@@ -57,7 +57,10 @@ import {
   UserToMaybeEventsQuery,
 } from "../internal";
 import schema from "../../schema/user_schema";
-import { convertAccountStatus } from "../../util/convert_user_fields";
+import {
+  convertAccountStatus,
+  convertSuperNestedObject,
+} from "../../util/convert_user_fields";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export enum UserDaysOff {
@@ -250,7 +253,7 @@ export class UserBase
         .load(this.id);
       this._superNestedObject = row?.super_nested_object ?? null;
     }
-    return this._superNestedObject ?? null;
+    return convertSuperNestedObject(this._superNestedObject ?? null);
   }
 
   static async load<T extends UserBase>(

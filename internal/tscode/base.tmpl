@@ -114,7 +114,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{range $field := .FieldInfo.Fields -}}
       {{ if fieldLoadedInBaseClass $schema $field -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
-        this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg  $val }}
+        this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg $val }}
       {{ end -}}
     {{end}}
   }
@@ -154,7 +154,8 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
           const v = await {{useImport "applyPrivacyPolicy"}}(this.viewer, p, this);
           return v ? this.{{$fieldName}} : null;
         {{ else -}}
-          return this.{{$fieldName}} ?? null;
+          {{$val := printf "this.%s ?? null" $fieldName -}}
+          return {{callAndConvertFunc $field $cfg $val }};
         {{ end -}}
       }
     {{ end }}
