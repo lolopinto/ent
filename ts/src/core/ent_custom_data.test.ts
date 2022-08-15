@@ -110,24 +110,19 @@ describe("postgres no soft delete", () => {
 });
 
 describe("sqlite no soft delete", () => {
-  setupSqlite(
-    `sqlite:///ent_custom_data_test.db`,
-    () => [
-      table(
-        "users",
-        integer("id", { primaryKey: true }),
-        text("baz"),
-        text("bar"),
-        text("foo"),
-      ),
-    ],
-    {
-      disableDeleteAfterEachTest: true,
-    },
-  );
+  setupSqlite(`sqlite:///ent_custom_data_test.db`, () => [
+    table(
+      "users",
+      integer("id", { primaryKey: true }),
+      text("baz"),
+      text("bar"),
+      text("foo"),
+    ),
+  ]);
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     await createAllRows();
+    ml.clear();
   });
 
   commonTests(options);
@@ -151,32 +146,29 @@ describe("postgres with soft delete", () => {
 
   commonTests(softDeleteOptions);
   softDeleteTests(softDeleteOptions);
+  mixTests();
 });
 
 describe("sqlite with soft delete", () => {
-  setupSqlite(
-    `sqlite:///ent_custom_data_soft_deletetest.db`,
-    () => [
-      table(
-        "users",
-        integer("id", { primaryKey: true }),
-        text("baz"),
-        text("bar"),
-        text("foo"),
-        timestamp("deleted_at", { nullable: true }),
-      ),
-    ],
-    {
-      disableDeleteAfterEachTest: true,
-    },
-  );
+  setupSqlite(`sqlite:///ent_custom_data_soft_deletetest.db`, () => [
+    table(
+      "users",
+      integer("id", { primaryKey: true }),
+      text("baz"),
+      text("bar"),
+      text("foo"),
+      timestamp("deleted_at", { nullable: true }),
+    ),
+  ]);
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     await createAllRows();
+    ml.clear();
   });
 
   commonTests(softDeleteOptions);
   softDeleteTests(softDeleteOptions);
+  mixTests();
 });
 
 const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -743,7 +735,7 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
       const ents2 = await loadCustomEnts(
         v,
         opts,
-        "select * from users WHERE deleted_at is NULL order by id desc",
+        "select * from users WHERE deleted_at IS NULL order by id desc",
       );
       expect(ents2.length).toBe(3);
       expect(ents2.map((ent) => ent.id)).toEqual([5, 3, 1]);
@@ -795,8 +787,77 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
   });
 }
 
-// TODO test interaction of ent soft delete and no soft delete
-// do we return the same rows. deletedAt flag will be different and maybe we don't want the same row so may need different clause
-// instanceKey of clause matters???
+function mixTests() {
+  test("no clause then soft delete load", async () => {
+    const v = getIDViewer(1, getCtx());
+
+    const ents = await loadCustomEnts(
+      v,
+      options,
+      "select * from users order by id desc",
+    );
+    expect(ents.length).toBe(5);
+    expect(ents.map((ent) => ent.id)).toEqual([9, 7, 5, 3, 1]);
+
+    await softDelete(softDeleteIds);
+    ml.clear();
+    const ents2 = await loadEnts(v, softDeleteOptions, ...ids);
+    // 5,3,1
+    expect(ents2.size).toBe(3);
+
+    // still hit the db and no ent cache even though all just loaded
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0].query).toMatch(
+      /SELECT \* FROM users WHERE id IN .+ AND deleted_at IS NULL/,
+    );
+    expect(ml.logs[0].values).toStrictEqual(ids);
+  });
+
+  test("no clause then soft delete load. no soft delete in between", async () => {
+    const v = getIDViewer(1, getCtx());
+
+    const ents = await loadCustomEnts(
+      v,
+      options,
+      "select * from users order by id desc",
+    );
+    expect(ents.length).toBe(5);
+    expect(ents.map((ent) => ent.id)).toEqual([9, 7, 5, 3, 1]);
+
+    ml.clear();
+    const ents2 = await loadEnts(v, softDeleteOptions, ...ids);
+    // 9,7,5,3,1
+    expect(ents2.size).toBe(5);
+
+    // still hit the db and no ent cache even though all just loaded
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0].query).toMatch(
+      /SELECT \* FROM users WHERE id IN .+ AND deleted_at IS NULL/,
+    );
+    expect(ml.logs[0].values).toStrictEqual(ids);
+  });
+
+  test("soft delete then no soft delete", async () => {
+    const v = getIDViewer(1, getCtx());
+
+    const ents = await loadCustomEnts(
+      v,
+      softDeleteOptions,
+      "select * from users where deleted_at IS NULL order by id desc",
+    );
+    expect(ents.length).toBe(5);
+    expect(ents.map((ent) => ent.id)).toEqual([9, 7, 5, 3, 1]);
+
+    ml.clear();
+    const ents2 = await loadEnts(v, options, ...ids);
+    // 9,7,5,3,1
+    expect(ents2.size).toBe(5);
+
+    // still hit the db and no ent cache even though all just loaded
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0].query).toMatch(/SELECT \* FROM users WHERE id IN/);
+    expect(ml.logs[0].values).toStrictEqual(ids);
+  });
+}
 
 // TODO prime logic with disableTransformations and different combos...
