@@ -575,8 +575,9 @@ func (f *Field) TsType() string {
 // type of the field in the class e.g. readonly name type;
 func (f *Field) TsFieldType(cfg codegenapi.Config) string {
 	// when fetch on demand, we set to undefined to start since we need to load it later
+	// we use nullable value because we set the value after loading...
 	if f.fetchOnDemand {
-		return fmt.Sprintf("%s | undefined", f.tsRawUnderlyingType())
+		return fmt.Sprintf("%s | undefined", f.TsType())
 	}
 	// there's a method that's nullable so return raw type
 	if f.HasAsyncAccessor(cfg) {

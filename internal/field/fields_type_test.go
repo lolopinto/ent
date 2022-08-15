@@ -559,12 +559,171 @@ func TestNullableJSONBAsListFieldOnDemand(t *testing.T) {
 	})
 }
 
-// TODO delayed fetch
-// should have async acesssor
-// type should have undefined and null
-// async accessor should have null
-// also test list types
-// should have null
+func TestNonNullableFieldDelayedFetch(t *testing.T) {
+	cfg := &onDemandConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name: "name",
+		Type: &input.FieldType{
+			DBType: input.String,
+		},
+		FetchOnDemand: true,
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            true,
+		asyncAccessor:      true,
+		tsFieldName:        "_name",
+		tsBuilderFieldName: "name",
+		tsPublicAPIName:    "name",
+		tsType:             "string | null",
+		tsFieldType:        "string | null | undefined",
+		tsBuilderType:      "string",
+		tsBuilderUnionType: "string | null",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		fieldTypeType:   &enttype.StringType{},
+		tsFieldTypeType: &enttype.StringType{},
+	})
+}
+
+func TestNullableFieldDelayedFetch(t *testing.T) {
+	cfg := &onDemandConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name: "name",
+		Type: &input.FieldType{
+			DBType: input.String,
+		},
+		Nullable:      true,
+		FetchOnDemand: true,
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            true,
+		asyncAccessor:      true,
+		tsFieldName:        "_name",
+		tsBuilderFieldName: "name",
+		tsPublicAPIName:    "name",
+		tsType:             "string | null",
+		tsFieldType:        "string | null | undefined",
+		tsBuilderType:      "string | null",
+		tsBuilderUnionType: "string | null",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		fieldTypeType:   &enttype.NullableStringType{},
+		tsFieldTypeType: &enttype.NullableStringType{},
+	})
+}
+
+func TestNonNullableListFieldDelayedFetch(t *testing.T) {
+	cfg := &onDemandConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name: "list",
+		Type: &input.FieldType{
+			DBType: input.List,
+			ListElemType: &input.FieldType{
+				DBType: input.String,
+			},
+		},
+		FetchOnDemand: true,
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            true,
+		asyncAccessor:      true,
+		tsFieldName:        "_list",
+		tsBuilderFieldName: "list",
+		tsPublicAPIName:    "list",
+		tsType:             "string[] | null",
+		tsFieldType:        "string[] | null | undefined",
+		tsBuilderType:      "string[]",
+		tsBuilderUnionType: "string[] | null",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		fieldTypeType: &enttype.ArrayListType{
+			ElemType: &enttype.StringType{},
+		},
+		tsFieldTypeType: &enttype.ArrayListType{
+			ElemType: &enttype.StringType{},
+		},
+	})
+}
+
+func TestNullableListFieldDelayedFetch(t *testing.T) {
+	cfg := &onDemandConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name: "list",
+		Type: &input.FieldType{
+			DBType: input.List,
+			ListElemType: &input.FieldType{
+				DBType: input.String,
+			},
+		},
+		Nullable:      true,
+		FetchOnDemand: true,
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            true,
+		asyncAccessor:      true,
+		tsFieldName:        "_list",
+		tsBuilderFieldName: "list",
+		tsPublicAPIName:    "list",
+		tsType:             "string[] | null",
+		tsFieldType:        "string[] | null | undefined",
+		tsBuilderType:      "string[] | null",
+		tsBuilderUnionType: "string[] | null",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		fieldTypeType: &enttype.NullableArrayListType{
+			ElemType: &enttype.StringType{},
+		},
+		tsFieldTypeType: &enttype.NullableArrayListType{
+			ElemType: &enttype.StringType{},
+		},
+	})
+}
 
 func doTestField(t *testing.T, cfg codegenapi.Config, f *Field, exp *expected) {
 	assert.Equal(t, exp.private, f.Private(cfg))
