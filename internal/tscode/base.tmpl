@@ -57,10 +57,10 @@ interface {{$dataType}} {
 
 {{range $field := .FieldInfo.Fields -}}
   {{ if $field.FetchOnDemand -}}
-    const {{$field.FieldName}}Loader = new {{useImport "ObjectLoaderFactory"}}({
+    const {{$field.TSPublicAPIName}}Loader = new {{useImport "ObjectLoaderFactory"}}({
       tableName: {{useImport $loaderInfo}}.tableName,
-      fields: ["{{$field.GetDbColName}}"],
       {{/* TODO "id" https://github.com/lolopinto/ent/issues/1064 */ -}}
+      fields: ["id", "{{$field.GetDbColName}}"],
       key: "id",
       instanceKey: `${ {{$loaderInfo}}.tableName}-{{$field.GetDbColName}}`,
     });
@@ -134,7 +134,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         {{ $fieldName := $field.TsFieldName $cfg -}}
         {{ if $field.FetchOnDemand -}}
           if (this.{{$fieldName}} === undefined) {
-            const row = await {{$field.FieldName}}Loader.createLoader(this.viewer.context).load(this.id);
+            const row = await {{$field.TSPublicAPIName}}Loader.createLoader(this.viewer.context).load(this.id);
             this.{{$fieldName}} = row?.{{$field.GetDbColName}} ?? null;
           }
         {{ end -}}

@@ -117,7 +117,7 @@ interface UserDBData {
 
 const superNestedObjectLoader = new ObjectLoaderFactory({
   tableName: userLoaderInfo.tableName,
-  fields: ["super_nested_object"],
+  fields: ["id", "super_nested_object"],
   key: "id",
   instanceKey: `${userLoaderInfo.tableName}-super_nested_object`,
 });
