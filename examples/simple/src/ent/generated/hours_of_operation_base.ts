@@ -108,7 +108,10 @@ export class HoursOfOperationBase
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      HoursOfOperationBase.loaderOptions.apply(this),
+      {
+        ...HoursOfOperationBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -119,7 +122,10 @@ export class HoursOfOperationBase
     context?: Context,
   ): Promise<HoursOfOperationDBData[]> {
     return (await loadCustomData(
-      HoursOfOperationBase.loaderOptions.apply(this),
+      {
+        ...HoursOfOperationBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as HoursOfOperationDBData[];

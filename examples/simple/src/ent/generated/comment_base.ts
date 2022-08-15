@@ -107,7 +107,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      CommentBase.loaderOptions.apply(this),
+      {
+        ...CommentBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -118,7 +121,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<CommentDBData[]> {
     return (await loadCustomData(
-      CommentBase.loaderOptions.apply(this),
+      {
+        ...CommentBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as CommentDBData[];

@@ -98,7 +98,10 @@ export class ContactEmailBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      ContactEmailBase.loaderOptions.apply(this),
+      {
+        ...ContactEmailBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -109,7 +112,10 @@ export class ContactEmailBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<ContactEmailDBData[]> {
     return (await loadCustomData(
-      ContactEmailBase.loaderOptions.apply(this),
+      {
+        ...ContactEmailBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as ContactEmailDBData[];
