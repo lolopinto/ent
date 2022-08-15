@@ -12,12 +12,16 @@ export interface StructOptions extends FieldOptions {
   jsonNotJSONB?: boolean;
 }
 
+interface allStructOptions extends StructOptions {
+  jsonAsList?: boolean;
+}
+
 export class StructField extends BaseField implements Field {
   type: Type = {
     dbType: DBType.JSONB,
   };
 
-  constructor(private options: StructOptions) {
+  constructor(private options: allStructOptions) {
     super();
     this.type.subFields = options.fields;
     this.type.type = options.tsType;
@@ -25,13 +29,18 @@ export class StructField extends BaseField implements Field {
     if (options.jsonNotJSONB) {
       this.type.dbType = DBType.JSON;
     }
+    if (options?.jsonAsList) {
+      this.type.listElemType = {
+        dbType: DBType.JSONB,
+      };
+    }
   }
 
   // right now, we store things in the db in lowerCase format
   // this will lead to issues if field changes.
   // TODO: use storageKey and convert back...
 
-  format(obj: any, nested?: boolean) {
+  formatImpl(obj: any, nested?: boolean) {
     if (!(obj instanceof Object)) {
       throw new Error("valid was not called");
     }
@@ -57,14 +66,25 @@ export class StructField extends BaseField implements Field {
         ret[dbKey] = val;
       }
     }
-    // don't json.stringify if nested
+    // don't json.stringify if nested or list
     if (nested) {
       return ret;
     }
     return JSON.stringify(ret);
   }
 
-  async valid(obj: any): Promise<boolean> {
+  format(obj: any, nested?: boolean) {
+    if (Array.isArray(obj) && this.options.jsonAsList) {
+      const ret = obj.map((v) => this.formatImpl(v, true));
+      if (nested) {
+        return ret;
+      }
+      return JSON.stringify(ret);
+    }
+    return this.formatImpl(obj, nested);
+  }
+
+  private async validImpl(obj: any) {
     if (!(obj instanceof Object)) {
       return false;
     }
@@ -102,6 +122,21 @@ export class StructField extends BaseField implements Field {
     const ret = await Promise.all(promises);
     return ret.every((v) => v);
   }
+
+  async valid(obj: any): Promise<boolean> {
+    if (this.options.jsonAsList) {
+      if (!Array.isArray(obj)) {
+        return false;
+      }
+      const valid = await Promise.all(obj.map((v) => this.validImpl(v)));
+      return valid.every((b) => b);
+    }
+    if (!(obj instanceof Object)) {
+      return false;
+    }
+
+    return this.validImpl(obj);
+  }
 }
 
 export function StructType(options: StructOptions) {
@@ -109,6 +144,17 @@ export function StructType(options: StructOptions) {
   return Object.assign(result, options);
 }
 
+/**
+ * @deprecated use StructTypeAsList
+ */
 export function StructListType(options: StructOptions) {
   return new ListField(StructType(options), options);
+}
+
+export function StructTypeAsList(options: allStructOptions) {
+  let result = new StructField({
+    ...options,
+    jsonAsList: true,
+  });
+  return Object.assign(result, options);
 }

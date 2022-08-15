@@ -769,12 +769,8 @@ export class UserBuilder<
   }
 
   // get value of superNestedObject. Retrieves it from the input if specified or takes it from existingEnt
-  getNewSuperNestedObjectValue(): UserSuperNestedObject | null {
-    if (this.input.superNestedObject !== undefined) {
-      return this.input.superNestedObject;
-    }
-
-    return this.existingEnt?.superNestedObject ?? null;
+  getNewSuperNestedObjectValue(): UserSuperNestedObject | null | undefined {
+    return this.input.superNestedObject;
   }
 
   // get value of nestedList. Retrieves it from the input if specified or takes it from existingEnt

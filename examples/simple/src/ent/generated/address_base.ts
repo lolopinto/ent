@@ -12,7 +12,6 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -51,8 +50,8 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.streetName = data.street_name;
     this.city = data.city;
     this.state = data.state;

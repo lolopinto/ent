@@ -19,6 +19,7 @@ import {
   TimestampType,
   IntegerEnumType,
   IntegerEnumListType,
+  StructTypeAsList,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -81,7 +82,7 @@ const UserSchema = new EntSchema({
     // TODO there should be a way to share structs across types
     // this is the same type across multiple fields
     // more likely to be shared across types
-    prefsList: StructListType({
+    prefsList: StructTypeAsList({
       tsType: "UserPrefsStruct2",
       nullable: true,
       fields: {
@@ -129,6 +130,7 @@ const UserSchema = new EntSchema({
     new_col: StringType({ nullable: true }),
     new_col2: StringType({ nullable: true }),
     superNestedObject: StructType({
+      fetchOnDemand: true,
       nullable: true,
       tsType: "UserSuperNestedObject",
       graphQLType: "UserSuperNestedObject",
@@ -365,6 +367,13 @@ const UserSchema = new EntSchema({
       // everything is optional by default in edits
 
       fields: ["FirstName", "LastName"],
+    },
+    {
+      operation: ActionOperation.Edit,
+      actionName: "EditUserAllFieldsAction",
+      graphQLName: "userEditAllFields",
+      inputName: "EditUserAllFieldsInput",
+      hideFromGraphQL: true,
     },
     // edit password left as an exercise to the reader
 

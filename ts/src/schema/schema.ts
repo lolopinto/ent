@@ -441,6 +441,8 @@ export interface FieldOptions {
   // should be the same type e.g. Date to Date
   convert?: ConvertType;
 
+  fetchOnDemand?: boolean;
+
   // allow name for now
   [x: string]: any;
 }

@@ -29,8 +29,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.StringType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertList",
 			},
 			nil,
 		},
@@ -51,8 +51,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.StringType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableList",
 			},
 			nil,
 		},
@@ -74,8 +74,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.IntegerType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertList",
 			},
 			nil,
 		},
@@ -96,8 +96,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.IntegerType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableList",
 			},
 			nil,
 		},
@@ -119,8 +119,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.BoolType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertBoolList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertBoolList",
 			},
 			nil,
 		},
@@ -141,8 +141,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.BoolType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableBoolList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableBoolList",
 			},
 			nil,
 		},
@@ -164,8 +164,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.FloatType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertList",
 			},
 			nil,
 		},
@@ -186,8 +186,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.FloatType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableList",
 			},
 			nil,
 		},
@@ -209,8 +209,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.DateType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertDateList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertDateList",
 			},
 			nil,
 		},
@@ -231,8 +231,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.DateType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableDateList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableDateList",
 			},
 			nil,
 		},
@@ -254,8 +254,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimeType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertList",
 			},
 			nil,
 		},
@@ -276,8 +276,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimeType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableList",
 			},
 			nil,
 		},
@@ -299,8 +299,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimetzType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertList",
 			},
 			nil,
 		},
@@ -321,8 +321,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimetzType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableList",
 			},
 			nil,
 		},
@@ -344,8 +344,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimestampType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertDateList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertDateList",
 			},
 			nil,
 		},
@@ -366,8 +366,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimestampType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableDateList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableDateList",
 			},
 			nil,
 		},
@@ -389,8 +389,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimestamptzType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertDateList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertDateList",
 			},
 			nil,
 		},
@@ -411,8 +411,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimestamptzType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableDateList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableDateList",
 			},
 			nil,
 		},
@@ -456,8 +456,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics: true,
-				convertFn:    "convertList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertList",
 			},
 			nil,
 		},
@@ -500,8 +500,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableList",
 			},
 			nil,
 		},
@@ -523,8 +523,33 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.JSONBType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertJSONList",
+			},
+			nil,
+		},
+		"jsonb as list": {
+			&enttype.ArrayListType{
+				ElemType:           &enttype.JSONBType{},
+				ElemDBTypeNotArray: true,
+			},
+			expType{
+				db:         "postgresql.JSONB",
+				graphql:    "[JSON!]!",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
+				},
+				tsType: "any[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType:           &enttype.JSONBType{},
+					ElemDBTypeNotArray: true,
+				},
+				goTypePanics:    true,
+				convertSqliteFn: "convertJSONList",
 			},
 			nil,
 		},
@@ -546,8 +571,33 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.JSONType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertJSONList",
+			},
+			nil,
+		},
+		"json as list": {
+			&enttype.ArrayListType{
+				ElemType:           &enttype.JSONType{},
+				ElemDBTypeNotArray: true,
+			},
+			expType{
+				db:         "postgresql.JSON",
+				graphql:    "[JSON!]!",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
+				},
+				tsType: "any[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType:           &enttype.JSONType{},
+					ElemDBTypeNotArray: true,
+				},
+				goTypePanics:    true,
+				convertSqliteFn: "convertJSONList",
 			},
 			nil,
 		},
@@ -568,8 +618,32 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.JSONBType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableJSONList",
+			},
+			nil,
+		},
+		"nullable jsonb as list": {
+			&enttype.NullableArrayListType{
+				ElemType:           &enttype.JSONBType{},
+				ElemDBTypeNotArray: true,
+			},
+			expType{
+				db:         "postgresql.JSONB",
+				graphql:    "[JSON!]",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
+				},
+				tsType: "any[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType:           &enttype.JSONBType{},
+					ElemDBTypeNotArray: true,
+				},
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableJSONList",
 			},
 			nil,
 		},
@@ -590,13 +664,12 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.JSONType{},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableJSONList",
 			},
 			nil,
 		},
-
-		"jsonb with sub fields list": {
+		"jsonb with sub fields as list": {
 			&enttype.ArrayListType{
 				ElemType: &enttype.JSONBType{
 					CommonJSONType: enttype.CommonJSONType{
@@ -612,9 +685,10 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
+				ElemDBTypeNotArray: true,
 			},
 			expType{
-				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				db:         "postgresql.JSONB",
 				graphql:    "[TypeWithSubFields!]!",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
@@ -639,9 +713,10 @@ func TestArrayListType(t *testing.T) {
 							},
 						},
 					},
+					ElemDBTypeNotArray: true,
 				},
-				goTypePanics: true,
-				convertFn:    "convertJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertJSONList",
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
@@ -656,7 +731,7 @@ func TestArrayListType(t *testing.T) {
 			},
 			nil,
 		},
-		"nullable jsonb with sub fields list": {
+		"nullable jsonb with sub fields as list": {
 			&enttype.NullableArrayListType{
 				ElemType: &enttype.JSONBType{
 					CommonJSONType: enttype.CommonJSONType{
@@ -672,9 +747,10 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
+				ElemDBTypeNotArray: true,
 			},
 			expType{
-				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				db:         "postgresql.JSONB",
 				graphql:    "[TypeWithSubFields!]",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
@@ -698,9 +774,10 @@ func TestArrayListType(t *testing.T) {
 							},
 						},
 					},
+					ElemDBTypeNotArray: true,
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableJSONList",
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
@@ -759,8 +836,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics: true,
-				convertFn:    "convertJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertJSONList",
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
@@ -818,8 +895,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableJSONList",
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
@@ -951,8 +1028,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics: true,
-				convertFn:    "convertJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertJSONList",
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
@@ -1118,8 +1195,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableJSONList",
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
@@ -1286,8 +1363,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics: true,
-				convertFn:    "convertJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertJSONList",
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
@@ -1453,8 +1530,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics: true,
-				convertFn:    "convertNullableJSONList",
+				goTypePanics:    true,
+				convertSqliteFn: "convertNullableJSONList",
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},

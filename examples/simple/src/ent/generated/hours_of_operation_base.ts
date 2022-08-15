@@ -12,7 +12,6 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -56,8 +55,8 @@ export class HoursOfOperationBase
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.open = data.open;
     this.close = data.close;
   }

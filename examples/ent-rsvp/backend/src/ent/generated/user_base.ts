@@ -10,7 +10,6 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
-  convertDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -50,8 +49,8 @@ export class UserBase implements Ent<Viewer> {
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
