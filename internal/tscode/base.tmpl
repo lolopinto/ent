@@ -83,7 +83,11 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{end -}}
     {{ if not ($schema.PatternFieldWithMixin $field) -}}
       {{ if $field.Private $cfg -}}
-        protected readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
+        {{ if $field.FetchOnDemand -}}
+          protected {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
+        {{ else -}}
+          protected readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
+        {{ end -}} 
       {{ else -}}
         readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
       {{end -}}
@@ -96,7 +100,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       super(viewer, data);
     {{ end -}}
     {{range $field := .FieldInfo.Fields -}}
-      {{ if not ($schema.PatternFieldWithMixin $field) -}}
+      {{ if fieldLoadedInBaseClass $schema $field -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
         this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg  $val }}
       {{ end -}}
@@ -111,22 +115,41 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{ end }}
   }
 
+  {{$node := .Node}}
   {{range $field := .FieldInfo.Fields -}}
     {{ if $field.HasAsyncAccessor $cfg -}}
       async {{$field.TSPublicAPIName}}(): Promise<{{$field.TsType}}> {
-        {{/* if underlying field can be null, we check for null */}}
-        {{ if $field.Nullable -}}
-          if (this.{{$field.TsFieldName $cfg}} === null) {
-            return null;
+        {{ $fieldName := $field.TsFieldName $cfg -}}
+        {{ if $field.FetchOnDemand -}}
+          if (this.{{$fieldName}} === undefined) {
+            const row = await {{useImport "loadRow"}}({
+              tableName: {{useImport $loaderInfo}}.tableName,
+              context: this.viewer.context,
+              fields: ["{{$field.GetDbColName}}"],
+              {{/* TODO "id" */ -}}
+              clause: {{useImport "query"}}.Eq("id", this.id),
+            });
+            this.{{$fieldName}} = row?.{{$field.GetDbColName}} ?? null;
           }
         {{ end -}}
-        const m = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}},{{useImport $loaderInfo}}.fieldInfo);
-        const p = m.get("{{$field.GetDbColName}}");
-        if (!p) {
-          throw new Error(`couldn't get field privacy policy for {{$field.TSPublicAPIName}}`);
-        }
-        const v = await {{useImport "applyPrivacyPolicy"}}(this.viewer, p, this);
-        return v ? this.{{$field.TsFieldName $cfg}} : null;
+
+        {{ if $field.HasFieldPrivacy -}}
+          {{/* if underlying field can be null, we check for null */}}
+          {{ if $field.Nullable -}}
+            if (this.{{$fieldName}} === null) {
+              return null;
+            }
+          {{ end -}}
+          const m = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}},{{useImport $loaderInfo}}.fieldInfo);
+          const p = m.get("{{$field.GetDbColName}}");
+          if (!p) {
+            throw new Error(`couldn't get field privacy policy for {{$field.TSPublicAPIName}}`);
+          }
+          const v = await {{useImport "applyPrivacyPolicy"}}(this.viewer, p, this);
+          return v ? this.{{$fieldName}} : null;
+        {{ else -}}
+          return this.{{$fieldName}} ?? null;
+        {{ end -}}
       }
     {{ end }}
   {{ end -}}

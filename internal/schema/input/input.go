@@ -155,6 +155,7 @@ type Field struct {
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`
 	DerivedFields       []*Field            `json:"derivedFields,omitempty"`
 	UserConvert         *UserConvertType    `json:"convert,omitempty"`
+	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
 
 	// Go specific information here
 	TagMap          map[string]string `json:"-"`

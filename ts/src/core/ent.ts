@@ -1514,6 +1514,7 @@ export function buildUpdateQuery(
 
   query = query + options.whereClause.clause(idx);
   values.push(...options.whereClause.values());
+  logValues.push(...options.whereClause.logValues());
 
   if (suffix) {
     query = query + " " + suffix;

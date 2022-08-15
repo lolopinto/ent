@@ -130,6 +130,7 @@ const UserSchema = new EntSchema({
     new_col: StringType({ nullable: true }),
     new_col2: StringType({ nullable: true }),
     superNestedObject: StructType({
+      fetchOnDemand: true,
       nullable: true,
       tsType: "UserSuperNestedObject",
       graphQLType: "UserSuperNestedObject",
@@ -366,6 +367,13 @@ const UserSchema = new EntSchema({
       // everything is optional by default in edits
 
       fields: ["FirstName", "LastName"],
+    },
+    {
+      operation: ActionOperation.Edit,
+      actionName: "EditUserAllFieldsAction",
+      graphQLName: "userEditAllFields",
+      inputName: "EditUserAllFieldsInput",
+      hideFromGraphQL: true,
     },
     // edit password left as an exercise to the reader
 

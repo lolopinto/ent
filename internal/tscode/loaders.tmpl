@@ -12,7 +12,9 @@
   const {{$table}} = '{{.TableName}}';
   const {{$fields}} = [
     {{range $field := .FieldInfo.Fields -}}
-      '{{$field.GetDbColName}}',
+      {{if $field.FetchOnLoad -}}
+        '{{$field.GetDbColName}}',
+      {{end -}}
     {{end}}
   ];
 

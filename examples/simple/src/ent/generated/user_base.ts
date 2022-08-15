@@ -21,8 +21,10 @@ import {
   loadEntX,
   loadEntXViaKey,
   loadEnts,
+  loadRow,
   loadUniqueEdge,
   loadUniqueNode,
+  query,
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
@@ -56,10 +58,7 @@ import {
   UserToMaybeEventsQuery,
 } from "../internal";
 import schema from "../../schema/user_schema";
-import {
-  convertAccountStatus,
-  convertSuperNestedObject,
-} from "../../util/convert_user_fields";
+import { convertAccountStatus } from "../../util/convert_user_fields";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export enum UserDaysOff {
@@ -140,7 +139,7 @@ export class UserBase
   readonly funUuids: ID[] | null;
   readonly newCol: string | null;
   readonly newCol2: string | null;
-  readonly superNestedObject: UserSuperNestedObject | null;
+  protected _superNestedObject: UserSuperNestedObject | null | undefined;
   readonly nestedList: UserNestedObjectList[] | null;
   readonly intEnum: UserIntEnum | null;
 
@@ -168,7 +167,6 @@ export class UserBase
     this.funUuids = data.fun_uuids;
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
-    this.superNestedObject = convertSuperNestedObject(data.super_nested_object);
     this.nestedList = data.nested_list;
     this.intEnum = data.int_enum;
   }
@@ -237,6 +235,19 @@ export class UserBase
     }
     const v = await applyPrivacyPolicy(this.viewer, p, this);
     return v ? this._prefsDiff : null;
+  }
+
+  async superNestedObject(): Promise<UserSuperNestedObject | null> {
+    if (this._superNestedObject === undefined) {
+      const row = await loadRow({
+        tableName: userLoaderInfo.tableName,
+        context: this.viewer.context,
+        fields: ["super_nested_object"],
+        clause: query.Eq("id", this.id),
+      });
+      this._superNestedObject = row?.super_nested_object ?? null;
+    }
+    return this._superNestedObject ?? null;
   }
 
   static async load<T extends UserBase>(
