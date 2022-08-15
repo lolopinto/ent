@@ -12,6 +12,7 @@ import {
   Ent,
   ID,
   LoadEntOptions,
+  ObjectLoaderFactory,
   PrivacyPolicy,
   applyPrivacyPolicy,
   loadCustomData,
@@ -21,10 +22,8 @@ import {
   loadEntX,
   loadEntXViaKey,
   loadEnts,
-  loadRow,
   loadUniqueEdge,
   loadUniqueNode,
-  query,
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
@@ -112,6 +111,13 @@ interface UserDBData {
   nested_list: UserNestedObjectList[] | null;
   int_enum: UserIntEnum | null;
 }
+
+const superNestedObjectLoader = new ObjectLoaderFactory({
+  tableName: userLoaderInfo.tableName,
+  fields: ["super_nested_object"],
+  key: "id",
+  instanceKey: `${userLoaderInfo.tableName}-super_nested_object`,
+});
 
 export class UserBase
   extends FeedbackMixin(class {})
@@ -239,12 +245,9 @@ export class UserBase
 
   async superNestedObject(): Promise<UserSuperNestedObject | null> {
     if (this._superNestedObject === undefined) {
-      const row = await loadRow({
-        tableName: userLoaderInfo.tableName,
-        context: this.viewer.context,
-        fields: ["super_nested_object"],
-        clause: query.Eq("id", this.id),
-      });
+      const row = await superNestedObjectLoader
+        .createLoader(this.viewer.context)
+        .load(this.id);
       this._superNestedObject = row?.super_nested_object ?? null;
     }
     return this._superNestedObject ?? null;

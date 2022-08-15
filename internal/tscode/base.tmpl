@@ -55,6 +55,18 @@ interface {{$dataType}} {
   {{ end -}}
 }
 
+{{range $field := .FieldInfo.Fields -}}
+  {{ if $field.FetchOnDemand -}}
+    const {{$field.FieldName}}Loader = new {{useImport "ObjectLoaderFactory"}}({
+      tableName: {{useImport $loaderInfo}}.tableName,
+      fields: ["{{$field.GetDbColName}}"],
+      {{/* TODO "id" https://github.com/lolopinto/ent/issues/1064 */ -}}
+      key: "id",
+      instanceKey: `${ {{$loaderInfo}}.tableName}-{{$field.GetDbColName}}`,
+    });
+  {{ end -}}
+{{ end}}
+
 
 {{$hasMixins := .HasMixins -}}
 {{$mixinInfo := .GetMixinInfo $schema -}}
@@ -122,13 +134,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         {{ $fieldName := $field.TsFieldName $cfg -}}
         {{ if $field.FetchOnDemand -}}
           if (this.{{$fieldName}} === undefined) {
-            const row = await {{useImport "loadRow"}}({
-              tableName: {{useImport $loaderInfo}}.tableName,
-              context: this.viewer.context,
-              fields: ["{{$field.GetDbColName}}"],
-              {{/* TODO "id" */ -}}
-              clause: {{useImport "query"}}.Eq("id", this.id),
-            });
+            const row = await {{$field.FieldName}}Loader.createLoader(this.viewer.context).load(this.id);
             this.{{$fieldName}} = row?.{{$field.GetDbColName}} ?? null;
           }
         {{ end -}}

@@ -483,7 +483,8 @@ func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
 
 	group1 = []*loader{
 		{
-			Name:                 nodeData.GetLoaderName(),
+			Name: nodeData.GetLoaderName(),
+			// TODO https://github.com/lolopinto/ent/issues/1064 this shouldn't be hardcoded as id...
 			Pkey:                 strconv.Quote("id"),
 			AddTransformedClause: nodeData.TransformsSelect,
 		},
@@ -494,6 +495,7 @@ func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
 		group2 = []*loader{
 			{
 				Name: nodeData.GetLoaderNoTransformName(),
+				// TODO https://github.com/lolopinto/ent/issues/1064 this shouldn't be hardcoded as id...
 				Pkey: strconv.Quote("id"),
 			},
 		}
@@ -614,6 +616,7 @@ func (nodeData *NodeData) GetBuilderMixinInfo(s *Schema) (*mixinInfo, error) {
 }
 
 func (nodeData *NodeData) GenerateGetIDInBuilder() bool {
+	// TODO https://github.com/lolopinto/ent/issues/1064
 	idField := nodeData.FieldInfo.GetFieldByName("ID")
 	if idField == nil {
 		idField = nodeData.FieldInfo.GetFieldByName("id")
