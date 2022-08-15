@@ -563,6 +563,8 @@ func TestNullableJSONBAsListFieldOnDemand(t *testing.T) {
 // should have async acesssor
 // type should have undefined and null
 // async accessor should have null
+// also test list types
+// should have null
 
 func doTestField(t *testing.T, cfg codegenapi.Config, f *Field, exp *expected) {
 	assert.Equal(t, exp.private, f.Private(cfg))

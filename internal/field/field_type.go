@@ -221,7 +221,8 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 	}
 
 	// if field privacy, whether on demand or ent load, the type here is nullable
-	if ret.hasFieldPrivacy {
+	// same for fetch on load since the fetch can fail...
+	if ret.hasFieldPrivacy || ret.fetchOnDemand {
 		nullableType, ok := ret.fieldType.(enttype.NullableType)
 		if ok {
 			if err := ret.setGraphQLFieldType(nullableType.GetNullableType()); err != nil {
