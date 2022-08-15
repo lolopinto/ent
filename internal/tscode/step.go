@@ -1270,5 +1270,9 @@ func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
 		return fmt.Sprintf("%s(%s)", conv1, val), nil
 	}
 
+	m["fieldLoadedInBaseClass"] = func(s *schema.Schema, f *field.Field) bool {
+		return !s.PatternFieldWithMixin(f) && f.FetchOnLoad()
+	}
+
 	return m
 }

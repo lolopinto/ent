@@ -139,7 +139,7 @@ function commonTests() {
       expect(ml.logs.length).toEqual(0);
     });
 
-    test("editRow no fieldsToLog", async () => {
+    test("fieldsToLog", async () => {
       const fields = {
         col1: "bar",
         col2: "baz",
@@ -176,7 +176,7 @@ function commonTests() {
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         query: expQuery,
-        values: ["bar", "baz"],
+        values: ["bar", "baz", "1"],
       });
     });
 
@@ -200,7 +200,7 @@ function commonTests() {
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         query: expQuery,
-        values: ["bar", "***"],
+        values: ["bar", "***", "1"],
       });
     });
 

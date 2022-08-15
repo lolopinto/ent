@@ -961,7 +961,7 @@ describe("super nested complex", () => {
         async function (id: string) {
           const entID = mustDecodeIDFromGQLID(id);
           const user = await User.loadX(new ExampleViewer(entID), entID);
-          expect(user.superNestedObject).toStrictEqual(transformedObj);
+          expect(await user.superNestedObject()).toStrictEqual(transformedObj);
         },
       ],
     );
@@ -1016,7 +1016,7 @@ describe("super nested complex", () => {
         async function (id: string) {
           const entID = mustDecodeIDFromGQLID(id);
           const user = await User.loadX(new ExampleViewer(entID), entID);
-          expect(user.superNestedObject).toStrictEqual(transformedObj);
+          expect(await user.superNestedObject()).toStrictEqual(transformedObj);
         },
       ],
     );
@@ -1073,7 +1073,7 @@ describe("super nested complex", () => {
         async function (id: string) {
           const entID = mustDecodeIDFromGQLID(id);
           const user = await User.loadX(new ExampleViewer(entID), entID);
-          expect(user.superNestedObject).toStrictEqual(transformedObj);
+          expect(await user.superNestedObject()).toStrictEqual(transformedObj);
         },
       ],
     );
@@ -1127,7 +1127,7 @@ describe("super nested complex", () => {
         async function (id: string) {
           const entID = mustDecodeIDFromGQLID(id);
           const user = await User.loadX(new ExampleViewer(entID), entID);
-          expect(user.superNestedObject).toStrictEqual(transformedObj);
+          expect(await user.superNestedObject()).toStrictEqual(transformedObj);
         },
       ],
     );

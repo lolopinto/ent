@@ -530,7 +530,6 @@ const userFields = [
   "fun_uuids",
   "new_col",
   "new_col_2",
-  "super_nested_object",
   "nested_list",
   "int_enum",
 ];
