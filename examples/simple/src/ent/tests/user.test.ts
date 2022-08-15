@@ -1285,6 +1285,9 @@ describe("super nested complex", () => {
 
     const cols = execArray![1].split(", ");
     expect(cols.includes("super_nested_object")).toBe(false);
+    // just confirm a few other fields included...
+    expect(cols.includes("id")).toBe(true);
+    expect(cols.includes("first_name")).toBe(true);
   });
 });
 
