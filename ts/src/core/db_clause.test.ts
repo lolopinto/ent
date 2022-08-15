@@ -13,6 +13,7 @@ import { loadRows } from "./ent";
 import * as clause from "./clause";
 import { Data } from "./base";
 import { v1 } from "uuid";
+import { MockLogs } from "../testutils/mock_log";
 import { setLogLevels } from "./logger";
 
 const tableName = "contacts";
@@ -158,8 +159,6 @@ test("create + array query", async () => {
     clause: clause.PostgresArrayNotContains("emails", row.emails),
   });
   expect(notFromAllEmails.length).toBe(19);
-
-  //  const
 });
 
 test("jsonb", async () => {
@@ -250,4 +249,37 @@ test("jsonb", async () => {
   expect(helloRows.length).toEqual(13);
 
   // TODO check to make sure we tested it all...
+});
+
+test("in clause", async () => {
+  const ids: string[] = [];
+  const count = clause.inClause.getPostgresInClauseValuesThreshold();
+  for (let i = 0; i < count; i++) {
+    const data: Data = {
+      id: v1(),
+      first_name: "Jon",
+      last_name: "Snow",
+      emails: [],
+      phones: [],
+      random: null,
+    };
+    ids.push(data.id);
+    await createRowForTest({
+      tableName,
+      fields: data,
+    });
+  }
+
+  const ml = new MockLogs();
+  ml.mock();
+
+  setLogLevels(["query", "error"]);
+  const allIds = await loadRows({
+    tableName,
+    fields,
+    clause: clause.In("id", ids, "uuid"),
+  });
+  expect(ml.logs.length).toBe(1);
+  expect(ml.errors.length).toBe(0);
+  expect(allIds.length).toBe(count);
 });
