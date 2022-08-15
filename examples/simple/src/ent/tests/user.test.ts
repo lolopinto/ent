@@ -1,5 +1,6 @@
 import { AssocEdge, AssocEdgeInput, setLogLevels } from "@snowtop/ent";
 import { MockLogs } from "@snowtop/ent/testutils/mock_log";
+import { TestContext } from "@snowtop/ent/testutils/context/test_context";
 import {
   User,
   Contact,
@@ -1285,6 +1286,23 @@ describe("super nested complex", () => {
 
     const cols = execArray![1].split(", ");
     expect(cols.includes("super_nested_object")).toBe(false);
+    // just confirm a few other fields included...
+    expect(cols.includes("id")).toBe(true);
+    expect(cols.includes("first_name")).toBe(true);
+  });
+
+  test("query empty with context", async () => {
+    const user = await CreateUserAction.create(
+      new LoggedOutExampleViewer(new TestContext()),
+      {
+        firstName: "Jane",
+        lastName: "Doe",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: random(),
+      },
+    ).saveX();
+    expect(await user.superNestedObject()).toBe(null);
   });
 });
 

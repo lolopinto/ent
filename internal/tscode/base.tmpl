@@ -57,10 +57,10 @@ interface {{$dataType}} {
 
 {{range $field := .FieldInfo.Fields -}}
   {{ if $field.FetchOnDemand -}}
-    const {{$field.FieldName}}Loader = new {{useImport "ObjectLoaderFactory"}}({
+    const {{$field.TSPublicAPIName}}Loader = new {{useImport "ObjectLoaderFactory"}}({
       tableName: {{useImport $loaderInfo}}.tableName,
-      fields: ["{{$field.GetDbColName}}"],
       {{/* TODO "id" https://github.com/lolopinto/ent/issues/1064 */ -}}
+      fields: ["id", "{{$field.GetDbColName}}"],
       key: "id",
       instanceKey: `${ {{$loaderInfo}}.tableName}-{{$field.GetDbColName}}`,
     });
@@ -114,7 +114,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{range $field := .FieldInfo.Fields -}}
       {{ if fieldLoadedInBaseClass $schema $field -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
-        this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg  $val }}
+        this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg $val }}
       {{ end -}}
     {{end}}
   }
@@ -134,7 +134,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         {{ $fieldName := $field.TsFieldName $cfg -}}
         {{ if $field.FetchOnDemand -}}
           if (this.{{$fieldName}} === undefined) {
-            const row = await {{$field.FieldName}}Loader.createLoader(this.viewer.context).load(this.id);
+            const row = await {{$field.TSPublicAPIName}}Loader.createLoader(this.viewer.context).load(this.id);
             this.{{$fieldName}} = row?.{{$field.GetDbColName}} ?? null;
           }
         {{ end -}}
@@ -154,7 +154,8 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
           const v = await {{useImport "applyPrivacyPolicy"}}(this.viewer, p, this);
           return v ? this.{{$fieldName}} : null;
         {{ else -}}
-          return this.{{$fieldName}} ?? null;
+          {{$val := printf "this.%s ?? null" $fieldName -}}
+          return {{callAndConvertFunc $field $cfg $val }};
         {{ end -}}
       }
     {{ end }}

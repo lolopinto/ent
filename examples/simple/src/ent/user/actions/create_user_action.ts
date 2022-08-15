@@ -1,8 +1,8 @@
 import {
   AlwaysAllowPrivacyPolicy,
   Data,
-  IDViewer,
   PrivacyPolicy,
+  Context,
 } from "@snowtop/ent";
 import { Changeset, Trigger, Observer } from "@snowtop/ent/action";
 import { EntCreationObserver } from "@snowtop/ent/testutils/fake_log";
@@ -24,8 +24,12 @@ export default class CreateUserAction extends CreateUserActionBase {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  viewerForEntLoad(data: Data) {
-    return new IDViewer(data.id);
+  viewerForEntLoad(data: Data, ctx?: Context<ExampleViewer>) {
+    const v = new ExampleViewer(data.id);
+    if (ctx) {
+      v.setContext(ctx);
+    }
+    return v;
   }
 
   getTriggers(): Trigger<

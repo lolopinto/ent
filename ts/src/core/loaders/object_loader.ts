@@ -61,6 +61,11 @@ function createDataLoader(options: SelectDataOptions) {
     const rows = await loadRows(rowOptions);
     for (const row of rows) {
       const id = row[col];
+      if (id === undefined) {
+        throw new Error(
+          `need to query for column ${col} when using an object loader because the query may not be sorted and we need the id to maintain sort order`,
+        );
+      }
       const idx = m.get(id);
       if (idx === undefined) {
         throw new Error(
@@ -210,6 +215,9 @@ interface ObjectLoaderOptions extends SelectDataOptions {
   instanceKey?: string;
 }
 
+// NOTE: if not querying for all columns
+// have to query for the id field as one of the fields
+// because it's used to maintain sort order of the queried ids
 export class ObjectLoaderFactory<T> implements LoaderFactory<T, Data | null> {
   name: string;
   private toPrime: ObjectLoaderFactory<T>[] = [];
