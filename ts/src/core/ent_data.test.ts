@@ -445,7 +445,6 @@ function commonTests() {
 
   describe("loadEnt", () => {
     // TODO this is all confusing
-    // not 100% sure it's doing the right thing
     test("with context", async () => {
       // write it once before all the checks since
       // repeated calls to loadTestEnt

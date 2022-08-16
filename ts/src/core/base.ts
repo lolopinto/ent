@@ -199,17 +199,12 @@ export interface LoadEntOptions<
 }
 
 export interface SelectCustomDataOptions extends SelectBaseDataOptions {
-  // defaultClause that's added to the query. automatically added
-  // TODO kill the tests testing for this.
-  // only in loaderFactory
-  // clause?: clause.Clause;
-
   // main loader factory for the ent, passed in for priming the data so subsequent fetches of this id don't reload
-  // only pass prime if we load all the data
-
   loaderFactory: LoaderFactoryWithOptions;
 
   // should we prime the ent after loading. uses loaderFactory above
+  // only pass prime if the fields is equivalent to the ids of the other loader factory
+  // it doesn't check...
   prime?: boolean;
 }
 

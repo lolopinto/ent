@@ -182,7 +182,9 @@ async function applyPrivacyPolicyForRowAndStoreInCacheX<
     throw ent;
   }
   if (ent === null) {
-    throw new Error(`TODO`);
+    throw new Error(
+      `applyPrivacyPolicyForRowImpl returned null when it shouldn't. ent error`,
+    );
   }
   return ent;
 }
@@ -221,6 +223,7 @@ export async function loadEntViaKey<
     return null;
   }
   // TODO every row.id needs to be audited...
+  // https://github.com/lolopinto/ent/issues/1064
   const info = entFromCacheMaybe(viewer, row.id, options);
   if (info.ent !== undefined) {
     return info.ent as TEnt | null;
@@ -229,7 +232,6 @@ export async function loadEntViaKey<
   return applyPrivacyPolicyForRowAndStoreInCache(viewer, options, row, info);
 }
 
-// need a cached error...
 export async function loadEntX<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -256,8 +258,6 @@ export async function loadEntX<
   return applyPrivacyPolicyForRowAndStoreInCacheX(viewer, options, row, info);
 }
 
-// TODO test this and loadEntViaKey
-// replace loadEntViaClause??
 export async function loadEntXViaKey<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -356,6 +356,7 @@ export async function loadEnts<
         });
         if (ent === null) {
           // TODO this should return null if not loadable...
+          // https://github.com/lolopinto/ent/issues/1070
           continue;
         }
         // @ts-ignore
@@ -398,14 +399,12 @@ export async function loadEnts<
     }
     if (ent !== undefined) {
       // TODO this should return null if not loadable...?
+      // TODO https://github.com/lolopinto/ent/issues/1070
       m.set(id, ent);
     }
   }
 
   return m;
-
-  // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
-  // TODO eventually this should be doing a cache then db queyr and maybe depend on dataloader to get all the results at once
 }
 
 // calls loadEnts and returns the results sorted in the order they were passed in
@@ -466,6 +465,7 @@ export async function loadCustomEnts<
   await Promise.all(
     rows.map(async (row, idx) => {
       // TODO what if key is different
+      // TODO https://github.com/lolopinto/ent/issues/1064
       const info = entFromCacheMaybe(viewer, row.id, options);
       if (info.ent !== undefined) {
         if (info.ent === null) {
@@ -2171,6 +2171,8 @@ async function applyPrivacyPolicyForRowX<
 }
 
 // TODO this needs to be changed to use ent cache as needed...
+// most current callsites fine not using it
+// custom_query is one that should be updated
 export async function applyPrivacyPolicyForRows<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
