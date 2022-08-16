@@ -107,7 +107,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      AddressBase.loaderOptions.apply(this),
+      {
+        ...AddressBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -118,7 +121,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<AddressDBData[]> {
     return (await loadCustomData(
-      AddressBase.loaderOptions.apply(this),
+      {
+        ...AddressBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as AddressDBData[];

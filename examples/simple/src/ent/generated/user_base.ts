@@ -299,7 +299,10 @@ export class UserBase
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      UserBase.loaderOptions.apply(this),
+      {
+        ...UserBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -310,7 +313,10 @@ export class UserBase
     context?: Context,
   ): Promise<UserDBData[]> {
     return (await loadCustomData(
-      UserBase.loaderOptions.apply(this),
+      {
+        ...UserBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as UserDBData[];

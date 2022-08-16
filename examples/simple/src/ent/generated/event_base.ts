@@ -139,7 +139,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      EventBase.loaderOptions.apply(this),
+      {
+        ...EventBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -150,7 +153,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<EventDBData[]> {
     return (await loadCustomData(
-      EventBase.loaderOptions.apply(this),
+      {
+        ...EventBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as EventDBData[];

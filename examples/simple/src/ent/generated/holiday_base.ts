@@ -108,7 +108,10 @@ export class HolidayBase
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      HolidayBase.loaderOptions.apply(this),
+      {
+        ...HolidayBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -119,7 +122,10 @@ export class HolidayBase
     context?: Context,
   ): Promise<HolidayDBData[]> {
     return (await loadCustomData(
-      HolidayBase.loaderOptions.apply(this),
+      {
+        ...HolidayBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as HolidayDBData[];

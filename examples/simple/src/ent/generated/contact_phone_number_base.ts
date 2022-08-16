@@ -101,7 +101,10 @@ export class ContactPhoneNumberBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      ContactPhoneNumberBase.loaderOptions.apply(this),
+      {
+        ...ContactPhoneNumberBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -112,7 +115,10 @@ export class ContactPhoneNumberBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<ContactPhoneNumberDBData[]> {
     return (await loadCustomData(
-      ContactPhoneNumberBase.loaderOptions.apply(this),
+      {
+        ...ContactPhoneNumberBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as ContactPhoneNumberDBData[];

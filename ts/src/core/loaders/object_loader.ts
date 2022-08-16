@@ -195,6 +195,19 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       this.loader.prime(key, data);
     }
   }
+
+  // prime this loader and any other loaders it's aware of
+  primeAll(data: Data) {
+    this.prime(data);
+    if (this.primedLoaders) {
+      for (const [key, loader] of this.primedLoaders) {
+        const value = data[key];
+        if (value !== undefined) {
+          loader.prime(data);
+        }
+      }
+    }
+  }
 }
 
 interface ObjectLoaderOptions extends SelectDataOptions {

@@ -13,6 +13,7 @@ import {
   buildQuery,
   loadEnt,
   loadEnts,
+  getEntKey,
 } from "./ent";
 import { clearLogLevels, setLogLevels } from "./logger";
 import * as clause from "./clause";
@@ -488,7 +489,7 @@ function commonTests() {
         ent: User,
         context: ctx,
       };
-      await loadEnt(ctx.getViewer(), 1, options);
+      const ent1 = await loadEnt(ctx.getViewer(), 1, options);
 
       // regular row fetch. hit db
       expect(ml.logs.length).toEqual(1);
@@ -505,7 +506,18 @@ function commonTests() {
 
       ml.clear();
       // fetch again
-      await loadEnt(ctx.getViewer(), 1, options);
+      const ent2 = await loadEnt(ctx.getViewer(), 1, options);
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 1, options),
+      });
+      // ent cache hit
+      expect(ent1).toBe(ent2);
+      ml.clear();
+
+      // now this should hit the dataloader cache
+      await options.loaderFactory.createLoader(ctx).load(1);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
@@ -525,7 +537,7 @@ function commonTests() {
         }),
         ent: User,
       };
-      await loadEnts(ctx.getViewer(), options, 1);
+      const ents = await loadEnts(ctx.getViewer(), options, 1);
 
       // regular row fetch. hit db
       expect(ml.logs.length).toEqual(1);
@@ -543,8 +555,20 @@ function commonTests() {
       ml.clear();
 
       // fetch again
-      await loadEnts(ctx.getViewer(), options, 1);
+      const ents2 = await loadEnts(ctx.getViewer(), options, 1);
+      expect(ents.size).toBe(ents2.size);
+      expect(ents.get(1)).toBe(ents2.get(1));
 
+      // should hit ent cache so nothing in the logs
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 1, options),
+      });
+
+      ml.clear();
+      await options.loaderFactory.createLoader(ctx).loadMany([1]);
+
+      // now should hit data loader cache
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         // TODO this will also change when loadEnts changes

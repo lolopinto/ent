@@ -101,7 +101,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      AuthCodeBase.loaderOptions.apply(this),
+      {
+        ...AuthCodeBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -112,7 +115,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<AuthCodeDBData[]> {
     return (await loadCustomData(
-      AuthCodeBase.loaderOptions.apply(this),
+      {
+        ...AuthCodeBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as AuthCodeDBData[];
