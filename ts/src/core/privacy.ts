@@ -13,7 +13,6 @@ import {
   Viewer,
 } from "./base";
 import { AssocEdge, loadEdgeForID2, loadEnt } from "./ent";
-import { log } from "./logger";
 
 // copied from ./base
 enum privacyResult {
