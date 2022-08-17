@@ -770,7 +770,7 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
       // soft deleted items not included...
       expect(ents2.length).toBe(3);
       // order not actually guaranteed so this may eventually break
-      expect(ents2.map((ent) => ent.id)).toEqual([2, 4, 6]);
+      expect(ents2.map((ent) => ent.id).sort()).toEqual([2, 4, 6]);
     });
 
     test("options", async () => {
