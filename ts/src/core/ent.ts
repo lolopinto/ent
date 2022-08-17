@@ -775,29 +775,22 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
   const query = buildQuery(options);
   logQuery(query, options.clause.logValues());
-  try {
-    const pool = DB.getInstance().getPool();
+  const pool = DB.getInstance().getPool();
 
-    const res = await pool.query(query, options.clause.values());
-    if (res.rowCount != 1) {
-      if (res.rowCount > 1) {
-        log("error", "got more than one row for query " + query);
-      }
-      return null;
+  const res = await pool.query(query, options.clause.values());
+  if (res.rowCount != 1) {
+    if (res.rowCount > 1) {
+      log("error", "got more than one row for query " + query);
     }
-
-    // put the row in the cache...
-    if (cache) {
-      cache.primeCache(options, res.rows[0]);
-    }
-
-    return res.rows[0];
-  } catch (e) {
-    // an example of an error being suppressed
-    // another one. TODO https://github.com/lolopinto/ent/issues/862
-    log("error", e);
     return null;
   }
+
+  // put the row in the cache...
+  if (cache) {
+    cache.primeCache(options, res.rows[0]);
+  }
+
+  return res.rows[0];
 }
 
 // this always goes to the db, no cache, nothing
@@ -809,14 +802,8 @@ export async function performRawQuery(
   const pool = DB.getInstance().getPool();
 
   logQuery(query, logValues || []);
-  try {
-    const res = await pool.queryAll(query, values);
-    return res.rows;
-  } catch (e) {
-    // TODO need to change every query to catch an error!
-    log("error", e);
-    return [];
-  }
+  const res = await pool.queryAll(query, values);
+  return res.rows;
 }
 
 // TODO this should throw, we can't be hiding errors here
