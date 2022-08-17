@@ -14,9 +14,7 @@ import {
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule } from "./privacy";
 import { loadCustomData, loadCustomEnts, loadEnts } from "./ent";
-import { QueryRecorder } from "../testutils/db_mock";
 import { createRowForTest, editRowForTest } from "../testutils/write";
-import { Pool } from "pg";
 import { ContextCache } from "./context";
 import * as clause from "./clause";
 
@@ -26,16 +24,12 @@ import {
   text,
   setupSqlite,
   timestamp,
+  TempDB,
 } from "../testutils/db/temp_db";
 import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
 import DB, { Dialect } from "./db";
-import { loadConfig } from "./config";
 import { ObjectLoaderFactory } from "./loaders";
-import { isConstValueNode, printSchema } from "graphql";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
 
 let ctx: Context;
 const ml = new MockLogs();
@@ -94,19 +88,60 @@ const softDeleteOptions: LoadCustomEntOptions<User> = {
   }),
 };
 
-describe("postgres no soft delete", () => {
+const getTable = (softDelete = false) => {
+  const cols = [
+    integer("id", { primaryKey: true }),
+    text("baz"),
+    text("bar"),
+    text("foo"),
+  ];
+  if (softDelete) {
+    cols.push(timestamp("deleted_at", { nullable: true }));
+  }
+  return table("users", ...cols);
+};
+
+function setupPostgresTables(tdb: TempDB, softDelete = false) {
   beforeAll(async () => {
-    loadConfig({
-      dbConnectionString: "postgresql:///foo",
-    });
+    await tdb.create(getTable(softDelete));
+  });
 
+  afterAll(async () => {
+    await tdb.dropAll();
+  });
+
+  beforeEach(async () => {
     await createAllRows();
+    ml.clear();
   });
 
-  afterAll(() => {
-    QueryRecorder.clear();
+  afterEach(async () => {
+    await DB.getInstance().getPool().query("DELETE FROM users");
   });
-  commonTests(options);
+}
+
+describe("postgres", () => {
+  const tdb = new TempDB(Dialect.Postgres);
+
+  beforeAll(async () => {
+    await tdb.beforeAll();
+  });
+
+  afterAll(async () => {
+    await tdb.afterAll();
+  });
+
+  describe("postgres no soft delete", () => {
+    setupPostgresTables(tdb);
+    commonTests(options);
+  });
+
+  describe("postgres with soft delete", () => {
+    setupPostgresTables(tdb, true);
+    commonTests(softDeleteOptions);
+    softDeleteTests(softDeleteOptions);
+    mixTests();
+  });
 });
 
 describe("sqlite no soft delete", () => {
@@ -126,27 +161,6 @@ describe("sqlite no soft delete", () => {
   });
 
   commonTests(options);
-});
-
-describe("postgres with soft delete", () => {
-  beforeAll(() => {
-    loadConfig({
-      dbConnectionString: "postgresql:///foo",
-    });
-  });
-
-  beforeEach(async () => {
-    await createAllRows(true);
-    ml.clear();
-  });
-
-  afterEach(() => {
-    QueryRecorder.clear();
-  });
-
-  commonTests(softDeleteOptions);
-  softDeleteTests(softDeleteOptions);
-  mixTests();
 });
 
 describe("sqlite with soft delete", () => {
@@ -381,7 +395,9 @@ async function queryViaClause(
 ) {
   const data = await loadCustomData(opts, clause.Greater("id", 5), ctx);
   expect(data.length).toBe(expIds?.length || 5);
-  expect(data.map((row) => row.id)).toEqual(expIds || ids.slice(5, 10));
+  expect(data.map((row) => row.id).sort()).toEqual(
+    (expIds || ids.slice(5, 10)).sort(),
+  );
   expect(ml.logs.length).toBe(1);
 
   // re-query. hits the db
@@ -517,8 +533,7 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
 
       const ents2 = await loadCustomEnts(v2, opts, clause.Eq("bar", "bar2"));
       expect(ents2.length).toBe(5);
-      // order not actually guaranteed so this may eventually break
-      expect(ents2.map((ent) => ent.id)).toEqual(even);
+      expect(ents2.map((ent) => ent.id).sort()).toEqual(even.slice().sort());
     });
 
     test("options", async () => {
