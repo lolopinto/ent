@@ -434,23 +434,18 @@ describe("select", () => {
   });
 
   test("groupby", async () => {
-    const ml = new MockLogs();
-    ml.mock();
-
-    // TODO loadRowsX
-    await loadRows({
-      tableName: "t",
-      fields: ["count(1)", "name"],
-      clause: clause.Eq("name", "Jane"),
-      //      orderby: "id DESC",
-      groupby: "name",
-      limit: 2,
-    });
-    ml.restore();
-    expect(ml.errors.length).toBe(1);
-
-    // we currently hide errors so we have to do this nonsense instead
-    expect(ml.errors[0]).toMatch(/^non-null groupby/);
+    try {
+      await loadRows({
+        tableName: "t",
+        fields: ["count(1)", "name"],
+        clause: clause.Eq("name", "Jane"),
+        groupby: "name",
+        limit: 2,
+      });
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(/^non-null groupby/);
+    }
   });
 });
 
