@@ -1550,22 +1550,16 @@ async function mutateRow(
   logQuery(query, logValues);
 
   let cache = options.context?.cache;
-  try {
-    let res: QueryResult<QueryResultRow>;
-    if (isSyncQueryer(queryer)) {
-      res = queryer.execSync(query, values);
-    } else {
-      res = await queryer.exec(query, values);
-    }
-    if (cache) {
-      cache.clearCache();
-    }
-    return res;
-  } catch (err) {
-    // TODO:::why is this not rethrowing?
-    log("error", err);
-    throw err;
+  let res: QueryResult<QueryResultRow>;
+  if (isSyncQueryer(queryer)) {
+    res = queryer.execSync(query, values);
+  } else {
+    res = await queryer.exec(query, values);
   }
+  if (cache) {
+    cache.clearCache();
+  }
+  return res;
 }
 
 function mutateRowSync(
@@ -1578,17 +1572,11 @@ function mutateRowSync(
   logQuery(query, logValues);
 
   let cache = options.context?.cache;
-  try {
-    const res = queryer.execSync(query, values);
-    if (cache) {
-      cache.clearCache();
-    }
-    return res;
-  } catch (err) {
-    // TODO:::why is this not rethrowing?
-    log("error", err);
-    throw err;
+  const res = queryer.execSync(query, values);
+  if (cache) {
+    cache.clearCache();
   }
+  return res;
 }
 
 export function buildInsertQuery(

@@ -13,7 +13,11 @@ import {
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule, EntPrivacyError } from "./privacy";
 import { loadCustomEnts, loadEnt, loadEnts, loadEntX } from "./ent";
-import { createRowForTest } from "../testutils/write";
+import {
+  createRowForTest,
+  deleteRowsForTest,
+  editRowForTest,
+} from "../testutils/write";
 import * as clause from "./clause";
 
 import {
@@ -134,12 +138,36 @@ function contextifyViewer(v?: Viewer): Viewer {
   return viewer;
 }
 
-function getExpectedErrorMessage() {
+function getExpectedErrorMessageOnRead() {
   const dialect = DB.getDialect();
   if (dialect === Dialect.Postgres) {
     return `column "hello" does not exist`;
   }
   return `no such column: hello`;
+}
+
+function getExpectedErrorMessageOnInsert() {
+  const dialect = DB.getDialect();
+  if (dialect === Dialect.Postgres) {
+    return `column "hello" of relation "users" does not exist`;
+  }
+  return `table users has no column named hello`;
+}
+
+function getExpectedErrorMessageOnUpdate() {
+  const dialect = DB.getDialect();
+  if (dialect === Dialect.Postgres) {
+    return `column "hello" of relation "users" does not exist`;
+  }
+  return `no such column: hello`;
+}
+
+function getExpectedErrorMessageOnDelete() {
+  const dialect = DB.getDialect();
+  if (dialect === Dialect.Postgres) {
+    return `relation "hello" does not exist`;
+  }
+  return `no such table: hello`;
 }
 
 function commonTests() {
@@ -159,7 +187,7 @@ function commonTests() {
       await loadEnts(new IDViewer(1), invalidFieldOpts, 1);
       throw new Error("should throw");
     } catch (err) {
-      expect((err as Error).message).toBe(getExpectedErrorMessage());
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
     }
   });
 
@@ -168,7 +196,7 @@ function commonTests() {
       await loadEnts(contextifyViewer(new IDViewer(1)), invalidFieldOpts, 1);
       throw new Error("should throw");
     } catch (err) {
-      expect((err as Error).message).toBe(getExpectedErrorMessage());
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
     }
   });
 
@@ -177,7 +205,7 @@ function commonTests() {
       await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
       throw new Error("should throw");
     } catch (err) {
-      expect((err as Error).message).toBe(getExpectedErrorMessage());
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
     }
   });
 
@@ -186,7 +214,7 @@ function commonTests() {
       await loadEnt(contextifyViewer(new IDViewer(1)), 2, invalidFieldOpts);
       throw new Error("should throw");
     } catch (err) {
-      expect((err as Error).message).toBe(getExpectedErrorMessage());
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
     }
   });
 
@@ -229,7 +257,7 @@ function commonTests() {
       await loadEntX(new IDViewer(1), 2, invalidFieldOpts);
       throw new Error("should throw");
     } catch (err) {
-      expect((err as Error).message).toBe(getExpectedErrorMessage());
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
     }
   });
 
@@ -238,7 +266,7 @@ function commonTests() {
       await loadEntX(contextifyViewer(new IDViewer(1)), 2, invalidFieldOpts);
       throw new Error("should throw");
     } catch (err) {
-      expect((err as Error).message).toBe(getExpectedErrorMessage());
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
     }
   });
 
@@ -247,7 +275,7 @@ function commonTests() {
       await loadCustomEnts(new IDViewer(1), options, clause.Eq("hello", "bar"));
       throw new Error("should throw");
     } catch (err) {
-      expect((err as Error).message).toBe(getExpectedErrorMessage());
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
     }
   });
 
@@ -260,7 +288,7 @@ function commonTests() {
       );
       throw new Error("should throw");
     } catch (err) {
-      expect((err as Error).message).toBe(getExpectedErrorMessage());
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
     }
   });
 
@@ -281,6 +309,101 @@ function commonTests() {
     );
     expect(ents.length).toBe(3);
   });
-}
 
-// TODO create, edit, delete errors and what the right behavior should be...
+  test("create with db errors", async () => {
+    try {
+      await createRowForTest({
+        tableName: "users",
+        fields: {
+          id: 1,
+          baz: "baz",
+          bar: `bar1`,
+          foo: "foo",
+          hello: "whaa",
+        },
+      });
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnInsert());
+    }
+  });
+
+  test("create with db errors with context", async () => {
+    try {
+      await createRowForTest({
+        tableName: "users",
+        fields: {
+          id: 1,
+          baz: "baz",
+          bar: `bar1`,
+          foo: "foo",
+          hello: "whaa",
+        },
+        context: new TestContext(),
+      });
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnInsert());
+    }
+  });
+
+  test("edit with db errors", async () => {
+    try {
+      await editRowForTest({
+        tableName: "users",
+        fields: {
+          hello: "ss",
+        },
+        whereClause: clause.Eq("id", 1),
+      });
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnUpdate());
+    }
+  });
+
+  test("edit with db errors with context", async () => {
+    try {
+      await editRowForTest({
+        tableName: "users",
+        fields: {
+          hello: "ss",
+        },
+        whereClause: clause.Eq("id", 1),
+        context: new TestContext(),
+      });
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnUpdate());
+    }
+  });
+
+  test("delete with db errors", async () => {
+    try {
+      await deleteRowsForTest(
+        {
+          tableName: "hello",
+        },
+        clause.Eq("id", 1),
+      );
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnDelete());
+    }
+  });
+
+  test("delete with db errors with context", async () => {
+    try {
+      await deleteRowsForTest(
+        {
+          tableName: "hello",
+          context: new TestContext(),
+        },
+        clause.Eq("id", 1),
+      );
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnDelete());
+    }
+  });
+}

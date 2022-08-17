@@ -88,7 +88,7 @@ describe("postgres", () => {
 });
 
 describe("sqlite", () => {
-  setupTempDB(Dialect.SQLite, `sqlite:///schema_live.db`);
+  setupTempDB(Dialect.SQLite, `sqlite:///schema_list.db`);
   commonTests();
 });
 
