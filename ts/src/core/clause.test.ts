@@ -428,7 +428,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3}`]);
-      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([`{3}`]);
       expect(cls.instanceKey()).toEqual("ids@>3");
     });
 
@@ -437,7 +437,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{foo}`]);
-      expect(cls.logValues()).toStrictEqual(["foo"]);
+      expect(cls.logValues()).toStrictEqual([`{foo}`]);
       expect(cls.instanceKey()).toEqual("ids@>foo");
     });
 
@@ -446,7 +446,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
-      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("ids@>3,4");
     });
 
@@ -455,7 +455,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{foo, bar}`]);
-      expect(cls.logValues()).toStrictEqual([["foo", "bar"]]);
+      expect(cls.logValues()).toStrictEqual([`{foo, bar}`]);
       expect(cls.instanceKey()).toEqual("ids@>foo,bar");
     });
 
@@ -464,7 +464,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("NOT ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3}`]);
-      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([`{3}`]);
       expect(cls.instanceKey()).toEqual("NOT:ids@>3");
     });
 
@@ -473,7 +473,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("NOT ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
-      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("NOT:ids@>3,4");
     });
 
@@ -482,7 +482,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids && $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
-      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("ids&&3,4");
     });
 
@@ -491,7 +491,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("NOT ids && $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
-      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("NOT:ids&&3,4");
     });
   });
