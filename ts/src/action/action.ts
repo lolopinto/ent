@@ -143,8 +143,8 @@ export interface Action<
   transformWrite?: (
     stmt: UpdateOperation<TEnt, TViewer>,
   ) =>
-    | Promise<TransformedUpdateOperation<TEnt>>
-    | TransformedUpdateOperation<TEnt>
+    | Promise<TransformedUpdateOperation<TEnt, TViewer>>
+    | TransformedUpdateOperation<TEnt, TViewer>
     | null;
 
   valid(): Promise<boolean>;

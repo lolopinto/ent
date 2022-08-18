@@ -1,6 +1,6 @@
 import { snakeCase } from "snake-case";
 import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
-import { Builder } from "../action/action";
+import { Builder, Changeset } from "../action/action";
 import { Clause } from "../core/clause";
 import { AssocEdgeInput } from "../core/ent";
 
@@ -189,9 +189,10 @@ export interface Pattern {
   // transform to loader instead?
   // we can change generated loader to do this instead of what we're doing here
   transformRead?: () => Clause;
-  transformWrite?: <T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ) => TransformedUpdateOperation<T> | null;
+
+  transformWrite?: <T extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+    stmt: UpdateOperation<T, TViewer>,
+  ) => TransformedUpdateOperation<T, TViewer> | null;
 
   // can only have one pattern in an object which transforms each
   // if we do, it throws an Error
@@ -238,14 +239,17 @@ export interface UpdateOperation<
 > {
   // TODO how should this affect builder.operation?
   op: SQLStatementOperation;
-  builder: Builder<TEnt, TViewer>;
+  builder: Builder<TEnt, TViewer, any>;
   // input. same input that's passed to Triggers, Observers, Validators. includes action-only fields
   input: Data;
   // data that'll be saved in the db
   data?: Map<string, any>;
 }
 
-export interface TransformedUpdateOperation<T extends Ent> {
+export interface TransformedUpdateOperation<
+  T extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
   op: SQLStatementOperation;
 
   data?: Data;
@@ -253,6 +257,7 @@ export interface TransformedUpdateOperation<T extends Ent> {
   // if changing to an update, we want to return the ent
   // TODO don't have a way to delete the ent e.g. update -> insert
   existingEnt?: T | null;
+  changeset?(): Promise<Changeset> | Changeset;
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
