@@ -205,9 +205,9 @@ class postgresArrayOperator implements Clause {
 
   logValues(): any[] {
     if (isSensitive(this.value)) {
-      return [this.value.logValue()];
+      return [`{${this.value.logValue()}}`];
     }
-    return [this.value];
+    return [`{${this.value}}`];
   }
 
   instanceKey(): string {
@@ -229,6 +229,19 @@ class postgresArrayOperatorList extends postgresArrayOperator {
         .map((v: any) => {
           if (isSensitive(v)) {
             return v.value();
+          }
+          return v;
+        })
+        .join(", ")}}`,
+    ];
+  }
+
+  logValues(): any[] {
+    return [
+      `{${this.value
+        .map((v: any) => {
+          if (isSensitive(v)) {
+            return v.logValue();
           }
           return v;
         })
