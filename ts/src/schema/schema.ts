@@ -189,6 +189,7 @@ export interface Pattern {
   // transform to loader instead?
   // we can change generated loader to do this instead of what we're doing here
   transformRead?: () => Clause;
+
   transformWrite?: <T extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
     stmt: UpdateOperation<T, TViewer>,
   ) => TransformedUpdateOperation<T, TViewer> | null;
