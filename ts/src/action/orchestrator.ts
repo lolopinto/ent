@@ -732,6 +732,10 @@ export class Orchestrator<
           // this.defaultFieldsByFieldName[k] = val;
         }
       }
+      if (transformed.changeset) {
+        const ct = await transformed.changeset();
+        this.changesets.push(ct);
+      }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
         // @ts-ignore
@@ -1025,6 +1029,10 @@ export class Orchestrator<
   }
 }
 
+function randomNum(): string {
+  return Math.random().toString(10).substring(2);
+}
+
 export class EntChangeset<T extends Ent> implements Changeset {
   private _executor: Executor | null;
   constructor(
@@ -1036,6 +1044,15 @@ export class EntChangeset<T extends Ent> implements Changeset {
     public changesets?: Changeset[],
     private options?: OrchestratorOptions<T, Data, Viewer>,
   ) {}
+
+  static changesetFrom(builder: Builder<any>, ops: DataOperation[]) {
+    return new EntChangeset(
+      builder.viewer,
+      `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
+      builder.ent,
+      ops,
+    );
+  }
 
   executor(): Executor {
     if (this._executor) {

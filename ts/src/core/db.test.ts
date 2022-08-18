@@ -132,7 +132,7 @@ describe("sqlite", () => {
 
   // not the supported way?
   test("manual transactions", async () => {
-    const client = await DB.getInstance().getSQLiteClient();
+    const client = DB.getInstance().getSQLiteClient();
 
     client.execSync("BEGIN");
     client.execSync(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
@@ -174,7 +174,7 @@ describe("sqlite", () => {
     ids: number[],
     opts?: { checkRows?: boolean; rollback?: boolean },
   ) => {
-    const client = await DB.getInstance().getSQLiteClient();
+    const client = DB.getInstance().getSQLiteClient();
 
     client.runInTransaction(() => {
       ids.map(async (id) => {
@@ -228,7 +228,7 @@ describe("sqlite", () => {
   });
 
   test("rollback transaction", async () => {
-    const client = await DB.getInstance().getSQLiteClient();
+    const client = DB.getInstance().getSQLiteClient();
 
     try {
       await createUsers([1, 2], { rollback: true });
@@ -264,7 +264,7 @@ describe("sqlite", () => {
 
   test("time", async () => {
     const d = new Date();
-    const client = await DB.getInstance().getSQLiteClient();
+    const client = DB.getInstance().getSQLiteClient();
     client.execSync(`INSERT INTO with_time (id, time) VALUES(?,?)`, [1, d]);
 
     const r = await DB.getInstance()
@@ -317,7 +317,7 @@ describe("sqlite", () => {
   });
 
   test("query bool", async () => {
-    const client = await DB.getInstance().getSQLiteClient();
+    const client = DB.getInstance().getSQLiteClient();
     client.execSync(`INSERT INTO with_bool (id, valid) VALUES(?,?)`, [1, true]);
     client.execSync(`INSERT INTO with_bool (id, valid) VALUES(?,?)`, [
       2,
@@ -416,7 +416,7 @@ test("sqlite memory", async () => {
   loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
   validateSQLiteMemory(true);
 
-  const client = await DB.getInstance().getSQLiteClient();
+  const client = DB.getInstance().getSQLiteClient();
   client.execSync(
     table(
       "users",

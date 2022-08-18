@@ -912,6 +912,34 @@ export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
   key: string;
 }
 
+export class RawQueryOperation implements DataOperation {
+  constructor(private queries: (string | parameterizedQueryOptions)[]) {}
+
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
+    for (const q of this.queries) {
+      if (typeof q === "string") {
+        logQuery(q, []);
+        await queryer.query(q);
+      } else {
+        logQuery(q.query, q.logValues || []);
+        await queryer.query(q.query, q.values);
+      }
+    }
+  }
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {
+    for (const q of this.queries) {
+      if (typeof q === "string") {
+        logQuery(q, []);
+        queryer.execSync(q);
+      } else {
+        logQuery(q.query, q.logValues || []);
+        queryer.execSync(q.query, q.values);
+      }
+    }
+  }
+}
+
 export class EditNodeOperation<T extends Ent> implements DataOperation {
   row: Data | null = null;
   placeholderID?: ID | undefined;
@@ -1013,6 +1041,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       ...this.options,
       context,
     };
+
     if (this.existingEnt) {
       if (this.hasData(this.options.fields)) {
         editRowSync(queryer, options, "RETURNING *");

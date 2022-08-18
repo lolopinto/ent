@@ -1,6 +1,6 @@
 import { snakeCase } from "snake-case";
 import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
-import { Builder } from "../action/action";
+import { Builder, Changeset } from "../action/action";
 import { Clause } from "../core/clause";
 import { AssocEdgeInput } from "../core/ent";
 
@@ -253,6 +253,7 @@ export interface TransformedUpdateOperation<T extends Ent> {
   // if changing to an update, we want to return the ent
   // TODO don't have a way to delete the ent e.g. update -> insert
   existingEnt?: T | null;
+  changeset?(): Promise<Changeset> | Changeset;
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
