@@ -189,9 +189,9 @@ export interface Pattern {
   // transform to loader instead?
   // we can change generated loader to do this instead of what we're doing here
   transformRead?: () => Clause;
-  transformWrite?: <T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ) => TransformedUpdateOperation<T> | null;
+  transformWrite?: <T extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+    stmt: UpdateOperation<T, TViewer>,
+  ) => TransformedUpdateOperation<T, TViewer> | null;
 
   // can only have one pattern in an object which transforms each
   // if we do, it throws an Error
@@ -238,14 +238,17 @@ export interface UpdateOperation<
 > {
   // TODO how should this affect builder.operation?
   op: SQLStatementOperation;
-  builder: Builder<TEnt, TViewer>;
+  builder: Builder<TEnt, TViewer, any>;
   // input. same input that's passed to Triggers, Observers, Validators. includes action-only fields
   input: Data;
   // data that'll be saved in the db
   data?: Map<string, any>;
 }
 
-export interface TransformedUpdateOperation<T extends Ent> {
+export interface TransformedUpdateOperation<
+  T extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
   op: SQLStatementOperation;
 
   data?: Data;
