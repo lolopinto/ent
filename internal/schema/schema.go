@@ -854,8 +854,8 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
 	}
 	return &assocEdgeData{
-		dbEdgeMap: edgeMap,
-		seenEdges: map[string]bool{},
+		dbEdgeMap:     edgeMap,
+		edgesToRender: map[string]*ent.AssocEdgeData{},
 	}, nil
 }
 
@@ -1308,55 +1308,51 @@ func (s *Schema) getEdgeInfoAndCheckNewEdge(edgeData *assocEdgeData, assocEdge *
 		}
 	}
 	isNewEdge := constValue == ""
+
+	// always make sure the information we send to schema.py is the latest
+	// info based on the schema so if the db is corrupted in some way, we'll fix
+	// TODO ... if someone is changing a property here, we should show them a prompt
+	// and confirm what's happening
+
 	if isNewEdge {
 		constValue = uuid.New().String()
-		// keep track of new edges that we need to do things with
-		newEdge := &ent.AssocEdgeData{
-			EdgeType:        ent.EdgeType(constValue),
-			EdgeName:        constName,
-			SymmetricEdge:   assocEdge.Symmetric,
-			EdgeTable:       assocEdge.TableName,
-			InverseEdgeType: sql.NullString{},
-		}
-
-		if inverseConstValue != "" {
-			if err := newEdge.InverseEdgeType.Scan(inverseConstValue); err != nil {
-				return nil, err
-			}
-		}
-
-		edgeData.addNewEdge(newEdge)
-	} else {
-		edgeData.flagSeenEdge(constName)
 	}
 
-	if newInverseEdge {
+	// always generate edge information from the schema
+	edge1 := &ent.AssocEdgeData{
+		EdgeType:        ent.EdgeType(constValue),
+		EdgeName:        constName,
+		SymmetricEdge:   assocEdge.Symmetric,
+		EdgeTable:       assocEdge.TableName,
+		InverseEdgeType: sql.NullString{},
+	}
+	if inverseConstValue != "" {
+		if err := edge1.InverseEdgeType.Scan(inverseConstValue); err != nil {
+			return nil, err
+		}
+	}
+	edgeData.addEdge(edge1, isNewEdge)
+
+	var edge2 *ent.AssocEdgeData
+
+	if inverseEdge != nil {
 		ns := sql.NullString{}
 		if err := ns.Scan(constValue); err != nil {
 			return nil, err
 		}
 
 		// add inverse edge to list of new edges
-		edgeData.addNewEdge(&ent.AssocEdgeData{
+		edge2 = &ent.AssocEdgeData{
 			EdgeType:        ent.EdgeType(inverseConstValue),
 			EdgeName:        inverseConstName,
 			SymmetricEdge:   false, // we know for sure that we can't be symmetric and have an inverse edge
 			EdgeTable:       assocEdge.TableName,
 			InverseEdgeType: ns,
-		})
-
-		// if the inverse edge already existed in the db, we need to update that edge to let it know of its new inverse
-		if !isNewEdge {
-			// potential improvement: we can do it automatically in addNewEdge
-			if err := edgeData.updateInverseEdgeTypeForEdge(
-				constName, inverseConstValue); err != nil {
-				return nil, err
-			}
 		}
-	} else if inverseEdge != nil {
-		edgeData.flagSeenEdge(inverseConstName)
 
+		edgeData.addEdge(edge2, newInverseEdge)
 	}
+
 	return &edgeInfo{
 		constName:  constName,
 		constValue: constValue,

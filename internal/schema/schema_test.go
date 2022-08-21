@@ -838,6 +838,10 @@ func testConstants(t *testing.T, info *schema.NodeDataInfo, constMap map[string]
 	}
 }
 
+// TODO in this file from here is all the tests that need to change
+// needs to be rewritten...
+// TODO put in its own file
+
 type edgeTestSuite struct {
 	testingutils.Suite
 	tdb *test_db.TestDB

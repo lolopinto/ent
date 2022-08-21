@@ -421,6 +421,84 @@ class BaseTestRunner(object):
         r3.downgrade('-1', delete_files=False)
         r3.upgrade()
 
+    @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_assoc_edge_config")
+    def test_edge_in_db_modified(self, new_test_runner, metadata_with_one_edge, metadata_with_assoc_edge_config):
+        r = testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_one_edge,
+            "add edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config
+        )
+        conn = r.get_connection()
+        conn.execute(
+            "UPDATE assoc_edge_config SET edge_table = 'user_to_followers_edge_incorrect'")
+
+        # validate edges fails because edges incorrect
+        with pytest.raises(AssertionError):
+            testingutils.validate_edges_from_metadata(
+                metadata_with_one_edge, r)
+
+        # edge is modified
+        r2 = testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_one_edge,
+            "modify edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config,
+            num_files=3,
+            prev_runner=r,
+            num_changes=1
+        )
+
+        # run again, nothing
+        testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_one_edge,
+            "",
+            metadata_with_assoc_edge_config,
+            num_files=3,
+            prev_runner=r2,
+            num_changes=0
+        )
+
+    @pytest.mark.usefixtures("metadata_with_inverse_edge", "metadata_with_assoc_edge_config")
+    def test_multiple_edge_table_incorrect_and_modified(self, new_test_runner, metadata_with_inverse_edge, metadata_with_assoc_edge_config):
+        r = testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_inverse_edge,
+            "add edges UserToFolloweesEdge, UserToFollowersEdge",
+            metadata_with_assoc_edge_config
+        )
+        conn = r.get_connection()
+        conn.execute(
+            "UPDATE assoc_edge_config SET edge_table = 'user_to_followers_edge_incorrect'")
+
+        # validate edges fails because edges incorrect
+        with pytest.raises(AssertionError):
+            testingutils.validate_edges_from_metadata(
+                metadata_with_inverse_edge, r)
+
+        # edge is modified
+        r2 = testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_inverse_edge,
+            "modify edge UserToFollowersEdge\nmodify edge UserToFolloweesEdge",
+            metadata_with_assoc_edge_config,
+            num_files=3,
+            prev_runner=r,
+            num_changes=2
+        )
+
+        # run again, nothing
+        testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_inverse_edge,
+            "",
+            metadata_with_assoc_edge_config,
+            num_files=3,
+            prev_runner=r2,
+            num_changes=0
+        )
+
     @pytest.mark.usefixtures("metadata_with_nullable_fields")
     def test_new_table_with_nullable_fields(self, new_test_runner, metadata_with_nullable_fields):
         r = new_test_runner(metadata_with_nullable_fields)
