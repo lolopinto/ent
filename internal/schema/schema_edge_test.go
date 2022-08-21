@@ -202,6 +202,7 @@ func (suite *edgeTestSuite) validateSchema(
 }
 
 func TestEdgeSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(edgeTestSuite))
 }
 
