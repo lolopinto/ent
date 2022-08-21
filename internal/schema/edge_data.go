@@ -61,5 +61,11 @@ func (edgeData *assocEdgeData) getEdgesToRender() map[string]*ent.AssocEdgeData 
 			ret[k] = v
 		}
 	}
+
+	// also make sure new edges are returned..
+	for _, v := range edgeData.newEdges {
+		ret[v.EdgeName] = v
+	}
+
 	return ret
 }
