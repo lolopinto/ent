@@ -10,12 +10,13 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Event, EventActivity, Guest, GuestGroup } from "src/ent/";
+import { Address, Event, EventActivity, Guest, GuestGroup } from "src/ent/";
 import { EdgeType, NodeType } from "src/ent/generated/const";
 import { eventActivityLoaderInfo } from "src/ent/generated/loaders";
 import schema from "src/schema/event_activity_schema";
 
 export interface EventActivityInput {
+  addressId?: ID | null | Builder<Address, Viewer>;
   name?: string;
   eventID?: ID | Builder<Event, Viewer>;
   startTime?: Date;
@@ -294,6 +295,7 @@ export class EventActivityBuilder<
         result.set(key, value);
       }
     };
+    addField("addressId", fields.addressId);
     addField("Name", fields.name);
     addField("eventID", fields.eventID);
     addField("StartTime", fields.startTime);
@@ -308,6 +310,15 @@ export class EventActivityBuilder<
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any> {
     return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+
+  // get value of addressId. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAddressIdValue(): ID | null | Builder<Address, Viewer> {
+    if (this.input.addressId !== undefined) {
+      return this.input.addressId;
+    }
+
+    return this.existingEnt?.addressId ?? null;
   }
 
   // get value of Name. Retrieves it from the input if specified or takes it from existingEnt

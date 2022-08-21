@@ -6,8 +6,11 @@ import {
   EntSchema,
 } from "@snowtop/ent";
 import { EmailType } from "@snowtop/ent-email";
+import { WithAddressPattern } from "./patterns/with_address";
 
 const GuestSchema = new EntSchema({
+  patterns: [new WithAddressPattern()],
+
   fields: {
     Name: StringType(),
     eventID: UUIDType({

@@ -149,6 +149,7 @@ const eventActivityFields = [
   "id",
   "created_at",
   "updated_at",
+  "address_id",
   "name",
   "event_id",
   "start_time",
@@ -181,6 +182,10 @@ export const eventActivityLoaderInfo = {
     updatedAt: {
       dbCol: "updated_at",
       inputKey: "updatedAt",
+    },
+    addressId: {
+      dbCol: "address_id",
+      inputKey: "addressId",
     },
     Name: {
       dbCol: "name",
@@ -276,6 +281,7 @@ const guestFields = [
   "id",
   "created_at",
   "updated_at",
+  "address_id",
   "name",
   "event_id",
   "email_address",
@@ -306,6 +312,10 @@ export const guestLoaderInfo = {
     updatedAt: {
       dbCol: "updated_at",
       inputKey: "updatedAt",
+    },
+    addressId: {
+      dbCol: "address_id",
+      inputKey: "addressId",
     },
     Name: {
       dbCol: "name",

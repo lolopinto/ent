@@ -48,6 +48,10 @@ export const EventActivityType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
+    addressId: {
+      type: GraphQLID,
+      resolve: nodeIDEncoder,
+    },
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },

@@ -2,6 +2,7 @@
 
 export * from "src/ent/generated/const";
 export * from "src/ent/generated/loaders";
+export * from "src/ent/generated/mixins/with_address";
 export * from "src/ent/generated/address_base";
 export * from "src/ent/generated/auth_code_base";
 export * from "src/ent/generated/event_activity_base";

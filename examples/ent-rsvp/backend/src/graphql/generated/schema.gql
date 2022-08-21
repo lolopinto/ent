@@ -45,6 +45,7 @@ type Address implements Node {
 type EventActivity implements Node {
   event: Event
   id: ID!
+  addressId: ID
   name: String!
   startTime: Time!
   endTime: Time
@@ -80,6 +81,7 @@ type Guest implements Node {
   event: Event
   guestGroup: GuestGroup
   id: ID!
+  addressId: ID
   name: String!
   emailAddress: String
   title: String
@@ -255,6 +257,7 @@ type AuthUserPayload {
 }
 
 input ActivityEventCreateInput {
+  addressId: ID
   name: String!
   startTime: Time!
   endTime: Time
@@ -322,6 +325,7 @@ type EventActivityAddInvitePayload {
 }
 
 input EventActivityCreateInput {
+  addressId: ID
   name: String!
   eventID: ID!
   startTime: Time!
@@ -348,6 +352,7 @@ type EventActivityDeletePayload {
 input EventActivityEditInput {
   """id of EventActivity"""
   id: ID!
+  addressId: ID
   name: String
   eventID: ID
   startTime: Time
@@ -399,6 +404,7 @@ type EventCreatePayload {
 }
 
 input GuestCreateInput {
+  addressId: ID
   name: String!
   eventID: ID!
   emailAddress: String
@@ -460,6 +466,7 @@ type GuestGroupEditPayload {
 }
 
 input GuestGuestGroupCreateInput {
+  addressId: ID
   name: String!
   emailAddress: String
   title: String

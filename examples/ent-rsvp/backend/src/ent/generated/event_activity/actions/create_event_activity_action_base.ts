@@ -15,7 +15,7 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Event, EventActivity } from "src/ent/";
+import { Address, Event, EventActivity } from "src/ent/";
 import { EventActivityBuilder } from "src/ent/generated/event_activity/actions/event_activity_builder";
 
 interface customAddressInput {
@@ -26,6 +26,7 @@ interface customAddressInput {
   apartment?: string | null;
 }
 export interface EventActivityCreateInput {
+  addressId?: ID | null | Builder<Address, Viewer>;
   name: string;
   eventID: ID | Builder<Event, Viewer>;
   startTime: Date;
