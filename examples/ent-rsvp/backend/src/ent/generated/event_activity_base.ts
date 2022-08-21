@@ -125,7 +125,10 @@ export class EventActivityBase implements Ent<Viewer> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      EventActivityBase.loaderOptions.apply(this),
+      {
+        ...EventActivityBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -136,7 +139,10 @@ export class EventActivityBase implements Ent<Viewer> {
     context?: Context,
   ): Promise<EventActivityDBData[]> {
     return (await loadCustomData(
-      EventActivityBase.loaderOptions.apply(this),
+      {
+        ...EventActivityBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as EventActivityDBData[];

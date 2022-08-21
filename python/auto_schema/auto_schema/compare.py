@@ -57,6 +57,21 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
     )
 
 
+def _edges_equal(edge1, edge2):
+    fields = [
+        'edge_name',
+        'edge_type',
+        'edge_table',
+        'inverse_edge_type'
+    ]
+    for f in fields:
+        if str(edge1.get(f, None)) != str(edge2.get(f, None)):
+            return False
+
+    # sqlite stores 1 as bool. comparing as strings no bueno
+    return bool(edge1.get('symmetric_edge', None)) == bool(edge2.get('symmetric_edge', None))
+
+
 def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mismatch_fn=None):
     alter_ops = []
 
@@ -71,16 +86,14 @@ def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mi
         for k, edge in edges.items():
             compare_edge = edges_for_sch.get(edge['edge_name'])
 
-            # for now we assume that the contents are the same. TODO, eventually support modifying edges.
-            # not something we support for now
-            # TODO we need modify_edge
             if compare_edge is None:
                 new_edges.append(edge)
             else:
-                # edge exists, let's confirm inverse_edge_type is the same
-                # that's the only thing we think should change/support changing
-                # convert to string to handle mismatch types e.g. str and UUID
-                if str(compare_edge.get('inverse_edge_type', None)) != str(edge.get('inverse_edge_type', None)) and edge_mismatch_fn is not None:
+                # edge exists, let's confirm everything is the same
+                # if there's a mismatch, modify the edge to fix it
+                # we should have validators in the schema input that makes
+                # sure we can't change these by accident
+                if edge_mismatch_fn is not None and not _edges_equal(compare_edge, edge):
                     alter_op = edge_mismatch_fn(edge, compare_edge, sch)
                     alter_ops.append(alter_op)
                     pass

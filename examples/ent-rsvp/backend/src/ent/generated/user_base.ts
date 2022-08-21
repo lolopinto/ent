@@ -104,7 +104,10 @@ export class UserBase implements Ent<Viewer> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      UserBase.loaderOptions.apply(this),
+      {
+        ...UserBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -115,7 +118,10 @@ export class UserBase implements Ent<Viewer> {
     context?: Context,
   ): Promise<UserDBData[]> {
     return (await loadCustomData(
-      UserBase.loaderOptions.apply(this),
+      {
+        ...UserBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as UserDBData[];
