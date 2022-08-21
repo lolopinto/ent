@@ -147,7 +147,10 @@ export class AccountBase implements Ent<Viewer> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      AccountBase.loaderOptions.apply(this),
+      {
+        ...AccountBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -158,7 +161,10 @@ export class AccountBase implements Ent<Viewer> {
     context?: Context,
   ): Promise<AccountDBData[]> {
     return (await loadCustomData(
-      AccountBase.loaderOptions.apply(this),
+      {
+        ...AccountBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as AccountDBData[];

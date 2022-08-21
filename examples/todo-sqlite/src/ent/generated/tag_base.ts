@@ -133,7 +133,10 @@ export class TagBase implements Ent<Viewer> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      TagBase.loaderOptions.apply(this),
+      {
+        ...TagBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -144,7 +147,10 @@ export class TagBase implements Ent<Viewer> {
     context?: Context,
   ): Promise<TagDBData[]> {
     return (await loadCustomData(
-      TagBase.loaderOptions.apply(this),
+      {
+        ...TagBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as TagDBData[];

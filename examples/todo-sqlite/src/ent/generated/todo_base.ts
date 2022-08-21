@@ -134,7 +134,10 @@ export class TodoBase implements Ent<Viewer> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      TodoBase.loaderOptions.apply(this),
+      {
+        ...TodoBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -145,7 +148,10 @@ export class TodoBase implements Ent<Viewer> {
     context?: Context,
   ): Promise<TodoDBData[]> {
     return (await loadCustomData(
-      TodoBase.loaderOptions.apply(this),
+      {
+        ...TodoBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as TodoDBData[];

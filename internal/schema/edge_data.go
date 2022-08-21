@@ -9,30 +9,31 @@ import (
 
 type assocEdgeData struct {
 	// differentiate between new edges and existing edges for tests
-	edgeMap  map[string]*ent.AssocEdgeData
-	newEdges []*ent.AssocEdgeData
+	dbEdgeMap map[string]*ent.AssocEdgeData
+	newEdges  []*ent.AssocEdgeData
 	// only for tests
 	edgesToUpdate []*ent.AssocEdgeData
+	seenEdges     map[string]bool
 }
 
 func (edgeData *assocEdgeData) existingEdge(constName string) bool {
-	return edgeData.edgeMap[constName] != nil
+	return edgeData.dbEdgeMap[constName] != nil
 }
 
 func (edgeData *assocEdgeData) edgeTypeOfEdge(constName string) string {
 	if !edgeData.existingEdge(constName) {
 		return ""
 	}
-	return string(edgeData.edgeMap[constName].EdgeType)
+	return string(edgeData.dbEdgeMap[constName].EdgeType)
 }
 
 func (edgeData *assocEdgeData) addNewEdge(newEdge *ent.AssocEdgeData) {
 	edgeData.newEdges = append(edgeData.newEdges, newEdge)
-	edgeData.edgeMap[newEdge.EdgeName] = newEdge
+	edgeData.dbEdgeMap[newEdge.EdgeName] = newEdge
 }
 
 func (edgeData *assocEdgeData) updateInverseEdgeTypeForEdge(constName string, constValue string) error {
-	edge := edgeData.edgeMap[constName]
+	edge := edgeData.dbEdgeMap[constName]
 	if edge == nil {
 		return fmt.Errorf("couldn't find edge with constName %s", constName)
 	}
@@ -44,4 +45,21 @@ func (edgeData *assocEdgeData) updateInverseEdgeTypeForEdge(constName string, co
 	edge.InverseEdgeType = ns
 	edgeData.edgesToUpdate = append(edgeData.edgesToUpdate, edge)
 	return nil
+}
+
+func (edgeData *assocEdgeData) flagSeenEdge(name string) {
+	edgeData.seenEdges[name] = true
+}
+
+func (edgeData *assocEdgeData) getEdgesToRender() map[string]*ent.AssocEdgeData {
+	ret := make(map[string]*ent.AssocEdgeData)
+
+	// now that we run upgade before codegen,
+	// it should be safe to drop what's not in the schema...
+	for k, v := range edgeData.dbEdgeMap {
+		if edgeData.seenEdges[k] {
+			ret[k] = v
+		}
+	}
+	return ret
 }

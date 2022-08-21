@@ -273,7 +273,7 @@ func parse(parseFn func(*Schema) (*assocEdgeData, error)) (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.edges = edgeData.edgeMap
+	s.edges = edgeData.getEdgesToRender()
 	s.newEdges = edgeData.newEdges
 	s.edgesToUpdate = edgeData.edgesToUpdate
 	return s, nil
@@ -506,11 +506,11 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 			// add edge info
 			if assocEdge.CreateEdge() {
-				newEdge, err := s.getNewEdge(edgeData, assocEdge)
+				info, err := s.getEdgeInfoAndCheckNewEdge(edgeData, assocEdge)
 				if err != nil {
 					errs = append(errs, err)
 				} else {
-					s.addNewEdgeType(p, newEdge.constName, newEdge.constValue, assocEdge)
+					s.addEdgeTypeFromEdgeInfo(p, info, assocEdge)
 				}
 			}
 			if err := s.maybeAddInverseAssocEdge(assocEdge); err != nil {
@@ -586,11 +586,11 @@ func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema
 		} else {
 			s.globalEdges = append(s.globalEdges, assocEdge)
 			if assocEdge.CreateEdge() {
-				newEdge, err := s.getNewEdge(edgeData, assocEdge)
+				info, err := s.getEdgeInfoAndCheckNewEdge(edgeData, assocEdge)
 				if err != nil {
 					errs = append(errs, err)
 				} else {
-					s.addNewEdgeType(s.globalConsts, newEdge.constName, newEdge.constValue, assocEdge)
+					s.addEdgeTypeFromEdgeInfo(s.globalConsts, info, assocEdge)
 				}
 				if err := s.maybeAddInverseAssocEdge(assocEdge); err != nil {
 					errs = append(errs, err)
@@ -854,7 +854,8 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
 	}
 	return &assocEdgeData{
-		edgeMap: edgeMap,
+		dbEdgeMap: edgeMap,
+		seenEdges: map[string]bool{},
 	}, nil
 }
 
@@ -1273,21 +1274,21 @@ func (s *Schema) addNewConstsAndEdges(nodeData *NodeData, edgeData *assocEdgeDat
 			continue
 		}
 
-		newEdge, err := s.getNewEdge(edgeData, assocEdge)
+		info, err := s.getEdgeInfoAndCheckNewEdge(edgeData, assocEdge)
 		if err != nil {
 			return err
 		}
 
-		s.addNewEdgeType(nodeData, newEdge.constName, newEdge.constValue, assocEdge)
+		s.addEdgeTypeFromEdgeInfo(nodeData, info, assocEdge)
 	}
 	return nil
 }
 
-type newEdgeInfo struct {
+type edgeInfo struct {
 	constName, constValue string
 }
 
-func (s *Schema) getNewEdge(edgeData *assocEdgeData, assocEdge *edge.AssociationEdge) (*newEdgeInfo, error) {
+func (s *Schema) getEdgeInfoAndCheckNewEdge(edgeData *assocEdgeData, assocEdge *edge.AssociationEdge) (*edgeInfo, error) {
 	constName := assocEdge.EdgeConst
 
 	// check if there's an existing edge
@@ -1325,6 +1326,8 @@ func (s *Schema) getNewEdge(edgeData *assocEdgeData, assocEdge *edge.Association
 		}
 
 		edgeData.addNewEdge(newEdge)
+	} else {
+		edgeData.flagSeenEdge(constName)
 	}
 
 	if newInverseEdge {
@@ -1350,8 +1353,11 @@ func (s *Schema) getNewEdge(edgeData *assocEdgeData, assocEdge *edge.Association
 				return nil, err
 			}
 		}
+	} else if inverseEdge != nil {
+		edgeData.flagSeenEdge(inverseConstName)
+
 	}
-	return &newEdgeInfo{
+	return &edgeInfo{
 		constName:  constName,
 		constValue: constValue,
 	}, nil
@@ -1646,12 +1652,16 @@ func (s *Schema) getInverseEdgeType(assocEdge *edge.AssociationEdge, inverseEdge
 	}
 
 	// add inverse edge constant
-	s.addNewEdgeType(inverseNodeData, inverseConstName, inverseConstValue, inverseEdge)
+	s.addEdgeType(inverseNodeData, inverseConstName, inverseConstValue, inverseEdge)
 
 	return inverseConstName, inverseConstValue, newEdge, nil
 }
 
-func (s *Schema) addNewEdgeType(c WithConst, constName, constValue string, edge edge.Edge) {
+func (s *Schema) addEdgeTypeFromEdgeInfo(c WithConst, info *edgeInfo, edge edge.Edge) {
+	s.addEdgeType(c, info.constName, info.constValue, edge)
+}
+
+func (s *Schema) addEdgeType(c WithConst, constName, constValue string, edge edge.Edge) {
 	// this is a map so easier to deal with duplicate consts if we run into them
 	c.addConstInfo(
 		"ent.EdgeType",
