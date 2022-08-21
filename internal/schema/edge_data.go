@@ -32,11 +32,6 @@ func (edgeData *assocEdgeData) edgeTypeOfEdge(constName string) string {
 	return string(edgeData.dbEdgeMap[constName].EdgeType)
 }
 
-func (edgeData *assocEdgeData) addNewEdge(newEdge *ent.AssocEdgeData) {
-	edgeData.newEdges = append(edgeData.newEdges, newEdge)
-	edgeData.dbEdgeMap[newEdge.EdgeName] = newEdge
-}
-
 func compareInverseEdgeType(ns1, ns2 *sql.NullString) bool {
 	ret := change.CompareNilVals(ns1 == nil, ns2 == nil)
 	if ret != nil {
@@ -76,11 +71,6 @@ func (edgeData *assocEdgeData) addEdge(edge *ent.AssocEdgeData, newEdge bool) er
 	return nil
 }
 
-// TODO need tests for all these
-
-// * new edges are returned
-// * existing edges are returned
-// * old edges are removed
 func (edgeData *assocEdgeData) getEdgesToRender() map[string]*ent.AssocEdgeData {
 	return edgeData.edgesToRender
 }

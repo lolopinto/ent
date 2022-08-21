@@ -15,10 +15,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// TODO in this file from here is all the tests that need to change
-// needs to be rewritten...
-// TODO put in its own file
-
 func TestGenerateNewEdges(t *testing.T) {
 	s := getSchemaForNewConstsAndEdges(t)
 	testEdgesFromConstsAndEdges(t, s)
@@ -53,63 +49,6 @@ func TestGeneratedConstants(t *testing.T) {
 			},
 		},
 	)
-}
-
-func getCodeForNewConstsAndEdges() map[string]string {
-	return map[string]string{
-		"account_schema.ts": testhelper.GetCodeWithSchema(
-			`import {StringType, EntSchema} from "{schema}";
-
-			const Account = new EntSchema({
-				fields: {
-					firstName: StringType(),
-				},
-
-				edges: [{
-					name: 'friends2',
-					schemaName: 'Account',
-				}],
-			});
-			export default Account;
-		`),
-		"todo_schema.ts": testhelper.GetCodeWithSchema(
-			`import {StringType, EntSchema} from "{schema}";
-
-			const Todo = new EntSchema({
-				fields: {
-					text: StringType(),
-				},
-			});
-			export default Todo;
-		`),
-	}
-}
-
-func getSchemaForNewConstsAndEdges(t *testing.T) *schema.Schema {
-	code := getCodeForNewConstsAndEdges()
-	s, err := testhelper.ParseSchemaForTestFull(
-		t,
-		code,
-		base.TypeScript,
-	)
-	require.Nil(t, err)
-	return s
-}
-
-func testEdgesFromConstsAndEdges(t *testing.T, s *schema.Schema) {
-	newEdges := s.GetNewEdges()
-
-	require.Len(t, newEdges, 1)
-	newEdge := newEdges[0]
-
-	expectedEdge := &ent.AssocEdgeData{
-		EdgeName:        "AccountToFriends2Edge",
-		SymmetricEdge:   false,
-		InverseEdgeType: sql.NullString{},
-		EdgeTable:       "account_friends_2_edges",
-	}
-
-	testEdge(t, newEdge, expectedEdge)
 }
 
 type edgeTestSuite struct {
@@ -154,12 +93,18 @@ func (suite *edgeTestSuite) TestNewVsExistingEdges() {
 	testEdgesFromConstsAndEdges(t, s)
 
 	// 1 new edge added. 1 edge total
-	suite.validateSchema(s, 1, 1, 0)
+	suite.validateSchema(s, 1, 1, 1, 0)
 
 	s2 := getSchemaForNewConstsAndEdges2(t)
 
 	// 1 new edge added. 2 edges total
-	suite.validateSchema(s2, 2, 1, 0)
+	suite.validateSchema(s2, 2, 2, 1, 0)
+
+	s3 := getSchemaForNewConstsAndEdges(t)
+
+	// check again if edge is deleted
+	// 1 edge total. 2 in db (would theoretically be deleted by auto_schema)
+	suite.validateSchema(s3, 1, 2, 0, 0)
 }
 
 func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
@@ -218,7 +163,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 	)
 	// 1 new edge added. 1 edge total
 	// validate with db
-	suite.validateSchema(s, 1, 1, 0)
+	suite.validateSchema(s, 1, 1, 1, 0)
 
 	code2 := make(map[string]string)
 	code2["account_schema.ts"] = getSourceForInverseAssocEdgeSameEnt(suite.T())
@@ -226,7 +171,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 	verifyInverseAssocEdgeSameEnt(suite.T(), s2)
 
 	// 1 new edge added. 2 edge total
-	suite.validateSchema(s2, 2, 1, 1)
+	suite.validateSchema(s2, 2, 2, 1, 1)
 }
 
 func (suite *edgeTestSuite) TestInverseAssocEdgeSameEnt() {
@@ -239,21 +184,21 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeSameEnt() {
 
 func (suite *edgeTestSuite) validateSchema(
 	s *schema.Schema,
-	expectedEdges, expectedNewEdges, expectedEdgesToUpdate int) {
-	assert.Equal(suite.T(), expectedNewEdges, len(s.GetNewEdges()))
+	expectedEdges, expectedDBEdges, expectedNewEdges, expectedEdgesToUpdate int) {
+	require.Equal(suite.T(), expectedNewEdges, len(s.GetNewEdges()))
 	for _, edge := range s.GetNewEdges() {
 		testingutils.CreateEdge(suite.T(), edge)
 	}
-	assert.Equal(suite.T(), expectedEdgesToUpdate, len(s.GetEdgesToUpdate()))
+	require.Equal(suite.T(), expectedEdgesToUpdate, len(s.GetEdgesToUpdate()))
 	// need to update existing edges also
 	for _, edge := range s.GetEdgesToUpdate() {
 		testingutils.EditEdge(suite.T(), edge)
 	}
 
-	assert.Equal(suite.T(), expectedEdges, len(s.GetEdges()))
+	require.Equal(suite.T(), expectedEdges, len(s.GetEdges()))
 	dbEdges := <-ent.GenLoadAssocEdges()
 	assert.Nil(suite.T(), dbEdges.Err)
-	assert.Equal(suite.T(), len(s.GetEdges()), len(dbEdges.Edges))
+	assert.Equal(suite.T(), expectedDBEdges, len(dbEdges.Edges))
 }
 
 func TestEdgeSuite(t *testing.T) {
@@ -387,4 +332,61 @@ func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 			},
 		},
 	)
+}
+
+func getCodeForNewConstsAndEdges() map[string]string {
+	return map[string]string{
+		"account_schema.ts": testhelper.GetCodeWithSchema(
+			`import {StringType, EntSchema} from "{schema}";
+
+			const Account = new EntSchema({
+				fields: {
+					firstName: StringType(),
+				},
+
+				edges: [{
+					name: 'friends2',
+					schemaName: 'Account',
+				}],
+			});
+			export default Account;
+		`),
+		"todo_schema.ts": testhelper.GetCodeWithSchema(
+			`import {StringType, EntSchema} from "{schema}";
+
+			const Todo = new EntSchema({
+				fields: {
+					text: StringType(),
+				},
+			});
+			export default Todo;
+		`),
+	}
+}
+
+func getSchemaForNewConstsAndEdges(t *testing.T) *schema.Schema {
+	code := getCodeForNewConstsAndEdges()
+	s, err := testhelper.ParseSchemaForTestFull(
+		t,
+		code,
+		base.TypeScript,
+	)
+	require.Nil(t, err)
+	return s
+}
+
+func testEdgesFromConstsAndEdges(t *testing.T, s *schema.Schema) {
+	newEdges := s.GetNewEdges()
+
+	require.Len(t, newEdges, 1)
+	newEdge := newEdges[0]
+
+	expectedEdge := &ent.AssocEdgeData{
+		EdgeName:        "AccountToFriends2Edge",
+		SymmetricEdge:   false,
+		InverseEdgeType: sql.NullString{},
+		EdgeTable:       "account_friends_2_edges",
+	}
+
+	testEdge(t, newEdge, expectedEdge)
 }
