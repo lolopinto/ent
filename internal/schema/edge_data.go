@@ -62,7 +62,7 @@ func (edgeData *assocEdgeData) addEdge(edge *ent.AssocEdgeData, newEdge bool) er
 	if newEdge {
 		edgeData.newEdges = append(edgeData.newEdges, edge)
 	} else {
-		if !compareEdgeType(edgeData.dbEdgeMap[string(edge.EdgeType)], edge) {
+		if !compareEdgeType(edgeData.dbEdgeMap[string(edge.EdgeName)], edge) {
 			edgeData.edgesToUpdate = append(edgeData.edgesToUpdate, edge)
 		}
 	}
