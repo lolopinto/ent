@@ -62,6 +62,12 @@ func (edgeData *assocEdgeData) getEdgesToRender() map[string]*ent.AssocEdgeData 
 		}
 	}
 
+	// TODO need tests for all these
+
+	// * new edges are returned
+	// * existing edges are returned
+	// * old edges are removed
+
 	// also make sure new edges are returned..
 	for _, v := range edgeData.newEdges {
 		ret[v.EdgeName] = v
