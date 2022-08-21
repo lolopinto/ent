@@ -1,3 +1,4 @@
+import e from "express";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
@@ -204,9 +205,9 @@ class postgresArrayOperator implements Clause {
 
   logValues(): any[] {
     if (isSensitive(this.value)) {
-      return [this.value.logValue()];
+      return [`{${this.value.logValue()}}`];
     }
-    return [this.value];
+    return [`{${this.value}}`];
   }
 
   instanceKey(): string {
@@ -234,18 +235,56 @@ class postgresArrayOperatorList extends postgresArrayOperator {
         .join(", ")}}`,
     ];
   }
+
+  logValues(): any[] {
+    return [
+      `{${this.value
+        .map((v: any) => {
+          if (isSensitive(v)) {
+            return v.logValue();
+          }
+          return v;
+        })
+        .join(", ")}}`,
+    ];
+  }
 }
 
-class inClause implements Clause {
-  constructor(private col: string, private value: any[]) {}
+export class inClause implements Clause {
+  static getPostgresInClauseValuesThreshold() {
+    return 70;
+  }
+
+  constructor(
+    private col: string,
+    private value: any[],
+    private type = "uuid",
+  ) {}
 
   clause(idx: number): string {
-    const dialect = DB.getDialect();
+    // do a simple = when only one item
+    if (this.value.length === 1) {
+      return new simpleClause(this.col, this.value[0], "=").clause(idx);
+    }
+
+    const postgres = DB.getDialect() === Dialect.Postgres;
+    const postgresValuesList =
+      postgres &&
+      this.value.length >= inClause.getPostgresInClauseValuesThreshold();
+
     let indices: string[];
-    if (dialect === Dialect.Postgres) {
+    if (postgres) {
       indices = [];
       for (let i = 0; i < this.value.length; i++) {
-        indices.push(`$${idx}`);
+        if (postgresValuesList) {
+          if (i === 0) {
+            indices.push(`($${idx}::${this.type})`);
+          } else {
+            indices.push(`($${idx})`);
+          }
+        } else {
+          indices.push(`$${idx}`);
+        }
         idx++;
       }
     } else {
@@ -253,7 +292,13 @@ class inClause implements Clause {
       indices.fill("?", 0);
     }
 
-    const inValue = indices.join(", ");
+    let inValue = indices.join(", ");
+
+    // wrap in VALUES list for postgres...
+    if (postgresValuesList) {
+      inValue = `VALUES${inValue}`;
+    }
+
     return `${this.col} IN (${inValue})`;
     // TODO we need to return idx at end to query builder...
     // or anything that's doing a composite query so next clause knows where to start
@@ -267,24 +312,16 @@ class inClause implements Clause {
 
   values(): any[] {
     const result: any[] = [];
-    for (const value of this.value) {
-      if (isSensitive(value)) {
-        result.push(value.value());
-      } else {
-        result.push(value);
-      }
+    for (let value of this.value) {
+      result.push(rawValue(value));
     }
     return result;
   }
 
   logValues(): any[] {
     const result: any[] = [];
-    for (const value of this.value) {
-      if (isSensitive(value)) {
-        result.push(value.logValue());
-      } else {
-        result.push(value);
-      }
+    for (let value of this.value) {
+      result.push(isSensitive(value) ? value.logValue() : value);
     }
     return result;
   }
@@ -531,9 +568,19 @@ export function Or(...args: Clause[]): compositeClause {
   return new compositeClause(args, " OR ");
 }
 
-// TODO this breaks if values.length ===1 and array. todo fix
-export function In(col: string, ...values: any): Clause {
-  return new inClause(col, values);
+export function In(col: string, ...values: any): Clause;
+
+export function In(col: string, values: any[], type?: string): Clause;
+
+export function In(...args: any[]): Clause {
+  if (args.length < 2) {
+    throw new Error(`invalid args passed to In`);
+  }
+  // 2nd overload
+  if (Array.isArray(args[1])) {
+    return new inClause(args[0], args[1], args[2]);
+  }
+  return new inClause(args[0], args.slice(1));
 }
 
 interface TsQuery {

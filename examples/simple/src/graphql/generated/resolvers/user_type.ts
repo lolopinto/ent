@@ -124,6 +124,9 @@ export const UserType = new GraphQLObjectType({
     },
     superNestedObject: {
       type: UserSuperNestedObjectType,
+      resolve: async (user: User, args: {}, context: RequestContext) => {
+        return user.superNestedObject();
+      },
     },
     nestedList: {
       type: new GraphQLList(new GraphQLNonNull(UserNestedObjectListType)),

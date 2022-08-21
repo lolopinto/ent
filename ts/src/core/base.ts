@@ -16,6 +16,10 @@ export interface Loader<T, V> {
   clearAll(): any;
 }
 
+interface LoaderWithLoadMany<T, V> extends Loader<T, V> {
+  loadMany(keys: T[]): Promise<(V | null)[]>;
+}
+
 // A LoaderFactory is used to create a Loader
 // We cache data on a per-request basis therefore for each new request, createLoader
 // is called to get a new instance of Loader which will then be used to load data as needed
@@ -27,6 +31,10 @@ export interface LoaderFactory<T, V> {
   // request
   // when no context is passed, no batching possible (except with explicit call to loadMany API)
   createLoader(context?: Context): Loader<T, V>;
+}
+
+interface LoaderFactoryWithLoaderMany<T, V> extends LoaderFactory<T, V> {
+  createLoader(context?: Context): LoaderWithLoadMany<T, V>;
 }
 
 // better name for this?
@@ -46,6 +54,8 @@ export type EdgeQueryableDataOptions = Partial<
 // other sources
 export interface PrimableLoader<T, V> extends Loader<T, V> {
   prime(d: Data): void;
+  // prime this loader and any other loader it's aware of
+  primeAll?(d: Data): void;
 }
 
 interface cache {
@@ -55,6 +65,7 @@ interface cache {
   primeCache(options: queryOptions, rows: Data[]): void;
   primeCache(options: queryOptions, rows: Data): void;
   clearCache(): void;
+  getEntCache(): Map<string, Ent | Error | null>;
 }
 interface queryOptions {
   fields: string[];
@@ -170,7 +181,8 @@ interface LoadableEntOptions<
   ent: EntConstructor<TEnt, TViewer>;
 }
 
-interface LoaderFactoryWithOptions extends LoaderFactory<any, Data | null> {
+interface LoaderFactoryWithOptions
+  extends LoaderFactoryWithLoaderMany<any, Data | null> {
   options?: SelectDataOptions;
 }
 
@@ -187,9 +199,13 @@ export interface LoadEntOptions<
 }
 
 export interface SelectCustomDataOptions extends SelectBaseDataOptions {
-  // defaultClause that's added to the query. automatically added
-  clause?: clause.Clause;
-  loaderFactory?: LoaderFactoryWithOptions;
+  // main loader factory for the ent, passed in for priming the data so subsequent fetches of this id don't reload
+  loaderFactory: LoaderFactoryWithOptions;
+
+  // should we prime the ent after loading. uses loaderFactory above
+  // only pass prime if the fields is equivalent to the ids of the other loader factory
+  // it doesn't check...
+  prime?: boolean;
 }
 
 export interface LoadCustomEntOptions<

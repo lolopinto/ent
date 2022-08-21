@@ -314,7 +314,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.In("id", 1)),
+      clause: clause.And(clause.In("id", 1), clause.Eq("deleted_at", null)),
     });
     const row = await loader.load(1);
 
@@ -396,7 +396,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+      clause: clause.And(clause.Eq("id", 1), clause.Eq("deleted_at", null)),
     });
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
@@ -441,7 +441,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+      clause: clause.And(clause.Eq("id", 1), clause.Eq("deleted_at", null)),
     });
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
@@ -551,7 +551,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+      clause: clause.And(clause.Eq("id", 1), clause.Eq("deleted_at", null)),
     });
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
@@ -948,6 +948,39 @@ function commonTests() {
       values: [user.emailAddress],
     });
   });
+
+  test("partial field query with context", async () => {
+    const user = await createTestUser();
+    ml.clear();
+
+    try {
+      await new ObjectLoaderFactory({
+        tableName: userLoader.options.tableName,
+        fields: ["first_name"],
+        key: "id",
+      })
+        .createLoader(new TestContext())
+        .load(user.id);
+      throw new Error(`should have thrown`);
+    } catch (err) {
+      expect((err as Error).message).toMatch(/need to query for column id/);
+    }
+  });
+
+  test("partial field query without context", async () => {
+    const user = await createTestUser();
+    ml.clear();
+
+    // currently fine without context see different path...
+    const row = await new ObjectLoaderFactory({
+      tableName: userLoader.options.tableName,
+      fields: ["first_name"],
+      key: "id",
+    })
+      .createLoader(undefined)
+      .load(user.id);
+    expect(row?.first_name).toBe(user.firstName);
+  });
 }
 
 async function verifyMultiIDsDataAvail(
@@ -1023,7 +1056,7 @@ function verifyMultiIDsCustomClauseGroupQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "users",
     fields: ["id", "first_name", "deleted_at"],
-    clause: clause.And(clause.Eq("deleted_at", null), clause.In("id", ...ids)),
+    clause: clause.And(clause.In("id", ...ids), clause.Eq("deleted_at", null)),
   });
 
   expect(ml.logs.length).toBe(1);
@@ -1055,8 +1088,8 @@ function verifyMultiIDsCustomClauseGroupQueryMiss(ids: ID[]) {
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
       clause: clause.And(
-        clause.Eq("deleted_at", null),
         clause.Eq("id", ids[idx]),
+        clause.Eq("deleted_at", null),
       ),
     });
     expect(log).toStrictEqual({

@@ -293,9 +293,7 @@ metadata.info["edges"] = {
     'UserToInvitedEventsEdge': {"edge_name":"UserToInvitedEventsEdge", "edge_type":"e439f2b2-d93a-4d1a-83f0-865bda5c8337", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"a72f5f64-3580-44fd-9bd0-d1335b803a46"},
     'UserToLikesEdge': {"edge_name":"UserToLikesEdge", "edge_type":"745a20bf-4fdc-4862-b39f-569c4451db8f", "edge_table":"object_likers_edges", "symmetric_edge":False, "inverse_edge_type":"c9ccdad9-7aff-40e4-9a69-2c29cfa19763"},
     'UserToMaybeEventsEdge': {"edge_name":"UserToMaybeEventsEdge", "edge_type":"8d5b1dee-ce65-452e-9f8d-78eca1993800", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"b0f6311b-fdab-4c26-b6bf-b751e0997735"},
-    'UserToPostEdge': {"edge_name":"UserToPostEdge", "edge_type":"4b725578-e9f5-472c-8e57-e47481c9e1b8", "edge_table":"object_comments_edges", "symmetric_edge":False, "inverse_edge_type":"8caba9c4-8035-447f-9eb1-4dd09a2d250c"},
     'UserToSelfContactEdge': {"edge_name":"UserToSelfContactEdge", "edge_type":"d504201d-cf3f-4eef-b6a0-0b46a7ae186b", "edge_table":"user_self_contact_edges", "symmetric_edge":False, "inverse_edge_type":None},
-    'UserToUserToHostedEventsEdge': {"edge_name":"UserToUserToHostedEventsEdge", "edge_type":"e5555185-91bf-4322-8130-d0a00eb605b7", "edge_table":"event_hosts_edges", "symmetric_edge":False, "inverse_edge_type":"ebe3e709-845c-4723-ac9c-29f983f2b8ea"},
   }
 }
 

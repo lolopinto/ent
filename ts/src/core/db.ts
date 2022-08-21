@@ -174,7 +174,7 @@ export default class DB {
     return this.q.newClient();
   }
 
-  async getSQLiteClient(): Promise<Sqlite> {
+  getSQLiteClient(): Sqlite {
     if (this.db.dialect == Dialect.Postgres) {
       throw new Error(`can't call getSQLiteClient when dialect is postgres`);
     }

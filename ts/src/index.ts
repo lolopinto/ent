@@ -18,6 +18,7 @@ export {
   DataOperation,
   EditNodeOptions,
   EditNodeOperation,
+  RawQueryOperation,
   EdgeOperation,
   DeleteNodeOperation,
   AssocEdge,

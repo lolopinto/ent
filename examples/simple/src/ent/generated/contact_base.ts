@@ -118,7 +118,10 @@ export class ContactBase
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      ContactBase.loaderOptions.apply(this),
+      {
+        ...ContactBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -129,7 +132,10 @@ export class ContactBase
     context?: Context,
   ): Promise<ContactDBData[]> {
     return (await loadCustomData(
-      ContactBase.loaderOptions.apply(this),
+      {
+        ...ContactBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as ContactDBData[];

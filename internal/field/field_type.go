@@ -75,6 +75,7 @@ type Field struct {
 	hasDefaultValueOnCreate    bool
 	hasDefaultValueOnEdit      bool
 	hasFieldPrivacy            bool
+	fetchOnDemand              bool
 
 	forceRequiredInAction bool
 	forceOptionalInAction bool
@@ -116,6 +117,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		hasDefaultValueOnCreate:    f.HasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:      f.HasDefaultValueOnEdit,
 		hasFieldPrivacy:            f.HasFieldPrivacy,
+		fetchOnDemand:              f.FetchOnDemand,
 		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
 		patternName:                f.PatternName,
 		userConvert:                f.UserConvert,
@@ -219,7 +221,8 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 	}
 
 	// if field privacy, whether on demand or ent load, the type here is nullable
-	if ret.hasFieldPrivacy {
+	// same for fetch on load since the fetch can fail...
+	if ret.hasFieldPrivacy || ret.fetchOnDemand {
 		nullableType, ok := ret.fieldType.(enttype.NullableType)
 		if ok {
 			if err := ret.setGraphQLFieldType(nullableType.GetNullableType()); err != nil {
@@ -380,7 +383,7 @@ func (f *Field) Private(cfg codegenapi.Config) bool {
 }
 
 func (f *Field) HasAsyncAccessor(cfg codegenapi.Config) bool {
-	return f.hasFieldPrivacy && cfg.FieldPrivacyEvaluated() == codegenapi.OnDemand
+	return f.fetchOnDemand || (f.hasFieldPrivacy && cfg.FieldPrivacyEvaluated() == codegenapi.OnDemand)
 }
 
 // GetFieldNameInStruct returns the name of the field in the struct definition
@@ -431,6 +434,14 @@ func (f *Field) HasDefaultValueOnEdit() bool {
 
 func (f *Field) HasFieldPrivacy() bool {
 	return f.hasFieldPrivacy
+}
+
+func (f *Field) FetchOnDemand() bool {
+	return f.fetchOnDemand
+}
+
+func (f *Field) FetchOnLoad() bool {
+	return !f.fetchOnDemand
 }
 
 func (f *Field) IDField() bool {
@@ -563,6 +574,11 @@ func (f *Field) TsType() string {
 
 // type of the field in the class e.g. readonly name type;
 func (f *Field) TsFieldType(cfg codegenapi.Config) string {
+	// when fetch on demand, we set to undefined to start since we need to load it later
+	// we use nullable value because we set the value after loading...
+	if f.fetchOnDemand {
+		return fmt.Sprintf("%s | undefined", f.TsType())
+	}
 	// there's a method that's nullable so return raw type
 	if f.HasAsyncAccessor(cfg) {
 		return f.tsRawUnderlyingType()

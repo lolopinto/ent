@@ -38,7 +38,11 @@ export class ExampleViewer implements ExampleViewerInt {
 }
 
 export class LoggedOutExampleViewer extends ExampleViewer {
-  constructor() {
+  constructor(context?: Context) {
     super(null);
+    if (context) {
+      // @ts-ignore
+      this.setContext(context);
+    }
   }
 }

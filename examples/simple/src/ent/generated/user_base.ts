@@ -12,6 +12,7 @@ import {
   Ent,
   ID,
   LoadEntOptions,
+  ObjectLoaderFactory,
   PrivacyPolicy,
   applyPrivacyPolicy,
   loadCustomData,
@@ -114,6 +115,13 @@ interface UserDBData {
   int_enum: UserIntEnum | null;
 }
 
+const superNestedObjectLoader = new ObjectLoaderFactory({
+  tableName: userLoaderInfo.tableName,
+  fields: ["id", "super_nested_object"],
+  key: "id",
+  instanceKey: `${userLoaderInfo.tableName}-super_nested_object`,
+});
+
 export class UserBase
   extends FeedbackMixin(class {})
   implements Ent<ExampleViewerAlias>, IFeedback
@@ -140,7 +148,7 @@ export class UserBase
   readonly funUuids: ID[] | null;
   readonly newCol: string | null;
   readonly newCol2: string | null;
-  readonly superNestedObject: UserSuperNestedObject | null;
+  protected _superNestedObject: UserSuperNestedObject | null | undefined;
   readonly nestedList: UserNestedObjectList[] | null;
   readonly intEnum: UserIntEnum | null;
 
@@ -168,7 +176,6 @@ export class UserBase
     this.funUuids = data.fun_uuids;
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
-    this.superNestedObject = convertSuperNestedObject(data.super_nested_object);
     this.nestedList = data.nested_list;
     this.intEnum = data.int_enum;
   }
@@ -239,6 +246,16 @@ export class UserBase
     return v ? this._prefsDiff : null;
   }
 
+  async superNestedObject(): Promise<UserSuperNestedObject | null> {
+    if (this._superNestedObject === undefined) {
+      const row = await superNestedObjectLoader
+        .createLoader(this.viewer.context)
+        .load(this.id);
+      this._superNestedObject = row?.super_nested_object ?? null;
+    }
+    return convertSuperNestedObject(this._superNestedObject ?? null);
+  }
+
   static async load<T extends UserBase>(
     this: new (viewer: ExampleViewerAlias, data: Data) => T,
     viewer: ExampleViewerAlias,
@@ -282,7 +299,10 @@ export class UserBase
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      UserBase.loaderOptions.apply(this),
+      {
+        ...UserBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -293,7 +313,10 @@ export class UserBase
     context?: Context,
   ): Promise<UserDBData[]> {
     return (await loadCustomData(
-      UserBase.loaderOptions.apply(this),
+      {
+        ...UserBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as UserDBData[];

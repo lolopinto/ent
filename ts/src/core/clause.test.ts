@@ -1,3 +1,4 @@
+import { v1 } from "uuid";
 import * as clause from "./clause";
 import { loadConfig } from "./config";
 
@@ -295,6 +296,15 @@ describe("postgres", () => {
   // TODO: AND OR mixed together?
 
   describe("In", () => {
+    test("1 arg", () => {
+      const cls = clause.In("id", 1);
+      expect(cls.clause(1)).toBe("id = $1");
+      expect(cls.columns()).toStrictEqual(["id"]);
+      expect(cls.values()).toStrictEqual([1]);
+      expect(cls.logValues()).toStrictEqual([1]);
+      expect(cls.instanceKey()).toEqual("in:id:1");
+    });
+
     test("spread args", () => {
       const cls = clause.In("id", 1, 2, 3);
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
@@ -330,6 +340,68 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual([1, "*", 3]);
       expect(cls.instanceKey()).toEqual("in:id:1,2,3");
     });
+
+    describe("valuesList threshold", () => {
+      const spy = jest
+        .spyOn(clause.inClause, "getPostgresInClauseValuesThreshold")
+        .mockImplementation(() => 5);
+
+      afterAll(() => {
+        spy.mockRestore();
+      });
+
+      test("uuid implicit", () => {
+        const ids = [1, 2, 3, 4, 5].map((_) => v1());
+
+        const cls = clause.In("id", ids);
+        expect(cls.clause(1)).toBe(
+          "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
+        expect(cls.logValues()).toStrictEqual(ids);
+        expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
+      });
+
+      test("int", () => {
+        const ids = [1, 2, 3, 4, 5];
+
+        const cls = clause.In("id", ids, "int");
+        expect(cls.clause(1)).toBe(
+          "id IN (VALUES($1::int), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
+        expect(cls.logValues()).toStrictEqual(ids);
+        expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
+      });
+
+      test("integer", () => {
+        const ids = [1, 2, 3, 4, 5];
+
+        const cls = clause.In("id", ids, "integer");
+        expect(cls.clause(1)).toBe(
+          "id IN (VALUES($1::integer), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
+        expect(cls.logValues()).toStrictEqual(ids);
+        expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
+      });
+
+      test("uuid explicit", () => {
+        const ids = [1, 2, 3, 4, 5].map((_) => v1());
+
+        const cls = clause.In("id", ids, "uuid");
+        expect(cls.clause(1)).toBe(
+          "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
+        expect(cls.logValues()).toStrictEqual(ids);
+        expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
+      });
+    });
   });
 
   describe("array", () => {
@@ -356,7 +428,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3}`]);
-      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([`{3}`]);
       expect(cls.instanceKey()).toEqual("ids@>3");
     });
 
@@ -365,7 +437,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{foo}`]);
-      expect(cls.logValues()).toStrictEqual(["foo"]);
+      expect(cls.logValues()).toStrictEqual([`{foo}`]);
       expect(cls.instanceKey()).toEqual("ids@>foo");
     });
 
@@ -374,7 +446,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
-      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("ids@>3,4");
     });
 
@@ -383,7 +455,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{foo, bar}`]);
-      expect(cls.logValues()).toStrictEqual([["foo", "bar"]]);
+      expect(cls.logValues()).toStrictEqual([`{foo, bar}`]);
       expect(cls.instanceKey()).toEqual("ids@>foo,bar");
     });
 
@@ -392,7 +464,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("NOT ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3}`]);
-      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([`{3}`]);
       expect(cls.instanceKey()).toEqual("NOT:ids@>3");
     });
 
@@ -401,7 +473,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("NOT ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
-      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("NOT:ids@>3,4");
     });
 
@@ -410,7 +482,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("ids && $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
-      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("ids&&3,4");
     });
 
@@ -419,7 +491,7 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe("NOT ids && $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
-      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("NOT:ids&&3,4");
     });
   });
@@ -971,6 +1043,15 @@ describe("sqlite", () => {
   // TODO: AND OR mixed together?
 
   describe("In", () => {
+    test("1 arg", () => {
+      const cls = clause.In("id", 1);
+      expect(cls.clause(1)).toBe("id = ?");
+      expect(cls.columns()).toStrictEqual(["id"]);
+      expect(cls.values()).toStrictEqual([1]);
+      expect(cls.logValues()).toStrictEqual([1]);
+      expect(cls.instanceKey()).toEqual("in:id:1");
+    });
+
     test("spread args", () => {
       const cls = clause.In("id", 1, 2, 3);
       expect(cls.clause(1)).toBe("id IN (?, ?, ?)");

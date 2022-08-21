@@ -688,7 +688,7 @@ export class Orchestrator<
     // if action transformations. always do it
     // if disable transformations set, don't do schema transform and just do the right thing
     // else apply schema tranformation if it exists
-    let transformed: TransformedUpdateOperation<TEnt> | null = null;
+    let transformed: TransformedUpdateOperation<TEnt, TViewer> | null = null;
 
     const sqlOp = this.getSQLStatementOperation();
     if (action?.transformWrite) {
@@ -731,6 +731,10 @@ export class Orchestrator<
           // TODO how to do this for local tests?
           // this.defaultFieldsByFieldName[k] = val;
         }
+      }
+      if (transformed.changeset) {
+        const ct = await transformed.changeset();
+        this.changesets.push(ct);
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
@@ -1025,6 +1029,10 @@ export class Orchestrator<
   }
 }
 
+function randomNum(): string {
+  return Math.random().toString(10).substring(2);
+}
+
 export class EntChangeset<T extends Ent> implements Changeset {
   private _executor: Executor | null;
   constructor(
@@ -1036,6 +1044,15 @@ export class EntChangeset<T extends Ent> implements Changeset {
     public changesets?: Changeset[],
     private options?: OrchestratorOptions<T, Data, Viewer>,
   ) {}
+
+  static changesetFrom(builder: Builder<any, any, any>, ops: DataOperation[]) {
+    return new EntChangeset(
+      builder.viewer,
+      `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
+      builder.ent,
+      ops,
+    );
+  }
 
   executor(): Executor {
     if (this._executor) {

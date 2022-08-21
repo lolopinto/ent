@@ -106,7 +106,10 @@ export class GuestDataBase implements Ent<Viewer> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      GuestDataBase.loaderOptions.apply(this),
+      {
+        ...GuestDataBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -117,7 +120,10 @@ export class GuestDataBase implements Ent<Viewer> {
     context?: Context,
   ): Promise<GuestDataDBData[]> {
     return (await loadCustomData(
-      GuestDataBase.loaderOptions.apply(this),
+      {
+        ...GuestDataBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as GuestDataDBData[];

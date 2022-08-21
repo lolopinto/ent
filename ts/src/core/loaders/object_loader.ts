@@ -41,7 +41,7 @@ function createDataLoader(options: SelectDataOptions) {
         optionClause = options.clause;
       }
       if (optionClause) {
-        cls = clause.And(optionClause, cls);
+        cls = clause.And(cls, optionClause);
       }
     }
     const rowOptions: LoadRowOptions = {
@@ -61,6 +61,11 @@ function createDataLoader(options: SelectDataOptions) {
     const rows = await loadRows(rowOptions);
     for (const row of rows) {
       const id = row[col];
+      if (id === undefined) {
+        throw new Error(
+          `need to query for column ${col} when using an object loader because the query may not be sorted and we need the id to maintain sort order`,
+        );
+      }
       const idx = m.get(id);
       if (idx === undefined) {
         throw new Error(
@@ -142,7 +147,7 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
         optionClause = this.options.clause;
       }
       if (optionClause) {
-        cls = clause.And(optionClause, cls);
+        cls = clause.And(cls, optionClause);
       }
     }
     const rowOptions: LoadRowOptions = {
@@ -171,7 +176,7 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
         optionClause = this.options.clause;
       }
       if (optionClause) {
-        cls = clause.And(optionClause, cls);
+        cls = clause.And(cls, optionClause);
       }
     }
     const rowOptions: LoadRowOptions = {
@@ -190,6 +195,19 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       this.loader.prime(key, data);
     }
   }
+
+  // prime this loader and any other loaders it's aware of
+  primeAll(data: Data) {
+    this.prime(data);
+    if (this.primedLoaders) {
+      for (const [key, loader] of this.primedLoaders) {
+        const value = data[key];
+        if (value !== undefined) {
+          loader.prime(data);
+        }
+      }
+    }
+  }
 }
 
 interface ObjectLoaderOptions extends SelectDataOptions {
@@ -197,6 +215,9 @@ interface ObjectLoaderOptions extends SelectDataOptions {
   instanceKey?: string;
 }
 
+// NOTE: if not querying for all columns
+// have to query for the id field as one of the fields
+// because it's used to maintain sort order of the queried ids
 export class ObjectLoaderFactory<T> implements LoaderFactory<T, Data | null> {
   name: string;
   private toPrime: ObjectLoaderFactory<T>[] = [];
