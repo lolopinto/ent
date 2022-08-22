@@ -7,7 +7,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" //driver not used
 	"github.com/lolopinto/ent/ent/config"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sqlx.DB

@@ -2,15 +2,12 @@ package ent
 
 import (
 	"fmt"
-	"runtime/debug"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/sql"
-	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
-	"github.com/rocketlaunchr/remember-go"
 )
 
 // DataOperation corresponds to an individual operation to write to the database
@@ -33,13 +30,6 @@ type DataOperationWithCreatedEnt interface {
 type DataOperationWithResolver interface {
 	DataOperation
 	Resolve(Executor) error
-}
-
-// DataOperationWithKeys indicates an operation that has keys in cache(redis/memory, etc)
-// and makes sure to delete these keys when an operation happens
-type DataOperationWithKeys interface {
-	DataOperation
-	GetCacheKeys() []string
 }
 
 // WriteOperation indicates if we're creating, editing or deleting an ent
@@ -105,16 +95,6 @@ func (op *EditNodeOperation) PerformWrite(tx *sqlx.Tx) error {
 	}
 
 	return performWrite(builder, tx, op.Entity)
-}
-
-// GetCacheKeys returns keys that need to be deleted for this operation
-func (op *EditNodeOperation) GetCacheKeys() []string {
-	if op.ExistingEnt == nil {
-		return []string{}
-	}
-	return []string{
-		getKeyForNode(op.ExistingEnt.GetID(), op.EntConfig.GetTableName()),
-	}
 }
 
 // CreatedEnt returns the newly created ent (if any)
@@ -296,13 +276,6 @@ func (op *EdgeOperation) PerformWrite(tx *sqlx.Tx) error {
 	return performWrite(builder, tx, nil)
 }
 
-// GetCacheKeys returns keys that need to be deleted for this operation
-func (op *EdgeOperation) GetCacheKeys() []string {
-	return []string{
-		getKeyForEdge(op.id1, op.edgeType),
-	}
-}
-
 func (op *EdgeOperation) getBuilderForInsertOp(edgeData *AssocEdgeData) *sqlBuilder {
 	if op.time.IsZero() {
 		// log warning here?
@@ -400,23 +373,4 @@ func (op *DeleteNodeOperation) PerformWrite(tx *sqlx.Tx) error {
 	builder := getDeleteQuery(op.EntConfig.GetTableName(), sql.Eq("id", op.ExistingEnt.GetID()))
 
 	return performWrite(builder, tx, nil)
-}
-
-// GetCacheKeys returns keys that need to be deleted for this operation
-func (op *DeleteNodeOperation) GetCacheKeys() []string {
-	return []string{
-		getKeyForNode(op.ExistingEnt.GetID(), op.EntConfig.GetTableName()),
-	}
-}
-
-func getKeyForNode(id, tableName string) string {
-	if id == "" {
-		debug.PrintStack()
-		util.GoSchemaKill(errors.WithStack(errors.New("empty id passed")))
-	}
-	return remember.CreateKey(false, "_", "table_id", tableName, id)
-}
-
-func getKeyForEdge(id string, edgeType EdgeType) string {
-	return remember.CreateKey(false, "_", "edge_id", edgeType, id)
 }
