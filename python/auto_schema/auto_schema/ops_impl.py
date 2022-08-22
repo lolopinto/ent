@@ -63,7 +63,7 @@ def _exec_insert_statement(
         values.append("(%s)" % ", ".join(curr_values))
 
     stmt = "INSERT INTO %s(%s) VALUES%s" % (
-        table.name, ", ".join(keys), ", ".join(values))
+        table.name, ", ".join(keys), ",\n".join(values))
 
     connection = operations.get_bind()
     dialect = connection.dialect.name
