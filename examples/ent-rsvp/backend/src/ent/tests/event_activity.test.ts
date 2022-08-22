@@ -3,6 +3,7 @@ import {
   GuestData,
   EventActivityToAttendingQuery,
   GuestToAttendingEventsQuery,
+  AddressToLocatedAtQuery,
 } from "src/ent";
 import { IDViewer } from "@snowtop/ent";
 import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
@@ -23,6 +24,7 @@ import {
   createAndInvitePlusGuests,
   createGuests,
 } from "src/testutils";
+import CreateAddressAction from "../address/actions/create_address_action";
 
 describe("create event activity", () => {
   test("valid", async () => {
@@ -77,6 +79,34 @@ describe("create event activity", () => {
     expect(count).toBe(1);
     expect(ents.length).toBe(1);
     expect(ents[0].id).toBe(group.id);
+  });
+
+  test("create with address id", async () => {
+    const user = await createUser();
+
+    const address = await CreateAddressAction.create(user.viewer, {
+      street: "1 main street",
+      state: "CA",
+      apartment: "2",
+      zipCode: "92323",
+      city: "San Francisco",
+      ownerID: user.id,
+      ownerType: user.nodeType,
+    }).saveX();
+
+    const event = await createEvent(user);
+    const activity = await createActivity({ addressId: address.id }, event);
+    expect(activity.addressId).toBe(address.id);
+    const loaded = await activity.loadAddress();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.id).toBe(address.id);
+
+    const locatedAt = await AddressToLocatedAtQuery.query(
+      address.viewer,
+      address,
+    ).queryEnts();
+    expect(locatedAt.length).toBe(1);
+    expect(locatedAt[0].id).toBe(activity.id);
   });
 });
 
