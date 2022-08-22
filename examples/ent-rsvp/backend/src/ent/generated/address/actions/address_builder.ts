@@ -10,7 +10,7 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Address, Guest } from "src/ent/";
+import { Address } from "src/ent/";
 import { EdgeType, NodeType } from "src/ent/generated/const";
 import { addressLoaderInfo } from "src/ent/generated/loaders";
 import schema from "src/schema/address_schema";
@@ -125,34 +125,41 @@ export class AddressBuilder<
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
-
-  addLocatedAt(...nodes: (ID | Guest | Builder<Guest, any>)[]): this {
+  addLocatedAt(...nodes: (Ent | Builder<Ent, any>)[]): this {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
-        this.addLocatedAtID(node);
-      } else if (typeof node === "object") {
-        this.addLocatedAtID(node.id);
+        this.orchestrator.addOutboundEdge(
+          node,
+          EdgeType.AddressToLocatedAt,
+          // nodeType will be gotten from Executor later
+          "",
+        );
       } else {
-        this.addLocatedAtID(node);
+        this.orchestrator.addOutboundEdge(
+          node.id,
+          EdgeType.AddressToLocatedAt,
+          node.nodeType,
+        );
       }
     }
     return this;
   }
 
   addLocatedAtID(
-    id: ID | Builder<Guest, any>,
+    id: ID | Builder<Ent, any>,
+    nodeType: NodeType,
     options?: AssocEdgeInputOptions,
   ): this {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.AddressToLocatedAt,
-      NodeType.Guest,
+      nodeType,
       options,
     );
     return this;
   }
 
-  removeLocatedAt(...nodes: (ID | Guest)[]): this {
+  removeLocatedAt(...nodes: (ID | Ent)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(

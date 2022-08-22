@@ -12,13 +12,12 @@ import {
   RawCountLoaderFactory,
   Viewer,
 } from "@snowtop/ent";
+import { getLoaderOptions } from "src/ent/generated/loadAny";
 import {
   Address,
   AddressToLocatedAtEdge,
   EdgeType,
-  Guest,
-  GuestToAttendingEventsQuery,
-  GuestToDeclinedEventsQuery,
+  NodeType,
   addressLoader,
 } from "src/ent/internal";
 
@@ -43,38 +42,33 @@ export const ownerToAddressesDataLoaderFactory = new IndexLoaderFactory(
 
 export abstract class AddressToLocatedAtQueryBase extends AssocEdgeQueryBase<
   Address,
-  Guest,
+  Ent<Viewer>,
   AddressToLocatedAtEdge,
   Viewer
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Address, Guest, Viewer>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<Address, Ent<Viewer>, Viewer>,
+  ) {
     super(
       viewer,
       src,
       addressToLocatedAtCountLoaderFactory,
       addressToLocatedAtDataLoaderFactory,
-      Guest.loaderOptions(),
+      (str) => getLoaderOptions(str as NodeType),
     );
   }
 
   static query<T extends AddressToLocatedAtQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Address, Guest>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Address, Ent<Viewer>>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Address, Guest>,
+    src: EdgeQuerySource<Address, Ent<Viewer>>,
   ): T {
     return new this(viewer, src);
   }
 
   sourceEnt(id: ID) {
     return Address.load(this.viewer, id);
-  }
-
-  queryGuestToAttendingEvents(): GuestToAttendingEventsQuery {
-    return GuestToAttendingEventsQuery.query(this.viewer, this);
-  }
-
-  queryGuestToDeclinedEvents(): GuestToDeclinedEventsQuery {
-    return GuestToDeclinedEventsQuery.query(this.viewer, this);
   }
 }
 

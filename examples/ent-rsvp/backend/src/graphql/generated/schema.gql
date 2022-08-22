@@ -99,13 +99,13 @@ type User implements Node {
 }
 
 type AddressToLocatedAtEdge implements Edge {
-  node: Guest!
+  node: Node!
   cursor: String!
 }
 
 type AddressToLocatedAtConnection implements Connection {
   edges: [AddressToLocatedAtEdge!]!
-  nodes: [Guest!]!
+  nodes: [Node!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

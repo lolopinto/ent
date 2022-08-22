@@ -162,7 +162,7 @@ sa.Table("users", metadata,
 
 metadata.info["edges"] = {
   'public': {
-    'AddressToLocatedAtEdge': {"edge_name":"AddressToLocatedAtEdge", "edge_type":"d2cbbbfe-380d-404e-85b8-81eff42f2122", "edge_table":"address_located_at_edges", "symmetric_edge":False, "inverse_edge_type":None},
+    'AddressToLocatedAtEdge': {"edge_name":"AddressToLocatedAtEdge", "edge_type":"4f8ace68-48f8-4c1d-a557-6c80bf0a1770", "edge_table":"address_located_at_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'EventActivityToAttendingEdge': {"edge_name":"EventActivityToAttendingEdge", "edge_type":"8025c416-c0a9-42dd-9bf4-f97f283d31a2", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"ea0de57e-25de-47ab-8ddc-324f41c892a3"},
     'EventActivityToDeclinedEdge': {"edge_name":"EventActivityToDeclinedEdge", "edge_type":"f3ff6b74-c055-4562-b5dd-07e4e2d8c8e3", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"5798e422-75d3-42ac-9ef8-30bd35e34f9f"},
     'EventActivityToInvitesEdge': {"edge_name":"EventActivityToInvitesEdge", "edge_type":"64ef93f6-7edf-42ce-a3e4-8c30d9851645", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"759e4abe-f866-41b7-aae8-40be4e8ab21e"},

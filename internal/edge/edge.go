@@ -147,14 +147,21 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
-func (e *EdgeInfo) AddEdgeFromInverseFieldEdge(cfg codegenapi.Config, sourceSchemaName, destinationPackageName string, edge *input.InverseFieldEdge) (*AssociationEdge, error) {
+func (e *EdgeInfo) AddEdgeFromInverseFieldEdge(cfg codegenapi.Config, sourceSchemaName, destinationPackageName string, edge *input.InverseFieldEdge, patternName string) (*AssociationEdge, error) {
+	var fns []func(*opts)
+	// force polymorphic
+	if patternName != "" {
+		fns = append(fns, ForceEdgePolymorphic())
+	}
 	assocEge, err := AssocEdgeFromInput(cfg, destinationPackageName, &input.AssocEdge{
 		Name:            edge.Name,
 		TableName:       edge.TableName,
 		EdgeConstName:   edge.EdgeConstName,
 		HideFromGraphQL: edge.HideFromGraphQL,
 		SchemaName:      sourceSchemaName,
-	})
+	},
+		fns...)
+
 	if err != nil {
 		return nil, err
 	}
@@ -692,7 +699,8 @@ var _ IndexedConnectionEdge = &IndexedEdge{}
 type InverseAssocEdge struct {
 	// note that if anything is changed here, need to update inverseAssocEdgeEqual() in compare_edge.go
 	commonEdgeInfo
-	EdgeConst string
+	EdgeConst   string
+	polymorphic bool
 }
 
 func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
@@ -700,7 +708,7 @@ func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 }
 
 func (e *InverseAssocEdge) PolymorphicEdge() bool {
-	return false
+	return e.polymorphic
 }
 
 var edgeRegexp = regexp.MustCompile(`(\w+)Edge`)
@@ -734,6 +742,7 @@ type AssociationEdge struct {
 	overridenEdgeName    string
 	overridenGraphQLName string
 	PatternName          string
+	polymorphic          bool
 }
 
 func (e *AssociationEdge) CreateEdge() bool {
@@ -774,7 +783,7 @@ func (e *AssociationEdge) AssocEdgeBaseImport(cfg codegenapi.Config) *tsimport.I
 func (e *AssociationEdge) PolymorphicEdge() bool {
 	// not fully supported but implicitly supoorted via Patterns
 	// TODO not ideal because it blocks Nodes called Object
-	return e.NodeInfo.Node == "Object" || e.NodeInfo.Node == "Ent"
+	return e.polymorphic || e.NodeInfo.Node == "Object" || e.NodeInfo.Node == "Ent"
 }
 
 func (e *AssociationEdge) TsEdgeQueryName() string {
@@ -863,6 +872,8 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 		commonEdgeInfo: inverseEdge.commonEdgeInfo,
 		IsInverseEdge:  true,
 		TableName:      e.TableName,
+		// if inverse is polymorphic, flag this as polymorphic too
+		// polymorphic: inverseEdge.polymorphic,
 	})
 }
 
@@ -1082,13 +1093,26 @@ func edgeActionsFromInput(actions []*input.EdgeAction) ([]*EdgeAction, error) {
 }
 
 // packageName == "object" for edges from patterns
-func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.AssocEdge) (*AssociationEdge, error) {
+type opts struct {
+	forcePolymorphic bool
+}
+
+func ForceEdgePolymorphic() func(*opts) {
+	return func(o *opts) {
+		o.forcePolymorphic = true
+	}
+}
+func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.AssocEdge, fns ...func(*opts)) (*AssociationEdge, error) {
 	assocEdge := &AssociationEdge{
 		Symmetric:          edge.Symmetric,
 		Unique:             edge.Unique,
 		TableName:          edge.TableName,
 		PatternName:        edge.PatternName,
 		givenEdgeConstName: edge.EdgeConstName,
+	}
+	o := &opts{}
+	for _, f := range fns {
+		f(o)
 	}
 
 	// name wasn't specified? get default one
@@ -1181,15 +1205,23 @@ func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.A
 		}
 	}
 
-	// golang
-	if edge.EntConfig != nil {
-		assocEdge.commonEdgeInfo = getCommonEdgeInfo(cfg, edge.Name, edge.EntConfig)
-	} else { // typescript
+	if o.forcePolymorphic {
 		assocEdge.commonEdgeInfo = getCommonEdgeInfo(
 			cfg,
 			edge.Name,
-			schemaparser.GetEntConfigFromName(edge.SchemaName),
+			schemaparser.GetEntConfigFromName("ent"),
 		)
+	} else {
+		// golang
+		if edge.EntConfig != nil {
+			assocEdge.commonEdgeInfo = getCommonEdgeInfo(cfg, edge.Name, edge.EntConfig)
+		} else { // typescript
+			assocEdge.commonEdgeInfo = getCommonEdgeInfo(
+				cfg,
+				edge.Name,
+				schemaparser.GetEntConfigFromName(edge.SchemaName),
+			)
+		}
 	}
 	assocEdge._HideFromGraphQL = edge.HideFromGraphQL
 

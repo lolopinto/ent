@@ -1129,7 +1129,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 		if fEdge == nil {
 			// add from inverseEdge...
 			var err error
-			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(cfg, info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge)
+			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(cfg, info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge, f.GetPatternName())
 			if err != nil {
 				return err
 			}
