@@ -822,7 +822,7 @@ func (s *graphQLSchema) buildYmlConfig(
 	cfg.SchemaFilename = []string{
 		s.getPath("schema.graphql"),
 	}
-	cfg.Exec = config.PackageConfig{
+	cfg.Exec = config.ExecConfig{
 		Filename: s.getPath("generated.go"),
 		Package:  "graphql",
 	}
