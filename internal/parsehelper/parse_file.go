@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
@@ -106,6 +107,7 @@ func ParseFilesForTest(t *testing.T, options ...func(*Config)) *FileConfigData {
 	}
 
 	var p schemaparser.Parser
+	spew.Dump("sssfsfsfsfsfsf")
 	if cfg.sources != nil {
 		p = &schemaparser.SourceSchemaParser{
 			Sources: cfg.sources,
@@ -148,8 +150,10 @@ func ParseFilesForTest(t *testing.T, options ...func(*Config)) *FileConfigData {
 	// parse edges, actions etc once and cache it so that we don't always
 	// have to parse it
 	// TODO rewrite this to go through every file once instead of what we're currently doing
+	spew.Dump(cfg.parseFuncFlags)
 	if cfg.parseFuncFlags != 0 {
 		if cfg.parseFuncFlags&ParseStruct != 0 {
+			spew.Dump("parseStructs")
 			ret.parseStructs(t)
 		}
 		if cfg.parseFuncFlags&ParseEdges != 0 {

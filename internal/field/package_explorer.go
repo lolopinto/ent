@@ -9,6 +9,7 @@ import (
 
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/util"
 	"golang.org/x/tools/go/packages"
@@ -209,10 +210,12 @@ func (explorer *packageExplorer) buildStruct(
 
 	for _, f := range s.Fields.List {
 		if len(f.Names) != 0 {
+			// spew.Dump(f.Names)
 			continue
 		}
 		// todo we need to get the imports and get full path etc
 		info, err := astparser.ParseFieldType(f)
+		// spew.Dump("info", info)
 		if err != nil {
 			util.GoSchemaKill(err)
 		}
@@ -326,6 +329,7 @@ func (explorer *packageExplorer) getResultFromPkg(
 
 // helper function for getResultFromPkg. called recursively
 func (explorer *packageExplorer) getResultFromStruct(s *structType) *parseResult {
+	spew.Dump(s)
 	if s.typeFromMethod != nil {
 		return &parseResult{
 			entType: s.typeFromMethod,
@@ -469,8 +473,10 @@ func newPackageExplorer() *packageExplorer {
 // methods we care about in Structs to gather information
 var dataTypeMethods = map[string]func(*packages.Package, *structType, *ast.FuncDecl){
 	"Type": func(pkg *packages.Package, s *structType, fn *ast.FuncDecl) {
+		// spew.Dump("typeeee", fn)
 		retStmt := astparser.GetLastReturnStmtExpr(fn)
 		s.typeFromMethod = pkg.TypesInfo.TypeOf(retStmt)
+		// spew.Dump(retStmt, s.typeFromMethod)
 	},
 	"PkgPath": func(_ *packages.Package, s *structType, fn *ast.FuncDecl) {
 		retStmt := astparser.GetLastReturnStmtExpr(fn)

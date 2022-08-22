@@ -228,7 +228,15 @@ func parseConnectionString() (*DBConfig, error) {
 			return nil, fmt.Errorf("invalid key %s in url", parts2[0])
 		}
 
-		fn(parts2[1])
+		// TODO handle this better
+		// API changed and we need to handle it...
+		v := parts2[1]
+		if v != "" {
+			if v[0] == '\'' && v[len(v)-1] == '\'' {
+				v = v[1 : len(v)-1]
+			}
+		}
+		fn(v)
 	}
 	return r, nil
 }

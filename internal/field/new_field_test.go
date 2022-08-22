@@ -5,6 +5,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSimpleIntField(t *testing.T) {
@@ -504,12 +505,12 @@ func TestMultipleFields(t *testing.T) {
 
 func loadFields(t *testing.T, code string) []*Field {
 	pkg, fn, err := schemaparser.FindFunction(code, "configs", "GetFields")
-	assert.Nil(t, err)
-	assert.NotNil(t, fn)
-	assert.NotNil(t, pkg)
+	require.Nil(t, err)
+	require.NotNil(t, fn)
+	require.NotNil(t, pkg)
 
 	fieldInfo, err := ParseFieldsFunc(pkg, fn)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	return fieldInfo.Fields
 }
 

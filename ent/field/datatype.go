@@ -137,8 +137,8 @@ type PrivateDataType interface {
 
 // StringDataType is the datatype for string fields
 type StringDataType struct {
-	validators []func(string) error
-	formatters []func(string) string
+	// validators []func(string) error
+	// formatters []func(string) string
 }
 
 // Type returns the empty string to satisfy the DataType interface
@@ -231,34 +231,34 @@ func (t *StringDataType) TrimSpace() *StringDataType {
 
 // Validate takes a function that Validates the value of the string
 func (t *StringDataType) Validate(fn func(string) error) *StringDataType {
-	t.validators = append(t.validators, fn)
+	// t.validators = append(t.validators, fn)
 	return t
 }
 
 // Formatter takes a function that takes the value of the string and re-formats it
 // The order in which functions are passed in here should not matter ala the associative property in math
 func (t *StringDataType) Formatter(fn func(string) string) *StringDataType {
-	t.formatters = append(t.formatters, fn)
+	// t.formatters = append(t.formatters, fn)
 	return t
 }
 
 // Valid implements the Validator interface to validate the string input
 func (t *StringDataType) Valid(val interface{}) error {
-	s := val.(string)
-	for _, val := range t.validators {
-		if err := val(s); err != nil {
-			return err
-		}
-	}
+	// s := val.(string)
+	// for _, val := range t.validators {
+	// 	if err := val(s); err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
 // Format implements the Formatter interface to format the string input before storing
 func (t *StringDataType) Format(val interface{}) (interface{}, error) {
 	s := val.(string)
-	for _, format := range t.formatters {
-		s = format(s)
-	}
+	// for _, format := range t.formatters {
+	// 	s = format(s)
+	// }
 	return s, nil
 }
 

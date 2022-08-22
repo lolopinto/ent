@@ -578,7 +578,7 @@ func (l *loadNodesLoader) GetSQLBuilder() (*sqlBuilder, error) {
 }
 
 func (l *loadNodesLoader) GetCacheKeyForID(id string) string {
-	return getKeyForNode(id, l.entLoader.GetConfig().GetTableName())
+	return ""
 }
 
 func (l *loadNodesLoader) Configure() configureQueryResult {
