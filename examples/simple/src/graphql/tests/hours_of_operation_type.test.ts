@@ -1,27 +1,16 @@
 import { ID } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import schema from "../generated/schema";
-import { DateTime } from "luxon";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "src/ent";
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
-
-// stolen from schema/field.ts
-export const leftPad = (val: number): string => {
-  if (val >= 0) {
-    if (val < 10) {
-      return `0${val}`;
-    }
-    return val.toString();
-  }
-  if (val > -10) {
-    return `-0${val * -1}`;
-  }
-  return val.toString();
-};
+import { DBTimeZone } from "@snowtop/ent/testutils/db_time_zone";
 
 test("create hours of operation", async () => {
   let id: ID;
+
+  let offset = await DBTimeZone.getDateOffset(new Date());
+
   await expectMutation(
     {
       mutation: "hoursOfOperationCreate",
@@ -43,10 +32,7 @@ test("create hours of operation", async () => {
     ["hoursOfOperation.dayOfWeek", "SUNDAY"],
     ["hoursOfOperation.dayOfWeek", "SUNDAY"],
     ["hoursOfOperation.open", "08:00:00"],
-    [
-      "hoursOfOperation.close",
-      `17:00:00${leftPad(DateTime.local().offset / 60)}`,
-    ],
+    ["hoursOfOperation.close", `17:00:00${offset}`],
   );
   const ent = await HoursOfOperation.loadX(new LoggedOutExampleViewer(), id!);
   expect(ent.dayOfWeek).toBe(DayOfWeek.Sunday);
