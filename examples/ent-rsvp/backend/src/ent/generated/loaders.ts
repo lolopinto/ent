@@ -183,7 +183,7 @@ export const eventActivityLoaderInfo = {
       dbCol: "updated_at",
       inputKey: "updatedAt",
     },
-    addressId: {
+    address_id: {
       dbCol: "address_id",
       inputKey: "addressId",
     },
@@ -313,7 +313,7 @@ export const guestLoaderInfo = {
       dbCol: "updated_at",
       inputKey: "updatedAt",
     },
-    addressId: {
+    address_id: {
       dbCol: "address_id",
       inputKey: "addressId",
     },

@@ -23,6 +23,7 @@ import {
   eventActivityLoaderInfo,
 } from "src/ent/generated/loaders";
 import {
+  Address,
   EdgeType,
   Event,
   EventActivityToAttendingQuery,
@@ -243,6 +244,14 @@ export class EventActivityBase
 
   queryInvites(): EventActivityToInvitesQuery {
     return EventActivityToInvitesQuery.query(this.viewer, this.id);
+  }
+
+  async loadAddress(): Promise<Address | null> {
+    if (!this.addressId) {
+      return null;
+    }
+
+    return loadEnt(this.viewer, this.addressId, Address.loaderOptions());
   }
 
   async loadEvent(): Promise<Event | null> {

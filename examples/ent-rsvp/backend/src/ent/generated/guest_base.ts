@@ -19,6 +19,7 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import { guestLoader, guestLoaderInfo } from "src/ent/generated/loaders";
 import {
+  Address,
   Event,
   GuestGroup,
   GuestToAttendingEventsQuery,
@@ -202,6 +203,14 @@ export class GuestBase
 
   queryGuestData(): GuestToGuestDataQuery {
     return GuestToGuestDataQuery.query(this.viewer, this.id);
+  }
+
+  async loadAddress(): Promise<Address | null> {
+    if (!this.addressId) {
+      return null;
+    }
+
+    return loadEnt(this.viewer, this.addressId, Address.loaderOptions());
   }
 
   async loadEvent(): Promise<Event | null> {

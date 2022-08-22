@@ -40,12 +40,13 @@ type Address implements Node {
   state: String!
   zipCode: String!
   apartment: String
+  locatedAt(first: Int, after: String, last: Int, before: String): AddressToLocatedAtConnection!
 }
 
 type EventActivity implements Node {
+  address: Address
   event: Event
   id: ID!
-  addressId: ID
   name: String!
   startTime: Time!
   endTime: Time
@@ -78,10 +79,10 @@ type GuestGroup implements Node {
 }
 
 type Guest implements Node {
+  address: Address
   event: Event
   guestGroup: GuestGroup
   id: ID!
-  addressId: ID
   name: String!
   emailAddress: String
   title: String
@@ -95,6 +96,18 @@ type User implements Node {
   lastName: String!
   emailAddress: String!
   events(first: Int, after: String, last: Int, before: String): UserToEventsConnection!
+}
+
+type AddressToLocatedAtEdge implements Edge {
+  node: EventActivity!
+  cursor: String!
+}
+
+type AddressToLocatedAtConnection implements Connection {
+  edges: [AddressToLocatedAtEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type EventActivityToAttendingEdge implements Edge {

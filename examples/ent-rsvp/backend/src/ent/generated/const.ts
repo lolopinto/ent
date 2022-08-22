@@ -20,6 +20,8 @@ export enum NodeType {
 }
 
 export enum EdgeType {
+  // AddressToLocatedAt is the edgeType for the address to locatedat edge.
+  AddressToLocatedAt = "d2cbbbfe-380d-404e-85b8-81eff42f2122",
   // EventActivityToAttending is the edgeType for the eventActivity to attending edge.
   EventActivityToAttending = "8025c416-c0a9-42dd-9bf4-f97f283d31a2",
   // EventActivityToDeclined is the edgeType for the eventActivity to declined edge.

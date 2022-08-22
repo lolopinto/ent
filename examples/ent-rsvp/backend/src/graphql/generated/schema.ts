@@ -84,6 +84,7 @@ import {
 } from "src/graphql/generated/mutations/user/user_create_type";
 import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
+  AddressToLocatedAtConnectionType,
   AddressType,
   EventActivityRsvpStatusType,
   EventActivityToAttendingConnectionType,
@@ -116,6 +117,7 @@ export default new GraphQLSchema({
     GuestGroupType,
     GuestType,
     UserType,
+    AddressToLocatedAtConnectionType(),
     EventActivityToAttendingConnectionType(),
     EventActivityToDeclinedConnectionType(),
     EventActivityToInvitesConnectionType(),

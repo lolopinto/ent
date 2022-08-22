@@ -34,6 +34,16 @@ import {
 export const EventActivityType = new GraphQLObjectType({
   name: "EventActivity",
   fields: (): GraphQLFieldConfigMap<EventActivity, RequestContext> => ({
+    address: {
+      type: AddressType,
+      resolve: (
+        eventActivity: EventActivity,
+        args: {},
+        context: RequestContext,
+      ) => {
+        return eventActivity.loadAddress();
+      },
+    },
     event: {
       type: EventType,
       resolve: (
@@ -46,10 +56,6 @@ export const EventActivityType = new GraphQLObjectType({
     },
     id: {
       type: new GraphQLNonNull(GraphQLID),
-      resolve: nodeIDEncoder,
-    },
-    addressId: {
-      type: GraphQLID,
       resolve: nodeIDEncoder,
     },
     name: {
