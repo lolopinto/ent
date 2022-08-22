@@ -15,10 +15,11 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Event, Guest, GuestGroup } from "src/ent/";
+import { Address, Event, Guest, GuestGroup } from "src/ent/";
 import { GuestBuilder } from "src/ent/generated/guest/actions/guest_builder";
 
 export interface GuestCreateInput {
+  addressId?: ID | null | Builder<Address, Viewer>;
   name: string;
   eventID: ID | Builder<Event, Viewer>;
   emailAddress?: string | null;

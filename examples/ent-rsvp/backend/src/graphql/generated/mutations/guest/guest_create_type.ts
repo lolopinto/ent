@@ -12,7 +12,10 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { Guest } from "src/ent/";
 import CreateGuestAction, {
   GuestCreateInput,
@@ -20,6 +23,7 @@ import CreateGuestAction, {
 import { GuestType } from "src/graphql/resolvers/";
 
 interface customGuestCreateInput extends GuestCreateInput {
+  addressId?: string;
   eventID: string;
   guestGroupID: string;
 }
@@ -31,6 +35,9 @@ interface GuestCreatePayload {
 export const GuestCreateInputType = new GraphQLInputObjectType({
   name: "GuestCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
+    addressId: {
+      type: GraphQLID,
+    },
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -77,6 +84,7 @@ export const GuestCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<GuestCreatePayload> => {
     const guest = await CreateGuestAction.create(context.getViewer(), {
+      addressId: mustDecodeNullableIDFromGQLID(input.addressId),
       name: input.name,
       eventID: mustDecodeIDFromGQLID(input.eventID),
       emailAddress: input.emailAddress,

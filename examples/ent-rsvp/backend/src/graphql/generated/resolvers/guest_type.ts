@@ -20,6 +20,7 @@ import {
   GuestToDeclinedEventsQuery,
 } from "src/ent/";
 import {
+  AddressType,
   EventType,
   GuestGroupType,
   GuestToAttendingEventsConnectionType,
@@ -29,6 +30,12 @@ import {
 export const GuestType = new GraphQLObjectType({
   name: "Guest",
   fields: (): GraphQLFieldConfigMap<Guest, RequestContext> => ({
+    address: {
+      type: AddressType,
+      resolve: (guest: Guest, args: {}, context: RequestContext) => {
+        return guest.loadAddress();
+      },
+    },
     event: {
       type: EventType,
       resolve: (guest: Guest, args: {}, context: RequestContext) => {

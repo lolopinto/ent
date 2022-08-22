@@ -6,8 +6,11 @@ import {
   BooleanType,
   EntSchema,
 } from "@snowtop/ent";
+import { WithAddressPattern } from "./patterns/with_address_pattern";
 
 const EventActivitySchema = new EntSchema({
+  patterns: [new WithAddressPattern()],
+
   fields: {
     Name: StringType(),
     eventID: UUIDType({

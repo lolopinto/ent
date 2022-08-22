@@ -26,6 +26,7 @@ import { EventActivityType } from "src/graphql/resolvers/";
 
 interface customEventActivityEditInput extends EventActivityEditInput {
   id: string;
+  addressId?: string;
   eventID?: string;
 }
 
@@ -39,6 +40,9 @@ export const EventActivityEditInputType = new GraphQLInputObjectType({
     id: {
       description: "id of EventActivity",
       type: new GraphQLNonNull(GraphQLID),
+    },
+    addressId: {
+      type: GraphQLID,
     },
     name: {
       type: GraphQLString,
@@ -98,6 +102,7 @@ export const EventActivityEditType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
       {
+        addressId: mustDecodeNullableIDFromGQLID(input.addressId),
         name: input.name,
         eventID: mustDecodeNullableIDFromGQLID(input.eventID),
         startTime: input.startTime,

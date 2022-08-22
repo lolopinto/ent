@@ -37,7 +37,7 @@ test("create activity", async () => {
         },
         location: "location",
         startTime: DateTime.fromJSDate(date).toUTC().toISO(),
-        address: {
+        addressFromOwner: {
           street: "1 main street",
           city: "San Francisco",
           state: "CA",

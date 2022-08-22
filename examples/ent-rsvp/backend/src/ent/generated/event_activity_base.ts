@@ -23,12 +23,15 @@ import {
   eventActivityLoaderInfo,
 } from "src/ent/generated/loaders";
 import {
+  Address,
   EdgeType,
   Event,
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
+  IWithAddress,
   NodeType,
+  WithAddressMixin,
 } from "src/ent/internal";
 import schema from "src/schema/event_activity_schema";
 
@@ -43,6 +46,7 @@ interface EventActivityDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
+  address_id: ID | null;
   name: string;
   event_id: ID;
   start_time: Date;
@@ -52,7 +56,10 @@ interface EventActivityDBData {
   invite_all_guests: boolean;
 }
 
-export class EventActivityBase implements Ent<Viewer> {
+export class EventActivityBase
+  extends WithAddressMixin(class {})
+  implements Ent<Viewer>, IWithAddress
+{
   readonly nodeType = NodeType.EventActivity;
   readonly id: ID;
   readonly createdAt: Date;
@@ -66,6 +73,8 @@ export class EventActivityBase implements Ent<Viewer> {
   readonly inviteAllGuests: boolean;
 
   constructor(public viewer: Viewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -235,6 +244,14 @@ export class EventActivityBase implements Ent<Viewer> {
 
   queryInvites(): EventActivityToInvitesQuery {
     return EventActivityToInvitesQuery.query(this.viewer, this.id);
+  }
+
+  async loadAddress(): Promise<Address | null> {
+    if (!this.addressId) {
+      return null;
+    }
+
+    return loadEnt(this.viewer, this.addressId, Address.loaderOptions());
   }
 
   async loadEvent(): Promise<Event | null> {

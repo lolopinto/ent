@@ -7,6 +7,7 @@ export * from "src/graphql/generated/resolvers/event_type";
 export * from "src/graphql/generated/resolvers/guest_group_type";
 export * from "src/graphql/generated/resolvers/guest_type";
 export * from "src/graphql/generated/resolvers/user_type";
+export * from "src/graphql/generated/resolvers/address/address_to_located_at_connection_type";
 export * from "src/graphql/generated/resolvers/event/event_to_event_activities_connection_type";
 export * from "src/graphql/generated/resolvers/event/event_to_guest_groups_connection_type";
 export * from "src/graphql/generated/resolvers/event/event_to_guests_connection_type";
