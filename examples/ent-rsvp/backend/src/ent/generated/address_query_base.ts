@@ -16,10 +16,9 @@ import {
   Address,
   AddressToLocatedAtEdge,
   EdgeType,
-  EventActivity,
-  EventActivityToAttendingQuery,
-  EventActivityToDeclinedQuery,
-  EventActivityToInvitesQuery,
+  Guest,
+  GuestToAttendingEventsQuery,
+  GuestToDeclinedEventsQuery,
   addressLoader,
 } from "src/ent/internal";
 
@@ -44,30 +43,24 @@ export const ownerToAddressesDataLoaderFactory = new IndexLoaderFactory(
 
 export abstract class AddressToLocatedAtQueryBase extends AssocEdgeQueryBase<
   Address,
-  EventActivity,
+  Guest,
   AddressToLocatedAtEdge,
   Viewer
 > {
-  constructor(
-    viewer: Viewer,
-    src: EdgeQuerySource<Address, EventActivity, Viewer>,
-  ) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Address, Guest, Viewer>) {
     super(
       viewer,
       src,
       addressToLocatedAtCountLoaderFactory,
       addressToLocatedAtDataLoaderFactory,
-      EventActivity.loaderOptions(),
+      Guest.loaderOptions(),
     );
   }
 
   static query<T extends AddressToLocatedAtQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: EdgeQuerySource<Address, EventActivity>,
-    ) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Address, Guest>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Address, EventActivity>,
+    src: EdgeQuerySource<Address, Guest>,
   ): T {
     return new this(viewer, src);
   }
@@ -76,16 +69,12 @@ export abstract class AddressToLocatedAtQueryBase extends AssocEdgeQueryBase<
     return Address.load(this.viewer, id);
   }
 
-  queryAttending(): EventActivityToAttendingQuery {
-    return EventActivityToAttendingQuery.query(this.viewer, this);
+  queryGuestToAttendingEvents(): GuestToAttendingEventsQuery {
+    return GuestToAttendingEventsQuery.query(this.viewer, this);
   }
 
-  queryDeclined(): EventActivityToDeclinedQuery {
-    return EventActivityToDeclinedQuery.query(this.viewer, this);
-  }
-
-  queryInvites(): EventActivityToInvitesQuery {
-    return EventActivityToInvitesQuery.query(this.viewer, this);
+  queryGuestToDeclinedEvents(): GuestToDeclinedEventsQuery {
+    return GuestToDeclinedEventsQuery.query(this.viewer, this);
   }
 }
 

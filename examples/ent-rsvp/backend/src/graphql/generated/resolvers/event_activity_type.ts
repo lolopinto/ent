@@ -181,7 +181,7 @@ export const EventActivityType = new GraphQLObjectType({
     viewerRsvpStatus: {
       type: EventActivityRsvpStatusType,
     },
-    address: {
+    addressFromOwner: {
       type: AddressType,
       resolve: async (
         eventActivity: EventActivity,

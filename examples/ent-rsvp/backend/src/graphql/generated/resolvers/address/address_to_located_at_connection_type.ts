@@ -3,16 +3,13 @@
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
 import { AddressToLocatedAtEdge } from "src/ent/";
-import { EventActivityType } from "src/graphql/resolvers/internal";
+import { GuestType } from "src/graphql/resolvers/internal";
 
 var connType: GraphQLConnectionType<GraphQLObjectType, AddressToLocatedAtEdge>;
 
 export const AddressToLocatedAtConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType(
-      "AddressToLocatedAt",
-      EventActivityType,
-    );
+    connType = new GraphQLConnectionType("AddressToLocatedAt", GuestType);
   }
   return connType;
 };

@@ -10,7 +10,7 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Address, EventActivity } from "src/ent/";
+import { Address, Guest } from "src/ent/";
 import { EdgeType, NodeType } from "src/ent/generated/const";
 import { addressLoaderInfo } from "src/ent/generated/loaders";
 import schema from "src/schema/address_schema";
@@ -126,9 +126,7 @@ export class AddressBuilder<
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addLocatedAt(
-    ...nodes: (ID | EventActivity | Builder<EventActivity, any>)[]
-  ): this {
+  addLocatedAt(...nodes: (ID | Guest | Builder<Guest, any>)[]): this {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addLocatedAtID(node);
@@ -142,19 +140,19 @@ export class AddressBuilder<
   }
 
   addLocatedAtID(
-    id: ID | Builder<EventActivity, any>,
+    id: ID | Builder<Guest, any>,
     options?: AssocEdgeInputOptions,
   ): this {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.AddressToLocatedAt,
-      NodeType.EventActivity,
+      NodeType.Guest,
       options,
     );
     return this;
   }
 
-  removeLocatedAt(...nodes: (ID | EventActivity)[]): this {
+  removeLocatedAt(...nodes: (ID | Guest)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(

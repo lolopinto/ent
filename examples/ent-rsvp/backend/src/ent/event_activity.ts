@@ -56,7 +56,7 @@ export class EventActivity extends EventActivityBase {
     return EventActivityRsvpStatus.CanRsvp;
   }
 
-  @gqlField({ name: "address", type: "Address", nullable: true })
+  @gqlField({ name: "addressFromOwner", type: "Address", nullable: true })
   async address(): Promise<Address | null> {
     return Address.loadFromOwnerID(this.viewer, this.id);
   }

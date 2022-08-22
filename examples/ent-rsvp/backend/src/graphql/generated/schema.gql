@@ -57,7 +57,7 @@ type EventActivity implements Node {
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
   viewerRsvpStatus: EventActivityRsvpStatus
-  address: Address
+  addressFromOwner: Address
 }
 
 type Event implements Node {
@@ -99,13 +99,13 @@ type User implements Node {
 }
 
 type AddressToLocatedAtEdge implements Edge {
-  node: EventActivity!
+  node: Guest!
   cursor: String!
 }
 
 type AddressToLocatedAtConnection implements Connection {
   edges: [AddressToLocatedAtEdge!]!
-  nodes: [EventActivity!]!
+  nodes: [Guest!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
