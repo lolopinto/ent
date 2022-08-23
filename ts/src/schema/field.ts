@@ -762,6 +762,10 @@ export class ListField extends BaseField {
     Object.assign(this, options);
   }
 
+  __getElemField() {
+    return this.field;
+  }
+
   validate(validator: (val: any[]) => boolean): this {
     this.validators.push(validator);
     return this;
@@ -880,7 +884,7 @@ export function StringListType(options?: StringOptions) {
   return new ListField(StringType(options), options);
 }
 
-export function IntListType(options: FieldOptions) {
+export function IntListType(options?: FieldOptions) {
   return new ListField(IntegerType(options), options);
 }
 
