@@ -820,46 +820,6 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"models.User": {
-				`package main
-	
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-	
-				func f() []models.User {
-					return []models.User{}
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "[User!]!",
-					defaultGQLFieldName: "users",
-					elemGraphql:         "User!",
-					zeroValue:           "nil",
-					goType:              "[]models.User",
-					tsTypePanics:        true,
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				nil,
-			},
-			"models.UserPointer": {
-				`package main
-
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-
-				func f() []*models.User {
-					return []*models.User{}
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "[User]!",
-					defaultGQLFieldName: "users",
-					elemGraphql:         "User",
-					zeroValue:           "nil",
-					goType:              "[]*models.User",
-					tsTypePanics:        true,
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				nil,
-			},
 		},
 	)
 }
