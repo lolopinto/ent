@@ -1,4 +1,3 @@
-import { LoggedOutViewer } from "../../core/viewer";
 import { v4 } from "uuid";
 import { DBType, Field, Schema, Type } from "../../schema";
 import {
@@ -9,10 +8,8 @@ import {
   TimestamptzType,
   JSONBType,
   JSONType,
-  JSONBTypeAsList,
   StringType,
 } from "../../schema";
-import { SimpleBuilder } from "../builder";
 
 function random(): string {
   return Math.random().toString(16).substring(2);

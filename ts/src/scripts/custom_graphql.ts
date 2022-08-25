@@ -3,6 +3,8 @@
 import glob from "glob";
 import JSON5 from "json5";
 import minimist from "minimist";
+import * as path from "path";
+import * as fs from "fs";
 import {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
@@ -16,8 +18,6 @@ import {
 } from "../graphql/graphql";
 import type { GQLCapture } from "../graphql/graphql";
 import * as readline from "readline";
-import * as path from "path";
-import * as fs from "fs";
 import { parseCustomImports, file } from "../imports";
 import { exit } from "process";
 import { Data } from "../core/base";

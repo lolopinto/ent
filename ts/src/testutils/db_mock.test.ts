@@ -7,7 +7,6 @@ import DB from "../core/db";
 import * as clause from "../core/clause";
 import { Where, EqOp } from "./parse_sql";
 import { setLogLevels } from "../core/logger";
-import { MockLogs } from "./mock_log";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

@@ -1,3 +1,5 @@
+import { validate as validateUUid } from "uuid";
+import { DateTime } from "luxon";
 import {
   IntegerType,
   FieldOptions,
@@ -18,13 +20,10 @@ import {
   IntListType,
   JSONBType,
   JSONType,
-  JSONBListType,
   JSONBTypeAsList,
   IntegerEnumType,
 } from "../../schema";
 import { getDefaultValue } from "./value";
-import { validate as validateUUid } from "uuid";
-import { DateTime } from "luxon";
 
 function strField(opts?: StringOptions) {
   return StringType(opts);

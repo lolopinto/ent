@@ -1,6 +1,6 @@
+import { camelCase } from "camel-case";
 import { BaseField, ListField } from "./field";
 import { FieldOptions, Field, Type, DBType, FieldMap } from "./schema";
-import { camelCase } from "camel-case";
 
 export interface StructOptions extends FieldOptions {
   // required.

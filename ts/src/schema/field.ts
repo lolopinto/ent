@@ -1,5 +1,7 @@
 import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
+import { types } from "util";
+import { validate } from "uuid";
 import { Ent } from "../core/base";
 import { Builder } from "../action/action";
 import DB, { Dialect } from "../core/db";
@@ -12,8 +14,6 @@ import {
   PolymorphicOptions,
   Type,
 } from "./schema";
-import { types } from "util";
-import { validate } from "uuid";
 
 export abstract class BaseField {
   name: string;
