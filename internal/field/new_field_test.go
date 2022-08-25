@@ -251,14 +251,13 @@ func TestCustomEmailType(t *testing.T) {
 
 		import "github.com/lolopinto/ent/ent"
 		import "github.com/lolopinto/ent/ent/field"
-		import "github.com/lolopinto/ent/ent/field/email"
 
 		type UserConfig struct {}
 		
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"EmailAddress": field.F(
-					email.Type(),
+					field.StringType(),
 					field.Unique(), 
 					field.DB("email"),
 				),
@@ -468,8 +467,6 @@ func TestMultipleFields(t *testing.T) {
 
 		import "github.com/lolopinto/ent/ent"
 		import "github.com/lolopinto/ent/ent/field"
-		import "github.com/lolopinto/ent/ent/field/email"
-		import "github.com/lolopinto/ent/ent/field/url"
 
 		type UserConfig struct {}
 		
@@ -480,7 +477,7 @@ func TestMultipleFields(t *testing.T) {
 					field.GraphQL("numInvitesLeft"),
 				),
 				"EmailAddress": field.F(
-					email.Type(),
+					field.StringType(),
 					field.Unique(), 
 					field.DB("email"),
 				),
@@ -494,7 +491,7 @@ func TestMultipleFields(t *testing.T) {
 					field.Nullable(),
 				),
 				"ProfileURL": field.F(
-					url.Type(),
+					field.StringType(),
 				),
 			}
 		}`,
