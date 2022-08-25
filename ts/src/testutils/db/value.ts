@@ -1,4 +1,4 @@
-import { LoggedOutViewer } from "@snowtop/ent";
+import { LoggedOutViewer } from "../../core/viewer";
 import { v4 } from "uuid";
 import { DBType, Field, Schema, Type } from "../../schema";
 import {
