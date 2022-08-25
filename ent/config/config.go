@@ -13,7 +13,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
