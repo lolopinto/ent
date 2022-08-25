@@ -452,7 +452,6 @@ func parseSchemaPlusError(t *testing.T, sources map[string]string, uniqueKeyForS
 	data := parsehelper.ParseFilesForTest(
 		t,
 		parsehelper.Sources(uniqueKeyForSources, sources),
-		parsehelper.ParseFuncs(parsehelper.ParseStruct|parsehelper.ParseActions|parsehelper.ParseEdges),
 	)
 	return schema.ParsePackage(data.Pkg)
 }
