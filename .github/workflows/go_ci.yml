@@ -85,13 +85,8 @@ jobs:
     - name: Setup ripgrep
       run: curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && sudo dpkg -i ripgrep_13.0.0_amd64.deb
       
-    - name: setup db
-      run: cd test_setup && go run .
-      env:
-          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
-
     - name: Test
-      run:  go test ./... -short 
+      run:  go test ./... 
       env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
           POSTGRES_PASSWORD: 'postgres'

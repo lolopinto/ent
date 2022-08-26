@@ -454,7 +454,6 @@ func parseSchemaPlusError(t *testing.T, sources map[string]string, uniqueKeyForS
 		parsehelper.Sources(uniqueKeyForSources, sources),
 	)
 	return schema.ParsePackage(data.Pkg)
-
 }
 
 func getEdgeFromSchema(t *testing.T, s *schema.Schema, configName, edgeName string) *edge.AssociationEdge {

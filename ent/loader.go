@@ -36,7 +36,8 @@ type processRawLoader interface {
 // works for both 1-N and 1-1 queries depending on context
 type cachedLoader interface {
 	loader
-	GetCacheKey() string
+	// nothing should implement this anymore...
+	GetCacheKeyXXXX() string
 }
 
 type validatedLoader interface {
@@ -258,7 +259,7 @@ func getCacheKeyFromLoader(l loader) string {
 	// loader supports a cache. check it out
 	cacheable, ok := l.(cachedLoader)
 	if ok {
-		return cacheable.GetCacheKey()
+		return cacheable.GetCacheKeyXXXX()
 	}
 	return ""
 }
@@ -371,13 +372,6 @@ func (l *loadNodeLoader) GetEntity() DBObject {
 	return l.entity
 }
 
-func (l *loadNodeLoader) GetCacheKey() string {
-	if l.id == "" {
-		return ""
-	}
-	return getKeyForNode(l.id, l.tableName)
-}
-
 type loadEdgesByType struct {
 	id         string
 	edgeType   EdgeType
@@ -418,10 +412,6 @@ func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
 		order:      "time DESC",
 		limit:      l.cfg.limit,
 	}, nil
-}
-
-func (l *loadEdgesByType) GetCacheKey() string {
-	return getKeyForEdge(l.id, l.edgeType) + l.cfg.getKey()
 }
 
 func (l *loadEdgesByType) GetNewInstance() DBObject {
@@ -588,7 +578,7 @@ func (l *loadNodesLoader) GetSQLBuilder() (*sqlBuilder, error) {
 }
 
 func (l *loadNodesLoader) GetCacheKeyForID(id string) string {
-	return getKeyForNode(id, l.entLoader.GetConfig().GetTableName())
+	return ""
 }
 
 func (l *loadNodesLoader) Configure() configureQueryResult {

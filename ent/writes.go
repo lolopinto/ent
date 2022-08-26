@@ -116,14 +116,6 @@ func executeOperations(exec Executor) error {
 		if err = op.PerformWrite(tx); err != nil {
 			return handErrInTransaction(tx, err)
 		}
-
-		// get any keys for this op and delete
-		cacheableOp, ok := op.(DataOperationWithKeys)
-		if cacheEnabled && ok {
-			for _, key := range cacheableOp.GetCacheKeys() {
-				deleteKey(key)
-			}
-		}
 	}
 
 	tx.Commit()

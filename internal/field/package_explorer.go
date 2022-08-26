@@ -209,10 +209,12 @@ func (explorer *packageExplorer) buildStruct(
 
 	for _, f := range s.Fields.List {
 		if len(f.Names) != 0 {
+			// spew.Dump(f.Names)
 			continue
 		}
 		// todo we need to get the imports and get full path etc
 		info, err := astparser.ParseFieldType(f)
+		// spew.Dump("info", info)
 		if err != nil {
 			util.GoSchemaKill(err)
 		}
@@ -272,7 +274,6 @@ func (explorer *packageExplorer) getResultFromPkg(
 	case astparser.TypFormat:
 		// type, get the structName from the identifier
 		structName = info.IdentName
-		break
 
 	case astparser.FunctionFormat:
 		// field.JSONType called directly. handle this case specifically
@@ -311,7 +312,6 @@ func (explorer *packageExplorer) getResultFromPkg(
 				err: fmt.Errorf("couldn't find type in package for function %s.%s", info.PkgName, info.IdentName),
 			}
 		}
-		break
 	}
 
 	s := parsedPkg.structMap[structName]

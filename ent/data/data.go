@@ -1,6 +1,7 @@
 package data
 
 import (
+	"log"
 	"sync"
 
 	"github.com/jmoiron/sqlx"
@@ -16,8 +17,11 @@ var dbMutex sync.RWMutex
 // init function called as package is initalized. Maybe make this explicit with InitDB()?
 func init() {
 	cfg := config.Get()
-	db, _ = cfg.DB.Init()
-
+	var err error
+	db, err = cfg.DB.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // GetSQLAlchemyDatabaseURIgo returns the databause uri needed by sqlalchemy to generate a schema file

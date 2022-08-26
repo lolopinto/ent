@@ -551,86 +551,6 @@ type testCase struct {
 	fn   func(ret *returnType, exp *expType)
 }
 
-func TestNamedType(t *testing.T) {
-	defaultFn := func(ret *returnType, exp *expType) {
-		namedType := ret.entType.(*enttype.NamedType)
-		exp.nullableType = enttype.NewNamedType(
-			namedType.GetActualType(),
-			true,
-			false,
-		)
-		exp.nonNullableType = enttype.NewNamedType(
-			namedType.GetActualType(),
-			false,
-			true,
-		)
-	}
-
-	testTestCases(
-		t,
-		&enttype.NamedType{},
-		map[string]testCase{
-			"context": {
-				`package main
-	
-			import "context"
-	
-			func f() context.Context {
-				return context.TODO()
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "Context!",
-					tsTypePanics:        true,
-					defaultGQLFieldName: "context",
-					contextType:         true,
-					goType:              "context.Context",
-					zeroValue:           "nil",
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
-			"error": {
-				`package main
-	
-			func f() error {
-				return nil
-			}`,
-				expType{
-					db:            "sa.Text()",
-					graphqlPanics: true,
-					tsTypePanics:  true,
-					errorType:     true,
-					goType:        "error",
-					zeroValue:     "nil",
-					castToMethod:  "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
-			"models.User": {
-				`package main
-	
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-	
-				func f() models.User {
-					// we have no reason to do this but test that default behavior does the right thing
-				return models.User{}
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "User!",
-					tsTypePanics:        true,
-					defaultGQLFieldName: "user",
-					goType:              "models.User",
-					zeroValue:           "models.User{}",
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
-		},
-	)
-}
-
 func TestPointerType(t *testing.T) {
 	defaultFn := func(ret *returnType, exp *expType) {
 		pointerType := ret.entType.(*enttype.PointerType)
@@ -649,25 +569,6 @@ func TestPointerType(t *testing.T) {
 	testTestCases(
 		t, &enttype.PointerType{},
 		map[string]testCase{
-			"models.User": {
-				`package main
-
-	import "github.com/lolopinto/ent/internal/test_schema/models"
-
-	func f() *models.User {
-	return nil
-}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "User",
-					tsTypePanics:        true,
-					defaultGQLFieldName: "user",
-					goType:              "*models.User",
-					zeroValue:           "nil",
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
 			"stringSlice": {
 				`package main
 	
@@ -697,25 +598,6 @@ func TestPointerType(t *testing.T) {
 					zeroValue:    "nil",
 					tsType:       "string | null[]",
 					castToMethod: "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
-			"models.UserPointer": {
-				`package main
-	
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-	
-				func f() *[]*models.User {
-				return nil
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "[User]",
-					tsTypePanics:        true,
-					defaultGQLFieldName: "users",
-					goType:              "*[]*models.User",
-					zeroValue:           "nil",
-					castToMethod:        "cast.UnmarshallJSON",
 				},
 				defaultFn,
 			},
@@ -934,46 +816,6 @@ func TestSliceType(t *testing.T) {
 					zeroValue:           "nil",
 					goType:              "[]*time.Time",
 					tsType:              "Date | null[]",
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				nil,
-			},
-			"models.User": {
-				`package main
-	
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-	
-				func f() []models.User {
-					return []models.User{}
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "[User!]!",
-					defaultGQLFieldName: "users",
-					elemGraphql:         "User!",
-					zeroValue:           "nil",
-					goType:              "[]models.User",
-					tsTypePanics:        true,
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				nil,
-			},
-			"models.UserPointer": {
-				`package main
-
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-
-				func f() []*models.User {
-					return []*models.User{}
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "[User]!",
-					defaultGQLFieldName: "users",
-					elemGraphql:         "User",
-					zeroValue:           "nil",
-					goType:              "[]*models.User",
-					tsTypePanics:        true,
 					castToMethod:        "cast.UnmarshallJSON",
 				},
 				nil,
