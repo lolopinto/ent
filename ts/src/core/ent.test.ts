@@ -274,9 +274,8 @@ function commonTests() {
     };
     const ctx = new TestContext();
 
-    test.only("loadEnt. no data. no context", async () => {
+    test("loadEnt. no data. no context", async () => {
       const ent = await loadEnt(noCtxV, "1", options);
-      console.debug(ent);
       expect(ent).toBeNull();
     });
 
@@ -432,7 +431,9 @@ function commonTests() {
       }
     });
 
-    test("from different key", async () => {
+    // TODO test from different key no prime
+    // we need to deal with that...
+    test.only("from different key", async () => {
       await createUser();
       const opts2: LoadEntOptions<User> = {
         ...options,
@@ -440,10 +441,13 @@ function commonTests() {
           fields,
           tableName,
           key: "foo",
-        }),
+        })
+          // @ts-ignore
+          .addToPrime(options.loaderFactory),
       };
 
       const ent = await loadEntViaKey(ctx.getViewer(), "bar", opts2);
+      console.debug(ent);
       expect(ent).not.toBeNull();
       if (!ent) {
         throw new Error("impossible");

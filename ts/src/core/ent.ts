@@ -123,7 +123,7 @@ class ErrorWrapper {
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: Viewer,
   options: LoadEntOptions<TEnt, TViewer>,
-): DataLoader<ID, TEnt | Error> {
+): DataLoader<ID, TEnt | ErrorWrapper> {
   // share the cache across loaders even if we create a new instance
   const loaderOptions: DataLoader.Options<any, any> = {};
 
@@ -132,7 +132,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       return [];
     }
 
-    const result: (TEnt | Error)[] = [];
+    const result: (TEnt | ErrorWrapper)[] = [];
 
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
@@ -140,22 +140,30 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       const row = await options.loaderFactory
         .createLoader(viewer.context)
         .load(id);
+      console.debug("fetccccch", id, row);
 
       if (row === null) {
-        result[i] = new Error(`couldn't find row for value ${id}`);
+        result[i] = new ErrorWrapper(
+          new Error(`couldn't find row for value ${id}`),
+        );
         continue;
       }
 
-      result[i] = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+      const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+      if (r instanceof Error) {
+        result[i] = new ErrorWrapper(r);
+      } else {
+        result[i] = r;
+      }
     }
     return result;
   }, loaderOptions);
 }
 
 class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
-  implements LoaderWithLoadMany<ID, TEnt | Error>
+  implements LoaderWithLoadMany<ID, TEnt | ErrorWrapper>
 {
-  private loader: DataLoader<ID, TEnt | Error>;
+  private loader: DataLoader<ID, TEnt | ErrorWrapper>;
 
   constructor(
     private viewer: TViewer,
@@ -164,15 +172,18 @@ class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
     this.loader = createEntLoader(this.viewer, this.options);
   }
 
-  async load(id: ID) {
+  async load(id: ID): Promise<TEnt | ErrorWrapper> {
     return this.loader.load(id);
   }
 
-  async loadMany(ids: ID[]) {
+  // this includes an error in the type lol.
+  // @ts-ignore TODO fix
+  async loadMany(ids: ID[]): Promise<Array<TEnt | ErrorWrapper>> {
+    // @ts-ignore TODO fix
     return this.loader.loadMany(ids);
   }
 
-  prime(id: ID, ent: TEnt | Error) {
+  prime(id: ID, ent: TEnt | ErrorWrapper) {
     this.loader.prime(id, ent);
   }
 
@@ -219,7 +230,7 @@ export async function loadEnt<
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt | null> {
   const r = await getEntLoader(viewer, options).load(id);
-  return r instanceof Error ? null : r;
+  return r instanceof ErrorWrapper ? null : r;
 }
 
 // this is the same implementation-wise (right now) as loadEnt. it's just clearer that it's not loaded via ID.
@@ -235,6 +246,7 @@ export async function loadEntViaKey<
   const row = await options.loaderFactory
     .createLoader(viewer.context)
     .load(key);
+  console.debug("row", row);
   if (!row) {
     return null;
   }
@@ -243,7 +255,8 @@ export async function loadEntViaKey<
   // TODO every row.id needs to be audited...
   // https://github.com/lolopinto/ent/issues/1064
   const r = await getEntLoader(viewer, options).load(row.id);
-  return r instanceof Error ? null : r;
+  console.debug(r);
+  return r instanceof ErrorWrapper ? null : r;
 }
 
 export async function loadEntX<
@@ -255,8 +268,8 @@ export async function loadEntX<
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt> {
   const r = await getEntLoader(viewer, options).load(id);
-  if (r instanceof Error) {
-    throw r;
+  if (r instanceof ErrorWrapper) {
+    throw r.error;
   }
   return r;
 }
@@ -282,8 +295,8 @@ export async function loadEntXViaKey<
   // TODO every row.id needs to be audited...
   // https://github.com/lolopinto/ent/issues/1064
   const r = await getEntLoader(viewer, options).load(row.id);
-  if (r instanceof Error) {
-    throw r;
+  if (r instanceof ErrorWrapper) {
+    throw r.error;
   }
   return r;
 }
@@ -351,7 +364,7 @@ export async function loadEnts<
 
   const ret = await getEntLoader(viewer, options).loadMany(ids);
   for (const ent of ret) {
-    if (ent instanceof Error) {
+    if (ent instanceof ErrorWrapper) {
       continue;
     }
     m.set(ent.id, ent);
@@ -429,7 +442,7 @@ export async function loadCustomEnts<
 
       // if not prime we're doing a lot of work. todo test the not prime case???
       const ent = await entLoader.load(row.id);
-      if (ent instanceof Error) {
+      if (ent instanceof ErrorWrapper) {
         return;
       }
       result[idx] = ent;
