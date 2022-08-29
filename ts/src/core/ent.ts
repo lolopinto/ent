@@ -47,7 +47,7 @@ import {
 
 // TODO kill this and createDataLoader
 class cacheMap {
-  private m = new Map();
+  protected m = new Map();
   constructor(private options: DataOptions) {}
   get(key: string) {
     const ret = this.m.get(key);
@@ -55,6 +55,37 @@ class cacheMap {
       log("cache", {
         "dataloader-cache-hit": key,
         "tableName": this.options.tableName,
+      });
+    }
+    return ret;
+  }
+
+  set(key: string, value: any) {
+    return this.m.set(key, value);
+  }
+
+  delete(key: string) {
+    return this.m.delete(key);
+  }
+
+  clear() {
+    return this.m.clear();
+  }
+}
+
+class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
+  private m = new Map();
+  constructor(
+    private viewer: TViewer,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {}
+
+  get(id: ID) {
+    const ret = this.m.get(id);
+    if (ret && logEnabled("cache")) {
+      const key = getEntKey(this.viewer, id, this.options);
+      log("cache", {
+        "ent-cache-hit": key,
       });
     }
     return ret;
@@ -123,9 +154,11 @@ class ErrorWrapper {
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: Viewer,
   options: LoadEntOptions<TEnt, TViewer>,
+  map: entCacheMap<TViewer, TEnt>,
 ): DataLoader<ID, TEnt | ErrorWrapper> {
   // share the cache across loaders even if we create a new instance
   const loaderOptions: DataLoader.Options<any, any> = {};
+  loaderOptions.cacheMap = map;
 
   return new DataLoader(async (ids: ID[]) => {
     if (!ids.length) {
@@ -134,26 +167,39 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
 
     const result: (TEnt | ErrorWrapper)[] = [];
 
+    const loader = options.loaderFactory.createLoader(viewer.context);
+    // TODO why is this null sometimes?
+    const rows = await loader.loadMany(ids);
+    let m = new Map<ID, number>();
     for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
+      // store the index....
+      m.set(ids[i], i);
+    }
 
-      const row = await options.loaderFactory
-        .createLoader(viewer.context)
-        .load(id);
-
-      if (row === null) {
-        result[i] = new ErrorWrapper(
-          new Error(`couldn't find row for value ${id}`),
+    for (const row of rows) {
+      const id = row!.id;
+      const idx = m.get(id);
+      if (idx === undefined) {
+        throw new Error(
+          `malformed query. got ${id} back but didn't query for it`,
         );
-        continue;
       }
 
-      const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+      // TODO...
+      const r = await applyPrivacyPolicyForRowImpl(viewer, options, row!);
       if (r instanceof Error) {
-        result[i] = new ErrorWrapper(r);
+        result[idx] = new ErrorWrapper(r);
       } else {
-        result[i] = r;
+        result[idx] = r;
       }
+      m.delete(id);
+    }
+
+    // TODO test partial results and what happens when this isn't seen
+    for (const [id, idx] of m) {
+      result[idx] = new ErrorWrapper(
+        new Error(`couldn't find row for value ${id}`),
+      );
     }
     return result;
   }, loaderOptions);
@@ -163,12 +209,18 @@ class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
   implements LoaderWithLoadMany<ID, TEnt | ErrorWrapper>
 {
   private loader: DataLoader<ID, TEnt | ErrorWrapper>;
+  private map: entCacheMap<TViewer, TEnt>;
 
   constructor(
     private viewer: TViewer,
     private options: LoadEntOptions<TEnt, TViewer>,
   ) {
-    this.loader = createEntLoader(this.viewer, this.options);
+    this.map = new entCacheMap(viewer, options);
+    this.loader = createEntLoader(this.viewer, this.options, this.map);
+  }
+
+  getMap() {
+    return this.map;
   }
 
   async load(id: ID): Promise<TEnt | ErrorWrapper> {
@@ -218,7 +270,7 @@ export function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ) {
-  return `${viewer.instanceKey()}:::${options.loaderFactory.name}:::${id}`;
+  return `${viewer.instanceKey()}:${options.loaderFactory.name}:${id}`;
 }
 
 export async function loadEnt<
@@ -236,13 +288,33 @@ export async function loadEnt<
 async function applyPrivacyPolicyForRowAndStoreInEntLoader<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
->(viewer: TViewer, row: Data, options: LoadEntOptions<TEnt, TViewer>) {
+>(
+  viewer: TViewer,
+  row: Data,
+  options: LoadEntOptions<TEnt, TViewer>,
+  // can pass in loader when calling this for multi-id cases...
+  loader?: EntLoader<TViewer, TEnt>,
+) {
+  if (!loader) {
+    loader = getEntLoader(viewer, options);
+  }
+  // TODO we should check the ent loader cache...
+  // we need a custom data-loader for this too so that it's all done correctly if there's a complicated fetch...
+  const id = row.id;
+
+  // TODO....
+  const result = loader.getMap().get(id);
+  if (result !== undefined) {
+    console.debug("result", result);
+    return result;
+  } else {
+    // console.debug("undefined", id);
+  }
+
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-  const loader = getEntLoader(viewer, options);
   // this should have primed the other cache in most cases so there isn't a database query
   // TODO every row.id needs to be audited...
   // https://github.com/lolopinto/ent/issues/1064
-  const id = row.id;
   if (r instanceof Error) {
     loader.prime(id, new ErrorWrapper(r));
     return new ErrorWrapper(r);
@@ -455,15 +527,17 @@ export async function loadCustomEnts<
 
   await Promise.all(
     rows.map(async (row, idx) => {
-      // TODO what if key is different
-      // TODO https://github.com/lolopinto/ent/issues/1064
-
+      const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+        viewer,
+        row,
+        options,
+        entLoader,
+      );
       // if not prime we're doing a lot of work. todo test the not prime case???
-      const ent = await entLoader.load(row.id);
-      if (ent instanceof ErrorWrapper) {
+      if (r instanceof ErrorWrapper) {
         return;
       }
-      result[idx] = ent;
+      result[idx] = r;
     }),
   );
   // filter ents that aren't visible because of privacy

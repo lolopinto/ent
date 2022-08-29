@@ -432,9 +432,9 @@ function commonTests() {
       }
     });
 
-    // TODO the queries in these two are the same. they shouldn't be...
+    // TODO audit the queries for these two...
     test("from different key", async () => {
-      // setLogLevels("query");
+      // setLogLevels(["query", "debug"]);
       await createUser();
       const opts2: LoadEntOptions<User> = {
         ...options,
