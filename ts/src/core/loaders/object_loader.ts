@@ -126,12 +126,10 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       this.memoizedInitPrime();
       // prime the result if we got primable loaders
       const result = await this.loader.load(key);
-      console.debug("result", key, result, this.primedLoaders);
       if (result && this.primedLoaders) {
         for (const [key, loader] of this.primedLoaders) {
           const value = result[key];
           if (value !== undefined) {
-            console.debug("primeeee", key, result);
             loader.prime(result);
           }
         }
@@ -157,7 +155,6 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       clause: cls,
       context: this.context,
     };
-    console.debug("no context but has prime?", this.toPrime?.length);
     return await loadRow(rowOptions);
   }
 

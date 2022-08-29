@@ -33,6 +33,7 @@ import {
   assoc_edge_config_table,
   assoc_edge_table,
 } from "../testutils/db/temp_db";
+import { setLogLevels } from "./logger";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -431,9 +432,9 @@ function commonTests() {
       }
     });
 
-    // TODO test from different key no prime
-    // we need to deal with that...
-    test.only("from different key", async () => {
+    // TODO the queries in these two are the same. they shouldn't be...
+    test("from different key", async () => {
+      // setLogLevels("query");
       await createUser();
       const opts2: LoadEntOptions<User> = {
         ...options,
@@ -447,7 +448,29 @@ function commonTests() {
       };
 
       const ent = await loadEntViaKey(ctx.getViewer(), "bar", opts2);
-      console.debug(ent);
+      expect(ent).not.toBeNull();
+      if (!ent) {
+        throw new Error("impossible");
+      }
+      expect(ent.data.foo).toBe("bar");
+
+      expect(ent.id).not.toBe("bar");
+      expect(validatev4(ent.id.toString())).toBe(true);
+    });
+
+    test("from different key. no prime", async () => {
+      // setLogLevels("query");
+      await createUser();
+      const opts2: LoadEntOptions<User> = {
+        ...options,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "foo",
+        }),
+      };
+
+      const ent = await loadEntViaKey(ctx.getViewer(), "bar", opts2);
       expect(ent).not.toBeNull();
       if (!ent) {
         throw new Error("impossible");

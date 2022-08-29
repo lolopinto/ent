@@ -140,7 +140,6 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       const row = await options.loaderFactory
         .createLoader(viewer.context)
         .load(id);
-      console.debug("fetccccch", id, row);
 
       if (row === null) {
         result[i] = new ErrorWrapper(
@@ -199,7 +198,7 @@ class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
 function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
-) {
+): EntLoader<TViewer, TEnt> {
   if (!viewer.context?.cache) {
     return new EntLoader(viewer, options);
   }
@@ -207,6 +206,7 @@ function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
     options.loaderFactory.name
   }`;
 
+  // @ts-ignore
   return viewer.context.cache.getLoaderWithLoadMany(
     name,
     () => new EntLoader(viewer, options),
@@ -233,6 +233,25 @@ export async function loadEnt<
   return r instanceof ErrorWrapper ? null : r;
 }
 
+async function applyPrivacyPolicyForRowAndStoreInEntLoader<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(viewer: TViewer, row: Data, options: LoadEntOptions<TEnt, TViewer>) {
+  const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+  const loader = getEntLoader(viewer, options);
+  // this should have primed the other cache in most cases so there isn't a database query
+  // TODO every row.id needs to be audited...
+  // https://github.com/lolopinto/ent/issues/1064
+  const id = row.id;
+  if (r instanceof Error) {
+    loader.prime(id, new ErrorWrapper(r));
+    return new ErrorWrapper(r);
+  } else {
+    loader.prime(id, r);
+    return r;
+  }
+}
+
 // this is the same implementation-wise (right now) as loadEnt. it's just clearer that it's not loaded via ID.
 // used for load via email address etc
 export async function loadEntViaKey<
@@ -246,16 +265,15 @@ export async function loadEntViaKey<
   const row = await options.loaderFactory
     .createLoader(viewer.context)
     .load(key);
-  console.debug("row", row);
   if (!row) {
     return null;
   }
 
-  // this should have primed the other cache so there isn't a database query
-  // TODO every row.id needs to be audited...
-  // https://github.com/lolopinto/ent/issues/1064
-  const r = await getEntLoader(viewer, options).load(row.id);
-  console.debug(r);
+  const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+    viewer,
+    row,
+    options,
+  );
   return r instanceof ErrorWrapper ? null : r;
 }
 
