@@ -274,8 +274,9 @@ function commonTests() {
     };
     const ctx = new TestContext();
 
-    test("loadEnt. no data. no context", async () => {
+    test.only("loadEnt. no data. no context", async () => {
       const ent = await loadEnt(noCtxV, "1", options);
+      console.debug(ent);
       expect(ent).toBeNull();
     });
 

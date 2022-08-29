@@ -16,21 +16,22 @@ export interface Loader<T, V> {
   clearAll(): any;
 }
 
-interface LoaderWithLoadMany<T, V> extends Loader<T, V> {
-  loadMany(keys: T[]): Promise<(V | null)[]>;
+export interface LoaderWithLoadMany<T, V> extends Loader<T, V> {
+  // TODO fix Loader API above...
+  loadMany(keys: T[]): Promise<V[]>;
 }
 
 // A LoaderFactory is used to create a Loader
 // We cache data on a per-request basis therefore for each new request, createLoader
 // is called to get a new instance of Loader which will then be used to load data as needed
-export interface LoaderFactory<T, V> {
+export interface LoaderFactory<K, V> {
   name: string; // used to have a per-request cache of each loader type
 
   // factory method.
   // when context is passed, there's potentially opportunities to batch data in the same
   // request
   // when no context is passed, no batching possible (except with explicit call to loadMany API)
-  createLoader(context?: Context): Loader<T, V>;
+  createLoader(context?: Context): Loader<K, V>;
 }
 
 interface LoaderFactoryWithLoaderMany<T, V> extends LoaderFactory<T, V> {
@@ -60,6 +61,10 @@ export interface PrimableLoader<T, V> extends Loader<T, V> {
 
 interface cache {
   getLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V>;
+  getLoaderWithLoadMany<T, V>(
+    name: string,
+    create: () => LoaderWithLoadMany<T, V>,
+  ): LoaderWithLoadMany<T, V>;
   getCachedRows(options: queryOptions): Data[] | null;
   getCachedRow(options: queryOptions): Data | null;
   primeCache(options: queryOptions, rows: Data[]): void;
@@ -67,6 +72,7 @@ interface cache {
   clearCache(): void;
   getEntCache(): Map<string, Ent | Error | null>;
 }
+
 interface queryOptions {
   fields: string[];
   tableName: string;
