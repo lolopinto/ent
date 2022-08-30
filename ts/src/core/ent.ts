@@ -47,7 +47,7 @@ import {
 
 // TODO kill this and createDataLoader
 class cacheMap {
-  protected m = new Map();
+  private m = new Map();
   constructor(private options: DataOptions) {}
   get(key: string) {
     const ret = this.m.get(key);
@@ -75,14 +75,17 @@ class cacheMap {
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   private m = new Map();
+  private logEnabled = false;
   constructor(
     private viewer: TViewer,
     private options: LoadEntOptions<TEnt, TViewer>,
-  ) {}
+  ) {
+    this.logEnabled = logEnabled("cache");
+  }
 
   get(id: ID) {
     const ret = this.m.get(id);
-    if (ret && logEnabled("cache")) {
+    if (this.logEnabled && ret) {
       const key = getEntKey(this.viewer, id, this.options);
       log("cache", {
         "ent-cache-hit": key,
@@ -145,12 +148,6 @@ class ErrorWrapper {
   constructor(public error: Error) {}
 }
 
-// we want one per ent and we pass in the viewer at run-time to query?
-// how to get the viewer passed in at run time since we may not be able to recreate it...
-
-// can't do it this way, EntLoaderFactory has to know about Viewer | Options and use that to determine
-// if we're using this loader/map or not...
-// viewer|options combo...
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: Viewer,
   options: LoadEntOptions<TEnt, TViewer>,
@@ -252,11 +249,10 @@ function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
     options.loaderFactory.name
   }`;
 
-  // @ts-ignore
   return viewer.context.cache.getLoaderWithLoadMany(
     name,
     () => new EntLoader(viewer, options),
-  );
+  ) as EntLoader<TViewer, TEnt>;
 }
 
 export function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
@@ -297,14 +293,13 @@ async function applyPrivacyPolicyForRowAndStoreInEntLoader<
   const id = row.id;
 
   // we should check the ent loader cache to see if this is already there
-  // TODO hmm... we need a custom data-loader for this too so that it's all done correctly if there's a complicated fetch...
+  // TODO hmm... we eventually need a custom data-loader for this too so that it's all done correctly if there's a complicated fetch deep down in graphql
   const result = loader.getMap().get(id);
   if (result !== undefined) {
     return result;
   }
 
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-  // this should have primed the other cache in most cases so there isn't a database query
   if (r instanceof Error) {
     loader.prime(id, new ErrorWrapper(r));
     return new ErrorWrapper(r);

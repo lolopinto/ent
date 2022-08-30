@@ -17,7 +17,6 @@ export interface Loader<T, V> {
 }
 
 export interface LoaderWithLoadMany<T, V> extends Loader<T, V> {
-  // TODO fix Loader API above...
   loadMany(keys: T[]): Promise<V[]>;
 }
 
