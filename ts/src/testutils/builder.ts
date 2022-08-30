@@ -169,7 +169,8 @@ export function getFieldInfo(value: BuilderSchema<Ent>) {
   for (const [k, f] of fields) {
     ret[k] = {
       dbCol: getStorageKey(f, k),
-      inputKey: camelCase(k),
+      // in tests (anything using SimpleBuilder), make it be the same as the fieldName
+      inputKey: k,
     };
   }
   return ret;

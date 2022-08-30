@@ -201,6 +201,10 @@ export class Orchestrator<
     this.memoizedGetFields = memoize(this.getFieldsInfo.bind(this));
   }
 
+  __getOptions() {
+    return this.options;
+  }
+
   private addEdge(edge: edgeInputData, op: WriteOperation) {
     this.edgeSet.add(edge.edgeType);
 
@@ -667,6 +671,7 @@ export class Orchestrator<
   private getInputKey(k: string) {
     return this.options.fieldInfo[k].inputKey;
   }
+
   private getStorageKey(k: string) {
     return this.options.fieldInfo[k].dbCol;
   }
@@ -885,13 +890,7 @@ export class Orchestrator<
       let value = editedFields.get(fieldName);
 
       if (field.validateWithFullData) {
-        // if (
-        //   (value === null ||
-        //     (value === undefined && op === WriteOperation.Insert)) &&
-        //   field.validateNullable
-        // ) {
         needsFullDataChecks.push(fieldName);
-        // continue;
       }
 
       if (value === undefined && op === WriteOperation.Insert) {
