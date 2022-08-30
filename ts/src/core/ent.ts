@@ -179,7 +179,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       if (row === null) {
         continue;
       }
-      const id = row.id;
+      const id = row[options.loaderFactory.options?.key || "id"];
       const idx = m.get(id);
       if (idx === undefined) {
         throw new Error(
