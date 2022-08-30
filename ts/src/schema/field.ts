@@ -746,11 +746,15 @@ export function IntegerEnumType(options: IntegerEnumOptions): IntegerEnumField {
   return Object.assign(result, options);
 }
 
+interface ListOptions extends FieldOptions {
+  disableJSONStringify?: boolean;
+}
+
 export class ListField extends BaseField {
   type: Type;
   private validators: { (val: any[]): boolean }[] = [];
 
-  constructor(private field: Field, options?: FieldOptions) {
+  constructor(private field: Field, private options?: ListOptions) {
     super();
     if (field.type.dbType === DBType.List) {
       throw new Error(`nested lists not currently supported`);
@@ -797,11 +801,12 @@ export class ListField extends BaseField {
   }
 
   private postgresVal(val: any, jsonType?: boolean) {
-    if (!jsonType) {
+    if (!jsonType && val === "") {
       // support empty strings in list
-      if (val === "") {
-        val = '"' + val + '"';
-      }
+      val = '"' + val + '"';
+      return val;
+    }
+    if (this.options?.disableJSONStringify) {
       return val;
     }
     return JSON.stringify(val);
@@ -948,5 +953,8 @@ export function IntegerEnumListType(options: IntegerEnumOptions) {
 }
 
 export function UUIDListType(options?: FieldOptions) {
-  return new ListField(UUIDType(options), options);
+  return new ListField(UUIDType(options), {
+    ...options,
+    disableJSONStringify: true,
+  });
 }
