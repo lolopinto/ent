@@ -168,7 +168,6 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
     const result: (TEnt | ErrorWrapper)[] = [];
 
     const loader = options.loaderFactory.createLoader(viewer.context);
-    // TODO why is this null sometimes?
     const rows = await loader.loadMany(ids);
     let m = new Map<ID, number>();
     for (let i = 0; i < ids.length; i++) {
@@ -177,7 +176,10 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
     }
 
     for (const row of rows) {
-      const id = row!.id;
+      if (row === null) {
+        continue;
+      }
+      const id = row.id;
       const idx = m.get(id);
       if (idx === undefined) {
         throw new Error(
@@ -185,8 +187,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
         );
       }
 
-      // TODO...
-      const r = await applyPrivacyPolicyForRowImpl(viewer, options, row!);
+      const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
       if (r instanceof Error) {
         result[idx] = new ErrorWrapper(r);
       } else {
@@ -298,23 +299,19 @@ async function applyPrivacyPolicyForRowAndStoreInEntLoader<
   if (!loader) {
     loader = getEntLoader(viewer, options);
   }
-  // TODO we should check the ent loader cache...
-  // we need a custom data-loader for this too so that it's all done correctly if there's a complicated fetch...
+  // TODO every row.id needs to be audited...
+  // https://github.com/lolopinto/ent/issues/1064
   const id = row.id;
 
-  // TODO....
+  // we should check the ent loader cache to see if this is already there
+  // TODO hmm... we need a custom data-loader for this too so that it's all done correctly if there's a complicated fetch...
   const result = loader.getMap().get(id);
   if (result !== undefined) {
-    console.debug("result", result);
     return result;
-  } else {
-    // console.debug("undefined", id);
   }
 
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
   // this should have primed the other cache in most cases so there isn't a database query
-  // TODO every row.id needs to be audited...
-  // https://github.com/lolopinto/ent/issues/1064
   if (r instanceof Error) {
     loader.prime(id, new ErrorWrapper(r));
     return new ErrorWrapper(r);
