@@ -47,7 +47,6 @@ export class ContextCache {
   // we have a per-table map to make it easier to purge and have less things to compare with
   private itemMap: Map<string, Map<string, Data>> = new Map();
   private listMap: Map<string, Map<string, Data[]>> = new Map();
-  private entCache: Map<string, Ent<any> | null | Error> = new Map();
 
   // tableName is ignored bcos already indexed on that
   // maybe we just want to store sql queries???
@@ -115,14 +114,15 @@ export class ContextCache {
       // but may have some benefits by explicitily doing so?
       loader.clearAll();
     }
+    for (const [_key, loader] of this.loaderWithLoadMany) {
+      // may not need this since we're clearing the loaders themselves...
+      // but may have some benefits by explicitily doing so?
+      loader.clearAll();
+    }
     this.loaders.clear();
+    this.loaderWithLoadMany.clear();
     this.itemMap.clear();
     this.listMap.clear();
-    this.entCache.clear();
-  }
-
-  getEntCache() {
-    return this.entCache;
   }
 }
 
