@@ -20,7 +20,7 @@ async function createAddress() {
   return address;
 }
 
-test("create address", async () => {
+test.only("create address", async () => {
   await createAddress();
 });
 

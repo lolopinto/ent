@@ -93,6 +93,10 @@ export class UUIDField extends BaseField implements Field {
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
             nullable: this.options?.nullable,
+            // there'll be getInput weirdness in generated code...
+            // TODO more #510 ish
+            // need to fix because if value is always undefined for id to validate
+            // we'll never actually be able to throw when this is an issue...
             parentFieldToValidate: getStorageKey(this, fieldName),
           }),
         };
