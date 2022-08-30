@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { v1 } from "uuid";
+import { v1, validate } from "uuid";
 import { UUIDType, UUIDListType, StringType } from "./field";
 import { DBType, PolymorphicOptions, Type, FieldOptions } from "./schema";
 import {
@@ -463,7 +463,7 @@ test("invalid uuid", async () => {
   }
 });
 
-test("builder vlid uuid", async () => {
+test("builder valid uuid", async () => {
   const UserSchema = getBuilderSchemaFromFields(
     {
       Name: StringType(),
@@ -495,4 +495,201 @@ test("builder vlid uuid", async () => {
   ];
 
   await accountAction.saveX();
+});
+
+describe("saving polymorphic", () => {
+  test("polymorphic true, nullable true, type set to undefined", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: true,
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([["foo_id", v1()]]),
+    );
+    try {
+      await action.saveX();
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        `field foo_type set to undefined when it can't be nullable`,
+      );
+    }
+  });
+
+  test("polymorphic true, nullable true, type set to null", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: true,
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([
+        ["foo_id", v1()],
+        ["foo_type", null],
+      ]),
+    );
+    try {
+      await action.saveX();
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        `field foo_type set to null when it can't be nullable`,
+      );
+    }
+  });
+
+  test("polymorphic true, nullable true, type valid", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: true,
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([
+        ["foo_id", v1()],
+        ["foo_type", "hello"],
+      ]),
+    );
+    const ent = await action.saveX();
+    expect(validate(ent.data.foo_id)).toBe(true);
+    expect(ent.data.foo_type).toBe("hello");
+  });
+
+  test("polymorphic object, nullable true, type set to undefined", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: {
+            types: ["bar", "baz"],
+          },
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([["foo_id", v1()]]),
+    );
+    try {
+      await action.saveX();
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        `field foo_type set to undefined when it can't be nullable`,
+      );
+    }
+  });
+
+  test("polymorphic object, nullable true, type set to null", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: {
+            types: ["bar", "baz"],
+          },
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([
+        ["foo_id", v1()],
+        ["foo_type", null],
+      ]),
+    );
+    try {
+      await action.saveX();
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        `field foo_type set to null when it can't be nullable`,
+      );
+    }
+  });
+
+  test("polymorphic object, nullable true, type valid", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: {
+            types: ["bar", "baz"],
+          },
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([
+        ["foo_id", v1()],
+        ["foo_type", "bar"],
+      ]),
+    );
+    const ent = await action.saveX();
+    expect(validate(ent.data.foo_id)).toBe(true);
+    expect(ent.data.foo_type).toBe("bar");
+  });
+
+  test("polymorphic object, nullable true, type valid", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: {
+            types: ["bar", "baz"],
+          },
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([
+        ["foo_id", v1()],
+        ["foo_type", "hello"],
+      ]),
+    );
+    try {
+      await action.saveX();
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        "invalid field foo_type with value hello",
+      );
+    }
+  });
 });

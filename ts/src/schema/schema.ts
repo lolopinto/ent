@@ -469,8 +469,14 @@ export interface Field extends FieldOptions {
   type: Type;
 
   // optional valid and format to validate and format before storing
+  // editedFields, data added to valid is useful for start_time, end_time comparisons too
   valid?(val: any): Promise<boolean> | boolean;
+
+  // validate if a field can be nullable based on other fields
+  // used for polymorphic and maybe eventually other fields
+  validateNullable?(data: Data): boolean | Promise<boolean>;
   // optional second param which if passed and true indicates that this is a nested object
+
   // and should only format children and not format lists or objects
   format?(val: any, nested?: boolean): any;
 

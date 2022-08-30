@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
 import { types } from "util";
 import { validate } from "uuid";
-import { Ent } from "../core/base";
+import { Data, Ent } from "../core/base";
 import { Builder } from "../action/action";
 import DB, { Dialect } from "../core/db";
 import {
@@ -11,6 +11,7 @@ import {
   FieldMap,
   FieldOptions,
   ForeignKey,
+  getStorageKey,
   PolymorphicOptions,
   Type,
 } from "./schema";
@@ -86,20 +87,21 @@ export class UUIDField extends BaseField implements Field {
       if (typeof polymorphic === "object" && polymorphic.types) {
         // an enum with types validated here
         return {
-          [name]: EnumType({
+          [name]: PolymorphicStringEnumType({
             values: polymorphic.types,
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
             nullable: this.options?.nullable,
+            parentFieldToValidate: getStorageKey(this, fieldName),
           }),
         };
       } else {
-        // just a string field...
         return {
-          [name]: StringType({
+          [name]: PolymorphicStringType({
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
             nullable: this.options?.nullable,
+            parentFieldToValidate: getStorageKey(this, fieldName),
           }),
         };
       }
@@ -370,6 +372,26 @@ export class StringField extends BaseField implements Field {
   }
 }
 
+interface PolymorphicStringOptions extends StringOptions {
+  parentFieldToValidate: string;
+}
+
+class PolymorphicStringField extends StringField {
+  constructor(private opts: PolymorphicStringOptions) {
+    super(opts);
+  }
+
+  validateNullable(data: Data): boolean {
+    const v = data[this.opts.parentFieldToValidate];
+    return v === null;
+  }
+}
+
+function PolymorphicStringType(opts: PolymorphicStringOptions) {
+  let result = new PolymorphicStringField(opts);
+  return Object.assign(result, opts);
+}
+
 export function StringType(options?: StringOptions): StringField {
   let result = new StringField(options);
   const options2 = { ...options };
@@ -548,8 +570,6 @@ export interface EnumOptions extends FieldOptions {
   createEnumType?: boolean;
 }
 
-export interface StringEnumOptions extends EnumOptions {}
-
 /**
  * @deprecated Use StringEnumField
  */
@@ -558,7 +578,7 @@ export class EnumField extends BaseField implements Field {
   private values?: string[];
   private map?: StringEnumMap;
 
-  constructor(options: StringEnumOptions) {
+  constructor(private options: EnumOptions) {
     super();
     this.type = {
       // if createEnumType boolean, we create postgres enum otherwise we use a string for it
@@ -673,6 +693,30 @@ export class EnumField extends BaseField implements Field {
 }
 
 export class StringEnumField extends EnumField {}
+
+export interface PolymorphicStringEnumOptions extends EnumOptions {
+  parentFieldToValidate: string;
+}
+
+class PolymorphicStringEnumField extends StringEnumField {
+  constructor(private opts: PolymorphicStringEnumOptions) {
+    super(opts);
+  }
+
+  validateNullable(data: Data): boolean {
+    const v = data[this.opts.parentFieldToValidate];
+    return v === null;
+  }
+}
+
+function PolymorphicStringEnumType(
+  options: PolymorphicStringEnumOptions,
+): EnumField {
+  let result = new PolymorphicStringEnumField(options);
+  return Object.assign(result, options);
+}
+
+export interface StringEnumOptions extends EnumOptions {}
 
 export function EnumType(options: StringEnumOptions): EnumField {
   let result = new StringEnumField(options);

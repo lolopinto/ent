@@ -880,8 +880,13 @@ export class Orchestrator<
     let data = {};
     let logValues = {};
 
+    let defaultNullableChecks: string[] = [];
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
+
+      if ((value === null || value === undefined) && field.validateNullable) {
+        defaultNullableChecks.push(fieldName);
+      }
 
       if (value === undefined && op === WriteOperation.Insert) {
         // null allowed
@@ -899,6 +904,28 @@ export class Orchestrator<
       if (value !== undefined) {
         data[dbKey] = value;
         logValues[dbKey] = field.logValue(value);
+      }
+    }
+
+    for (const fieldName of defaultNullableChecks) {
+      const field = schemaFields.get(fieldName)!;
+      const v = await field.validateNullable!(data);
+      if (!v) {
+        let value = editedFields.get(fieldName);
+
+        if (value === undefined) {
+          errors.push(
+            new Error(
+              `field ${fieldName} set to undefined when it can't be nullable`,
+            ),
+          );
+        } else {
+          errors.push(
+            new Error(
+              `field ${fieldName} set to null when it can't be nullable`,
+            ),
+          );
+        }
       }
     }
 

@@ -491,6 +491,10 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
           if (!this.{{$edge.TSFieldName}}) {
             return null;
           }
+          if (!this.{{$edge.Polymorphic.NodeTypeField}}) {
+            console.error(`nullable {{$edge.Polymorphic.NodeTypeField}} when {{$edge.TSFieldName}} isn't null`);
+            return null;
+          }
         {{end -}}
         return {{useImport "loadEntByType"}}(
           this.viewer,
