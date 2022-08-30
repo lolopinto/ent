@@ -177,8 +177,6 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
         result[idx] = row;
         continue;
       } else if (!row) {
-        // TODO test partial results and what happens when this isn't seen
-
         result[idx] = new ErrorWrapper(
           new Error(`couldn't find row for value ${ids[idx]}`),
         );
