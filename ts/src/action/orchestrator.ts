@@ -201,7 +201,8 @@ export class Orchestrator<
     this.memoizedGetFields = memoize(this.getFieldsInfo.bind(this));
   }
 
-  __getOptions() {
+  // don't type this because we don't care
+  __getOptions(): OrchestratorOptions<any, any, any, any> {
     return this.options;
   }
 
@@ -916,7 +917,9 @@ export class Orchestrator<
       const field = schemaFields.get(fieldName)!;
       let value = editedFields.get(fieldName);
 
-      const v = await field.validateWithFullData!(value, this.options.builder);
+      // @ts-ignore...
+      // type hackery because it's hard
+      const v = await field.validateWithFullData(value, this.options.builder);
       if (!v) {
         if (value === undefined) {
           errors.push(

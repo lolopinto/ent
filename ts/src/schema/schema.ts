@@ -463,10 +463,6 @@ export interface PolymorphicOptions {
   disableBuilderType?: boolean;
 }
 
-export interface BuilderWithInput extends Builder<any> {
-  getInput(): Data;
-}
-
 // Field interface that each Field needs to support
 export interface Field extends FieldOptions {
   // type of field. db, typescript, graphql types encoded in here
@@ -484,7 +480,7 @@ export interface Field extends FieldOptions {
   // used for polymorphic and maybe eventually other fields
   validateWithFullData?(
     val: any,
-    builder: BuilderWithInput,
+    builder: Builder<any>,
   ): boolean | Promise<boolean>;
 
   // optional second param which if passed and true indicates that this is a nested object

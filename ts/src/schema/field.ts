@@ -2,11 +2,10 @@ import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
 import { types } from "util";
 import { validate } from "uuid";
-import { Data, Ent, WriteOperation } from "../core/base";
+import { Ent, WriteOperation } from "../core/base";
 import { Builder } from "../action/action";
 import DB, { Dialect } from "../core/db";
 import {
-  BuilderWithInput,
   DBType,
   Field,
   FieldMap,
@@ -379,7 +378,7 @@ interface PolymorphicStringOptions extends StringOptions {
 
 function validatePolymorphicTypeWithFullData(
   val: any,
-  b: BuilderWithInput,
+  b: Builder<any>,
   field: string,
 ): boolean {
   const input = b.getInput();
@@ -403,7 +402,7 @@ class PolymorphicStringField extends StringField {
     super(opts);
   }
 
-  validateWithFullData(val: any, b: BuilderWithInput): boolean {
+  validateWithFullData(val: any, b: Builder<any>): boolean {
     return validatePolymorphicTypeWithFullData(
       val,
       b,
@@ -728,7 +727,7 @@ class PolymorphicStringEnumField extends StringEnumField {
     super(opts);
   }
 
-  validateWithFullData(val: any, b: BuilderWithInput): boolean {
+  validateWithFullData(val: any, b: Builder<any>): boolean {
     return validatePolymorphicTypeWithFullData(
       val,
       b,
