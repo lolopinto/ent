@@ -195,7 +195,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
 }
 
 class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
-  implements LoaderWithLoadMany<ID, TEnt | ErrorWrapper>
+  implements LoaderWithLoadMany<ID, TEnt | ErrorWrapper | Error>
 {
   private loader: DataLoader<ID, TEnt | ErrorWrapper>;
   private map: entCacheMap<TViewer, TEnt>;
@@ -216,10 +216,7 @@ class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
     return this.loader.load(id);
   }
 
-  // this includes an error in the type lol.
-  // @ts-ignore TODO fix
-  async loadMany(ids: ID[]): Promise<Array<TEnt | ErrorWrapper>> {
-    // @ts-ignore TODO fix
+  async loadMany(ids: ID[]): Promise<Array<TEnt | ErrorWrapper | Error>> {
     return this.loader.loadMany(ids);
   }
 
