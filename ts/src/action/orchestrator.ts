@@ -201,6 +201,11 @@ export class Orchestrator<
     this.memoizedGetFields = memoize(this.getFieldsInfo.bind(this));
   }
 
+  // don't type this because we don't care
+  __getOptions(): OrchestratorOptions<any, any, any, any> {
+    return this.options;
+  }
+
   private addEdge(edge: edgeInputData, op: WriteOperation) {
     this.edgeSet.add(edge.edgeType);
 
@@ -667,6 +672,7 @@ export class Orchestrator<
   private getInputKey(k: string) {
     return this.options.fieldInfo[k].inputKey;
   }
+
   private getStorageKey(k: string) {
     return this.options.fieldInfo[k].dbCol;
   }
@@ -880,8 +886,13 @@ export class Orchestrator<
     let data = {};
     let logValues = {};
 
+    let needsFullDataChecks: string[] = [];
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
+
+      if (field.validateWithFullData) {
+        needsFullDataChecks.push(fieldName);
+      }
 
       if (value === undefined && op === WriteOperation.Insert) {
         // null allowed
@@ -899,6 +910,30 @@ export class Orchestrator<
       if (value !== undefined) {
         data[dbKey] = value;
         logValues[dbKey] = field.logValue(value);
+      }
+    }
+
+    for (const fieldName of needsFullDataChecks) {
+      const field = schemaFields.get(fieldName)!;
+      let value = editedFields.get(fieldName);
+
+      // @ts-ignore...
+      // type hackery because it's hard
+      const v = await field.validateWithFullData(value, this.options.builder);
+      if (!v) {
+        if (value === undefined) {
+          errors.push(
+            new Error(
+              `field ${fieldName} set to undefined when it can't be nullable`,
+            ),
+          );
+        } else {
+          errors.push(
+            new Error(
+              `field ${fieldName} set to null when it can't be nullable`,
+            ),
+          );
+        }
       }
     }
 

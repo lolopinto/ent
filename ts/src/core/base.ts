@@ -322,3 +322,9 @@ export interface PrivacyPolicyRule<TEnt extends Ent = Ent, TViewer = Viewer> {
 export interface PrivacyPolicy<TEnt extends Ent = Ent, TViewer = Viewer> {
   rules: PrivacyPolicyRule<TEnt, TViewer>[];
 }
+
+export enum WriteOperation {
+  Insert = "insert",
+  Edit = "edit",
+  Delete = "delete",
+}

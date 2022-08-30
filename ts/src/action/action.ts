@@ -6,6 +6,7 @@ import {
   Data,
   PrivacyPolicy,
   Context,
+  WriteOperation,
 } from "../core/base";
 import {
   DataOperation,
@@ -16,15 +17,18 @@ import {
 import { Queryer } from "../core/db";
 import { log } from "../core/logger";
 import { TransformedUpdateOperation, UpdateOperation } from "../schema";
+import { FieldInfoMap } from "../schema/schema";
 
-export enum WriteOperation {
-  Insert = "insert",
-  Edit = "edit",
-  Delete = "delete",
-}
+export { WriteOperation };
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+interface BuilderOrchestrator {
+  __getOptions(): {
+    fieldInfo: FieldInfoMap;
+  };
+}
 
 export interface Builder<
   TEnt extends Ent<TViewer>,
@@ -39,6 +43,10 @@ export interface Builder<
   operation: WriteOperation;
   editedEnt?(): Promise<TEnt | null>;
   nodeType: string;
+  // TODO TInput in Builder
+  getInput(): Data;
+  // TODO full orchestrator...
+  orchestrator: BuilderOrchestrator;
 }
 
 // NB: this is a private API subject to change
