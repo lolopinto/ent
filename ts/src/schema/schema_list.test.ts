@@ -114,6 +114,34 @@ function commonTests() {
     expect(convertList(account.data.nicknames)).toEqual(n);
   });
 
+  test("string list with commas", async () => {
+    class Account extends User {}
+    class AccountSchema implements Schema {
+      fields = {
+        Nicknames: StringListType(),
+      };
+      ent = Account;
+    }
+
+    const n = [
+      "Lord Snow",
+      "The Prince, That was Promised",
+      "the son of fire",
+      "the warrior of light",
+      "king in the north",
+      "azor ahai",
+    ];
+
+    const action = getInsertAction(
+      new AccountSchema(),
+      new Map<string, any>([["Nicknames", n]]),
+    );
+    await createTables(new AccountSchema());
+
+    const account = await action.saveX();
+    expect(convertList(account.data.nicknames)).toEqual(n);
+  });
+
   test("string list with empty value at end", async () => {
     class Account extends User {}
     class AccountSchema implements Schema {

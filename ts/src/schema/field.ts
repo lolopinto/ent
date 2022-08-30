@@ -797,11 +797,9 @@ export class ListField extends BaseField {
   }
 
   private postgresVal(val: any, jsonType?: boolean) {
-    if (!jsonType) {
+    if (!jsonType && val === "") {
       // support empty strings in list
-      if (val === "") {
-        val = '"' + val + '"';
-      }
+      val = '"' + val + '"';
       return val;
     }
     return JSON.stringify(val);
