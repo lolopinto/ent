@@ -511,7 +511,6 @@ test("builder valid uuid", async () => {
   await accountAction.saveX();
 });
 
-// TODO test update with this. ish is broken
 describe("saving polymorphic", () => {
   test("polymorphic true, nullable true, type not set set on insert", async () => {
     class Contact extends User {}
@@ -625,6 +624,25 @@ describe("saving polymorphic", () => {
     const ent = await action.saveX();
     expect(ent.data.foo_id).toBe(null);
     expect(ent.data.foo_type).toBe(null);
+  });
+
+  test("polymorphic true, nullable true, both not set on create", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: true,
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(ContactShema, new Map<string, any>([]));
+    const ent = await action.saveX();
+    // should be null in real postgres
+    expect(ent.data.foo_id).toBe(undefined);
+    expect(ent.data.foo_type).toBe(undefined);
   });
 
   test("polymorphic true, nullable true, type valid", async () => {
@@ -859,6 +877,27 @@ describe("saving polymorphic", () => {
     }
   });
 
+  test("polymorphic object, nullable true, both not set on create", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: {
+            types: ["bar", "baz"],
+          },
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(ContactShema, new Map<string, any>([]));
+    const ent = await action.saveX();
+    // should be null if not for fake postgres
+    expect(ent.data.foo_id).toBe(undefined);
+    expect(ent.data.foo_type).toBe(undefined);
+  });
+
   test("polymorphic object, nullable true, both set to null on create", async () => {
     class Contact extends User {}
     const ContactShema = getBuilderSchemaFromFields(
@@ -1059,4 +1098,5 @@ describe("saving polymorphic", () => {
       );
     }
   });
+  // TODO both undefined :()
 });

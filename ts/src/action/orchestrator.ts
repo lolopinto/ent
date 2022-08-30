@@ -880,16 +880,18 @@ export class Orchestrator<
     let data = {};
     let logValues = {};
 
-    let defaultNullableChecks: string[] = [];
+    let needsFullDataChecks: string[] = [];
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
 
-      if (
-        (value === null ||
-          (value === undefined && op === WriteOperation.Insert)) &&
-        field.validateNullable
-      ) {
-        defaultNullableChecks.push(fieldName);
+      if (field.validateWithFullData) {
+        // if (
+        //   (value === null ||
+        //     (value === undefined && op === WriteOperation.Insert)) &&
+        //   field.validateNullable
+        // ) {
+        needsFullDataChecks.push(fieldName);
+        // continue;
       }
 
       if (value === undefined && op === WriteOperation.Insert) {
@@ -911,12 +913,12 @@ export class Orchestrator<
       }
     }
 
-    for (const fieldName of defaultNullableChecks) {
+    for (const fieldName of needsFullDataChecks) {
       const field = schemaFields.get(fieldName)!;
-      const v = await field.validateNullable!(data);
-      if (!v) {
-        let value = editedFields.get(fieldName);
+      let value = editedFields.get(fieldName);
 
+      const v = await field.validateWithFullData!(value, this.options.builder);
+      if (!v) {
         if (value === undefined) {
           errors.push(
             new Error(

@@ -2,10 +2,11 @@ import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
 import { types } from "util";
 import { validate } from "uuid";
-import { Data, Ent } from "../core/base";
+import { Data, Ent, WriteOperation } from "../core/base";
 import { Builder } from "../action/action";
 import DB, { Dialect } from "../core/db";
 import {
+  BuilderWithInput,
   DBType,
   Field,
   FieldMap,
@@ -376,14 +377,36 @@ interface PolymorphicStringOptions extends StringOptions {
   parentFieldToValidate: string;
 }
 
+function validatePolymorphicTypeWithFullData(
+  val: any,
+  b: BuilderWithInput,
+  field: string,
+): boolean {
+  const input = b.getInput();
+  const v = input[field];
+
+  if (val === null) {
+    // if this is being set to null, ok if v is also null
+    return v === null;
+  }
+  // if this is not being set, ok if v is not being set
+  if (val === undefined && b.operation === WriteOperation.Insert) {
+    return v === undefined;
+  }
+  return true;
+}
+
 class PolymorphicStringField extends StringField {
   constructor(private opts: PolymorphicStringOptions) {
     super(opts);
   }
 
-  validateNullable(data: Data): boolean {
-    const v = data[this.opts.parentFieldToValidate];
-    return v === null;
+  validateWithFullData(val: any, b: BuilderWithInput): boolean {
+    return validatePolymorphicTypeWithFullData(
+      val,
+      b,
+      this.opts.parentFieldToValidate,
+    );
   }
 }
 
@@ -703,15 +726,18 @@ class PolymorphicStringEnumField extends StringEnumField {
     super(opts);
   }
 
-  validateNullable(data: Data): boolean {
-    const v = data[this.opts.parentFieldToValidate];
-    return v === null;
+  validateWithFullData(val: any, b: BuilderWithInput): boolean {
+    return validatePolymorphicTypeWithFullData(
+      val,
+      b,
+      this.opts.parentFieldToValidate,
+    );
   }
 }
 
 function PolymorphicStringEnumType(
   options: PolymorphicStringEnumOptions,
-): EnumField {
+): PolymorphicStringEnumField {
   let result = new PolymorphicStringEnumField(options);
   return Object.assign(result, options);
 }

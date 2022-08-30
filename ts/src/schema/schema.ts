@@ -463,6 +463,10 @@ export interface PolymorphicOptions {
   disableBuilderType?: boolean;
 }
 
+export interface BuilderWithInput extends Builder<any> {
+  getInput(): Data;
+}
+
 // Field interface that each Field needs to support
 export interface Field extends FieldOptions {
   // type of field. db, typescript, graphql types encoded in here
@@ -473,10 +477,17 @@ export interface Field extends FieldOptions {
   valid?(val: any): Promise<boolean> | boolean;
 
   // validate if a field can be nullable based on other fields
+  // validate field based on other fields
+  // have to be careful that there's no circular dependencies btw fields
+  // which needs this
+  // can be used to validate if a field can be nullable based on other fields
   // used for polymorphic and maybe eventually other fields
-  validateNullable?(data: Data): boolean | Promise<boolean>;
-  // optional second param which if passed and true indicates that this is a nested object
+  validateWithFullData?(
+    val: any,
+    builder: BuilderWithInput,
+  ): boolean | Promise<boolean>;
 
+  // optional second param which if passed and true indicates that this is a nested object
   // and should only format children and not format lists or objects
   format?(val: any, nested?: boolean): any;
 

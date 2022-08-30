@@ -6,6 +6,7 @@ import {
   Data,
   PrivacyPolicy,
   Context,
+  WriteOperation,
 } from "../core/base";
 import {
   DataOperation,
@@ -17,11 +18,7 @@ import { Queryer } from "../core/db";
 import { log } from "../core/logger";
 import { TransformedUpdateOperation, UpdateOperation } from "../schema";
 
-export enum WriteOperation {
-  Insert = "insert",
-  Edit = "edit",
-  Delete = "delete",
-}
+export { WriteOperation };
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
@@ -39,6 +36,8 @@ export interface Builder<
   operation: WriteOperation;
   editedEnt?(): Promise<TEnt | null>;
   nodeType: string;
+  // TODO maybe
+  getInput(): Data;
 }
 
 // NB: this is a private API subject to change
