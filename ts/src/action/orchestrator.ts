@@ -884,7 +884,11 @@ export class Orchestrator<
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
 
-      if ((value === null || value === undefined) && field.validateNullable) {
+      if (
+        (value === null ||
+          (value === undefined && op === WriteOperation.Insert)) &&
+        field.validateNullable
+      ) {
         defaultNullableChecks.push(fieldName);
       }
 
