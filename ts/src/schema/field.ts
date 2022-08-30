@@ -603,7 +603,7 @@ export class EnumField extends BaseField implements Field {
   private values?: string[];
   private map?: StringEnumMap;
 
-  constructor(private options: EnumOptions) {
+  constructor(options: StringEnumOptions) {
     super();
     this.type = {
       // if createEnumType boolean, we create postgres enum otherwise we use a string for it
