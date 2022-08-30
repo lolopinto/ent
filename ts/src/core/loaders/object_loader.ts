@@ -16,6 +16,57 @@ import { logEnabled } from "../logger";
 import { getLoader, cacheMap } from "./loader";
 import memoizee from "memoizee";
 
+async function loadRowsForLoader<T>(
+  options: SelectDataOptions,
+  ids: T[],
+  context?: Context,
+) {
+  let col = options.key;
+  let cls = clause.In(col, ...ids);
+  if (options.clause) {
+    let optionClause: clause.Clause | undefined;
+    if (typeof options.clause === "function") {
+      optionClause = options.clause();
+    } else {
+      optionClause = options.clause;
+    }
+    if (optionClause) {
+      cls = clause.And(cls, optionClause);
+    }
+  }
+  const rowOptions: LoadRowOptions = {
+    ...options,
+    clause: cls,
+    context,
+  };
+
+  let m = new Map<T, number>();
+  let result: (Data | null)[] = [];
+  for (let i = 0; i < ids.length; i++) {
+    result.push(null);
+    // store the index....
+    m.set(ids[i], i);
+  }
+
+  const rows = await loadRows(rowOptions);
+  for (const row of rows) {
+    const id = row[col];
+    if (id === undefined) {
+      throw new Error(
+        `need to query for column ${col} when using an object loader because the query may not be sorted and we need the id to maintain sort order`,
+      );
+    }
+    const idx = m.get(id);
+    if (idx === undefined) {
+      throw new Error(
+        `malformed query. got ${id} back but didn't query for it`,
+      );
+    }
+    result[idx] = row;
+  }
+  return result;
+}
+
 // optional clause...
 // so ObjectLoaderFactory and createDataLoader need to take a new optional field which is a clause that's always added here
 // and we need a disableTransform which skips loader completely and uses loadRow...
@@ -31,51 +82,9 @@ function createDataLoader(options: SelectDataOptions) {
     if (!ids.length) {
       return [];
     }
-    let col = options.key;
-    let cls = clause.In(col, ...ids);
-    if (options.clause) {
-      let optionClause: clause.Clause | undefined;
-      if (typeof options.clause === "function") {
-        optionClause = options.clause();
-      } else {
-        optionClause = options.clause;
-      }
-      if (optionClause) {
-        cls = clause.And(cls, optionClause);
-      }
-    }
-    const rowOptions: LoadRowOptions = {
-      ...options,
-      clause: cls,
-    };
-
-    let m = new Map<ID, number>();
-    let result: (Data | null)[] = [];
-    for (let i = 0; i < ids.length; i++) {
-      result.push(null);
-      // store the index....
-      m.set(ids[i], i);
-    }
 
     // context not needed because we're creating a loader which has its own cache which is being used here
-    const rows = await loadRows(rowOptions);
-    for (const row of rows) {
-      const id = row[col];
-      if (id === undefined) {
-        throw new Error(
-          `need to query for column ${col} when using an object loader because the query may not be sorted and we need the id to maintain sort order`,
-        );
-      }
-      const idx = m.get(id);
-      if (idx === undefined) {
-        throw new Error(
-          `malformed query. got ${id} back but didn't query for it`,
-        );
-      }
-      result[idx] = row;
-    }
-
-    return result;
+    return loadRowsForLoader(options, ids);
   }, loaderOptions);
 }
 
@@ -155,36 +164,19 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       clause: cls,
       context: this.context,
     };
-    return await loadRow(rowOptions);
+    return loadRow(rowOptions);
   }
 
   clearAll() {
     this.loader && this.loader.clearAll();
   }
 
-  async loadMany(keys: T[]): Promise<Data[]> {
+  async loadMany(keys: T[]): Promise<Array<Data | null>> {
     if (this.loader) {
       return await this.loader.loadMany(keys);
     }
 
-    let cls = clause.In(this.options.key, ...keys);
-    if (this.options.clause) {
-      let optionClause: clause.Clause | undefined;
-      if (typeof this.options.clause === "function") {
-        optionClause = this.options.clause();
-      } else {
-        optionClause = this.options.clause;
-      }
-      if (optionClause) {
-        cls = clause.And(cls, optionClause);
-      }
-    }
-    const rowOptions: LoadRowOptions = {
-      ...this.options,
-      clause: cls,
-      context: this.context,
-    };
-    return await loadRows(rowOptions);
+    return loadRowsForLoader(this.options, keys, this.context);
   }
 
   prime(data: Data) {

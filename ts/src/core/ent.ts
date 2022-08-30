@@ -165,43 +165,36 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       return [];
     }
 
-    const result: (TEnt | ErrorWrapper)[] = [];
+    let result: (TEnt | ErrorWrapper | Error)[] = [];
 
     const loader = options.loaderFactory.createLoader(viewer.context);
     const rows = await loader.loadMany(ids);
-    let m = new Map<ID, number>();
-    for (let i = 0; i < ids.length; i++) {
-      // store the index....
-      m.set(ids[i], i);
-    }
+    // this is a loader which should return the same order based on passed-in ids
+    // so let's depend on that...
 
-    for (const row of rows) {
-      if (row === null) {
+    for (let idx = 0; idx < rows.length; idx++) {
+      const row = rows[idx];
+
+      // db error
+      if (row instanceof Error) {
+        result[idx] = row;
         continue;
-      }
-      const id = row[options.loaderFactory.options?.key || "id"];
-      const idx = m.get(id);
-      if (idx === undefined) {
-        throw new Error(
-          `malformed query. got ${id} back but didn't query for it`,
+      } else if (!row) {
+        // TODO test partial results and what happens when this isn't seen
+
+        result[idx] = new ErrorWrapper(
+          new Error(`couldn't find row for value ${ids[idx]}`),
         );
-      }
-
-      const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-      if (r instanceof Error) {
-        result[idx] = new ErrorWrapper(r);
       } else {
-        result[idx] = r;
+        const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+        if (r instanceof Error) {
+          result[idx] = new ErrorWrapper(r);
+        } else {
+          result[idx] = r;
+        }
       }
-      m.delete(id);
     }
 
-    // TODO test partial results and what happens when this isn't seen
-    for (const [id, idx] of m) {
-      result[idx] = new ErrorWrapper(
-        new Error(`couldn't find row for value ${id}`),
-      );
-    }
     return result;
   }, loaderOptions);
 }
@@ -450,11 +443,15 @@ export async function loadEnts<
   let m: Map<ID, TEnt> = new Map();
 
   const ret = await getEntLoader(viewer, options).loadMany(ids);
-  for (const ent of ret) {
-    if (ent instanceof ErrorWrapper) {
+  for (const r of ret) {
+    if (r instanceof Error) {
+      throw r;
+    }
+    if (r instanceof ErrorWrapper) {
       continue;
     }
-    m.set(ent.id, ent);
+
+    m.set(r.id, r);
   }
 
   return m;
