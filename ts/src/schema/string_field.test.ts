@@ -276,7 +276,7 @@ describe("list", () => {
       const list = new ListField(f, f.getOptions());
       let val = v.customInput || input;
       // list format for postgres list
-      expect(list.format([val])).toBe(`{${v.format}}`);
+      expect(list.format([val])).toBe(`{${JSON.stringify(v.format)}}`);
       expect(await list.valid([val])).toBe(v.valid);
     });
   }
