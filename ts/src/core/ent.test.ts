@@ -21,6 +21,7 @@ import {
   loadEnt,
   loadEntX,
   loadEntViaKey,
+  loadEntXViaKey,
 } from "./ent";
 import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
 import { TestContext } from "../testutils/context/test_context";
@@ -437,7 +438,7 @@ function commonTests() {
       }
     });
 
-    test("from different key", async () => {
+    test("loadEntViaKey", async () => {
       await createUser();
       const opts2: LoadEntOptions<User> = {
         ...options,
@@ -471,7 +472,37 @@ function commonTests() {
       ml.clear();
     });
 
-    test("from different key. no prime", async () => {
+    test("loadEntXViaKey", async () => {
+      await createUser();
+      const opts2: LoadEntOptions<User> = {
+        ...options,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "foo",
+        })
+          // @ts-ignore
+          .addToPrime(options.loaderFactory),
+      };
+
+      setLogLevels(["query"]);
+
+      const ml = new MockLogs();
+      ml.mock();
+      const ent = await loadEntXViaKey(ctx.getViewer(), "bar", opts2);
+      expect(ent.data.foo).toBe("bar");
+
+      expect(ent.id).not.toBe("bar");
+      expect(validatev4(ent.id.toString())).toBe(true);
+
+      // cache primed this one so no subsequent fetch
+      await loadEntX(ctx.getViewer(), ent.id, options);
+
+      expect(ml.logs.length).toBe(1);
+      ml.clear();
+    });
+
+    test("loadEntViaKey. no prime", async () => {
       await createUser();
       const opts2: LoadEntOptions<User> = {
         ...options,
@@ -492,6 +523,34 @@ function commonTests() {
       if (!ent) {
         throw new Error("impossible");
       }
+      expect(ent.data.foo).toBe("bar");
+
+      expect(ent.id).not.toBe("bar");
+      expect(validatev4(ent.id.toString())).toBe(true);
+
+      await loadEntX(ctx.getViewer(), ent.id, options);
+
+      expect(ml.logs.length).toBe(2);
+      ml.clear();
+    });
+
+    test("loadEntXViaKey. no prime", async () => {
+      await createUser();
+      const opts2: LoadEntOptions<User> = {
+        ...options,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "foo",
+        }),
+      };
+
+      setLogLevels("query");
+      const ml = new MockLogs();
+      ml.mock();
+
+      const ent = await loadEntXViaKey(ctx.getViewer(), "bar", opts2);
+
       expect(ent.data.foo).toBe("bar");
 
       expect(ent.id).not.toBe("bar");
