@@ -200,6 +200,26 @@ function commonTests() {
     }
   });
 
+  test("query error throws for loadEnts with context with multiple ids", async () => {
+    try {
+      await loadEnts(
+        contextifyViewer(new IDViewer(1)),
+        invalidFieldOpts,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+      );
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
   test("query error throws for loadEnt", async () => {
     try {
       await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
