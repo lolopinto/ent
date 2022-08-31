@@ -363,10 +363,11 @@ export async function loadEntXViaKey<
       `${options.loaderFactory.name}: couldn't find row for value ${key}`,
     );
   }
-  // this should have primed the other cache so there isn't a database query
-  // TODO every row.id needs to be audited...
-  // https://github.com/lolopinto/ent/issues/1064
-  const r = await getEntLoader(viewer, options).load(row.id);
+  const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+    viewer,
+    row,
+    options,
+  );
   if (r instanceof ErrorWrapper) {
     throw r.error;
   }
