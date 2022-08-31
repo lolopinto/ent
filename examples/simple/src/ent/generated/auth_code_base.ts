@@ -12,6 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -122,6 +123,20 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
       query,
       context,
     )) as AuthCodeDBData[];
+  }
+
+  static async loadCustomCount<T extends AuthCodeBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...AuthCodeBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends AuthCodeBase>(

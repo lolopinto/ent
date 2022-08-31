@@ -12,6 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -119,6 +120,20 @@ export class ContactEmailBase implements Ent<ExampleViewerAlias> {
       query,
       context,
     )) as ContactEmailDBData[];
+  }
+
+  static async loadCustomCount<T extends ContactEmailBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...ContactEmailBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends ContactEmailBase>(

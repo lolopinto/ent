@@ -10,6 +10,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -129,6 +130,20 @@ export class EventBase implements Ent<Viewer> {
       query,
       context,
     )) as EventDBData[];
+  }
+
+  static async loadCustomCount<T extends EventBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...EventBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends EventBase>(

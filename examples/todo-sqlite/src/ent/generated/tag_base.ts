@@ -13,6 +13,7 @@ import {
   convertDate,
   convertNullableDate,
   convertNullableList,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -154,6 +155,20 @@ export class TagBase implements Ent<Viewer> {
       query,
       context,
     )) as TagDBData[];
+  }
+
+  static async loadCustomCount<T extends TagBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...TagBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends TagBase>(

@@ -12,6 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -122,6 +123,20 @@ export class ContactPhoneNumberBase implements Ent<ExampleViewerAlias> {
       query,
       context,
     )) as ContactPhoneNumberDBData[];
+  }
+
+  static async loadCustomCount<T extends ContactPhoneNumberBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...ContactPhoneNumberBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends ContactPhoneNumberBase>(
