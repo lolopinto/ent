@@ -517,7 +517,6 @@ export async function loadCustomEnts<
         options,
         entLoader,
       );
-      // if not prime we're doing a lot of work. todo test the not prime case???
       if (r instanceof ErrorWrapper) {
         return;
       }
