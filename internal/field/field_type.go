@@ -834,9 +834,6 @@ func (f *Field) GetTSMutationGraphQLTypeForFieldImports(forceOptional, input boo
 	var tsGQLType enttype.TSGraphQLType
 	// spew.Dump(f.fieldType, f.graphqlFieldType)
 	tsGQLType = f.fieldType
-	if f.graphqlFieldType != nil {
-		// tsGQLType = f.graphqlFieldType
-	}
 	nullableType, ok := f.fieldType.(enttype.NullableType)
 
 	if forceOptional && ok {
