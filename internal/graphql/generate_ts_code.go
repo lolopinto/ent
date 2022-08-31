@@ -2041,7 +2041,8 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 
 	for _, f := range a.GetGraphQLFields() {
 		result.Fields = append(result.Fields, &fieldType{
-			Name:         f.GetGraphQLName(),
+			Name: f.GetGraphQLName(),
+			// here...
 			FieldImports: getGQLFileImports(f.GetTSMutationGraphQLTypeForFieldImports(!action.IsRequiredField(a, f), true), true),
 		})
 	}

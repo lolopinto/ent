@@ -832,13 +832,17 @@ func (f *Field) GetTSGraphQLTypeForFieldImports(input bool) []*tsimport.ImportPa
 // TODO multiple booleans is a horrible code-smell. fix with options or something
 func (f *Field) GetTSMutationGraphQLTypeForFieldImports(forceOptional, input bool) []*tsimport.ImportPath {
 	var tsGQLType enttype.TSGraphQLType
+	// spew.Dump(f.fieldType, f.graphqlFieldType)
+	tsGQLType = f.fieldType
+	if f.graphqlFieldType != nil {
+		// tsGQLType = f.graphqlFieldType
+	}
 	nullableType, ok := f.fieldType.(enttype.NullableType)
 
 	if forceOptional && ok {
 		tsGQLType = nullableType.GetNullableType()
-	} else {
-		// already null and/or not forceOptional
-		tsGQLType = f.fieldType
+	} else if input && f.forceOptionalInAction && f.graphqlFieldType != nil {
+		tsGQLType = f.graphqlFieldType
 	}
 	return tsGQLType.GetTSGraphQLImports(input)
 }

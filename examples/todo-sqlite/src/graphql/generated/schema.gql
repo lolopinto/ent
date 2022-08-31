@@ -166,6 +166,7 @@ input CreateTagInput {
   display_name: String!
   owner_id: ID!
   related_tag_ids: [ID!]
+  canonical_name: String
 }
 
 type CreateTagPayload {

@@ -1,6 +1,9 @@
 package tsimport
 
 import (
+	"fmt"
+
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
 )
@@ -73,6 +76,18 @@ func NewLocalGraphQLEntImportPath(typ string) *ImportPath {
 		// transformed to codepath.GetImportPathForExternalGQLFile for mutations
 		ImportPath:                    codepath.GetImportPathForInternalGQLFile(),
 		TransformedForGraphQLMutation: true,
+	}
+}
+
+func getImportPathForCustomInterfaceInputFile(gqlType string) string {
+	return fmt.Sprintf("src/graphql/generated/mutations/input/%s_type", strcase.ToSnake(gqlType))
+}
+
+func NewLocalGraphQLInputEntImportPath(typ string) *ImportPath {
+	return &ImportPath{
+		// TODO always adding type for now. may need to different paths
+		Import:     typ + "InputType",
+		ImportPath: getImportPathForCustomInterfaceInputFile(typ + "Input"),
 	}
 }
 

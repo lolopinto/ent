@@ -30,10 +30,15 @@ type expected struct {
 	// GetTSMutationGraphQLTypeForFieldImports
 	graphqlMutationImports []*tsimport.ImportPath
 	// force optional
+	// used for edit mutations for example
 	graphqlMutationImportsForceOptional []*tsimport.ImportPath
 
 	fieldTypeType   enttype.EntType
 	tsFieldTypeType enttype.EntType
+
+	// if optional in action, create new field that's optional in action and then test input there
+	optionalInAction bool
+	requiredInAction bool
 }
 
 func TestNonNullableField(t *testing.T) {
@@ -102,6 +107,77 @@ func TestNullableField(t *testing.T) {
 		},
 		fieldTypeType:   &enttype.NullableStringType{},
 		tsFieldTypeType: &enttype.NullableStringType{},
+	})
+}
+
+func TestOptionalFieldInAction(t *testing.T) {
+	cfg := &codegenapi.DummyConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name: "name",
+		Type: &input.FieldType{
+			DBType: input.String,
+		},
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            false,
+		asyncAccessor:      false,
+		tsFieldName:        "name",
+		tsBuilderFieldName: "name",
+		tsPublicAPIName:    "name",
+		tsType:             "string",
+		tsFieldType:        "string",
+		tsBuilderType:      "string",
+		tsBuilderUnionType: "string",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		fieldTypeType:    &enttype.StringType{},
+		tsFieldTypeType:  &enttype.StringType{},
+		optionalInAction: true,
+	})
+}
+
+func TestRequiredFieldInAction(t *testing.T) {
+	cfg := &codegenapi.DummyConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name:     "name",
+		Nullable: true,
+		Type: &input.FieldType{
+			DBType: input.String,
+		},
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            false,
+		asyncAccessor:      false,
+		tsFieldName:        "name",
+		tsBuilderFieldName: "name",
+		tsPublicAPIName:    "name",
+		tsType:             "string | null",
+		tsFieldType:        "string | null",
+		tsBuilderType:      "string | null",
+		tsBuilderUnionType: "string | null",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		requiredInAction: true,
+		fieldTypeType:    &enttype.NullableStringType{},
+		tsFieldTypeType:  &enttype.NullableStringType{},
 	})
 }
 
@@ -497,12 +573,12 @@ func TestNullableJSONBAsListFieldOnDemand(t *testing.T) {
 		graphqlMutationImports: []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLList"),
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewLocalGraphQLEntImportPath("Foo"),
+			tsimport.NewLocalGraphQLInputEntImportPath("Foo"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLList"),
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewLocalGraphQLEntImportPath("Foo"),
+			tsimport.NewLocalGraphQLInputEntImportPath("Foo"),
 		},
 		fieldTypeType: &enttype.NullableArrayListType{
 			ElemType: &enttype.JSONBType{
@@ -736,8 +812,25 @@ func doTestField(t *testing.T, cfg codegenapi.Config, f *Field, exp *expected) {
 	assert.Equal(t, exp.tsBuilderType, f.TsBuilderType(cfg))
 	assert.Equal(t, exp.tsBuilderUnionType, f.TsBuilderUnionType(cfg))
 	assert.Equal(t, exp.graphqlImports, f.GetTSGraphQLTypeForFieldImports(false))
-	assert.Equal(t, exp.graphqlMutationImports, f.GetTSMutationGraphQLTypeForFieldImports(false, false))
-	assert.Equal(t, exp.graphqlMutationImportsForceOptional, f.GetTSMutationGraphQLTypeForFieldImports(true, false))
+	assert.Equal(t, exp.graphqlMutationImportsForceOptional, f.GetTSMutationGraphQLTypeForFieldImports(true, true))
 	assert.Equal(t, exp.fieldTypeType, f.GetFieldType())
 	assert.Equal(t, exp.tsFieldTypeType, f.GetTSFieldType(cfg))
+
+	if exp.optionalInAction && exp.requiredInAction {
+		require.Fail(t, "cannot have both optionalInAction && requiredInAction")
+	}
+	if exp.optionalInAction {
+		f = cloneForTest(t, f, Optional())
+	}
+	if exp.requiredInAction {
+		f = cloneForTest(t, f, Required())
+	}
+
+	assert.Equal(t, exp.graphqlMutationImports, f.GetTSMutationGraphQLTypeForFieldImports(exp.optionalInAction, true))
+}
+
+func cloneForTest(t *testing.T, f *Field, opts ...Option) *Field {
+	f2, err := f.Clone(opts...)
+	require.Nil(t, err)
+	return f2
 }
