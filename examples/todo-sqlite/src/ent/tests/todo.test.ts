@@ -95,11 +95,21 @@ test("querying todos", async () => {
   );
   expect(openTodos.length).toBe(3);
 
+  const openTodosCount = await Todo.loadCustomCount(
+    query.And(query.Eq("creator_id", account.id), query.Eq("completed", false)),
+  );
+  expect(openTodosCount).toBe(3);
+
   const closedTodos = await Todo.loadCustom(
     account.viewer,
     query.And(query.Eq("creator_id", account.id), query.Eq("completed", true)),
   );
   expect(closedTodos.length).toBe(2);
+
+  const closedTodosCount = await Todo.loadCustomCount(
+    query.And(query.Eq("creator_id", account.id), query.Eq("completed", true)),
+  );
+  expect(closedTodosCount).toBe(2);
 
   const orderedOpenedTodos = await Todo.loadCustom(account.viewer, {
     clause: query.And(

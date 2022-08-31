@@ -11,6 +11,7 @@ import {
   PrivacyPolicy,
   Viewer,
   getEdgeTypeInGroup,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -155,6 +156,20 @@ export class EventActivityBase
       query,
       context,
     )) as EventActivityDBData[];
+  }
+
+  static async loadCustomCount<T extends EventActivityBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...EventActivityBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends EventActivityBase>(
