@@ -136,10 +136,10 @@ describe("postgres", () => {
     await tdb.afterAll();
   });
 
-  // describe("postgres no soft delete", () => {
-  //   setupPostgresTables(tdb);
-  //   commonTests(options);
-  // });
+  describe("postgres no soft delete", () => {
+    setupPostgresTables(tdb);
+    commonTests(options);
+  });
 
   describe("postgres with soft delete", () => {
     setupPostgresTables(tdb, true);
