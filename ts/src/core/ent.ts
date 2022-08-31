@@ -28,6 +28,8 @@ import {
   PrimableLoader,
   Loader,
   LoaderWithLoadMany,
+  SelectBaseDataOptions,
+  LoaderFactoryWithOptions,
 } from "./base";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
@@ -596,14 +598,43 @@ export async function loadCustomData(
   return rows;
 }
 
+interface CustomCountOptions extends DataOptions {}
+
+// NOTE: if you use a raw query or paramterized query with this,
+// you should use `SELECT count(*) as count...`
+export async function loadCustomCount(
+  options: CustomCountOptions,
+  query: CustomQuery,
+  context: Context | undefined,
+): Promise<number> {
+  // TODO also need to loaderify this in case we're querying for this a lot...
+  const rows = await loadCustomDataImpl(
+    {
+      ...options,
+      fields: ["count(1) as count"],
+    },
+    query,
+    context,
+  );
+
+  if (rows.length) {
+    return parseInt(rows[0].count);
+  }
+  return 0;
+}
+
 function isPrimableLoader(
   loader: Loader<any, Data | null>,
 ): loader is PrimableLoader<any, Data> {
   return (loader as PrimableLoader<any, Data>) != undefined;
 }
 
+interface SelectCustomDataOptionsImpl extends SelectBaseDataOptions {
+  loaderFactory?: LoaderFactoryWithOptions;
+}
+
 async function loadCustomDataImpl(
-  options: SelectCustomDataOptions,
+  options: SelectCustomDataOptionsImpl,
   query: CustomQuery,
   context: Context | undefined,
 ): Promise<Data[]> {

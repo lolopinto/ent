@@ -185,7 +185,7 @@ interface LoadableEntOptions<
   ent: EntConstructor<TEnt, TViewer>;
 }
 
-interface LoaderFactoryWithOptions
+export interface LoaderFactoryWithOptions
   extends LoaderFactoryWithLoaderMany<any, Data | null> {
   options?: SelectDataOptions;
 }

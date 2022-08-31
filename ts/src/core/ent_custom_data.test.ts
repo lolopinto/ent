@@ -13,7 +13,12 @@ import {
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule } from "./privacy";
-import { loadCustomData, loadCustomEnts, loadEnts } from "./ent";
+import {
+  loadCustomCount,
+  loadCustomData,
+  loadCustomEnts,
+  loadEnts,
+} from "./ent";
 import { createRowForTest, editRowForTest } from "../testutils/write";
 import { ContextCache } from "./context";
 import * as clause from "./clause";
@@ -131,10 +136,10 @@ describe("postgres", () => {
     await tdb.afterAll();
   });
 
-  describe("postgres no soft delete", () => {
-    setupPostgresTables(tdb);
-    commonTests(options);
-  });
+  // describe("postgres no soft delete", () => {
+  //   setupPostgresTables(tdb);
+  //   commonTests(options);
+  // });
 
   describe("postgres with soft delete", () => {
     setupPostgresTables(tdb, true);
@@ -299,6 +304,28 @@ async function queryViaSQLQuery(
   expect(ml.logs.length).toBe(2);
 }
 
+async function queryCountViaSQLQuery(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+) {
+  const count = await loadCustomCount(
+    opts,
+    "select count(*) as count from users",
+    ctx,
+  );
+  expect(count).toBe(ids.length);
+  expect(ml.logs.length).toBe(1);
+
+  // re-query. hits the db
+  const count2 = await loadCustomCount(
+    opts,
+    "select count(*) as count from users",
+    ctx,
+  );
+  expect(count).toEqual(count2);
+  expect(ml.logs.length).toBe(2);
+}
+
 async function querySoftDeleteViaSQLQuery(
   opts: LoadCustomEntOptions<User>,
   ctx: Context | undefined,
@@ -355,6 +382,72 @@ async function queryViaParameterizedQuery(
   expect(ml.logs.length).toBe(2);
 }
 
+async function queryCountViaParameterizedQuery(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+) {
+  const dialect = DB.getDialect();
+  const count = await loadCustomCount(
+    opts,
+    {
+      query: `select count(*) as count from users where id < ${
+        dialect === Dialect.Postgres ? "$1" : "?"
+      }`,
+      values: [5],
+    },
+    ctx,
+  );
+  expect(count).toBe(4);
+  expect(ml.logs.length).toBe(1);
+
+  // re-query. hits the db
+  const count2 = await loadCustomCount(
+    opts,
+    {
+      query: `select count(*) as count from users where id < ${
+        dialect === Dialect.Postgres ? "$1" : "?"
+      }`,
+      values: [5],
+    },
+    ctx,
+  );
+  expect(count).toEqual(count2);
+  expect(ml.logs.length).toBe(2);
+}
+
+async function querySoftDeleteCountViaParameterizedQuery(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+) {
+  const dialect = DB.getDialect();
+  const count = await loadCustomCount(
+    opts,
+    {
+      query: `select count(*) as count from users where deleted_at IS NOT NULL AND id > ${
+        dialect === Dialect.Postgres ? "$1" : "?"
+      }`,
+      values: [9],
+    },
+    ctx,
+  );
+  expect(count).toBe(1);
+  expect(ml.logs.length).toBe(1);
+
+  // re-query. hits the db
+  const count2 = await loadCustomCount(
+    opts,
+    {
+      query: `select count(*) as count from users where deleted_at IS NOT NULL AND id > ${
+        dialect === Dialect.Postgres ? "$1" : "?"
+      }`,
+      values: [9],
+    },
+    ctx,
+  );
+  expect(count).toEqual(count2);
+  expect(ml.logs.length).toBe(2);
+}
+
 async function querySoftDeleteViaParameterizedQuery(
   opts: LoadCustomEntOptions<User>,
   ctx: Context | undefined,
@@ -403,6 +496,31 @@ async function queryViaClause(
   // re-query. hits the db
   const data2 = await loadCustomData(opts, clause.Greater("id", 5), ctx);
   expect(data).toEqual(data2);
+  expect(ml.logs.length).toBe(2);
+  const lastLog = ml.logs[1];
+
+  // if context, cache hit, otherwise, hits db
+  if (ctx) {
+    expect(lastLog["cache-hit"]).toBeDefined();
+    expect(lastLog["query"]).toBeUndefined();
+  } else {
+    expect(lastLog["cache-hit"]).toBeUndefined();
+    expect(lastLog["query"]).toBeDefined();
+  }
+}
+
+async function queryCountViaClause(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+  expIds?: number[],
+) {
+  const count = await loadCustomCount(opts, clause.Greater("id", 5), ctx);
+  expect(count).toBe(expIds?.length || 5);
+  expect(ml.logs.length).toBe(1);
+
+  // re-query. hits the db
+  const count2 = await loadCustomCount(opts, clause.Greater("id", 5), ctx);
+  expect(count).toEqual(count2);
   expect(ml.logs.length).toBe(2);
   const lastLog = ml.logs[1];
 
@@ -473,13 +591,90 @@ async function queryViaOptionsImpl(
   }
 }
 
+async function queryCountViaOptions(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+  expIds?: number[],
+) {
+  const count = await loadCustomCount(
+    opts,
+    {
+      clause: clause.Greater("id", 5),
+    },
+    ctx,
+  );
+
+  expect(count).toBe((expIds || reversed.slice(0, 5)).length);
+  expect(ml.logs.length).toBe(1);
+
+  // re-query. hits the db
+  const count2 = await loadCustomCount(
+    opts,
+    {
+      clause: clause.Greater("id", 5),
+    },
+    ctx,
+  );
+  expect(count).toEqual(count2);
+  expect(ml.logs.length).toBe(2);
+  const lastLog = ml.logs[1];
+
+  // if context, cache hit, otherwise, hits db
+  if (ctx) {
+    expect(lastLog["cache-hit"]).toBeDefined();
+    expect(lastLog["query"]).toBeUndefined();
+  } else {
+    expect(lastLog["cache-hit"]).toBeUndefined();
+    expect(lastLog["query"]).toBeDefined();
+  }
+}
+
+async function queryCountViaOptionsDisableTransformations(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+) {
+  const count = await loadCustomCount(
+    opts,
+    {
+      clause: clause.Greater("id", 5),
+      disableTransformations: true,
+    },
+    ctx,
+  );
+
+  expect(count).toBe(reversed.slice(0, 5).length);
+  expect(ml.logs.length).toBe(1);
+
+  // re-query. hits the db
+  const count2 = await loadCustomCount(
+    opts,
+    {
+      clause: clause.Greater("id", 5),
+      disableTransformations: true,
+    },
+    ctx,
+  );
+  expect(count).toEqual(count2);
+  expect(ml.logs.length).toBe(2);
+  const lastLog = ml.logs[1];
+
+  // if context, cache hit, otherwise, hits db
+  if (ctx) {
+    expect(lastLog["cache-hit"]).toBeDefined();
+    expect(lastLog["query"]).toBeUndefined();
+  } else {
+    expect(lastLog["cache-hit"]).toBeUndefined();
+    expect(lastLog["query"]).toBeDefined();
+  }
+}
+
 function commonTests(opts: LoadCustomEntOptions<User>) {
   describe("loadCustomData", () => {
     test("query via SQL with context", async () => {
       await queryViaSQLQuery(opts, getCtx(undefined));
     });
 
-    test("query via SQL with context", async () => {
+    test("query via SQL without context", async () => {
       await queryViaSQLQuery(opts, undefined);
     });
 
@@ -505,6 +700,40 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
 
     test("query via parameterized query without context", async () => {
       await queryViaParameterizedQuery(opts, undefined);
+    });
+  });
+
+  describe("loadCustomCount", () => {
+    test("query count via SQL with context", async () => {
+      await queryCountViaSQLQuery(opts, getCtx(undefined));
+    });
+
+    test("query count via SQL without context", async () => {
+      await queryCountViaSQLQuery(opts, undefined);
+    });
+
+    test("query count via clause with context", async () => {
+      await queryCountViaClause(opts, getCtx(undefined));
+    });
+
+    test("query count via clause without context", async () => {
+      await queryCountViaClause(opts, undefined);
+    });
+
+    test("count options with context", async () => {
+      await queryCountViaOptions(opts, getCtx(undefined));
+    });
+
+    test("count options without context", async () => {
+      await queryCountViaOptions(opts, undefined);
+    });
+
+    test("query via parameterized query with context", async () => {
+      await queryCountViaParameterizedQuery(opts, getCtx(undefined));
+    });
+
+    test("query via parameterized query without context", async () => {
+      await queryCountViaParameterizedQuery(opts, undefined);
     });
   });
 
@@ -726,6 +955,73 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
       ml.clear();
 
       await querySoftDeleteViaParameterizedQuery(opts, undefined);
+    });
+  });
+
+  describe("loadCustomCount soft delete", () => {
+    beforeEach(async () => {
+      await softDelete(softDeleteIds);
+      ml.clear();
+    });
+
+    test("query count via SQL with context", async () => {
+      await queryCountViaSQLQuery(opts, getCtx(undefined));
+    });
+
+    test("query count via SQL without context", async () => {
+      await queryCountViaSQLQuery(opts, undefined);
+    });
+
+    test("query count via clause with context", async () => {
+      await queryCountViaClause(opts, getCtx(undefined), [6]);
+    });
+
+    test("query count via clause without context", async () => {
+      await queryCountViaClause(opts, undefined, [6]);
+    });
+
+    test("count options with context", async () => {
+      await queryCountViaOptions(opts, getCtx(undefined), [6]);
+    });
+
+    test("count options without context", async () => {
+      await queryCountViaOptions(opts, undefined, [6]);
+    });
+
+    test("count options disable transformations with context", async () => {
+      await queryCountViaOptionsDisableTransformations(opts, getCtx(undefined));
+    });
+
+    test("count options disable transformations without context", async () => {
+      await queryCountViaOptionsDisableTransformations(opts, undefined);
+    });
+
+    test("query count via parameterized query with context", async () => {
+      await queryCountViaParameterizedQuery(opts, getCtx(undefined));
+    });
+
+    test("query count via parameterized query without context", async () => {
+      await queryCountViaParameterizedQuery(opts, undefined);
+    });
+
+    test("query count via parameterized query with context", async () => {
+      // query via parameterized query doesn't affect soft delete so query is the same.
+
+      await queryCountViaParameterizedQuery(opts, getCtx(undefined));
+
+      ml.clear();
+
+      await querySoftDeleteCountViaParameterizedQuery(opts, getCtx(undefined));
+    });
+
+    test("query via parameterized query without context", async () => {
+      // query via parameterized doesn't affect soft delete so query is the same.
+
+      await queryCountViaParameterizedQuery(opts, undefined);
+
+      ml.clear();
+
+      await querySoftDeleteCountViaParameterizedQuery(opts, undefined);
     });
   });
 
