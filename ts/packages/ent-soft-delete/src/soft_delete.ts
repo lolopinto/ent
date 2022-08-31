@@ -8,6 +8,7 @@ import {
   FieldMap,
   EdgeUpdateOperation,
   TransformedEdgeUpdateOperation,
+  Viewer,
 } from "@snowtop/ent";
 import * as clause from "@snowtop/ent/core/clause";
 
@@ -30,9 +31,9 @@ export class DeletedAtPattern implements Pattern {
     return clause.Eq("deleted_at", null);
   }
 
-  transformWrite<T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | null {
+  transformWrite<T extends Ent<TViewer>, TViewer extends Viewer>(
+    stmt: UpdateOperation<T, TViewer>,
+  ): TransformedUpdateOperation<T, TViewer> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
