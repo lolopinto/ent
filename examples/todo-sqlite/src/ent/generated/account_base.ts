@@ -12,6 +12,7 @@ import {
   Viewer,
   convertDate,
   convertNullableDate,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -168,6 +169,20 @@ export class AccountBase implements Ent<Viewer> {
       query,
       context,
     )) as AccountDBData[];
+  }
+
+  static async loadCustomCount<T extends AccountBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...AccountBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends AccountBase>(

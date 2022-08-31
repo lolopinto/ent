@@ -12,6 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -129,6 +130,20 @@ export class HoursOfOperationBase
       query,
       context,
     )) as HoursOfOperationDBData[];
+  }
+
+  static async loadCustomCount<T extends HoursOfOperationBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...HoursOfOperationBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends HoursOfOperationBase>(

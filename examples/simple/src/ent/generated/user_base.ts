@@ -15,6 +15,7 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   applyPrivacyPolicy,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -320,6 +321,20 @@ export class UserBase
       query,
       context,
     )) as UserDBData[];
+  }
+
+  static async loadCustomCount<T extends UserBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...UserBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends UserBase>(

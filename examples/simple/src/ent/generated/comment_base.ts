@@ -12,6 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -128,6 +129,20 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
       query,
       context,
     )) as CommentDBData[];
+  }
+
+  static async loadCustomCount<T extends CommentBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...CommentBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends CommentBase>(
