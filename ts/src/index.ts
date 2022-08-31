@@ -3,6 +3,7 @@ export {
   loadEnt,
   loadCustomData,
   loadCustomEnts,
+  loadCustomCount,
   loadEntX,
   loadEnts,
   CustomQuery,
