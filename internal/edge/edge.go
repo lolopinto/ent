@@ -935,6 +935,7 @@ type AssociationEdgeGroup struct {
 	Edges             map[string]*AssociationEdge // TODO...
 	EdgeActions       []*EdgeAction
 	StatusEnums       []string
+	ViewerBased       bool
 	NullStateFn       string
 	NullStates        []string
 	actionEdges       map[string]bool
@@ -979,7 +980,10 @@ func (edgeGroup *AssociationEdgeGroup) GetIDArg() string {
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
-	return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
+	if edgeGroup.ViewerBased {
+		return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
+	}
+	return strcase.ToLowerCamel(edgeGroup.GroupStatusName)
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
@@ -1234,6 +1238,14 @@ func assocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *in
 		GroupStatusName:   edgeGroup.GroupStatusName,
 		TSGroupStatusName: strcase.ToLowerCamel(edgeGroup.GroupStatusName),
 		NodeInfo:          nodeinfo.GetNodeInfo(packageName),
+		StatusEnums:       edgeGroup.StatusEnums,
+		NullStateFn:       edgeGroup.NullStateFn,
+		NullStates:        edgeGroup.NullStates,
+		ViewerBased:       edgeGroup.ViewerBased,
+	}
+
+	if assocEdgeGroup.ViewerBased && len(assocEdgeGroup.NullStates) == 0 {
+		return nil, fmt.Errorf("ViewerBased edge group must have NullStates")
 	}
 
 	// no overriden table name, get default one
@@ -1256,9 +1268,6 @@ func assocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *in
 			return nil, err
 		}
 	}
-	assocEdgeGroup.StatusEnums = edgeGroup.StatusEnums
-	assocEdgeGroup.NullStateFn = edgeGroup.NullStateFn
-	assocEdgeGroup.NullStates = edgeGroup.NullStates
 	if assocEdgeGroup.NullStateFn != "" && len(assocEdgeGroup.NullStates) == 0 {
 		return nil, fmt.Errorf("cannot have null state fn with no null states")
 	}

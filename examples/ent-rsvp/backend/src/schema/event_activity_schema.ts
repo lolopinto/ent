@@ -45,6 +45,9 @@ const EventActivitySchema = new EntSchema({
     },
   ],
 
+  // TODO this one shouldn't be viewerBased since you can rsvp for someone else I think
+  // come back...
+
   edgeGroups: [
     {
       name: "rsvp",
