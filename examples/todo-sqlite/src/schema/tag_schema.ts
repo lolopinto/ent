@@ -1,4 +1,4 @@
-import { UUIDListType } from "@snowtop/ent";
+import { optionalField, UUIDListType } from "@snowtop/ent";
 import {
   ActionOperation,
   ConstraintType,
@@ -35,7 +35,14 @@ const TagSchema = new TodoEntSchema({
   actions: [
     {
       operation: ActionOperation.Create,
-      fields: ["DisplayName", "ownerID", "relatedTagIds"],
+      fields: [
+        "DisplayName",
+        "ownerID",
+        "relatedTagIds",
+        optionalField("canonicalName"),
+      ],
+      // TODO https://github.com/lolopinto/ent/issues/1096 this isn't working...
+      optionalFields: ["canonicalName"],
     },
   ],
 });

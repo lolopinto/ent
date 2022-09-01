@@ -2073,20 +2073,13 @@ func (t *CommonJSONType) getTsTypeImports(impType *tsimport.ImportPath) []*tsimp
 	}
 }
 
-func getImportPathForCustomInterfaceInputFile(gqlType string) string {
-	return fmt.Sprintf("src/graphql/generated/mutations/input/%s_type", strcase.ToSnake(gqlType))
-}
-
 func (t *CommonJSONType) getJSONGraphQLType(gqlType string, input bool) *tsimport.ImportPath {
 	if t.SubFields == nil && t.UnionFields == nil {
 		// TODO https://github.com/taion/graphql-type-json
 		return tsimport.NewGraphQLJSONImportPath("GraphQLJSON")
 	}
 	if input {
-		return &tsimport.ImportPath{
-			Import:     gqlType + "InputType",
-			ImportPath: getImportPathForCustomInterfaceInputFile(gqlType + "Input"),
-		}
+		return tsimport.NewLocalGraphQLInputEntImportPath(gqlType)
 	}
 	return tsimport.NewLocalGraphQLEntImportPath(gqlType)
 }
