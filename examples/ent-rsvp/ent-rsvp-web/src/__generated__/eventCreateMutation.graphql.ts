@@ -10,6 +10,7 @@ export type EventCreateInput = {
     activities?: Array<ActivityEventCreateInput> | null;
 };
 export type ActivityEventCreateInput = {
+    addressId?: string | null;
     name: string;
     startTime: unknown;
     endTime?: unknown | null;
