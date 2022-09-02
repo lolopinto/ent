@@ -302,7 +302,7 @@ describe("rsvps", () => {
     expect(count).toBe(1);
 
     // rsvp status is as expected
-    const rsvpStatus = await activity2.viewerRsvpStatus();
+    const rsvpStatus = await activity2.rsvpStatusFor(guest);
     expect(rsvpStatus).toBe(output);
 
     return [activity, guests];
@@ -310,8 +310,6 @@ describe("rsvps", () => {
 
   async function doRsvpForOther(
     input: EventActivityRsvpStatusInput,
-    // TODO we need to be able to check rsvp status for other user...
-    // need to figure out best way to show this in graphql
     output: EventActivityRsvpStatus,
     activityCount: (activity: EventActivity) => Promise<number>,
     guestCount: (guest: Guest) => Promise<number>,
@@ -345,10 +343,12 @@ describe("rsvps", () => {
     count = await guestCount(guest);
     expect(count).toBe(1);
 
-    // rsvp status is attending
-    const rsvpStatus = await activity2.viewerRsvpStatus();
-    // can rsvp since didn't rsvp for self /rsvped for guest
+    // self rsvp is still can rsvp since didn't rsvp for self
+    const rsvpStatus = await activity2.rsvpStatusFor(guests[1]);
     expect(rsvpStatus).toBe(EventActivityRsvpStatus.CanRsvp);
+
+    const otherRsvpStatus = await activity2.rsvpStatusFor(guest);
+    expect(otherRsvpStatus).toBe(output);
   }
 
   test("rsvp attending for self", async () => {
@@ -588,7 +588,7 @@ describe("rsvps", () => {
       },
     ).saveX();
 
-    const rsvpStatus = await activity2.viewerRsvpStatus();
+    const rsvpStatus = await activity2.rsvpStatusFor(guest);
     expect(rsvpStatus).toBe(EventActivityRsvpStatus.Attending);
 
     const activity3 = await EditEventActivityRsvpStatusAction.create(
@@ -600,7 +600,7 @@ describe("rsvps", () => {
       },
     ).saveX();
 
-    const rsvpStatus2 = await activity3.viewerRsvpStatus();
+    const rsvpStatus2 = await activity3.rsvpStatusFor(guest);
     expect(rsvpStatus2).toBe(EventActivityRsvpStatus.Declined);
   });
 });
