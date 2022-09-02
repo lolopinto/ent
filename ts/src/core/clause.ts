@@ -1,4 +1,3 @@
-import e from "express";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
@@ -10,6 +9,10 @@ export interface Clause {
   instanceKey(): string;
   // values to log when querying
   logValues(): any[];
+  // to indicate if a composite clause e.g. combining multiple things
+  // one such reason is to be used by other composite clauses to know if to add parens
+  // around a clause to ensure order of operations is met
+  compositeOp?: string; // e.g. AND, OR etc
 }
 
 export interface SensitiveValue {
@@ -332,12 +335,21 @@ export class inClause implements Clause {
 }
 
 class compositeClause implements Clause {
-  constructor(private clauses: Clause[], private sep: string) {}
+  compositeOp: string;
+
+  constructor(private clauses: Clause[], private sep: string) {
+    this.compositeOp = this.sep;
+  }
 
   clause(idx: number): string {
     let clauses: string[] = [];
     for (const clause of this.clauses) {
-      clauses.push(clause.clause(idx));
+      let cls = clause.clause(idx);
+      // if composite clause and a different op, add parens so that we enforce order of precedence
+      if (clause.compositeOp && clause.compositeOp !== this.sep) {
+        cls = `(${cls})`;
+      }
+      clauses.push(cls);
       idx = idx + clause.values().length;
     }
     return clauses.join(this.sep);
@@ -369,7 +381,13 @@ class compositeClause implements Clause {
 
   instanceKey(): string {
     let keys: string[] = [];
-    this.clauses.forEach((clause) => keys.push(clause.instanceKey()));
+    this.clauses.forEach((clause) => {
+      if (clause.compositeOp && clause.compositeOp != this.sep) {
+        keys.push(`(${clause.instanceKey()})`);
+      } else {
+        keys.push(clause.instanceKey());
+      }
+    });
     return keys.join(this.sep);
   }
 }
@@ -566,6 +584,15 @@ export function AndOptional(...args: (Clause | undefined)[]): Clause {
 
 export function Or(...args: Clause[]): compositeClause {
   return new compositeClause(args, " OR ");
+}
+
+export function OrOptional(...args: (Clause | undefined)[]): Clause {
+  // @ts-ignore
+  let filtered: Clause[] = args.filter((v) => v !== undefined);
+  if (filtered.length === 1) {
+    return filtered[0];
+  }
+  return Or(...filtered);
 }
 
 export function In(col: string, ...values: any): Clause;
