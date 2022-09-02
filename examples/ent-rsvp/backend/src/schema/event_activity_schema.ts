@@ -45,15 +45,13 @@ const EventActivitySchema = new EntSchema({
     },
   ],
 
-  // TODO this one shouldn't be viewerBased since you can rsvp for someone else I think
-  // come back...
-
   edgeGroups: [
     {
       name: "rsvp",
       groupStatusName: "rsvpStatus",
       tableName: "event_rsvps",
       statusEnums: ["attending", "declined"],
+      // not viewer based with null states...
       nullStateFn: "rsvpStatus",
       nullStates: ["canRsvp", "cannotRsvp"],
       edgeAction: {

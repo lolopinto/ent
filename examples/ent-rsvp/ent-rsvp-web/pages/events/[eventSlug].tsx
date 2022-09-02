@@ -514,6 +514,18 @@ function CreateGuestGroup(props: {
     setGuests(clone);
   }
 
+  // anytime show changes, reset
+  useEffect(() => {
+    if (show) {
+      setInvitationName("");
+      setGuests([]);
+    }
+  }, [show]);
+
+  if (!show) {
+    return null;
+  }
+
   return (
     <Modal show={show} onHide={handleClose} size="lg">
       <Modal.Header closeButton>
