@@ -81,7 +81,7 @@ export const GuestType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guest: Guest, args: {}, context: RequestContext) => {
+      resolve: (guest: Guest, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           guest.viewer,
           guest,
@@ -110,7 +110,7 @@ export const GuestType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guest: Guest, args: {}, context: RequestContext) => {
+      resolve: (guest: Guest, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           guest.viewer,
           guest,

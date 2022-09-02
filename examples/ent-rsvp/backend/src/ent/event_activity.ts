@@ -1,7 +1,5 @@
 import {
   AllowIfEdgeExistsRule,
-  AllowIfEntIsVisiblePolicy,
-  AlwaysAllowRule,
   AlwaysDenyRule,
   DelayedResultRule,
   DenyIfEntIsNotVisibleRule,

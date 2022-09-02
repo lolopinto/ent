@@ -442,7 +442,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{ else -}}
       async {{$group.GetStatusMethod}}({{$group.DestNodeInfo.NodeInstance}}: {{useImport $group.DestNodeInfo.Node}}): Promise<{{$group.ConstType}}> {
         {{if $group.NullStateFn -}}
-          const ret = await this.{{$group.NullStateFn}}();
+          const ret = await this.{{$group.NullStateFn}}({{$group.DestNodeInfo.NodeInstance}});
         {{else -}}
           const ret= {{$group.ConstType}}.{{$group.DefaultNullState}};
         {{end -}}

@@ -184,14 +184,17 @@ function Guest({ guest, activity, reloadData }) {
   const [declinedVariant, setDeclinedVariant] = useState("outline-danger");
 
   useEffect(() => {
+    // here, have to fetch all attending for this
     let attendingEdge = guest.attending.edges.find(
       (edge) => edge.node.id === activity.id,
     );
     setAttendingVariant(attendingEdge ? "danger" : "outline-danger");
 
+    // here, have to fetch all declined for this
     let declined = guest.declined.nodes.find((node) => node.id === activity.id);
     setDeclinedVariant(declined ? "danger" : "outline-danger");
 
+    // still need dietary restrictions...
     if (attendingEdge) {
       setDietaryRestrictions(attendingEdge.dietaryRestrictions || "");
     }

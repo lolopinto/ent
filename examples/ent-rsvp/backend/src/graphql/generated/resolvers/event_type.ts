@@ -66,7 +66,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: {}, context: RequestContext) => {
+      resolve: (event: Event, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -95,7 +95,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: {}, context: RequestContext) => {
+      resolve: (event: Event, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -124,7 +124,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: {}, context: RequestContext) => {
+      resolve: (event: Event, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,

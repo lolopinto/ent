@@ -53,7 +53,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,

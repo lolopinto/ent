@@ -983,7 +983,7 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
 	if edgeGroup.ViewerBased {
 		return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
 	}
-	return strcase.ToLowerCamel(edgeGroup.GroupStatusName)
+	return strcase.ToLowerCamel(edgeGroup.GroupStatusName) + "For"
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
