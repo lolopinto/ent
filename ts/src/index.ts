@@ -92,6 +92,7 @@ const query = {
   And: q.And,
   AndOptional: q.AndOptional,
   Or: q.Or,
+  OrOptional: q.OrOptional,
   In: q.In,
   Greater: q.Greater,
   Less: q.Less,
