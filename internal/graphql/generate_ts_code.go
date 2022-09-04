@@ -2141,7 +2141,6 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 				omittedFields = append(omittedFields, fieldName)
 				var useImports []string
 				imps := f.GetTsTypeImports()
-				// TODO imports needs to be aware of input vs not...
 				if len(imps) != 0 {
 					result.Imports = append(result.Imports, imps...)
 					for _, v := range imps {

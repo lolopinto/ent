@@ -12,16 +12,16 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
-import { Account, AccountTodoStatusInput } from "src/ent/";
+import { Account } from "src/ent/";
 import EditAccountTodoStatusAction, {
   EditAccountTodoStatusInput,
 } from "src/ent/account/actions/edit_account_todo_status_action";
+import { AccountTodoStatusInput } from "src/ent/generated/account/actions/edit_account_todo_status_action_base";
 import { AccountType } from "src/graphql/resolvers/";
 
 interface customTodoStatusAccountEditInput
   extends Omit<EditAccountTodoStatusInput, "todoStatus"> {
   id: string;
-  // it's because of different spelling...
   todo_status: AccountTodoStatusInput;
   todo_id: string;
 }
