@@ -113,7 +113,6 @@ export class EditAccountTodoStatusActionBase
   }
 
   async changeset(): Promise<Changeset> {
-    // wow!
     await this.setEdgeType();
     return this.builder.build();
   }

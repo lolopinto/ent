@@ -29,8 +29,6 @@ export enum EventRsvpStatusInput {
 
 export interface EditEventRsvpStatusInput {
   rsvpStatus: EventRsvpStatusInput;
-  // TODO if viewer based, we shouldn't even pass this since you shouldn't be able
-  // to set this for other users...
   userID: ID;
 }
 
@@ -119,6 +117,7 @@ export class EditEventRsvpStatusActionBase
   }
 
   async changeset(): Promise<Changeset> {
+    await this.setEdgeType();
     return this.builder.build();
   }
 
