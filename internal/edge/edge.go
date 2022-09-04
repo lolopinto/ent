@@ -943,8 +943,15 @@ type AssociationEdgeGroup struct {
 	NodeInfo          nodeinfo.NodeInfo
 }
 
+func (edgeGroup *AssociationEdgeGroup) IsNullable() bool {
+	return !edgeGroup.ViewerBased && len(edgeGroup.NullStates) == 0
+}
+
 func (edgeGroup *AssociationEdgeGroup) DefaultNullState() string {
-	return enum.GetTSEnumNameForVal(edgeGroup.NullStates[0])
+	if len(edgeGroup.NullStates) == 0 {
+		return "null"
+	}
+	return fmt.Sprintf("%s.%s", edgeGroup.ConstType, enum.GetTSEnumNameForVal(edgeGroup.NullStates[0]))
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMap() map[string]string {
@@ -977,6 +984,14 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusValues() []string {
 
 func (edgeGroup *AssociationEdgeGroup) GetIDArg() string {
 	return strcase.ToLowerCamel(edgeGroup.DestNodeInfo.Node + "ID")
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetStatusMethodReturn() string {
+	ret := edgeGroup.ConstType
+	if edgeGroup.IsNullable() {
+		ret = fmt.Sprintf("%s | null", ret)
+	}
+	return ret
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {

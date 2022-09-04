@@ -58,7 +58,7 @@ export const TodoType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+      resolve: (todo: Todo, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           todo.viewer,
           todo,

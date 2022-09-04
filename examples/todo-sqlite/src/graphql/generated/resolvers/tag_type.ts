@@ -70,7 +70,7 @@ export const TagType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+      resolve: (tag: Tag, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           tag.viewer,
           tag,

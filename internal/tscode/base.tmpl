@@ -408,7 +408,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       {{ else -}}
         // this should be overwritten by subclasses as needed. 
         protected async {{$group.NullStateFn}}({{$group.DestNodeInfo.NodeInstance}}: {{useImport $group.DestNodeInfo.Node}}) {
-          return {{$group.ConstType}}.{{$group.DefaultNullState}};
+          return {{$group.DefaultNullState}};
         }
       {{end -}}
     {{end}}
@@ -422,11 +422,11 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     }
 
     {{ if $group.ViewerBased -}}
-      async {{$group.GetStatusMethod}}(): Promise<{{$group.ConstType}}> {
+      async {{$group.GetStatusMethod}}(): Promise<{{$group.GetStatusMethodReturn}}> {
         {{if $group.NullStateFn -}}
           const ret = await this.{{$group.NullStateFn}}();
         {{else -}}
-          const ret= {{$group.ConstType}}.{{$group.DefaultNullState}};
+          const ret = {{$group.DefaultNullState}};
         {{end -}}
         if (!this.viewer.viewerID) {
           return ret;
@@ -440,11 +440,11 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         return g ? g[0] : ret;
       }
     {{ else -}}
-      async {{$group.GetStatusMethod}}({{$group.DestNodeInfo.NodeInstance}}: {{useImport $group.DestNodeInfo.Node}}): Promise<{{$group.ConstType}}> {
+      async {{$group.GetStatusMethod}}({{$group.DestNodeInfo.NodeInstance}}: {{useImport $group.DestNodeInfo.Node}}): Promise<{{$group.GetStatusMethodReturn}}> {
         {{if $group.NullStateFn -}}
           const ret = await this.{{$group.NullStateFn}}({{$group.DestNodeInfo.NodeInstance}});
         {{else -}}
-          const ret= {{$group.ConstType}}.{{$group.DefaultNullState}};
+          const ret = {{$group.DefaultNullState}};
         {{end -}}
         const g = await {{useImport "getEdgeTypeInGroup"}}(
           this.viewer,

@@ -12,6 +12,7 @@ import {
   Viewer,
   convertDate,
   convertNullableDate,
+  getEdgeTypeInGroup,
   loadCustomCount,
   loadCustomData,
   loadCustomEnts,
@@ -29,9 +30,13 @@ import {
   accountPhoneNumberLoader,
 } from "src/ent/generated/loaders";
 import {
+  AccountToClosedTodosDupQuery,
+  AccountToOpenTodosDupQuery,
   AccountToTagsQuery,
   AccountToTodosQuery,
+  EdgeType,
   NodeType,
+  Todo,
 } from "src/ent/internal";
 import schema from "src/schema/account_schema";
 
@@ -40,6 +45,11 @@ export enum AccountState {
   VERIFIED = "VERIFIED",
   DEACTIVATED = "DEACTIVATED",
   DISABLED = "DISABLED",
+}
+
+export enum AccountTodoStatus {
+  OpenTodosDup = "openTodosDup",
+  ClosedTodosDup = "closedTodosDup",
 }
 
 interface AccountDBData {
@@ -279,6 +289,32 @@ export class AccountBase implements Ent<Viewer> {
 
   static getField(key: string): Field | undefined {
     return AccountBase.getSchemaFields().get(key);
+  }
+
+  getAccountTodoStatusMap() {
+    let m: Map<AccountTodoStatus, EdgeType> = new Map();
+    m.set(AccountTodoStatus.ClosedTodosDup, EdgeType.AccountToClosedTodosDup);
+    m.set(AccountTodoStatus.OpenTodosDup, EdgeType.AccountToOpenTodosDup);
+    return m;
+  }
+
+  async todoStatusFor(todo: Todo): Promise<AccountTodoStatus | null> {
+    const ret = null;
+    const g = await getEdgeTypeInGroup(
+      this.viewer,
+      this.id,
+      todo.id,
+      this.getAccountTodoStatusMap(),
+    );
+    return g ? g[0] : ret;
+  }
+
+  queryClosedTodosDup(): AccountToClosedTodosDupQuery {
+    return AccountToClosedTodosDupQuery.query(this.viewer, this.id);
+  }
+
+  queryOpenTodosDup(): AccountToOpenTodosDupQuery {
+    return AccountToOpenTodosDupQuery.query(this.viewer, this.id);
   }
 
   queryTags(): AccountToTagsQuery {
