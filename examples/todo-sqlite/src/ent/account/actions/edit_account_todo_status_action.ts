@@ -1,3 +1,5 @@
+import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
+import { PrivacyPolicy } from "@snowtop/ent";
 import {
   EditAccountTodoStatusActionBase,
   EditAccountTodoStatusInput,
@@ -5,4 +7,8 @@ import {
 
 export { EditAccountTodoStatusInput };
 
-export default class EditAccountTodoStatusAction extends EditAccountTodoStatusActionBase {}
+export default class EditAccountTodoStatusAction extends EditAccountTodoStatusActionBase {
+  getPrivacyPolicy(): PrivacyPolicy {
+    return AlwaysAllowPrivacyPolicy;
+  }
+}
