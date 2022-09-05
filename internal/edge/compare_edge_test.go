@@ -356,7 +356,6 @@ func TestPolymorphicFieldEdge(t *testing.T) {
 }
 
 func TestAssociationEdgeGroup(t *testing.T) {
-
 	edge1, err := AssocEdgeFromInput(&codegenapi.DummyConfig{}, "Event", &input.AssocEdge{
 		Name:       "Attending",
 		SchemaName: "User",

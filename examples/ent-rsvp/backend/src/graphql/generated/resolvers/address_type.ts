@@ -65,7 +65,7 @@ export const AddressType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (address: Address, args: {}, context: RequestContext) => {
+      resolve: (address: Address, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           address.viewer,
           address,

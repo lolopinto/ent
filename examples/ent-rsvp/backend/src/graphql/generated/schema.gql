@@ -56,7 +56,7 @@ type EventActivity implements Node {
   attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
-  viewerRsvpStatus: EventActivityRsvpStatus
+  rsvpStatusFor(id: ID!): EventActivityRsvpStatus!
   addressFromOwner: Address
 }
 
@@ -527,9 +527,6 @@ type Mutation {
   importGuests(eventID: ID!, file: Upload!): Event!
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
-
-"""The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""
-scalar JSON
 
 """Time scalar type"""
 scalar Time

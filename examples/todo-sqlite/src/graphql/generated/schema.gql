@@ -32,13 +32,21 @@ enum AccountState {
   DISABLED
 }
 
+enum AccountTodoStatus {
+  OPEN_TODOS_DUP
+  CLOSED_TODOS_DUP
+}
+
 type Account implements Node {
   id: ID!
   name: String!
   phone_number: String
   account_state: AccountState
+  closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
+  open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
+  todoStatusFor(id: ID!): AccountTodoStatus
   open_todos_plural: [Todo!]!
   open_todos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
 }
@@ -60,6 +68,18 @@ type Todo implements Node {
   tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
 }
 
+type AccountToClosedTodosDupEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type AccountToClosedTodosDupConnection implements Connection {
+  edges: [AccountToClosedTodosDupEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type AccountToOpenTodosEdge implements Edge {
   node: Todo!
   cursor: String!
@@ -67,6 +87,18 @@ type AccountToOpenTodosEdge implements Edge {
 
 type AccountToOpenTodosConnection implements Connection {
   edges: [AccountToOpenTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AccountToOpenTodosDupEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type AccountToOpenTodosDupConnection implements Connection {
+  edges: [AccountToOpenTodosDupEdge!]!
   nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -130,6 +162,11 @@ type TodoToTagsConnection implements Connection {
   nodes: [Tag!]!
   pageInfo: PageInfo!
   rawCount: Int!
+}
+
+enum AccountTodoStatusInput {
+  OPEN_TODOS_DUP
+  CLOSED_TODOS_DUP
 }
 
 input AddTodoTagInput {
@@ -233,6 +270,17 @@ type RenameTodoPayload {
   todo: Todo!
 }
 
+input TodoStatusAccountEditInput {
+  """id of Account"""
+  id: ID!
+  todo_status: AccountTodoStatusInput!
+  todo_id: ID!
+}
+
+type TodoStatusAccountEditPayload {
+  account: Account!
+}
+
 type Query {
   account(id: ID!): Account
   open_todos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
@@ -254,6 +302,7 @@ type Mutation {
   removeCompletedTodos(accountID: ID!): Account!
   removeTodoTag(input: RemoveTodoTagInput!): RemoveTodoTagPayload!
   renameTodo(input: RenameTodoInput!): RenameTodoPayload!
+  todoStatusAccountEdit(input: TodoStatusAccountEditInput!): TodoStatusAccountEditPayload!
 }
 
 """The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""

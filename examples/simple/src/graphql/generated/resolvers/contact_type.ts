@@ -86,7 +86,7 @@ export const ContactType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (contact: Contact, args: {}, context: RequestContext) => {
+      resolve: (contact: Contact, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           contact.viewer,
           contact,
@@ -115,7 +115,7 @@ export const ContactType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (contact: Contact, args: {}, context: RequestContext) => {
+      resolve: (contact: Contact, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           contact.viewer,
           contact,

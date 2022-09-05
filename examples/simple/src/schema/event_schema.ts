@@ -72,6 +72,7 @@ const EventSchema = new EntSchema({
     {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
+      viewerBased: true,
       nullStates: ["canRsvp"],
       statusEnums: ["attending", "declined", "maybe"],
       edgeAction: {

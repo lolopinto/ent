@@ -65,7 +65,7 @@ export const CommentType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (comment: Comment, args: {}, context: RequestContext) => {
+      resolve: (comment: Comment, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           comment.viewer,
           comment,

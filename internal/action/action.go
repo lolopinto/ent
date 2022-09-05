@@ -3,6 +3,7 @@ package action
 import (
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -14,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/tsimport"
 
 	"github.com/lolopinto/ent/internal/field"
 
@@ -391,6 +393,10 @@ func processEdgeActions(cfg codegenapi.Config, nodeName string, assocEdge *edge.
 	return actions, nil
 }
 
+func getImportPathForActionBaseFile(nodeName, actionName string) string {
+	return path.Join(fmt.Sprintf("src/ent/generated/%s/actions/%s_base", strcase.ToSnake(nodeName), strcase.ToSnake(actionName)))
+}
+
 func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup *edge.AssociationEdgeGroup, lang base.Language) ([]Action, error) {
 	edgeActions := assocGroup.EdgeActions
 	if len(edgeActions) == 0 {
@@ -399,9 +405,13 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 	actions := make([]Action, len(edgeActions))
 
 	for idx, edgeAction := range edgeActions {
-		typ, err := getEdgeActionType(edgeAction.Action)
+		actionType, err := getEdgeActionType(edgeAction.Action)
 		if err != nil {
 			return nil, err
+		}
+		actionName := edgeAction.CustomActionName
+		if actionName == "" {
+			actionName = actionType.getDefaultActionName(cfg, nodeName, assocGroup, lang)
 		}
 
 		var tsEnums []*enum.Enum
@@ -422,11 +432,19 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 				field.NewNonEntField(
 					cfg,
 					assocGroup.TSGroupStatusName,
-					&enttype.StringEnumType{
+					(&enttype.StringEnumType{
 						Values:      values,
 						Type:        typ,
 						GraphQLType: typ,
-					},
+					}).SetImportPath(
+						&tsimport.ImportPath{
+							ImportPath: getImportPathForActionBaseFile(nodeName, actionName),
+							Import:     typ,
+						}).SetGraphQLImportPath(&tsimport.ImportPath{
+						ImportPath: getImportPathForActionBaseFile(nodeName, actionName),
+						// have to add type manually
+						Import: typ + "Type",
+					}),
 					false,
 				),
 				field.NewNonEntField(
@@ -446,7 +464,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 			tsEnums = append(tsEnums, tsEnum)
 			gqlEnums = append(gqlEnums, gqlEnum)
 		}
-		nonEntFields, err := getNonEntFieldsFromAssocGroup(cfg, nodeName, assocGroup, edgeAction, typ)
+		nonEntFields, err := getNonEntFieldsFromAssocGroup(cfg, nodeName, assocGroup, edgeAction, actionType)
 		if err != nil {
 			return nil, err
 		}
@@ -454,7 +472,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 
 		commonInfo := getCommonInfoForGroupEdgeAction(cfg, nodeName,
 			assocGroup,
-			typ,
+			actionType,
 			edgeAction,
 			lang,
 			fields,
@@ -463,7 +481,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 		commonInfo.gqlEnums = gqlEnums
 		commonInfo.EdgeGroup = assocGroup
 
-		actions[idx] = typ.getAction(commonInfo)
+		actions[idx] = actionType.getAction(commonInfo)
 	}
 	return actions, nil
 }

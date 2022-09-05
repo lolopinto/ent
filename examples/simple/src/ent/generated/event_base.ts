@@ -241,13 +241,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     const g = await getEdgeTypeInGroup(
       this.viewer,
       this.id,
-      this.viewer.viewerID!,
+      this.viewer.viewerID,
       this.getEventRsvpStatusMap(),
     );
-    if (g) {
-      return g[0];
-    }
-    return ret;
+    return g ? g[0] : ret;
   }
 
   queryAttending(): EventToAttendingQuery {

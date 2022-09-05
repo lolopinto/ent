@@ -157,10 +157,23 @@ export interface AssocEdgeGroup {
   tableName?: string;
   assocEdges: AssocEdge[];
   statusEnums?: string[]; // if present, restrict to these instead of all given enums...
+
+  // breaking change!
+  // if true, assumes the edge group is viewer based e.g. viewer rsvping to an event
+  // viewer sending a friend request etc.
+  // if viewer based, a viewer{Foo}() function is added to the source ent to get the viewer status
+  // to this and cannot check it for another User|Account|et
+
+  // if not viewer based, will generate an API to pass an instance of the other ent to get the status for
+  viewerBased?: boolean;
+
   //  extraEnums:
   // either single item or should be list with way to differentiate btw them...
   // nullStates are not part of input, just output...
-  nullStates: string | string[];
+  // make nullStates optional for non-viewer-based edges...
+  // required for now for viewer based status enums, optional otherwise
+  nullStates?: string | string[];
+
   // if more than one nullState. must pass this in
   nullStateFn?: string;
   //  nullStates?: string | AssocEdgeNullState[]; // if the edge doesn't exist, return this instead

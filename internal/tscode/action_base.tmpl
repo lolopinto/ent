@@ -192,6 +192,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   {{end -}}
 
   async changeset(): Promise<{{useImport "Changeset"}}> {
+    {{if edgeGroupAction $action }}
+      await this.setEdgeType();
+    {{ end -}}
     return this.builder.build();
   }
 

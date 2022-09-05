@@ -30,6 +30,7 @@ import {
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
+  Guest,
   IWithAddress,
   NodeType,
   WithAddressMixin,
@@ -221,7 +222,7 @@ export class EventActivityBase
   }
 
   // this should be overwritten by subclasses as needed.
-  protected async rsvpStatus() {
+  protected async rsvpStatus(guest: Guest) {
     return EventActivityRsvpStatus.CanRsvp;
   }
 
@@ -232,21 +233,15 @@ export class EventActivityBase
     return m;
   }
 
-  async viewerRsvpStatus(): Promise<EventActivityRsvpStatus> {
-    const ret = await this.rsvpStatus();
-    if (!this.viewer.viewerID) {
-      return ret;
-    }
+  async rsvpStatusFor(guest: Guest): Promise<EventActivityRsvpStatus> {
+    const ret = await this.rsvpStatus(guest);
     const g = await getEdgeTypeInGroup(
       this.viewer,
       this.id,
-      this.viewer.viewerID!,
+      guest.id,
       this.getEventActivityRsvpStatusMap(),
     );
-    if (g) {
-      return g[0];
-    }
-    return ret;
+    return g ? g[0] : ret;
   }
 
   queryAttending(): EventActivityToAttendingQuery {

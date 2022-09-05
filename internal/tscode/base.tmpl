@@ -402,10 +402,15 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   {{ range $group := .EdgeInfo.AssocGroups -}}
     {{if $group.NullStateFn -}}
-    // this should be overwritten by subclasses as needed. 
-    protected async {{$group.NullStateFn}}() {
-      return {{$group.ConstType}}.{{$group.DefaultNullState}};
-    }
+      {{ if $group.ViewerBased -}}
+        // this should be overwritten by subclasses as needed. 
+        protected async {{$group.NullStateFn}}() {
+      {{ else -}}
+        // this should be overwritten by subclasses as needed. 
+        protected async {{$group.NullStateFn}}({{$group.DestNodeInfo.NodeInstance}}: {{useImport $group.DestNodeInfo.Node}}) {
+          return {{$group.DefaultNullState}};
+        }
+      {{end -}}
     {{end}}
 
     {{$group.GetStatusMapMethod}}() {
@@ -416,26 +421,40 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       return m;
     }
 
-    async {{$group.GetStatusMethod}}(): Promise<{{$group.ConstType}}> {
-      {{if $group.NullStateFn -}}
-        const ret = await this.{{$group.NullStateFn}}();
-      {{else -}}
-        const ret= {{$group.ConstType}}.{{$group.DefaultNullState}};
-      {{end -}}
-      if (!this.viewer.viewerID) {
-        return ret;
+    {{ if $group.ViewerBased -}}
+      async {{$group.GetStatusMethod}}(): Promise<{{$group.GetStatusMethodReturn}}> {
+        {{if $group.NullStateFn -}}
+          const ret = await this.{{$group.NullStateFn}}();
+        {{else -}}
+          const ret = {{$group.DefaultNullState}};
+        {{end -}}
+        if (!this.viewer.viewerID) {
+          return ret;
+        }
+        const g = await {{useImport "getEdgeTypeInGroup"}}(
+          this.viewer,
+          this.id,
+          this.viewer.viewerID,
+          this.get{{$group.ConstType}}Map(),
+        );
+        return g ? g[0] : ret;
       }
-      const g = await {{useImport "getEdgeTypeInGroup"}}(
-        this.viewer,
-        this.id,
-        this.viewer.viewerID!,
-        this.get{{$group.ConstType}}Map(),
-      );
-      if (g) {
-        return g[0];
+    {{ else -}}
+      async {{$group.GetStatusMethod}}({{$group.DestNodeInfo.NodeInstance}}: {{useImport $group.DestNodeInfo.Node}}): Promise<{{$group.GetStatusMethodReturn}}> {
+        {{if $group.NullStateFn -}}
+          const ret = await this.{{$group.NullStateFn}}({{$group.DestNodeInfo.NodeInstance}});
+        {{else -}}
+          const ret = {{$group.DefaultNullState}};
+        {{end -}}
+        const g = await {{useImport "getEdgeTypeInGroup"}}(
+          this.viewer,
+          this.id,
+          {{$group.DestNodeInfo.NodeInstance}}.id,
+          this.get{{$group.ConstType}}Map(),
+        );
+        return g ? g[0] : ret;
       }
-      return ret;
-    }
+    {{end -}}
   {{end -}}
 
   {{/* load edges and load objects */ -}}

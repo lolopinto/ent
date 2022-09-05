@@ -1553,11 +1553,13 @@ func (t *enumType) getDBTypeForEnumDBType(values []string, typ string) string {
 
 type StringEnumType struct {
 	enumType
-	EnumDBType  bool
-	Type        string
-	GraphQLType string
-	Values      []string
-	EnumMap     map[string]string
+	EnumDBType               bool
+	Type                     string
+	GraphQLType              string
+	Values                   []string
+	EnumMap                  map[string]string
+	overrideImportPath       *tsimport.ImportPath
+	overideGraphQLImportPath *tsimport.ImportPath
 }
 
 func (t *StringEnumType) GetDBType() string {
@@ -1565,6 +1567,16 @@ func (t *StringEnumType) GetDBType() string {
 		return t.getDBTypeForEnumDBType(t.Values, t.Type)
 	}
 	return "sa.Text()"
+}
+
+func (t *StringEnumType) SetImportPath(imp *tsimport.ImportPath) *StringEnumType {
+	t.overrideImportPath = imp
+	return t
+}
+
+func (t *StringEnumType) SetGraphQLImportPath(imp *tsimport.ImportPath) *StringEnumType {
+	t.overideGraphQLImportPath = imp
+	return t
 }
 
 func (t *StringEnumType) GetEnumData() *EnumData {
@@ -1591,6 +1603,11 @@ func (t *StringEnumType) GetTSType() string {
 }
 
 func (t *StringEnumType) GetTsTypeImports() []*tsimport.ImportPath {
+	if t.overrideImportPath != nil {
+		return []*tsimport.ImportPath{
+			t.overrideImportPath,
+		}
+	}
 	return []*tsimport.ImportPath{
 		tsimport.NewLocalEntImportPath(t.Type),
 	}
@@ -1609,6 +1626,12 @@ func (t *StringEnumType) GetNullableType() TSGraphQLType {
 }
 
 func (t *StringEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+	if t.overideGraphQLImportPath != nil {
+		return []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			t.overideGraphQLImportPath,
+		}
+	}
 	return []*tsimport.ImportPath{
 		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
