@@ -268,6 +268,13 @@ export async function loadEnt<
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt | null> {
+  if (
+    typeof id !== "string" &&
+    typeof id !== "number" &&
+    typeof id !== "bigint"
+  ) {
+    throw new Error(`invalid id ${id} passed to loadEnt`);
+  }
   const r = await getEntLoader(viewer, options).load(id);
   return r instanceof ErrorWrapper ? null : r;
 }
@@ -339,6 +346,13 @@ export async function loadEntX<
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt> {
+  if (
+    typeof id !== "string" &&
+    typeof id !== "number" &&
+    typeof id !== "bigint"
+  ) {
+    throw new Error(`invalid id ${id} passed to loadEntX`);
+  }
   const r = await getEntLoader(viewer, options).load(id);
   if (r instanceof ErrorWrapper) {
     throw r.error;

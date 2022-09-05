@@ -8,7 +8,7 @@ import {
 import { IDViewer, LoggedOutViewer } from "./viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
-import { Field, FieldMap, StringType, UUIDType } from "../schema";
+import { FieldMap, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
 import { ID, Ent, Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
 import {
