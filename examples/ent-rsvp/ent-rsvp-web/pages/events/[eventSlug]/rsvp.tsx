@@ -184,19 +184,17 @@ function Guest({ guest, activity, reloadData }) {
   const [declinedVariant, setDeclinedVariant] = useState("outline-danger");
 
   useEffect(() => {
-    // TODO this should be using viewerRsvpFor or a custom query that figures out how to fetch the
+    // TODO this should be using rsvpStatusFor or a custom query that figures out how to fetch the
     // rsvp status for all the right people
     // we can fetch the extra data in a custom query
-    // alas, viewerRsvpFor doesn't work for dietary restrictions so probably a custom filter somewhere
+    // alas, rsvpStatusFor doesn't work for dietary restrictions so probably a custom filter somewhere
     // so that we don't need to fetch extra data multiple times
     //
-    // here, have to fetch all attending for this beause the default generated queries don't work ideally for this
     let attendingEdge = guest.attending.edges.find(
       (edge) => edge.node.id === activity.id,
     );
     setAttendingVariant(attendingEdge ? "danger" : "outline-danger");
 
-    // here, have to fetch all declined for this
     let declined = guest.declined.nodes.find((node) => node.id === activity.id);
     setDeclinedVariant(declined ? "danger" : "outline-danger");
 
