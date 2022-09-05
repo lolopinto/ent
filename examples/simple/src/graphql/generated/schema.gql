@@ -233,7 +233,7 @@ type Event implements Node {
   hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
   invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
-  viewerRsvpStatus: EventRsvpStatus
+  viewerRsvpStatus: EventRsvpStatus!
 }
 
 type Holiday implements Node {

@@ -56,7 +56,7 @@ type EventActivity implements Node {
   attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
-  rsvpStatusFor(id: ID!): EventActivityRsvpStatus
+  rsvpStatusFor(id: ID!): EventActivityRsvpStatus!
   addressFromOwner: Address
 }
 

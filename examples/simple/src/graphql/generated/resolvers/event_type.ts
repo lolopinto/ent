@@ -217,7 +217,7 @@ export const EventType = new GraphQLObjectType({
       },
     },
     viewerRsvpStatus: {
-      type: EventRsvpStatusType,
+      type: new GraphQLNonNull(EventRsvpStatusType),
     },
   }),
   interfaces: [GraphQLNodeInterface],

@@ -1845,13 +1845,13 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 
 	for _, group := range nodeData.EdgeInfo.AssocGroups {
 		method := group.GetStatusMethod()
-		// TODO nullable check here
-		imps := getGQLFileImports(
-			[]*tsimport.ImportPath{
-				tsimport.NewLocalGraphQLEntImportPath(group.ConstType),
-			},
-			false,
-		)
+		var imps []*tsimport.ImportPath
+		if !group.IsNullable() {
+			imps = append(imps, tsimport.NewGQLClassImportPath("GraphQLNonNull"))
+		}
+		imps = append(imps, tsimport.NewLocalGraphQLEntImportPath(group.ConstType))
+		imps = getGQLFileImports(imps, false)
+
 		if group.ViewerBased {
 			fields = append(fields, &fieldType{
 				Name:         method,

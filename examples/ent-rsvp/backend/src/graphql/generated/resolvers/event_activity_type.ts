@@ -180,7 +180,7 @@ export const EventActivityType = new GraphQLObjectType({
       },
     },
     rsvpStatusFor: {
-      type: EventActivityRsvpStatusType,
+      type: new GraphQLNonNull(EventActivityRsvpStatusType),
       args: {
         id: {
           description: "",
