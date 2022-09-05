@@ -754,7 +754,9 @@ export interface Action {
   // allows changing default behavior e.g. making an optional field required
   // or excluding a field so as to not put in fields
   excludedFields?: string[];
+  // NB: optionalFields still requires field in list of fields
   optionalFields?: string[];
+  // NB: requiredFields still requires field in list of fields
   requiredFields?: string[];
   noFields?: boolean;
 
