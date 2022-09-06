@@ -68,6 +68,8 @@ sa.Table("comments", metadata,
     sa.Column("body", sa.Text(), nullable=False),
     sa.Column("article_id", postgresql.UUID(), nullable=False),
     sa.Column("article_type", sa.Text(), nullable=False),
+    sa.Column("sticker_id", postgresql.UUID(), nullable=True),
+    sa.Column("sticker_type", sa.Text(), nullable=True),
     sa.Index("comments_article_id_idx", "article_id"),
     sa.PrimaryKeyConstraint("id", name="comments_id_pkey"),
 )

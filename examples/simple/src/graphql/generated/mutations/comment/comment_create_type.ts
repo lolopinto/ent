@@ -15,7 +15,10 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { Comment } from "../../../../ent";
 import CreateCommentAction, {
   CommentCreateInput,
@@ -26,6 +29,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 interface customCommentCreateInput extends CommentCreateInput {
   authorID: string;
   articleID: string;
+  stickerID?: string;
 }
 
 interface CommentCreatePayload {
@@ -46,6 +50,12 @@ export const CommentCreateInputType = new GraphQLInputObjectType({
     },
     articleType: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    stickerID: {
+      type: GraphQLID,
+    },
+    stickerType: {
+      type: GraphQLString,
     },
   }),
 });
@@ -82,6 +92,8 @@ export const CommentCreateType: GraphQLFieldConfig<
       body: input.body,
       articleID: mustDecodeIDFromGQLID(input.articleID),
       articleType: input.articleType,
+      stickerID: mustDecodeNullableIDFromGQLID(input.stickerID),
+      stickerType: input.stickerType,
     }).saveX();
     return { comment: comment };
   },

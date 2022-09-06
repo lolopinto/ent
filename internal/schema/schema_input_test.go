@@ -977,14 +977,12 @@ func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	assert.Len(t, schema.Nodes, 2)
 
 	addressCfg := schema.Nodes["AddressConfig"]
-	assert.NotNil(t, addressCfg)
+	require.NotNil(t, addressCfg)
 
 	ownerEdge := addressCfg.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
-	assert.NotNil(t, ownerEdge)
-
-	// this edge name doesn't make the most sense...
-	addressesEdge := addressCfg.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("Addresses")
-	assert.NotNil(t, addressesEdge)
+	require.NotNil(t, ownerEdge)
+	addressesEdge := addressCfg.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	require.NotNil(t, addressesEdge)
 	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
 	// TODO tied to IndexedEdge.GetGraphQLConnectionName
 	assert.Equal(t, "", addressesEdge.GetGraphQLConnectionName())
@@ -998,6 +996,112 @@ func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
 
 	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "UserToAddressesConnection")
+}
+
+func TestParseInputWithMultiplePolymorphicFieldEdgeInverseTypes(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"Address": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "ownerID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						DerivedFields: []*input.Field{
+							{
+								Name: "ownerType",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+						Polymorphic: &input.PolymorphicOptions{
+							Types: []string{"user"},
+						},
+					},
+					{
+						Name: "fooID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						DerivedFields: []*input.Field{
+							{
+								Name: "fooType",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+						// need a name for inverseEdge...
+						Polymorphic: &input.PolymorphicOptions{
+							Types: []string{"user"},
+							Name:  "FooAddresses",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	addressCfg := schema.Nodes["AddressConfig"]
+	require.NotNil(t, addressCfg)
+
+	ownerEdge := addressCfg.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	require.NotNil(t, ownerEdge)
+	addressesEdge := addressCfg.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	require.NotNil(t, addressesEdge)
+	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
+	// TODO tied to IndexedEdge.GetGraphQLConnectionName
+	assert.Equal(t, "", addressesEdge.GetGraphQLConnectionName())
+
+	userCfg := schema.Nodes["UserConfig"]
+	assert.NotNil(t, userCfg)
+
+	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	assert.NotNil(t, indexedEdge)
+
+	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
+
+	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "UserToAddressesConnection")
+
+	fooEdge := addressCfg.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("fooIDS")
+	require.NotNil(t, fooEdge)
+	assert.Equal(t, fooEdge.TsEdgeQueryName(), "FooToAddressesQuery")
+
+	indexedEdge2 := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("FooAddresses")
+	assert.NotNil(t, indexedEdge2)
 }
 
 func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
@@ -1065,8 +1169,9 @@ func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
 	userCfg := schema.Nodes["UserConfig"]
 	assert.NotNil(t, userCfg)
 
-	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("ownerIDS")
 	assert.Nil(t, indexedEdge)
+	assert.Len(t, userCfg.NodeData.EdgeInfo.DestinationEdges, 0)
 }
 
 func TestWithPatterns(t *testing.T) {

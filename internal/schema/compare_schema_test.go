@@ -1980,7 +1980,7 @@ func TestIndexedEdgeAdded(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.AddEdge,
-		Name:   "Users",
+		Name:   "ownerIDS",
 		// no connection...
 		GraphQLName: "",
 		ExtraInfo:   "OwnerToUsersQuery",
@@ -2032,7 +2032,7 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.RemoveEdge,
-		Name:   "Users",
+		Name:   "ownerIDS",
 		// no connection...
 		GraphQLName: "",
 		ExtraInfo:   "OwnerToUsersQuery",
@@ -2054,15 +2054,17 @@ func TestIndexedEdgeModified(t *testing.T) {
 		&base.PolymorphicOptions{
 			PolymorphicOptions: &input.PolymorphicOptions{},
 		}))
-	// change field name, keep col name
+	// change polymorphic flag
 	e2 := edge.NewEdgeInfo("user")
 	require.Nil(t, e2.AddIndexedEdgeFromSource(
 		&codegenapi.DummyConfig{},
-		"ownerID",
+		"owner_id",
 		"owner_id",
 		"User",
 		&base.PolymorphicOptions{
-			PolymorphicOptions: &input.PolymorphicOptions{},
+			PolymorphicOptions: &input.PolymorphicOptions{
+				HideFromInverseGraphQL: true,
+			},
 		}))
 
 	s1 := &schema.Schema{
@@ -2095,7 +2097,7 @@ func TestIndexedEdgeModified(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.ModifyEdge,
-		Name:   "Users",
+		Name:   "owner_ids",
 		// no connection
 		GraphQLName: "",
 		ExtraInfo:   "OwnerIdToUsersQuery",

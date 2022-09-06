@@ -466,6 +466,10 @@ export interface FieldOptions {
 }
 
 export interface PolymorphicOptions {
+  // optional but if we have multiple Polymorphic fields in the source schema, it becomes required for all but one
+  // defaults to pluralize(schema) if not provided
+  // same philosophy as type ForeignKey
+  name?: string;
   // restrict to just these types
   types?: string[];
   // hide inverse type from graphql

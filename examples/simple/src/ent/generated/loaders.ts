@@ -133,6 +133,8 @@ const commentFields = [
   "body",
   "article_id",
   "article_type",
+  "sticker_id",
+  "sticker_type",
 ];
 
 export const commentLoader = new ObjectLoaderFactory({
@@ -174,6 +176,14 @@ export const commentLoaderInfo = {
     ArticleType: {
       dbCol: "article_type",
       inputKey: "articleType",
+    },
+    StickerID: {
+      dbCol: "sticker_id",
+      inputKey: "stickerID",
+    },
+    StickerType: {
+      dbCol: "sticker_type",
+      inputKey: "stickerType",
     },
   },
 };

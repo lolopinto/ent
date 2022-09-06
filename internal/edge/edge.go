@@ -354,7 +354,14 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				cfg,
-				inflection.Plural(nodeName),
+				// TODO this changes a bunch of things
+
+				// it changes a bunch of things
+				// so we need edge name to be the same but loader factory and query to change
+
+				// TODO test multiple polymorphic fields on the same schema
+				inflection.Plural(tsFieldName),
+				// inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
 			quotedDbColName: quotedDBColName,
@@ -365,6 +372,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 		edge._HideFromGraphQL = true
 	}
 	edgeName := edge.GetEdgeName()
+	// TODO this is being called twice  with different edge infos...
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
 	return e.addEdge(edge)
@@ -372,12 +380,16 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 
 func getIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
+	edgeName := inflection.Plural(nodeName)
+	if polymorphic != nil && polymorphic.Name != "" {
+		edgeName = polymorphic.Name
+	}
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				cfg,
-				inflection.Plural(nodeName),
+				edgeName,
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
 			quotedDbColName: quotedDBColName,
@@ -646,7 +658,7 @@ func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 }
 
 func (e *IndexedEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetSourceNodeName() string {
@@ -663,7 +675,7 @@ func (e *IndexedEdge) GetGraphQLConnectionName() string {
 		return ""
 		//		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
 	}
-	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
@@ -680,7 +692,7 @@ func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {
-	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetCountFactoryName() string {
