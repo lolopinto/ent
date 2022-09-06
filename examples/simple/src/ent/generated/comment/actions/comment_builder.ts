@@ -24,6 +24,8 @@ export interface CommentInput {
   body?: string;
   articleID?: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   articleType?: string;
+  stickerID?: ID | null | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
+  stickerType?: string | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -213,6 +215,8 @@ export class CommentBuilder<
     addField("Body", fields.body);
     addField("ArticleID", fields.articleID);
     addField("ArticleType", fields.articleType);
+    addField("StickerID", fields.stickerID);
+    addField("StickerType", fields.stickerType);
     return result;
   }
 
@@ -278,5 +282,26 @@ export class CommentBuilder<
       );
     }
     return this.existingEnt.articleType;
+  }
+
+  // get value of StickerID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewStickerIDValue():
+    | ID
+    | null
+    | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias> {
+    if (this.input.stickerID !== undefined) {
+      return this.input.stickerID;
+    }
+
+    return this.existingEnt?.stickerID ?? null;
+  }
+
+  // get value of StickerType. Retrieves it from the input if specified or takes it from existingEnt
+  getNewStickerTypeValue(): string | null {
+    if (this.input.stickerType !== undefined) {
+      return this.input.stickerType;
+    }
+
+    return this.existingEnt?.stickerType ?? null;
   }
 }

@@ -205,6 +205,7 @@ type PolymorphicOptions struct {
 	Types                  []string `json:"types,omitempty"`
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL,omitempty"`
 	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
+	Name                   string   `json:"name,omitempty"`
 }
 
 type PrivateOptions struct {

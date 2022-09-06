@@ -38,6 +38,12 @@ export const CommentType = new GraphQLObjectType({
         return comment.loadAuthor();
       },
     },
+    sticker: {
+      type: GraphQLNodeInterface,
+      resolve: (comment: Comment, args: {}, context: RequestContext) => {
+        return comment.loadSticker();
+      },
+    },
     id: {
       type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,

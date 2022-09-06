@@ -12,6 +12,7 @@ const CommentSchema = new EntSchema({
     Body: StringType(),
     // should be postID but don't want to conflict with existing post edge
     ArticleID: UUIDType({ polymorphic: true, index: true }),
+    StickerID: UUIDType({ polymorphic: true, nullable: true }),
   },
 
   actions: [

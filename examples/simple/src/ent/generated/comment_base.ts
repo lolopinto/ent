@@ -39,6 +39,8 @@ interface CommentDBData {
   body: string;
   article_id: ID;
   article_type: string;
+  sticker_id: ID | null;
+  sticker_type: string | null;
 }
 
 export class CommentBase implements Ent<ExampleViewerAlias> {
@@ -50,6 +52,8 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   readonly body: string;
   readonly articleID: ID;
   readonly articleType: string;
+  readonly stickerID: ID | null;
+  readonly stickerType: string | null;
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
@@ -59,6 +63,8 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     this.body = data.body;
     this.articleID = data.article_id;
     this.articleType = data.article_type;
+    this.stickerID = data.sticker_id;
+    this.stickerType = data.sticker_type;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
@@ -227,5 +233,16 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
 
   loadAuthorX(): Promise<User> {
     return loadEntX(this.viewer, this.authorID, User.loaderOptions());
+  }
+
+  async loadSticker(): Promise<Ent | null> {
+    if (!this.stickerID) {
+      return null;
+    }
+    return loadEntByType(
+      this.viewer,
+      this.stickerType as unknown as NodeType,
+      this.stickerID,
+    );
   }
 }
