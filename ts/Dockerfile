@@ -12,10 +12,10 @@ ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
 ARG TARGETOS TARGETARCH
 # TODO go install works on its own but not the mounts with "read-only file system"
-RUN --mount=target=. \
-  --mount=type=cache,target=/root/.cache/go-build \
-  --mount=type=cache,target=/go/pkg \
-  GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
+# RUN --mount=target=. \
+# --mount=type=cache,target=/root/.cache/go-build \
+# --mount=type=cache,target=/go/pkg \
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
 FROM --platform=$BUILDPLATFORM python:3.8.11-buster AS python-image
