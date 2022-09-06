@@ -295,9 +295,9 @@ func (i *Input) getValuesFromIntEnumMap(m map[string]int) ([]Data, []Data) {
 	return tsVals, gqlVals
 }
 
-func NewInputFromEnumType(enumType enttype.EnumeratedType) *Input {
+func NewInputFromEnumType(enumType enttype.EnumeratedType) (*Input, error) {
 	data := enumType.GetEnumData()
-	return &Input{
+	input := &Input{
 		TSName:               enumType.GetTSName(),
 		GQLName:              enumType.GetGraphQLName(),
 		GQLType:              enumType.GetTSType(),
@@ -306,6 +306,10 @@ func NewInputFromEnumType(enumType enttype.EnumeratedType) *Input {
 		IntEnumMap:           data.IntEnumMap,
 		DeprecatedIntEnumMap: data.DeprecatedIntEnumMap,
 	}
+	if !input.HasValues() {
+		return nil, fmt.Errorf("Enum %s has no values", input.TSName)
+	}
+	return input, nil
 }
 
 func GetEnums(input *Input) (*Enum, *GQLEnum) {

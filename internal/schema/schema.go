@@ -71,11 +71,12 @@ func (s *Schema) GetGlobalConsts() WithConst {
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
-	return s.addEnumFrom(
-		enum.NewInputFromEnumType(enumType),
-		nodeData,
-		nil,
-	)
+	v, err := enum.NewInputFromEnumType(enumType)
+	if err != nil {
+		return err
+	}
+
+	return s.addEnumFrom(v, nodeData, nil)
 }
 
 func (s *Schema) addPattern(name string, p *PatternInfo) error {
@@ -206,7 +207,10 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 }
 
 func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) (*EnumInfo, error) {
-	input := enum.NewInputFromEnumType(enumType)
+	input, err := enum.NewInputFromEnumType(enumType)
+	if err != nil {
+		return nil, err
+	}
 	return s.addEnumFromInput(input, pattern)
 }
 
@@ -696,7 +700,10 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 	typ := f.GetFieldType()
 	enumTyp, ok := enttype.GetEnumType(typ)
 	if ok {
-		input := enum.NewInputFromEnumType(enumTyp)
+		input, err := enum.NewInputFromEnumType(enumTyp)
+		if err != nil {
+			return err
+		}
 		info, err := s.addEnumFromInput(input, nil)
 		if err != nil {
 			return err

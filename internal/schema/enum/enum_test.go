@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -195,6 +196,44 @@ func TestUnequalEnums(t *testing.T) {
 
 	assert.False(t, EnumEqual(tsEnum, tsEnum2))
 	assert.False(t, GQLEnumEqual(gqlEnum, gqlEnum2))
+}
+
+func TestIntEnumNoValues(t *testing.T) {
+	input, err := NewInputFromEnumType(&enttype.IntegerEnumType{})
+	require.Nil(t, input)
+	require.Error(t, err)
+}
+
+func TestStringEnumNoValues(t *testing.T) {
+	input, err := NewInputFromEnumType(&enttype.StringEnumType{})
+	require.Nil(t, input)
+	require.Error(t, err)
+}
+
+func TestIntEnumWithValues(t *testing.T) {
+	input, err := NewInputFromEnumType(&enttype.IntegerEnumType{
+		EnumMap: map[string]int{
+			"Foo": 0,
+		},
+	})
+	require.Nil(t, err)
+	require.NotNil(t, input)
+}
+
+func TestStringEnumWithValues(t *testing.T) {
+	input, err := NewInputFromEnumType(&enttype.StringEnumType{
+		Values: []string{"hello"},
+	})
+	require.Nil(t, err)
+	require.NotNil(t, input)
+}
+
+func TestStringEnumWithMap(t *testing.T) {
+	input, err := NewInputFromEnumType(&enttype.StringEnumType{
+		EnumMap: map[string]string{"FOO": "f"},
+	})
+	require.Nil(t, err)
+	require.NotNil(t, input)
 }
 
 func getValues(values []string) []Data {
