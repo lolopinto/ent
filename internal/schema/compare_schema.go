@@ -177,7 +177,11 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 	var ret []change.Change
 
 	if !opts.skipFields {
-		ret = append(ret, field.CompareFieldInfo(n1.FieldInfo, n2.FieldInfo)...)
+		r, err := field.CompareFieldInfo(n1.FieldInfo, n2.FieldInfo)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, r...)
 	}
 
 	ret = append(ret, edge.CompareEdgeInfo(n1.EdgeInfo, n2.EdgeInfo)...)
