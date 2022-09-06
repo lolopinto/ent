@@ -543,6 +543,56 @@ func TestCompareNodesModifyField(t *testing.T) {
 	}, user[1])
 }
 
+func TestCompareNodesModifyDBType(t *testing.T) {
+	fi1 := newFieldInfoTests(
+		t,
+		[]*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		})
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi1,
+				},
+			},
+		},
+	}
+
+	fi2 := newFieldInfoTests(
+		t,
+		[]*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.JSONB,
+				},
+			},
+		})
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, m)
+	require.Error(t, err)
+}
+
 func TestCompareNodesChangeFieldKeepDBKey(t *testing.T) {
 	fi1 := newFieldInfoTests(
 		t,
