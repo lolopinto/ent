@@ -23,13 +23,13 @@ const TAG = "0.1.0-testtttt"
 const CURRENT_NODE_VERSION = 18
 const REPO = "ghcr.io/lolopinto/ent"
 
-const UPDATE_LATEST = true
+const UPDATE_LATEST = false
 
 var NODE_VERSIONS = []int{
-	// 14,
-	// 16,
+	14,
+	16,
 	17,
-	// 18,
+	18,
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.20"
