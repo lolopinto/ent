@@ -291,6 +291,66 @@ func TestCompareAddNode(t *testing.T) {
 	}, user[0])
 }
 
+func TestCompareAddNodeTableNameSet(t *testing.T) {
+	s1 := &schema.Schema{}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					TableName:   "users",
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 1)
+	verifyChange(t, change.Change{
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[0])
+}
+
+func TestCompareAddEnumTableNode(t *testing.T) {
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"RoleConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("role"),
+					PackageName: "role",
+					EnumTable:   true,
+					DBRows: []map[string]interface{}{
+						{
+							"role": "admin",
+						},
+						{
+							"role": "member",
+						},
+					},
+				},
+			},
+		},
+	}
+	s1 := &schema.Schema{}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	role := m["Role"]
+	require.Len(t, role, 1)
+	verifyChange(t, change.Change{
+		Change:      change.AddNode,
+		Name:        "Role",
+		GraphQLName: "Role",
+	}, role[0])
+}
+
 func TestCompareRemoveNode(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -314,6 +374,66 @@ func TestCompareRemoveNode(t *testing.T) {
 		Name:        "User",
 		GraphQLName: "User",
 	}, user[0])
+}
+
+func TestCompareRemoveNodeTableNameSet(t *testing.T) {
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					TableName:   "users",
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 1)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[0])
+}
+
+func TestCompareRemoveEnumTableNode(t *testing.T) {
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"RoleConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("role"),
+					PackageName: "role",
+					EnumTable:   true,
+					DBRows: []map[string]interface{}{
+						{
+							"role": "admin",
+						},
+						{
+							"role": "member",
+						},
+					},
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	role := m["Role"]
+	require.Len(t, role, 1)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveNode,
+		Name:        "Role",
+		GraphQLName: "Role",
+	}, role[0])
 }
 
 func TestCompareNodesNoChange(t *testing.T) {

@@ -124,6 +124,7 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 			ndi2 = blankNodeDataInfo()
 			opts.skipFields = true
 			opts.skipModifyNode = true
+			opts.addingOrRemovingNode = true
 		}
 		diff, err := compareNode(ndi1.NodeData, ndi2.NodeData, &opts)
 		if err != nil {
@@ -150,8 +151,9 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 			}
 			ndi1 := blankNodeDataInfo()
 			diff, err := compareNode(ndi1.NodeData, ndi2.NodeData, &compareNodeOptions{
-				skipFields:     true,
-				skipModifyNode: true,
+				skipFields:           true,
+				skipModifyNode:       true,
+				addingOrRemovingNode: true,
 			})
 			if err != nil {
 				return err
@@ -169,8 +171,9 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 
 type compareNodeOptions struct {
 	// options: skipFields, skipModifyNode
-	skipFields     bool
-	skipModifyNode bool
+	skipFields           bool
+	skipModifyNode       bool
+	addingOrRemovingNode bool
 }
 
 func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, error) {
@@ -197,20 +200,22 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 
 	ret = append(ret, input.CompareConstraints(n1.Constraints, n2.Constraints)...)
 
-	if n1.TableName != n2.TableName {
-		return nil, fmt.Errorf("cannot change table name for node %s", n1.Node)
-	}
+	if !opts.addingOrRemovingNode {
+		if n1.TableName != n2.TableName {
+			return nil, fmt.Errorf("cannot change table name for node %s", n1.Node)
+		}
 
-	if n1.EnumTable != n2.EnumTable {
-		return nil, fmt.Errorf("cannot change enum table status for node %s", n1.Node)
-	}
+		if n1.EnumTable != n2.EnumTable {
+			return nil, fmt.Errorf("cannot change enum table status for node %s", n1.Node)
+		}
 
-	if !change.MapListEqual(n1.DBRows, n2.DBRows) {
-		ret = append(ret, change.Change{
-			Change:      change.ModifiedDBRows,
-			Name:        n2.Node,
-			GraphQLName: n2.Node,
-		})
+		if !change.MapListEqual(n1.DBRows, n2.DBRows) {
+			ret = append(ret, change.Change{
+				Change:      change.ModifiedDBRows,
+				Name:        n2.Node,
+				GraphQLName: n2.Node,
+			})
+		}
 	}
 
 	ret = append(ret, changes...)
