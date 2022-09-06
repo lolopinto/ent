@@ -28,7 +28,7 @@ RUN python3 -m pip install auto_schema==$AUTO_SCHEMA_VERSION
 #RUN python3 -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ auto_schema_test==$AUTO_SCHEMA_VERSION
 
 # final image needs to be python-based to have auto-schema work
-FROM --platform=$BUILDPLATFORM python:3.8.11-slim AS final-image
+FROM python:3.8.11-slim AS final-image
 ARG GOLANG_VERSION
 ARG NODE_VERSION
 
