@@ -13,6 +13,7 @@ import {
   convertBool,
   convertDate,
   convertNullableDate,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -155,6 +156,20 @@ export class TodoBase implements Ent<Viewer> {
       query,
       context,
     )) as TodoDBData[];
+  }
+
+  static async loadCustomCount<T extends TodoBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...TodoBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends TodoBase>(

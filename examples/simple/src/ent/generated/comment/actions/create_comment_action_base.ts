@@ -27,6 +27,8 @@ export interface CommentCreateInput {
   body: string;
   articleID: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   articleType: string;
+  stickerID?: ID | null | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
+  stickerType?: string | null;
 }
 
 export type CreateCommentActionTriggers = (

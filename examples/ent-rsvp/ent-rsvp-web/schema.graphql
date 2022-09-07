@@ -5,6 +5,7 @@ directive @specifiedBy(
 ) on SCALAR
 
 input ActivityEventCreateInput {
+  addressId: ID
   name: String!
   startTime: Time!
   endTime: Time
@@ -22,6 +23,7 @@ type Address implements Node {
   state: String!
   zipCode: String!
   apartment: String
+  locatedAt(first: Int, after: String, last: Int, before: String): AddressToLocatedAtConnection!
 }
 
 input AddressCreateInput {
@@ -71,6 +73,18 @@ input AddressEventActivityCreateInput {
   apartment: String
 }
 
+type AddressToLocatedAtConnection implements Connection {
+  edges: [AddressToLocatedAtEdge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AddressToLocatedAtEdge implements Edge {
+  node: Node!
+  cursor: String!
+}
+
 input AuthGuestInput {
   emailAddress: String!
   code: String!
@@ -115,6 +129,7 @@ type Event implements Node {
 }
 
 type EventActivity implements Node {
+  address: Address
   event: Event
   id: ID!
   name: String!
@@ -126,8 +141,8 @@ type EventActivity implements Node {
   attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
-  viewerRsvpStatus: EventActivityRsvpStatus
-  address: Address
+  rsvpStatusFor(id: ID!): EventActivityRsvpStatus
+  addressFromOwner: Address
 }
 
 input EventActivityAddInviteInput {
@@ -141,6 +156,7 @@ type EventActivityAddInvitePayload {
 }
 
 input EventActivityCreateInput {
+  addressId: ID
   name: String!
   eventID: ID!
   startTime: Time!
@@ -167,6 +183,7 @@ type EventActivityDeletePayload {
 input EventActivityEditInput {
   """id of EventActivity"""
   id: ID!
+  addressId: ID
   name: String
   eventID: ID
   startTime: Time
@@ -298,6 +315,7 @@ type EventToGuestsEdge implements Edge {
 }
 
 type Guest implements Node {
+  address: Address
   event: Event
   guestGroup: GuestGroup
   id: ID!
@@ -309,6 +327,7 @@ type Guest implements Node {
 }
 
 input GuestCreateInput {
+  addressId: ID
   name: String!
   eventID: ID!
   emailAddress: String
@@ -402,6 +421,7 @@ type GuestGroupToInvitedEventsEdge implements Edge {
 }
 
 input GuestGuestGroupCreateInput {
+  addressId: ID
   name: String!
   emailAddress: String
   title: String

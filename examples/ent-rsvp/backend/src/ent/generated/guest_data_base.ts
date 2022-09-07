@@ -10,6 +10,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -127,6 +128,20 @@ export class GuestDataBase implements Ent<Viewer> {
       query,
       context,
     )) as GuestDataDBData[];
+  }
+
+  static async loadCustomCount<T extends GuestDataBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...GuestDataBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends GuestDataBase>(

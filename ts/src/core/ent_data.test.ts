@@ -1098,6 +1098,50 @@ function commonTests() {
       // in query added again
       validateQueries(expQueries3);
     });
+
+    test("with no rows", async () => {
+      ml.clear();
+      const vc = getIDViewer(1);
+      const ents = await ent.loadEntsList(
+        vc,
+        User.loaderOptions(),
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+      );
+      expect(ml.logs.length).toBe(1);
+
+      ml.clear();
+
+      const ents2 = await ent.loadEntsList(
+        vc,
+        User.loaderOptions(),
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+      );
+      expect(ents2).toStrictEqual(ents);
+      // ent-cache-hit all the way
+      expect(ml.logs.length).toBe(6);
+
+      ml.clear();
+
+      try {
+        await ent.loadEntX(vc, 6, User.loaderOptions());
+        throw new Error(`should throw`);
+      } catch (err) {
+        expect((err as Error).message).toBe(`couldn't find row for value 6`);
+        expect(ml.logs).toStrictEqual([
+          { "ent-cache-hit": "idViewer:1:users:bar::6" },
+        ]);
+      }
+    });
   });
 
   describe("loadEnts with field privacy", () => {

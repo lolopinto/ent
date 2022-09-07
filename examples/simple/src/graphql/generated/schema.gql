@@ -181,6 +181,7 @@ type CatType {
 type Comment implements Node {
   article: Node
   author: User
+  sticker: Node
   id: ID!
   body: String!
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
@@ -233,7 +234,7 @@ type Event implements Node {
   hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
   invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
-  viewerRsvpStatus: EventRsvpStatus
+  viewerRsvpStatus: EventRsvpStatus!
 }
 
 type Holiday implements Node {
@@ -647,6 +648,8 @@ input CommentCreateInput {
   body: String!
   articleID: ID!
   articleType: String!
+  stickerID: ID
+  stickerType: String
 }
 
 type CommentCreatePayload {

@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent-soft-delete",
-  "version": "0.1.0-alpha3",
+  "version": "0.1.0-alpha4",
   "description": "snowtop ent soft delete",
   "main": "dist/soft_delete.js",
   "types": "dist/soft_delete.d.ts",
@@ -29,13 +29,13 @@
   },
   "homepage": "https://github.com/lolopinto/ent#readme",
   "devDependencies": {
-    "@snowtop/ent": "^0.1.0-alpha55",
+    "@snowtop/ent": "^0.1.0-alpha86",
     "@types/jest": "^26.0.23",
     "jest": "^26.6.3",
     "ts-jest": "^26.5.6"
   },
   "peerDependencies": {
-    "@snowtop/ent": ">= 0.1.0-alpha55"
+    "@snowtop/ent": ">= 0.1.0-alpha86"
   },
   "dependencies": {
     "@types/express": "^4.17.13"

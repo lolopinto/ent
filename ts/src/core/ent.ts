@@ -27,6 +27,9 @@ import {
   SelectCustomDataOptions,
   PrimableLoader,
   Loader,
+  LoaderWithLoadMany,
+  SelectBaseDataOptions,
+  LoaderFactoryWithOptions,
 } from "./base";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
@@ -54,6 +57,40 @@ class cacheMap {
       log("cache", {
         "dataloader-cache-hit": key,
         "tableName": this.options.tableName,
+      });
+    }
+    return ret;
+  }
+
+  set(key: string, value: any) {
+    return this.m.set(key, value);
+  }
+
+  delete(key: string) {
+    return this.m.delete(key);
+  }
+
+  clear() {
+    return this.m.clear();
+  }
+}
+
+class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
+  private m = new Map();
+  private logEnabled = false;
+  constructor(
+    private viewer: TViewer,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {
+    this.logEnabled = logEnabled("cache");
+  }
+
+  get(id: ID) {
+    const ret = this.m.get(id);
+    if (this.logEnabled && ret) {
+      const key = getEntKey(this.viewer, id, this.options);
+      log("cache", {
+        "ent-cache-hit": key,
       });
     }
     return ret;
@@ -107,86 +144,120 @@ function createDataLoader(options: SelectDataOptions) {
   }, loaderOptions);
 }
 
+// used to wrap errors that would eventually be thrown in ents
+// not an Error because DataLoader automatically rejects that
+class ErrorWrapper {
+  constructor(public error: Error) {}
+}
+
+function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+  viewer: Viewer,
+  options: LoadEntOptions<TEnt, TViewer>,
+  map: entCacheMap<TViewer, TEnt>,
+): DataLoader<ID, TEnt | ErrorWrapper> {
+  // share the cache across loaders even if we create a new instance
+  const loaderOptions: DataLoader.Options<any, any> = {};
+  loaderOptions.cacheMap = map;
+
+  return new DataLoader(async (ids: ID[]) => {
+    if (!ids.length) {
+      return [];
+    }
+
+    let result: (TEnt | ErrorWrapper | Error)[] = [];
+
+    const loader = options.loaderFactory.createLoader(viewer.context);
+    const rows = await loader.loadMany(ids);
+    // this is a loader which should return the same order based on passed-in ids
+    // so let's depend on that...
+
+    for (let idx = 0; idx < rows.length; idx++) {
+      const row = rows[idx];
+
+      // db error
+      if (row instanceof Error) {
+        result[idx] = row;
+        continue;
+      } else if (!row) {
+        result[idx] = new ErrorWrapper(
+          new Error(`couldn't find row for value ${ids[idx]}`),
+        );
+      } else {
+        const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+        if (r instanceof Error) {
+          result[idx] = new ErrorWrapper(r);
+        } else {
+          result[idx] = r;
+        }
+      }
+    }
+
+    return result;
+  }, loaderOptions);
+}
+
+class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
+  implements LoaderWithLoadMany<ID, TEnt | ErrorWrapper | Error>
+{
+  private loader: DataLoader<ID, TEnt | ErrorWrapper>;
+  private map: entCacheMap<TViewer, TEnt>;
+
+  constructor(
+    private viewer: TViewer,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {
+    this.map = new entCacheMap(viewer, options);
+    this.loader = createEntLoader(this.viewer, this.options, this.map);
+  }
+
+  getMap() {
+    return this.map;
+  }
+
+  async load(id: ID): Promise<TEnt | ErrorWrapper> {
+    return this.loader.load(id);
+  }
+
+  async loadMany(ids: ID[]): Promise<Array<TEnt | ErrorWrapper | Error>> {
+    return this.loader.loadMany(ids);
+  }
+
+  prime(id: ID, ent: TEnt | ErrorWrapper) {
+    this.loader.prime(id, ent);
+  }
+
+  clear(id: ID) {
+    this.loader.clear(id);
+  }
+
+  clearAll() {
+    this.loader.clearAll();
+  }
+}
+
+function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
+  viewer: TViewer,
+  options: LoadEntOptions<TEnt, TViewer>,
+): EntLoader<TViewer, TEnt> {
+  if (!viewer.context?.cache) {
+    return new EntLoader(viewer, options);
+  }
+  const name = `ent-loader:${viewer.instanceKey()}:${
+    options.loaderFactory.name
+  }`;
+
+  return viewer.context.cache.getLoaderWithLoadMany(
+    name,
+    () => new EntLoader(viewer, options),
+  ) as EntLoader<TViewer, TEnt>;
+}
+
 export function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: TViewer,
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ) {
   return `${viewer.instanceKey()}:${options.loaderFactory.name}:${id}`;
-}
-
-interface EntCacheInfo {
-  ent?: Ent | null;
-  error?: Error;
-  key?: string;
-  cache?: Map<string, Ent<any> | Error | null>;
-}
-
-// fetches the ent from cache if cache exists.
-function entFromCacheMaybe<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
-  viewer: TViewer,
-  id: ID,
-  options: LoadEntOptions<TEnt, TViewer>,
-): EntCacheInfo {
-  const cache = viewer.context?.cache?.getEntCache();
-  if (!cache) {
-    return {};
-  }
-  const key = getEntKey(viewer, id, options);
-  const r = cache.get(key);
-  if (r !== undefined) {
-    log("cache", {
-      "ent-cache-hit": key,
-    });
-  }
-  return {
-    key,
-    ent: r instanceof Error ? undefined : r,
-    error: r instanceof Error ? r : undefined,
-    cache,
-  };
-}
-
-// Ent accessors
-
-async function applyPrivacyPolicyForRowAndStoreInCache<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
->(
-  viewer: TViewer,
-  options: LoadEntOptions<TEnt, TViewer>,
-  row: Data | null,
-  info: EntCacheInfo,
-): Promise<TEnt | null> {
-  const ent = await applyPrivacyPolicyForRow(viewer, options, row);
-  if (info.cache && info.key) {
-    info.cache.set(info.key, ent);
-  }
-  return ent instanceof Error ? null : ent;
-}
-
-async function applyPrivacyPolicyForRowAndStoreInCacheX<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
->(
-  viewer: TViewer,
-  options: LoadEntOptions<TEnt, TViewer>,
-  row: Data | null,
-  info: EntCacheInfo,
-): Promise<TEnt> {
-  const ent = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-  if (info.cache && info.key) {
-    info.cache.set(info.key, ent);
-  }
-  if (ent instanceof Error) {
-    throw ent;
-  }
-  if (ent === null) {
-    throw new Error(
-      `applyPrivacyPolicyForRowImpl returned null when it shouldn't. ent error`,
-    );
-  }
-  return ent;
 }
 
 export async function loadEnt<
@@ -197,13 +268,49 @@ export async function loadEnt<
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt | null> {
-  const info = entFromCacheMaybe(viewer, id, options);
-  if (info.ent !== undefined) {
-    return info.ent as TEnt | null;
+  if (
+    typeof id !== "string" &&
+    typeof id !== "number" &&
+    typeof id !== "bigint"
+  ) {
+    throw new Error(`invalid id ${id} passed to loadEnt`);
+  }
+  const r = await getEntLoader(viewer, options).load(id);
+  return r instanceof ErrorWrapper ? null : r;
+}
+
+async function applyPrivacyPolicyForRowAndStoreInEntLoader<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
+  row: Data,
+  options: LoadEntOptions<TEnt, TViewer>,
+  // can pass in loader when calling this for multi-id cases...
+  loader?: EntLoader<TViewer, TEnt>,
+) {
+  if (!loader) {
+    loader = getEntLoader(viewer, options);
+  }
+  // TODO every row.id needs to be audited...
+  // https://github.com/lolopinto/ent/issues/1064
+  const id = row.id;
+
+  // we should check the ent loader cache to see if this is already there
+  // TODO hmm... we eventually need a custom data-loader for this too so that it's all done correctly if there's a complicated fetch deep down in graphql
+  const result = loader.getMap().get(id);
+  if (result !== undefined) {
+    return result;
   }
 
-  const row = await options.loaderFactory.createLoader(viewer.context).load(id);
-  return applyPrivacyPolicyForRowAndStoreInCache(viewer, options, row, info);
+  const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+  if (r instanceof Error) {
+    loader.prime(id, new ErrorWrapper(r));
+    return new ErrorWrapper(r);
+  } else {
+    loader.prime(id, r);
+    return r;
+  }
 }
 
 // this is the same implementation-wise (right now) as loadEnt. it's just clearer that it's not loaded via ID.
@@ -222,14 +329,13 @@ export async function loadEntViaKey<
   if (!row) {
     return null;
   }
-  // TODO every row.id needs to be audited...
-  // https://github.com/lolopinto/ent/issues/1064
-  const info = entFromCacheMaybe(viewer, row.id, options);
-  if (info.ent !== undefined) {
-    return info.ent as TEnt | null;
-  }
 
-  return applyPrivacyPolicyForRowAndStoreInCache(viewer, options, row, info);
+  const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+    viewer,
+    row,
+    options,
+  );
+  return r instanceof ErrorWrapper ? null : r;
 }
 
 export async function loadEntX<
@@ -240,22 +346,18 @@ export async function loadEntX<
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt> {
-  const info = entFromCacheMaybe(viewer, id, options);
-  if (info.error !== undefined) {
-    throw info.error;
+  if (
+    typeof id !== "string" &&
+    typeof id !== "number" &&
+    typeof id !== "bigint"
+  ) {
+    throw new Error(`invalid id ${id} passed to loadEntX`);
   }
-  if (info.ent !== undefined && info.ent !== null) {
-    return info.ent as TEnt;
+  const r = await getEntLoader(viewer, options).load(id);
+  if (r instanceof ErrorWrapper) {
+    throw r.error;
   }
-
-  const row = await options.loaderFactory.createLoader(viewer.context).load(id);
-  if (!row) {
-    // todo make this better
-    throw new Error(
-      `${options.loaderFactory.name}: couldn't find row for value ${id}`,
-    );
-  }
-  return applyPrivacyPolicyForRowAndStoreInCacheX(viewer, options, row, info);
+  return r;
 }
 
 export async function loadEntXViaKey<
@@ -275,15 +377,15 @@ export async function loadEntXViaKey<
       `${options.loaderFactory.name}: couldn't find row for value ${key}`,
     );
   }
-  const info = entFromCacheMaybe(viewer, row.id, options);
-  if (info.error !== undefined) {
-    throw info.error;
+  const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+    viewer,
+    row,
+    options,
+  );
+  if (r instanceof ErrorWrapper) {
+    throw r.error;
   }
-  if (info.ent !== undefined && info.ent !== null) {
-    return info.ent as TEnt;
-  }
-
-  return applyPrivacyPolicyForRowAndStoreInCacheX(viewer, options, row, info);
+  return r;
 }
 
 /**
@@ -303,6 +405,9 @@ export async function loadEntFromClause<
     context: viewer.context,
   };
   const row = await loadRow(rowOptions);
+  if (row === null) {
+    return null;
+  }
   return applyPrivacyPolicyForRow(viewer, options, row);
 }
 
@@ -344,64 +449,16 @@ export async function loadEnts<
   // result
   let m: Map<ID, TEnt> = new Map();
 
-  const cache = viewer.context?.cache?.getEntCache();
-  let toFetch: ID[] = [];
-  if (cache) {
-    for (const id of ids) {
-      const key = getEntKey(viewer, id, options);
-      const ent = cache.get(key);
-      if (ent !== undefined) {
-        log("cache", {
-          "ent-cache-hit": key,
-        });
-        if (ent === null) {
-          // TODO this should return null if not loadable...
-          // https://github.com/lolopinto/ent/issues/1070
-          continue;
-        }
-        // @ts-ignore
-        m.set(id, ent);
-      } else {
-        toFetch.push(id);
-      }
+  const ret = await getEntLoader(viewer, options).loadMany(ids);
+  for (const r of ret) {
+    if (r instanceof Error) {
+      throw r;
     }
-  } else {
-    toFetch = ids;
-  }
-
-  // all in ent cache!
-  if (!toFetch.length) {
-    return m;
-  }
-
-  const l = options.loaderFactory.createLoader(viewer.context);
-  const rows: (Error | Data | null)[] = await l.loadMany(toFetch);
-
-  let rows2: Data[] = [];
-  for (const row of rows) {
-    if (!row) {
+    if (r instanceof ErrorWrapper) {
       continue;
     }
-    if (row instanceof Error) {
-      throw row;
-    }
-    rows2.push(row);
-  }
-  const m2 = await applyPrivacyPolicyForRows(viewer, rows2, options);
-  for (const row of rows2) {
-    const id = row[options.loaderFactory.options?.key || "id"];
-    const ent = m2.get(id);
 
-    if (cache) {
-      // put back in cache...
-      // store null for rows that can't be seen
-      cache.set(getEntKey(viewer, id, options), ent ?? null);
-    }
-    if (ent !== undefined) {
-      // TODO this should return null if not loadable...?
-      // TODO https://github.com/lolopinto/ent/issues/1070
-      m.set(id, ent);
-    }
+    m.set(r.id, r);
   }
 
   return m;
@@ -462,30 +519,25 @@ export async function loadCustomEnts<
   const rows = await loadCustomData(options, query, viewer.context);
 
   const result: TEnt[] = new Array(rows.length);
+
+  if (!rows.length) {
+    return [];
+  }
+
+  const entLoader = getEntLoader(viewer, options);
+
   await Promise.all(
     rows.map(async (row, idx) => {
-      // TODO what if key is different
-      // TODO https://github.com/lolopinto/ent/issues/1064
-      const info = entFromCacheMaybe(viewer, row.id, options);
-      if (info.ent !== undefined) {
-        if (info.ent === null) {
-          // we're done here
-          return;
-        }
-        // @ts-ignore
-        result[idx] = info.ent;
+      const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+        viewer,
+        row,
+        options,
+        entLoader,
+      );
+      if (r instanceof ErrorWrapper) {
         return;
       }
-
-      const privacyEnt = await applyPrivacyPolicyForRowAndStoreInCache(
-        viewer,
-        options,
-        row,
-        info,
-      );
-      if (privacyEnt) {
-        result[idx] = privacyEnt;
-      }
+      result[idx] = r;
     }),
   );
   // filter ents that aren't visible because of privacy
@@ -561,14 +613,43 @@ export async function loadCustomData(
   return rows;
 }
 
+interface CustomCountOptions extends DataOptions {}
+
+// NOTE: if you use a raw query or paramterized query with this,
+// you should use `SELECT count(*) as count...`
+export async function loadCustomCount(
+  options: CustomCountOptions,
+  query: CustomQuery,
+  context: Context | undefined,
+): Promise<number> {
+  // TODO also need to loaderify this in case we're querying for this a lot...
+  const rows = await loadCustomDataImpl(
+    {
+      ...options,
+      fields: ["count(1) as count"],
+    },
+    query,
+    context,
+  );
+
+  if (rows.length) {
+    return parseInt(rows[0].count);
+  }
+  return 0;
+}
+
 function isPrimableLoader(
   loader: Loader<any, Data | null>,
 ): loader is PrimableLoader<any, Data> {
   return (loader as PrimableLoader<any, Data>) != undefined;
 }
 
+interface SelectCustomDataOptionsImpl extends SelectBaseDataOptions {
+  loaderFactory?: LoaderFactoryWithOptions;
+}
+
 async function loadCustomDataImpl(
-  options: SelectCustomDataOptions,
+  options: SelectCustomDataOptionsImpl,
   query: CustomQuery,
   context: Context | undefined,
 ): Promise<Data[]> {
@@ -664,22 +745,19 @@ async function applyPrivacyPolicyForEnt<
   TViewer extends Viewer,
 >(
   viewer: TViewer,
-  ent: TEnt | null,
+  ent: TEnt,
   data: Data,
   fieldPrivacyOptions: FieldPrivacyOptions<TEnt, TViewer>,
-): Promise<TEnt | Error | null> {
-  if (ent) {
-    const error = await applyPrivacyPolicyImpl(
-      viewer,
-      ent.getPrivacyPolicy(),
-      ent,
-    );
-    if (error === null) {
-      return doFieldPrivacy(viewer, ent, data, fieldPrivacyOptions);
-    }
-    return error;
+): Promise<TEnt | Error> {
+  const error = await applyPrivacyPolicyImpl(
+    viewer,
+    ent.getPrivacyPolicy(),
+    ent,
+  );
+  if (error === null) {
+    return doFieldPrivacy(viewer, ent, data, fieldPrivacyOptions);
   }
-  return null;
+  return error;
 }
 
 async function applyPrivacyPolicyForEntX<
@@ -2141,7 +2219,7 @@ export async function applyPrivacyPolicyForRow<
 >(
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
-  row: Data | null,
+  row: Data,
 ): Promise<TEnt | null> {
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
   return r instanceof Error ? null : r;
@@ -2153,11 +2231,8 @@ async function applyPrivacyPolicyForRowImpl<
 >(
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
-  row: Data | null,
-): Promise<TEnt | Error | null> {
-  if (!row) {
-    return null;
-  }
+  row: Data,
+): Promise<TEnt | Error> {
   const ent = new options.ent(viewer, row);
   return applyPrivacyPolicyForEnt(viewer, ent, row, options);
 }

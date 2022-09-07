@@ -50,6 +50,8 @@ CREATE TABLE comments (
     body TEXT NOT NULL, 
     article_id UUID NOT NULL, 
     article_type TEXT NOT NULL, 
+    sticker_id UUID, 
+    sticker_type TEXT, 
     CONSTRAINT comments_id_pkey PRIMARY KEY (id)
 );
 

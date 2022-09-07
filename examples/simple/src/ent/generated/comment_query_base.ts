@@ -44,6 +44,18 @@ export const articleToCommentsDataLoaderFactory = new IndexLoaderFactory(
   },
 );
 
+export const stickerToCommentsCountLoaderFactory = new RawCountLoaderFactory({
+  ...Comment.loaderOptions(),
+  groupCol: "sticker_id",
+});
+export const stickerToCommentsDataLoaderFactory = new IndexLoaderFactory(
+  Comment.loaderOptions(),
+  "sticker_id",
+  {
+    toPrime: [commentLoader],
+  },
+);
+
 export abstract class CommentToPostQueryBase extends AssocEdgeQueryBase<
   Comment,
   Ent<ExampleViewerAlias>,
@@ -97,6 +109,36 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends ArticleToCommentsQueryBase>(
+    this: new (viewer: ExampleViewerAlias, src: Ent<ExampleViewerAlias>) => T,
+    viewer: ExampleViewerAlias,
+    src: Ent<ExampleViewerAlias>,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  async sourceEnt(_id: ID) {
+    return this.srcEnt;
+  }
+}
+
+export class StickerToCommentsQueryBase extends CustomEdgeQueryBase<
+  Ent<ExampleViewerAlias>,
+  Comment,
+  ExampleViewerAlias
+> {
+  constructor(
+    viewer: ExampleViewerAlias,
+    private srcEnt: Ent<ExampleViewerAlias>,
+  ) {
+    super(viewer, {
+      src: srcEnt,
+      countLoaderFactory: stickerToCommentsCountLoaderFactory,
+      dataLoaderFactory: stickerToCommentsDataLoaderFactory,
+      options: Comment.loaderOptions(),
+    });
+  }
+
+  static query<T extends StickerToCommentsQueryBase>(
     this: new (viewer: ExampleViewerAlias, src: Ent<ExampleViewerAlias>) => T,
     viewer: ExampleViewerAlias,
     src: Ent<ExampleViewerAlias>,

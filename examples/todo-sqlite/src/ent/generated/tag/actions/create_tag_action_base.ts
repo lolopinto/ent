@@ -22,6 +22,7 @@ export interface TagCreateInput {
   displayName: string;
   ownerID: ID | Builder<Account, Viewer>;
   relatedTagIds?: ID[] | null;
+  canonicalName?: string;
 }
 
 export type CreateTagActionTriggers = (

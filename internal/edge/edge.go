@@ -354,7 +354,14 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				cfg,
-				inflection.Plural(nodeName),
+				// TODO this changes a bunch of things
+
+				// it changes a bunch of things
+				// so we need edge name to be the same but loader factory and query to change
+
+				// TODO test multiple polymorphic fields on the same schema
+				inflection.Plural(tsFieldName),
+				// inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
 			quotedDbColName: quotedDBColName,
@@ -365,6 +372,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 		edge._HideFromGraphQL = true
 	}
 	edgeName := edge.GetEdgeName()
+	// TODO this is being called twice  with different edge infos...
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
 	return e.addEdge(edge)
@@ -372,12 +380,16 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 
 func getIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
+	edgeName := inflection.Plural(nodeName)
+	if polymorphic != nil && polymorphic.Name != "" {
+		edgeName = polymorphic.Name
+	}
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				cfg,
-				inflection.Plural(nodeName),
+				edgeName,
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
 			quotedDbColName: quotedDBColName,
@@ -646,7 +658,7 @@ func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 }
 
 func (e *IndexedEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetSourceNodeName() string {
@@ -663,7 +675,7 @@ func (e *IndexedEdge) GetGraphQLConnectionName() string {
 		return ""
 		//		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
 	}
-	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
@@ -680,7 +692,7 @@ func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {
-	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetCountFactoryName() string {
@@ -935,6 +947,7 @@ type AssociationEdgeGroup struct {
 	Edges             map[string]*AssociationEdge // TODO...
 	EdgeActions       []*EdgeAction
 	StatusEnums       []string
+	ViewerBased       bool
 	NullStateFn       string
 	NullStates        []string
 	actionEdges       map[string]bool
@@ -942,8 +955,15 @@ type AssociationEdgeGroup struct {
 	NodeInfo          nodeinfo.NodeInfo
 }
 
+func (edgeGroup *AssociationEdgeGroup) IsNullable() bool {
+	return !edgeGroup.ViewerBased && len(edgeGroup.NullStates) == 0
+}
+
 func (edgeGroup *AssociationEdgeGroup) DefaultNullState() string {
-	return enum.GetTSEnumNameForVal(edgeGroup.NullStates[0])
+	if len(edgeGroup.NullStates) == 0 {
+		return "null"
+	}
+	return fmt.Sprintf("%s.%s", edgeGroup.ConstType, enum.GetTSEnumNameForVal(edgeGroup.NullStates[0]))
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMap() map[string]string {
@@ -978,8 +998,19 @@ func (edgeGroup *AssociationEdgeGroup) GetIDArg() string {
 	return strcase.ToLowerCamel(edgeGroup.DestNodeInfo.Node + "ID")
 }
 
+func (edgeGroup *AssociationEdgeGroup) GetStatusMethodReturn() string {
+	ret := edgeGroup.ConstType
+	if edgeGroup.IsNullable() {
+		ret = fmt.Sprintf("%s | null", ret)
+	}
+	return ret
+}
+
 func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
-	return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
+	if edgeGroup.ViewerBased {
+		return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
+	}
+	return strcase.ToLowerCamel(edgeGroup.GroupStatusName) + "For"
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
@@ -1234,6 +1265,14 @@ func assocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *in
 		GroupStatusName:   edgeGroup.GroupStatusName,
 		TSGroupStatusName: strcase.ToLowerCamel(edgeGroup.GroupStatusName),
 		NodeInfo:          nodeinfo.GetNodeInfo(packageName),
+		StatusEnums:       edgeGroup.StatusEnums,
+		NullStateFn:       edgeGroup.NullStateFn,
+		NullStates:        edgeGroup.NullStates,
+		ViewerBased:       edgeGroup.ViewerBased,
+	}
+
+	if assocEdgeGroup.ViewerBased && len(assocEdgeGroup.NullStates) == 0 {
+		return nil, fmt.Errorf("ViewerBased edge group must have NullStates")
 	}
 
 	// no overriden table name, get default one
@@ -1256,9 +1295,6 @@ func assocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *in
 			return nil, err
 		}
 	}
-	assocEdgeGroup.StatusEnums = edgeGroup.StatusEnums
-	assocEdgeGroup.NullStateFn = edgeGroup.NullStateFn
-	assocEdgeGroup.NullStates = edgeGroup.NullStates
 	if assocEdgeGroup.NullStateFn != "" && len(assocEdgeGroup.NullStates) == 0 {
 		return nil, fmt.Errorf("cannot have null state fn with no null states")
 	}

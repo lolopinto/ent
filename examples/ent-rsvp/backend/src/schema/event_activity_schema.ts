@@ -51,6 +51,7 @@ const EventActivitySchema = new EntSchema({
       groupStatusName: "rsvpStatus",
       tableName: "event_rsvps",
       statusEnums: ["attending", "declined"],
+      // not viewer based with null states...
       nullStateFn: "rsvpStatus",
       nullStates: ["canRsvp", "cannotRsvp"],
       edgeAction: {

@@ -14,6 +14,7 @@ import {
   PrivacyPolicy,
   applyPrivacyPolicy,
   getEdgeTypeInGroup,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -162,6 +163,20 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     )) as EventDBData[];
   }
 
+  static async loadCustomCount<T extends EventBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...EventBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
+  }
+
   static async loadRawData<T extends EventBase>(
     this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
@@ -226,13 +241,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     const g = await getEdgeTypeInGroup(
       this.viewer,
       this.id,
-      this.viewer.viewerID!,
+      this.viewer.viewerID,
       this.getEventRsvpStatusMap(),
     );
-    if (g) {
-      return g[0];
-    }
-    return ret;
+    return g ? g[0] : ret;
   }
 
   queryAttending(): EventToAttendingQuery {

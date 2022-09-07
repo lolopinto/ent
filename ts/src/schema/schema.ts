@@ -157,10 +157,23 @@ export interface AssocEdgeGroup {
   tableName?: string;
   assocEdges: AssocEdge[];
   statusEnums?: string[]; // if present, restrict to these instead of all given enums...
+
+  // breaking change!
+  // if true, assumes the edge group is viewer based e.g. viewer rsvping to an event
+  // viewer sending a friend request etc.
+  // if viewer based, a viewer{Foo}() function is added to the source ent to get the viewer status
+  // to this and cannot check it for another User|Account|et
+
+  // if not viewer based, will generate an API to pass an instance of the other ent to get the status for
+  viewerBased?: boolean;
+
   //  extraEnums:
   // either single item or should be list with way to differentiate btw them...
   // nullStates are not part of input, just output...
-  nullStates: string | string[];
+  // make nullStates optional for non-viewer-based edges...
+  // required for now for viewer based status enums, optional otherwise
+  nullStates?: string | string[];
+
   // if more than one nullState. must pass this in
   nullStateFn?: string;
   //  nullStates?: string | AssocEdgeNullState[]; // if the edge doesn't exist, return this instead
@@ -453,6 +466,10 @@ export interface FieldOptions {
 }
 
 export interface PolymorphicOptions {
+  // optional but if we have multiple Polymorphic fields in the source schema, it becomes required for all but one
+  // defaults to pluralize(schema) if not provided
+  // same philosophy as type ForeignKey
+  name?: string;
   // restrict to just these types
   types?: string[];
   // hide inverse type from graphql
@@ -469,7 +486,20 @@ export interface Field extends FieldOptions {
   type: Type;
 
   // optional valid and format to validate and format before storing
+  // editedFields, data added to valid is useful for start_time, end_time comparisons too
   valid?(val: any): Promise<boolean> | boolean;
+
+  // validate if a field can be nullable based on other fields
+  // validate field based on other fields
+  // have to be careful that there's no circular dependencies btw fields
+  // which needs this
+  // can be used to validate if a field can be nullable based on other fields
+  // used for polymorphic and maybe eventually other fields
+  validateWithFullData?(
+    val: any,
+    builder: Builder<any>,
+  ): boolean | Promise<boolean>;
+
   // optional second param which if passed and true indicates that this is a nested object
   // and should only format children and not format lists or objects
   format?(val: any, nested?: boolean): any;
@@ -728,7 +758,9 @@ export interface Action {
   // allows changing default behavior e.g. making an optional field required
   // or excluding a field so as to not put in fields
   excludedFields?: string[];
+  // NB: optionalFields still requires field in list of fields
   optionalFields?: string[];
+  // NB: requiredFields still requires field in list of fields
   requiredFields?: string[];
   noFields?: boolean;
 

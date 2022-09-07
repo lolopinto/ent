@@ -4,7 +4,6 @@ import {
   Ent,
   Data,
   Viewer,
-  Context,
   PrivacyResult,
   Allow,
   Skip,
@@ -27,7 +26,6 @@ import {
   TempDB,
   setupSqlite,
 } from "../testutils/db/temp_db";
-import { MockLogs } from "../testutils/mock_log";
 import DB, { Dialect } from "./db";
 import { ObjectLoaderFactory } from "./loaders";
 import { TestContext } from "../testutils/context/test_context";
@@ -194,6 +192,26 @@ function commonTests() {
   test("query error throws for loadEnts with context", async () => {
     try {
       await loadEnts(contextifyViewer(new IDViewer(1)), invalidFieldOpts, 1);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
+  test("query error throws for loadEnts with context with multiple ids", async () => {
+    try {
+      await loadEnts(
+        contextifyViewer(new IDViewer(1)),
+        invalidFieldOpts,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+      );
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
@@ -404,6 +422,76 @@ function commonTests() {
       throw new Error("should have thrown");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnDelete());
+    }
+  });
+
+  test("loadEnt with null", async () => {
+    try {
+      // @ts-ignore
+      await loadEnt(new IDViewer(1), null, options);
+      throw new Error(`should throw`);
+    } catch (err) {
+      expect((err as Error).message).toBe("invalid id null passed to loadEnt");
+    }
+  });
+
+  test("loadEnt with undefined", async () => {
+    try {
+      // @ts-ignore
+      await loadEnt(new IDViewer(1), undefined, options);
+      throw new Error(`should throw`);
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        "invalid id undefined passed to loadEnt",
+      );
+    }
+  });
+
+  test("loadEnt with object", async () => {
+    const obj = await loadEnt(new IDViewer(1), 1, options);
+    try {
+      // @ts-ignore
+      await loadEnt(new IDViewer(1), obj, options);
+      throw new Error(`should throw`);
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        "invalid id [object Object] passed to loadEnt",
+      );
+    }
+  });
+
+  test("loadEntX with null", async () => {
+    try {
+      // @ts-ignore
+      await loadEntX(new IDViewer(1), null, options);
+      throw new Error(`should throw`);
+    } catch (err) {
+      expect((err as Error).message).toBe("invalid id null passed to loadEntX");
+    }
+  });
+
+  test("loadEntX with undefined", async () => {
+    try {
+      // @ts-ignore
+      await loadEntX(new IDViewer(1), undefined, options);
+      throw new Error(`should throw`);
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        "invalid id undefined passed to loadEntX",
+      );
+    }
+  });
+
+  test("loadEntX with object", async () => {
+    const obj = await loadEntX(new IDViewer(1), 1, options);
+    try {
+      // @ts-ignore
+      await loadEntX(new IDViewer(1), obj, options);
+      throw new Error(`should throw`);
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        "invalid id [object Object] passed to loadEntX",
+      );
     }
   });
 }

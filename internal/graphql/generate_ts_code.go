@@ -1844,15 +1844,40 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 	}
 
 	for _, group := range nodeData.EdgeInfo.AssocGroups {
-		fields = append(fields, &fieldType{
-			Name: group.GetStatusMethod(),
-			FieldImports: getGQLFileImports(
-				[]*tsimport.ImportPath{
-					tsimport.NewLocalGraphQLEntImportPath(group.ConstType),
+		method := group.GetStatusMethod()
+		var imps []*tsimport.ImportPath
+		if !group.IsNullable() {
+			imps = append(imps, tsimport.NewGQLClassImportPath("GraphQLNonNull"))
+		}
+		imps = append(imps, tsimport.NewLocalGraphQLEntImportPath(group.ConstType))
+		imps = getGQLFileImports(imps, false)
+
+		if group.ViewerBased {
+			fields = append(fields, &fieldType{
+				Name:         method,
+				FieldImports: imps,
+			})
+		} else {
+			fields = append(fields, &fieldType{
+				Name:         method,
+				FieldImports: imps,
+				ExtraImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath(group.DestNodeInfo.Node),
 				},
-				false,
-			),
-		})
+				Args: []*fieldConfigArg{
+					{
+						Name:    "id",
+						Imports: []*tsimport.ImportPath{tsimport.NewGQLClassImportPath("GraphQLNonNull"), tsimport.NewGQLImportPath("GraphQLID")},
+					},
+				},
+				HasAsyncModifier:   true,
+				HasResolveFunction: true,
+				FunctionContents: []string{
+					fmt.Sprintf("const ent = await %s.loadX(context.getViewer(), args.id);", group.DestNodeInfo.Node),
+					fmt.Sprintf("return %s.%s(ent);", instance, method),
+				},
+			})
+		}
 	}
 
 	result.Fields = fields

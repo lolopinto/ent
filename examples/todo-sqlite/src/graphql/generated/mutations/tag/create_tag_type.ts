@@ -20,10 +20,14 @@ import CreateTagAction, {
 import { TagType } from "src/graphql/resolvers/";
 
 interface customCreateTagInput
-  extends Omit<TagCreateInput, "displayName" | "relatedTagIds"> {
+  extends Omit<
+    TagCreateInput,
+    "displayName" | "relatedTagIds" | "canonicalName"
+  > {
   display_name: string;
   owner_id: string;
   related_tag_ids?: ID[] | null;
+  canonical_name?: string;
 }
 
 interface CreateTagPayload {
@@ -41,6 +45,9 @@ export const CreateTagInputType = new GraphQLInputObjectType({
     },
     related_tag_ids: {
       type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
+    },
+    canonical_name: {
+      type: GraphQLString,
     },
   }),
 });
@@ -76,6 +83,7 @@ export const CreateTagType: GraphQLFieldConfig<
       displayName: input.display_name,
       ownerID: input.owner_id,
       relatedTagIds: input.related_tag_ids,
+      canonicalName: input.canonical_name,
     }).saveX();
     return { tag: tag };
   },

@@ -1,9 +1,9 @@
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import RenameTodoStatusAction from "src/ent/todo/actions/rename_todo_status_action";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
-import { Todo, EdgeType } from "src/ent/";
+import { Todo, EdgeType, AccountTodoStatus } from "src/ent/";
 import { createAccount, createTag, createTodo } from "../testutils/util";
-import { query } from "@snowtop/ent";
+import { query, setLogLevels } from "@snowtop/ent";
 import { advanceTo } from "jest-date-mock";
 import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
 import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
@@ -20,6 +20,14 @@ async function changeCompleted(todo: Todo, completed: boolean) {
   }).saveX();
 
   expect(todo.completed).toBe(completed);
+
+  const creator = await todo.loadCreatorX();
+  const status = await creator.todoStatusFor(todo);
+  expect(status).toBe(
+    completed
+      ? AccountTodoStatus.ClosedTodosDup
+      : AccountTodoStatus.OpenTodosDup,
+  );
   return todo;
 }
 
@@ -95,11 +103,21 @@ test("querying todos", async () => {
   );
   expect(openTodos.length).toBe(3);
 
+  const openTodosCount = await Todo.loadCustomCount(
+    query.And(query.Eq("creator_id", account.id), query.Eq("completed", false)),
+  );
+  expect(openTodosCount).toBe(3);
+
   const closedTodos = await Todo.loadCustom(
     account.viewer,
     query.And(query.Eq("creator_id", account.id), query.Eq("completed", true)),
   );
   expect(closedTodos.length).toBe(2);
+
+  const closedTodosCount = await Todo.loadCustomCount(
+    query.And(query.Eq("creator_id", account.id), query.Eq("completed", true)),
+  );
+  expect(closedTodosCount).toBe(2);
 
   const orderedOpenedTodos = await Todo.loadCustom(account.viewer, {
     clause: query.And(

@@ -16,9 +16,11 @@ export default class CreateTagAction extends CreateTagActionBase {
     return [
       {
         async changeset(builder, input) {
-          builder.updateInput({
-            canonicalName: input.displayName,
-          });
+          if (!input.canonicalName) {
+            builder.updateInput({
+              canonicalName: input.displayName,
+            });
+          }
         },
       },
     ];

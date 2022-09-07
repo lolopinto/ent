@@ -46,6 +46,9 @@ export async function createTodo(opts?: Partial<TodoCreateInput>) {
   expect(todo.creatorID).toBe(creatorID);
   expect(todo.completed).toBe(false);
 
+  const creator = await todo.loadCreatorX();
+  const status = await creator.todoStatusFor(todo);
+  expect(status).toBeNull();
   return todo;
 }
 
