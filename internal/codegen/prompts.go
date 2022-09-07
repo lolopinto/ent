@@ -178,7 +178,7 @@ func getPromptsFromChanges(p *Processor) ([]prompt.Prompt, error) {
 
 			switch c.Change {
 			case change.AddField:
-				info := p.Schema.Nodes[k]
+				info := p.Schema.Nodes[k+"Config"]
 				if info == nil {
 					return nil, fmt.Errorf("cannot find NodeDataInfo with key %s", k)
 				}
