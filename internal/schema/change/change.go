@@ -139,6 +139,21 @@ func StringMapEqual(m1, m2 map[string]string) bool {
 	return true
 }
 
+func IntMapEqual(m1, m2 map[string]int) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+
+	for k, v := range m1 {
+		v2, ok := m2[k]
+		if !ok || v != v2 {
+			return false
+		}
+	}
+
+	return true
+}
+
 func MapListEqual(l1, l2 []map[string]interface{}) bool {
 	if len(l1) != len(l2) {
 		return false
