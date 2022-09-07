@@ -4,7 +4,7 @@ ARG NODE_VERSION={{.NodeVersion}}
 ARG DOCKER_TAG={{.DockerTag}}
 
 # get and install tsent
-FROM golang:1.17.9-buster AS golang-image
+FROM golang:1.19-buster AS golang-image
 ARG GOLANG_VERSION
 ARG DOCKER_TAG
 ENV GOPATH=$HOME/go
