@@ -66,9 +66,9 @@ class simpleClause implements Clause {
   }
 
   values(): any[] {
-    const sqliteClause = this.nullClause();
-    if (sqliteClause) {
-      return sqliteClause.values();
+    const nullClause = this.nullClause();
+    if (nullClause) {
+      return nullClause.values();
     }
     if (isSensitive(this.value)) {
       return [this.value.value()];
@@ -77,9 +77,9 @@ class simpleClause implements Clause {
   }
 
   logValues(): any[] {
-    const sqliteClause = this.nullClause();
-    if (sqliteClause) {
-      return sqliteClause.logValues();
+    const nullClause = this.nullClause();
+    if (nullClause) {
+      return nullClause.logValues();
     }
     if (isSensitive(this.value)) {
       return [this.value.logValue()];
@@ -88,9 +88,9 @@ class simpleClause implements Clause {
   }
 
   instanceKey(): string {
-    const sqliteClause = this.nullClause();
-    if (sqliteClause) {
-      return sqliteClause.instanceKey();
+    const nullClause = this.nullClause();
+    if (nullClause) {
+      return nullClause.instanceKey();
     }
     return `${this.col}${this.op}${rawValue(this.value)}`;
   }
