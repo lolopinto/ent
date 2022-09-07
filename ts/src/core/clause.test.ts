@@ -400,6 +400,101 @@ describe("postgres", () => {
     });
   });
 
+  describe("null on null", () => {
+    test("OR nested in AND", () => {
+      const cls = clause.And(
+        clause.Eq("id3", null),
+        clause.Or(clause.Eq("id1", null), clause.Eq("id2", "foo")),
+      );
+      expect(cls.clause(1)).toBe("id3 IS NULL AND (id1 IS NULL OR id2 = $1)");
+      expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["foo"]);
+      expect(cls.logValues()).toStrictEqual(["foo"]);
+      expect(cls.instanceKey()).toEqual(
+        "id3 IS NULL AND (id1 IS NULL OR id2=foo)",
+      );
+    });
+
+    test("AND nested in OR", () => {
+      const cls = clause.Or(
+        clause.Eq("id3", null),
+        clause.And(clause.Eq("id1", null), clause.Eq("id2", "foo")),
+      );
+      expect(cls.clause(1)).toBe("id3 IS NULL OR (id1 IS NULL AND id2 = $1)");
+      expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["foo"]);
+      expect(cls.logValues()).toStrictEqual(["foo"]);
+      expect(cls.instanceKey()).toEqual(
+        "id3 IS NULL OR (id1 IS NULL AND id2=foo)",
+      );
+    });
+
+    test("Or nested in AND nested in OR", () => {
+      const cls = clause.Or(
+        clause.Eq("id4", "baz"),
+        clause.And(
+          clause.Eq("id3", null),
+          clause.Or(clause.Eq("id1", null), clause.Eq("id2", "foo")),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = $1 OR (id3 IS NULL AND (id1 IS NULL OR id2 = $2))",
+      );
+      expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["baz", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["baz", "foo"]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz OR (id3 IS NULL AND (id1 IS NULL OR id2=foo))",
+      );
+    });
+
+    test("complexx ", () => {
+      const cls = clause.And(
+        clause.Eq("id4", "baz"),
+        clause.Or(
+          clause.Eq("id3", null),
+          clause.And(clause.Eq("id1", null), clause.Eq("id2", "foo")),
+          clause.Or(
+            clause.Eq("id5", "whaa"),
+            clause.Eq("id6", "indeed"),
+            clause.Eq("id7", null),
+          ),
+          clause.Eq("id8", "wheee"),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = $1 AND (id3 IS NULL OR (id1 IS NULL AND id2 = $2) OR id5 = $3 OR id6 = $4 OR id7 IS NULL OR id8 = $5)",
+      );
+      expect(cls.columns()).toStrictEqual([
+        "id4",
+        "id3",
+        "id1",
+        "id2",
+        "id5",
+        "id6",
+        "id7",
+        "id8",
+      ]);
+      expect(cls.values()).toStrictEqual([
+        "baz",
+        "foo",
+        "whaa",
+        "indeed",
+        "wheee",
+      ]);
+      expect(cls.logValues()).toStrictEqual([
+        "baz",
+        "foo",
+        "whaa",
+        "indeed",
+        "wheee",
+      ]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz AND (id3 IS NULL OR (id1 IS NULL AND id2=foo) OR id5=whaa OR id6=indeed OR id7 IS NULL OR id8=wheee)",
+      );
+    });
+  });
+
   describe("In", () => {
     test("1 arg", () => {
       const cls = clause.In("id", 1);
