@@ -122,7 +122,10 @@ export interface Validator<
   // can throw if it wants
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  validate(builder: TBuilder, input: TInput): Promise<void> | void;
+  validate(
+    builder: TBuilder,
+    input: TInput,
+  ): Promise<void | undefined | Error> | void | Error | undefined;
 }
 
 export interface Action<

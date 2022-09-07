@@ -585,13 +585,14 @@ export class Orchestrator<
     // not ideal we're calling this twice. fix...
     // needed for now. may need to rewrite some of this?
     const editedFields2 = await this.options.editedFields();
-    const [errors, _] = await Promise.all([
+    const [errors, errs2] = await Promise.all([
       this.formatAndValidateFields(schemaFields, editedFields2),
       this.validators(validators, action!, builder),
     ]);
     if (privacyError !== null) {
       errors.unshift(privacyError);
     }
+    errors.push(...errs2);
     return errors;
   }
 
@@ -652,17 +653,21 @@ export class Orchestrator<
     validators: Validator<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>[],
     action: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>,
     builder: Builder<TEnt, TViewer>,
-  ): Promise<void> {
-    // TODO need to catch errors and return it...
-    // don't need it initially since what we need this for doesn't have the errors
-    let promises: Promise<void>[] = [];
-    validators.forEach((validator) => {
-      let res = validator.validate(builder, action.getInput());
-      if (res) {
-        promises.push(res);
-      }
-    });
-    await Promise.all(promises);
+  ): Promise<Error[]> {
+    const errors: Error[] = [];
+    await Promise.all(
+      validators.map(async (v) => {
+        try {
+          const r = await v.validate(builder, action.getInput());
+          if (r instanceof Error) {
+            errors.push(r);
+          }
+        } catch (err) {
+          errors.push(err as Error);
+        }
+      }),
+    );
+    return errors;
   }
 
   private isBuilder(val: Builder<TEnt> | any): val is Builder<TEnt> {
