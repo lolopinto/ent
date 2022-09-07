@@ -295,7 +295,7 @@ func (i *Input) getValuesFromIntEnumMap(m map[string]int) ([]Data, []Data) {
 	return tsVals, gqlVals
 }
 
-func NewInputFromEnumType(enumType enttype.EnumeratedType) (*Input, error) {
+func NewInputFromEnumType(enumType enttype.EnumeratedType, fkey bool) (*Input, error) {
 	data := enumType.GetEnumData()
 	input := &Input{
 		TSName:               enumType.GetTSName(),
@@ -306,7 +306,7 @@ func NewInputFromEnumType(enumType enttype.EnumeratedType) (*Input, error) {
 		IntEnumMap:           data.IntEnumMap,
 		DeprecatedIntEnumMap: data.DeprecatedIntEnumMap,
 	}
-	if !input.HasValues() {
+	if !input.HasValues() && !fkey {
 		return nil, fmt.Errorf("Enum %s has no values", input.TSName)
 	}
 	return input, nil

@@ -199,13 +199,13 @@ func TestUnequalEnums(t *testing.T) {
 }
 
 func TestIntEnumNoValues(t *testing.T) {
-	input, err := NewInputFromEnumType(&enttype.IntegerEnumType{})
+	input, err := NewInputFromEnumType(&enttype.IntegerEnumType{}, false)
 	require.Nil(t, input)
 	require.Error(t, err)
 }
 
 func TestStringEnumNoValues(t *testing.T) {
-	input, err := NewInputFromEnumType(&enttype.StringEnumType{})
+	input, err := NewInputFromEnumType(&enttype.StringEnumType{}, false)
 	require.Nil(t, input)
 	require.Error(t, err)
 }
@@ -215,7 +215,7 @@ func TestIntEnumWithValues(t *testing.T) {
 		EnumMap: map[string]int{
 			"Foo": 0,
 		},
-	})
+	}, false)
 	require.Nil(t, err)
 	require.NotNil(t, input)
 }
@@ -223,7 +223,7 @@ func TestIntEnumWithValues(t *testing.T) {
 func TestStringEnumWithValues(t *testing.T) {
 	input, err := NewInputFromEnumType(&enttype.StringEnumType{
 		Values: []string{"hello"},
-	})
+	}, false)
 	require.Nil(t, err)
 	require.NotNil(t, input)
 }
@@ -231,7 +231,13 @@ func TestStringEnumWithValues(t *testing.T) {
 func TestStringEnumWithMap(t *testing.T) {
 	input, err := NewInputFromEnumType(&enttype.StringEnumType{
 		EnumMap: map[string]string{"FOO": "f"},
-	})
+	}, false)
+	require.Nil(t, err)
+	require.NotNil(t, input)
+}
+
+func TestFkeyEnumNoValues(t *testing.T) {
+	input, err := NewInputFromEnumType(&enttype.StringEnumType{}, true)
 	require.Nil(t, err)
 	require.NotNil(t, input)
 }
