@@ -416,7 +416,8 @@ func indexEqual(existing, index *Index) bool {
 	return existing.Name == index.Name &&
 		change.StringListEqual(existing.Columns, index.Columns) &&
 		existing.Unique == index.Unique &&
-		fullTextEqual(existing.FullText, index.FullText)
+		fullTextEqual(existing.FullText, index.FullText) &&
+		existing.IndexType == index.IndexType
 }
 
 func fullTextEqual(existing, fullText *FullText) bool {

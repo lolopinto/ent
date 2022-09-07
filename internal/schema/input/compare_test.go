@@ -258,6 +258,22 @@ func TestIndex(t *testing.T) {
 	require.True(t, indexEqual(i, i2))
 }
 
+func TestDiffIndexType(t *testing.T) {
+	i := &Index{
+		Name:    "contacts_name_index",
+		Columns: []string{"first_name", "last_name"},
+	}
+
+	b, err := json.Marshal(i)
+	require.Nil(t, err)
+
+	i2 := &Index{}
+	err = json.Unmarshal(b, i2)
+	i2.IndexType = "gin"
+	require.Nil(t, err)
+	require.False(t, indexEqual(i, i2))
+}
+
 func TestForeignKey(t *testing.T) {
 	fkey := &ForeignKey{
 		Schema: "User",
