@@ -106,6 +106,16 @@ func getModifyIndexPrompt(indexName string) (prompt.Prompt, error) {
 	}, nil
 }
 
+func getModifyEdgeDataPrompt(edgeType string) (prompt.Prompt, error) {
+	return &prompt.YesNoQuestion{
+		Question: fmt.Sprintf(
+			"You're modifying edge_type '%s' which could affect production. Are you sure you want to do that? Y/N: ",
+			edgeType,
+		),
+		NoHandler: prompt.ExitHandler,
+	}, nil
+}
+
 // TODO eventually deprecate this. for now, we keep this to have both paths just in case
 func getPromptsFromDBChanges(s *schema.Schema, changes map[string][]deprecatedChange) ([]prompt.Prompt, error) {
 	var prompts []prompt.Prompt
@@ -133,6 +143,9 @@ func getPromptsFromDBChanges(s *schema.Schema, changes map[string][]deprecatedCh
 				if change.Index != "" && dropped[change.Index] {
 					p, err = getModifyIndexPrompt(change.Index)
 				}
+
+			case ModifyEdge:
+				p, err = getModifyEdgeDataPrompt(change.Edge)
 			}
 
 			if err != nil {
@@ -158,25 +171,31 @@ func getPromptsFromChanges(p *Processor) ([]prompt.Prompt, error) {
 	}
 
 	var prompts []prompt.Prompt
-	for _, info := range p.Schema.Nodes {
-
-		for _, c := range p.ChangeMap[info.NodeData.Node] {
-			var p prompt.Prompt
+	for k, changes := range p.ChangeMap {
+		for _, c := range changes {
+			var pt prompt.Prompt
 			var err error
 
 			switch c.Change {
 			case change.AddField:
-				p, err = getAddColumnPrompt(info.NodeData, fieldInfo{name: c.Name})
+				info := p.Schema.Nodes[k]
+				if info == nil {
+					return nil, fmt.Errorf("cannot find NodeDataInfo with key %s", k)
+				}
+				pt, err = getAddColumnPrompt(info.NodeData, fieldInfo{name: c.Name})
 
 			case change.ModifyIndex:
-				p, err = getModifyIndexPrompt(c.Name)
+				pt, err = getModifyIndexPrompt(c.Name)
+
+			case change.ModifyEdgeData:
+				pt, err = getModifyEdgeDataPrompt(c.Name)
 			}
 
 			if err != nil {
 				return nil, err
 			}
-			if p != nil {
-				prompts = append(prompts, p)
+			if pt != nil {
+				prompts = append(prompts, pt)
 			}
 		}
 	}

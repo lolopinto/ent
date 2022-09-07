@@ -36,6 +36,10 @@ func CompareSchemas(s1, s2 *Schema) (change.ChangeMap, error) {
 		return nil, err
 	}
 
+	if err := getEdgeChanges(s2, &m); err != nil {
+		return nil, err
+	}
+
 	return m, nil
 }
 
@@ -162,6 +166,23 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 			ret[name] = changes
 		}
 	}
+	return nil
+}
+
+func getEdgeChanges(s2 *Schema, m *change.ChangeMap) error {
+	var changes []change.Change
+	for _, edge := range s2.GetEdgesToUpdate() {
+		changes = append(changes, change.Change{
+			Change: change.ModifyEdgeData,
+			Name:   edge.EdgeName,
+		})
+	}
+
+	if len(changes) != 0 {
+		ret := *m
+		ret["assoc_edge_changes"] = changes
+	}
+
 	return nil
 }
 

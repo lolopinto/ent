@@ -56,6 +56,10 @@ const (
 	RemoveRows ChangeType = "remove_rows"
 	ModifyRows ChangeType = "modify_rows"
 
+	AddEdgeData    ChangeType = "add_edge_data"
+	ModifyEdgeData ChangeType = "modify_edge_data"
+	RemoveEdgeData ChangeType = "remove_edge_data"
+
 	CreateUniqueConstraint ChangeType = "create_unique_constraint"
 	CreateCheckConstraint  ChangeType = "create_check_constraint"
 	DropCheckConstraint    ChangeType = "drop_check_constraint"
