@@ -94,12 +94,14 @@ class Diff(object):
     def _create_index(self: Diff, op: alembicops.CreateIndexOp):
         self._append_change(op.table_name, {
             "change": ChangeType.CREATE_INDEX,
+            "index": op.index_name,
             "desc": 'add index %s to %s' % (op.index_name, op.table_name),
         })
 
     def _drop_index(self: Diff, op: alembicops.DropIndexOp):
         self._append_change(op.table_name, {
             "change": ChangeType.DROP_INDEX,
+            "index": op.index_name,
             "desc": 'drop index %s from %s' % (op.index_name, op.table_name),
         })
 
