@@ -2,17 +2,12 @@ from __future__ import annotations
 from sqlalchemy.sql.sqltypes import String
 from .clause_text import get_clause_text
 from .change_type import ChangeType
+from .change import Change
 from .ops import MigrateOpInterface, DropFullTextIndexOp, CreateFullTextIndexOp
 
 import alembic.operations.ops as alembicops
 
-from typing import List, Sequence, TypedDict
-
-
-class Change(TypedDict):
-    change: ChangeType
-    desc: String
-    col: String
+from typing import List, Sequence
 
 
 class Diff(object):
@@ -57,10 +52,7 @@ class Diff(object):
                 class_name_map[type(op).__name__](op)
 
     def _custom_migrate_op(self: Diff, op: MigrateOpInterface):
-        self._append_change(op.get_table_name(), {
-            "change": op.get_change_type(),
-            "desc": op.get_revision_message(),
-        })
+        self._append_change(op.get_table_name(), op.get_change())
 
     def _create_table(self: Diff, op: alembicops.CreateTableOp):
         self._append_change(op.table_name,                 {

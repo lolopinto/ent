@@ -17,7 +17,6 @@ type assocEdgeData struct {
 	// and anything not seen in the schema is assumed to be dropped and dropped
 	edgesToRender map[string]*ent.AssocEdgeData
 	newEdges      []*ent.AssocEdgeData
-	// only for tests
 	edgesToUpdate []*ent.AssocEdgeData
 }
 

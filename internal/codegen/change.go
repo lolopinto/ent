@@ -6,21 +6,23 @@ import (
 	"github.com/lolopinto/ent/internal/auto_schema"
 )
 
-type ChangeType string
+type DBChangeType string
 
 const (
 	// NOTE: this was a list that was in sync with change_type in auto_schema/change_type.py
-	// since deprecated and we're only using one, only keeping reference to that one
-	AddColumn   ChangeType = "add_column"
-	CreateIndex ChangeType = "create_index"
-	DropIndex   ChangeType = "drop_index"
+	// since deprecated and we're only using a few, only keeping reference to those ones
+	AddColumn   DBChangeType = "add_column"
+	CreateIndex DBChangeType = "create_index"
+	DropIndex   DBChangeType = "drop_index"
+	ModifyEdge  DBChangeType = "modify_edge"
 )
 
 type deprecatedChange struct {
-	Change ChangeType
-	Desc   string
-	Col    string
-	Index  string
+	Change DBChangeType `json:"change"`
+	Desc   string       `json:"desc"`
+	Col    string       `json:"col"`
+	Index  string       `json:"index"`
+	Edge   string       `json:"edge"`
 }
 
 // get db changes and store in Buffer (output of auto_schema --changes)

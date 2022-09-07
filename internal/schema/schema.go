@@ -1318,8 +1318,6 @@ func (s *Schema) getEdgeInfoAndCheckNewEdge(edgeData *assocEdgeData, assocEdge *
 
 	// always make sure the information we send to schema.py is the latest
 	// info based on the schema so if the db is corrupted in some way, we'll fix
-	// TODO ... if someone is changing a property here, we should show them a prompt
-	// and confirm what's happening
 
 	if isNewEdge {
 		constValue = uuid.New().String()
