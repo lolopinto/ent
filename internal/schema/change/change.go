@@ -56,6 +56,10 @@ const (
 	RemoveRows ChangeType = "remove_rows"
 	ModifyRows ChangeType = "modify_rows"
 
+	AddEdgeData    ChangeType = "add_edge_data"
+	ModifyEdgeData ChangeType = "modify_edge_data"
+	RemoveEdgeData ChangeType = "remove_edge_data"
+
 	CreateUniqueConstraint ChangeType = "create_unique_constraint"
 	CreateCheckConstraint  ChangeType = "create_check_constraint"
 	DropCheckConstraint    ChangeType = "drop_check_constraint"
@@ -121,6 +125,21 @@ func StringListEqual(l1, l2 []string) bool {
 }
 
 func StringMapEqual(m1, m2 map[string]string) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+
+	for k, v := range m1 {
+		v2, ok := m2[k]
+		if !ok || v != v2 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func IntMapEqual(m1, m2 map[string]int) bool {
 	if len(m1) != len(m2) {
 		return false
 	}

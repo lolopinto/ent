@@ -11,7 +11,6 @@ import {
   EditNodeOperation,
   DeleteNodeOperation,
   DataOperation,
-  EdgeOperation,
   loadRows,
 } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
@@ -705,7 +704,25 @@ function commonTests() {
       },
     ];
 
-    test("invalid", async () => {
+    const validators2: Validator<Event, SimpleBuilder<Event>>[] = [
+      {
+        validate: async (builder): Promise<Error | undefined> => {
+          let startTime: Date = builder.fields.get("startTime");
+          let endTime: Date = builder.fields.get("endTime");
+
+          if (!startTime || !endTime) {
+            return new Error("startTime and endTime required");
+          }
+
+          if (startTime.getTime() > endTime.getTime()) {
+            return new Error("start time cannot be after end time");
+          }
+          return;
+        },
+      },
+    ];
+
+    test("invalid. validX", async () => {
       let now = new Date();
       let yesterday = new Date(now.getTime() - 86400);
 
@@ -729,7 +746,72 @@ function commonTests() {
       }
     });
 
-    test("valid", async () => {
+    test("invalid. validX with validator which returns error", async () => {
+      let now = new Date();
+      let yesterday = new Date(now.getTime() - 86400);
+
+      let action = new SimpleAction(
+        new LoggedOutViewer(),
+        EventSchema,
+        new Map([
+          ["startTime", now],
+          ["endTime", yesterday],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getValidators = () => validators2;
+
+      try {
+        await action.validX();
+        throw new Error("should have thrown exception");
+      } catch (e) {
+        expect(e.message).toBe("start time cannot be after end time");
+      }
+    });
+
+    test("invalid. valid", async () => {
+      let now = new Date();
+      let yesterday = new Date(now.getTime() - 86400);
+
+      let action = new SimpleAction(
+        new LoggedOutViewer(),
+        EventSchema,
+        new Map([
+          ["startTime", now],
+          ["endTime", yesterday],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getValidators = () => validators;
+
+      const valid = await action.valid();
+      expect(valid).toBe(false);
+    });
+
+    test("invalid. validWithErrors", async () => {
+      let now = new Date();
+      let yesterday = new Date(now.getTime() - 86400);
+
+      let action = new SimpleAction(
+        new LoggedOutViewer(),
+        EventSchema,
+        new Map([
+          ["startTime", now],
+          ["endTime", yesterday],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getValidators = () => validators;
+
+      const errors = await action.builder.orchestrator.validWithErrors();
+      expect(errors.length).toBe(1);
+      expect(errors[0].message).toBe("start time cannot be after end time");
+    });
+
+    test("validX", async () => {
       let now = new Date();
       let yesterday = new Date(now.getTime() - 86400);
 
@@ -749,6 +831,46 @@ function commonTests() {
 
       // can "save" the query!
       await action.saveX();
+    });
+
+    test("valid", async () => {
+      let now = new Date();
+      let yesterday = new Date(now.getTime() - 86400);
+
+      let action = new SimpleAction(
+        new LoggedOutViewer(),
+        EventSchema,
+        new Map([
+          ["startTime", yesterday],
+          ["endTime", now],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getValidators = () => validators;
+
+      const valid = await action.valid();
+      expect(valid).toBe(true);
+    });
+
+    test("validWithErrors", async () => {
+      let now = new Date();
+      let yesterday = new Date(now.getTime() - 86400);
+
+      let action = new SimpleAction(
+        new LoggedOutViewer(),
+        EventSchema,
+        new Map([
+          ["startTime", yesterday],
+          ["endTime", now],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getValidators = () => validators;
+
+      const errors = await action.builder.orchestrator.validWithErrors();
+      expect(errors.length).toBe(0);
     });
   });
 

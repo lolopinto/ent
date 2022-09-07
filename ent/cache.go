@@ -2,14 +2,11 @@ package ent
 
 // TODO everything here needs work
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
-	"github.com/rocketlaunchr/remember-go"
-	"github.com/rocketlaunchr/remember-go/memory"
 )
 
 type cachedItem struct {
@@ -26,8 +23,6 @@ type cacheRetrievalFunc func() (interface{}, bool, error)
 
 const cacheTTL = 1 * time.Hour
 
-var ms = memory.NewMemoryStore(cacheTTL)
-
 // call this something like loader or something
 // which handles cache hit/ get/miss
 func getItemFromCacheMaybe(key string, dataFunc func() (map[string]interface{}, error)) (map[string]interface{}, error) {
@@ -35,19 +30,8 @@ func getItemFromCacheMaybe(key string, dataFunc func() (map[string]interface{}, 
 		util.GoSchemaKill("invalid key")
 	}
 
-	ctx := context.Background()
-	// memory store
-	//	ms := memory.NewMemoryStore(10 * time.Minute)
-	fn := func(ctx context.Context) (interface{}, error) {
-		res, err := dataFunc()
-		return &cachedItem{
-			data: res,
-			err:  err,
-		}, nil
-	}
-
 	data, err := getSingleCachedItem(key, func() (interface{}, bool, error) {
-		return remember.Cache(ctx, ms, key, cacheTTL, fn)
+		return nil, false, nil
 	})
 	if err != nil {
 		return nil, err
@@ -63,19 +47,9 @@ func getItemsFromCacheMaybe(key string, dataFunc func() ([]map[string]interface{
 	if key == "" {
 		util.GoSchemaKill("invalid key")
 	}
-	ctx := context.Background()
-	// memory store
-	//	ms := memory.NewMemoryStore(10 * time.Minute)
-	fn := func(ctx context.Context) (interface{}, error) {
-		res, err := dataFunc()
-		return &cachedItems{
-			datas: res,
-			err:   err,
-		}, nil
-	}
 
 	data, err := getMultiCacheItem(key, func() (interface{}, bool, error) {
-		return remember.Cache(ctx, ms, key, 1*time.Hour, fn)
+		return nil, false, nil
 	})
 
 	if err != nil {
@@ -139,18 +113,18 @@ func getMultiCacheItem(key string, cacheFunc cacheRetrievalFunc) (*cachedItems, 
 
 func setSingleCachedItem(key string, dataItem map[string]interface{}, err error) {
 	//	spew.Dump("setcachevalue", key, dataItem, err)
-	ms.Set(key, cacheTTL, &cachedItem{data: dataItem, err: err})
+
 }
 
 func deleteKey(key string) {
 	//fmt.Println("delete key", key)
-	ms.Forget(key)
+
 }
 
 func getItemInCache(key string) (map[string]interface{}, error) {
 	//	loadNodesHelper
 	data, err := getSingleCachedItem(key, func() (interface{}, bool, error) {
-		return ms.Get(key)
+		return nil, false, nil
 	})
 	if err != nil {
 		return nil, err
@@ -164,7 +138,7 @@ func getItemInCache(key string) (map[string]interface{}, error) {
 
 func getItemsInCache(key string) ([]map[string]interface{}, error) {
 	data, err := getMultiCacheItem(key, func() (interface{}, bool, error) {
-		return ms.Get(key)
+		return nil, false, nil
 	})
 	if err != nil {
 		return nil, err
@@ -175,10 +149,3 @@ func getItemsInCache(key string) ([]map[string]interface{}, error) {
 	}
 	return data.datas, nil
 }
-
-// type loader interface {
-// 	GetKey() string
-// 	DataFunc() (interface{}, error)
-// }
-
-//func loadItem(load loader )

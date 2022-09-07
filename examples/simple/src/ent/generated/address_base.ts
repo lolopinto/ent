@@ -12,6 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -128,6 +129,20 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
       query,
       context,
     )) as AddressDBData[];
+  }
+
+  static async loadCustomCount<T extends AddressBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...AddressBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends AddressBase>(

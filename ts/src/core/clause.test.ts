@@ -293,7 +293,207 @@ describe("postgres", () => {
     });
   });
 
-  // TODO: AND OR mixed together?
+  describe("nested and/or", () => {
+    test("OR nested in AND", () => {
+      const cls = clause.And(
+        clause.Eq("id3", "bar"),
+        clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+      );
+      expect(cls.clause(1)).toBe("id3 = $1 AND (id1 = $2 OR id2 = $3)");
+      expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["bar", "iddd", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["bar", "iddd", "foo"]);
+      expect(cls.instanceKey()).toEqual("id3=bar AND (id1=iddd OR id2=foo)");
+    });
+
+    test("AND nested in Or", () => {
+      const cls = clause.Or(
+        clause.Eq("id3", "bar"),
+        clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+      );
+      expect(cls.clause(1)).toBe("id3 = $1 OR (id1 = $2 AND id2 = $3)");
+      expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["bar", "iddd", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["bar", "iddd", "foo"]);
+      expect(cls.instanceKey()).toEqual("id3=bar OR (id1=iddd AND id2=foo)");
+    });
+
+    test("Or nested in AND nested in OR", () => {
+      const cls = clause.Or(
+        clause.Eq("id4", "baz"),
+        clause.And(
+          clause.Eq("id3", "bar"),
+          clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = $1 OR (id3 = $2 AND (id1 = $3 OR id2 = $4))",
+      );
+      expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz OR (id3=bar AND (id1=iddd OR id2=foo))",
+      );
+    });
+
+    test("And nested in OR nested in AND", () => {
+      const cls = clause.And(
+        clause.Eq("id4", "baz"),
+        clause.Or(
+          clause.Eq("id3", "bar"),
+          clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = $1 AND (id3 = $2 OR (id1 = $3 AND id2 = $4))",
+      );
+      expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz AND (id3=bar OR (id1=iddd AND id2=foo))",
+      );
+    });
+
+    test("complexx ", () => {
+      const cls = clause.And(
+        clause.Eq("id4", "baz"),
+        clause.Or(
+          clause.Eq("id3", "bar"),
+          clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+          clause.Or(clause.Eq("id5", "whaa"), clause.Eq("id6", "indeed")),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = $1 AND (id3 = $2 OR (id1 = $3 AND id2 = $4) OR id5 = $5 OR id6 = $6)",
+        // could also do this...
+        //         "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?) OR (id5 = ? OR id6 = ?))",
+      );
+      expect(cls.columns()).toStrictEqual([
+        "id4",
+        "id3",
+        "id1",
+        "id2",
+        "id5",
+        "id6",
+      ]);
+      expect(cls.values()).toStrictEqual([
+        "baz",
+        "bar",
+        "iddd",
+        "foo",
+        "whaa",
+        "indeed",
+      ]);
+      expect(cls.logValues()).toStrictEqual([
+        "baz",
+        "bar",
+        "iddd",
+        "foo",
+        "whaa",
+        "indeed",
+      ]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz AND (id3=bar OR (id1=iddd AND id2=foo) OR id5=whaa OR id6=indeed)",
+      );
+    });
+  });
+
+  describe("null on null", () => {
+    test("OR nested in AND", () => {
+      const cls = clause.And(
+        clause.Eq("id3", null),
+        clause.Or(clause.Eq("id1", null), clause.Eq("id2", "foo")),
+      );
+      expect(cls.clause(1)).toBe("id3 IS NULL AND (id1 IS NULL OR id2 = $1)");
+      expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["foo"]);
+      expect(cls.logValues()).toStrictEqual(["foo"]);
+      expect(cls.instanceKey()).toEqual(
+        "id3 IS NULL AND (id1 IS NULL OR id2=foo)",
+      );
+    });
+
+    test("AND nested in OR", () => {
+      const cls = clause.Or(
+        clause.Eq("id3", null),
+        clause.And(clause.Eq("id1", null), clause.Eq("id2", "foo")),
+      );
+      expect(cls.clause(1)).toBe("id3 IS NULL OR (id1 IS NULL AND id2 = $1)");
+      expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["foo"]);
+      expect(cls.logValues()).toStrictEqual(["foo"]);
+      expect(cls.instanceKey()).toEqual(
+        "id3 IS NULL OR (id1 IS NULL AND id2=foo)",
+      );
+    });
+
+    test("Or nested in AND nested in OR", () => {
+      const cls = clause.Or(
+        clause.Eq("id4", "baz"),
+        clause.And(
+          clause.Eq("id3", null),
+          clause.Or(clause.Eq("id1", null), clause.Eq("id2", "foo")),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = $1 OR (id3 IS NULL AND (id1 IS NULL OR id2 = $2))",
+      );
+      expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["baz", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["baz", "foo"]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz OR (id3 IS NULL AND (id1 IS NULL OR id2=foo))",
+      );
+    });
+
+    test("complexx ", () => {
+      const cls = clause.And(
+        clause.Eq("id4", "baz"),
+        clause.Or(
+          clause.Eq("id3", null),
+          clause.And(clause.Eq("id1", null), clause.Eq("id2", "foo")),
+          clause.Or(
+            clause.Eq("id5", "whaa"),
+            clause.Eq("id6", "indeed"),
+            clause.Eq("id7", null),
+          ),
+          clause.Eq("id8", "wheee"),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = $1 AND (id3 IS NULL OR (id1 IS NULL AND id2 = $2) OR id5 = $3 OR id6 = $4 OR id7 IS NULL OR id8 = $5)",
+      );
+      expect(cls.columns()).toStrictEqual([
+        "id4",
+        "id3",
+        "id1",
+        "id2",
+        "id5",
+        "id6",
+        "id7",
+        "id8",
+      ]);
+      expect(cls.values()).toStrictEqual([
+        "baz",
+        "foo",
+        "whaa",
+        "indeed",
+        "wheee",
+      ]);
+      expect(cls.logValues()).toStrictEqual([
+        "baz",
+        "foo",
+        "whaa",
+        "indeed",
+        "wheee",
+      ]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz AND (id3 IS NULL OR (id1 IS NULL AND id2=foo) OR id5=whaa OR id6=indeed OR id7 IS NULL OR id8=wheee)",
+      );
+    });
+  });
 
   describe("In", () => {
     test("1 arg", () => {
@@ -1040,7 +1240,112 @@ describe("sqlite", () => {
     });
   });
 
-  // TODO: AND OR mixed together?
+  describe("nested and/or", () => {
+    test("OR nested in AND", () => {
+      const cls = clause.And(
+        clause.Eq("id3", "bar"),
+        clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+      );
+      expect(cls.clause(1)).toBe("id3 = ? AND (id1 = ? OR id2 = ?)");
+      expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["bar", "iddd", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["bar", "iddd", "foo"]);
+      expect(cls.instanceKey()).toEqual("id3=bar AND (id1=iddd OR id2=foo)");
+    });
+
+    test("AND nested in Or", () => {
+      const cls = clause.Or(
+        clause.Eq("id3", "bar"),
+        clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+      );
+      expect(cls.clause(1)).toBe("id3 = ? OR (id1 = ? AND id2 = ?)");
+      expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["bar", "iddd", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["bar", "iddd", "foo"]);
+      expect(cls.instanceKey()).toEqual("id3=bar OR (id1=iddd AND id2=foo)");
+    });
+
+    test("Or nested in AND nested in OR", () => {
+      const cls = clause.Or(
+        clause.Eq("id4", "baz"),
+        clause.And(
+          clause.Eq("id3", "bar"),
+          clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = ? OR (id3 = ? AND (id1 = ? OR id2 = ?))",
+      );
+      expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz OR (id3=bar AND (id1=iddd OR id2=foo))",
+      );
+    });
+
+    test("And nested in OR nested in AND", () => {
+      const cls = clause.And(
+        clause.Eq("id4", "baz"),
+        clause.Or(
+          clause.Eq("id3", "bar"),
+          clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?))",
+      );
+      expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
+      expect(cls.values()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
+      expect(cls.logValues()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz AND (id3=bar OR (id1=iddd AND id2=foo))",
+      );
+    });
+
+    test("complexx ", () => {
+      const cls = clause.And(
+        clause.Eq("id4", "baz"),
+        clause.Or(
+          clause.Eq("id3", "bar"),
+          clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
+          clause.Or(clause.Eq("id5", "whaa"), clause.Eq("id6", "indeed")),
+        ),
+      );
+      expect(cls.clause(1)).toBe(
+        "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?) OR id5 = ? OR id6 = ?)",
+        // could also do this...
+        //         "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?) OR (id5 = ? OR id6 = ?))",
+      );
+      expect(cls.columns()).toStrictEqual([
+        "id4",
+        "id3",
+        "id1",
+        "id2",
+        "id5",
+        "id6",
+      ]);
+      expect(cls.values()).toStrictEqual([
+        "baz",
+        "bar",
+        "iddd",
+        "foo",
+        "whaa",
+        "indeed",
+      ]);
+      expect(cls.logValues()).toStrictEqual([
+        "baz",
+        "bar",
+        "iddd",
+        "foo",
+        "whaa",
+        "indeed",
+      ]);
+      expect(cls.instanceKey()).toBe(
+        "id4=baz AND (id3=bar OR (id1=iddd AND id2=foo) OR id5=whaa OR id6=indeed)",
+      );
+    });
+  });
 
   describe("In", () => {
     test("1 arg", () => {

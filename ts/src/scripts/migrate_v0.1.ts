@@ -1,9 +1,9 @@
+import minimist from "minimist";
 import { transform } from "../tsc/transform";
 import { TransformSchema } from "../tsc/transform_schema";
 import { TransformEnt } from "../tsc/transform_ent";
 import { moveGenerated } from "../tsc/move_generated";
 import { TransformAction } from "../tsc/transform_action";
-import minimist from "minimist";
 import { getCustomInfo } from "../tsc/ast";
 
 // todo-sqlite

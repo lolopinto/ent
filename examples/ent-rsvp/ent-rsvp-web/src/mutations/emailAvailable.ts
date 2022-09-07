@@ -14,4 +14,4 @@ const mutation = graphql`
 export default commit<
   emailAvailableMutationVariables,
   emailAvailableMutationResponse
->(mutation);
+>(mutation, true);

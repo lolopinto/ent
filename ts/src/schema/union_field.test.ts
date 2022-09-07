@@ -1,3 +1,4 @@
+import { v1 } from "uuid";
 import { UnionType } from "./union_field";
 import { StructField, StructType } from "./struct_field";
 import {
@@ -9,7 +10,7 @@ import {
   FloatType,
   EnumType,
 } from "./field";
-import { v1 } from "uuid";
+
 declare type StructMap = {
   [key: string]: StructField;
 };

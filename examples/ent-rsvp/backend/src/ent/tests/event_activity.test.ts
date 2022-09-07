@@ -3,6 +3,7 @@ import {
   GuestData,
   EventActivityToAttendingQuery,
   GuestToAttendingEventsQuery,
+  AddressToLocatedAtQuery,
 } from "src/ent";
 import { IDViewer } from "@snowtop/ent";
 import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
@@ -23,6 +24,7 @@ import {
   createAndInvitePlusGuests,
   createGuests,
 } from "src/testutils";
+import CreateAddressAction from "../address/actions/create_address_action";
 
 describe("create event activity", () => {
   test("valid", async () => {
@@ -77,6 +79,34 @@ describe("create event activity", () => {
     expect(count).toBe(1);
     expect(ents.length).toBe(1);
     expect(ents[0].id).toBe(group.id);
+  });
+
+  test("create with address id", async () => {
+    const user = await createUser();
+
+    const address = await CreateAddressAction.create(user.viewer, {
+      street: "1 main street",
+      state: "CA",
+      apartment: "2",
+      zipCode: "92323",
+      city: "San Francisco",
+      ownerID: user.id,
+      ownerType: user.nodeType,
+    }).saveX();
+
+    const event = await createEvent(user);
+    const activity = await createActivity({ addressId: address.id }, event);
+    expect(activity.addressId).toBe(address.id);
+    const loaded = await activity.loadAddress();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.id).toBe(address.id);
+
+    const locatedAt = await AddressToLocatedAtQuery.query(
+      address.viewer,
+      address,
+    ).queryEnts();
+    expect(locatedAt.length).toBe(1);
+    expect(locatedAt[0].id).toBe(activity.id);
   });
 });
 
@@ -272,7 +302,7 @@ describe("rsvps", () => {
     expect(count).toBe(1);
 
     // rsvp status is as expected
-    const rsvpStatus = await activity2.viewerRsvpStatus();
+    const rsvpStatus = await activity2.rsvpStatusFor(guest);
     expect(rsvpStatus).toBe(output);
 
     return [activity, guests];
@@ -280,8 +310,6 @@ describe("rsvps", () => {
 
   async function doRsvpForOther(
     input: EventActivityRsvpStatusInput,
-    // TODO we need to be able to check rsvp status for other user...
-    // need to figure out best way to show this in graphql
     output: EventActivityRsvpStatus,
     activityCount: (activity: EventActivity) => Promise<number>,
     guestCount: (guest: Guest) => Promise<number>,
@@ -315,10 +343,12 @@ describe("rsvps", () => {
     count = await guestCount(guest);
     expect(count).toBe(1);
 
-    // rsvp status is attending
-    const rsvpStatus = await activity2.viewerRsvpStatus();
-    // can rsvp since didn't rsvp for self /rsvped for guest
+    // self rsvp is still can rsvp since didn't rsvp for self
+    const rsvpStatus = await activity2.rsvpStatusFor(guests[1]);
     expect(rsvpStatus).toBe(EventActivityRsvpStatus.CanRsvp);
+
+    const otherRsvpStatus = await activity2.rsvpStatusFor(guest);
+    expect(otherRsvpStatus).toBe(output);
   }
 
   test("rsvp attending for self", async () => {
@@ -558,7 +588,7 @@ describe("rsvps", () => {
       },
     ).saveX();
 
-    const rsvpStatus = await activity2.viewerRsvpStatus();
+    const rsvpStatus = await activity2.rsvpStatusFor(guest);
     expect(rsvpStatus).toBe(EventActivityRsvpStatus.Attending);
 
     const activity3 = await EditEventActivityRsvpStatusAction.create(
@@ -570,7 +600,7 @@ describe("rsvps", () => {
       },
     ).saveX();
 
-    const rsvpStatus2 = await activity3.viewerRsvpStatus();
+    const rsvpStatus2 = await activity3.rsvpStatusFor(guest);
     expect(rsvpStatus2).toBe(EventActivityRsvpStatus.Declined);
   });
 });

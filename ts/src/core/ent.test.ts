@@ -8,7 +8,7 @@ import {
 import { IDViewer, LoggedOutViewer } from "./viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
-import { Field, FieldMap, StringType, UUIDType } from "../schema";
+import { FieldMap, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
 import { ID, Ent, Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
 import {
@@ -21,6 +21,7 @@ import {
   loadEnt,
   loadEntX,
   loadEntViaKey,
+  loadEntXViaKey,
 } from "./ent";
 import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
 import { TestContext } from "../testutils/context/test_context";
@@ -33,6 +34,8 @@ import {
   assoc_edge_config_table,
   assoc_edge_table,
 } from "../testutils/db/temp_db";
+import { setLogLevels } from "./logger";
+import { MockLogs } from "../testutils/mock_log";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -274,6 +277,10 @@ function commonTests() {
     };
     const ctx = new TestContext();
 
+    afterEach(() => {
+      ctx.cache.clearCache();
+    });
+
     test("loadEnt. no data. no context", async () => {
       const ent = await loadEnt(noCtxV, "1", options);
       expect(ent).toBeNull();
@@ -431,7 +438,71 @@ function commonTests() {
       }
     });
 
-    test("from different key", async () => {
+    test("loadEntViaKey", async () => {
+      await createUser();
+      const opts2: LoadEntOptions<User> = {
+        ...options,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "foo",
+        })
+          // @ts-ignore
+          .addToPrime(options.loaderFactory),
+      };
+
+      setLogLevels(["query"]);
+
+      const ml = new MockLogs();
+      ml.mock();
+      const ent = await loadEntViaKey(ctx.getViewer(), "bar", opts2);
+      expect(ent).not.toBeNull();
+      if (!ent) {
+        throw new Error("impossible");
+      }
+      expect(ent.data.foo).toBe("bar");
+
+      expect(ent.id).not.toBe("bar");
+      expect(validatev4(ent.id.toString())).toBe(true);
+
+      // cache primed this one so no subsequent fetch
+      await loadEntX(ctx.getViewer(), ent.id, options);
+
+      expect(ml.logs.length).toBe(1);
+      ml.clear();
+    });
+
+    test("loadEntXViaKey", async () => {
+      await createUser();
+      const opts2: LoadEntOptions<User> = {
+        ...options,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "foo",
+        })
+          // @ts-ignore
+          .addToPrime(options.loaderFactory),
+      };
+
+      setLogLevels(["query"]);
+
+      const ml = new MockLogs();
+      ml.mock();
+      const ent = await loadEntXViaKey(ctx.getViewer(), "bar", opts2);
+      expect(ent.data.foo).toBe("bar");
+
+      expect(ent.id).not.toBe("bar");
+      expect(validatev4(ent.id.toString())).toBe(true);
+
+      // cache primed this one so no subsequent fetch
+      await loadEntX(ctx.getViewer(), ent.id, options);
+
+      expect(ml.logs.length).toBe(1);
+      ml.clear();
+    });
+
+    test("loadEntViaKey. no prime", async () => {
       await createUser();
       const opts2: LoadEntOptions<User> = {
         ...options,
@@ -442,7 +513,12 @@ function commonTests() {
         }),
       };
 
+      setLogLevels("query");
+      const ml = new MockLogs();
+      ml.mock();
+
       const ent = await loadEntViaKey(ctx.getViewer(), "bar", opts2);
+
       expect(ent).not.toBeNull();
       if (!ent) {
         throw new Error("impossible");
@@ -451,6 +527,39 @@ function commonTests() {
 
       expect(ent.id).not.toBe("bar");
       expect(validatev4(ent.id.toString())).toBe(true);
+
+      await loadEntX(ctx.getViewer(), ent.id, options);
+
+      expect(ml.logs.length).toBe(2);
+      ml.clear();
+    });
+
+    test("loadEntXViaKey. no prime", async () => {
+      await createUser();
+      const opts2: LoadEntOptions<User> = {
+        ...options,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "foo",
+        }),
+      };
+
+      setLogLevels("query");
+      const ml = new MockLogs();
+      ml.mock();
+
+      const ent = await loadEntXViaKey(ctx.getViewer(), "bar", opts2);
+
+      expect(ent.data.foo).toBe("bar");
+
+      expect(ent.id).not.toBe("bar");
+      expect(validatev4(ent.id.toString())).toBe(true);
+
+      await loadEntX(ctx.getViewer(), ent.id, options);
+
+      expect(ml.logs.length).toBe(2);
+      ml.clear();
     });
   });
 }

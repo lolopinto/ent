@@ -31,6 +31,9 @@ interface GuestGroupCreatePayload {
 export const GuestGuestGroupCreateInput = new GraphQLInputObjectType({
   name: "GuestGuestGroupCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
+    addressId: {
+      type: GraphQLID,
+    },
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },

@@ -40,9 +40,11 @@ type Address implements Node {
   state: String!
   zipCode: String!
   apartment: String
+  locatedAt(first: Int, after: String, last: Int, before: String): AddressToLocatedAtConnection!
 }
 
 type EventActivity implements Node {
+  address: Address
   event: Event
   id: ID!
   name: String!
@@ -54,8 +56,8 @@ type EventActivity implements Node {
   attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
-  viewerRsvpStatus: EventActivityRsvpStatus
-  address: Address
+  rsvpStatusFor(id: ID!): EventActivityRsvpStatus!
+  addressFromOwner: Address
 }
 
 type Event implements Node {
@@ -77,6 +79,7 @@ type GuestGroup implements Node {
 }
 
 type Guest implements Node {
+  address: Address
   event: Event
   guestGroup: GuestGroup
   id: ID!
@@ -93,6 +96,18 @@ type User implements Node {
   lastName: String!
   emailAddress: String!
   events(first: Int, after: String, last: Int, before: String): UserToEventsConnection!
+}
+
+type AddressToLocatedAtEdge implements Edge {
+  node: Node!
+  cursor: String!
+}
+
+type AddressToLocatedAtConnection implements Connection {
+  edges: [AddressToLocatedAtEdge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type EventActivityToAttendingEdge implements Edge {
@@ -255,6 +270,7 @@ type AuthUserPayload {
 }
 
 input ActivityEventCreateInput {
+  addressId: ID
   name: String!
   startTime: Time!
   endTime: Time
@@ -322,6 +338,7 @@ type EventActivityAddInvitePayload {
 }
 
 input EventActivityCreateInput {
+  addressId: ID
   name: String!
   eventID: ID!
   startTime: Time!
@@ -348,6 +365,7 @@ type EventActivityDeletePayload {
 input EventActivityEditInput {
   """id of EventActivity"""
   id: ID!
+  addressId: ID
   name: String
   eventID: ID
   startTime: Time
@@ -399,6 +417,7 @@ type EventCreatePayload {
 }
 
 input GuestCreateInput {
+  addressId: ID
   name: String!
   eventID: ID!
   emailAddress: String
@@ -460,6 +479,7 @@ type GuestGroupEditPayload {
 }
 
 input GuestGuestGroupCreateInput {
+  addressId: ID
   name: String!
   emailAddress: String
   title: String

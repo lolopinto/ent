@@ -35,7 +35,8 @@ const TagSchema = new TodoEntSchema({
   actions: [
     {
       operation: ActionOperation.Create,
-      fields: ["DisplayName", "ownerID", "relatedTagIds"],
+      fields: ["DisplayName", "ownerID", "relatedTagIds", "canonicalName"],
+      optionalFields: ["canonicalName"],
     },
   ],
 });

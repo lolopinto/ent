@@ -4,6 +4,7 @@
 
 import { ConcreteRequest } from "relay-runtime";
 export type EventActivityCreateInput = {
+    addressId?: string | null;
     name: string;
     eventID: string;
     startTime: unknown;

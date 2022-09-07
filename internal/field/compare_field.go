@@ -1,6 +1,8 @@
 package field
 
 import (
+	"fmt"
+
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -108,7 +110,7 @@ func foreignKeyInfoEqual(existing, fkey *ForeignKeyInfo) bool {
 		existing.DisableIndex == fkey.DisableIndex
 }
 
-func compareFieldMap(m1, m2 map[string]*Field) []change.Change {
+func compareFieldMap(m1, m2 map[string]*Field) ([]change.Change, error) {
 	var ret []change.Change
 
 	// db col to old name
@@ -125,6 +127,9 @@ func compareFieldMap(m1, m2 map[string]*Field) []change.Change {
 
 		} else {
 			if !FieldEqual(f1, f2) {
+				if f1.fieldType.GetDBType() != f2.fieldType.GetDBType() {
+					return nil, fmt.Errorf("changing the database type of a field isn't currently supported. you should drop the field and add it back if you really want to do that")
+				}
 				ret = append(ret, change.Change{
 					Change: change.ModifyField,
 					Name:   k,
@@ -167,10 +172,10 @@ func compareFieldMap(m1, m2 map[string]*Field) []change.Change {
 		})
 	}
 
-	return append(temp, ret...)
+	return append(temp, ret...), nil
 }
 
-func CompareFieldInfo(f1, f2 *FieldInfo) []change.Change {
+func CompareFieldInfo(f1, f2 *FieldInfo) ([]change.Change, error) {
 	if f1 == nil {
 		f1 = &FieldInfo{}
 	}

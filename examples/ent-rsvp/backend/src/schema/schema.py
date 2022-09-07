@@ -7,6 +7,18 @@ from auto_schema.schema_item import FullTextIndex
 metadata = sa.MetaData()
 
  
+sa.Table("address_located_at_edges", metadata,
+    sa.Column("id1", postgresql.UUID(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", postgresql.UUID(), nullable=False),
+    sa.Column("id2", postgresql.UUID(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="address_located_at_edges_id1_edge_type_id2_pkey"),
+    sa.Index("address_located_at_edges_time_idx", "time"),
+)
+   
 sa.Table("addresses", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -53,6 +65,7 @@ sa.Table("event_activities", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("address_id", postgresql.UUID(), nullable=True),
     sa.Column("name", sa.Text(), nullable=False),
     sa.Column("event_id", postgresql.UUID(), nullable=False),
     sa.Column("start_time", sa.TIMESTAMP(), nullable=False),
@@ -120,6 +133,7 @@ sa.Table("guests", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("address_id", postgresql.UUID(), nullable=True),
     sa.Column("name", sa.Text(), nullable=False),
     sa.Column("event_id", postgresql.UUID(), nullable=False),
     sa.Column("email_address", sa.Text(), nullable=True),
@@ -148,6 +162,7 @@ sa.Table("users", metadata,
 
 metadata.info["edges"] = {
   'public': {
+    'AddressToLocatedAtEdge': {"edge_name":"AddressToLocatedAtEdge", "edge_type":"d2cbbbfe-380d-404e-85b8-81eff42f2122", "edge_table":"address_located_at_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'EventActivityToAttendingEdge': {"edge_name":"EventActivityToAttendingEdge", "edge_type":"8025c416-c0a9-42dd-9bf4-f97f283d31a2", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"ea0de57e-25de-47ab-8ddc-324f41c892a3"},
     'EventActivityToDeclinedEdge': {"edge_name":"EventActivityToDeclinedEdge", "edge_type":"f3ff6b74-c055-4562-b5dd-07e4e2d8c8e3", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"5798e422-75d3-42ac-9ef8-30bd35e34f9f"},
     'EventActivityToInvitesEdge': {"edge_name":"EventActivityToInvitesEdge", "edge_type":"64ef93f6-7edf-42ce-a3e4-8c30d9851645", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"759e4abe-f866-41b7-aae8-40be4e8ab21e"},

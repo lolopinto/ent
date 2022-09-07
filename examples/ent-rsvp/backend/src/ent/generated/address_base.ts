@@ -10,6 +10,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -25,7 +26,7 @@ import {
   addressLoaderInfo,
   addressOwnerIDLoader,
 } from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/internal";
+import { AddressToLocatedAtQuery, NodeType } from "src/ent/internal";
 import schema from "src/schema/address_schema";
 
 interface AddressDBData {
@@ -137,6 +138,20 @@ export class AddressBase implements Ent<Viewer> {
     )) as AddressDBData[];
   }
 
+  static async loadCustomCount<T extends AddressBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...AddressBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
+  }
+
   static async loadRawData<T extends AddressBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
@@ -226,6 +241,10 @@ export class AddressBase implements Ent<Viewer> {
 
   static getField(key: string): Field | undefined {
     return AddressBase.getSchemaFields().get(key);
+  }
+
+  queryLocatedAt(): AddressToLocatedAtQuery {
+    return AddressToLocatedAtQuery.query(this.viewer, this.id);
   }
 
   async loadOwner(): Promise<Ent | null> {

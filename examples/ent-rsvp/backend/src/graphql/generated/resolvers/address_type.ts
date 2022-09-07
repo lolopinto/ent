@@ -3,13 +3,19 @@
 import {
   GraphQLFieldConfigMap,
   GraphQLID,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { Address } from "src/ent/";
+import {
+  GraphQLEdgeConnection,
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+} from "@snowtop/ent/graphql";
+import { Address, AddressToLocatedAtQuery } from "src/ent/";
+import { AddressToLocatedAtConnectionType } from "src/graphql/resolvers/internal";
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",
@@ -38,6 +44,35 @@ export const AddressType = new GraphQLObjectType({
     },
     apartment: {
       type: GraphQLString,
+    },
+    locatedAt: {
+      type: new GraphQLNonNull(AddressToLocatedAtConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (address: Address, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          address.viewer,
+          address,
+          (v, address: Address) => AddressToLocatedAtQuery.query(v, address),
+          args,
+        );
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],

@@ -6,8 +6,11 @@ import {
   BooleanType,
   EntSchema,
 } from "@snowtop/ent";
+import { WithAddressPattern } from "./patterns/with_address_pattern";
 
 const EventActivitySchema = new EntSchema({
+  patterns: [new WithAddressPattern()],
+
   fields: {
     Name: StringType(),
     eventID: UUIDType({
@@ -48,6 +51,7 @@ const EventActivitySchema = new EntSchema({
       groupStatusName: "rsvpStatus",
       tableName: "event_rsvps",
       statusEnums: ["attending", "declined"],
+      // not viewer based with null states...
       nullStateFn: "rsvpStatus",
       nullStates: ["canRsvp", "cannotRsvp"],
       edgeAction: {

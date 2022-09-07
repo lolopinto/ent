@@ -14,12 +14,22 @@ import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
 } from "@snowtop/ent/graphql";
-import { Account, AccountToTagsQuery, AccountToTodosQuery } from "src/ent/";
+import {
+  Account,
+  AccountToClosedTodosDupQuery,
+  AccountToOpenTodosDupQuery,
+  AccountToTagsQuery,
+  AccountToTodosQuery,
+  Todo,
+} from "src/ent/";
 import {
   AccountStateType,
+  AccountToClosedTodosDupConnectionType,
   AccountToOpenTodosConnectionType,
+  AccountToOpenTodosDupConnectionType,
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
+  AccountTodoStatusType,
   TodoType,
 } from "src/graphql/resolvers/internal";
 
@@ -44,6 +54,65 @@ export const AccountType = new GraphQLObjectType({
         return account.accountState;
       },
     },
+    closed_todos_dup: {
+      type: new GraphQLNonNull(AccountToClosedTodosDupConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) =>
+            AccountToClosedTodosDupQuery.query(v, account),
+          args,
+        );
+      },
+    },
+    open_todos_dup: {
+      type: new GraphQLNonNull(AccountToOpenTodosDupConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) => AccountToOpenTodosDupQuery.query(v, account),
+          args,
+        );
+      },
+    },
     tags: {
       type: new GraphQLNonNull(AccountToTagsConnectionType()),
       args: {
@@ -64,7 +133,7 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: {}, context: RequestContext) => {
+      resolve: (account: Account, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
@@ -93,13 +162,26 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: {}, context: RequestContext) => {
+      resolve: (account: Account, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
           (v, account: Account) => AccountToTodosQuery.query(v, account),
           args,
         );
+      },
+    },
+    todoStatusFor: {
+      type: AccountTodoStatusType,
+      args: {
+        id: {
+          description: "",
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      resolve: async (account: Account, args: any, context: RequestContext) => {
+        const ent = await Todo.loadX(context.getViewer(), args.id);
+        return account.todoStatusFor(ent);
       },
     },
     open_todos_plural: {
@@ -128,7 +210,7 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: {}, context: RequestContext) => {
+      resolve: (account: Account, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,

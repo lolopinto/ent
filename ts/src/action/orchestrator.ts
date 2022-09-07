@@ -201,6 +201,11 @@ export class Orchestrator<
     this.memoizedGetFields = memoize(this.getFieldsInfo.bind(this));
   }
 
+  // don't type this because we don't care
+  __getOptions(): OrchestratorOptions<any, any, any, any> {
+    return this.options;
+  }
+
   private addEdge(edge: edgeInputData, op: WriteOperation) {
     this.edgeSet.add(edge.edgeType);
 
@@ -580,13 +585,14 @@ export class Orchestrator<
     // not ideal we're calling this twice. fix...
     // needed for now. may need to rewrite some of this?
     const editedFields2 = await this.options.editedFields();
-    const [errors, _] = await Promise.all([
+    const [errors, errs2] = await Promise.all([
       this.formatAndValidateFields(schemaFields, editedFields2),
       this.validators(validators, action!, builder),
     ]);
     if (privacyError !== null) {
       errors.unshift(privacyError);
     }
+    errors.push(...errs2);
     return errors;
   }
 
@@ -647,17 +653,21 @@ export class Orchestrator<
     validators: Validator<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>[],
     action: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>,
     builder: Builder<TEnt, TViewer>,
-  ): Promise<void> {
-    // TODO need to catch errors and return it...
-    // don't need it initially since what we need this for doesn't have the errors
-    let promises: Promise<void>[] = [];
-    validators.forEach((validator) => {
-      let res = validator.validate(builder, action.getInput());
-      if (res) {
-        promises.push(res);
-      }
-    });
-    await Promise.all(promises);
+  ): Promise<Error[]> {
+    const errors: Error[] = [];
+    await Promise.all(
+      validators.map(async (v) => {
+        try {
+          const r = await v.validate(builder, action.getInput());
+          if (r instanceof Error) {
+            errors.push(r);
+          }
+        } catch (err) {
+          errors.push(err as Error);
+        }
+      }),
+    );
+    return errors;
   }
 
   private isBuilder(val: Builder<TEnt> | any): val is Builder<TEnt> {
@@ -667,6 +677,7 @@ export class Orchestrator<
   private getInputKey(k: string) {
     return this.options.fieldInfo[k].inputKey;
   }
+
   private getStorageKey(k: string) {
     return this.options.fieldInfo[k].dbCol;
   }
@@ -880,8 +891,13 @@ export class Orchestrator<
     let data = {};
     let logValues = {};
 
+    let needsFullDataChecks: string[] = [];
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
+
+      if (field.validateWithFullData) {
+        needsFullDataChecks.push(fieldName);
+      }
 
       if (value === undefined && op === WriteOperation.Insert) {
         // null allowed
@@ -899,6 +915,30 @@ export class Orchestrator<
       if (value !== undefined) {
         data[dbKey] = value;
         logValues[dbKey] = field.logValue(value);
+      }
+    }
+
+    for (const fieldName of needsFullDataChecks) {
+      const field = schemaFields.get(fieldName)!;
+      let value = editedFields.get(fieldName);
+
+      // @ts-ignore...
+      // type hackery because it's hard
+      const v = await field.validateWithFullData(value, this.options.builder);
+      if (!v) {
+        if (value === undefined) {
+          errors.push(
+            new Error(
+              `field ${fieldName} set to undefined when it can't be nullable`,
+            ),
+          );
+        } else {
+          errors.push(
+            new Error(
+              `field ${fieldName} set to null when it can't be nullable`,
+            ),
+          );
+        }
       }
     }
 

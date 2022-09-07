@@ -10,12 +10,13 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Event, EventActivity, Guest, GuestGroup } from "src/ent/";
+import { Address, Event, EventActivity, Guest, GuestGroup } from "src/ent/";
 import { EdgeType, NodeType } from "src/ent/generated/const";
 import { guestLoaderInfo } from "src/ent/generated/loaders";
 import schema from "src/schema/guest_schema";
 
 export interface GuestInput {
+  addressId?: ID | null | Builder<Address, Viewer>;
   name?: string;
   eventID?: ID | Builder<Event, Viewer>;
   emailAddress?: string | null;
@@ -252,6 +253,26 @@ export class GuestBuilder<
         result.set(key, value);
       }
     };
+    addField("address_id", fields.addressId);
+    if (fields.addressId !== undefined) {
+      if (fields.addressId) {
+        this.orchestrator.addInboundEdge(
+          fields.addressId,
+          EdgeType.AddressToLocatedAt,
+          NodeType.Address,
+        );
+      }
+      if (
+        this.existingEnt &&
+        this.existingEnt.addressId &&
+        this.existingEnt.addressId !== fields.addressId
+      ) {
+        this.orchestrator.removeInboundEdge(
+          this.existingEnt.addressId,
+          EdgeType.AddressToLocatedAt,
+        );
+      }
+    }
     addField("Name", fields.name);
     addField("eventID", fields.eventID);
     addField("EmailAddress", fields.emailAddress);
@@ -264,6 +285,15 @@ export class GuestBuilder<
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any> {
     return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+
+  // get value of address_id. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAddressIdValue(): ID | null | Builder<Address, Viewer> {
+    if (this.input.addressId !== undefined) {
+      return this.input.addressId;
+    }
+
+    return this.existingEnt?.addressId ?? null;
   }
 
   // get value of Name. Retrieves it from the input if specified or takes it from existingEnt

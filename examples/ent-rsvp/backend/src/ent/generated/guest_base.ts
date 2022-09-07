@@ -10,6 +10,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -19,13 +20,16 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import { guestLoader, guestLoaderInfo } from "src/ent/generated/loaders";
 import {
+  Address,
   Event,
   GuestGroup,
   GuestToAttendingEventsQuery,
   GuestToAuthCodesQuery,
   GuestToDeclinedEventsQuery,
   GuestToGuestDataQuery,
+  IWithAddress,
   NodeType,
+  WithAddressMixin,
 } from "src/ent/internal";
 import schema from "src/schema/guest_schema";
 
@@ -33,6 +37,7 @@ interface GuestDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
+  address_id: ID | null;
   name: string;
   event_id: ID;
   email_address: string | null;
@@ -40,7 +45,10 @@ interface GuestDBData {
   title: string | null;
 }
 
-export class GuestBase implements Ent<Viewer> {
+export class GuestBase
+  extends WithAddressMixin(class {})
+  implements Ent<Viewer>, IWithAddress
+{
   readonly nodeType = NodeType.Guest;
   readonly id: ID;
   readonly createdAt: Date;
@@ -52,6 +60,8 @@ export class GuestBase implements Ent<Viewer> {
   readonly title: string | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -132,6 +142,20 @@ export class GuestBase implements Ent<Viewer> {
     )) as GuestDBData[];
   }
 
+  static async loadCustomCount<T extends GuestBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...GuestBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
+  }
+
   static async loadRawData<T extends GuestBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
@@ -194,6 +218,14 @@ export class GuestBase implements Ent<Viewer> {
 
   queryGuestData(): GuestToGuestDataQuery {
     return GuestToGuestDataQuery.query(this.viewer, this.id);
+  }
+
+  async loadAddress(): Promise<Address | null> {
+    if (!this.addressId) {
+      return null;
+    }
+
+    return loadEnt(this.viewer, this.addressId, Address.loaderOptions());
   }
 
   async loadEvent(): Promise<Event | null> {

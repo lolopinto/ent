@@ -1,5 +1,5 @@
 import { Dialect } from "../../core/db";
-import { TempDB, text, table, uuid, setupSqlite } from "./temp_db";
+import { TempDB, text, table, uuid } from "./temp_db";
 
 const fkeyTables = () => {
   return [

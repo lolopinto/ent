@@ -70,12 +70,13 @@ func (s *Schema) GetGlobalConsts() WithConst {
 	return s.globalConsts
 }
 
-func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
-	return s.addEnumFrom(
-		enum.NewInputFromEnumType(enumType),
-		nodeData,
-		nil,
-	)
+func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData, fkeyInfo *field.ForeignKeyInfo) error {
+	v, err := enum.NewInputFromEnumType(enumType, fkeyInfo != nil)
+	if err != nil {
+		return err
+	}
+
+	return s.addEnumFrom(v, nodeData, nil)
 }
 
 func (s *Schema) addPattern(name string, p *PatternInfo) error {
@@ -206,7 +207,10 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 }
 
 func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) (*EnumInfo, error) {
-	input := enum.NewInputFromEnumType(enumType)
+	input, err := enum.NewInputFromEnumType(enumType, false)
+	if err != nil {
+		return nil, err
+	}
 	return s.addEnumFromInput(input, pattern)
 }
 
@@ -416,7 +420,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			// don't add enums which are defined in patterns
 			if ok {
 				if !f.PatternField() {
-					if err := s.addEnum(enumType, nodeData); err != nil {
+					if err := s.addEnum(enumType, nodeData, f.ForeignKeyInfo()); err != nil {
 						errs = append(errs, err)
 					}
 				} else {
@@ -696,7 +700,10 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 	typ := f.GetFieldType()
 	enumTyp, ok := enttype.GetEnumType(typ)
 	if ok {
-		input := enum.NewInputFromEnumType(enumTyp)
+		input, err := enum.NewInputFromEnumType(enumTyp, false)
+		if err != nil {
+			return err
+		}
 		info, err := s.addEnumFromInput(input, nil)
 		if err != nil {
 			return err
@@ -1129,7 +1136,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 		if fEdge == nil {
 			// add from inverseEdge...
 			var err error
-			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(cfg, info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge)
+			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(cfg, info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge, f.GetPatternName())
 			if err != nil {
 				return err
 			}
@@ -1311,8 +1318,6 @@ func (s *Schema) getEdgeInfoAndCheckNewEdge(edgeData *assocEdgeData, assocEdge *
 
 	// always make sure the information we send to schema.py is the latest
 	// info based on the schema so if the db is corrupted in some way, we'll fix
-	// TODO ... if someone is changing a property here, we should show them a prompt
-	// and confirm what's happening
 
 	if isNewEdge {
 		constValue = uuid.New().String()

@@ -1,3 +1,5 @@
+import { v4 } from "uuid";
+import * as fs from "fs";
 import { LoggedOutViewer } from "../core/viewer";
 import {
   BooleanListType,
@@ -23,10 +25,8 @@ import {
 import Schema from "./schema";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
 import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
-import { v4 } from "uuid";
 import DB, { Dialect } from "../core/db";
 import { Ent } from "../core/base";
-import * as fs from "fs";
 import { loadConfig } from "../core/config";
 import {
   convertBool,
@@ -103,6 +103,34 @@ function commonTests() {
     }
 
     const n = ["Lord Snow", "The Prince That was Promised"];
+
+    const action = getInsertAction(
+      new AccountSchema(),
+      new Map<string, any>([["Nicknames", n]]),
+    );
+    await createTables(new AccountSchema());
+
+    const account = await action.saveX();
+    expect(convertList(account.data.nicknames)).toEqual(n);
+  });
+
+  test("string list with commas", async () => {
+    class Account extends User {}
+    class AccountSchema implements Schema {
+      fields = {
+        Nicknames: StringListType(),
+      };
+      ent = Account;
+    }
+
+    const n = [
+      "Lord Snow",
+      "The Prince, That was Promised",
+      "the son of fire",
+      "the warrior of light",
+      "king in the north",
+      "azor ahai",
+    ];
 
     const action = getInsertAction(
       new AccountSchema(),

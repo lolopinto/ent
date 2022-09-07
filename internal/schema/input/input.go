@@ -116,7 +116,7 @@ type FieldType struct {
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
-	// list because go-lang map not stable and don't want generated fields to change ofte
+	// list because go-lang map not stable and don't want generated fields to change often
 	SubFields   []*Field `json:"subFields,omitempty"`
 	UnionFields []*Field `json:"unionFields,omitempty"`
 }
@@ -205,6 +205,7 @@ type PolymorphicOptions struct {
 	Types                  []string `json:"types,omitempty"`
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL,omitempty"`
 	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
+	Name                   string   `json:"name,omitempty"`
 }
 
 type PrivateOptions struct {
@@ -484,6 +485,7 @@ type AssocEdgeGroup struct {
 	TableName       string        `json:"tableName,omitempty"`
 	AssocEdges      []*AssocEdge  `json:"assocEdges,omitempty"`
 	EdgeActions     []*EdgeAction `json:"edgeActions,omitempty"`
+	ViewerBased     bool          `json:"viewerBased"`
 	StatusEnums     []string      `json:"statusEnums,omitempty"`
 	NullStateFn     string        `json:"nullStateFn,omitempty"`
 	NullStates      []string      `json:"nullStates,omitempty"`

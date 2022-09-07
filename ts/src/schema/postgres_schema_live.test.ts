@@ -1,10 +1,13 @@
+import { v4 as uuidv4 } from "uuid";
+import pg from "pg";
+import * as fs from "fs";
+import * as path from "path";
 import { LoggedOutViewer } from "../core/viewer";
 import {
   StringType,
   TimeType,
   TimetzType,
   UUIDType,
-  leftPad,
   DateType,
   TimestamptzType,
 } from "./field";
@@ -25,15 +28,12 @@ import {
   uuid,
   getSchemaTable,
 } from "../testutils/db/temp_db";
-import { v4 as uuidv4 } from "uuid";
-import pg from "pg";
 import { defaultTimestampParser, Dialect } from "../core/db";
 import { DBType, FieldMap } from "./schema";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { ID, Ent, Viewer, Data, PrivacyPolicy } from "../core/base";
-import * as fs from "fs";
-import * as path from "path";
 import { WriteOperation } from "../action";
+import { DBTimeZone } from "../testutils/db_time_zone";
 
 const UserSchema = getBuilderSchemaFromFields(
   {
@@ -365,15 +365,6 @@ describe("time", () => {
   });
 });
 
-const dateOffset = (d: Date): string => {
-  // for some reason this API is backwards
-  const val = leftPad((d.getTimezoneOffset() / 60) * -1);
-  if (val == "00") {
-    return "+00";
-  }
-  return val;
-};
-
 describe("timetz", () => {
   beforeAll(async () => {
     await createTimeTable();
@@ -408,7 +399,7 @@ describe("timetz", () => {
       ]),
     );
 
-    let offset = dateOffset(open);
+    let offset = await DBTimeZone.getDateOffset(open);
 
     const hours = await action.saveX();
     expect(hours.data.open).toEqual(`08:00:00${offset}`);
@@ -426,7 +417,7 @@ describe("timetz", () => {
     );
 
     const d = new Date();
-    let offset = dateOffset(d);
+    let offset = await DBTimeZone.getDateOffset(d);
 
     const hours = await action.saveX();
     expect(hours.data.open).toEqual(`08:00:00${offset}`);

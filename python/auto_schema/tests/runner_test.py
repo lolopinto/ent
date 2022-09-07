@@ -744,6 +744,7 @@ class BaseTestRunner(object):
         d = Diff(diff, group_by_table=False)
         assert d.list_changes() == [{
             'change': ChangeType.DROP_INDEX,
+            "index": "accounts_first_name_idx",
             'desc': 'drop index accounts_first_name_idx from accounts',
         }, {
             'change': ChangeType.DROP_TABLE,
@@ -754,6 +755,7 @@ class BaseTestRunner(object):
         assert d2.changes() == {
             'accounts': [{
                 'change': ChangeType.DROP_INDEX,
+                "index": "accounts_first_name_idx",
                 'desc': 'drop index accounts_first_name_idx from accounts',
             }, {
                 'change': ChangeType.DROP_TABLE,

@@ -61,7 +61,7 @@ export const GuestGroupType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guestGroup: GuestGroup, args: {}, context: RequestContext) => {
+      resolve: (guestGroup: GuestGroup, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           guestGroup.viewer,
           guestGroup,
@@ -91,7 +91,7 @@ export const GuestGroupType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guestGroup: GuestGroup, args: {}, context: RequestContext) => {
+      resolve: (guestGroup: GuestGroup, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           guestGroup.viewer,
           guestGroup,
