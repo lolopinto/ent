@@ -337,6 +337,22 @@ func TestPolymorphicOptions(t *testing.T) {
 	require.True(t, PolymorphicOptionsEqual(p, p2))
 }
 
+func TestPolymorphicOptionsDiffName(t *testing.T) {
+	p := &PolymorphicOptions{
+		Types:                  []string{"User", "Account"},
+		HideFromInverseGraphQL: true,
+	}
+
+	b, err := json.Marshal(p)
+	require.Nil(t, err)
+
+	p2 := &PolymorphicOptions{}
+	err = json.Unmarshal(b, p2)
+	p2.Name = "foo"
+	require.Nil(t, err)
+	require.False(t, PolymorphicOptionsEqual(p, p2))
+}
+
 func TestField(t *testing.T) {
 	f := &Field{
 		Name: "city",

@@ -116,7 +116,7 @@ type FieldType struct {
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
-	// list because go-lang map not stable and don't want generated fields to change ofte
+	// list because go-lang map not stable and don't want generated fields to change often
 	SubFields   []*Field `json:"subFields,omitempty"`
 	UnionFields []*Field `json:"unionFields,omitempty"`
 }
