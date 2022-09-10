@@ -361,6 +361,7 @@ type User implements Node {
   bar: String
   contactSameDomain: Contact
   contactsSameDomain: [Contact!]!
+  contactsSameDomainConn(first: Int, after: String, last: Int, before: String): UserToContactsSameDomainConnConnection!
   contactsSameDomainNullable: [Contact!]
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
@@ -493,6 +494,18 @@ type UserToContactsEdge implements Edge {
 
 type UserToContactsConnection implements Connection {
   edges: [UserToContactsEdge!]!
+  nodes: [Contact!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToContactsSameDomainConnEdge implements Edge {
+  node: Contact!
+  cursor: String!
+}
+
+type UserToContactsSameDomainConnConnection implements Connection {
+  edges: [UserToContactsSameDomainConnEdge!]!
   nodes: [Contact!]!
   pageInfo: PageInfo!
   rawCount: Int!

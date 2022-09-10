@@ -96,6 +96,7 @@ function transformResultType(f: any) {
           type: f.resultType,
           tsType: knownAllowedNames.get(f.resultType),
           list: f.list,
+          connection: f.connection,
           nullable: f.nullable,
         },
       ]

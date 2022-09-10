@@ -204,6 +204,13 @@
         "fieldType": "ASYNC_FUNCTION"
       },
       {
+        "name": "contactsSameDomainConn",
+        "functionName": "getContactsSameDomainConn",
+        "resultType": "Contact",
+        "connection": true,
+        "fieldType": "ASYNC_FUNCTION"
+      },
+      {
         "name": "contactsSameDomainNullable",
         "functionName": "getContactsSameDomainNullable",
         "resultType": "Contact",

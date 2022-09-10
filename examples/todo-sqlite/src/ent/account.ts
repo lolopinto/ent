@@ -13,6 +13,7 @@ import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import { AccountBase, todoLoader } from "src/ent/internal";
 import { Todo } from "./todo";
 import TodoSchema from "src/schema/todo_schema";
+import { Clause } from "@snowtop/ent/core/clause";
 
 // we want to reuse these and not create a new one every time...
 // so that the cache is shared
@@ -30,6 +31,7 @@ const openTodosLoader = new QueryLoaderFactory({
 // TODO https://github.com/lolopinto/ent/issues/1048 can we skip getTransformedReadClause
 const openTodosCountLoader = new RawCountLoaderFactory({
   //  ...Todo.loaderOptions(),
+
   tableName: Todo.loaderOptions().tableName,
   groupCol: "creator_id",
   clause: query.AndOptional(
@@ -37,6 +39,16 @@ const openTodosCountLoader = new RawCountLoaderFactory({
     getTransformedReadClause(TodoSchema),
   ),
 });
+
+interface CustomEdgeQueryBaseOpts {
+  // main loaderFactory
+  loadEntOptions: any;
+  groupCol: "creator_id";
+  clause: Clause;
+  name: string;
+  // query-name used to create loaders...
+  // and then from there it does what it needs to do to do the right thing...
+}
 
 export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
   Account,

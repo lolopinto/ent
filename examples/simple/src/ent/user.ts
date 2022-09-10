@@ -8,7 +8,7 @@ import {
 } from "@snowtop/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { GraphQLString } from "graphql";
-import { gqlField } from "@snowtop/ent/graphql";
+import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import * as bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided
@@ -85,6 +85,22 @@ export class User extends UserBase {
 
   @gqlField({ type: "[Contact]", name: "contactsSameDomain" })
   async getContactsSameDomain(): Promise<Contact[]> {
+    // the behavior here is inconsistent but meh
+    let domain = this.getDomainFromEmail(this.emailAddress);
+    if (!domain) {
+      return [];
+    }
+    const contactInfos = await this.queryContactInfos();
+    return contactInfos
+      .filter((contactInfo) => {
+        return domain === this.getDomainFromEmail(contactInfo.firstEmail);
+      })
+      .map((info) => info.contact);
+  }
+
+  @gqlField({ name: "contactsSameDomainConn", type: gqlConnection("Contact") })
+  async getContactsSameDomainConn(): Promise<Contact[]> {
+    // TODO need to fix this. not a connection
     // the behavior here is inconsistent but meh
     let domain = this.getDomainFromEmail(this.emailAddress);
     if (!domain) {

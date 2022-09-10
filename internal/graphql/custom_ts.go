@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -761,6 +762,9 @@ func isConnection(field CustomField) bool {
 func getCustomGQLField(cd *CustomData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
 	if isConnection(field) {
 		return nil, fmt.Errorf("field is a connection. this should be handled elsewhere")
+	}
+	if field.FunctionName == "getContactsSameDomainConn" {
+		spew.Dump("sadness", field)
 	}
 	imports, err := getGraphQLImportsForField(cd, field, s)
 	if err != nil {

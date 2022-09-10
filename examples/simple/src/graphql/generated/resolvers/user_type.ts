@@ -44,6 +44,7 @@ import {
   UserSuperNestedObjectType,
   UserToCommentsConnectionType,
   UserToContactsConnectionType,
+  UserToContactsSameDomainConnConnectionType,
   UserToCreatedEventsConnectionType,
   UserToDeclinedEventsConnectionType,
   UserToEventsAttendingConnectionType,
@@ -480,6 +481,35 @@ export const UserType = new GraphQLObjectType({
       ),
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomain();
+      },
+    },
+    contactsSameDomainConn: {
+      type: new GraphQLNonNull(UserToContactsSameDomainConnConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => user.getContactsSameDomainConn(),
+          args,
+        );
       },
     },
     contactsSameDomainNullable: {

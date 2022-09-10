@@ -8,10 +8,12 @@ import {
   LoaderFactory,
   ConfigurableLoaderFactory,
 } from "../base";
+import { Clause } from "../clause";
 import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
+import { QueryLoader, RawCountLoader } from "../loaders";
 import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
 
-export interface CustomEdgeQueryOptions<
+export interface CustomEdgeQueryOptionsDeprecated<
   TSource extends Ent<TViewer>,
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
@@ -22,6 +24,90 @@ export interface CustomEdgeQueryOptions<
   options: LoadEntOptions<TDest, TViewer>;
   // // defaults to created_at
   sortColumn?: string;
+}
+
+// TSource used in Query name
+export interface CustomEdgeQueryOptions<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
+  src: TSource | ID;
+  loadEntOptions: LoadEntOptions<TDest, TViewer>;
+  // must provide at least one of these
+  groupCol?: string;
+  clause?: Clause;
+  // query-name used to create loaders...
+  // and then from there it does what it needs to do to do the right thing...
+  name: string;
+  // // defaults to created_at
+  sortColumn?: string;
+}
+
+function getRawCountLoader<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+>(viewer: TViewer, opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>) {
+  if (!viewer.context?.cache) {
+    return new RawCountLoader({
+      tableName: opts.loadEntOptions.tableName,
+      groupCol: opts.groupCol,
+      clause: opts.clause,
+    });
+  }
+  const name = `custom_query_count_loader:${opts.name}`;
+  return viewer.context.cache.getLoader(
+    name,
+    () =>
+      new RawCountLoader({
+        tableName: opts.loadEntOptions.tableName,
+        groupCol: opts.groupCol,
+        clause: opts.clause,
+      }),
+  ) as RawCountLoader<ID>;
+}
+
+function getQueryLoader<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+>(
+  viewer: TViewer,
+  opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>,
+  options: EdgeQueryableDataOptions,
+) {
+  if (!viewer.context?.cache) {
+    return new QueryLoader(
+      {
+        tableName: opts.loadEntOptions.tableName,
+        fields: opts.loadEntOptions.fields,
+        groupCol: opts.groupCol,
+        clause: opts.clause,
+        // TODO toPrime...
+        // toPrime: [opts.loadEntOptions.loaderFactory],
+      },
+      viewer.context,
+      options,
+    );
+  }
+  const name = `custom_query_loader:${opts.name}`;
+  return viewer.context.cache.getLoader(
+    name,
+    () =>
+      new QueryLoader(
+        {
+          tableName: opts.loadEntOptions.tableName,
+          fields: opts.loadEntOptions.fields,
+          groupCol: opts.groupCol,
+          clause: opts.clause,
+          // TODO toPrime...
+          // toPrime: [opts.loadEntOptions.loaderFactory],
+        },
+        viewer.context,
+        options,
+      ),
+  ) as QueryLoader<ID>;
 }
 
 export abstract class CustomEdgeQueryBase<
@@ -35,9 +121,12 @@ export abstract class CustomEdgeQueryBase<
   private id: ID;
   constructor(
     public viewer: TViewer,
-    private options: CustomEdgeQueryOptions<TSource, TDest, TViewer>,
+    private options:
+      | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
+      | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
   ) {
-    super(viewer, options.sortColumn || "created_at");
+    // @ts-ignore
+    super(viewer, options?.sortColumn || "created_at");
     options.sortColumn = options.sortColumn || "created_at";
     if (typeof options.src === "object") {
       this.id = options.src.id;
@@ -56,15 +145,41 @@ export abstract class CustomEdgeQueryBase<
     return !ids[0].invalidated;
   }
 
+  private isDeprecatedOptions(
+    options:
+      | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
+      | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
+  ): options is CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer> {
+    return (
+      (options as CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>)
+        .countLoaderFactory !== undefined
+    );
+  }
+
+  private getCountLoader() {
+    if (this.isDeprecatedOptions(this.options)) {
+      return this.options.countLoaderFactory.createLoader(this.viewer.context);
+    }
+    return getRawCountLoader(this.viewer, this.options);
+  }
+
+  private getQueryLoader(options: EdgeQueryableDataOptions) {
+    if (this.isDeprecatedOptions(this.options)) {
+      return this.options.dataLoaderFactory.createConfigurableLoader(
+        options,
+        this.viewer.context,
+      );
+    }
+    return getQueryLoader(this.viewer, this.options, options);
+  }
+
   async queryRawCount(): Promise<number> {
     const idVisible = await this.idVisible();
     if (!idVisible) {
       return 0;
     }
 
-    return await this.options.countLoaderFactory
-      .createLoader(this.viewer.context)
-      .load(this.id);
+    return this.getCountLoader().load(this.id);
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {
@@ -86,10 +201,7 @@ export abstract class CustomEdgeQueryBase<
     infos: IDInfo[],
     options: EdgeQueryableDataOptions,
   ) {
-    const loader = this.options.dataLoaderFactory.createConfigurableLoader(
-      options,
-      this.viewer.context,
-    );
+    const loader = this.getQueryLoader(options);
     if (!options.orderby) {
       options.orderby = `${this.options.sortColumn} DESC`;
     }
@@ -115,11 +227,15 @@ export abstract class CustomEdgeQueryBase<
   }
 
   protected async loadEntsFromEdges(id: ID, rows: Data[]): Promise<TDest[]> {
-    const ents = await applyPrivacyPolicyForRows(
-      this.viewer,
-      rows,
-      this.options.options,
-    );
+    let opts: LoadEntOptions<TDest>;
+    if (this.isDeprecatedOptions(this.options)) {
+      // console.debug("depre");
+      opts = this.options.options;
+    } else {
+      opts = this.options.loadEntOptions;
+    }
+    // TODO applyPrivacyPolicyForRows needs to change to read from ent cache
+    const ents = await applyPrivacyPolicyForRows(this.viewer, rows, opts);
     return Array.from(ents.values());
   }
 }
