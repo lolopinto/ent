@@ -8,7 +8,7 @@ import {
   LoaderFactory,
   ConfigurableLoaderFactory,
 } from "../base";
-import { Clause } from "../clause";
+import { AndOptional, Clause, inClause } from "../clause";
 import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
 import { ObjectLoaderFactory, QueryLoader, RawCountLoader } from "../loaders";
 import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
@@ -42,6 +42,28 @@ export interface CustomEdgeQueryOptions<
   name: string;
   // // defaults to created_at
   sortColumn?: string;
+
+  // TODO test...
+  disableTransformations?: boolean;
+}
+
+function getClause<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+>(opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>) {
+  let cls = opts.clause;
+  if (opts.disableTransformations) {
+    return cls;
+  }
+  let optClause = opts.loadEntOptions.loaderFactory?.options?.clause;
+  if (typeof optClause === "function") {
+    optClause = optClause();
+  }
+  if (!optClause) {
+    return cls;
+  }
+  return AndOptional(cls, optClause);
 }
 
 function getRawCountLoader<
@@ -53,7 +75,7 @@ function getRawCountLoader<
     return new RawCountLoader({
       tableName: opts.loadEntOptions.tableName,
       groupCol: opts.groupCol,
-      clause: opts.clause,
+      clause: getClause(opts),
     });
   }
   const name = `custom_query_count_loader:${opts.name}`;
@@ -63,11 +85,13 @@ function getRawCountLoader<
       new RawCountLoader({
         tableName: opts.loadEntOptions.tableName,
         groupCol: opts.groupCol,
-        clause: opts.clause,
+        clause: getClause(opts),
       }),
   ) as RawCountLoader<ID>;
 }
 
+// TODO need test for transformed clause and disableTransformations
+// and test for how it affects priming...
 function getQueryLoader<
   TSource extends Ent<TViewer>,
   TDest extends Ent<TViewer>,
@@ -84,7 +108,7 @@ function getQueryLoader<
         tableName: opts.loadEntOptions.tableName,
         fields: opts.loadEntOptions.fields,
         groupCol: opts.groupCol,
-        clause: opts.clause,
+        clause: getClause(opts),
         toPrime: [loader],
       },
       viewer.context,
@@ -100,7 +124,7 @@ function getQueryLoader<
           tableName: opts.loadEntOptions.tableName,
           fields: opts.loadEntOptions.fields,
           groupCol: opts.groupCol,
-          clause: opts.clause,
+          clause: getClause(opts),
           toPrime: [loader],
         },
         viewer.context,
