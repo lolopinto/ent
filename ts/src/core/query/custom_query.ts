@@ -201,18 +201,18 @@ export abstract class CustomEdgeQueryBase<
     infos: IDInfo[],
     options: EdgeQueryableDataOptions,
   ) {
-    const loader = this.getQueryLoader(options);
+    if (infos.length !== 1) {
+      throw new Error(
+        `expected 1 info passed to loadRawData. ${infos.length} passed`,
+      );
+    }
     if (!options.orderby) {
       options.orderby = `${this.options.sortColumn} DESC`;
     }
     if (!options.limit) {
       options.limit = DefaultLimit;
     }
-    if (infos.length !== 1) {
-      throw new Error(
-        `expected 1 info passed to loadRawData. ${infos.length} passed`,
-      );
-    }
+    const loader = this.getQueryLoader(options);
     const info = infos[0];
     if (info.invalidated) {
       this.edges.set(this.id, []);

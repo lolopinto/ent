@@ -5,10 +5,11 @@ import { IDViewer, LoggedOutViewer } from "../viewer";
 import {
   FakeUser,
   FakeContact,
-  UserToContactsFkeyQuery,
+  UserToContactsFkeyQueryDeprecated,
   FakeUserSchema,
   EdgeType,
   FakeContactSchema,
+  UserToContactsFkeyQuery,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -27,6 +28,7 @@ import { setLogLevels } from "../logger";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { WriteOperation } from "../../action";
+import DB from "../../core/db";
 
 class TestQueryFilter<TData extends Data> {
   allContacts: FakeContact[] = [];
@@ -46,10 +48,8 @@ class TestQueryFilter<TData extends Data> {
     private defaultViewer: Viewer,
   ) {}
 
-  async beforeEach() {
-    //    console.log("sss");
+  async createData() {
     [this.user, this.allContacts] = await createAllContacts();
-    //    console.log(this.user, this.contacts);
     //    this.allContacts = this.allContacts.reverse();
     this.filteredContacts = this.ents(this.allContacts);
     QueryRecorder.clearQueries();
@@ -100,7 +100,10 @@ class TestQueryFilter<TData extends Data> {
     const q = this.getQuery();
 
     // TODO sad not generic enough
-    if (q instanceof UserToContactsFkeyQuery) {
+    if (
+      q instanceof UserToContactsFkeyQueryDeprecated ||
+      q instanceof UserToContactsFkeyQuery
+    ) {
       verifyUserToContactRawData(this.user, edges, this.filteredContacts);
     } else {
       verifyUserToContactEdges(
@@ -286,8 +289,12 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
   let tdb: TempDB;
   if (opts.sqlite) {
-    setupSqlite(`sqlite:///shared_test+${opts.uniqKey}.db`, () =>
-      tempDBTables(opts.globalSchema),
+    setupSqlite(
+      `sqlite:///shared_test+${opts.uniqKey}.db`,
+      () => tempDBTables(opts.globalSchema),
+      {
+        disableDeleteAfterEachTest: true,
+      },
     );
   }
 
@@ -296,11 +303,13 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     setLogLevels(["error", "warn", "info"]);
     if (opts.livePostgresDB) {
       tdb = await setupTempDB();
+      return;
     }
+    await createEdges();
   });
 
   beforeEach(async () => {
-    if (opts.livePostgresDB) {
+    if (opts.livePostgresDB || opts.sqlite) {
       return;
     }
     await createEdges();
@@ -328,7 +337,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     );
 
     beforeEach(async () => {
-      await filter.beforeEach();
+      await filter.createData();
     });
 
     test("ids", async () => {
@@ -376,7 +385,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     );
 
     beforeEach(async () => {
-      await filter.beforeEach();
+      await filter.createData();
       const action = new SimpleAction(
         filter.user.viewer,
         FakeUserSchema,
@@ -458,7 +467,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     );
 
     beforeEach(async () => {
-      await filter.beforeEach();
+      await filter.createData();
     });
 
     test("ids", async () => {
@@ -508,7 +517,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     );
 
     beforeEach(async () => {
-      await filter.beforeEach();
+      await filter.createData();
     });
 
     test("ids", async () => {
@@ -560,8 +569,19 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       getViewer(),
     );
 
+    beforeAll(async () => {
+      if (opts.livePostgresDB || opts.sqlite) {
+        await filter.createData();
+      }
+    });
+
+    // TODO do we still need QueryRecorder?
+    // should just delete this...
     beforeEach(async () => {
-      await filter.beforeEach();
+      if (opts.livePostgresDB || opts.sqlite) {
+        return;
+      }
+      await filter.createData();
     });
 
     test("ids", async () => {
@@ -654,8 +674,18 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       getViewer(),
     );
 
+    beforeAll(async () => {
+      if (opts.livePostgresDB || opts.sqlite) {
+        await filter.createData();
+      }
+    });
+
+    // same TODO above
     beforeEach(async () => {
-      await filter.beforeEach();
+      if (opts.livePostgresDB || opts.sqlite) {
+        return;
+      }
+      await filter.createData();
     });
 
     test("ids", async () => {

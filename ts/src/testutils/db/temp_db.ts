@@ -443,6 +443,7 @@ export class TempDB {
         } else {
           process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
         }
+        DB.initDB();
       } else {
         // will probably be setup via loadConfig
         delete process.env.DB_CONNECTION_STRING;

@@ -27,6 +27,7 @@ import { NodeType } from "./const";
 import { MockDate } from "./../mock_date";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { WriteOperation } from "../../action";
+import DB from "../../core/db";
 
 export function getContactInput(
   user: FakeUser,
