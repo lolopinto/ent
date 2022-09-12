@@ -228,13 +228,11 @@ export abstract class CustomEdgeQueryBase<
   protected async loadEntsFromEdges(id: ID, rows: Data[]): Promise<TDest[]> {
     let opts: LoadEntOptions<TDest>;
     if (this.isDeprecatedOptions(this.options)) {
-      // console.debug("depre");
       opts = this.options.options;
     } else {
       opts = this.options.loadEntOptions;
     }
-    // TODO applyPrivacyPolicyForRows needs to change to read from ent cache
-    const ents = await applyPrivacyPolicyForRows(this.viewer, rows, opts);
-    return Array.from(ents.values());
+
+    return applyPrivacyPolicyForRows(this.viewer, rows, opts);
   }
 }

@@ -505,7 +505,7 @@ export async function loadEntsFromClause<
   };
 
   const rows = await loadRows(rowOptions);
-  return await applyPrivacyPolicyForRows(viewer, rows, options);
+  return applyPrivacyPolicyForRowsDeprecated(viewer, rows, options);
 }
 
 export async function loadCustomEnts<
@@ -518,30 +518,7 @@ export async function loadCustomEnts<
 ) {
   const rows = await loadCustomData(options, query, viewer.context);
 
-  const result: TEnt[] = new Array(rows.length);
-
-  if (!rows.length) {
-    return [];
-  }
-
-  const entLoader = getEntLoader(viewer, options);
-
-  await Promise.all(
-    rows.map(async (row, idx) => {
-      const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
-        viewer,
-        row,
-        options,
-        entLoader,
-      );
-      if (r instanceof ErrorWrapper) {
-        return;
-      }
-      result[idx] = r;
-    }),
-  );
-  // filter ents that aren't visible because of privacy
-  return result.filter((r) => r !== undefined);
+  return applyPrivacyPolicyForRows(viewer, rows, options);
 }
 
 interface parameterizedQueryOptions {
@@ -2249,10 +2226,8 @@ async function applyPrivacyPolicyForRowX<
   return await applyPrivacyPolicyForEntX(viewer, ent, row, options);
 }
 
-// TODO this needs to be changed to use ent cache as needed...
-// most current callsites fine not using it
-// custom_query is one that should be updated
-export async function applyPrivacyPolicyForRows<
+// deprecated. doesn't use entcache
+async function applyPrivacyPolicyForRowsDeprecated<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
 >(viewer: TViewer, rows: Data[], options: LoadEntOptions<TEnt, TViewer>) {
@@ -2267,6 +2242,36 @@ export async function applyPrivacyPolicyForRows<
     }),
   );
   return m;
+}
+
+export async function applyPrivacyPolicyForRows<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(viewer: TViewer, rows: Data[], options: LoadEntOptions<TEnt, TViewer>) {
+  const result: TEnt[] = new Array(rows.length);
+
+  if (!rows.length) {
+    return [];
+  }
+
+  const entLoader = getEntLoader(viewer, options);
+
+  await Promise.all(
+    rows.map(async (row, idx) => {
+      const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+        viewer,
+        row,
+        options,
+        entLoader,
+      );
+      if (r instanceof ErrorWrapper) {
+        return;
+      }
+      result[idx] = r;
+    }),
+  );
+  // filter ents that aren't visible because of privacy
+  return result.filter((r) => r !== undefined);
 }
 
 async function loadEdgeWithConst<T extends string>(
