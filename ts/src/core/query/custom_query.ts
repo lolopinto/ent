@@ -10,7 +10,7 @@ import {
 } from "../base";
 import { Clause } from "../clause";
 import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
-import { QueryLoader, RawCountLoader } from "../loaders";
+import { ObjectLoaderFactory, QueryLoader, RawCountLoader } from "../loaders";
 import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
 
 export interface CustomEdgeQueryOptionsDeprecated<
@@ -77,6 +77,7 @@ function getQueryLoader<
   opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>,
   options: EdgeQueryableDataOptions,
 ) {
+  const loader = opts.loadEntOptions.loaderFactory as ObjectLoaderFactory<ID>;
   if (!viewer.context?.cache) {
     return new QueryLoader(
       {
@@ -84,8 +85,7 @@ function getQueryLoader<
         fields: opts.loadEntOptions.fields,
         groupCol: opts.groupCol,
         clause: opts.clause,
-        // TODO toPrime...
-        // toPrime: [opts.loadEntOptions.loaderFactory],
+        toPrime: [loader],
       },
       viewer.context,
       options,
@@ -101,8 +101,7 @@ function getQueryLoader<
           fields: opts.loadEntOptions.fields,
           groupCol: opts.groupCol,
           clause: opts.clause,
-          // TODO toPrime...
-          // toPrime: [opts.loadEntOptions.loaderFactory],
+          toPrime: [loader],
         },
         viewer.context,
         options,
