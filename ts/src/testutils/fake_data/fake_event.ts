@@ -118,6 +118,8 @@ export const FakeEventSchema = getBuilderSchemaFromFields(
 );
 
 export interface EventCreateInput {
+  createdAt?: Date;
+  updatedAt?: Date;
   startTime: Date;
   endTime?: Date | null;
   location: string;
