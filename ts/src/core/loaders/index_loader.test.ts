@@ -27,7 +27,7 @@ import { IndexLoaderFactory } from "./index_loader";
 const ml = new MockLogs();
 let tdb: TempDB;
 
-let ctx: TestContext;
+let ctx = new TestContext();
 
 const getNewLoader = (context: boolean = true) => {
   return new IndexLoaderFactory(
@@ -56,7 +56,7 @@ describe("postgres", () => {
 
   beforeEach(() => {
     // reset context for each test
-    ctx = new TestContext();
+    ctx?.cache.clearCache();
   });
 
   afterEach(() => {
@@ -80,7 +80,7 @@ describe("sqlite", () => {
 
   beforeEach(async () => {
     // reset context for each test
-    ctx = new TestContext();
+    ctx?.cache.clearCache();
   });
 
   afterEach(() => {

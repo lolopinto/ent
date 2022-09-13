@@ -20,13 +20,13 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 
 import { QueryLoaderFactory } from "./query_loader";
-import { advanceBy, advanceTo, clear } from "jest-date-mock";
+import { advanceBy, advanceTo } from "jest-date-mock";
 import { MockDate } from "../../testutils/mock_date";
 
 const ml = new MockLogs();
 let tdb: TempDB;
 
-let ctx: TestContext;
+let ctx = new TestContext();
 
 // we get 7 back because we're looking at a week
 const DAYS = 7;
@@ -63,6 +63,8 @@ const getNonGroupableLoader = (id: ID, context: boolean = true) => {
   }).createLoader(context ? ctx : undefined);
 };
 
+// TODO test all this with direct calls? since we almost had an issue with calling QueryLoader directly...
+
 describe("postgres", () => {
   beforeAll(async () => {
     setLogLevels(["query", "error", "cache"]);
@@ -73,7 +75,7 @@ describe("postgres", () => {
 
   beforeEach(() => {
     // reset context for each test
-    ctx = new TestContext();
+    ctx?.cache.clearCache();
   });
 
   afterEach(() => {
@@ -97,7 +99,8 @@ describe("sqlite", () => {
 
   beforeEach(async () => {
     // reset context for each test
-    ctx = new TestContext();
+    ctx?.cache.clearCache();
+
     // create once
     //    await createEdges();
   });

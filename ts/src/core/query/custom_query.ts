@@ -10,7 +10,11 @@ import {
 } from "../base";
 import { AndOptional, Clause } from "../clause";
 import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
-import { ObjectLoaderFactory, QueryLoader, RawCountLoader } from "../loaders";
+import {
+  ObjectLoaderFactory,
+  QueryLoaderFactory,
+  RawCountLoader,
+} from "../loaders";
 import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
 
 export interface CustomEdgeQueryOptionsDeprecated<
@@ -102,35 +106,20 @@ function getQueryLoader<
   options: EdgeQueryableDataOptions,
 ) {
   const loader = opts.loadEntOptions.loaderFactory as ObjectLoaderFactory<ID>;
-  if (!viewer.context?.cache) {
-    return new QueryLoader(
-      {
-        tableName: opts.loadEntOptions.tableName,
-        fields: opts.loadEntOptions.fields,
-        groupCol: opts.groupCol,
-        clause: getClause(opts),
-        toPrime: [loader],
-      },
-      viewer.context,
-      options,
-    );
-  }
   const name = `custom_query_loader:${opts.name}`;
-  return viewer.context.cache.getLoader(
+
+  return QueryLoaderFactory.createConfigurableLoader(
     name,
-    () =>
-      new QueryLoader(
-        {
-          tableName: opts.loadEntOptions.tableName,
-          fields: opts.loadEntOptions.fields,
-          groupCol: opts.groupCol,
-          clause: getClause(opts),
-          toPrime: [loader],
-        },
-        viewer.context,
-        options,
-      ),
-  ) as QueryLoader<ID>;
+    {
+      tableName: opts.loadEntOptions.tableName,
+      fields: opts.loadEntOptions.fields,
+      groupCol: opts.groupCol,
+      clause: getClause(opts),
+      toPrime: [loader],
+    },
+    options,
+    viewer.context,
+  );
 }
 
 export abstract class CustomEdgeQueryBase<
