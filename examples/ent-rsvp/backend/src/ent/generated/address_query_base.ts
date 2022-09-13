@@ -8,8 +8,6 @@ import {
   EdgeQuerySource,
   Ent,
   ID,
-  IndexLoaderFactory,
-  RawCountLoaderFactory,
   Viewer,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "src/ent/generated/loadAny";
@@ -18,7 +16,6 @@ import {
   AddressToLocatedAtEdge,
   EdgeType,
   NodeType,
-  addressLoader,
 } from "src/ent/internal";
 
 export const addressToLocatedAtCountLoaderFactory =
@@ -26,18 +23,6 @@ export const addressToLocatedAtCountLoaderFactory =
 export const addressToLocatedAtDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.AddressToLocatedAt,
   () => AddressToLocatedAtEdge,
-);
-
-export const ownerToAddressesCountLoaderFactory = new RawCountLoaderFactory({
-  ...Address.loaderOptions(),
-  groupCol: "owner_id",
-});
-export const ownerToAddressesDataLoaderFactory = new IndexLoaderFactory(
-  Address.loaderOptions(),
-  "owner_id",
-  {
-    toPrime: [addressLoader],
-  },
 );
 
 export abstract class AddressToLocatedAtQueryBase extends AssocEdgeQueryBase<
@@ -80,9 +65,9 @@ export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, private srcEnt: Ent<Viewer>) {
     super(viewer, {
       src: srcEnt,
-      countLoaderFactory: ownerToAddressesCountLoaderFactory,
-      dataLoaderFactory: ownerToAddressesDataLoaderFactory,
-      options: Address.loaderOptions(),
+      groupCol: "owner_id",
+      loadEntOptions: Address.loaderOptions(),
+      name: "OwnerToAddressesQuery",
     });
   }
 

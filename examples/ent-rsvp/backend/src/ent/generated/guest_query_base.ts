@@ -7,8 +7,6 @@ import {
   CustomEdgeQueryBase,
   EdgeQuerySource,
   ID,
-  IndexLoaderFactory,
-  RawCountLoaderFactory,
   Viewer,
 } from "@snowtop/ent";
 import {
@@ -22,8 +20,6 @@ import {
   GuestData,
   GuestToAttendingEventsEdge,
   GuestToDeclinedEventsEdge,
-  authCodeLoader,
-  guestDataLoader,
 } from "src/ent/internal";
 
 export const guestToAttendingEventsCountLoaderFactory =
@@ -41,30 +37,6 @@ export const guestToDeclinedEventsDataLoaderFactory =
     EdgeType.GuestToDeclinedEvents,
     () => GuestToDeclinedEventsEdge,
   );
-
-export const guestToAuthCodesCountLoaderFactory = new RawCountLoaderFactory({
-  ...AuthCode.loaderOptions(),
-  groupCol: "guest_id",
-});
-export const guestToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
-  AuthCode.loaderOptions(),
-  "guest_id",
-  {
-    toPrime: [authCodeLoader],
-  },
-);
-
-export const guestToGuestDataCountLoaderFactory = new RawCountLoaderFactory({
-  ...GuestData.loaderOptions(),
-  groupCol: "guest_id",
-});
-export const guestToGuestDataDataLoaderFactory = new IndexLoaderFactory(
-  GuestData.loaderOptions(),
-  "guest_id",
-  {
-    toPrime: [guestDataLoader],
-  },
-);
 
 export abstract class GuestToAttendingEventsQueryBase extends AssocEdgeQueryBase<
   Guest,
@@ -162,9 +134,9 @@ export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: Guest | ID) {
     super(viewer, {
       src: src,
-      countLoaderFactory: guestToAuthCodesCountLoaderFactory,
-      dataLoaderFactory: guestToAuthCodesDataLoaderFactory,
-      options: AuthCode.loaderOptions(),
+      groupCol: "guest_id",
+      loadEntOptions: AuthCode.loaderOptions(),
+      name: "GuestToAuthCodesQuery",
     });
   }
 
@@ -189,9 +161,9 @@ export class GuestToGuestDataQueryBase extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: Guest | ID) {
     super(viewer, {
       src: src,
-      countLoaderFactory: guestToGuestDataCountLoaderFactory,
-      dataLoaderFactory: guestToGuestDataDataLoaderFactory,
-      options: GuestData.loaderOptions(),
+      groupCol: "guest_id",
+      loadEntOptions: GuestData.loaderOptions(),
+      name: "GuestToGuestDataQuery",
     });
   }
 
