@@ -418,21 +418,6 @@ export function getCompleteClause(id: ID): clause.Clause {
   return clause.And(clause.Eq("user_id", id), getNextWeekClause());
 }
 
-export const userToEventsInNextWeekCountLoaderFactory =
-  new RawCountLoaderFactory({
-    ...FakeEvent.loaderOptions(),
-    groupCol: "user_id",
-    clause: getNextWeekClause(),
-  });
-
-export const userToEventsInNextWeekDataLoaderFactory = new QueryLoaderFactory({
-  ...FakeEvent.loaderOptions(),
-  groupCol: "user_id",
-  clause: getNextWeekClause(),
-  toPrime: [contactLoader],
-  sortColumn: "start_time",
-});
-
 export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<
   FakeUser,
   FakeEvent
@@ -440,11 +425,11 @@ export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: ID | FakeUser) {
     super(viewer, {
       src,
-      // we want to reuse this and not create a new one every time...
-      countLoaderFactory: userToEventsInNextWeekCountLoaderFactory,
-      dataLoaderFactory: userToEventsInNextWeekDataLoaderFactory,
-      options: FakeEvent.loaderOptions(),
-      // hmm TODO shouldn't need to write this twice...
+      ...FakeEvent.loaderOptions(),
+      groupCol: "user_id",
+      clause: getNextWeekClause(),
+      loadEntOptions: FakeEvent.loaderOptions(),
+      name: "events_in_next_week",
       sortColumn: "start_time",
     });
   }
