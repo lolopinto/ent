@@ -340,7 +340,11 @@ export function table(name: string, ...items: SchemaItem[]): Table {
           parts.push("PRIMARY KEY");
         }
         if (col.default !== undefined) {
-          parts.push(`DEFAULT ${col.default}`);
+          if (Dialect.SQLite === DB.getDialect()) {
+            parts.push(`DEFAULT "${col.default}"`);
+          } else {
+            parts.push(`DEFAULT ${col.default}`);
+          }
         }
 
         if (col.unique) {

@@ -17,6 +17,7 @@ import {
   loadCustomCount,
   loadCustomData,
   loadCustomEnts,
+  loadEnt,
   loadEnts,
 } from "./ent";
 import { createRowForTest, editRowForTest } from "../testutils/write";
@@ -35,6 +36,8 @@ import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
 import DB, { Dialect } from "./db";
 import { ObjectLoaderFactory } from "./loaders";
+import { CustomEdgeQueryBase } from "./query";
+import { CustomEdgeQueryOptions } from "./query/custom_query";
 
 let ctx: Context;
 const ml = new MockLogs();
@@ -76,7 +79,6 @@ const options: LoadCustomEntOptions<User> = {
     tableName: "users",
     fields: ["*"],
     key: "id",
-    // instanceKey: "loader-factory-deleted-at",
   }),
 };
 
@@ -99,6 +101,7 @@ const getTable = (softDelete = false) => {
     text("baz"),
     text("bar"),
     text("foo"),
+    timestamp("created_at", { default: "now()" }),
   ];
   if (softDelete) {
     cols.push(timestamp("deleted_at", { nullable: true }));
@@ -157,6 +160,7 @@ describe("sqlite no soft delete", () => {
       text("baz"),
       text("bar"),
       text("foo"),
+      timestamp("created_at", { default: new Date().toISOString() }),
     ),
   ]);
 
@@ -176,6 +180,7 @@ describe("sqlite with soft delete", () => {
       text("baz"),
       text("bar"),
       text("foo"),
+      timestamp("created_at", { default: new Date().toISOString() }),
       timestamp("deleted_at", { nullable: true }),
     ),
   ]);
@@ -1094,6 +1099,78 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
 
       // only odd numbers visible
       expect(ents2.map((ent) => ent.id)).toEqual([9, 7, 5]);
+    });
+  });
+
+  describe("custom query soft delete", () => {
+    beforeEach(async () => {
+      await softDelete(softDeleteIds);
+      ml.clear();
+    });
+
+    class CustomQuery extends CustomEdgeQueryBase<any, any> {
+      constructor(
+        v: IDViewer,
+        cls: clause.Clause,
+        disableTransformations?: boolean,
+      ) {
+        super(v, {
+          src: v.viewerID,
+          loadEntOptions: softDeleteOptions,
+          clause: cls,
+          name: "bar=bar2",
+          disableTransformations,
+        });
+      }
+      sourceEnt(id: ID) {
+        return loadEnt(this.viewer, id, softDeleteOptions);
+      }
+    }
+
+    test("simple clause", async () => {
+      const v = getIDViewer(2, getCtx());
+
+      const q = new CustomQuery(v, clause.Eq("bar", "bar2"));
+      const ents = await q.queryEnts();
+      // 2, 4, 6
+      expect(ents.length).toBe(3);
+
+      const count = await q.queryCount();
+      expect(count).toBe(3);
+
+      ml.clear();
+
+      await Promise.all(
+        ents.map((ent) => loadEnt(v, ent.id, softDeleteOptions)),
+      );
+
+      expect(ml.logs.length).toBe(count);
+      for (const log of ml.logs) {
+        expect(log["ent-cache-hit"]).toBeDefined();
+      }
+    });
+
+    test("disable Transformations", async () => {
+      const v = getIDViewer(2, getCtx());
+
+      const q = new CustomQuery(v, clause.Eq("bar", "bar2"), true);
+      const ents = await q.queryEnts();
+      // 2,4, 6, 8, 10
+      expect(ents.length).toBe(5);
+
+      const count = await q.queryCount();
+      expect(count).toBe(5);
+
+      ml.clear();
+
+      await Promise.all(
+        ents.map((ent) => loadEnt(v, ent.id, softDeleteOptions)),
+      );
+
+      expect(ml.logs.length).toBe(count);
+      for (const log of ml.logs) {
+        expect(log["ent-cache-hit"]).toBeDefined();
+      }
     });
   });
 }

@@ -26,11 +26,10 @@ export interface CustomEdgeQueryOptionsDeprecated<
   countLoaderFactory: LoaderFactory<ID, number>;
   dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
   options: LoadEntOptions<TDest, TViewer>;
-  // // defaults to created_at
+  // defaults to created_at
   sortColumn?: string;
 }
 
-// TSource used in Query name
 export interface CustomEdgeQueryOptions<
   TSource extends Ent<TViewer>,
   TDest extends Ent<TViewer>,
@@ -44,10 +43,9 @@ export interface CustomEdgeQueryOptions<
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
   name: string;
-  // // defaults to created_at
+  // defaults to created_at
   sortColumn?: string;
 
-  // TODO test...
   disableTransformations?: boolean;
 }
 
@@ -94,8 +92,6 @@ function getRawCountLoader<
   ) as RawCountLoader<ID>;
 }
 
-// TODO need test for transformed clause and disableTransformations
-// and test for how it affects priming...
 function getQueryLoader<
   TSource extends Ent<TViewer>,
   TDest extends Ent<TViewer>,
