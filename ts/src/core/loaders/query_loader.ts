@@ -244,7 +244,8 @@ export class QueryLoaderFactory<K extends any>
     options: EdgeQueryableDataOptions,
     context?: Context,
   ) {
-    if (options?.clause || !context) {
+    if (!context) {
+      // hmm why was there a options.clause check here
       return new QueryDirectLoader(this.options, options);
     }
 

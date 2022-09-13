@@ -24,16 +24,17 @@ import {
 import { EdgeQuery } from "./query";
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import { TestContext } from "../../testutils/context/test_context";
-import { setLogLevels } from "../logger";
+import { clearLogLevels, setLogLevels } from "../logger";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { WriteOperation } from "../../action";
-import DB from "../../core/db";
+import { MockLogs } from "../../testutils/mock_log";
 
 class TestQueryFilter<TData extends Data> {
   allContacts: FakeContact[] = [];
   private filteredContacts: FakeContact[] = [];
   user: FakeUser;
+  customQuery: boolean;
   constructor(
     private filter: (
       q: EdgeQuery<FakeUser, FakeContact, TData>,
@@ -46,7 +47,15 @@ class TestQueryFilter<TData extends Data> {
     ) => EdgeQuery<FakeUser, FakeContact, TData>,
     private ents: (contacts: FakeContact[]) => FakeContact[],
     private defaultViewer: Viewer,
-  ) {}
+  ) {
+    // @ts-ignore
+    const q = this.newQuery(this.defaultViewer);
+
+    // TODO sad not generic enough
+    this.customQuery =
+      q instanceof UserToContactsFkeyQuery ||
+      q instanceof UserToContactsFkeyQueryDeprecated;
+  }
 
   async createData() {
     [this.user, this.allContacts] = await createAllContacts();
@@ -100,10 +109,7 @@ class TestQueryFilter<TData extends Data> {
     const q = this.getQuery();
 
     // TODO sad not generic enough
-    if (
-      q instanceof UserToContactsFkeyQueryDeprecated ||
-      q instanceof UserToContactsFkeyQuery
-    ) {
+    if (this.customQuery) {
       verifyUserToContactRawData(this.user, edges, this.filteredContacts);
     } else {
       verifyUserToContactEdges(
@@ -114,9 +120,58 @@ class TestQueryFilter<TData extends Data> {
     }
   }
 
-  async testEnts() {
-    const entsMap = await this.getQuery(new IDViewer(this.user.id)).queryEnts();
-    this.verifyEnts(entsMap);
+  async testEnts(v?: Viewer) {
+    const ents = await this.getQuery(
+      v || new IDViewer(this.user.id),
+    ).queryEnts();
+    this.verifyEnts(ents);
+    return ents;
+  }
+
+  async testEntsCache() {
+    if (!this.customQuery) {
+      return;
+    }
+    setLogLevels(["query", "cache"]);
+    const ml = new MockLogs();
+    ml.mock();
+    const v = new TestContext(new IDViewer(this.user.id)).getViewer();
+    const ents = await this.testEnts(v);
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM /);
+
+    await Promise.all(ents.map((ent) => FakeContact.loadX(v, ent.id)));
+
+    expect(ml.logs.length).toBe(this.filteredContacts.length + 1);
+    for (const log of ml.logs.slice(1)) {
+      expect(log["ent-cache-hit"]).toBeDefined();
+    }
+    ml.restore();
+    clearLogLevels();
+  }
+
+  async testDataCache() {
+    if (!this.customQuery) {
+      return;
+    }
+    setLogLevels(["query", "cache"]);
+    const ml = new MockLogs();
+    ml.mock();
+    const v = new TestContext(new IDViewer(this.user.id)).getViewer();
+    const ents = await this.testEnts(v);
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM /);
+
+    await Promise.all(
+      ents.map((ent) => FakeContact.loadRawData(ent.id, v.context)),
+    );
+
+    expect(ml.logs.length).toBe(this.filteredContacts.length + 1);
+    for (const log of ml.logs.slice(1)) {
+      expect(log["dataloader-cache-hit"]).toBeDefined();
+    }
+    ml.restore();
+    clearLogLevels();
   }
 
   private verifyEnts(ents: FakeContact[]) {
@@ -368,6 +423,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     test("all", async () => {
       await filter.testAll();
     });
+
+    test("ents cache", async () => {
+      await filter.testEntsCache();
+    });
+
+    test("data cache", async () => {
+      await filter.testDataCache();
+    });
   });
 
   describe("after delete", () => {
@@ -449,6 +512,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         await opts.rawDataVerify(filter.user);
       }
     });
+
+    test("ents cache", async () => {
+      await filter.testEntsCache();
+    });
+
+    test("data cache", async () => {
+      await filter.testDataCache();
+    });
   });
 
   describe("first. no cursor", () => {
@@ -497,6 +568,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("all", async () => {
       await filter.testAll();
+    });
+
+    test("ents cache", async () => {
+      await filter.testEntsCache();
+    });
+
+    test("data cache", async () => {
+      await filter.testDataCache();
     });
   });
 
@@ -547,6 +626,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("all", async () => {
       await filter.testAll();
+    });
+
+    test("ents cache", async () => {
+      await filter.testEntsCache();
+    });
+
+    test("data cache", async () => {
+      await filter.testDataCache();
     });
   });
 
@@ -611,6 +698,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("all", async () => {
       await filter.testAll();
+    });
+
+    test("ents cache", async () => {
+      await filter.testEntsCache();
+    });
+
+    test("data cache", async () => {
+      await filter.testDataCache();
     });
   });
 
@@ -715,6 +810,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("all", async () => {
       await filter.testAll();
+    });
+
+    test("ents cache", async () => {
+      await filter.testEntsCache();
+    });
+
+    test("data cache", async () => {
+      await filter.testDataCache();
     });
   });
 

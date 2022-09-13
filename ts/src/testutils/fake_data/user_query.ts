@@ -20,7 +20,6 @@ import {
 import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader";
 import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
-import { IndexLoaderFactory } from "../../core/loaders/index_loader";
 import { contactLoader } from "./fake_contact";
 import { clear } from "jest-date-mock";
 import { Interval } from "luxon";
@@ -60,13 +59,11 @@ export const userToContactsCountLoaderFactory = new RawCountLoaderFactory({
   ...FakeContact.loaderOptions(),
   groupCol: "user_id",
 });
-export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
-  FakeContact.loaderOptions(),
-  "user_id",
-  {
-    toPrime: [contactLoader],
-  },
-);
+export const userToContactsDataLoaderFactory = new QueryLoaderFactory({
+  ...FakeContact.loaderOptions(),
+  groupCol: "user_id",
+  toPrime: [contactLoader],
+});
 
 export class UserToContactsFkeyQueryDeprecated extends CustomEdgeQueryBase<
   FakeUser,

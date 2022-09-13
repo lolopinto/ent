@@ -8,7 +8,7 @@ import {
   LoaderFactory,
   ConfigurableLoaderFactory,
 } from "../base";
-import { AndOptional, Clause, inClause } from "../clause";
+import { AndOptional, Clause } from "../clause";
 import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
 import { ObjectLoaderFactory, QueryLoader, RawCountLoader } from "../loaders";
 import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
@@ -142,6 +142,7 @@ export abstract class CustomEdgeQueryBase<
   implements EdgeQuery<TSource, TDest, Data>
 {
   private id: ID;
+  private opts: LoadEntOptions<TDest>;
   constructor(
     public viewer: TViewer,
     private options:
@@ -156,6 +157,8 @@ export abstract class CustomEdgeQueryBase<
     } else {
       this.id = options.src;
     }
+
+    this.opts = this.getLoadEntOptions();
   }
 
   abstract sourceEnt(id: ID): Promise<Ent | null>;
@@ -220,6 +223,16 @@ export abstract class CustomEdgeQueryBase<
     addID(this.options.src);
   }
 
+  private getLoadEntOptions() {
+    let opts: LoadEntOptions<TDest>;
+    if (this.isDeprecatedOptions(this.options)) {
+      opts = this.options.options;
+    } else {
+      opts = this.options.loadEntOptions;
+    }
+    return opts;
+  }
+
   protected async loadRawData(
     infos: IDInfo[],
     options: EdgeQueryableDataOptions,
@@ -242,6 +255,7 @@ export abstract class CustomEdgeQueryBase<
       return;
     }
     const rows = await loader.load(this.id);
+
     this.edges.set(this.id, rows);
   }
 
@@ -250,13 +264,6 @@ export abstract class CustomEdgeQueryBase<
   }
 
   protected async loadEntsFromEdges(id: ID, rows: Data[]): Promise<TDest[]> {
-    let opts: LoadEntOptions<TDest>;
-    if (this.isDeprecatedOptions(this.options)) {
-      opts = this.options.options;
-    } else {
-      opts = this.options.loadEntOptions;
-    }
-
-    return applyPrivacyPolicyForRows(this.viewer, rows, opts);
+    return applyPrivacyPolicyForRows(this.viewer, rows, this.opts);
   }
 }
