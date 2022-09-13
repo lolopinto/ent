@@ -340,7 +340,11 @@ export function table(name: string, ...items: SchemaItem[]): Table {
           parts.push("PRIMARY KEY");
         }
         if (col.default !== undefined) {
-          parts.push(`DEFAULT ${col.default}`);
+          if (Dialect.SQLite === DB.getDialect()) {
+            parts.push(`DEFAULT "${col.default}"`);
+          } else {
+            parts.push(`DEFAULT ${col.default}`);
+          }
         }
 
         if (col.unique) {
@@ -443,6 +447,7 @@ export class TempDB {
         } else {
           process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
         }
+        DB.initDB();
       } else {
         // will probably be setup via loadConfig
         delete process.env.DB_CONNECTION_STRING;

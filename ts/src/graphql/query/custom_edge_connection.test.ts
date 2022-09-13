@@ -3,7 +3,7 @@ import { QueryRecorder } from "../../testutils/db_mock";
 
 import {
   FakeUser,
-  UserToContactsFkeyQuery,
+  UserToContactsFkeyQueryDeprecated,
 } from "../../testutils/fake_data/index";
 import { createEdges } from "../../testutils/fake_data/test_helpers";
 import { commonTests } from "./shared_edge_connection";
@@ -17,7 +17,8 @@ beforeEach(async () => {
 });
 
 commonTests({
-  getQuery: (v, user: FakeUser) => UserToContactsFkeyQuery.query(v, user),
+  getQuery: (v, user: FakeUser) =>
+    UserToContactsFkeyQueryDeprecated.query(v, user),
   tableName: "fake_contacts",
   sortCol: "created_at",
 });

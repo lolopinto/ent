@@ -7,8 +7,6 @@ import {
   CustomEdgeQueryBase,
   EdgeQuerySource,
   ID,
-  IndexLoaderFactory,
-  RawCountLoaderFactory,
   Viewer,
 } from "@snowtop/ent";
 import {
@@ -20,7 +18,6 @@ import {
   Guest,
   GuestGroup,
   GuestGroupToInvitedEventsEdge,
-  guestLoader,
 } from "src/ent/internal";
 
 export const guestGroupToInvitedEventsCountLoaderFactory =
@@ -30,18 +27,6 @@ export const guestGroupToInvitedEventsDataLoaderFactory =
     EdgeType.GuestGroupToInvitedEvents,
     () => GuestGroupToInvitedEventsEdge,
   );
-
-export const guestGroupToGuestsCountLoaderFactory = new RawCountLoaderFactory({
-  ...Guest.loaderOptions(),
-  groupCol: "guest_group_id",
-});
-export const guestGroupToGuestsDataLoaderFactory = new IndexLoaderFactory(
-  Guest.loaderOptions(),
-  "guest_group_id",
-  {
-    toPrime: [guestLoader],
-  },
-);
 
 export abstract class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   GuestGroup,
@@ -98,9 +83,9 @@ export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: GuestGroup | ID) {
     super(viewer, {
       src: src,
-      countLoaderFactory: guestGroupToGuestsCountLoaderFactory,
-      dataLoaderFactory: guestGroupToGuestsDataLoaderFactory,
-      options: Guest.loaderOptions(),
+      groupCol: "guest_group_id",
+      loadEntOptions: Guest.loaderOptions(),
+      name: "GuestGroupToGuestsQuery",
     });
   }
 

@@ -128,20 +128,58 @@ function createLoader<K extends any>(
   }, loaderOptions);
 }
 
-export class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
+class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
+  private memoizedInitPrime: () => void;
+  private primedLoaders:
+    | Map<string, PrimableLoader<any, Data | null>>
+    | undefined;
   constructor(
     private options: QueryOptions,
     private queryOptions?: EdgeQueryableDataOptions,
-  ) {}
+    public context?: Context,
+  ) {
+    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+  }
+
+  private initPrime() {
+    if (!this.context || !this.options?.toPrime) {
+      return;
+    }
+    let primedLoaders = new Map();
+    this.options.toPrime.forEach((prime) => {
+      const l2 = prime.createLoader(this.context);
+      if ((l2 as PrimableLoader<any, Data | null>).prime === undefined) {
+        return;
+      }
+      primedLoaders.set(prime.options.key, l2);
+    });
+    this.primedLoaders = primedLoaders;
+  }
 
   async load(id: K): Promise<Data[]> {
-    return simpleCase(this.options, id, this.queryOptions);
+    const rows = await simpleCase(this.options, id, this.queryOptions);
+    if (this.context) {
+      this.memoizedInitPrime();
+      if (this.primedLoaders) {
+        for (const row of rows) {
+          for (const [key, loader] of this.primedLoaders) {
+            const value = row[key];
+            if (value !== undefined) {
+              loader.prime(row);
+            }
+          }
+        }
+      }
+    }
+    return rows;
   }
 
   clearAll() {}
 }
 
-export class QueryLoader<K extends any> implements Loader<K, Data[]> {
+// note, you should never call this directly
+// there's scenarios where QueryDirectLoader is needed instead of this...
+class QueryLoader<K extends any> implements Loader<K, Data[]> {
   private loader: DataLoader<K, Data[]> | undefined;
   private primedLoaders:
     | Map<string, PrimableLoader<any, Data | null>>
@@ -244,14 +282,28 @@ export class QueryLoaderFactory<K extends any>
     options: EdgeQueryableDataOptions,
     context?: Context,
   ) {
-    if (options?.clause || !context) {
-      return new QueryDirectLoader(this.options, options);
+    return QueryLoaderFactory.createConfigurableLoader(
+      this.name,
+      this.options,
+      options,
+      context,
+    );
+  }
+
+  static createConfigurableLoader(
+    name: string,
+    queryOptions: QueryOptions,
+    options: EdgeQueryableDataOptions,
+    context?: Context,
+  ) {
+    if (options.clause || !context) {
+      return new QueryDirectLoader(queryOptions, options, context);
     }
 
-    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}`;
+    const key = `${name}:limit:${options.limit}:orderby:${options.orderby}`;
     return getCustomLoader(
       key,
-      () => new QueryLoader(this.options, context, options),
+      () => new QueryLoader(queryOptions, context, options),
       context,
     );
   }

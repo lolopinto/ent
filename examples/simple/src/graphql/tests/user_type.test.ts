@@ -36,7 +36,8 @@ import {
   RabbitBreed,
   SuperNestedObjectEnum,
 } from "../../ent/generated/user_super_nested_object";
-import { LoggedOutExampleViewer, ExampleViewer } from "src/viewer/viewer";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+import CreateCommentAction from "../../ent/comment/actions/create_comment_action";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -1132,4 +1133,23 @@ describe("super nested complex", () => {
       ],
     );
   });
+});
+
+test("custom connection. comments", async () => {
+  const [user1, user2] = await Promise.all([create({}), create({})]);
+
+  const comment = await CreateCommentAction.create(user2.viewer, {
+    authorID: user2.id,
+    body: "sup",
+    articleID: user1.id,
+    articleType: user1.nodeType,
+  }).saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new ExampleViewer(user2.id), user2),
+    ["id", encodeGQLID(user2)],
+    ["firstName", user2.firstName],
+    ["commentsAuthored.rawCount", 1],
+    ["commentsAuthored.nodes[0].body", comment.body],
+  );
 });

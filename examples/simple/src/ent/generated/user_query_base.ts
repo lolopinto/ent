@@ -11,8 +11,6 @@ import {
   EdgeQuerySource,
   Ent,
   ID,
-  IndexLoaderFactory,
-  RawCountLoaderFactory,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
 import {
@@ -49,8 +47,6 @@ import {
   UserToMaybeEventsQuery,
   UserToSelfContactEdge,
   UserToSelfContactQuery,
-  authCodeLoader,
-  contactLoader,
 } from "../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
@@ -118,30 +114,6 @@ export const userToHostedEventsCountLoaderFactory =
 export const userToHostedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToHostedEvents,
   () => UserToHostedEventsEdge,
-);
-
-export const userToAuthCodesCountLoaderFactory = new RawCountLoaderFactory({
-  ...AuthCode.loaderOptions(),
-  groupCol: "user_id",
-});
-export const userToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
-  AuthCode.loaderOptions(),
-  "user_id",
-  {
-    toPrime: [authCodeLoader],
-  },
-);
-
-export const userToContactsCountLoaderFactory = new RawCountLoaderFactory({
-  ...Contact.loaderOptions(),
-  groupCol: "user_id",
-});
-export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
-  Contact.loaderOptions(),
-  "user_id",
-  {
-    toPrime: [contactLoader],
-  },
 );
 
 export abstract class UserToCreatedEventsQueryBase extends AssocEdgeQueryBase<
@@ -639,9 +611,9 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
   constructor(viewer: ExampleViewerAlias, src: User | ID) {
     super(viewer, {
       src: src,
-      countLoaderFactory: userToAuthCodesCountLoaderFactory,
-      dataLoaderFactory: userToAuthCodesDataLoaderFactory,
-      options: AuthCode.loaderOptions(),
+      groupCol: "user_id",
+      loadEntOptions: AuthCode.loaderOptions(),
+      name: "UserToAuthCodesQuery",
     });
   }
 
@@ -666,9 +638,9 @@ export class UserToContactsQueryBase extends CustomEdgeQueryBase<
   constructor(viewer: ExampleViewerAlias, src: User | ID) {
     super(viewer, {
       src: src,
-      countLoaderFactory: userToContactsCountLoaderFactory,
-      dataLoaderFactory: userToContactsDataLoaderFactory,
-      options: Contact.loaderOptions(),
+      groupCol: "user_id",
+      loadEntOptions: Contact.loaderOptions(),
+      name: "UserToContactsQuery",
     });
   }
 

@@ -7,11 +7,8 @@ import {
   CustomEdgeQueryBase,
   EdgeQuerySource,
   ID,
-  IndexLoaderFactory,
-  RawCountLoaderFactory,
   Viewer,
 } from "@snowtop/ent";
-import { getTransformedReadClause } from "@snowtop/ent/schema";
 import {
   Account,
   AccountToClosedTodosDupEdge,
@@ -20,11 +17,7 @@ import {
   Tag,
   Todo,
   TodoToTagsQuery,
-  tagLoader,
-  todoLoader,
 } from "src/ent/internal";
-import TagSchema from "src/schema/tag_schema";
-import TodoSchema from "src/schema/todo_schema";
 
 export const accountToClosedTodosDupCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.AccountToClosedTodosDup);
@@ -41,34 +34,6 @@ export const accountToOpenTodosDupDataLoaderFactory =
     EdgeType.AccountToOpenTodosDup,
     () => AccountToOpenTodosDupEdge,
   );
-
-export const accountToTagsCountLoaderFactory = new RawCountLoaderFactory({
-  ...Tag.loaderOptions(),
-  groupCol: "owner_id",
-  clause: getTransformedReadClause(TagSchema),
-});
-export const accountToTagsDataLoaderFactory = new IndexLoaderFactory(
-  Tag.loaderOptions(),
-  "owner_id",
-  {
-    toPrime: [tagLoader],
-    extraClause: getTransformedReadClause(TagSchema),
-  },
-);
-
-export const accountToTodosCountLoaderFactory = new RawCountLoaderFactory({
-  ...Todo.loaderOptions(),
-  groupCol: "creator_id",
-  clause: getTransformedReadClause(TodoSchema),
-});
-export const accountToTodosDataLoaderFactory = new IndexLoaderFactory(
-  Todo.loaderOptions(),
-  "creator_id",
-  {
-    toPrime: [todoLoader],
-    extraClause: getTransformedReadClause(TodoSchema),
-  },
-);
 
 export abstract class AccountToClosedTodosDupQueryBase extends AssocEdgeQueryBase<
   Account,
@@ -144,9 +109,9 @@ export class AccountToTagsQueryBase extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: Account | ID) {
     super(viewer, {
       src: src,
-      countLoaderFactory: accountToTagsCountLoaderFactory,
-      dataLoaderFactory: accountToTagsDataLoaderFactory,
-      options: Tag.loaderOptions(),
+      groupCol: "owner_id",
+      loadEntOptions: Tag.loaderOptions(),
+      name: "AccountToTagsQuery",
     });
   }
 
@@ -171,9 +136,9 @@ export class AccountToTodosQueryBase extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: Account | ID) {
     super(viewer, {
       src: src,
-      countLoaderFactory: accountToTodosCountLoaderFactory,
-      dataLoaderFactory: accountToTodosDataLoaderFactory,
-      options: Todo.loaderOptions(),
+      groupCol: "creator_id",
+      loadEntOptions: Todo.loaderOptions(),
+      name: "AccountToTodosQuery",
     });
   }
 

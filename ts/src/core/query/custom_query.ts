@@ -8,10 +8,16 @@ import {
   LoaderFactory,
   ConfigurableLoaderFactory,
 } from "../base";
+import { AndOptional, Clause } from "../clause";
 import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
+import {
+  ObjectLoaderFactory,
+  QueryLoaderFactory,
+  RawCountLoader,
+} from "../loaders";
 import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
 
-export interface CustomEdgeQueryOptions<
+export interface CustomEdgeQueryOptionsDeprecated<
   TSource extends Ent<TViewer>,
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
@@ -20,8 +26,96 @@ export interface CustomEdgeQueryOptions<
   countLoaderFactory: LoaderFactory<ID, number>;
   dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
   options: LoadEntOptions<TDest, TViewer>;
-  // // defaults to created_at
+  // defaults to created_at
   sortColumn?: string;
+}
+
+export interface CustomEdgeQueryOptions<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
+  src: TSource | ID;
+  loadEntOptions: LoadEntOptions<TDest, TViewer>;
+  // must provide at least one of these
+  groupCol?: string;
+  clause?: Clause;
+  // query-name used to create loaders...
+  // and then from there it does what it needs to do to do the right thing...
+  name: string;
+  // defaults to created_at
+  sortColumn?: string;
+
+  disableTransformations?: boolean;
+}
+
+function getClause<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+>(opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>) {
+  let cls = opts.clause;
+  if (opts.disableTransformations) {
+    return cls;
+  }
+  let optClause = opts.loadEntOptions.loaderFactory?.options?.clause;
+  if (typeof optClause === "function") {
+    optClause = optClause();
+  }
+  if (!optClause) {
+    return cls;
+  }
+  return AndOptional(cls, optClause);
+}
+
+function getRawCountLoader<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+>(viewer: TViewer, opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>) {
+  if (!viewer.context?.cache) {
+    return new RawCountLoader({
+      tableName: opts.loadEntOptions.tableName,
+      groupCol: opts.groupCol,
+      clause: getClause(opts),
+    });
+  }
+  const name = `custom_query_count_loader:${opts.name}`;
+  return viewer.context.cache.getLoader(
+    name,
+    () =>
+      new RawCountLoader({
+        tableName: opts.loadEntOptions.tableName,
+        groupCol: opts.groupCol,
+        clause: getClause(opts),
+      }),
+  ) as RawCountLoader<ID>;
+}
+
+function getQueryLoader<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+>(
+  viewer: TViewer,
+  opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>,
+  options: EdgeQueryableDataOptions,
+) {
+  const loader = opts.loadEntOptions.loaderFactory as ObjectLoaderFactory<ID>;
+  const name = `custom_query_loader:${opts.name}`;
+
+  return QueryLoaderFactory.createConfigurableLoader(
+    name,
+    {
+      tableName: opts.loadEntOptions.tableName,
+      fields: opts.loadEntOptions.fields,
+      groupCol: opts.groupCol,
+      clause: getClause(opts),
+      toPrime: [loader],
+    },
+    options,
+    viewer.context,
+  );
 }
 
 export abstract class CustomEdgeQueryBase<
@@ -33,17 +127,23 @@ export abstract class CustomEdgeQueryBase<
   implements EdgeQuery<TSource, TDest, Data>
 {
   private id: ID;
+  private opts: LoadEntOptions<TDest>;
   constructor(
     public viewer: TViewer,
-    private options: CustomEdgeQueryOptions<TSource, TDest, TViewer>,
+    private options:
+      | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
+      | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
   ) {
-    super(viewer, options.sortColumn || "created_at");
+    // @ts-ignore
+    super(viewer, options?.sortColumn || "created_at");
     options.sortColumn = options.sortColumn || "created_at";
     if (typeof options.src === "object") {
       this.id = options.src.id;
     } else {
       this.id = options.src;
     }
+
+    this.opts = this.getLoadEntOptions();
   }
 
   abstract sourceEnt(id: ID): Promise<Ent | null>;
@@ -56,15 +156,41 @@ export abstract class CustomEdgeQueryBase<
     return !ids[0].invalidated;
   }
 
+  private isDeprecatedOptions(
+    options:
+      | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
+      | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
+  ): options is CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer> {
+    return (
+      (options as CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>)
+        .countLoaderFactory !== undefined
+    );
+  }
+
+  private getCountLoader() {
+    if (this.isDeprecatedOptions(this.options)) {
+      return this.options.countLoaderFactory.createLoader(this.viewer.context);
+    }
+    return getRawCountLoader(this.viewer, this.options);
+  }
+
+  private getQueryLoader(options: EdgeQueryableDataOptions) {
+    if (this.isDeprecatedOptions(this.options)) {
+      return this.options.dataLoaderFactory.createConfigurableLoader(
+        options,
+        this.viewer.context,
+      );
+    }
+    return getQueryLoader(this.viewer, this.options, options);
+  }
+
   async queryRawCount(): Promise<number> {
     const idVisible = await this.idVisible();
     if (!idVisible) {
       return 0;
     }
 
-    return await this.options.countLoaderFactory
-      .createLoader(this.viewer.context)
-      .load(this.id);
+    return this.getCountLoader().load(this.id);
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {
@@ -82,31 +208,39 @@ export abstract class CustomEdgeQueryBase<
     addID(this.options.src);
   }
 
+  private getLoadEntOptions() {
+    let opts: LoadEntOptions<TDest>;
+    if (this.isDeprecatedOptions(this.options)) {
+      opts = this.options.options;
+    } else {
+      opts = this.options.loadEntOptions;
+    }
+    return opts;
+  }
+
   protected async loadRawData(
     infos: IDInfo[],
     options: EdgeQueryableDataOptions,
   ) {
-    const loader = this.options.dataLoaderFactory.createConfigurableLoader(
-      options,
-      this.viewer.context,
-    );
+    if (infos.length !== 1) {
+      throw new Error(
+        `expected 1 info passed to loadRawData. ${infos.length} passed`,
+      );
+    }
     if (!options.orderby) {
       options.orderby = `${this.options.sortColumn} DESC`;
     }
     if (!options.limit) {
       options.limit = DefaultLimit;
     }
-    if (infos.length !== 1) {
-      throw new Error(
-        `expected 1 info passed to loadRawData. ${infos.length} passed`,
-      );
-    }
+    const loader = this.getQueryLoader(options);
     const info = infos[0];
     if (info.invalidated) {
       this.edges.set(this.id, []);
       return;
     }
     const rows = await loader.load(this.id);
+
     this.edges.set(this.id, rows);
   }
 
@@ -115,11 +249,6 @@ export abstract class CustomEdgeQueryBase<
   }
 
   protected async loadEntsFromEdges(id: ID, rows: Data[]): Promise<TDest[]> {
-    const ents = await applyPrivacyPolicyForRows(
-      this.viewer,
-      rows,
-      this.options.options,
-    );
-    return Array.from(ents.values());
+    return applyPrivacyPolicyForRows(this.viewer, rows, this.opts);
   }
 }
