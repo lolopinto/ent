@@ -94,7 +94,7 @@ export class UserToContactsFkeyQueryDeprecated extends CustomEdgeQueryBase<
   }
 }
 
-// this replaces UserToContactsFkeyQuery
+// this replaces UserToContactsFkeyQueryDeprecated
 export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<
   FakeUser,
   FakeContact
