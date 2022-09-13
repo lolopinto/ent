@@ -63,8 +63,6 @@ const getNonGroupableLoader = (id: ID, context: boolean = true) => {
   }).createLoader(context ? ctx : undefined);
 };
 
-// TODO test all this with direct calls? since we almost had an issue with calling QueryLoader directly...
-
 describe("postgres", () => {
   beforeAll(async () => {
     setLogLevels(["query", "error", "cache"]);
