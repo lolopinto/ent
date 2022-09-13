@@ -204,13 +204,6 @@
         "fieldType": "ASYNC_FUNCTION"
       },
       {
-        "name": "contactsSameDomainConn",
-        "functionName": "getContactsSameDomainConn",
-        "resultType": "Contact",
-        "connection": true,
-        "fieldType": "ASYNC_FUNCTION"
-      },
-      {
         "name": "contactsSameDomainNullable",
         "functionName": "getContactsSameDomainNullable",
         "resultType": "Contact",
@@ -233,6 +226,13 @@
         "list": true,
         "fieldType": "ASYNC_FUNCTION",
         "nullable": "contentsAndList"
+      },
+      {
+        "name": "commentsAuthored",
+        "functionName": "getCommentsAuthored",
+        "resultType": "Comment",
+        "connection": true,
+        "fieldType": "ASYNC_FUNCTION"
       }
     ]
   }

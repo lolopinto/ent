@@ -57,6 +57,8 @@ CREATE TABLE comments (
 
 CREATE INDEX comments_article_id_idx ON comments (article_id);
 
+CREATE INDEX comments_author_id_idx ON comments (author_id);
+
 CREATE TABLE contact_emails (
     id UUID NOT NULL, 
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 

@@ -1,16 +1,37 @@
-import { UserBase, Contact, EdgeType } from "./internal";
+import { UserBase, Contact, EdgeType, Comment } from "./internal";
 import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   Data,
   PrivacyPolicy,
+  ID,
 } from "@snowtop/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { GraphQLString } from "graphql";
 import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import * as bcrypt from "bcryptjs";
+import { CustomEdgeQueryBase } from "@snowtop/ent";
+import { ExampleViewer } from "src/viewer/viewer";
 
+class UserToCommentsAuthoredQuery extends CustomEdgeQueryBase<
+  User,
+  Comment,
+  ExampleViewer
+> {
+  constructor(viewer: ExampleViewer, src: User | ID) {
+    super(viewer, {
+      src,
+      groupCol: "author_id",
+      loadEntOptions: Comment.loaderOptions(),
+      name: "UserToCommentsAuthored",
+    });
+  }
+
+  sourceEnt(id: ID) {
+    return User.load(this.viewer, id);
+  }
+}
 // we're only writing this once except with --force and packageName provided
 export class User extends UserBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
@@ -98,22 +119,6 @@ export class User extends UserBase {
       .map((info) => info.contact);
   }
 
-  @gqlField({ name: "contactsSameDomainConn", type: gqlConnection("Contact") })
-  async getContactsSameDomainConn(): Promise<Contact[]> {
-    // TODO need to fix this. not a connection
-    // the behavior here is inconsistent but meh
-    let domain = this.getDomainFromEmail(this.emailAddress);
-    if (!domain) {
-      return [];
-    }
-    const contactInfos = await this.queryContactInfos();
-    return contactInfos
-      .filter((contactInfo) => {
-        return domain === this.getDomainFromEmail(contactInfo.firstEmail);
-      })
-      .map((info) => info.contact);
-  }
-
   @gqlField({
     type: "[Contact]",
     name: "contactsSameDomainNullable",
@@ -183,6 +188,11 @@ export class User extends UserBase {
       }
       return null;
     });
+  }
+
+  @gqlField({ name: "commentsAuthored", type: gqlConnection("Comment") })
+  getCommentsAuthored(): UserToCommentsAuthoredQuery {
+    return new UserToCommentsAuthoredQuery(this.viewer, this);
   }
 
   static async validateEmailPassword(

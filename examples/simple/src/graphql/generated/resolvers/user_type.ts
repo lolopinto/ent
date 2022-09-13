@@ -42,9 +42,9 @@ import {
   UserPrefsStruct2Type,
   UserPrefsStructType,
   UserSuperNestedObjectType,
+  UserToCommentsAuthoredConnectionType,
   UserToCommentsConnectionType,
   UserToContactsConnectionType,
-  UserToContactsSameDomainConnConnectionType,
   UserToCreatedEventsConnectionType,
   UserToDeclinedEventsConnectionType,
   UserToEventsAttendingConnectionType,
@@ -483,8 +483,26 @@ export const UserType = new GraphQLObjectType({
         return user.getContactsSameDomain();
       },
     },
-    contactsSameDomainConn: {
-      type: new GraphQLNonNull(UserToContactsSameDomainConnConnectionType()),
+    contactsSameDomainNullable: {
+      type: new GraphQLList(new GraphQLNonNull(ContactType)),
+      resolve: async (user: User, args: {}, context: RequestContext) => {
+        return user.getContactsSameDomainNullable();
+      },
+    },
+    contactsSameDomainNullableContents: {
+      type: new GraphQLNonNull(new GraphQLList(ContactType)),
+      resolve: async (user: User, args: {}, context: RequestContext) => {
+        return user.getContactsSameDomainNullableContents();
+      },
+    },
+    contactsSameDomainNullableContentsAndList: {
+      type: new GraphQLList(ContactType),
+      resolve: async (user: User, args: {}, context: RequestContext) => {
+        return user.getContactsSameDomainNullableContentsAndList();
+      },
+    },
+    commentsAuthored: {
+      type: new GraphQLNonNull(UserToCommentsAuthoredConnectionType()),
       args: {
         first: {
           description: "",
@@ -507,27 +525,9 @@ export const UserType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
-          (v, user: User) => user.getContactsSameDomainConn(),
+          (v, user: User) => user.getCommentsAuthored(),
           args,
         );
-      },
-    },
-    contactsSameDomainNullable: {
-      type: new GraphQLList(new GraphQLNonNull(ContactType)),
-      resolve: async (user: User, args: {}, context: RequestContext) => {
-        return user.getContactsSameDomainNullable();
-      },
-    },
-    contactsSameDomainNullableContents: {
-      type: new GraphQLNonNull(new GraphQLList(ContactType)),
-      resolve: async (user: User, args: {}, context: RequestContext) => {
-        return user.getContactsSameDomainNullableContents();
-      },
-    },
-    contactsSameDomainNullableContentsAndList: {
-      type: new GraphQLList(ContactType),
-      resolve: async (user: User, args: {}, context: RequestContext) => {
-        return user.getContactsSameDomainNullableContentsAndList();
       },
     },
   }),

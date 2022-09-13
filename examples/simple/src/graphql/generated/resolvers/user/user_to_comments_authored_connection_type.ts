@@ -6,16 +6,13 @@
 import { GraphQLObjectType } from "graphql";
 import { Data } from "@snowtop/ent";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { ContactType } from "../../../resolvers/internal";
+import { CommentType } from "../../../resolvers/internal";
 
 var connType: GraphQLConnectionType<GraphQLObjectType, Data>;
 
-export const UserToContactsSameDomainConnConnectionType = () => {
+export const UserToCommentsAuthoredConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType(
-      "UserToContactsSameDomainConn",
-      ContactType,
-    );
+    connType = new GraphQLConnectionType("UserToCommentsAuthored", CommentType);
   }
   return connType;
 };
