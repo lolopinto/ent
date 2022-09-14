@@ -285,9 +285,6 @@ class Runner(object):
     # progressive_sql and upgrade range do go through offline path
     def all_sql(self, file=None, database=''):
         dialect = self.connection.dialect.name
-        # TODO handle
-        if dialect != 'postgresql':
-            return
 
         raw_engine = self.args.get('engine', None)
         if raw_engine is None:
