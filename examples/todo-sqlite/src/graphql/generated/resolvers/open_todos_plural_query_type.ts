@@ -9,7 +9,7 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { TodoType } from "src/graphql/resolvers/internal";
-import { TodoResolver } from "../../resolvers/open_todos";
+import { TodoResolver } from "../../resolvers/todos_resolver";
 
 interface open_todos_pluralArgs {
   id: any;

@@ -20,6 +20,7 @@ export interface TodoInput {
   text?: string;
   completed?: boolean;
   creatorID?: ID | Builder<Account, Viewer>;
+  completedDate?: Date | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -199,6 +200,7 @@ export class TodoBuilder<
     addField("Text", fields.text);
     addField("Completed", fields.completed);
     addField("creatorID", fields.creatorID);
+    addField("completedDate", fields.completedDate);
     return result;
   }
 
@@ -253,5 +255,14 @@ export class TodoBuilder<
       );
     }
     return this.existingEnt.creatorID;
+  }
+
+  // get value of completedDate. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCompletedDateValue(): Date | null {
+    if (this.input.completedDate !== undefined) {
+      return this.input.completedDate;
+    }
+
+    return this.existingEnt?.completedDate ?? null;
   }
 }
