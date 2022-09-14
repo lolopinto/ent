@@ -1911,6 +1911,7 @@ export function getCursor(opts: cursorOptions) {
   if (conv) {
     datum = conv(datum);
   }
+
   const cursorKey = opts.cursorKey || col;
   const str = `${cursorKey}:${datum}`;
   return Buffer.from(str, "ascii").toString("base64");

@@ -65,6 +65,8 @@ export function getEventInput(
     title: "title",
     description: "fun event",
     userID: user.id,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...input,
   };
 }
@@ -336,6 +338,7 @@ interface options {
   interval: number;
   userInput?: Partial<UserCreateInput>;
   eventInputs?: Partial<EventCreateInput>[];
+  startTime?: number | Date;
 }
 export async function createAllEvents(
   opts: options,
@@ -346,7 +349,7 @@ export async function createAllEvents(
   arr.fill(1);
 
   // start at date in case something else has used a date already
-  advanceTo(MockDate.getDate());
+  advanceTo(opts.startTime || MockDate.getDate());
 
   const events = await Promise.all(
     arr.map(async (v, idx: number) => {

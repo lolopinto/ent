@@ -158,7 +158,12 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     // todo may not be desc
     // and if asc
     // clause below should switch to greater...
-    options.orderby = `${this.sortCol} DESC`;
+    const sortCol = this.sortCol.toLowerCase();
+    if (sortCol.endsWith("desc") || sortCol.endsWith("asc")) {
+      options.orderby = `${this.sortCol}`;
+    } else {
+      options.orderby = `${this.sortCol} DESC`;
+    }
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
     if (this.offset) {
@@ -171,6 +176,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         );
       }
     }
+    // console.debug("filter opts", options, this.options);
     return options;
   }
 

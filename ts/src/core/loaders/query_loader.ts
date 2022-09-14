@@ -20,13 +20,16 @@ import { cacheMap, getCustomLoader, getLoader } from "./loader";
 import memoizee from "memoizee";
 import { ObjectLoaderFactory } from "./object_loader";
 
-function getOrderBy(sortCol: string, orderby?: string) {
+export function getOrderBy(sortCol: string, orderby?: string) {
+  if (orderby) {
+    return orderby;
+  }
   let sortColLower = sortCol.toLowerCase();
   let orderbyDirection = " DESC";
   if (sortColLower.endsWith("asc") || sortCol.endsWith("desc")) {
     orderbyDirection = "";
   }
-  return orderby || `${sortCol}${orderbyDirection}`;
+  return `${sortCol}${orderbyDirection}`;
 }
 
 async function simpleCase<K extends any>(
