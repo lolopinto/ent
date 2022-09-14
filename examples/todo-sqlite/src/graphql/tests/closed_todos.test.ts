@@ -18,7 +18,6 @@ beforeAll(() => {
 
   const sqlite = DB.getInstance().getSQLiteClient();
 
-  // @ts-ignore
   sqlite.db.exec(f.toString());
 });
 
