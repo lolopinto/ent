@@ -14,6 +14,7 @@ import {
   loadEnt,
   loadEnts,
   getEntKey,
+  loadEntX,
 } from "./ent";
 import { clearLogLevels, setLogLevels } from "./logger";
 import * as clause from "./clause";
@@ -522,6 +523,113 @@ function commonTests() {
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         "dataloader-cache-hit": 1,
+        "tableName": options.tableName,
+      });
+    });
+
+    test("loadEnt no data", async () => {
+      const options: LoadEntOptions<User> = {
+        fields,
+        tableName,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "id",
+        }),
+        ent: User,
+        context: ctx,
+      };
+      const ent1 = await loadEnt(ctx.getViewer(), 13, options);
+      expect(ent1).toBe(null);
+
+      // regular row fetch. hit db
+      expect(ml.logs.length).toEqual(1);
+
+      expect(ml.logs[0]).toStrictEqual({
+        query: buildQuery({
+          tableName,
+          fields,
+          // data loader always does an in fetch...
+          clause: clause.In("id", 13),
+        }),
+        values: [13],
+      });
+
+      ml.clear();
+      // fetch again
+      const ent2 = await loadEnt(ctx.getViewer(), 13, options);
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 13, options),
+      });
+      // ent cache hit
+      expect(ent2).toBe(null);
+      ml.clear();
+
+      // now this should hit the dataloader cache
+      await options.loaderFactory.createLoader(ctx).load(13);
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "dataloader-cache-hit": 13,
+        "tableName": options.tableName,
+      });
+    });
+
+    test("loadEntX no data", async () => {
+      const options: LoadEntOptions<User> = {
+        fields,
+        tableName,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "id",
+        }),
+        ent: User,
+        context: ctx,
+      };
+      try {
+        await loadEntX(ctx.getViewer(), 13, options);
+        throw new Error("should have thrown");
+      } catch (err) {
+        expect((err as Error).message).toBe(`couldn't find row for value 13`);
+      }
+
+      // regular row fetch. hit db
+      expect(ml.logs.length).toEqual(1);
+
+      expect(ml.logs[0]).toStrictEqual({
+        query: buildQuery({
+          tableName,
+          fields,
+          // data loader always does an in fetch...
+          clause: clause.In("id", 13),
+        }),
+        values: [13],
+      });
+
+      ml.clear();
+      // fetch again
+      try {
+        await loadEntX(ctx.getViewer(), 13, options);
+        throw new Error("should have thrown");
+      } catch (err) {
+        expect((err as Error).message).toBe(`couldn't find row for value 13`);
+      }
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 13, options),
+      });
+      ml.clear();
+
+      // now this should hit the dataloader cache
+      await options.loaderFactory.createLoader(ctx).load(13);
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "dataloader-cache-hit": 13,
         "tableName": options.tableName,
       });
     });
