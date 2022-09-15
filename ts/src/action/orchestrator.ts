@@ -593,7 +593,6 @@ export class Orchestrator<
       this.formatAndValidateFields(schemaFields, editedFields2),
       this.validators(validators, action!, builder),
     ]);
-    console.debug(errors, errs2, privacyError);
     errors.push(...errs2);
     return errors;
   }
