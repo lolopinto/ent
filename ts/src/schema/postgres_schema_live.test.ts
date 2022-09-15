@@ -1,7 +1,8 @@
-import { v4 as uuidv4 } from "uuid";
+import { v1, v4 as uuidv4 } from "uuid";
 import pg from "pg";
 import * as fs from "fs";
 import * as path from "path";
+import each from "jest-each";
 import { LoggedOutViewer } from "../core/viewer";
 import {
   StringType,
@@ -10,6 +11,7 @@ import {
   UUIDType,
   DateType,
   TimestamptzType,
+  UUIDListType,
 } from "./field";
 import Schema from "./schema";
 import {
@@ -27,6 +29,7 @@ import {
   timestamptz,
   uuid,
   getSchemaTable,
+  uuidList,
 } from "../testutils/db/temp_db";
 import { defaultTimestampParser, Dialect } from "../core/db";
 import { DBType, FieldMap } from "./schema";
@@ -544,4 +547,55 @@ test("timestamptz copy", async () => {
       recursive: true,
     });
   }
+});
+
+each([
+  ["v1", v1],
+  ["v4", uuidv4],
+]).test("uuid list %s", async (name: string, fn: () => string) => {
+  await tdb.create(
+    table(
+      "tables",
+      uuid("id", { primaryKey: true }),
+      uuidList("list"),
+      timestamp("created_at"),
+      timestamp("updated_at"),
+    ),
+  );
+
+  class Table implements Ent {
+    id: ID;
+    accountID: string;
+    nodeType = "Table";
+    getPrivacyPolicy(): PrivacyPolicy<this> {
+      return AlwaysAllowPrivacyPolicy;
+    }
+
+    constructor(public viewer: Viewer, public data: Data) {
+      this.id = data.id;
+    }
+  }
+
+  const TableSchema = getBuilderSchemaFromFields(
+    {
+      id: UUIDType(),
+      list: UUIDListType(),
+    },
+    Table,
+  );
+  const list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((_) => fn());
+
+  const action = getInsertAction(
+    TableSchema,
+    new Map<string, any>([
+      ["id", v1()],
+      ["list", list],
+      ["createdAt", new Date()],
+      ["updatedAt", new Date()],
+    ]),
+  );
+  const ent = await action.saveX();
+  expect(ent.data.list).toStrictEqual(list);
+
+  await tdb.drop("tables");
 });
