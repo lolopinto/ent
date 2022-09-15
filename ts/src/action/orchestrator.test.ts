@@ -6,7 +6,7 @@ import {
   Validator,
   Observer,
 } from "../action";
-import { Ent, Viewer, ID, Data } from "../core/base";
+import { Ent, Viewer, ID, Data, PrivacyPolicy } from "../core/base";
 import {
   EditNodeOperation,
   DeleteNodeOperation,
@@ -43,6 +43,7 @@ import {
   AlwaysDenyRule,
   DenyIfLoggedOutRule,
   AllowIfEntPropertyIsRule,
+  AlwaysDenyPrivacyPolicy,
 } from "../core/privacy";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
@@ -1068,6 +1069,36 @@ function commonTests() {
       };
       let valid = await action.valid();
       expect(valid).toBe(false);
+    });
+
+    test.only("cannot create and load ent", async () => {
+      class DenyAllUser extends User {
+        getPrivacyPolicy(): PrivacyPolicy<this> {
+          return AlwaysDenyPrivacyPolicy;
+        }
+      }
+      const DenyUserSchema = getBuilderSchemaFromFields(
+        {
+          FirstName: StringType(),
+          LastName: StringType(),
+        },
+        DenyAllUser,
+      );
+
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        DenyUserSchema,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getPrivacyPolicy = () => {
+        return AlwaysDenyPrivacyPolicy;
+      };
+      await action.saveX();
     });
   });
 
