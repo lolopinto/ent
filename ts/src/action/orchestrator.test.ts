@@ -6,7 +6,14 @@ import {
   Validator,
   Observer,
 } from "../action";
-import { Ent, Viewer, ID, Data, PrivacyPolicy } from "../core/base";
+import {
+  Ent,
+  Viewer,
+  ID,
+  Data,
+  PrivacyPolicy,
+  DenyWithReason,
+} from "../core/base";
 import {
   EditNodeOperation,
   DeleteNodeOperation,
@@ -1077,6 +1084,21 @@ function commonTests() {
           return AlwaysDenyPrivacyPolicy;
         }
       }
+
+      // class DenyAllAccount extends User {
+      //   getPrivacyPolicy(): PrivacyPolicy<this> {
+      //     return {
+      //       rules: [
+      //         {
+      //           async apply(v, ent?) {
+      //             return DenyWithReason("thou shall not pass");
+      //           },
+      //         },
+      //         AlwaysDenyRule,
+      //       ],
+      //     };
+      //   }
+      // }
       const DenyUserSchema = getBuilderSchemaFromFields(
         {
           FirstName: StringType(),
@@ -1084,6 +1106,14 @@ function commonTests() {
         },
         DenyAllUser,
       );
+
+      // const DenyAccountSchema = getBuilderSchemaFromFields(
+      //   {
+      //     FirstName: StringType(),
+      //     LastName: StringType(),
+      //   },
+      //   DenyAllAccount,
+      // );
 
       const action = new SimpleAction(
         new LoggedOutViewer(),
@@ -1098,6 +1128,102 @@ function commonTests() {
       action.getPrivacyPolicy = () => {
         return AlwaysDenyPrivacyPolicy;
       };
+      // action.getTriggers = () => [
+      //   {
+      //     changeset(builder, input) {
+      //       const action2 = new SimpleAction(
+      //         new LoggedOutViewer(),
+      //         DenyAccountSchema,
+      //         new Map([
+      //           ["FirstName", "Jon"],
+      //           ["LastName", "Snow"],
+      //         ]),
+      //         WriteOperation.Insert,
+      //         null,
+      //       );
+      //       action2.getPrivacyPolicy = () => {
+      //         return AlwaysDenyPrivacyPolicy;
+      //       };
+      //       return action2.changeset();
+      //     },
+      //   },
+      // ];
+
+      await action.saveX();
+    });
+
+    // TODO second bug. need to fix this one
+    test.skip("dependent triggers and policies", async () => {
+      class DenyAllUser extends User {
+        getPrivacyPolicy(): PrivacyPolicy<this> {
+          return AlwaysDenyPrivacyPolicy;
+        }
+      }
+
+      // class DenyAllAccount extends User {
+      //   getPrivacyPolicy(): PrivacyPolicy<this> {
+      //     return {
+      //       rules: [
+      //         {
+      //           async apply(v, ent?) {
+      //             return DenyWithReason("thou shall not pass");
+      //           },
+      //         },
+      //         AlwaysDenyRule,
+      //       ],
+      //     };
+      //   }
+      // }
+      const DenyUserSchema = getBuilderSchemaFromFields(
+        {
+          FirstName: StringType(),
+          LastName: StringType(),
+        },
+        DenyAllUser,
+      );
+
+      // const DenyAccountSchema = getBuilderSchemaFromFields(
+      //   {
+      //     FirstName: StringType(),
+      //     LastName: StringType(),
+      //   },
+      //   DenyAllAccount,
+      // );
+
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        DenyUserSchema,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getPrivacyPolicy = () => {
+        return AlwaysDenyPrivacyPolicy;
+      };
+      // action.getTriggers = () => [
+      //   {
+      //     changeset(builder, input) {
+      //       const action2 = new SimpleAction(
+      //         new LoggedOutViewer(),
+      //         DenyAccountSchema,
+      //         new Map([
+      //           ["FirstName", "Jon"],
+      //           ["LastName", "Snow"],
+      //         ]),
+      //         WriteOperation.Insert,
+      //         null,
+      //       );
+      //       action2.getPrivacyPolicy = () => {
+      //         return AlwaysDenyPrivacyPolicy;
+      //       };
+      //       return action2.changeset();
+      //     },
+      //   },
+      // ];
+
       await action.saveX();
     });
   });
