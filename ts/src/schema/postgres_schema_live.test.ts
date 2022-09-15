@@ -578,7 +578,6 @@ each([
 
   const TableSchema = getBuilderSchemaFromFields(
     {
-      // should be an enum but let's ignore that
       id: UUIDType(),
       list: UUIDListType(),
     },
