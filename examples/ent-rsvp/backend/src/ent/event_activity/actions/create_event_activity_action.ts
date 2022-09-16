@@ -6,10 +6,9 @@ import {
 } from "src/ent/generated/event_activity/actions/create_event_activity_action_base";
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
 export { EventActivityCreateInput };
-import { Builder, Trigger } from "@snowtop/ent/action";
+import { Builder } from "@snowtop/ent/action";
 import CreateAddressAction from "src/ent/address/actions/create_address_action";
 import { NodeType } from "src/ent/generated/const";
-import { EventActivityBuilder } from "../../generated/event_activity/actions/event_activity_builder";
 import { Event, EventToGuestGroupsQuery } from "src/ent";
 
 // we're only writing this once except with --force and packageName provided

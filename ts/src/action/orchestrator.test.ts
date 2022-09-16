@@ -6,7 +6,14 @@ import {
   Validator,
   Observer,
 } from "../action";
-import { Ent, Viewer, ID, Data } from "../core/base";
+import {
+  Ent,
+  Viewer,
+  ID,
+  Data,
+  PrivacyPolicy,
+  DenyWithReason,
+} from "../core/base";
 import {
   EditNodeOperation,
   DeleteNodeOperation,
@@ -43,6 +50,8 @@ import {
   AlwaysDenyRule,
   DenyIfLoggedOutRule,
   AllowIfEntPropertyIsRule,
+  AlwaysDenyPrivacyPolicy,
+  AlwaysAllowPrivacyPolicy,
 } from "../core/privacy";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
@@ -1068,6 +1077,203 @@ function commonTests() {
       };
       let valid = await action.valid();
       expect(valid).toBe(false);
+    });
+
+    test("cannot create and load ent. create error wins", async () => {
+      class DenyAllUser extends User {
+        getPrivacyPolicy(): PrivacyPolicy<this> {
+          return AlwaysDenyPrivacyPolicy;
+        }
+      }
+
+      const DenyUserSchema = getBuilderSchemaFromFields(
+        {
+          FirstName: StringType(),
+          LastName: StringType(),
+        },
+        DenyAllUser,
+      );
+
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        DenyUserSchema,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getPrivacyPolicy = () => {
+        return AlwaysDenyPrivacyPolicy;
+      };
+
+      await expect(action.saveX()).rejects.toThrowError(
+        "Logged out Viewer does not have permission to create DenyAllUser",
+      );
+    });
+
+    test("dependent triggers and policies behave as expected", async () => {
+      class DenyAllUser extends User {
+        getPrivacyPolicy(): PrivacyPolicy<this> {
+          return AlwaysDenyPrivacyPolicy;
+        }
+      }
+
+      class DenyAllAccount extends User {
+        getPrivacyPolicy(): PrivacyPolicy<this> {
+          return AlwaysDenyPrivacyPolicy;
+        }
+      }
+
+      const DenyUserSchema = getBuilderSchemaFromFields(
+        {
+          FirstName: StringType(),
+          LastName: StringType(),
+        },
+        DenyAllUser,
+      );
+
+      const DenyAccountSchema = getBuilderSchemaFromFields(
+        {
+          FirstName: StringType(),
+          LastName: StringType(),
+        },
+        DenyAllAccount,
+      );
+
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        DenyUserSchema,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getPrivacyPolicy = () => {
+        return {
+          rules: [
+            {
+              async apply(v, ent?) {
+                return DenyWithReason("thou shall not pass. DenyUser");
+              },
+            },
+            AlwaysDenyRule,
+          ],
+        };
+      };
+      action.getTriggers = () => [
+        {
+          changeset(builder, input) {
+            const action2 = new SimpleAction(
+              new LoggedOutViewer(),
+              DenyAccountSchema,
+              new Map([
+                ["FirstName", "Jon"],
+                ["LastName", "Snow"],
+              ]),
+              WriteOperation.Insert,
+              null,
+            );
+            action2.getPrivacyPolicy = () => {
+              return {
+                rules: [
+                  {
+                    async apply(v, ent?) {
+                      return DenyWithReason("thou shall not pass. DenyAccount");
+                    },
+                  },
+                  AlwaysDenyRule,
+                ],
+              };
+            };
+            return action2.changeset();
+          },
+        },
+      ];
+
+      await expect(action.saveX()).rejects.toThrowError(
+        "thou shall not pass. DenyUser",
+      );
+    });
+
+    test("dependent triggers and policies behave as expected 2", async () => {
+      class DenyAllUser extends User {
+        getPrivacyPolicy(): PrivacyPolicy<this> {
+          return AlwaysAllowPrivacyPolicy;
+        }
+      }
+
+      class DenyAllAccount extends User {
+        getPrivacyPolicy(): PrivacyPolicy<this> {
+          return AlwaysAllowPrivacyPolicy;
+        }
+      }
+
+      const DenyUserSchema = getBuilderSchemaFromFields(
+        {
+          FirstName: StringType(),
+          LastName: StringType(),
+        },
+        DenyAllUser,
+      );
+
+      const DenyAccountSchema = getBuilderSchemaFromFields(
+        {
+          FirstName: StringType(),
+          LastName: StringType(),
+        },
+        DenyAllAccount,
+      );
+
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        DenyUserSchema,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action.getPrivacyPolicy = () => {
+        return AlwaysAllowPrivacyPolicy;
+      };
+      action.getTriggers = () => [
+        {
+          changeset(builder, input) {
+            const action2 = new SimpleAction(
+              new LoggedOutViewer(),
+              DenyAccountSchema,
+              new Map([
+                ["FirstName", "Jon"],
+                ["LastName", "Snow"],
+              ]),
+              WriteOperation.Insert,
+              null,
+            );
+            action2.getPrivacyPolicy = () => {
+              return {
+                rules: [
+                  {
+                    async apply(v, ent?) {
+                      return DenyWithReason("thou shall not pass. DenyAccount");
+                    },
+                  },
+                  AlwaysDenyRule,
+                ],
+              };
+            };
+            return action2.changeset();
+          },
+        },
+      ];
+
+      await expect(action.saveX()).rejects.toThrowError(
+        "thou shall not pass. DenyAccount",
+      );
     });
   });
 
