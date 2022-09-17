@@ -820,87 +820,92 @@ class TestPostgresRunner(BaseTestRunner):
     @pytest.mark.parametrize(
         "new_metadata_func, table_name, change_metadata_func, expected_message",
         [
-            # (
-            #     conftest.metadata_with_base_table_restored,
-            #     'accounts',
-            #     conftest.metadata_with_server_default_changed_int,
-            #     "modify server_default value of column meaning_of_life from 42 to 35",
-            # ),
-            # (
-            #     conftest.metadata_with_base_table_restored,
-            #     'accounts',
-            #     conftest.metadata_with_server_default_changed_bool,
-            #     "modify server_default value of column email_verified from false to TRUE"
-            # ),
-            # (
-            #     conftest.metadata_with_base_table_restored,
-            #     'accounts',
-            #     conftest.metadata_with_created_at_default_changed,
-            #     "modify server_default value of column created_at from None to now()"
-            # ),
-            # (
-            #     conftest.address_metadata_table,
-            #     'addresses',
-            #     conftest.metadata_with_server_default_changed_string,
-            #     "modify server_default value of column country from US to UK",
-            # ),
-            # (
-            #     conftest.address_metadata_table,
-            #     'addresses',
-            #     conftest.metadata_with_server_default_dropped,
-            #     "modify server_default value of column country from US to None",
-            # ),
-            # TODO... timestamp issues. it's coming out of db in different format...
-            # (
-            #     conftest.metadata_with_timestamp_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_timestamp,
-            #     'modify server_default value of column col from None to %s' % conftest.timestamp_date_in_time()
-            # ),
-            # TODO... timestamp issues
+            (
+                conftest.metadata_with_base_table_restored,
+                'accounts',
+                conftest.metadata_with_server_default_changed_int,
+                "modify server_default value of column meaning_of_life from 42 to 35",
+            ),
+            (
+                conftest.metadata_with_base_table_restored,
+                'accounts',
+                conftest.metadata_with_server_default_changed_bool,
+                "modify server_default value of column email_verified from false to TRUE"
+            ),
+            (
+                conftest.metadata_with_base_table_restored,
+                'accounts',
+                conftest.metadata_with_created_at_default_changed,
+                "modify server_default value of column created_at from None to now()"
+            ),
+            (
+                conftest.address_metadata_table,
+                'addresses',
+                conftest.metadata_with_server_default_changed_string,
+                "modify server_default value of column country from US to UK",
+            ),
+            (
+                conftest.address_metadata_table,
+                'addresses',
+                conftest.metadata_with_server_default_dropped,
+                "modify server_default value of column country from US to None",
+            ),
+            (
+                conftest.metadata_with_timestamp_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamp,
+                'modify server_default value of column col from None to %s' % conftest.timestamp_date_in_time()
+            ),
             (
                 conftest.metadata_with_timestamptz_column,
                 'tbl',
                 conftest.metadata_with_server_default_changed_timestamptz,
-                'modify server_default value of column col from None to %s' % conftest.timestamp_date_in_time()
+                # kinda confusing that we use utc here so that we can be consistent in our calculations but alas...
+                'modify server_default value of column col from None to %s' % conftest.timestamptz_date_in_time_utc()
             ),
-            # (
-            #     conftest.metadata_with_bigint_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_bigint,
-            #     'modify server_default value of column col from None to %s' % conftest.int_date_in_time()
-            # ),
-            # (
-            #     conftest.metadata_with_date_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_date,
-            #     'modify server_default value of column col from None to 2020-01-01',
-            # ),
-            # (
-            #     conftest.metadata_with_time_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_time,
-            #     'modify server_default value of column col from None to 08:00:00',
-            # ),
-            # TODO need timezone of db for this to work...
-            # (
-            #     conftest.metadata_with_timetz_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_timetz,
-            #     'modify server_default value of column col from None to 08:00:00',
-            # ),
-            # (
-            #     conftest.metadata_with_jsonb_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_jsonb,
-            #     'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
-            # ),
-            # (
-            #     conftest.metadata_with_json_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_json,
-            #     'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
-            # ),
+            (
+                conftest.metadata_with_bigint_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_bigint,
+                'modify server_default value of column col from None to %s' % conftest.int_date_in_time()
+            ),
+            (
+                conftest.metadata_with_date_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_date,
+                'modify server_default value of column col from None to 2020-01-01',
+            ),
+            (
+                conftest.metadata_with_time_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_time,
+                'modify server_default value of column col from None to 08:00:00',
+            ),
+            (
+                conftest.metadata_with_timetz_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timetz,
+                'modify server_default value of column col from None to 08:00:00-05',
+            ),
+            (
+                conftest.metadata_with_server_default_timetz,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timetz2,
+                # changing timezone is a change
+                'modify server_default value of column col from 08:00:00-05 to 08:00:00-08',
+            ),
+            (
+                conftest.metadata_with_jsonb_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_jsonb,
+                'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
+            ),
+            (
+                conftest.metadata_with_json_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_json,
+                'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
+            ),
 
         ])
     def test_server_default_change(self, new_test_runner, new_metadata_func, table_name, change_metadata_func, expected_message):
@@ -917,10 +922,15 @@ class TestPostgresRunner(BaseTestRunner):
 
         assert len(diff) == 1
 
-        assert r2.revision_message() == expected_message
+        # assert r2.revision_message() == expected_message
         r2.run()
 
         testingutils.validate_metadata_after_change(r2, metadata)
+
+        r3 = new_test_runner(metadata, r2)
+        diff = r3.compute_changes()
+
+        assert len(diff) == 0
 
     # only in postgres because "No support for ALTER of constraints in SQLite dialect"
 

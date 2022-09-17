@@ -245,6 +245,8 @@ def metadata_with_server_default_changed_float(metadata):
 
 
 DATE_IN_TIME = datetime.datetime(2020, 1, 1)
+DATE_IN_TIME_WITH_TZ = datetime.datetime(
+    2020, 1, 1, 0, 0, 0, 0, datetime.datetime.now().astimezone().tzinfo)
 
 
 def int_date_in_time():
@@ -293,8 +295,17 @@ def metadata_with_timestamptz_column():
     return metadata
 
 
+def timestamptz_date_in_time():
+    return DATE_IN_TIME_WITH_TZ.isoformat()
+
+
+def timestamptz_date_in_time_utc():
+    utc = datetime.timezone(datetime.timedelta())
+    return DATE_IN_TIME_WITH_TZ.astimezone(utc).isoformat()
+
+
 def metadata_with_server_default_changed_timestamptz(metadata):
-    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', timestamp_date_in_time())
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', timestamptz_date_in_time())
 
 
 def metadata_with_date_column():
@@ -335,8 +346,19 @@ def metadata_with_timetz_column():
     return metadata
 
 
+def metadata_with_server_default_timetz():
+    metadata = metadata_with_timetz_column()
+    return metadata_with_server_default_changed_timetz(metadata)
+
+
 def metadata_with_server_default_changed_timetz(metadata):
-    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', '08:00:00')
+    # we require the timezone to be sent down so we compare with timezone
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', '08:00:00-05')
+
+
+def metadata_with_server_default_changed_timetz2(metadata):
+    # we require the timezone to be sent down so we compare with timezone
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', '08:00:00-08')
 
 
 def server_default_json_value():

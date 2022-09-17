@@ -5,7 +5,11 @@ import datetime
 
 clause_regex = re.compile("(.+)'::(.+)")
 date_regex = re.compile(
-    '[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}')
+    '([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})(.+)?')
+
+# this only applies to timestamp with timezone...
+iso_regex = re.compile(
+    '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.+)')
 
 valid_suffixes = {
     'text': True,
@@ -25,19 +29,32 @@ def get_clause_text(server_default):
     if server_default is None:
         return server_default
 
-    def handle_date(arg):
-        if date_regex.match(arg) is None:
+    def handle_date(arg, type=None):
+        utc = datetime.timezone(datetime.timedelta())
+
+        m = date_regex.match(arg)
+        if m is None:
+            m2 = iso_regex.match(arg)
+
+            if m2 is not None:
+                date = datetime.datetime.strptime(
+                    arg, '%Y-%m-%dT%H:%M:%S%z')
+                return date.astimezone(utc).isoformat()
+
             return arg
 
-# TODO timestamp not handled
-        # TODO test with more complicated values...
+        tz = None
+        if m.group(7) is not None:
+            tz = datetime.timezone(
+                datetime.timedelta(hours=int(m.group(7))))
 
-        # not working with timezone...
-        print(arg)
-        return datetime.datetime.strptime(arg,
-                                          '%Y-%m-%d %H:%M:%S%z').isoformat()
-# # TODO...
-#     return arg
+        date = datetime.datetime(int(m.group(1)), int(m.group(2)), int(
+            m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)), 0, tz)
+
+        if type == 'timestamp with time zone':
+            return date.astimezone(utc).isoformat()
+
+        return date.isoformat()
 
     def normalize(arg):
         # return the underlying string instead of quoted
@@ -50,7 +67,7 @@ def get_clause_text(server_default):
             return handle_date(arg)
 
         if valid_suffixes.get(m.group(2)):
-            return handle_date(m.group(1))
+            return handle_date(m.group(1), m.group(2))
 
         return handle_date(arg)
 
