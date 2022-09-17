@@ -137,6 +137,7 @@ class Runner(object):
     def compare_server_default(cls, context, inspected_column, metadata_column, inspected_default, metadata_default, rendered_metadata_default):
         # let's just do simple comparison for now.
         # Things may get more complicated in the future but this works for now
+        # print('compare server default')
 
         new_inspected_default = get_clause_text(inspected_default)
         new_metadata_default = get_clause_text(metadata_default)
@@ -146,6 +147,7 @@ class Runner(object):
             new_metadata_default = cls.convert_postgres_boolean(
                 new_metadata_default)
 
+        # print(new_inspected_default, new_metadata_default)
         if new_inspected_default != new_metadata_default:
             # specific case. not sure why this is needed
             # can be generalized at some point in the future

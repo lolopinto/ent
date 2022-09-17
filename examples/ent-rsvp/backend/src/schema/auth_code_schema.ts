@@ -16,7 +16,7 @@ const AuthCodeSchema = new EntSchema({
       unique: true,
     }),
     emailAddress: EmailType(),
-    sentCode: BooleanType({ serverDefault: "FALSE" }),
+    sentCode: BooleanType({ serverDefault: "false" }),
   },
 
   hideFromGraphQL: true,

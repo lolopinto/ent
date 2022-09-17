@@ -259,7 +259,9 @@ def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Colu
     if schema_clause_text is None and db_column.autoincrement == True:
         assert db_clause_text.startswith("nextval")
     else:
-        assert schema_clause_text == db_clause_text
+        # different formats for timestamp...
+        print(schema_clause_text, db_clause_text)
+        assert str(schema_clause_text) == str(db_clause_text)
 
 
 def _validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String):
