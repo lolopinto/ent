@@ -906,7 +906,24 @@ class TestPostgresRunner(BaseTestRunner):
                 conftest.metadata_with_server_default_changed_json,
                 'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
             ),
-
+            (
+                conftest.metadata_with_jsonb_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_jsonb_array,
+                'modify server_default value of column col from None to %s' % conftest.server_default_json_array_value(),
+            ),
+            (
+                conftest.metadata_with_string_list_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_string_list,
+                'modify server_default value of column col from None to %s' % conftest.server_default_string_list_value(),
+            ),
+            (
+                conftest.metadata_with_int_list_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_int_list,
+                'modify server_default value of column col from None to %s' % conftest.server_default_int_list_value(),
+            ),
         ])
     def test_server_default_change(self, new_test_runner, new_metadata_func, table_name, change_metadata_func, expected_message):
         metadata = new_metadata_func()

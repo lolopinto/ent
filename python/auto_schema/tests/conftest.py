@@ -379,6 +379,14 @@ def metadata_with_server_default_changed_jsonb(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_json_value())
 
 
+def server_default_json_array_value():
+    return json.dumps([{"col1": 2, "col2": []}, {"col1": 3, "col2": ["hello"]}])
+
+
+def metadata_with_server_default_changed_jsonb_array(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_json_array_value())
+
+
 def metadata_with_json_column():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,
@@ -392,7 +400,43 @@ def metadata_with_json_column():
 def metadata_with_server_default_changed_json(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_json_value())
 
-# TODO jsonb array and jsonb complicated array
+
+def metadata_with_string_list_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', postgresql.ARRAY(
+                 sa.Text), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def server_default_string_list_value():
+    return '{%s}' % ",".join(["foo", "bar", '"baz, hello"'])
+
+
+def metadata_with_server_default_changed_string_list(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_string_list_value())
+
+
+def metadata_with_int_list_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', postgresql.ARRAY(
+                 sa.Integer), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def server_default_int_list_value():
+    return '{%s}' % ",".join([str(v) for v in [1, 2, 3]])
+
+
+def metadata_with_server_default_changed_int_list(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_int_list_value())
 
 
 @pytest.fixture()

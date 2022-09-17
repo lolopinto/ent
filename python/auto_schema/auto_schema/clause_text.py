@@ -22,6 +22,8 @@ valid_suffixes = {
     'date': True,
     'jsonb': True,
     'json': True,
+    # mostly used for lists
+    'integer': True,
 }
 
 
@@ -66,9 +68,12 @@ def get_clause_text(server_default):
         if m is None:
             return handle_date(arg)
 
-        if valid_suffixes.get(m.group(2)):
-            return handle_date(m.group(1), m.group(2))
-
+        type = m.group(2)
+        if valid_suffixes.get(type):
+            return handle_date(m.group(1), type)
+        # handle list types
+        elif type.endswith("[]") and valid_suffixes.get(type.strip("[]")):
+            return handle_date(m.group(1), type)
         return handle_date(arg)
 
     if isinstance(server_default, TextClause):
