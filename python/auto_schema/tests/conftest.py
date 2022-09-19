@@ -285,6 +285,15 @@ def metadata_with_server_default_changed_timestamp(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', timestamp_date_in_time())
 
 
+# lesigh
+def timestamp_decimal():
+    return '2022-09-19T17:07:39.654Z'
+
+
+def metadata_with_server_default_changed_timestamp_decimal(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', timestamp_decimal())
+
+
 def metadata_with_timestamptz_column():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,

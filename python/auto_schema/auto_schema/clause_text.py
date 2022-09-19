@@ -5,11 +5,8 @@ import datetime
 
 clause_regex = re.compile("(.+)'::(.+)")
 date_regex = re.compile(
-    '([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})(.+)?')
+    '([0-9]{4})-([0-9]{2})-([0-9]{2})[T| ]([0-9]{2}):([0-9]{2}):([0-9]{2})(\.[0-9]{3})?(.+)?')
 
-# this only applies to timestamp with timezone...
-iso_regex = re.compile(
-    '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.+)')
 
 valid_suffixes = {
     'text': True,
@@ -36,22 +33,24 @@ def get_clause_text(server_default):
 
         m = date_regex.match(arg)
         if m is None:
-            m2 = iso_regex.match(arg)
-
-            if m2 is not None:
-                date = datetime.datetime.strptime(
-                    arg, '%Y-%m-%dT%H:%M:%S%z')
-                return date.astimezone(utc).isoformat()
-
             return arg
 
         tz = None
-        if m.group(7) is not None:
-            tz = datetime.timezone(
-                datetime.timedelta(hours=int(m.group(7))))
+        tz_data = m.group(8)
+        if tz_data is not None:
+            if tz_data == 'Z':
+                tz_data = 0
+        else:
+            tz_data = 0
 
+        tz = datetime.timezone(
+            datetime.timedelta(hours=int(tz_data)))
+
+        ms = m.group(7)
+        if ms is None:
+            ms = 0
         date = datetime.datetime(int(m.group(1)), int(m.group(2)), int(
-            m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)), 0, tz)
+            m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)), int(float(ms) * 1000), tz)
 
         if type == 'timestamp with time zone':
             return date.astimezone(utc).isoformat()
