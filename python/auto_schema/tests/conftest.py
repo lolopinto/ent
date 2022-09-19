@@ -1260,6 +1260,10 @@ def metadata_with_triple_pkey_with_rows_changed(metadata):
 
 @ pytest.fixture
 def metadata_with_enum_type():
+    return metadata_with_enum_col()
+
+
+def metadata_with_enum_col():
     metadata = sa.MetaData()
 
     rainbow = ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')
@@ -1271,6 +1275,10 @@ def metadata_with_enum_type():
              sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'),
              )
     return metadata
+
+
+def metadata_with_server_default_changed_enum_type(metadata):
+    return _metadata_with_server_default_changed(metadata, 'rainbow', 'accounts', 'violet')
 
 
 def _apply_func_on_enum(metadata, fn):

@@ -3,6 +3,7 @@ from sqlalchemy.sql.elements import TextClause
 import re
 import datetime
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 clause_regex = re.compile("(.+)'::(.+)")
 date_regex = re.compile(
@@ -78,11 +79,16 @@ def get_clause_text(server_default, col_type=None):
             return handle_date(arg)
 
         type = m.group(2)
+        default = m.group(1)
         if valid_suffixes.get(type):
-            return handle_date(m.group(1))
+            return handle_date(default)
         # handle list types
         elif type.endswith("[]") and valid_suffixes.get(type.strip("[]")):
-            return handle_date(m.group(1))
+            return handle_date(default)
+
+        if isinstance(col_type, postgresql.ENUM) and col_type.name == type:
+            return default
+
         return handle_date(arg)
 
     if isinstance(server_default, TextClause):

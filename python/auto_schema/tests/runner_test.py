@@ -936,6 +936,12 @@ class TestPostgresRunner(BaseTestRunner):
                 conftest.metadata_with_server_default_changed_int_list,
                 'modify server_default value of column col from None to %s' % conftest.server_default_int_list_value(),
             ),
+            (
+                conftest.metadata_with_enum_col,
+                'accounts',
+                conftest.metadata_with_server_default_changed_enum_type,
+                'modify server_default value of column col from None to violet',
+            ),
         ])
     def test_server_default_change(self, new_test_runner, new_metadata_func, table_name, change_metadata_func, expected_message):
         metadata = new_metadata_func()
