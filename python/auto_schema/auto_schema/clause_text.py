@@ -2,6 +2,7 @@ from sqlalchemy.sql.schema import DefaultClause
 from sqlalchemy.sql.elements import TextClause
 import re
 import datetime
+import sqlalchemy as sa
 
 clause_regex = re.compile("(.+)'::(.+)")
 date_regex = re.compile(
@@ -24,11 +25,11 @@ valid_suffixes = {
 }
 
 
-def get_clause_text(server_default):
+def get_clause_text(server_default, col_type=None):
     if server_default is None:
         return server_default
 
-    def handle_date(arg, type=None):
+    def handle_date(arg):
         utc = datetime.timezone(datetime.timedelta())
 
         m = date_regex.match(arg)
@@ -37,14 +38,23 @@ def get_clause_text(server_default):
 
         tz = None
         tz_data = m.group(8)
+        mins = 0
         if tz_data is not None:
             if tz_data == 'Z':
                 tz_data = 0
+            else:
+                parts = tz_data.split(":")
+                # print('parts', parts)
+                if len(parts) == 2:
+                    tz_data = parts[0]
+                    mins = float(parts[1])
+                # print(tz_data, mins)
         else:
             tz_data = 0
 
         tz = datetime.timezone(
-            datetime.timedelta(hours=int(tz_data)))
+            datetime.timedelta(hours=float(tz_data), minutes=mins))
+        # print('tz', tz)
 
         ms = m.group(7)
         if ms is None:
@@ -52,7 +62,7 @@ def get_clause_text(server_default):
         date = datetime.datetime(int(m.group(1)), int(m.group(2)), int(
             m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)), int(float(ms) * 1000), tz)
 
-        if type == 'timestamp with time zone':
+        if isinstance(col_type, sa.TIMESTAMP):
             return date.astimezone(utc).isoformat()
 
         return date.isoformat()
@@ -69,10 +79,10 @@ def get_clause_text(server_default):
 
         type = m.group(2)
         if valid_suffixes.get(type):
-            return handle_date(m.group(1), type)
+            return handle_date(m.group(1))
         # handle list types
         elif type.endswith("[]") and valid_suffixes.get(type.strip("[]")):
-            return handle_date(m.group(1), type)
+            return handle_date(m.group(1))
         return handle_date(arg)
 
     if isinstance(server_default, TextClause):

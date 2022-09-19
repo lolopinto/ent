@@ -140,6 +140,7 @@ class Diff(object):
             elif op.modify_nullable is not None:
                 return 'modify nullable value of column %s from %s to %s' % (op.column_name, op.existing_nullable, op.modify_nullable)
             elif op.modify_server_default is not None:
+                # these 3 here could flag it to be rendered differently
                 return 'modify server_default value of column %s from %s to %s' % (
                     op.column_name,
                     get_clause_text(op.existing_server_default),

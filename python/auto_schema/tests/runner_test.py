@@ -820,54 +820,54 @@ class TestPostgresRunner(BaseTestRunner):
     @pytest.mark.parametrize(
         "new_metadata_func, table_name, change_metadata_func, expected_message",
         [
-            # (
-            #     conftest.metadata_with_base_table_restored,
-            #     'accounts',
-            #     conftest.metadata_with_server_default_changed_int,
-            #     "modify server_default value of column meaning_of_life from 42 to 35",
-            # ),
-            # (
-            #     conftest.metadata_with_base_table_restored,
-            #     'accounts',
-            #     conftest.metadata_with_server_default_changed_bool,
-            #     "modify server_default value of column email_verified from false to TRUE"
-            # ),
-            # (
-            #     conftest.metadata_with_base_table_restored,
-            #     'accounts',
-            #     conftest.metadata_with_created_at_default_changed,
-            #     "modify server_default value of column created_at from None to now()"
-            # ),
-            # (
-            #     conftest.address_metadata_table,
-            #     'addresses',
-            #     conftest.metadata_with_server_default_changed_string,
-            #     "modify server_default value of column country from US to UK",
-            # ),
-            # (
-            #     conftest.address_metadata_table,
-            #     'addresses',
-            #     conftest.metadata_with_server_default_dropped,
-            #     "modify server_default value of column country from US to None",
-            # ),
-            # (
-            #     conftest.metadata_with_timestamp_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_timestamp,
-            #     'modify server_default value of column col from None to %s' % conftest.timestamp_date_in_time()
-            # ),
-            # (
-            #     conftest.metadata_with_timestamp_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_timestamp_decimal,
-            #     'modify server_default value of column col from None to %s' % conftest.timestamp_decimal()
-            # ),
-            # (
-            #     conftest.metadata_with_timestamptz_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_timestamp_decimal,
-            #     'modify server_default value of column col from None to %s' % conftest.timestamp_decimal()
-            # ),
+            (
+                conftest.metadata_with_base_table_restored,
+                'accounts',
+                conftest.metadata_with_server_default_changed_int,
+                "modify server_default value of column meaning_of_life from 42 to 35",
+            ),
+            (
+                conftest.metadata_with_base_table_restored,
+                'accounts',
+                conftest.metadata_with_server_default_changed_bool,
+                "modify server_default value of column email_verified from false to TRUE"
+            ),
+            (
+                conftest.metadata_with_base_table_restored,
+                'accounts',
+                conftest.metadata_with_created_at_default_changed,
+                "modify server_default value of column created_at from None to now()"
+            ),
+            (
+                conftest.address_metadata_table,
+                'addresses',
+                conftest.metadata_with_server_default_changed_string,
+                "modify server_default value of column country from US to UK",
+            ),
+            (
+                conftest.address_metadata_table,
+                'addresses',
+                conftest.metadata_with_server_default_dropped,
+                "modify server_default value of column country from US to None",
+            ),
+            (
+                conftest.metadata_with_timestamp_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamp,
+                'modify server_default value of column col from None to %s' % conftest.timestamp_date_in_time()
+            ),
+            (
+                conftest.metadata_with_timestamp_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamp_decimal,
+                'modify server_default value of column col from None to %s' % conftest.timestamp_decimal()
+            ),
+            (
+                conftest.metadata_with_timestamptz_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamp_decimal,
+                'modify server_default value of column col from None to %s' % conftest.timestamp_decimal()
+            ),
             (
                 conftest.metadata_with_timestamptz_column,
                 'tbl',
@@ -875,67 +875,67 @@ class TestPostgresRunner(BaseTestRunner):
                 # kinda confusing that we use utc here so that we can be consistent in our calculations but alas...
                 'modify server_default value of column col from None to %s' % conftest.timestamptz_date_in_time_utc()
             ),
-            # (
-            #     conftest.metadata_with_bigint_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_bigint,
-            #     'modify server_default value of column col from None to %s' % conftest.int_date_in_time()
-            # ),
-            # (
-            #     conftest.metadata_with_date_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_date,
-            #     'modify server_default value of column col from None to 2020-01-01',
-            # ),
-            # (
-            #     conftest.metadata_with_time_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_time,
-            #     'modify server_default value of column col from None to 08:00:00',
-            # ),
-            # (
-            #     conftest.metadata_with_timetz_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_timetz,
-            #     'modify server_default value of column col from None to 08:00:00-05',
-            # ),
-            # (
-            #     conftest.metadata_with_server_default_timetz,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_timetz2,
-            #     # changing timezone is a change
-            #     'modify server_default value of column col from 08:00:00-05 to 08:00:00-08',
-            # ),
-            # (
-            #     conftest.metadata_with_jsonb_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_jsonb,
-            #     'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
-            # ),
-            # (
-            #     conftest.metadata_with_json_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_json,
-            #     'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
-            # ),
-            # (
-            #     conftest.metadata_with_jsonb_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_jsonb_array,
-            #     'modify server_default value of column col from None to %s' % conftest.server_default_json_array_value(),
-            # ),
-            # (
-            #     conftest.metadata_with_string_list_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_string_list,
-            #     'modify server_default value of column col from None to %s' % conftest.server_default_string_list_value(),
-            # ),
-            # (
-            #     conftest.metadata_with_int_list_column,
-            #     'tbl',
-            #     conftest.metadata_with_server_default_changed_int_list,
-            #     'modify server_default value of column col from None to %s' % conftest.server_default_int_list_value(),
-            # ),
+            (
+                conftest.metadata_with_bigint_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_bigint,
+                'modify server_default value of column col from None to %s' % conftest.int_date_in_time()
+            ),
+            (
+                conftest.metadata_with_date_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_date,
+                'modify server_default value of column col from None to 2020-01-01',
+            ),
+            (
+                conftest.metadata_with_time_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_time,
+                'modify server_default value of column col from None to 08:00:00',
+            ),
+            (
+                conftest.metadata_with_timetz_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timetz,
+                'modify server_default value of column col from None to 08:00:00-05',
+            ),
+            (
+                conftest.metadata_with_server_default_timetz,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timetz2,
+                # changing timezone is a change
+                'modify server_default value of column col from 08:00:00-05 to 08:00:00-08',
+            ),
+            (
+                conftest.metadata_with_jsonb_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_jsonb,
+                'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
+            ),
+            (
+                conftest.metadata_with_json_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_json,
+                'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
+            ),
+            (
+                conftest.metadata_with_jsonb_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_jsonb_array,
+                'modify server_default value of column col from None to %s' % conftest.server_default_json_array_value(),
+            ),
+            (
+                conftest.metadata_with_string_list_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_string_list,
+                'modify server_default value of column col from None to %s' % conftest.server_default_string_list_value(),
+            ),
+            (
+                conftest.metadata_with_int_list_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_int_list,
+                'modify server_default value of column col from None to %s' % conftest.server_default_int_list_value(),
+            ),
         ])
     def test_server_default_change(self, new_test_runner, new_metadata_func, table_name, change_metadata_func, expected_message):
         metadata = new_metadata_func()
