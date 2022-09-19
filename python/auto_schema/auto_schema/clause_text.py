@@ -26,7 +26,7 @@ valid_suffixes = {
 }
 
 
-def get_clause_text(server_default, col_type=None):
+def get_clause_text(server_default, col_type):
     if server_default is None:
         return server_default
 
@@ -58,9 +58,9 @@ def get_clause_text(server_default, col_type=None):
         if ms is None:
             ms = 0
         date = datetime.datetime(int(m.group(1)), int(m.group(2)), int(
-            m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)), int(float(ms) * 1000), tz)
+            m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)), int(float(ms) * 1000000), tz)
 
-        if isinstance(col_type, sa.TIMESTAMP):
+        if isinstance(col_type, sa.TIMESTAMP) and col_type.timezone:
             return date.astimezone(utc).isoformat()
 
         return date.isoformat()

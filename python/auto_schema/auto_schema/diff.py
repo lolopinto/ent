@@ -143,8 +143,9 @@ class Diff(object):
                 # these 3 here could flag it to be rendered differently
                 return 'modify server_default value of column %s from %s to %s' % (
                     op.column_name,
-                    get_clause_text(op.existing_server_default),
-                    get_clause_text(op.modify_server_default))
+                    get_clause_text(op.existing_server_default,
+                                    op.existing_type),
+                    get_clause_text(op.modify_server_default, op.modify_type))
             elif op.modify_comment:
                 return "modify comment of column %s"
             elif op.modify_name:
@@ -152,7 +153,8 @@ class Diff(object):
             elif op.modify_server_default is None and op.existing_server_default is not None:
                 return 'modify server_default value of column %s from %s to None' % (
                     op.column_name,
-                    get_clause_text(op.existing_server_default)
+                    get_clause_text(op.existing_server_default,
+                                    op.existing_type)
                 )
             else:
                 raise ValueError("unsupported alter_column op")

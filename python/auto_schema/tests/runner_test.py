@@ -853,25 +853,24 @@ class TestPostgresRunner(BaseTestRunner):
                 conftest.metadata_with_timestamp_column,
                 'tbl',
                 conftest.metadata_with_server_default_changed_timestamp,
-                'modify server_default value of column col from None to %s' % conftest.timestamp_date_in_time()
+                'modify server_default value of column col from None to %s' % conftest.timestamp_date_in_time_utc()
             ),
             (
                 conftest.metadata_with_timestamp_column,
                 'tbl',
                 conftest.metadata_with_server_default_changed_timestamp_decimal,
-                'modify server_default value of column col from None to %s' % conftest.timestamp_decimal()
+                'modify server_default value of column col from None to %s' % conftest.timestamp_decimal_python_utc()
             ),
             (
                 conftest.metadata_with_timestamptz_column,
                 'tbl',
                 conftest.metadata_with_server_default_changed_timestamp_decimal,
-                'modify server_default value of column col from None to %s' % conftest.timestamp_decimal()
+                'modify server_default value of column col from None to %s' % conftest.timestamp_decimal_python_utc()
             ),
             (
                 conftest.metadata_with_timestamptz_column,
                 'tbl',
                 conftest.metadata_with_server_default_changed_timestamptz,
-                # kinda confusing that we use utc here so that we can be consistent in our calculations but alas...
                 'modify server_default value of column col from None to %s' % conftest.timestamptz_date_in_time_utc()
             ),
             (
@@ -939,7 +938,7 @@ class TestPostgresRunner(BaseTestRunner):
                 conftest.metadata_with_enum_col,
                 'accounts',
                 conftest.metadata_with_server_default_changed_enum_type,
-                'modify server_default value of column col from None to violet',
+                'modify server_default value of column rainbow from None to violet',
             ),
         ])
     def test_server_default_change(self, new_test_runner, new_metadata_func, table_name, change_metadata_func, expected_message):
@@ -956,7 +955,7 @@ class TestPostgresRunner(BaseTestRunner):
 
         assert len(diff) == 1
 
-        # assert r2.revision_message() == expected_message
+        assert r2.revision_message() == expected_message
         r2.run()
 
         testingutils.validate_metadata_after_change(r2, metadata)

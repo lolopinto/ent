@@ -10,7 +10,7 @@ import tempfile
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects import postgresql
-
+from dateutil import parser
 import sqlalchemy as sa
 
 from auto_schema import runner
@@ -249,7 +249,9 @@ def metadata_with_server_default_changed_float(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', '3.145')
 
 
+utc = datetime.timezone(datetime.timedelta(0))
 DATE_IN_TIME = datetime.datetime(2020, 1, 1)
+DATE_IN_TIME_UTC = datetime.datetime(2020, 1, 1, 0, 0, 0, 0, utc)
 DATE_IN_TIME_WITH_TZ = datetime.datetime(
     2020, 1, 1, 0, 0, 0, 0, datetime.datetime.now().astimezone().tzinfo)
 
@@ -260,6 +262,10 @@ def int_date_in_time():
 
 def timestamp_date_in_time():
     return DATE_IN_TIME.isoformat()
+
+
+def timestamp_date_in_time_utc():
+    return DATE_IN_TIME_UTC.isoformat()
 
 
 def metadata_with_bigint_column():
@@ -294,6 +300,10 @@ def timestamp_decimal():
     return '2022-09-19T17:07:39.654Z'
 
 
+def timestamp_decimal_python_utc():
+    return parser.parse('2022-09-19T17:07:39.654Z').isoformat()
+
+
 def metadata_with_server_default_changed_timestamp_decimal(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', timestamp_decimal())
 
@@ -313,8 +323,7 @@ def timestamptz_date_in_time():
 
 
 def timestamptz_date_in_time_utc():
-    utc = datetime.timezone(datetime.timedelta())
-    return DATE_IN_TIME_WITH_TZ.astimezone(utc).isoformat()
+    return DATE_IN_TIME_WITH_TZ.isoformat()
 
 
 def metadata_with_server_default_changed_timestamptz(metadata):
@@ -452,7 +461,7 @@ def metadata_with_server_default_changed_int_list(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_int_list_value())
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def table_with_timestamptz_plus_date():
     metadata = sa.MetaData()
     sa.Table("accounts", metadata,
@@ -469,7 +478,7 @@ def table_with_timestamptz_plus_date():
     return metadata
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_table_with_time():
     metadata = sa.MetaData()
     sa.Table("hours", metadata,
@@ -480,7 +489,7 @@ def metadata_table_with_time():
     return metadata
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_table_with_timetz():
     metadata = sa.MetaData()
     sa.Table("hours", metadata,
@@ -491,7 +500,7 @@ def metadata_table_with_timetz():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_arrays():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,
