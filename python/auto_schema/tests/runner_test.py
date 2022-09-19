@@ -801,17 +801,16 @@ class TestPostgresRunner(BaseTestRunner):
 
         testingutils.validate_metadata_after_change(r2, metadata_with_table)
 
-# TODO test a few of these that don't change e.g. int, timestamp, different formats? lists, jsonb
-    @pytest.mark.usefixtures("address_metadata_table")
-    def test_server_default_no_change_string(self, new_test_runner, address_metadata_table):
-        r = new_test_runner(address_metadata_table)
+    @pytest.mark.usefixtures("address_metadata_table_fixture")
+    def test_server_default_no_change_string(self, new_test_runner, address_metadata_table_fixture):
+        r = new_test_runner(address_metadata_table_fixture)
 
         testingutils.run_and_validate_with_standard_metadata_tables(
-            r, address_metadata_table, ['addresses'])
+            r, address_metadata_table_fixture, ['addresses'])
 
-        conftest.identity_metadata_func(address_metadata_table)
+        conftest.identity_metadata_func(address_metadata_table_fixture)
 
-        r2 = new_test_runner(address_metadata_table, r)
+        r2 = new_test_runner(address_metadata_table_fixture, r)
         diff = r2.compute_changes()
 
         # nothing changed, we should have no changes

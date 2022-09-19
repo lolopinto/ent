@@ -214,6 +214,11 @@ def metadata_with_nullable_fields():
     return metadata
 
 
+@pytest.fixture
+def address_metadata_table_fixture():
+    return address_metadata_table()
+
+
 def address_metadata_table():
     metadata = sa.MetaData()
     sa.Table("addresses", metadata,
