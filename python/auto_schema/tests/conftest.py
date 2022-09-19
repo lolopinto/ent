@@ -296,6 +296,11 @@ def metadata_with_server_default_changed_timestamp(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', timestamp_date_in_time())
 
 
+def metadata_with_timestamp_server_default_to_start():
+    metadata = metadata_with_timestamp_column()
+    return metadata_with_server_default_changed_timestamp(metadata)
+
+
 def timestamp_decimal():
     return '2022-09-19T17:07:39.654Z'
 

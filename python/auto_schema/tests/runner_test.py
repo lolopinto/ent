@@ -862,6 +862,13 @@ class TestPostgresRunner(BaseTestRunner):
                 'modify server_default value of column col from None to %s' % conftest.timestamp_decimal_python_utc()
             ),
             (
+                conftest.metadata_with_timestamp_server_default_to_start,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamp_decimal,
+                'modify server_default value of column col from %s to %s' % (
+                    conftest.timestamp_date_in_time_utc(), conftest.timestamp_decimal_python_utc())
+            ),
+            (
                 conftest.metadata_with_timestamptz_column,
                 'tbl',
                 conftest.metadata_with_server_default_changed_timestamp_decimal,
