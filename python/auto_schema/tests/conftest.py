@@ -1,6 +1,8 @@
+import datetime
 import os
 import random
 import string
+import json
 import pytest
 import shutil
 import uuid
@@ -8,7 +10,7 @@ import tempfile
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects import postgresql
-
+from dateutil import parser
 import sqlalchemy as sa
 
 from auto_schema import runner
@@ -212,7 +214,11 @@ def metadata_with_nullable_fields():
     return metadata
 
 
-@pytest.fixture()
+@pytest.fixture
+def address_metadata_table_fixture():
+    return address_metadata_table()
+
+
 def address_metadata_table():
     metadata = sa.MetaData()
     sa.Table("addresses", metadata,
@@ -229,7 +235,238 @@ def address_metadata_table():
     return metadata
 
 
-@pytest.fixture()
+def metadata_with_float_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', sa.Float(), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def metadata_with_server_default_changed_float(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', '3.145')
+
+
+utc = datetime.timezone(datetime.timedelta(0))
+DATE_IN_TIME = datetime.datetime(2020, 1, 1)
+DATE_IN_TIME_UTC = datetime.datetime(2020, 1, 1, 0, 0, 0, 0, utc)
+DATE_IN_TIME_WITH_TZ = datetime.datetime(
+    2020, 1, 1, 0, 0, 0, 0, datetime.datetime.now().astimezone().tzinfo)
+
+
+def int_date_in_time():
+    return str(int(DATE_IN_TIME.timestamp()*1000))
+
+
+def timestamp_date_in_time():
+    return DATE_IN_TIME.isoformat()
+
+
+def timestamp_date_in_time_utc():
+    return DATE_IN_TIME_UTC.isoformat()
+
+
+def metadata_with_bigint_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', sa.BIGINT(), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def metadata_with_server_default_changed_bigint(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', int_date_in_time())
+
+
+def metadata_with_timestamp_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', sa.TIMESTAMP(), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def metadata_with_server_default_changed_timestamp(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', timestamp_date_in_time())
+
+
+def metadata_with_timestamp_server_default_to_start():
+    metadata = metadata_with_timestamp_column()
+    return metadata_with_server_default_changed_timestamp(metadata)
+
+
+def timestamp_decimal():
+    return '2022-09-19T17:07:39.654Z'
+
+
+def timestamp_decimal_python_utc():
+    return parser.parse('2022-09-19T17:07:39.654Z').isoformat()
+
+
+def metadata_with_server_default_changed_timestamp_decimal(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', timestamp_decimal())
+
+
+def metadata_with_timestamptz_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', sa.TIMESTAMP(timezone=True), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def timestamptz_date_in_time():
+    return DATE_IN_TIME_WITH_TZ.isoformat()
+
+
+def timestamptz_date_in_time_utc():
+    return DATE_IN_TIME_WITH_TZ.isoformat()
+
+
+def metadata_with_server_default_changed_timestamptz(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', timestamptz_date_in_time())
+
+
+def metadata_with_date_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', sa.Date(), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def metadata_with_server_default_changed_date(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', '2020-01-01')
+
+
+def metadata_with_time_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', sa.Time(), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def metadata_with_server_default_changed_time(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', '08:00:00')
+
+
+def metadata_with_timetz_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', sa.Time(timezone=True), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def metadata_with_server_default_timetz():
+    metadata = metadata_with_timetz_column()
+    return metadata_with_server_default_changed_timetz(metadata)
+
+
+def metadata_with_server_default_changed_timetz(metadata):
+    # we require the timezone to be sent down so we compare with timezone
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', '08:00:00-05')
+
+
+def metadata_with_server_default_changed_timetz2(metadata):
+    # we require the timezone to be sent down so we compare with timezone
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', '08:00:00-08')
+
+
+def server_default_json_value():
+    return json.dumps({"col1": 2, "col2": []})
+
+
+def metadata_with_jsonb_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', postgresql.JSONB, nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def metadata_with_server_default_changed_jsonb(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_json_value())
+
+
+def server_default_json_array_value():
+    return json.dumps([{"col1": 2, "col2": []}, {"col1": 3, "col2": ["hello"]}])
+
+
+def metadata_with_server_default_changed_jsonb_array(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_json_array_value())
+
+
+def metadata_with_json_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', postgresql.JSON, nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def metadata_with_server_default_changed_json(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_json_value())
+
+
+def metadata_with_string_list_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', postgresql.ARRAY(
+                 sa.Text), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def server_default_string_list_value():
+    return '{%s}' % ",".join(["foo", "bar", '"baz, hello"'])
+
+
+def metadata_with_server_default_changed_string_list(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_string_list_value())
+
+
+def metadata_with_int_list_column():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('col', postgresql.ARRAY(
+                 sa.Integer), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+             )
+    return metadata
+
+
+def server_default_int_list_value():
+    return '{%s}' % ",".join([str(v) for v in [1, 2, 3]])
+
+
+def metadata_with_server_default_changed_int_list(metadata):
+    return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_int_list_value())
+
+
+@ pytest.fixture()
 def table_with_timestamptz_plus_date():
     metadata = sa.MetaData()
     sa.Table("accounts", metadata,
@@ -246,7 +483,7 @@ def table_with_timestamptz_plus_date():
     return metadata
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_table_with_time():
     metadata = sa.MetaData()
     sa.Table("hours", metadata,
@@ -257,7 +494,7 @@ def metadata_table_with_time():
     return metadata
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_table_with_timetz():
     metadata = sa.MetaData()
     sa.Table("hours", metadata,
@@ -268,7 +505,7 @@ def metadata_table_with_timetz():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_arrays():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,
@@ -1041,6 +1278,10 @@ def metadata_with_triple_pkey_with_rows_changed(metadata):
 
 @ pytest.fixture
 def metadata_with_enum_type():
+    return metadata_with_enum_col()
+
+
+def metadata_with_enum_col():
     metadata = sa.MetaData()
 
     rainbow = ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')
@@ -1052,6 +1293,10 @@ def metadata_with_enum_type():
              sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'),
              )
     return metadata
+
+
+def metadata_with_server_default_changed_enum_type(metadata):
+    return _metadata_with_server_default_changed(metadata, 'rainbow', 'accounts', 'violet')
 
 
 def _apply_func_on_enum(metadata, fn):
