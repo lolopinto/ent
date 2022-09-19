@@ -45,17 +45,14 @@ def get_clause_text(server_default, col_type=None):
                 tz_data = 0
             else:
                 parts = tz_data.split(":")
-                # print('parts', parts)
                 if len(parts) == 2:
                     tz_data = parts[0]
                     mins = float(parts[1])
-                # print(tz_data, mins)
         else:
             tz_data = 0
 
         tz = datetime.timezone(
             datetime.timedelta(hours=float(tz_data), minutes=mins))
-        # print('tz', tz)
 
         ms = m.group(7)
         if ms is None:
@@ -73,7 +70,6 @@ def get_clause_text(server_default, col_type=None):
         arg = str(arg).strip("'")
 
         # strip the extra text padding added so we can compare effectively
-        # TODO need to do this better
         m = clause_regex.match(arg)
         if m is None:
             return handle_date(arg)

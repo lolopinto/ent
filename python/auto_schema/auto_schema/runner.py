@@ -148,7 +148,6 @@ class Runner(object):
             new_metadata_default = cls.convert_postgres_boolean(
                 new_metadata_default)
 
-        # print(new_inspected_default, new_metadata_default)
         if new_inspected_default != new_metadata_default:
             # specific case. not sure why this is needed
             # can be generalized at some point in the future
