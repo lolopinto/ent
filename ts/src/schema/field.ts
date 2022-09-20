@@ -549,6 +549,10 @@ export class DateField extends BaseField implements Field {
   type: Type = { dbType: DBType.Date };
 
   format(val: any): any {
+    if (typeof val === "string") {
+      return val;
+    }
+    val = new Date(val);
     if (!(val instanceof Date)) {
       return val;
     }
