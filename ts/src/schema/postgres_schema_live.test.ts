@@ -499,6 +499,19 @@ describe("date", () => {
     const holiday = await action.saveX();
     expect(holiday.data.date).toEqual(expectedValue());
   });
+
+  test("date timestamp", async () => {
+    const action = getInsertAction(
+      HolidaySchema,
+      new Map<string, any>([
+        ["label", "inaugaration"],
+        ["date", getInaugauration().getTime()],
+      ]),
+    );
+
+    const holiday = await action.saveX();
+    expect(holiday.data.date).toEqual(expectedValue());
+  });
 });
 
 test("timestamptz copy", async () => {

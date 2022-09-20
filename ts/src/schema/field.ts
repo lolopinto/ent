@@ -549,9 +549,10 @@ export class DateField extends BaseField implements Field {
   type: Type = { dbType: DBType.Date };
 
   format(val: any): any {
-    if (!(val instanceof Date)) {
+    if (typeof val === "string") {
       return val;
     }
+    val = new Date(val);
 
     let yy = leftPad(val.getFullYear());
 
