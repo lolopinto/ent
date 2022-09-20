@@ -138,7 +138,7 @@ CREATE TABLE holidays (
     day_of_week TEXT NOT NULL, 
     day_of_week_alt TEXT, 
     label TEXT NOT NULL, 
-    date DATE NOT NULL, 
+    date DATE DEFAULT '2020-02-01' NOT NULL, 
     CONSTRAINT holidays_id_pkey PRIMARY KEY (id)
 );
 
@@ -229,7 +229,7 @@ CREATE TABLE users (
     phone_number TEXT, 
     password TEXT, 
     account_status TEXT, 
-    email_verified BOOLEAN DEFAULT 'FALSE' NOT NULL, 
+    email_verified BOOLEAN DEFAULT 'false' NOT NULL, 
     bio TEXT, 
     nicknames TEXT[], 
     prefs JSONB, 

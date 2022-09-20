@@ -42,7 +42,7 @@ type Field struct {
 	nullable bool
 	// special case to indicate that a field is optional in ts but nullable in graphql
 	graphqlNullable          bool
-	defaultValue             interface{}
+	defaultValue             *string
 	unique                   bool
 	fkey                     *ForeignKeyInfo
 	fieldEdge                *base.FieldEdgeInfo
@@ -508,7 +508,7 @@ func (f *Field) ForceOptionalInAction() bool {
 	return f.forceOptionalInAction
 }
 
-func (f *Field) DefaultValue() interface{} {
+func (f *Field) DefaultValue() *string {
 	return f.defaultValue
 }
 

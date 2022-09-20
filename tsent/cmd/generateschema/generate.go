@@ -158,7 +158,7 @@ func setBooleanValue(f *input.Field, key string) {
 func setValue(f *input.Field, key string, val string) error {
 	switch key {
 	case "serverDefault":
-		f.ServerDefault = val
+		f.ServerDefault = &val
 	case "storageKey":
 		f.StorageKey = val
 	// case "defaultValueOnCreate":
@@ -238,10 +238,10 @@ func FieldObjectCall(f *input.Field) string {
 	appendBoolean(o, f.HideFromGraphQL, "hideFromGraphQL")
 	appendBoolean(o, f.DefaultToViewerOnCreate, "defaultToViewerOnCreate")
 
-	if f.ServerDefault != "" && f.ServerDefault != nil {
+	if f.ServerDefault != nil && *f.ServerDefault != "" {
 		o.Append(kv.Pair{
 			Key:   "serverDefault",
-			Value: strconv.Quote(fmt.Sprintf("%v", f.ServerDefault)),
+			Value: strconv.Quote(fmt.Sprintf("%v", *f.ServerDefault)),
 		})
 	}
 	appendQuotedValue(o, "storageKey", f.StorageKey)

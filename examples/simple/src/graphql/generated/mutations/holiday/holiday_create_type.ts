@@ -43,7 +43,7 @@ export const HolidayCreateInputType = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     date: {
-      type: new GraphQLNonNull(GraphQLTime),
+      type: GraphQLTime,
     },
   }),
 });

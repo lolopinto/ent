@@ -58,7 +58,7 @@ const UserSchema = new EntSchema({
     }),
     emailVerified: BooleanType({
       hideFromGraphQL: true,
-      serverDefault: "FALSE",
+      serverDefault: false,
       // not needed because we have serverDefault but can also set it here.
       defaultValueOnCreate: () => false,
       privacyPolicy: AllowIfViewerPrivacyPolicy,

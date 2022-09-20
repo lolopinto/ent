@@ -14,7 +14,7 @@ test("importType", async () => {
       }),
     };
   }
-  const r = parseSchema({ bar: Bar });
+  const r = await parseSchema({ bar: Bar });
   const fields = r.schemas.bar.fields;
   expect(fields.length).toBe(4);
   const jsonField = fields[3];
@@ -40,7 +40,7 @@ test("importType list", async () => {
       }),
     };
   }
-  const r = parseSchema({ bar: Bar });
+  const r = await parseSchema({ bar: Bar });
   const fields = r.schemas.bar.fields;
   expect(fields.length).toBe(4);
   const jsonField = fields[3];

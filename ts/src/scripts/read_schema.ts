@@ -2,7 +2,6 @@ import glob from "glob";
 import * as path from "path";
 import { pascalCase } from "pascal-case";
 import minimist from "minimist";
-import { exit } from "process";
 import { parseSchema } from "../parse_schema/parse";
 import { getCustomInfo } from "../tsc/ast";
 import { GlobalSchema } from "../schema/schema";
@@ -53,14 +52,16 @@ function main() {
   }
   //  console.log(potentialSchemas);
 
-  const result = parseSchema(potentialSchemas, globalSchema);
-
-  console.log(JSON.stringify(result));
+  // NB: do not change this to async/await
+  // doing so runs it buffer limit on linux (65536 bytes) and we lose data reading in go
+  parseSchema(potentialSchemas, globalSchema).then((result) => {
+    console.log(JSON.stringify(result));
+  });
 }
 
 try {
   main();
 } catch (err) {
   console.error(err);
-  exit(1);
+  process.exit(1);
 }

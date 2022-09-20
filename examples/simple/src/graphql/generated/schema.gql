@@ -901,7 +901,7 @@ input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt
   label: String!
-  date: Time!
+  date: Time
 }
 
 type HolidayCreatePayload {

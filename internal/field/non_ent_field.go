@@ -88,7 +88,7 @@ func (f *NonEntField) ForceOptionalInAction() bool {
 	return false
 }
 
-func (f *NonEntField) DefaultValue() interface{} {
+func (f *NonEntField) DefaultValue() *string {
 	return nil
 }
 
