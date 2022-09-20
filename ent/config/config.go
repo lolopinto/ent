@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -257,7 +256,7 @@ func loadDBConfig() *DBConfig {
 		log.Fatalf("no way to get db config :%v", err)
 	}
 
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("could not read yml file to load db: %v", err)
 	}

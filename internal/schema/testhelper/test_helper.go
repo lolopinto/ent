@@ -1,7 +1,6 @@
 package testhelper
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,7 +48,7 @@ func ParseInputSchemaForTest(t *testing.T, code map[string]string, opts ...func(
 	if dirPath == "" {
 		absPath, err := filepath.Abs(".")
 		require.NoError(t, err)
-		dirPath, err = ioutil.TempDir(absPath, "project")
+		dirPath, err = os.MkdirTemp(absPath, "project")
 		// delete temporary created dir
 		defer os.RemoveAll(dirPath)
 		require.NoError(t, err)
@@ -63,7 +62,7 @@ func ParseInputSchemaForTest(t *testing.T, code map[string]string, opts ...func(
 		dir := filepath.Dir(path)
 		// e.g. patterns/foo.ts
 		require.NoError(t, os.MkdirAll(dir, os.ModePerm))
-		require.NoError(t, ioutil.WriteFile(path, []byte(contents), os.ModePerm))
+		require.NoError(t, os.WriteFile(path, []byte(contents), os.ModePerm))
 	}
 
 	inputSchema, err := input.ParseSchemaFromTSDir(dirPath, true)

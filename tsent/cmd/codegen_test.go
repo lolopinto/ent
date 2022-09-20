@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -66,7 +65,7 @@ func TestSimpleCodegen(t *testing.T) {
 		}, base.TypeScript)
 	require.Nil(t, err)
 
-	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
+	rootDir, err := os.MkdirTemp(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
 	runSteps(t, s, rootDir)
@@ -86,7 +85,7 @@ func TestSimpleCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/graphql/index.ts")
 
 	f := path.Join(rootDir, "src/ent/generated/user_base.ts")
-	b, err := ioutil.ReadFile(f)
+	b, err := os.ReadFile(f)
 	require.Nil(t, err)
 	str := string(b)
 	assert.True(
@@ -118,7 +117,7 @@ func TestDisableGraphQLRoot(t *testing.T) {
 		}, base.TypeScript)
 	require.Nil(t, err)
 
-	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
+	rootDir, err := os.MkdirTemp(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
 
@@ -165,7 +164,7 @@ func TestGeneratedHeader(t *testing.T) {
 		}, base.TypeScript)
 	require.Nil(t, err)
 
-	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
+	rootDir, err := os.MkdirTemp(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
 
@@ -192,7 +191,7 @@ func TestGeneratedHeader(t *testing.T) {
 	validateFileExists(t, rootDir, "src/graphql/index.ts")
 
 	f := path.Join(rootDir, "src/ent/generated/user_base.ts")
-	b, err := ioutil.ReadFile(f)
+	b, err := os.ReadFile(f)
 	require.Nil(t, err)
 	str := string(b)
 	assert.True(
@@ -206,7 +205,7 @@ func TestGeneratedHeader(t *testing.T) {
 	)
 
 	f2 := path.Join(rootDir, "src/ent/user.ts")
-	b2, err := ioutil.ReadFile(f2)
+	b2, err := os.ReadFile(f2)
 	require.Nil(t, err)
 	str2 := string(b2)
 	assert.True(
@@ -278,7 +277,7 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 		}, base.TypeScript)
 	require.Nil(t, err)
 
-	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
+	rootDir, err := os.MkdirTemp(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
 	runSteps(t, s, rootDir)
@@ -356,7 +355,7 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 		}, base.TypeScript)
 	require.Nil(t, err)
 
-	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
+	rootDir, err := os.MkdirTemp(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
 	runSteps(t, s, rootDir)
@@ -434,7 +433,7 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 		}, base.TypeScript)
 	require.Nil(t, err)
 
-	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
+	rootDir, err := os.MkdirTemp(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
 	runSteps(t, s, rootDir)
@@ -510,7 +509,7 @@ func TestSchemaWithPattern(t *testing.T) {
 		}, base.TypeScript)
 	require.Nil(t, err)
 
-	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
+	rootDir, err := os.MkdirTemp(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
 	runSteps(t, s, rootDir)
