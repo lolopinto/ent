@@ -62,7 +62,7 @@ type ActionField interface {
 	GetGraphQLName() string
 	ForceRequiredInAction() bool
 	ForceOptionalInAction() bool
-	DefaultValue() interface{}
+	DefaultValue() *string
 	Nullable() bool
 	HasDefaultValueOnCreate() bool
 	GetTsType() string

@@ -125,6 +125,7 @@ func TestHiddenGraphQLField(t *testing.T) {
 	// Also tests default value...
 	f := getTestFieldByName(t, "AccountConfig", "NumberOfLogins")
 
+	dv := "0"
 	testField(
 		t,
 		f,
@@ -135,7 +136,7 @@ func TestHiddenGraphQLField(t *testing.T) {
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
-			defaultValue:          "0",
+			defaultValue:          &dv,
 			dbName:                "number_of_logins",
 			graphQLName:           "numberOfLogins",
 		},

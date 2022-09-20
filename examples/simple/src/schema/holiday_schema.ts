@@ -9,7 +9,13 @@ import DayOfWeek from "./patterns/day_of_week";
 const HolidaySchema = new EntSchemaWithTZ({
   patterns: [new DayOfWeek()],
 
-  fields: { label: StringType(), date: DateType() },
+  fields: {
+    label: StringType(),
+    // server default for all holidays is feb 2020 for some reason
+    // doing this to test serverDefault
+    // date month is 0-index based...
+    date: DateType({ serverDefault: new Date(2020, 1, 1) }),
+  },
 
   actions: [
     {

@@ -106,6 +106,7 @@ func TestFloatField(t *testing.T) {
 }
 
 func TestBoolField(t *testing.T) {
+	dv := "true"
 	field := verifyField(
 		t,
 		`package configs
@@ -133,7 +134,7 @@ func TestBoolField(t *testing.T) {
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			nullable:                 true,
-			defaultValue:             "true",
+			defaultValue:             &dv,
 		},
 	)
 	testDBType(t, field, "sa.Boolean()")
@@ -174,6 +175,7 @@ func TestTimeField(t *testing.T) {
 }
 
 func TestStringWithMoreCustomizationsField(t *testing.T) {
+	dv := "Ola"
 	field := verifyField(
 		t,
 		`package configs
@@ -200,7 +202,7 @@ func TestStringWithMoreCustomizationsField(t *testing.T) {
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			nullable:                 true,
-			defaultValue:             "Ola",
+			defaultValue:             &dv,
 		},
 	)
 

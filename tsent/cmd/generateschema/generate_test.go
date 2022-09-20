@@ -49,6 +49,7 @@ func getExpField(f *input.Field, expFieldObjectCall string) *expField {
 }
 
 func TestParse(t *testing.T) {
+	bar := "bar"
 	tests := map[string]testcase{
 		"basic": {
 			fields: "foo:string bar:email baz:password foo2:int hello:bool",
@@ -198,7 +199,7 @@ func TestParse(t *testing.T) {
 					&input.Field{
 						Name:          "foo",
 						Import:        &enttype.StringImport{},
-						ServerDefault: "bar",
+						ServerDefault: &bar,
 					},
 					"{serverDefault: \"bar\"}",
 				),
