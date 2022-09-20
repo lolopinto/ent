@@ -553,9 +553,6 @@ export class DateField extends BaseField implements Field {
       return val;
     }
     val = new Date(val);
-    if (!(val instanceof Date)) {
-      return val;
-    }
 
     let yy = leftPad(val.getFullYear());
 
