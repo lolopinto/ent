@@ -8,11 +8,16 @@ import { commonTests } from "./shared_test";
 import { assocTests } from "./shared_assoc_test";
 import { loadCustomEdges } from "../ent";
 import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
+import { MockLogs } from "../../testutils/mock_log";
+
+const ml = new MockLogs();
+ml.mock();
 
 commonTests({
   newQuery(viewer: Viewer, user: FakeUser) {
     return UserToContactsQuery.query(viewer, user);
   },
+  ml,
   tableName: "user_to_contacts_table",
   uniqKey: "user_to_contacts_table_sqlite",
   entsLength: 2,
@@ -43,5 +48,5 @@ describe("custom assoc", () => {
   //  setupSqlite(`sqlite:///assoc_query_sqlite.db`, tempDBTables);
 
   // TODO there's a weird dependency with commonTest above where commenting that out breaks this...
-  assocTests();
+  assocTests(ml);
 });

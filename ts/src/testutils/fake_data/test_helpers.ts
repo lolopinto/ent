@@ -308,8 +308,8 @@ export async function createTestEvent(
   return await builder.editedEntX();
 }
 
-export async function setupTempDB() {
-  const tdb = new TempDB(tempDBTables());
+export async function setupTempDB(global: boolean = false) {
+  const tdb = new TempDB(tempDBTables(global));
 
   await tdb.beforeAll();
 

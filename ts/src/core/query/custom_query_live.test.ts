@@ -2,32 +2,23 @@ import { Viewer } from "../base";
 import {
   FakeUser,
   UserToContactsFkeyQuery,
-  UserToContactsFkeyQueryDeprecated,
 } from "../../testutils/fake_data/index";
 import { commonTests } from "./shared_test";
+import { MockLogs } from "../../testutils/mock_log";
 
-describe("custom query deprecated", () => {
-  commonTests({
-    newQuery(viewer: Viewer, user: FakeUser) {
-      return UserToContactsFkeyQueryDeprecated.query(viewer, user);
-    },
-    uniqKey: "fake_contacts",
-    tableName: "fake_contacts",
-    where: "user_id = $1",
-    sortCol: "created_at",
-    livePostgresDB: true, // doing this on a db as opposed to in memory
-  });
-});
+const ml = new MockLogs();
+ml.mock();
 
 describe("custom query", () => {
   commonTests({
     newQuery(viewer: Viewer, user: FakeUser) {
       return UserToContactsFkeyQuery.query(viewer, user);
     },
+    ml,
     uniqKey: "fake_contacts",
     tableName: "fake_contacts",
     where: "user_id = $1",
     sortCol: "created_at",
-    livePostgresDB: true, // doing this on a db as opposed to in memory
+    livePostgresDB: true,
   });
 });
