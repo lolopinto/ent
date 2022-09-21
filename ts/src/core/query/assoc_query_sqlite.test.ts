@@ -9,6 +9,7 @@ import { assocTests } from "./shared_assoc_test";
 import { loadCustomEdges } from "../ent";
 import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
 import { MockLogs } from "../../testutils/mock_log";
+import { And, Eq } from "../clause";
 
 const ml = new MockLogs();
 ml.mock();
@@ -21,7 +22,7 @@ commonTests({
   tableName: "user_to_contacts_table",
   uniqKey: "user_to_contacts_table_sqlite",
   entsLength: 2,
-  where: "id1 = ? AND edge_type = ?",
+  clause: And(Eq("id1", ""), Eq("edge_type", "")),
   sortCol: "time",
   sqlite: true,
   rawDataVerify: async (user: FakeUser) => {

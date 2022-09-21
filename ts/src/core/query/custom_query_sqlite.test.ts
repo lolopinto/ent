@@ -5,6 +5,7 @@ import {
 } from "../../testutils/fake_data/index";
 import { commonTests } from "./shared_test";
 import { MockLogs } from "../../testutils/mock_log";
+import { Eq } from "../clause";
 
 const ml = new MockLogs();
 ml.mock();
@@ -17,7 +18,7 @@ describe("custom query", () => {
     ml,
     uniqKey: "fake_contacts",
     tableName: "fake_contacts",
-    where: "user_id = ?",
+    clause: Eq("user_id", ""),
     sortCol: "created_at",
     sqlite: true,
   });

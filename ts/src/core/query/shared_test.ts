@@ -28,7 +28,7 @@ import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
-import { Greater, Less } from "../clause";
+import { Clause, Greater, Less } from "../clause";
 
 const preparedVar = /(\$(\d))/g;
 
@@ -42,7 +42,8 @@ interface options<TData extends Data> {
   ml: MockLogs;
 
   entsLength?: number;
-  where: string;
+  clause: Clause;
+  // where: string;
   sortCol: string;
   livePostgresDB?: boolean; // if livedb creates temp db and not depending on mock
   sqlite?: boolean; // do this in sqlite
@@ -235,7 +236,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       let expLimit = disablePaginationBump ? limit : limit + 1;
       expect(whereClause, `${i}`).toBe(
         // default limit
-        `${opts.where} ORDER BY ${opts.sortCol} DESC LIMIT ${expLimit}`,
+        `${opts.clause.clause(1)} ORDER BY ${
+          opts.sortCol
+        } DESC LIMIT ${expLimit}`,
       );
     }
   }
@@ -244,17 +247,16 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     expect(ml.logs.length).toBe(length);
     for (let i = 0; i < numQueries; i++) {
       const whereClause = getWhereClause(ml.logs[i]);
-      expect(whereClause).toBe(opts.where);
+      expect(whereClause).toBe(opts.clause.clause(1));
     }
   }
 
   function verifyFirstAfterCursorQuery(length: number = 1) {
     // cache showing up in a few because of cross runs...
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
-    const result = [...opts.where.matchAll(preparedVar)];
 
-    let parts = opts.where.split(" AND ");
-    const less = Less(opts.sortCol, "").clause(result.length + 1);
+    let parts = opts.clause.clause(1).split(" AND ");
+    const less = Less(opts.sortCol, "").clause(opts.clause.values().length + 1);
     if (parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)
@@ -271,10 +273,11 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   function verifyLastBeforeCursorQuery(length: number = 1) {
     // cache showing up in a few because of cross runs...
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
-    const result = [...opts.where.matchAll(preparedVar)];
 
-    let parts = opts.where.split(" AND ");
-    const greater = Greater(opts.sortCol, "").clause(result.length + 1);
+    let parts = opts.clause.clause(1).split(" AND ");
+    const greater = Greater(opts.sortCol, "").clause(
+      opts.clause.values().length + 1,
+    );
     if (parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)

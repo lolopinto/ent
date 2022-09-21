@@ -3,6 +3,7 @@ import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index";
 import { commonTests } from "./shared_test";
 import { assocTests } from "./shared_assoc_test";
 import { MockLogs } from "../../testutils/mock_log";
+import { And, Eq } from "../clause";
 
 // shared mock across tests
 // should this be global?
@@ -17,7 +18,7 @@ commonTests({
   tableName: "user_to_contacts_table",
   uniqKey: "user_to_contacts_table",
   entsLength: 2,
-  where: "id1 = $1 AND edge_type = $2",
+  clause: And(Eq("id1", ""), Eq("edge_type", "")),
   sortCol: "time",
   livePostgresDB: true,
 });

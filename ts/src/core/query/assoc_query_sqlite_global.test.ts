@@ -11,6 +11,7 @@ import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
 import { inputs } from "../../testutils/fake_data/test_helpers";
 import { convertDate } from "../../core/convert";
 import { MockLogs } from "../../testutils/mock_log";
+import { And, Eq } from "../clause";
 
 const ml = new MockLogs();
 ml.mock();
@@ -24,7 +25,7 @@ commonTests({
   tableName: "user_to_contacts_table",
   uniqKey: "user_to_contacts_table_global",
   entsLength: 2,
-  where: "id1 = ? AND edge_type = ? AND deleted_at IS NULL",
+  clause: And(Eq("id1", ""), Eq("edge_type", ""), Eq("deleted_at", null)),
   sortCol: "time",
   sqlite: true,
   globalSchema: true,

@@ -13,6 +13,7 @@ import { loadCustomEdges } from "../ent";
 import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
 import { convertDate } from "../convert";
 import { MockLogs } from "../../testutils/mock_log";
+import { And, Eq } from "../clause";
 
 const ml = new MockLogs();
 ml.mock();
@@ -25,7 +26,7 @@ commonTests({
   uniqKey: "user_to_contacts_table",
   tableName: "user_to_contacts_table",
   entsLength: 2,
-  where: "id1 = $1 AND edge_type = $2 AND deleted_at IS NULL",
+  clause: And(Eq("id1", ""), Eq("edge_type", ""), Eq("deleted_at", null)),
   sortCol: "time",
   globalSchema: true,
   livePostgresDB: true,
