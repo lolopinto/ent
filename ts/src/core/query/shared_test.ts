@@ -30,8 +30,6 @@ import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
 import { Clause, Greater, Less } from "../clause";
 
-const preparedVar = /(\$(\d))/g;
-
 interface options<TData extends Data> {
   newQuery: (
     v: Viewer,
@@ -43,7 +41,6 @@ interface options<TData extends Data> {
 
   entsLength?: number;
   clause: Clause;
-  // where: string;
   sortCol: string;
   livePostgresDB?: boolean; // if livedb creates temp db and not depending on mock
   sqlite?: boolean; // do this in sqlite
@@ -184,8 +181,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         return;
       }
       setLogLevels(["query", "cache"]);
-      // const ml = new MockLogs();
-      // ml.mock();
       const v = new TestContext(new IDViewer(this.user.id)).getViewer();
       const ents = await this.testEnts(v);
       expect(ml.logs.length).toBe(1);
@@ -293,16 +288,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   function getViewer() {
-    // live db, let's do context because we're testing complicated paths
-    // may be worth breaking this out later
-
-    // opts.liveDB no context too...
-    // maybe this one we just always hit the db
-    // we don't get value out of testing parse_sql no context....
-    if (opts.livePostgresDB || opts.sqlite) {
-      // return new TestContext().getViewer();
-    }
-    // no context when not live db
     return new LoggedOutViewer();
   }
 
