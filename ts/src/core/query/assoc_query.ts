@@ -64,6 +64,10 @@ export abstract class AssocEdgeQueryBase<
     throw new Error(`TODO not implemented yet`);
   }
 
+  getUniqueColumn(): string {
+    return "id2";
+  }
+
   private async getSingleID() {
     const infos = await this.genIDInfosToFetch();
     if (infos.length !== 1) {

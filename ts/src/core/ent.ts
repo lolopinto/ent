@@ -1899,7 +1899,7 @@ interface cursorOptions {
   conv?: (any: any) => any;
 }
 
-// TODO change this
+// TODO change/delete this
 export function getCursor(opts: cursorOptions) {
   const { row, col, conv } = opts;
   //  row: Data, col: string, conv?: (any) => any) {

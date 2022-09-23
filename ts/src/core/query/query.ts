@@ -83,17 +83,17 @@ function assertPositive(n: number) {
 }
 
 // TODO change this...
-function assertValidCursor(cursor: string, col: string): number {
+function assertValidCursor(cursor: string, col: string): any {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
   // invalid or unknown cursor. nothing to do here.
   if (parts.length !== 2 || parts[0] !== col) {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
-  // TODO check if numeric or not but for now we're only doing numbers
+  // TODO handle both cases... time vs not better
   const time = parseInt(parts[1], 10);
   if (isNaN(time)) {
-    throw new Error(`invalid cursor ${cursor} passed`);
+    return parts[1];
   }
   return time;
 }
@@ -114,6 +114,10 @@ interface FilterOptions<T extends Data> {
   // defaults to assuming sortCol is unique if this is not provided...
   // TODO we should make this required and provide both as needed
   uniqueCol?: string;
+
+  // indicates that sort column is unique and we shouldn't use the id from the
+  // table as the cursor and use the sort column instead
+  sortColumnUnique?: boolean;
 }
 
 interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
@@ -123,6 +127,8 @@ interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
 interface LastFilterOptions<T extends Data> extends FilterOptions<T> {
   before?: string;
 }
+
+const orderbyRegex = new RegExp(/([0-9a-z_]+)[ ]?([0-9a-z_]+)?/i);
 
 class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
@@ -135,7 +141,11 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     this.sortCol = options.sortCol;
     if (options.after) {
-      this.offset = assertValidCursor(options.after, this.sortCol);
+      if (options.uniqueCol) {
+        this.offset = assertValidCursor(options.after, options.uniqueCol);
+      } else {
+        this.offset = assertValidCursor(options.after, this.sortCol);
+      }
     }
     if (this.options.sortColNotTime && !this.options.sortCol) {
       throw new Error(
@@ -153,8 +163,14 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         // hasPreviousPage always false even if there's a previous page because
         // we shouldn't be querying in both diretions at the same
         hasPreviousPage: false,
-        startCursor: this.edgeQuery.getCursor(ret[0]),
-        endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
+        startCursor: getCursor({
+          row: ret[0],
+          col: this.options.uniqueCol || this.sortCol,
+        }),
+        endCursor: getCursor({
+          row: ret[ret.length - 1],
+          col: this.options.uniqueCol || this.sortCol,
+        }),
       });
       return ret;
     }
@@ -175,14 +191,26 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     // todo may not be desc
     // and if asc
     // clause below should switch to greater...
-    const sortCol = this.sortCol.toLowerCase();
+    const sortCol = this.sortCol;
+    const uniqueCol = this.options.uniqueCol;
 
-    // TODO change order by for the double orderby...
-    if (sortCol.endsWith("desc") || sortCol.endsWith("asc")) {
-      options.orderby = `${this.sortCol}`;
-    } else {
-      options.orderby = `${this.sortCol} DESC`;
+    const m = orderbyRegex.exec(sortCol);
+    if (!m) {
+      throw new Error(`invalid sort column ${sortCol}`);
     }
+    let orderby = "DESC";
+    if (m[2]) {
+      orderby = m[2].toUpperCase();
+    }
+    if (uniqueCol) {
+      // TODO hack for now
+      this.options.sortColNotTime = true;
+      // we also sort unique col in same direction since it doesn't matter...
+      options.orderby = `${m[0]} ${orderby}, ${uniqueCol} ${orderby}`;
+    } else {
+      options.orderby = `${m[0]} ${orderby}`;
+    }
+
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
     if (this.offset) {
@@ -472,6 +500,8 @@ export abstract class BaseEdgeQuery<
   // TODO async eventually for assoc loader purposes
   abstract getTableName(): string;
 
+  abstract getUniqueColumn(): string;
+
   protected async genIDInfosToFetchImpl() {
     await this.loadRawIDs(this.addID.bind(this));
 
@@ -530,7 +560,7 @@ export abstract class BaseEdgeQuery<
     return this.edges;
   }
 
-  // TODO change this...
+  // TODO delete change this...
   getCursor(row: TEdge): string {
     return getCursor({
       row,

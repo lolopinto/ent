@@ -425,7 +425,8 @@ export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: ID | FakeUser) {
     super(viewer, {
       src,
-      ...FakeEvent.loaderOptions(),
+
+      // ...FakeEvent.loaderOptions(),
       groupCol: "user_id",
       clause: getNextWeekClause(),
       loadEntOptions: FakeEvent.loaderOptions(),

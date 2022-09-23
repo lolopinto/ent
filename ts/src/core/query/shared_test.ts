@@ -343,7 +343,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
   });
 
-  describe("simple queries", () => {
+  // convert just these...
+  // and then have a special test for conflicts.....
+  // or change API to have conflicts...
+  describe.only("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
         // no filters

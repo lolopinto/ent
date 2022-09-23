@@ -43,8 +43,11 @@ export interface CustomEdgeQueryOptions<
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
   name: string;
-  // defaults to created_at
+  // defaults to id
   sortColumn?: string;
+  // pass this if the sort column is unique and it'll be used for the cursor and used to
+  // generate the query
+  sortColumnUnique?: boolean;
 
   disableTransformations?: boolean;
 }
@@ -148,6 +151,10 @@ export abstract class CustomEdgeQueryBase<
 
   getTableName(): string {
     return this.opts.tableName;
+  }
+
+  getUniqueColumn(): string {
+    return this.opts.loaderFactory.options?.key || "id";
   }
 
   abstract sourceEnt(id: ID): Promise<Ent | null>;
