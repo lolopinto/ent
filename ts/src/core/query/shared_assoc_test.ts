@@ -121,14 +121,14 @@ export function assocTests(ml: MockLogs, global = false) {
             Eq("id1", ""),
             Eq("edge_type", ""),
             Eq("deleted_at", null),
-          ).clause(1)} ORDER BY time DESC LIMIT ${expLimit}`,
+          ).clause(1)} ORDER BY time DESC, id2 DESC LIMIT ${expLimit}`,
         );
       } else {
         expect(whereClause, `${i}`).toBe(
           // default limit
           `${And(Eq("id1", ""), Eq("edge_type", "")).clause(
             1,
-          )} ORDER BY time DESC LIMIT ${expLimit}`,
+          )} ORDER BY time DESC, id2 DESC LIMIT ${expLimit}`,
         );
       }
     }

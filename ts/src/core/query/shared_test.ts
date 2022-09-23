@@ -59,7 +59,21 @@ function getWhereClause(query: any) {
 export const commonTests = <TData extends Data>(opts: options<TData>) => {
   setLogLevels(["query", "error"]);
   const ml = opts.ml;
-  // ml.mock();
+  ml.mock();
+
+  function isCustomQuery(
+    q: TestQueryFilter<any> | EdgeQuery<FakeUser, FakeContact, any>,
+  ): boolean {
+    if ((q as TestQueryFilter<any>).customQuery !== undefined) {
+      return (q as TestQueryFilter<any>).customQuery;
+    }
+
+    // TODO sad not generic enough
+    return (
+      q instanceof UserToContactsFkeyQuery ||
+      q instanceof UserToContactsFkeyQueryDeprecated
+    );
+  }
 
   class TestQueryFilter<TData extends Data> {
     allContacts: FakeContact[] = [];
@@ -80,12 +94,11 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       private defaultViewer: Viewer,
     ) {
       // @ts-ignore
-      const q = this.newQuery(this.defaultViewer);
+      const q: EdgeQuery<FakeUser, FakeContact, TData> = this.newQuery(
+        this.defaultViewer,
+      );
 
-      // TODO sad not generic enough
-      this.customQuery =
-        q instanceof UserToContactsFkeyQuery ||
-        q instanceof UserToContactsFkeyQueryDeprecated;
+      this.customQuery = isCustomQuery(q);
     }
 
     async createData() {
@@ -222,12 +235,18 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
   }
 
-  function verifyQuery({
-    length = 1,
-    numQueries = 1,
-    limit = DefaultLimit,
-    disablePaginationBump = false,
-  }) {
+  function verifyQuery(
+    filter: TestQueryFilter<any> | EdgeQuery<FakeUser, FakeContact, Data>,
+    {
+      length = 1,
+      numQueries = 1,
+      limit = DefaultLimit,
+      disablePaginationBump = false,
+      orderby = "DESC",
+    },
+  ) {
+    const uniqCol = isCustomQuery(filter) ? "id" : "id2";
+
     expect(ml.logs.length).toBe(length);
     for (let i = 0; i < numQueries; i++) {
       const whereClause = getWhereClause(ml.logs[i]);
@@ -236,7 +255,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         // default limit
         `${opts.clause.clause(1)} ORDER BY ${
           opts.sortCol
-        } DESC LIMIT ${expLimit}`,
+        } ${orderby}, ${uniqCol} ${orderby} LIMIT ${expLimit}`,
       );
     }
   }
@@ -250,13 +269,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   function verifyFirstAfterCursorQuery(
-    filter: TestQueryFilter<any>,
+    filter: TestQueryFilter<any> | EdgeQuery<FakeUser, FakeContact, Data>,
     length: number = 1,
+    limit: number = 3,
   ) {
     // cache showing up in a few because of cross runs...
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
-    const uniqCol = filter.customQuery ? "id" : "id2";
+    const uniqCol = isCustomQuery(filter) ? "id" : "id2";
     let parts = opts.clause.clause(1).split(" AND ");
     const cmp = PaginationMultipleColsSubQuery(
       opts.sortCol,
@@ -276,18 +296,19 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     expect(getWhereClause(ml.logs[0])).toBe(
       `${parts.join(" AND ")} ORDER BY ${
         opts.sortCol
-      } DESC, ${uniqCol} DESC LIMIT 4`,
+      } DESC, ${uniqCol} DESC LIMIT ${limit + 1}`,
     );
   }
 
   function verifyLastBeforeCursorQuery(
-    filter: TestQueryFilter<any>,
+    filter: TestQueryFilter<any> | EdgeQuery<FakeUser, FakeContact, Data>,
     length: number = 1,
+    limit: number = 3,
   ) {
     // cache showing up in a few because of cross runs...
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
-    const uniqCol = filter.customQuery ? "id" : "id2";
+    const uniqCol = isCustomQuery(filter) ? "id" : "id2";
 
     let parts = opts.clause.clause(1).split(" AND ");
     const cmp = PaginationMultipleColsSubQuery(
@@ -309,7 +330,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       // extra fetched for pagination
       `${parts.join(" AND ")} ORDER BY ${
         opts.sortCol
-      } ASC, ${uniqCol} ASC LIMIT 4`,
+      } ASC, ${uniqCol} ASC LIMIT ${limit + 1}`,
     );
   }
 
@@ -396,7 +417,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("ids", async () => {
       await filter.testIDs();
-      verifyQuery({});
+      verifyQuery(filter, {});
     });
 
     test("rawCount", async () => {
@@ -406,17 +427,17 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("count", async () => {
       await filter.testCount();
-      verifyQuery({});
+      verifyQuery(filter, {});
     });
 
     test("edges", async () => {
       await filter.testEdges();
-      verifyQuery({});
+      verifyQuery(filter, {});
     });
 
     test("ents", async () => {
       await filter.testEnts();
-      verifyQuery({ length: opts.entsLength });
+      verifyQuery(filter, { length: opts.entsLength });
     });
 
     test("all", async () => {
@@ -478,7 +499,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("ids", async () => {
       await filter.testIDs();
-      verifyQuery({});
+      verifyQuery(filter, {});
     });
 
     test("rawCount", async () => {
@@ -488,18 +509,18 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("count", async () => {
       await filter.testCount(0);
-      verifyQuery({});
+      verifyQuery(filter, {});
     });
 
     test("edges", async () => {
       await filter.testEdges();
-      verifyQuery({});
+      verifyQuery(filter, {});
     });
 
     test("ents", async () => {
       await filter.testEnts();
       // no ents so no subsequent query. just the edge query
-      verifyQuery({ length: 1 });
+      verifyQuery(filter, { length: 1 });
     });
 
     test("all", async () => {
@@ -542,7 +563,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("ids", async () => {
       await filter.testIDs();
-      verifyQuery({ limit: 2 });
+      verifyQuery(filter, { limit: 2 });
     });
 
     test("rawCount", async () => {
@@ -552,17 +573,17 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("count", async () => {
       await filter.testCount();
-      verifyQuery({ limit: 2 });
+      verifyQuery(filter, { limit: 2 });
     });
 
     test("edges", async () => {
       await filter.testEdges();
-      verifyQuery({ limit: 2 });
+      verifyQuery(filter, { limit: 2 });
     });
 
     test("ents", async () => {
       await filter.testEnts();
-      verifyQuery({ limit: 2, length: opts.entsLength });
+      verifyQuery(filter, { limit: 2, length: opts.entsLength });
     });
 
     test("all", async () => {
@@ -588,8 +609,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       },
       opts.newQuery,
       (contacts: FakeContact[]) => {
-        // take the first N and then reverse it to get the last N in the right order
-        return contacts.slice(0, N).reverse();
+        return contacts.slice(0, N);
       },
       getViewer(),
     );
@@ -600,7 +620,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("ids", async () => {
       await filter.testIDs();
-      verifyQuery({ disablePaginationBump: true });
+      verifyQuery(filter, {
+        orderby: "ASC",
+        limit: N,
+      });
     });
 
     test("rawCount", async () => {
@@ -610,17 +633,21 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("count", async () => {
       await filter.testCount();
-      verifyQuery({ disablePaginationBump: true });
+      verifyQuery(filter, { orderby: "ASC", limit: N });
     });
 
     test("edges", async () => {
       await filter.testEdges();
-      verifyQuery({ disablePaginationBump: true });
+      verifyQuery(filter, { orderby: "ASC", limit: N });
     });
 
     test("ents", async () => {
       await filter.testEnts();
-      verifyQuery({ disablePaginationBump: true, length: opts.entsLength });
+      verifyQuery(filter, {
+        orderby: "ASC",
+        limit: N,
+        length: opts.entsLength,
+      });
     });
 
     test("all", async () => {
@@ -702,8 +729,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   });
 
   test("first. after each cursor", async () => {
-    let [user, contacts] = await createAllContacts();
-    contacts = contacts.reverse();
+    let [user] = await createAllContacts();
     const edges = await opts.newQuery(getViewer(), user).queryEdges();
 
     let query: EdgeQuery<FakeUser, FakeContact, Data>;
@@ -714,6 +740,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       hasNextPage: boolean,
       cursor?: string,
     ) {
+      ml.clear();
       query = opts.newQuery(getViewer(), user);
       const newEdges = await query.first(1, cursor).queryEdges();
 
@@ -731,6 +758,12 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       } else {
         expect(pagination?.hasNextPage).toBe(undefined);
         expect(pagination?.hasNextPage).toBe(undefined);
+      }
+
+      if (cursor) {
+        verifyFirstAfterCursorQuery(query!, 1, 1);
+      } else {
+        verifyQuery(query!, { orderby: "DESC", limit: 1 });
       }
     }
 
@@ -810,8 +843,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   });
 
   test("last. before each cursor", async () => {
-    let [user, contacts] = await createAllContacts();
-    contacts = contacts.reverse();
+    let [user] = await createAllContacts();
     const edges = await opts.newQuery(getViewer(), user).queryEdges();
 
     let query: EdgeQuery<FakeUser, FakeContact, Data>;
@@ -821,6 +853,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       hasPreviousPage: boolean,
       cursor?: string,
     ) {
+      ml.clear();
+
       query = opts.newQuery(getViewer(), user);
       const newEdges = await query.last(1, cursor).queryEdges();
 
@@ -833,11 +867,16 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       }
 
       if (hasPreviousPage) {
-        expect(pagination?.hasPreviousPage).toBe(true);
-        expect(pagination?.hasNextPage).toBe(false);
+        expect(pagination?.hasPreviousPage, `${i}`).toBe(true);
+        expect(pagination?.hasNextPage, `${i}`).toBe(false);
       } else {
-        expect(pagination?.hasPreviousPage).toBe(undefined);
-        expect(pagination?.hasNextPage).toBe(undefined);
+        expect(pagination?.hasPreviousPage, `${i}`).toBe(undefined);
+        expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
+      }
+      if (cursor) {
+        verifyLastBeforeCursorQuery(query!, 1, 1);
+      } else {
+        verifyQuery(query!, { orderby: "ASC", limit: 1 });
       }
     }
 

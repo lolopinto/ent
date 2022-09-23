@@ -202,7 +202,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
-    const less = orderby.toLowerCase() === "desc";
+    const less = orderby === "DESC";
 
     if (this.options.cursorCol !== this.sortCol) {
       // we also sort unique col in same direction since it doesn't matter...
@@ -276,7 +276,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
         ret = edges;
       }
     } else {
-      ret = edges.slice(edges.length - this.options.limit, edges.length);
+      ret = edges.slice(0, this.options.limit);
     }
 
     if (edges.length > this.options.limit) {
@@ -295,9 +295,6 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   async query(
     options: EdgeQueryableDataOptions,
   ): Promise<EdgeQueryableDataOptions> {
-    if (!this.offset) {
-      return options;
-    }
     const sortCol = this.sortCol;
 
     const m = orderbyRegex.exec(sortCol);
@@ -310,7 +307,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
       orderby = m[2].toUpperCase();
     }
 
-    const greater = orderby.toLowerCase() === "asc";
+    const greater = orderby === "ASC";
 
     options.limit = this.options.limit + 1; // fetch an extra so we know if previous pag
 
@@ -318,25 +315,29 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
       const res = this.edgeQuery.getTableName();
       const tableName = isPromise(res) ? await res : res;
 
-      // inner col time
-      options.clause = clause.PaginationMultipleColsSubQuery(
-        sortCol,
-        // TODO also test for this...
-        greater ? ">" : "<",
-        tableName,
-        this.options.cursorCol,
-        this.offset,
-      );
+      if (this.offset) {
+        // inner col time
+        options.clause = clause.PaginationMultipleColsSubQuery(
+          sortCol,
+          // TODO also test for this...
+          greater ? ">" : "<",
+          tableName,
+          this.options.cursorCol,
+          this.offset,
+        );
+      }
       options.orderby = `${m[0]} ${orderby}, ${this.options.cursorCol} ${orderby}`;
     } else {
       options.orderby = `${m[0]} ${orderby}`;
 
-      // TODO test for desc
-      let clauseFn = greater ? clause.Greater : clause.Less;
-      let val = this.options.sortColNotTime
-        ? this.offset
-        : new Date(this.offset).toISOString();
-      options.clause = clauseFn(this.sortCol, val);
+      if (this.offset) {
+        // TODO test for desc
+        let clauseFn = greater ? clause.Greater : clause.Less;
+        let val = this.options.sortColNotTime
+          ? this.offset
+          : new Date(this.offset).toISOString();
+        options.clause = clauseFn(this.sortCol, val);
+      }
     }
 
     return options;
