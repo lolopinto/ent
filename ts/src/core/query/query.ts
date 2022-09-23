@@ -204,8 +204,11 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     // so when paging, we fetch afterCursor X
     const less = orderby.toLowerCase() === "desc";
 
-    if (this.offset) {
-      if (this.options.cursorCol !== this.sortCol) {
+    if (this.options.cursorCol !== this.sortCol) {
+      // we also sort unique col in same direction since it doesn't matter...
+      options.orderby = `${m[0]} ${orderby}, ${this.options.cursorCol} ${orderby}`;
+
+      if (this.offset) {
         const res = this.edgeQuery.getTableName();
         const tableName = isPromise(res) ? await res : res;
         // inner col time
@@ -217,12 +220,11 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
           this.options.cursorCol,
           this.offset,
         );
+      }
+    } else {
+      options.orderby = `${m[0]} ${orderby}`;
 
-        // we also sort unique col in same direction since it doesn't matter...
-        options.orderby = `${m[0]} ${orderby}, ${this.options.cursorCol} ${orderby}`;
-      } else {
-        options.orderby = `${m[0]} ${orderby}`;
-
+      if (this.offset) {
         let clauseFn = less ? clause.Less : clause.Greater;
         let val = this.options.sortColNotTime
           ? this.offset
@@ -231,6 +233,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         options.clause = clauseFn(this.sortCol, val);
       }
     }
+
     // console.debug("filter opts", options, this.options);
     return options;
   }

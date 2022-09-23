@@ -64,7 +64,9 @@ export class CustomClauseQuery<
   ) {
     // TODO this sshould change to id
     const sortCol = options.sortColumn || "created_at";
-    let unique = options.sortColumnUnique ? sortCol : "id";
+    let unique = options.sortColumnUnique
+      ? sortCol
+      : options.loadEntOptions.loaderFactory.options?.key || "id";
     super(viewer, options.sortColumn || sortCol, unique);
     this.clause = getClause(options);
   }

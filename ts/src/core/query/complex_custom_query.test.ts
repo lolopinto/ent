@@ -151,14 +151,20 @@ describe("query for user", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "start_time DESC",
+      orderby: "start_time DESC, id DESC",
       limit: 3,
       clause: clause.And(
         clause.Eq("user_id", user.id),
         clause.GreaterEq("start_time", 1),
         clause.LessEq("start_time", 2),
         // the cursor check
-        clause.Less("start_time", 4),
+        clause.PaginationMultipleColsSubQuery(
+          "start_time",
+          "<",
+          FakeEvent.loaderOptions().tableName,
+          "id",
+          4,
+        ),
       ),
     });
     expect(query).toEqual(ml.logs[ml.logs.length - 1].query);
@@ -282,17 +288,25 @@ describe("global query", () => {
 
       const query = buildQuery({
         ...FakeEvent.loaderOptions(),
-        orderby: "start_time DESC",
+        orderby: "start_time DESC, id DESC",
         limit: PAGE + 1,
         clause: clause.AndOptional(
           clause.GreaterEq("start_time", 1),
           clause.LessEq("start_time", 2),
           // the cursor check
-          cursor ? clause.Less("start_time", 4) : undefined,
+          cursor
+            ? clause.PaginationMultipleColsSubQuery(
+                "start_time",
+                "<",
+                FakeEvent.loaderOptions().tableName,
+                "id",
+                4,
+              )
+            : undefined,
         ),
       });
       // console.debug(ml.logs);
-      expect(query).toEqual(ml.logs[ml.logs.length - 1].query);
+      expect(query, page.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
 
       // 1 is a hack...
       const pagination = q2.paginationInfo().get(1);
