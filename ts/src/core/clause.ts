@@ -767,3 +767,64 @@ export function JSONPathValuePredicate(
 ): Clause {
   return new jSONPathValuePredicateClause(dbCol, path, val, pred);
 }
+
+// TODO need a better name for this lol
+// this assumes we're doing the same direction twice which isn't necessarily accurate in the future...
+class paginationMultipleColumnsSubQueryClause implements Clause {
+  constructor(
+    private col: string,
+    private op: string,
+    private tableName: string,
+    private uniqueCol: string,
+    private val: any,
+  ) {}
+
+  private buildSimpleQuery(clause: Clause, idx: number) {
+    return `SELECT ${this.col} FROM ${this.tableName} WHERE ${clause.clause(
+      idx,
+    )}`;
+  }
+
+  clause(idx: number): string {
+    const eq1 = this.buildSimpleQuery(Eq(this.uniqueCol, this.val), idx);
+    const eq2 = this.buildSimpleQuery(Eq(this.uniqueCol, this.val), idx + 1);
+    const op = new simpleClause(this.uniqueCol, this.val, this.op).clause(
+      idx + 2,
+    );
+
+    return `${this.col} ${this.op} (${eq1}) OR (${this.col} = (${eq2}) AND ${op})`;
+  }
+
+  columns(): string[] {
+    return [this.col];
+  }
+
+  values(): any[] {
+    return [this.val, this.val, this.val];
+  }
+
+  logValues(): any[] {
+    const log = isSensitive(this.val) ? this.val.logValue() : this.val;
+    return [log, log, log];
+  }
+
+  instanceKey(): string {
+    return `${this.col}-${this.op}-${this.tableName}-${this.uniqueCol}-${this.val}`;
+  }
+}
+
+export function PaginationMultipleColsSubQuery(
+  col: string,
+  op: string,
+  tableName: string,
+  uniqueCol: string,
+  val: any,
+) {
+  return new paginationMultipleColumnsSubQueryClause(
+    col,
+    op,
+    tableName,
+    uniqueCol,
+    val,
+  );
+}

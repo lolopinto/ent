@@ -969,6 +969,59 @@ describe("postgres", () => {
       );
     });
   });
+
+  describe("pagination multiple cols query", () => {
+    test(">", () => {
+      const cls = clause.PaginationMultipleColsSubQuery(
+        "start_time",
+        ">",
+        "events",
+        "id",
+        "fooo",
+      );
+      expect(cls.clause(1)).toBe(
+        "start_time > (SELECT start_time FROM events WHERE id = $1) OR (start_time = (SELECT start_time FROM events WHERE id = $2) AND id > $3)",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time"]);
+      expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.instanceKey()).toEqual("start_time->-events-id-fooo");
+    });
+
+    test("> clause 3", () => {
+      const cls = clause.PaginationMultipleColsSubQuery(
+        "start_time",
+        ">",
+        "events",
+        "id",
+        "fooo",
+      );
+      expect(cls.clause(3)).toBe(
+        "start_time > (SELECT start_time FROM events WHERE id = $3) OR (start_time = (SELECT start_time FROM events WHERE id = $4) AND id > $5)",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time"]);
+      expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.instanceKey()).toEqual("start_time->-events-id-fooo");
+    });
+
+    test("<", () => {
+      const cls = clause.PaginationMultipleColsSubQuery(
+        "start_time",
+        "<",
+        "events",
+        "id",
+        "fooo",
+      );
+      expect(cls.clause(1)).toBe(
+        "start_time < (SELECT start_time FROM events WHERE id = $1) OR (start_time = (SELECT start_time FROM events WHERE id = $2) AND id < $3)",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time"]);
+      expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.instanceKey()).toEqual("start_time-<-events-id-fooo");
+    });
+  });
 });
 
 describe("sqlite", () => {
@@ -1391,6 +1444,59 @@ describe("sqlite", () => {
       expect(cls.values()).toStrictEqual([1, 2, 3]);
       expect(cls.logValues()).toStrictEqual([1, "*", 3]);
       expect(cls.instanceKey()).toEqual("in:id:1,2,3");
+    });
+  });
+
+  describe("pagination multiple cols query", () => {
+    test(">", () => {
+      const cls = clause.PaginationMultipleColsSubQuery(
+        "start_time",
+        ">",
+        "events",
+        "id",
+        "fooo",
+      );
+      expect(cls.clause(1)).toBe(
+        "start_time > (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id > ?)",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time"]);
+      expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.instanceKey()).toEqual("start_time->-events-id-fooo");
+    });
+
+    test("> clause 3", () => {
+      const cls = clause.PaginationMultipleColsSubQuery(
+        "start_time",
+        ">",
+        "events",
+        "id",
+        "fooo",
+      );
+      expect(cls.clause(3)).toBe(
+        "start_time > (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id > ?)",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time"]);
+      expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.instanceKey()).toEqual("start_time->-events-id-fooo");
+    });
+
+    test("<", () => {
+      const cls = clause.PaginationMultipleColsSubQuery(
+        "start_time",
+        "<",
+        "events",
+        "id",
+        "fooo",
+      );
+      expect(cls.clause(1)).toBe(
+        "start_time < (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id < ?)",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time"]);
+      expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls.instanceKey()).toEqual("start_time-<-events-id-fooo");
     });
   });
 });
