@@ -9,6 +9,7 @@ import {
   EdgeType,
   FakeContactSchema,
   UserToContactsFkeyQuery,
+  UserToContactsFkeyQueryAsc,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -45,6 +46,7 @@ interface options<TData extends Data> {
   livePostgresDB?: boolean; // if livedb creates temp db and not depending on mock
   sqlite?: boolean; // do this in sqlite
   globalSchema?: boolean;
+  orderby: "DESC" | "ASC";
   rawDataVerify?(user: FakeUser): Promise<void>;
 }
 
@@ -71,7 +73,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     // TODO sad not generic enough
     return (
       q instanceof UserToContactsFkeyQuery ||
-      q instanceof UserToContactsFkeyQueryDeprecated
+      q instanceof UserToContactsFkeyQueryDeprecated ||
+      q instanceof UserToContactsFkeyQueryAsc
     );
   }
 
@@ -242,7 +245,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       numQueries = 1,
       limit = DefaultLimit,
       disablePaginationBump = false,
-      orderby = "DESC",
+      orderby = opts.orderby,
     },
   ) {
     const uniqCol = isCustomQuery(filter) ? "id" : "id2";
@@ -280,7 +283,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     let parts = opts.clause.clause(1).split(" AND ");
     const cmp = PaginationMultipleColsSubQuery(
       opts.sortCol,
-      "<",
+      opts.orderby === "DESC" ? "<" : ">",
       opts.tableName,
       uniqCol,
       "",
@@ -294,9 +297,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
 
     expect(getWhereClause(ml.logs[0])).toBe(
-      `${parts.join(" AND ")} ORDER BY ${
-        opts.sortCol
-      } DESC, ${uniqCol} DESC LIMIT ${limit + 1}`,
+      `${parts.join(" AND ")} ORDER BY ${opts.sortCol} ${
+        opts.orderby
+      }, ${uniqCol} ${opts.orderby} LIMIT ${limit + 1}`,
     );
   }
 
@@ -310,10 +313,20 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     const uniqCol = isCustomQuery(filter) ? "id" : "id2";
 
+    let op = "";
+    let orderby = "";
+    if (opts.orderby === "DESC") {
+      op = ">";
+      orderby = "ASC";
+    } else {
+      op = "<";
+      orderby = "DESC";
+    }
+
     let parts = opts.clause.clause(1).split(" AND ");
     const cmp = PaginationMultipleColsSubQuery(
       opts.sortCol,
-      ">",
+      op,
       opts.tableName,
       uniqCol,
       "",
@@ -330,7 +343,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       // extra fetched for pagination
       `${parts.join(" AND ")} ORDER BY ${
         opts.sortCol
-      } ASC, ${uniqCol} ASC LIMIT ${limit + 1}`,
+      } ${orderby}, ${uniqCol} ${orderby} LIMIT ${limit + 1}`,
     );
   }
 
@@ -393,9 +406,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
   });
 
-  // TODO test for asc
   // and then have a special test for conflicts.....
   // or change API to have conflicts...
+  // TODO also test for unique column directly e.g. id?????
+  // what else??????
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
@@ -406,7 +420,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       (contacts: FakeContact[]) => {
         // nothing to do here
         // reverse because edges are most recent first
-        return contacts.reverse();
+        if (opts.orderby === "DESC") {
+          return contacts.reverse();
+        }
+        return contacts;
       },
       getViewer(),
     );
@@ -552,7 +569,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       opts.newQuery,
 
       (contacts: FakeContact[]) => {
-        return contacts.reverse().slice(0, N);
+        if (opts.orderby === "DESC") {
+          return contacts.reverse().slice(0, N);
+        }
+        return contacts.slice(0, N);
       },
       getViewer(),
     );
@@ -609,10 +629,15 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       },
       opts.newQuery,
       (contacts: FakeContact[]) => {
-        return contacts.slice(0, N);
+        if (opts.orderby === "DESC") {
+          return contacts.slice(0, N);
+        } else {
+          return contacts.reverse().slice(0, N);
+        }
       },
       getViewer(),
     );
+    const orderby = opts.orderby === "ASC" ? "DESC" : "ASC";
 
     beforeEach(async () => {
       await filter.createData();
@@ -621,7 +646,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     test("ids", async () => {
       await filter.testIDs();
       verifyQuery(filter, {
-        orderby: "ASC",
+        orderby,
         limit: N,
       });
     });
@@ -633,18 +658,18 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("count", async () => {
       await filter.testCount();
-      verifyQuery(filter, { orderby: "ASC", limit: N });
+      verifyQuery(filter, { orderby, limit: N });
     });
 
     test("edges", async () => {
       await filter.testEdges();
-      verifyQuery(filter, { orderby: "ASC", limit: N });
+      verifyQuery(filter, { orderby, limit: N });
     });
 
     test("ents", async () => {
       await filter.testEnts();
       verifyQuery(filter, {
-        orderby: "ASC",
+        orderby,
         limit: N,
         length: opts.entsLength,
       });
@@ -676,8 +701,12 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       },
       opts.newQuery,
       (contacts: FakeContact[]) => {
-        // < check so we shouldn't get that index
-        return contacts.reverse().slice(idx + 1, idx + N);
+        if (opts.orderby === "DESC") {
+          // < check so we shouldn't get that index
+          return contacts.reverse().slice(idx + 1, idx + N);
+        } else {
+          return contacts.slice(idx + 1, idx + N);
+        }
       },
       getViewer(),
     );
@@ -763,7 +792,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       if (cursor) {
         verifyFirstAfterCursorQuery(query!, 1, 1);
       } else {
-        verifyQuery(query!, { orderby: "DESC", limit: 1 });
+        verifyQuery(query!, { orderby: opts.orderby, limit: 1 });
       }
     }
 
@@ -789,7 +818,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       opts.newQuery,
       (contacts: FakeContact[]) => {
         // > check so we don't want that index
-        return contacts.reverse().slice(0, idx).reverse(); // because of order returned
+        if (opts.orderby === "DESC") {
+          return contacts.reverse().slice(0, idx).reverse(); // because of order returned
+        }
+        return contacts.slice(0, idx).reverse(); // because of order returned
       },
       getViewer(),
     );
@@ -876,7 +908,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       if (cursor) {
         verifyLastBeforeCursorQuery(query!, 1, 1);
       } else {
-        verifyQuery(query!, { orderby: "ASC", limit: 1 });
+        verifyQuery(query!, {
+          orderby: opts.orderby === "DESC" ? "ASC" : "DESC",
+          limit: 1,
+        });
       }
     }
 

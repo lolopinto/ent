@@ -189,16 +189,17 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     const limit = this.options.limit + 1;
 
     options.limit = limit;
-    const sortCol = this.sortCol;
 
-    const m = orderbyRegex.exec(sortCol);
+    const m = orderbyRegex.exec(this.sortCol);
     if (!m) {
-      throw new Error(`invalid sort column ${sortCol}`);
+      throw new Error(`invalid sort column ${this.sortCol}`);
     }
     let orderby = "DESC";
     if (m[2]) {
       orderby = m[2].toUpperCase();
     }
+
+    const sortCol = m[1];
 
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
@@ -206,7 +207,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     if (this.options.cursorCol !== this.sortCol) {
       // we also sort unique col in same direction since it doesn't matter...
-      options.orderby = `${m[0]} ${orderby}, ${this.options.cursorCol} ${orderby}`;
+      options.orderby = `${sortCol} ${orderby}, ${this.options.cursorCol} ${orderby}`;
 
       if (this.offset) {
         const res = this.edgeQuery.getTableName();
@@ -222,7 +223,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         );
       }
     } else {
-      options.orderby = `${m[0]} ${orderby}`;
+      options.orderby = `${sortCol} ${orderby}`;
 
       if (this.offset) {
         let clauseFn = less ? clause.Less : clause.Greater;
@@ -295,16 +296,22 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   async query(
     options: EdgeQueryableDataOptions,
   ): Promise<EdgeQueryableDataOptions> {
-    const sortCol = this.sortCol;
-
-    const m = orderbyRegex.exec(sortCol);
+    const m = orderbyRegex.exec(this.sortCol);
     if (!m) {
-      throw new Error(`invalid sort column ${sortCol}`);
+      throw new Error(`invalid sort column ${this.sortCol}`);
     }
+    const sortCol = m[1];
 
+    // assume desc by default
+    // so last is reverse
     let orderby = "ASC";
     if (m[2]) {
-      orderby = m[2].toUpperCase();
+      // reverse sort col shown...
+      if (m[2].toUpperCase() === "DESC") {
+        orderby = "ASC";
+      } else {
+        orderby = "DESC";
+      }
     }
 
     const greater = orderby === "ASC";
@@ -326,9 +333,9 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
           this.offset,
         );
       }
-      options.orderby = `${m[0]} ${orderby}, ${this.options.cursorCol} ${orderby}`;
+      options.orderby = `${sortCol} ${orderby}, ${this.options.cursorCol} ${orderby}`;
     } else {
-      options.orderby = `${m[0]} ${orderby}`;
+      options.orderby = `${sortCol} ${orderby}`;
 
       if (this.offset) {
         // TODO test for desc

@@ -51,6 +51,7 @@ commonTests({
       expect(convertDate(edge.deletedAt!)).toBeInstanceOf(Date);
     });
   },
+  orderby: "DESC",
 });
 
 assocTests(ml, true);

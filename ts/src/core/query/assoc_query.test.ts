@@ -20,6 +20,7 @@ commonTests({
   entsLength: 2,
   clause: And(Eq("id1", ""), Eq("edge_type", "")),
   sortCol: "time",
+  orderby: "DESC",
   livePostgresDB: true,
 });
 

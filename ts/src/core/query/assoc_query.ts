@@ -26,6 +26,7 @@ interface typeData {
   options: LoadEntOptions<Ent>;
 }
 
+// would be nice to someday have an API for assoc asc
 export abstract class AssocEdgeQueryBase<
     TSource extends Ent<TViewer>,
     TDest extends Ent<TViewer>,
