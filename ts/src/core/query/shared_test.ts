@@ -28,7 +28,7 @@ import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
-import { Clause, Greater, Less } from "../clause";
+import { Clause, PaginationMultipleColsSubQuery } from "../clause";
 
 interface options<TData extends Data> {
   newQuery: (
@@ -254,19 +254,24 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
     let parts = opts.clause.clause(1).split(" AND ");
-    const less = Less(opts.sortCol, "").clause(opts.clause.values().length + 1);
+    const cmp = PaginationMultipleColsSubQuery(
+      opts.sortCol,
+      "<",
+      opts.tableName,
+      "id",
+      "",
+    ).clause(opts.clause.values().length + 1);
     if (parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)
-        .concat([less, "deleted_at IS NULL"]);
+        .concat([cmp, "deleted_at IS NULL"]);
     } else {
-      parts.push(less);
+      parts.push(cmp);
     }
 
-    // TODO!
-    // expect(getWhereClause(ml.logs[0])).toBe(
-    //   `${parts.join(" AND ")} ORDER BY ${opts.sortCol} DESC LIMIT 4`,
-    // );
+    expect(getWhereClause(ml.logs[0])).toBe(
+      `${parts.join(" AND ")} ORDER BY ${opts.sortCol} DESC, id DESC LIMIT 4`,
+    );
   }
 
   function verifyLastBeforeCursorQuery(length: number = 1) {
@@ -274,22 +279,25 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
     let parts = opts.clause.clause(1).split(" AND ");
-    const greater = Greater(opts.sortCol, "").clause(
-      opts.clause.values().length + 1,
-    );
+    const cmp = PaginationMultipleColsSubQuery(
+      opts.sortCol,
+      ">",
+      opts.tableName,
+      "id",
+      "",
+    ).clause(opts.clause.values().length + 1);
     if (parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)
-        .concat([greater, "deleted_at IS NULL"]);
+        .concat([cmp, "deleted_at IS NULL"]);
     } else {
-      parts.push(greater);
+      parts.push(cmp);
     }
 
-    // TODO !
-    // expect(getWhereClause(ml.logs[0])).toBe(
-    //   // extra fetched for pagination
-    //   `${parts.join(" AND ")} ORDER BY ${opts.sortCol} ASC LIMIT 4`,
-    // );
+    expect(getWhereClause(ml.logs[0])).toBe(
+      // extra fetched for pagination
+      `${parts.join(" AND ")} ORDER BY ${opts.sortCol} ASC, id ASC LIMIT 4`,
+    );
   }
 
   function getViewer() {
