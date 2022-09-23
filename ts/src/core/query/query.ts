@@ -52,7 +52,7 @@ export interface EdgeQuery<
 //maybe id2 shouldn't return EdgeQuery but a different object from which you can query edge. the ent you don't need to query since you can just query that on your own.
 
 export interface EdgeQueryFilter<T extends Data> {
-  // this is a filter that does the processing in TypeScript instead of at the SQL layer
+  // this is a filter that does the processing in TypeScript instead of (or in addition to) the SQL layer
   filter?(id: ID, edges: T[]): T[];
 
   // there's 2 ways to do it.
@@ -82,6 +82,7 @@ function assertPositive(n: number) {
   }
 }
 
+// TODO change this...
 function assertValidCursor(cursor: string, col: string): number {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
@@ -97,29 +98,42 @@ function assertValidCursor(cursor: string, col: string): number {
   return time;
 }
 
-interface FilterOptions {
+interface FilterOptions<T extends Data> {
   limit: number;
-  query: BaseEdgeQuery<Ent, Ent, Data>;
-  before?: string;
-  after?: string;
-  sortCol?: string; // what column are we sorting by. defaults to `time`
+  query: BaseEdgeQuery<Ent, Ent, T>;
+  sortCol: string;
   // if sortCol is provided, check if time or not
+  // TODO this is never set...
   sortColNotTime?: boolean;
+
+  // we need source table to be able to do correct query
+
+  // if provided, indicates that sort column is not unqiue and we should use it to
+  // deal with potential duplicates in the sort column.
+  // also ends up being in the cursor e.g. 'id' column in tables
+  // defaults to assuming sortCol is unique if this is not provided...
+  // TODO we should make this required and provide both as needed
+  uniqueCol?: string;
+}
+
+interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
+  after?: string;
+}
+
+interface LastFilterOptions<T extends Data> extends FilterOptions<T> {
+  before?: string;
 }
 
 class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
-  private edgeQuery: BaseEdgeQuery<Ent, Ent, Data>;
+  private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
   private pageMap: Map<ID, PaginationInfo> = new Map();
 
-  constructor(private options: FilterOptions) {
+  constructor(private options: FirstFilterOptions<T>) {
     assertPositive(options.limit);
 
-    if (options.before) {
-      throw new Error(`cannot specify before with a first filter`);
-    }
-    this.sortCol = options.sortCol || "time";
+    this.sortCol = options.sortCol;
     if (options.after) {
       this.offset = assertValidCursor(options.after, this.sortCol);
     }
@@ -136,6 +150,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
       const ret = edges.slice(0, this.options.limit);
       this.pageMap.set(id, {
         hasNextPage: true,
+        // hasPreviousPage always false even if there's a previous page because
+        // we shouldn't be querying in both diretions at the same
         hasPreviousPage: false,
         startCursor: this.edgeQuery.getCursor(ret[0]),
         endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
@@ -150,6 +166,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     return edges;
   }
 
+  // TODO extra query comes here....
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
     // we fetch an extra one to see if we're at the end
     const limit = this.options.limit + 1;
@@ -159,6 +176,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     // and if asc
     // clause below should switch to greater...
     const sortCol = this.sortCol.toLowerCase();
+
+    // TODO change order by for the double orderby...
     if (sortCol.endsWith("desc") || sortCol.endsWith("asc")) {
       options.orderby = `${this.sortCol}`;
     } else {
@@ -167,6 +186,19 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
     if (this.offset) {
+      // TODO change everything from here
+      if (this.options.uniqueCol && this.options.uniqueCol !== sortCol) {
+        // inner col time
+        options.clause = clause.PaginationMultipleColsSubQuery(
+          sortCol,
+          "<",
+          this.edgeQuery.getTableName(),
+          this.options.uniqueCol,
+          // TODO set offset to cursor id...
+          this.offset,
+        );
+      }
+
       if (this.options.sortColNotTime) {
         options.clause = clause.Less(this.sortCol, this.offset);
       } else {
@@ -190,15 +222,12 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
   private pageMap: Map<ID, PaginationInfo> = new Map();
-  private edgeQuery: BaseEdgeQuery<Ent, Ent, Data>;
+  private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
 
-  constructor(private options: FilterOptions) {
+  constructor(private options: LastFilterOptions<T>) {
     assertPositive(options.limit);
 
-    if (options.after) {
-      throw new Error(`cannot specify after with a last filter`);
-    }
-    this.sortCol = options.sortCol || "time";
+    this.sortCol = options.sortCol;
     if (options.before) {
       this.offset = assertValidCursor(options.before, this.sortCol);
     }
@@ -227,6 +256,8 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     if (edges.length > this.options.limit) {
       this.pageMap.set(id, {
         hasPreviousPage: true,
+        // hasNextPage always false even if there's a next page because
+        // we shouldn't be querying in both directions at the same
         hasNextPage: false,
         startCursor: this.edgeQuery.getCursor(ret[0]),
         endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
@@ -438,6 +469,9 @@ export abstract class BaseEdgeQuery<
     }
   }
 
+  // TODO async eventually for assoc loader purposes
+  abstract getTableName(): string;
+
   protected async genIDInfosToFetchImpl() {
     await this.loadRawIDs(this.addID.bind(this));
 
@@ -463,6 +497,7 @@ export abstract class BaseEdgeQuery<
     // may need to bring sql mode or something back
     this.filters.forEach((filter) => {
       if (filter.query) {
+        //  TODO async since we need to fetch edge_table for async filters
         options = filter.query(options);
       }
     });
@@ -495,6 +530,7 @@ export abstract class BaseEdgeQuery<
     return this.edges;
   }
 
+  // TODO change this...
   getCursor(row: TEdge): string {
     return getCursor({
       row,

@@ -146,6 +146,10 @@ export abstract class CustomEdgeQueryBase<
     this.opts = this.getLoadEntOptions();
   }
 
+  getTableName(): string {
+    return this.opts.tableName;
+  }
+
   abstract sourceEnt(id: ID): Promise<Ent | null>;
 
   private async idVisible() {

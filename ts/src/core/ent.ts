@@ -1877,6 +1877,7 @@ export class AssocEdge {
     return this.rawData;
   }
 
+  // TODO change this...
   getCursor(): string {
     return getCursor({
       row: this,
@@ -1898,6 +1899,7 @@ interface cursorOptions {
   conv?: (any: any) => any;
 }
 
+// TODO change this
 export function getCursor(opts: cursorOptions) {
   const { row, col, conv } = opts;
   //  row: Data, col: string, conv?: (any) => any) {
