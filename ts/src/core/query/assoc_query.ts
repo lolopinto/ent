@@ -5,7 +5,7 @@ import {
   LoadEntOptions,
   EdgeQueryableDataOptions,
 } from "../base";
-import { AssocEdge, loadEntsList } from "../ent";
+import { AssocEdge, loadEdgeData, loadEntsList } from "../ent";
 import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
 import { EdgeQuery, BaseEdgeQuery, IDInfo } from "./query";
@@ -60,12 +60,12 @@ export abstract class AssocEdgeQueryBase<
 
   abstract sourceEnt(id: ID): Promise<Ent | null>;
 
-  getTableName(): string {
-    throw new Error(`TODO not implemented yet`);
-  }
-
-  getUniqueColumn(): string {
-    return "id2";
+  async getTableName(): Promise<string> {
+    const edgeData = await loadEdgeData(this.countLoaderFactory.getEdgeType());
+    if (!edgeData) {
+      throw new Error(`couldn't load edgeData`);
+    }
+    return edgeData.edgeTable;
   }
 
   private async getSingleID() {

@@ -73,12 +73,8 @@ export class CustomClauseQuery<
     return null;
   }
 
-  getTableName(): string {
+  getTableName() {
     return this.options.loadEntOptions.tableName;
-  }
-
-  getUniqueColumn(): string {
-    return this.options.loadEntOptions.loaderFactory.options?.key || "id";
   }
 
   async queryRawCount(): Promise<number> {

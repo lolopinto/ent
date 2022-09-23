@@ -184,12 +184,8 @@ export abstract class CustomEdgeQueryBase<
     this.opts = opts;
   }
 
-  getTableName(): string {
+  getTableName() {
     return this.opts.tableName;
-  }
-
-  getUniqueColumn(): string {
-    return this.opts.loaderFactory.options?.key || "id";
   }
 
   abstract sourceEnt(id: ID): Promise<Ent | null>;

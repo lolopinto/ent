@@ -57,9 +57,9 @@ function getWhereClause(query: any) {
 }
 
 export const commonTests = <TData extends Data>(opts: options<TData>) => {
-  setLogLevels("query");
+  setLogLevels(["query", "error"]);
   const ml = opts.ml;
-  ml.mock();
+  // ml.mock();
 
   class TestQueryFilter<TData extends Data> {
     allContacts: FakeContact[] = [];
@@ -249,16 +249,20 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
   }
 
-  function verifyFirstAfterCursorQuery(length: number = 1) {
+  function verifyFirstAfterCursorQuery(
+    filter: TestQueryFilter<any>,
+    length: number = 1,
+  ) {
     // cache showing up in a few because of cross runs...
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
+    const uniqCol = filter.customQuery ? "id" : "id2";
     let parts = opts.clause.clause(1).split(" AND ");
     const cmp = PaginationMultipleColsSubQuery(
       opts.sortCol,
       "<",
       opts.tableName,
-      "id",
+      uniqCol,
       "",
     ).clause(opts.clause.values().length + 1);
     if (parts[parts.length - 1] === "deleted_at IS NULL") {
@@ -270,20 +274,27 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
 
     expect(getWhereClause(ml.logs[0])).toBe(
-      `${parts.join(" AND ")} ORDER BY ${opts.sortCol} DESC, id DESC LIMIT 4`,
+      `${parts.join(" AND ")} ORDER BY ${
+        opts.sortCol
+      } DESC, ${uniqCol} DESC LIMIT 4`,
     );
   }
 
-  function verifyLastBeforeCursorQuery(length: number = 1) {
+  function verifyLastBeforeCursorQuery(
+    filter: TestQueryFilter<any>,
+    length: number = 1,
+  ) {
     // cache showing up in a few because of cross runs...
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
+
+    const uniqCol = filter.customQuery ? "id" : "id2";
 
     let parts = opts.clause.clause(1).split(" AND ");
     const cmp = PaginationMultipleColsSubQuery(
       opts.sortCol,
       ">",
       opts.tableName,
-      "id",
+      uniqCol,
       "",
     ).clause(opts.clause.values().length + 1);
     if (parts[parts.length - 1] === "deleted_at IS NULL") {
@@ -296,7 +307,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     expect(getWhereClause(ml.logs[0])).toBe(
       // extra fetched for pagination
-      `${parts.join(" AND ")} ORDER BY ${opts.sortCol} ASC, id ASC LIMIT 4`,
+      `${parts.join(" AND ")} ORDER BY ${
+        opts.sortCol
+      } ASC, ${uniqCol} ASC LIMIT 4`,
     );
   }
 
@@ -345,7 +358,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
   beforeAll(async () => {
     // want error on by default in tests?
-    setLogLevels(["error", "warn", "info"]);
+    // setLogLevels(["error", "warn", "info"]);
     if (opts.livePostgresDB) {
       tdb = await setupTempDB(opts.globalSchema);
       return;
@@ -652,7 +665,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("ids", async () => {
       await filter.testIDs();
-      verifyFirstAfterCursorQuery();
+      verifyFirstAfterCursorQuery(filter);
     });
 
     test("rawCount", async () => {
@@ -662,17 +675,17 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("count", async () => {
       await filter.testCount();
-      verifyFirstAfterCursorQuery();
+      verifyFirstAfterCursorQuery(filter);
     });
 
     test("edges", async () => {
       await filter.testEdges();
-      verifyFirstAfterCursorQuery();
+      verifyFirstAfterCursorQuery(filter);
     });
 
     test("ents", async () => {
       await filter.testEnts();
-      verifyFirstAfterCursorQuery(opts.entsLength);
+      verifyFirstAfterCursorQuery(filter, opts.entsLength);
     });
 
     test("all", async () => {
@@ -760,7 +773,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("ids", async () => {
       await filter.testIDs();
-      verifyLastBeforeCursorQuery();
+      verifyLastBeforeCursorQuery(filter);
     });
 
     test("rawCount", async () => {
@@ -770,17 +783,17 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("count", async () => {
       await filter.testCount();
-      verifyLastBeforeCursorQuery();
+      verifyLastBeforeCursorQuery(filter);
     });
 
     test("edges", async () => {
       await filter.testEdges();
-      verifyLastBeforeCursorQuery();
+      verifyLastBeforeCursorQuery(filter);
     });
 
     test("ents", async () => {
       await filter.testEnts();
-      verifyLastBeforeCursorQuery(opts.entsLength);
+      verifyLastBeforeCursorQuery(filter, opts.entsLength);
     });
 
     test("all", async () => {

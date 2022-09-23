@@ -11,6 +11,7 @@ import * as clause from "../clause";
 import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
 import { validate } from "uuid";
+import { isPromise } from "util/types";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -59,7 +60,9 @@ export interface EdgeQueryFilter<T extends Data> {
   // there's 2 ways to do it.
   // apply it in SQL
   // or process it after the fact
-  query?(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions;
+  query?(
+    options: EdgeQueryableDataOptions,
+  ): EdgeQueryableDataOptions | Promise<EdgeQueryableDataOptions>;
   // maybe it's a dynamic decision to do so and then query returns what was passed to it and filter returns what was passed to it based on the decision flow
   //  preProcess
 
@@ -179,7 +182,9 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     return edges;
   }
 
-  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+  async query(
+    options: EdgeQueryableDataOptions,
+  ): Promise<EdgeQueryableDataOptions> {
     // we fetch an extra one to see if we're at the end
     const limit = this.options.limit + 1;
 
@@ -201,12 +206,14 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     if (this.offset) {
       if (this.options.cursorCol !== this.sortCol) {
+        const res = this.edgeQuery.getTableName();
+        const tableName = isPromise(res) ? await res : res;
         // inner col time
         options.clause = clause.PaginationMultipleColsSubQuery(
           sortCol,
           // TODO also test for this...
           less ? "<" : ">",
-          this.edgeQuery.getTableName(),
+          tableName,
           this.options.cursorCol,
           this.offset,
         );
@@ -282,7 +289,9 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     return ret;
   }
 
-  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+  async query(
+    options: EdgeQueryableDataOptions,
+  ): Promise<EdgeQueryableDataOptions> {
     if (!this.offset) {
       return options;
     }
@@ -303,12 +312,15 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     options.limit = this.options.limit + 1; // fetch an extra so we know if previous pag
 
     if (this.options.cursorCol !== this.sortCol) {
+      const res = this.edgeQuery.getTableName();
+      const tableName = isPromise(res) ? await res : res;
+
       // inner col time
       options.clause = clause.PaginationMultipleColsSubQuery(
         sortCol,
         // TODO also test for this...
         greater ? ">" : "<",
-        this.edgeQuery.getTableName(),
+        tableName,
         this.options.cursorCol,
         this.offset,
       );
@@ -517,10 +529,7 @@ export abstract class BaseEdgeQuery<
     }
   }
 
-  // TODO async eventually for assoc loader purposes
-  abstract getTableName(): string;
-
-  abstract getUniqueColumn(): string;
+  abstract getTableName(): string | Promise<string>;
 
   protected async genIDInfosToFetchImpl() {
     await this.loadRawIDs(this.addID.bind(this));
@@ -545,12 +554,13 @@ export abstract class BaseEdgeQuery<
     // TODO once we add a lot of complex filters, this needs to be more complicated
     // e.g. commutative filters. what can be done in sql or combined together etc
     // may need to bring sql mode or something back
-    this.filters.forEach((filter) => {
+    // console.debug(this.filters);
+    for (const filter of this.filters) {
       if (filter.query) {
-        //  TODO async since we need to fetch edge_table for async filters
-        options = filter.query(options);
+        let res = filter.query(options);
+        options = isPromise(res) ? await res : res;
       }
-    });
+    }
 
     await this.loadRawData(idsInfo, options);
 
