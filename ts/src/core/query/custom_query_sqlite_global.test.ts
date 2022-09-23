@@ -16,7 +16,7 @@ describe("custom query", () => {
       return UserToContactsFkeyQuery.query(viewer, user);
     },
     ml,
-    uniqKey: "fake_contacts",
+    uniqKey: "fake_contacts_global",
     tableName: "fake_contacts",
     clause: Eq("user_id", ""),
     sortCol: "created_at",
