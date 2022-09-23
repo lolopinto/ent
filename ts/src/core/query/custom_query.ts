@@ -121,6 +121,21 @@ function getQueryLoader<
   );
 }
 
+function isDeprecatedOptions<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+>(
+  options:
+    | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
+    | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
+): options is CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer> {
+  return (
+    (options as CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>)
+      .countLoaderFactory !== undefined
+  );
+}
+
 export abstract class CustomEdgeQueryBase<
     TSource extends Ent<TViewer>,
     TDest extends Ent<TViewer>,
@@ -137,16 +152,36 @@ export abstract class CustomEdgeQueryBase<
       | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
       | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
   ) {
-    // @ts-ignore
-    super(viewer, options?.sortColumn || "created_at");
-    options.sortColumn = options.sortColumn || "created_at";
+    let opts: LoadEntOptions<TDest>;
+    // TODO this is changing to id...
+    let defaultSort = "created_at";
+
+    let uniqueColIsSort = false;
+
+    if (isDeprecatedOptions(options)) {
+      opts = options.options;
+    } else {
+      opts = options.loadEntOptions;
+      // uniqueCol = options.sortColumn || defaultSort;
+      if (options.sortColumnUnique) {
+        uniqueColIsSort = true;
+      }
+    }
+    let uniqueCol = opts.loaderFactory.options?.key || "id";
+
+    if (uniqueColIsSort) {
+      uniqueCol = options.sortColumn || defaultSort;
+    }
+    // // let uniqueCol = "id";
+    options.sortColumn = options.sortColumn || defaultSort;
+    super(viewer, options.sortColumn, uniqueCol);
     if (typeof options.src === "object") {
       this.id = options.src.id;
     } else {
       this.id = options.src;
     }
 
-    this.opts = this.getLoadEntOptions();
+    this.opts = opts;
   }
 
   getTableName(): string {
@@ -167,26 +202,15 @@ export abstract class CustomEdgeQueryBase<
     return !ids[0].invalidated;
   }
 
-  private isDeprecatedOptions(
-    options:
-      | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
-      | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
-  ): options is CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer> {
-    return (
-      (options as CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>)
-        .countLoaderFactory !== undefined
-    );
-  }
-
   private getCountLoader() {
-    if (this.isDeprecatedOptions(this.options)) {
+    if (isDeprecatedOptions(this.options)) {
       return this.options.countLoaderFactory.createLoader(this.viewer.context);
     }
     return getRawCountLoader(this.viewer, this.options);
   }
 
   private getQueryLoader(options: EdgeQueryableDataOptions) {
-    if (this.isDeprecatedOptions(this.options)) {
+    if (isDeprecatedOptions(this.options)) {
       return this.options.dataLoaderFactory.createConfigurableLoader(
         options,
         this.viewer.context,
@@ -217,16 +241,6 @@ export abstract class CustomEdgeQueryBase<
     addID: (src: ID | TSource) => void,
   ): Promise<void> {
     addID(this.options.src);
-  }
-
-  private getLoadEntOptions() {
-    let opts: LoadEntOptions<TDest>;
-    if (this.isDeprecatedOptions(this.options)) {
-      opts = this.options.options;
-    } else {
-      opts = this.options.loadEntOptions;
-    }
-    return opts;
   }
 
   protected async loadRawData(

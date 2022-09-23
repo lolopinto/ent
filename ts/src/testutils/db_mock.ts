@@ -256,7 +256,9 @@ export class QueryRecorder {
   }
 
   static mockPool(pool: typeof Pool) {
-    const mockedPool = mocked(pool, true);
+    const mockedPool = mocked(pool);
+    // @ts-ignore
+    // TODO what changed in mockImplementation?
     mockedPool.mockImplementation((): Pool => {
       return {
         totalCount: 1,

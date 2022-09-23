@@ -62,8 +62,10 @@ export class CustomClauseQuery<
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
   ) {
-    // TODO this should change to default id anyways
-    super(viewer, options.sortColumn || "created_at");
+    // TODO this sshould change to id
+    const sortCol = options.sortColumn || "created_at";
+    let unique = options.sortColumnUnique ? sortCol : "id";
+    super(viewer, options.sortColumn || sortCol, unique);
     this.clause = getClause(options);
   }
 

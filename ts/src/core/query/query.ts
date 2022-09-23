@@ -10,6 +10,7 @@ import { DefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
+import { validate } from "uuid";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -86,6 +87,12 @@ function assertPositive(n: number) {
 function assertValidCursor(cursor: string, col: string): any {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
+  // console.debug(parts, col);
+  // uuid, don't parse int since it tries to validate just first part
+  // TODO change this to only do the parseInt part if time...
+  if (validate(parts[1])) {
+    return parts[1];
+  }
   // invalid or unknown cursor. nothing to do here.
   if (parts.length !== 2 || parts[0] !== col) {
     throw new Error(`invalid cursor ${cursor} passed`);
@@ -102,21 +109,21 @@ interface FilterOptions<T extends Data> {
   limit: number;
   query: BaseEdgeQuery<Ent, Ent, T>;
   sortCol: string;
+  cursorCol: string;
   // if sortCol is provided, check if time or not
   // TODO this is never set...
   sortColNotTime?: boolean;
-
-  // we need source table to be able to do correct query
 
   // if provided, indicates that sort column is not unqiue and we should use it to
   // deal with potential duplicates in the sort column.
   // also ends up being in the cursor e.g. 'id' column in tables
   // defaults to assuming sortCol is unique if this is not provided...
   // TODO we should make this required and provide both as needed
-  uniqueCol?: string;
+  // uniqueCol?: string;
 
   // indicates that sort column is unique and we shouldn't use the id from the
   // table as the cursor and use the sort column instead
+  // TODO do we still need this?
   sortColumnUnique?: boolean;
 }
 
@@ -141,11 +148,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     this.sortCol = options.sortCol;
     if (options.after) {
-      if (options.uniqueCol) {
-        this.offset = assertValidCursor(options.after, options.uniqueCol);
-      } else {
-        this.offset = assertValidCursor(options.after, this.sortCol);
-      }
+      this.offset = assertValidCursor(options.after, options.cursorCol);
     }
     if (this.options.sortColNotTime && !this.options.sortCol) {
       throw new Error(
@@ -163,14 +166,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         // hasPreviousPage always false even if there's a previous page because
         // we shouldn't be querying in both diretions at the same
         hasPreviousPage: false,
-        startCursor: getCursor({
-          row: ret[0],
-          col: this.options.uniqueCol || this.sortCol,
-        }),
-        endCursor: getCursor({
-          row: ret[ret.length - 1],
-          col: this.options.uniqueCol || this.sortCol,
-        }),
+        startCursor: this.edgeQuery.getCursor(ret[0]),
+        endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
       });
       return ret;
     }
@@ -182,17 +179,12 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     return edges;
   }
 
-  // TODO extra query comes here....
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
     // we fetch an extra one to see if we're at the end
     const limit = this.options.limit + 1;
 
     options.limit = limit;
-    // todo may not be desc
-    // and if asc
-    // clause below should switch to greater...
     const sortCol = this.sortCol;
-    const uniqueCol = this.options.uniqueCol;
 
     const m = orderbyRegex.exec(sortCol);
     if (!m) {
@@ -202,38 +194,34 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     if (m[2]) {
       orderby = m[2].toUpperCase();
     }
-    if (uniqueCol) {
-      // TODO hack for now
-      this.options.sortColNotTime = true;
-      // we also sort unique col in same direction since it doesn't matter...
-      options.orderby = `${m[0]} ${orderby}, ${uniqueCol} ${orderby}`;
-    } else {
-      options.orderby = `${m[0]} ${orderby}`;
-    }
 
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
+    const less = orderby.toLowerCase() === "desc";
+
     if (this.offset) {
-      // TODO change everything from here
-      if (this.options.uniqueCol && this.options.uniqueCol !== sortCol) {
+      if (this.options.cursorCol !== this.sortCol) {
         // inner col time
         options.clause = clause.PaginationMultipleColsSubQuery(
           sortCol,
-          "<",
+          // TODO also test for this...
+          less ? "<" : ">",
           this.edgeQuery.getTableName(),
-          this.options.uniqueCol,
-          // TODO set offset to cursor id...
+          this.options.cursorCol,
           this.offset,
         );
-      }
 
-      if (this.options.sortColNotTime) {
-        options.clause = clause.Less(this.sortCol, this.offset);
+        // we also sort unique col in same direction since it doesn't matter...
+        options.orderby = `${m[0]} ${orderby}, ${this.options.cursorCol} ${orderby}`;
       } else {
-        options.clause = clause.Less(
-          this.sortCol,
-          new Date(this.offset).toISOString(),
-        );
+        options.orderby = `${m[0]} ${orderby}`;
+
+        let clauseFn = less ? clause.Less : clause.Greater;
+        let val = this.options.sortColNotTime
+          ? this.offset
+          : new Date(this.offset).toISOString();
+
+        options.clause = clauseFn(this.sortCol, val);
       }
     }
     // console.debug("filter opts", options, this.options);
@@ -257,7 +245,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     this.sortCol = options.sortCol;
     if (options.before) {
-      this.offset = assertValidCursor(options.before, this.sortCol);
+      this.offset = assertValidCursor(options.before, options.cursorCol);
     }
     if (this.options.sortColNotTime && !this.options.sortCol) {
       throw new Error(
@@ -298,18 +286,44 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     if (!this.offset) {
       return options;
     }
+    const sortCol = this.sortCol;
 
-    options.orderby = `${this.sortCol} ASC`;
+    const m = orderbyRegex.exec(sortCol);
+    if (!m) {
+      throw new Error(`invalid sort column ${sortCol}`);
+    }
+
+    let orderby = "ASC";
+    if (m[2]) {
+      orderby = m[2].toUpperCase();
+    }
+
+    const greater = orderby.toLowerCase() === "asc";
+
     options.limit = this.options.limit + 1; // fetch an extra so we know if previous pag
 
-    if (this.options.sortColNotTime) {
-      options.clause = clause.Greater(this.sortCol, this.offset);
-    } else {
-      options.clause = clause.Greater(
-        this.sortCol,
-        new Date(this.offset).toISOString(),
+    if (this.options.cursorCol !== this.sortCol) {
+      // inner col time
+      options.clause = clause.PaginationMultipleColsSubQuery(
+        sortCol,
+        // TODO also test for this...
+        greater ? ">" : "<",
+        this.edgeQuery.getTableName(),
+        this.options.cursorCol,
+        this.offset,
       );
+      options.orderby = `${m[0]} ${orderby}, ${this.options.cursorCol} ${orderby}`;
+    } else {
+      options.orderby = `${m[0]} ${orderby}`;
+
+      // TODO test for desc
+      let clauseFn = greater ? clause.Greater : clause.Less;
+      let val = this.options.sortColNotTime
+        ? this.offset
+        : new Date(this.offset).toISOString();
+      options.clause = clauseFn(this.sortCol, val);
     }
+
     return options;
   }
 
@@ -333,7 +347,11 @@ export abstract class BaseEdgeQuery<
   private idMap: Map<ID, TSource> = new Map();
   private idsToFetch: ID[] = [];
 
-  constructor(public viewer: Viewer, private sortCol: string) {
+  constructor(
+    public viewer: Viewer,
+    private sortCol: string,
+    private cursorCol: string,
+  ) {
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
     this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
   }
@@ -352,6 +370,7 @@ export abstract class BaseEdgeQuery<
         limit: n,
         after,
         sortCol: this.sortCol,
+        cursorCol: this.cursorCol,
         query: this,
       }),
     );
@@ -365,6 +384,7 @@ export abstract class BaseEdgeQuery<
         limit: n,
         before,
         sortCol: this.sortCol,
+        cursorCol: this.cursorCol,
         query: this,
       }),
     );
@@ -560,21 +580,21 @@ export abstract class BaseEdgeQuery<
     return this.edges;
   }
 
-  // TODO delete change this...
   getCursor(row: TEdge): string {
     return getCursor({
       row,
-      col: this.sortCol,
-      conv: (datum) => {
-        if (datum instanceof Date) {
-          return datum.getTime();
-        }
-        // sqlite stores it as string and doesn't convert back
-        if (typeof datum === "string") {
-          return Date.parse(datum);
-        }
-        return datum;
-      },
+      col: this.cursorCol,
+      // TODO support unique date type cols....
+      // conv: (datum) => {
+      //   if (datum instanceof Date) {
+      //     return datum.getTime();
+      //   }
+      //   // sqlite stores it as string and doesn't convert back
+      //   if (typeof datum === "string") {
+      //     return Date.parse(datum);
+      //   }
+      //   return datum;
+      // },
     });
   }
 }

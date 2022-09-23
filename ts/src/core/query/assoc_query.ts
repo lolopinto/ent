@@ -46,7 +46,7 @@ export abstract class AssocEdgeQueryBase<
       | LoadEntOptions<TDest, TViewer>
       | loaderOptionsFunc<TViewer>,
   ) {
-    super(viewer, "time");
+    super(viewer, "time", "id2");
   }
 
   private isEdgeQuery(
