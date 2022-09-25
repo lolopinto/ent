@@ -212,7 +212,7 @@ async function testMultiQueryDataAvail(
 
   await Promise.all(
     [1, 2, 3, 4, 5].map(async (count, idx) => {
-      const [user, contacts] = await createAllContacts(undefined, count);
+      const [user, contacts] = await createAllContacts({ slice: count });
 
       m.set(user.id, contacts);
       ids[idx] = user.id;

@@ -375,6 +375,104 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     });
   }
 
+  function getVerifyAfterEachCursor<TData extends Data>(
+    edges: TData[],
+    pageLength: number,
+    user: FakeUser,
+  ) {
+    let query: EdgeQuery<FakeUser, FakeContact, Data>;
+
+    async function verify(
+      i: number,
+      hasEdge: boolean,
+      hasNextPage: boolean,
+      cursor?: string,
+    ) {
+      ml.clear();
+      query = opts.newQuery(getViewer(), user);
+      const newEdges = await query.first(pageLength, cursor).queryEdges();
+
+      const pagination = query.paginationInfo().get(user.id);
+      if (hasEdge) {
+        expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
+        expect(newEdges.length, `${i}`).toBe(
+          edges.length - i >= pageLength ? pageLength : edges.length - i,
+        );
+      } else {
+        expect(newEdges.length, `${i}`).toBe(0);
+      }
+
+      if (hasNextPage) {
+        expect(pagination?.hasNextPage, `${i}`).toBe(true);
+        expect(pagination?.hasPreviousPage, `${i}`).toBe(false);
+      } else {
+        expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
+        expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
+      }
+
+      if (cursor) {
+        verifyFirstAfterCursorQuery(query!, 1, pageLength);
+      } else {
+        verifyQuery(query!, { orderby: opts.orderby, limit: pageLength });
+      }
+    }
+
+    function getCursor(edge: TData) {
+      return query.getCursor(edge);
+    }
+    return { verify, getCursor };
+  }
+
+  function getVerifyBeforeEachCursor(
+    edges: TData[],
+    pageLength: number,
+    user: FakeUser,
+  ) {
+    let query: EdgeQuery<FakeUser, FakeContact, Data>;
+
+    async function verify(
+      i: number,
+      hasEdge: boolean,
+      hasPreviousPage: boolean,
+      cursor?: string,
+    ) {
+      ml.clear();
+
+      query = opts.newQuery(getViewer(), user);
+      const newEdges = await query.last(pageLength, cursor).queryEdges();
+
+      const pagination = query.paginationInfo().get(user.id);
+      if (hasEdge) {
+        expect(newEdges.length, `${i}`).toBe(
+          i >= pageLength ? pageLength : i + 1,
+        );
+        expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
+      } else {
+        expect(newEdges.length, `${i}`).toBe(0);
+      }
+
+      if (hasPreviousPage) {
+        expect(pagination?.hasPreviousPage, `${i}`).toBe(true);
+        expect(pagination?.hasNextPage, `${i}`).toBe(false);
+      } else {
+        expect(pagination?.hasPreviousPage, `${i}`).toBe(undefined);
+        expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
+      }
+      if (cursor) {
+        verifyLastBeforeCursorQuery(query!, 1, pageLength);
+      } else {
+        verifyQuery(query!, {
+          orderby: opts.orderby === "DESC" ? "ASC" : "DESC",
+          limit: pageLength,
+        });
+      }
+    }
+    function getCursor(edge: TData) {
+      return query.getCursor(edge);
+    }
+    return { verify, getCursor };
+  }
+
   if (opts.globalSchema) {
     setGlobalSchema(testEdgeGlobalSchema);
   }
@@ -406,10 +504,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
   });
 
-  // and then have a special test for conflicts.....
-  // or change API to have conflicts...
+  // TODO conflicts complex tests
+
   // TODO also test for unique column directly e.g. id?????
-  // what else??????
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
@@ -761,47 +858,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     let [user] = await createAllContacts();
     const edges = await opts.newQuery(getViewer(), user).queryEdges();
 
-    let query: EdgeQuery<FakeUser, FakeContact, Data>;
-
-    async function verify(
-      i: number,
-      hasEdge: boolean,
-      hasNextPage: boolean,
-      cursor?: string,
-    ) {
-      ml.clear();
-      query = opts.newQuery(getViewer(), user);
-      const newEdges = await query.first(1, cursor).queryEdges();
-
-      const pagination = query.paginationInfo().get(user.id);
-      if (hasEdge) {
-        expect(newEdges.length, `${i}`).toBe(1);
-        expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
-      } else {
-        expect(newEdges.length, `${i}`).toBe(0);
-      }
-
-      if (hasNextPage) {
-        expect(pagination?.hasNextPage).toBe(true);
-        expect(pagination?.hasPreviousPage).toBe(false);
-      } else {
-        expect(pagination?.hasNextPage).toBe(undefined);
-        expect(pagination?.hasNextPage).toBe(undefined);
-      }
-
-      if (cursor) {
-        verifyFirstAfterCursorQuery(query!, 1, 1);
-      } else {
-        verifyQuery(query!, { orderby: opts.orderby, limit: 1 });
-      }
-    }
+    const { verify, getCursor } = getVerifyAfterEachCursor(edges, 1, user);
 
     await verify(0, true, true, undefined);
-    await verify(1, true, true, query!.getCursor(edges[0]));
-    await verify(2, true, true, query!.getCursor(edges[1]));
-    await verify(3, true, true, query!.getCursor(edges[2]));
-    await verify(4, true, false, query!.getCursor(edges[3]));
-    await verify(5, false, false, query!.getCursor(edges[4]));
+    await verify(1, true, true, getCursor(edges[0]));
+    await verify(2, true, true, getCursor(edges[1]));
+    await verify(3, true, true, getCursor(edges[2]));
+    await verify(4, true, false, getCursor(edges[3]));
+    await verify(5, false, false, getCursor(edges[4]));
   });
 
   describe("last. before cursor", () => {
@@ -878,49 +942,68 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     let [user] = await createAllContacts();
     const edges = await opts.newQuery(getViewer(), user).queryEdges();
 
-    let query: EdgeQuery<FakeUser, FakeContact, Data>;
-    async function verify(
-      i: number,
-      hasEdge: boolean,
-      hasPreviousPage: boolean,
-      cursor?: string,
-    ) {
-      ml.clear();
-
-      query = opts.newQuery(getViewer(), user);
-      const newEdges = await query.last(1, cursor).queryEdges();
-
-      const pagination = query.paginationInfo().get(user.id);
-      if (hasEdge) {
-        expect(newEdges.length, `${i}`).toBe(1);
-        expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
-      } else {
-        expect(newEdges.length, `${i}`).toBe(0);
-      }
-
-      if (hasPreviousPage) {
-        expect(pagination?.hasPreviousPage, `${i}`).toBe(true);
-        expect(pagination?.hasNextPage, `${i}`).toBe(false);
-      } else {
-        expect(pagination?.hasPreviousPage, `${i}`).toBe(undefined);
-        expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
-      }
-      if (cursor) {
-        verifyLastBeforeCursorQuery(query!, 1, 1);
-      } else {
-        verifyQuery(query!, {
-          orderby: opts.orderby === "DESC" ? "ASC" : "DESC",
-          limit: 1,
-        });
-      }
-    }
+    const { verify, getCursor } = getVerifyBeforeEachCursor(edges, 1, user);
 
     await verify(4, true, true, undefined);
-    await verify(3, true, true, query!.getCursor(edges[4]));
-    await verify(2, true, true, query!.getCursor(edges[3]));
-    await verify(1, true, true, query!.getCursor(edges[2]));
-    await verify(0, true, false, query!.getCursor(edges[1]));
-    await verify(-1, false, false, query!.getCursor(edges[0]));
+    await verify(3, true, true, getCursor(edges[4]));
+    await verify(2, true, true, getCursor(edges[3]));
+    await verify(1, true, true, getCursor(edges[2]));
+    await verify(0, true, false, getCursor(edges[1]));
+    await verify(-1, false, false, getCursor(edges[0]));
+  });
+
+  describe("with conflicts", () => {
+    let user: FakeUser;
+    let allEdges: TData[] = [];
+    beforeEach(async () => {
+      const [u, contacts] = await createAllContacts();
+      user = u;
+      const [_, contacts2] = await createAllContacts({
+        user,
+        start: contacts[contacts.length - 1].createdAt.getTime() - 100,
+      });
+      await createAllContacts({
+        user,
+        start: contacts2[contacts.length - 1].createdAt.getTime() - 100,
+      });
+
+      const edges = await opts.newQuery(getViewer(), user).queryEdges();
+
+      // confirm there are duplicates...
+      expect(edges[4].created_at).toStrictEqual(edges[5].created_at);
+      expect(edges[9].created_at).toStrictEqual(edges[10].created_at);
+      allEdges = edges;
+    });
+
+    test("first after each cursor", async () => {
+      const { verify, getCursor } = getVerifyAfterEachCursor(allEdges, 5, user);
+
+      // regular pagination
+      await verify(0, true, true, undefined);
+      await verify(5, true, true, getCursor(allEdges[4]));
+      await verify(10, true, false, getCursor(allEdges[9]));
+      await verify(15, false, false, getCursor(allEdges[14]));
+
+      // one without duplicates work if we were paginating at a different place...
+      // TODO change this to use different numbers based on
+      await verify(6, true, true, getCursor(allEdges[5]));
+      await verify(11, true, false, getCursor(allEdges[10]));
+    });
+
+    test("last before each cursor", async () => {
+      const { verify, getCursor } = getVerifyBeforeEachCursor(
+        allEdges,
+        5,
+        user,
+      );
+
+      await verify(14, true, true, undefined);
+      await verify(13, true, true, getCursor(allEdges[14]));
+      await verify(8, true, true, getCursor(allEdges[9]));
+      await verify(9, true, true, getCursor(allEdges[10]));
+      await verify(3, true, false, getCursor(allEdges[4]));
+      await verify(4, true, false, getCursor(allEdges[5]));
+    });
   });
 };
 

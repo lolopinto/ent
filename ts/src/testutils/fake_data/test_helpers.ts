@@ -27,7 +27,6 @@ import { NodeType } from "./const";
 import { MockDate } from "./../mock_date";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { WriteOperation } from "../../action";
-import DB from "../../core/db";
 
 export function getContactInput(
   user: FakeUser,
@@ -38,6 +37,8 @@ export function getContactInput(
     lastName: "Snow",
     emailAddress: "foo@bar.com",
     userID: user.id,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...input,
   };
 }
@@ -51,6 +52,8 @@ export function getUserInput(
     emailAddress: "foo@bar.com",
     phoneNumber: "415-212-1212",
     password: "pa$$w0rd",
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...input,
   };
 }
@@ -111,24 +114,36 @@ export const inputs: Partial<ContactCreateInput>[] = [
   },
 ];
 
+interface createContactOptions {
+  input?: Partial<UserCreateInput>;
+  slice?: number;
+  user?: FakeUser;
+  start?: number;
+}
 export async function createAllContacts(
-  input?: Partial<UserCreateInput>,
-  slice?: number,
+  opts?: createContactOptions,
 ): Promise<[FakeUser, FakeContact[]]> {
-  const user = await createTestUser(input);
+  let { input, slice, user } = opts || {};
+  if (!user) {
+    user = await createTestUser(input);
+  }
+  const userr = user!;
 
+  if (opts?.start) {
+    advanceTo(opts.start);
+  }
   let userInputs = inputs.slice(0, slice || inputs.length);
   const contacts = await Promise.all(
     userInputs.map(async (input) => {
       // just to make times deterministic so that tests can consistently work
       advanceBy(100);
       const builder = getContactBuilder(
-        user.viewer,
-        getContactInput(user, input),
+        userr.viewer,
+        getContactInput(userr, input),
       );
       // add edge from user to contact
       builder.orchestrator.addInboundEdge(
-        user.id,
+        userr.id,
         EdgeType.UserToContacts,
         NodeType.FakeUser,
         {
@@ -140,7 +155,7 @@ export async function createAllContacts(
     }),
   );
   expect(contacts.length).toBe(userInputs.length);
-  return [user, contacts];
+  return [userr, contacts];
 }
 
 export async function createUserPlusFriendRequests(

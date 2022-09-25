@@ -166,9 +166,11 @@ export function assocTests(ml: MockLogs, global = false) {
 
     async beforeEach() {
       let [user1, user2, user3] = await Promise.all([
-        createAllContacts({ firstName: "Jon", lastName: "Snow" }),
-        createAllContacts({ firstName: "Aegon", lastName: "Targaryen" }),
-        createAllContacts({ firstName: "Ned", lastName: "Stark" }),
+        createAllContacts({ input: { firstName: "Jon", lastName: "Snow" } }),
+        createAllContacts({
+          input: { firstName: "Aegon", lastName: "Targaryen" },
+        }),
+        createAllContacts({ input: { firstName: "Ned", lastName: "Stark" } }),
       ]);
       // modify contacts as needed
       user1[1] = this.ents(user1[1]);

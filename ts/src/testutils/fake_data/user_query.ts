@@ -102,6 +102,8 @@ export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<
       loadEntOptions: FakeContact.loaderOptions(),
       groupCol: "user_id",
       name: "user_to_contacts",
+      // instead of the id col...
+      sortColumn: "created_at",
     });
   }
 

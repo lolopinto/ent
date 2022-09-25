@@ -114,6 +114,8 @@ export interface ContactCreateInput {
   lastName: string;
   emailAddress: string;
   userID: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
