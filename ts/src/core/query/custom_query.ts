@@ -26,7 +26,7 @@ export interface CustomEdgeQueryOptionsDeprecated<
   countLoaderFactory: LoaderFactory<ID, number>;
   dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
   options: LoadEntOptions<TDest, TViewer>;
-  // defaults to id
+  // defaults to created_at (for now, will be changed to id)
   sortColumn?: string;
 }
 
@@ -43,7 +43,7 @@ export interface CustomEdgeQueryOptions<
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
   name: string;
-  // defaults to id
+  // defaults to created_at (for now, will be changed to id)
   sortColumn?: string;
   // pass this if the sort column is unique and it'll be used for the cursor and used to
   // generate the query
@@ -153,7 +153,7 @@ export abstract class CustomEdgeQueryBase<
       | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
   ) {
     let opts: LoadEntOptions<TDest>;
-    let defaultSort = "id";
+    let defaultSort = "created_at";
 
     let uniqueColIsSort = false;
 

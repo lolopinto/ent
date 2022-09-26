@@ -269,15 +269,12 @@ class Compiler {
           if (relPath) {
             // update the node...
             return ts.updateImportDeclaration(
-              // TODO test this...
-              // something changed here...
               importNode,
               importNode.decorators,
               importNode.modifiers,
               importNode.importClause,
               importNode.moduleSpecifier,
               importNode.assertClause,
-              // ts.createLiteral(relPath),
             );
           }
         }
@@ -295,7 +292,7 @@ class Compiler {
                 exportNode.decorators,
                 exportNode.modifiers,
                 exportNode.exportClause,
-                ts.createLiteral(relPath),
+                exportNode.moduleSpecifier,
                 exportNode.isTypeOnly,
               );
             }

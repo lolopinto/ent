@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.1.0-alpha90",
+  "version": "0.1.0-alpha90-4c018c30-3ddd-11ed-afe2-d56010888db3",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -75,8 +75,7 @@
     "object-path": ">=0.11.6",
     "pluralize": "^8.0.0",
     "supertest": "^6.1.3",
-    "ts-jest": "^29.0.1",
-    "typescript": "^4.8.3"
+    "ts-jest": "^29.0.1"
   },
   "scripts": {
     "compile": "tsc",
