@@ -20,7 +20,6 @@ import { cacheMap, getCustomLoader, getLoader } from "./loader";
 import memoizee from "memoizee";
 import { ObjectLoaderFactory } from "./object_loader";
 
-// hello maybe?
 export function getOrderBy(sortCol: string, orderby?: string) {
   if (orderby) {
     return orderby;

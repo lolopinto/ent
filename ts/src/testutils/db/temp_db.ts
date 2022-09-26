@@ -630,7 +630,6 @@ export function setupSqlite(
     process.env.DB_CONNECTION_STRING = connString;
     loadConfig();
     await tdb.beforeAll();
-    // await tdb.create(...tables());
 
     const conn = DB.getInstance().getConnection();
     expect((conn as Sqlite).db.memory).toBe(false);

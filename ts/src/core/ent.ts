@@ -1892,7 +1892,7 @@ interface cursorOptions {
   conv?: (any: any) => any;
 }
 
-// TODO change/delete this
+// TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
   const { row, col, conv } = opts;
   //  row: Data, col: string, conv?: (any) => any) {

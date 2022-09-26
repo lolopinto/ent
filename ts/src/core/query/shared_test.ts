@@ -472,8 +472,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   beforeAll(async () => {
-    // want error on by default in tests?
-    // setLogLevels(["error", "warn", "info"]);
     if (opts.livePostgresDB) {
       tdb = await setupTempDB(opts.globalSchema);
       return;
@@ -487,8 +485,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
   });
 
-  // TODO also test for unique column directly e.g. id?????
-  // or name in this case
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeUser, FakeContact, TData>) => {

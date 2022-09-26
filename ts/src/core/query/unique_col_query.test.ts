@@ -92,7 +92,6 @@ function tests(
       fn = dir === "DESC" ? Greater : Less;
     }
     expect(ml.logs.length).toBe(2);
-    // console.debug(ml.logs, orderby, fn, opts);
     expect(ml.logs[1]).toStrictEqual({
       query: buildQuery({
         tableName: FakeTag.loaderOptions().tableName,
@@ -162,7 +161,6 @@ function tests(
     const edges = await q.queryEdges();
     expect(edges.length).toBe(COUNT);
     const names = edges.map((edge) => edge.canonical_name);
-    // console.debug(names);
     ml.clear();
 
     const q2 = getQuery();
@@ -170,8 +168,6 @@ function tests(
     expect(edges2.length).toBe(2);
     verifyQuery({ limit: 2 });
     const cursor = q2.getCursor(edges2[1]);
-    // console.debug(edges2);
-    // console.debug("cursorrrs", cursor);
     ml.clear();
 
     const q3 = getQuery();

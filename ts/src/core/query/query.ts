@@ -86,13 +86,10 @@ function assertPositive(n: number) {
   }
 }
 
-// TODO change this...
 function assertValidCursor(cursor: string, col: string): any {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
-  // console.debug(parts, col);
   // uuid, don't parse int since it tries to validate just first part
-  // TODO change this to only do the parseInt part if time...
   if (validate(parts[1])) {
     return parts[1];
   }
@@ -100,7 +97,9 @@ function assertValidCursor(cursor: string, col: string): any {
   if (parts.length !== 2 || parts[0] !== col) {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
-  // TODO handle both cases... time vs not better
+  // TODO handle both cases... (time vs not) better
+  // TODO change this to only do the parseInt part if time...
+  // pass flag indicating if time?
   const time = parseInt(parts[1], 10);
   if (isNaN(time)) {
     return parts[1];
@@ -155,7 +154,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
       this.pageMap.set(id, {
         hasNextPage: true,
         // hasPreviousPage always false even if there's a previous page because
-        // we shouldn't be querying in both diretions at the same
+        // we shouldn't be querying in both directions at the same
         hasPreviousPage: false,
         startCursor: this.edgeQuery.getCursor(ret[0]),
         endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
@@ -548,7 +547,6 @@ export abstract class BaseEdgeQuery<
     // TODO once we add a lot of complex filters, this needs to be more complicated
     // e.g. commutative filters. what can be done in sql or combined together etc
     // may need to bring sql mode or something back
-    // console.debug(this.filters);
     for (const filter of this.filters) {
       if (filter.query) {
         let res = filter.query(options);
