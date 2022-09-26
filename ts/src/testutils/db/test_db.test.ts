@@ -21,7 +21,7 @@ const fkeyTables = () => {
 describe("postgres", () => {
   test("fkey", async () => {
     let tdb: TempDB;
-    tdb = new TempDB(fkeyTables());
+    tdb = new TempDB(Dialect.Postgres, fkeyTables());
     await tdb.beforeAll();
     await tdb.afterAll();
   });
@@ -49,9 +49,10 @@ describe("sqlite", () => {
     ]);
 
     expect(tdb.getDialect()).toBe(Dialect.SQLite);
-    expect(tdb.getTables().size).toBe(2);
 
     await tdb.beforeAll();
+    expect(tdb.__getTables().size).toBe(2);
+
     await tdb.afterAll();
   });
 });

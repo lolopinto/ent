@@ -28,6 +28,7 @@ import { MockDate } from "./../mock_date";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { WriteOperation } from "../../action";
 import { FakeTag } from "./fake_tag";
+import { Dialect } from "../../core/db";
 
 export function getContactInput(
   user: FakeUser,
@@ -325,7 +326,7 @@ export async function createTestEvent(
 }
 
 export async function setupTempDB(global: boolean = false) {
-  const tdb = new TempDB(tempDBTables(global));
+  const tdb = new TempDB(Dialect.Postgres, tempDBTables(global));
 
   await tdb.beforeAll();
 

@@ -416,28 +416,23 @@ export class TempDB {
   private tables = new Map<string, CoreConcept>();
   private dialect: Dialect;
   private sqlite: SqliteDatabase;
+  private setTables: CoreConcept[] | (() => CoreConcept[]) | undefined;
 
-  constructor(dialect: Dialect, tables?: CoreConcept[]);
-  constructor(tables: CoreConcept[]);
-  constructor(dialect: Dialect | CoreConcept[], tables?: CoreConcept[]) {
-    let tbles: CoreConcept[] = [];
-    if (isDialect(dialect)) {
-      this.dialect = dialect;
-      if (tables) {
-        tbles = tables;
-      }
-    } else {
-      this.dialect = Dialect.Postgres;
-      tbles = dialect;
-    }
-    tbles.forEach((table) => this.tables.set(table.name, table));
+  constructor(
+    dialect: Dialect,
+    tables?: CoreConcept[] | (() => CoreConcept[]),
+  ) {
+    this.dialect = dialect;
+    this.setTables = tables;
   }
 
   getDialect() {
     return this.dialect;
   }
 
-  getTables() {
+  // NB: this won't be set until after beforeAll() is called since it depends on
+  // dialect being correctly set
+  __getTables() {
     return this.tables;
   }
 
@@ -482,6 +477,16 @@ export class TempDB {
       }
       const filePath = process.env.DB_CONNECTION_STRING.substr(10);
       this.sqlite = sqlite(filePath);
+    }
+
+    if (this.setTables) {
+      let tables: CoreConcept[] = [];
+      if (typeof this.setTables === "function") {
+        tables = this.setTables();
+      } else {
+        tables = this.setTables;
+      }
+      tables.forEach((table) => this.tables.set(table.name, table));
     }
 
     for (const [_, table] of this.tables) {
@@ -619,17 +624,13 @@ export function setupSqlite(
   tables: () => Table[],
   opts?: sqliteSetupOptions,
 ) {
-  // if need dialect here...
-  process.env.DB_CONNECTION_STRING = connString;
-  loadConfig({
-    dbConnectionString: connString,
-  });
-  let tdb: TempDB = new TempDB(Dialect.SQLite, tables());
+  let tdb: TempDB = new TempDB(Dialect.SQLite, tables);
 
   beforeAll(async () => {
     process.env.DB_CONNECTION_STRING = connString;
     loadConfig();
     await tdb.beforeAll();
+    // await tdb.create(...tables());
 
     const conn = DB.getInstance().getConnection();
     expect((conn as Sqlite).db.memory).toBe(false);
@@ -638,7 +639,7 @@ export function setupSqlite(
   if (!opts?.disableDeleteAfterEachTest) {
     afterEach(async () => {
       const client = await DB.getInstance().getNewClient();
-      for (const [key, _] of tdb.getTables()) {
+      for (const [key, _] of tdb.__getTables()) {
         const query = `delete from ${key}`;
         if (isSyncClient(client))
           if (client.execSync) {

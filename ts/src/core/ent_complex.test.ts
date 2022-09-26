@@ -308,7 +308,7 @@ const accountLoaderOptions = {
 
 let tdb: TempDB;
 beforeAll(async () => {
-  tdb = new TempDB([
+  tdb = new TempDB(Dialect.Postgres, [
     getSchemaTable(userSchema, Dialect.Postgres),
     getSchemaTable(accountSchema, Dialect.Postgres),
     assoc_edge_config_table(),
