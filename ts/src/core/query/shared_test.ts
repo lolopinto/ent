@@ -352,26 +352,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   function getCursorFrom(contacts: FakeContact[], idx: number) {
-    // we depend on the fact that the same time is used for the edge and created_at
-    // based on getContactBuilder
-    // so regardless of if we're doing assoc or custom queries, we can get the time
-    // from the created_at field
     return getCursor({
       row: contacts[idx],
-      // TODO changing to new cursor format...
-      // TODO cleannuppppp
       col: "id",
-      // conv: (t) => {
-      //   return
-      //   //sqlite
-      //   if (typeof t === "string") {
-      //     return Date.parse(t);
-      //   }
-      //   return t.getTime();
-      // },
-      // we want the right column to be encoded in the cursor as opposed e.g. time for
-      // assoc queries, created_at for index/custom queries
-      // cursorKey: opts.sortCol,
     });
   }
 
@@ -504,9 +487,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
   });
 
-  // TODO conflicts complex tests
-
   // TODO also test for unique column directly e.g. id?????
+  // TODO change default in custom_query to id...
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
@@ -985,7 +967,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       await verify(15, false, false, getCursor(allEdges[14]));
 
       // one without duplicates work if we were paginating at a different place...
-      // TODO change this to use different numbers based on
       await verify(6, true, true, getCursor(allEdges[5]));
       await verify(11, true, false, getCursor(allEdges[10]));
     });

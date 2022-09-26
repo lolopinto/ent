@@ -18,7 +18,6 @@ import { TempDB } from "../../testutils/db/temp_db";
 import { buildQuery } from "../ent";
 import * as clause from "../clause";
 import { Viewer } from "../base";
-import { QueryRecorder } from "../../testutils/db_mock";
 import { CustomClauseQuery } from "./custom_clause_query";
 
 const INTERVAL = 24 * 60 * 60 * 1000;
@@ -61,11 +60,10 @@ beforeAll(async () => {
   const startTime = new Date().getTime();
   ({ user, user2 } = await createData(startTime));
 
-  // create a few extra..
-  await createData(startTime + 1);
-  await createData(startTime + 2);
-  await createData(startTime + 3);
-  QueryRecorder.clearQueries();
+  // create with same startTimes to ensure there's conflicts
+  await createData(startTime);
+  await createData(startTime);
+  await createData(startTime);
 });
 
 beforeEach(() => {
@@ -276,7 +274,7 @@ describe("global query", () => {
     const PAGE = 5;
 
     async function verify(
-      page: number,
+      idx: number,
       hasEdge: boolean,
       hasNextPage: boolean,
       cursor?: string,
@@ -305,37 +303,48 @@ describe("global query", () => {
             : undefined,
         ),
       });
-      // console.debug(ml.logs);
-      expect(query, page.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
+      expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
 
       // 1 is a hack...
       const pagination = q2.paginationInfo().get(1);
       if (hasEdge) {
-        expect(ents.length, page.toString()).toBeLessThanOrEqual(PAGE);
+        expect(ents.length, idx.toString()).toBeGreaterThan(0);
+        expect(ents.length, idx.toString()).toBeLessThanOrEqual(PAGE);
         // console.debug(page, ents[0].id, edges[PAGE * page]);
-        expect(ents[0].id, page.toString()).toBe(edges[PAGE * page].id);
+        expect(ents[0].id, idx.toString()).toBe(edges[idx].id);
       } else {
-        expect(ents.length, page.toString()).toBe(0);
-        expect(newEdges.length, page.toString()).toBe(0);
+        expect(ents.length, idx.toString()).toBe(0);
+        expect(newEdges.length, idx.toString()).toBe(0);
       }
 
       if (hasNextPage) {
         // has exact if next page
-        expect(ents.length, page.toString()).toBe(PAGE);
+        expect(ents.length, idx.toString()).toBe(PAGE);
 
-        expect(pagination?.hasNextPage, page.toString()).toBe(true);
-        expect(pagination?.hasPreviousPage, page.toString()).toBe(false);
+        expect(pagination?.hasNextPage, idx.toString()).toBe(true);
+        expect(pagination?.hasPreviousPage, idx.toString()).toBe(false);
       } else {
-        expect(pagination?.hasNextPage, page.toString()).toBe(undefined);
-        expect(pagination?.hasNextPage, page.toString()).toBe(undefined);
+        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
+        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
       }
     }
 
     await verify(0, true, true); // 0-4
-    await verify(1, true, true, q.getCursor(edges[PAGE - 1])); // 5-9
-    await verify(2, true, true, q.getCursor(edges[2 * PAGE - 1])); // 10-14
-    await verify(3, true, true, q.getCursor(edges[3 * PAGE - 1])); //15-19
-    await verify(4, true, true, q.getCursor(edges[4 * PAGE - 1])); //20-24
-    await verify(5, true, false, q.getCursor(edges[5 * PAGE - 1])); //25-28
+    await verify(1 * PAGE, true, true, q.getCursor(edges[PAGE - 1])); // 5-9
+    await verify(2 * PAGE, true, true, q.getCursor(edges[2 * PAGE - 1])); // 10-14
+    await verify(3 * PAGE, true, true, q.getCursor(edges[3 * PAGE - 1])); //15-19
+    await verify(4 * PAGE, true, true, q.getCursor(edges[4 * PAGE - 1])); //20-24
+    await verify(5 * PAGE, true, false, q.getCursor(edges[5 * PAGE - 1])); //25-28
+
+    // do a few around transitions to make sure we handle it correctly
+    // 0-4, 5-8, 9-12, 13-16 etc have duplicate timestamps
+    await verify(1, true, true, q.getCursor(edges[0]));
+    await verify(2, true, true, q.getCursor(edges[1]));
+    await verify(3, true, true, q.getCursor(edges[2]));
+    await verify(4, true, true, q.getCursor(edges[3]));
+
+    await verify(8, true, true, q.getCursor(edges[7]));
+    await verify(14, true, true, q.getCursor(edges[13]));
+    await verify(19, true, true, q.getCursor(edges[18]));
   });
 });

@@ -980,7 +980,7 @@ describe("postgres", () => {
         "fooo",
       );
       expect(cls.clause(1)).toBe(
-        "start_time > (SELECT start_time FROM events WHERE id = $1) OR (start_time = (SELECT start_time FROM events WHERE id = $2) AND id > $3)",
+        "(start_time > (SELECT start_time FROM events WHERE id = $1) OR (start_time = (SELECT start_time FROM events WHERE id = $2) AND id > $3))",
       );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -997,7 +997,7 @@ describe("postgres", () => {
         "fooo",
       );
       expect(cls.clause(3)).toBe(
-        "start_time > (SELECT start_time FROM events WHERE id = $3) OR (start_time = (SELECT start_time FROM events WHERE id = $4) AND id > $5)",
+        "(start_time > (SELECT start_time FROM events WHERE id = $3) OR (start_time = (SELECT start_time FROM events WHERE id = $4) AND id > $5))",
       );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1014,7 +1014,7 @@ describe("postgres", () => {
         "fooo",
       );
       expect(cls.clause(1)).toBe(
-        "start_time < (SELECT start_time FROM events WHERE id = $1) OR (start_time = (SELECT start_time FROM events WHERE id = $2) AND id < $3)",
+        "(start_time < (SELECT start_time FROM events WHERE id = $1) OR (start_time = (SELECT start_time FROM events WHERE id = $2) AND id < $3))",
       );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1457,7 +1457,7 @@ describe("sqlite", () => {
         "fooo",
       );
       expect(cls.clause(1)).toBe(
-        "start_time > (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id > ?)",
+        "(start_time > (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id > ?))",
       );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1474,7 +1474,7 @@ describe("sqlite", () => {
         "fooo",
       );
       expect(cls.clause(3)).toBe(
-        "start_time > (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id > ?)",
+        "(start_time > (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id > ?))",
       );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1491,7 +1491,7 @@ describe("sqlite", () => {
         "fooo",
       );
       expect(cls.clause(1)).toBe(
-        "start_time < (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id < ?)",
+        "(start_time < (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id < ?))",
       );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);

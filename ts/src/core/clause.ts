@@ -792,7 +792,8 @@ class paginationMultipleColumnsSubQueryClause implements Clause {
       idx + 2,
     );
 
-    return `${this.col} ${this.op} (${eq1}) OR (${this.col} = (${eq2}) AND ${op})`;
+    // nest in () to make sure it's scoped correctly
+    return `(${this.col} ${this.op} (${eq1}) OR (${this.col} = (${eq2}) AND ${op}))`;
   }
 
   columns(): string[] {
