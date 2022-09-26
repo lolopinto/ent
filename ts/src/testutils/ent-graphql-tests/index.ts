@@ -22,6 +22,7 @@ import {
 import { buildContext, registerAuthHandler } from "../../auth";
 import supertest from "supertest";
 import * as fs from "fs";
+import { IncomingMessage, ServerResponse } from "http";
 
 function server(config: queryConfig): Express {
   const viewer = config.viewer;
@@ -37,6 +38,7 @@ function server(config: queryConfig): Express {
   if (config.init) {
     config.init(app);
   }
+  // @ts-ignore something changed. come back
   app.use(express.json());
 
   let handlers = config.customHandlers || [];
@@ -49,9 +51,11 @@ function server(config: queryConfig): Express {
       request: req,
       schema: config.schema,
       contextFactory: async (executionContext: ExecutionContext) => {
+        // @ts-ignore something changed. come back
         return buildContext(req, res);
       },
     });
+    // @ts-ignore something changed. come back
     await sendResult(result, res);
   });
   app.use(config.graphQLPath || "/graphql", ...handlers);

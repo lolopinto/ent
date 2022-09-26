@@ -197,7 +197,6 @@ export const addCustomType = (type: CustomType) => {
 
   // TODO split this out...
   if (customType && JSON.stringify(customType) !== JSON.stringify(type)) {
-    // TODO json stringify and see if they're the same
     throw new Error(`cannot add multiple custom types of name ${type.type}`);
   }
   if (customType) {
