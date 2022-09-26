@@ -8,7 +8,7 @@
     "example": "examples"
   },
   "dependencies": {
-    "@types/node": "^15.0.2",
+    "@types/node": "^18.7.23",
     "camel-case": "^4.1.2",
     "dataloader": "^2.0.0",
     "glob": "^7.1.6",
