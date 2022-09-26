@@ -65,6 +65,7 @@ export const userToContactsDataLoaderFactory = new QueryLoaderFactory({
   toPrime: [contactLoader],
 });
 
+// note: this is still used in graphql tests...
 export class UserToContactsFkeyQueryDeprecated extends CustomEdgeQueryBase<
   FakeUser,
   FakeContact
@@ -76,6 +77,7 @@ export class UserToContactsFkeyQueryDeprecated extends CustomEdgeQueryBase<
       countLoaderFactory: userToContactsCountLoaderFactory,
       dataLoaderFactory: userToContactsDataLoaderFactory,
       options: FakeContact.loaderOptions(),
+      sortColumn: "created_at",
     });
   }
 

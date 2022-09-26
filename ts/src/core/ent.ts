@@ -1877,17 +1877,10 @@ export class AssocEdge {
     return this.rawData;
   }
 
-  // TODO change this...
   getCursor(): string {
     return getCursor({
       row: this,
-      col: "time",
-      conv: (t) => {
-        if (typeof t === "string") {
-          return Date.parse(t);
-        }
-        return t.getTime();
-      },
+      col: "id2",
     });
   }
 }
