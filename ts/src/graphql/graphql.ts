@@ -195,10 +195,7 @@ export const addCustomType = (type: CustomType) => {
   // TODO these should return ReadOnly objects...
   const customType = GQLCapture.getCustomTypes().get(type.type);
 
-  if (customType && customType !== type) {
-    throw new Error(`cannot add multiple custom types of name ${type.type}`);
-  }
-  if (customType) {
+  if (customType && customType === type) {
     return;
   }
   try {
@@ -222,6 +219,10 @@ export const addCustomType = (type: CustomType) => {
       });
     }
     return;
+  }
+
+  if (customType && JSON.stringify(customType) !== JSON.stringify(type)) {
+    throw new Error(`cannot add multiple custom types of name ${type.type}`);
   }
   GQLCapture.getCustomTypes().set(type.type, type);
 };
