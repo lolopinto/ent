@@ -1,4 +1,3 @@
-import { QueryRecorder } from "../../testutils/db_mock";
 import { Data, ID, Viewer } from "../base";
 import { DefaultLimit, AssocEdge, getCursor, setGlobalSchema } from "../ent";
 import { IDViewer, LoggedOutViewer } from "../viewer";
@@ -24,178 +23,12 @@ import {
 import { EdgeQuery } from "./query";
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import { TestContext } from "../../testutils/context/test_context";
-import { clearLogLevels, setLogLevels } from "../logger";
+import { setLogLevels } from "../logger";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
-
-class TestQueryFilter<TData extends Data> {
-  allContacts: FakeContact[] = [];
-  private filteredContacts: FakeContact[] = [];
-  user: FakeUser;
-  customQuery: boolean;
-  constructor(
-    private filter: (
-      q: EdgeQuery<FakeUser, FakeContact, TData>,
-      user: FakeUser,
-      contacts: FakeContact[],
-    ) => EdgeQuery<FakeUser, FakeContact, TData>,
-    private newQuery: (
-      v: Viewer,
-      user: FakeUser,
-    ) => EdgeQuery<FakeUser, FakeContact, TData>,
-    private ents: (contacts: FakeContact[]) => FakeContact[],
-    private defaultViewer: Viewer,
-  ) {
-    // @ts-ignore
-    const q = this.newQuery(this.defaultViewer);
-
-    // TODO sad not generic enough
-    this.customQuery =
-      q instanceof UserToContactsFkeyQuery ||
-      q instanceof UserToContactsFkeyQueryDeprecated;
-  }
-
-  async createData() {
-    [this.user, this.allContacts] = await createAllContacts();
-    //    this.allContacts = this.allContacts.reverse();
-    this.filteredContacts = this.ents(this.allContacts);
-    QueryRecorder.clearQueries();
-  }
-
-  getQuery(viewer?: Viewer) {
-    return this.filter(
-      this.newQuery(viewer || this.defaultViewer, this.user),
-      this.user,
-      this.allContacts,
-    );
-  }
-
-  async testIDs() {
-    const ids = await this.getQuery().queryIDs();
-    this.verifyIDs(ids);
-  }
-
-  private verifyIDs(ids: ID[]) {
-    expect(ids).toEqual(this.filteredContacts.map((contact) => contact.id));
-  }
-
-  // rawCount isn't affected by filters...
-  async testRawCount(expectedCount?: number) {
-    const count = await this.getQuery().queryRawCount();
-    this.verifyRawCount(count, expectedCount);
-  }
-
-  private verifyRawCount(count: number, expectedCount?: number) {
-    expect(count).toBe(expectedCount ?? inputs.length);
-  }
-
-  async testCount(expectedCount?: number) {
-    const count = await this.getQuery().queryCount();
-    this.verifyCount(count, expectedCount);
-  }
-
-  private verifyCount(count: number, expectedCount?: number) {
-    expect(count).toBe(expectedCount ?? this.filteredContacts.length);
-  }
-
-  async testEdges() {
-    const edges = await this.getQuery().queryEdges();
-    this.verifyEdges(edges);
-  }
-
-  private verifyEdges(edges: Data[]) {
-    const q = this.getQuery();
-
-    // TODO sad not generic enough
-    if (this.customQuery) {
-      verifyUserToContactRawData(this.user, edges, this.filteredContacts);
-    } else {
-      verifyUserToContactEdges(
-        this.user,
-        edges as AssocEdge[],
-        this.filteredContacts,
-      );
-    }
-  }
-
-  async testEnts(v?: Viewer) {
-    const ents = await this.getQuery(
-      v || new IDViewer(this.user.id),
-    ).queryEnts();
-    this.verifyEnts(ents);
-    return ents;
-  }
-
-  async testEntsCache() {
-    if (!this.customQuery) {
-      return;
-    }
-    setLogLevels(["query", "cache"]);
-    const ml = new MockLogs();
-    ml.mock();
-    const v = new TestContext(new IDViewer(this.user.id)).getViewer();
-    const ents = await this.testEnts(v);
-    expect(ml.logs.length).toBe(1);
-    expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM /);
-
-    await Promise.all(ents.map((ent) => FakeContact.loadX(v, ent.id)));
-
-    expect(ml.logs.length).toBe(this.filteredContacts.length + 1);
-    for (const log of ml.logs.slice(1)) {
-      expect(log["ent-cache-hit"]).toBeDefined();
-    }
-    ml.restore();
-    clearLogLevels();
-  }
-
-  async testDataCache() {
-    if (!this.customQuery) {
-      return;
-    }
-    setLogLevels(["query", "cache"]);
-    const ml = new MockLogs();
-    ml.mock();
-    const v = new TestContext(new IDViewer(this.user.id)).getViewer();
-    const ents = await this.testEnts(v);
-    expect(ml.logs.length).toBe(1);
-    expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM /);
-
-    await Promise.all(
-      ents.map((ent) => FakeContact.loadRawData(ent.id, v.context)),
-    );
-
-    expect(ml.logs.length).toBe(this.filteredContacts.length + 1);
-    for (const log of ml.logs.slice(1)) {
-      expect(log["dataloader-cache-hit"]).toBeDefined();
-    }
-    ml.restore();
-    clearLogLevels();
-  }
-
-  private verifyEnts(ents: FakeContact[]) {
-    verifyUserToContacts(this.user, ents, this.filteredContacts);
-  }
-
-  async testAll(expectedCount?: number) {
-    const query = this.getQuery(new IDViewer(this.user.id));
-    const [edges, count, ids, rawCount, ents] = await Promise.all([
-      query.queryEdges(),
-      query.queryCount(),
-      query.queryIDs(),
-      query.queryRawCount(),
-      query.queryEnts(),
-    ]);
-    this.verifyCount(count, expectedCount);
-    this.verifyEdges(edges);
-    this.verifyIDs(ids);
-    this.verifyRawCount(rawCount, expectedCount);
-    this.verifyEnts(ents);
-  }
-}
-
-const preparedVar = /(\$(\d))/g;
+import { Clause, Greater, Less } from "../clause";
 
 interface options<TData extends Data> {
   newQuery: (
@@ -204,9 +37,10 @@ interface options<TData extends Data> {
   ) => EdgeQuery<FakeUser, FakeContact, TData>;
   tableName: string;
   uniqKey: string;
+  ml: MockLogs;
 
   entsLength?: number;
-  where: string;
+  clause: Clause;
   sortCol: string;
   livePostgresDB?: boolean; // if livedb creates temp db and not depending on mock
   sqlite?: boolean; // do this in sqlite
@@ -214,106 +48,246 @@ interface options<TData extends Data> {
   rawDataVerify?(user: FakeUser): Promise<void>;
 }
 
+function getWhereClause(query: any) {
+  let execArray = /^SELECT (.+) FROM (.+) WHERE (.+)?/.exec(query.query);
+  return execArray?.[3];
+}
+
 export const commonTests = <TData extends Data>(opts: options<TData>) => {
+  setLogLevels("query");
+  const ml = opts.ml;
+  ml.mock();
+
+  class TestQueryFilter<TData extends Data> {
+    allContacts: FakeContact[] = [];
+    private filteredContacts: FakeContact[] = [];
+    user: FakeUser;
+    customQuery: boolean;
+    constructor(
+      private filter: (
+        q: EdgeQuery<FakeUser, FakeContact, TData>,
+        user: FakeUser,
+        contacts: FakeContact[],
+      ) => EdgeQuery<FakeUser, FakeContact, TData>,
+      private newQuery: (
+        v: Viewer,
+        user: FakeUser,
+      ) => EdgeQuery<FakeUser, FakeContact, TData>,
+      private ents: (contacts: FakeContact[]) => FakeContact[],
+      private defaultViewer: Viewer,
+    ) {
+      // @ts-ignore
+      const q = this.newQuery(this.defaultViewer);
+
+      // TODO sad not generic enough
+      this.customQuery =
+        q instanceof UserToContactsFkeyQuery ||
+        q instanceof UserToContactsFkeyQueryDeprecated;
+    }
+
+    async createData() {
+      [this.user, this.allContacts] = await createAllContacts();
+      //    this.allContacts = this.allContacts.reverse();
+      this.filteredContacts = this.ents(this.allContacts);
+      ml.clear();
+    }
+
+    getQuery(viewer?: Viewer) {
+      return this.filter(
+        this.newQuery(viewer || this.defaultViewer, this.user),
+        this.user,
+        this.allContacts,
+      );
+    }
+
+    async testIDs() {
+      const ids = await this.getQuery().queryIDs();
+      this.verifyIDs(ids);
+    }
+
+    private verifyIDs(ids: ID[]) {
+      expect(ids).toEqual(this.filteredContacts.map((contact) => contact.id));
+    }
+
+    // rawCount isn't affected by filters...
+    async testRawCount(expectedCount?: number) {
+      const count = await this.getQuery().queryRawCount();
+      this.verifyRawCount(count, expectedCount);
+    }
+
+    private verifyRawCount(count: number, expectedCount?: number) {
+      expect(count).toBe(expectedCount ?? inputs.length);
+    }
+
+    async testCount(expectedCount?: number) {
+      const count = await this.getQuery().queryCount();
+      this.verifyCount(count, expectedCount);
+    }
+
+    private verifyCount(count: number, expectedCount?: number) {
+      expect(count).toBe(expectedCount ?? this.filteredContacts.length);
+    }
+
+    async testEdges() {
+      const edges = await this.getQuery().queryEdges();
+      this.verifyEdges(edges);
+    }
+
+    private verifyEdges(edges: Data[]) {
+      const q = this.getQuery();
+
+      // TODO sad not generic enough
+      if (this.customQuery) {
+        verifyUserToContactRawData(this.user, edges, this.filteredContacts);
+      } else {
+        verifyUserToContactEdges(
+          this.user,
+          edges as AssocEdge[],
+          this.filteredContacts,
+        );
+      }
+    }
+
+    async testEnts(v?: Viewer) {
+      const ents = await this.getQuery(
+        v || new IDViewer(this.user.id),
+      ).queryEnts();
+      this.verifyEnts(ents);
+      return ents;
+    }
+
+    async testEntsCache() {
+      if (!this.customQuery) {
+        return;
+      }
+      setLogLevels(["query", "cache"]);
+      const v = new TestContext(new IDViewer(this.user.id)).getViewer();
+      const ents = await this.testEnts(v);
+      expect(ml.logs.length).toBe(1);
+      expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM /);
+
+      await Promise.all(ents.map((ent) => FakeContact.loadX(v, ent.id)));
+
+      expect(ml.logs.length).toBe(this.filteredContacts.length + 1);
+      for (const log of ml.logs.slice(1)) {
+        expect(log["ent-cache-hit"]).toBeDefined();
+      }
+      // "restore" back to previous
+      setLogLevels("query");
+    }
+
+    async testDataCache() {
+      if (!this.customQuery) {
+        return;
+      }
+      setLogLevels(["query", "cache"]);
+      const v = new TestContext(new IDViewer(this.user.id)).getViewer();
+      const ents = await this.testEnts(v);
+      expect(ml.logs.length).toBe(1);
+      expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM /);
+
+      await Promise.all(
+        ents.map((ent) => FakeContact.loadRawData(ent.id, v.context)),
+      );
+
+      expect(ml.logs.length).toBe(this.filteredContacts.length + 1);
+      for (const log of ml.logs.slice(1)) {
+        expect(log["dataloader-cache-hit"]).toBeDefined();
+      }
+      // "restore" back to previous
+      setLogLevels("query");
+    }
+
+    private verifyEnts(ents: FakeContact[]) {
+      verifyUserToContacts(this.user, ents, this.filteredContacts);
+    }
+
+    async testAll(expectedCount?: number) {
+      const query = this.getQuery(new IDViewer(this.user.id));
+      const [edges, count, ids, rawCount, ents] = await Promise.all([
+        query.queryEdges(),
+        query.queryCount(),
+        query.queryIDs(),
+        query.queryRawCount(),
+        query.queryEnts(),
+      ]);
+      this.verifyCount(count, expectedCount);
+      this.verifyEdges(edges);
+      this.verifyIDs(ids);
+      this.verifyRawCount(rawCount, expectedCount);
+      this.verifyEnts(ents);
+    }
+  }
+
   function verifyQuery({
     length = 1,
     numQueries = 1,
     limit = DefaultLimit,
     disablePaginationBump = false,
   }) {
-    if (opts.livePostgresDB || opts.sqlite) {
-      return;
-    }
-    const queries = QueryRecorder.getCurrentQueries();
-    expect(queries.length).toBe(length);
+    expect(ml.logs.length).toBe(length);
     for (let i = 0; i < numQueries; i++) {
-      const query = queries[i];
+      const whereClause = getWhereClause(ml.logs[i]);
       let expLimit = disablePaginationBump ? limit : limit + 1;
-      expect(query.qs?.whereClause, `${i}`).toBe(
+      expect(whereClause, `${i}`).toBe(
         // default limit
-        `${opts.where} ORDER BY ${opts.sortCol} DESC LIMIT ${expLimit}`,
+        `${opts.clause.clause(1)} ORDER BY ${
+          opts.sortCol
+        } DESC LIMIT ${expLimit}`,
       );
     }
   }
 
   function verifyCountQuery({ length = 1, numQueries = 1 }) {
-    if (opts.livePostgresDB || opts.sqlite) {
-      return;
-    }
-    const queries = QueryRecorder.getCurrentQueries();
-    expect(queries.length).toBe(length);
+    expect(ml.logs.length).toBe(length);
     for (let i = 0; i < numQueries; i++) {
-      const query = queries[i];
-      expect(query.qs?.whereClause).toBe(opts.where);
-      expect(query.qs?.columns).toHaveLength(1);
-      expect(query.qs?.columns).toStrictEqual(["count(1) as count"]);
+      const whereClause = getWhereClause(ml.logs[i]);
+      expect(whereClause).toBe(opts.clause.clause(1));
     }
   }
 
   function verifyFirstAfterCursorQuery(length: number = 1) {
-    if (opts.livePostgresDB || opts.sqlite) {
-      return;
-    }
-    const queries = QueryRecorder.getCurrentQueries();
-    expect(queries.length).toBe(length);
-    const query = queries[0];
-    const result = [...opts.where.matchAll(preparedVar)];
+    // cache showing up in a few because of cross runs...
+    expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
-    let parts = opts.where.split(" AND ");
+    let parts = opts.clause.clause(1).split(" AND ");
+    const less = Less(opts.sortCol, "").clause(opts.clause.values().length + 1);
     if (parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)
-        .concat([
-          `${opts.sortCol} < $${result.length + 1}`,
-          "deleted_at IS NULL",
-        ]);
+        .concat([less, "deleted_at IS NULL"]);
     } else {
-      parts.push(`${opts.sortCol} < $${result.length + 1}`);
+      parts.push(less);
     }
 
-    expect(query.qs?.whereClause).toBe(
+    expect(getWhereClause(ml.logs[0])).toBe(
       `${parts.join(" AND ")} ORDER BY ${opts.sortCol} DESC LIMIT 4`,
     );
   }
 
   function verifyLastBeforeCursorQuery(length: number = 1) {
-    if (opts.livePostgresDB || opts.sqlite) {
-      return;
-    }
-    const queries = QueryRecorder.getCurrentQueries();
-    expect(queries.length).toBe(length);
-    const query = queries[0];
-    const result = [...opts.where.matchAll(preparedVar)];
+    // cache showing up in a few because of cross runs...
+    expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
-    let parts = opts.where.split(" AND ");
+    let parts = opts.clause.clause(1).split(" AND ");
+    const greater = Greater(opts.sortCol, "").clause(
+      opts.clause.values().length + 1,
+    );
     if (parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)
-        .concat([
-          `${opts.sortCol} > $${result.length + 1}`,
-          "deleted_at IS NULL",
-        ]);
+        .concat([greater, "deleted_at IS NULL"]);
     } else {
-      parts.push(`${opts.sortCol} > $${result.length + 1}`);
+      parts.push(greater);
     }
 
-    expect(query.qs?.whereClause).toBe(
+    expect(getWhereClause(ml.logs[0])).toBe(
       // extra fetched for pagination
       `${parts.join(" AND ")} ORDER BY ${opts.sortCol} ASC LIMIT 4`,
     );
   }
 
   function getViewer() {
-    // live db, let's do context because we're testing complicated paths
-    // may be worth breaking this out later
-
-    // opts.liveDB no context too...
-    // maybe this one we just always hit the db
-    // we don't get value out of testing parse_sql no context....
-    if (opts.livePostgresDB || opts.sqlite) {
-      return new TestContext().getViewer();
-    }
-    // no context when not live db
     return new LoggedOutViewer();
   }
 
@@ -357,14 +331,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     // want error on by default in tests?
     setLogLevels(["error", "warn", "info"]);
     if (opts.livePostgresDB) {
-      tdb = await setupTempDB();
-      return;
-    }
-    await createEdges();
-  });
-
-  beforeEach(async () => {
-    if (opts.livePostgresDB || opts.sqlite) {
+      tdb = await setupTempDB(opts.globalSchema);
       return;
     }
     await createEdges();
@@ -474,7 +441,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         }),
       );
       await action.save();
-      QueryRecorder.clearQueries();
+      ml.clear();
     });
 
     test("ids", async () => {
@@ -657,18 +624,11 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     );
 
     beforeAll(async () => {
-      if (opts.livePostgresDB || opts.sqlite) {
-        await filter.createData();
-      }
+      await filter.createData();
     });
 
-    // TODO do we still need QueryRecorder?
-    // should just delete this...
-    beforeEach(async () => {
-      if (opts.livePostgresDB || opts.sqlite) {
-        return;
-      }
-      await filter.createData();
+    beforeEach(() => {
+      ml.clear();
     });
 
     test("ids", async () => {
@@ -775,12 +735,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       }
     });
 
-    // same TODO above
     beforeEach(async () => {
-      if (opts.livePostgresDB || opts.sqlite) {
-        return;
-      }
-      await filter.createData();
+      ml.clear();
     });
 
     test("ids", async () => {

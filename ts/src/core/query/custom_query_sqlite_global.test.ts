@@ -21,5 +21,9 @@ describe("custom query", () => {
     clause: Eq("user_id", ""),
     sortCol: "created_at",
     sqlite: true,
+    globalSchema: true,
   });
 });
+
+// TODO do we need more specific tests here?
+// ent_custom_data.test.ts has a bunch and that may be enough

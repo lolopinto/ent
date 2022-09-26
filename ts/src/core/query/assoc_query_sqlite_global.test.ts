@@ -10,16 +10,22 @@ import { loadCustomEdges } from "../ent";
 import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
 import { inputs } from "../../testutils/fake_data/test_helpers";
 import { convertDate } from "../../core/convert";
+import { MockLogs } from "../../testutils/mock_log";
+import { And, Eq } from "../clause";
+
+const ml = new MockLogs();
+ml.mock();
 
 // deleted_at column added for this case and assoc tests should work
 commonTests({
   newQuery(viewer: Viewer, user: FakeUser) {
     return UserToContactsQuery.query(viewer, user);
   },
+  ml,
   tableName: "user_to_contacts_table",
   uniqKey: "user_to_contacts_table_global",
   entsLength: 2,
-  where: "id1 = ? AND edge_type = ? AND deleted_at IS NULL",
+  clause: And(Eq("id1", ""), Eq("edge_type", ""), Eq("deleted_at", null)),
   sortCol: "time",
   sqlite: true,
   globalSchema: true,
@@ -51,5 +57,5 @@ describe("custom assoc", () => {
   //  setupSqlite(`sqlite:///assoc_query_sqlite.db`, tempDBTables);
 
   // TODO there's a weird dependency with commonTest above where commenting that out breaks this...
-  assocTests();
+  assocTests(ml, true);
 });

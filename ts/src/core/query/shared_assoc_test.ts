@@ -1,4 +1,3 @@
-import { QueryRecorder } from "../../testutils/db_mock";
 import { ID, Ent, Viewer } from "../base";
 import { AssocEdge, DefaultLimit } from "../ent";
 import { EdgeQuery } from "./query";
@@ -20,7 +19,6 @@ import {
   UserToCustomEdgeQuery,
   CustomEdge,
   getEventBuilder,
-  UserToFriendRequestsQuery,
   UserToIncomingFriendRequestsQuery,
   ViewerWithAccessToken,
 } from "../../testutils/fake_data/index";
@@ -35,9 +33,12 @@ import {
   getEventInput,
   createUserPlusFriendRequests,
 } from "../../testutils/fake_data/test_helpers";
-import DB, { Dialect } from "../db";
+import { MockLogs } from "../../testutils/mock_log";
+import { And, Eq } from "../clause";
 
-export function assocTests(global = false) {
+export function assocTests(ml: MockLogs, global = false) {
+  ml.mock();
+
   describe("custom edge", () => {
     let user1, user2: FakeUser;
 
@@ -98,48 +99,57 @@ export function assocTests(global = false) {
     return contacts.reverse().slice(0, N);
   }
 
+  function getWhereClause(query: any) {
+    let execArray = /^SELECT (.+) FROM (.+) WHERE (.+)?/.exec(query.query);
+    return execArray?.[3];
+  }
+
   function verifyQuery({
     length = 1,
     numQueries = 1,
     limit = DefaultLimit,
     disablePaginationBump = false,
   }) {
-    if (DB.getDialect() === Dialect.SQLite) {
-      return;
-    }
-    const queries = QueryRecorder.getCurrentQueries();
-    expect(queries.length).toBe(length);
+    expect(ml.logs.length).toBe(length);
     for (let i = 0; i < numQueries; i++) {
-      const query = queries[i];
+      const whereClause = getWhereClause(ml.logs[i]);
       let expLimit = disablePaginationBump ? limit : limit + 1;
       if (global) {
-        expect(query.qs?.whereClause, `${i}`).toBe(
+        expect(whereClause, `${i}`).toBe(
           // default limit
-          `id1 = $1 AND edge_type = $2 AND deleted_at IS NULL ORDER BY time DESC LIMIT ${expLimit}`,
+          `${And(
+            Eq("id1", ""),
+            Eq("edge_type", ""),
+            Eq("deleted_at", null),
+          ).clause(1)} ORDER BY time DESC LIMIT ${expLimit}`,
         );
       } else {
-        expect(query.qs?.whereClause, `${i}`).toBe(
+        expect(whereClause, `${i}`).toBe(
           // default limit
-          `id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT ${expLimit}`,
+          `${And(Eq("id1", ""), Eq("edge_type", "")).clause(
+            1,
+          )} ORDER BY time DESC LIMIT ${expLimit}`,
         );
       }
     }
   }
 
   function verifyCountQuery({ length = 1, numQueries = 1 }) {
-    if (DB.getDialect() === Dialect.SQLite) {
-      return;
-    }
-    const queries = QueryRecorder.getCurrentQueries();
-    expect(queries.length).toBe(length);
+    expect(ml.logs.length).toBe(length);
     for (let i = 0; i < numQueries; i++) {
-      const query = queries[i];
+      const whereClause = getWhereClause(ml.logs[i]);
       if (global) {
-        expect(query.qs?.whereClause).toBe(
-          `id1 = $1 AND edge_type = $2 AND deleted_at IS NULL`,
+        expect(whereClause).toBe(
+          `${And(
+            Eq("id1", ""),
+            Eq("edge_type", ""),
+            Eq("deleted_at", null),
+          ).clause(1)}`,
         );
       } else {
-        expect(query.qs?.whereClause).toBe(`id1 = $1 AND edge_type = $2`);
+        expect(whereClause).toBe(
+          `${And(Eq("id1", ""), Eq("edge_type", "")).clause(1)}`,
+        );
       }
     }
   }
@@ -165,7 +175,7 @@ export function assocTests(global = false) {
       user2[1] = this.ents(user2[1]);
       user3[1] = this.ents(user3[1]);
       this.dataz = [user1, user2, user3];
-      QueryRecorder.clearQueries();
+      ml.clear();
     }
 
     getQuery(viewer?: Viewer) {
@@ -674,7 +684,7 @@ export function assocTests(global = false) {
       //order is users, then events
       this.expCount = this.ents([...this.users, ...this.events]).length;
 
-      QueryRecorder.clearQueries();
+      ml.clear();
     }
 
     getQuery(viewer?: Viewer) {
