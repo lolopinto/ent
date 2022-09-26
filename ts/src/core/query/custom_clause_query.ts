@@ -26,8 +26,7 @@ interface CustomClauseQueryOptions<
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
   name: string;
-  // TODO changes to id...
-  // defaults to created_at
+  // defaults to id
   sortColumn?: string;
   // pass this if the sort column is unique and it'll be used for the cursor and used to
   // generate the query
@@ -62,8 +61,7 @@ export class CustomClauseQuery<
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
   ) {
-    // TODO this sshould change to id
-    const sortCol = options.sortColumn || "created_at";
+    const sortCol = options.sortColumn || "id";
     let unique = options.sortColumnUnique
       ? sortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
@@ -108,13 +106,11 @@ export class CustomClauseQuery<
       options.limit = DefaultLimit;
     }
 
-    let sortCol = this.options.sortColumn || "created_at";
-
     const rows = await loadRows({
       tableName: this.options.loadEntOptions.tableName,
       fields: this.options.loadEntOptions.fields,
       clause: AndOptional(this.clause, options.clause),
-      orderby: getOrderBy(sortCol, options?.orderby),
+      orderby: getOrderBy(this.getSortCol(), options?.orderby),
       limit: options?.limit || DefaultLimit,
       context: this.viewer.context,
     });

@@ -26,7 +26,7 @@ export interface CustomEdgeQueryOptionsDeprecated<
   countLoaderFactory: LoaderFactory<ID, number>;
   dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
   options: LoadEntOptions<TDest, TViewer>;
-  // defaults to created_at
+  // defaults to id
   sortColumn?: string;
 }
 
@@ -153,8 +153,7 @@ export abstract class CustomEdgeQueryBase<
       | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
   ) {
     let opts: LoadEntOptions<TDest>;
-    // TODO this is changing to id...
-    let defaultSort = "created_at";
+    let defaultSort = "id";
 
     let uniqueColIsSort = false;
 
@@ -162,7 +161,6 @@ export abstract class CustomEdgeQueryBase<
       opts = options.options;
     } else {
       opts = options.loadEntOptions;
-      // uniqueCol = options.sortColumn || defaultSort;
       if (options.sortColumnUnique) {
         uniqueColIsSort = true;
       }
@@ -172,7 +170,6 @@ export abstract class CustomEdgeQueryBase<
     if (uniqueColIsSort) {
       uniqueCol = options.sortColumn || defaultSort;
     }
-    // // let uniqueCol = "id";
     options.sortColumn = options.sortColumn || defaultSort;
     super(viewer, options.sortColumn, uniqueCol);
     if (typeof options.src === "object") {
@@ -249,7 +246,7 @@ export abstract class CustomEdgeQueryBase<
       );
     }
     if (!options.orderby) {
-      options.orderby = `${this.options.sortColumn} DESC`;
+      options.orderby = `${this.getSortCol()} DESC`;
     }
     if (!options.limit) {
       options.limit = DefaultLimit;

@@ -379,6 +379,10 @@ export abstract class BaseEdgeQuery<
     this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
   }
 
+  protected getSortCol(): string {
+    return this.sortCol;
+  }
+
   getPrivacyPolicy() {
     // default PrivacyPolicy is always allow. nothing to do here
     return AlwaysAllowPrivacyPolicy;
