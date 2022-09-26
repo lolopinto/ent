@@ -488,7 +488,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   });
 
   // TODO also test for unique column directly e.g. id?????
-  // TODO change default in custom_query to id...
+  // or name in this case
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeUser, FakeContact, TData>) => {

@@ -30,6 +30,11 @@ interface Constraint extends SchemaItem {
 
 interface Index extends SchemaItem {
   generate(): string;
+  postCreate?(): boolean;
+}
+
+interface PostCreateIndex extends Index {
+  postCreate(): boolean;
 }
 
 // TODO need a better shared name for Table|Type
@@ -76,7 +81,15 @@ export function foreignKey(
 }
 
 interface indexOptions {
-  type: string;
+  type?: string;
+  unique?: boolean;
+}
+
+function isPostCreateIndex(s: SchemaItem): s is PostCreateIndex {
+  return (
+    (s as PostCreateIndex).postCreate !== undefined &&
+    (s as PostCreateIndex).postCreate()
+  );
 }
 
 export function index(
@@ -88,18 +101,17 @@ export function index(
   return {
     name,
     generate() {
-      return `CREATE INDEX ${name} ON ${tableName} USING ${
+      if (opts?.unique && Dialect.SQLite === DB.getDialect()) {
+        return `UNIQUE (${cols.join(",")})`;
+      }
+      return `CREATE ${
+        opts?.unique ? "UNIQUE " : ""
+      }INDEX ${name} ON ${tableName} USING ${
         opts?.type || "btree"
       } (${cols.join(",")});`;
     },
-  };
-}
-
-export function uniqueIndex(name: string): Constraint {
-  return {
-    name: "", //ignore...
-    generate() {
-      return `UNIQUE (${name})`;
+    postCreate() {
+      return Dialect.Postgres === DB.getDialect() && !!opts?.unique;
     },
   };
 }
@@ -323,7 +335,11 @@ export function table(name: string, ...items: SchemaItem[]): Table {
       }
       cols.push(item as Column);
     } else if ((item as Constraint).generate !== undefined) {
-      constraints.push(item as Constraint);
+      if (isPostCreateIndex(item) && item.postCreate()) {
+        indexes.push(item);
+      } else {
+        constraints.push(item as Constraint);
+      }
     }
   }
   return {
@@ -603,6 +619,11 @@ export function setupSqlite(
   tables: () => Table[],
   opts?: sqliteSetupOptions,
 ) {
+  // if need dialect here...
+  process.env.DB_CONNECTION_STRING = connString;
+  loadConfig({
+    dbConnectionString: connString,
+  });
   let tdb: TempDB = new TempDB(Dialect.SQLite, tables());
 
   beforeAll(async () => {

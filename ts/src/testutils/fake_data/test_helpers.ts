@@ -27,6 +27,7 @@ import { NodeType } from "./const";
 import { MockDate } from "./../mock_date";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { WriteOperation } from "../../action";
+import { FakeTag } from "./fake_tag";
 
 export function getContactInput(
   user: FakeUser,
@@ -339,6 +340,7 @@ export function tempDBTables(global: boolean = false) {
     FakeUser.getTestTable(),
     FakeContact.getTestTable(),
     FakeEvent.getTestTable(),
+    FakeTag.getTestTable(),
     assoc_edge_config_table(),
   ];
   edgeTableNames().forEach((tableName) =>
