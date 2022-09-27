@@ -194,7 +194,8 @@ func (cf CustomField) hasCustomArgs() bool {
 }
 
 func (cf CustomField) getResolveMethodArg() string {
-	if cf.hasCustomArgs() {
+	// for connection, need to render args since we need it for GraphQLEdgeConnection
+	if cf.hasCustomArgs() || isConnection(cf) {
 		return "args"
 	}
 	return "{}"

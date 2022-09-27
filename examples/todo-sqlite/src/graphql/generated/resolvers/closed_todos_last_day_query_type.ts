@@ -2,7 +2,6 @@
 
 import {
   GraphQLFieldConfig,
-  GraphQLID,
   GraphQLInt,
   GraphQLNonNull,
   GraphQLResolveInfo,
@@ -13,21 +12,13 @@ import { GraphQLEdgeConnection } from "@snowtop/ent/graphql";
 import { RootToClosedTodosLastDayConnectionType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../../resolvers/todos_resolver";
 
-interface closed_todos_last_dayArgs {
-  id: any;
-}
-
 export const ClosedTodosLastDayQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<Viewer>,
-  closed_todos_last_dayArgs
+  {}
 > = {
   type: new GraphQLNonNull(RootToClosedTodosLastDayConnectionType()),
   args: {
-    id: {
-      description: "",
-      type: new GraphQLNonNull(GraphQLID),
-    },
     first: {
       description: "",
       type: GraphQLInt,
@@ -54,7 +45,7 @@ export const ClosedTodosLastDayQueryType: GraphQLFieldConfig<
     const r = new TodoResolver();
     return new GraphQLEdgeConnection(
       context.getViewer(),
-      (v) => r.closedTodosLastDay(context, args.id),
+      (v) => r.closedTodosLastDay(context),
       args,
     );
   },

@@ -211,4 +211,26 @@ export class Account extends AccountBase {
 }
 ```
 
-TODO global queries...
+## Global EntQuery
+
+To fetch a query that isn't source based or that's global to your database e.g. all closed todos in the last day, instead of using `CustomEdgeQueryBase` above, you can use `CustomClauseQuery`. This can also be exposed as a GraphQL [Connection](https://graphql.org/learn/pagination/#complete-connection-model) that follows the [Relay Spec](https://relay.dev/graphql/connections.htm).
+
+```ts
+
+  @gqlQuery({ name: "closed_todos_last_day", type: gqlConnection("Todo") })
+  closedTodosLastDay(@gqlContextType() context: RequestContext) {
+    const start = Interval.before(new Date(), { hours: 24 })
+      .start.toUTC()
+      .toISO();
+
+    return new CustomClauseQuery(context.getViewer(), {
+      loadEntOptions: Todo.loaderOptions(),
+      clause: query.And(
+        query.Eq("completed", true),
+        query.GreaterEq("completed_date", start),
+      ),
+      name: "closed_todos_last_day",
+      sortColumn: 'completed_date',
+    });
+  }
+```

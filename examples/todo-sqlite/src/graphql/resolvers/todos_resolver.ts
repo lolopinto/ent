@@ -40,18 +40,12 @@ export class TodoResolver {
   }
 
   @gqlQuery({ name: "closed_todos_last_day", type: gqlConnection("Todo") })
-  closedTodosLastDay(
-    // we're not using context but have it here to show that it works
-    @gqlContextType() _context: RequestContext,
-    @gqlArg("id", { type: GraphQLID }) id: ID,
-  ) {
-    const viewer = new IDViewer(id);
+  closedTodosLastDay(@gqlContextType() context: RequestContext) {
     const start = Interval.before(new Date(), { hours: 24 })
       .start.toUTC()
       .toISO();
 
-    return new CustomClauseQuery(viewer, {
-      // @ts-ignore
+    return new CustomClauseQuery(context.getViewer(), {
       loadEntOptions: Todo.loaderOptions(),
       clause: query.And(
         query.Eq("completed", true),
