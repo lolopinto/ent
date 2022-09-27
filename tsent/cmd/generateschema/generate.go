@@ -441,13 +441,15 @@ type CodegenData struct {
 	Constraints     []*input.Constraint
 	Indices         []*input.Index
 	DBRows          kv.List
-	Extends         bool
-	Base            string
-	Implements      bool
+	Class           string
 }
 
 func (c *CodegenData) DBRowsCall() string {
 	return c.DBRows.String()
+}
+
+func (c *CodegenData) Schema() string {
+	return c.Node + "Schema"
 }
 
 func NewEnumCodegenData(cfg *codegen.Config, schema, col string, values []string) *CodegenData {
@@ -455,9 +457,7 @@ func NewEnumCodegenData(cfg *codegen.Config, schema, col string, values []string
 		Node:      schema,
 		EnumTable: true,
 		Package:   cfg.GetImportPackage(),
-
-		Implements: true,
-		Base:       "Schema",
+		Class:     "EntSchema",
 	}
 	ret.Fields = []*input.Field{
 		{
@@ -488,15 +488,8 @@ func NewCodegenDataFromInputNode(cfg *codegen.Config, node string, n *input.Node
 		Constraints:     n.Constraints,
 		Indices:         n.Indices,
 		HideFromGraphQL: n.HideFromGraphQL,
-	}
-	if n.EnumTable {
-		ret.EnumTable = true
-		ret.Implements = true
-		ret.Base = "Schema"
-	} else {
-		// TODO eventually support other types
-		ret.Extends = true
-		ret.Base = "BaseEntSchema"
+		Class:           "EntSchema",
+		EnumTable:       n.EnumTable,
 	}
 	if n.TableName != "" {
 		ret.TableName = strconv.Quote(n.TableName)
@@ -528,8 +521,7 @@ func ParseAndGenerateSchema(cfg *codegen.Config, node string, fields []string) e
 		Node:    node,
 		Fields:  parsed,
 		Package: cfg.GetImportPackage(),
-		Extends: true,
-		Base:    "BaseEntSchema",
+		Class:   "EntSchema",
 	}
 
 	return GenerateSingleSchema(cfg, data, node)
@@ -569,7 +561,7 @@ func GenerateSingleSchema(cfg *codegen.Config, data *CodegenData, node string) e
 // have to call codegen.FormatTS() after since we now do the formatting at once
 // as opposed to for each file
 func generateSchema(cfg *codegen.Config, data *CodegenData, node string) error {
-	filePath := path.Join(cfg.GetRootPathToConfigs(), base.GetSnakeCaseName(node)+".ts")
+	filePath := path.Join(cfg.GetRootPathToConfigs(), base.GetSnakeCaseName(node)+"_schema.ts")
 	tsimps := tsimport.NewImports(cfg, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{

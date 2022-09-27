@@ -275,10 +275,9 @@ func TestEnumCodegenData(t *testing.T) {
 	testCodegenData(
 		t,
 		&CodegenData{
-			Node:       "RequestStatus",
-			EnumTable:  true,
-			Implements: true,
-			Base:       "Schema",
+			Node:      "RequestStatus",
+			EnumTable: true,
+			Class:     "EntSchema",
 			DBRows: kv.NewList(
 				kv.NewObjectFromPairs(
 					kv.Pair{
@@ -319,9 +318,7 @@ func TestEnumCodegenData(t *testing.T) {
 func testCodegenData(t *testing.T, exp, c *CodegenData, expFields []*expField) {
 	assert.Equal(t, exp.Node, c.Node)
 	assert.Equal(t, exp.EnumTable, c.EnumTable)
-	assert.Equal(t, exp.Implements, c.Implements)
-	assert.Equal(t, exp.Extends, c.Extends)
-	assert.Equal(t, exp.Base, c.Base)
+	assert.Equal(t, exp.Class, c.Class)
 
 	require.Len(t, exp.Fields, 0)
 	testFields(t, expFields, c.Fields)
