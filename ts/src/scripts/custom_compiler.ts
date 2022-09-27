@@ -268,13 +268,13 @@ class Compiler {
           let relPath = checkPath(paths, text);
           if (relPath) {
             // update the node...
-            return ts.updateImportDeclaration(
+            return ts.factory.updateImportDeclaration(
               importNode,
               importNode.decorators,
-              // @ts-ignore
               importNode.modifiers,
               importNode.importClause,
               ts.factory.createStringLiteral(relPath),
+              importNode.assertClause,
             );
           }
         }
