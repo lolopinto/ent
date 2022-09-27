@@ -67,12 +67,14 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
   constructor(
     viewer: ExampleViewerAlias,
     private srcEnt: Ent<ExampleViewerAlias>,
+    sortColumn?: string,
   ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "article_id",
       loadEntOptions: Comment.loaderOptions(),
       name: "ArticleToCommentsQuery",
+      sortColumn,
     });
   }
 
@@ -97,12 +99,14 @@ export class StickerToCommentsQueryBase extends CustomEdgeQueryBase<
   constructor(
     viewer: ExampleViewerAlias,
     private srcEnt: Ent<ExampleViewerAlias>,
+    sortColumn?: string,
   ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "sticker_id",
       loadEntOptions: Comment.loaderOptions(),
       name: "StickerToCommentsQuery",
+      sortColumn,
     });
   }
 

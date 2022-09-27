@@ -119,17 +119,18 @@
 
     export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$srcNode}}, {{$node}}, {{$viewerType}}> {
     {{ if $srcPoly -}}
-      constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}) {
+      constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string) {
         super(viewer, {
           src: srcEnt, 
     {{ else -}}
-      constructor(viewer: {{$viewerType}}, src: {{$srcType }}) {
+      constructor(viewer: {{$viewerType}}, src: {{$srcType }}, sortColumn?: string) {
         super(viewer, {
           src: src, 
     {{ end -}}
           groupCol: {{$edge.QuotedDBColName}},
           loadEntOptions: {{$node}}.loaderOptions(),
           name: "{{$edge.TsEdgeQueryName}}",
+          sortColumn,
         });
       }
 

@@ -26,7 +26,7 @@ interface CustomClauseQueryOptions<
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
   name: string;
-  // defaults to created_at (for now, will be changed to id)
+  // defaults to id
   sortColumn?: string;
   // pass this if the sort column is unique and it'll be used for the cursor and used to
   // generate the query
@@ -61,7 +61,7 @@ export class CustomClauseQuery<
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
   ) {
-    const sortCol = options.sortColumn || "created_at";
+    const sortCol = options.sortColumn || "id";
     let unique = options.sortColumnUnique
       ? sortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";

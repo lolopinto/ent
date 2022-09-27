@@ -608,12 +608,13 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
   AuthCode,
   ExampleViewerAlias
 > {
-  constructor(viewer: ExampleViewerAlias, src: User | ID) {
+  constructor(viewer: ExampleViewerAlias, src: User | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "user_id",
       loadEntOptions: AuthCode.loaderOptions(),
       name: "UserToAuthCodesQuery",
+      sortColumn,
     });
   }
 
@@ -635,12 +636,13 @@ export class UserToContactsQueryBase extends CustomEdgeQueryBase<
   Contact,
   ExampleViewerAlias
 > {
-  constructor(viewer: ExampleViewerAlias, src: User | ID) {
+  constructor(viewer: ExampleViewerAlias, src: User | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "user_id",
       loadEntOptions: Contact.loaderOptions(),
       name: "UserToContactsQuery",
+      sortColumn,
     });
   }
 
