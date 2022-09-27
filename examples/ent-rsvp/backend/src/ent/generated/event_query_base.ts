@@ -14,12 +14,13 @@ export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
   EventActivity,
   Viewer
 > {
-  constructor(viewer: Viewer, src: Event | ID) {
+  constructor(viewer: Viewer, src: Event | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "event_id",
       loadEntOptions: EventActivity.loaderOptions(),
       name: "EventToEventActivitiesQuery",
+      sortColumn,
     });
   }
 
@@ -41,12 +42,13 @@ export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<
   GuestData,
   Viewer
 > {
-  constructor(viewer: Viewer, src: Event | ID) {
+  constructor(viewer: Viewer, src: Event | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "event_id",
       loadEntOptions: GuestData.loaderOptions(),
       name: "EventToGuestDataQuery",
+      sortColumn,
     });
   }
 
@@ -68,12 +70,13 @@ export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
   GuestGroup,
   Viewer
 > {
-  constructor(viewer: Viewer, src: Event | ID) {
+  constructor(viewer: Viewer, src: Event | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "event_id",
       loadEntOptions: GuestGroup.loaderOptions(),
       name: "EventToGuestGroupsQuery",
+      sortColumn,
     });
   }
 
@@ -95,12 +98,13 @@ export class EventToGuestsQueryBase extends CustomEdgeQueryBase<
   Guest,
   Viewer
 > {
-  constructor(viewer: Viewer, src: Event | ID) {
+  constructor(viewer: Viewer, src: Event | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "event_id",
       loadEntOptions: Guest.loaderOptions(),
       name: "EventToGuestsQuery",
+      sortColumn,
     });
   }
 

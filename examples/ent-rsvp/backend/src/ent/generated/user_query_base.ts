@@ -8,12 +8,13 @@ export class UserToEventsQueryBase extends CustomEdgeQueryBase<
   Event,
   Viewer
 > {
-  constructor(viewer: Viewer, src: User | ID) {
+  constructor(viewer: Viewer, src: User | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "creator_id",
       loadEntOptions: Event.loaderOptions(),
       name: "UserToEventsQuery",
+      sortColumn,
     });
   }
 

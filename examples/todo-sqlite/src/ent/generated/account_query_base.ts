@@ -106,12 +106,13 @@ export class AccountToTagsQueryBase extends CustomEdgeQueryBase<
   Tag,
   Viewer
 > {
-  constructor(viewer: Viewer, src: Account | ID) {
+  constructor(viewer: Viewer, src: Account | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "owner_id",
       loadEntOptions: Tag.loaderOptions(),
       name: "AccountToTagsQuery",
+      sortColumn,
     });
   }
 
@@ -133,12 +134,13 @@ export class AccountToTodosQueryBase extends CustomEdgeQueryBase<
   Todo,
   Viewer
 > {
-  constructor(viewer: Viewer, src: Account | ID) {
+  constructor(viewer: Viewer, src: Account | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "creator_id",
       loadEntOptions: Todo.loaderOptions(),
       name: "AccountToTodosQuery",
+      sortColumn,
     });
   }
 

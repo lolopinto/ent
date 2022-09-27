@@ -62,12 +62,17 @@ export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
   Address,
   Viewer
 > {
-  constructor(viewer: Viewer, private srcEnt: Ent<Viewer>) {
+  constructor(
+    viewer: Viewer,
+    private srcEnt: Ent<Viewer>,
+    sortColumn?: string,
+  ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "owner_id",
       loadEntOptions: Address.loaderOptions(),
       name: "OwnerToAddressesQuery",
+      sortColumn,
     });
   }
 

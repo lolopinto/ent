@@ -131,12 +131,13 @@ export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<
   AuthCode,
   Viewer
 > {
-  constructor(viewer: Viewer, src: Guest | ID) {
+  constructor(viewer: Viewer, src: Guest | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "guest_id",
       loadEntOptions: AuthCode.loaderOptions(),
       name: "GuestToAuthCodesQuery",
+      sortColumn,
     });
   }
 
@@ -158,12 +159,13 @@ export class GuestToGuestDataQueryBase extends CustomEdgeQueryBase<
   GuestData,
   Viewer
 > {
-  constructor(viewer: Viewer, src: Guest | ID) {
+  constructor(viewer: Viewer, src: Guest | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "guest_id",
       loadEntOptions: GuestData.loaderOptions(),
       name: "GuestToGuestDataQuery",
+      sortColumn,
     });
   }
 

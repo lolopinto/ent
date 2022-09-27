@@ -80,12 +80,13 @@ export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<
   Guest,
   Viewer
 > {
-  constructor(viewer: Viewer, src: GuestGroup | ID) {
+  constructor(viewer: Viewer, src: GuestGroup | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "guest_group_id",
       loadEntOptions: Guest.loaderOptions(),
       name: "GuestGroupToGuestsQuery",
+      sortColumn,
     });
   }
 
