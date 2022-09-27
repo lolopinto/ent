@@ -8,10 +8,11 @@ import { commonTests } from "./shared_test";
 import { assocTests } from "./shared_assoc_test";
 import { loadCustomEdges } from "../ent";
 import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
-import { inputs } from "../../testutils/fake_data/test_helpers";
+import { inputs, tempDBTables } from "../../testutils/fake_data/test_helpers";
 import { convertDate } from "../../core/convert";
 import { MockLogs } from "../../testutils/mock_log";
 import { And, Eq } from "../clause";
+import { setupSqlite } from "../../testutils/db/temp_db";
 
 const ml = new MockLogs();
 ml.mock();
@@ -50,11 +51,13 @@ commonTests({
       expect(convertDate(edge.deletedAt!)).toBeInstanceOf(Date);
     });
   },
+  orderby: "DESC",
 });
 
 describe("custom assoc", () => {
-  // DB.getInstance is broken. so we need the same assoc instance to be used
-  //  setupSqlite(`sqlite:///assoc_query_sqlite.db`, tempDBTables);
+  setupSqlite(`sqlite:///assoc_query_sqlite_global.db`, () =>
+    tempDBTables(true),
+  );
 
   // TODO there's a weird dependency with commonTest above where commenting that out breaks this...
   assocTests(ml, true);

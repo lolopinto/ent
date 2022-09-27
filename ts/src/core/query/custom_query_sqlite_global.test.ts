@@ -2,6 +2,7 @@ import { Viewer } from "../base";
 import {
   FakeUser,
   UserToContactsFkeyQuery,
+  UserToContactsFkeyQueryAsc,
 } from "../../testutils/fake_data/index";
 import { commonTests } from "./shared_test";
 import { MockLogs } from "../../testutils/mock_log";
@@ -16,11 +17,28 @@ describe("custom query", () => {
       return UserToContactsFkeyQuery.query(viewer, user);
     },
     ml,
-    uniqKey: "fake_contacts",
+    uniqKey: "fake_contacts_global",
     tableName: "fake_contacts",
     clause: Eq("user_id", ""),
     sortCol: "created_at",
     sqlite: true,
+    orderby: "DESC",
+    globalSchema: true,
+  });
+});
+
+describe("custom query ASC", () => {
+  commonTests({
+    newQuery(viewer: Viewer, user: FakeUser) {
+      return UserToContactsFkeyQueryAsc.query(viewer, user);
+    },
+    ml,
+    uniqKey: "fake_contacts_global_asc",
+    tableName: "fake_contacts",
+    clause: Eq("user_id", ""),
+    sortCol: "created_at",
+    sqlite: true,
+    orderby: "ASC",
     globalSchema: true,
   });
 });

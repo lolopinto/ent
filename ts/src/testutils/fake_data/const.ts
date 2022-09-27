@@ -1,5 +1,5 @@
 import { Ent, LoadEntOptions } from "../../core/base";
-import { FakeContact, FakeEvent, FakeUser } from "./internal";
+import { FakeContact, FakeEvent, FakeUser, FakeTag } from "./internal";
 
 export enum EdgeType {
   UserToContacts = "userToContacts",
@@ -30,6 +30,7 @@ export enum NodeType {
   FakeUser = "user",
   FakeContact = "contact",
   FakeEvent = "event",
+  FakeTag = "tag",
 }
 
 export const SymmetricEdges = new Set<string>();
@@ -57,5 +58,7 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return FakeUser.loaderOptions();
     case NodeType.FakeEvent:
       return FakeEvent.loaderOptions();
+    case NodeType.FakeTag:
+      return FakeTag.loaderOptions();
   }
 }

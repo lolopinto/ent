@@ -30,6 +30,11 @@ interface Constraint extends SchemaItem {
 
 interface Index extends SchemaItem {
   generate(): string;
+  postCreate?(): boolean;
+}
+
+interface PostCreateIndex extends Index {
+  postCreate(): boolean;
 }
 
 // TODO need a better shared name for Table|Type
@@ -76,7 +81,15 @@ export function foreignKey(
 }
 
 interface indexOptions {
-  type: string;
+  type?: string;
+  unique?: boolean;
+}
+
+function isPostCreateIndex(s: SchemaItem): s is PostCreateIndex {
+  return (
+    (s as PostCreateIndex).postCreate !== undefined &&
+    (s as PostCreateIndex).postCreate()
+  );
 }
 
 export function index(
@@ -88,18 +101,17 @@ export function index(
   return {
     name,
     generate() {
-      return `CREATE INDEX ${name} ON ${tableName} USING ${
+      if (opts?.unique && Dialect.SQLite === DB.getDialect()) {
+        return `UNIQUE (${cols.join(",")})`;
+      }
+      return `CREATE ${
+        opts?.unique ? "UNIQUE " : ""
+      }INDEX ${name} ON ${tableName} USING ${
         opts?.type || "btree"
       } (${cols.join(",")});`;
     },
-  };
-}
-
-export function uniqueIndex(name: string): Constraint {
-  return {
-    name: "", //ignore...
-    generate() {
-      return `UNIQUE (${name})`;
+    postCreate() {
+      return Dialect.Postgres === DB.getDialect() && !!opts?.unique;
     },
   };
 }
@@ -323,7 +335,11 @@ export function table(name: string, ...items: SchemaItem[]): Table {
       }
       cols.push(item as Column);
     } else if ((item as Constraint).generate !== undefined) {
-      constraints.push(item as Constraint);
+      if (isPostCreateIndex(item) && item.postCreate()) {
+        indexes.push(item);
+      } else {
+        constraints.push(item as Constraint);
+      }
     }
   }
   return {
@@ -400,28 +416,23 @@ export class TempDB {
   private tables = new Map<string, CoreConcept>();
   private dialect: Dialect;
   private sqlite: SqliteDatabase;
+  private setTables: CoreConcept[] | (() => CoreConcept[]) | undefined;
 
-  constructor(dialect: Dialect, tables?: CoreConcept[]);
-  constructor(tables: CoreConcept[]);
-  constructor(dialect: Dialect | CoreConcept[], tables?: CoreConcept[]) {
-    let tbles: CoreConcept[] = [];
-    if (isDialect(dialect)) {
-      this.dialect = dialect;
-      if (tables) {
-        tbles = tables;
-      }
-    } else {
-      this.dialect = Dialect.Postgres;
-      tbles = dialect;
-    }
-    tbles.forEach((table) => this.tables.set(table.name, table));
+  constructor(
+    dialect: Dialect,
+    tables?: CoreConcept[] | (() => CoreConcept[]),
+  ) {
+    this.dialect = dialect;
+    this.setTables = tables;
   }
 
   getDialect() {
     return this.dialect;
   }
 
-  getTables() {
+  // NB: this won't be set until after beforeAll() is called since it depends on
+  // dialect being correctly set
+  __getTables() {
     return this.tables;
   }
 
@@ -466,6 +477,16 @@ export class TempDB {
       }
       const filePath = process.env.DB_CONNECTION_STRING.substr(10);
       this.sqlite = sqlite(filePath);
+    }
+
+    if (this.setTables) {
+      let tables: CoreConcept[] = [];
+      if (typeof this.setTables === "function") {
+        tables = this.setTables();
+      } else {
+        tables = this.setTables;
+      }
+      tables.forEach((table) => this.tables.set(table.name, table));
     }
 
     for (const [_, table] of this.tables) {
@@ -603,7 +624,7 @@ export function setupSqlite(
   tables: () => Table[],
   opts?: sqliteSetupOptions,
 ) {
-  let tdb: TempDB = new TempDB(Dialect.SQLite, tables());
+  let tdb: TempDB = new TempDB(Dialect.SQLite, tables);
 
   beforeAll(async () => {
     process.env.DB_CONNECTION_STRING = connString;
@@ -617,7 +638,7 @@ export function setupSqlite(
   if (!opts?.disableDeleteAfterEachTest) {
     afterEach(async () => {
       const client = await DB.getInstance().getNewClient();
-      for (const [key, _] of tdb.getTables()) {
+      for (const [key, _] of tdb.__getTables()) {
         const query = `delete from ${key}`;
         if (isSyncClient(client))
           if (client.execSync) {

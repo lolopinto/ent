@@ -115,7 +115,7 @@ async function createUsersWithTZ() {
 
 let tdb: TempDB;
 beforeAll(async () => {
-  tdb = new TempDB([]);
+  tdb = new TempDB(Dialect.Postgres, []);
 
   await tdb.beforeAll();
 });

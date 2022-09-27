@@ -1880,13 +1880,7 @@ export class AssocEdge {
   getCursor(): string {
     return getCursor({
       row: this,
-      col: "time",
-      conv: (t) => {
-        if (typeof t === "string") {
-          return Date.parse(t);
-        }
-        return t.getTime();
-      },
+      col: "id2",
     });
   }
 }
@@ -1898,6 +1892,7 @@ interface cursorOptions {
   conv?: (any: any) => any;
 }
 
+// TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
   const { row, col, conv } = opts;
   //  row: Data, col: string, conv?: (any) => any) {

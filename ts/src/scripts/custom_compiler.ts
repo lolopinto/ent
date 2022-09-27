@@ -268,12 +268,13 @@ class Compiler {
           let relPath = checkPath(paths, text);
           if (relPath) {
             // update the node...
-            return ts.updateImportDeclaration(
+            return ts.factory.updateImportDeclaration(
               importNode,
               importNode.decorators,
               importNode.modifiers,
               importNode.importClause,
               ts.factory.createStringLiteral(relPath),
+              importNode.assertClause,
             );
           }
         }
@@ -291,7 +292,7 @@ class Compiler {
                 exportNode.decorators,
                 exportNode.modifiers,
                 exportNode.exportClause,
-                ts.createLiteral(relPath),
+                ts.factory.createStringLiteral(relPath),
                 exportNode.isTypeOnly,
               );
             }

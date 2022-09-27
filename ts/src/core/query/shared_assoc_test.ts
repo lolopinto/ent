@@ -121,14 +121,14 @@ export function assocTests(ml: MockLogs, global = false) {
             Eq("id1", ""),
             Eq("edge_type", ""),
             Eq("deleted_at", null),
-          ).clause(1)} ORDER BY time DESC LIMIT ${expLimit}`,
+          ).clause(1)} ORDER BY time DESC, id2 DESC LIMIT ${expLimit}`,
         );
       } else {
         expect(whereClause, `${i}`).toBe(
           // default limit
           `${And(Eq("id1", ""), Eq("edge_type", "")).clause(
             1,
-          )} ORDER BY time DESC LIMIT ${expLimit}`,
+          )} ORDER BY time DESC, id2 DESC LIMIT ${expLimit}`,
         );
       }
     }
@@ -166,9 +166,11 @@ export function assocTests(ml: MockLogs, global = false) {
 
     async beforeEach() {
       let [user1, user2, user3] = await Promise.all([
-        createAllContacts({ firstName: "Jon", lastName: "Snow" }),
-        createAllContacts({ firstName: "Aegon", lastName: "Targaryen" }),
-        createAllContacts({ firstName: "Ned", lastName: "Stark" }),
+        createAllContacts({ input: { firstName: "Jon", lastName: "Snow" } }),
+        createAllContacts({
+          input: { firstName: "Aegon", lastName: "Targaryen" },
+        }),
+        createAllContacts({ input: { firstName: "Ned", lastName: "Stark" } }),
       ]);
       // modify contacts as needed
       user1[1] = this.ents(user1[1]);

@@ -5,7 +5,7 @@ import {
   LoadEntOptions,
   EdgeQueryableDataOptions,
 } from "../base";
-import { AssocEdge, loadEnts, loadEntsList } from "../ent";
+import { AssocEdge, loadEdgeData, loadEntsList } from "../ent";
 import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
 import { EdgeQuery, BaseEdgeQuery, IDInfo } from "./query";
@@ -26,6 +26,7 @@ interface typeData {
   options: LoadEntOptions<Ent>;
 }
 
+// would be nice to someday have an API for assoc asc
 export abstract class AssocEdgeQueryBase<
     TSource extends Ent<TViewer>,
     TDest extends Ent<TViewer>,
@@ -46,7 +47,7 @@ export abstract class AssocEdgeQueryBase<
       | LoadEntOptions<TDest, TViewer>
       | loaderOptionsFunc<TViewer>,
   ) {
-    super(viewer, "time");
+    super(viewer, "time", "id2");
   }
 
   private isEdgeQuery(
@@ -59,6 +60,14 @@ export abstract class AssocEdgeQueryBase<
   }
 
   abstract sourceEnt(id: ID): Promise<Ent | null>;
+
+  async getTableName(): Promise<string> {
+    const edgeData = await loadEdgeData(this.countLoaderFactory.getEdgeType());
+    if (!edgeData) {
+      throw new Error(`couldn't load edgeData`);
+    }
+    return edgeData.edgeTable;
+  }
 
   private async getSingleID() {
     const infos = await this.genIDInfosToFetch();

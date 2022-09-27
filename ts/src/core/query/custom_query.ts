@@ -26,7 +26,7 @@ export interface CustomEdgeQueryOptionsDeprecated<
   countLoaderFactory: LoaderFactory<ID, number>;
   dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
   options: LoadEntOptions<TDest, TViewer>;
-  // defaults to created_at
+  // defaults to created_at (for now, will be changed to id)
   sortColumn?: string;
 }
 
@@ -43,8 +43,11 @@ export interface CustomEdgeQueryOptions<
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
   name: string;
-  // defaults to created_at
+  // defaults to created_at (for now, will be changed to id)
   sortColumn?: string;
+  // pass this if the sort column is unique and it'll be used for the cursor and used to
+  // generate the query
+  sortColumnUnique?: boolean;
 
   disableTransformations?: boolean;
 }
@@ -118,6 +121,21 @@ function getQueryLoader<
   );
 }
 
+function isDeprecatedOptions<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+>(
+  options:
+    | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
+    | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
+): options is CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer> {
+  return (
+    (options as CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>)
+      .countLoaderFactory !== undefined
+  );
+}
+
 export abstract class CustomEdgeQueryBase<
     TSource extends Ent<TViewer>,
     TDest extends Ent<TViewer>,
@@ -134,16 +152,37 @@ export abstract class CustomEdgeQueryBase<
       | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
       | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
   ) {
-    // @ts-ignore
-    super(viewer, options?.sortColumn || "created_at");
-    options.sortColumn = options.sortColumn || "created_at";
+    let opts: LoadEntOptions<TDest>;
+    let defaultSort = "created_at";
+
+    let uniqueColIsSort = false;
+
+    if (isDeprecatedOptions(options)) {
+      opts = options.options;
+    } else {
+      opts = options.loadEntOptions;
+      if (options.sortColumnUnique) {
+        uniqueColIsSort = true;
+      }
+    }
+    let uniqueCol = opts.loaderFactory.options?.key || "id";
+
+    if (uniqueColIsSort) {
+      uniqueCol = options.sortColumn || defaultSort;
+    }
+    options.sortColumn = options.sortColumn || defaultSort;
+    super(viewer, options.sortColumn, uniqueCol);
     if (typeof options.src === "object") {
       this.id = options.src.id;
     } else {
       this.id = options.src;
     }
 
-    this.opts = this.getLoadEntOptions();
+    this.opts = opts;
+  }
+
+  getTableName() {
+    return this.opts.tableName;
   }
 
   abstract sourceEnt(id: ID): Promise<Ent | null>;
@@ -156,26 +195,15 @@ export abstract class CustomEdgeQueryBase<
     return !ids[0].invalidated;
   }
 
-  private isDeprecatedOptions(
-    options:
-      | CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>
-      | CustomEdgeQueryOptions<TSource, TDest, TViewer>,
-  ): options is CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer> {
-    return (
-      (options as CustomEdgeQueryOptionsDeprecated<TSource, TDest, TViewer>)
-        .countLoaderFactory !== undefined
-    );
-  }
-
   private getCountLoader() {
-    if (this.isDeprecatedOptions(this.options)) {
+    if (isDeprecatedOptions(this.options)) {
       return this.options.countLoaderFactory.createLoader(this.viewer.context);
     }
     return getRawCountLoader(this.viewer, this.options);
   }
 
   private getQueryLoader(options: EdgeQueryableDataOptions) {
-    if (this.isDeprecatedOptions(this.options)) {
+    if (isDeprecatedOptions(this.options)) {
       return this.options.dataLoaderFactory.createConfigurableLoader(
         options,
         this.viewer.context,
@@ -208,16 +236,6 @@ export abstract class CustomEdgeQueryBase<
     addID(this.options.src);
   }
 
-  private getLoadEntOptions() {
-    let opts: LoadEntOptions<TDest>;
-    if (this.isDeprecatedOptions(this.options)) {
-      opts = this.options.options;
-    } else {
-      opts = this.options.loadEntOptions;
-    }
-    return opts;
-  }
-
   protected async loadRawData(
     infos: IDInfo[],
     options: EdgeQueryableDataOptions,
@@ -228,7 +246,7 @@ export abstract class CustomEdgeQueryBase<
       );
     }
     if (!options.orderby) {
-      options.orderby = `${this.options.sortColumn} DESC`;
+      options.orderby = `${this.getSortCol()} DESC`;
     }
     if (!options.limit) {
       options.limit = DefaultLimit;

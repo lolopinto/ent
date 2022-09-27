@@ -10,6 +10,8 @@ import { DefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
+import { validate } from "uuid";
+import { types } from "util";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -52,13 +54,15 @@ export interface EdgeQuery<
 //maybe id2 shouldn't return EdgeQuery but a different object from which you can query edge. the ent you don't need to query since you can just query that on your own.
 
 export interface EdgeQueryFilter<T extends Data> {
-  // this is a filter that does the processing in TypeScript instead of at the SQL layer
+  // this is a filter that does the processing in TypeScript instead of (or in addition to) the SQL layer
   filter?(id: ID, edges: T[]): T[];
 
   // there's 2 ways to do it.
   // apply it in SQL
   // or process it after the fact
-  query?(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions;
+  query?(
+    options: EdgeQueryableDataOptions,
+  ): EdgeQueryableDataOptions | Promise<EdgeQueryableDataOptions>;
   // maybe it's a dynamic decision to do so and then query returns what was passed to it and filter returns what was passed to it based on the decision flow
   //  preProcess
 
@@ -82,51 +86,64 @@ function assertPositive(n: number) {
   }
 }
 
-function assertValidCursor(cursor: string, col: string): number {
+function assertValidCursor(cursor: string, col: string): any {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
+  // uuid, don't parse int since it tries to validate just first part
+  if (validate(parts[1])) {
+    return parts[1];
+  }
   // invalid or unknown cursor. nothing to do here.
   if (parts.length !== 2 || parts[0] !== col) {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
-  // TODO check if numeric or not but for now we're only doing numbers
+  // TODO handle both cases... (time vs not) better
+  // TODO change this to only do the parseInt part if time...
+  // pass flag indicating if time?
   const time = parseInt(parts[1], 10);
   if (isNaN(time)) {
-    throw new Error(`invalid cursor ${cursor} passed`);
+    return parts[1];
   }
   return time;
 }
 
-interface FilterOptions {
+interface FilterOptions<T extends Data> {
   limit: number;
-  query: BaseEdgeQuery<Ent, Ent, Data>;
-  before?: string;
-  after?: string;
-  sortCol?: string; // what column are we sorting by. defaults to `time`
-  // if sortCol is provided, check if time or not
-  sortColNotTime?: boolean;
+  query: BaseEdgeQuery<Ent, Ent, T>;
+  sortCol: string;
+  cursorCol: string;
+  defaultDirection?: "ASC" | "DESC";
+  // TODO provide this option
+  // if sortCol is Unique and time, we need to pass different values for comparisons and checks...
+  sortColTime?: boolean;
+
+  // indicates that sort column is unique and we shouldn't use the id from the
+  // table as the cursor and use the sort column instead
+  sortColumnUnique?: boolean;
 }
+
+interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
+  after?: string;
+}
+
+interface LastFilterOptions<T extends Data> extends FilterOptions<T> {
+  before?: string;
+}
+
+const orderbyRegex = new RegExp(/([0-9a-z_]+)[ ]?([0-9a-z_]+)?/i);
 
 class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
-  private edgeQuery: BaseEdgeQuery<Ent, Ent, Data>;
+  private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
   private pageMap: Map<ID, PaginationInfo> = new Map();
 
-  constructor(private options: FilterOptions) {
+  constructor(private options: FirstFilterOptions<T>) {
     assertPositive(options.limit);
 
-    if (options.before) {
-      throw new Error(`cannot specify before with a first filter`);
-    }
-    this.sortCol = options.sortCol || "time";
+    this.sortCol = options.sortCol;
     if (options.after) {
-      this.offset = assertValidCursor(options.after, this.sortCol);
-    }
-    if (this.options.sortColNotTime && !this.options.sortCol) {
-      throw new Error(
-        `cannot specify sortColNotTime without specifying a sortCol`,
-      );
+      this.offset = assertValidCursor(options.after, options.cursorCol);
     }
     this.edgeQuery = options.query;
   }
@@ -136,6 +153,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
       const ret = edges.slice(0, this.options.limit);
       this.pageMap.set(id, {
         hasNextPage: true,
+        // hasPreviousPage always false even if there's a previous page because
+        // we shouldn't be querying in both directions at the same
         hasPreviousPage: false,
         startCursor: this.edgeQuery.getCursor(ret[0]),
         endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
@@ -150,33 +169,48 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     return edges;
   }
 
-  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+  async query(
+    options: EdgeQueryableDataOptions,
+  ): Promise<EdgeQueryableDataOptions> {
     // we fetch an extra one to see if we're at the end
     const limit = this.options.limit + 1;
 
     options.limit = limit;
-    // todo may not be desc
-    // and if asc
-    // clause below should switch to greater...
-    const sortCol = this.sortCol.toLowerCase();
-    if (sortCol.endsWith("desc") || sortCol.endsWith("asc")) {
-      options.orderby = `${this.sortCol}`;
-    } else {
-      options.orderby = `${this.sortCol} DESC`;
-    }
+
+    let orderby = this.options.defaultDirection || "DESC";
+
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
-    if (this.offset) {
-      if (this.options.sortColNotTime) {
-        options.clause = clause.Less(this.sortCol, this.offset);
-      } else {
-        options.clause = clause.Less(
+    const less = orderby === "DESC";
+
+    if (this.options.cursorCol !== this.sortCol) {
+      // we also sort unique col in same direction since it doesn't matter...
+      options.orderby = `${this.sortCol} ${orderby}, ${this.options.cursorCol} ${orderby}`;
+
+      if (this.offset) {
+        const res = this.edgeQuery.getTableName();
+        const tableName = types.isPromise(res) ? await res : res;
+        // inner col time
+        options.clause = clause.PaginationMultipleColsSubQuery(
           this.sortCol,
-          new Date(this.offset).toISOString(),
+          less ? "<" : ">",
+          tableName,
+          this.options.cursorCol,
+          this.offset,
         );
       }
+    } else {
+      options.orderby = `${this.sortCol} ${orderby}`;
+
+      if (this.offset) {
+        let clauseFn = less ? clause.Less : clause.Greater;
+        let val = this.options.sortColTime
+          ? new Date(this.offset).toISOString()
+          : this.offset;
+        options.clause = clauseFn(this.sortCol, val);
+      }
     }
-    // console.debug("filter opts", options, this.options);
+
     return options;
   }
 
@@ -190,22 +224,14 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
   private pageMap: Map<ID, PaginationInfo> = new Map();
-  private edgeQuery: BaseEdgeQuery<Ent, Ent, Data>;
+  private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
 
-  constructor(private options: FilterOptions) {
+  constructor(private options: LastFilterOptions<T>) {
     assertPositive(options.limit);
 
-    if (options.after) {
-      throw new Error(`cannot specify after with a last filter`);
-    }
-    this.sortCol = options.sortCol || "time";
+    this.sortCol = options.sortCol;
     if (options.before) {
-      this.offset = assertValidCursor(options.before, this.sortCol);
-    }
-    if (this.options.sortColNotTime && !this.options.sortCol) {
-      throw new Error(
-        `cannot specify sortColNotTime without specifying a sortCol`,
-      );
+      this.offset = assertValidCursor(options.before, options.cursorCol);
     }
     this.edgeQuery = options.query;
   }
@@ -221,12 +247,14 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
         ret = edges;
       }
     } else {
-      ret = edges.slice(edges.length - this.options.limit, edges.length);
+      ret = edges.slice(0, this.options.limit);
     }
 
     if (edges.length > this.options.limit) {
       this.pageMap.set(id, {
         hasPreviousPage: true,
+        // hasNextPage always false even if there's a next page because
+        // we shouldn't be querying in both directions at the same
         hasNextPage: false,
         startCursor: this.edgeQuery.getCursor(ret[0]),
         endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
@@ -235,22 +263,52 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     return ret;
   }
 
-  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
-    if (!this.offset) {
-      return options;
+  async query(
+    options: EdgeQueryableDataOptions,
+  ): Promise<EdgeQueryableDataOptions> {
+    // assume desc by default
+    // so last is reverse
+    let orderby = "ASC";
+    if (this.options.defaultDirection) {
+      // reverse sort col shown...
+      if (this.options.defaultDirection === "DESC") {
+        orderby = "ASC";
+      } else {
+        orderby = "DESC";
+      }
     }
 
-    options.orderby = `${this.sortCol} ASC`;
+    const greater = orderby === "ASC";
+
     options.limit = this.options.limit + 1; // fetch an extra so we know if previous pag
 
-    if (this.options.sortColNotTime) {
-      options.clause = clause.Greater(this.sortCol, this.offset);
+    if (this.options.cursorCol !== this.sortCol) {
+      const res = this.edgeQuery.getTableName();
+      const tableName = types.isPromise(res) ? await res : res;
+
+      if (this.offset) {
+        // inner col time
+        options.clause = clause.PaginationMultipleColsSubQuery(
+          this.sortCol,
+          greater ? ">" : "<",
+          tableName,
+          this.options.cursorCol,
+          this.offset,
+        );
+      }
+      options.orderby = `${this.sortCol} ${orderby}, ${this.options.cursorCol} ${orderby}`;
     } else {
-      options.clause = clause.Greater(
-        this.sortCol,
-        new Date(this.offset).toISOString(),
-      );
+      options.orderby = `${this.sortCol} ${orderby}`;
+
+      if (this.offset) {
+        let clauseFn = greater ? clause.Greater : clause.Less;
+        let val = this.options.sortColTime
+          ? new Date(this.offset).toISOString()
+          : this.offset;
+        options.clause = clauseFn(this.sortCol, val);
+      }
     }
+
     return options;
   }
 
@@ -273,10 +331,32 @@ export abstract class BaseEdgeQuery<
   protected genIDInfosToFetch: () => Promise<IDInfo[]>;
   private idMap: Map<ID, TSource> = new Map();
   private idsToFetch: ID[] = [];
+  private sortCol: string;
+  private cursorCol: string;
+  private defaultDirection?: "ASC" | "DESC";
 
-  constructor(public viewer: Viewer, private sortCol: string) {
+  constructor(public viewer: Viewer, sortCol: string, cursorCol: string) {
+    let m = orderbyRegex.exec(sortCol);
+    if (!m) {
+      throw new Error(`invalid sort column ${sortCol}`);
+    }
+    this.sortCol = m[1];
+    if (m[2]) {
+      // @ts-ignore
+      this.defaultDirection = m[2].toUpperCase();
+    }
+
+    let m2 = orderbyRegex.exec(cursorCol);
+    if (!m2) {
+      throw new Error(`invalid sort column ${cursorCol}`);
+    }
+    this.cursorCol = m2[1];
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
     this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
+  }
+
+  protected getSortCol(): string {
+    return this.sortCol;
   }
 
   getPrivacyPolicy() {
@@ -293,6 +373,8 @@ export abstract class BaseEdgeQuery<
         limit: n,
         after,
         sortCol: this.sortCol,
+        cursorCol: this.cursorCol,
+        defaultDirection: this.defaultDirection,
         query: this,
       }),
     );
@@ -306,6 +388,8 @@ export abstract class BaseEdgeQuery<
         limit: n,
         before,
         sortCol: this.sortCol,
+        cursorCol: this.cursorCol,
+        defaultDirection: this.defaultDirection,
         query: this,
       }),
     );
@@ -438,6 +522,8 @@ export abstract class BaseEdgeQuery<
     }
   }
 
+  abstract getTableName(): string | Promise<string>;
+
   protected async genIDInfosToFetchImpl() {
     await this.loadRawIDs(this.addID.bind(this));
 
@@ -461,11 +547,12 @@ export abstract class BaseEdgeQuery<
     // TODO once we add a lot of complex filters, this needs to be more complicated
     // e.g. commutative filters. what can be done in sql or combined together etc
     // may need to bring sql mode or something back
-    this.filters.forEach((filter) => {
+    for (const filter of this.filters) {
       if (filter.query) {
-        options = filter.query(options);
+        let res = filter.query(options);
+        options = types.isPromise(res) ? await res : res;
       }
-    });
+    }
 
     await this.loadRawData(idsInfo, options);
 
@@ -498,17 +585,7 @@ export abstract class BaseEdgeQuery<
   getCursor(row: TEdge): string {
     return getCursor({
       row,
-      col: this.sortCol,
-      conv: (datum) => {
-        if (datum instanceof Date) {
-          return datum.getTime();
-        }
-        // sqlite stores it as string and doesn't convert back
-        if (typeof datum === "string") {
-          return Date.parse(datum);
-        }
-        return datum;
-      },
+      col: this.cursorCol,
     });
   }
 }

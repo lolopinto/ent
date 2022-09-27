@@ -356,7 +356,7 @@ async function createData(): Promise<createdData> {
 
   await Promise.all(
     [1, 2, 3, 4, 5].map(async (count, idx) => {
-      let [user, contacts] = await createAllContacts(undefined, count);
+      let [user, contacts] = await createAllContacts({ slice: count });
 
       m.set(user.id, contacts.reverse());
       ids[idx] = user.id;
