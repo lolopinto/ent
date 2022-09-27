@@ -200,7 +200,34 @@ func TestParseFields(t *testing.T) {
 						{
 							name:    "password",
 							dbType:  input.String,
-							private: true,
+							private: &input.PrivateOptions{},
+						},
+					},
+				},
+			},
+		},
+		"private field exposed to actions": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import {Schema, FieldMap, StringType} from "{schema}";
+
+				export default class User implements Schema {
+					fields: FieldMap = {
+						password: StringType({private: {
+							exposeToActions: true,
+						}}),
+					};
+				}`),
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: []field{
+						{
+							name:   "password",
+							dbType: input.String,
+							private: &input.PrivateOptions{
+								ExposeToActions: true,
+							},
 						},
 					},
 				},
@@ -331,7 +358,7 @@ func TestParseFields(t *testing.T) {
 						field{
 							name:            "password",
 							dbType:          input.String,
-							private:         true,
+							private:         &input.PrivateOptions{},
 							hideFromGraphQL: true,
 						},
 					),
@@ -688,7 +715,7 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"jsonb import ype": {
+		"jsonb import type": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import {Schema, Field, BaseEntSchema, JSONBType } from "{schema}"
@@ -719,6 +746,107 @@ func TestParseFields(t *testing.T) {
 								ImportType: &tsimport.ImportPath{
 									ImportPath: "path/to_foo.ts",
 									Import:     "Foo",
+								},
+							},
+						},
+					),
+				},
+			},
+		},
+		"jsonb import type as list": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import {Schema, Field, BaseEntSchema, JSONBTypeAsList } from "{schema}"
+
+				export default class User extends BaseEntSchema implements Schema {
+					fields: Field[] = [
+						JSONBTypeAsList({name: "foo", importType: {
+							type: "Foo",
+							path: "path/to_foo.ts",
+						} }),
+					]
+				}`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name:   "node",
+					fields: nodeFields(),
+				},
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "foo",
+							dbType: input.JSONB,
+							typ: &input.FieldType{
+								DBType: input.JSONB,
+								ListElemType: &input.FieldType{
+									DBType: input.JSONB,
+								},
+								ImportType: &tsimport.ImportPath{
+									ImportPath: "path/to_foo.ts",
+									Import:     "Foo",
+								},
+							},
+						},
+					),
+				},
+			},
+		},
+		"struct type as list": {
+			only: true,
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import { EntSchema, StructTypeAsList, StringType, IntegerType } from "{schema}"
+
+				const UserSchema = new EntSchema({
+					fields: {
+						foo: StructTypeAsList({
+							tsType: 'FooType',
+							graphQLType: 'FooType',
+							fields: {
+								bar: StringType(),
+								baz: IntegerType(),
+							},
+						}),
+					}
+				});
+				export default UserSchema;
+				`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name:   "node",
+					fields: nodeFields(),
+				},
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "foo",
+							dbType: input.JSONB,
+							typ: &input.FieldType{
+								Type:        "FooType",
+								GraphQLType: "FooType",
+								DBType:      input.JSONB,
+								ListElemType: &input.FieldType{
+									DBType: input.JSONB,
+								},
+								SubFields: []*input.Field{
+									{
+										Name: "bar",
+										Type: &input.FieldType{
+											DBType: input.String,
+										},
+									},
+									{
+										Name: "baz",
+										Type: &input.FieldType{
+											DBType: input.Int,
+										},
+									},
 								},
 							},
 						},

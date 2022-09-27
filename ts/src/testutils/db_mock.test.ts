@@ -7,7 +7,6 @@ import DB from "../core/db";
 import * as clause from "../core/clause";
 import { Where, EqOp } from "./parse_sql";
 import { setLogLevels } from "../core/logger";
-import { MockLogs } from "./mock_log";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -434,23 +433,18 @@ describe("select", () => {
   });
 
   test("groupby", async () => {
-    const ml = new MockLogs();
-    ml.mock();
-
-    // TODO loadRowsX
-    await loadRows({
-      tableName: "t",
-      fields: ["count(1)", "name"],
-      clause: clause.Eq("name", "Jane"),
-      //      orderby: "id DESC",
-      groupby: "name",
-      limit: 2,
-    });
-    ml.restore();
-    expect(ml.errors.length).toBe(1);
-
-    // we currently hide errors so we have to do this nonsense instead
-    expect(ml.errors[0]).toMatch(/^non-null groupby/);
+    try {
+      await loadRows({
+        tableName: "t",
+        fields: ["count(1)", "name"],
+        clause: clause.Eq("name", "Jane"),
+        groupby: "name",
+        limit: 2,
+      });
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(/^non-null groupby/);
+    }
   });
 });
 
@@ -539,17 +533,14 @@ describe("ops", () => {
   test("AND 2 ops", async () => {
     await Promise.all(
       [4, 8].map(async (id) => {
-        return await editRowForTest(
-          {
-            tableName: "t",
-            fields: {
-              bar: "bar2",
-              baz: "baz3",
-            },
-            key: "id",
+        return await editRowForTest({
+          tableName: "t",
+          fields: {
+            bar: "bar2",
+            baz: "baz3",
           },
-          id,
-        );
+          whereClause: clause.Eq("id", id),
+        });
       }),
     );
     const rows = await loadRows({
@@ -569,17 +560,14 @@ describe("ops", () => {
   test("AND 3 ops", async () => {
     await Promise.all(
       [4, 8].map(async (id) => {
-        return await editRowForTest(
-          {
-            tableName: "t",
-            fields: {
-              bar: "bar2",
-              baz: "baz3",
-            },
-            key: "id",
+        return await editRowForTest({
+          tableName: "t",
+          fields: {
+            bar: "bar2",
+            baz: "baz3",
           },
-          id,
-        );
+          whereClause: clause.Eq("id", id),
+        });
       }),
     );
     const rows = await loadRows({
@@ -628,17 +616,14 @@ describe("ops", () => {
   test("OR 4 ops", async () => {
     await Promise.all(
       [4, 8].map(async (id) => {
-        return await editRowForTest(
-          {
-            tableName: "t",
-            fields: {
-              bar: "bar2",
-              baz: "baz3",
-            },
-            key: "id",
+        return await editRowForTest({
+          tableName: "t",
+          fields: {
+            bar: "bar2",
+            baz: "baz3",
           },
-          id,
-        );
+          whereClause: clause.Eq("id", id),
+        });
       }),
     );
     const rows = await loadRows({
@@ -669,16 +654,13 @@ describe("update", () => {
   });
 
   test("simple update", async () => {
-    const row = await editRowForTest(
-      {
-        tableName: "t",
-        fields: {
-          bar: "bar2",
-        },
-        key: "id",
+    const row = await editRowForTest({
+      tableName: "t",
+      fields: {
+        bar: "bar2",
       },
-      1,
-    );
+      whereClause: clause.Eq("id", 1),
+    });
     expect(row).toBeNull();
     verifyIDRowWritten({ id: 1, bar: "bar2", baz: "baz", name: "John" }, 1);
   });
@@ -690,9 +672,8 @@ describe("update", () => {
         fields: {
           bar: "bar2",
         },
-        key: "id",
+        whereClause: clause.Eq("id", 1),
       },
-      1,
       "RETURNING *",
     );
     expect(row).toStrictEqual({ id: 1, bar: "bar2", baz: "baz", name: "John" });
@@ -706,9 +687,8 @@ describe("update", () => {
         fields: {
           bar: "bar2",
         },
-        key: "id",
+        whereClause: clause.Eq("id", 1),
       },
-      1,
       "RETURNING id, bar",
     );
     expect(row).toStrictEqual({ id: 1, bar: "bar2" });

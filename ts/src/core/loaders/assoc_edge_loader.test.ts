@@ -7,7 +7,7 @@ import { AssocEdge, buildQuery, DefaultLimit } from "../ent";
 import * as clause from "../clause";
 
 import { EdgeQueryableDataOptions, ID, Loader } from "../base";
-import { setupSqlite, TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import {
   FakeUser,
   FakeContact,
@@ -353,7 +353,7 @@ async function createData(): Promise<createdData> {
 
   await Promise.all(
     [1, 2, 3, 4, 5].map(async (count, idx) => {
-      let [user, contacts] = await createAllContacts(undefined, count);
+      let [user, contacts] = await createAllContacts({ slice: count });
 
       m.set(user.id, contacts.reverse());
       ids[idx] = user.id;

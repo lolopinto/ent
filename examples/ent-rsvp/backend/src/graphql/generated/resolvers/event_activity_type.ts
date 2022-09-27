@@ -21,6 +21,7 @@ import {
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
+  Guest,
 } from "src/ent/";
 import {
   AddressType,
@@ -34,6 +35,16 @@ import {
 export const EventActivityType = new GraphQLObjectType({
   name: "EventActivity",
   fields: (): GraphQLFieldConfigMap<EventActivity, RequestContext> => ({
+    address: {
+      type: AddressType,
+      resolve: (
+        eventActivity: EventActivity,
+        args: {},
+        context: RequestContext,
+      ) => {
+        return eventActivity.loadAddress();
+      },
+    },
     event: {
       type: EventType,
       resolve: (
@@ -88,7 +99,7 @@ export const EventActivityType = new GraphQLObjectType({
       },
       resolve: (
         eventActivity: EventActivity,
-        args: {},
+        args: any,
         context: RequestContext,
       ) => {
         return new GraphQLEdgeConnection(
@@ -122,7 +133,7 @@ export const EventActivityType = new GraphQLObjectType({
       },
       resolve: (
         eventActivity: EventActivity,
-        args: {},
+        args: any,
         context: RequestContext,
       ) => {
         return new GraphQLEdgeConnection(
@@ -156,7 +167,7 @@ export const EventActivityType = new GraphQLObjectType({
       },
       resolve: (
         eventActivity: EventActivity,
-        args: {},
+        args: any,
         context: RequestContext,
       ) => {
         return new GraphQLEdgeConnection(
@@ -168,10 +179,24 @@ export const EventActivityType = new GraphQLObjectType({
         );
       },
     },
-    viewerRsvpStatus: {
-      type: EventActivityRsvpStatusType,
+    rsvpStatusFor: {
+      type: new GraphQLNonNull(EventActivityRsvpStatusType),
+      args: {
+        id: {
+          description: "",
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      resolve: async (
+        eventActivity: EventActivity,
+        args: any,
+        context: RequestContext,
+      ) => {
+        const ent = await Guest.loadX(context.getViewer(), args.id);
+        return eventActivity.rsvpStatusFor(ent);
+      },
     },
-    address: {
+    addressFromOwner: {
       type: AddressType,
       resolve: async (
         eventActivity: EventActivity,

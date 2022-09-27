@@ -20,10 +20,15 @@
       {{end -}}
       resolve: {{useImport $field.ResolverMethod}},
     {{else if $field.HasResolveFunction -}}
+      {{/* TODO render actual args instead of any */ -}}
+      {{$args := "{}" -}}
+      {{ if gt (len $field.Args) 0 -}}
+        {{$args = "any" -}}
+      {{ end -}}
       {{if $field.HasAsyncModifier -}}
-        resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}, context: {{useImport "RequestContext"}}) => {
+        resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useImport "RequestContext"}}) => {
       {{ else -}}
-        resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}, context: {{useImport "RequestContext"}}) => {
+        resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useImport "RequestContext"}}) => {
       {{ end -}}
         {{ range $field.FunctionContents -}}
           {{.}}

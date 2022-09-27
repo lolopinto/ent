@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/spf13/cobra"
@@ -27,6 +30,18 @@ tsent upgrade r1:r2 --sql`,
 		}
 		// another hardcoded place
 		cfg, err := codegen.NewConfig("src/schema", "")
+		if err != nil {
+			return err
+		}
+
+		// if schema.py doesn't exist, don't do anything
+		// checking this here beause codegen calls this
+		// may eventually make sense to do this in auto_schema.RunPythonCommandWriter maybe
+		schemaPath := filepath.Join(cfg.GetRootPathToConfigs(), "schema.py")
+		_, err = os.Stat(schemaPath)
+		if os.IsNotExist(err) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}

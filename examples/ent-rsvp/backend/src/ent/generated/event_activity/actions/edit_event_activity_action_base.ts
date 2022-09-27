@@ -15,10 +15,11 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Event, EventActivity } from "src/ent/";
+import { Address, Event, EventActivity } from "src/ent/";
 import { EventActivityBuilder } from "src/ent/generated/event_activity/actions/event_activity_builder";
 
 export interface EventActivityEditInput {
+  addressId?: ID | null | Builder<Address, Viewer>;
   name?: string;
   eventID?: ID | Builder<Event, Viewer>;
   startTime?: Date;

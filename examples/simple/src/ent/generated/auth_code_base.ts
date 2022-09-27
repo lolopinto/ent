@@ -12,7 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -47,8 +47,8 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.code = data.code;
     this.userID = data.user_id;
     this.emailAddress = data.email_address;
@@ -102,7 +102,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      AuthCodeBase.loaderOptions.apply(this),
+      {
+        ...AuthCodeBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -113,10 +116,27 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<AuthCodeDBData[]> {
     return (await loadCustomData(
-      AuthCodeBase.loaderOptions.apply(this),
+      {
+        ...AuthCodeBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as AuthCodeDBData[];
+  }
+
+  static async loadCustomCount<T extends AuthCodeBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...AuthCodeBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends AuthCodeBase>(

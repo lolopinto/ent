@@ -4,7 +4,7 @@ import { MockLogs } from "../../testutils/mock_log";
 import { buildQuery, DefaultLimit } from "../ent";
 import * as clause from "../clause";
 import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
-import { setupSqlite, TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import {
   FakeUser,
   FakeEvent,
@@ -20,13 +20,13 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 
 import { QueryLoaderFactory } from "./query_loader";
-import { advanceBy, advanceTo, clear } from "jest-date-mock";
+import { advanceBy, advanceTo } from "jest-date-mock";
 import { MockDate } from "../../testutils/mock_date";
 
 const ml = new MockLogs();
 let tdb: TempDB;
 
-let ctx: TestContext;
+let ctx = new TestContext();
 
 // we get 7 back because we're looking at a week
 const DAYS = 7;
@@ -73,7 +73,7 @@ describe("postgres", () => {
 
   beforeEach(() => {
     // reset context for each test
-    ctx = new TestContext();
+    ctx?.cache.clearCache();
   });
 
   afterEach(() => {
@@ -97,7 +97,8 @@ describe("sqlite", () => {
 
   beforeEach(async () => {
     // reset context for each test
-    ctx = new TestContext();
+    ctx?.cache.clearCache();
+
     // create once
     //    await createEdges();
   });

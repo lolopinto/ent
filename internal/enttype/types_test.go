@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -34,7 +35,8 @@ type expType struct {
 	goType              string
 	tsType              string
 	tsTypePanics        bool
-	convertFn           string
+	convertSqliteFn     string
+	convertPostgresFn   string
 	importType          enttype.Import
 	tsTypeImports       []*tsimport.ImportPath
 	subFields           []*input.Field
@@ -244,13 +246,13 @@ func f() bool {
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLBoolean"),
 		},
-		zeroValue:    "false",
-		castToMethod: "cast.ToBool",
-		goType:       "bool",
-		nullableType: &enttype.NullableBoolType{},
-		tsType:       "boolean",
-		convertFn:    "convertBool",
-		importType:   &enttype.BoolImport{},
+		zeroValue:       "false",
+		castToMethod:    "cast.ToBool",
+		goType:          "bool",
+		nullableType:    &enttype.NullableBoolType{},
+		tsType:          "boolean",
+		convertSqliteFn: "convertBool",
+		importType:      &enttype.BoolImport{},
 	}, ret)
 }
 
@@ -273,7 +275,7 @@ func f() *bool {
 		nonNullableType: &enttype.BoolType{},
 		goType:          "*bool",
 		tsType:          "boolean | null",
-		convertFn:       "convertNullableBool",
+		convertSqliteFn: "convertNullableBool",
 		importType:      &enttype.BoolImport{},
 	}, ret)
 }
@@ -358,13 +360,14 @@ func f() int64 {
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
-		zeroValue:    "0",
-		castToMethod: "cast.ToInt64",
-		goType:       "int64",
-		nullableType: &enttype.NullableBigIntegerType{},
-		tsType:       "BigInt",
-		importType:   &enttype.BigIntImport{},
-		convertFn:    "BigInt",
+		zeroValue:         "0",
+		castToMethod:      "cast.ToInt64",
+		goType:            "int64",
+		nullableType:      &enttype.NullableBigIntegerType{},
+		tsType:            "BigInt",
+		importType:        &enttype.BigIntImport{},
+		convertSqliteFn:   "BigInt",
+		convertPostgresFn: "BigInt",
 	}, ret)
 }
 
@@ -405,13 +408,14 @@ func f() *int64 {
 		graphqlImports: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
-		zeroValue:       "0",
-		castToMethod:    "cast.ToNullableInt64",
-		nonNullableType: &enttype.BigIntegerType{},
-		goType:          "*int64",
-		tsType:          "BigInt | null",
-		importType:      &enttype.BigIntImport{},
-		convertFn:       "BigInt",
+		zeroValue:         "0",
+		castToMethod:      "cast.ToNullableInt64",
+		nonNullableType:   &enttype.BigIntegerType{},
+		goType:            "*int64",
+		tsType:            "BigInt | null",
+		importType:        &enttype.BigIntImport{},
+		convertSqliteFn:   "BigInt",
+		convertPostgresFn: "BigInt",
 	}, ret)
 }
 
@@ -509,7 +513,7 @@ func f() time.Time {
 		defaultGQLFieldName: "time",
 		goType:              "time.Time",
 		tsType:              "Date",
-		convertFn:           "convertDate",
+		convertSqliteFn:     "convertDate",
 		importType:          &enttype.TimestampImport{},
 	}, ret)
 }
@@ -536,7 +540,7 @@ func f() *time.Time {
 		defaultGQLFieldName: "time",
 		goType:              "*time.Time",
 		tsType:              "Date | null",
-		convertFn:           "convertNullableDate",
+		convertSqliteFn:     "convertNullableDate",
 		importType:          &enttype.TimestampImport{},
 	}, ret)
 }
@@ -545,86 +549,6 @@ type testCase struct {
 	code string
 	exp  expType
 	fn   func(ret *returnType, exp *expType)
-}
-
-func TestNamedType(t *testing.T) {
-	defaultFn := func(ret *returnType, exp *expType) {
-		namedType := ret.entType.(*enttype.NamedType)
-		exp.nullableType = enttype.NewNamedType(
-			namedType.GetActualType(),
-			true,
-			false,
-		)
-		exp.nonNullableType = enttype.NewNamedType(
-			namedType.GetActualType(),
-			false,
-			true,
-		)
-	}
-
-	testTestCases(
-		t,
-		&enttype.NamedType{},
-		map[string]testCase{
-			"context": {
-				`package main
-	
-			import "context"
-	
-			func f() context.Context {
-				return context.TODO()
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "Context!",
-					tsTypePanics:        true,
-					defaultGQLFieldName: "context",
-					contextType:         true,
-					goType:              "context.Context",
-					zeroValue:           "nil",
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
-			"error": {
-				`package main
-	
-			func f() error {
-				return nil
-			}`,
-				expType{
-					db:            "sa.Text()",
-					graphqlPanics: true,
-					tsTypePanics:  true,
-					errorType:     true,
-					goType:        "error",
-					zeroValue:     "nil",
-					castToMethod:  "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
-			"models.User": {
-				`package main
-	
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-	
-				func f() models.User {
-					// we have no reason to do this but test that default behavior does the right thing
-				return models.User{}
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "User!",
-					tsTypePanics:        true,
-					defaultGQLFieldName: "user",
-					goType:              "models.User",
-					zeroValue:           "models.User{}",
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
-		},
-	)
 }
 
 func TestPointerType(t *testing.T) {
@@ -645,25 +569,6 @@ func TestPointerType(t *testing.T) {
 	testTestCases(
 		t, &enttype.PointerType{},
 		map[string]testCase{
-			"models.User": {
-				`package main
-
-	import "github.com/lolopinto/ent/internal/test_schema/models"
-
-	func f() *models.User {
-	return nil
-}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "User",
-					tsTypePanics:        true,
-					defaultGQLFieldName: "user",
-					goType:              "*models.User",
-					zeroValue:           "nil",
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
 			"stringSlice": {
 				`package main
 	
@@ -693,25 +598,6 @@ func TestPointerType(t *testing.T) {
 					zeroValue:    "nil",
 					tsType:       "string | null[]",
 					castToMethod: "cast.UnmarshallJSON",
-				},
-				defaultFn,
-			},
-			"models.UserPointer": {
-				`package main
-	
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-	
-				func f() *[]*models.User {
-				return nil
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "[User]",
-					tsTypePanics:        true,
-					defaultGQLFieldName: "users",
-					goType:              "*[]*models.User",
-					zeroValue:           "nil",
-					castToMethod:        "cast.UnmarshallJSON",
 				},
 				defaultFn,
 			},
@@ -930,46 +816,6 @@ func TestSliceType(t *testing.T) {
 					zeroValue:           "nil",
 					goType:              "[]*time.Time",
 					tsType:              "Date | null[]",
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				nil,
-			},
-			"models.User": {
-				`package main
-	
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-	
-				func f() []models.User {
-					return []models.User{}
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "[User!]!",
-					defaultGQLFieldName: "users",
-					elemGraphql:         "User!",
-					zeroValue:           "nil",
-					goType:              "[]models.User",
-					tsTypePanics:        true,
-					castToMethod:        "cast.UnmarshallJSON",
-				},
-				nil,
-			},
-			"models.UserPointer": {
-				`package main
-
-				import "github.com/lolopinto/ent/internal/test_schema/models"
-
-				func f() []*models.User {
-					return []*models.User{}
-			}`,
-				expType{
-					db:                  "sa.Text()",
-					graphql:             "[User]!",
-					defaultGQLFieldName: "users",
-					elemGraphql:         "User",
-					zeroValue:           "nil",
-					goType:              "[]*models.User",
-					tsTypePanics:        true,
 					castToMethod:        "cast.UnmarshallJSON",
 				},
 				nil,
@@ -1409,7 +1255,7 @@ func TestTimestamptzType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
-				convertFn:           "convertNullableDate",
+				convertSqliteFn:     "convertNullableDate",
 				importType:          &enttype.TimestamptzImport{},
 			},
 			nil,
@@ -1428,7 +1274,7 @@ func TestTimestamptzType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
-				convertFn:           "convertDate",
+				convertSqliteFn:     "convertDate",
 				importType:          &enttype.TimestamptzImport{},
 			},
 			nil,
@@ -1531,7 +1377,7 @@ func TestDateType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
-				convertFn:           "convertNullableDate",
+				convertSqliteFn:     "convertNullableDate",
 				importType:          &enttype.DateImport{},
 			},
 			nil,
@@ -1550,7 +1396,7 @@ func TestDateType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
-				convertFn:           "convertDate",
+				convertSqliteFn:     "convertDate",
 				importType:          &enttype.DateImport{},
 			},
 			nil,
@@ -1723,7 +1569,18 @@ func testType(t *testing.T, exp expType, ret returnType) {
 
 	convType, ok := typ.(enttype.ConvertDataType)
 	if ok {
-		assert.Equal(t, exp.convertFn, convType.Convert().Import)
+		m := convType.Convert()
+		sqlite := m[config.SQLite]
+		if sqlite != nil {
+			assert.Equal(t, exp.convertSqliteFn, sqlite.Import)
+		}
+		postgres := m[config.Postgres]
+		if postgres != nil {
+			assert.Equal(t, exp.convertPostgresFn, postgres.Import)
+		}
+	} else {
+		assert.Equal(t, exp.convertSqliteFn, "")
+		assert.Equal(t, exp.convertPostgresFn, "")
 	}
 
 	impType, ok := typ.(enttype.TSCodegenableType)

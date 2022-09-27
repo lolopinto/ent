@@ -28,7 +28,7 @@ import {
   assoc_edge_table,
   getSchemaTable,
   TempDB,
-} from "../testutils/db/test_db";
+} from "../testutils/db/temp_db";
 import { Dialect } from "./db";
 import { LoggedOutViewer } from "./viewer";
 import { WriteOperation } from "../action";
@@ -308,7 +308,7 @@ const accountLoaderOptions = {
 
 let tdb: TempDB;
 beforeAll(async () => {
-  tdb = new TempDB([
+  tdb = new TempDB(Dialect.Postgres, [
     getSchemaTable(userSchema, Dialect.Postgres),
     getSchemaTable(accountSchema, Dialect.Postgres),
     assoc_edge_config_table(),

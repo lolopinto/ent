@@ -2,6 +2,7 @@ import {
   ActionOperation,
   BooleanType,
   StringType,
+  TimestampType,
   UUIDType,
 } from "@snowtop/ent";
 import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
@@ -23,6 +24,7 @@ const TodoSchema = new TodoEntSchema({
     creatorID: UUIDType({
       foreignKey: { schema: "Account", column: "ID" },
     }),
+    completedDate: TimestampType({ index: true, nullable: true }),
   },
 
   edges: [

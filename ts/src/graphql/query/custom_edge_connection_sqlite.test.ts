@@ -1,7 +1,7 @@
-import { setupSqlite } from "../../testutils/db/test_db";
+import { setupSqlite } from "../../testutils/db/temp_db";
 import {
   FakeUser,
-  UserToContactsFkeyQuery,
+  UserToContactsFkeyQueryDeprecated,
 } from "../../testutils/fake_data/index";
 import {
   createEdges,
@@ -15,7 +15,8 @@ beforeEach(async () => {
 
 setupSqlite(`sqlite:///custom_edge_connection.db`, tempDBTables);
 commonTests({
-  getQuery: (v, user: FakeUser) => UserToContactsFkeyQuery.query(v, user),
+  getQuery: (v, user: FakeUser) =>
+    UserToContactsFkeyQueryDeprecated.query(v, user),
   tableName: "fake_contacts",
   sortCol: "created_at",
 });

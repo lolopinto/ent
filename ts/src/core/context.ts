@@ -1,4 +1,4 @@
-import { Viewer, Data, Loader } from "./base";
+import { Viewer, Data, Loader, Ent, LoaderWithLoadMany } from "./base";
 import { IncomingMessage, ServerResponse } from "http";
 
 import * as clause from "./clause";
@@ -16,6 +16,8 @@ export interface RequestContext<TViewer extends Viewer = Viewer>
 
 export class ContextCache {
   loaders: Map<string, Loader<any, any>> = new Map();
+  // we should eventually combine the two but better for typing to be separate for now
+  loaderWithLoadMany: Map<string, LoaderWithLoadMany<any, any>> = new Map();
 
   getLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V> {
     let l = this.loaders.get(name);
@@ -25,6 +27,20 @@ export class ContextCache {
     log("debug", `new context-aware loader created for ${name}`);
     l = create();
     this.loaders.set(name, l);
+    return l;
+  }
+
+  getLoaderWithLoadMany<T, V>(
+    name: string,
+    create: () => LoaderWithLoadMany<T, V>,
+  ): LoaderWithLoadMany<T, V> {
+    let l = this.loaderWithLoadMany.get(name);
+    if (l) {
+      return l;
+    }
+    log("debug", `new context-aware loader created for ${name}`);
+    l = create();
+    this.loaderWithLoadMany.set(name, l);
     return l;
   }
 
@@ -98,7 +114,13 @@ export class ContextCache {
       // but may have some benefits by explicitily doing so?
       loader.clearAll();
     }
+    for (const [_key, loader] of this.loaderWithLoadMany) {
+      // may not need this since we're clearing the loaders themselves...
+      // but may have some benefits by explicitily doing so?
+      loader.clearAll();
+    }
     this.loaders.clear();
+    this.loaderWithLoadMany.clear();
     this.itemMap.clear();
     this.listMap.clear();
   }

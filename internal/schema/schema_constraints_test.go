@@ -1102,6 +1102,33 @@ func TestFullTextIndex(t *testing.T) {
 			},
 			expectedErr: fmt.Errorf("already have generated computed column name_idx"),
 		},
+		"index-type-specified": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName"],
+								indexType: "gin",
+								fullText: {
+									language: 'english',
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("if you want to specify the full text index type, specify it in FullText object"),
+		},
 	}
 
 	runTestCases(t, testCases)
@@ -1143,6 +1170,106 @@ func TestIndices(t *testing.T) {
 					},
 				},
 			},
+		},
+		"list-index-type-specified": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringListType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringListType({
+								name: 'emails',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_emails_idx",
+								columns: ["emails"],
+								indexType: 'gin',
+							},
+						];
+					}`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:      "users_emails_idx",
+							Columns:   []string{"emails"},
+							IndexType: input.Gin,
+						},
+					},
+				},
+			},
+		},
+		"jsonb-index-type": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import { StructType, StringType, EntSchema} from "{schema}";
+
+					const User = new EntSchema({
+						fields: {
+							foo: StructType({
+								tsType: 'FooType',
+								fields: {
+									bar: StringType(),
+								},
+								name: 'foo',
+							}),
+						},
+												
+						indices: [
+							{
+								name: "users_foo_idx",
+								columns: ["foo"],
+								indexType: 'gin',
+							},
+						],
+					});
+					
+					export default User;`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:      "users_foo_idx",
+							Columns:   []string{"foo"},
+							IndexType: input.Gin,
+						},
+					},
+				},
+			},
+		},
+		"gist-index-type-specified": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringListType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringListType({
+								name: 'emails',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_emails_idx",
+								columns: ["emails"],
+								indexType: 'gist',
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("gist index currently only supported for full text indexes"),
 		},
 		"invalid-column": {
 			code: map[string]string{

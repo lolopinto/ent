@@ -6,6 +6,7 @@ import {
   Data,
   PrivacyPolicy,
   Context,
+  WriteOperation,
 } from "../core/base";
 import {
   DataOperation,
@@ -16,15 +17,18 @@ import {
 import { Queryer } from "../core/db";
 import { log } from "../core/logger";
 import { TransformedUpdateOperation, UpdateOperation } from "../schema";
+import { FieldInfoMap } from "../schema/schema";
 
-export enum WriteOperation {
-  Insert = "insert",
-  Edit = "edit",
-  Delete = "delete",
-}
+export { WriteOperation };
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+interface BuilderOrchestrator {
+  __getOptions(): {
+    fieldInfo: FieldInfoMap;
+  };
+}
 
 export interface Builder<
   TEnt extends Ent<TViewer>,
@@ -39,6 +43,10 @@ export interface Builder<
   operation: WriteOperation;
   editedEnt?(): Promise<TEnt | null>;
   nodeType: string;
+  // TODO TInput in Builder
+  getInput(): Data;
+  // TODO full orchestrator...
+  orchestrator: BuilderOrchestrator;
 }
 
 // NB: this is a private API subject to change
@@ -114,7 +122,10 @@ export interface Validator<
   // can throw if it wants
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  validate(builder: TBuilder, input: TInput): Promise<void> | void;
+  validate(
+    builder: TBuilder,
+    input: TInput,
+  ): Promise<void | undefined | Error> | void | Error | undefined;
 }
 
 export interface Action<
@@ -143,8 +154,8 @@ export interface Action<
   transformWrite?: (
     stmt: UpdateOperation<TEnt, TViewer>,
   ) =>
-    | Promise<TransformedUpdateOperation<TEnt>>
-    | TransformedUpdateOperation<TEnt>
+    | Promise<TransformedUpdateOperation<TEnt, TViewer>>
+    | TransformedUpdateOperation<TEnt, TViewer>
     | null;
 
   valid(): Promise<boolean>;
@@ -197,7 +208,7 @@ async function saveBuilderImpl<
       return;
     }
   }
-  const executor = changeset!.executor();
+  const executor = changeset.executor();
   if (throwErr) {
     return executor.execute();
   } else {

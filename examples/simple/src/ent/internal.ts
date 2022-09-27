@@ -44,6 +44,7 @@ export * from "./generated/user_query_base";
 export * from "./address/query/address_to_hosted_events_query";
 export * from "./comment/query/article_to_comments_query";
 export * from "./comment/query/comment_to_post_query";
+export * from "./comment/query/sticker_to_comments_query";
 export * from "./contact/query/contact_to_comments_query";
 export * from "./contact/query/contact_to_likers_query";
 export * from "./event/query/event_to_attending_query";

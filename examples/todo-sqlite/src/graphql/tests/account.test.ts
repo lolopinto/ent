@@ -1,4 +1,3 @@
-import { LoggedOutViewer } from "@snowtop/ent";
 import { IDViewer } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { Account } from "src/ent";
@@ -19,7 +18,7 @@ test("create", async () => {
     [
       "account.id",
       async (id: string) => {
-        Account.loadX(new IDViewer(id), id);
+        await Account.loadX(new IDViewer(id), id);
       },
     ],
     ["account.account_state", "UNVERIFIED"],

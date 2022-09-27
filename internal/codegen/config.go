@@ -13,7 +13,7 @@ import (
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Config is codegen info/config which is used to pass things
@@ -361,14 +361,33 @@ func (cfg *Config) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvaluated {
 	return codegenapi.OnDemand
 }
 
-func (cfg *Config) GetTemplatizedViewer() *codegenapi.ViewerConfig {
+func (cfg *Config) GetTemplatizedViewer() *codegenapi.ImportedObject {
 	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.TemplatizedViewer != nil {
 		return codegen.TemplatizedViewer
 	}
-	return &codegenapi.ViewerConfig{
+	return &codegenapi.ImportedObject{
 		Path: codepath.Package,
 		Name: "Viewer",
 	}
+}
+
+func (cfg *Config) GetAssocEdgePath() *codegenapi.ImportedObject {
+	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.CustomAssocEdgePath != nil {
+		return codegen.CustomAssocEdgePath
+	}
+	return &codegenapi.ImportedObject{
+		Path: codepath.Package,
+		Name: "AssocEdge",
+	}
+}
+
+func (cfg *Config) GetGlobalSchemaImportPath() string {
+	if cfg.config != nil {
+		if cfg.config.GlobalSchemaPath != "" {
+			return filepath.Join("src/schema", strings.Trim(cfg.config.GlobalSchemaPath, ".ts"))
+		}
+	}
+	return "src/schema/__global__schema"
 }
 
 const DEFAULT_GLOB = "src/**/*.ts"
@@ -488,12 +507,14 @@ func parseConfig() (*config, error) {
 type config struct {
 	Codegen               *CodegenConfig `yaml:"codegen"`
 	CustomGraphQLJSONPath string         `yaml:"customGraphQLJSONPath"`
+	GlobalSchemaPath      string         `yaml:"globalSchemaPath"`
 }
 
 func (cfg *config) Clone() *config {
 	return &config{
 		Codegen:               cloneCodegen(cfg.Codegen),
 		CustomGraphQLJSONPath: cfg.CustomGraphQLJSONPath,
+		GlobalSchemaPath:      cfg.GlobalSchemaPath,
 	}
 }
 
@@ -518,7 +539,8 @@ type CodegenConfig struct {
 	SchemaSQLFilePath          string                           `yaml:"schemaSQLFilePath"`
 	DatabaseToCompareTo        string                           `yaml:"databaseToCompareTo"`
 	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
-	TemplatizedViewer          *codegenapi.ViewerConfig         `yaml:"templatizedViewer"`
+	TemplatizedViewer          *codegenapi.ImportedObject       `yaml:"templatizedViewer"`
+	CustomAssocEdgePath        *codegenapi.ImportedObject       `yaml:"customAssocEdgePath"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -543,7 +565,8 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
 		DatabaseToCompareTo:        cfg.DatabaseToCompareTo,
 		FieldPrivacyEvaluated:      cfg.FieldPrivacyEvaluated,
-		TemplatizedViewer:          cloneViewerConfig(cfg.TemplatizedViewer),
+		TemplatizedViewer:          cloneImportedObject(cfg.TemplatizedViewer),
+		CustomAssocEdgePath:        cloneImportedObject(cfg.CustomAssocEdgePath),
 	}
 }
 
@@ -568,7 +591,7 @@ func (cfg *PrivacyConfig) Clone() *PrivacyConfig {
 	}
 }
 
-func cloneViewerConfig(cfg *codegenapi.ViewerConfig) *codegenapi.ViewerConfig {
+func cloneImportedObject(cfg *codegenapi.ImportedObject) *codegenapi.ImportedObject {
 	if cfg == nil {
 		return nil
 	}

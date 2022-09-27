@@ -2,7 +2,6 @@ package viewertesting
 
 import (
 	"github.com/lolopinto/ent/ent/viewer"
-	"github.com/lolopinto/ent/internal/test_schema/models"
 )
 
 type OmniViewerContext struct {
@@ -18,9 +17,7 @@ type LoggedinViewerContext struct {
 }
 
 func (v LoggedinViewerContext) GetViewer() viewer.LoggedInEntity {
-	user := &models.User{}
-	user.ID = v.GetViewerID()
-	return user
+	panic("invalid call to LoggedinViewerContext.GetViewer")
 }
 
 func (v LoggedinViewerContext) GetViewerID() string {

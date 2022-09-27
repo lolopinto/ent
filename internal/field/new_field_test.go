@@ -5,6 +5,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSimpleIntField(t *testing.T) {
@@ -105,6 +106,7 @@ func TestFloatField(t *testing.T) {
 }
 
 func TestBoolField(t *testing.T) {
+	dv := "true"
 	field := verifyField(
 		t,
 		`package configs
@@ -132,7 +134,7 @@ func TestBoolField(t *testing.T) {
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			nullable:                 true,
-			defaultValue:             "true",
+			defaultValue:             &dv,
 		},
 	)
 	testDBType(t, field, "sa.Boolean()")
@@ -173,6 +175,7 @@ func TestTimeField(t *testing.T) {
 }
 
 func TestStringWithMoreCustomizationsField(t *testing.T) {
+	dv := "Ola"
 	field := verifyField(
 		t,
 		`package configs
@@ -199,118 +202,12 @@ func TestStringWithMoreCustomizationsField(t *testing.T) {
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			nullable:                 true,
-			defaultValue:             "Ola",
+			defaultValue:             &dv,
 		},
 	)
 
 	testDBType(t, field, "sa.Text()")
 	testGraphQLType(t, field, "String")
-}
-
-func TestCustomURLType(t *testing.T) {
-	field := verifyField(
-		t,
-		`package configs
-
-		import "github.com/lolopinto/ent/ent"
-		import "github.com/lolopinto/ent/ent/field"
-		import "github.com/lolopinto/ent/ent/field/url"
-
-		type UserConfig struct {}
-		
-		func (config *UserConfig) GetFields() ent.FieldMap {
-			return ent.FieldMap {
-				"ProfileURL": field.F(
-					url.Type().RestrictToDomain("www.facebook.com"),
-					field.HideFromGraphQL(),
-					field.Nullable(),
-				),
-			}
-		}`,
-		&Field{
-			FieldName:                "ProfileURL",
-			dbName:                   "profile_url",
-			graphQLName:              "profileURL",
-			topLevelStructField:      true,
-			exposeToActionsByDefault: true,
-			dbColumn:                 true,
-			nullable:                 true,
-			hideFromGraphQL:          true,
-		},
-	)
-
-	testDBType(t, field, "sa.Text()")
-	testGraphQLType(t, field, "String")
-}
-
-func TestCustomEmailType(t *testing.T) {
-	field := verifyField(
-		t,
-		`package configs
-
-		import "github.com/lolopinto/ent/ent"
-		import "github.com/lolopinto/ent/ent/field"
-		import "github.com/lolopinto/ent/ent/field/email"
-
-		type UserConfig struct {}
-		
-		func (config *UserConfig) GetFields() ent.FieldMap {
-			return ent.FieldMap {
-				"EmailAddress": field.F(
-					email.Type(),
-					field.Unique(), 
-					field.DB("email"),
-				),
-			}
-		}`,
-		&Field{
-			FieldName:                "EmailAddress",
-			dbName:                   "email",
-			graphQLName:              "emailAddress",
-			unique:                   true,
-			topLevelStructField:      true,
-			exposeToActionsByDefault: true,
-			dbColumn:                 true,
-		},
-	)
-
-	testDBType(t, field, "sa.Text()")
-	testGraphQLType(t, field, "String!")
-}
-
-func TestCustomPasswordType(t *testing.T) {
-	field := verifyField(
-		t,
-		`package configs
-
-		import "github.com/lolopinto/ent/ent"
-		import "github.com/lolopinto/ent/ent/field"
-		import "github.com/lolopinto/ent/ent/field/password"
-
-		type UserConfig struct {}
-		
-		func (config *UserConfig) GetFields() ent.FieldMap {
-			return ent.FieldMap {
-				"Password": field.F(
-					password.Type(),
-				),
-			}
-		}`,
-		&Field{
-			FieldName:           "Password",
-			dbName:              "password",
-			graphQLName:         "password",
-			topLevelStructField: true,
-			dbColumn:            true,
-			// password fields are automatically private and hidden from graphql
-			hideFromGraphQL:          true,
-			private:                  true,
-			exposeToActionsByDefault: false,
-		},
-	)
-
-	testDBType(t, field, "sa.Text()")
-	testGraphQLType(t, field, "String!")
 }
 
 func TestForeignKey(t *testing.T) {
@@ -467,8 +364,6 @@ func TestMultipleFields(t *testing.T) {
 
 		import "github.com/lolopinto/ent/ent"
 		import "github.com/lolopinto/ent/ent/field"
-		import "github.com/lolopinto/ent/ent/field/email"
-		import "github.com/lolopinto/ent/ent/field/url"
 
 		type UserConfig struct {}
 		
@@ -479,7 +374,7 @@ func TestMultipleFields(t *testing.T) {
 					field.GraphQL("numInvitesLeft"),
 				),
 				"EmailAddress": field.F(
-					email.Type(),
+					field.StringType(),
 					field.Unique(), 
 					field.DB("email"),
 				),
@@ -493,7 +388,7 @@ func TestMultipleFields(t *testing.T) {
 					field.Nullable(),
 				),
 				"ProfileURL": field.F(
-					url.Type(),
+					field.StringType(),
 				),
 			}
 		}`,
@@ -504,12 +399,12 @@ func TestMultipleFields(t *testing.T) {
 
 func loadFields(t *testing.T, code string) []*Field {
 	pkg, fn, err := schemaparser.FindFunction(code, "configs", "GetFields")
-	assert.Nil(t, err)
-	assert.NotNil(t, fn)
-	assert.NotNil(t, pkg)
+	require.Nil(t, err)
+	require.NotNil(t, fn)
+	require.NotNil(t, pkg)
 
 	fieldInfo, err := ParseFieldsFunc(pkg, fn)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	return fieldInfo.Fields
 }
 

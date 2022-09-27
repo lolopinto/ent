@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -2170,6 +2170,561 @@ func TestFullTextIndexMultipleColsGeneratedColumnMisMatchedWeights(t *testing.T)
 	})
 }
 
+func TestGlobalEdge(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+				},
+			},
+			GlobalSchema: &input.GlobalSchema{
+				GlobalEdges: []*input.AssocEdge{
+					{
+						Name:       "external_info",
+						SchemaName: "User",
+					},
+					{
+						Name:       "external_info_on_wheels",
+						SchemaName: "User",
+					},
+				},
+			},
+		},
+	)
+
+	require.Len(t, dbSchema.tableMap, 4)
+	expTables := []string{
+		"assoc_edge_config",
+		"users",
+		"global_external_info_edges",
+		"global_external_info_on_wheels_edges",
+	}
+	for _, tbl := range expTables {
+		table := dbSchema.tableMap[tbl]
+		require.NotNil(t, table)
+
+		if tbl == "global_external_info_edges" || tbl == "global_external_info_on_wheels_edges" {
+			testEdgeTable(t, table)
+		}
+	}
+}
+
+func TestGlobalEdgeWithInverse(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+				},
+			},
+			GlobalSchema: &input.GlobalSchema{
+				GlobalEdges: []*input.AssocEdge{
+					{
+						Name:       "external_info",
+						SchemaName: "User",
+						InverseEdge: &input.InverseAssocEdge{
+							Name: "user_external_info",
+						},
+					},
+				},
+			},
+		},
+	)
+
+	require.Len(t, dbSchema.tableMap, 3)
+	expTables := []string{
+		"assoc_edge_config",
+		"users",
+		"global_external_info_edges",
+	}
+	for _, tbl := range expTables {
+		table := dbSchema.tableMap[tbl]
+		require.NotNil(t, table)
+
+		if tbl == "global_external_info_edges" {
+			testEdgeTable(t, table)
+		}
+	}
+}
+
+func TestExtraEdgeCols(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "friends",
+							SchemaName: "User",
+						},
+					},
+				},
+			},
+			GlobalSchema: &input.GlobalSchema{
+				ExtraEdgeFields: []*input.Field{
+					{
+						Name: "deleted_at",
+						Type: &input.FieldType{
+							DBType: input.Timestamp,
+						},
+					},
+				},
+				GlobalEdges: []*input.AssocEdge{
+					{
+						Name:       "external_info",
+						SchemaName: "User",
+						InverseEdge: &input.InverseAssocEdge{
+							Name: "user_external_info",
+						},
+					},
+				},
+			},
+		},
+	)
+
+	require.Len(t, dbSchema.tableMap, 4)
+	expTables := []string{
+		"assoc_edge_config",
+		"users",
+		"user_friends_edges",
+		"global_external_info_edges",
+	}
+	for _, tbl := range expTables {
+		table := dbSchema.tableMap[tbl]
+		require.NotNil(t, table)
+
+		if tbl == "global_external_info_edges" || tbl == "user_friends_edges" {
+			testEdgeTable(t, table)
+
+			found := false
+			for _, col := range table.Columns {
+				if col.DBColName == "deleted_at" {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "couldn't find deleted_at column")
+		}
+	}
+}
+
+func TestExplicitScalarIndexBtree(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "email",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:      "users_email_idx",
+							Columns:   []string{"email"},
+							IndexType: input.Btree,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "email")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_email_idx"),
+			strconv.Quote("email"),
+			strconv.Quote("btree"),
+		),
+	)
+}
+
+func TestExplicitListIndexGin(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "emails",
+							Type: &input.FieldType{
+								DBType: input.List,
+								ListElemType: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:      "users_emails_idx",
+							Columns:   []string{"emails"},
+							IndexType: input.Gin,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "emails")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_emails_idx"),
+			strconv.Quote("emails"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestImplicitScalarIndex(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "email",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+							Index: true,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "email")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s)",
+			strconv.Quote("users_email_idx"),
+			strconv.Quote("email"),
+		),
+	)
+}
+
+func TestImplicitListIndexGin(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "emails",
+							Type: &input.FieldType{
+								DBType: input.List,
+								ListElemType: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+							Index: true,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "emails")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_emails_idx"),
+			strconv.Quote("emails"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestImplicitListIndexGinNoIndexType(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "emails",
+							Type: &input.FieldType{
+								DBType: input.List,
+								ListElemType: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_emails_idx",
+							Columns: []string{"emails"},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "emails")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_emails_idx"),
+			strconv.Quote("emails"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestExplicitJSONBIndexGin(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "foo",
+							Type: &input.FieldType{
+								DBType: input.JSONB,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:      "users_foo_idx",
+							Columns:   []string{"foo"},
+							IndexType: input.Gin,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "foo")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_foo_idx"),
+			strconv.Quote("foo"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestImplicitJSONBIndexGin(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "foo",
+							Type: &input.FieldType{
+								DBType: input.JSONB,
+							},
+							Index: true,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "foo")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_foo_idx"),
+			strconv.Quote("foo"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestImplicitJSONBNoIndexType(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "foo",
+							Type: &input.FieldType{
+								DBType: input.JSONB,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_foo_idx",
+							Columns: []string{"foo"},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "foo")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_foo_idx"),
+			strconv.Quote("foo"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
 func getSchemaFromInput(t *testing.T, s *input.Schema) *dbSchema {
 	ss, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, s, base.TypeScript)
 	require.Nil(t, err)
@@ -2180,7 +2735,7 @@ func getSchemaFromInput(t *testing.T, s *input.Schema) *dbSchema {
 }
 
 func testEdgeTable(t *testing.T, table *dbTable) {
-	assert.Equal(t, 7, len(table.Columns), "invalid number of columns for table generated. expected %d, got %d", 7, len(table.Columns))
+	assert.GreaterOrEqual(t, len(table.Columns), 7, "invalid number of columns for table generated. expected at least %d, got %d", 7, len(table.Columns))
 
 	// 1 primary key constraint for the id1, edge_type, id2 fields
 	assert.GreaterOrEqual(
@@ -2429,7 +2984,7 @@ func getAccountConfigContents(t *testing.T) string {
 	// use a simple non-go file that we don't care about as it changes.
 	path, err := filepath.Abs("../testdata/models/configs/simple_account_config.go.file")
 	assert.Nil(t, err)
-	file, err := ioutil.ReadFile(path)
+	file, err := os.ReadFile(path)
 	assert.Nil(t, err, "error loading account config")
 	return string(file)
 }

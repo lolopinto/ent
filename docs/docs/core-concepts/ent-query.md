@@ -175,7 +175,17 @@ and we can then query all kinds of information from the query.
   const ents = await this.queryContacts().first(10).queryEnts();
 ```
 
-Right now, the sort key is the `created_at` column which is **not** indexed so this query isn't as fast as it should be. Need feedback on best options here since we don't want to use `id` since it's not going to be a stable sort since we're not using an autoincrement id column.
+Right now, the default sort key is the `id` column. However, this isn't a stable sort since we're not using an autoincrement id column. You should consider this unsorted, we do and "order by" so pagination at specific points in time is possible.
+
+To change to use a different sort key e.g. an indexed `created_at` column, change the generated class as follows:
+
+```ts title="src/ent/user/query/user_to_contacts_query.ts"
+export class UserToContactsQuery extends UserToContactsQueryBase {
+  constructor(viewer: Viewer, src: User | ID) {
+    super(viewer, src, "created_at");
+  }
+}
+```
 
 ### index graphql
 

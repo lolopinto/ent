@@ -4,6 +4,7 @@ import {
   GraphQLBoolean,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
+  GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
   GraphQLList,
@@ -28,6 +29,9 @@ interface EventCreatePayload {
 export const ActivityEventCreateInput = new GraphQLInputObjectType({
   name: "ActivityEventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
+    addressId: {
+      type: GraphQLID,
+    },
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },

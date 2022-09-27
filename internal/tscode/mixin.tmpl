@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent" "Viewer" "Data"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent" "Viewer" "Data"}}
 
 {{$p := .Pattern}}
 {{$cfg := .Config}}
@@ -59,14 +59,7 @@ export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
 
       {{ range $field := $p.FieldInfo.Fields -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
-        {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
-
-        {{if $convertType -}} 
-          {{/* could be BigInt which isn't reserved */ -}}
-          this.{{$field.TsFieldName $cfg}} = {{useImportMaybe $convertType}}({{$val}});
-        {{ else -}}
-          this.{{$field.TsFieldName $cfg}} = {{$val}};
-        {{end -}}
+        this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg  $val }}
       {{end -}}
     }
 

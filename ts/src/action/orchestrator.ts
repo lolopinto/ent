@@ -34,14 +34,15 @@ import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
 import memoize from "memoizee";
+import * as clause from "../core/clause";
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export interface OrchestratorOptions<
   TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
   TInput extends Data,
+  TViewer extends Viewer,
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   viewer: Viewer;
@@ -192,12 +193,17 @@ export class Orchestrator<
   private memoizedGetFields: () => Promise<fieldsInfo>;
 
   constructor(
-    private options: OrchestratorOptions<TEnt, TViewer, TInput, TExistingEnt>,
+    private options: OrchestratorOptions<TEnt, TInput, TViewer, TExistingEnt>,
   ) {
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
     this.memoizedGetFields = memoize(this.getFieldsInfo.bind(this));
+  }
+
+  // don't type this because we don't care
+  __getOptions(): OrchestratorOptions<any, any, any, any> {
+    return this.options;
   }
 
   private addEdge(edge: edgeInputData, op: WriteOperation) {
@@ -323,6 +329,7 @@ export class Orchestrator<
           key: this.options.key,
           loadEntOptions: this.options.loaderOptions,
           placeholderID: this.options.builder.placeholderID,
+          whereClause: clause.Eq(this.options.key, this.existingEnt?.id),
         };
         if (this.logValues) {
           opts.fieldsToLog = this.logValues;
@@ -494,6 +501,19 @@ export class Orchestrator<
     return editedData;
   }
 
+  /**
+   * @returns validated and formatted fields that would be written to the db
+   * throws an error if called before valid() or validX() has been called
+   */
+  getValidatedFields() {
+    if (this.validatedFields === null) {
+      throw new Error(
+        `trying to call getValidatedFields before validating fields`,
+      );
+    }
+    return this.validatedFields;
+  }
+
   // Note: this is memoized. call memoizedGetFields instead
   private async getFieldsInfo() {
     const action = this.options.action;
@@ -514,7 +534,7 @@ export class Orchestrator<
     return { editedData, editedFields, schemaFields };
   }
 
-  private async validate(): Promise<void> {
+  private async validate(): Promise<Error[]> {
     // existing ent required for edit or delete operations
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -536,13 +556,22 @@ export class Orchestrator<
     // * triggers
     // * validators
     let privacyPolicy = action?.getPrivacyPolicy();
+    let privacyError: Error | null = null;
     if (privacyPolicy) {
-      await applyPrivacyPolicyX(
-        this.options.viewer,
-        privacyPolicy,
-        this.getEntForPrivacyPolicyImpl(editedData),
-        this.throwError.bind(this),
-      );
+      try {
+        await applyPrivacyPolicyX(
+          this.options.viewer,
+          privacyPolicy,
+          this.getEntForPrivacyPolicyImpl(editedData),
+          this.throwError.bind(this),
+        );
+      } catch (err: any) {
+        privacyError = err as Error;
+      }
+    }
+    // privacyError should return first since it's less confusing
+    if (privacyError !== null) {
+      return [privacyError];
     }
 
     // have to run triggers which update fields first before field and other validators
@@ -560,10 +589,12 @@ export class Orchestrator<
     // not ideal we're calling this twice. fix...
     // needed for now. may need to rewrite some of this?
     const editedFields2 = await this.options.editedFields();
-    await Promise.all([
+    const [errors, errs2] = await Promise.all([
       this.formatAndValidateFields(schemaFields, editedFields2),
       this.validators(validators, action!, builder),
     ]);
+    errors.push(...errs2);
+    return errors;
   }
 
   private async triggers(
@@ -623,15 +654,21 @@ export class Orchestrator<
     validators: Validator<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>[],
     action: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>,
     builder: Builder<TEnt, TViewer>,
-  ): Promise<void> {
-    let promises: Promise<void>[] = [];
-    validators.forEach((validator) => {
-      let res = validator.validate(builder, action.getInput());
-      if (res) {
-        promises.push(res);
-      }
-    });
-    await Promise.all(promises);
+  ): Promise<Error[]> {
+    const errors: Error[] = [];
+    await Promise.all(
+      validators.map(async (v) => {
+        try {
+          const r = await v.validate(builder, action.getInput());
+          if (r instanceof Error) {
+            errors.push(r);
+          }
+        } catch (err) {
+          errors.push(err as Error);
+        }
+      }),
+    );
+    return errors;
   }
 
   private isBuilder(val: Builder<TEnt> | any): val is Builder<TEnt> {
@@ -641,6 +678,7 @@ export class Orchestrator<
   private getInputKey(k: string) {
     return this.options.fieldInfo[k].inputKey;
   }
+
   private getStorageKey(k: string) {
     return this.options.fieldInfo[k].dbCol;
   }
@@ -662,7 +700,7 @@ export class Orchestrator<
     // if action transformations. always do it
     // if disable transformations set, don't do schema transform and just do the right thing
     // else apply schema tranformation if it exists
-    let transformed: TransformedUpdateOperation<TEnt> | null = null;
+    let transformed: TransformedUpdateOperation<TEnt, TViewer> | null = null;
 
     const sqlOp = this.getSQLStatementOperation();
     if (action?.transformWrite) {
@@ -705,6 +743,10 @@ export class Orchestrator<
           // TODO how to do this for local tests?
           // this.defaultFieldsByFieldName[k] = val;
         }
+      }
+      if (transformed.changeset) {
+        const ct = await transformed.changeset();
+        this.changesets.push(ct);
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
@@ -789,11 +831,11 @@ export class Orchestrator<
     field: Field,
     dbKey: string,
     value: any,
-  ) {
+  ): Promise<Error | any> {
     // now format and validate...
     if (value === null) {
       if (!field.nullable) {
-        throw new Error(
+        return new Error(
           `field ${fieldName} set to null for non-nullable field`,
         );
       }
@@ -807,13 +849,13 @@ export class Orchestrator<
         field.serverDefault === undefined &&
         this.actualOperation === WriteOperation.Insert
       ) {
-        throw new Error(`required field ${fieldName} not set`);
+        return new Error(`required field ${fieldName} not set`);
       }
     } else if (this.isBuilder(value)) {
       if (field.valid) {
         const valid = await field.valid(value);
         if (!valid) {
-          throw new Error(`invalid field ${fieldName} with value ${value}`);
+          return new Error(`invalid field ${fieldName} with value ${value}`);
         }
       }
       // keep track of dependencies to resolve
@@ -825,7 +867,7 @@ export class Orchestrator<
         // TODO this could be async. handle this better
         const valid = await field.valid(value);
         if (!valid) {
-          throw new Error(`invalid field ${fieldName} with value ${value}`);
+          return new Error(`invalid field ${fieldName} with value ${value}`);
         }
       }
 
@@ -839,18 +881,24 @@ export class Orchestrator<
   private async formatAndValidateFields(
     schemaFields: Map<string, Field>,
     editedFields: Map<string, any>,
-  ): Promise<void> {
+  ): Promise<Error[]> {
+    const errors: Error[] = [];
     const op = this.actualOperation;
     if (op === WriteOperation.Delete) {
-      return;
+      return [];
     }
 
     // build up data to be saved...
     let data = {};
     let logValues = {};
 
+    let needsFullDataChecks: string[] = [];
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
+
+      if (field.validateWithFullData) {
+        needsFullDataChecks.push(fieldName);
+      }
 
       if (value === undefined && op === WriteOperation.Insert) {
         // null allowed
@@ -858,11 +906,40 @@ export class Orchestrator<
       }
       let dbKey = this.getStorageKey(fieldName);
 
-      value = await this.transformFieldValue(fieldName, field, dbKey, value);
+      let ret = await this.transformFieldValue(fieldName, field, dbKey, value);
+      if (ret instanceof Error) {
+        errors.push(ret);
+      } else {
+        value = ret;
+      }
 
       if (value !== undefined) {
         data[dbKey] = value;
         logValues[dbKey] = field.logValue(value);
+      }
+    }
+
+    for (const fieldName of needsFullDataChecks) {
+      const field = schemaFields.get(fieldName)!;
+      let value = editedFields.get(fieldName);
+
+      // @ts-ignore...
+      // type hackery because it's hard
+      const v = await field.validateWithFullData(value, this.options.builder);
+      if (!v) {
+        if (value === undefined) {
+          errors.push(
+            new Error(
+              `field ${fieldName} set to undefined when it can't be nullable`,
+            ),
+          );
+        } else {
+          errors.push(
+            new Error(
+              `field ${fieldName} set to null when it can't be nullable`,
+            ),
+          );
+        }
       }
     }
 
@@ -877,33 +954,53 @@ export class Orchestrator<
 
         // no value, let's just default
         if (data[dbKey] === undefined) {
-          const value = await this.transformFieldValue(
+          const ret = await this.transformFieldValue(
             fieldName,
             field,
             dbKey,
             defaultValue,
           );
-          data[dbKey] = value;
-          logValues[dbKey] = field.logValue(value);
+          if (ret instanceof Error) {
+            errors.push(ret);
+          } else {
+            data[dbKey] = ret;
+            logValues[dbKey] = field.logValue(ret);
+          }
         }
       }
     }
 
     this.validatedFields = data;
     this.logValues = logValues;
+    return errors;
   }
 
   async valid(): Promise<boolean> {
-    try {
-      await this.validate();
-    } catch (e) {
-      log("error", e);
+    const errors = await this.validate();
+    if (errors.length) {
+      errors.map((err) => log("error", err));
       return false;
     }
     return true;
   }
 
   async validX(): Promise<void> {
+    const errors = await this.validate();
+    if (errors.length) {
+      // just throw the first one...
+      // TODO we should ideally throw all of them
+      throw errors[0];
+    }
+  }
+
+  /**
+   * @experimental API that's not guaranteed to remain in the future which returns
+   * a list of errors encountered
+   * 0 errors indicates valid
+   * NOTE that this currently doesn't catch errors returned by validators().
+   * If those throws, this still throws and doesn't return them
+   */
+  async validWithErrors(): Promise<Error[]> {
     return this.validate();
   }
 
@@ -973,6 +1070,10 @@ export class Orchestrator<
   }
 }
 
+function randomNum(): string {
+  return Math.random().toString(10).substring(2);
+}
+
 export class EntChangeset<T extends Ent> implements Changeset {
   private _executor: Executor | null;
   constructor(
@@ -982,8 +1083,17 @@ export class EntChangeset<T extends Ent> implements Changeset {
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset[],
-    private options?: OrchestratorOptions<T, Viewer, Data>,
+    private options?: OrchestratorOptions<T, Data, Viewer>,
   ) {}
+
+  static changesetFrom(builder: Builder<any, any, any>, ops: DataOperation[]) {
+    return new EntChangeset(
+      builder.viewer,
+      `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
+      builder.ent,
+      ops,
+    );
+  }
 
   executor(): Executor {
     if (this._executor) {

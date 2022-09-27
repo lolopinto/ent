@@ -12,7 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -51,8 +51,8 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.streetName = data.street_name;
     this.city = data.city;
     this.state = data.state;
@@ -108,7 +108,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      AddressBase.loaderOptions.apply(this),
+      {
+        ...AddressBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -119,10 +122,27 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<AddressDBData[]> {
     return (await loadCustomData(
-      AddressBase.loaderOptions.apply(this),
+      {
+        ...AddressBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as AddressDBData[];
+  }
+
+  static async loadCustomCount<T extends AddressBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...AddressBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends AddressBase>(

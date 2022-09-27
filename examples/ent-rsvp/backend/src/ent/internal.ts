@@ -2,6 +2,7 @@
 
 export * from "src/ent/generated/const";
 export * from "src/ent/generated/loaders";
+export * from "src/ent/generated/mixins/with_address";
 export * from "src/ent/generated/address_base";
 export * from "src/ent/generated/auth_code_base";
 export * from "src/ent/generated/event_activity_base";
@@ -24,6 +25,7 @@ export * from "src/ent/generated/event_query_base";
 export * from "src/ent/generated/guest_group_query_base";
 export * from "src/ent/generated/guest_query_base";
 export * from "src/ent/generated/user_query_base";
+export * from "src/ent/address/query/address_to_located_at_query";
 export * from "src/ent/address/query/owner_to_addresses_query";
 export * from "src/ent/event/query/event_to_event_activities_query";
 export * from "src/ent/event/query/event_to_guest_data_query";

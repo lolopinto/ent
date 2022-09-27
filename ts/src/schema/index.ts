@@ -29,8 +29,11 @@ export {
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
+  EdgeUpdateOperation,
+  TransformedEdgeUpdateOperation,
   getTransformedReadClause,
   getObjectLoaderProperties,
+  GlobalSchema,
 } from "./schema";
 export {
   Timestamps,

@@ -1,5 +1,6 @@
 import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
+import { EntChangeset } from "../action/orchestrator";
 import { Data, Ent, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
 import { StringType, TimestampType } from "../schema/field";
@@ -11,8 +12,6 @@ import {
   SQLStatementOperation,
 } from "../schema";
 import { User, SimpleAction, Contact } from "../testutils/builder";
-import { FakeComms } from "../testutils/fake_comms";
-import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
@@ -26,20 +25,14 @@ import {
   getSchemaTable,
   setupSqlite,
   Table,
-} from "../testutils/db/test_db";
+  TempDB,
+} from "../testutils/db/temp_db";
 import { convertDate } from "../core/convert";
-import { loadConfig } from "../core/config";
 import { FieldMap } from "../schema";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
-loadConfig({
-  // log: ["query"],
-});
+import { loadRawEdgeCountX, RawQueryOperation } from "../core/ent";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
-beforeEach(async () => {
-  // does assoc_edge_config loader need to be cleared?
+async function createEdges() {
   for (const edge of edges) {
     await createRowForTest({
       tableName: "assoc_edge_config",
@@ -54,33 +47,7 @@ beforeEach(async () => {
       },
     });
   }
-});
-
-afterEach(() => {
-  QueryRecorder.clear();
-  FakeComms.clear();
-});
-
-describe("postgres", () => {
-  commonTests();
-});
-
-describe("sqlite", () => {
-  const getTables = () => {
-    const tables: Table[] = [assoc_edge_config_table()];
-    edges.map((edge) =>
-      tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
-    );
-
-    [new UserSchema(), new ContactSchema()].map((s) =>
-      tables.push(getSchemaTable(s, Dialect.SQLite)),
-    );
-    return tables;
-  };
-
-  setupSqlite(`sqlite:///transformed-orchestrator-test.db`, getTables);
-  commonTests();
-});
+}
 
 class DeletedAtPattern implements Pattern {
   name = "deleted_at";
@@ -148,6 +115,66 @@ class DeletedAtSnakeCasePattern implements Pattern {
   }
 }
 
+class DeletedAtPatternWithExtraWrites implements Pattern {
+  name = "deleted_at";
+  fields: FieldMap = {
+    // need this to be lowerCamelCase because we do this based on field name
+    // #510
+    deletedAt: TimestampType({
+      nullable: true,
+      index: true,
+      defaultValueOnCreate: () => null,
+    }),
+  };
+
+  transformRead(): clause.Clause {
+    // this is based on sql. other is based on field
+    return clause.Eq("deleted_at", null);
+  }
+
+  transformWrite<T extends Ent>(
+    stmt: UpdateOperation<T>,
+  ): TransformedUpdateOperation<T> | null {
+    switch (stmt.op) {
+      case SQLStatementOperation.Delete:
+        return {
+          op: SQLStatementOperation.Update,
+          data: {
+            // this should return field, it'll be formatted as needed
+            deletedAt: new Date(),
+          },
+          changeset: () =>
+            EntChangeset.changesetFrom(stmt.builder, [
+              new RawQueryOperation([
+                `DELETE FROM edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
+                `DELETE FROM inverse_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
+                `DELETE FROM symmetric_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
+                {
+                  query: `DELETE FROM edge_table WHERE id2 = ${
+                    DB.getDialect() === Dialect.Postgres ? "$1" : "?"
+                  }`,
+                  values: [stmt.builder.existingEnt?.id],
+                },
+                {
+                  query: `DELETE FROM inverse_edge_table WHERE id2 = ${
+                    DB.getDialect() === Dialect.Postgres ? "$1" : "?"
+                  }`,
+                  values: [stmt.builder.existingEnt?.id],
+                },
+                {
+                  query: `DELETE FROM symmetric_edge_table WHERE id2 = ${
+                    DB.getDialect() === Dialect.Postgres ? "$1" : "?"
+                  }`,
+                  values: [stmt.builder.existingEnt?.id],
+                },
+              ]),
+            ]),
+        };
+    }
+    return null;
+  }
+}
+
 class UserSchema extends BaseEntSchema {
   constructor() {
     super();
@@ -172,10 +199,77 @@ class ContactSchema extends BaseEntSchema {
   ent = Contact;
 }
 
+class Account extends User {}
+
+class AccountSchema extends BaseEntSchema {
+  constructor() {
+    super();
+    this.addPatterns(new DeletedAtPatternWithExtraWrites());
+  }
+  fields: FieldMap = {
+    FirstName: StringType(),
+    LastName: StringType(),
+  };
+  ent = Account;
+}
+
+const getTables = () => {
+  const tables: Table[] = [assoc_edge_config_table()];
+  edges.map((edge) =>
+    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+  );
+
+  [new UserSchema(), new ContactSchema(), new AccountSchema()].map((s) =>
+    tables.push(getSchemaTable(s, Dialect.SQLite)),
+  );
+  return tables;
+};
+
+describe("postgres", () => {
+  const tdb = new TempDB(Dialect.Postgres, getTables());
+  beforeAll(async () => {
+    await tdb.beforeAll();
+    await createEdges();
+  });
+
+  afterAll(async () => {
+    await tdb.afterAll();
+  });
+
+  beforeEach(async () => {
+    await DB.getInstance().getPool().query("DELETE FROM contacts");
+    await DB.getInstance().getPool().query("DELETE FROM users");
+    await DB.getInstance().getPool().query("DELETE FROM accounts");
+  });
+
+  commonTests();
+});
+
+describe("sqlite", () => {
+  setupSqlite(`sqlite:///transformed-orchestrator-test.db`, getTables);
+  beforeEach(async () => {
+    await createEdges();
+  });
+
+  commonTests();
+});
+
 const getNewLoader = (context: boolean = true) => {
   return new ObjectLoader(
     {
       tableName: "users",
+      fields: ["id", "first_name", "last_name", "deleted_at"],
+      key: "id",
+      clause: clause.Eq("deleted_at", null),
+    },
+    context ? new TestContext() : undefined,
+  );
+};
+
+const getAccountNewLoader = (context: boolean = true) => {
+  return new ObjectLoader(
+    {
+      tableName: "accounts",
       fields: ["id", "first_name", "last_name", "deleted_at"],
       key: "id",
       clause: clause.Eq("deleted_at", null),
@@ -220,6 +314,17 @@ const getContactNewLoaderNoCustomClause = (context: boolean = true) => {
   );
 };
 
+const getAccountNewLoaderNoCustomClause = (context: boolean = true) => {
+  return new ObjectLoader(
+    {
+      tableName: "accounts",
+      fields: ["id", "first_name", "last_name", "deleted_at"],
+      key: "id",
+    },
+    context ? new TestContext() : undefined,
+  );
+};
+
 function transformDeletedAt(row: Data | null) {
   if (row === null) {
     return null;
@@ -238,6 +343,19 @@ function getInsertUserAction(
   return new SimpleAction(
     viewer,
     new UserSchema(),
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
+function getInsertAccountAction(
+  map: Map<string, any>,
+  viewer: Viewer = new LoggedOutViewer(),
+) {
+  return new SimpleAction(
+    viewer,
+    new AccountSchema(),
     map,
     WriteOperation.Insert,
     null,
@@ -303,6 +421,123 @@ function commonTests() {
     });
   });
 
+  test("delete -> update with extra writes", async () => {
+    const action = getInsertAccountAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    const account1 = await action.saveX();
+
+    const action2 = getInsertAccountAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    const account2 = await action2.saveX();
+
+    const action3 = getInsertAccountAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    action3.builder.orchestrator.addOutboundEdge(
+      account1.id,
+      "symmetricEdge",
+      "account",
+    );
+    action3.builder.orchestrator.addOutboundEdge(
+      account2.id,
+      "inverseEdge",
+      "account",
+    );
+
+    action3.builder.orchestrator.addOutboundEdge(
+      account1.id,
+      "edge",
+      "account",
+    );
+
+    const account3 = await action3.saveX();
+    const loader = getAccountNewLoader();
+
+    const row = await loader.load(account3.id);
+    expect(row).toEqual({
+      id: account3.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: null,
+    });
+
+    const d = new Date();
+    advanceTo(d);
+
+    let [edgeCt, inverseEdgeCt, symmetricEdgeCt] = await Promise.all([
+      loadRawEdgeCountX({
+        id1: account3.id,
+        edgeType: "edge",
+      }),
+      loadRawEdgeCountX({
+        id1: account3.id,
+        edgeType: "inverseEdge",
+      }),
+      loadRawEdgeCountX({
+        id1: account3.id,
+        edgeType: "symmetricEdge",
+      }),
+    ]);
+
+    expect(edgeCt).toBe(1);
+    expect(symmetricEdgeCt).toBe(1);
+    expect(inverseEdgeCt).toBe(1);
+
+    const action4 = new SimpleAction(
+      new LoggedOutViewer(),
+      new AccountSchema(),
+      new Map(),
+      WriteOperation.Delete,
+      account3,
+    );
+
+    await action4.save();
+
+    loader.clearAll();
+    const row2 = await loader.load(account3.id);
+    expect(row2).toBeNull();
+
+    // loader which bypasses transformations
+    const loader2 = getAccountNewLoaderNoCustomClause();
+    const row3 = await loader2.load(account3.id);
+    expect(transformDeletedAt(row3)).toEqual({
+      id: account3.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: d,
+    });
+
+    [edgeCt, inverseEdgeCt, symmetricEdgeCt] = await Promise.all([
+      loadRawEdgeCountX({
+        id1: account3.id,
+        edgeType: "edge",
+      }),
+      loadRawEdgeCountX({
+        id1: account3.id,
+        edgeType: "inverseEdge",
+      }),
+      loadRawEdgeCountX({
+        id1: account3.id,
+        edgeType: "symmetricEdge",
+      }),
+    ]);
+
+    expect(edgeCt).toBe(0);
+    expect(symmetricEdgeCt).toBe(0);
+    expect(inverseEdgeCt).toBe(0);
+  });
+
   test("really delete", async () => {
     const action = getInsertUserAction(
       new Map([
@@ -343,14 +578,18 @@ function commonTests() {
   });
 
   test("insert -> update", async () => {
-    const verifyPostgres = (ct: number) => {
-      const users = QueryRecorder.getData().get("users") || [];
-      if (DB.getDialect() !== Dialect.Postgres) {
+    const verifyRows = async (ct: number) => {
+      // hmm, not sure why this is still needed...
+      if (Dialect.Postgres !== DB.getDialect()) {
         return;
       }
-      expect(users.length).toBe(ct);
+      const res = await DB.getInstance()
+        .getPool()
+        .query("select count(*) as count from users;");
+      expect(parseInt(res.rows[0].count)).toBe(ct);
     };
-    verifyPostgres(0);
+
+    await verifyRows(0);
     const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
@@ -358,7 +597,7 @@ function commonTests() {
       ]),
     );
     const user = await action.saveX();
-    verifyPostgres(1);
+    await verifyRows(1);
 
     const loader = getNewLoader();
 
@@ -401,7 +640,7 @@ function commonTests() {
     expect(user.id).toBe(user2.id);
     expect(user2.firstName).toBe("Aegon");
     expect(user2.data.last_name).toBe("Targaryen");
-    verifyPostgres(1);
+    await verifyRows(1);
 
     const action3 = getInsertUserAction(
       new Map([
@@ -417,7 +656,7 @@ function commonTests() {
     expect(user.id).not.toBe(user3.id);
     expect(user3.firstName).toBe("Sansa");
     expect(user3.data.last_name).toBe("Stark");
-    verifyPostgres(2);
+    await verifyRows(2);
   });
 
   test("delete -> update. snake_case", async () => {
@@ -504,15 +743,17 @@ function commonTests() {
     expect(row3).toBe(null);
   });
 
-  test("insert -> update", async () => {
-    const verifyPostgres = (ct: number) => {
-      const contacts = QueryRecorder.getData().get("contacts") || [];
-      if (DB.getDialect() !== Dialect.Postgres) {
+  test("insert -> update 2", async () => {
+    const verifyRows = async (ct: number) => {
+      if (Dialect.Postgres !== DB.getDialect()) {
         return;
       }
-      expect(contacts.length).toBe(ct);
+      const res = await DB.getInstance()
+        .getPool()
+        .query("select count(1) from contacts;");
+      expect(parseInt(res.rows[0].count)).toBe(ct);
     };
-    verifyPostgres(0);
+    await verifyRows(0);
     const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
@@ -520,7 +761,7 @@ function commonTests() {
       ]),
     );
     const contact = await action.saveX();
-    verifyPostgres(1);
+    await verifyRows(1);
 
     const loader = getContactNewLoader();
 
@@ -563,7 +804,7 @@ function commonTests() {
     expect(contact.id).toBe(contact2.id);
     expect(contact2.data.first_name).toBe("Aegon");
     expect(contact2.data.last_name).toBe("Targaryen");
-    verifyPostgres(1);
+    await verifyRows(1);
 
     const action3 = getInsertContactAction(
       new Map([
@@ -579,18 +820,20 @@ function commonTests() {
     expect(contact.id).not.toBe(contact3.id);
     expect(contact3.data.first_name).toBe("Sansa");
     expect(contact3.data.last_name).toBe("Stark");
-    verifyPostgres(2);
+    await verifyRows(2);
   });
 
   test("insert -> update no existingEnt returned", async () => {
-    const verifyPostgres = (ct: number) => {
-      const contacts = QueryRecorder.getData().get("contacts") || [];
-      if (DB.getDialect() !== Dialect.Postgres) {
+    const verifyRows = async (ct: number) => {
+      if (Dialect.Postgres !== DB.getDialect()) {
         return;
       }
-      expect(contacts.length).toBe(ct);
+      const res = await DB.getInstance()
+        .getPool()
+        .query("select count(1) from contacts;");
+      expect(parseInt(res.rows[0].count)).toBe(ct);
     };
-    verifyPostgres(0);
+    await verifyRows(0);
     const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
@@ -598,7 +841,7 @@ function commonTests() {
       ]),
     );
     const contact = await action.saveX();
-    verifyPostgres(1);
+    await verifyRows(1);
 
     const loader = getContactNewLoader();
 
@@ -642,14 +885,16 @@ function commonTests() {
   });
 
   test("throw in transformWrite", async () => {
-    const verifyPostgres = (ct: number) => {
-      const contacts = QueryRecorder.getData().get("contacts") || [];
-      if (DB.getDialect() !== Dialect.Postgres) {
+    const verifyRows = async (ct: number) => {
+      if (Dialect.Postgres !== DB.getDialect()) {
         return;
       }
-      expect(contacts.length).toBe(ct);
+      const res = await DB.getInstance()
+        .getPool()
+        .query("select count(1) from contacts;");
+      expect(parseInt(res.rows[0].count)).toBe(ct);
     };
-    verifyPostgres(0);
+    await verifyRows(0);
     const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
@@ -657,7 +902,7 @@ function commonTests() {
       ]),
     );
     const contact = await action.saveX();
-    verifyPostgres(1);
+    await verifyRows(1);
 
     const loader = getContactNewLoader();
 

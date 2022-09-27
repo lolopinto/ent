@@ -117,6 +117,7 @@ export class EditEventActivityRsvpStatusActionBase
   }
 
   async changeset(): Promise<Changeset> {
+    await this.setEdgeType();
     return this.builder.build();
   }
 

@@ -1,10 +1,14 @@
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import RenameTodoStatusAction from "src/ent/todo/actions/rename_todo_status_action";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
-import { Todo } from "src/ent/internal";
-import { createAccount, createTodo } from "../testutils/util";
-import { query } from "@snowtop/ent";
+import { Todo, EdgeType, AccountTodoStatus } from "src/ent/";
+import { createAccount, createTag, createTodo } from "../testutils/util";
+import { query, setLogLevels } from "@snowtop/ent";
 import { advanceTo } from "jest-date-mock";
+import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
+import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
+import { loadCustomEdges } from "@snowtop/ent/core/ent";
+import { CustomTodoEdge } from "../edge/custom_edge";
 
 test("create", async () => {
   await createTodo();
@@ -16,6 +20,14 @@ async function changeCompleted(todo: Todo, completed: boolean) {
   }).saveX();
 
   expect(todo.completed).toBe(completed);
+
+  const creator = await todo.loadCreatorX();
+  const status = await creator.todoStatusFor(todo);
+  expect(status).toBe(
+    completed
+      ? AccountTodoStatus.ClosedTodosDup
+      : AccountTodoStatus.OpenTodosDup,
+  );
   return todo;
 }
 
@@ -91,11 +103,21 @@ test("querying todos", async () => {
   );
   expect(openTodos.length).toBe(3);
 
+  const openTodosCount = await Todo.loadCustomCount(
+    query.And(query.Eq("creator_id", account.id), query.Eq("completed", false)),
+  );
+  expect(openTodosCount).toBe(3);
+
   const closedTodos = await Todo.loadCustom(
     account.viewer,
     query.And(query.Eq("creator_id", account.id), query.Eq("completed", true)),
   );
   expect(closedTodos.length).toBe(2);
+
+  const closedTodosCount = await Todo.loadCustomCount(
+    query.And(query.Eq("creator_id", account.id), query.Eq("completed", true)),
+  );
+  expect(closedTodosCount).toBe(2);
 
   const orderedOpenedTodos = await Todo.loadCustom(account.viewer, {
     clause: query.And(
@@ -105,4 +127,50 @@ test("querying todos", async () => {
     orderby: "created_at desc",
   });
   expect(orderedOpenedTodos.length).toBe(3);
+});
+
+test("tags", async () => {
+  const todo = await createTodo();
+  const account = await todo.loadCreatorX();
+  const tag = await createTag("sports", account);
+  const tag2 = await createTag("hello", account);
+  const tag3 = await createTag("exercise", account);
+  const tag4 = await createTag("fun", account);
+
+  await TodoAddTagAction.create(todo.viewer, todo)
+    .addTag(tag)
+    .addTag(tag2)
+    .addTag(tag3)
+    .addTag(tag4)
+    .saveX();
+
+  const count = await todo.queryTags().queryRawCount();
+  const tags = await todo.queryTags().queryEnts();
+  const edges = await todo.queryTags().queryEdges();
+
+  expect(count).toBe(4);
+  expect(tags.length).toBe(4);
+  expect(edges.length).toBe(4);
+  expect(edges.every((edge) => edge.deletedAt === null)).toBe(true);
+
+  await TodoRemoveTagAction.create(todo.viewer, todo).removeTag(tag).saveX();
+
+  const count2 = await todo.queryTags().queryRawCount();
+  const tags2 = await todo.queryTags().queryEnts();
+  const edges2 = await todo.queryTags().queryEdges();
+
+  expect(edges2.length).toBe(3);
+  expect(edges2.every((edge) => edge.deletedAt === null)).toBe(true);
+  expect(count2).toBe(3);
+  expect(tags2.length).toBe(3);
+
+  // the deleted one is still in the db, just not returned by queries
+  const rawDB = await loadCustomEdges({
+    edgeType: EdgeType.TodoToTags,
+    id1: todo.id,
+    ctr: CustomTodoEdge,
+    disableTransformations: true,
+  });
+  expect(rawDB.length).toBe(4);
+  expect(rawDB.filter((edge) => edge.deletedAt !== null).length).toBe(1);
 });

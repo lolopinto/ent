@@ -47,9 +47,12 @@ func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 		cmdArgs = cmd.GetArgsForScript(dirPath)
 	}
 
+	if !util.EnvIsTrue("DISABLE_SWC") {
+		cmdArgs = append(cmdArgs, "--swc")
+	}
+
 	cmdArgs = append(
 		cmdArgs,
-		"--swc",
 		util.GetPathToScript("scripts/read_schema.ts", fromTest),
 		"--path",
 		schemaPath,

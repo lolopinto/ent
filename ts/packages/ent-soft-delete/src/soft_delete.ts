@@ -1,11 +1,14 @@
 import {
   Pattern,
   TimestampType,
-  Field,
   Ent,
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
+  FieldMap,
+  EdgeUpdateOperation,
+  TransformedEdgeUpdateOperation,
+  Viewer,
 } from "@snowtop/ent";
 import * as clause from "@snowtop/ent/core/clause";
 
@@ -14,30 +17,28 @@ export class DeletedAtPattern implements Pattern {
 
   disableMixin = true;
 
-  fields: Field[] = [
-    TimestampType({
-      name: "deleted_at",
+  fields: FieldMap = {
+    deleted_at: TimestampType({
       nullable: true,
       index: true,
       defaultValueOnCreate: () => null,
       hideFromGraphQL: true,
       private: true,
     }),
-  ];
+  };
 
   transformRead(): clause.Clause {
     return clause.Eq("deleted_at", null);
   }
 
-  transformWrite<T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | null {
+  transformWrite<T extends Ent<TViewer>, TViewer extends Viewer>(
+    stmt: UpdateOperation<T, TViewer>,
+  ): TransformedUpdateOperation<T, TViewer> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
           op: SQLStatementOperation.Update,
           data: {
-            // this should return field, it'll be formatted as needed
             deleted_at: new Date(),
           },
         };
@@ -47,3 +48,31 @@ export class DeletedAtPattern implements Pattern {
 
   transformsDelete = true;
 }
+
+export const GlobalDeletedEdge = {
+  extraEdgeFields: {
+    deleted_at: TimestampType({
+      nullable: true,
+      defaultValueOnCreate: () => null,
+    }),
+  },
+
+  transformEdgeRead(): clause.Clause {
+    return clause.Eq("deleted_at", null);
+  },
+
+  transformEdgeWrite(
+    stmt: EdgeUpdateOperation,
+  ): TransformedEdgeUpdateOperation | null {
+    switch (stmt.op) {
+      case SQLStatementOperation.Delete:
+        return {
+          op: SQLStatementOperation.Update,
+          data: {
+            deleted_at: new Date(),
+          },
+        };
+    }
+    return null;
+  },
+};

@@ -1,5 +1,5 @@
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "IndexLoaderFactory" "loadEnt" "LoadEntOptions"}}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "IndexLoaderFactory" "loadEnt" "LoadEntOptions"}}
 {{$importPath := .Package.InternalImportPath -}}
 {{reserveImport "src/ent/generated/loadAny" "getLoaderOptions" -}}
 {{ reserveImport .Package.SchemaPackagePath "getTransformedReadClause" }}
@@ -32,30 +32,6 @@
       () => {{$edgeName}},
     );
 
-  {{end -}}
-
-  {{range $edge := .IndexedEdges -}}
-    {{$node := useImport $edge.GetNodeInfo.Node -}}
-    {{$fNodeData := $schema.GetNodeDataForNode $node}}
-    {{$schema := $fNodeData.GetSchemaConst -}}
-      export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}({
-        ...{{$node}}.loaderOptions(),
-        groupCol: {{$edge.QuotedDBColName}},
-        {{ if $fNodeData.TransformsSelect -}}
-          {{ reserveDefaultImport $fNodeData.GetSchemaPath $schema -}}
-          clause: {{useImport "getTransformedReadClause"}}({{useImport $schema}}),
-        {{ end -}}
-      });
-      export const {{$edge.GetDataFactoryName}} = new {{useImport "IndexLoaderFactory"}}(
-        {{$node}}.loaderOptions(),
-        {{$edge.QuotedDBColName}},
-        {
-          toPrime: [{{useImport (printf "%sLoader" $edge.GetNodeInfo.NodeInstance)}}],
-          {{ if $fNodeData.TransformsSelect -}}
-            extraClause: {{useImport "getTransformedReadClause"}}({{useImport $schema}}),
-          {{ end -}}
-        }
-      );
   {{end -}}
 
   {{range $edge := .AssocEdges}}
@@ -143,17 +119,18 @@
 
     export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$srcNode}}, {{$node}}, {{$viewerType}}> {
     {{ if $srcPoly -}}
-      constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}) {
+      constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string) {
         super(viewer, {
           src: srcEnt, 
     {{ else -}}
-      constructor(viewer: {{$viewerType}}, src: {{$srcType }}) {
+      constructor(viewer: {{$viewerType}}, src: {{$srcType }}, sortColumn?: string) {
         super(viewer, {
           src: src, 
     {{ end -}}
-          countLoaderFactory: {{$edge.GetCountFactoryName}},
-          dataLoaderFactory: {{$edge.GetDataFactoryName}},
-          options:{{$node}}.loaderOptions(), 
+          groupCol: {{$edge.QuotedDBColName}},
+          loadEntOptions: {{$node}}.loaderOptions(),
+          name: "{{$edge.TsEdgeQueryName}}",
+          sortColumn,
         });
       }
 

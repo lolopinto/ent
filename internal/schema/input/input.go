@@ -14,8 +14,9 @@ import (
 )
 
 type Schema struct {
-	Nodes    map[string]*Node    `json:"schemas,omitempty"`
-	Patterns map[string]*Pattern `json:"patterns,omitempty"`
+	Nodes        map[string]*Node    `json:"schemas,omitempty"`
+	Patterns     map[string]*Pattern `json:"patterns,omitempty"`
+	GlobalSchema *GlobalSchema       `json:"globalSchema"`
 }
 
 type Pattern struct {
@@ -58,6 +59,12 @@ func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
 	n.AssocEdgeGroups = append(n.AssocEdgeGroups, edgeGroup)
 }
 
+type GlobalSchema struct {
+	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
+	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
+	InitForEdges    bool         `json:"initForEdges,omitempty"`
+}
+
 type DBType string
 
 const (
@@ -94,6 +101,8 @@ type FieldType struct {
 	// Note that anytime anything changes here, have to update fieldTypeEqual in compare.go
 	DBType DBType `json:"dbType,omitempty"`
 	// required when DBType == DBType.List
+	// also sometimes used when DBType == JSON or JSONB for json that we store as json(b) in the db but represent as lists
+	// in graphql and typescript
 	ListElemType *FieldType `json:"listElemType,omitempty"`
 	// required when DBType == DBType.Enum || DBType.StringEnum
 	Values               []string          `json:"values,omitempty"`
@@ -107,9 +116,14 @@ type FieldType struct {
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
-	// list because go-lang map not stable and don't want generated fields to change ofte
+	// list because go-lang map not stable and don't want generated fields to change often
 	SubFields   []*Field `json:"subFields,omitempty"`
 	UnionFields []*Field `json:"unionFields,omitempty"`
+}
+
+type UserConvertType struct {
+	Path     string `json:"path,omitempty"`
+	Function string `json:"function,omitempty"`
 }
 
 type Field struct {
@@ -119,17 +133,17 @@ type Field struct {
 	Nullable   bool       `json:"nullable,omitempty"`
 	StorageKey string     `json:"storageKey,omitempty"`
 	// TODO need a way to indicate unique edge is Required also. this changes type generated in ent and graphql
-	Unique                  bool   `json:"unique,omitempty"`
-	HideFromGraphQL         bool   `json:"hideFromGraphQL,omitempty"`
-	Private                 bool   `json:"private,omitempty"`
-	GraphQLName             string `json:"graphqlName,omitempty"`
-	Index                   bool   `json:"index,omitempty"`
-	PrimaryKey              bool   `json:"primaryKey,omitempty"`
-	DefaultToViewerOnCreate bool   `json:"defaultToViewerOnCreate,omitempty"`
+	Unique                  bool            `json:"unique,omitempty"`
+	HideFromGraphQL         bool            `json:"hideFromGraphQL,omitempty"`
+	Private                 *PrivateOptions `json:"private,omitempty"`
+	GraphQLName             string          `json:"graphqlName,omitempty"`
+	Index                   bool            `json:"index,omitempty"`
+	PrimaryKey              bool            `json:"primaryKey,omitempty"`
+	DefaultToViewerOnCreate bool            `json:"defaultToViewerOnCreate,omitempty"`
 
 	FieldEdge     *FieldEdge  `json:"fieldEdge,omitempty"` // this only really makes sense on id fields...
 	ForeignKey    *ForeignKey `json:"foreignKey,omitempty"`
-	ServerDefault interface{} `json:"serverDefault,omitempty"`
+	ServerDefault *string     `json:"serverDefault,omitempty"`
 	// DisableUserEditable true == DefaultValueOnCreate required OR set in trigger
 	DisableUserEditable        bool `json:"disableUserEditable,omitempty"`
 	DisableUserGraphQLEditable bool `json:"disableUserGraphQLEditable,omitempty"`
@@ -140,6 +154,8 @@ type Field struct {
 	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`
 	DerivedFields       []*Field            `json:"derivedFields,omitempty"`
+	UserConvert         *UserConvertType    `json:"convert,omitempty"`
+	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
 
 	// Go specific information here
 	TagMap          map[string]string `json:"-"`
@@ -189,6 +205,65 @@ type PolymorphicOptions struct {
 	Types                  []string `json:"types,omitempty"`
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL,omitempty"`
 	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
+	Name                   string   `json:"name,omitempty"`
+}
+
+type PrivateOptions struct {
+	ExposeToActions bool `json:"exposeToActions,omitempty"`
+}
+
+func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSGraphQLType {
+	importType := typ.ImportType
+	var subFields interface{}
+	var unionFields interface{}
+	if len(typ.SubFields) != 0 {
+		// only set this if we actually have fields. otherwise, we want this to be nil
+		subFields = typ.SubFields
+		if importType == nil && typ.Type != "" {
+			importType = &tsimport.ImportPath{
+				ImportPath: getImportPathForCustomInterfaceFile(typ.Type),
+				Import:     typ.Type,
+			}
+		}
+	}
+	if len(typ.UnionFields) != 0 {
+		// only set this if we actually have fields. otherwise, we want this to be nil
+		unionFields = typ.UnionFields
+		if importType == nil && typ.Type != "" {
+			importType = &tsimport.ImportPath{
+				// intentionally no path since we don't support top level unions and this should lead to some kind of error
+				Import: typ.Type,
+			}
+		}
+	}
+
+	common := enttype.CommonJSONType{}
+	common.ImportType = importType
+	common.CustomTsInterface = typ.Type
+	common.CustomGraphQLInterface = typ.GraphQLType
+	common.SubFields = subFields
+	common.UnionFields = unionFields
+
+	if typ.DBType == JSON {
+		if nullable {
+			return &enttype.NullableJSONType{
+				CommonJSONType: common,
+			}
+		}
+		return &enttype.JSONType{
+			CommonJSONType: common,
+		}
+	}
+
+	//	case JSONB:
+	if nullable {
+		return &enttype.NullableJSONBType{
+			CommonJSONType: common,
+		}
+	}
+	return &enttype.JSONBType{
+		CommonJSONType: common,
+	}
 }
 
 func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
@@ -270,66 +345,20 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		return &enttype.DateType{}, nil
 	case JSON, JSONB:
 
-		importType := typ.ImportType
-		var subFields interface{}
-		var unionFields interface{}
-		if len(typ.SubFields) != 0 {
-			// only set this if we actually have fields. otherwise, we want this to be nil
-			subFields = typ.SubFields
-			if importType == nil && typ.Type != "" {
-				importType = &tsimport.ImportPath{
-					ImportPath: getImportPathForCustomInterfaceFile(typ.Type),
-					Import:     typ.Type,
-				}
-			}
-		}
-		if len(typ.UnionFields) != 0 {
-			// only set this if we actually have fields. otherwise, we want this to be nil
-			unionFields = typ.UnionFields
-			if importType == nil && typ.Type != "" {
-				importType = &tsimport.ImportPath{
-					// intentionally no path since we don't support top level unions and this should lead to some kind of error
-					Import: typ.Type,
-				}
-			}
-		}
-
-		if typ.DBType == JSON {
+		if typ.ListElemType != nil {
 			if nullable {
-				ret := &enttype.NullableJSONType{}
-				ret.ImportType = importType
-				ret.CustomTsInterface = typ.Type
-				ret.CustomGraphQLInterface = typ.GraphQLType
-				ret.SubFields = subFields
-				ret.UnionFields = unionFields
-				return ret, nil
+				return &enttype.NullableArrayListType{
+					ElemType:           getJSONOrJSONBType(typ, false),
+					ElemDBTypeNotArray: true,
+				}, nil
 			}
-			ret := &enttype.JSONType{}
-			ret.ImportType = importType
-			ret.CustomTsInterface = typ.Type
-			ret.CustomGraphQLInterface = typ.GraphQLType
-			ret.SubFields = subFields
-			ret.UnionFields = unionFields
-			return ret, nil
+			return &enttype.ArrayListType{
+				ElemType:           getJSONOrJSONBType(typ, false),
+				ElemDBTypeNotArray: true,
+			}, nil
 		}
 
-		//	case JSONB:
-		if nullable {
-			ret := &enttype.NullableJSONBType{}
-			ret.ImportType = importType
-			ret.CustomTsInterface = typ.Type
-			ret.CustomGraphQLInterface = typ.GraphQLType
-			ret.SubFields = subFields
-			ret.UnionFields = unionFields
-			return ret, nil
-		}
-		ret := &enttype.JSONBType{}
-		ret.ImportType = importType
-		ret.CustomTsInterface = typ.Type
-		ret.CustomGraphQLInterface = typ.GraphQLType
-		ret.SubFields = subFields
-		ret.UnionFields = unionFields
-		return ret, nil
+		return getJSONOrJSONBType(typ, nullable), nil
 
 	case StringEnum, Enum:
 		tsType := strcase.ToCamel(typ.Type)
@@ -456,6 +485,7 @@ type AssocEdgeGroup struct {
 	TableName       string        `json:"tableName,omitempty"`
 	AssocEdges      []*AssocEdge  `json:"assocEdges,omitempty"`
 	EdgeActions     []*EdgeAction `json:"edgeActions,omitempty"`
+	ViewerBased     bool          `json:"viewerBased"`
 	StatusEnums     []string      `json:"statusEnums,omitempty"`
 	NullStateFn     string        `json:"nullStateFn,omitempty"`
 	NullStates      []string      `json:"nullStates,omitempty"`
@@ -714,6 +744,8 @@ type Index struct {
 	Columns  []string  `json:"columns,omitempty"`
 	Unique   bool      `json:"unique,omitempty"`
 	FullText *FullText `json:"fullText,omitempty"`
+	// for regular indices. doesn't apply for full text...
+	IndexType IndexType `json:"indexType,omitempty"`
 }
 
 type FullTextLanguage string
@@ -726,11 +758,15 @@ const (
 	Simple  FullTextLanguage = "simple"
 )
 
+// full text only supports gin | gist
+// TODO https://github.com/lolopinto/ent/issues/1029
+// Index only currently supports gin | btree (will eventually support gist)
 type IndexType string
 
 const (
-	Gin  IndexType = "gin"
-	Gist IndexType = "gist"
+	Gin   IndexType = "gin"
+	Gist  IndexType = "gist"
+	Btree IndexType = "btree"
 )
 
 type FullTextWeight struct {

@@ -10,7 +10,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
-  convertDate,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -26,7 +26,7 @@ import {
   addressLoaderInfo,
   addressOwnerIDLoader,
 } from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/internal";
+import { AddressToLocatedAtQuery, NodeType } from "src/ent/internal";
 import schema from "src/schema/address_schema";
 
 interface AddressDBData {
@@ -57,8 +57,8 @@ export class AddressBase implements Ent<Viewer> {
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.street = data.street;
     this.city = data.city;
     this.state = data.state;
@@ -115,7 +115,10 @@ export class AddressBase implements Ent<Viewer> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      AddressBase.loaderOptions.apply(this),
+      {
+        ...AddressBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -126,10 +129,27 @@ export class AddressBase implements Ent<Viewer> {
     context?: Context,
   ): Promise<AddressDBData[]> {
     return (await loadCustomData(
-      AddressBase.loaderOptions.apply(this),
+      {
+        ...AddressBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as AddressDBData[];
+  }
+
+  static async loadCustomCount<T extends AddressBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...AddressBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends AddressBase>(
@@ -221,6 +241,10 @@ export class AddressBase implements Ent<Viewer> {
 
   static getField(key: string): Field | undefined {
     return AddressBase.getSchemaFields().get(key);
+  }
+
+  queryLocatedAt(): AddressToLocatedAtQuery {
+    return AddressToLocatedAtQuery.query(this.viewer, this.id);
   }
 
   async loadOwner(): Promise<Ent | null> {

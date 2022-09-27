@@ -12,7 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -56,10 +56,10 @@ export class HolidayBase
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.label = data.label;
-    this.date = convertDate(data.date);
+    this.date = data.date;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
@@ -109,7 +109,10 @@ export class HolidayBase
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      HolidayBase.loaderOptions.apply(this),
+      {
+        ...HolidayBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -120,10 +123,27 @@ export class HolidayBase
     context?: Context,
   ): Promise<HolidayDBData[]> {
     return (await loadCustomData(
-      HolidayBase.loaderOptions.apply(this),
+      {
+        ...HolidayBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as HolidayDBData[];
+  }
+
+  static async loadCustomCount<T extends HolidayBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...HolidayBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends HolidayBase>(

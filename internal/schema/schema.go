@@ -29,12 +29,16 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes         NodeMapInfo
-	Patterns      map[string]*PatternInfo
-	tables        NodeMapInfo
-	edges         map[string]*ent.AssocEdgeData
-	newEdges      []*ent.AssocEdgeData
-	edgesToUpdate []*ent.AssocEdgeData
+	Nodes           NodeMapInfo
+	Patterns        map[string]*PatternInfo
+	globalEdges     []*edge.AssociationEdge
+	globalConsts    *objWithConsts
+	extraEdgeFields []*field.Field
+	initForEdges    bool
+	tables          NodeMapInfo
+	edges           map[string]*ent.AssocEdgeData
+	newEdges        []*ent.AssocEdgeData
+	edgesToUpdate   []*ent.AssocEdgeData
 	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
 	// confusing but gets us closer to what we want
 	Enums            map[string]*EnumInfo
@@ -50,12 +54,29 @@ func (s *Schema) GetInputSchema() *input.Schema {
 	return s.inputSchema
 }
 
-func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
-	return s.addEnumFrom(
-		enum.NewInputFromEnumType(enumType),
-		nodeData,
-		nil,
-	)
+func (s *Schema) GetGlobalEdges() []*edge.AssociationEdge {
+	return s.globalEdges
+}
+
+func (s *Schema) InitForEdges() bool {
+	return s.initForEdges
+}
+
+func (s *Schema) ExtraEdgeFields() []*field.Field {
+	return s.extraEdgeFields
+}
+
+func (s *Schema) GetGlobalConsts() WithConst {
+	return s.globalConsts
+}
+
+func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData, fkeyInfo *field.ForeignKeyInfo) error {
+	v, err := enum.NewInputFromEnumType(enumType, fkeyInfo != nil)
+	if err != nil {
+		return err
+	}
+
+	return s.addEnumFrom(v, nodeData, nil)
 }
 
 func (s *Schema) addPattern(name string, p *PatternInfo) error {
@@ -186,7 +207,10 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 }
 
 func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) (*EnumInfo, error) {
-	input := enum.NewInputFromEnumType(enumType)
+	input, err := enum.NewInputFromEnumType(enumType, false)
+	if err != nil {
+		return nil, err
+	}
 	return s.addEnumFromInput(input, pattern)
 }
 
@@ -253,7 +277,7 @@ func parse(parseFn func(*Schema) (*assocEdgeData, error)) (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.edges = edgeData.edgeMap
+	s.edges = edgeData.getEdgesToRender()
 	s.newEdges = edgeData.newEdges
 	s.edgesToUpdate = edgeData.edgesToUpdate
 	return s, nil
@@ -267,6 +291,7 @@ func (s *Schema) init() {
 	s.Patterns = map[string]*PatternInfo{}
 	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
 	s.gqlNameMap = make(map[string]bool)
+	s.globalConsts = &objWithConsts{}
 }
 
 func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
@@ -395,7 +420,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			// don't add enums which are defined in patterns
 			if ok {
 				if !f.PatternField() {
-					if err := s.addEnum(enumType, nodeData); err != nil {
+					if err := s.addEnum(enumType, nodeData, f.ForeignKeyInfo()); err != nil {
 						errs = append(errs, err)
 					}
 				} else {
@@ -462,7 +487,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 		if err := s.addConfig(&NodeDataInfo{
 			NodeData:      nodeData,
-			depgraph:      s.buildPostRunDepgraph(cfg, edgeData),
+			depgraph:      s.buildPostRunDepgraph(cfg),
 			ShouldCodegen: true,
 		}); err != nil {
 			errs = append(errs, err)
@@ -485,11 +510,11 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 			// add edge info
 			if assocEdge.CreateEdge() {
-				newEdge, err := s.getNewEdge(edgeData, assocEdge)
+				info, err := s.getEdgeInfoAndCheckNewEdge(edgeData, assocEdge)
 				if err != nil {
 					errs = append(errs, err)
 				} else {
-					s.addNewEdgeType(p, newEdge.constName, newEdge.constValue, assocEdge)
+					s.addEdgeTypeFromEdgeInfo(p, info, assocEdge)
 				}
 			}
 			if err := s.maybeAddInverseAssocEdge(assocEdge); err != nil {
@@ -543,6 +568,10 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		}
 	}
 
+	if schema.GlobalSchema != nil {
+		errs = append(errs, s.parseGlobalSchema(cfg, schema.GlobalSchema, edgeData)...)
+	}
+
 	// TODO convert more things to do something like this?
 	if len(errs) > 0 {
 		// we're getting list of errors and coalescing
@@ -550,6 +579,43 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 	}
 
 	return s.processDepgrah(edgeData)
+}
+
+func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema, edgeData *assocEdgeData) []error {
+	var errs []error
+	for _, inputEdge := range gs.GlobalEdges {
+		assocEdge, err := edge.AssocEdgeFromInput(cfg, "global", inputEdge)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			s.globalEdges = append(s.globalEdges, assocEdge)
+			if assocEdge.CreateEdge() {
+				info, err := s.getEdgeInfoAndCheckNewEdge(edgeData, assocEdge)
+				if err != nil {
+					errs = append(errs, err)
+				} else {
+					s.addEdgeTypeFromEdgeInfo(s.globalConsts, info, assocEdge)
+				}
+				if err := s.maybeAddInverseAssocEdge(assocEdge); err != nil {
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	if len(gs.ExtraEdgeFields) > 0 {
+		fi, err := field.NewFieldInfoFromInputs(cfg, "global", gs.ExtraEdgeFields, &field.Options{
+			SortFields: true,
+		})
+		if err != nil {
+			errs = append(errs, err)
+		}
+		s.extraEdgeFields = fi.Fields
+	}
+
+	s.initForEdges = gs.InitForEdges
+
+	return errs
 }
 
 func (s *Schema) validateIndices(nodeData *NodeData) error {
@@ -569,9 +635,20 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 			return err
 		}
 
+		if index.IndexType != "" {
+			if index.IndexType == input.Gist {
+				return fmt.Errorf("gist index currently only supported for full text indexes")
+			}
+		}
+
 		if index.FullText == nil {
 			continue
 		}
+
+		if index.IndexType != "" {
+			return fmt.Errorf("if you want to specify the full text index type, specify it in FullText object")
+		}
+
 		fullText := index.FullText
 		if fullText.Language == "" && fullText.LanguageColumn == "" {
 			return fmt.Errorf("have to specify at least one of language and language column for index %s", index.Name)
@@ -623,7 +700,10 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 	typ := f.GetFieldType()
 	enumTyp, ok := enttype.GetEnumType(typ)
 	if ok {
-		input := enum.NewInputFromEnumType(enumTyp)
+		input, err := enum.NewInputFromEnumType(enumTyp, false)
+		if err != nil {
+			return err
+		}
 		info, err := s.addEnumFromInput(input, nil)
 		if err != nil {
 			return err
@@ -781,7 +861,8 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
 	}
 	return &assocEdgeData{
-		edgeMap: edgeMap,
+		dbEdgeMap:     edgeMap,
+		edgesToRender: map[string]*ent.AssocEdgeData{},
 	}, nil
 }
 
@@ -819,7 +900,6 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 
 func (s *Schema) buildPostRunDepgraph(
 	cfg codegenapi.Config,
-	edgeData *assocEdgeData,
 ) *depgraph.Depgraph {
 	// things that need all nodeDatas loaded
 	g := &depgraph.Depgraph{}
@@ -1019,7 +1099,6 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 					// only add polymorphic accessors on foreign if index or unique
 					if f.Index() || f.Unique() {
 						fEdgeInfo := foreign.NodeData.EdgeInfo
-						//						spew.Dump(nodeData.Node, foreign.NodeData.Node)
 						if err := fEdgeInfo.AddDestinationEdgeFromPolymorphicOptions(
 							cfg,
 							f.TsFieldName(cfg),
@@ -1057,7 +1136,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 		if fEdge == nil {
 			// add from inverseEdge...
 			var err error
-			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(cfg, info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge)
+			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(cfg, info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge, f.GetPatternName())
 			if err != nil {
 				return err
 			}
@@ -1202,21 +1281,21 @@ func (s *Schema) addNewConstsAndEdges(nodeData *NodeData, edgeData *assocEdgeDat
 			continue
 		}
 
-		newEdge, err := s.getNewEdge(edgeData, assocEdge)
+		info, err := s.getEdgeInfoAndCheckNewEdge(edgeData, assocEdge)
 		if err != nil {
 			return err
 		}
 
-		s.addNewEdgeType(nodeData, newEdge.constName, newEdge.constValue, assocEdge)
+		s.addEdgeTypeFromEdgeInfo(nodeData, info, assocEdge)
 	}
 	return nil
 }
 
-type newEdgeInfo struct {
+type edgeInfo struct {
 	constName, constValue string
 }
 
-func (s *Schema) getNewEdge(edgeData *assocEdgeData, assocEdge *edge.AssociationEdge) (*newEdgeInfo, error) {
+func (s *Schema) getEdgeInfoAndCheckNewEdge(edgeData *assocEdgeData, assocEdge *edge.AssociationEdge) (*edgeInfo, error) {
 	constName := assocEdge.EdgeConst
 
 	// check if there's an existing edge
@@ -1236,51 +1315,50 @@ func (s *Schema) getNewEdge(edgeData *assocEdgeData, assocEdge *edge.Association
 		}
 	}
 	isNewEdge := constValue == ""
+
+	// always make sure the information we send to schema.py is the latest
+	// info based on the schema so if the db is corrupted in some way, we'll fix
+
 	if isNewEdge {
 		constValue = uuid.New().String()
-		// keep track of new edges that we need to do things with
-		newEdge := &ent.AssocEdgeData{
-			EdgeType:        ent.EdgeType(constValue),
-			EdgeName:        constName,
-			SymmetricEdge:   assocEdge.Symmetric,
-			EdgeTable:       assocEdge.TableName,
-			InverseEdgeType: sql.NullString{},
-		}
-
-		if inverseConstValue != "" {
-			if err := newEdge.InverseEdgeType.Scan(inverseConstValue); err != nil {
-				return nil, err
-			}
-		}
-
-		edgeData.addNewEdge(newEdge)
 	}
 
-	if newInverseEdge {
+	// always generate edge information from the schema
+	edge1 := &ent.AssocEdgeData{
+		EdgeType:        ent.EdgeType(constValue),
+		EdgeName:        constName,
+		SymmetricEdge:   assocEdge.Symmetric,
+		EdgeTable:       assocEdge.TableName,
+		InverseEdgeType: sql.NullString{},
+	}
+	if inverseConstValue != "" {
+		if err := edge1.InverseEdgeType.Scan(inverseConstValue); err != nil {
+			return nil, err
+		}
+	}
+	edgeData.addEdge(edge1, isNewEdge)
+
+	var edge2 *ent.AssocEdgeData
+
+	if inverseEdge != nil {
 		ns := sql.NullString{}
 		if err := ns.Scan(constValue); err != nil {
 			return nil, err
 		}
 
 		// add inverse edge to list of new edges
-		edgeData.addNewEdge(&ent.AssocEdgeData{
+		edge2 = &ent.AssocEdgeData{
 			EdgeType:        ent.EdgeType(inverseConstValue),
 			EdgeName:        inverseConstName,
 			SymmetricEdge:   false, // we know for sure that we can't be symmetric and have an inverse edge
 			EdgeTable:       assocEdge.TableName,
 			InverseEdgeType: ns,
-		})
-
-		// if the inverse edge already existed in the db, we need to update that edge to let it know of its new inverse
-		if !isNewEdge {
-			// potential improvement: we can do it automatically in addNewEdge
-			if err := edgeData.updateInverseEdgeTypeForEdge(
-				constName, inverseConstValue); err != nil {
-				return nil, err
-			}
 		}
+
+		edgeData.addEdge(edge2, newInverseEdge)
 	}
-	return &newEdgeInfo{
+
+	return &edgeInfo{
 		constName:  constName,
 		constValue: constValue,
 	}, nil
@@ -1575,12 +1653,16 @@ func (s *Schema) getInverseEdgeType(assocEdge *edge.AssociationEdge, inverseEdge
 	}
 
 	// add inverse edge constant
-	s.addNewEdgeType(inverseNodeData, inverseConstName, inverseConstValue, inverseEdge)
+	s.addEdgeType(inverseNodeData, inverseConstName, inverseConstValue, inverseEdge)
 
 	return inverseConstName, inverseConstValue, newEdge, nil
 }
 
-func (s *Schema) addNewEdgeType(c WithConst, constName, constValue string, edge edge.Edge) {
+func (s *Schema) addEdgeTypeFromEdgeInfo(c WithConst, info *edgeInfo, edge edge.Edge) {
+	s.addEdgeType(c, info.constName, info.constValue, edge)
+}
+
+func (s *Schema) addEdgeType(c WithConst, constName, constValue string, edge edge.Edge) {
 	// this is a map so easier to deal with duplicate consts if we run into them
 	c.addConstInfo(
 		"ent.EdgeType",

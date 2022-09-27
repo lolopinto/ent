@@ -1,12 +1,17 @@
+import { v1, v4 as uuidv4 } from "uuid";
+import pg from "pg";
+import * as fs from "fs";
+import * as path from "path";
+import each from "jest-each";
 import { LoggedOutViewer } from "../core/viewer";
 import {
   StringType,
   TimeType,
   TimetzType,
   UUIDType,
-  leftPad,
   DateType,
   TimestamptzType,
+  UUIDListType,
 } from "./field";
 import Schema from "./schema";
 import {
@@ -24,16 +29,14 @@ import {
   timestamptz,
   uuid,
   getSchemaTable,
-} from "../testutils/db/test_db";
-import { v4 as uuidv4 } from "uuid";
-import pg from "pg";
+  uuidList,
+} from "../testutils/db/temp_db";
 import { defaultTimestampParser, Dialect } from "../core/db";
 import { DBType, FieldMap } from "./schema";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { ID, Ent, Viewer, Data, PrivacyPolicy } from "../core/base";
-import * as fs from "fs";
-import * as path from "path";
 import { WriteOperation } from "../action";
+import { DBTimeZone } from "../testutils/db_time_zone";
 
 const UserSchema = getBuilderSchemaFromFields(
   {
@@ -112,7 +115,7 @@ async function createUsersWithTZ() {
 
 let tdb: TempDB;
 beforeAll(async () => {
-  tdb = new TempDB([]);
+  tdb = new TempDB(Dialect.Postgres, []);
 
   await tdb.beforeAll();
 });
@@ -365,15 +368,6 @@ describe("time", () => {
   });
 });
 
-const dateOffset = (d: Date): string => {
-  // for some reason this API is backwards
-  const val = leftPad((d.getTimezoneOffset() / 60) * -1);
-  if (val == "00") {
-    return "+00";
-  }
-  return val;
-};
-
 describe("timetz", () => {
   beforeAll(async () => {
     await createTimeTable();
@@ -408,7 +402,7 @@ describe("timetz", () => {
       ]),
     );
 
-    let offset = dateOffset(open);
+    let offset = await DBTimeZone.getDateOffset(open);
 
     const hours = await action.saveX();
     expect(hours.data.open).toEqual(`08:00:00${offset}`);
@@ -426,7 +420,7 @@ describe("timetz", () => {
     );
 
     const d = new Date();
-    let offset = dateOffset(d);
+    let offset = await DBTimeZone.getDateOffset(d);
 
     const hours = await action.saveX();
     expect(hours.data.open).toEqual(`08:00:00${offset}`);
@@ -505,6 +499,19 @@ describe("date", () => {
     const holiday = await action.saveX();
     expect(holiday.data.date).toEqual(expectedValue());
   });
+
+  test("date timestamp", async () => {
+    const action = getInsertAction(
+      HolidaySchema,
+      new Map<string, any>([
+        ["label", "inaugaration"],
+        ["date", getInaugauration().getTime()],
+      ]),
+    );
+
+    const holiday = await action.saveX();
+    expect(holiday.data.date).toEqual(expectedValue());
+  });
 });
 
 test("timestamptz copy", async () => {
@@ -553,4 +560,55 @@ test("timestamptz copy", async () => {
       recursive: true,
     });
   }
+});
+
+each([
+  ["v1", v1],
+  ["v4", uuidv4],
+]).test("uuid list %s", async (name: string, fn: () => string) => {
+  await tdb.create(
+    table(
+      "tables",
+      uuid("id", { primaryKey: true }),
+      uuidList("list"),
+      timestamp("created_at"),
+      timestamp("updated_at"),
+    ),
+  );
+
+  class Table implements Ent {
+    id: ID;
+    accountID: string;
+    nodeType = "Table";
+    getPrivacyPolicy(): PrivacyPolicy<this> {
+      return AlwaysAllowPrivacyPolicy;
+    }
+
+    constructor(public viewer: Viewer, public data: Data) {
+      this.id = data.id;
+    }
+  }
+
+  const TableSchema = getBuilderSchemaFromFields(
+    {
+      id: UUIDType(),
+      list: UUIDListType(),
+    },
+    Table,
+  );
+  const list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((_) => fn());
+
+  const action = getInsertAction(
+    TableSchema,
+    new Map<string, any>([
+      ["id", v1()],
+      ["list", list],
+      ["createdAt", new Date()],
+      ["updatedAt", new Date()],
+    ]),
+  );
+  const ent = await action.saveX();
+  expect(ent.data.list).toStrictEqual(list);
+
+  await tdb.drop("tables");
 });

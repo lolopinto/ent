@@ -42,7 +42,7 @@ type Field struct {
 	nullable bool
 	// special case to indicate that a field is optional in ts but nullable in graphql
 	graphqlNullable          bool
-	defaultValue             interface{}
+	defaultValue             *string
 	unique                   bool
 	fkey                     *ForeignKeyInfo
 	fieldEdge                *base.FieldEdgeInfo
@@ -75,11 +75,13 @@ type Field struct {
 	hasDefaultValueOnCreate    bool
 	hasDefaultValueOnEdit      bool
 	hasFieldPrivacy            bool
+	fetchOnDemand              bool
 
 	forceRequiredInAction bool
 	forceOptionalInAction bool
 
 	patternName string
+	userConvert *input.UserConvertType
 }
 
 // mostly used by tests
@@ -100,7 +102,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		nullable:                   f.Nullable,
 		dbName:                     f.StorageKey,
 		hideFromGraphQL:            f.HideFromGraphQL,
-		private:                    f.Private,
+		private:                    f.Private != nil,
 		polymorphic:                f.Polymorphic,
 		index:                      f.Index,
 		graphQLName:                f.GraphQLName,
@@ -115,8 +117,10 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		hasDefaultValueOnCreate:    f.HasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:      f.HasDefaultValueOnEdit,
 		hasFieldPrivacy:            f.HasFieldPrivacy,
+		fetchOnDemand:              f.FetchOnDemand,
 		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
 		patternName:                f.PatternName,
+		userConvert:                f.UserConvert,
 
 		// go specific things
 		entType:         f.GoType,
@@ -172,7 +176,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 	}
 
 	if ret.private {
-		ret.setPrivate()
+		ret.setPrivate(f.Private)
 	}
 
 	getSchemaName := func(config string) string {
@@ -217,7 +221,8 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 	}
 
 	// if field privacy, whether on demand or ent load, the type here is nullable
-	if ret.hasFieldPrivacy {
+	// same for fetch on load since the fetch can fail...
+	if ret.hasFieldPrivacy || ret.fetchOnDemand {
 		nullableType, ok := ret.fieldType.(enttype.NullableType)
 		if ok {
 			if err := ret.setGraphQLFieldType(nullableType.GetNullableType()); err != nil {
@@ -363,6 +368,9 @@ func (f *Field) ForeignKeyInfo() *ForeignKeyInfo {
 }
 
 func (f *Field) FieldEdgeInfo() *base.FieldEdgeInfo {
+	if f.private {
+		return nil
+	}
 	return f.fieldEdge
 }
 
@@ -375,7 +383,7 @@ func (f *Field) Private(cfg codegenapi.Config) bool {
 }
 
 func (f *Field) HasAsyncAccessor(cfg codegenapi.Config) bool {
-	return f.hasFieldPrivacy && cfg.FieldPrivacyEvaluated() == codegenapi.OnDemand
+	return f.fetchOnDemand || (f.hasFieldPrivacy && cfg.FieldPrivacyEvaluated() == codegenapi.OnDemand)
 }
 
 // GetFieldNameInStruct returns the name of the field in the struct definition
@@ -426,6 +434,14 @@ func (f *Field) HasDefaultValueOnEdit() bool {
 
 func (f *Field) HasFieldPrivacy() bool {
 	return f.hasFieldPrivacy
+}
+
+func (f *Field) FetchOnDemand() bool {
+	return f.fetchOnDemand
+}
+
+func (f *Field) FetchOnLoad() bool {
+	return !f.fetchOnDemand
 }
 
 func (f *Field) IDField() bool {
@@ -492,7 +508,7 @@ func (f *Field) ForceOptionalInAction() bool {
 	return f.forceOptionalInAction
 }
 
-func (f *Field) DefaultValue() interface{} {
+func (f *Field) DefaultValue() *string {
 	return f.defaultValue
 }
 
@@ -558,6 +574,11 @@ func (f *Field) TsType() string {
 
 // type of the field in the class e.g. readonly name type;
 func (f *Field) TsFieldType(cfg codegenapi.Config) string {
+	// when fetch on demand, we set to undefined to start since we need to load it later
+	// we use nullable value because we set the value after loading...
+	if f.fetchOnDemand {
+		return fmt.Sprintf("%s | undefined", f.TsType())
+	}
 	// there's a method that's nullable so return raw type
 	if f.HasAsyncAccessor(cfg) {
 		return f.tsRawUnderlyingType()
@@ -586,11 +607,10 @@ func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 	tt := f.GetPossibleTypes()
 	for _, t := range tt {
-		if enttype.IsConvertDataType(t) {
-			t2 := t.(enttype.ConvertDataType)
-			c := t2.Convert()
-			if c.ImportPath != "" {
-				ret = append(ret, c)
+		imp := enttype.ConvertImportPath(t)
+		if imp != nil {
+			if imp.ImportPath != "" {
+				ret = append(ret, imp)
 			}
 		}
 		if enttype.IsImportDepsType(t) {
@@ -602,6 +622,14 @@ func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
 			}
 		}
 	}
+
+	if f.userConvert != nil {
+		ret = append(ret, &tsimport.ImportPath{
+			ImportPath: f.userConvert.Path,
+			Import:     f.userConvert.Function,
+		})
+	}
+
 	return ret
 }
 
@@ -771,10 +799,10 @@ func (f *Field) setTsFieldType(fieldType enttype.Type) error {
 	return nil
 }
 
-func (f *Field) setPrivate() {
+func (f *Field) setPrivate(p *input.PrivateOptions) {
 	f.private = true
 	f.hideFromGraphQL = true
-	f.exposeToActionsByDefault = false
+	f.exposeToActionsByDefault = p.ExposeToActions
 }
 
 func (f *Field) AddInverseEdge(cfg codegenapi.Config, edge *edge.AssociationEdge) error {
@@ -804,13 +832,14 @@ func (f *Field) GetTSGraphQLTypeForFieldImports(input bool) []*tsimport.ImportPa
 // TODO multiple booleans is a horrible code-smell. fix with options or something
 func (f *Field) GetTSMutationGraphQLTypeForFieldImports(forceOptional, input bool) []*tsimport.ImportPath {
 	var tsGQLType enttype.TSGraphQLType
+	// spew.Dump(f.fieldType, f.graphqlFieldType)
+	tsGQLType = f.fieldType
 	nullableType, ok := f.fieldType.(enttype.NullableType)
 
 	if forceOptional && ok {
 		tsGQLType = nullableType.GetNullableType()
-	} else {
-		// already null and/or not forceOptional
-		tsGQLType = f.fieldType
+	} else if input && f.forceOptionalInAction && f.graphqlFieldType != nil {
+		tsGQLType = f.graphqlFieldType
 	}
 	return tsGQLType.GetTSGraphQLImports(input)
 }
@@ -843,6 +872,10 @@ func (f *Field) PatternField() bool {
 
 func (f *Field) GetPatternName() string {
 	return f.patternName
+}
+
+func (f *Field) GetUserConvert() *input.UserConvertType {
+	return f.userConvert
 }
 
 type Option func(*Field)

@@ -2,6 +2,7 @@ package build_info
 
 import (
 	"os"
+	"time"
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/file"
@@ -10,10 +11,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const FORCE_WRITE_ALL_DURATION_HOURS = 24
+
 type BuildInfo struct {
 	BuildTime             string     `yaml:"buildTime"`
 	ConfigTime            string     `yaml:"configTime"` // ent.yml time
 	DockerVersion         string     `yaml:"dockerVersion"`
+	WriteTime             int64      `yaml:"writeTime"`
 	dev                   bool       `yaml:"-"`
 	cfg                   Config     `yaml:"-"`
 	prevEqual             bool       `yaml:"-"`
@@ -50,6 +54,9 @@ type Config interface {
 
 // next 2 set via:
 // go install -v -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=v0.ss' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'"
+
+// local version (in development):
+// go install -v -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=v0.ss' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" .
 
 // DockerVersion encompasses go or auto_schema
 var DockerVersion string
@@ -97,6 +104,15 @@ func NewBuildInfo(cfg Config) *BuildInfo {
 		if prev.ForceWriteAllNextTime {
 			bi.forceWriteAll = true
 		}
+
+		if prev.WriteTime != 0 {
+			t := time.UnixMilli(prev.WriteTime)
+			d := time.Since(t)
+
+			if d.Hours() > FORCE_WRITE_ALL_DURATION_HOURS {
+				bi.forceWriteAll = true
+			}
+		}
 	}
 	bi.prev = prev
 	bi.prevEqual = buildInfoEqual(prev, bi)
@@ -136,6 +152,7 @@ func loadPreviousBI(cfg Config) *BuildInfo {
 }
 
 func (bi *BuildInfo) PostProcess(cfg codegenapi.Config) error {
+
 	val := cfg.DefaultGraphQLMutationName()
 	// store graphql mutation name because it affects files generated
 	// we may eventually need to store all of ent.yml but not doing
@@ -143,6 +160,7 @@ func (bi *BuildInfo) PostProcess(cfg codegenapi.Config) error {
 	if val != "" {
 		bi.DefaultGraphQLMutationName = val
 	}
+	bi.WriteTime = time.Now().UnixMilli()
 	return file.Write(&file.YamlFileWriter{
 		Config:     bi.cfg,
 		Data:       bi,
@@ -150,6 +168,7 @@ func (bi *BuildInfo) PostProcess(cfg codegenapi.Config) error {
 	})
 }
 
+// intentionally not checking write time
 func buildInfoEqual(bi1, bi2 *BuildInfo) bool {
 	ret := change.CompareNilVals(bi1 == nil, bi2 == nil)
 	if ret != nil {

@@ -312,6 +312,7 @@ func AssocEdgeGroupEqual(g1, g2 *AssociationEdgeGroup) bool {
 		g1.ConstType == g2.ConstType &&
 		assocEdgesMapEqual(g1.Edges, g2.Edges) &&
 		change.StringListEqual(g1.StatusEnums, g2.StatusEnums) &&
+		g1.ViewerBased == g2.ViewerBased &&
 		g1.NullStateFn == g2.NullStateFn &&
 		change.StringListEqual(g1.NullStates, g2.NullStates) &&
 		actionEdgesEqual(g1.actionEdges, g2.actionEdges) &&

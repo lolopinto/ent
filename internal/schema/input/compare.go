@@ -16,13 +16,18 @@ func NodeEqual(existing, node *Node) bool {
 		indicesEqual(existing.Indices, node.Indices) &&
 		existing.HideFromGraphQL == node.HideFromGraphQL &&
 		existing.EdgeConstName == node.EdgeConstName &&
-		existing.PatternName == node.PatternName
+		existing.PatternName == node.PatternName &&
+		existing.TransformsSelect == node.TransformsSelect &&
+		existing.TransformsDelete == node.TransformsDelete &&
+		existing.SchemaPath == node.SchemaPath &&
+		change.StringListEqual(existing.Patterns, node.Patterns)
 }
 
 func PatternEqual(existing, pattern *Pattern) bool {
 	return existing.Name == pattern.Name &&
 		fieldsEqual(existing.Fields, pattern.Fields) &&
-		assocEdgesEqual(existing.AssocEdges, pattern.AssocEdges)
+		assocEdgesEqual(existing.AssocEdges, pattern.AssocEdges) &&
+		existing.DisableMixin == pattern.DisableMixin
 }
 
 func fieldsEqual(existing, fields []*Field) bool {
@@ -45,7 +50,7 @@ func fieldEqual(existingField, field *Field) bool {
 		existingField.StorageKey == field.StorageKey &&
 		existingField.Unique == field.Unique &&
 		existingField.HideFromGraphQL == field.HideFromGraphQL &&
-		existingField.Private == field.Private &&
+		PrivateOptionsEqual(existingField.Private, field.Private) &&
 		existingField.GraphQLName == field.GraphQLName &&
 		existingField.Index == field.Index &&
 		existingField.PrimaryKey == field.PrimaryKey &&
@@ -63,7 +68,19 @@ func fieldEqual(existingField, field *Field) bool {
 		PolymorphicOptionsEqual(existingField.Polymorphic, field.Polymorphic) &&
 		existingField.DerivedWhenEmbedded == field.DerivedWhenEmbedded &&
 		fieldsEqual(existingField.DerivedFields, field.DerivedFields) &&
-		existingField.PatternName == field.PatternName
+		existingField.PatternName == field.PatternName &&
+		UserConvertTypeEqual(existingField.UserConvert, field.UserConvert) &&
+		existingField.FetchOnDemand == field.FetchOnDemand
+}
+
+func UserConvertTypeEqual(existing, convert *UserConvertType) bool {
+	ret := change.CompareNilVals(existing == nil, convert == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Function == convert.Function &&
+		existing.Path == convert.Path
 }
 
 func fieldTypeEqual(existing, fieldType *FieldType) bool {
@@ -76,10 +93,14 @@ func fieldTypeEqual(existing, fieldType *FieldType) bool {
 		fieldTypeEqual(existing.ListElemType, fieldType.ListElemType) &&
 		change.StringListEqual(existing.Values, fieldType.Values) &&
 		change.StringMapEqual(existing.EnumMap, fieldType.EnumMap) &&
+		change.IntMapEqual(existing.IntEnumMap, fieldType.IntEnumMap) &&
+		change.IntMapEqual(existing.DeprecatedIntEnumMap, fieldType.DeprecatedIntEnumMap) &&
 		existing.Type == fieldType.Type &&
 		existing.GraphQLType == fieldType.GraphQLType &&
 		existing.CustomType == fieldType.CustomType &&
-		tsimport.ImportPathEqual(existing.ImportType, fieldType.ImportType)
+		tsimport.ImportPathEqual(existing.ImportType, fieldType.ImportType) &&
+		fieldsEqual(existing.SubFields, fieldType.SubFields) &&
+		fieldsEqual(existing.UnionFields, fieldType.UnionFields)
 }
 
 func fieldEdgeEqual(existing, fieldEdge *FieldEdge) bool {
@@ -129,7 +150,17 @@ func PolymorphicOptionsEqual(existing, p *PolymorphicOptions) bool {
 
 	return change.StringListEqual(existing.Types, p.Types) &&
 		existing.HideFromInverseGraphQL == p.HideFromInverseGraphQL &&
-		existing.DisableBuilderType == p.DisableBuilderType
+		existing.DisableBuilderType == p.DisableBuilderType &&
+		existing.Name == p.Name
+}
+
+func PrivateOptionsEqual(existing, p *PrivateOptions) bool {
+	ret := change.CompareNilVals(existing == nil, p == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.ExposeToActions == p.ExposeToActions
 }
 
 func assocEdgesEqual(existing, edges []*AssocEdge) bool {
@@ -229,6 +260,7 @@ func assocEdgeGroupEqual(existing, group *AssocEdgeGroup) bool {
 		existing.TableName == group.TableName &&
 		assocEdgesEqual(existing.AssocEdges, group.AssocEdges) &&
 		edgeActionsEqual(existing.EdgeActions, group.EdgeActions) &&
+		existing.ViewerBased == group.ViewerBased &&
 		change.StringListEqual(existing.StatusEnums, group.StatusEnums) &&
 		existing.NullStateFn == group.NullStateFn &&
 		change.StringListEqual(existing.NullStates, group.NullStates) &&
@@ -396,7 +428,8 @@ func indexEqual(existing, index *Index) bool {
 	return existing.Name == index.Name &&
 		change.StringListEqual(existing.Columns, index.Columns) &&
 		existing.Unique == index.Unique &&
-		fullTextEqual(existing.FullText, index.FullText)
+		fullTextEqual(existing.FullText, index.FullText) &&
+		existing.IndexType == index.IndexType
 }
 
 func fullTextEqual(existing, fullText *FullText) bool {

@@ -8,6 +8,7 @@ from sqlalchemy.sql.sqltypes import String
 
 from auto_schema.schema_item import FullTextIndex
 from .change_type import ChangeType
+from .change import Change
 
 
 class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
@@ -21,6 +22,10 @@ class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_table_name(self) -> String:
+        pass
+
+    @abc.abstractmethod
+    def get_change(self) -> Change:
         pass
 
 
@@ -52,6 +57,12 @@ class AddEdgesOp(MigrateOpInterface):
     def get_table_name(self) -> String:
         return "assoc_edge_config"
 
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
+
 
 @Operations.register_operation("remove_edges")
 class RemoveEdgesOp(MigrateOpInterface):
@@ -80,6 +91,12 @@ class RemoveEdgesOp(MigrateOpInterface):
 
     def get_table_name(self) -> String:
         return "assoc_edge_config"
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
 
 
 def _get_revision_message_for_edges(edges, single_edge_msg, multi_edge_msg):
@@ -128,6 +145,13 @@ class ModifyEdgeOp(MigrateOpInterface):
     def get_table_name(self) -> String:
         return "assoc_edge_config"
 
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "edge": self.old_edge['edge_name'],
+            "desc": self.get_revision_message(),
+        }
+
 
 @Operations.register_operation("add_rows")
 class AddRowsOp(MigrateOpInterface):
@@ -159,6 +183,12 @@ class AddRowsOp(MigrateOpInterface):
     def get_table_name(self) -> String:
         return self.table_name
 
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
+
 
 @Operations.register_operation("remove_rows")
 class RemoveRowsOp(MigrateOpInterface):
@@ -189,6 +219,12 @@ class RemoveRowsOp(MigrateOpInterface):
 
     def get_table_name(self) -> String:
         return self.table_name
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
 
 
 @Operations.register_operation("modify_rows")
@@ -222,6 +258,12 @@ class ModifyRowsOp(MigrateOpInterface):
     def get_table_name(self) -> String:
         return self.table_name
 
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
+
 
 @Operations.register_operation("alter_enum")
 class AlterEnumOp(MigrateOpInterface):
@@ -252,6 +294,12 @@ class AlterEnumOp(MigrateOpInterface):
 
     def get_table_name(self) -> String:
         return "enum_schema"
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
 
 
 @Operations.register_operation("no_downgrade")
@@ -293,6 +341,12 @@ class AddEnumOp(MigrateOpInterface):
     def get_table_name(self) -> String:
         return "enum_schema"
 
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
+
 
 @Operations.register_operation("drop_enum_type")
 class DropEnumOp(MigrateOpInterface):
@@ -323,6 +377,12 @@ class DropEnumOp(MigrateOpInterface):
     def get_table_name(self) -> String:
         return "enum_schema"
 
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
+
 # overriding this so that we can implement dispatch and render
 # alembic for some reason doesn't have it...
 
@@ -338,6 +398,12 @@ class OurCreateCheckConstraintOp(MigrateOpInterface, alembicops.CreateCheckConst
 
     def get_table_name(self) -> String:
         return self.table_name
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
 
 # need to override this so that when we reverse, we render ours instead of theirs
 
@@ -362,6 +428,12 @@ class OurDropConstraintOp(MigrateOpInterface, alembicops.DropConstraintOp):
 
     def get_table_name(self) -> String:
         return self.table_name
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
 
 
 @Operations.register_operation("create_full_text_index")
@@ -391,6 +463,12 @@ class CreateFullTextIndexOp(MigrateOpInterface):
 
     def get_table_name(self) -> String:
         return self.table_name
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
 
     def reverse(self):
         return DropFullTextIndexOp.from_index(self.to_index())
@@ -467,6 +545,12 @@ class DropFullTextIndexOp(MigrateOpInterface):
 
     def get_table_name(self) -> String:
         return self.table_name
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
 
     def reverse(self) -> CreateFullTextIndexOp:
         return CreateFullTextIndexOp.from_index(self.to_index())

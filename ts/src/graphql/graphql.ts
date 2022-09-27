@@ -193,12 +193,10 @@ const isGraphQLScalarType = (type: Type): type is GraphQLScalarType => {
 
 export const addCustomType = (type: CustomType) => {
   // TODO these should return ReadOnly objects...
-  const customType = GQLCapture.getCustomTypes().get(type.type);
+  const customTypes = GQLCapture.getCustomTypes();
+  const customType = customTypes.get(type.type);
 
-  if (customType && customType !== type) {
-    throw new Error(`cannot add multiple custom types of name ${type.type}`);
-  }
-  if (customType) {
+  if (customType && customType === type) {
     return;
   }
   try {
@@ -223,7 +221,14 @@ export const addCustomType = (type: CustomType) => {
     }
     return;
   }
-  GQLCapture.getCustomTypes().set(type.type, type);
+
+  if (customType) {
+    if (JSON.stringify(customType) !== JSON.stringify(type)) {
+      throw new Error(`cannot add multiple custom types of name ${type.type}`);
+    }
+    return;
+  }
+  customTypes.set(type.type, type);
 };
 
 interface typeInfo {

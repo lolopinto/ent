@@ -5,8 +5,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/parsehelper"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 
@@ -260,6 +262,85 @@ func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
 			"Attending",
 			"Declined",
 		})
+}
+
+func TestViewerBasedEdgeGroupWithNoNullStates(t *testing.T) {
+	group, err := assocEdgeGroupFromInput(
+		&codegenapi.DummyConfig{},
+		"User",
+		&input.Node{},
+		&input.AssocEdgeGroup{
+			Name:            "rsvps",
+			GroupStatusName: "RsvpStatus",
+			ViewerBased:     true,
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Attending",
+					SchemaName: "Event",
+				},
+				{
+					Name:       "Declined",
+					SchemaName: "Event",
+				},
+			},
+		},
+		NewEdgeInfo("User"))
+
+	require.Error(t, err)
+	require.Nil(t, group)
+	require.Equal(t, err.Error(), "ViewerBased edge group must have NullStates")
+}
+
+func TestViewerBasedEdgeGroupWithNullStates(t *testing.T) {
+	group, err := assocEdgeGroupFromInput(
+		&codegenapi.DummyConfig{},
+		"User",
+		&input.Node{},
+		&input.AssocEdgeGroup{
+			Name:            "rsvps",
+			GroupStatusName: "RsvpStatus",
+			ViewerBased:     true,
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Attending",
+					SchemaName: "Event",
+				},
+				{
+					Name:       "Declined",
+					SchemaName: "Event",
+				},
+			},
+			NullStates: []string{"CanRsvp", "CannotRsvp"},
+		},
+		NewEdgeInfo("User"))
+
+	require.Nil(t, err)
+	require.NotNil(t, group)
+}
+
+func TestNonViewerBasedEdgeGroupWithNoNullStates(t *testing.T) {
+	group, err := assocEdgeGroupFromInput(
+		&codegenapi.DummyConfig{},
+		"User",
+		&input.Node{},
+		&input.AssocEdgeGroup{
+			Name:            "rsvps",
+			GroupStatusName: "RsvpStatus",
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Attending",
+					SchemaName: "Event",
+				},
+				{
+					Name:       "Declined",
+					SchemaName: "Event",
+				},
+			},
+		},
+		NewEdgeInfo("User"))
+
+	require.Nil(t, err)
+	require.NotNil(t, group)
 }
 
 func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
@@ -668,6 +749,8 @@ func testFieldEdge(t *testing.T, edge, expectedEdge *FieldEdge) {
 		assert.Equal(t, expectedEdge.Polymorphic.Types, edge.Polymorphic.Types)
 		assert.Equal(t, expectedEdge.Polymorphic.Unique, edge.Polymorphic.Unique)
 	}
+
+	assert.Equal(t, expectedEdge.GetTSGraphQLTypeImports(), edge.GetTSGraphQLTypeImports())
 
 	testEntConfig(t, edge.entConfig, expectedEdge.entConfig)
 

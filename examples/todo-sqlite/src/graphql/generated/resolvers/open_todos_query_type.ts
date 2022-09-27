@@ -11,7 +11,7 @@ import {
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { GraphQLEdgeConnection } from "@snowtop/ent/graphql";
 import { RootToOpenTodosConnectionType } from "src/graphql/resolvers/internal";
-import { TodoResolver } from "../../resolvers/open_todos";
+import { TodoResolver } from "../../resolvers/todos_resolver";
 
 interface open_todosArgs {
   id: any;

@@ -13,9 +13,11 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
@@ -439,6 +441,10 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		}
 	}
 
+	if err := s.accumulateConsts(processor.Schema.GetGlobalConsts()); err != nil {
+		serr.Append(err)
+	}
+
 	for k := range processor.Schema.Enums {
 		info := processor.Schema.Enums[k]
 		if !info.OwnEnumFile() {
@@ -857,10 +863,12 @@ func writeAssocEdgeQueryFile(processor *codegen.Processor, e *edge.AssociationEd
 			Edge       *edge.AssociationEdge
 			Package    *codegen.ImportPackage
 			SourceNode string
+			Config     *codegen.Config
 		}{
 			Edge:       e,
 			Package:    cfg.GetImportPackage(),
 			SourceNode: sourceNode,
+			Config:     cfg,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("assoc_ent_query.tmpl"),
 		TemplateName:      "assoc_ent_query.tmpl",
@@ -1123,8 +1131,18 @@ func writeInternalEntFile(s *schema.Schema, processor *codegen.Processor) error 
 	imps := tsimport.NewImports(processor.Config, path)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
-		Config:            processor.Config,
-		Data:              getSortedInternalEntFileLines(s),
+		Config: processor.Config,
+		Data: struct {
+			SortedLines []string
+			Schema      *schema.Schema
+			Config      *codegen.Config
+			Package     *codegen.ImportPackage
+		}{
+			getSortedInternalEntFileLines(s),
+			s,
+			processor.Config,
+			cfg.GetImportPackage(),
+		},
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		TemplateName:      "internal.tmpl",
 		PathToFile:        path,
@@ -1217,7 +1235,44 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 
 func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
-	m["convertFunc"] = enttype.ConvertFunc
+	m["callAndConvertFunc"] = func(f *field.Field, cfg codegenapi.Config, val string) (string, error) {
+		conv1 := enttype.ConvertFunc(f.GetTSFieldType(cfg))
+		conv2 := ""
+		userConv := f.GetUserConvert()
+		if userConv != nil {
+			conv2 = userConv.Function
+		}
+		if conv1 == conv2 && conv1 == "" {
+			return val, nil
+		}
+
+		// could be BigInt which isn't reserved
+		if conv2 != "" {
+			_, err := imps.UseMaybe(conv2)
+			if err != nil {
+				return "", err
+			}
+		}
+		if conv1 != "" {
+			_, err := imps.UseMaybe(conv1)
+
+			if err != nil {
+				return "", err
+			}
+		}
+
+		if conv2 != "" && conv1 != "" {
+			return fmt.Sprintf("%s(%s(%s))", conv2, conv1, val), nil
+		}
+		if conv2 != "" {
+			return fmt.Sprintf("%s(%s)", conv2, val), nil
+		}
+		return fmt.Sprintf("%s(%s)", conv1, val), nil
+	}
+
+	m["fieldLoadedInBaseClass"] = func(s *schema.Schema, f *field.Field) bool {
+		return !s.PatternFieldWithMixin(f) && f.FetchOnLoad()
+	}
 
 	return m
 }

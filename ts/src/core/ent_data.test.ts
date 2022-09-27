@@ -28,7 +28,7 @@ import DB from "./db";
 import each from "jest-each";
 import { ObjectLoaderFactory } from "./loaders";
 
-import { integer, table, text, setupSqlite } from "../testutils/db/test_db";
+import { integer, table, text, setupSqlite } from "../testutils/db/temp_db";
 import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
 
@@ -316,6 +316,7 @@ async function loadTestEnt(
   getExpQueries: getEntQueriesFn,
   addCtx?: boolean,
   disableWrite?: boolean,
+  throwsErr?: boolean,
 ): Promise<[User | null, User | null]> {
   if (!disableWrite) {
     await createDefaultRow();
@@ -323,11 +324,27 @@ async function loadTestEnt(
 
   const [expQueries1, expQueries2] = getExpQueries();
 
-  const ent1 = await fn();
+  let ent1: User | null = null;
+  let ent2: User | null = null;
+  if (throwsErr) {
+    try {
+      ent1 = await fn();
+      throw Error(`should have thrown`);
+    } catch (err) {}
+  } else {
+    ent1 = await fn();
+  }
   expect(ml.logs.length).toBe(expQueries1.length);
   expect(ml.logs).toStrictEqual(expQueries1);
 
-  const ent2 = await fn();
+  if (throwsErr) {
+    try {
+      ent2 = await fn();
+      throw Error(`should have thrown`);
+    } catch (err) {}
+  } else {
+    ent2 = await fn();
+  }
   expect(ml.logs.length).toBe(expQueries2.length);
   expect(ml.logs).toStrictEqual(expQueries2);
 
@@ -427,6 +444,7 @@ function commonTests() {
   });
 
   describe("loadEnt", () => {
+    // TODO this is all confusing
     test("with context", async () => {
       // write it once before all the checks since
       // repeated calls to loadTestEnt
@@ -456,12 +474,25 @@ function commonTests() {
               "dataloader-cache-hit": 1,
               "tableName": options.tableName,
             };
-            const expQueries2: Data[] = [queryOption, cacheHit];
+            const entLoggedoutCacheHit: Data = {
+              "ent-cache-hit": ent.getEntKey(
+                new LoggedOutViewer(),
+                1,
+                User.loaderOptions(),
+              ),
+            };
+            const entCacheHit: Data = {
+              "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+            };
+            // query first time, 2nd time ent cache
+            const expQueries2: Data[] = [queryOption, entLoggedoutCacheHit];
 
             // 2nd time. with different viewer. more hits
             if (vc instanceof IDViewer) {
-              expQueries1.push(cacheHit, cacheHit);
-              expQueries2.push(cacheHit, cacheHit);
+              // ent logged out cache hit of second one, then ent cache hit
+              expQueries1.push(entLoggedoutCacheHit, cacheHit);
+              // first time hit cacheHit, second time ent cache
+              expQueries2.push(cacheHit, entCacheHit);
             }
             return [expQueries1, expQueries2];
           },
@@ -530,6 +561,7 @@ function commonTests() {
   });
 
   describe("loadEnt with field privacy", () => {
+    // TODO come back...
     test("with context", async () => {
       // write it once before all the checks since
       // repeated calls to loadTestEnt
@@ -568,12 +600,23 @@ function commonTests() {
               "dataloader-cache-hit": 1,
               "tableName": options.tableName,
             };
-            const expQueries2: Data[] = [queryOption, cacheHit];
+            const entLoggedoutCacheHit: Data = {
+              "ent-cache-hit": ent.getEntKey(
+                new LoggedOutViewer(),
+                1,
+                Contact.loaderOptions(),
+              ),
+            };
+            const entCacheHit: Data = {
+              "ent-cache-hit": ent.getEntKey(vc, 1, Contact.loaderOptions()),
+            };
+            const expQueries2: Data[] = [queryOption, entLoggedoutCacheHit];
 
             // 2nd time. with different viewer. more hits
             if (vc instanceof IDViewer) {
-              expQueries1.push(cacheHit, cacheHit);
-              expQueries2.push(cacheHit, cacheHit);
+              // id get cacheHit after
+              expQueries1.push(entLoggedoutCacheHit, cacheHit);
+              expQueries2.push(cacheHit, entCacheHit);
             }
             return [expQueries1, expQueries2];
           },
@@ -678,16 +721,13 @@ function commonTests() {
       const expQueries2 = [
         ...expQueries,
         {
-          "dataloader-cache-hit": 1,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 2,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 2, User.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 3,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 3, User.loaderOptions()),
         },
       ];
       validateQueries(expQueries2);
@@ -765,7 +805,9 @@ function commonTests() {
               [qOption],
               [
                 qOption,
-                { "dataloader-cache-hit": 1, "tableName": options.tableName },
+                {
+                  "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+                },
               ],
             ];
           },
@@ -780,6 +822,48 @@ function commonTests() {
 
       expect(ent1?.id).toBe(1);
       expect(ent2?.id).toBe(1);
+    });
+
+    test("with context error", async () => {
+      const vc = getIDViewer(2);
+
+      const options = {
+        ...User.loaderOptions(),
+        // context. dataloader. in query
+        clause: clause.In("bar", 1),
+      };
+
+      const testEnt = async (vc: Viewer) => {
+        return await loadTestEnt(
+          () => ent.loadEntX(vc, 1, User.loaderOptions()),
+          () => {
+            const qOption = {
+              query: ent.buildQuery(options),
+              values: options.clause.values(),
+            };
+            // when there's a context cache, we only run the query once
+            // 2nd time there's a ent cache hit
+            return [
+              [qOption],
+              [
+                qOption,
+                {
+                  "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+                },
+              ],
+            ];
+          },
+          true,
+          false,
+          true,
+        );
+      };
+
+      const [ent1, ent2] = await testEnt(vc);
+
+      // it threw internally and has been handled supposedly
+      expect(ent1).toBe(null);
+      expect(ent2).toBe(null);
     });
 
     test("without context", async () => {
@@ -942,16 +1026,13 @@ function commonTests() {
 
       const cacheHits = [
         {
-          "dataloader-cache-hit": 1,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 2,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 2, User.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 3,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 3, User.loaderOptions()),
         },
       ];
       const expQueries2 = [...expQueries, ...cacheHits];
@@ -960,7 +1041,7 @@ function commonTests() {
       // reload all
       await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
 
-      // more cache hits
+      // more ent cache hits
       validateQueries([...expQueries2, ...cacheHits]);
     });
 
@@ -1017,6 +1098,50 @@ function commonTests() {
       // in query added again
       validateQueries(expQueries3);
     });
+
+    test("with no rows", async () => {
+      ml.clear();
+      const vc = getIDViewer(1);
+      const ents = await ent.loadEntsList(
+        vc,
+        User.loaderOptions(),
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+      );
+      expect(ml.logs.length).toBe(1);
+
+      ml.clear();
+
+      const ents2 = await ent.loadEntsList(
+        vc,
+        User.loaderOptions(),
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+      );
+      expect(ents2).toStrictEqual(ents);
+      // ent-cache-hit all the way
+      expect(ml.logs.length).toBe(6);
+
+      ml.clear();
+
+      try {
+        await ent.loadEntX(vc, 6, User.loaderOptions());
+        throw new Error(`should throw`);
+      } catch (err) {
+        expect((err as Error).message).toBe(`couldn't find row for value 6`);
+        expect(ml.logs).toStrictEqual([
+          { "ent-cache-hit": "idViewer:1:users:bar::6" },
+        ]);
+      }
+    });
   });
 
   describe("loadEnts with field privacy", () => {
@@ -1071,16 +1196,13 @@ function commonTests() {
 
       const cacheHits = [
         {
-          "dataloader-cache-hit": 1,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 1, Contact.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 2,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 2, Contact.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 3,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 3, Contact.loaderOptions()),
         },
       ];
       const expQueries2 = [...expQueries, ...cacheHits];
@@ -1329,7 +1451,7 @@ function commonTests() {
       options = {
         fields: fields,
         fieldsToLog: fields,
-        key: "bar",
+        whereClause: clause.Eq("bar", 1),
         tableName: selectOptions.tableName,
         context: ctx!, // reuse "global" context
       };
@@ -1367,18 +1489,15 @@ function commonTests() {
           options2.fields = { ...options.fields, baz: "baz3" };
           options2.fieldsToLog = options2.fields;
           // we need a different row so that querying after still returns one row
-          return editRowForTest(options2, 1);
+          return editRowForTest(options2);
         },
         () => {
-          const [query, _, logValues] = buildUpdateQuery(
-            {
-              fields: { ...fields, baz: "baz3" },
-              fieldsToLog: { ...fields, baz: "baz3" },
-              tableName: selectOptions.tableName,
-              key: "bar",
-            },
-            1,
-          );
+          const [query, _, logValues] = buildUpdateQuery({
+            fields: { ...fields, baz: "baz3" },
+            fieldsToLog: { ...fields, baz: "baz3" },
+            tableName: selectOptions.tableName,
+            whereClause: clause.Eq("bar", 1),
+          });
           return { query, values: logValues };
         },
       ],

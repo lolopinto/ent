@@ -421,6 +421,84 @@ class BaseTestRunner(object):
         r3.downgrade('-1', delete_files=False)
         r3.upgrade()
 
+    @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_assoc_edge_config")
+    def test_edge_in_db_modified(self, new_test_runner, metadata_with_one_edge, metadata_with_assoc_edge_config):
+        r = testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_one_edge,
+            "add edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config
+        )
+        conn = r.get_connection()
+        conn.execute(
+            "UPDATE assoc_edge_config SET edge_table = 'user_to_followers_edge_incorrect'")
+
+        # validate edges fails because edges incorrect
+        with pytest.raises(AssertionError):
+            testingutils.validate_edges_from_metadata(
+                metadata_with_one_edge, r)
+
+        # edge is modified
+        r2 = testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_one_edge,
+            "modify edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config,
+            num_files=3,
+            prev_runner=r,
+            num_changes=1
+        )
+
+        # run again, nothing
+        testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_one_edge,
+            "",
+            metadata_with_assoc_edge_config,
+            num_files=3,
+            prev_runner=r2,
+            num_changes=0
+        )
+
+    @pytest.mark.usefixtures("metadata_with_inverse_edge", "metadata_with_assoc_edge_config")
+    def test_multiple_edge_table_incorrect_and_modified(self, new_test_runner, metadata_with_inverse_edge, metadata_with_assoc_edge_config):
+        r = testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_inverse_edge,
+            "add edges UserToFolloweesEdge, UserToFollowersEdge",
+            metadata_with_assoc_edge_config
+        )
+        conn = r.get_connection()
+        conn.execute(
+            "UPDATE assoc_edge_config SET edge_table = 'user_to_followers_edge_incorrect'")
+
+        # validate edges fails because edges incorrect
+        with pytest.raises(AssertionError):
+            testingutils.validate_edges_from_metadata(
+                metadata_with_inverse_edge, r)
+
+        # edge is modified
+        r2 = testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_inverse_edge,
+            "modify edge UserToFollowersEdge\nmodify edge UserToFolloweesEdge",
+            metadata_with_assoc_edge_config,
+            num_files=3,
+            prev_runner=r,
+            num_changes=2
+        )
+
+        # run again, nothing
+        testingutils.run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_inverse_edge,
+            "",
+            metadata_with_assoc_edge_config,
+            num_files=3,
+            prev_runner=r2,
+            num_changes=0
+        )
+
     @pytest.mark.usefixtures("metadata_with_nullable_fields")
     def test_new_table_with_nullable_fields(self, new_test_runner, metadata_with_nullable_fields):
         r = new_test_runner(metadata_with_nullable_fields)
@@ -666,6 +744,7 @@ class BaseTestRunner(object):
         d = Diff(diff, group_by_table=False)
         assert d.list_changes() == [{
             'change': ChangeType.DROP_INDEX,
+            "index": "accounts_first_name_idx",
             'desc': 'drop index accounts_first_name_idx from accounts',
         }, {
             'change': ChangeType.DROP_TABLE,
@@ -676,6 +755,7 @@ class BaseTestRunner(object):
         assert d2.changes() == {
             'accounts': [{
                 'change': ChangeType.DROP_INDEX,
+                "index": "accounts_first_name_idx",
                 'desc': 'drop index accounts_first_name_idx from accounts',
             }, {
                 'change': ChangeType.DROP_TABLE,
@@ -701,12 +781,6 @@ class TestPostgresRunner(BaseTestRunner):
              "modify column created_at type from DATE to TIMESTAMP"),
             (conftest.metadata_with_nullable_changed,
              "modify nullable value of column last_name from False to True"),
-            (conftest.metadata_with_server_default_changed_int,
-             "modify server_default value of column meaning_of_life from 42 to 35"),
-            (conftest.metadata_with_server_default_changed_bool,
-             "modify server_default value of column email_verified from false to TRUE"),
-            (conftest.metadata_with_created_at_default_changed,
-             "modify server_default value of column created_at from None to now()"),
         ])
     def test_column_attr_change(self, new_test_runner, metadata_with_table, new_metadata_func, expected_message):
         r = new_test_runner(metadata_with_table)
@@ -727,65 +801,180 @@ class TestPostgresRunner(BaseTestRunner):
 
         testingutils.validate_metadata_after_change(r2, metadata_with_table)
 
-    @pytest.mark.usefixtures("address_metadata_table")
-    def test_server_default_no_change_string(self, new_test_runner, address_metadata_table):
-        r = new_test_runner(address_metadata_table)
+    @pytest.mark.usefixtures("address_metadata_table_fixture")
+    def test_server_default_no_change_string(self, new_test_runner, address_metadata_table_fixture):
+        r = new_test_runner(address_metadata_table_fixture)
 
         testingutils.run_and_validate_with_standard_metadata_tables(
-            r, address_metadata_table, ['addresses'])
+            r, address_metadata_table_fixture, ['addresses'])
 
-        conftest.identity_metadata_func(address_metadata_table)
+        conftest.identity_metadata_func(address_metadata_table_fixture)
 
-        r2 = new_test_runner(address_metadata_table, r)
+        r2 = new_test_runner(address_metadata_table_fixture, r)
         diff = r2.compute_changes()
 
         # nothing changed, we should have no changes
         assert len(diff) == 0
 
-    @pytest.mark.usefixtures("address_metadata_table")
-    def test_server_default_change_string(self, new_test_runner, address_metadata_table):
-        r = new_test_runner(address_metadata_table)
+    @pytest.mark.parametrize(
+        "new_metadata_func, table_name, change_metadata_func, expected_message",
+        [
+            (
+                conftest.metadata_with_base_table_restored,
+                'accounts',
+                conftest.metadata_with_server_default_changed_int,
+                "modify server_default value of column meaning_of_life from 42 to 35",
+            ),
+            (
+                conftest.metadata_with_base_table_restored,
+                'accounts',
+                conftest.metadata_with_server_default_changed_bool,
+                "modify server_default value of column email_verified from false to TRUE"
+            ),
+            (
+                conftest.metadata_with_base_table_restored,
+                'accounts',
+                conftest.metadata_with_created_at_default_changed,
+                "modify server_default value of column created_at from None to now()"
+            ),
+            (
+                conftest.address_metadata_table,
+                'addresses',
+                conftest.metadata_with_server_default_changed_string,
+                "modify server_default value of column country from US to UK",
+            ),
+            (
+                conftest.address_metadata_table,
+                'addresses',
+                conftest.metadata_with_server_default_dropped,
+                "modify server_default value of column country from US to None",
+            ),
+            (
+                conftest.metadata_with_timestamp_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamp,
+                'modify server_default value of column col from None to %s' % conftest.timestamp_date_in_time_utc()
+            ),
+            (
+                conftest.metadata_with_timestamp_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamp_decimal,
+                'modify server_default value of column col from None to %s' % conftest.timestamp_decimal_python_utc()
+            ),
+            (
+                conftest.metadata_with_timestamp_server_default_to_start,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamp_decimal,
+                'modify server_default value of column col from %s to %s' % (
+                    conftest.timestamp_date_in_time_utc(), conftest.timestamp_decimal_python_utc())
+            ),
+            (
+                conftest.metadata_with_timestamptz_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamp_decimal,
+                'modify server_default value of column col from None to %s' % conftest.timestamp_decimal_python_utc()
+            ),
+            (
+                conftest.metadata_with_timestamptz_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timestamptz,
+                'modify server_default value of column col from None to %s' % conftest.timestamptz_date_in_time_utc()
+            ),
+            (
+                conftest.metadata_with_bigint_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_bigint,
+                'modify server_default value of column col from None to %s' % conftest.int_date_in_time()
+            ),
+            (
+                conftest.metadata_with_date_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_date,
+                'modify server_default value of column col from None to 2020-01-01',
+            ),
+            (
+                conftest.metadata_with_time_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_time,
+                'modify server_default value of column col from None to 08:00:00',
+            ),
+            (
+                conftest.metadata_with_timetz_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timetz,
+                'modify server_default value of column col from None to 08:00:00-05',
+            ),
+            (
+                conftest.metadata_with_server_default_timetz,
+                'tbl',
+                conftest.metadata_with_server_default_changed_timetz2,
+                # changing timezone is a change
+                'modify server_default value of column col from 08:00:00-05 to 08:00:00-08',
+            ),
+            (
+                conftest.metadata_with_jsonb_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_jsonb,
+                'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
+            ),
+            (
+                conftest.metadata_with_json_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_json,
+                'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
+            ),
+            (
+                conftest.metadata_with_jsonb_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_jsonb_array,
+                'modify server_default value of column col from None to %s' % conftest.server_default_json_array_value(),
+            ),
+            (
+                conftest.metadata_with_string_list_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_string_list,
+                'modify server_default value of column col from None to %s' % conftest.server_default_string_list_value(),
+            ),
+            (
+                conftest.metadata_with_int_list_column,
+                'tbl',
+                conftest.metadata_with_server_default_changed_int_list,
+                'modify server_default value of column col from None to %s' % conftest.server_default_int_list_value(),
+            ),
+            (
+                conftest.metadata_with_enum_col,
+                'accounts',
+                conftest.metadata_with_server_default_changed_enum_type,
+                'modify server_default value of column rainbow from None to violet',
+            ),
+        ])
+    def test_server_default_change(self, new_test_runner, new_metadata_func, table_name, change_metadata_func, expected_message):
+        metadata = new_metadata_func()
+        r = new_test_runner(metadata)
 
         testingutils.run_and_validate_with_standard_metadata_tables(
-            r, address_metadata_table, ['addresses'])
+            r, metadata, [table_name])
 
-        conftest.metadata_with_server_default_changed_string(
-            address_metadata_table)
+        change_metadata_func(metadata)
 
-        r2 = new_test_runner(address_metadata_table, r)
+        r2 = new_test_runner(metadata, r)
         diff = r2.compute_changes()
 
         assert len(diff) == 1
 
-        assert r2.revision_message() == "modify server_default value of column country from US to UK"
+        assert r2.revision_message() == expected_message
         r2.run()
 
-        testingutils.validate_metadata_after_change(r2, address_metadata_table)
+        testingutils.validate_metadata_after_change(r2, metadata)
 
-    @pytest.mark.usefixtures("address_metadata_table")
-    def test_server_default_dropped(self, new_test_runner, address_metadata_table):
-        r = new_test_runner(address_metadata_table)
+        r3 = new_test_runner(metadata, r2)
+        diff = r3.compute_changes()
 
-        testingutils.run_and_validate_with_standard_metadata_tables(
-            r, address_metadata_table, ['addresses'])
-
-        conftest.metadata_with_server_default_dropped(
-            address_metadata_table)
-
-        r2 = new_test_runner(address_metadata_table, r)
-        diff = r2.compute_changes()
-
-        assert len(diff) == 1
-
-        assert r2.revision_message(
-        ) == "modify server_default value of column country from US to None"
-        r2.run()
-
-        testingutils.validate_metadata_after_change(r2, address_metadata_table)
+        assert len(diff) == 0
 
     # only in postgres because "No support for ALTER of constraints in SQLite dialect"
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_unique_constraint_added(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -804,7 +993,7 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
         testingutils.validate_metadata_after_change(r2, r2.get_metadata())
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_check_constraint_added_and_removed(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,
@@ -1011,11 +1200,175 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_arrays, new_table_names=['tbl'])
 
+    @pytest.mark.usefixtures("metadata_with_arrays")
+    def test_change_array_index_type_explicit(self, new_test_runner, metadata_with_arrays):
+        r = new_test_runner(metadata_with_arrays)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_arrays, new_table_names=['tbl'])
+
+        t = r.get_metadata().tables.get('tbl')
+        indexes = {
+            index.name: index for index in t.indexes}
+
+        index = indexes.get('tbl_float_list_idx')
+        assert index.kwargs.get('postgresql_using') == 'btree'
+        index.kwargs['postgresql_using'] = 'gin'
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_arrays, lambda _: t)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+        assert isinstance(diff[0], alembicops.ModifyTableOps)
+        modify_op = diff[0]
+        assert len(modify_op.ops) == 2
+        # we drop and recreate index
+        assert isinstance(modify_op.ops[0], alembicops.DropIndexOp)
+        assert isinstance(modify_op.ops[1], alembicops.CreateIndexOp)
+
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
+
+    @pytest.mark.usefixtures("metadata_with_arrays")
+    def test_change_array_index_type_no_explicit(self, new_test_runner, metadata_with_arrays):
+        r = new_test_runner(metadata_with_arrays)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_arrays, new_table_names=['tbl'])
+
+        t = r.get_metadata().tables.get('tbl')
+        indexes = {
+            index.name: index for index in t.indexes}
+
+        index = indexes.get('tbl_date_list_idx')
+        assert index.kwargs.get('postgresql_using') == False
+        index.kwargs['postgresql_using'] = 'gin'
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_arrays, lambda _: t)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+        r2.run()
+        assert isinstance(diff[0], alembicops.ModifyTableOps)
+        modify_op = diff[0]
+        assert len(modify_op.ops) == 2
+        # we drop and recreate index
+        assert isinstance(modify_op.ops[0], alembicops.DropIndexOp)
+        assert isinstance(modify_op.ops[1], alembicops.CreateIndexOp)
+
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
+
+    @pytest.mark.usefixtures("metadata_with_arrays")
+    def test_change_array_index_type_implicit_explicit_btree(self, new_test_runner, metadata_with_arrays):
+        r = new_test_runner(metadata_with_arrays)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_arrays, new_table_names=['tbl'])
+
+        t = r.get_metadata().tables.get('tbl')
+        indexes = {
+            index.name: index for index in t.indexes}
+
+        index = indexes.get('tbl_date_list_idx')
+        assert index.kwargs.get('postgresql_using') == False
+        index.kwargs['postgresql_using'] = 'btree'
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_arrays, lambda _: t)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 0
+
+        r2.run()
+        testingutils.assert_num_files(r2, 1)
+        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
+
     @pytest.mark.usefixtures("metadata_with_json")
     def test_tables_with_json(self, new_test_runner, metadata_with_json):
         r = new_test_runner(metadata_with_json)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_json, new_table_names=['tbl'])
+
+    @pytest.mark.usefixtures("metadata_with_json")
+    def test_change_jsonb_index_type_explicit(self, new_test_runner, metadata_with_json):
+        r = new_test_runner(metadata_with_json)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_json, new_table_names=['tbl'])
+
+        t = r.get_metadata().tables.get('tbl')
+        indexes = {
+            index.name: index for index in t.indexes}
+
+        index = indexes.get('tbl_nullable_jsonb_idx')
+        assert index.kwargs.get('postgresql_using') == 'btree'
+        index.kwargs['postgresql_using'] = 'gin'
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_json, lambda _: t)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+        assert isinstance(diff[0], alembicops.ModifyTableOps)
+        modify_op = diff[0]
+        assert len(modify_op.ops) == 2
+        # we drop and recreate index
+        assert isinstance(modify_op.ops[0], alembicops.DropIndexOp)
+        assert isinstance(modify_op.ops[1], alembicops.CreateIndexOp)
+
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
+
+    @pytest.mark.usefixtures("metadata_with_json")
+    def test_change_jsonb_index_type_no_explicit(self, new_test_runner, metadata_with_json):
+        r = new_test_runner(metadata_with_json)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_json, new_table_names=['tbl'])
+
+        t = r.get_metadata().tables.get('tbl')
+        indexes = {
+            index.name: index for index in t.indexes}
+
+        index = indexes.get('tbl_default_jsonb_idx')
+        assert index.kwargs.get('postgresql_using') == False
+        index.kwargs['postgresql_using'] = 'gin'
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_json, lambda _: t)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+        r2.run()
+        assert isinstance(diff[0], alembicops.ModifyTableOps)
+        modify_op = diff[0]
+        assert len(modify_op.ops) == 2
+        # we drop and recreate index
+        assert isinstance(modify_op.ops[0], alembicops.DropIndexOp)
+        assert isinstance(modify_op.ops[1], alembicops.CreateIndexOp)
+
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
+
+    @pytest.mark.usefixtures("metadata_with_json")
+    def test_change_jsonb_index_type_implicit_explicit_btree(self, new_test_runner, metadata_with_json):
+        r = new_test_runner(metadata_with_json)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_json, new_table_names=['tbl'])
+
+        t = r.get_metadata().tables.get('tbl')
+        indexes = {
+            index.name: index for index in t.indexes}
+
+        index = indexes.get('tbl_default_jsonb_idx')
+        assert index.kwargs.get('postgresql_using') == False
+        index.kwargs['postgresql_using'] = 'btree'
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_json, lambda _: t)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 0
+
+        r2.run()
+        testingutils.assert_num_files(r2, 1)
+        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):

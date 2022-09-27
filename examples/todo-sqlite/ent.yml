@@ -1,7 +1,11 @@
+globalSchemaPath: global_schema.ts
 codegen:
   disableBase64Encoding: true
   generateRootResolvers: true
   defaultGraphQLMutationName: VerbNoun
   defaultGraphQLFieldFormat: snake_case
   fieldPrivacyEvaluated: at_ent_load
-
+  customAssocEdgePath:
+    path: 'src/ent/edge/custom_edge.ts'
+    name: 'CustomTodoEdge'
+  schemaSQLFilePath: 'src/schema/schema.sql'

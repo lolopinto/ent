@@ -181,6 +181,7 @@ type CatType {
 type Comment implements Node {
   article: Node
   author: User
+  sticker: Node
   id: ID!
   body: String!
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
@@ -233,7 +234,7 @@ type Event implements Node {
   hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
   invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
-  viewerRsvpStatus: EventRsvpStatus
+  viewerRsvpStatus: EventRsvpStatus!
 }
 
 type Holiday implements Node {
@@ -363,6 +364,7 @@ type User implements Node {
   contactsSameDomainNullable: [Contact!]
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
+  commentsAuthored(first: Int, after: String, last: Int, before: String): UserToCommentsAuthoredConnection!
 }
 
 type AddressToHostedEventsEdge implements Edge {
@@ -469,6 +471,18 @@ type EventToMaybeEdge implements Edge {
 type EventToMaybeConnection implements Connection {
   edges: [EventToMaybeEdge!]!
   nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToCommentsAuthoredEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type UserToCommentsAuthoredConnection implements Connection {
+  edges: [UserToCommentsAuthoredEdge!]!
+  nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -647,6 +661,8 @@ input CommentCreateInput {
   body: String!
   articleID: ID!
   articleType: String!
+  stickerID: ID
+  stickerType: String
 }
 
 type CommentCreatePayload {
@@ -885,7 +901,7 @@ input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt
   label: String!
-  date: Time!
+  date: Time
 }
 
 type HolidayCreatePayload {
@@ -952,7 +968,7 @@ type UserEditPayload {
 
 type Query {
   node(id: ID!): Node
-  timeDiff(time: Time!): String!
+  timeDiff(time: Time!, log: JSON!): String!
   viewer: Viewer!
 }
 

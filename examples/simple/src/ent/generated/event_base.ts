@@ -13,9 +13,8 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   applyPrivacyPolicy,
-  convertDate,
-  convertNullableDate,
   getEdgeTypeInGroup,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -71,12 +70,12 @@ export class EventBase implements Ent<ExampleViewerAlias> {
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.name = data.name;
     this.creatorID = data.user_id;
-    this.startTime = convertDate(data.start_time);
-    this.endTime = convertNullableDate(data.end_time);
+    this.startTime = data.start_time;
+    this.endTime = data.end_time;
     this.location = data.location;
     this._addressID = data.address_id;
   }
@@ -141,7 +140,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      EventBase.loaderOptions.apply(this),
+      {
+        ...EventBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -152,10 +154,27 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<EventDBData[]> {
     return (await loadCustomData(
-      EventBase.loaderOptions.apply(this),
+      {
+        ...EventBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as EventDBData[];
+  }
+
+  static async loadCustomCount<T extends EventBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...EventBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends EventBase>(
@@ -222,13 +241,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     const g = await getEdgeTypeInGroup(
       this.viewer,
       this.id,
-      this.viewer.viewerID!,
+      this.viewer.viewerID,
       this.getEventRsvpStatusMap(),
     );
-    if (g) {
-      return g[0];
-    }
-    return ret;
+    return g ? g[0] : ret;
   }
 
   queryAttending(): EventToAttendingQuery {

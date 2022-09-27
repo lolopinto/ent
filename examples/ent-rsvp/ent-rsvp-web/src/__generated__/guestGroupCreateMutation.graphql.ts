@@ -9,6 +9,7 @@ export type GuestGroupCreateInput = {
     guests?: Array<GuestGuestGroupCreateInput> | null;
 };
 export type GuestGuestGroupCreateInput = {
+    addressId?: string | null;
     name: string;
     emailAddress?: string | null;
     title?: string | null;

@@ -1,7 +1,8 @@
 import { snakeCase } from "snake-case";
 import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
-import { Builder } from "../action/action";
+import { Builder, Changeset } from "../action/action";
 import { Clause } from "../core/clause";
+import { AssocEdgeInput } from "../core/ent";
 
 export declare type FieldMap = {
   [key: string]: Field;
@@ -15,6 +16,22 @@ interface FieldInfo {
 export type FieldInfoMap = {
   [key: string]: FieldInfo;
 };
+
+export interface GlobalSchema {
+  // source is ¯\_(ツ)_/¯
+  // this api works fine for external to int
+  // internal to external, we need to solve ala polymorphic
+  // internal to internal, why is this here
+  edges?: Edge[];
+
+  // e.g. deleted_at for edges
+  extraEdgeFields?: FieldMap;
+
+  transformEdgeRead?: () => Clause;
+  transformEdgeWrite?: (
+    stmt: EdgeUpdateOperation,
+  ) => TransformedEdgeUpdateOperation | null;
+}
 
 // Schema is the base for every schema in typescript
 export default interface Schema {
@@ -140,10 +157,23 @@ export interface AssocEdgeGroup {
   tableName?: string;
   assocEdges: AssocEdge[];
   statusEnums?: string[]; // if present, restrict to these instead of all given enums...
+
+  // breaking change!
+  // if true, assumes the edge group is viewer based e.g. viewer rsvping to an event
+  // viewer sending a friend request etc.
+  // if viewer based, a viewer{Foo}() function is added to the source ent to get the viewer status
+  // to this and cannot check it for another User|Account|et
+
+  // if not viewer based, will generate an API to pass an instance of the other ent to get the status for
+  viewerBased?: boolean;
+
   //  extraEnums:
   // either single item or should be list with way to differentiate btw them...
   // nullStates are not part of input, just output...
-  nullStates: string | string[];
+  // make nullStates optional for non-viewer-based edges...
+  // required for now for viewer based status enums, optional otherwise
+  nullStates?: string | string[];
+
   // if more than one nullState. must pass this in
   nullStateFn?: string;
   //  nullStates?: string | AssocEdgeNullState[]; // if the edge doesn't exist, return this instead
@@ -172,9 +202,10 @@ export interface Pattern {
   // transform to loader instead?
   // we can change generated loader to do this instead of what we're doing here
   transformRead?: () => Clause;
-  transformWrite?: <T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ) => TransformedUpdateOperation<T> | null;
+
+  transformWrite?: <T extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+    stmt: UpdateOperation<T, TViewer>,
+  ) => TransformedUpdateOperation<T, TViewer> | null;
 
   // can only have one pattern in an object which transforms each
   // if we do, it throws an Error
@@ -203,20 +234,35 @@ export enum SQLStatementOperation {
   Delete = "delete",
 }
 
+export interface EdgeUpdateOperation {
+  op: SQLStatementOperation;
+  edge: AssocEdgeInput;
+}
+
+export interface TransformedEdgeUpdateOperation {
+  op: SQLStatementOperation;
+
+  // data to write to db for this edge
+  data?: Data;
+}
+
 export interface UpdateOperation<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
 > {
   // TODO how should this affect builder.operation?
   op: SQLStatementOperation;
-  builder: Builder<TEnt, TViewer>;
+  builder: Builder<TEnt, TViewer, any>;
   // input. same input that's passed to Triggers, Observers, Validators. includes action-only fields
   input: Data;
   // data that'll be saved in the db
   data?: Map<string, any>;
 }
 
-export interface TransformedUpdateOperation<T extends Ent> {
+export interface TransformedUpdateOperation<
+  T extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
   op: SQLStatementOperation;
 
   data?: Data;
@@ -224,6 +270,7 @@ export interface TransformedUpdateOperation<T extends Ent> {
   // if changing to an update, we want to return the ent
   // TODO don't have a way to delete the ent e.g. update -> insert
   existingEnt?: T | null;
+  changeset?(): Promise<Changeset> | Changeset;
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
@@ -261,6 +308,13 @@ export interface ImportType {
   [x: string]: any;
 }
 
+// TODO make this have an async flag and an accessor will be generated
+// for it that does this instead of doing in constructor
+export interface ConvertType {
+  path: string;
+  function: string;
+}
+
 declare type EnumMap = {
   [key: string]: string;
 };
@@ -293,6 +347,9 @@ export interface Type {
 
   // UnionType fields. really StructMap but don't want circular dependency...
   unionFields?: FieldMap;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface ForeignKey {
@@ -305,6 +362,9 @@ export interface ForeignKey {
   // to simplify the code when it's known that the object here
   // would always have been previously created. simplifies validation
   disableBuilderType?: boolean;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 type getLoaderInfoFn = (type: string) => LoaderInfo;
@@ -338,6 +398,10 @@ export interface FieldEdge {
   disableBuilderType?: boolean;
 }
 
+interface PrivateOptions {
+  exposeToActions?: boolean;
+}
+
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
@@ -347,7 +411,10 @@ export interface FieldOptions {
   serverDefault?: any;
   unique?: boolean;
   hideFromGraphQL?: boolean;
-  private?: boolean;
+  // private automatically hides from graphql and actions
+  // but you may want something which is private and visible in actions
+  // e.g. because you have custom code you want to run in the accessors
+  private?: boolean | PrivateOptions;
   sensitive?: boolean;
   graphqlName?: string;
   index?: boolean;
@@ -388,11 +455,21 @@ export interface FieldOptions {
   // takes the name of the field and returns any fields which are derived from current field
   getDerivedFields?(name: string): FieldMap;
 
+  // to convert the field in some way
+  // should be the same type e.g. Date to Date
+  convert?: ConvertType;
+
+  fetchOnDemand?: boolean;
+
   // allow name for now
   [x: string]: any;
 }
 
 export interface PolymorphicOptions {
+  // optional but if we have multiple Polymorphic fields in the source schema, it becomes required for all but one
+  // defaults to pluralize(schema) if not provided
+  // same philosophy as type ForeignKey
+  name?: string;
   // restrict to just these types
   types?: string[];
   // hide inverse type from graphql
@@ -409,7 +486,20 @@ export interface Field extends FieldOptions {
   type: Type;
 
   // optional valid and format to validate and format before storing
+  // editedFields, data added to valid is useful for start_time, end_time comparisons too
   valid?(val: any): Promise<boolean> | boolean;
+
+  // validate if a field can be nullable based on other fields
+  // validate field based on other fields
+  // have to be careful that there's no circular dependencies btw fields
+  // which needs this
+  // can be used to validate if a field can be nullable based on other fields
+  // used for polymorphic and maybe eventually other fields
+  validateWithFullData?(
+    val: any,
+    builder: Builder<any>,
+  ): boolean | Promise<boolean>;
+
   // optional second param which if passed and true indicates that this is a nested object
   // and should only format children and not format lists or objects
   format?(val: any, nested?: boolean): any;
@@ -646,6 +736,9 @@ export interface ActionField {
   // either because they can be derived or optional and don't need it
   // no validation on what can be excluded is done. things will eventually fail if done incorrectly
   excludedFields?: string[];
+
+  // allow other keys
+  [x: string]: any;
 }
 
 // provides a way to configure the actions generated for the ent
@@ -665,9 +758,14 @@ export interface Action {
   // allows changing default behavior e.g. making an optional field required
   // or excluding a field so as to not put in fields
   excludedFields?: string[];
+  // NB: optionalFields still requires field in list of fields
   optionalFields?: string[];
+  // NB: requiredFields still requires field in list of fields
   requiredFields?: string[];
   noFields?: boolean;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 // sentinel that indicates an action has no fields
@@ -691,6 +789,9 @@ export interface Constraint {
   columns: string[];
   fkey?: ForeignKeyInfo;
   condition?: string; // only applies in check constraint
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface FullTextWeight {
@@ -719,6 +820,9 @@ export interface FullText {
 
   // to simplify: we only allow weights when there's a generated column so that rank is easiest ts_rank(col, ...)
   weights?: FullTextWeight;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface Index {
@@ -726,6 +830,13 @@ export interface Index {
   columns: string[];
   unique?: boolean; // can also create a unique constraint this way because why not...
   fulltext?: FullText;
+  // TODO support gist soon...
+  // need operator class too
+  // TODO https://github.com/lolopinto/ent/issues/1029
+  indexType?: "gin" | "btree";
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface ForeignKeyInfo {
@@ -733,6 +844,9 @@ export interface ForeignKeyInfo {
   ondelete?: "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT" | "NO ACTION";
   columns: string[];
   // no on update, match full etc
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export enum ConstraintType {

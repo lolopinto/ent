@@ -9,6 +9,7 @@ import {
   UserToIncomingFriendRequestsQuery,
   UserToFriendRequestsQuery,
   ViewerWithAccessToken,
+  FakeTag,
 } from "../testutils/fake_data";
 import {
   createTestUser,
@@ -45,7 +46,7 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
 } from "../testutils/ent-graphql-tests";
-import { setupSqlite } from "../testutils/db/test_db";
+import { setupSqlite } from "../testutils/db/temp_db";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -66,6 +67,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return FakeContact.loaderOptions();
     case NodeType.FakeEvent:
       return FakeEvent.loaderOptions();
+    case NodeType.FakeTag:
+      return FakeTag.loaderOptions();
   }
 }
 

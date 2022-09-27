@@ -20,6 +20,10 @@
         {
           "name": "time",
           "type": "Date"
+        },
+        {
+          "name": "log",
+          "type": "JSON"
         }
       ],
       "resultType": "String",
@@ -222,6 +226,13 @@
         "list": true,
         "fieldType": "ASYNC_FUNCTION",
         "nullable": "contentsAndList"
+      },
+      {
+        "name": "commentsAuthored",
+        "functionName": "getCommentsAuthored",
+        "resultType": "Comment",
+        "connection": true,
+        "fieldType": "ASYNC_FUNCTION"
       }
     ]
   }

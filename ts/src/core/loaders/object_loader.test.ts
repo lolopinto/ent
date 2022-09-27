@@ -30,7 +30,7 @@ import {
   table,
   text,
   timestamp,
-} from "../../testutils/db/test_db";
+} from "../../testutils/db/temp_db";
 import DB, { Dialect } from "../db";
 import { advanceTo } from "jest-date-mock";
 import { convertDate } from "../convert";
@@ -197,13 +197,6 @@ describe("sqlite", () => {
   commonTests();
 });
 
-function filterNullIfSqlite(values: any[]) {
-  if (DB.getDialect() === Dialect.SQLite) {
-    return values.filter((f) => f !== null);
-  }
-  return values;
-}
-
 function transformDeletedAt(row: Data | null) {
   if (row === null) {
     return null;
@@ -321,7 +314,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.In("id", 1)),
+      clause: clause.And(clause.In("id", 1), clause.Eq("deleted_at", null)),
     });
     const row = await loader.load(1);
 
@@ -329,7 +322,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
 
     const row2 = await loader.load(1);
@@ -403,12 +396,12 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+      clause: clause.And(clause.Eq("id", 1), clause.Eq("deleted_at", null)),
     });
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
 
     // same data loaded  but not same row
@@ -421,7 +414,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
   }
 
@@ -448,12 +441,12 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+      clause: clause.And(clause.Eq("id", 1), clause.Eq("deleted_at", null)),
     });
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
 
     // same data loaded  but not same row
@@ -465,7 +458,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
   }
 
@@ -558,12 +551,12 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+      clause: clause.And(clause.Eq("id", 1), clause.Eq("deleted_at", null)),
     });
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
 
     // same data loaded  but not same row
@@ -575,7 +568,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
   }
 
@@ -716,16 +709,13 @@ function commonTests() {
       deleted_at: null,
     });
 
-    await editRowForTest(
-      {
-        tableName: "users",
-        key: "id",
-        fields: {
-          deleted_at: new Date(),
-        },
+    await editRowForTest({
+      tableName: "users",
+      whereClause: clause.Eq("id", 1),
+      fields: {
+        deleted_at: new Date(),
       },
-      1,
-    );
+    });
 
     ctx.cache.clearCache();
     const rowPostDelete = await loader.load(1);
@@ -958,6 +948,39 @@ function commonTests() {
       values: [user.emailAddress],
     });
   });
+
+  test("partial field query with context", async () => {
+    const user = await createTestUser();
+    ml.clear();
+
+    try {
+      await new ObjectLoaderFactory({
+        tableName: userLoader.options.tableName,
+        fields: ["first_name"],
+        key: "id",
+      })
+        .createLoader(new TestContext())
+        .load(user.id);
+      throw new Error(`should have thrown`);
+    } catch (err) {
+      expect((err as Error).message).toMatch(/need to query for column id/);
+    }
+  });
+
+  test("partial field query without context", async () => {
+    const user = await createTestUser();
+    ml.clear();
+
+    // currently fine without context see different path...
+    const row = await new ObjectLoaderFactory({
+      tableName: userLoader.options.tableName,
+      fields: ["first_name"],
+      key: "id",
+    })
+      .createLoader(undefined)
+      .load(user.id);
+    expect(row?.first_name).toBe(user.firstName);
+  });
 }
 
 async function verifyMultiIDsDataAvail(
@@ -1033,13 +1056,13 @@ function verifyMultiIDsCustomClauseGroupQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "users",
     fields: ["id", "first_name", "deleted_at"],
-    clause: clause.And(clause.Eq("deleted_at", null), clause.In("id", ...ids)),
+    clause: clause.And(clause.In("id", ...ids), clause.Eq("deleted_at", null)),
   });
 
   expect(ml.logs.length).toBe(1);
   expect(ml.logs[0]).toStrictEqual({
     query: expQuery,
-    values: filterNullIfSqlite([null, ...ids]),
+    values: ids,
   });
 }
 
@@ -1065,13 +1088,13 @@ function verifyMultiIDsCustomClauseGroupQueryMiss(ids: ID[]) {
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
       clause: clause.And(
-        clause.Eq("deleted_at", null),
         clause.Eq("id", ids[idx]),
+        clause.Eq("deleted_at", null),
       ),
     });
     expect(log).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, ids[idx]]),
+      values: [ids[idx]],
     });
   });
 }

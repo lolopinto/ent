@@ -169,7 +169,8 @@ export function getFieldInfo(value: BuilderSchema<Ent>) {
   for (const [k, f] of fields) {
     ret[k] = {
       dbCol: getStorageKey(f, k),
-      inputKey: camelCase(k),
+      // in tests (anything using SimpleBuilder), make it be the same as the fieldName
+      inputKey: k,
     };
   }
   return ret;
@@ -182,11 +183,11 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class SimpleBuilder<
   T extends Ent,
   TExistingEnt extends TMaybleNullableEnt<T> = MaybeNull<T>,
-> implements Builder<T>
+> implements Builder<T, Viewer, TExistingEnt>
 {
-  ent: EntConstructor<T>;
+  ent: EntConstructor<T, Viewer>;
   placeholderID: ID;
-  public orchestrator: Orchestrator<T, Data, Viewer>;
+  public orchestrator: Orchestrator<T, Data, Viewer, TExistingEnt>;
   public fields: Map<string, any>;
   nodeType: string;
   m: Map<string, any> = new Map();
@@ -197,7 +198,9 @@ export class SimpleBuilder<
     fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
     public existingEnt: TExistingEnt,
-    action?: Action<T, SimpleBuilder<T>, Viewer, Data> | undefined,
+    action?:
+      | Action<T, SimpleBuilder<T, TExistingEnt>, Viewer, Data, TExistingEnt>
+      | undefined,
   ) {
     // create dynamic placeholder
     // TODO: do we need to use this as the node when there's an existingEnt
@@ -231,7 +234,7 @@ export class SimpleBuilder<
     const tableName = getTableName(schema);
     this.nodeType = camelCase(schema.ent.name);
     const fieldInfo = getFieldInfo(schema);
-    this.orchestrator = new Orchestrator<T, Data, Viewer>({
+    this.orchestrator = new Orchestrator<T, Data, Viewer, TExistingEnt>({
       viewer: this.viewer,
       operation: operation,
       tableName: tableName,
@@ -390,6 +393,10 @@ export class SimpleAction<
 
   validX(): Promise<void> {
     return this.builder.orchestrator.validX();
+  }
+
+  validWithErrors() {
+    return this.builder.orchestrator.validWithErrors();
   }
 
   async save(): Promise<T | null> {

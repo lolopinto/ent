@@ -2,17 +2,12 @@ from __future__ import annotations
 from sqlalchemy.sql.sqltypes import String
 from .clause_text import get_clause_text
 from .change_type import ChangeType
+from .change import Change
 from .ops import MigrateOpInterface, DropFullTextIndexOp, CreateFullTextIndexOp
 
 import alembic.operations.ops as alembicops
 
-from typing import List, Sequence, TypedDict
-
-
-class Change(TypedDict):
-    change: ChangeType
-    desc: String
-    col: String
+from typing import List, Sequence
 
 
 class Diff(object):
@@ -57,10 +52,7 @@ class Diff(object):
                 class_name_map[type(op).__name__](op)
 
     def _custom_migrate_op(self: Diff, op: MigrateOpInterface):
-        self._append_change(op.get_table_name(), {
-            "change": op.get_change_type(),
-            "desc": op.get_revision_message(),
-        })
+        self._append_change(op.get_table_name(), op.get_change())
 
     def _create_table(self: Diff, op: alembicops.CreateTableOp):
         self._append_change(op.table_name,                 {
@@ -94,12 +86,14 @@ class Diff(object):
     def _create_index(self: Diff, op: alembicops.CreateIndexOp):
         self._append_change(op.table_name, {
             "change": ChangeType.CREATE_INDEX,
+            "index": op.index_name,
             "desc": 'add index %s to %s' % (op.index_name, op.table_name),
         })
 
     def _drop_index(self: Diff, op: alembicops.DropIndexOp):
         self._append_change(op.table_name, {
             "change": ChangeType.DROP_INDEX,
+            "index": op.index_name,
             "desc": 'drop index %s from %s' % (op.index_name, op.table_name),
         })
 
@@ -146,10 +140,12 @@ class Diff(object):
             elif op.modify_nullable is not None:
                 return 'modify nullable value of column %s from %s to %s' % (op.column_name, op.existing_nullable, op.modify_nullable)
             elif op.modify_server_default is not None:
+                # these 3 here could flag it to be rendered differently
                 return 'modify server_default value of column %s from %s to %s' % (
                     op.column_name,
-                    get_clause_text(op.existing_server_default),
-                    get_clause_text(op.modify_server_default))
+                    get_clause_text(op.existing_server_default,
+                                    op.existing_type),
+                    get_clause_text(op.modify_server_default, op.modify_type))
             elif op.modify_comment:
                 return "modify comment of column %s"
             elif op.modify_name:
@@ -157,7 +153,8 @@ class Diff(object):
             elif op.modify_server_default is None and op.existing_server_default is not None:
                 return 'modify server_default value of column %s from %s to None' % (
                     op.column_name,
-                    get_clause_text(op.existing_server_default)
+                    get_clause_text(op.existing_server_default,
+                                    op.existing_type)
                 )
             else:
                 raise ValueError("unsupported alter_column op")

@@ -14,7 +14,7 @@ import {
   deleteRowsSync,
 } from "../core/ent";
 import * as clause from "../core/clause";
-import DB, { Client, SyncClient } from "../core/db";
+import DB, { Client, Dialect, SyncClient } from "../core/db";
 
 function isSyncClient(client: Client): client is SyncClient {
   return (client as SyncClient).execSync !== undefined;
@@ -24,7 +24,12 @@ export async function createRowForTest(
   options: CreateRowOptions,
   suffix?: string,
 ): Promise<Data | null> {
-  const client = await DB.getInstance().getNewClient();
+  let client: Client;
+  if (Dialect.SQLite === DB.getDialect()) {
+    client = DB.getInstance().getSQLiteClient();
+  } else {
+    client = await DB.getInstance().getNewClient();
+  }
 
   try {
     if (isSyncClient(client)) {
@@ -36,18 +41,14 @@ export async function createRowForTest(
   }
 }
 
-export async function editRowForTest(
-  options: EditRowOptions,
-  id: ID,
-  suffix?: string,
-) {
+export async function editRowForTest(options: EditRowOptions, suffix?: string) {
   const client = await DB.getInstance().getNewClient();
 
   try {
     if (isSyncClient(client)) {
-      return editRowSync(client, options, id, suffix || "");
+      return editRowSync(client, options, suffix || "");
     }
-    return await editRow(client, options, id, suffix);
+    return await editRow(client, options, suffix);
   } finally {
     client.release();
   }

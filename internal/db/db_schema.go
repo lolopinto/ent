@@ -15,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -213,6 +214,7 @@ type indexConstraint struct {
 	tableName string
 	unique    bool
 	name      string
+	indexType input.IndexType
 }
 
 func (constraint *indexConstraint) getInfo() (string, []string) {
@@ -241,6 +243,9 @@ func (constraint *indexConstraint) getConstraintString() string {
 	args = append(args, quotedColNames...)
 	if constraint.unique {
 		args = append(args, "unique=True")
+	}
+	if constraint.indexType != "" {
+		args = append(args, fmt.Sprintf("postgresql_using=%s", strconv.Quote(string(constraint.indexType))))
 	}
 
 	return fmt.Sprintf(
@@ -434,6 +439,15 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	}
 }
 
+func (s *dbSchema) findFieldForCol(nodeData *schema.NodeData, col string) *field.Field {
+	for _, f := range nodeData.FieldInfo.Fields {
+		if f.GetDbColName() == col {
+			return f
+		}
+	}
+	return nil
+}
+
 func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbColumn, constraints *[]dbConstraint) error {
 	for _, constraint := range nodeData.Constraints {
 		switch constraint.Type {
@@ -474,7 +488,17 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 			tableName: nodeData.GetTableName(),
 			unique:    index.Unique,
 			name:      index.Name,
+			indexType: index.IndexType,
 		}
+		if index.IndexType == "" {
+			if len(cols) == 1 {
+				f := s.findFieldForCol(nodeData, cols[0].DBColName)
+				if f != nil {
+					constraint.indexType = s.getDefaultIndexType(f)
+				}
+			}
+		}
+
 		if index.FullText != nil {
 			fullText := &fullTextConstraint{
 				indexConstraint: constraint,
@@ -505,10 +529,10 @@ func (s *dbSchema) processSchema(cfg *codegen.Config) error {
 
 func (s *dbSchema) generateShemaTables() error {
 
-	addedAtLeastOneTable := false
+	addedAtLeastOneEdgeTable := false
 	for _, p := range s.schema.Patterns {
 		if s.addEdgeTablesFromPattern(p) {
-			addedAtLeastOneTable = true
+			addedAtLeastOneEdgeTable = true
 		}
 	}
 	for _, info := range s.schema.Nodes {
@@ -516,7 +540,13 @@ func (s *dbSchema) generateShemaTables() error {
 		s.addTable(s.getTableForNode(nodeData))
 
 		if s.addEdgeTables(nodeData) {
-			addedAtLeastOneTable = true
+			addedAtLeastOneEdgeTable = true
+		}
+	}
+
+	for _, edge := range s.schema.GetGlobalEdges() {
+		if s.addEdgeTable(edge) {
+			addedAtLeastOneEdgeTable = true
 		}
 	}
 
@@ -545,7 +575,7 @@ func (s *dbSchema) generateShemaTables() error {
 		}
 	}
 
-	if addedAtLeastOneTable {
+	if addedAtLeastOneEdgeTable {
 		s.addEdgeConfigTable()
 	}
 
@@ -883,6 +913,10 @@ func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 		},
 	}
 
+	for _, f := range s.schema.ExtraEdgeFields() {
+		columns = append(columns, s.getColumnInfoForFieldWithTable(f, tableName, &constraints))
+	}
+
 	// add unique constraint for edge
 	// TODO this only works when it's one table per edge
 	// we need to add logic to deal with this
@@ -905,6 +939,10 @@ func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 }
 
 func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeData, constraints *[]dbConstraint) *dbColumn {
+	return s.getColumnInfoForFieldWithTable(f, nodeData.GetTableName(), constraints)
+}
+
+func (s *dbSchema) getColumnInfoForFieldWithTable(f *field.Field, tableName string, constraints *[]dbConstraint) *dbColumn {
 	dbType := f.GetDbTypeForField()
 	var extraParts []string
 	if f.Nullable() {
@@ -912,13 +950,14 @@ func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeDa
 	} else {
 		extraParts = append(extraParts, "nullable=False")
 	}
-	if f.DefaultValue() != nil {
-		extraParts = append(extraParts, fmt.Sprintf("server_default='%s'", f.DefaultValue()))
+	val := f.DefaultValue()
+	if val != nil {
+		extraParts = append(extraParts, fmt.Sprintf("server_default='%s'", *val))
 	}
 	col := s.getColumn(f.FieldName, f.GetDbColName(), dbType, extraParts)
 
 	// index is still on a per field type so we leave this here
-	s.addIndexConstraint(f, nodeData, col, constraints)
+	s.addIndexConstraint(f, tableName, col, constraints)
 
 	return col
 }
@@ -1065,13 +1104,28 @@ func (s *dbSchema) addUniqueConstraint(nodeData *schema.NodeData, inputConstrain
 	return nil
 }
 
-func (s *dbSchema) addIndexConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
+func (s *dbSchema) getDefaultIndexType(f *field.Field) input.IndexType {
+	// default index type for lists|jsonb when not specified is gin type
+	typ := f.GetFieldType()
+	if enttype.IsListType(typ) || enttype.IsJSONBType(typ) {
+		return input.Gin
+	}
+
+	return ""
+}
+
+func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbColumn, constraints *[]dbConstraint) {
 	if !f.Index() {
 		return
 	}
 	constraint := &indexConstraint{
 		dbColumns: []*dbColumn{col},
-		tableName: nodeData.GetTableName(),
+		tableName: tableName,
+	}
+	// default index type for lists when not specified is gin type
+	idxType := s.getDefaultIndexType(f)
+	if idxType != "" {
+		constraint.indexType = input.Gin
 	}
 	*constraints = append(*constraints, constraint)
 }

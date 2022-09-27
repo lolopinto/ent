@@ -11,6 +11,9 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  convertNullableDate,
+  getEdgeTypeInGroup,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -27,11 +30,13 @@ import {
   accountPhoneNumberLoader,
 } from "src/ent/generated/loaders";
 import {
+  AccountToClosedTodosDupQuery,
+  AccountToOpenTodosDupQuery,
   AccountToTagsQuery,
   AccountToTodosQuery,
-  DeletedAtMixin,
-  IDeletedAt,
+  EdgeType,
   NodeType,
+  Todo,
 } from "src/ent/internal";
 import schema from "src/schema/account_schema";
 
@@ -40,6 +45,11 @@ export enum AccountState {
   VERIFIED = "VERIFIED",
   DEACTIVATED = "DEACTIVATED",
   DISABLED = "DISABLED",
+}
+
+export enum AccountTodoStatus {
+  OpenTodosDup = "openTodosDup",
+  ClosedTodosDup = "closedTodosDup",
 }
 
 interface AccountDBData {
@@ -52,24 +62,21 @@ interface AccountDBData {
   account_state: AccountState | null;
 }
 
-export class AccountBase
-  extends DeletedAtMixin(class {})
-  implements Ent<Viewer>, IDeletedAt
-{
+export class AccountBase implements Ent<Viewer> {
   readonly nodeType = NodeType.Account;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  protected readonly deletedAt: Date | null;
   readonly name: string;
   readonly phoneNumber: string | null;
   readonly accountState: AccountState | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
-    // @ts-ignore pass to mixin
-    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.deletedAt = convertNullableDate(data.deleted_at);
     this.name = data.name;
     this.phoneNumber = data.phone_number;
     this.accountState = data.account_state;
@@ -151,7 +158,10 @@ export class AccountBase
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      AccountBase.loaderOptions.apply(this),
+      {
+        ...AccountBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -162,10 +172,27 @@ export class AccountBase
     context?: Context,
   ): Promise<AccountDBData[]> {
     return (await loadCustomData(
-      AccountBase.loaderOptions.apply(this),
+      {
+        ...AccountBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as AccountDBData[];
+  }
+
+  static async loadCustomCount<T extends AccountBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...AccountBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends AccountBase>(
@@ -191,8 +218,6 @@ export class AccountBase
     }
     return row as AccountDBData;
   }
-
-  // TODO index deleted_at not id... we want an indexQueryLoader...
 
   static async loadFromPhoneNumber<T extends AccountBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -264,6 +289,32 @@ export class AccountBase
 
   static getField(key: string): Field | undefined {
     return AccountBase.getSchemaFields().get(key);
+  }
+
+  getAccountTodoStatusMap() {
+    let m: Map<AccountTodoStatus, EdgeType> = new Map();
+    m.set(AccountTodoStatus.ClosedTodosDup, EdgeType.AccountToClosedTodosDup);
+    m.set(AccountTodoStatus.OpenTodosDup, EdgeType.AccountToOpenTodosDup);
+    return m;
+  }
+
+  async todoStatusFor(todo: Todo): Promise<AccountTodoStatus | null> {
+    const ret = null;
+    const g = await getEdgeTypeInGroup(
+      this.viewer,
+      this.id,
+      todo.id,
+      this.getAccountTodoStatusMap(),
+    );
+    return g ? g[0] : ret;
+  }
+
+  queryClosedTodosDup(): AccountToClosedTodosDupQuery {
+    return AccountToClosedTodosDupQuery.query(this.viewer, this.id);
+  }
+
+  queryOpenTodosDup(): AccountToOpenTodosDupQuery {
+    return AccountToOpenTodosDupQuery.query(this.viewer, this.id);
   }
 
   queryTags(): AccountToTagsQuery {

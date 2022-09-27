@@ -24,8 +24,10 @@ export async function createUser() {
   return user;
 }
 
-export async function createEvent() {
-  const user = await createUser();
+export async function createEvent(user?: User) {
+  if (!user) {
+    user = await createUser();
+  }
   const event = await CreateEventAction.create(new IDViewer(user.id), {
     name: `${user.firstName}'s wedding`,
   }).saveX();

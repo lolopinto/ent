@@ -6,12 +6,12 @@ import {
   AssocEdgeGroup,
   Action,
 } from "../schema";
-import { ActionField, Type, FieldMap } from "../schema/schema";
+import { ActionField, Type, FieldMap, GlobalSchema } from "../schema/schema";
 
-function processFields(
+async function processFields(
   src: FieldMap | Field[],
   patternName?: string,
-): ProcessedField[] {
+): Promise<ProcessedField[]> {
   const ret: ProcessedField[] = [];
   let m: FieldMap = {};
   if (Array.isArray(src)) {
@@ -43,6 +43,17 @@ function processFields(
     } else {
       delete f.polymorphic;
     }
+    if (field.private) {
+      // convert boolean into object
+      // we keep boolean as an option to keep API simple
+      if (typeof field.private === "boolean") {
+        f.private = {};
+      } else {
+        f.private = field.private;
+      }
+    } else {
+      delete f.private;
+    }
     // convert string to object to make API consumed by go simple
     if (f.fieldEdge && f.fieldEdge.inverseEdge) {
       if (typeof f.fieldEdge.inverseEdge === "string") {
@@ -54,17 +65,24 @@ function processFields(
     if (patternName) {
       f.patternName = patternName;
     }
+    if (field.serverDefault !== undefined) {
+      f.serverDefault = await transformServerDefault(
+        name,
+        field,
+        field.serverDefault,
+      );
+    }
 
     transformType(field.type);
 
     if (field.getDerivedFields) {
-      f.derivedFields = processFields(field.getDerivedFields(name));
+      f.derivedFields = await processFields(field.getDerivedFields(name));
     }
     if (field.type.subFields) {
-      f.type.subFields = processFields(field.type.subFields);
+      f.type.subFields = await processFields(field.type.subFields);
     }
     if (field.type.unionFields) {
-      f.type.unionFields = processFields(field.type.unionFields);
+      f.type.unionFields = await processFields(field.type.unionFields);
     }
     if (
       field.type.listElemType &&
@@ -72,13 +90,33 @@ function processFields(
       // check to avoid ts-ignore below. exists just for tsc
       f.type.listElemType
     ) {
-      f.type.listElemType.subFields = processFields(
+      f.type.listElemType.subFields = await processFields(
         field.type.listElemType.subFields,
       );
     }
     ret.push(f);
   }
   return ret;
+}
+
+async function transformServerDefault(name: string, f: Field, value: any) {
+  if (f.valid) {
+    if (!(await f.valid(value))) {
+      throw new Error(`invalid value ${value} passed to field ${name}`);
+    }
+  }
+  if (f.format) {
+    value = await f.format(value);
+  }
+  switch (typeof value) {
+    case "boolean":
+    case "number":
+    case "bigint":
+    case "string":
+      return `${value}`;
+    default:
+      throw new Error(`invalid value ${value} passed to field ${name}`);
+  }
 }
 
 function transformImportType(typ: Type) {
@@ -134,16 +172,16 @@ function processEdgeGroups(
   }
 }
 
-function processPattern(
+async function processPattern(
   patterns: patternsDict,
   pattern: Pattern,
   processedSchema: ProcessedSchema,
-): TransformFlags {
+): Promise<TransformFlags> {
   let ret: TransformFlags = {
     ...pattern,
   };
   const name = pattern.name;
-  const fields = processFields(pattern.fields, pattern.name);
+  const fields = await processFields(pattern.fields, pattern.name);
   processedSchema.fields.push(...fields);
   if (pattern.edges) {
     const edges = processEdges(pattern.edges, pattern.name);
@@ -286,7 +324,11 @@ type ProcessedType = Omit<
 
 type ProcessedField = Omit<
   Field,
-  "defaultValueOnEdit" | "defaultValueOnCreate" | "privacyPolicy" | "type"
+  | "defaultValueOnEdit"
+  | "defaultValueOnCreate"
+  | "privacyPolicy"
+  | "type"
+  | "serverDefault"
 > & {
   name: string;
   hasDefaultValueOnCreate?: boolean;
@@ -295,6 +337,7 @@ type ProcessedField = Omit<
   hasFieldPrivacy?: boolean;
   derivedFields?: ProcessedField[];
   type: ProcessedType;
+  serverDefault?: string;
 };
 
 interface patternsDict {
@@ -304,6 +347,7 @@ interface patternsDict {
 interface Result {
   schemas: schemasDict;
   patterns: patternsDict;
+  globalSchema?: ProcessedGlobalSchema;
 }
 
 declare type PotentialSchemas = {
@@ -314,10 +358,17 @@ interface InputSchema extends Schema {
   schemaPath?: string;
 }
 
-export function parseSchema(potentialSchemas: PotentialSchemas): Result {
+export async function parseSchema(
+  potentialSchemas: PotentialSchemas,
+  globalSchema?: GlobalSchema,
+): Promise<Result> {
   let schemas: schemasDict = {};
   let patterns: patternsDict = {};
+  let parsedGlobalSchema: ProcessedGlobalSchema | undefined;
 
+  if (globalSchema) {
+    parsedGlobalSchema = await parseGlobalSchema(globalSchema);
+  }
   for (const key in potentialSchemas) {
     const value = potentialSchemas[key];
     let schema: InputSchema;
@@ -349,7 +400,7 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
     let patternNames: string[] = [];
     if (schema.patterns) {
       for (const pattern of schema.patterns) {
-        const ret = processPattern(patterns, pattern, processedSchema);
+        const ret = await processPattern(patterns, pattern, processedSchema);
         patternNames.push(pattern.name);
         if (ret.transformsSelect) {
           if (processedSchema.transformsSelect) {
@@ -370,7 +421,7 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
         }
       }
     }
-    const fields = processFields(schema.fields);
+    const fields = await processFields(schema.fields);
     processedSchema.fields.push(...fields);
     processedSchema.patternNames = patternNames;
     if (schema.edges) {
@@ -384,5 +435,34 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
     schemas[key] = processedSchema;
   }
 
-  return { schemas, patterns };
+  return { schemas, patterns, globalSchema: parsedGlobalSchema };
+}
+
+interface ProcessedGlobalSchema {
+  globalEdges: ProcessedAssocEdge[];
+  extraEdgeFields: ProcessedField[];
+  initForEdges?: boolean;
+}
+
+async function parseGlobalSchema(
+  s: GlobalSchema,
+): Promise<ProcessedGlobalSchema> {
+  const ret: ProcessedGlobalSchema = {
+    globalEdges: [],
+    extraEdgeFields: [],
+    initForEdges:
+      !!s.extraEdgeFields ||
+      s.transformEdgeRead !== undefined ||
+      s.transformEdgeWrite !== undefined,
+  };
+
+  if (s.extraEdgeFields) {
+    ret.extraEdgeFields = await processFields(s.extraEdgeFields);
+  }
+
+  if (s.edges) {
+    ret.globalEdges = processEdges(s.edges);
+  }
+
+  return ret;
 }

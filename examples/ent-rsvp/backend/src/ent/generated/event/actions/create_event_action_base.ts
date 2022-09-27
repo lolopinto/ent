@@ -2,21 +2,24 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  ID,
   PrivacyPolicy,
   Viewer,
 } from "@snowtop/ent";
 import {
   Action,
+  Builder,
   Changeset,
   Observer,
   Trigger,
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Event } from "src/ent/";
+import { Address, Event } from "src/ent/";
 import { EventBuilder } from "src/ent/generated/event/actions/event_builder";
 
 interface customActivityInput {
+  addressId?: ID | null | Builder<Address, Viewer>;
   name: string;
   startTime: Date;
   endTime?: Date | null;

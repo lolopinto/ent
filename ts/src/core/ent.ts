@@ -19,15 +19,20 @@ import {
   LoadCustomEntOptions,
   EdgeQueryableDataOptions,
   Context,
-  SelectBaseDataOptions,
   SelectDataOptions,
   CreateRowOptions,
   QueryDataOptions,
   EntConstructor,
   PrivacyPolicy,
+  SelectCustomDataOptions,
+  PrimableLoader,
+  Loader,
+  LoaderWithLoadMany,
+  SelectBaseDataOptions,
+  LoaderFactoryWithOptions,
 } from "./base";
 
-import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
+import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
 import { Executor } from "../action/action";
 
 import * as clause from "./clause";
@@ -35,6 +40,12 @@ import { WriteOperation, Builder } from "../action";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
 import { ObjectLoader } from "./loaders";
+import {
+  getStorageKey,
+  GlobalSchema,
+  SQLStatementOperation,
+  TransformedEdgeUpdateOperation,
+} from "../schema/";
 
 // TODO kill this and createDataLoader
 class cacheMap {
@@ -46,6 +57,40 @@ class cacheMap {
       log("cache", {
         "dataloader-cache-hit": key,
         "tableName": this.options.tableName,
+      });
+    }
+    return ret;
+  }
+
+  set(key: string, value: any) {
+    return this.m.set(key, value);
+  }
+
+  delete(key: string) {
+    return this.m.delete(key);
+  }
+
+  clear() {
+    return this.m.clear();
+  }
+}
+
+class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
+  private m = new Map();
+  private logEnabled = false;
+  constructor(
+    private viewer: TViewer,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {
+    this.logEnabled = logEnabled("cache");
+  }
+
+  get(id: ID) {
+    const ret = this.m.get(id);
+    if (this.logEnabled && ret) {
+      const key = getEntKey(this.viewer, id, this.options);
+      log("cache", {
+        "ent-cache-hit": key,
       });
     }
     return ret;
@@ -99,7 +144,122 @@ function createDataLoader(options: SelectDataOptions) {
   }, loaderOptions);
 }
 
-// Ent accessors
+// used to wrap errors that would eventually be thrown in ents
+// not an Error because DataLoader automatically rejects that
+class ErrorWrapper {
+  constructor(public error: Error) {}
+}
+
+function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+  viewer: Viewer,
+  options: LoadEntOptions<TEnt, TViewer>,
+  map: entCacheMap<TViewer, TEnt>,
+): DataLoader<ID, TEnt | ErrorWrapper> {
+  // share the cache across loaders even if we create a new instance
+  const loaderOptions: DataLoader.Options<any, any> = {};
+  loaderOptions.cacheMap = map;
+
+  return new DataLoader(async (ids: ID[]) => {
+    if (!ids.length) {
+      return [];
+    }
+
+    let result: (TEnt | ErrorWrapper | Error)[] = [];
+
+    const loader = options.loaderFactory.createLoader(viewer.context);
+    const rows = await loader.loadMany(ids);
+    // this is a loader which should return the same order based on passed-in ids
+    // so let's depend on that...
+
+    for (let idx = 0; idx < rows.length; idx++) {
+      const row = rows[idx];
+
+      // db error
+      if (row instanceof Error) {
+        result[idx] = row;
+        continue;
+      } else if (!row) {
+        result[idx] = new ErrorWrapper(
+          new Error(`couldn't find row for value ${ids[idx]}`),
+        );
+      } else {
+        const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+        if (r instanceof Error) {
+          result[idx] = new ErrorWrapper(r);
+        } else {
+          result[idx] = r;
+        }
+      }
+    }
+
+    return result;
+  }, loaderOptions);
+}
+
+class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
+  implements LoaderWithLoadMany<ID, TEnt | ErrorWrapper | Error>
+{
+  private loader: DataLoader<ID, TEnt | ErrorWrapper>;
+  private map: entCacheMap<TViewer, TEnt>;
+
+  constructor(
+    private viewer: TViewer,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {
+    this.map = new entCacheMap(viewer, options);
+    this.loader = createEntLoader(this.viewer, this.options, this.map);
+  }
+
+  getMap() {
+    return this.map;
+  }
+
+  async load(id: ID): Promise<TEnt | ErrorWrapper> {
+    return this.loader.load(id);
+  }
+
+  async loadMany(ids: ID[]): Promise<Array<TEnt | ErrorWrapper | Error>> {
+    return this.loader.loadMany(ids);
+  }
+
+  prime(id: ID, ent: TEnt | ErrorWrapper) {
+    this.loader.prime(id, ent);
+  }
+
+  clear(id: ID) {
+    this.loader.clear(id);
+  }
+
+  clearAll() {
+    this.loader.clearAll();
+  }
+}
+
+function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
+  viewer: TViewer,
+  options: LoadEntOptions<TEnt, TViewer>,
+): EntLoader<TViewer, TEnt> {
+  if (!viewer.context?.cache) {
+    return new EntLoader(viewer, options);
+  }
+  const name = `ent-loader:${viewer.instanceKey()}:${
+    options.loaderFactory.name
+  }`;
+
+  return viewer.context.cache.getLoaderWithLoadMany(
+    name,
+    () => new EntLoader(viewer, options),
+  ) as EntLoader<TViewer, TEnt>;
+}
+
+export function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+  viewer: TViewer,
+  id: ID,
+  options: LoadEntOptions<TEnt, TViewer>,
+) {
+  return `${viewer.instanceKey()}:${options.loaderFactory.name}:${id}`;
+}
+
 export async function loadEnt<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -108,8 +268,49 @@ export async function loadEnt<
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt | null> {
-  const row = await options.loaderFactory.createLoader(viewer.context).load(id);
-  return await applyPrivacyPolicyForRow(viewer, options, row);
+  if (
+    typeof id !== "string" &&
+    typeof id !== "number" &&
+    typeof id !== "bigint"
+  ) {
+    throw new Error(`invalid id ${id} passed to loadEnt`);
+  }
+  const r = await getEntLoader(viewer, options).load(id);
+  return r instanceof ErrorWrapper ? null : r;
+}
+
+async function applyPrivacyPolicyForRowAndStoreInEntLoader<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
+  row: Data,
+  options: LoadEntOptions<TEnt, TViewer>,
+  // can pass in loader when calling this for multi-id cases...
+  loader?: EntLoader<TViewer, TEnt>,
+) {
+  if (!loader) {
+    loader = getEntLoader(viewer, options);
+  }
+  // TODO every row.id needs to be audited...
+  // https://github.com/lolopinto/ent/issues/1064
+  const id = row.id;
+
+  // we should check the ent loader cache to see if this is already there
+  // TODO hmm... we eventually need a custom data-loader for this too so that it's all done correctly if there's a complicated fetch deep down in graphql
+  const result = loader.getMap().get(id);
+  if (result !== undefined) {
+    return result;
+  }
+
+  const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+  if (r instanceof Error) {
+    loader.prime(id, new ErrorWrapper(r));
+    return new ErrorWrapper(r);
+  } else {
+    loader.prime(id, r);
+    return r;
+  }
 }
 
 // this is the same implementation-wise (right now) as loadEnt. it's just clearer that it's not loaded via ID.
@@ -125,7 +326,16 @@ export async function loadEntViaKey<
   const row = await options.loaderFactory
     .createLoader(viewer.context)
     .load(key);
-  return await applyPrivacyPolicyForRow(viewer, options, row);
+  if (!row) {
+    return null;
+  }
+
+  const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+    viewer,
+    row,
+    options,
+  );
+  return r instanceof ErrorWrapper ? null : r;
 }
 
 export async function loadEntX<
@@ -136,14 +346,18 @@ export async function loadEntX<
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt> {
-  const row = await options.loaderFactory.createLoader(viewer.context).load(id);
-  if (!row) {
-    // todo make this better
-    throw new Error(
-      `${options.loaderFactory.name}: couldn't find row for value ${id}`,
-    );
+  if (
+    typeof id !== "string" &&
+    typeof id !== "number" &&
+    typeof id !== "bigint"
+  ) {
+    throw new Error(`invalid id ${id} passed to loadEntX`);
   }
-  return await applyPrivacyPolicyForRowX(viewer, options, row);
+  const r = await getEntLoader(viewer, options).load(id);
+  if (r instanceof ErrorWrapper) {
+    throw r.error;
+  }
+  return r;
 }
 
 export async function loadEntXViaKey<
@@ -163,9 +377,20 @@ export async function loadEntXViaKey<
       `${options.loaderFactory.name}: couldn't find row for value ${key}`,
     );
   }
-  return await applyPrivacyPolicyForRowX(viewer, options, row);
+  const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+    viewer,
+    row,
+    options,
+  );
+  if (r instanceof ErrorWrapper) {
+    throw r.error;
+  }
+  return r;
 }
 
+/**
+ * @deprecated use loadCustomEnts
+ */
 export async function loadEntFromClause<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -180,12 +405,18 @@ export async function loadEntFromClause<
     context: viewer.context,
   };
   const row = await loadRow(rowOptions);
-  return await applyPrivacyPolicyForRow(viewer, options, row);
+  if (row === null) {
+    return null;
+  }
+  return applyPrivacyPolicyForRow(viewer, options, row);
 }
 
 // same as loadEntFromClause
 // only works for ents where primary key is "id"
 // use loadEnt with a loaderFactory if different
+/**
+ * @deprecated use loadCustomEnts
+ */
 export async function loadEntXFromClause<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -214,42 +445,23 @@ export async function loadEnts<
   if (!ids.length) {
     return new Map();
   }
-  let loaded = false;
-  let rows: (Error | Data | null)[] = [];
-  // TODO loadMany everywhere
-  const l = options.loaderFactory.createLoader(viewer.context);
-  if (l.loadMany) {
-    loaded = true;
-    rows = await l.loadMany(ids);
-  }
 
-  // TODO rewrite all of this
+  // result
   let m: Map<ID, TEnt> = new Map();
 
-  if (loaded) {
-    let rows2: Data[] = [];
-    for (const row of rows) {
-      if (!row) {
-        continue;
-      }
-      if (row instanceof Error) {
-        throw row;
-      }
-      rows2.push(row);
+  const ret = await getEntLoader(viewer, options).loadMany(ids);
+  for (const r of ret) {
+    if (r instanceof Error) {
+      throw r;
     }
-    m = await applyPrivacyPolicyForRows(viewer, rows2, options);
-  } else {
-    m = await loadEntsFromClause(
-      viewer,
-      // this is always "id" if not using an ObjectLoaderFactory
-      clause.In("id", ...ids),
-      options,
-    );
-  }
-  return m;
+    if (r instanceof ErrorWrapper) {
+      continue;
+    }
 
-  // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
-  // TODO eventually this should be doing a cache then db queyr and maybe depend on dataloader to get all the results at once
+    m.set(r.id, r);
+  }
+
+  return m;
 }
 
 // calls loadEnts and returns the results sorted in the order they were passed in
@@ -275,6 +487,9 @@ export async function loadEntsList<
 
 // we return a map here so that any sorting for queries that exist
 // can be done in O(N) time
+/**
+ * @deperecated use loadCustomEnts
+ */
 export async function loadEntsFromClause<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -290,7 +505,7 @@ export async function loadEntsFromClause<
   };
 
   const rows = await loadRows(rowOptions);
-  return await applyPrivacyPolicyForRows(viewer, rows, options);
+  return applyPrivacyPolicyForRowsDeprecated(viewer, rows, options);
 }
 
 export async function loadCustomEnts<
@@ -303,27 +518,10 @@ export async function loadCustomEnts<
 ) {
   const rows = await loadCustomData(options, query, viewer.context);
 
-  const result: TEnt[] = new Array(rows.length);
-  await Promise.all(
-    rows.map(async (row, idx) => {
-      const ent = new options.ent(viewer, row);
-      let privacyEnt = await applyPrivacyPolicyForEnt(
-        viewer,
-        ent,
-        row,
-        options,
-      );
-
-      if (privacyEnt) {
-        result[idx] = privacyEnt;
-      }
-    }),
-  );
-  // filter ents that aren't visible because of privacy
-  return result.filter((r) => r !== undefined);
+  return applyPrivacyPolicyForRows(viewer, rows, options);
 }
 
-interface rawQueryOptions {
+interface parameterizedQueryOptions {
   query: string;
   values?: any[];
   logValues?: any[];
@@ -331,57 +529,153 @@ interface rawQueryOptions {
 
 export type CustomQuery =
   | string
-  | rawQueryOptions
+  | parameterizedQueryOptions
   | clause.Clause
   | QueryDataOptions;
 
 function isClause(
-  opts: clause.Clause | QueryDataOptions | rawQueryOptions,
+  opts: clause.Clause | QueryDataOptions | parameterizedQueryOptions,
 ): opts is clause.Clause {
   const cls = opts as clause.Clause;
 
   return cls.clause !== undefined && cls.values !== undefined;
 }
 
-function isRawQuery(
-  opts: QueryDataOptions | rawQueryOptions,
-): opts is rawQueryOptions {
-  return (opts as rawQueryOptions).query !== undefined;
+function isParameterizedQuery(
+  opts: QueryDataOptions | parameterizedQueryOptions,
+): opts is parameterizedQueryOptions {
+  return (opts as parameterizedQueryOptions).query !== undefined;
 }
 
+/**
+ * Note that if there's default read transformations (e.g. soft delete) and a clause is passed in
+ * either as Clause or QueryDataOptions without {disableTransformations: true}, the default transformation
+ * (e.g. soft delete) is applied.
+ *
+ * Passing a full SQL string or Paramterized SQL string doesn't apply it and the given string is sent to the
+ * database as written.
+ *
+ * e.g.
+ * Foo.loadCustom(opts, 'SELECT * FROM foo') // doesn't change the query
+ * Foo.loadCustom(opts, { query: 'SELECT * FROM foo WHERE id = ?', values: [1]}) // doesn't change the query
+ * Foo.loadCustom(opts, query.Eq('time', Date.now())) // changes the query
+ * Foo.loadCustom(opts, {
+ *   clause:  query.LessEq('time', Date.now()),
+ *   limit: 100,
+ *   orderby: 'time',
+ *  }) // changes the query
+ * Foo.loadCustom(opts, {
+ *   clause:  query.LessEq('time', Date.now()),
+ *   limit: 100,
+ *   orderby: 'time',
+ *   disableTransformations: false
+ *  }) // doesn't change the query
+ */
 export async function loadCustomData(
-  options: SelectBaseDataOptions,
+  options: SelectCustomDataOptions,
   query: CustomQuery,
   context: Context | undefined,
 ): Promise<Data[]> {
+  const rows = await loadCustomDataImpl(options, query, context);
+
+  // prime the data so that subsequent fetches of the row with this id are a cache hit.
+  if (options.prime) {
+    const loader = options.loaderFactory.createLoader(context);
+    if (isPrimableLoader(loader) && loader.primeAll !== undefined) {
+      for (const row of rows) {
+        loader.primeAll(row);
+      }
+    }
+  }
+  return rows;
+}
+
+interface CustomCountOptions extends DataOptions {}
+
+// NOTE: if you use a raw query or paramterized query with this,
+// you should use `SELECT count(*) as count...`
+export async function loadCustomCount(
+  options: CustomCountOptions,
+  query: CustomQuery,
+  context: Context | undefined,
+): Promise<number> {
+  // TODO also need to loaderify this in case we're querying for this a lot...
+  const rows = await loadCustomDataImpl(
+    {
+      ...options,
+      fields: ["count(1) as count"],
+    },
+    query,
+    context,
+  );
+
+  if (rows.length) {
+    return parseInt(rows[0].count);
+  }
+  return 0;
+}
+
+function isPrimableLoader(
+  loader: Loader<any, Data | null>,
+): loader is PrimableLoader<any, Data> {
+  return (loader as PrimableLoader<any, Data>) != undefined;
+}
+
+interface SelectCustomDataOptionsImpl extends SelectBaseDataOptions {
+  loaderFactory?: LoaderFactoryWithOptions;
+}
+
+async function loadCustomDataImpl(
+  options: SelectCustomDataOptionsImpl,
+  query: CustomQuery,
+  context: Context | undefined,
+): Promise<Data[]> {
+  function getClause(cls: clause.Clause) {
+    let optClause = options.loaderFactory?.options?.clause;
+    if (typeof optClause === "function") {
+      optClause = optClause();
+    }
+    if (!optClause) {
+      return cls;
+    }
+
+    return clause.And(cls, optClause);
+  }
+
   if (typeof query === "string") {
     // no caching, perform raw query
-    return await performRawQuery(query, [], []);
+    return performRawQuery(query, [], []);
   } else if (isClause(query)) {
+    // if a Clause is passed in and we have a default clause
+    // associated with the query, pass that in
+    // if we want to disableTransformations, need to indicate that with
+    // disableTransformations option
     // this will have rudimentary caching but nothing crazy
-    return await loadRows({
+    return loadRows({
       ...options,
-      clause: query,
+      clause: getClause(query),
       context: context,
     });
-  } else if (isRawQuery(query)) {
+  } else if (isParameterizedQuery(query)) {
     // no caching, perform raw query
-    return await performRawQuery(
-      query.query,
-      query.values || [],
-      query.logValues,
-    );
+    return performRawQuery(query.query, query.values || [], query.logValues);
   } else {
+    let cls = query.clause;
+    if (!query.disableTransformations) {
+      cls = getClause(cls);
+    }
     // this will have rudimentary caching but nothing crazy
-    return await loadRows({
+    return loadRows({
       ...query,
       ...options,
       context: context,
+      clause: cls,
     });
   }
 }
 
 // Derived ents
+// no ent caching
 export async function loadDerivedEnt<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -391,11 +685,16 @@ export async function loadDerivedEnt<
   loader: new (viewer: TViewer, data: Data) => TEnt,
 ): Promise<TEnt | null> {
   const ent = new loader(viewer, data);
-  return await applyPrivacyPolicyForEnt(viewer, ent, data, {
+  const r = await applyPrivacyPolicyForEnt(viewer, ent, data, {
     ent: loader,
   });
+  if (r instanceof Error) {
+    return null;
+  }
+  return r as TEnt | null;
 }
 
+// won't have caching yet either
 export async function loadDerivedEntX<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -423,22 +722,19 @@ async function applyPrivacyPolicyForEnt<
   TViewer extends Viewer,
 >(
   viewer: TViewer,
-  ent: TEnt | null,
+  ent: TEnt,
   data: Data,
   fieldPrivacyOptions: FieldPrivacyOptions<TEnt, TViewer>,
-): Promise<TEnt | null> {
-  if (ent) {
-    const visible = await applyPrivacyPolicy(
-      viewer,
-      ent.getPrivacyPolicy(),
-      ent,
-    );
-    if (!visible) {
-      return null;
-    }
+): Promise<TEnt | Error> {
+  const error = await applyPrivacyPolicyImpl(
+    viewer,
+    ent.getPrivacyPolicy(),
+    ent,
+  );
+  if (error === null) {
     return doFieldPrivacy(viewer, ent, data, fieldPrivacyOptions);
   }
-  return null;
+  return error;
 }
 
 async function applyPrivacyPolicyForEntX<
@@ -450,9 +746,14 @@ async function applyPrivacyPolicyForEntX<
   data: Data,
   options: FieldPrivacyOptions<TEnt, TViewer>,
 ): Promise<TEnt> {
-  // this will throw
-  await applyPrivacyPolicyX(viewer, ent.getPrivacyPolicy(), ent);
-  return doFieldPrivacy(viewer, ent, data, options);
+  const r = await applyPrivacyPolicyForEnt(viewer, ent, data, options);
+  if (r instanceof Error) {
+    throw r;
+  }
+  if (r === null) {
+    throw new Error(`couldn't apply privacyPoliy for ent ${ent.id}`);
+  }
+  return r;
 }
 
 async function doFieldPrivacy<
@@ -470,13 +771,14 @@ async function doFieldPrivacy<
   const promises: Promise<void>[] = [];
   let somethingChanged = false;
   for (const [k, policy] of options.fieldPrivacy) {
+    const curr = data[k];
+    if (curr === null || curr === undefined) {
+      continue;
+    }
+
     promises.push(
       (async () => {
         // don't do anything if key is null or for some reason missing
-        const curr = data[k];
-        if (curr === null || curr === undefined) {
-          return;
-        }
         const r = await applyPrivacyPolicy(viewer, policy, ent);
         if (!r) {
           data[k] = null;
@@ -528,29 +830,22 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
   const query = buildQuery(options);
   logQuery(query, options.clause.logValues());
-  try {
-    const pool = DB.getInstance().getPool();
+  const pool = DB.getInstance().getPool();
 
-    const res = await pool.query(query, options.clause.values());
-    if (res.rowCount != 1) {
-      if (res.rowCount > 1) {
-        log("error", "got more than one row for query " + query);
-      }
-      return null;
+  const res = await pool.query(query, options.clause.values());
+  if (res.rowCount != 1) {
+    if (res.rowCount > 1) {
+      log("error", "got more than one row for query " + query);
     }
-
-    // put the row in the cache...
-    if (cache) {
-      cache.primeCache(options, res.rows[0]);
-    }
-
-    return res.rows[0];
-  } catch (e) {
-    // an example of an error being suppressed
-    // another one. TODO https://github.com/lolopinto/ent/issues/862
-    log("error", e);
     return null;
   }
+
+  // put the row in the cache...
+  if (cache) {
+    cache.primeCache(options, res.rows[0]);
+  }
+
+  return res.rows[0];
 }
 
 // this always goes to the db, no cache, nothing
@@ -562,14 +857,8 @@ export async function performRawQuery(
   const pool = DB.getInstance().getPool();
 
   logQuery(query, logValues || []);
-  try {
-    const res = await pool.queryAll(query, values);
-    return res.rows;
-  } catch (e) {
-    // TODO need to change every query to catch an error!
-    log("error", e);
-    return [];
-  }
+  const res = await pool.queryAll(query, values);
+  return res.rows;
 }
 
 // TODO this should throw, we can't be hiding errors here
@@ -675,6 +964,35 @@ export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
   fieldsToResolve: string[];
   loadEntOptions: LoadEntOptions<T>;
   placeholderID?: ID;
+  key: string;
+}
+
+export class RawQueryOperation implements DataOperation {
+  constructor(private queries: (string | parameterizedQueryOptions)[]) {}
+
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
+    for (const q of this.queries) {
+      if (typeof q === "string") {
+        logQuery(q, []);
+        await queryer.query(q);
+      } else {
+        logQuery(q.query, q.logValues || []);
+        await queryer.query(q.query, q.values);
+      }
+    }
+  }
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {
+    for (const q of this.queries) {
+      if (typeof q === "string") {
+        logQuery(q, []);
+        queryer.execSync(q);
+      } else {
+        logQuery(q.query, q.logValues || []);
+        queryer.execSync(q.query, q.values);
+      }
+    }
+  }
 }
 
 export class EditNodeOperation<T extends Ent> implements DataOperation {
@@ -728,12 +1046,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       if (this.hasData(options.fields)) {
         // even this with returning * may not always work if transformed...
         // we can have a transformed flag to see if it should be returned?
-        this.row = await editRow(
-          queryer,
-          options,
-          this.existingEnt.id,
-          "RETURNING *",
-        );
+        this.row = await editRow(queryer, options, "RETURNING *");
       } else {
         // @ts-ignore
         this.row = this.existingEnt["data"];
@@ -759,7 +1072,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         optionClause = opts.clause;
       }
       if (optionClause) {
-        cls = clause.And(optionClause, cls);
+        cls = clause.And(cls, optionClause);
       }
     }
 
@@ -783,9 +1096,10 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       ...this.options,
       context,
     };
+
     if (this.existingEnt) {
       if (this.hasData(this.options.fields)) {
-        editRowSync(queryer, options, this.existingEnt.id, "RETURNING *");
+        editRowSync(queryer, options, "RETURNING *");
         this.reloadRow(queryer, this.existingEnt.id, options);
       } else {
         // @ts-ignore
@@ -817,9 +1131,24 @@ interface EdgeOperationOptions {
   dataPlaceholder?: boolean;
 }
 
+let globalSchema: GlobalSchema | undefined;
+export function setGlobalSchema(val: GlobalSchema) {
+  globalSchema = val;
+}
+
+export function clearGlobalSchema() {
+  globalSchema = undefined;
+}
+
+// used by tests. no guarantee will always exist
+export function __hasGlobalSchema() {
+  return globalSchema !== undefined;
+}
+
 export class EdgeOperation implements DataOperation {
   private edgeData: AssocEdgeData | undefined;
   private constructor(
+    private builder: Builder<any>,
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
   ) {}
@@ -887,7 +1216,35 @@ export class EdgeOperation implements DataOperation {
     edge: AssocEdgeInput,
     context?: Context,
   ) {
+    let transformed: TransformedEdgeUpdateOperation | null = null;
+    let op = SQLStatementOperation.Delete;
+    let updateData: Data | null = null;
+
+    // TODO respect disableTransformations
+    if (globalSchema?.transformEdgeWrite) {
+      transformed = globalSchema.transformEdgeWrite({
+        op: SQLStatementOperation.Delete,
+        edge,
+      });
+      if (transformed) {
+        op = transformed.op;
+        if (transformed.op === SQLStatementOperation.Insert) {
+          throw new Error(`cannot currently transform a delete into an insert`);
+        }
+        if (transformed.op === SQLStatementOperation.Update) {
+          if (!transformed.data) {
+            throw new Error(
+              `cannot transform a delete into an update without providing data`,
+            );
+          }
+          updateData = transformed.data;
+        }
+      }
+    }
+
     return {
+      op,
+      updateData,
       options: {
         tableName: edgeData.edgeTable,
         context,
@@ -907,7 +1264,18 @@ export class EdgeOperation implements DataOperation {
     context?: Context,
   ): Promise<void> {
     const params = this.getDeleteRowParams(edgeData, edge, context);
-    return deleteRows(q, params.options, params.clause);
+    if (params.op === SQLStatementOperation.Delete) {
+      return deleteRows(q, params.options, params.clause);
+    } else {
+      if (params.op !== SQLStatementOperation.Update) {
+        throw new Error(`invalid operation ${params.op}`);
+      }
+      await editRow(q, {
+        tableName: params.options.tableName,
+        whereClause: params.clause,
+        fields: params.updateData!,
+      });
+    }
   }
 
   private performDeleteWriteSync(
@@ -917,7 +1285,18 @@ export class EdgeOperation implements DataOperation {
     context?: Context,
   ): void {
     const params = this.getDeleteRowParams(edgeData, edge, context);
-    return deleteRowsSync(q, params.options, params.clause);
+    if (params.op === SQLStatementOperation.Delete) {
+      return deleteRowsSync(q, params.options, params.clause);
+    } else {
+      if (params.op !== SQLStatementOperation.Update) {
+        throw new Error(`invalid operation ${params.op}`);
+      }
+      editRowSync(q, {
+        tableName: params.options.tableName,
+        whereClause: params.clause,
+        fields: params.updateData!,
+      });
+    }
   }
 
   private getInsertRowParams(
@@ -941,6 +1320,34 @@ export class EdgeOperation implements DataOperation {
       fields["time"] = new Date().toISOString();
     }
 
+    const onConflictFields = ["data"];
+
+    if (globalSchema?.extraEdgeFields) {
+      for (const name in globalSchema.extraEdgeFields) {
+        const f = globalSchema.extraEdgeFields[name];
+        if (f.defaultValueOnCreate) {
+          const storageKey = getStorageKey(f, name);
+          fields[storageKey] = f.defaultValueOnCreate(this.builder, {});
+          // onconflict make sure we override the default values
+          // e.g. setting deleted_at = null for soft delete
+          onConflictFields.push(storageKey);
+        }
+      }
+    }
+
+    // TODO respect disableTransformations
+
+    let transformed: TransformedEdgeUpdateOperation | null = null;
+    if (globalSchema?.transformEdgeWrite) {
+      transformed = globalSchema.transformEdgeWrite({
+        op: SQLStatementOperation.Insert,
+        edge,
+      });
+      if (transformed) {
+        throw new Error(`transforming an insert edge not currently supported`);
+      }
+    }
+
     return [
       {
         tableName: edgeData.edgeTable,
@@ -948,7 +1355,9 @@ export class EdgeOperation implements DataOperation {
         fieldsToLog: fields,
         context,
       },
-      "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+      `ON CONFLICT(id1, edge_type, id2) DO UPDATE SET ${onConflictFields
+        .map((f) => `${f} = EXCLUDED.${f}`)
+        .join(", ")}`,
     ];
   }
 
@@ -962,6 +1371,7 @@ export class EdgeOperation implements DataOperation {
 
     await createRow(q, options, suffix);
   }
+
   private performInsertWriteSync(
     q: SyncQueryer,
     edgeData: AssocEdgeData,
@@ -1020,6 +1430,7 @@ export class EdgeOperation implements DataOperation {
 
   symmetricEdge(): EdgeOperation {
     return new EdgeOperation(
+      this.builder,
       {
         id1: this.edgeInput.id2,
         id1Type: this.edgeInput.id2Type,
@@ -1040,6 +1451,7 @@ export class EdgeOperation implements DataOperation {
 
   inverseEdge(edgeData: AssocEdgeData): EdgeOperation {
     return new EdgeOperation(
+      this.builder,
       {
         id1: this.edgeInput.id2,
         id1Type: this.edgeInput.id2Type,
@@ -1128,7 +1540,7 @@ export class EdgeOperation implements DataOperation {
       edge.data = data;
     }
 
-    return new EdgeOperation(edge, {
+    return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Insert,
       id2Placeholder,
       id1Placeholder,
@@ -1159,7 +1571,7 @@ export class EdgeOperation implements DataOperation {
       edge.data = data;
     }
 
-    return new EdgeOperation(edge, {
+    return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Insert,
       id1Placeholder,
       id2Placeholder,
@@ -1182,7 +1594,7 @@ export class EdgeOperation implements DataOperation {
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
     };
-    return new EdgeOperation(edge, {
+    return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,
     });
   }
@@ -1202,7 +1614,7 @@ export class EdgeOperation implements DataOperation {
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
     };
-    return new EdgeOperation(edge, {
+    return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,
     });
   }
@@ -1222,22 +1634,16 @@ async function mutateRow(
   logQuery(query, logValues);
 
   let cache = options.context?.cache;
-  try {
-    let res: QueryResult<QueryResultRow>;
-    if (isSyncQueryer(queryer)) {
-      res = queryer.execSync(query, values);
-    } else {
-      res = await queryer.exec(query, values);
-    }
-    if (cache) {
-      cache.clearCache();
-    }
-    return res;
-  } catch (err) {
-    // TODO:::why is this not rethrowing?
-    log("error", err);
-    throw err;
+  let res: QueryResult<QueryResultRow>;
+  if (isSyncQueryer(queryer)) {
+    res = queryer.execSync(query, values);
+  } else {
+    res = await queryer.exec(query, values);
   }
+  if (cache) {
+    cache.clearCache();
+  }
+  return res;
 }
 
 function mutateRowSync(
@@ -1250,17 +1656,11 @@ function mutateRowSync(
   logQuery(query, logValues);
 
   let cache = options.context?.cache;
-  try {
-    const res = queryer.execSync(query, values);
-    if (cache) {
-      cache.clearCache();
-    }
-    return res;
-  } catch (err) {
-    // TODO:::why is this not rethrowing?
-    log("error", err);
-    throw err;
+  const res = queryer.execSync(query, values);
+  if (cache) {
+    cache.clearCache();
   }
+  return res;
 }
 
 export function buildInsertQuery(
@@ -1332,7 +1732,6 @@ export function createRowSync(
 
 export function buildUpdateQuery(
   options: EditRowOptions,
-  id: ID,
   suffix?: string,
 ): [string, any[], any[]] {
   let valsString: string[] = [];
@@ -1342,27 +1741,33 @@ export function buildUpdateQuery(
 
   let idx = 1;
   for (const key in options.fields) {
-    values.push(options.fields[key]);
+    const val = options.fields[key];
+    values.push(val);
     if (options.fieldsToLog) {
       logValues.push(options.fieldsToLog[key]);
     }
+    // TODO would be nice to use clause here. need update version of the queries so that
+    // we don't have to handle dialect specifics here
+    // can't use clause because of IS NULL
+    // valsString.push(clause.Eq(key, val).clause(idx));
     if (dialect === Dialect.Postgres) {
       valsString.push(`${key} = $${idx}`);
-      idx++;
     } else {
       valsString.push(`${key} = ?`);
     }
+    idx++;
   }
 
   const vals = valsString.join(", ");
 
   let query = `UPDATE ${options.tableName} SET ${vals} WHERE `;
 
-  if (dialect === Dialect.Postgres) {
-    query = query + `${options.key} = $${idx}`;
-  } else {
-    query = query + `${options.key} = ?`;
+  query = query + options.whereClause.clause(idx);
+  values.push(...options.whereClause.values());
+  if (options.fieldsToLog) {
+    logValues.push(...options.whereClause.logValues());
   }
+
   if (suffix) {
     query = query + " " + suffix;
   }
@@ -1373,13 +1778,9 @@ export function buildUpdateQuery(
 export async function editRow(
   queryer: Queryer,
   options: EditRowOptions,
-  id: ID,
   suffix?: string,
 ): Promise<Data | null> {
-  const [query, values, logValues] = buildUpdateQuery(options, id, suffix);
-
-  // add id as value to prepared query
-  values.push(id);
+  const [query, values, logValues] = buildUpdateQuery(options, suffix);
 
   const res = await mutateRow(queryer, query, values, logValues, options);
 
@@ -1395,13 +1796,9 @@ export async function editRow(
 export function editRowSync(
   queryer: SyncQueryer,
   options: EditRowOptions,
-  id: ID,
   suffix?: string,
 ): Data | null {
-  const [query, values, logValues] = buildUpdateQuery(options, id, suffix);
-
-  // add id as value to prepared query
-  values.push(id);
+  const [query, values, logValues] = buildUpdateQuery(options, suffix);
 
   const res = mutateRowSync(queryer, query, values, logValues, options);
 
@@ -1461,6 +1858,8 @@ export class AssocEdge {
   time: Date;
   data?: string | null;
 
+  private rawData: Data;
+
   constructor(data: Data) {
     this.id1 = data.id1;
     this.id1Type = data.id1_type;
@@ -1469,18 +1868,19 @@ export class AssocEdge {
     this.edgeType = data.edge_type;
     this.time = data.time;
     this.data = data.data;
+    this.rawData = data;
+  }
+
+  __getRawData() {
+    // incase there's extra db fields. useful for tests
+    // in production, a subclass of this should be in use so we won't need this...
+    return this.rawData;
   }
 
   getCursor(): string {
     return getCursor({
       row: this,
-      col: "time",
-      conv: (t) => {
-        if (typeof t === "string") {
-          return Date.parse(t);
-        }
-        return t.getTime();
-      },
+      col: "id2",
     });
   }
 }
@@ -1492,6 +1892,7 @@ interface cursorOptions {
   conv?: (any: any) => any;
 }
 
+// TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
   const { row, col, conv } = opts;
   //  row: Data, col: string, conv?: (any) => any) {
@@ -1505,6 +1906,7 @@ export function getCursor(opts: cursorOptions) {
   if (conv) {
     datum = conv(datum);
   }
+
   const cursorKey = opts.cursorKey || col;
   const str = `${cursorKey}:${datum}`;
   return Buffer.from(str, "ascii").toString("base64");
@@ -1606,6 +2008,7 @@ interface loadEdgesOptions {
   edgeType: string;
   context?: Context;
   queryOptions?: EdgeQueryableDataOptions;
+  disableTransformations?: boolean;
 }
 
 interface loadCustomEdgesOptions<T extends AssocEdge> extends loadEdgesOptions {
@@ -1632,6 +2035,25 @@ export async function loadEdges(
   return loadCustomEdges({ ...options, ctr: AssocEdge });
 }
 
+export function getEdgeClauseAndFields(
+  cls: clause.Clause,
+  options: loadEdgesOptions,
+) {
+  let fields = edgeFields;
+
+  if (globalSchema?.transformEdgeRead) {
+    const transformClause = globalSchema.transformEdgeRead();
+    if (!options.disableTransformations) {
+      cls = clause.And(cls, transformClause);
+    }
+    fields = edgeFields.concat(transformClause.columns());
+  }
+  return {
+    cls,
+    fields,
+  };
+}
+
 export async function loadCustomEdges<T extends AssocEdge>(
   options: loadCustomEdgesOptions<T>,
 ): Promise<T[]> {
@@ -1646,10 +2068,13 @@ export async function loadCustomEdges<T extends AssocEdge>(
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
   }
+
+  const { cls: actualClause, fields } = getEdgeClauseAndFields(cls, options);
+
   const rows = await loadRows({
     tableName: edgeData.edgeTable,
-    fields: edgeFields,
-    clause: cls,
+    fields: fields,
+    clause: actualClause,
     orderby: options.queryOptions?.orderby || defaultOptions.orderby,
     limit: options.queryOptions?.limit || defaultOptions.limit,
     context,
@@ -1668,10 +2093,15 @@ export async function loadUniqueEdge(
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
   }
+  const { cls, fields } = getEdgeClauseAndFields(
+    clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    options,
+  );
+
   const row = await loadRow({
     tableName: edgeData.edgeTable,
-    fields: edgeFields,
-    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    fields: fields,
+    clause: cls,
     context,
   });
   if (!row) {
@@ -1709,11 +2139,15 @@ export async function loadRawEdgeCountX(
     throw new Error(`error loading edge data for ${edgeType}`);
   }
 
+  const { cls } = getEdgeClauseAndFields(
+    clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    options,
+  );
   const row = await loadRowX({
     tableName: edgeData.edgeTable,
     // sqlite needs as count otherwise it returns count(1)
     fields: ["count(1) as count"],
-    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    clause: cls,
     context,
   });
   return parseInt(row["count"], 10) || 0;
@@ -1758,16 +2192,25 @@ export async function applyPrivacyPolicyForRow<
 >(
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
-  row: Data | null,
+  row: Data,
 ): Promise<TEnt | null> {
-  if (!row) {
-    return null;
-  }
-  const ent = new options.ent(viewer, row);
-  return await applyPrivacyPolicyForEnt(viewer, ent, row, options);
+  const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+  return r instanceof Error ? null : r;
 }
 
-export async function applyPrivacyPolicyForRowX<
+async function applyPrivacyPolicyForRowImpl<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
+  options: LoadEntOptions<TEnt, TViewer>,
+  row: Data,
+): Promise<TEnt | Error> {
+  const ent = new options.ent(viewer, row);
+  return applyPrivacyPolicyForEnt(viewer, ent, row, options);
+}
+
+async function applyPrivacyPolicyForRowX<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
 >(
@@ -1779,7 +2222,8 @@ export async function applyPrivacyPolicyForRowX<
   return await applyPrivacyPolicyForEntX(viewer, ent, row, options);
 }
 
-export async function applyPrivacyPolicyForRows<
+// deprecated. doesn't use entcache
+async function applyPrivacyPolicyForRowsDeprecated<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
 >(viewer: TViewer, rows: Data[], options: LoadEntOptions<TEnt, TViewer>) {
@@ -1794,6 +2238,36 @@ export async function applyPrivacyPolicyForRows<
     }),
   );
   return m;
+}
+
+export async function applyPrivacyPolicyForRows<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(viewer: TViewer, rows: Data[], options: LoadEntOptions<TEnt, TViewer>) {
+  const result: TEnt[] = new Array(rows.length);
+
+  if (!rows.length) {
+    return [];
+  }
+
+  const entLoader = getEntLoader(viewer, options);
+
+  await Promise.all(
+    rows.map(async (row, idx) => {
+      const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+        viewer,
+        row,
+        options,
+        entLoader,
+      );
+      if (r instanceof ErrorWrapper) {
+        return;
+      }
+      result[idx] = r;
+    }),
+  );
+  // filter ents that aren't visible because of privacy
+  return result.filter((r) => r !== undefined);
 }
 
 async function loadEdgeWithConst<T extends string>(

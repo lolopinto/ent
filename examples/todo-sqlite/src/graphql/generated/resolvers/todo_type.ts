@@ -13,6 +13,7 @@ import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
+  GraphQLTime,
 } from "@snowtop/ent/graphql";
 import { Todo, TodoToTagsQuery } from "src/ent/";
 import {
@@ -38,6 +39,12 @@ export const TodoType = new GraphQLObjectType({
     completed: {
       type: new GraphQLNonNull(GraphQLBoolean),
     },
+    completed_date: {
+      type: GraphQLTime,
+      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+        return todo.completedDate;
+      },
+    },
     tags: {
       type: new GraphQLNonNull(TodoToTagsConnectionType()),
       args: {
@@ -58,7 +65,7 @@ export const TodoType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+      resolve: (todo: Todo, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           todo.viewer,
           todo,

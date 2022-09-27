@@ -13,6 +13,8 @@ import {
   buildQuery,
   loadEnt,
   loadEnts,
+  getEntKey,
+  loadEntX,
 } from "./ent";
 import { clearLogLevels, setLogLevels } from "./logger";
 import * as clause from "./clause";
@@ -27,7 +29,7 @@ import {
   LoadRowOptions,
   LoadRowsOptions,
 } from "./base";
-import { integer, table, text, setupSqlite } from "../testutils/db/test_db";
+import { integer, table, text, setupSqlite } from "../testutils/db/temp_db";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -139,18 +141,18 @@ function commonTests() {
       expect(ml.logs.length).toEqual(0);
     });
 
-    test("editRow no fieldsToLog", async () => {
+    test("fieldsToLog", async () => {
       const fields = {
         col1: "bar",
         col2: "baz",
       };
       const options: EditRowOptions = {
         fields: fields,
-        key: "id",
         tableName: "t1",
+        whereClause: clause.Eq("id", "1"),
       };
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
+      const [expQuery] = buildUpdateQuery(options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
@@ -166,17 +168,17 @@ function commonTests() {
       };
       const options: EditRowOptions = {
         fields: fields,
-        key: "id",
         tableName: "t1",
         fieldsToLog: fields,
+        whereClause: clause.Eq("id", "1"),
       };
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
+      const [expQuery] = buildUpdateQuery(options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         query: expQuery,
-        values: ["bar", "baz"],
+        values: ["bar", "baz", "1"],
       });
     });
 
@@ -187,20 +189,20 @@ function commonTests() {
       };
       const options: EditRowOptions = {
         fields: fields,
-        key: "id",
         tableName: "t1",
+        whereClause: clause.Eq("id", "1"),
         fieldsToLog: {
           col1: "bar",
           col2: "***",
         },
       };
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
+      const [expQuery] = buildUpdateQuery(options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         query: expQuery,
-        values: ["bar", "***"],
+        values: ["bar", "***", "1"],
       });
     });
 
@@ -211,13 +213,12 @@ function commonTests() {
       };
       const options: EditRowOptions = {
         fields: fields,
-        key: "id",
         tableName: "t1",
         fieldsToLog: fields,
+        whereClause: clause.Eq("id", "1"),
       };
       clearLogLevels();
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
 
       expect(ml.logs.length).toEqual(0);
     });
@@ -489,7 +490,7 @@ function commonTests() {
         ent: User,
         context: ctx,
       };
-      await loadEnt(ctx.getViewer(), 1, options);
+      const ent1 = await loadEnt(ctx.getViewer(), 1, options);
 
       // regular row fetch. hit db
       expect(ml.logs.length).toEqual(1);
@@ -506,11 +507,129 @@ function commonTests() {
 
       ml.clear();
       // fetch again
-      await loadEnt(ctx.getViewer(), 1, options);
+      const ent2 = await loadEnt(ctx.getViewer(), 1, options);
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 1, options),
+      });
+      // ent cache hit
+      expect(ent1).toBe(ent2);
+      ml.clear();
+
+      // now this should hit the dataloader cache
+      await options.loaderFactory.createLoader(ctx).load(1);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         "dataloader-cache-hit": 1,
+        "tableName": options.tableName,
+      });
+    });
+
+    test("loadEnt no data", async () => {
+      const options: LoadEntOptions<User> = {
+        fields,
+        tableName,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "id",
+        }),
+        ent: User,
+        context: ctx,
+      };
+      const ent1 = await loadEnt(ctx.getViewer(), 13, options);
+      expect(ent1).toBe(null);
+
+      // regular row fetch. hit db
+      expect(ml.logs.length).toEqual(1);
+
+      expect(ml.logs[0]).toStrictEqual({
+        query: buildQuery({
+          tableName,
+          fields,
+          // data loader always does an in fetch...
+          clause: clause.In("id", 13),
+        }),
+        values: [13],
+      });
+
+      ml.clear();
+      // fetch again
+      const ent2 = await loadEnt(ctx.getViewer(), 13, options);
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 13, options),
+      });
+      // ent cache hit
+      expect(ent2).toBe(null);
+      ml.clear();
+
+      // now this should hit the dataloader cache
+      await options.loaderFactory.createLoader(ctx).load(13);
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "dataloader-cache-hit": 13,
+        "tableName": options.tableName,
+      });
+    });
+
+    test("loadEntX no data", async () => {
+      const options: LoadEntOptions<User> = {
+        fields,
+        tableName,
+        loaderFactory: new ObjectLoaderFactory({
+          fields,
+          tableName,
+          key: "id",
+        }),
+        ent: User,
+        context: ctx,
+      };
+      try {
+        await loadEntX(ctx.getViewer(), 13, options);
+        throw new Error("should have thrown");
+      } catch (err) {
+        expect((err as Error).message).toBe(`couldn't find row for value 13`);
+      }
+
+      // regular row fetch. hit db
+      expect(ml.logs.length).toEqual(1);
+
+      expect(ml.logs[0]).toStrictEqual({
+        query: buildQuery({
+          tableName,
+          fields,
+          // data loader always does an in fetch...
+          clause: clause.In("id", 13),
+        }),
+        values: [13],
+      });
+
+      ml.clear();
+      // fetch again
+      try {
+        await loadEntX(ctx.getViewer(), 13, options);
+        throw new Error("should have thrown");
+      } catch (err) {
+        expect((err as Error).message).toBe(`couldn't find row for value 13`);
+      }
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 13, options),
+      });
+      ml.clear();
+
+      // now this should hit the dataloader cache
+      await options.loaderFactory.createLoader(ctx).load(13);
+
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "dataloader-cache-hit": 13,
         "tableName": options.tableName,
       });
     });
@@ -526,7 +645,7 @@ function commonTests() {
         }),
         ent: User,
       };
-      await loadEnts(ctx.getViewer(), options, 1);
+      const ents = await loadEnts(ctx.getViewer(), options, 1);
 
       // regular row fetch. hit db
       expect(ml.logs.length).toEqual(1);
@@ -544,8 +663,20 @@ function commonTests() {
       ml.clear();
 
       // fetch again
-      await loadEnts(ctx.getViewer(), options, 1);
+      const ents2 = await loadEnts(ctx.getViewer(), options, 1);
+      expect(ents.size).toBe(ents2.size);
+      expect(ents.get(1)).toBe(ents2.get(1));
 
+      // should hit ent cache so nothing in the logs
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 1, options),
+      });
+
+      ml.clear();
+      await options.loaderFactory.createLoader(ctx).loadMany([1]);
+
+      // now should hit data loader cache
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         // TODO this will also change when loadEnts changes

@@ -1,4 +1,6 @@
-import { AssocEdge, AssocEdgeInput } from "@snowtop/ent";
+import { AssocEdge, AssocEdgeInput, setLogLevels } from "@snowtop/ent";
+import { MockLogs } from "@snowtop/ent/testutils/mock_log";
+import { TestContext } from "@snowtop/ent/testutils/context/test_context";
 import {
   User,
   Contact,
@@ -46,6 +48,7 @@ import {
   UserSuperNestedObject,
 } from "../generated/user_super_nested_object";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+import EditUserAllFieldsAction from "../user/actions/edit_user_all_fields_action";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -123,6 +126,18 @@ test("create user with accountstatus", async () => {
   expect(user.firstName).toBe("Jon");
   expect(user.lastName).toBe("Snow");
   expect(await user.accountStatus()).toBe("VERIFIED");
+});
+
+test("create user with accountstatus explicitly null", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    accountStatus: null,
+  });
+
+  expect(user.firstName).toBe("Jon");
+  expect(user.lastName).toBe("Snow");
+  expect(await user.accountStatus()).toBe("UNVERIFIED");
 });
 
 test("edit user", async () => {
@@ -1058,7 +1073,7 @@ describe("super nested complex", () => {
       password: random(),
       superNestedObject: obj,
     }).saveX();
-    expect(user.superNestedObject).toStrictEqual(obj);
+    expect(await user.superNestedObject()).toStrictEqual(obj);
   });
 
   test("union. cat", async () => {
@@ -1092,7 +1107,7 @@ describe("super nested complex", () => {
         birthday: obj.union?.birthday.toISOString(),
       },
     };
-    expect(user.superNestedObject).toStrictEqual(formattedObj);
+    expect(await user.superNestedObject()).toStrictEqual(formattedObj);
   });
 
   test("union. dog", async () => {
@@ -1127,7 +1142,7 @@ describe("super nested complex", () => {
         birthday: obj.union?.birthday.toISOString(),
       },
     };
-    expect(user.superNestedObject).toStrictEqual(formattedObj);
+    expect(await user.superNestedObject()).toStrictEqual(formattedObj);
   });
 
   test("union. rabbit", async () => {
@@ -1160,7 +1175,7 @@ describe("super nested complex", () => {
         birthday: obj.union?.birthday.toISOString(),
       },
     };
-    expect(user.superNestedObject).toStrictEqual(formattedObj);
+    expect(await user.superNestedObject()).toStrictEqual(formattedObj);
   });
 
   test("nested list", async () => {
@@ -1194,6 +1209,100 @@ describe("super nested complex", () => {
       nestedList: objs,
     }).saveX();
     expect(user.nestedList).toStrictEqual(objs);
+  });
+
+  test("can create + edit field loaded on demand", async () => {
+    const obj: UserSuperNestedObject = {
+      uuid: uuidv1(),
+      int: 34,
+      string: "whaa",
+      float: 2.3,
+      bool: false,
+      enum: SuperNestedObjectEnum.Maybe,
+      intList: [7, 8, 9],
+      union: {
+        name: "hallo",
+        birthday: new Date(),
+        breed: RabbitBreed.AmericanChincilla,
+      },
+    };
+
+    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+      superNestedObject: obj,
+    }).saveX();
+    const formattedObj = {
+      ...obj,
+      union: {
+        ...obj.union,
+        birthday: obj.union?.birthday.toISOString(),
+      },
+    };
+    expect(await user.superNestedObject()).toStrictEqual(formattedObj);
+
+    const editedObj: UserSuperNestedObject = {
+      uuid: uuidv1(),
+      int: 23,
+      string: "barrr",
+      float: 2.233,
+      bool: true,
+      enum: SuperNestedObjectEnum.Yes,
+      intList: [13, 28, 42],
+      union: {
+        name: "bye",
+        birthday: new Date(),
+        breed: RabbitBreed.AmericanChincilla,
+      },
+    };
+
+    const edited = await EditUserAllFieldsAction.create(user.viewer, user, {
+      superNestedObject: editedObj,
+    }).saveX();
+    const formattedEditedObj = {
+      ...editedObj,
+      union: {
+        ...editedObj.union,
+        birthday: editedObj.union?.birthday.toISOString(),
+      },
+    };
+    expect(await edited.superNestedObject()).toStrictEqual(formattedEditedObj);
+
+    setLogLevels("query");
+    const ml = new MockLogs();
+    ml.mock();
+
+    // confirm that we can create and edit with a field that's delayed fetch even if when we load
+    // on its own, we don't fetch
+    await User.loadX(user.viewer, user.id);
+
+    expect(ml.logs.length).toBe(1);
+    let execArray = /^SELECT (.+) FROM (.+) WHERE (.+)?/.exec(
+      ml.logs[0].query || "",
+    );
+
+    const cols = execArray![1].split(", ");
+    expect(cols.includes("super_nested_object")).toBe(false);
+    // just confirm a few other fields included...
+    expect(cols.includes("id")).toBe(true);
+    expect(cols.includes("first_name")).toBe(true);
+  });
+
+  test("query empty with context", async () => {
+    const user = await CreateUserAction.create(
+      new LoggedOutExampleViewer(new TestContext()),
+      {
+        firstName: "Jane",
+        lastName: "Doe",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: random(),
+      },
+    ).saveX();
+    expect(await user.superNestedObject()).toBe(null);
   });
 });
 

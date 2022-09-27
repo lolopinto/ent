@@ -1,11 +1,11 @@
+import * as fs from "fs";
 import { LoggedOutViewer } from "../core/viewer";
 
-import { Schema, Field } from ".";
+import { Schema } from ".";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
-import { TempDB, getSchemaTable } from "../testutils/db/test_db";
+import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
 import { Ent } from "../core/base";
-import * as fs from "fs";
 import { loadConfig } from "../core/config";
 import { convertJSON } from "../core/convert";
 import { JSONType, JSONBType } from "./json_field";
@@ -64,7 +64,7 @@ describe("postgres", () => {
 });
 
 describe("sqlite", () => {
-  setupTempDB(Dialect.SQLite, `sqlite:///schema_live.db`);
+  setupTempDB(Dialect.SQLite, `sqlite:///schema_json.db`);
   commonTests();
 });
 

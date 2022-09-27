@@ -10,7 +10,6 @@ export interface Database extends PoolConfig {
   password?: string;
   host?: string;
   port?: number;
-  ssl?: boolean;
   sslmode?: string;
 }
 
@@ -175,7 +174,7 @@ export default class DB {
     return this.q.newClient();
   }
 
-  async getSQLiteClient(): Promise<Sqlite> {
+  getSQLiteClient(): Sqlite {
     if (this.db.dialect == Dialect.Postgres) {
       throw new Error(`can't call getSQLiteClient when dialect is postgres`);
     }
@@ -294,6 +293,7 @@ interface SqliteRunResult {
 
 interface SqliteDatabase {
   memory: boolean;
+  exec(query: string): SqliteStatement;
   prepare(query: string): SqliteStatement;
   close(): void;
   transaction(fn: (...params: any[]) => any): SqliteTransaction;

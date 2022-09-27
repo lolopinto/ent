@@ -126,7 +126,7 @@ func modifyFieldForDataType(
 		}
 		// if the datatype is specifically private, field makes it private
 		if res.private {
-			f.Private = true
+			f.Private = &input.PrivateOptions{}
 		}
 
 		f.DataTypePkgPath = getImportedPackageThatMatchesIdent(pkg, info.PkgName, info.IdentName).PkgPath
@@ -192,7 +192,8 @@ var m = map[string]fn{
 	"field.ServerDefault": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 1, func() {
 			// TODO compare types with f.type
-			f.ServerDefault = args[0].Literal
+			serverDefault := args[0].Literal
+			f.ServerDefault = &serverDefault
 		})
 	},
 	"field.HideFromGraphQL": func(f *input.Field, args astparser.Results) error {

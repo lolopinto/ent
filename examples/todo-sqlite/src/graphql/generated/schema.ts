@@ -13,6 +13,11 @@ import {
   EditAccountInputType,
   EditAccountPayloadType,
 } from "src/graphql/generated/mutations/account/edit_account_type";
+import {
+  AccountTodoStatusInputType,
+  TodoStatusAccountEditInputType,
+  TodoStatusAccountEditPayloadType,
+} from "src/graphql/generated/mutations/account/todo_status_account_edit_type";
 import { MutationType } from "src/graphql/generated/mutations/mutation_type";
 import {
   CreateTagInputType,
@@ -45,10 +50,14 @@ import {
 import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
   AccountStateType,
+  AccountToClosedTodosDupConnectionType,
   AccountToOpenTodosConnectionType,
+  AccountToOpenTodosDupConnectionType,
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
+  AccountTodoStatusType,
   AccountType,
+  RootToClosedTodosLastDayConnectionType,
   RootToOpenTodosConnectionType,
   TagToTodosConnectionType,
   TagType,
@@ -61,15 +70,20 @@ export default new GraphQLSchema({
   mutation: MutationType,
   types: [
     AccountStateType,
+    AccountTodoStatusType,
     AccountType,
     TagType,
     TodoType,
+    AccountToClosedTodosDupConnectionType(),
     AccountToOpenTodosConnectionType(),
+    AccountToOpenTodosDupConnectionType(),
     AccountToTagsConnectionType(),
     AccountToTodosConnectionType(),
+    RootToClosedTodosLastDayConnectionType(),
     RootToOpenTodosConnectionType(),
     TagToTodosConnectionType(),
     TodoToTagsConnectionType(),
+    AccountTodoStatusInputType,
     AddTodoTagInputType,
     AddTodoTagPayloadType,
     ChangeTodoStatusInputType,
@@ -90,5 +104,7 @@ export default new GraphQLSchema({
     RemoveTodoTagPayloadType,
     RenameTodoInputType,
     RenameTodoPayloadType,
+    TodoStatusAccountEditInputType,
+    TodoStatusAccountEditPayloadType,
   ],
 });

@@ -49,6 +49,19 @@ sa.Table("tags", metadata,
     sa.UniqueConstraint("canonical_name", "owner_id", name="uniqueForOwner"),
 )
    
+sa.Table("todo_edges", metadata,
+    sa.Column("id1", sa.Text(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", sa.Text(), nullable=False),
+    sa.Column("id2", sa.Text(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="todo_edges_id1_edge_type_id2_pkey"),
+    sa.Index("todo_edges_time_idx", "time"),
+)
+   
 sa.Table("todo_tags_edges", metadata,
     sa.Column("id1", sa.Text(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -57,6 +70,7 @@ sa.Table("todo_tags_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
+    sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="todo_tags_edges_id1_edge_type_id2_pkey"),
     sa.Index("todo_tags_edges_time_idx", "time"),
 )
@@ -69,9 +83,11 @@ sa.Table("todos", metadata,
     sa.Column("text", sa.Text(), nullable=False),
     sa.Column("completed", sa.Boolean(), nullable=False),
     sa.Column("creator_id", sa.Text(), nullable=False),
+    sa.Column("completed_date", sa.TIMESTAMP(), nullable=True),
     sa.Index("todos_deleted_at_idx", "deleted_at"),
     sa.Index("todos_completed_idx", "completed"),
     sa.Index("todos_creator_id_idx", "creator_id"),
+    sa.Index("todos_completed_date_idx", "completed_date"),
     sa.PrimaryKeyConstraint("id", name="todos_id_pkey"),
     sa.ForeignKeyConstraint(["creator_id"], ["accounts.id"], name="todos_creator_id_fkey", ondelete="CASCADE"),
 )
@@ -79,6 +95,8 @@ sa.Table("todos", metadata,
 
 metadata.info["edges"] = {
   'public': {
+    'AccountToClosedTodosDupEdge': {"edge_name":"AccountToClosedTodosDupEdge", "edge_type":"7dcd1712-6a08-4253-96d9-068996bb6e4a", "edge_table":"todo_edges", "symmetric_edge":False, "inverse_edge_type":None},
+    'AccountToOpenTodosDupEdge': {"edge_name":"AccountToOpenTodosDupEdge", "edge_type":"a75dafbf-0051-4804-bb99-a0c212599af3", "edge_table":"todo_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'TagToTodosEdge': {"edge_name":"TagToTodosEdge", "edge_type":"33dd169d-a290-4d3f-8b09-b74628bec247", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"546160e1-224a-42ef-92c7-46089ab5e06e"},
     'TodoToTagsEdge': {"edge_name":"TodoToTagsEdge", "edge_type":"546160e1-224a-42ef-92c7-46089ab5e06e", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"33dd169d-a290-4d3f-8b09-b74628bec247"},
   }

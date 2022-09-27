@@ -20,7 +20,6 @@ import {
 import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader";
 import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
-import { IndexLoaderFactory } from "../../core/loaders/index_loader";
 import { contactLoader } from "./fake_contact";
 import { clear } from "jest-date-mock";
 import { Interval } from "luxon";
@@ -60,15 +59,14 @@ export const userToContactsCountLoaderFactory = new RawCountLoaderFactory({
   ...FakeContact.loaderOptions(),
   groupCol: "user_id",
 });
-export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
-  FakeContact.loaderOptions(),
-  "user_id",
-  {
-    toPrime: [contactLoader],
-  },
-);
+export const userToContactsDataLoaderFactory = new QueryLoaderFactory({
+  ...FakeContact.loaderOptions(),
+  groupCol: "user_id",
+  toPrime: [contactLoader],
+});
 
-export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<
+// note: this is still used in graphql tests...
+export class UserToContactsFkeyQueryDeprecated extends CustomEdgeQueryBase<
   FakeUser,
   FakeContact
 > {
@@ -79,11 +77,63 @@ export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<
       countLoaderFactory: userToContactsCountLoaderFactory,
       dataLoaderFactory: userToContactsDataLoaderFactory,
       options: FakeContact.loaderOptions(),
+      sortColumn: "created_at",
+    });
+  }
+
+  static query(
+    viewer: Viewer,
+    src: FakeUser | ID,
+  ): UserToContactsFkeyQueryDeprecated {
+    return new UserToContactsFkeyQueryDeprecated(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
+}
+
+// this replaces UserToContactsFkeyQueryDeprecated
+export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<
+  FakeUser,
+  FakeContact
+> {
+  constructor(viewer: Viewer, src: ID | FakeUser) {
+    super(viewer, {
+      src,
+      loadEntOptions: FakeContact.loaderOptions(),
+      groupCol: "user_id",
+      name: "user_to_contacts",
+      // instead of the id col...
+      sortColumn: "created_at",
     });
   }
 
   static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {
     return new UserToContactsFkeyQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
+}
+
+export class UserToContactsFkeyQueryAsc extends CustomEdgeQueryBase<
+  FakeUser,
+  FakeContact
+> {
+  constructor(viewer: Viewer, src: ID | FakeUser) {
+    super(viewer, {
+      src,
+      loadEntOptions: FakeContact.loaderOptions(),
+      groupCol: "user_id",
+      name: "user_to_contacts",
+      sortColumn: "created_at ASC",
+    });
+  }
+
+  static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {
+    return new UserToContactsFkeyQueryAsc(viewer, src);
   }
 
   sourceEnt(id: ID) {
@@ -395,21 +445,6 @@ export function getCompleteClause(id: ID): clause.Clause {
   return clause.And(clause.Eq("user_id", id), getNextWeekClause());
 }
 
-export const userToEventsInNextWeekCountLoaderFactory =
-  new RawCountLoaderFactory({
-    ...FakeEvent.loaderOptions(),
-    groupCol: "user_id",
-    clause: getNextWeekClause(),
-  });
-
-export const userToEventsInNextWeekDataLoaderFactory = new QueryLoaderFactory({
-  ...FakeEvent.loaderOptions(),
-  groupCol: "user_id",
-  clause: getNextWeekClause(),
-  toPrime: [contactLoader],
-  sortColumn: "start_time",
-});
-
 export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<
   FakeUser,
   FakeEvent
@@ -417,11 +452,10 @@ export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: ID | FakeUser) {
     super(viewer, {
       src,
-      // we want to reuse this and not create a new one every time...
-      countLoaderFactory: userToEventsInNextWeekCountLoaderFactory,
-      dataLoaderFactory: userToEventsInNextWeekDataLoaderFactory,
-      options: FakeEvent.loaderOptions(),
-      // hmm TODO shouldn't need to write this twice...
+      groupCol: "user_id",
+      clause: getNextWeekClause(),
+      loadEntOptions: FakeEvent.loaderOptions(),
+      name: "events_in_next_week",
       sortColumn: "start_time",
     });
   }

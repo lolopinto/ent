@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -13,7 +12,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -142,8 +141,26 @@ func Get() *Config {
 	return cfg
 }
 
+type Dialect string
+
+const (
+	SQLite   Dialect = "sqlite"
+	Postgres Dialect = "postgres"
+)
+
+func GetAllDialects() []Dialect {
+	return []Dialect{
+		SQLite,
+		Postgres,
+	}
+}
+
 func IsSQLiteDialect() bool {
-	return Get().DB.Dialect == "sqlite"
+	return Get().DB.Dialect == string(SQLite)
+}
+
+func GetDialect() Dialect {
+	return Dialect(Get().DB.Dialect)
 }
 
 func GetConnectionStr() string {
@@ -210,7 +227,15 @@ func parseConnectionString() (*DBConfig, error) {
 			return nil, fmt.Errorf("invalid key %s in url", parts2[0])
 		}
 
-		fn(parts2[1])
+		// TODO handle this better
+		// API changed and we need to handle it...
+		v := parts2[1]
+		if v != "" {
+			if v[0] == '\'' && v[len(v)-1] == '\'' {
+				v = v[1 : len(v)-1]
+			}
+		}
+		fn(v)
 	}
 	return r, nil
 }
@@ -231,7 +256,7 @@ func loadDBConfig() *DBConfig {
 		log.Fatalf("no way to get db config :%v", err)
 	}
 
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("could not read yml file to load db: %v", err)
 	}

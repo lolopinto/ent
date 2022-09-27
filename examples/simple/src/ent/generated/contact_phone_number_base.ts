@@ -12,7 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -48,8 +48,8 @@ export class ContactPhoneNumberBase implements Ent<ExampleViewerAlias> {
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.phoneNumber = data.phone_number;
     this.label = data.label;
     this.contactID = data.contact_id;
@@ -102,7 +102,10 @@ export class ContactPhoneNumberBase implements Ent<ExampleViewerAlias> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      ContactPhoneNumberBase.loaderOptions.apply(this),
+      {
+        ...ContactPhoneNumberBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -113,10 +116,27 @@ export class ContactPhoneNumberBase implements Ent<ExampleViewerAlias> {
     context?: Context,
   ): Promise<ContactPhoneNumberDBData[]> {
     return (await loadCustomData(
-      ContactPhoneNumberBase.loaderOptions.apply(this),
+      {
+        ...ContactPhoneNumberBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as ContactPhoneNumberDBData[];
+  }
+
+  static async loadCustomCount<T extends ContactPhoneNumberBase>(
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...ContactPhoneNumberBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends ContactPhoneNumberBase>(

@@ -9,6 +9,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
+import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLTime } from "@snowtop/ent/graphql";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -16,6 +17,7 @@ import { ViewerResolver } from "../../resolvers/viewer";
 
 interface timeDiffArgs {
   time: any;
+  log: any;
 }
 
 export const TimeDiffQueryType: GraphQLFieldConfig<
@@ -29,6 +31,10 @@ export const TimeDiffQueryType: GraphQLFieldConfig<
       description: "",
       type: new GraphQLNonNull(GraphQLTime),
     },
+    log: {
+      description: "",
+      type: new GraphQLNonNull(GraphQLJSON),
+    },
   },
   resolve: async (
     _source,
@@ -37,6 +43,6 @@ export const TimeDiffQueryType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ) => {
     const r = new ViewerResolver();
-    return r.timeDiff(args.time);
+    return r.timeDiff(args.time, args.log);
   },
 };

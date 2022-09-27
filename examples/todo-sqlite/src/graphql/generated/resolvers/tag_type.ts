@@ -29,6 +29,12 @@ export const TagType = new GraphQLObjectType({
         return tag.loadOwner();
       },
     },
+    related_tags: {
+      type: new GraphQLList(new GraphQLNonNull(TagType)),
+      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+        return tag.loadRelatedTags();
+      },
+    },
     id: {
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -42,12 +48,6 @@ export const TagType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
       resolve: (tag: Tag, args: {}, context: RequestContext) => {
         return tag.canonicalName;
-      },
-    },
-    related_tag_ids: {
-      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
-      resolve: (tag: Tag, args: {}, context: RequestContext) => {
-        return tag.relatedTagIds;
       },
     },
     todos: {
@@ -70,7 +70,7 @@ export const TagType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+      resolve: (tag: Tag, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           tag.viewer,
           tag,

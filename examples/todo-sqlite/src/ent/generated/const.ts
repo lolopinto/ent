@@ -10,6 +10,10 @@ export enum NodeType {
 }
 
 export enum EdgeType {
+  // AccountToClosedTodosDup is the edgeType for the account to closedtodosdup edge.
+  AccountToClosedTodosDup = "7dcd1712-6a08-4253-96d9-068996bb6e4a",
+  // AccountToOpenTodosDup is the edgeType for the account to opentodosdup edge.
+  AccountToOpenTodosDup = "a75dafbf-0051-4804-bb99-a0c212599af3",
   // TagToTodos is the edgeType for the tag to todos edge.
   TagToTodos = "33dd169d-a290-4d3f-8b09-b74628bec247",
   // TodoToTags is the edgeType for the todo to tags edge.

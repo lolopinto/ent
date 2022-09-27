@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
@@ -148,14 +147,21 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
-func (e *EdgeInfo) AddEdgeFromInverseFieldEdge(cfg codegenapi.Config, sourceSchemaName, destinationPackageName string, edge *input.InverseFieldEdge) (*AssociationEdge, error) {
+func (e *EdgeInfo) AddEdgeFromInverseFieldEdge(cfg codegenapi.Config, sourceSchemaName, destinationPackageName string, edge *input.InverseFieldEdge, patternName string) (*AssociationEdge, error) {
+	var fns []func(*opts)
+	// force polymorphic
+	if patternName != "" {
+		fns = append(fns, ForceEdgePolymorphic())
+	}
 	assocEge, err := AssocEdgeFromInput(cfg, destinationPackageName, &input.AssocEdge{
 		Name:            edge.Name,
 		TableName:       edge.TableName,
 		EdgeConstName:   edge.EdgeConstName,
 		HideFromGraphQL: edge.HideFromGraphQL,
 		SchemaName:      sourceSchemaName,
-	})
+	},
+		fns...)
+
 	if err != nil {
 		return nil, err
 	}
@@ -247,6 +253,7 @@ func getFieldEdge(cfg codegenapi.Config,
 		"ID":  "ID",
 		"IDs": "IDs",
 		"ids": "_ids",
+		"Ids": "Ids",
 	}
 	// well this is dumb
 	// not an id field, do nothing
@@ -347,7 +354,14 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				cfg,
-				inflection.Plural(nodeName),
+				// TODO this changes a bunch of things
+
+				// it changes a bunch of things
+				// so we need edge name to be the same but loader factory and query to change
+
+				// TODO test multiple polymorphic fields on the same schema
+				inflection.Plural(tsFieldName),
+				// inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
 			quotedDbColName: quotedDBColName,
@@ -358,6 +372,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 		edge._HideFromGraphQL = true
 	}
 	edgeName := edge.GetEdgeName()
+	// TODO this is being called twice  with different edge infos...
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
 	return e.addEdge(edge)
@@ -365,12 +380,16 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 
 func getIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
+	edgeName := inflection.Plural(nodeName)
+	if polymorphic != nil && polymorphic.Name != "" {
+		edgeName = polymorphic.Name
+	}
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				cfg,
-				inflection.Plural(nodeName),
+				edgeName,
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
 			quotedDbColName: quotedDBColName,
@@ -490,6 +509,13 @@ func (edge *FieldEdge) PolymorphicEdge() bool {
 
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	if edge.IsList() {
+		if edge.Nullable {
+			return []*tsimport.ImportPath{
+				tsimport.NewGQLClassImportPath("GraphQLList"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				tsimport.NewLocalGraphQLEntImportPath(edge.NodeInfo.Node),
+			}
+		}
 		return []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLClassImportPath("GraphQLList"),
@@ -632,7 +658,7 @@ func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 }
 
 func (e *IndexedEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetSourceNodeName() string {
@@ -649,7 +675,7 @@ func (e *IndexedEdge) GetGraphQLConnectionName() string {
 		return ""
 		//		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
 	}
-	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
@@ -666,7 +692,7 @@ func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {
-	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetCountFactoryName() string {
@@ -685,7 +711,8 @@ var _ IndexedConnectionEdge = &IndexedEdge{}
 type InverseAssocEdge struct {
 	// note that if anything is changed here, need to update inverseAssocEdgeEqual() in compare_edge.go
 	commonEdgeInfo
-	EdgeConst string
+	EdgeConst   string
+	polymorphic bool
 }
 
 func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
@@ -693,7 +720,7 @@ func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 }
 
 func (e *InverseAssocEdge) PolymorphicEdge() bool {
-	return false
+	return e.polymorphic
 }
 
 var edgeRegexp = regexp.MustCompile(`(\w+)Edge`)
@@ -727,6 +754,7 @@ type AssociationEdge struct {
 	overridenEdgeName    string
 	overridenGraphQLName string
 	PatternName          string
+	polymorphic          bool
 }
 
 func (e *AssociationEdge) CreateEdge() bool {
@@ -757,17 +785,17 @@ func (e *AssociationEdge) EdgeQueryBase() string {
 	return e.TsEdgeQueryName() + "Base"
 }
 
-func (e *AssociationEdge) AssocEdgeBase() string {
+func (e *AssociationEdge) AssocEdgeBaseImport(cfg codegenapi.Config) *tsimport.ImportPath {
 	if e.patternEdgeConst != "" {
-		return fmt.Sprintf("%sEdge", e.patternEdgeConst)
+		return tsimport.NewEntImportPath(fmt.Sprintf("%sEdge", e.patternEdgeConst))
 	}
-	return "AssocEdge"
+	return cfg.GetAssocEdgePath().GetImportPath()
 }
 
 func (e *AssociationEdge) PolymorphicEdge() bool {
 	// not fully supported but implicitly supoorted via Patterns
 	// TODO not ideal because it blocks Nodes called Object
-	return e.NodeInfo.Node == "Object" || e.NodeInfo.Node == "Ent"
+	return e.polymorphic || e.NodeInfo.Node == "Object" || e.NodeInfo.Node == "Ent"
 }
 
 func (e *AssociationEdge) TsEdgeQueryName() string {
@@ -856,6 +884,8 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 		commonEdgeInfo: inverseEdge.commonEdgeInfo,
 		IsInverseEdge:  true,
 		TableName:      e.TableName,
+		// if inverse is polymorphic, flag this as polymorphic too
+		// polymorphic: inverseEdge.polymorphic,
 	})
 }
 
@@ -917,6 +947,7 @@ type AssociationEdgeGroup struct {
 	Edges             map[string]*AssociationEdge // TODO...
 	EdgeActions       []*EdgeAction
 	StatusEnums       []string
+	ViewerBased       bool
 	NullStateFn       string
 	NullStates        []string
 	actionEdges       map[string]bool
@@ -924,8 +955,15 @@ type AssociationEdgeGroup struct {
 	NodeInfo          nodeinfo.NodeInfo
 }
 
+func (edgeGroup *AssociationEdgeGroup) IsNullable() bool {
+	return !edgeGroup.ViewerBased && len(edgeGroup.NullStates) == 0
+}
+
 func (edgeGroup *AssociationEdgeGroup) DefaultNullState() string {
-	return enum.GetTSEnumNameForVal(edgeGroup.NullStates[0])
+	if len(edgeGroup.NullStates) == 0 {
+		return "null"
+	}
+	return fmt.Sprintf("%s.%s", edgeGroup.ConstType, enum.GetTSEnumNameForVal(edgeGroup.NullStates[0]))
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMap() map[string]string {
@@ -960,8 +998,19 @@ func (edgeGroup *AssociationEdgeGroup) GetIDArg() string {
 	return strcase.ToLowerCamel(edgeGroup.DestNodeInfo.Node + "ID")
 }
 
+func (edgeGroup *AssociationEdgeGroup) GetStatusMethodReturn() string {
+	ret := edgeGroup.ConstType
+	if edgeGroup.IsNullable() {
+		ret = fmt.Sprintf("%s | null", ret)
+	}
+	return ret
+}
+
 func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
-	return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
+	if edgeGroup.ViewerBased {
+		return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
+	}
+	return strcase.ToLowerCamel(edgeGroup.GroupStatusName) + "For"
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
@@ -1075,13 +1124,26 @@ func edgeActionsFromInput(actions []*input.EdgeAction) ([]*EdgeAction, error) {
 }
 
 // packageName == "object" for edges from patterns
-func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.AssocEdge) (*AssociationEdge, error) {
+type opts struct {
+	forcePolymorphic bool
+}
+
+func ForceEdgePolymorphic() func(*opts) {
+	return func(o *opts) {
+		o.forcePolymorphic = true
+	}
+}
+func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.AssocEdge, fns ...func(*opts)) (*AssociationEdge, error) {
 	assocEdge := &AssociationEdge{
 		Symmetric:          edge.Symmetric,
 		Unique:             edge.Unique,
 		TableName:          edge.TableName,
 		PatternName:        edge.PatternName,
 		givenEdgeConstName: edge.EdgeConstName,
+	}
+	o := &opts{}
+	for _, f := range fns {
+		f(o)
 	}
 
 	// name wasn't specified? get default one
@@ -1174,15 +1236,23 @@ func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.A
 		}
 	}
 
-	// golang
-	if edge.EntConfig != nil {
-		assocEdge.commonEdgeInfo = getCommonEdgeInfo(cfg, edge.Name, edge.EntConfig)
-	} else { // typescript
+	if o.forcePolymorphic {
 		assocEdge.commonEdgeInfo = getCommonEdgeInfo(
 			cfg,
 			edge.Name,
-			schemaparser.GetEntConfigFromName(edge.SchemaName),
+			schemaparser.GetEntConfigFromName("ent"),
 		)
+	} else {
+		// golang
+		if edge.EntConfig != nil {
+			assocEdge.commonEdgeInfo = getCommonEdgeInfo(cfg, edge.Name, edge.EntConfig)
+		} else { // typescript
+			assocEdge.commonEdgeInfo = getCommonEdgeInfo(
+				cfg,
+				edge.Name,
+				schemaparser.GetEntConfigFromName(edge.SchemaName),
+			)
+		}
 	}
 	assocEdge._HideFromGraphQL = edge.HideFromGraphQL
 
@@ -1195,6 +1265,14 @@ func assocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *in
 		GroupStatusName:   edgeGroup.GroupStatusName,
 		TSGroupStatusName: strcase.ToLowerCamel(edgeGroup.GroupStatusName),
 		NodeInfo:          nodeinfo.GetNodeInfo(packageName),
+		StatusEnums:       edgeGroup.StatusEnums,
+		NullStateFn:       edgeGroup.NullStateFn,
+		NullStates:        edgeGroup.NullStates,
+		ViewerBased:       edgeGroup.ViewerBased,
+	}
+
+	if assocEdgeGroup.ViewerBased && len(assocEdgeGroup.NullStates) == 0 {
+		return nil, fmt.Errorf("ViewerBased edge group must have NullStates")
 	}
 
 	// no overriden table name, get default one
@@ -1217,9 +1295,6 @@ func assocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *in
 			return nil, err
 		}
 	}
-	assocEdgeGroup.StatusEnums = edgeGroup.StatusEnums
-	assocEdgeGroup.NullStateFn = edgeGroup.NullStateFn
-	assocEdgeGroup.NullStates = edgeGroup.NullStates
 	if assocEdgeGroup.NullStateFn != "" && len(assocEdgeGroup.NullStates) == 0 {
 		return nil, fmt.Errorf("cannot have null state fn with no null states")
 	}
@@ -1364,9 +1439,6 @@ func getCommonEdgeInfo(
 	entConfig *schemaparser.EntConfigInfo,
 ) commonEdgeInfo {
 
-	if edgeName == "" {
-		spew.Dump("null edgeName")
-	}
 	ret := commonEdgeInfo{
 		EdgeName:        edgeName,
 		entConfig:       entConfig,

@@ -3,7 +3,6 @@ package schemaparser
 import (
 	"fmt"
 	"go/ast"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,7 +34,8 @@ func (p *ConfigSchemaParser) getRootPath() (string, string) {
 }
 
 func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
-	mode := packages.LoadTypes | packages.LoadSyntax
+	// mode := packages.NeedTypes | packages.NeedSyntax
+	mode := packages.LoadAllSyntax
 
 	cfg := &packages.Config{
 		// the more I load, the slower this is...
@@ -75,7 +75,7 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	p.tempDir, err = ioutil.TempDir(path, "test")
+	p.tempDir, err = os.MkdirTemp(path, "test")
 	if err != nil {
 		return nil, "", err
 	}
@@ -100,7 +100,8 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 		//Fset: fset,
 		// the more I load, the slower this is...
 		// this is a lot slower than the old thing. what am I doing wrong or differently?
-		Mode:    packages.LoadTypes | packages.LoadSyntax,
+		// Mode:    packages.NeedTypes | packages.NeedSyntax | packages.NeedFiles | packages.NeedTypesInfo | packages.NeedImports | packages.LoadAllSyntax,
+		Mode:    packages.LoadAllSyntax,
 		Overlay: overlay,
 	}
 	return cfg, configDir, err

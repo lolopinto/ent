@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Pool, PoolClient } from "pg";
 import { mocked } from "jest-mock";
-import { ID, Ent, Data } from "../core/base";
+import { ID, Data } from "../core/base";
 import { Clause } from "../core/clause";
 
 import { performQuery, queryResult, getDataToReturn } from "./parse_sql";
@@ -256,7 +256,9 @@ export class QueryRecorder {
   }
 
   static mockPool(pool: typeof Pool) {
-    const mockedPool = mocked(pool, true);
+    const mockedPool = mocked(pool);
+    // @ts-ignore
+    // TODO what changed in mockImplementation?
     mockedPool.mockImplementation((): Pool => {
       return {
         totalCount: 1,

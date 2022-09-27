@@ -1,19 +1,24 @@
-ARG GOLANG_VERSION=v0.0.38
-ARG AUTO_SCHEMA_VERSION=0.0.17
+ARG GOLANG_VERSION=v0.1.0-alpha.34
+ARG AUTO_SCHEMA_VERSION=0.0.21
 ARG NODE_VERSION=17
-ARG DOCKER_TAG=0.0.37
+ARG DOCKER_TAG=0.1.0-testtttt
 
 # get and install tsent
-FROM golang:1.17.9-buster As golang-image
+FROM --platform=$BUILDPLATFORM golang:1.19-buster As golang-image
 ARG GOLANG_VERSION
 ARG DOCKER_TAG
 ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
-RUN go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
+ARG TARGETOS TARGETARCH
+# TODO go install works on its own but not the mounts with "read-only file system"
+# RUN --mount=target=. \
+# --mount=type=cache,target=/root/.cache/go-build \
+# --mount=type=cache,target=/go/pkg \
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
-FROM python:3.8.11-buster AS python-image
+FROM --platform=$BUILDPLATFORM python:3.8.11-buster AS python-image
 ARG AUTO_SCHEMA_VERSION
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv
@@ -34,6 +39,7 @@ ENV PATH /go/bin:$PATH
 LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
 
 # install node and dependencies
+# TODO platform specific stuff in the node layers here...
 RUN \
   apt-get update && \
   # wget and gnupg are dependencies needed below

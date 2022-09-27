@@ -11,7 +11,9 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  convertNullableDate,
   convertNullableList,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -24,13 +26,7 @@ import {
   tagLoaderInfo,
   tagNoTransformLoader,
 } from "src/ent/generated/loaders";
-import {
-  Account,
-  DeletedAtMixin,
-  IDeletedAt,
-  NodeType,
-  TagToTodosQuery,
-} from "src/ent/internal";
+import { Account, NodeType, Tag, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag_schema";
 
 interface TagDBData {
@@ -44,25 +40,22 @@ interface TagDBData {
   related_tag_ids: ID[] | null;
 }
 
-export class TagBase
-  extends DeletedAtMixin(class {})
-  implements Ent<Viewer>, IDeletedAt
-{
+export class TagBase implements Ent<Viewer> {
   readonly nodeType = NodeType.Tag;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  protected readonly deletedAt: Date | null;
   readonly displayName: string;
   readonly canonicalName: string;
   readonly ownerID: ID;
   readonly relatedTagIds: ID[] | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
-    // @ts-ignore pass to mixin
-    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.deletedAt = convertNullableDate(data.deleted_at);
     this.displayName = data.display_name;
     this.canonicalName = data.canonical_name;
     this.ownerID = data.owner_id;
@@ -141,7 +134,10 @@ export class TagBase
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      TagBase.loaderOptions.apply(this),
+      {
+        ...TagBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -152,10 +148,27 @@ export class TagBase
     context?: Context,
   ): Promise<TagDBData[]> {
     return (await loadCustomData(
-      TagBase.loaderOptions.apply(this),
+      {
+        ...TagBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as TagDBData[];
+  }
+
+  static async loadCustomCount<T extends TagBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...TagBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends TagBase>(
@@ -181,8 +194,6 @@ export class TagBase
     }
     return row as TagDBData;
   }
-
-  // TODO index deleted_at not id... we want an indexQueryLoader...
 
   static loaderOptions<T extends TagBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -218,5 +229,17 @@ export class TagBase
 
   loadOwnerX(): Promise<Account> {
     return loadEntX(this.viewer, this.ownerID, Account.loaderOptions());
+  }
+
+  async loadRelatedTags(): Promise<Tag[] | null> {
+    if (!this.relatedTagIds) {
+      return null;
+    }
+    const ents = await loadEnts(
+      this.viewer,
+      Tag.loaderOptions(),
+      ...this.relatedTagIds,
+    );
+    return Array.from(ents.values());
   }
 }

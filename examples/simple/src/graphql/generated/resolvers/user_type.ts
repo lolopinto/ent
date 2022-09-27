@@ -42,6 +42,7 @@ import {
   UserPrefsStruct2Type,
   UserPrefsStructType,
   UserSuperNestedObjectType,
+  UserToCommentsAuthoredConnectionType,
   UserToCommentsConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
@@ -124,6 +125,9 @@ export const UserType = new GraphQLObjectType({
     },
     superNestedObject: {
       type: UserSuperNestedObjectType,
+      resolve: async (user: User, args: {}, context: RequestContext) => {
+        return user.superNestedObject();
+      },
     },
     nestedList: {
       type: new GraphQLList(new GraphQLNonNull(UserNestedObjectListType)),
@@ -157,7 +161,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -186,7 +190,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -215,7 +219,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -244,7 +248,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -273,7 +277,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -302,7 +306,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -331,7 +335,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -360,7 +364,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -389,7 +393,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -418,7 +422,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -447,7 +451,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -495,6 +499,35 @@ export const UserType = new GraphQLObjectType({
       type: new GraphQLList(ContactType),
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomainNullableContentsAndList();
+      },
+    },
+    commentsAuthored: {
+      type: new GraphQLNonNull(UserToCommentsAuthoredConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => user.getCommentsAuthored(),
+          args,
+        );
       },
     },
   }),

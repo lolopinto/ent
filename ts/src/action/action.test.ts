@@ -11,6 +11,9 @@ import {
   buildUpdateQuery,
   loadEdgeForID2,
   assocEdgeLoader,
+  setGlobalSchema,
+  clearGlobalSchema,
+  __hasGlobalSchema,
 } from "../core/ent";
 import { setEdgeTypeInGroup, WriteOperation } from "./action";
 import { MockLogs } from "../testutils/mock_log";
@@ -22,9 +25,10 @@ import {
   setupSqlite,
   table,
   text,
-} from "../testutils/db/test_db";
+} from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
 import * as clause from "../core/clause";
+import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -55,7 +59,22 @@ describe("postgres", () => {
     ml.clear();
     QueryRecorder.clear();
   });
-  commonTests();
+
+  describe("with global schema", () => {
+    beforeAll(() => {
+      setGlobalSchema(testEdgeGlobalSchema);
+    });
+
+    afterAll(() => {
+      clearGlobalSchema();
+    });
+
+    commonTests();
+  });
+
+  describe("without global schema", () => {
+    commonTests();
+  });
 });
 
 describe("sqlite", () => {
@@ -71,21 +90,40 @@ describe("sqlite", () => {
     QueryRecorder.clear();
     ml.clear();
   });
-  setupSqlite(`sqlite:///action-test.db`, () => [
-    table(
-      "users",
-      // uuid field goes here
-      text("id", { primaryKey: true }),
-      text("foo"),
-    ),
-    assoc_edge_config_table(),
-    assoc_edge_table("edge_table"),
-    assoc_edge_table("edge1_table"),
-    assoc_edge_table("edge2_table"),
-    assoc_edge_table("edge3_table"),
-  ]);
 
-  commonTests();
+  function getTables(global = false) {
+    return [
+      table(
+        "users",
+        // uuid field goes here
+        text("id", { primaryKey: true }),
+        text("foo"),
+      ),
+      assoc_edge_config_table(),
+      assoc_edge_table("edge_table", global),
+      assoc_edge_table("edge1_table", global),
+      assoc_edge_table("edge2_table", global),
+      assoc_edge_table("edge3_table", global),
+    ];
+  }
+
+  describe("with global schema", () => {
+    beforeAll(() => {
+      setGlobalSchema(testEdgeGlobalSchema);
+    });
+
+    afterAll(() => {
+      clearGlobalSchema();
+    });
+
+    setupSqlite(`sqlite:///action-test-global.db`, () => getTables(true));
+    commonTests();
+  });
+
+  describe("without global schema", () => {
+    setupSqlite(`sqlite:///action-test.db`, () => getTables());
+    commonTests();
+  });
 });
 
 class UserSchema implements BuilderSchema<User> {
@@ -132,7 +170,6 @@ function getInsertQuery(id: ID) {
 function getUpdateQuery(ent: User) {
   const [query, _, logValues] = buildUpdateQuery(
     {
-      key: "id",
       tableName: "users",
       fields: {
         foo: "bar",
@@ -140,8 +177,8 @@ function getUpdateQuery(ent: User) {
       fieldsToLog: {
         foo: "bar",
       },
+      whereClause: clause.Eq("id", ent.id),
     },
-    ent.id,
     "RETURNING *",
   );
   return { query, values: logValues };
@@ -250,7 +287,8 @@ function commonTests() {
 
     // select for sqlite
 
-    const fields = {
+    const global = __hasGlobalSchema();
+    const fields: Data = {
       id1: ent.id,
       id2: id2,
       id1_type: "User",
@@ -259,13 +297,18 @@ function commonTests() {
       data: null,
       time: date.toISOString(),
     };
+    if (global) {
+      fields.deleted_at = null;
+    }
     const [query, _, logValues] = buildInsertQuery(
       {
         tableName: "edge_table",
         fields: fields,
         fieldsToLog: fields,
       },
-      "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+      global
+        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, deleted_at = EXCLUDED.deleted_at"
+        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
     expect(ml.logs[lastIdx]).toEqual({
       query: query,
@@ -301,7 +344,7 @@ function commonTests() {
     expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM assoc_edge_config/);
     expect(ml.logs[1]).toEqual(getUpdateQuery(ent));
 
-    const fields = {
+    const fields: Data = {
       id1: ent.id,
       id2: id2,
       id1_type: "User",
@@ -310,13 +353,20 @@ function commonTests() {
       data: null,
       time: date.toISOString(),
     };
+    const global = __hasGlobalSchema();
+    if (global) {
+      fields.deleted_at = null;
+    }
+
     const [query, _, logValues] = buildInsertQuery(
       {
         tableName: "edge_table",
         fields: fields,
         fieldsToLog: fields,
       },
-      "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+      global
+        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, deleted_at = EXCLUDED.deleted_at"
+        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
     expect(ml.logs[lastIdx]).toEqual({
       query: query,

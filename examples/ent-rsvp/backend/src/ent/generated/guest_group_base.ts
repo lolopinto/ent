@@ -10,7 +10,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
-  convertDate,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -48,8 +48,8 @@ export class GuestGroupBase implements Ent<Viewer> {
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.invitationName = data.invitation_name;
     this.eventID = data.event_id;
   }
@@ -101,7 +101,10 @@ export class GuestGroupBase implements Ent<Viewer> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      GuestGroupBase.loaderOptions.apply(this),
+      {
+        ...GuestGroupBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -112,10 +115,27 @@ export class GuestGroupBase implements Ent<Viewer> {
     context?: Context,
   ): Promise<GuestGroupDBData[]> {
     return (await loadCustomData(
-      GuestGroupBase.loaderOptions.apply(this),
+      {
+        ...GuestGroupBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as GuestGroupDBData[];
+  }
+
+  static async loadCustomCount<T extends GuestGroupBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...GuestGroupBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends GuestGroupBase>(

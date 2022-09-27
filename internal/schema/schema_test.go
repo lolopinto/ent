@@ -2,9 +2,7 @@ package schema_test
 
 import (
 	"database/sql"
-	"fmt"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -13,13 +11,11 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/testingutils"
-	"github.com/lolopinto/ent/internal/testingutils/test_db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
+// TODO convert everything here to typescript
 func TestInverseFieldEdge(t *testing.T) {
 	sources := make(map[string]string)
 
@@ -204,67 +200,6 @@ func (config *TodoConfig) GetFields() ent.FieldMap {
 
 	_, err := parseSchemaPlusError(t, sources, "ForeignKeyEdgeInvalid")
 	assert.Error(t, err)
-}
-
-func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
-	friendRequests := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequests")
-
-	require.NotNil(t, friendRequests, "expected the friend requests edge to not be nil")
-
-	assert.NotNil(t, friendRequests.InverseEdge, "expected the friend requests edge to have an inverse edge")
-
-	friendRequestsReceived := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequestsReceived")
-	require.NotNil(t, friendRequestsReceived, "expected the friend requests received edge to not be nil")
-
-	assert.Nil(t, friendRequestsReceived.InverseEdge, "expected the friend requests inverse edge field to be nil")
-
-	assert.True(t, friendRequestsReceived.IsInverseEdge, "expected the friend request is inverse edge field to be true")
-
-	edges := s.GetEdges()
-
-	assert.Len(t, edges, 2, "Expected 2 edges generated in schema, got %d instead", len(edges))
-
-	friendRequestsEdge := edges["AccountToFriendRequestsEdge"]
-	friendRequestsReceivedEdge := edges["AccountToFriendRequestsReceivedEdge"]
-
-	expectedEdge := &ent.AssocEdgeData{
-		EdgeName:      "AccountToFriendRequestsEdge",
-		SymmetricEdge: false,
-		InverseEdgeType: sql.NullString{
-			String: string(friendRequestsReceivedEdge.EdgeType),
-			Valid:  true,
-		},
-		EdgeTable: "account_friend_requests_edges",
-	}
-
-	testEdge(t, friendRequestsEdge, expectedEdge)
-
-	expectedInverseEdge := &ent.AssocEdgeData{
-		EdgeName:      "AccountToFriendRequestsReceivedEdge",
-		SymmetricEdge: false,
-		InverseEdgeType: sql.NullString{
-			String: string(friendRequestsEdge.EdgeType),
-			Valid:  true,
-		},
-		EdgeTable: "account_friend_requests_edges",
-	}
-	testEdge(t, friendRequestsReceivedEdge, expectedInverseEdge)
-
-	accountInfo := s.Nodes["AccountConfig"]
-
-	testConstants(
-		t,
-		accountInfo,
-		map[string]map[string]string{
-			"ent.NodeType": {
-				"AccountType": "account",
-			},
-			"ent.EdgeType": {
-				"AccountToFriendRequestsEdge":         "",
-				"AccountToFriendRequestsReceivedEdge": "",
-			},
-		},
-	)
 }
 
 func TestInverseAssocEdge(t *testing.T) {
@@ -506,42 +441,6 @@ type EventConfig struct {
 	// )
 }
 
-func TestGenerateNewEdges(t *testing.T) {
-	s := getSchemaForNewConstsAndEdges(t)
-	testEdgesFromConstsAndEdges(t, s)
-}
-
-func TestGeneratedConstants(t *testing.T) {
-	s := getSchemaForNewConstsAndEdges(t)
-
-	accountInfo := s.Nodes["AccountConfig"]
-
-	testConstants(
-		t,
-		accountInfo,
-		map[string]map[string]string{
-			"ent.NodeType": {
-				"AccountType": "account",
-			},
-			"ent.EdgeType": {
-				"AccountToFriends2Edge": "",
-			},
-		},
-	)
-
-	todoInfo := s.Nodes["TodoConfig"]
-
-	testConstants(
-		t,
-		todoInfo,
-		map[string]map[string]string{
-			"ent.NodeType": {
-				"TodoType": "todo",
-			},
-		},
-	)
-}
-
 // inlining this in a bunch of places to break the import cycle
 func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources string) *schema.Schema {
 	s, err := parseSchemaPlusError(t, sources, uniqueKeyForSources)
@@ -555,7 +454,6 @@ func parseSchemaPlusError(t *testing.T, sources map[string]string, uniqueKeyForS
 		parsehelper.Sources(uniqueKeyForSources, sources),
 	)
 	return schema.ParsePackage(data.Pkg)
-
 }
 
 func getEdgeFromSchema(t *testing.T, s *schema.Schema, configName, edgeName string) *edge.AssociationEdge {
@@ -568,146 +466,6 @@ func getFieldFromSchema(t *testing.T, s *schema.Schema, configName, fieldName st
 	ret, err := s.GetFieldByName(configName, fieldName)
 	require.Nil(t, err)
 	return ret
-}
-
-func getSourcesForNewConstsAndEdges() map[string]string {
-	sources := make(map[string]string)
-
-	sources["account_config.go"] = `
-	package configs
-
-	import "github.com/lolopinto/ent/ent"
-
-type AccountConfig struct {
-	FirstName string
-}
-
-func (config *AccountConfig) GetTableName() string {
-	return "accounts"
-}
-
-	func (config *AccountConfig) GetEdges() ent.EdgeMap{
-		return ent.EdgeMap{
-			"Friends2": ent.AssociationEdge{
-				EntConfig:   AccountConfig{},
-			},
-		}
-	}
-	`
-
-	sources["todo_config.go"] = `
-	package configs
-
-type TodoConfig struct {
-	Text string
-}
-
-func (config *TodoConfig) GetTableName() string {
-	return "todos"
-}
-	`
-
-	return sources
-}
-
-func getSourceForInverseAssocEdgeSameEnt(t *testing.T) string {
-	return `
-	package configs
-
-	import "github.com/lolopinto/ent/ent"
-
-type AccountConfig struct {
-	FirstName string
-}
-
-	func (config *AccountConfig) GetTableName() string {
-		return "accounts"
-	}
-
-	func (config *AccountConfig) GetEdges() ent.EdgeMap{
-		return ent.EdgeMap{
-			"FriendRequests": ent.AssociationEdge{
-				EntConfig:   AccountConfig{},
-				InverseEdge: &ent.InverseAssocEdge{
-					EdgeName: "FriendRequestsReceived",
-				},
-			},
-		}
-	}
-	`
-}
-
-func getSourceForEdgeWithoutInverse(t *testing.T) string {
-	source := getSourceForInverseAssocEdgeSameEnt(t)
-
-	// strip out InverseEdge: ... }.
-
-	inverseEdgeIdx := strings.Index(source, "InverseEdge")
-	assert.NotEqual(t, inverseEdgeIdx, -1)
-
-	prefix := source[:inverseEdgeIdx]
-	suffix := source[inverseEdgeIdx:]
-
-	// find }, after InverseEdge and strip out the entire InverseEdge
-
-	endIdx := strings.Index(suffix, "},")
-	assert.NotEqual(t, endIdx, -1)
-
-	return prefix + string(suffix[endIdx+2:])
-}
-
-func getSources2ForNewConstsAndEdges(t *testing.T) map[string]string {
-	sources := getSourcesForNewConstsAndEdges()
-
-	todoConfig := sources["todo_config.go"]
-
-	index := strings.Index(todoConfig, "type TodoConfig")
-	assert.NotEqual(t, index, -1)
-
-	// need to add import github.com/lolopinto/ent/ent
-	todoConfig = todoConfig[:index] + `import "github.com/lolopinto/ent/ent"
-	
-	` + todoConfig[index:]
-
-	// add a new edge in a second PR
-	sources["todo_config.go"] = todoConfig +
-		`
-	func (config *TodoConfig) GetEdges() ent.EdgeMap{
-		return ent.EdgeMap{
-			"Account": ent.AssociationEdge{
-				EntConfig: AccountConfig{},
-			},
-		}
-	}
-	`
-	fmt.Println(sources["todo_config.go"])
-	return sources
-}
-
-func getSchemaForNewConstsAndEdges(t *testing.T) *schema.Schema {
-	sources := getSourcesForNewConstsAndEdges()
-	return parseSchema(t, sources, "NewConstsAndEdges")
-}
-
-func getSchemaForNewConstsAndEdges2(t *testing.T) *schema.Schema {
-	sources := getSources2ForNewConstsAndEdges(t)
-	return parseSchema(t, sources, "NewConstsAndEdges2")
-}
-
-func testEdgesFromConstsAndEdges(t *testing.T, s *schema.Schema) {
-	newEdges := s.GetNewEdges()
-
-	require.Len(t, newEdges, 1)
-	newEdge := newEdges[0]
-
-	expectedEdge := &ent.AssocEdgeData{
-		EdgeName:        "AccountToFriends2Edge",
-		SymmetricEdge:   false,
-		InverseEdgeType: sql.NullString{},
-		EdgeTable:       "account_friends_2_edges",
-	}
-
-	testEdge(t, newEdge, expectedEdge)
 }
 
 func testEdge(t *testing.T, edge, expectedEdge *ent.AssocEdgeData) {
@@ -836,153 +594,4 @@ func testConstants(t *testing.T, info *schema.NodeDataInfo, constMap map[string]
 			}
 		}
 	}
-}
-
-type edgeTestSuite struct {
-	testingutils.Suite
-	tdb *test_db.TestDB
-}
-
-func (suite *edgeTestSuite) SetupSuite() {
-	suite.tdb = &test_db.TestDB{
-		Tables: []test_db.Table{
-			{
-				Name: "assoc_edge_config",
-				Columns: []test_db.Column{
-					test_db.UUID("edge_type", test_db.PrimaryKey()),
-					test_db.Text("edge_name"),
-					test_db.Bool("symmetric_edge"),
-					test_db.UUID("inverse_edge_type", test_db.Nullable()),
-					test_db.Text("edge_table"),
-					test_db.Timestamp("created_at"),
-					test_db.Timestamp("updated_at"),
-				},
-			},
-		},
-	}
-
-	err := suite.tdb.BeforeAll()
-	require.Nil(suite.T(), err)
-
-	suite.Tables = []string{"assoc_edge_config"}
-	suite.Suite.ForceClean = true
-	suite.Suite.SetupSuite()
-}
-
-func (suite *edgeTestSuite) TearDownSuite() {
-	err := suite.tdb.AfterAll()
-	require.Nil(suite.T(), err)
-}
-
-func (suite *edgeTestSuite) TestNewVsExistingEdges() {
-	t := suite.T()
-	s := getSchemaForNewConstsAndEdges(t)
-	testEdgesFromConstsAndEdges(t, s)
-
-	// 1 new edge added. 1 edge total
-	suite.validateSchema(s, 1, 1, 0)
-
-	s2 := getSchemaForNewConstsAndEdges2(t)
-
-	// 1 new edge added. 2 edges total
-	suite.validateSchema(s2, 2, 1, 0)
-}
-
-func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
-	sources := make(map[string]string)
-	sources["account_config.go"] = getSourceForEdgeWithoutInverse(suite.T())
-
-	s := parseSchema(suite.T(), sources, "InverseAssocEdgeFirstTry")
-	friendRequests := getEdgeFromSchema(suite.T(), s, "AccountConfig", "FriendRequests")
-
-	require.NotNil(
-		suite.T(),
-		friendRequests,
-		"expected the friend requests edge to not be nil",
-	)
-
-	require.Nil(
-		suite.T(),
-		friendRequests.InverseEdge,
-		"expected the friend requests edge not to have an inverse edge",
-	)
-
-	edges := s.GetEdges()
-
-	require.Len(
-		suite.T(),
-		edges,
-		1,
-		"Expected 1 edge generated in schema, got %d instead",
-		len(edges),
-	)
-
-	friendRequestsEdge := edges["AccountToFriendRequestsEdge"]
-
-	expectedEdge := &ent.AssocEdgeData{
-		EdgeName:        "AccountToFriendRequestsEdge",
-		SymmetricEdge:   false,
-		InverseEdgeType: sql.NullString{},
-		EdgeTable:       "account_friend_requests_edges",
-	}
-
-	testEdge(suite.T(), friendRequestsEdge, expectedEdge)
-
-	accountInfo := s.Nodes["AccountConfig"]
-
-	testConstants(
-		suite.T(),
-		accountInfo,
-		map[string]map[string]string{
-			"ent.NodeType": {
-				"AccountType": "account",
-			},
-			"ent.EdgeType": {
-				"AccountToFriendRequestsEdge": "",
-			},
-		},
-	)
-	// 1 new edge added. 1 edge total
-	// validate with db
-	suite.validateSchema(s, 1, 1, 0)
-
-	sources2 := make(map[string]string)
-	sources2["account_config.go"] = getSourceForInverseAssocEdgeSameEnt(suite.T())
-	s2 := parseSchema(suite.T(), sources2, "InverseAssocEdgeAddedAfter")
-	verifyInverseAssocEdgeSameEnt(suite.T(), s2)
-
-	// 1 new edge added. 2 edge total
-	suite.validateSchema(s2, 2, 1, 1)
-}
-
-func (suite *edgeTestSuite) TestInverseAssocEdgeSameEnt() {
-	sources := make(map[string]string)
-
-	sources["account_config.go"] = getSourceForInverseAssocEdgeSameEnt(suite.T())
-
-	s := parseSchema(suite.T(), sources, "InverseAssocEdgeSameEnt")
-	verifyInverseAssocEdgeSameEnt(suite.T(), s)
-}
-
-func (suite *edgeTestSuite) validateSchema(
-	s *schema.Schema,
-	expectedEdges, expectedNewEdges, expectedEdgesToUpdate int) {
-	assert.Equal(suite.T(), expectedNewEdges, len(s.GetNewEdges()))
-	for _, edge := range s.GetNewEdges() {
-		testingutils.CreateEdge(suite.T(), edge)
-	}
-	assert.Equal(suite.T(), expectedEdgesToUpdate, len(s.GetEdgesToUpdate()))
-	// need to update existing edges also
-	for _, edge := range s.GetEdgesToUpdate() {
-		testingutils.EditEdge(suite.T(), edge)
-	}
-
-	assert.Equal(suite.T(), expectedEdges, len(s.GetEdges()))
-	dbEdges := <-ent.GenLoadAssocEdges()
-	assert.Nil(suite.T(), dbEdges.Err)
-	assert.Equal(suite.T(), len(s.GetEdges()), len(dbEdges.Edges))
-}
-
-func TestEdgeSuite(t *testing.T) {
-	suite.Run(t, new(edgeTestSuite))
 }

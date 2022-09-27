@@ -98,7 +98,7 @@ class OpsTest(object):
                 "('UserToFriendsEdge', 1, true, 'user_friends_edge', %s, %s)" % (
                     date_value(self), date_value(self)
                 ) +
-                ", " +
+                ",\n" +
                 "('UserToFollowersEdge', 2, false, 'user_followers_edge', %s, %s)" % (
                     date_value(self), date_value(self)
                 )
@@ -135,7 +135,7 @@ class OpsTest(object):
                 "('UserToFollowersEdge', 1, false, 2, 'user_followers_edge', %s, %s)" % (
                     date_value(self), date_value(self)
                 ) +
-                ", " +
+                ",\n" +
                 "('UserToFolloweesEdge', 2, false, 1, 'user_followees_edge', %s, %s)" % (
                     date_value(self), date_value(self)
                 )
@@ -220,7 +220,7 @@ class OpsTest(object):
                     }
                 ],
             ),
-            "INSERT INTO requests(status) VALUES('open'), ('pending'), ('closed');",
+            "INSERT INTO requests(status) VALUES('open'),\n('pending'),\n('closed');",
         )
 
     def test_remove_rows_one(self, new_test_runner):

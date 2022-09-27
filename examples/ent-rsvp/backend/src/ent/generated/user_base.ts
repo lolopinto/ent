@@ -10,7 +10,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
-  convertDate,
+  loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -50,8 +50,8 @@ export class UserBase implements Ent<Viewer> {
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
@@ -105,7 +105,10 @@ export class UserBase implements Ent<Viewer> {
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      UserBase.loaderOptions.apply(this),
+      {
+        ...UserBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     )) as T[];
   }
@@ -116,10 +119,27 @@ export class UserBase implements Ent<Viewer> {
     context?: Context,
   ): Promise<UserDBData[]> {
     return (await loadCustomData(
-      UserBase.loaderOptions.apply(this),
+      {
+        ...UserBase.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     )) as UserDBData[];
+  }
+
+  static async loadCustomCount<T extends UserBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<number> {
+    return loadCustomCount(
+      {
+        ...UserBase.loaderOptions.apply(this),
+      },
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends UserBase>(

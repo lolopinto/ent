@@ -88,7 +88,7 @@ func (f *NonEntField) ForceOptionalInAction() bool {
 	return false
 }
 
-func (f *NonEntField) DefaultValue() interface{} {
+func (f *NonEntField) DefaultValue() *string {
 	return nil
 }
 
@@ -104,20 +104,12 @@ func (f *NonEntField) IsEditableIDField() bool {
 	return enttype.IsIDType(f.fieldType)
 }
 
-// TODO logic copied/duplicated  from Field
 func (f *NonEntField) GetTsTypeImports() []*tsimport.ImportPath {
 	ret := []*tsimport.ImportPath{}
 	// field type requires imports. assumes it has been reserved separately
 	typ, ok := f.fieldType.(enttype.TSTypeWithImports)
 	if ok {
 		ret = typ.GetTsTypeImports()
-	}
-
-	enumType, ok := f.fieldType.(enttype.EnumeratedType)
-	if ok {
-		// foreign key with enum type requires an import
-		// if pattern enum, this is defined in its own file
-		ret = append(ret, tsimport.NewLocalEntImportPath(enumType.GetTSName()))
 	}
 
 	return ret
