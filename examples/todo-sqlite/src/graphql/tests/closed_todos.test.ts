@@ -83,9 +83,7 @@ test("closed todos last day", async () => {
       viewer: account1.viewer,
       schema: schema,
       root: "closed_todos_last_day",
-      args: {
-        id: account1.id,
-      },
+      args: {},
     },
     ["rawCount", 3],
   );
@@ -97,7 +95,6 @@ test("closed todos last day", async () => {
       schema: schema,
       root: "closed_todos_last_day",
       args: {
-        id: account1.id,
         first: 2,
       },
     },
@@ -117,7 +114,6 @@ test("closed todos last day", async () => {
       schema: schema,
       root: "closed_todos_last_day",
       args: {
-        id: account1.id,
         first: 2,
         after: lastCursor,
       },

@@ -296,7 +296,7 @@ type TodoStatusAccountEditPayload {
 
 type Query {
   account(id: ID!): Account
-  closed_todos_last_day(id: ID!, first: Int, after: String, last: Int, before: String): RootToClosedTodosLastDayConnection!
+  closed_todos_last_day(first: Int, after: String, last: Int, before: String): RootToClosedTodosLastDayConnection!
   open_todos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
   open_todos_plural(id: ID!): [Todo!]!
   tag(id: ID!): Tag
