@@ -270,10 +270,10 @@ class Compiler {
             // update the node...
             return ts.updateImportDeclaration(
               importNode,
-              importNode.decorators,
               importNode.modifiers,
               importNode.importClause,
               ts.factory.createStringLiteral(relPath),
+              importNode.assertClause,
             );
           }
         }
