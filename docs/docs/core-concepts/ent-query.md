@@ -175,7 +175,9 @@ and we can then query all kinds of information from the query.
   const ents = await this.queryContacts().first(10).queryEnts();
 ```
 
-Right now, the sort key is the `id` column. However, this isn't a stable sort since we're not using an autoincrement id column. To change to use a different sort key e.g. `created_at` column, change the generated class as follows:
+Right now, the default sort key is the `id` column. However, this isn't a stable sort since we're not using an autoincrement id column. You should consider this unsorted, we do and "order by" so pagination at specific points in time is possible.
+
+To change to use a different sort key e.g. an indexed `created_at` column, change the generated class as follows:
 
 ```ts title="src/ent/user/query/user_to_contacts_query.ts"
 export class UserToContactsQuery extends UserToContactsQueryBase {
