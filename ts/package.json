@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.1.0-alpha90-99798560-3e2a-11ed-8ea1-635cc7a33740",
+  "version": "0.1.0-alpha90-7fc4bfd0-3e80-11ed-b428-57a2c68aeb33",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
