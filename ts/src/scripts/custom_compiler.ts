@@ -225,8 +225,8 @@ class Compiler {
             // just because of how imports work. it's relative from directory not current path
             path.dirname(fullPath),
             path.join(
-              text.substr(0, idx).replace(r, str.substr(0, strIdx)),
-              text.substr(idx),
+              text.substring(0, idx).replace(r, str.substring(0, strIdx)),
+              text.substring(idx),
             ),
           );
           // if file ends with "..", we've reached a case where we're trying to
@@ -241,8 +241,8 @@ class Compiler {
                 // just because of how imports work. it's relative from directory not current path
                 path.dirname(fullPath),
                 path.join(
-                  text2.substr(0, idx).replace(r, str.substr(0, strIdx)),
-                  text2.substr(idx),
+                  text2.substring(0, idx).replace(r, str.substring(0, strIdx)),
+                  text2.substring(idx),
                 ),
               );
             }
@@ -254,7 +254,7 @@ class Compiler {
           // tsc removes this by default so we need to also do it
           let tsIdx = relPath.indexOf(".ts");
           if (tsIdx !== -1) {
-            relPath = relPath.substr(0, tsIdx);
+            relPath = relPath.substring(0, tsIdx);
           }
           return relPath;
         }
@@ -273,8 +273,7 @@ class Compiler {
               importNode.decorators,
               importNode.modifiers,
               importNode.importClause,
-              importNode.moduleSpecifier,
-              importNode.assertClause,
+              ts.factory.createStringLiteral(relPath),
             );
           }
         }
