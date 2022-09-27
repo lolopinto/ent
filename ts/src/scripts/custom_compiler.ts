@@ -270,10 +270,11 @@ class Compiler {
             // update the node...
             return ts.updateImportDeclaration(
               importNode,
+              importNode.decorators,
+              // @ts-ignore
               importNode.modifiers,
               importNode.importClause,
               ts.factory.createStringLiteral(relPath),
-              importNode.assertClause,
             );
           }
         }
@@ -291,7 +292,7 @@ class Compiler {
                 exportNode.decorators,
                 exportNode.modifiers,
                 exportNode.exportClause,
-                exportNode.moduleSpecifier,
+                ts.factory.createStringLiteral(relPath),
                 exportNode.isTypeOnly,
               );
             }
