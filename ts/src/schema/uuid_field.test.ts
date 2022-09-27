@@ -64,6 +64,35 @@ test("polymorphic object, nullable true", () => {
   );
 });
 
+test("polymorphic object. with types, serverDefault", () => {
+  doTest(
+    { types: ["User", "Post"], serverDefault: "hello" },
+    {
+      dbType: DBType.StringEnum,
+      values: ["User", "Post"],
+      type: undefined,
+      graphQLType: undefined,
+      enumMap: undefined,
+    },
+    {
+      nullable: true,
+      serverDefault: "hello",
+    },
+  );
+});
+
+test("polymorphic object.  serverDefault", () => {
+  doTest(
+    { serverDefault: "hello" },
+    {
+      dbType: DBType.String,
+    },
+    {
+      serverDefault: "hello",
+    },
+  );
+});
+
 function doTest(
   polymorphic: boolean | PolymorphicOptions,
   expDerivedType: Type,
@@ -84,6 +113,7 @@ function doTest(
   const derived = derivedFields![lastKey];
   expect(derived.type).toStrictEqual(expDerivedType);
   expect(derived.nullable).toBe(opts?.nullable);
+  expect(derived.serverDefault).toBe(opts?.serverDefault);
 }
 
 function getInsertAction<T extends Ent>(
