@@ -146,38 +146,20 @@ export class Account extends AccountBase {
 
 Fetching all objects in a custom query isn't always desired because as usage of your application grows, the amount of data that could be returned is a lot. We provide the ability to return an [EntQuery](/docs/core-concepts/ent-query) which can be exposed as a GraphQL [Connection](https://graphql.org/learn/pagination/#complete-connection-model) that follows the [Relay Spec](https://relay.dev/graphql/connections.htm).
 
-To do so, we need to be aware of the following concepts:
-
-* [CustomEdgeQueryBase](#custom-entquery)
-* [RawCountLoaderFactory](/docs/loaders/raw-count-loader#rawcountloaderfactory)
-* [QueryLoaderFactory](/docs/loaders/query-loader#queryloaderfactory)
-
-Here's what the end product looks like here:
+Here's an example query to get open todos of an account in a simple TODO app:
 
 ```ts title="src/ent/account.ts"
-
-const openTodosLoader = new QueryLoaderFactory({
-  ...Todo.loaderOptions(),
-  // or tableName: Todo.loaderOptions().tableName
-  groupCol: "creator_id",
-  clause: query.Eq("completed", false),
-  toPrime: [todoLoader],
-});
-
-const openTodosCountLoader = new RawCountLoaderFactory({
-  ...Todo.loaderOptions(),
-  // or tableName: Todo.loaderOptions().tableName
-  groupCol: "creator_id",
-  clause: query.Eq("completed", false),
-});
 
 export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<Todo> {
   constructor(viewer: Viewer, src: ID | Account) {
     super(viewer, {
       src,
-      countLoaderFactory: openTodosCountLoader,
-      dataLoaderFactory: openTodosLoader,
-      options: Todo.loaderOptions(),
+      groupCol: "creator_id",
+      loadEntOptions: Todo.loaderOptions(),
+      clause: query.Eq("completed", false),
+      name: "account_to_open_todos",
+      // optional...
+      // sortColumn: 'created_at',
     });
   }
 }
@@ -190,17 +172,14 @@ This is the base class of a custom EntQuery that needs to be implemented. This i
 The relevant API is as follows:
 
 ```ts
-interface CustomEdgeQueryOptions<
-  TSource extends Ent<TViewer>,
-  TDest extends Ent<TViewer>,
-  TViewer extends Viewer = Viewer,
-> {
-  src: TSource | ID;
-  countLoaderFactory: LoaderFactory<ID, number>;
-  dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
-  options: LoadEntOptions<TDest, TViewer>;
-  // // defaults to created_at
-  sortColumn?: string;
+interface CustomEdgeQueryOptions<TSource extends Ent<TViewer>, TDest extends Ent<TViewer>, TViewer extends Viewer = Viewer> {
+    src: TSource | ID;
+    loadEntOptions: LoadEntOptions<TDest, TViewer>;
+    groupCol?: string;
+    clause?: Clause;
+    name: string;
+    sortColumn?: string;
+    sortColumnUnique?: boolean;
 }
 
 declare class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<TDest, Data> {
@@ -211,10 +190,12 @@ declare class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<TDest
 `CustomEdgeQueryOptions` has the following properties:
 
 * `src`: The source ent of the query
-* `countLoaderFactory`: [LoaderFactory](/docs/loaders/loader#loaderfactory) used to get the `rawCount`
-* `dataLoaderFactory`: [LoaderFactory](/docs/loaders/loader#loaderfactory) used to get the data at the end of the query
-* `options`: used to load the ents at the end of the query. The generated `Ent.loaderOptions()` method suffices here
-* `sortColumn`: optional. Column in the database to sort by. If not provided, uses the `created_at` field.
+* `loadEntOptions`: used to load the ents at the end of the query. The generated `Ent.loaderOptions()` method suffices here
+* `groupCol`: column in the database that can be converted into an IN query when querying for multiple sources
+* `clause`: [Clause](/docs/advanced-topics/clause) instance for filtering.
+* `name`: unique name used to identify this query. Used with [Context Caching](/docs/core-concepts/context-caching).
+* `sortColumn`: optional. Column in the database to sort by. If not provided, uses the `id` field.
+* `sortColumnUnique`: optional. If provided, `sortColumn` is used in generating the cursors and makes for a simpler SQL query.
 
 ### expose query to graphql
 
@@ -229,3 +210,5 @@ export class Account extends AccountBase {
   }
 }
 ```
+
+TODO global queries...
