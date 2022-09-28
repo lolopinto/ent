@@ -18,6 +18,15 @@ export default class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {
       {
         // anytime we complete a todo, we also set the status to test that flow
         async changeset(builder, input) {
+          if (input.completed) {
+            builder.updateInput({
+              completedDate: new Date(),
+            });
+          } else {
+            builder.updateInput({
+              completedDate: null,
+            });
+          }
           const account = await builder.existingEnt.loadCreatorX();
           const status = input.completed
             ? AccountTodoStatusInput.ClosedTodosDup

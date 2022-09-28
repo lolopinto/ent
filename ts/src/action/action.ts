@@ -208,7 +208,7 @@ async function saveBuilderImpl<
       return;
     }
   }
-  const executor = changeset!.executor();
+  const executor = changeset.executor();
   if (throwErr) {
     return executor.execute();
   } else {

@@ -5,6 +5,7 @@ import {
   Data,
   LoadEntOptions,
   PrivacyPolicy,
+  Context,
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
 import { AllowIfViewerIsRule, AlwaysDenyRule } from "../../core/privacy";
@@ -88,6 +89,12 @@ export class FakeContact implements Ent {
   static async loadX(v: Viewer, id: ID): Promise<FakeContact> {
     return loadEntX(v, id, FakeContact.loaderOptions());
   }
+
+  static async loadRawData(id: ID, context?: Context): Promise<Data | null> {
+    return FakeContact.loaderOptions()
+      .loaderFactory.createLoader(context)
+      .load(id);
+  }
 }
 
 export const FakeContactSchema = getBuilderSchemaFromFields(
@@ -107,6 +114,8 @@ export interface ContactCreateInput {
   lastName: string;
   emailAddress: string;
   userID: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {

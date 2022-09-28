@@ -10,7 +10,7 @@ test("legacy class", async () => {
     };
   }
 
-  parseSchema({ foo: Foo });
+  await parseSchema({ foo: Foo });
 });
 
 test("implicit schema", async () => {
@@ -20,7 +20,7 @@ test("implicit schema", async () => {
     },
   };
 
-  parseSchema({ foo: Foo });
+  await parseSchema({ foo: Foo });
 });
 
 test("new API with constructor config", async () => {
@@ -30,5 +30,5 @@ test("new API with constructor config", async () => {
     },
   });
 
-  parseSchema({ foo: Foo });
+  await parseSchema({ foo: Foo });
 });

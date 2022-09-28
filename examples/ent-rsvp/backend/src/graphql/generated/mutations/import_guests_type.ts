@@ -12,7 +12,7 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { EventType } from "src/graphql/resolvers/";
 import { ImportGuestResolver } from "../../mutations/import_guests";
 
-interface importGuestsArgs {
+interface ImportGuestsArgs {
   eventID: any;
   file: any;
 }
@@ -20,7 +20,7 @@ interface importGuestsArgs {
 export const ImportGuestsType: GraphQLFieldConfig<
   undefined,
   RequestContext<Viewer>,
-  importGuestsArgs
+  ImportGuestsArgs
 > = {
   type: new GraphQLNonNull(EventType),
   args: {

@@ -3,6 +3,7 @@
 import { GraphQLObjectType } from "graphql";
 import {
   AccountQueryType,
+  ClosedTodosLastDayQueryType,
   OpenTodosPluralQueryType,
   OpenTodosQueryType,
   TagQueryType,
@@ -13,6 +14,7 @@ export const QueryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({
     account: AccountQueryType,
+    closed_todos_last_day: ClosedTodosLastDayQueryType,
     open_todos: OpenTodosQueryType,
     open_todos_plural: OpenTodosPluralQueryType,
     tag: TagQueryType,

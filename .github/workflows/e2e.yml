@@ -30,23 +30,23 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('ts/package-lock.json') }}
@@ -54,14 +54,14 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.19
 
       - name: Set up python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.8'
+          python-version: '3.9'
 
       - name: setup auto_schema dependencies
         run: |
@@ -70,10 +70,10 @@ jobs:
           pipenv install --dev
           
       - name: Setup nodejs
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: 18.x
-      - run: npm install -g ts-node prettier typescript @swc/core @swc/cli jest
+      - run: npm install -g ts-node prettier typescript@4.8.3 @swc/core @swc/cli jest
       - run: |
           cd ts 
           npm ci

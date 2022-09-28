@@ -82,23 +82,9 @@ export const commonTests = <TEdge extends Data>(
   opts: options<FakeContact, TEdge>,
 ) => {
   function getCursorFrom(contacts: FakeContact[], idx: number) {
-    // we depend on the fact that the same time is used for the edge and created_at
-    // based on getContactBuilder
-    // so regardless of if we're doing assoc or custom queries, we can get the time
-    // from the created_at field
     return getCursor({
       row: contacts[idx],
-      col: "createdAt",
-      conv: (t) => {
-        //sqlite
-        if (typeof t === "string") {
-          return Date.parse(t);
-        }
-        return t.getTime();
-      },
-      // we want the right column to be encoded in the cursor as opposed e.g. time for
-      // assoc queries, created_at for index/custom queries
-      cursorKey: opts.sortCol,
+      col: "id",
     });
   }
 

@@ -12,26 +12,24 @@ import { assocTests } from "./shared_assoc_test";
 import { loadCustomEdges } from "../ent";
 import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
 import { convertDate } from "../convert";
+import { MockLogs } from "../../testutils/mock_log";
+import { And, Eq } from "../clause";
 
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
-
-beforeEach(async () => {
-  QueryRecorder.clear();
-  await createEdges();
-  QueryRecorder.clearQueries();
-});
+const ml = new MockLogs();
+ml.mock();
 
 commonTests({
   newQuery(viewer: Viewer, user: FakeUser) {
     return UserToContactsQuery.query(viewer, user);
   },
+  ml,
   uniqKey: "user_to_contacts_table",
   tableName: "user_to_contacts_table",
   entsLength: 2,
-  where: "id1 = $1 AND edge_type = $2 AND deleted_at IS NULL",
+  clause: And(Eq("id1", ""), Eq("edge_type", ""), Eq("deleted_at", null)),
   sortCol: "time",
   globalSchema: true,
+  livePostgresDB: true,
   rawDataVerify: async (user: FakeUser) => {
     const [raw, withDeleted] = await Promise.all([
       loadCustomEdges({
@@ -53,9 +51,10 @@ commonTests({
       expect(convertDate(edge.deletedAt!)).toBeInstanceOf(Date);
     });
   },
+  orderby: "DESC",
 });
 
-assocTests(true);
+assocTests(ml, true);
 
 // TODO need to figure out a better way to test time. we had ms here
 // for times but we needed Date object comparions

@@ -1,7 +1,6 @@
 package graphql
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,7 +57,7 @@ func TestCustomMutation(t *testing.T) {
 
 	absPath, err := filepath.Abs(".")
 	require.NoError(t, err)
-	dirPath, err := ioutil.TempDir(absPath, "project")
+	dirPath, err := os.MkdirTemp(absPath, "project")
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
@@ -84,7 +83,7 @@ func TestCustomMutation(t *testing.T) {
 		`)
 
 	path := filepath.Join(schemaDir, "auth.ts")
-	require.NoError(t, ioutil.WriteFile(path, []byte(code), os.ModePerm))
+	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
 	s, err := buildSchema(data, true)
 	require.NoError(t, err)
@@ -145,7 +144,7 @@ func TestCustomMutation(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailAvailableType")
-	assert.Equal(t, fcfg.Arg, "emailAvailableArgs")
+	assert.Equal(t, fcfg.Arg, "EmailAvailableArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
@@ -189,7 +188,7 @@ func TestCustomQuery(t *testing.T) {
 
 	absPath, err := filepath.Abs(".")
 	require.NoError(t, err)
-	dirPath, err := ioutil.TempDir(absPath, "project")
+	dirPath, err := os.MkdirTemp(absPath, "project")
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
@@ -215,7 +214,7 @@ func TestCustomQuery(t *testing.T) {
 		`)
 
 	path := filepath.Join(schemaDir, "auth.ts")
-	require.NoError(t, ioutil.WriteFile(path, []byte(code), os.ModePerm))
+	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
 	s, err := buildSchema(data, true)
 	require.NoError(t, err)
@@ -276,7 +275,7 @@ func TestCustomQuery(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailAvailableQueryType")
-	assert.Equal(t, fcfg.Arg, "emailAvailableArgs")
+	assert.Equal(t, fcfg.Arg, "EmailAvailableArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
@@ -309,7 +308,7 @@ func TestCustomListQuery(t *testing.T) {
 
 	absPath, err := filepath.Abs(".")
 	require.NoError(t, err)
-	dirPath, err := ioutil.TempDir(absPath, "project")
+	dirPath, err := os.MkdirTemp(absPath, "project")
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
@@ -336,7 +335,7 @@ func TestCustomListQuery(t *testing.T) {
 		`)
 
 	path := filepath.Join(schemaDir, "auth.ts")
-	require.NoError(t, ioutil.WriteFile(path, []byte(code), os.ModePerm))
+	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
 	s, err := buildSchema(data, true)
 	require.NoError(t, err)
@@ -397,7 +396,7 @@ func TestCustomListQuery(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailsAvailableQueryType")
-	assert.Equal(t, fcfg.Arg, "emailsAvailableArgs")
+	assert.Equal(t, fcfg.Arg, "EmailsAvailableArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
@@ -459,7 +458,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 
 	absPath, err := filepath.Abs(".")
 	require.NoError(t, err)
-	dirPath, err := ioutil.TempDir(absPath, "project")
+	dirPath, err := os.MkdirTemp(absPath, "project")
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
@@ -486,7 +485,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 		`)
 
 	path := filepath.Join(schemaDir, "username.ts")
-	require.NoError(t, ioutil.WriteFile(path, []byte(code), os.ModePerm))
+	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
 	s, err := buildSchema(data, true)
 	require.NoError(t, err)
@@ -547,7 +546,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "UsernameQueryType")
-	assert.Equal(t, fcfg.Arg, "usernameArgs")
+	assert.Equal(t, fcfg.Arg, "UsernameArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
@@ -582,7 +581,7 @@ func TestCustomUploadType(t *testing.T) {
 
 	absPath, err := filepath.Abs(".")
 	require.NoError(t, err)
-	dirPath, err := ioutil.TempDir(absPath, "project")
+	dirPath, err := os.MkdirTemp(absPath, "project")
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
@@ -609,7 +608,7 @@ func TestCustomUploadType(t *testing.T) {
 		`)
 
 	path := filepath.Join(schemaDir, "upload.ts")
-	require.NoError(t, ioutil.WriteFile(path, []byte(code), os.ModePerm))
+	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
 	s, err := buildSchema(data, true)
 	require.NoError(t, err)
@@ -669,7 +668,7 @@ func TestCustomUploadType(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "ProfilePicUploadType")
-	assert.Equal(t, fcfg.Arg, "profilePicUploadArgs")
+	assert.Equal(t, fcfg.Arg, "ProfilePicUploadArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{

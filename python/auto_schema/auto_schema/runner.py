@@ -138,8 +138,10 @@ class Runner(object):
         # let's just do simple comparison for now.
         # Things may get more complicated in the future but this works for now
 
-        new_inspected_default = get_clause_text(inspected_default)
-        new_metadata_default = get_clause_text(metadata_default)
+        new_inspected_default = get_clause_text(
+            inspected_default, inspected_column.type)
+        new_metadata_default = get_clause_text(
+            metadata_default, metadata_column.type)
         if isinstance(metadata_column.type, sa.Boolean):
             new_inspected_default = cls.convert_postgres_boolean(
                 new_inspected_default)
@@ -285,9 +287,6 @@ class Runner(object):
     # progressive_sql and upgrade range do go through offline path
     def all_sql(self, file=None, database=''):
         dialect = self.connection.dialect.name
-        # TODO handle
-        if dialect != 'postgresql':
-            return
 
         raw_engine = self.args.get('engine', None)
         if raw_engine is None:

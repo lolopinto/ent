@@ -3,7 +3,6 @@ package schemaparser
 import (
 	"fmt"
 	"go/ast"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,7 +75,7 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	p.tempDir, err = ioutil.TempDir(path, "test")
+	p.tempDir, err = os.MkdirTemp(path, "test")
 	if err != nil {
 		return nil, "", err
 	}

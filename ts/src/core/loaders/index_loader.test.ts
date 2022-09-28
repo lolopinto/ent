@@ -27,7 +27,7 @@ import { IndexLoaderFactory } from "./index_loader";
 const ml = new MockLogs();
 let tdb: TempDB;
 
-let ctx: TestContext;
+let ctx = new TestContext();
 
 const getNewLoader = (context: boolean = true) => {
   return new IndexLoaderFactory(
@@ -56,7 +56,7 @@ describe("postgres", () => {
 
   beforeEach(() => {
     // reset context for each test
-    ctx = new TestContext();
+    ctx?.cache.clearCache();
   });
 
   afterEach(() => {
@@ -80,7 +80,7 @@ describe("sqlite", () => {
 
   beforeEach(async () => {
     // reset context for each test
-    ctx = new TestContext();
+    ctx?.cache.clearCache();
   });
 
   afterEach(() => {
@@ -356,7 +356,7 @@ async function createData(): Promise<createdData> {
 
   await Promise.all(
     [1, 2, 3, 4, 5].map(async (count, idx) => {
-      let [user, contacts] = await createAllContacts(undefined, count);
+      let [user, contacts] = await createAllContacts({ slice: count });
 
       m.set(user.id, contacts.reverse());
       ids[idx] = user.id;

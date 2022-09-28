@@ -9,6 +9,7 @@ import {
   UserToIncomingFriendRequestsQuery,
   UserToFriendRequestsQuery,
   ViewerWithAccessToken,
+  FakeTag,
 } from "../testutils/fake_data";
 import {
   createTestUser,
@@ -66,6 +67,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return FakeContact.loaderOptions();
     case NodeType.FakeEvent:
       return FakeEvent.loaderOptions();
+    case NodeType.FakeTag:
+      return FakeTag.loaderOptions();
   }
 }
 

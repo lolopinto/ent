@@ -64,6 +64,10 @@ export class AssocEdgeCountLoaderFactory implements LoaderFactory<ID, number> {
     this.name = `assocEdgeLoader:count:${edgeType}`;
   }
 
+  getEdgeType() {
+    return this.edgeType;
+  }
+
   createLoader(context?: Context): AssocEdgeCountLoader {
     return getLoader(
       this,

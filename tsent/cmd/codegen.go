@@ -51,7 +51,7 @@ var codegenCmd = &cobra.Command{
 		}
 
 		// nothing to do here
-		if len(currentSchema.Nodes) == 0 {
+		if len(currentSchema.Nodes) == 0 && len(currentSchema.Enums) == 0 {
 			return nil
 		}
 

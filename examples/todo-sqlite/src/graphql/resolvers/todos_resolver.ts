@@ -1,9 +1,9 @@
 import {
-  getTransformedReadClause,
   ID,
   IDViewer,
   query,
   RequestContext,
+  CustomClauseQuery,
 } from "@snowtop/ent";
 import {
   gqlArg,
@@ -13,6 +13,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
 import { Todo, AccountToOpenTodosQuery } from "src/ent";
+import { Interval } from "luxon";
 
 export class TodoResolver {
   // showing plural
@@ -36,5 +37,21 @@ export class TodoResolver {
   ) {
     const viewer = new IDViewer(id);
     return new AccountToOpenTodosQuery(viewer, id);
+  }
+
+  @gqlQuery({ name: "closed_todos_last_day", type: gqlConnection("Todo") })
+  closedTodosLastDay(@gqlContextType() context: RequestContext) {
+    const start = Interval.before(new Date(), { hours: 24 })
+      .start.toUTC()
+      .toISO();
+
+    return new CustomClauseQuery(context.getViewer(), {
+      loadEntOptions: Todo.loaderOptions(),
+      clause: query.And(
+        query.Eq("completed", true),
+        query.GreaterEq("completed_date", start),
+      ),
+      name: "closed_todos_last_day",
+    });
   }
 }

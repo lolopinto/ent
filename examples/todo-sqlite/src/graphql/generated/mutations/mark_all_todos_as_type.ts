@@ -11,15 +11,15 @@ import { RequestContext, Viewer } from "@snowtop/ent";
 import { AccountType } from "src/graphql/resolvers/";
 import { TodosResolver } from "../../mutations/todo/todo_resolver";
 
-interface markAllTodosAsArgs {
+interface MarkAllTodosAsArgs {
   accountID: any;
-  completed: any;
+  completed: boolean;
 }
 
 export const MarkAllTodosAsType: GraphQLFieldConfig<
   undefined,
   RequestContext<Viewer>,
-  markAllTodosAsArgs
+  MarkAllTodosAsArgs
 > = {
   type: new GraphQLNonNull(AccountType),
   args: {

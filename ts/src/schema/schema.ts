@@ -478,6 +478,8 @@ export interface PolymorphicOptions {
   // to simplify the code when it's known that the object here
   // would always have been previously created. simplifies validation
   disableBuilderType?: boolean;
+  // serverDefault for derived polymorphic field
+  serverDefault?: any;
 }
 
 // Field interface that each Field needs to support

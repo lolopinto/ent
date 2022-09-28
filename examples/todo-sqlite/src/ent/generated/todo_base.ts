@@ -37,6 +37,7 @@ interface TodoDBData {
   text: string;
   completed: boolean;
   creator_id: ID;
+  completed_date: Date | null;
 }
 
 export class TodoBase implements Ent<Viewer> {
@@ -48,6 +49,7 @@ export class TodoBase implements Ent<Viewer> {
   readonly text: string;
   readonly completed: boolean;
   readonly creatorID: ID;
+  readonly completedDate: Date | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -57,6 +59,7 @@ export class TodoBase implements Ent<Viewer> {
     this.text = data.text;
     this.completed = convertBool(data.completed);
     this.creatorID = data.creator_id;
+    this.completedDate = convertNullableDate(data.completed_date);
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

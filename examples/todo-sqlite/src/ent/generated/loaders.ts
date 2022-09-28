@@ -162,6 +162,7 @@ const todoFields = [
   "text",
   "completed",
   "creator_id",
+  "completed_date",
 ];
 
 export const todoLoader = new ObjectLoaderFactory({
@@ -210,6 +211,10 @@ export const todoLoaderInfo = {
     creatorID: {
       dbCol: "creator_id",
       inputKey: "creatorID",
+    },
+    completedDate: {
+      dbCol: "completed_date",
+      inputKey: "completedDate",
     },
   },
 };

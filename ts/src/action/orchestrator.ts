@@ -569,6 +569,10 @@ export class Orchestrator<
         privacyError = err as Error;
       }
     }
+    // privacyError should return first since it's less confusing
+    if (privacyError !== null) {
+      return [privacyError];
+    }
 
     // have to run triggers which update fields first before field and other validators
     // so running this first to build things up
@@ -589,9 +593,6 @@ export class Orchestrator<
       this.formatAndValidateFields(schemaFields, editedFields2),
       this.validators(validators, action!, builder),
     ]);
-    if (privacyError !== null) {
-      errors.unshift(privacyError);
-    }
     errors.push(...errs2);
     return errors;
   }

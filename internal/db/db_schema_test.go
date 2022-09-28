@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -2984,7 +2984,7 @@ func getAccountConfigContents(t *testing.T) string {
 	// use a simple non-go file that we don't care about as it changes.
 	path, err := filepath.Abs("../testdata/models/configs/simple_account_config.go.file")
 	assert.Nil(t, err)
-	file, err := ioutil.ReadFile(path)
+	file, err := os.ReadFile(path)
 	assert.Nil(t, err, "error loading account config")
 	return string(file)
 }

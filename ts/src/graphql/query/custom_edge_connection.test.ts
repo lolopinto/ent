@@ -1,23 +1,25 @@
-import { Pool } from "pg";
-import { QueryRecorder } from "../../testutils/db_mock";
+import { TempDB } from "../../testutils/db/temp_db";
 
 import {
   FakeUser,
-  UserToContactsFkeyQuery,
+  UserToContactsFkeyQueryDeprecated,
 } from "../../testutils/fake_data/index";
-import { createEdges } from "../../testutils/fake_data/test_helpers";
+import { setupTempDB } from "../../testutils/fake_data/test_helpers";
 import { commonTests } from "./shared_edge_connection";
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
 
-beforeEach(async () => {
-  QueryRecorder.clear();
-  await createEdges();
-  QueryRecorder.clearQueries();
+let tdb: TempDB;
+
+beforeAll(async () => {
+  tdb = await setupTempDB();
+});
+
+afterAll(async () => {
+  await tdb.afterAll();
 });
 
 commonTests({
-  getQuery: (v, user: FakeUser) => UserToContactsFkeyQuery.query(v, user),
+  getQuery: (v, user: FakeUser) =>
+    UserToContactsFkeyQueryDeprecated.query(v, user),
   tableName: "fake_contacts",
   sortCol: "created_at",
 });

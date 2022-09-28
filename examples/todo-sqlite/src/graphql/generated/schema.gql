@@ -65,6 +65,7 @@ type Todo implements Node {
   id: ID!
   text: String!
   completed: Boolean!
+  completed_date: Time
   tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
 }
 
@@ -123,6 +124,18 @@ type AccountToTodosEdge implements Edge {
 
 type AccountToTodosConnection implements Connection {
   edges: [AccountToTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToClosedTodosLastDayEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type RootToClosedTodosLastDayConnection implements Connection {
+  edges: [RootToClosedTodosLastDayEdge!]!
   nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -283,6 +296,7 @@ type TodoStatusAccountEditPayload {
 
 type Query {
   account(id: ID!): Account
+  closed_todos_last_day(first: Int, after: String, last: Int, before: String): RootToClosedTodosLastDayConnection!
   open_todos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
   open_todos_plural(id: ID!): [Todo!]!
   tag(id: ID!): Tag
@@ -305,6 +319,6 @@ type Mutation {
   todoStatusAccountEdit(input: TodoStatusAccountEditInput!): TodoStatusAccountEditPayload!
 }
 
-"""The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""
-scalar JSON
+"""Time scalar type"""
+scalar Time
 

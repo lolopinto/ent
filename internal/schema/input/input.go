@@ -143,7 +143,7 @@ type Field struct {
 
 	FieldEdge     *FieldEdge  `json:"fieldEdge,omitempty"` // this only really makes sense on id fields...
 	ForeignKey    *ForeignKey `json:"foreignKey,omitempty"`
-	ServerDefault interface{} `json:"serverDefault,omitempty"`
+	ServerDefault *string     `json:"serverDefault,omitempty"`
 	// DisableUserEditable true == DefaultValueOnCreate required OR set in trigger
 	DisableUserEditable        bool `json:"disableUserEditable,omitempty"`
 	DisableUserGraphQLEditable bool `json:"disableUserGraphQLEditable,omitempty"`

@@ -293,6 +293,7 @@ interface SqliteRunResult {
 
 interface SqliteDatabase {
   memory: boolean;
+  exec(query: string): SqliteStatement;
   prepare(query: string): SqliteStatement;
   close(): void;
   transaction(fn: (...params: any[]) => any): SqliteTransaction;

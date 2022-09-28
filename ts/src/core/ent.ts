@@ -505,7 +505,7 @@ export async function loadEntsFromClause<
   };
 
   const rows = await loadRows(rowOptions);
-  return await applyPrivacyPolicyForRows(viewer, rows, options);
+  return applyPrivacyPolicyForRowsDeprecated(viewer, rows, options);
 }
 
 export async function loadCustomEnts<
@@ -518,30 +518,7 @@ export async function loadCustomEnts<
 ) {
   const rows = await loadCustomData(options, query, viewer.context);
 
-  const result: TEnt[] = new Array(rows.length);
-
-  if (!rows.length) {
-    return [];
-  }
-
-  const entLoader = getEntLoader(viewer, options);
-
-  await Promise.all(
-    rows.map(async (row, idx) => {
-      const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
-        viewer,
-        row,
-        options,
-        entLoader,
-      );
-      if (r instanceof ErrorWrapper) {
-        return;
-      }
-      result[idx] = r;
-    }),
-  );
-  // filter ents that aren't visible because of privacy
-  return result.filter((r) => r !== undefined);
+  return applyPrivacyPolicyForRows(viewer, rows, options);
 }
 
 interface parameterizedQueryOptions {
@@ -1903,13 +1880,7 @@ export class AssocEdge {
   getCursor(): string {
     return getCursor({
       row: this,
-      col: "time",
-      conv: (t) => {
-        if (typeof t === "string") {
-          return Date.parse(t);
-        }
-        return t.getTime();
-      },
+      col: "id2",
     });
   }
 }
@@ -1921,6 +1892,7 @@ interface cursorOptions {
   conv?: (any: any) => any;
 }
 
+// TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
   const { row, col, conv } = opts;
   //  row: Data, col: string, conv?: (any) => any) {
@@ -1934,6 +1906,7 @@ export function getCursor(opts: cursorOptions) {
   if (conv) {
     datum = conv(datum);
   }
+
   const cursorKey = opts.cursorKey || col;
   const str = `${cursorKey}:${datum}`;
   return Buffer.from(str, "ascii").toString("base64");
@@ -2249,10 +2222,8 @@ async function applyPrivacyPolicyForRowX<
   return await applyPrivacyPolicyForEntX(viewer, ent, row, options);
 }
 
-// TODO this needs to be changed to use ent cache as needed...
-// most current callsites fine not using it
-// custom_query is one that should be updated
-export async function applyPrivacyPolicyForRows<
+// deprecated. doesn't use entcache
+async function applyPrivacyPolicyForRowsDeprecated<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
 >(viewer: TViewer, rows: Data[], options: LoadEntOptions<TEnt, TViewer>) {
@@ -2267,6 +2238,36 @@ export async function applyPrivacyPolicyForRows<
     }),
   );
   return m;
+}
+
+export async function applyPrivacyPolicyForRows<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(viewer: TViewer, rows: Data[], options: LoadEntOptions<TEnt, TViewer>) {
+  const result: TEnt[] = new Array(rows.length);
+
+  if (!rows.length) {
+    return [];
+  }
+
+  const entLoader = getEntLoader(viewer, options);
+
+  await Promise.all(
+    rows.map(async (row, idx) => {
+      const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
+        viewer,
+        row,
+        options,
+        entLoader,
+      );
+      if (r instanceof ErrorWrapper) {
+        return;
+      }
+      result[idx] = r;
+    }),
+  );
+  // filter ents that aren't visible because of privacy
+  return result.filter((r) => r !== undefined);
 }
 
 async function loadEdgeWithConst<T extends string>(

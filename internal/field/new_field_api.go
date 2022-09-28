@@ -192,7 +192,8 @@ var m = map[string]fn{
 	"field.ServerDefault": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 1, func() {
 			// TODO compare types with f.type
-			f.ServerDefault = args[0].Literal
+			serverDefault := args[0].Literal
+			f.ServerDefault = &serverDefault
 		})
 	},
 	"field.HideFromGraphQL": func(f *input.Field, args astparser.Results) error {

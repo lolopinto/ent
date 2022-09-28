@@ -152,6 +152,8 @@ export interface UserCreateInput {
   emailAddress: string;
   phoneNumber: string | null;
   password: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type UserEditInput = Partial<UserCreateInput>;

@@ -354,7 +354,8 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, err
 		}
 
 		if tagMap["default"] != "" {
-			field.ServerDefault = getUnquotedKeyFromTag(tagMap, "default")
+			serverDefault := getUnquotedKeyFromTag(tagMap, "default")
+			field.ServerDefault = &serverDefault
 		}
 		field.Nullable = isKeyTrue(tagMap, "nullable")
 		field.Unique = isKeyTrue(tagMap, "unique")

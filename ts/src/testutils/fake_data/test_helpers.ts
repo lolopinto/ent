@@ -27,6 +27,8 @@ import { NodeType } from "./const";
 import { MockDate } from "./../mock_date";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { WriteOperation } from "../../action";
+import { FakeTag } from "./fake_tag";
+import { Dialect } from "../../core/db";
 
 export function getContactInput(
   user: FakeUser,
@@ -37,6 +39,8 @@ export function getContactInput(
     lastName: "Snow",
     emailAddress: "foo@bar.com",
     userID: user.id,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...input,
   };
 }
@@ -50,6 +54,8 @@ export function getUserInput(
     emailAddress: "foo@bar.com",
     phoneNumber: "415-212-1212",
     password: "pa$$w0rd",
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...input,
   };
 }
@@ -64,6 +70,8 @@ export function getEventInput(
     title: "title",
     description: "fun event",
     userID: user.id,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...input,
   };
 }
@@ -108,24 +116,36 @@ export const inputs: Partial<ContactCreateInput>[] = [
   },
 ];
 
+interface createContactOptions {
+  input?: Partial<UserCreateInput>;
+  slice?: number;
+  user?: FakeUser;
+  start?: number;
+}
 export async function createAllContacts(
-  input?: Partial<UserCreateInput>,
-  slice?: number,
+  opts?: createContactOptions,
 ): Promise<[FakeUser, FakeContact[]]> {
-  const user = await createTestUser(input);
+  let { input, slice, user } = opts || {};
+  if (!user) {
+    user = await createTestUser(input);
+  }
+  const userr = user!;
 
+  if (opts?.start) {
+    advanceTo(opts.start);
+  }
   let userInputs = inputs.slice(0, slice || inputs.length);
   const contacts = await Promise.all(
     userInputs.map(async (input) => {
       // just to make times deterministic so that tests can consistently work
       advanceBy(100);
       const builder = getContactBuilder(
-        user.viewer,
-        getContactInput(user, input),
+        userr.viewer,
+        getContactInput(userr, input),
       );
       // add edge from user to contact
       builder.orchestrator.addInboundEdge(
-        user.id,
+        userr.id,
         EdgeType.UserToContacts,
         NodeType.FakeUser,
         {
@@ -137,7 +157,7 @@ export async function createAllContacts(
     }),
   );
   expect(contacts.length).toBe(userInputs.length);
-  return [user, contacts];
+  return [userr, contacts];
 }
 
 export async function createUserPlusFriendRequests(
@@ -305,8 +325,8 @@ export async function createTestEvent(
   return await builder.editedEntX();
 }
 
-export async function setupTempDB() {
-  const tdb = new TempDB(tempDBTables());
+export async function setupTempDB(global: boolean = false) {
+  const tdb = new TempDB(Dialect.Postgres, tempDBTables(global));
 
   await tdb.beforeAll();
 
@@ -321,6 +341,7 @@ export function tempDBTables(global: boolean = false) {
     FakeUser.getTestTable(),
     FakeContact.getTestTable(),
     FakeEvent.getTestTable(),
+    FakeTag.getTestTable(),
     assoc_edge_config_table(),
   ];
   edgeTableNames().forEach((tableName) =>
@@ -335,6 +356,7 @@ interface options {
   interval: number;
   userInput?: Partial<UserCreateInput>;
   eventInputs?: Partial<EventCreateInput>[];
+  startTime?: number | Date;
 }
 export async function createAllEvents(
   opts: options,
@@ -345,7 +367,7 @@ export async function createAllEvents(
   arr.fill(1);
 
   // start at date in case something else has used a date already
-  advanceTo(MockDate.getDate());
+  advanceTo(opts.startTime || MockDate.getDate());
 
   const events = await Promise.all(
     arr.map(async (v, idx: number) => {

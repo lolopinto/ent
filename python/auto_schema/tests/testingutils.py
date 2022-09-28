@@ -248,8 +248,8 @@ def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: s
 
 def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Column):
     schema_clause_text = get_clause_text(
-        schema_column.server_default)
-    db_clause_text = get_clause_text(db_column.server_default)
+        schema_column.server_default, schema_column.type)
+    db_clause_text = get_clause_text(db_column.server_default, db_column.type)
 
     if isinstance(schema_column.type, sa.Boolean):
         schema_clause_text = runner.Runner.convert_postgres_boolean(
@@ -259,7 +259,7 @@ def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Colu
     if schema_clause_text is None and db_column.autoincrement == True:
         assert db_clause_text.startswith("nextval")
     else:
-        assert schema_clause_text == db_clause_text
+        assert str(schema_clause_text) == str(db_clause_text)
 
 
 def _validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String):

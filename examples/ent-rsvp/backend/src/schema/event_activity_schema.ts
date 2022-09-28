@@ -21,7 +21,7 @@ const EventActivitySchema = new EntSchema({
     // Name of location, not address. TODO address
     Location: StringType(),
     Description: StringType({ nullable: true }),
-    InviteAllGuests: BooleanType({ serverDefault: "FALSE" }),
+    InviteAllGuests: BooleanType({ serverDefault: false }),
   },
 
   actions: [

@@ -364,6 +364,7 @@ type User implements Node {
   contactsSameDomainNullable: [Contact!]
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
+  commentsAuthored(first: Int, after: String, last: Int, before: String): UserToCommentsAuthoredConnection!
 }
 
 type AddressToHostedEventsEdge implements Edge {
@@ -470,6 +471,18 @@ type EventToMaybeEdge implements Edge {
 type EventToMaybeConnection implements Connection {
   edges: [EventToMaybeEdge!]!
   nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToCommentsAuthoredEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type UserToCommentsAuthoredConnection implements Connection {
+  edges: [UserToCommentsAuthoredEdge!]!
+  nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -888,7 +901,7 @@ input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt
   label: String!
-  date: Time!
+  date: Time
 }
 
 type HolidayCreatePayload {

@@ -5,6 +5,7 @@ import {
   Data,
   LoaderFactory,
   EdgeQueryableDataOptions,
+  Loader,
 } from "../base";
 import * as clause from "../clause";
 import { ObjectLoaderFactory } from "./object_loader";
@@ -43,7 +44,7 @@ export class IndexLoaderFactory implements LoaderFactory<ID, Data[]> {
   createConfigurableLoader(
     options: EdgeQueryableDataOptions,
     context?: Context,
-  ) {
+  ): Loader<ID, Data[]> {
     return this.factory.createConfigurableLoader(options, context);
   }
 }

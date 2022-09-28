@@ -9,16 +9,16 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { TodoType } from "src/graphql/resolvers/internal";
-import { TodoResolver } from "../../resolvers/open_todos";
+import { TodoResolver } from "../../resolvers/todos_resolver";
 
-interface open_todos_pluralArgs {
+interface OpenTodosPluralArgs {
   id: any;
 }
 
 export const OpenTodosPluralQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<Viewer>,
-  open_todos_pluralArgs
+  OpenTodosPluralArgs
 > = {
   type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(TodoType))),
   args: {

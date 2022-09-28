@@ -11,17 +11,9 @@ import {
   EdgeQuerySource,
   Ent,
   ID,
-  IndexLoaderFactory,
-  RawCountLoaderFactory,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
-import {
-  Comment,
-  CommentToPostEdge,
-  EdgeType,
-  NodeType,
-  commentLoader,
-} from "../internal";
+import { Comment, CommentToPostEdge, EdgeType, NodeType } from "../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
@@ -30,30 +22,6 @@ export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
 export const commentToPostDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.CommentToPost,
   () => CommentToPostEdge,
-);
-
-export const articleToCommentsCountLoaderFactory = new RawCountLoaderFactory({
-  ...Comment.loaderOptions(),
-  groupCol: "article_id",
-});
-export const articleToCommentsDataLoaderFactory = new IndexLoaderFactory(
-  Comment.loaderOptions(),
-  "article_id",
-  {
-    toPrime: [commentLoader],
-  },
-);
-
-export const stickerToCommentsCountLoaderFactory = new RawCountLoaderFactory({
-  ...Comment.loaderOptions(),
-  groupCol: "sticker_id",
-});
-export const stickerToCommentsDataLoaderFactory = new IndexLoaderFactory(
-  Comment.loaderOptions(),
-  "sticker_id",
-  {
-    toPrime: [commentLoader],
-  },
 );
 
 export abstract class CommentToPostQueryBase extends AssocEdgeQueryBase<
@@ -99,12 +67,14 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
   constructor(
     viewer: ExampleViewerAlias,
     private srcEnt: Ent<ExampleViewerAlias>,
+    sortColumn?: string,
   ) {
     super(viewer, {
       src: srcEnt,
-      countLoaderFactory: articleToCommentsCountLoaderFactory,
-      dataLoaderFactory: articleToCommentsDataLoaderFactory,
-      options: Comment.loaderOptions(),
+      groupCol: "article_id",
+      loadEntOptions: Comment.loaderOptions(),
+      name: "ArticleToCommentsQuery",
+      sortColumn,
     });
   }
 
@@ -129,12 +99,14 @@ export class StickerToCommentsQueryBase extends CustomEdgeQueryBase<
   constructor(
     viewer: ExampleViewerAlias,
     private srcEnt: Ent<ExampleViewerAlias>,
+    sortColumn?: string,
   ) {
     super(viewer, {
       src: srcEnt,
-      countLoaderFactory: stickerToCommentsCountLoaderFactory,
-      dataLoaderFactory: stickerToCommentsDataLoaderFactory,
-      options: Comment.loaderOptions(),
+      groupCol: "sticker_id",
+      loadEntOptions: Comment.loaderOptions(),
+      name: "StickerToCommentsQuery",
+      sortColumn,
     });
   }
 

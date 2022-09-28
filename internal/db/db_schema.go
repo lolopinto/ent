@@ -950,8 +950,9 @@ func (s *dbSchema) getColumnInfoForFieldWithTable(f *field.Field, tableName stri
 	} else {
 		extraParts = append(extraParts, "nullable=False")
 	}
-	if f.DefaultValue() != nil {
-		extraParts = append(extraParts, fmt.Sprintf("server_default='%s'", f.DefaultValue()))
+	val := f.DefaultValue()
+	if val != nil {
+		extraParts = append(extraParts, fmt.Sprintf("server_default='%s'", *val))
 	}
 	col := s.getColumn(f.FieldName, f.GetDbColName(), dbType, extraParts)
 

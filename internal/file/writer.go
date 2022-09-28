@@ -2,7 +2,6 @@ package file
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -95,7 +94,7 @@ func writeFile(w Writer, cfg Config, opts ...func(opt *Options)) error {
 		err = nil
 	} else {
 		// skip writing
-		err = ioutil.WriteFile(fullPath, b, 0666)
+		err = os.WriteFile(fullPath, b, 0666)
 	}
 
 	if !option.disableLog {

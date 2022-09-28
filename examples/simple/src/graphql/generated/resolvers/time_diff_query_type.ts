@@ -15,15 +15,15 @@ import { GraphQLTime } from "@snowtop/ent/graphql";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import { ViewerResolver } from "../../resolvers/viewer";
 
-interface timeDiffArgs {
-  time: any;
+interface TimeDiffArgs {
+  time: Date;
   log: any;
 }
 
 export const TimeDiffQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<ExampleViewerAlias>,
-  timeDiffArgs
+  TimeDiffArgs
 > = {
   type: new GraphQLNonNull(GraphQLString),
   args: {

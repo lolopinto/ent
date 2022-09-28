@@ -3,40 +3,12 @@ import {
   CustomEdgeQueryBase,
   ID,
   query,
-  QueryLoaderFactory,
-  RawCountLoaderFactory,
   Viewer,
-  getTransformedReadClause,
   PrivacyPolicy,
 } from "@snowtop/ent";
 import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
-import { AccountBase, todoLoader } from "src/ent/internal";
+import { AccountBase } from "src/ent/internal";
 import { Todo } from "./todo";
-import TodoSchema from "src/schema/todo_schema";
-
-// we want to reuse these and not create a new one every time...
-// so that the cache is shared
-// TODO https://github.com/lolopinto/ent/issues/1048 can we skip getTransformedReadClause
-const openTodosLoader = new QueryLoaderFactory({
-  ...Todo.loaderOptions(),
-  groupCol: "creator_id",
-  clause: query.AndOptional(
-    query.Eq("completed", false),
-    getTransformedReadClause(TodoSchema),
-  ),
-  toPrime: [todoLoader],
-});
-
-// TODO https://github.com/lolopinto/ent/issues/1048 can we skip getTransformedReadClause
-const openTodosCountLoader = new RawCountLoaderFactory({
-  //  ...Todo.loaderOptions(),
-  tableName: Todo.loaderOptions().tableName,
-  groupCol: "creator_id",
-  clause: query.AndOptional(
-    query.Eq("completed", false),
-    getTransformedReadClause(TodoSchema),
-  ),
-});
 
 export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
   Account,
@@ -45,11 +17,11 @@ export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: ID | Account) {
     super(viewer, {
       src,
-      countLoaderFactory: openTodosCountLoader,
-      dataLoaderFactory: openTodosLoader,
-      // TODO https://github.com/lolopinto/ent/issues/1048 can we skip getTransformedReadClause
-      // have the info here and can use loaderFactory...
-      options: Todo.loaderOptions(),
+      groupCol: "creator_id",
+      loadEntOptions: Todo.loaderOptions(),
+      clause: query.Eq("completed", false),
+      name: "account_to_open_todos",
+      sortColumn: "created_at",
     });
   }
   sourceEnt(id: ID) {
