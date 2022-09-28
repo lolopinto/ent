@@ -161,9 +161,8 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 			if argObj == nil {
 				createInterface = true
 				intType.Fields = append(intType.Fields, &interfaceField{
-					Name:     arg.Name,
-					Type:     typ,
-					Optional: arg.Nullable != "",
+					Name: arg.Name,
+					Type: typ,
 					//
 					// arg.TSType + add to import so we can useImport
 					//					UseImport: true,
