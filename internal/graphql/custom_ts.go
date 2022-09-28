@@ -402,6 +402,8 @@ func getFieldConfigArgs(field CustomField, s *gqlSchema, mutation bool) []*field
 	return getFieldConfigArgsFrom(field.Args, s, mutation)
 }
 
+// if s is nil, we only check knownTypes to see if arg.Type
+// matches, otherwise, no type given for that...
 func getFieldConfigArgsFrom(args []CustomItem, s *gqlSchema, mutation bool) []*fieldConfigArg {
 	var ret []*fieldConfigArg
 	for _, arg := range args {
@@ -416,15 +418,25 @@ func getFieldConfigArgsFrom(args []CustomItem, s *gqlSchema, mutation bool) []*f
 			panic(err)
 		}
 
-		imp := s.getImportFor(arg.Type, mutation)
-		if imp == nil {
-			// local
-			imp = &tsimport.ImportPath{
-				Import: arg.Type,
+		var imp *tsimport.ImportPath
+
+		if s != nil {
+			imp = s.getImportFor(arg.Type, mutation)
+			if imp == nil {
+				// local
+				imp = &tsimport.ImportPath{
+					Import: arg.Type,
+				}
 			}
+		} else {
+			imp = knownTypes[arg.Type]
 		}
-		var imports = arg.imports[:]
-		imports = append(imports, imp)
+
+		var imports []*tsimport.ImportPath
+		if imp != nil {
+			imports = arg.imports[:]
+			imports = append(imports, imp)
+		}
 
 		ret = append(ret, &fieldConfigArg{
 			// need flag of arg passed to function

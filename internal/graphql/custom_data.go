@@ -228,7 +228,7 @@ func (cf *CustomField) UnmarshalJSON(data []byte) error {
 	if isConnection(cf) {
 		cf.Connection = true
 		// add connection args...
-		cf.Args = append(cf.Args, getConnectionArgs2()...)
+		cf.Args = append(cf.Args, getConnectionArgs()...)
 	}
 
 	return nil
@@ -251,33 +251,29 @@ func (cf CustomField) getResolveMethodArg() string {
 	return "{}"
 }
 
-func getConnectionArgs2() []CustomItem {
+func getConnectionArgs() []CustomItem {
 	return []CustomItem{
 		{
-			Name:     "first",
-			Nullable: NullableTrue,
-			// imports:        []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLInt")},
+			Name:           "first",
+			Nullable:       NullableTrue,
 			Type:           "Int",
 			GraphQLOnlyArg: true,
 		},
 		{
-			Name:     "after",
-			Nullable: NullableTrue,
-			// imports:        []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLString")},
+			Name:           "after",
+			Nullable:       NullableTrue,
 			GraphQLOnlyArg: true,
 			Type:           "String",
 		},
 		{
-			Name:     "last",
-			Nullable: NullableTrue,
-			// imports:        []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLInt")},
+			Name:           "last",
+			Nullable:       NullableTrue,
 			GraphQLOnlyArg: true,
 			Type:           "Int",
 		},
 		{
-			Name:     "before",
-			Nullable: NullableTrue,
-			// imports:        []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLString")},
+			Name:           "before",
+			Nullable:       NullableTrue,
 			GraphQLOnlyArg: true,
 			Type:           "String",
 		},
