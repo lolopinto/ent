@@ -143,8 +143,13 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 			// TODO for now we assume inputtype is 1:1, that's not going to remain the same forever...
 			argObj := cr.getArgObject(cd, arg)
 			typ := knownTsTypes[arg.Type]
+			// TODO use input.Field.GetEntType()
 			if typ == "" {
 				typ = "any"
+			} else {
+				if arg.List {
+					typ = typ + "[]"
+				}
 			}
 			if argObj == nil {
 				createInterface = true
