@@ -15,10 +15,10 @@ import { TodoResolver } from "../../resolvers/todos_resolver";
 
 interface OpenTodosArgs {
   id: any;
-  first?: number;
-  after?: string;
-  last?: number;
-  before?: string;
+  first: number | null;
+  after: string | null;
+  last: number | null;
+  before: string | null;
 }
 
 export const OpenTodosQueryType: GraphQLFieldConfig<
