@@ -147,8 +147,15 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 			if typ == "" {
 				typ = "any"
 			} else {
-				if arg.List {
-					typ = typ + "[]"
+				if arg.Connection {
+					typ = "any"
+				} else {
+					if arg.List {
+						typ = typ + "[]"
+					}
+					if arg.Nullable == NullableTrue {
+						typ = typ + " | null"
+					}
 				}
 			}
 			if argObj == nil {
