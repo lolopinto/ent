@@ -188,6 +188,7 @@ func (cf CustomField) getArg() string {
 	}
 	return "{}"
 }
+
 func getStringFromMap(m map[string]interface{}, key string) string {
 	if m[key] == nil {
 		return ""
@@ -498,6 +499,7 @@ func customItemEqual(item1, item2 CustomItem) bool {
 		item1.List == item2.List &&
 		item1.Connection == item2.Connection &&
 		item1.IsContextArg == item2.IsContextArg &&
+		item1.GraphQLOnlyArg == item2.GraphQLOnlyArg &&
 		item1.TSType == item2.TSType
 }
 
