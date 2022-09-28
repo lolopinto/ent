@@ -10,14 +10,14 @@ import {
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { AuthResolver } from "../../mutations/auth/auth";
 
-interface emailAvailableArgs {
-  email: any;
+interface EmailAvailableArgs {
+  email: string;
 }
 
 export const EmailAvailableQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<Viewer>,
-  emailAvailableArgs
+  EmailAvailableArgs
 > = {
   type: new GraphQLNonNull(GraphQLBoolean),
   args: {
