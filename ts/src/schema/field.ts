@@ -93,15 +93,21 @@ export class UUIDField extends BaseField implements Field {
             derivedWhenEmbedded: true,
             nullable: this.options?.nullable,
             parentFieldToValidate: fieldName,
+            serverDefault: polymorphic.serverDefault,
           }),
         };
       } else {
+        let serverDefault: any = undefined;
+        if (typeof polymorphic === "object") {
+          serverDefault = polymorphic.serverDefault;
+        }
         return {
           [name]: PolymorphicStringType({
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
             nullable: this.options?.nullable,
             parentFieldToValidate: fieldName,
+            serverDefault: serverDefault,
           }),
         };
       }

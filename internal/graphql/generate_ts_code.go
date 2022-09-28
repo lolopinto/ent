@@ -59,6 +59,16 @@ var knownTypes = map[string]*tsimport.ImportPath{
 	"Connection": tsimport.NewEntGraphQLImportPath("GraphQLConnectionInterface"),
 }
 
+var knownTsTypes = map[string]string{
+	"String":  "string",
+	"Date":    "Date",
+	"Int":     "number",
+	"Float":   "float",
+	"Boolean": "boolean",
+	// "ID":         "ID",
+	"BigInt": "bigint",
+}
+
 var knownCustomTypes = map[string]string{
 	"Date": "GraphQLTime",
 	"JSON": "GraphQLJSON",
@@ -1904,27 +1914,6 @@ func addPluralEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 	*fields = append(*fields, gqlField)
 }
 
-func getConnectionArgs() []*fieldConfigArg {
-	return []*fieldConfigArg{
-		{
-			Name:    "first",
-			Imports: []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLInt")},
-		},
-		{
-			Name:    "after",
-			Imports: []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLString")},
-		},
-		{
-			Name:    "last",
-			Imports: []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLInt")},
-		},
-		{
-			Name:    "before",
-			Imports: []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLString")},
-		},
-	}
-}
-
 func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *[]*fieldType, instance string, customField *CustomField) {
 	// import GraphQLEdgeConnection and EdgeQuery file
 	extraImports := []*tsimport.ImportPath{
@@ -1952,7 +1941,7 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		ExtraImports:       extraImports,
-		Args:               getConnectionArgs(),
+		Args:               getFieldConfigArgsFrom(getConnectionArgs(), nil, false),
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(

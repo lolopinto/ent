@@ -16,7 +16,7 @@ import { UserType } from "../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import { ImportContactResolver } from "../../mutations/import_contact";
 
-interface bulkUploadContactArgs {
+interface BulkUploadContactArgs {
   userID: any;
   file: any;
 }
@@ -24,7 +24,7 @@ interface bulkUploadContactArgs {
 export const BulkUploadContactType: GraphQLFieldConfig<
   undefined,
   RequestContext<ExampleViewerAlias>,
-  bulkUploadContactArgs
+  BulkUploadContactArgs
 > = {
   type: new GraphQLNonNull(UserType),
   args: {

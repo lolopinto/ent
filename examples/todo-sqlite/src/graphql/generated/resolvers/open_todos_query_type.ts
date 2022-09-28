@@ -13,14 +13,18 @@ import { GraphQLEdgeConnection } from "@snowtop/ent/graphql";
 import { RootToOpenTodosConnectionType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../../resolvers/todos_resolver";
 
-interface open_todosArgs {
+interface OpenTodosArgs {
   id: any;
+  first: number | null;
+  after: string | null;
+  last: number | null;
+  before: string | null;
 }
 
 export const OpenTodosQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<Viewer>,
-  open_todosArgs
+  OpenTodosArgs
 > = {
   type: new GraphQLNonNull(RootToOpenTodosConnectionType()),
   args: {

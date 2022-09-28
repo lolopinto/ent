@@ -10,14 +10,14 @@ import { RequestContext, Viewer } from "@snowtop/ent";
 import { EventType } from "src/graphql/resolvers/internal";
 import { EventResolver } from "../../resolvers/event";
 
-interface eventArgs {
-  slug: any;
+interface EventArgs {
+  slug: string;
 }
 
 export const EventQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<Viewer>,
-  eventArgs
+  EventArgs
 > = {
   type: EventType,
   args: {

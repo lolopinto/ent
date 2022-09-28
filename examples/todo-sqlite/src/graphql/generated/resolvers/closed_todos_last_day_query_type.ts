@@ -12,10 +12,17 @@ import { GraphQLEdgeConnection } from "@snowtop/ent/graphql";
 import { RootToClosedTodosLastDayConnectionType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../../resolvers/todos_resolver";
 
+interface ClosedTodosLastDayArgs {
+  first: number | null;
+  after: string | null;
+  last: number | null;
+  before: string | null;
+}
+
 export const ClosedTodosLastDayQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<Viewer>,
-  {}
+  ClosedTodosLastDayArgs
 > = {
   type: new GraphQLNonNull(RootToClosedTodosLastDayConnectionType()),
   args: {
