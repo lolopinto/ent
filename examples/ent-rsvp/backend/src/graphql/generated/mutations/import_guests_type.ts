@@ -6,7 +6,7 @@ import {
   GraphQLNonNull,
   GraphQLResolveInfo,
 } from "graphql";
-import { GraphQLUpload } from "graphql-upload";
+import { GraphQLUpload } from "graphql-upload/";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { EventType } from "src/graphql/resolvers/";
