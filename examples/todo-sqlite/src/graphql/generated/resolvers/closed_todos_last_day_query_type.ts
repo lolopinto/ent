@@ -13,10 +13,10 @@ import { RootToClosedTodosLastDayConnectionType } from "src/graphql/resolvers/in
 import { TodoResolver } from "../../resolvers/todos_resolver";
 
 interface ClosedTodosLastDayArgs {
-  first?: number | null;
-  after?: string | null;
-  last?: number | null;
-  before?: string | null;
+  first: number | null;
+  after: string | null;
+  last: number | null;
+  before: string | null;
 }
 
 export const ClosedTodosLastDayQueryType: GraphQLFieldConfig<
