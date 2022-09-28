@@ -1,8 +1,10 @@
 package graphql
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
@@ -26,14 +28,16 @@ type CustomData struct {
 }
 
 type CustomItem struct {
-	Name         string                 `json:"name,omitempty"`
-	Type         string                 `json:"type,omitempty"`
-	Nullable     NullableItem           `json:"nullable,omitempty"`
-	List         bool                   `json:"list,omitempty"`
-	Connection   bool                   `json:"connection,omitempty"`
-	IsContextArg bool                   `json:"isContextArg,omitempty"`
-	TSType       string                 `json:"tsType,omitempty"`
-	imports      []*tsimport.ImportPath `json:"-"`
+	Name         string       `json:"name,omitempty"`
+	Type         string       `json:"type,omitempty"`
+	Nullable     NullableItem `json:"nullable,omitempty"`
+	List         bool         `json:"list,omitempty"`
+	Connection   bool         `json:"connection,omitempty"`
+	IsContextArg bool         `json:"isContextArg,omitempty"`
+	// indicates not to pass it to calling function
+	GraphQLOnlyArg bool                   `json:"_"`
+	TSType         string                 `json:"tsType,omitempty"`
+	imports        []*tsimport.ImportPath `json:"-"`
 }
 
 type CustomScalarInfo struct {
@@ -174,14 +178,60 @@ type CustomField struct {
 	Args         []CustomItem    `json:"args"`
 	Results      []CustomItem    `json:"results"`
 	FieldType    CustomFieldType `json:"fieldType"`
+	Connection   bool            `json:"_"`
 }
 
 func (cf CustomField) getArg() string {
 	if cf.hasCustomArgs() {
 		// interface has been generated for it
-		return cf.GraphQLName + "Args"
+		return strcase.ToCamel(cf.GraphQLName) + "Args"
 	}
 	return "{}"
+}
+func getStringFromMap(m map[string]interface{}, key string) string {
+	if m[key] == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v", m[key])
+}
+
+func getValFromMap(m map[string]interface{}, key string, v any) error {
+	if m[key] == nil {
+		return nil
+	}
+
+	b, err := json.Marshal(m[key])
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(b, v)
+}
+
+func (cf *CustomField) UnmarshalJSON(data []byte) error {
+	m := make(map[string]interface{})
+	err := json.Unmarshal(data, &m)
+	if err != nil {
+		return err
+	}
+
+	cf.Node = getStringFromMap(m, "nodeName")
+	cf.GraphQLName = getStringFromMap(m, "gqlName")
+	cf.FunctionName = getStringFromMap(m, "functionName")
+	cf.FieldType = CustomFieldType(getStringFromMap(m, "fieldType"))
+	if err := getValFromMap(m, "args", &cf.Args); err != nil {
+		return err
+	}
+	if err := getValFromMap(m, "results", &cf.Results); err != nil {
+		return err
+	}
+
+	if isConnection(cf) {
+		cf.Connection = true
+		// add connection args...
+		cf.Args = append(cf.Args, getConnectionArgs2()...)
+	}
+
+	return nil
 }
 
 func (cf CustomField) hasCustomArgs() bool {
@@ -195,10 +245,43 @@ func (cf CustomField) hasCustomArgs() bool {
 
 func (cf CustomField) getResolveMethodArg() string {
 	// for connection, need to render args since we need it for GraphQLEdgeConnection
-	if cf.hasCustomArgs() || isConnection(cf) {
+	if cf.hasCustomArgs() {
 		return "args"
 	}
 	return "{}"
+}
+
+func getConnectionArgs2() []CustomItem {
+	return []CustomItem{
+		{
+			Name:     "first",
+			Nullable: NullableTrue,
+			// imports:        []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLInt")},
+			Type:           "Int",
+			GraphQLOnlyArg: true,
+		},
+		{
+			Name:     "after",
+			Nullable: NullableTrue,
+			// imports:        []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLString")},
+			GraphQLOnlyArg: true,
+			Type:           "String",
+		},
+		{
+			Name:     "last",
+			Nullable: NullableTrue,
+			// imports:        []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLInt")},
+			GraphQLOnlyArg: true,
+			Type:           "Int",
+		},
+		{
+			Name:     "before",
+			Nullable: NullableTrue,
+			// imports:        []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLString")},
+			GraphQLOnlyArg: true,
+			Type:           "String",
+		},
+	}
 }
 
 type CustomClassInfo struct {
@@ -383,7 +466,8 @@ func customFieldEqual(cf1, cf2 *CustomField) bool {
 		cf1.FunctionName == cf2.FunctionName &&
 		customItemsListEqual(cf1.Args, cf2.Args) &&
 		customItemsListEqual(cf1.Results, cf2.Results) &&
-		cf1.FieldType == cf2.FieldType
+		cf1.FieldType == cf2.FieldType &&
+		cf1.Connection == cf2.Connection
 }
 
 func customFieldListComparison(cfg codegenapi.Config, l1, l2 []CustomField) (bool, map[string]bool) {
@@ -398,11 +482,11 @@ func customFieldListComparison(cfg codegenapi.Config, l1, l2 []CustomField) (boo
 		if !customFieldEqual(cf1, cf2) {
 			listEqual = false
 		}
-		if !isConnection(*cf2) {
+		if !cf2.Connection {
 			continue
 		}
 
-		if !ok || !isConnection(*cf1) {
+		if !ok || !cf1.Connection {
 			edge := getGQLEdge(cfg, *cf2, cf2.Node)
 			conns[edge.GetGraphQLConnectionName()] = true
 		}

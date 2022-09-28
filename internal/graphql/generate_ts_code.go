@@ -59,6 +59,16 @@ var knownTypes = map[string]*tsimport.ImportPath{
 	"Connection": tsimport.NewEntGraphQLImportPath("GraphQLConnectionInterface"),
 }
 
+var knownTsTypes = map[string]string{
+	"String":  "string",
+	"Date":    "Date",
+	"Int":     "number",
+	"Float":   "float",
+	"Boolean": "boolean",
+	// "ID":         "ID",
+	"BigInt": "bigint",
+}
+
 var knownCustomTypes = map[string]string{
 	"Date": "GraphQLTime",
 	"JSON": "GraphQLJSON",
@@ -1952,7 +1962,8 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		ExtraImports:       extraImports,
-		Args:               getConnectionArgs(),
+		// TODO??
+		Args: getConnectionArgs(),
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(

@@ -131,7 +131,7 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 		// should we build an interface for this custom object?
 		createInterface := false
 		intType := &interfaceType{
-			Name: field.GraphQLName + "Args",
+			Name: strcase.ToCamel(field.GraphQLName) + "Args",
 		}
 		for _, arg := range field.Args {
 			// nothing to do with context args yet
@@ -142,11 +142,17 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 			// need to build input type
 			// TODO for now we assume inputtype is 1:1, that's not going to remain the same forever...
 			argObj := cr.getArgObject(cd, arg)
+			typ := knownTsTypes[arg.Type]
+			if typ == "" {
+				typ = "any"
+			}
 			if argObj == nil {
 				createInterface = true
 				intType.Fields = append(intType.Fields, &interfaceField{
-					Name: arg.Name,
-					Type: "any",
+					Name:     arg.Name,
+					Type:     typ,
+					Optional: arg.Nullable != "",
+					//
 					// arg.TSType + add to import so we can useImport
 					//					UseImport: true,
 				})
@@ -365,7 +371,7 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor
 		panic("invalid number of results for custom field")
 	}
 
-	if isConnection(qfcg.field) {
+	if qfcg.field.Connection {
 		return getGQLFileImports(getRootGQLEdge(processor.Config, qfcg.field).GetTSGraphQLTypeImports(), false)
 	}
 	r := qfcg.field.Results[0]
@@ -393,8 +399,12 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor
 }
 
 func getFieldConfigArgs(field CustomField, s *gqlSchema, mutation bool) []*fieldConfigArg {
-	var args []*fieldConfigArg
-	for _, arg := range field.Args {
+	return getFieldConfigArgsFrom(field.Args, s, mutation)
+}
+
+func getFieldConfigArgsFrom(args []CustomItem, s *gqlSchema, mutation bool) []*fieldConfigArg {
+	var ret []*fieldConfigArg
+	for _, arg := range args {
 		if arg.IsContextArg {
 			continue
 		}
@@ -416,16 +426,13 @@ func getFieldConfigArgs(field CustomField, s *gqlSchema, mutation bool) []*field
 		var imports = arg.imports[:]
 		imports = append(imports, imp)
 
-		args = append(args, &fieldConfigArg{
+		ret = append(ret, &fieldConfigArg{
+			// need flag of arg passed to function
 			Name:    arg.Name,
 			Imports: imports,
 		})
 	}
-	// add connection args
-	if isConnection(field) {
-		args = append(args, getConnectionArgs()...)
-	}
-	return args
+	return ret
 }
 
 func (qfcg *queryFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg {
@@ -481,10 +488,13 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 	}
 
 	argMap := builder.getArgMap(cd)
-	argContents := make([]string, len(field.Args))
-	for idx, arg := range field.Args {
+	var argContents []string
+	for _, arg := range field.Args {
+		if arg.GraphQLOnlyArg {
+			continue
+		}
 		if arg.IsContextArg {
-			argContents[idx] = "context"
+			argContents = append(argContents, "context")
 			continue
 		}
 		argType := argMap[arg.Type]
@@ -494,9 +504,9 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 					Import:     "mustDecodeIDFromGQLID",
 					ImportPath: codepath.GraphQLPackage,
 				})
-				argContents[idx] = fmt.Sprintf("mustDecodeIDFromGQLID(args.%s)", arg.Name)
+				argContents = append(argContents, fmt.Sprintf("mustDecodeIDFromGQLID(args.%s)", arg.Name))
 			} else {
-				argContents[idx] = fmt.Sprintf("args.%s", arg.Name)
+				argContents = append(argContents, fmt.Sprintf("args.%s", arg.Name))
 			}
 		} else {
 			fields, ok := cd.Fields[arg.Type]
@@ -509,7 +519,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 				// input.foo
 				args[idx] = fmt.Sprintf("%s:%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
 			}
-			argContents[idx] = fmt.Sprintf("{%s},", strings.Join(args, ","))
+			argContents = append(argContents, fmt.Sprintf("{%s},", strings.Join(args, ",")))
 		}
 	}
 	var conn *gqlConnection
@@ -520,7 +530,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		fmt.Sprintf("const r = new %s();", field.Node),
 	}
 
-	if isConnection(field) {
+	if field.Connection {
 		// nodeName is root or something...
 		customEdge := getRootGQLEdge(processor.Config, field)
 		// RootQuery?
@@ -718,7 +728,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 		}
 
 		for _, field := range fields {
-			if isConnection(field) {
+			if field.Connection {
 				customEdge := getGQLEdge(processor.Config, field, nodeName)
 				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
 				addConnection(nodeData, customEdge, &obj.Fields, nodeData.NodeInstance, &field)
@@ -751,7 +761,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 	return nil
 }
 
-func isConnection(field CustomField) bool {
+func isConnection(field *CustomField) bool {
 	if len(field.Results) != 1 {
 		return false
 	}
@@ -759,7 +769,7 @@ func isConnection(field CustomField) bool {
 }
 
 func getCustomGQLField(cd *CustomData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
-	if isConnection(field) {
+	if field.Connection {
 		return nil, fmt.Errorf("field is a connection. this should be handled elsewhere")
 	}
 	imports, err := getGraphQLImportsForField(cd, field, s)
