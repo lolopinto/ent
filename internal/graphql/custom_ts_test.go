@@ -144,7 +144,7 @@ func TestCustomMutation(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailAvailableType")
-	assert.Equal(t, fcfg.Arg, "emailAvailableArgs")
+	assert.Equal(t, fcfg.Arg, "EmailAvailableArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
@@ -275,7 +275,7 @@ func TestCustomQuery(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailAvailableQueryType")
-	assert.Equal(t, fcfg.Arg, "emailAvailableArgs")
+	assert.Equal(t, fcfg.Arg, "EmailAvailableArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
@@ -396,7 +396,7 @@ func TestCustomListQuery(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailsAvailableQueryType")
-	assert.Equal(t, fcfg.Arg, "emailsAvailableArgs")
+	assert.Equal(t, fcfg.Arg, "EmailsAvailableArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
@@ -546,7 +546,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "UsernameQueryType")
-	assert.Equal(t, fcfg.Arg, "usernameArgs")
+	assert.Equal(t, fcfg.Arg, "UsernameArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
@@ -668,7 +668,7 @@ func TestCustomUploadType(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "ProfilePicUploadType")
-	assert.Equal(t, fcfg.Arg, "profilePicUploadArgs")
+	assert.Equal(t, fcfg.Arg, "ProfilePicUploadArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
