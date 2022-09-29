@@ -199,9 +199,11 @@ func (e *EdgeInfo) GetSingularEdges() []Edge {
 			ret = append(ret, edge)
 		}
 	}
+	// don't return these because field edge already created...
+	// TODO need to change destination edge properties?
 	for _, edge := range e.DestinationEdges {
 		if edge.UniqueEdge() {
-			ret = append(ret, edge)
+			// ret = append(ret, edge)
 		}
 	}
 	return ret

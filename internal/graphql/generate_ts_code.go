@@ -1808,6 +1808,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 				panic(err)
 			}
 		}
+		// spew.Dump(edge.GraphQLEdgeName(), instance)
 		if edge.IsList() {
 			addPluralEdge(edge, &fields, instance)
 		} else {
