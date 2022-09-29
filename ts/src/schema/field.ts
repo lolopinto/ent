@@ -1,5 +1,6 @@
 import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
+import { camelCase } from "camel-case";
 import { types } from "util";
 import { validate } from "uuid";
 import { Ent, WriteOperation } from "../core/base";
@@ -80,37 +81,28 @@ export class UUIDField extends BaseField implements Field {
         throw new Error(`unsupported id polymorhpic type ${fieldName}`);
       }
 
+      let types: string[] | undefined;
+      let serverDefault: any = undefined;
+      if (typeof polymorphic === "object") {
+        serverDefault = polymorphic.serverDefault;
+        types = polymorphic.types;
+      }
+
       // polymorphic field automatically hidden from GraphQL
       // can be made visible with custom fields if user wants to change this behavior
       // can't be foreignKey so need to make other changes to the field
       // intentionally not made private as it doesn't seem like it needs to be hidden
-      if (typeof polymorphic === "object" && polymorphic.types) {
-        // an enum with types validated here
-        return {
-          [name]: PolymorphicStringEnumType({
-            values: polymorphic.types,
-            hideFromGraphQL: true,
-            derivedWhenEmbedded: true,
-            nullable: this.options?.nullable,
-            parentFieldToValidate: fieldName,
-            serverDefault: polymorphic.serverDefault,
-          }),
-        };
-      } else {
-        let serverDefault: any = undefined;
-        if (typeof polymorphic === "object") {
-          serverDefault = polymorphic.serverDefault;
-        }
-        return {
-          [name]: PolymorphicStringType({
-            hideFromGraphQL: true,
-            derivedWhenEmbedded: true,
-            nullable: this.options?.nullable,
-            parentFieldToValidate: fieldName,
-            serverDefault: serverDefault,
-          }),
-        };
-      }
+
+      return {
+        [name]: PolymorphicStringType({
+          types: types,
+          hideFromGraphQL: true,
+          derivedWhenEmbedded: true,
+          nullable: this.options?.nullable,
+          parentFieldToValidate: fieldName,
+          serverDefault: serverDefault,
+        }),
+      };
     }
     return {};
   }
@@ -380,40 +372,64 @@ export class StringField extends BaseField implements Field {
 
 interface PolymorphicStringOptions extends StringOptions {
   parentFieldToValidate: string;
+  // restrict to just these types...
+  types?: string[];
 }
 
-function validatePolymorphicTypeWithFullData(
-  val: any,
-  b: Builder<any>,
-  field: string,
-): boolean {
-  const input = b.getInput();
-  const inputKey = b.orchestrator.__getOptions().fieldInfo[field].inputKey;
-
-  const v = input[inputKey];
-
-  if (val === null) {
-    // if this is being set to null, ok if v is also null
-    return v === null;
-  }
-  // if this is not being set, ok if v is not being set
-  if (val === undefined && b.operation === WriteOperation.Insert) {
-    return v === undefined;
-  }
-  return true;
-}
-
-class PolymorphicStringField extends StringField {
+export class PolymorphicStringField extends StringField {
+  private camelCaseVals: string[] | undefined;
   constructor(private opts: PolymorphicStringOptions) {
     super(opts);
+    if (opts.types) {
+      this.camelCaseVals = opts.types.map((v) => camelCase(v));
+    }
   }
 
   validateWithFullData(val: any, b: Builder<any>): boolean {
-    return validatePolymorphicTypeWithFullData(
-      val,
-      b,
-      this.opts.parentFieldToValidate,
-    );
+    const input = b.getInput();
+    const inputKey =
+      b.orchestrator.__getOptions().fieldInfo[this.opts.parentFieldToValidate]
+        .inputKey;
+
+    const v = input[inputKey];
+
+    if (val === null) {
+      // if this is being set to null, ok if v is also null
+      return v === null;
+    }
+    // if this is not being set, ok if v is not being set
+    if (val === undefined && b.operation === WriteOperation.Insert) {
+      return v === undefined;
+    }
+    return true;
+  }
+
+  valid(val: any): boolean {
+    if (!this.camelCaseVals) {
+      return true;
+    }
+
+    let str = camelCase(String(val));
+    // allow different cases because it could be coming from different clients who don't have strong typing
+    return this.camelCaseVals.some((value) => value === str);
+  }
+
+  format(val: any) {
+    if (!this.camelCaseVals) {
+      return val;
+    }
+
+    const converted = camelCase(String(val));
+
+    for (const v of this.camelCaseVals) {
+      if (v === val) {
+        return val;
+      }
+      if (converted === v) {
+        return converted;
+      }
+    }
+    return val;
   }
 }
 
@@ -727,27 +743,6 @@ export class StringEnumField extends EnumField {}
 
 export interface PolymorphicStringEnumOptions extends EnumOptions {
   parentFieldToValidate: string;
-}
-
-class PolymorphicStringEnumField extends StringEnumField {
-  constructor(private opts: PolymorphicStringEnumOptions) {
-    super(opts);
-  }
-
-  validateWithFullData(val: any, b: Builder<any>): boolean {
-    return validatePolymorphicTypeWithFullData(
-      val,
-      b,
-      this.opts.parentFieldToValidate,
-    );
-  }
-}
-
-function PolymorphicStringEnumType(
-  options: PolymorphicStringEnumOptions,
-): PolymorphicStringEnumField {
-  let result = new PolymorphicStringEnumField(options);
-  return Object.assign(result, options);
 }
 
 export interface StringEnumOptions extends EnumOptions {}

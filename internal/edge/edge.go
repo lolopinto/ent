@@ -199,11 +199,9 @@ func (e *EdgeInfo) GetSingularEdges() []Edge {
 			ret = append(ret, edge)
 		}
 	}
-	for _, edge := range e.DestinationEdges {
-		if edge.UniqueEdge() {
-			ret = append(ret, edge)
-		}
-	}
+	// DestinationEdges aren't returned here because there
+	// should be a field edge already created them for which is
+	// the accessor we need
 	return ret
 }
 

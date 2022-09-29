@@ -14,7 +14,9 @@ const AddressSchema = new EntSchema({
     Apartment: StringType({ nullable: true }),
     OwnerID: UUIDType({
       unique: true,
-      polymorphic: true,
+      polymorphic: {
+        types: ["EventActivity", "User"],
+      },
     }),
   },
 
