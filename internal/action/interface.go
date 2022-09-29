@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
@@ -37,8 +38,12 @@ type Action interface {
 	GetActionName() string
 	ExposedToGraphQL() bool
 	GetGraphQLName() string
+	GetGraphQLTypeName() string
 	GetActionInputName() string
 	GetGraphQLInputName() string
+	GetGraphQLInputTypeName() string
+	GetGraphQLPayloadName() string
+	GetGraphQLPayloadTypeName() string
 	MutatingExistingObject() bool // whether to add User, Note etc params
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetOperation() ent.ActionOperation
@@ -149,12 +154,29 @@ func (action *commonActionInfo) GetGraphQLName() string {
 	return action.GraphQLName
 }
 
+func (action *commonActionInfo) GetGraphQLTypeName() string {
+	return action.GraphQLName + "Type"
+}
+
 func (action *commonActionInfo) GetActionInputName() string {
 	return action.ActionInputName
 }
 
 func (action *commonActionInfo) GetGraphQLInputName() string {
 	return action.GraphQLInputName
+}
+
+func (action *commonActionInfo) GetGraphQLInputTypeName() string {
+	return action.GraphQLInputName + "Type"
+}
+
+func (action *commonActionInfo) GetGraphQLPayloadName() string {
+	input := action.GetGraphQLInputName()
+	return strings.TrimSuffix(input, "Input") + "Payload"
+}
+
+func (action *commonActionInfo) GetGraphQLPayloadTypeName() string {
+	return action.GetGraphQLPayloadName() + "Type"
 }
 
 func (action *commonActionInfo) GetFields() []*field.Field {
@@ -219,7 +241,7 @@ func (action *commonActionInfo) getCustomInterface(typ enttype.TSTypeWithCustomT
 	if !ok {
 		ci = &customtype.CustomInterface{
 			TSType:  tsTyp,
-			GQLType: gqlType,
+			GQLName: gqlType,
 		}
 	}
 
@@ -257,7 +279,7 @@ func (action *commonActionInfo) AddCustomInterfaces(a2 Action) {
 		// don't add to graphql
 		action.customInterfaces[inter.TSType] = &customtype.CustomInterface{
 			TSType:  inter.TSType,
-			GQLType: inter.GQLType,
+			GQLName: inter.GQLName,
 			// this flag indicates that we're going to import this input in graphql
 			// from where this is generated
 			Action:       a2,

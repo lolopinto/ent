@@ -9,7 +9,7 @@ import (
 
 type CustomUnion struct {
 	TSType     string
-	GQLType    string
+	GQLName    string
 	Interfaces []*CustomInterface
 }
 
@@ -17,8 +17,12 @@ func (cu *CustomUnion) GetTSType() string {
 	return cu.TSType
 }
 
+func (cu *CustomUnion) GetGraphQLName() string {
+	return cu.GQLName
+}
+
 func (cu *CustomUnion) GetGraphQLType() string {
-	return cu.GQLType
+	return cu.GQLName + "Type"
 }
 
 func (cu *CustomUnion) IsCustomInterface() bool {

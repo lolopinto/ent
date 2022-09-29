@@ -390,7 +390,7 @@ func TestWithUnionFields(t *testing.T) {
 
 	union := ci.Children[0]
 	require.Equal(t, union.GetTSType(), "UnionField")
-	require.Equal(t, union.GetGraphQLType(), "UnionField")
+	require.Equal(t, union.GetGraphQLName(), "UnionField")
 	require.False(t, union.IsCustomInterface())
 	require.True(t, union.IsCustomUnion())
 
@@ -403,7 +403,7 @@ func TestWithUnionFields(t *testing.T) {
 	child1 := customTypes[0]
 	ci1 := child1.(*customtype.CustomInterface)
 	require.Equal(t, child1.GetTSType(), "FooUserPrefs")
-	require.Equal(t, child1.GetGraphQLType(), "FooUserPrefs")
+	require.Equal(t, child1.GetGraphQLName(), "FooUserPrefs")
 	require.True(t, child1.IsCustomInterface())
 	require.False(t, child1.IsCustomUnion())
 	require.Len(t, ci1.Fields, 3)
@@ -414,7 +414,7 @@ func TestWithUnionFields(t *testing.T) {
 	child2 := customTypes[1]
 	ci2 := child2.(*customtype.CustomInterface)
 	require.Equal(t, child2.GetTSType(), "Foo2UserPrefs")
-	require.Equal(t, child2.GetGraphQLType(), "Foo2UserPrefs")
+	require.Equal(t, child2.GetGraphQLName(), "Foo2UserPrefs")
 	require.True(t, child2.IsCustomInterface())
 	require.False(t, child2.IsCustomUnion())
 	require.Len(t, ci2.Fields, 2)

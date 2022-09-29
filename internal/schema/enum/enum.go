@@ -132,6 +132,10 @@ func (g GQLEnum) GetGraphQLNames() []string {
 	return ret
 }
 
+func (g GQLEnum) GetGraphQLType() string {
+	return g.Name + "Type"
+}
+
 func GQLEnumEqual(e1, e2 *GQLEnum) bool {
 	ret := change.CompareNilVals(e1 == nil, e2 == nil)
 	if ret != nil {

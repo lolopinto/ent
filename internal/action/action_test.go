@@ -1179,7 +1179,7 @@ func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActio
 				expCustomInt := expAction.customInterfaces[idx]
 
 				assert.Equal(t, customInt.TSType, expCustomInt.tsType)
-				assert.Equal(t, customInt.GQLType, expCustomInt.gqlType)
+				assert.Equal(t, customInt.GQLName, expCustomInt.gqlType)
 
 				verifyFields(t, customInt.Fields, expCustomInt.fields)
 				verifyNonEntFields(t, customInt.NonEntFields, expCustomInt.nonEntFields)
