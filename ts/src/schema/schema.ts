@@ -410,6 +410,12 @@ export interface FieldOptions {
   storageKey?: string; // db?
   serverDefault?: any;
   unique?: boolean;
+  // hide field from graphql
+  // does not hide field from actions by default
+  // if you want to hide it from action, use disableUserGraphQLEditable
+  // for fields which generate new types e.g. enums, you have to also set
+  // disableUserGraphQLEditable since it won't compile since it'll try and reference a type
+  // that doesn't exist
   hideFromGraphQL?: boolean;
   // private automatically hides from graphql and actions
   // but you may want something which is private and visible in actions
