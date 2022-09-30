@@ -70,13 +70,13 @@ func (s *Schema) GetGlobalConsts() WithConst {
 	return s.globalConsts
 }
 
-func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData, fkeyInfo *field.ForeignKeyInfo) error {
+func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData, fkeyInfo *field.ForeignKeyInfo, exposeToGraphQL bool) error {
 	v, err := enum.NewInputFromEnumType(enumType, fkeyInfo != nil)
 	if err != nil {
 		return err
 	}
 
-	return s.addEnumFrom(v, nodeData, nil)
+	return s.addEnumFrom(v, nodeData, nil, exposeToGraphQL)
 }
 
 func (s *Schema) addPattern(name string, p *PatternInfo) error {
@@ -172,10 +172,11 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeDat
 		},
 		nodeData,
 		node,
+		!nodeData.HideFromGraphQL,
 	)
 }
 
-func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *input.Node) error {
+func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *input.Node, exposeToGraphQL bool) error {
 	tsEnum, gqlEnum := enum.GetEnums(input)
 
 	// first create EnumInfo...
@@ -186,7 +187,8 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 		InputNode: inputNode,
 	}
 
-	if nodeData.HideFromGraphQL {
+	// field hide from graphql or pattern hide from gql
+	if !exposeToGraphQL || nodeData.HideFromGraphQL {
 		// hide from graphql. no graphql enum
 		info.GQLEnum = nil
 	}
@@ -206,15 +208,15 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 	return nil
 }
 
-func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) (*EnumInfo, error) {
+func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern, exposeToGraphQL bool) (*EnumInfo, error) {
 	input, err := enum.NewInputFromEnumType(enumType, false)
 	if err != nil {
 		return nil, err
 	}
-	return s.addEnumFromInput(input, pattern)
+	return s.addEnumFromInput(input, pattern, exposeToGraphQL)
 }
 
-func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern) (*EnumInfo, error) {
+func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern, exposeToGraphQL bool) (*EnumInfo, error) {
 	tsEnum, gqlEnum := enum.GetEnums(input)
 
 	// first create EnumInfo...
@@ -222,6 +224,10 @@ func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern) (*E
 		Enum:    tsEnum,
 		GQLEnum: gqlEnum,
 		Pattern: pattern,
+	}
+
+	if !exposeToGraphQL {
+		info.GQLEnum = nil
 	}
 
 	// new source enum
@@ -427,7 +433,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			// don't add enums which are defined in patterns
 			if ok {
 				if !f.PatternField() {
-					if err := s.addEnum(enumType, nodeData, f.ForeignKeyInfo()); err != nil {
+					if err := s.addEnum(enumType, nodeData, f.ForeignKeyInfo(), f.ExposeToGraphQL()); err != nil {
 						errs = append(errs, err)
 					}
 				} else {
@@ -466,6 +472,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 				},
 				nodeData,
 				nil,
+				true,
 			); err != nil {
 				errs = append(errs, err)
 			}
@@ -545,7 +552,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 				enumType, ok := enttype.GetEnumType(entType)
 				if ok {
-					info, err := s.addEnumFromPattern(enumType, pattern)
+					info, err := s.addEnumFromPattern(enumType, pattern, f.ExposeToGraphQL())
 					if err != nil {
 						errs = append(errs, err)
 					}
@@ -711,7 +718,7 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 		if err != nil {
 			return err
 		}
-		info, err := s.addEnumFromInput(input, nil)
+		info, err := s.addEnumFromInput(input, nil, f.ExposeToGraphQL())
 		if err != nil {
 			return err
 		}

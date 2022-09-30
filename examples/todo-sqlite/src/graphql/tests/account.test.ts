@@ -12,16 +12,15 @@ test("create", async () => {
       args: {
         name: "Jon Snow",
         phone_number: randomPhoneNumber(),
-        account_state: "UNVERIFIED",
       },
     },
     [
       "account.id",
       async (id: string) => {
-        await Account.loadX(new IDViewer(id), id);
+        const account = await Account.loadX(new IDViewer(id), id);
+        expect(account.accountState).toBe("UNVERIFIED");
       },
     ],
-    ["account.account_state", "UNVERIFIED"],
     ["account.name", "Jon Snow"],
   );
 });

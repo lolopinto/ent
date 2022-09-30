@@ -1404,7 +1404,155 @@ func TestWithMultipleEnumsInPattern(t *testing.T) {
 	assert.Len(t, schema.Enums, 2)
 	for _, info := range schema.Enums {
 		assert.True(t, info.OwnEnumFile(), true)
+		assert.NotNil(t, info.GQLEnum)
 	}
+}
+
+func TestWithEnumInPatternHiddenFromGraphQL(t *testing.T) {
+	n := &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "id",
+				Type: &input.FieldType{
+					DBType: input.UUID,
+				},
+				PrimaryKey: true,
+			},
+			{
+				Name: "DayOfWeek",
+				Type: &input.FieldType{
+					Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+					DBType:      input.StringEnum,
+					Type:        "DayOfWeek",
+					GraphQLType: "DayOfWeek",
+				},
+				HideFromGraphQL: true,
+				PatternName:     "days",
+			},
+		},
+	}
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Event": n,
+			"Group": n,
+		},
+		Patterns: map[string]*input.Pattern{
+			"days": {
+				Name: "days",
+				Fields: []*input.Field{
+					{
+						Name: "DayOfWeek",
+						Type: &input.FieldType{
+							Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+							DBType:      input.StringEnum,
+							Type:        "DayOfWeek",
+							GraphQLType: "DayOfWeek",
+						},
+						PatternName:     "days",
+						HideFromGraphQL: true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	assert.Len(t, schema.Patterns, 1)
+
+	assert.Len(t, schema.Enums, 1)
+	for _, info := range schema.Enums {
+		assert.True(t, info.OwnEnumFile(), true)
+		assert.Nil(t, info.GQLEnum)
+	}
+}
+
+func TestWithEnumFromField(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "DayOfWeek",
+						Type: &input.FieldType{
+							Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+							DBType:      input.StringEnum,
+							Type:        "DayOfWeek",
+							GraphQLType: "DayOfWeek",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	assert.Len(t, schema.Patterns, 0)
+
+	assert.Len(t, schema.Enums, 1)
+	for _, enum := range schema.Enums {
+		assert.False(t, enum.OwnEnumFile())
+		assert.NotNil(t, enum.Enum)
+		assert.NotNil(t, enum.GQLEnum)
+	}
+	tsEnums := schema.Nodes["EventConfig"].NodeData.GetTSEnums()
+	require.Len(t, tsEnums, 1)
+}
+
+func TestWithEnumFromFieldHiddenFromGraphQL(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "DayOfWeek",
+						Type: &input.FieldType{
+							Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+							DBType:      input.StringEnum,
+							Type:        "DayOfWeek",
+							GraphQLType: "DayOfWeek",
+						},
+						HideFromGraphQL: true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	assert.Len(t, schema.Patterns, 0)
+
+	assert.Len(t, schema.Enums, 1)
+	for _, enum := range schema.Enums {
+		assert.False(t, enum.OwnEnumFile())
+		assert.NotNil(t, enum.Enum)
+		assert.Nil(t, enum.GQLEnum)
+	}
+	tsEnums := schema.Nodes["EventConfig"].NodeData.GetTSEnums()
+	require.Len(t, tsEnums, 1)
 }
 
 func TestWithInverseFieldEdgeInPatterns(t *testing.T) {

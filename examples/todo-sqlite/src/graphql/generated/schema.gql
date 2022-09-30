@@ -25,13 +25,6 @@ type PageInfo {
   endCursor: String!
 }
 
-enum AccountState {
-  UNVERIFIED
-  VERIFIED
-  DEACTIVATED
-  DISABLED
-}
-
 enum AccountTodoStatus {
   OPEN_TODOS_DUP
   CLOSED_TODOS_DUP
@@ -41,7 +34,6 @@ type Account implements Node {
   id: ID!
   name: String!
   phone_number: String
-  account_state: AccountState
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
@@ -205,7 +197,6 @@ type ChangeTodoStatusPayload {
 input CreateAccountInput {
   name: String!
   phone_number: String!
-  account_state: AccountState
 }
 
 type CreateAccountPayload {
@@ -255,7 +246,6 @@ input EditAccountInput {
   id: ID!
   name: String
   phone_number: String
-  account_state: AccountState
 }
 
 type EditAccountPayload {
