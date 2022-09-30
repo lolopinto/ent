@@ -1777,5 +1777,5 @@ func TestDuplicateNames(t *testing.T) {
 
 	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.GoLang)
 	require.Nil(t, schema)
-	require.Equal(t, err.Error(), "there's already an entity with GraphQL name Profile")
+	require.Equal(t, err.Error(), "there's already an entity with GraphQL name ProfileType")
 }
