@@ -8,6 +8,7 @@ import (
 
 type CustomType interface {
 	GetTSType() string
+	GetGraphQLName() string
 	GetGraphQLType() string
 	IsCustomInterface() bool
 	IsCustomUnion() bool
@@ -20,7 +21,7 @@ type CustomType interface {
 
 type CustomInterface struct {
 	TSType       string
-	GQLType      string
+	GQLName      string
 	Fields       []*field.Field
 	NonEntFields []*field.NonEntField
 
@@ -108,8 +109,12 @@ func (ci *CustomInterface) GetTSTypes() []string {
 	return types
 }
 
+func (ci *CustomInterface) GetGraphQLName() string {
+	return ci.GQLName
+}
+
 func (ci *CustomInterface) GetGraphQLType() string {
-	return ci.GQLType
+	return ci.GQLName + "Type"
 }
 
 func (ci *CustomInterface) IsCustomInterface() bool {
@@ -139,7 +144,7 @@ func CustomInterfaceEqual(ci1, ci2 *CustomInterface) bool {
 	}
 
 	return ci1.TSType == ci2.TSType &&
-		ci1.GQLType == ci2.GQLType &&
+		ci1.GQLName == ci2.GQLName &&
 		field.FieldsEqual(ci1.Fields, ci2.Fields) &&
 		field.NonEntFieldsEqual(ci1.NonEntFields, ci2.NonEntFields) &&
 		change.StringListEqual(ci1.enumImports, ci2.enumImports)

@@ -935,6 +935,10 @@ func (e *CustomEdge) GetGraphQLConnectionName() string {
 	return fmt.Sprintf("%sTo%sConnection", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
 }
 
+func (e *CustomEdge) GetGraphQLConnectionType() string {
+	return fmt.Sprintf("%sTo%sConnectionType", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
+}
+
 func (e *CustomEdge) TsEdgeQueryEdgeName() string {
 	// For CustomEdge, we only use this with GraphQLConnectionType and the EdgeType is "Data"
 	return "Data"

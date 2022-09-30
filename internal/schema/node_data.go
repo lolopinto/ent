@@ -100,6 +100,10 @@ func (nodeData *NodeData) GetTableName() string {
 	return nodeData.TableName
 }
 
+func (nodeData *NodeData) GetGraphQLTypeName() string {
+	return fmt.Sprintf("%sType", strcase.ToCamel(nodeData.Node))
+}
+
 func (nodeData *NodeData) GetQuotedTableName() string {
 	return strconv.Quote(nodeData.TableName)
 }

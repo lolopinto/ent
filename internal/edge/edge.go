@@ -435,6 +435,7 @@ type ConnectionEdge interface {
 	GetSourceNodeName() string
 	GetGraphQLEdgePrefix() string
 	GetGraphQLConnectionName() string
+	GetGraphQLConnectionType() string
 	TsEdgeQueryEdgeName() string
 	TsEdgeQueryName() string
 	UniqueEdge() bool
@@ -580,6 +581,10 @@ func (e *ForeignKeyEdge) GetGraphQLConnectionName() string {
 	return fmt.Sprintf("%sTo%sConnection", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
 }
 
+func (e *ForeignKeyEdge) GetGraphQLConnectionType() string {
+	return fmt.Sprintf("%sTo%sConnectionType", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
 func (e *ForeignKeyEdge) TsEdgeQueryEdgeName() string {
 	// For ForeignKeyEdge, we only use this with GraphQLConnectionType and the EdgeType is "Data"
 	return "Data"
@@ -674,6 +679,14 @@ func (e *IndexedEdge) GetGraphQLConnectionName() string {
 		//		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
 	}
 	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+}
+
+func (e *IndexedEdge) GetGraphQLConnectionType() string {
+	if e.foreignNode == "" {
+		return ""
+		//		panic("cannot call GetGraphQLConnectionType when foreignNode is empty")
+	}
+	return fmt.Sprintf("%sTo%sConnectionType", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
@@ -826,6 +839,16 @@ func (e *AssociationEdge) GetGraphQLConnectionName() string {
 	// there's nothing stopping multiple edges of different types having the same connection and then there'll be a conflict here
 	// so we use the UserToFoo names to have UserToFriendsConnection and UserToFriendsEdge names
 	return fmt.Sprintf("%sConnection", e.TsEdgeConst)
+}
+
+func (e *AssociationEdge) GetGraphQLConnectionType() string {
+	if e.overridenGraphQLName != "" {
+		return e.overridenGraphQLName + "Type"
+	}
+	// we need a unique graphql name
+	// there's nothing stopping multiple edges of different types having the same connection and then there'll be a conflict here
+	// so we use the UserToFoo names to have UserToFriendsConnection and UserToFriendsEdge names
+	return fmt.Sprintf("%sConnectionType", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetSourceNodeName() string {

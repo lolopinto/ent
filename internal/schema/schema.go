@@ -44,7 +44,7 @@ type Schema struct {
 	Enums            map[string]*EnumInfo
 	enumTables       map[string]*EnumInfo
 	CustomInterfaces map[string]*customtype.CustomInterface
-	gqlNameMap       map[string]bool
+	gqlTypeMap       map[string]bool
 
 	// used to keep track of schema-state
 	inputSchema *input.Schema
@@ -239,7 +239,9 @@ func (s *Schema) addEnumShared(input *enum.Input, info *EnumInfo) error {
 		}
 
 		// TODO we're storing the same info twice. simplify this.
-		if err := s.addGQLName(gqlName); err != nil {
+		// s.Enums and s.gqlTypeMap
+		gqlType := gqlName + "Type"
+		if err := s.addGQLType(gqlType); err != nil {
 			return err
 		}
 		// key on gqlName since key isn't really being used atm and gqlName needs to be unique
@@ -290,7 +292,12 @@ func (s *Schema) init() {
 	s.enumTables = make(map[string]*EnumInfo)
 	s.Patterns = map[string]*PatternInfo{}
 	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
-	s.gqlNameMap = make(map[string]bool)
+	s.gqlTypeMap = map[string]bool{
+		"QueryType":    true,
+		"MutationType": true,
+		// just claim this for now...
+		"SubscriptionType": true,
+	}
 	s.globalConsts = &objWithConsts{}
 }
 
@@ -747,7 +754,7 @@ func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.Custom
 
 	ci := &customtype.CustomInterface{
 		TSType:   cti.TSInterface,
-		GQLType:  cti.GraphQLInterface,
+		GQLName:  cti.GraphQLInterface,
 		Exported: true,
 	}
 	actualSubFields := subFields.([]*input.Field)
@@ -761,7 +768,7 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 		return nil
 	}
 
-	if err := s.addGQLName(ci.GQLType); err != nil {
+	if err := s.addGQLType(ci.GetGraphQLType()); err != nil {
 		return err
 	}
 
@@ -810,10 +817,10 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customt
 
 	cu := &customtype.CustomUnion{
 		TSType:  cti.TSInterface,
-		GQLType: cti.GraphQLInterface,
+		GQLName: cti.GraphQLInterface,
 	}
 
-	if err := s.addGQLName(cu.GQLType); err != nil {
+	if err := s.addGQLType(cu.GetGraphQLType()); err != nil {
 		return nil, err
 	}
 
@@ -866,11 +873,11 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	}, nil
 }
 
-func (s *Schema) addGQLName(name string) error {
-	if s.gqlNameMap[name] {
+func (s *Schema) addGQLType(name string) error {
+	if s.gqlTypeMap[name] {
 		return fmt.Errorf("there's already an entity with GraphQL name %s", name)
 	}
-	s.gqlNameMap[name] = true
+	s.gqlTypeMap[name] = true
 	return nil
 }
 
@@ -883,8 +890,28 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 		return fmt.Errorf("schema with table name %s already exists", info.NodeData.TableName)
 	}
 
-	if err := s.addGQLName(info.NodeData.Node); err != nil {
+	if err := s.addGQLType(info.NodeData.GetGraphQLTypeName()); err != nil {
 		return err
+	}
+
+	for _, action := range info.NodeData.ActionInfo.Actions {
+		if err := s.addGQLType(action.GetGraphQLInputTypeName()); err != nil {
+			return err
+		}
+
+		if err := s.addGQLType(action.GetGraphQLTypeName()); err != nil {
+			return err
+		}
+
+		if err := s.addGQLType(action.GetGraphQLPayloadTypeName()); err != nil {
+			return err
+		}
+	}
+
+	for _, conn := range info.NodeData.EdgeInfo.GetConnectionEdges() {
+		if err := s.addGQLType(conn.GetGraphQLConnectionType()); err != nil {
+			return err
+		}
 	}
 
 	// it's confusing that this is stored in 2 places :(
