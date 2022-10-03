@@ -36,6 +36,12 @@ enum CatBreed {
   OTHER
 }
 
+enum ContactInfoSource {
+  FRIEND
+  WORK
+  ONLINE
+}
+
 enum DayOfWeekAlt {
   FRIDAY
   MONDAY
@@ -190,13 +196,20 @@ type Comment implements Node {
 type ContactEmail implements Node {
   contact: Contact
   id: ID!
+  extra: ContactInfo
   emailAddress: String!
   label: String!
+}
+
+type ContactInfo {
+  default: Boolean!
+  source: ContactInfoSource!
 }
 
 type ContactPhoneNumber implements Node {
   contact: Contact
   id: ID!
+  extra: ContactInfo
   phoneNumber: String!
   label: String!
 }
@@ -727,6 +740,7 @@ type ContactEditPayload {
 }
 
 input ContactEmailCreateInput {
+  extra: ContactInfoInput
   emailAddress: String!
   label: String!
   contactID: ID!
@@ -748,6 +762,7 @@ type ContactEmailDeletePayload {
 input ContactEmailEditInput {
   """id of ContactEmail"""
   id: ID!
+  extra: ContactInfoInput
   emailAddress: String
   label: String
   contactID: ID
@@ -758,6 +773,7 @@ type ContactEmailEditPayload {
 }
 
 input ContactPhoneNumberCreateInput {
+  extra: ContactInfoInput
   phoneNumber: String!
   label: String!
   contactID: ID!
@@ -779,6 +795,7 @@ type ContactPhoneNumberDeletePayload {
 input ContactPhoneNumberEditInput {
   """id of ContactPhoneNumber"""
   id: ID!
+  extra: ContactInfoInput
   phoneNumber: String
   label: String
   contactID: ID
@@ -819,6 +836,7 @@ type EditPhoneNumberPayload {
 }
 
 input EmailContactCreateInput {
+  extra: ContactInfoInput
   emailAddress: String!
   label: String!
 }
@@ -920,6 +938,7 @@ type HoursOfOperationCreatePayload {
 }
 
 input PhoneNumberContactCreateInput {
+  extra: ContactInfoInput
   phoneNumber: String!
   label: String!
 }

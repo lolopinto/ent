@@ -15,11 +15,13 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { NodeType } from "../../const";
+import { ContactInfo } from "../../contact_info";
 import { contactPhoneNumberLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberInput {
+  extra?: ContactInfo | null;
   phoneNumber?: string;
   label?: string;
   contactID?: ID | Builder<Contact, ExampleViewerAlias>;
@@ -160,6 +162,7 @@ export class ContactPhoneNumberBuilder<
         result.set(key, value);
       }
     };
+    addField("extra", fields.extra);
     addField("phoneNumber", fields.phoneNumber);
     addField("label", fields.label);
     addField("contactID", fields.contactID);
@@ -170,6 +173,15 @@ export class ContactPhoneNumberBuilder<
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any> {
     return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+
+  // get value of extra. Retrieves it from the input if specified or takes it from existingEnt
+  getNewExtraValue(): ContactInfo | null {
+    if (this.input.extra !== undefined) {
+      return this.input.extra;
+    }
+
+    return this.existingEnt?.extra ?? null;
   }
 
   // get value of phoneNumber. Retrieves it from the input if specified or takes it from existingEnt
