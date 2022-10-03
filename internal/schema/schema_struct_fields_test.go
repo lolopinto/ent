@@ -434,6 +434,134 @@ func TestWithUnionFields(t *testing.T) {
 	validateEnumValuesEqual(t, enum2, []string{"MOBILE", "WEB", "EMAIL"})
 }
 
+func TestWithSubFieldsInPattern(t *testing.T) {
+	n := &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "id",
+				Type: &input.FieldType{
+					DBType: input.UUID,
+				},
+				PrimaryKey: true,
+			},
+			{
+				Name:        "userPrefs",
+				PatternName: "pattern",
+				Type: &input.FieldType{
+					DBType:      input.JSONB,
+					Type:        "UserPrefs",
+					GraphQLType: "UserPrefs",
+					SubFields: []*input.Field{
+						{
+							Name: "finishedNux",
+							Type: &input.FieldType{
+								DBType: input.Boolean,
+							},
+							Nullable: true,
+						},
+						{
+							Name: "enableNotifs",
+							Type: &input.FieldType{
+								DBType: input.Boolean,
+							},
+							Nullable: true,
+						},
+						{
+							Name: "notifTypes",
+							Type: &input.FieldType{
+								DBType: input.List,
+								ListElemType: &input.FieldType{
+									Type:        "NotifType",
+									GraphQLType: "NotifType",
+									DBType:      input.StringEnum,
+									Values:      []string{"MOBILE", "WEB", "EMAIL"},
+								},
+							},
+							Nullable: true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User":  n,
+			"Group": n,
+		},
+		Patterns: map[string]*input.Pattern{
+			"pattern": {
+				Name: "pattern",
+				Fields: []*input.Field{
+					{
+						Name:        "userPrefs",
+						PatternName: "pattern",
+						Type: &input.FieldType{
+							DBType:      input.JSONB,
+							Type:        "UserPrefs",
+							GraphQLType: "UserPrefs",
+							SubFields: []*input.Field{
+								{
+									Name: "finishedNux",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "enableNotifs",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "notifTypes",
+									Type: &input.FieldType{
+										DBType: input.List,
+										ListElemType: &input.FieldType{
+											Type:        "NotifType",
+											GraphQLType: "NotifType",
+											DBType:      input.StringEnum,
+											Values:      []string{"MOBILE", "WEB", "EMAIL"},
+										},
+									},
+									Nullable: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	userNode := schema.Nodes["UserConfig"]
+	require.NotNil(t, userNode)
+
+	groupNode := schema.Nodes["GroupConfig"]
+	require.NotNil(t, groupNode)
+
+	require.Len(t, schema.CustomInterfaces, 1)
+
+	ci := schema.CustomInterfaces["UserPrefs"]
+	require.NotNil(t, ci)
+	require.Len(t, ci.Fields, 3)
+	require.Len(t, ci.NonEntFields, 0)
+	require.Len(t, ci.Children, 0)
+
+	require.Len(t, ci.GetTSEnums(), 1)
+
+	enum := ci.GetTSEnums()[0]
+	require.Equal(t, enum.Name, "NotifType")
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL"})
+}
+
 func validateEnumValuesEqual(t *testing.T, enum *enum.Enum, values []string) {
 	enumValues := enum.GetEnumValues()
 	require.Equal(t, len(values), len(enumValues))

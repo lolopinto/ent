@@ -416,46 +416,27 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			nodeData.PatternsWithMixins = append(nodeData.PatternsWithMixins, p)
 		}
 
-		var err error
-		nodeData.FieldInfo, err = field.NewFieldInfoFromInputs(
-			cfg,
-			nodeName,
-			node.Fields,
-			&field.Options{},
-		)
-		if err != nil {
-			// error here can break things later since no fieldInfo
-			return nil, err
-		}
-		for _, f := range nodeData.FieldInfo.Fields {
-			entType := f.GetFieldType()
-			enumType, ok := enttype.GetEnumType(entType)
-			// don't add enums which are defined in patterns
-			if ok {
-				if !f.PatternField() {
-					if err := s.addEnum(enumType, nodeData, f.ForeignKeyInfo(), f.ExposeToGraphQL()); err != nil {
-						errs = append(errs, err)
-					}
-				} else {
-					// keep track of NodeDatas that map to this enum...
-					patternName := f.GetPatternName()
-					list := patternMap[patternName]
-					if list == nil {
-						list = []*NodeData{}
-					}
-					list = append(list, nodeData)
-					patternMap[patternName] = list
+		addEnum := func(enumType enttype.EnumeratedType, f *field.Field, patternField bool) error {
+			if patternField {
+				// keep track of NodeDatas that map to this enum...
+				patternName := f.GetPatternName()
+				list := patternMap[patternName]
+				if list == nil {
+					list = []*NodeData{}
 				}
-			}
-			union, ok := entType.(enttype.TSWithUnionFields)
-			if ok && union.GetUnionFields() != nil {
-				errs = append(errs, fmt.Errorf("union fields aren't supported as top level fields at the moment. `%s` invalid field", f.FieldName))
+				list = append(list, nodeData)
+				patternMap[patternName] = list
+				return nil
 			}
 
-			if err := s.checkCustomInterface(cfg, f, nil); err != nil {
-				errs = append(errs, err)
-			}
+			return s.addEnum(enumType, nodeData, f.ForeignKeyInfo(), f.ExposeToGraphQL())
 		}
+
+		fieldInfo, err := s.processFields(cfg, nodeName, node.Fields, addEnum, false)
+		if err != nil {
+			return nil, err
+		}
+		nodeData.FieldInfo = fieldInfo
 
 		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(cfg, packageName, node)
 		if err != nil {
@@ -536,38 +517,28 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			}
 		}
 
-		// add enums from patterns
-		fieldInfo, err := field.NewFieldInfoFromInputs(
-			cfg,
-			name,
-			pattern.Fields,
-			&field.Options{},
-		)
+		addEnum := func(enumType enttype.EnumeratedType, f *field.Field, patternField bool) error {
+			info, err := s.addEnumFromPattern(enumType, pattern, f.ExposeToGraphQL())
+			if err != nil {
+				return err
+			}
+
+			// add cloned enum to nodeData and mark as imported
+			list := patternMap[name]
+			clone := info.Enum.Clone()
+			clone.Imported = true
+			for _, nodeData := range list {
+				nodeData.addEnum(clone)
+			}
+			return nil
+		}
+
+		fieldInfo, err := s.processFields(cfg, name, pattern.Fields, addEnum, true)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-
-			for _, f := range fieldInfo.Fields {
-				entType := f.GetFieldType()
-
-				enumType, ok := enttype.GetEnumType(entType)
-				if ok {
-					info, err := s.addEnumFromPattern(enumType, pattern, f.ExposeToGraphQL())
-					if err != nil {
-						errs = append(errs, err)
-					}
-
-					// add cloned enum to nodeData and mark as imported
-					list := patternMap[name]
-					clone := info.Enum.Clone()
-					clone.Imported = true
-					for _, nodeData := range list {
-						nodeData.addEnum(clone)
-					}
-				}
-			}
+			p.FieldInfo = fieldInfo
 		}
-		p.FieldInfo = fieldInfo
 
 		if err := s.addPattern(name, p); err != nil {
 			errs = append(errs, err)
@@ -707,6 +678,47 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 		}
 	}
 	return nil
+}
+
+// patternField explicitly passed as a param to remind clients to check it
+type processEnum func(enumType enttype.EnumeratedType, f *field.Field, patternField bool) error
+
+func (s *Schema) processFields(cfg codegenapi.Config, nodeName string, fields []*input.Field, fn processEnum, sourceIsPattern bool) (*field.FieldInfo, error) {
+	fieldInfo, err := field.NewFieldInfoFromInputs(
+		cfg,
+		nodeName,
+		fields,
+		&field.Options{},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range fieldInfo.Fields {
+		entType := f.GetFieldType()
+		enumType, ok := enttype.GetEnumType(entType)
+		// don't add enums which are defined in patterns
+		if ok {
+			if err := fn(enumType, f, f.PatternField()); err != nil {
+				return nil, err
+			}
+		}
+		union, ok := entType.(enttype.TSWithUnionFields)
+		if ok && union.GetUnionFields() != nil {
+			return nil, fmt.Errorf("union fields aren't supported as top level fields at the moment. `%s` invalid field", f.FieldName)
+		}
+
+		// only process custom interfaces if not in pattern or only from pattern
+		// if pattern field
+		if !f.PatternField() || (f.PatternField() && sourceIsPattern) {
+			if err := s.checkCustomInterface(cfg, f, nil); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return fieldInfo, nil
 }
 
 // TODO combine with checkCustomInterface...

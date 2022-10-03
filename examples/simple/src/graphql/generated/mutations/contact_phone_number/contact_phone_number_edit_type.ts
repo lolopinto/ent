@@ -23,6 +23,7 @@ import { ContactPhoneNumber } from "../../../../ent";
 import EditContactPhoneNumberAction, {
   ContactPhoneNumberEditInput,
 } from "../../../../ent/contact_phone_number/actions/edit_contact_phone_number_action";
+import { ContactInfoInputType } from "../input/contact_info_input_type";
 import { ContactPhoneNumberType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -42,6 +43,9 @@ export const ContactPhoneNumberEditInputType = new GraphQLInputObjectType({
     id: {
       description: "id of ContactPhoneNumber",
       type: new GraphQLNonNull(GraphQLID),
+    },
+    extra: {
+      type: ContactInfoInputType,
     },
     phoneNumber: {
       type: GraphQLString,
@@ -89,6 +93,7 @@ export const ContactPhoneNumberEditType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
       {
+        extra: input.extra,
         phoneNumber: input.phoneNumber,
         label: input.label,
         contactID: mustDecodeNullableIDFromGQLID(input.contactID),
