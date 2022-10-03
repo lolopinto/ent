@@ -421,6 +421,8 @@ func (f *Field) EditableField() bool {
 }
 
 func (f *Field) EditableGraphQLField() bool {
+	// NB: if a field is hidden from graphql, it's still editable (e.g. in create and edit actions), unless
+	// it's been explicit flagged as not editable
 	return !f.disableUserEditable && !f.disableUserGraphQLEditable
 }
 

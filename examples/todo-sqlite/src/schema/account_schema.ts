@@ -23,6 +23,12 @@ const AccountSchema = new TodoEntSchema({
       defaultValueOnCreate: () => "UNVERIFIED",
       // only viewer can see their account state
       privacyPolicy: AllowIfViewerPrivacyPolicy,
+      hideFromGraphQL: true,
+      // if hidden from graphql and an enum, this also needs to be set
+      // TODO we should have an error for this...
+      // can check import types and see if it makes sense?
+      // if referencing a local import?
+      disableUserGraphQLEditable: true,
     }),
   },
 

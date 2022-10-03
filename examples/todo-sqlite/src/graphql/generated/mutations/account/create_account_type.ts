@@ -11,16 +11,15 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
-import { Account, AccountState } from "src/ent/";
+import { Account } from "src/ent/";
 import CreateAccountAction, {
   AccountCreateInput,
 } from "src/ent/account/actions/create_account_action";
-import { AccountStateType, AccountType } from "src/graphql/resolvers/";
+import { AccountType } from "src/graphql/resolvers/";
 
 interface customCreateAccountInput
-  extends Omit<AccountCreateInput, "phoneNumber" | "accountState"> {
+  extends Omit<AccountCreateInput, "phoneNumber"> {
   phone_number: string;
-  account_state?: AccountState | null;
 }
 
 interface CreateAccountPayload {
@@ -35,9 +34,6 @@ export const CreateAccountInputType = new GraphQLInputObjectType({
     },
     phone_number: {
       type: new GraphQLNonNull(GraphQLString),
-    },
-    account_state: {
-      type: AccountStateType,
     },
   }),
 });
@@ -72,7 +68,6 @@ export const CreateAccountType: GraphQLFieldConfig<
     const account = await CreateAccountAction.create(context.getViewer(), {
       name: input.name,
       phoneNumber: input.phone_number,
-      accountState: input.account_state,
     }).saveX();
     return { account: account };
   },
