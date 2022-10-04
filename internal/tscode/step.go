@@ -10,6 +10,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -597,6 +598,7 @@ func getFilePathForEnumFile(cfg *codegen.Config, name string) string {
 }
 
 // copied to input.go
+// copied to type.go
 func getFilePathForCustomInterfaceFile(cfg *codegen.Config, ci *customtype.CustomInterface) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(ci.TSType)))
 }
@@ -1236,38 +1238,35 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["callAndConvertFunc"] = func(f *field.Field, cfg codegenapi.Config, val string) (string, error) {
-		conv1 := enttype.ConvertFunc(f.GetTSFieldType(cfg))
-		conv2 := ""
+		// only user convert showing here...
+		convs := enttype.ConvertFuncs(f.GetTSFieldType(cfg))
 		userConv := f.GetUserConvert()
 		if userConv != nil {
-			conv2 = userConv.Function
+			convs = append(convs, userConv.Function)
 		}
-		if conv1 == conv2 && conv1 == "" {
+
+		if len(convs) == 0 {
 			return val, nil
 		}
 
-		// could be BigInt which isn't reserved
-		if conv2 != "" {
-			_, err := imps.UseMaybe(conv2)
+		ret := val
+
+		spew.Dump(convs)
+		for _, conv := range convs {
+			if conv == "" {
+				continue
+			}
+
+			// could be BigInt which isn't reserved
+			_, err := imps.UseMaybe(conv)
 			if err != nil {
 				return "", err
 			}
-		}
-		if conv1 != "" {
-			_, err := imps.UseMaybe(conv1)
 
-			if err != nil {
-				return "", err
-			}
+			ret = fmt.Sprintf("%s(%s)", conv, ret)
 		}
 
-		if conv2 != "" && conv1 != "" {
-			return fmt.Sprintf("%s(%s(%s))", conv2, conv1, val), nil
-		}
-		if conv2 != "" {
-			return fmt.Sprintf("%s(%s)", conv2, val), nil
-		}
-		return fmt.Sprintf("%s(%s)", conv1, val), nil
+		return ret, nil
 	}
 
 	m["fieldLoadedInBaseClass"] = func(s *schema.Schema, f *field.Field) bool {

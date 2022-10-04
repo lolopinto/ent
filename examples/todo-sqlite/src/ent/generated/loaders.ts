@@ -16,6 +16,7 @@ const accountFields = [
   "name",
   "phone_number",
   "account_state",
+  "account_prefs",
 ];
 
 export const accountLoader = new ObjectLoaderFactory({
@@ -77,6 +78,10 @@ export const accountLoaderInfo = {
     accountState: {
       dbCol: "account_state",
       inputKey: "accountState",
+    },
+    accountPrefs: {
+      dbCol: "account_prefs",
+      inputKey: "accountPrefs",
     },
   },
 };

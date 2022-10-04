@@ -24,3 +24,32 @@ test("create", async () => {
     ["account.name", "Jon Snow"],
   );
 });
+
+test.only("create with prefs", async () => {
+  await expectMutation(
+    {
+      schema,
+      mutation: "createAccount",
+      debugMode: true,
+      args: {
+        name: "Jon Snow",
+        phone_number: randomPhoneNumber(),
+        account_prefs: {
+          finished_nux: true,
+          enable_notifs: false,
+          preferred_language: "en_US",
+        },
+      },
+    },
+    [
+      "account.id",
+      async (id: string) => {
+        const account = await Account.loadX(new IDViewer(id), id);
+        expect(account.accountState).toBe("UNVERIFIED");
+
+        console.debug(account.accountPrefs);
+      },
+    ],
+    ["account.name", "Jon Snow"],
+  );
+});

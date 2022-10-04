@@ -34,10 +34,13 @@ import {
   userPhoneNumberLoader,
 } from "./loaders";
 import { UserNestedObjectList } from "./user_nested_object_list";
-import { UserPrefsDiff } from "./user_prefs_diff";
-import { UserPrefsStruct } from "./user_prefs_struct";
+import { UserPrefsDiff, convertUserPrefsDiff } from "./user_prefs_diff";
+import { UserPrefsStruct, convertUserPrefsStruct } from "./user_prefs_struct";
 import { UserPrefsStruct2 } from "./user_prefs_struct_2";
-import { UserSuperNestedObject } from "./user_super_nested_object";
+import {
+  UserSuperNestedObject,
+  convertUserSuperNestedObject,
+} from "./user_super_nested_object";
 import {
   Contact,
   EdgeType,
@@ -168,9 +171,9 @@ export class UserBase
     this._emailVerified = data.email_verified;
     this.bio = data.bio;
     this.nicknames = data.nicknames;
-    this._prefs = data.prefs;
+    this._prefs = convertUserPrefsStruct(data.prefs);
     this._prefsList = data.prefs_list;
-    this._prefsDiff = data.prefs_diff;
+    this._prefsDiff = convertUserPrefsDiff(data.prefs_diff);
     this.daysOff = data.days_off;
     this.preferredShift = data.preferred_shift;
     this.timeInMs = BigInt(data.time_in_ms);
@@ -254,7 +257,9 @@ export class UserBase
         .load(this.id);
       this._superNestedObject = row?.super_nested_object ?? null;
     }
-    return convertSuperNestedObject(this._superNestedObject ?? null);
+    return convertSuperNestedObject(
+      convertUserSuperNestedObject(this._superNestedObject ?? null),
+    );
   }
 
   static async load<T extends UserBase>(

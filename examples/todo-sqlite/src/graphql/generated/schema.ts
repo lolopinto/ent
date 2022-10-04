@@ -49,6 +49,7 @@ import {
 } from "src/graphql/generated/mutations/todo/rename_todo_type";
 import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
+  AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
   AccountToOpenTodosConnectionType,
   AccountToOpenTodosDupConnectionType,
@@ -69,6 +70,7 @@ export default new GraphQLSchema({
   mutation: MutationType,
   types: [
     AccountTodoStatusType,
+    AccountPrefsType,
     AccountType,
     TagType,
     TodoType,

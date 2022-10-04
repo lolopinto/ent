@@ -11,6 +11,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Account, AccountState, Todo } from "src/ent/";
+import { AccountPrefs } from "src/ent/generated/account_prefs";
 import { EdgeType, NodeType } from "src/ent/generated/const";
 import { accountLoaderInfo } from "src/ent/generated/loaders";
 import schema from "src/schema/account_schema";
@@ -20,6 +21,7 @@ export interface AccountInput {
   name?: string;
   phoneNumber?: string;
   accountState?: AccountState | null;
+  accountPrefs?: AccountPrefs | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -251,6 +253,7 @@ export class AccountBuilder<
     addField("Name", fields.name);
     addField("PhoneNumber", fields.phoneNumber);
     addField("accountState", fields.accountState);
+    addField("accountPrefs", fields.accountPrefs);
     return result;
   }
 
@@ -300,5 +303,14 @@ export class AccountBuilder<
     }
 
     return this.existingEnt?.accountState ?? null;
+  }
+
+  // get value of accountPrefs. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAccountPrefsValue(): AccountPrefs | null {
+    if (this.input.accountPrefs !== undefined) {
+      return this.input.accountPrefs;
+    }
+
+    return this.existingEnt?.accountPrefs ?? null;
   }
 }

@@ -1,6 +1,14 @@
 import { camelCase } from "camel-case";
+import { snakeCase } from "snake-case";
 import { BaseField, ListField } from "./field";
-import { FieldOptions, Field, Type, DBType, FieldMap } from "./schema";
+import {
+  FieldOptions,
+  Field,
+  Type,
+  DBType,
+  FieldMap,
+  getStorageKey,
+} from "./schema";
 
 export interface StructOptions extends FieldOptions {
   // required.
@@ -36,29 +44,35 @@ export class StructField extends BaseField implements Field {
     }
   }
 
-  // right now, we store things in the db in lowerCase format
-  // this will lead to issues if field changes.
-  // TODO: use storageKey and convert back...
-
   formatImpl(obj: any, nested?: boolean) {
     if (!(obj instanceof Object)) {
       throw new Error("valid was not called");
     }
     let ret: Object = {};
     for (const k in this.options.fields) {
+      const field = this.options.fields[k];
+
+      // check two values
+
+      // wait, two different things
+
+      // getStoragetKey and getCamelCase()
+      // for weird graphql case and for typescript format...
+
+      // store in dbKey format
+
       // TODO more #510
-      let dbKey = camelCase(k);
-      let val = obj[dbKey];
-      // for tests with snake_case
-      if (val === undefined && obj[k] !== undefined) {
-        val = obj[k];
-        dbKey = k;
+      let dbKey = getStorageKey(field, k);
+      let camelKey = camelCase(k);
+      let val = obj[camelKey];
+
+      if (val === undefined && obj[dbKey] !== undefined) {
+        val = obj[dbKey];
       }
 
       if (val === undefined) {
         continue;
       }
-      const field = this.options.fields[k];
       if (field.format) {
         // indicate nested so this isn't JSON stringified
         ret[dbKey] = field.format(val, true);
@@ -95,12 +109,12 @@ export class StructField extends BaseField implements Field {
     for (const k in this.options.fields) {
       const field = this.options.fields[k];
       // TODO more #510
-      let dbKey = camelCase(k);
-      let val = obj[dbKey];
-      // for tests with snake_case
-      if (val === undefined && obj[k] !== undefined) {
-        val = obj[k];
-        dbKey = k;
+      let dbKey = getStorageKey(field, k);
+      let camelKey = camelCase(k);
+      let val = obj[camelKey];
+
+      if (val === undefined && obj[dbKey] !== undefined) {
+        val = obj[dbKey];
       }
 
       if (val === undefined || val === null) {

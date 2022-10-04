@@ -1,6 +1,7 @@
 package customtype
 
 import (
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -37,6 +38,7 @@ type CustomInterface struct {
 	// children of this interface. could be other interfaces or unions
 	Children []CustomType
 
+	// right now they're all exported??
 	Exported bool
 
 	tsEnums  []*enum.Enum
@@ -123,6 +125,22 @@ func (ci *CustomInterface) IsCustomInterface() bool {
 
 func (ci *CustomInterface) IsCustomUnion() bool {
 	return false
+}
+
+func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
+	return true
+	// TODO need to update field_type to know when this applies or not...
+	// for _, f := range ci.Fields {
+	// 	if f.TsFieldName(cfg) != f.GetDbColName() {
+	// 		return true
+	// 	}
+	// }
+	// // TODO when do we use non ent fields again??
+	// return len(ci.NonEntFields) > 0
+}
+
+func (ci *CustomInterface) GetConvertMethod() string {
+	return "convert" + ci.TSType
 }
 
 func (ci *CustomInterface) GetAllCustomTypes() []CustomType {

@@ -962,6 +962,7 @@ describe("super nested complex", () => {
         async function (id: string) {
           const entID = mustDecodeIDFromGQLID(id);
           const user = await User.loadX(new ExampleViewer(entID), entID);
+          console.debug(transformedObj, obj);
           expect(await user.superNestedObject()).toStrictEqual(transformedObj);
         },
       ],

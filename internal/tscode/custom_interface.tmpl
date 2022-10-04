@@ -13,9 +13,43 @@
 {{ range $ci.GetAllCustomTypes -}}
   {{ if .IsCustomInterface -}}
     {{ template "interface.tmpl" (dict "RootInterface" $ci "Interface" . "Package" $pkg "Config" $cfg)}}
+    {{ if .HasConvertFunction $cfg }}
+      {{ if .Exported -}}
+        export function {{.GetConvertMethod}}(input: any): {{.TSType}} {
+      {{ else -}}
+        function {{.GetConvertMethod}}(input: any): {{.TSType}} {
+      {{ end -}}
+        return {
+          {{range $field := .Fields -}}
+            {{ if $field.IsUnionType -}}
+              // if union type do something else
+              // TODO need to generate isFoo methods and handle that...
+              {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}},
+            {{ else if $field.HasSubFields -}}
+              {{  if $field.Nullable -}}
+                {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}} === null ? null :{{printf "convert%s" $field.GetTSCustomInterfaceType}}(input.{{$field.GetDbColName}}),
+              {{ else -}}
+                {{$field.TsFieldName $cfg}}: {{printf "convert%s" $field.GetTSCustomInterfaceType}}(input.{{$field.GetDbColName}}),
+              {{end -}}
+            {{else -}}
+              {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}},
+            {{end -}}
+          {{end -}}
+        };
+      }
+    {{end -}}
   {{ end }}
   {{ if .IsCustomUnion -}}
     {{ .GetTypeDeclaration }}
   {{ end -}}
 {{ end -}}
 
+
+// TODO convertFooMethod and if exported...
+
+//then need something for graphql input just in case for the account.test.ts case
+// there's convert from db 
+// and convert from grapphql
+
+// there's also logic about convert to db in format()??
+// for now we can just getStorageKey() since that's all JS code...

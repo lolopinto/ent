@@ -16,11 +16,15 @@ import { Account } from "src/ent/";
 import EditAccountAction, {
   AccountEditInput,
 } from "src/ent/account/actions/edit_account_action";
+import { AccountPrefs } from "src/ent/generated/account_prefs";
+import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
 import { AccountType } from "src/graphql/resolvers/";
 
-interface customEditAccountInput extends Omit<AccountEditInput, "phoneNumber"> {
+interface customEditAccountInput
+  extends Omit<AccountEditInput, "phoneNumber" | "accountPrefs"> {
   id: string;
   phone_number?: string;
+  account_prefs?: AccountPrefs | null;
 }
 
 interface EditAccountPayload {
@@ -39,6 +43,9 @@ export const EditAccountInputType = new GraphQLInputObjectType({
     },
     phone_number: {
       type: GraphQLString,
+    },
+    account_prefs: {
+      type: AccountPrefsInputType,
     },
   }),
 });
@@ -76,6 +83,7 @@ export const EditAccountType: GraphQLFieldConfig<
       {
         name: input.name,
         phoneNumber: input.phone_number,
+        accountPrefs: input.account_prefs,
       },
     );
     return { account: account };

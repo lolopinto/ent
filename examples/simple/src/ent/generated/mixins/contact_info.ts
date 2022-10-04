@@ -4,7 +4,7 @@
  */
 
 import { Data, Viewer } from "@snowtop/ent";
-import { ContactInfo } from "../contact_info";
+import { ContactInfo, convertContactInfo } from "../contact_info";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
@@ -31,7 +31,7 @@ export function ContactInfoMixin<T extends Constructor>(BaseClass: T) {
     constructor(...args: any[]) {
       super(...args);
       const { data } = extractFromArgs(args);
-      this.extra = data.extra;
+      this.extra = convertContactInfo(data.extra);
     }
 
     isContactInfo() {

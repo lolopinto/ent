@@ -1,22 +1,15 @@
-/**
- * Copyright whaa whaa
- */
-
-export enum ContactInfoSource {
-  Friend = "friend",
-  Work = "work",
-  Online = "online",
+export interface AccountPrefs {
+  finishedNux: boolean;
+  enableNotifs: boolean;
+  preferredLanguage: string;
 }
 
-export interface ContactInfo {
-  default: boolean;
-  source: ContactInfoSource;
-}
-
-export function convertContactInfo(input: any): ContactInfo {
+// TODO convert objects
+function convertAccountPrefs(input: any): AccountPrefs {
   return {
-    default: input.default,
-    source: input.source,
+    finishedNux: input.finished_nux,
+    enableNotifs: input.enable_notifs,
+    preferredLanguage: input.preferred_language,
   };
 }
 

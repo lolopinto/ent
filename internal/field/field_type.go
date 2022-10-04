@@ -137,6 +137,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 			// TODO come up with a better way of handling this
 			ret.graphQLName = "id"
 		} else {
+			// graphql name here. i need a flag here of when to override graphql name???
 			ret.graphQLName = codegenapi.GraphQLName(cfg, ret.FieldName)
 		}
 	}
@@ -609,10 +610,12 @@ func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 	tt := f.GetPossibleTypes()
 	for _, t := range tt {
-		imp := enttype.ConvertImportPath(t)
-		if imp != nil {
-			if imp.ImportPath != "" {
-				ret = append(ret, imp)
+		imps := enttype.ConvertImportPaths(t)
+		if imps != nil {
+			for _, imp := range imps {
+				if imp.ImportPath != "" {
+					ret = append(ret, imp)
+				}
 			}
 		}
 		if enttype.IsImportDepsType(t) {
@@ -878,6 +881,28 @@ func (f *Field) GetPatternName() string {
 
 func (f *Field) GetUserConvert() *input.UserConvertType {
 	return f.userConvert
+}
+
+func (f *Field) IsUnionType() bool {
+	t := f.GetFieldType()
+
+	t2, ok := t.(enttype.TSWithUnionFields)
+	return ok && t2.GetUnionFields() != nil
+}
+
+func (f *Field) HasSubFields() bool {
+	t := f.GetFieldType()
+
+	t2, ok := t.(enttype.TSWithSubFields)
+	return ok && t2.GetSubFields() != nil
+}
+
+func (f *Field) GetTSCustomInterfaceType() string {
+	// assumes HasSubFields is true
+	t := f.GetFieldType()
+
+	t2 := t.(enttype.TSWithSubFields)
+	return t2.GetCustomTypeInfo().TSInterface
 }
 
 type Option func(*Field)

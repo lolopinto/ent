@@ -76,6 +76,23 @@ export interface UserNestedObject {
   nestedObj?: UserNestedNestedObject | null;
 }
 
+export function convertUserNestedObject(input: any): UserNestedObject {
+  return {
+    nestedUuid: input.nested_uuid,
+    nestedInt: input.nested_int,
+    nestedString: input.nested_string,
+    nestedBool: input.nested_bool,
+    nestedFloat: input.nested_float,
+    nestedEnum: input.nested_enum,
+    nestedStringList: input.nested_string_list,
+    nestedIntList: input.nested_int_list,
+    nestedObj:
+      input.nested_obj === null
+        ? null
+        : convertUserNestedNestedObject(input.nested_obj),
+  };
+}
+
 export interface UserNestedNestedObject {
   nestedNestedUuid: ID;
   nestedNestedInt: number;
@@ -87,11 +104,35 @@ export interface UserNestedNestedObject {
   nestedNestedIntList: number[];
 }
 
+export function convertUserNestedNestedObject(
+  input: any,
+): UserNestedNestedObject {
+  return {
+    nestedNestedUuid: input.nested_nested_uuid,
+    nestedNestedInt: input.nested_nested_int,
+    nestedNestedString: input.nested_nested_string,
+    nestedNestedBool: input.nested_nested_bool,
+    nestedNestedFloat: input.nested_nested_float,
+    nestedNestedEnum: input.nested_nested_enum,
+    nestedNestedStringList: input.nested_nested_string_list,
+    nestedNestedIntList: input.nested_nested_int_list,
+  };
+}
+
 export interface CatType {
   name: string;
   birthday: Date;
   breed: CatBreed;
   kitten: boolean;
+}
+
+export function convertCatType(input: any): CatType {
+  return {
+    name: input.name,
+    birthday: input.birthday,
+    breed: input.breed,
+    kitten: input.kitten,
+  };
 }
 
 export interface DogType {
@@ -102,10 +143,28 @@ export interface DogType {
   puppy: boolean;
 }
 
+export function convertDogType(input: any): DogType {
+  return {
+    name: input.name,
+    birthday: input.birthday,
+    breed: input.breed,
+    breedGroup: input.breed_group,
+    puppy: input.puppy,
+  };
+}
+
 export interface RabbitType {
   name: string;
   birthday: Date;
   breed: RabbitBreed;
+}
+
+export function convertRabbitType(input: any): RabbitType {
+  return {
+    name: input.name,
+    birthday: input.birthday,
+    breed: input.breed,
+  };
 }
 
 export type PetUnionType = CatType | DogType | RabbitType;
@@ -122,3 +181,31 @@ export interface UserSuperNestedObject {
   obj?: UserNestedObject | null;
   union?: PetUnionType | null;
 }
+
+export function convertUserSuperNestedObject(
+  input: any,
+): UserSuperNestedObject {
+  return {
+    uuid: input.uuid,
+    int: input.int,
+    string: input.string,
+    bool: input.bool,
+    float: input.float,
+    enum: input.enum,
+    stringList: input.string_list,
+    intList: input.int_list,
+    obj: input.obj === null ? null : convertUserNestedObject(input.obj),
+    // if union type do something else
+    // TODO need to generate isFoo methods and handle that...
+    union: input.union,
+  };
+}
+
+// TODO convertFooMethod and if exported...
+
+//then need something for graphql input just in case for the account.test.ts case
+// there's convert from db
+// and convert from grapphql
+
+// there's also logic about convert to db in format()??
+// for now we can just getStorageKey() since that's all JS code...
