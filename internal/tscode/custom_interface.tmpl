@@ -21,12 +21,8 @@
       {{ end -}}
         return {
           {{range $field := .Fields -}}
-            {{ if $field.IsUnionType -}}
-              // if union type do something else
-              // TODO need to generate isFoo methods and handle that...
-              {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}},
-            {{ else if $field.HasSubFields -}}
-              {{  if $field.Nullable -}}
+            {{ if or $field.HasSubFields $field.IsUnionType -}}
+              {{ if $field.Nullable -}}
                 {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}} === null ? null :{{printf "convert%s" $field.GetTSCustomInterfaceType}}(input.{{$field.GetDbColName}}),
               {{ else -}}
                 {{$field.TsFieldName $cfg}}: {{printf "convert%s" $field.GetTSCustomInterfaceType}}(input.{{$field.GetDbColName}}),
@@ -41,5 +37,18 @@
   {{ end }}
   {{ if .IsCustomUnion -}}
     {{ .GetTypeDeclaration }}
+    {{$info := .GetConvertMethodInfo }}
+    function {{$info.Method}}(input: any): {{.TSType}} {
+      {{range $info.Infos -}} 
+        if (input.{{.Field}} !== undefined) {
+          return {{.ReturnFunction}}(input);
+        }
+      {{ end -}}
+      {{ if $info.Default -}}
+        return {{$info.Default}}(input);
+      {{ else -}}
+        throw new Error('invalid input for {{.TSType}}`);
+      {{ end -}}
+    }
   {{ end -}}
 {{ end -}}

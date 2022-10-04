@@ -169,6 +169,16 @@ export function convertRabbitType(input: any): RabbitType {
 
 export type PetUnionType = CatType | DogType | RabbitType;
 
+function convertPetUnionType(input: any): PetUnionType {
+  if (input.kitten !== undefined) {
+    return convertCatType(input);
+  }
+  if (input.breed_group !== undefined) {
+    return convertDogType(input);
+  }
+  return convertRabbitType(input);
+}
+
 export interface UserSuperNestedObject {
   uuid: ID;
   int: number;
@@ -195,8 +205,6 @@ export function convertUserSuperNestedObject(
     stringList: input.string_list,
     intList: input.int_list,
     obj: input.obj === null ? null : convertUserNestedObject(input.obj),
-    // if union type do something else
-    // TODO need to generate isFoo methods and handle that...
-    union: input.union,
+    union: input.union === null ? null : convertPetUnionType(input.union),
   };
 }

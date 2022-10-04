@@ -45,6 +45,64 @@ func (cu *CustomUnion) GetTypeDeclaration() (string, error) {
 	return fmt.Sprintf("export type %s = %s", cu.TSType, strings.Join(types, " | ")), nil
 }
 
+type NarrowingInfo struct {
+	Field          string
+	ReturnFunction string
+}
+
+type ConvertMethodInfo struct {
+	Method  string
+	Infos   []NarrowingInfo
+	Default string
+}
+
+func (cu *CustomUnion) GetConvertMethod() string {
+	return "convert" + cu.TSType
+}
+
+// need all but one to be set
+func (cu *CustomUnion) GetConvertMethodInfo() (*ConvertMethodInfo, error) {
+	ct := map[string]int{}
+	for _, inter := range cu.Interfaces {
+		for _, f := range inter.Fields {
+			ct[f.GetDbColName()] += 1
+		}
+	}
+
+	var infos []NarrowingInfo
+
+	def := ""
+	l := len(cu.Interfaces)
+	for _, inter := range cu.Interfaces {
+		found := false
+		for _, f := range inter.Fields {
+			// TODO move this to validation...
+			if l != ct[f.GetDbColName()] && ct[f.GetDbColName()] == 1 && !f.Nullable() {
+				infos = append(infos, NarrowingInfo{
+					Field:          f.GetDbColName(),
+					ReturnFunction: inter.GetConvertMethod(),
+				})
+				found = true
+				break
+			}
+		}
+		if !found {
+			def = inter.GetConvertMethod()
+		}
+	}
+
+	// we need at most an extra one here
+	if l-len(infos) > 1 {
+		return nil, fmt.Errorf("don't have enough information here to convert union type")
+	}
+
+	return &ConvertMethodInfo{
+		Method:  cu.GetConvertMethod(),
+		Infos:   infos,
+		Default: def,
+	}, nil
+}
+
 func (cu *CustomUnion) GetTSTypes() []string {
 	types := []string{cu.TSType}
 	for _, ci := range cu.Interfaces {
