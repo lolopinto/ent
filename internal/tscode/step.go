@@ -10,7 +10,6 @@ import (
 	"sync"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -1251,7 +1250,6 @@ func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
 
 		ret := val
 
-		spew.Dump(convs)
 		for _, conv := range convs {
 			if conv == "" {
 				continue
