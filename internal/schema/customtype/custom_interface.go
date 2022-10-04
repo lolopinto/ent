@@ -41,6 +41,8 @@ type CustomInterface struct {
 	// right now they're all exported??
 	Exported bool
 
+	GenerateListConvert bool
+
 	tsEnums  []*enum.Enum
 	gqlEnums []*enum.GQLEnum
 }
@@ -139,8 +141,17 @@ func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
 	// return len(ci.NonEntFields) > 0
 }
 
+// note the logic for these 3 duplicated in Field.GetConvertMethod() in field_type.go
 func (ci *CustomInterface) GetConvertMethod() string {
 	return "convert" + ci.TSType
+}
+
+func (ci *CustomInterface) GetConvertListMethod() string {
+	return "convert" + ci.TSType + "List"
+}
+
+func (ci *CustomInterface) GetConvertNullableListMethod() string {
+	return "convertNullable" + ci.TSType + "List"
 }
 
 func (ci *CustomInterface) GetAllCustomTypes() []CustomType {
@@ -161,6 +172,7 @@ func CustomInterfaceEqual(ci1, ci2 *CustomInterface) bool {
 		return false
 	}
 
+	// TODO exported etc. update this...
 	return ci1.TSType == ci2.TSType &&
 		ci1.GQLName == ci2.GQLName &&
 		field.FieldsEqual(ci1.Fields, ci2.Fields) &&

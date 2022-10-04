@@ -23,9 +23,9 @@
           {{range $field := .Fields -}}
             {{ if or $field.HasSubFields $field.IsUnionType -}}
               {{ if $field.Nullable -}}
-                {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}} === null ? null :{{printf "convert%s" $field.GetTSCustomInterfaceType}}(input.{{$field.GetDbColName}}),
+                {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}} === null ? null :{{$field.GetConvertMethod}}(input.{{$field.GetDbColName}}),
               {{ else -}}
-                {{$field.TsFieldName $cfg}}: {{printf "convert%s" $field.GetTSCustomInterfaceType}}(input.{{$field.GetDbColName}}),
+                {{$field.TsFieldName $cfg}}: {{$field.GetConvertMethod}}(input.{{$field.GetDbColName}}),
               {{end -}}
             {{else -}}
               {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}},
@@ -33,6 +33,19 @@
           {{end -}}
         };
       }
+
+      {{ if .GenerateListConvert}}
+        export function {{.GetConvertListMethod}}(input: any[]): {{.TSType}}[] {
+          return input.map(v => {{.GetConvertMethod}}(v));
+        }
+
+        export function {{.GetConvertNullableListMethod}}(input: any[] | null): {{.TSType}}[] | null {
+          if (input === null) {
+            return null;
+          }
+          return input.map(v => {{.GetConvertMethod}}(v));
+        }
+      {{ end }}
     {{end -}}
   {{ end }}
   {{ if .IsCustomUnion -}}

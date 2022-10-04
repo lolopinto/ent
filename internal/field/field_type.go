@@ -897,12 +897,23 @@ func (f *Field) HasSubFields() bool {
 	return ok && t2.GetSubFields() != nil
 }
 
-func (f *Field) GetTSCustomInterfaceType() string {
+func (f *Field) GetConvertMethod() string {
 	// assumes HasSubFields is true
 	t := f.GetFieldType()
 
 	t2 := t.(enttype.TSWithSubFields)
-	return t2.GetCustomTypeInfo().TSInterface
+	m := t2.GetCustomTypeInfo().TSInterface
+
+	list := enttype.IsListType(t)
+	nullable := f.Nullable()
+
+	if list && nullable {
+		return fmt.Sprintf("convertNullable%sList", m)
+	}
+	if list {
+		return fmt.Sprintf("convert%sList", m)
+	}
+	return "convert" + m
 }
 
 type Option func(*Field)

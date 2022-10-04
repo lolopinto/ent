@@ -772,9 +772,10 @@ func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.Custom
 	cti := subFieldsType.GetCustomTypeInfo()
 
 	ci := &customtype.CustomInterface{
-		TSType:   cti.TSInterface,
-		GQLName:  cti.GraphQLInterface,
-		Exported: true,
+		TSType:              cti.TSInterface,
+		GQLName:             cti.GraphQLInterface,
+		Exported:            true,
+		GenerateListConvert: enttype.IsListType(f.GetFieldType()),
 	}
 	actualSubFields := subFields.([]*input.Field)
 
