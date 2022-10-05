@@ -19,3 +19,10 @@ export function convertContactInfo(input: any): ContactInfo {
     source: input.source,
   };
 }
+
+export function convertNullableContactInfo(input: any): ContactInfo | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertContactInfo(input);
+}

@@ -883,23 +883,23 @@ func (f *Field) GetUserConvert() *input.UserConvertType {
 	return f.userConvert
 }
 
-func (f *Field) IsUnionType() bool {
-	t := f.GetFieldType()
+func (f *Field) IsUnionType(cfg codegenapi.Config) bool {
+	t := f.GetTSFieldType(cfg)
 
 	t2, ok := t.(enttype.TSWithUnionFields)
 	return ok && t2.GetUnionFields() != nil
 }
 
-func (f *Field) HasSubFields() bool {
-	t := f.GetFieldType()
+func (f *Field) HasSubFields(cfg codegenapi.Config) bool {
+	t := f.GetTSFieldType(cfg)
 
 	t2, ok := t.(enttype.TSWithSubFields)
 	return ok && t2.GetSubFields() != nil
 }
 
-func (f *Field) GetConvertMethod() string {
+func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
 	// assumes HasSubFields is true
-	t := f.GetFieldType()
+	t := f.GetTSFieldType(cfg)
 
 	t2 := t.(enttype.TSWithSubFields)
 	m := t2.GetCustomTypeInfo().TSInterface
@@ -907,13 +907,7 @@ func (f *Field) GetConvertMethod() string {
 	list := enttype.IsListType(t)
 	nullable := f.Nullable()
 
-	if list && nullable {
-		return fmt.Sprintf("convertNullable%sList", m)
-	}
-	if list {
-		return fmt.Sprintf("convert%sList", m)
-	}
-	return "convert" + m
+	return enttype.GetConvertMethod(nullable, list, m)
 }
 
 type Option func(*Field)

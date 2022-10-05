@@ -141,9 +141,13 @@ func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
 	// return len(ci.NonEntFields) > 0
 }
 
-// note the logic for these 3 duplicated in Field.GetConvertMethod() in field_type.go
+// note the logic for these 4 duplicated in Field.GetConvertMethod() in field_type.go
 func (ci *CustomInterface) GetConvertMethod() string {
 	return "convert" + ci.TSType
+}
+
+func (ci *CustomInterface) GetConvertNullableMethod() string {
+	return "convertNullable" + ci.TSType
 }
 
 func (ci *CustomInterface) GetConvertListMethod() string {

@@ -21,3 +21,12 @@ export function convertUserPrefsStruct(input: any): UserPrefsStruct {
     notifTypes: input.notif_types,
   };
 }
+
+export function convertNullableUserPrefsStruct(
+  input: any,
+): UserPrefsStruct | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserPrefsStruct(input);
+}

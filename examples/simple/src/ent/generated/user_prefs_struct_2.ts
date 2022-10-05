@@ -22,6 +22,15 @@ export function convertUserPrefsStruct2(input: any): UserPrefsStruct2 {
   };
 }
 
+export function convertNullableUserPrefsStruct2(
+  input: any,
+): UserPrefsStruct2 | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserPrefsStruct2(input);
+}
+
 export function convertUserPrefsStruct2List(input: any[]): UserPrefsStruct2[] {
   return input.map((v) => convertUserPrefsStruct2(v));
 }
@@ -29,7 +38,7 @@ export function convertUserPrefsStruct2List(input: any[]): UserPrefsStruct2[] {
 export function convertNullableUserPrefsStruct2List(
   input: any[] | null,
 ): UserPrefsStruct2[] | null {
-  if (input === null) {
+  if (input === null || input === undefined) {
     return null;
   }
   return input.map((v) => convertUserPrefsStruct2(v));

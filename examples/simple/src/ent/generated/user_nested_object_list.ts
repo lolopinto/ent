@@ -26,6 +26,15 @@ export function convertUserNestedNestedObjectList(
   };
 }
 
+export function convertNullableUserNestedNestedObjectList(
+  input: any,
+): UserNestedNestedObjectList | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserNestedNestedObjectList(input);
+}
+
 export function convertUserNestedNestedObjectListList(
   input: any[],
 ): UserNestedNestedObjectList[] {
@@ -35,7 +44,7 @@ export function convertUserNestedNestedObjectListList(
 export function convertNullableUserNestedNestedObjectListList(
   input: any[] | null,
 ): UserNestedNestedObjectList[] | null {
-  if (input === null) {
+  if (input === null || input === undefined) {
     return null;
   }
   return input.map((v) => convertUserNestedNestedObjectList(v));
@@ -57,6 +66,15 @@ export function convertUserNestedObjectList(input: any): UserNestedObjectList {
   };
 }
 
+export function convertNullableUserNestedObjectList(
+  input: any,
+): UserNestedObjectList | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserNestedObjectList(input);
+}
+
 export function convertUserNestedObjectListList(
   input: any[],
 ): UserNestedObjectList[] {
@@ -66,7 +84,7 @@ export function convertUserNestedObjectListList(
 export function convertNullableUserNestedObjectListList(
   input: any[] | null,
 ): UserNestedObjectList[] | null {
-  if (input === null) {
+  if (input === null || input === undefined) {
     return null;
   }
   return input.map((v) => convertUserNestedObjectList(v));

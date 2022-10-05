@@ -51,13 +51,18 @@ type NarrowingInfo struct {
 }
 
 type ConvertMethodInfo struct {
-	Method  string
-	Infos   []NarrowingInfo
-	Default string
+	Method         string
+	NullableMethod string
+	Infos          []NarrowingInfo
+	Default        string
 }
 
 func (cu *CustomUnion) GetConvertMethod() string {
 	return "convert" + cu.TSType
+}
+
+func (cu *CustomUnion) GetConvertNullableMethod() string {
+	return "convertNullable" + cu.TSType
 }
 
 // need all but one to be set
@@ -97,9 +102,10 @@ func (cu *CustomUnion) GetConvertMethodInfo() (*ConvertMethodInfo, error) {
 	}
 
 	return &ConvertMethodInfo{
-		Method:  cu.GetConvertMethod(),
-		Infos:   infos,
-		Default: def,
+		Method:         cu.GetConvertMethod(),
+		NullableMethod: cu.GetConvertNullableMethod(),
+		Infos:          infos,
+		Default:        def,
 	}, nil
 }
 

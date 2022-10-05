@@ -11,3 +11,10 @@ export function convertUserPrefsDiff(input: any): UserPrefsDiff {
     type: input.type,
   };
 }
+
+export function convertNullableUserPrefsDiff(input: any): UserPrefsDiff | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserPrefsDiff(input);
+}

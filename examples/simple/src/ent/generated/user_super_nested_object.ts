@@ -86,11 +86,17 @@ export function convertUserNestedObject(input: any): UserNestedObject {
     nestedEnum: input.nested_enum,
     nestedStringList: input.nested_string_list,
     nestedIntList: input.nested_int_list,
-    nestedObj:
-      input.nested_obj === null
-        ? null
-        : convertUserNestedNestedObject(input.nested_obj),
+    nestedObj: convertNullableUserNestedNestedObject(input.nested_obj),
   };
+}
+
+export function convertNullableUserNestedObject(
+  input: any,
+): UserNestedObject | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserNestedObject(input);
 }
 
 export interface UserNestedNestedObject {
@@ -119,6 +125,15 @@ export function convertUserNestedNestedObject(
   };
 }
 
+export function convertNullableUserNestedNestedObject(
+  input: any,
+): UserNestedNestedObject | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserNestedNestedObject(input);
+}
+
 export interface CatType {
   name: string;
   birthday: Date;
@@ -133,6 +148,13 @@ export function convertCatType(input: any): CatType {
     breed: input.breed,
     kitten: input.kitten,
   };
+}
+
+export function convertNullableCatType(input: any): CatType | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertCatType(input);
 }
 
 export interface DogType {
@@ -153,6 +175,13 @@ export function convertDogType(input: any): DogType {
   };
 }
 
+export function convertNullableDogType(input: any): DogType | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertDogType(input);
+}
+
 export interface RabbitType {
   name: string;
   birthday: Date;
@@ -167,6 +196,13 @@ export function convertRabbitType(input: any): RabbitType {
   };
 }
 
+export function convertNullableRabbitType(input: any): RabbitType | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertRabbitType(input);
+}
+
 export type PetUnionType = CatType | DogType | RabbitType;
 
 function convertPetUnionType(input: any): PetUnionType {
@@ -177,6 +213,13 @@ function convertPetUnionType(input: any): PetUnionType {
     return convertDogType(input);
   }
   return convertRabbitType(input);
+}
+
+function convertNullablePetUnionType(input: any): PetUnionType | null {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  return convertPetUnionType(input);
 }
 
 export interface UserSuperNestedObject {
@@ -204,7 +247,16 @@ export function convertUserSuperNestedObject(
     enum: input.enum,
     stringList: input.string_list,
     intList: input.int_list,
-    obj: input.obj === null ? null : convertUserNestedObject(input.obj),
-    union: input.union === null ? null : convertPetUnionType(input.union),
+    obj: convertNullableUserNestedObject(input.obj),
+    union: convertNullablePetUnionType(input.union),
   };
+}
+
+export function convertNullableUserSuperNestedObject(
+  input: any,
+): UserSuperNestedObject | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserSuperNestedObject(input);
 }
