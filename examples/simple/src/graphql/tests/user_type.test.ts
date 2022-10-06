@@ -761,19 +761,18 @@ test("create with prefs+prefsList", async () => {
           finishedNux: true,
           notifTypes: [NotifType.EMAIL],
         });
-        // TODO...
-        // expect(await user.prefsList()).toStrictEqual([
-        //   {
-        //     enableNotifs: undefined,
-        //     finishedNux: true,
-        //     notifTypes: [NotifType.EMAIL],
-        //   },
-        //   {
-        //     enableNotifs: undefined,
-        //     finishedNux: false,
-        //     notifTypes: [NotifType.MOBILE],
-        //   },
-        // ]);
+        expect(await user.prefsList()).toStrictEqual([
+          {
+            enableNotifs: undefined,
+            finishedNux: true,
+            notifTypes: [NotifType.EMAIL],
+          },
+          {
+            enableNotifs: undefined,
+            finishedNux: false,
+            notifTypes: [NotifType.MOBILE],
+          },
+        ]);
       },
     ],
   );
