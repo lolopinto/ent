@@ -53,12 +53,6 @@ export class StructField extends BaseField implements Field {
       const field = this.options.fields[k];
 
       // check two values
-
-      // wait, two different things
-
-      // getStoragetKey and getCamelCase()
-      // for weird graphql case and for typescript format...
-
       // store in dbKey format
 
       // TODO more #510

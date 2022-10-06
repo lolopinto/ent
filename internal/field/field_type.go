@@ -137,7 +137,6 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 			// TODO come up with a better way of handling this
 			ret.graphQLName = "id"
 		} else {
-			// graphql name here. i need a flag here of when to override graphql name???
 			ret.graphQLName = codegenapi.GraphQLName(cfg, ret.FieldName)
 		}
 	}

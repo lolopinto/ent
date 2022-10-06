@@ -1237,7 +1237,6 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["callAndConvertFunc"] = func(f *field.Field, cfg codegenapi.Config, val string) (string, error) {
-		// only user convert showing here...
 		convs := enttype.ConvertFuncs(f.GetTSFieldType(cfg))
 		userConv := f.GetUserConvert()
 		if userConv != nil {

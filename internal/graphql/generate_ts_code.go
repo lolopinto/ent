@@ -2626,7 +2626,6 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 	}
 
 	for _, f := range ci.Fields {
-
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(ciInfo.input), ciInfo.input),

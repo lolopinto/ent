@@ -798,7 +798,6 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 	} else {
 		root.Children = append(root.Children, ci)
 	}
-	// TODO graphqlName snake case for input...
 
 	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, subFields, &field.Options{})
 	if err != nil {
