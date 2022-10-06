@@ -25,12 +25,11 @@ test("create", async () => {
   );
 });
 
-test.only("create with prefs", async () => {
+test("create with prefs", async () => {
   await expectMutation(
     {
       schema,
       mutation: "createAccount",
-      debugMode: true,
       args: {
         name: "Jon Snow",
         phone_number: randomPhoneNumber(),
@@ -47,7 +46,11 @@ test.only("create with prefs", async () => {
         const account = await Account.loadX(new IDViewer(id), id);
         expect(account.accountState).toBe("UNVERIFIED");
 
-        console.debug(account.accountPrefs);
+        expect(account.accountPrefs).toStrictEqual({
+          finishedNux: true,
+          enableNotifs: false,
+          preferredLanguage: "en_US",
+        });
       },
     ],
     ["account.name", "Jon Snow"],

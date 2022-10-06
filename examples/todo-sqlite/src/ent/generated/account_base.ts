@@ -24,7 +24,10 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
-import { AccountPrefs } from "src/ent/generated/account_prefs";
+import {
+  AccountPrefs,
+  convertNullableAccountPrefs,
+} from "src/ent/generated/account_prefs";
 import {
   accountLoader,
   accountLoaderInfo,
@@ -84,7 +87,9 @@ export class AccountBase implements Ent<Viewer> {
     this.name = data.name;
     this.phoneNumber = data.phone_number;
     this.accountState = data.account_state;
-    this.accountPrefs = convertNullableJSON(data.account_prefs);
+    this.accountPrefs = convertNullableAccountPrefs(
+      convertNullableJSON(data.account_prefs),
+    );
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
