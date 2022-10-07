@@ -176,12 +176,15 @@ export type PetUnionType = CatType | DogType | RabbitType;
 
 function convertPetUnionType(input: any): PetUnionType {
   if (input.kitten !== undefined) {
-    return convertCatType(input);
+    // these don't have convert
+    // need to handle this in custom_union so only applies to oen that has onvert
+    // return convertCatType(input);
   }
   if (input.breed_group !== undefined) {
     return convertDogType(input);
   }
-  return convertRabbitType(input);
+  return input;
+  // return convertRabbitType(input);
 }
 
 function convertNullablePetUnionType(input: any): PetUnionType | null {
@@ -217,7 +220,8 @@ export function convertUserSuperNestedObject(
     stringList: input.string_list,
     intList: input.int_list,
     obj: input.obj,
-    union: input.union,
+    // this should be convertNullable
+    union: convertNullablePetUnionType(input.union),
   };
 }
 

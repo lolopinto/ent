@@ -22,7 +22,7 @@
   {{ end }}
 {{ end -}}
 
-{{ range .GetImportsForBaseFile $schema -}} 
+{{ range .GetImportsForBaseFile $schema $cfg -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 

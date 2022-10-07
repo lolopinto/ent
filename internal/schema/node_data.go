@@ -218,7 +218,7 @@ func (nodeData *NodeData) GetTSEnums() []*enum.Enum {
 
 // TODO kill this
 // GetImportsForBaseFile returns list of imports needed in the base generated file
-func (nodeData *NodeData) GetImportsForBaseFile(s *Schema) ([]*tsimport.ImportPath, error) {
+func (nodeData *NodeData) GetImportsForBaseFile(s *Schema, cfg codegenapi.Config) ([]*tsimport.ImportPath, error) {
 	ret := []*tsimport.ImportPath{
 		{
 			Import:        "schema",
@@ -276,7 +276,7 @@ func (nodeData *NodeData) GetImportsForBaseFile(s *Schema) ([]*tsimport.ImportPa
 			})
 		}
 
-		ret = append(ret, f.GetImportsForTypes()...)
+		ret = append(ret, f.GetImportsForTypes(cfg, s)...)
 	}
 	return ret, nil
 }

@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -115,7 +116,7 @@ func (p *PatternInfo) HasFields() bool {
 	return len(p.FieldInfo.Fields) > 0
 }
 
-func (p *PatternInfo) GetImportsForMixin() []*tsimport.ImportPath {
+func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 
 	for _, edge := range p.AssocEdges {
@@ -126,7 +127,7 @@ func (p *PatternInfo) GetImportsForMixin() []*tsimport.ImportPath {
 	}
 
 	for _, f := range p.FieldInfo.Fields {
-		ret = append(ret, f.GetImportsForTypes()...)
+		ret = append(ret, f.GetImportsForTypes(cfg, s)...)
 	}
 	return ret
 }

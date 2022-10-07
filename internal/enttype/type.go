@@ -339,13 +339,15 @@ func getAllDialectsImportMap(imps ...*tsimport.ImportPath) ConvertDataTypeRet {
 }
 
 func addToAllDialects(m ConvertDataTypeRet, imp *tsimport.ImportPath) ConvertDataTypeRet {
-	all := []config.Dialect{config.Postgres, config.SQLite}
-	for _, dialect := range all {
-		list := m[dialect]
-		list = append(list, imp)
-		m[dialect] = list
-	}
+	// TODO revert coming...
 	return m
+	// all := []config.Dialect{config.Postgres, config.SQLite}
+	// for _, dialect := range all {
+	// 	list := m[dialect]
+	// 	list = append(list, imp)
+	// 	m[dialect] = list
+	// }
+	// return m
 }
 
 func (t *boolType) Convert() ConvertDataTypeRet {
@@ -2140,6 +2142,7 @@ func GetConvertMethod(nullable, list bool, typ string) string {
 }
 
 func (t *CommonJSONType) getCustomImportPath(nullable, list bool) *tsimport.ImportPath {
+	return nil
 	if t.CustomTsInterface == "" {
 		return nil
 	}

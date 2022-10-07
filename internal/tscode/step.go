@@ -742,7 +742,7 @@ func writeBaseModelFile(nodeData *schema.NodeData, processor *codegen.Processor)
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		PathToFile:         filePath,
 		TsImports:          imps,
-		FuncMap:            getBaseFuncs(imps),
+		FuncMap:            getBaseFuncs(processor.Schema, imps),
 	})
 }
 
@@ -751,6 +751,7 @@ type patternTemplateCodePath struct {
 	Config  *codegen.Config
 	Package *codegen.ImportPackage
 	Imports []*tsimport.ImportPath
+	Schema  *schema.Schema
 }
 
 func writeMixinFile(processor *codegen.Processor, pattern *schema.PatternInfo) error {
@@ -764,13 +765,14 @@ func writeMixinFile(processor *codegen.Processor, pattern *schema.PatternInfo) e
 			Pattern: pattern,
 			Config:  cfg,
 			Package: cfg.GetImportPackage(),
+			Schema:  processor.Schema,
 		},
 		AbsPathToTemplate:  util.GetAbsolutePath("mixin.tmpl"),
 		TemplateName:       "mixin.tmpl",
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		PathToFile:         filePath,
 		TsImports:          imps,
-		FuncMap:            getBaseFuncs(imps),
+		FuncMap:            getBaseFuncs(processor.Schema, imps),
 	})
 }
 
@@ -1177,7 +1179,7 @@ func writeBuilderFile(nodeData *schema.NodeData, processor *codegen.Processor) e
 	filePath := getFilePathForBuilderFile(cfg, nodeData)
 	imps := tsimport.NewImports(processor.Config, filePath)
 
-	imports, err := nodeData.GetImportsForBaseFile(processor.Schema)
+	imports, err := nodeData.GetImportsForBaseFile(processor.Schema, cfg)
 	if err != nil {
 		return err
 	}
@@ -1236,10 +1238,18 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 	return m
 }
 
-func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
+func getBaseFuncs(s *schema.Schema, imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["callAndConvertFunc"] = func(f *field.Field, cfg codegenapi.Config, val string) (string, error) {
+		// so here...
+		// there's type convert
+		// user convert
+		// custom type convert...
 		convs := enttype.ConvertFuncs(f.GetTSFieldType(cfg))
+		convImp := f.GetConvertImport(cfg, s)
+		if convImp != nil {
+			convs = append(convs, convImp.Import)
+		}
 		userConv := f.GetUserConvert()
 		if userConv != nil {
 			convs = append(convs, userConv.Function)

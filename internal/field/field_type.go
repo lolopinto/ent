@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/types"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -605,7 +606,7 @@ func (f *Field) GetPossibleTypes() []enttype.EntType {
 	return typs
 }
 
-func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
+func (f *Field) GetImportsForTypes(cfg codegenapi.Config, g CustomInterfaceGetter) []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 	tt := f.GetPossibleTypes()
 	for _, t := range tt {
@@ -630,6 +631,12 @@ func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
 			ImportPath: f.userConvert.Path,
 			Import:     f.userConvert.Function,
 		})
+	}
+
+	// need schema
+	imp := f.GetConvertImport(cfg, g)
+	if imp != nil {
+		ret = append(ret, imp)
 	}
 
 	return ret
@@ -913,6 +920,28 @@ func (f *Field) HasConvertFunction(cfg codegenapi.Config, g CustomInterfaceGette
 	return custom != nil && custom.HasConvertFunction(cfg)
 }
 
+func getImportPathForCustomInterfaceFile(typ string) string {
+	return path.Join(fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(typ)))
+}
+
+func (f *Field) GetConvertImport(cfg codegenapi.Config, g CustomInterfaceGetter) *tsimport.ImportPath {
+	if !f.HasConvertFunction(cfg, g) {
+		return nil
+	}
+	t := f.GetTSFieldType(cfg)
+
+	list := enttype.IsListType(t)
+	nullable := f.Nullable()
+
+	t2 := t.(enttype.TSTypeWithCustomType)
+	typ := t2.GetCustomTypeInfo().TSInterface
+
+	return &tsimport.ImportPath{
+		Import:     enttype.GetConvertMethod(nullable, list, typ),
+		ImportPath: getImportPathForCustomInterfaceFile(typ),
+	}
+}
+
 func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
 	// assumes HasConvertFunction is true
 	t := f.GetTSFieldType(cfg)
@@ -923,6 +952,7 @@ func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
 	list := enttype.IsListType(t)
 	nullable := f.Nullable()
 
+	// all the logic there will be in here
 	return enttype.GetConvertMethod(nullable, list, m)
 }
 
