@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/schema/enum"
 )
 
@@ -55,6 +56,15 @@ type ConvertMethodInfo struct {
 	NullableMethod string
 	Infos          []NarrowingInfo
 	Default        string
+}
+
+func (ci *CustomUnion) HasConvertFunction(cfg codegenapi.Config) bool {
+	for _, inter := range ci.Interfaces {
+		if inter.HasConvertFunction(cfg) {
+			return true
+		}
+	}
+	return false
 }
 
 func (cu *CustomUnion) GetConvertMethod() string {

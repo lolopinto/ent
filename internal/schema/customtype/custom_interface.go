@@ -8,6 +8,7 @@ import (
 )
 
 type CustomType interface {
+	field.CustomTypeWithHasConvertFunction
 	GetTSType() string
 	GetGraphQLName() string
 	GetGraphQLType() string
@@ -130,15 +131,20 @@ func (ci *CustomInterface) IsCustomUnion() bool {
 }
 
 func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
-	return true
-	// TODO need to update field_type to know when this applies or not...
-	// for _, f := range ci.Fields {
-	// 	if f.TsFieldName(cfg) != f.GetDbColName() {
-	// 		return true
-	// 	}
-	// }
-	// // TODO when do we use non ent fields again??
-	// return len(ci.NonEntFields) > 0
+	for _, c := range ci.Children {
+		if c.HasConvertFunction(cfg) {
+			return true
+		}
+	}
+
+	for _, f := range ci.Fields {
+		if f.TsFieldName(cfg) != f.GetDbColName() {
+			return true
+		}
+	}
+
+	// TODO when do we use non ent fields again??
+	return len(ci.NonEntFields) > 0
 }
 
 // note the logic for these 4 duplicated in Field.GetConvertMethod() in field_type.go

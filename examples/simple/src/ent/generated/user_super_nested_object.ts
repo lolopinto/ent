@@ -86,7 +86,7 @@ export function convertUserNestedObject(input: any): UserNestedObject {
     nestedEnum: input.nested_enum,
     nestedStringList: input.nested_string_list,
     nestedIntList: input.nested_int_list,
-    nestedObj: convertNullableUserNestedNestedObject(input.nested_obj),
+    nestedObj: input.nested_obj,
   };
 }
 
@@ -141,22 +141,6 @@ export interface CatType {
   kitten: boolean;
 }
 
-export function convertCatType(input: any): CatType {
-  return {
-    name: input.name,
-    birthday: input.birthday,
-    breed: input.breed,
-    kitten: input.kitten,
-  };
-}
-
-export function convertNullableCatType(input: any): CatType | null {
-  if (input === undefined || input === null) {
-    return null;
-  }
-  return convertCatType(input);
-}
-
 export interface DogType {
   name: string;
   birthday: Date;
@@ -186,21 +170,6 @@ export interface RabbitType {
   name: string;
   birthday: Date;
   breed: RabbitBreed;
-}
-
-export function convertRabbitType(input: any): RabbitType {
-  return {
-    name: input.name,
-    birthday: input.birthday,
-    breed: input.breed,
-  };
-}
-
-export function convertNullableRabbitType(input: any): RabbitType | null {
-  if (input === undefined || input === null) {
-    return null;
-  }
-  return convertRabbitType(input);
 }
 
 export type PetUnionType = CatType | DogType | RabbitType;
@@ -247,8 +216,8 @@ export function convertUserSuperNestedObject(
     enum: input.enum,
     stringList: input.string_list,
     intList: input.int_list,
-    obj: convertNullableUserNestedObject(input.obj),
-    union: convertNullablePetUnionType(input.union),
+    obj: input.obj,
+    union: input.union,
   };
 }
 

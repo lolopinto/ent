@@ -44,6 +44,7 @@ type Schema struct {
 	Enums            map[string]*EnumInfo
 	enumTables       map[string]*EnumInfo
 	CustomInterfaces map[string]*customtype.CustomInterface
+	allCustomTypes   map[string]field.CustomTypeWithHasConvertFunction
 	gqlTypeMap       map[string]bool
 
 	// used to keep track of schema-state
@@ -298,6 +299,7 @@ func (s *Schema) init() {
 	s.enumTables = make(map[string]*EnumInfo)
 	s.Patterns = map[string]*PatternInfo{}
 	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
+	s.allCustomTypes = make(map[string]field.CustomTypeWithHasConvertFunction)
 	s.gqlTypeMap = map[string]bool{
 		"QueryType":    true,
 		"MutationType": true,
@@ -792,6 +794,7 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 		return err
 	}
 
+	s.allCustomTypes[ci.TSType] = ci
 	if root == nil {
 		root = ci
 		s.CustomInterfaces[ci.TSType] = ci
@@ -840,6 +843,7 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customt
 		TSType:  cti.TSInterface,
 		GQLName: cti.GraphQLInterface,
 	}
+	s.allCustomTypes[cu.TSType] = cu
 
 	if err := s.addGQLType(cu.GetGraphQLType()); err != nil {
 		return nil, err
@@ -1759,3 +1763,9 @@ func (s *Schema) PatternFieldWithMixin(f *field.Field) bool {
 	}
 	return p.HasMixin()
 }
+
+func (s *Schema) GetCustomTypeByTSName(name string) field.CustomTypeWithHasConvertFunction {
+	return s.allCustomTypes[name]
+}
+
+var _ field.CustomInterfaceGetter = &Schema{}

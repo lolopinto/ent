@@ -3,6 +3,7 @@
 {{ $ci := .Interface}}
 {{ $pkg := .Package }}
 {{ $cfg := .Config }}
+{{ $schema := .Schema }}
 {{ range $ci.GetAllEnums -}}
   {{/* TODO when imported here? */}}
   {{if not .Imported -}}
@@ -21,7 +22,7 @@
       {{ end -}}
         return {
           {{range $field := .Fields -}}
-            {{ if or ($field.HasSubFields $cfg) ($field.IsUnionType $cfg) -}}
+            {{ if $field.HasConvertFunction $cfg $schema -}}
               {{$field.TsFieldName $cfg}}: {{$field.GetConvertMethod $cfg}}(input.{{$field.GetDbColName}}),
             {{else -}}
               {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}},

@@ -610,11 +610,9 @@ func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
 	tt := f.GetPossibleTypes()
 	for _, t := range tt {
 		imps := enttype.ConvertImportPaths(t)
-		if imps != nil {
-			for _, imp := range imps {
-				if imp.ImportPath != "" {
-					ret = append(ret, imp)
-				}
+		for _, imp := range imps {
+			if imp.ImportPath != "" {
+				ret = append(ret, imp)
 			}
 		}
 		if enttype.IsImportDepsType(t) {
@@ -882,22 +880,41 @@ func (f *Field) GetUserConvert() *input.UserConvertType {
 	return f.userConvert
 }
 
-func (f *Field) IsUnionType(cfg codegenapi.Config) bool {
-	t := f.GetTSFieldType(cfg)
-
-	t2, ok := t.(enttype.TSWithUnionFields)
-	return ok && t2.GetUnionFields() != nil
+type CustomInterfaceGetter interface {
+	GetCustomTypeByTSName(name string) CustomTypeWithHasConvertFunction
 }
 
-func (f *Field) HasSubFields(cfg codegenapi.Config) bool {
+type CustomTypeWithHasConvertFunction interface {
+	HasConvertFunction(cfg codegenapi.Config) bool
+}
+
+func (f *Field) HasConvertFunction(cfg codegenapi.Config, g CustomInterfaceGetter) bool {
 	t := f.GetTSFieldType(cfg)
 
 	t2, ok := t.(enttype.TSWithSubFields)
-	return ok && t2.GetSubFields() != nil
+	t3, ok2 := t.(enttype.TSWithUnionFields)
+	if !ok && !ok2 {
+		return false
+	}
+	var typ string
+	if ok {
+		if t2.GetSubFields() == nil {
+			return false
+		}
+		typ = t2.GetCustomTypeInfo().TSInterface
+	}
+	if ok2 {
+		if t3.GetUnionFields() == nil {
+			return false
+		}
+		typ = t3.GetCustomTypeInfo().TSInterface
+	}
+	custom := g.GetCustomTypeByTSName(typ)
+	return custom != nil && custom.HasConvertFunction(cfg)
 }
 
 func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
-	// assumes HasSubFields is true
+	// assumes HasConvertFunction is true
 	t := f.GetTSFieldType(cfg)
 
 	t2 := t.(enttype.TSWithSubFields)

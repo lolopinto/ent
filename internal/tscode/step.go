@@ -822,10 +822,12 @@ func writeCustomInterfaceFile(processor *codegen.Processor, ci *customtype.Custo
 			Interface *customtype.CustomInterface
 			Package   *codegen.ImportPackage
 			Config    *codegen.Config
+			Schema    *schema.Schema
 		}{
 			Interface: ci,
 			Package:   processor.Config.GetImportPackage(),
 			Config:    processor.Config,
+			Schema:    processor.Schema,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("custom_interface.tmpl"),
 		OtherTemplateFiles: []string{
