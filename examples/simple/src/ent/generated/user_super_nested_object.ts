@@ -175,14 +175,10 @@ export interface RabbitType {
 export type PetUnionType = CatType | DogType | RabbitType;
 
 function convertPetUnionType(input: any): PetUnionType {
-  if (input.kitten !== undefined) {
-    // return convertCatType(input);
-  }
   if (input.breed_group !== undefined) {
     return convertDogType(input);
   }
   return input;
-  // return convertRabbitType(input);
 }
 
 function convertNullablePetUnionType(input: any): PetUnionType | null {

@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -909,7 +908,6 @@ func (f *Field) HasConvertFunction(cfg codegenapi.Config, g CustomInterfaceGette
 	}
 	typ := cti.TSInterface
 	custom := g.GetCustomTypeByTSName(typ)
-	spew.Dump(typ, custom.HasConvertFunction(cfg))
 	return custom != nil && custom.HasConvertFunction(cfg)
 }
 
