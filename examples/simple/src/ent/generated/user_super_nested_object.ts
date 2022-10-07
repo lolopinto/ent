@@ -86,7 +86,7 @@ export function convertUserNestedObject(input: any): UserNestedObject {
     nestedEnum: input.nested_enum,
     nestedStringList: input.nested_string_list,
     nestedIntList: input.nested_int_list,
-    nestedObj: input.nested_obj,
+    nestedObj: convertNullableUserNestedNestedObject(input.nested_obj),
   };
 }
 
@@ -176,8 +176,6 @@ export type PetUnionType = CatType | DogType | RabbitType;
 
 function convertPetUnionType(input: any): PetUnionType {
   if (input.kitten !== undefined) {
-    // these don't have convert
-    // need to handle this in custom_union so only applies to oen that has onvert
     // return convertCatType(input);
   }
   if (input.breed_group !== undefined) {
@@ -219,8 +217,7 @@ export function convertUserSuperNestedObject(
     enum: input.enum,
     stringList: input.string_list,
     intList: input.int_list,
-    obj: input.obj,
-    // this should be convertNullable
+    obj: convertNullableUserNestedObject(input.obj),
     union: convertNullablePetUnionType(input.union),
   };
 }

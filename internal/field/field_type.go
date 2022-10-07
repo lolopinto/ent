@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -898,25 +899,17 @@ type CustomTypeWithHasConvertFunction interface {
 func (f *Field) HasConvertFunction(cfg codegenapi.Config, g CustomInterfaceGetter) bool {
 	t := f.GetTSFieldType(cfg)
 
-	t2, ok := t.(enttype.TSWithSubFields)
-	t3, ok2 := t.(enttype.TSWithUnionFields)
-	if !ok && !ok2 {
+	t2, ok := t.(enttype.TSTypeWithCustomType)
+	if !ok {
 		return false
 	}
-	var typ string
-	if ok {
-		if t2.GetSubFields() == nil {
-			return false
-		}
-		typ = t2.GetCustomTypeInfo().TSInterface
+	cti := t2.GetCustomTypeInfo()
+	if cti == nil {
+		return false
 	}
-	if ok2 {
-		if t3.GetUnionFields() == nil {
-			return false
-		}
-		typ = t3.GetCustomTypeInfo().TSInterface
-	}
+	typ := cti.TSInterface
 	custom := g.GetCustomTypeByTSName(typ)
+	spew.Dump(typ, custom.HasConvertFunction(cfg))
 	return custom != nil && custom.HasConvertFunction(cfg)
 }
 
