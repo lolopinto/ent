@@ -19,6 +19,19 @@ type CustomType interface {
 	// put self last because you can reference
 	// want to render in order so that dependencies are rendered first
 	GetAllCustomTypes() []CustomType
+	Equal(ct CustomType) bool
+}
+
+func customTypeListEqual(l1, l2 []CustomType) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+	for i, ci1 := range l1 {
+		if !ci1.Equal(l2[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 type CustomInterface struct {
@@ -176,18 +189,41 @@ func (ci *CustomInterface) GetAllCustomTypes() []CustomType {
 	return ret
 }
 
+func (ci *CustomInterface) Equal(ct CustomType) bool {
+	ci2, ok := ct.(*CustomInterface)
+	return ok && CustomInterfaceEqual(ci, ci2)
+}
+
 func CustomInterfaceEqual(ci1, ci2 *CustomInterface) bool {
 	ret := change.CompareNilVals(ci1.Action == nil, ci2.Action == nil)
 	if ret != nil && !*ret {
 		return false
 	}
 
-	// TODO exported etc. update this...
 	return ci1.TSType == ci2.TSType &&
 		ci1.GQLName == ci2.GQLName &&
 		field.FieldsEqual(ci1.Fields, ci2.Fields) &&
 		field.NonEntFieldsEqual(ci1.NonEntFields, ci2.NonEntFields) &&
-		change.StringListEqual(ci1.enumImports, ci2.enumImports)
+		// Action handled above
+		ci1.GraphQLFieldName == ci2.GraphQLFieldName &&
+		change.StringListEqual(ci1.enumImports, ci2.enumImports) &&
+		customTypeListEqual(ci1.Children, ci2.Children) &&
+		ci1.Exported == ci2.Exported &&
+		ci1.GenerateListConvert == ci2.GenerateListConvert &&
+		enum.EnumsEqual(ci1.tsEnums, ci2.tsEnums) &&
+		enum.GQLEnumsEqual(ci1.gqlEnums, ci1.gqlEnums)
+}
+
+func customInterfaceListEqual(l1, l2 []*CustomInterface) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+	for i, ci1 := range l1 {
+		if !CustomInterfaceEqual(ci1, l2[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func CompareInterfacesMapEqual(m1, m2 map[string]*CustomInterface) bool {
