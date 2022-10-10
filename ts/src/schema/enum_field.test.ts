@@ -65,14 +65,6 @@ describe("upper case enum", () => {
         formatted: status,
       });
     });
-
-    ["VERIFIED", "UNVERIFIED"].forEach((status) => {
-      testEnum(e2, {
-        valid: true,
-        value: status,
-        formatted: status.toLowerCase(),
-      });
-    });
   });
 
   test("invalid", () => {
@@ -93,132 +85,6 @@ describe("upper case enum", () => {
     testEnum(e, {
       valid: false,
       value: "verified",
-    });
-  });
-});
-
-describe("gql support", () => {
-  let rainbow = enumF([
-    "red",
-    "orange",
-    "yellow",
-    "green",
-    "blue",
-    "indigo",
-    "violet",
-  ]);
-  let rainbow2 = enumMapF({
-    Red: "red",
-    Orange: "orange",
-    Yellow: "yellow",
-    Green: "green",
-    Blue: "blue",
-    Indigo: "indigo",
-    Violet: "violet",
-  });
-
-  test("same case", () => {
-    ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].forEach(
-      (color) => {
-        testEnum(rainbow, {
-          value: color,
-          valid: true,
-          formatted: color,
-        });
-      },
-    );
-  });
-
-  test("same case map", () => {
-    ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].forEach(
-      (color) => {
-        testEnum(rainbow2, {
-          value: color,
-          valid: true,
-          formatted: color,
-        });
-      },
-    );
-  });
-
-  test("all caps", () => {
-    ["RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "INDIGO", "VIOLET"].forEach(
-      (color) => {
-        testEnum(rainbow, {
-          value: color,
-          valid: true,
-          // the enum values are lowercase so we expect it to be formatted correctly as lowercase
-          formatted: color.toLowerCase(),
-        });
-      },
-    );
-  });
-
-  test("all caps map", () => {
-    ["RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "INDIGO", "VIOLET"].forEach(
-      (color) => {
-        testEnum(rainbow2, {
-          value: color,
-          valid: true,
-          // the enum values are lowercase so we expect it to be formatted correctly as lowercase
-          formatted: color.toLowerCase(),
-        });
-      },
-    );
-  });
-
-  test("mixed case", () => {
-    expect(rainbow.valid("Violet")).toBe(false);
-  });
-
-  test("mixed case map", () => {
-    expect(rainbow2.valid("Violet")).toBe(false);
-  });
-});
-
-describe("gql support camel case", () => {
-  const values = [
-    "areFriends",
-    "outgoingFriendRequest",
-    "incomingFriendRequest",
-    "canSendRequest",
-    "cannotRequest",
-  ];
-  const expectedVals = [
-    "ARE_FRIENDS",
-    "OUTGOING_FRIEND_REQUEST",
-    "INCOMING_FRIEND_REQUEST",
-    "CAN_SEND_REQUEST",
-    "CANNOT_REQUEST",
-  ];
-  let friendshipStatus = enumF(values);
-
-  test("same case", () => {
-    values.forEach((enumValue) => {
-      testEnum(friendshipStatus, {
-        value: enumValue,
-        valid: true,
-        formatted: enumValue,
-      });
-    });
-  });
-
-  test("converted", () => {
-    values.forEach((enumValue, idx) => {
-      expect(friendshipStatus.convertForGQL(enumValue)).toEqual(
-        expectedVals[idx],
-      );
-    });
-  });
-
-  test("validate expected", () => {
-    expectedVals.forEach((val, idx) => {
-      testEnum(friendshipStatus, {
-        value: val,
-        valid: true,
-        // the enum values are lowercase so we expect it to be formatted correctly as lowercase
-        formatted: values[idx],
-      });
     });
   });
 });
@@ -246,20 +112,6 @@ describe("mixed case enum", () => {
     );
   });
 
-  test("all caps", () => {
-    ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"].forEach(
-      (color) => {
-        testEnum(rainbow, {
-          // value passed is uppercase
-          value: color.toUpperCase(),
-          valid: true,
-          // formatted value is title case saved value
-          formatted: color,
-        });
-      },
-    );
-  });
-
   test("lower case", () => {
     ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].forEach(
       (color) => {
@@ -280,7 +132,6 @@ test("fkey enum", () => {
     // everything is valid since we don't currently support validating from source
     // and depend on db foreign key validation to do it
     expect(e.valid(id)).toBe(true);
-    // we return passed in values since no graphql formatting happening
     expect(e.format(id)).toBe(id);
   });
 });
@@ -320,24 +171,6 @@ describe("weird maps", () => {
       testEnum(langs, {
         valid: false,
         value: lang,
-      });
-    });
-  });
-
-  test("gql support", () => {
-    [
-      ["JAVA", "java"],
-      ["C_PLUS_PLUS", "c++"],
-      ["C_SHARP", "c#"],
-      ["JAVA_SCRIPT", "js"],
-      ["TYPE_SCRIPT", "ts"],
-      ["GO_LANG", "go"],
-      ["PYTHON", "python"],
-    ].forEach((lang) => {
-      testEnum(langs, {
-        valid: true,
-        value: lang[0],
-        formatted: lang[1],
       });
     });
   });
