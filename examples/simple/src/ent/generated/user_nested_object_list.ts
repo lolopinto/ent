@@ -18,38 +18,6 @@ export interface UserNestedNestedObjectList {
   int: number;
 }
 
-export function convertUserNestedNestedObjectList(
-  input: any,
-): UserNestedNestedObjectList {
-  return {
-    int: input.int,
-  };
-}
-
-export function convertNullableUserNestedNestedObjectList(
-  input: any,
-): UserNestedNestedObjectList | null {
-  if (input === undefined || input === null) {
-    return null;
-  }
-  return convertUserNestedNestedObjectList(input);
-}
-
-export function convertUserNestedNestedObjectListList(
-  input: any[],
-): UserNestedNestedObjectList[] {
-  return input.map((v) => convertUserNestedNestedObjectList(v));
-}
-
-export function convertNullableUserNestedNestedObjectListList(
-  input: any[] | null,
-): UserNestedNestedObjectList[] | null {
-  if (input === null || input === undefined) {
-    return null;
-  }
-  return input.map((v) => convertUserNestedNestedObjectList(v));
-}
-
 export interface UserNestedObjectList {
   type: string;
   enum: EnumUsedInList;
@@ -61,7 +29,7 @@ export function convertUserNestedObjectList(input: any): UserNestedObjectList {
   return {
     type: input.type,
     enum: input.enum,
-    objects: convertUserNestedNestedObjectListList(input.objects),
+    objects: input.objects,
     enumList: input.enum_list,
   };
 }

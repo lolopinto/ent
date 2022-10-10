@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/schema/enum"
 )
 
@@ -46,8 +47,9 @@ func (cu *CustomUnion) GetTypeDeclaration() (string, error) {
 }
 
 type NarrowingInfo struct {
-	Field          string
-	ReturnFunction string
+	Field              string
+	ReturnFunction     string
+	HasConvertFunction bool
 }
 
 type ConvertMethodInfo struct {
@@ -55,6 +57,15 @@ type ConvertMethodInfo struct {
 	NullableMethod string
 	Infos          []NarrowingInfo
 	Default        string
+}
+
+func (ci *CustomUnion) HasConvertFunction(cfg codegenapi.Config) bool {
+	for _, inter := range ci.Interfaces {
+		if inter.HasConvertFunction(cfg) {
+			return true
+		}
+	}
+	return false
 }
 
 func (cu *CustomUnion) GetConvertMethod() string {
@@ -66,7 +77,7 @@ func (cu *CustomUnion) GetConvertNullableMethod() string {
 }
 
 // need all but one to be set
-func (cu *CustomUnion) GetConvertMethodInfo() (*ConvertMethodInfo, error) {
+func (cu *CustomUnion) GetConvertMethodInfo(cfg codegenapi.Config) (*ConvertMethodInfo, error) {
 	ct := map[string]int{}
 	for _, inter := range cu.Interfaces {
 		for _, f := range inter.Fields {
@@ -84,14 +95,15 @@ func (cu *CustomUnion) GetConvertMethodInfo() (*ConvertMethodInfo, error) {
 			// TODO move this to validation...
 			if l != ct[f.GetDbColName()] && ct[f.GetDbColName()] == 1 && !f.Nullable() {
 				infos = append(infos, NarrowingInfo{
-					Field:          f.GetDbColName(),
-					ReturnFunction: inter.GetConvertMethod(),
+					Field:              f.GetDbColName(),
+					ReturnFunction:     inter.GetConvertMethod(),
+					HasConvertFunction: inter.HasConvertFunction(cfg),
 				})
 				found = true
 				break
 			}
 		}
-		if !found {
+		if !found && inter.HasConvertFunction(cfg) {
 			def = inter.GetConvertMethod()
 		}
 	}

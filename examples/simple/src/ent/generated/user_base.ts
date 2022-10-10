@@ -37,7 +37,7 @@ import {
   UserNestedObjectList,
   convertNullableUserNestedObjectListList,
 } from "./user_nested_object_list";
-import { UserPrefsDiff, convertNullableUserPrefsDiff } from "./user_prefs_diff";
+import { UserPrefsDiff } from "./user_prefs_diff";
 import {
   UserPrefsStruct,
   convertNullableUserPrefsStruct,
@@ -182,7 +182,7 @@ export class UserBase
     this.nicknames = data.nicknames;
     this._prefs = convertNullableUserPrefsStruct(data.prefs);
     this._prefsList = convertNullableUserPrefsStruct2List(data.prefs_list);
-    this._prefsDiff = convertNullableUserPrefsDiff(data.prefs_diff);
+    this._prefsDiff = data.prefs_diff;
     this.daysOff = data.days_off;
     this.preferredShift = data.preferred_shift;
     this.timeInMs = BigInt(data.time_in_ms);

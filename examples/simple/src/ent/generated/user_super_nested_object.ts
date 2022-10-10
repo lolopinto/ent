@@ -141,22 +141,6 @@ export interface CatType {
   kitten: boolean;
 }
 
-export function convertCatType(input: any): CatType {
-  return {
-    name: input.name,
-    birthday: input.birthday,
-    breed: input.breed,
-    kitten: input.kitten,
-  };
-}
-
-export function convertNullableCatType(input: any): CatType | null {
-  if (input === undefined || input === null) {
-    return null;
-  }
-  return convertCatType(input);
-}
-
 export interface DogType {
   name: string;
   birthday: Date;
@@ -188,31 +172,13 @@ export interface RabbitType {
   breed: RabbitBreed;
 }
 
-export function convertRabbitType(input: any): RabbitType {
-  return {
-    name: input.name,
-    birthday: input.birthday,
-    breed: input.breed,
-  };
-}
-
-export function convertNullableRabbitType(input: any): RabbitType | null {
-  if (input === undefined || input === null) {
-    return null;
-  }
-  return convertRabbitType(input);
-}
-
 export type PetUnionType = CatType | DogType | RabbitType;
 
 function convertPetUnionType(input: any): PetUnionType {
-  if (input.kitten !== undefined) {
-    return convertCatType(input);
-  }
   if (input.breed_group !== undefined) {
     return convertDogType(input);
   }
-  return convertRabbitType(input);
+  return input;
 }
 
 function convertNullablePetUnionType(input: any): PetUnionType | null {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/types"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -605,16 +606,14 @@ func (f *Field) GetPossibleTypes() []enttype.EntType {
 	return typs
 }
 
-func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
+func (f *Field) GetImportsForTypes(cfg codegenapi.Config, g CustomInterfaceGetter) []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 	tt := f.GetPossibleTypes()
 	for _, t := range tt {
 		imps := enttype.ConvertImportPaths(t)
-		if imps != nil {
-			for _, imp := range imps {
-				if imp.ImportPath != "" {
-					ret = append(ret, imp)
-				}
+		for _, imp := range imps {
+			if imp.ImportPath != "" {
+				ret = append(ret, imp)
 			}
 		}
 		if enttype.IsImportDepsType(t) {
@@ -632,6 +631,12 @@ func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
 			ImportPath: f.userConvert.Path,
 			Import:     f.userConvert.Function,
 		})
+	}
+
+	// need schema
+	imp := f.GetConvertImport(cfg, g)
+	if imp != nil {
+		ret = append(ret, imp)
 	}
 
 	return ret
@@ -882,31 +887,72 @@ func (f *Field) GetUserConvert() *input.UserConvertType {
 	return f.userConvert
 }
 
-func (f *Field) IsUnionType(cfg codegenapi.Config) bool {
-	t := f.GetTSFieldType(cfg)
-
-	t2, ok := t.(enttype.TSWithUnionFields)
-	return ok && t2.GetUnionFields() != nil
+type CustomInterfaceGetter interface {
+	GetCustomTypeByTSName(name string) CustomTypeWithHasConvertFunction
 }
 
-func (f *Field) HasSubFields(cfg codegenapi.Config) bool {
-	t := f.GetTSFieldType(cfg)
-
-	t2, ok := t.(enttype.TSWithSubFields)
-	return ok && t2.GetSubFields() != nil
+type CustomTypeWithHasConvertFunction interface {
+	HasConvertFunction(cfg codegenapi.Config) bool
 }
 
-func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
-	// assumes HasSubFields is true
+func (f *Field) HasConvertFunction(cfg codegenapi.Config, g CustomInterfaceGetter) bool {
 	t := f.GetTSFieldType(cfg)
 
-	t2 := t.(enttype.TSWithSubFields)
-	m := t2.GetCustomTypeInfo().TSInterface
+	t2, ok := t.(enttype.TSTypeWithCustomType)
+	if !ok {
+		return false
+	}
+	cti := t2.GetCustomTypeInfo()
+	if cti == nil {
+		return false
+	}
+	typ := cti.TSInterface
+	custom := g.GetCustomTypeByTSName(typ)
+	return custom != nil && custom.HasConvertFunction(cfg)
+}
+
+func getImportPathForCustomInterfaceFile(typ string) string {
+	return path.Join(fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(typ)))
+}
+
+func (f *Field) GetConvertImport(cfg codegenapi.Config, g CustomInterfaceGetter) *tsimport.ImportPath {
+	if !f.HasConvertFunction(cfg, g) {
+		return nil
+	}
+
+	method, typ := f.getConvertMethodInfo(cfg)
+	return &tsimport.ImportPath{
+		Import:     method,
+		ImportPath: getImportPathForCustomInterfaceFile(typ),
+	}
+}
+
+func (f *Field) getConvertMethodInfo(cfg codegenapi.Config) (string, string) {
+	t := f.GetTSFieldType(cfg)
 
 	list := enttype.IsListType(t)
 	nullable := f.Nullable()
 
-	return enttype.GetConvertMethod(nullable, list, m)
+	t2 := t.(enttype.TSTypeWithCustomType)
+	typ := t2.GetCustomTypeInfo().TSInterface
+
+	// nullable, list bool, typ string) string {
+	prefix := "convert"
+	suffix := ""
+	if list {
+		suffix = "List"
+	}
+	if nullable {
+		prefix += "Nullable"
+	}
+
+	return fmt.Sprintf("%s%s%s", prefix, typ, suffix), typ
+}
+
+func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
+	// assumes HasConvertFunction is true
+	method, _ := f.getConvertMethodInfo(cfg)
+	return method
 }
 
 type Option func(*Field)

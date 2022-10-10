@@ -1567,29 +1567,24 @@ func testType(t *testing.T, exp expType, ret returnType) {
 	assert.Equal(t, exp.enumType, enumType)
 	assert.Equal(t, exp.tsListType, enttype.IsListType(typ))
 
-	// hack. TODO remove in next PR
-	json := enttype.IsJSONBType(typ) || enttype.IsJSONType(typ) || enttype.IsJSONListType(typ)
-
 	convType, ok := typ.(enttype.ConvertDataType)
-	if !json {
-		if ok {
-			m := convType.Convert()
-			sqlite := m[config.SQLite]
-			if sqlite != nil {
-				require.Len(t, exp.convertSqliteFns, 1)
-				require.Len(t, sqlite, 1)
-				assert.Equal(t, exp.convertSqliteFns[0], sqlite[0].Import)
-			}
-			postgres := m[config.Postgres]
-			if postgres != nil {
-				require.Len(t, exp.convertPostgresFns, 1)
-				require.Len(t, postgres, 1)
-				assert.Equal(t, exp.convertPostgresFns[0], postgres[0].Import)
-			}
-		} else {
-			assert.Len(t, exp.convertSqliteFns, 0)
-			assert.Len(t, exp.convertPostgresFns, 0)
+	if ok {
+		m := convType.Convert()
+		sqlite := m[config.SQLite]
+		if sqlite != nil {
+			require.Len(t, exp.convertSqliteFns, 1)
+			require.Len(t, sqlite, 1)
+			assert.Equal(t, exp.convertSqliteFns[0], sqlite[0].Import)
 		}
+		postgres := m[config.Postgres]
+		if postgres != nil {
+			require.Len(t, exp.convertPostgresFns, 1)
+			require.Len(t, postgres, 1)
+			assert.Equal(t, exp.convertPostgresFns[0], postgres[0].Import)
+		}
+	} else {
+		assert.Len(t, exp.convertSqliteFns, 0)
+		assert.Len(t, exp.convertPostgresFns, 0)
 	}
 
 	impType, ok := typ.(enttype.TSCodegenableType)
