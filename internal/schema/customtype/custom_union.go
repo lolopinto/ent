@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
+	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/enum"
 )
 
@@ -59,8 +60,8 @@ type ConvertMethodInfo struct {
 	Default        string
 }
 
-func (ci *CustomUnion) HasConvertFunction(cfg codegenapi.Config) bool {
-	for _, inter := range ci.Interfaces {
+func (cu *CustomUnion) HasConvertFunction(cfg codegenapi.Config) bool {
+	for _, inter := range cu.Interfaces {
 		if inter.HasConvertFunction(cfg) {
 			return true
 		}
@@ -149,4 +150,20 @@ func (cu *CustomUnion) GetAllCustomTypes() []CustomType {
 	ret = append(ret, cu)
 
 	return ret
+}
+
+func (cu *CustomUnion) Equal(ct CustomType) bool {
+	cu2, ok := ct.(*CustomUnion)
+	return ok && CustomUnionEqual(cu, cu2)
+}
+
+func CustomUnionEqual(cu1, cu2 *CustomUnion) bool {
+	ret := change.CompareNilVals(cu1 == nil, cu2 == nil)
+	if ret != nil && !*ret {
+		return false
+	}
+
+	return cu1.TSType == cu2.TSType &&
+		cu1.GQLName == cu2.GQLName &&
+		customInterfaceListEqual(cu1.Interfaces, cu2.Interfaces)
 }
