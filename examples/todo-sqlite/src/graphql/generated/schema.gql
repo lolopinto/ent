@@ -176,6 +176,12 @@ type TodoToTagsConnection implements Connection {
   rawCount: Int!
 }
 
+input AccountPrefsInput {
+  finished_nux: Boolean!
+  enable_notifs: Boolean!
+  preferred_language: String!
+}
+
 enum AccountTodoStatusInput {
   OPEN_TODOS_DUP
   CLOSED_TODOS_DUP

@@ -1484,9 +1484,18 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 
 	for _, node := range s.otherObjects {
 		if otherObjectIsInput(node) {
-			continue
+			for _, obj := range node.ObjData.GQLNodes {
+				actionTypes = append(actionTypes, typeInfo{
+					Type:       obj.Type,
+					ImportPath: trimPath(cfg, node.FilePath),
+					NodeType:   "CustomInput",
+					Obj:        obj,
+					Exported:   obj.Exported,
+				})
+			}
+		} else {
+			processNode(node, "CustomObject")
 		}
-		processNode(node, "CustomObject")
 	}
 	var enums []typeInfo
 	for _, enum := range s.enums {

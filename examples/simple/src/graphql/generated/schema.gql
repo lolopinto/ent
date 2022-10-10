@@ -669,6 +669,13 @@ type AddressCreatePayload {
   address: Address!
 }
 
+input CatTypeInput {
+  name: String!
+  birthday: Time!
+  breed: CatBreed!
+  kitten: Boolean!
+}
+
 input CommentCreateInput {
   authorID: ID!
   body: String!
@@ -772,6 +779,11 @@ type ContactEmailEditPayload {
   contactEmail: ContactEmail!
 }
 
+input ContactInfoInput {
+  default: Boolean!
+  source: ContactInfoSource!
+}
+
 input ContactPhoneNumberCreateInput {
   extra: ContactInfoInput
   phoneNumber: String!
@@ -813,6 +825,14 @@ input DeleteUserInput2 {
   """id of User"""
   id: ID!
   log: Boolean!
+}
+
+input DogTypeInput {
+  name: String!
+  birthday: Time!
+  breed: DogBreed!
+  breedGroup: DogBreedGroup!
+  puppy: Boolean!
 }
 
 input EditEmailAddressInput {
@@ -937,10 +957,22 @@ type HoursOfOperationCreatePayload {
   hoursOfOperation: HoursOfOperation!
 }
 
+input PetUnionTypeInput {
+  cat: CatTypeInput
+  dog: DogTypeInput
+  rabbit: RabbitTypeInput
+}
+
 input PhoneNumberContactCreateInput {
   extra: ContactInfoInput
   phoneNumber: String!
   label: String!
+}
+
+input RabbitTypeInput {
+  name: String!
+  birthday: Time!
+  breed: RabbitBreed!
 }
 
 input UserCreateInput {
@@ -983,6 +1015,69 @@ input UserEditInput {
 
 type UserEditPayload {
   user: User!
+}
+
+input UserNestedNestedObjectInput {
+  nestedNestedUuid: ID!
+  nestedNestedInt: Int!
+  nestedNestedString: String!
+  nestedNestedBool: Boolean
+  nestedNestedFloat: Float!
+  nestedNestedEnum: NestedObjNestedNestedEnum!
+  nestedNestedStringList: [String!]!
+  nestedNestedIntList: [Int!]!
+}
+
+input UserNestedNestedObjectListInput {
+  int: Int!
+}
+
+input UserNestedObjectInput {
+  nestedUuid: ID!
+  nestedInt: Int!
+  nestedString: String!
+  nestedBool: Boolean!
+  nestedFloat: Float
+  nestedEnum: ObjNestedEnum!
+  nestedStringList: [String!]!
+  nestedIntList: [Int!]!
+  nestedObj: UserNestedNestedObjectInput
+}
+
+input UserNestedObjectListInput {
+  type: String!
+  enum: EnumUsedInList!
+  objects: [UserNestedNestedObjectListInput!]!
+  enumList: [IntEnumUsedInList!]!
+}
+
+input UserPrefsDiffInput {
+  type: String!
+}
+
+input UserPrefsStruct2Input {
+  finishedNux: Boolean
+  enableNotifs: Boolean
+  notifTypes: [NotifType2!]!
+}
+
+input UserPrefsStructInput {
+  finishedNux: Boolean
+  enableNotifs: Boolean
+  notifTypes: [NotifType!]!
+}
+
+input UserSuperNestedObjectInput {
+  uuid: ID!
+  int: Int!
+  string: String!
+  bool: Boolean!
+  float: Float!
+  enum: SuperNestedObjectEnum!
+  stringList: [String!]
+  intList: [Int!]!
+  obj: UserNestedObjectInput
+  union: PetUnionTypeInput
 }
 
 type Query {

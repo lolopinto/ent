@@ -83,6 +83,12 @@ import {
   HoursOfOperationCreateInputType,
   HoursOfOperationCreatePayloadType,
 } from "./mutations/hours_of_operation/hours_of_operation_create_type";
+import { ContactInfoInputType } from "./mutations/input/contact_info_input_type";
+import { UserNestedObjectListInputType } from "./mutations/input/user_nested_object_list_input_type";
+import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type";
+import { UserPrefsStruct2InputType } from "./mutations/input/user_prefs_struct_2_input_type";
+import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_input_type";
+import { UserSuperNestedObjectInputType } from "./mutations/input/user_super_nested_object_input_type";
 import { MutationType } from "./mutations/mutation_type";
 import {
   ConfirmEditEmailAddressInputType,
@@ -266,6 +272,7 @@ export default new GraphQLSchema({
     ContactEmailDeletePayloadType,
     ContactEmailEditInputType,
     ContactEmailEditPayloadType,
+    ContactInfoInputType,
     ContactPhoneNumberCreateInputType,
     ContactPhoneNumberCreatePayloadType,
     ContactPhoneNumberDeleteInputType,
@@ -303,5 +310,10 @@ export default new GraphQLSchema({
     UserDeletePayloadType,
     UserEditInputType,
     UserEditPayloadType,
+    UserNestedObjectListInputType,
+    UserPrefsDiffInputType,
+    UserPrefsStruct2InputType,
+    UserPrefsStructInputType,
+    UserSuperNestedObjectInputType,
   ],
 });
