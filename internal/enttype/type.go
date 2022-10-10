@@ -2552,27 +2552,9 @@ func IsListType(t Type) bool {
 	return ok || ok2
 }
 
-func IsJSONListType(t Type) bool {
-	t1, ok := t.(*ArrayListType)
-	t2, ok2 := t.(*NullableArrayListType)
-	if ok {
-		return IsJSONType(t1.ElemType) || IsJSONBType(t1.ElemType)
-	}
-	if ok2 {
-		return IsJSONType(t2.ElemType) || IsJSONBType(t2.ElemType)
-	}
-	return false
-}
-
 func IsJSONBType(t Type) bool {
 	_, ok := t.(*JSONBType)
 	_, ok2 := t.(*NullableJSONBType)
-	return ok || ok2
-}
-
-func IsJSONType(t Type) bool {
-	_, ok := t.(*JSONType)
-	_, ok2 := t.(*NullableJSONType)
 	return ok || ok2
 }
 
