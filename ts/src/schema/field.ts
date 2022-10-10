@@ -1,5 +1,4 @@
 import { DateTime } from "luxon";
-import { snakeCase } from "snake-case";
 import { camelCase } from "camel-case";
 import { types } from "util";
 import { validate } from "uuid";
@@ -678,11 +677,6 @@ export class EnumField extends BaseField implements Field {
     this.map = options.map;
   }
 
-  // TODO need to update this for map
-  convertForGQL(value: string) {
-    return snakeCase(value).toUpperCase();
-  }
-
   valid(val: any): boolean {
     // lookup table enum and indicated via presence of foreignKey
     if (!this.values && !this.map) {
@@ -690,15 +684,12 @@ export class EnumField extends BaseField implements Field {
     }
     if (this.values) {
       let str = String(val);
-      return this.values.some(
-        (value) => value === str || this.convertForGQL(value) === str,
-      );
+      return this.values.some((value) => value === str);
     }
 
     for (const k in this.map) {
       const v = this.map[k];
-      if (v === val || this.convertForGQL(k) === val) {
-        // TODO decide on behavior for GQL since GQL only supports one type
+      if (v === val) {
         return true;
       }
     }
@@ -706,35 +697,6 @@ export class EnumField extends BaseField implements Field {
   }
 
   format(val: any): any {
-    // TODO need to format correctly for graphql purposes...
-    // how to best get the values in the db...
-    if (!this.values && !this.map) {
-      return val;
-    }
-    let str = String(val);
-
-    if (this.values) {
-      for (let i = 0; i < this.values.length; i++) {
-        let value = this.values[i];
-        // store the format that maps to the given value in the db instead of saving the upper case value
-        if (str === value || str === this.convertForGQL(value)) {
-          return value;
-        }
-      }
-    }
-    if (this.map) {
-      for (const k in this.map) {
-        const v = this.map[k];
-        if (str === v) {
-          return v;
-        }
-        if (str === this.convertForGQL(k)) {
-          return v;
-        }
-      }
-    }
-
-    // whelp, just return what's passed
     return val;
   }
 }
