@@ -143,7 +143,7 @@ func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
 		}
 	}
 
-	// TODO when do we use non ent fields again??
+	// this is (currently) only used in actions and should not apply. but to be safe, if exists, have a convert function
 	return len(ci.NonEntFields) > 0
 }
 
