@@ -11,6 +11,7 @@ CREATE TABLE accounts (
     name TEXT NOT NULL, 
     phone_number TEXT NOT NULL, 
     account_state TEXT, 
+    account_prefs TEXT, 
     CONSTRAINT accounts_id_pkey PRIMARY KEY (id), 
     CONSTRAINT accounts_unique_phone_number UNIQUE (phone_number)
 );

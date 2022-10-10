@@ -1,6 +1,7 @@
 package customtype
 
 import (
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -37,7 +38,10 @@ type CustomInterface struct {
 	// children of this interface. could be other interfaces or unions
 	Children []CustomType
 
+	// right now they're all exported??
 	Exported bool
+
+	GenerateListConvert bool
 
 	tsEnums  []*enum.Enum
 	gqlEnums []*enum.GQLEnum
@@ -125,6 +129,35 @@ func (ci *CustomInterface) IsCustomUnion() bool {
 	return false
 }
 
+func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
+	return true
+	// TODO need to update field_type to know when this applies or not...
+	// for _, f := range ci.Fields {
+	// 	if f.TsFieldName(cfg) != f.GetDbColName() {
+	// 		return true
+	// 	}
+	// }
+	// // TODO when do we use non ent fields again??
+	// return len(ci.NonEntFields) > 0
+}
+
+// note the logic for these 4 duplicated in Field.GetConvertMethod() in field_type.go
+func (ci *CustomInterface) GetConvertMethod() string {
+	return "convert" + ci.TSType
+}
+
+func (ci *CustomInterface) GetConvertNullableMethod() string {
+	return "convertNullable" + ci.TSType
+}
+
+func (ci *CustomInterface) GetConvertListMethod() string {
+	return "convert" + ci.TSType + "List"
+}
+
+func (ci *CustomInterface) GetConvertNullableListMethod() string {
+	return "convertNullable" + ci.TSType + "List"
+}
+
 func (ci *CustomInterface) GetAllCustomTypes() []CustomType {
 	var ret []CustomType
 
@@ -143,6 +176,7 @@ func CustomInterfaceEqual(ci1, ci2 *CustomInterface) bool {
 		return false
 	}
 
+	// TODO exported etc. update this...
 	return ci1.TSType == ci2.TSType &&
 		ci1.GQLName == ci2.GQLName &&
 		field.FieldsEqual(ci1.Fields, ci2.Fields) &&

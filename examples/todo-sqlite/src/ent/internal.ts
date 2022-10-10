@@ -3,6 +3,7 @@
 export * from "src/ent/generated/const";
 export * from "src/ent/generated/loaders";
 export * from "src/ent/generated/account_base";
+export * from "src/ent/generated/account_prefs";
 export * from "src/ent/generated/tag_base";
 export * from "src/ent/generated/todo_base";
 export * from "src/ent/account";

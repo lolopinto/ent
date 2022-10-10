@@ -772,9 +772,10 @@ func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.Custom
 	cti := subFieldsType.GetCustomTypeInfo()
 
 	ci := &customtype.CustomInterface{
-		TSType:   cti.TSInterface,
-		GQLName:  cti.GraphQLInterface,
-		Exported: true,
+		TSType:              cti.TSInterface,
+		GQLName:             cti.GraphQLInterface,
+		Exported:            true,
+		GenerateListConvert: enttype.IsListType(f.GetFieldType()),
 	}
 	actualSubFields := subFields.([]*input.Field)
 
@@ -797,6 +798,7 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 	} else {
 		root.Children = append(root.Children, ci)
 	}
+
 	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, subFields, &field.Options{})
 	if err != nil {
 		return err

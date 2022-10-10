@@ -35,8 +35,8 @@ type expType struct {
 	goType              string
 	tsType              string
 	tsTypePanics        bool
-	convertSqliteFn     string
-	convertPostgresFn   string
+	convertSqliteFns    []string
+	convertPostgresFns  []string
 	importType          enttype.Import
 	tsTypeImports       []*tsimport.ImportPath
 	subFields           []*input.Field
@@ -246,13 +246,13 @@ func f() bool {
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLBoolean"),
 		},
-		zeroValue:       "false",
-		castToMethod:    "cast.ToBool",
-		goType:          "bool",
-		nullableType:    &enttype.NullableBoolType{},
-		tsType:          "boolean",
-		convertSqliteFn: "convertBool",
-		importType:      &enttype.BoolImport{},
+		zeroValue:        "false",
+		castToMethod:     "cast.ToBool",
+		goType:           "bool",
+		nullableType:     &enttype.NullableBoolType{},
+		tsType:           "boolean",
+		convertSqliteFns: []string{"convertBool"},
+		importType:       &enttype.BoolImport{},
 	}, ret)
 }
 
@@ -270,13 +270,13 @@ func f() *bool {
 		graphqlImports: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLBoolean"),
 		},
-		zeroValue:       "false",
-		castToMethod:    "cast.ToNullableBool",
-		nonNullableType: &enttype.BoolType{},
-		goType:          "*bool",
-		tsType:          "boolean | null",
-		convertSqliteFn: "convertNullableBool",
-		importType:      &enttype.BoolImport{},
+		zeroValue:        "false",
+		castToMethod:     "cast.ToNullableBool",
+		nonNullableType:  &enttype.BoolType{},
+		goType:           "*bool",
+		tsType:           "boolean | null",
+		convertSqliteFns: []string{"convertNullableBool"},
+		importType:       &enttype.BoolImport{},
 	}, ret)
 }
 
@@ -360,14 +360,14 @@ func f() int64 {
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
-		zeroValue:         "0",
-		castToMethod:      "cast.ToInt64",
-		goType:            "int64",
-		nullableType:      &enttype.NullableBigIntegerType{},
-		tsType:            "BigInt",
-		importType:        &enttype.BigIntImport{},
-		convertSqliteFn:   "BigInt",
-		convertPostgresFn: "BigInt",
+		zeroValue:          "0",
+		castToMethod:       "cast.ToInt64",
+		goType:             "int64",
+		nullableType:       &enttype.NullableBigIntegerType{},
+		tsType:             "BigInt",
+		importType:         &enttype.BigIntImport{},
+		convertSqliteFns:   []string{"BigInt"},
+		convertPostgresFns: []string{"BigInt"},
 	}, ret)
 }
 
@@ -408,14 +408,14 @@ func f() *int64 {
 		graphqlImports: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
-		zeroValue:         "0",
-		castToMethod:      "cast.ToNullableInt64",
-		nonNullableType:   &enttype.BigIntegerType{},
-		goType:            "*int64",
-		tsType:            "BigInt | null",
-		importType:        &enttype.BigIntImport{},
-		convertSqliteFn:   "BigInt",
-		convertPostgresFn: "BigInt",
+		zeroValue:          "0",
+		castToMethod:       "cast.ToNullableInt64",
+		nonNullableType:    &enttype.BigIntegerType{},
+		goType:             "*int64",
+		tsType:             "BigInt | null",
+		importType:         &enttype.BigIntImport{},
+		convertSqliteFns:   []string{"BigInt"},
+		convertPostgresFns: []string{"BigInt"},
 	}, ret)
 }
 
@@ -513,7 +513,7 @@ func f() time.Time {
 		defaultGQLFieldName: "time",
 		goType:              "time.Time",
 		tsType:              "Date",
-		convertSqliteFn:     "convertDate",
+		convertSqliteFns:    []string{"convertDate"},
 		importType:          &enttype.TimestampImport{},
 	}, ret)
 }
@@ -540,7 +540,7 @@ func f() *time.Time {
 		defaultGQLFieldName: "time",
 		goType:              "*time.Time",
 		tsType:              "Date | null",
-		convertSqliteFn:     "convertNullableDate",
+		convertSqliteFns:    []string{"convertNullableDate"},
 		importType:          &enttype.TimestampImport{},
 	}, ret)
 }
@@ -1255,7 +1255,7 @@ func TestTimestamptzType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
-				convertSqliteFn:     "convertNullableDate",
+				convertSqliteFns:    []string{"convertNullableDate"},
 				importType:          &enttype.TimestamptzImport{},
 			},
 			nil,
@@ -1274,7 +1274,7 @@ func TestTimestamptzType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
-				convertSqliteFn:     "convertDate",
+				convertSqliteFns:    []string{"convertDate"},
 				importType:          &enttype.TimestamptzImport{},
 			},
 			nil,
@@ -1377,7 +1377,7 @@ func TestDateType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
-				convertSqliteFn:     "convertNullableDate",
+				convertSqliteFns:    []string{"convertNullableDate"},
 				importType:          &enttype.DateImport{},
 			},
 			nil,
@@ -1396,7 +1396,7 @@ func TestDateType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
-				convertSqliteFn:     "convertDate",
+				convertSqliteFns:    []string{"convertDate"},
 				importType:          &enttype.DateImport{},
 			},
 			nil,
@@ -1567,20 +1567,29 @@ func testType(t *testing.T, exp expType, ret returnType) {
 	assert.Equal(t, exp.enumType, enumType)
 	assert.Equal(t, exp.tsListType, enttype.IsListType(typ))
 
+	// hack. TODO remove in next PR
+	json := enttype.IsJSONBType(typ) || enttype.IsJSONType(typ) || enttype.IsJSONListType(typ)
+
 	convType, ok := typ.(enttype.ConvertDataType)
-	if ok {
-		m := convType.Convert()
-		sqlite := m[config.SQLite]
-		if sqlite != nil {
-			assert.Equal(t, exp.convertSqliteFn, sqlite.Import)
+	if !json {
+		if ok {
+			m := convType.Convert()
+			sqlite := m[config.SQLite]
+			if sqlite != nil {
+				require.Len(t, exp.convertSqliteFns, 1)
+				require.Len(t, sqlite, 1)
+				assert.Equal(t, exp.convertSqliteFns[0], sqlite[0].Import)
+			}
+			postgres := m[config.Postgres]
+			if postgres != nil {
+				require.Len(t, exp.convertPostgresFns, 1)
+				require.Len(t, postgres, 1)
+				assert.Equal(t, exp.convertPostgresFns[0], postgres[0].Import)
+			}
+		} else {
+			assert.Len(t, exp.convertSqliteFns, 0)
+			assert.Len(t, exp.convertPostgresFns, 0)
 		}
-		postgres := m[config.Postgres]
-		if postgres != nil {
-			assert.Equal(t, exp.convertPostgresFn, postgres.Import)
-		}
-	} else {
-		assert.Equal(t, exp.convertSqliteFn, "")
-		assert.Equal(t, exp.convertPostgresFn, "")
 	}
 
 	impType, ok := typ.(enttype.TSCodegenableType)

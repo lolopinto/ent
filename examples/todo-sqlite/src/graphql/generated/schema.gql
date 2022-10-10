@@ -30,10 +30,17 @@ enum AccountTodoStatus {
   CLOSED_TODOS_DUP
 }
 
+type AccountPrefs {
+  finished_nux: Boolean!
+  enable_notifs: Boolean!
+  preferred_language: String!
+}
+
 type Account implements Node {
   id: ID!
   name: String!
   phone_number: String
+  account_prefs: AccountPrefs
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
@@ -197,6 +204,7 @@ type ChangeTodoStatusPayload {
 input CreateAccountInput {
   name: String!
   phone_number: String!
+  account_prefs: AccountPrefsInput
 }
 
 type CreateAccountPayload {
@@ -246,6 +254,7 @@ input EditAccountInput {
   id: ID!
   name: String
   phone_number: String
+  account_prefs: AccountPrefsInput
 }
 
 type EditAccountPayload {

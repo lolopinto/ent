@@ -3,6 +3,7 @@ package enttype
 import (
 	"fmt"
 	"go/types"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -72,7 +73,7 @@ type CustomGQLRenderer interface {
 	ArgImports(cfg Config) []*tsimport.ImportPath
 }
 
-type ConvertDataTypeRet map[config.Dialect]*tsimport.ImportPath
+type ConvertDataTypeRet map[config.Dialect][]*tsimport.ImportPath
 type ConvertDataType interface {
 	TSType
 	// return convert info for each dialect. a lot of these only apply for one dialect
@@ -324,17 +325,27 @@ func (t *boolType) GetImportType() Import {
 	return &BoolImport{}
 }
 
-func getSqliteImportMap(imp *tsimport.ImportPath) ConvertDataTypeRet {
-	return map[config.Dialect]*tsimport.ImportPath{
-		config.SQLite: imp,
+func getSqliteImportMap(imps ...*tsimport.ImportPath) ConvertDataTypeRet {
+	return map[config.Dialect][]*tsimport.ImportPath{
+		config.SQLite: imps,
 	}
 }
 
-func getAllDialectsImportMap(imp *tsimport.ImportPath) ConvertDataTypeRet {
-	return map[config.Dialect]*tsimport.ImportPath{
-		config.SQLite:   imp,
-		config.Postgres: imp,
+func getAllDialectsImportMap(imps ...*tsimport.ImportPath) ConvertDataTypeRet {
+	return map[config.Dialect][]*tsimport.ImportPath{
+		config.SQLite:   imps,
+		config.Postgres: imps,
 	}
+}
+
+func addToAllDialects(m ConvertDataTypeRet, imp *tsimport.ImportPath) ConvertDataTypeRet {
+	all := []config.Dialect{config.Postgres, config.SQLite}
+	for _, dialect := range all {
+		list := m[dialect]
+		list = append(list, imp)
+		m[dialect] = list
+	}
+	return m
 }
 
 func (t *boolType) Convert() ConvertDataTypeRet {
@@ -2111,12 +2122,32 @@ func (t *CommonJSONType) GetImportType() Import {
 	return &JSONImport{}
 }
 
-func (t *CommonJSONType) convertListWithItem() ConvertDataTypeRet {
-	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
+func getImportPathForCustomInterfaceFile(typ string) string {
+	return path.Join(fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(typ)))
 }
 
-func (t *CommonJSONType) convertNullableListWithItem() ConvertDataTypeRet {
-	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
+func GetConvertMethod(nullable, list bool, typ string) string {
+	prefix := "convert"
+	suffix := ""
+	if list {
+		suffix = "List"
+	}
+	if nullable {
+		prefix += "Nullable"
+	}
+
+	return fmt.Sprintf("%s%s%s", prefix, typ, suffix)
+}
+
+func (t *CommonJSONType) getCustomImportPath(nullable, list bool) *tsimport.ImportPath {
+	if t.CustomTsInterface == "" {
+		return nil
+	}
+
+	return &tsimport.ImportPath{
+		Import:     GetConvertMethod(nullable, list, t.CustomTsInterface),
+		ImportPath: getImportPathForCustomInterfaceFile(t.CustomTsInterface),
+	}
 }
 
 func (t *CommonJSONType) GetImportDepsType() *tsimport.ImportPath {
@@ -2170,7 +2201,30 @@ func (t *JSONType) GetNullableType() TSGraphQLType {
 }
 
 func (t *JSONType) Convert() ConvertDataTypeRet {
-	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSON"))
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertJSON"))
+	imp2 := t.getCustomImportPath(false, false)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
+}
+
+func (t *JSONType) convertListWithItem() ConvertDataTypeRet {
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
+	imp2 := t.getCustomImportPath(false, true)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
+}
+
+func (t *JSONType) convertNullableListWithItem() ConvertDataTypeRet {
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
+	imp2 := t.getCustomImportPath(true, true)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
 }
 
 func (t *JSONType) GetImportDepsType() *tsimport.ImportPath {
@@ -2210,7 +2264,30 @@ func (t *NullableJSONType) GetTSGraphQLImports(input bool) []*tsimport.ImportPat
 }
 
 func (t *NullableJSONType) Convert() ConvertDataTypeRet {
-	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSON"))
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSON"))
+	imp2 := t.getCustomImportPath(true, false)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
+}
+
+func (t *NullableJSONType) convertListWithItem() ConvertDataTypeRet {
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
+	imp2 := t.getCustomImportPath(false, true)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
+}
+
+func (t *NullableJSONType) convertNullableListWithItem() ConvertDataTypeRet {
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
+	imp2 := t.getCustomImportPath(true, true)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
 }
 
 func (t *NullableJSONType) GetNonNullableType() TSGraphQLType {
@@ -2250,7 +2327,30 @@ func (t *JSONBType) GetNullableType() TSGraphQLType {
 }
 
 func (t *JSONBType) Convert() ConvertDataTypeRet {
-	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSON"))
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertJSON"))
+	imp2 := t.getCustomImportPath(false, false)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
+}
+
+func (t *JSONBType) convertListWithItem() ConvertDataTypeRet {
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
+	imp2 := t.getCustomImportPath(false, true)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
+}
+
+func (t *JSONBType) convertNullableListWithItem() ConvertDataTypeRet {
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
+	imp2 := t.getCustomImportPath(true, true)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
 }
 
 func (t *JSONBType) GetImportDepsType() *tsimport.ImportPath {
@@ -2304,7 +2404,30 @@ func (t *NullableJSONBType) GetNonNullableType() TSGraphQLType {
 }
 
 func (t *NullableJSONBType) Convert() ConvertDataTypeRet {
-	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSON"))
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSON"))
+	imp2 := t.getCustomImportPath(true, false)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
+}
+
+func (t *NullableJSONBType) convertListWithItem() ConvertDataTypeRet {
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
+	imp2 := t.getCustomImportPath(false, true)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
+}
+
+func (t *NullableJSONBType) convertNullableListWithItem() ConvertDataTypeRet {
+	ret := getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
+	imp2 := t.getCustomImportPath(true, true)
+	if imp2 != nil {
+		return addToAllDialects(ret, imp2)
+	}
+	return ret
 }
 
 func (t *NullableJSONBType) GetImportType() Import {
@@ -2470,25 +2593,24 @@ func GetGoType(typ types.Type) string {
 	return str[:letterIdx] + fp
 }
 
-func IsConvertDataType(t EntType) bool {
-	_, ok := t.(ConvertDataType)
-	return ok
-}
-
 func IsImportDepsType(t EntType) bool {
 	_, ok := t.(ImportDepsType)
 	return ok
 }
 
-func ConvertFunc(t EntType) string {
-	imp := ConvertImportPath(t)
-	if imp == nil {
-		return ""
+func ConvertFuncs(t EntType) []string {
+	imps := ConvertImportPaths(t)
+	if imps == nil {
+		return nil
 	}
-	return imp.Import
+	var ret []string
+	for _, imp := range imps {
+		ret = append(ret, imp.Import)
+	}
+	return ret
 }
 
-func ConvertImportPath(t EntType) *tsimport.ImportPath {
+func ConvertImportPaths(t EntType) []*tsimport.ImportPath {
 	tt, ok := t.(ConvertDataType)
 	if !ok {
 		return nil
@@ -2529,9 +2651,27 @@ func IsListType(t Type) bool {
 	return ok || ok2
 }
 
+func IsJSONListType(t Type) bool {
+	t1, ok := t.(*ArrayListType)
+	t2, ok2 := t.(*NullableArrayListType)
+	if ok {
+		return IsJSONType(t1.ElemType) || IsJSONBType(t1.ElemType)
+	}
+	if ok2 {
+		return IsJSONType(t2.ElemType) || IsJSONBType(t2.ElemType)
+	}
+	return false
+}
+
 func IsJSONBType(t Type) bool {
 	_, ok := t.(*JSONBType)
 	_, ok2 := t.(*NullableJSONBType)
+	return ok || ok2
+}
+
+func IsJSONType(t Type) bool {
+	_, ok := t.(*JSONType)
+	_, ok2 := t.(*NullableJSONType)
 	return ok || ok2
 }
 

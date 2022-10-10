@@ -1,4 +1,4 @@
-import { EnumType } from "@snowtop/ent";
+import { BooleanType, EnumType, StructType } from "@snowtop/ent";
 import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 import { ActionOperation, StringType } from "@snowtop/ent";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
@@ -29,6 +29,16 @@ const AccountSchema = new TodoEntSchema({
       // can check import types and see if it makes sense?
       // if referencing a local import?
       disableUserGraphQLEditable: true,
+    }),
+    accountPrefs: StructType({
+      nullable: true,
+      tsType: "AccountPrefs",
+      graphQLType: "AccountPrefs",
+      fields: {
+        finishedNux: BooleanType(),
+        enableNotifs: BooleanType(),
+        preferredLanguage: StringType(),
+      },
     }),
   },
 

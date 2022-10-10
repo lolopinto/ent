@@ -238,7 +238,7 @@ describe("overlap", () => {
       name: "scout",
       birthday: new Date(),
       breed: "german_shepherd",
-      breedGroup: "herding",
+      breed_group: "herding",
       puppy: false,
     };
     expect(await f.valid(obj)).toBe(true);

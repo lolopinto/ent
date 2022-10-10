@@ -1,5 +1,7 @@
 import { LoggedOutViewer, ID, IDViewer } from "@snowtop/ent";
-import CreateAccountAction from "src/ent/account/actions/create_account_action";
+import CreateAccountAction, {
+  AccountCreateInput,
+} from "src/ent/account/actions/create_account_action";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { validate } from "uuid";
 import CreateTodoAction, {
@@ -14,14 +16,15 @@ export function randomPhoneNumber(): string {
   return phoneNumber!.format("E.164");
 }
 
-export async function createAccount() {
+export async function createAccount(input?: Partial<AccountCreateInput>) {
   const number = randomPhoneNumber();
   const account = await CreateAccountAction.create(new LoggedOutViewer(), {
     name: "Jon Snow",
     phoneNumber: number,
+    ...input,
   }).saveX();
-  expect(account.name).toBe("Jon Snow");
-  expect(account.phoneNumber).toBe(number);
+  expect(account.name).toBe(input?.name ?? "Jon Snow");
+  expect(account.phoneNumber).toBe(input?.phoneNumber ?? number);
   expect(validate(account.id as string)).toBe(true);
   expect(account.createdAt).toBeInstanceOf(Date);
   expect(account.updatedAt).toBeInstanceOf(Date);

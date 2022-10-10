@@ -12,6 +12,7 @@ import {
   Viewer,
   convertDate,
   convertNullableDate,
+  convertNullableJSON,
   getEdgeTypeInGroup,
   loadCustomCount,
   loadCustomData,
@@ -23,6 +24,10 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
+import {
+  AccountPrefs,
+  convertNullableAccountPrefs,
+} from "src/ent/generated/account_prefs";
 import {
   accountLoader,
   accountLoaderInfo,
@@ -60,6 +65,7 @@ interface AccountDBData {
   name: string;
   phone_number: string | null;
   account_state: AccountState | null;
+  account_prefs: AccountPrefs | null;
 }
 
 export class AccountBase implements Ent<Viewer> {
@@ -71,6 +77,7 @@ export class AccountBase implements Ent<Viewer> {
   readonly name: string;
   readonly phoneNumber: string | null;
   readonly accountState: AccountState | null;
+  readonly accountPrefs: AccountPrefs | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -80,6 +87,9 @@ export class AccountBase implements Ent<Viewer> {
     this.name = data.name;
     this.phoneNumber = data.phone_number;
     this.accountState = data.account_state;
+    this.accountPrefs = convertNullableAccountPrefs(
+      convertNullableJSON(data.account_prefs),
+    );
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

@@ -609,10 +609,12 @@ func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 	tt := f.GetPossibleTypes()
 	for _, t := range tt {
-		imp := enttype.ConvertImportPath(t)
-		if imp != nil {
-			if imp.ImportPath != "" {
-				ret = append(ret, imp)
+		imps := enttype.ConvertImportPaths(t)
+		if imps != nil {
+			for _, imp := range imps {
+				if imp.ImportPath != "" {
+					ret = append(ret, imp)
+				}
 			}
 		}
 		if enttype.IsImportDepsType(t) {
@@ -878,6 +880,33 @@ func (f *Field) GetPatternName() string {
 
 func (f *Field) GetUserConvert() *input.UserConvertType {
 	return f.userConvert
+}
+
+func (f *Field) IsUnionType(cfg codegenapi.Config) bool {
+	t := f.GetTSFieldType(cfg)
+
+	t2, ok := t.(enttype.TSWithUnionFields)
+	return ok && t2.GetUnionFields() != nil
+}
+
+func (f *Field) HasSubFields(cfg codegenapi.Config) bool {
+	t := f.GetTSFieldType(cfg)
+
+	t2, ok := t.(enttype.TSWithSubFields)
+	return ok && t2.GetSubFields() != nil
+}
+
+func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
+	// assumes HasSubFields is true
+	t := f.GetTSFieldType(cfg)
+
+	t2 := t.(enttype.TSWithSubFields)
+	m := t2.GetCustomTypeInfo().TSInterface
+
+	list := enttype.IsListType(t)
+	nullable := f.Nullable()
+
+	return enttype.GetConvertMethod(nullable, list, m)
 }
 
 type Option func(*Field)

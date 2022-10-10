@@ -240,8 +240,9 @@ func (action *commonActionInfo) getCustomInterface(typ enttype.TSTypeWithCustomT
 	ci, ok := action.customInterfaces[tsTyp]
 	if !ok {
 		ci = &customtype.CustomInterface{
-			TSType:  tsTyp,
-			GQLName: gqlType,
+			TSType:              tsTyp,
+			GQLName:             gqlType,
+			GenerateListConvert: enttype.IsListType(typ),
 		}
 	}
 
