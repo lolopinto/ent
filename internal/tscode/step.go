@@ -597,11 +597,11 @@ func getFilePathForEnumFile(cfg *codegen.Config, name string) string {
 }
 
 // copied to input.go
-// copied to type.go
 func getFilePathForCustomInterfaceFile(cfg *codegen.Config, ci *customtype.CustomInterface) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(ci.TSType)))
 }
 
+// copied to field_type.go
 func getImportPathForCustomInterfaceFile(ci *customtype.CustomInterface) string {
 	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(ci.TSType))
 }

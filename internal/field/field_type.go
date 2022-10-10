@@ -919,6 +919,15 @@ func (f *Field) GetConvertImport(cfg codegenapi.Config, g CustomInterfaceGetter)
 	if !f.HasConvertFunction(cfg, g) {
 		return nil
 	}
+
+	method, typ := f.getConvertMethodInfo(cfg)
+	return &tsimport.ImportPath{
+		Import:     method,
+		ImportPath: getImportPathForCustomInterfaceFile(typ),
+	}
+}
+
+func (f *Field) getConvertMethodInfo(cfg codegenapi.Config) (string, string) {
 	t := f.GetTSFieldType(cfg)
 
 	list := enttype.IsListType(t)
@@ -927,24 +936,23 @@ func (f *Field) GetConvertImport(cfg codegenapi.Config, g CustomInterfaceGetter)
 	t2 := t.(enttype.TSTypeWithCustomType)
 	typ := t2.GetCustomTypeInfo().TSInterface
 
-	return &tsimport.ImportPath{
-		Import:     enttype.GetConvertMethod(nullable, list, typ),
-		ImportPath: getImportPathForCustomInterfaceFile(typ),
+	// nullable, list bool, typ string) string {
+	prefix := "convert"
+	suffix := ""
+	if list {
+		suffix = "List"
 	}
+	if nullable {
+		prefix += "Nullable"
+	}
+
+	return fmt.Sprintf("%s%s%s", prefix, typ, suffix), typ
 }
 
 func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
 	// assumes HasConvertFunction is true
-	t := f.GetTSFieldType(cfg)
-
-	t2 := t.(enttype.TSWithSubFields)
-	m := t2.GetCustomTypeInfo().TSInterface
-
-	list := enttype.IsListType(t)
-	nullable := f.Nullable()
-
-	// all the logic there will be in here
-	return enttype.GetConvertMethod(nullable, list, m)
+	method, _ := f.getConvertMethodInfo(cfg)
+	return method
 }
 
 type Option func(*Field)
