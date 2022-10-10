@@ -18,6 +18,7 @@ import {
   TodoStatusAccountEditInputType,
   TodoStatusAccountEditPayloadType,
 } from "src/graphql/generated/mutations/account/todo_status_account_edit_type";
+import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
 import { MutationType } from "src/graphql/generated/mutations/mutation_type";
 import {
   CreateTagInputType,
@@ -83,6 +84,7 @@ export default new GraphQLSchema({
     RootToOpenTodosConnectionType(),
     TagToTodosConnectionType(),
     TodoToTagsConnectionType(),
+    AccountPrefsInputType,
     AccountTodoStatusInputType,
     AddTodoTagInputType,
     AddTodoTagPayloadType,
