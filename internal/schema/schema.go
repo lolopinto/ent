@@ -21,10 +21,8 @@ import (
 	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
-	"golang.org/x/tools/go/packages"
 )
 
 // Schema is the representation of the parsed schema. Has everything needed to
@@ -257,32 +255,13 @@ func (s *Schema) addEnumShared(input *enum.Input, info *EnumInfo) error {
 	return nil
 }
 
-// Given a schema file parser, Parse parses the schema to return the completely
-// parsed schema
-func Parse(p schemaparser.Parser, specificConfigs ...string) (*Schema, error) {
-	return parse(func(s *Schema) (*assocEdgeData, error) {
-		return s.parseFiles(p, specificConfigs...)
-	})
-}
-
-func ParsePackage(pkg *packages.Package, specificConfigs ...string) (*Schema, error) {
-	return parse(func(s *Schema) (*assocEdgeData, error) {
-		return s.parsePackage(pkg, specificConfigs...)
-	})
-}
-
 // ParseFromInputSchema takes the schema that has been parsed from whatever input source
 // and provides the schema we have that's checked and conforms to everything we expect
 func ParseFromInputSchema(cfg codegenapi.Config, schema *input.Schema, lang base.Language) (*Schema, error) {
-	return parse(func(s *Schema) (*assocEdgeData, error) {
-		return s.parseInputSchema(cfg, schema, lang)
-	})
-}
-
-func parse(parseFn func(*Schema) (*assocEdgeData, error)) (*Schema, error) {
 	s := &Schema{}
 	s.init()
-	edgeData, err := parseFn(s)
+
+	edgeData, err := s.parseInputSchema(cfg, schema, lang)
 	if err != nil {
 		return nil, err
 	}
@@ -1637,58 +1616,6 @@ func (s *Schema) convertCols(fieldInfo *field.FieldInfo, cols []string) ([]strin
 		result[idx] = f.GetDbColName()
 	}
 	return result, nil
-}
-
-func (s *Schema) addConstsFromEdgeGroups(nodeData *NodeData) {
-	for _, edgeGroup := range nodeData.EdgeInfo.AssocGroups {
-		for edgeName := range edgeGroup.Edges {
-			constName := edgeGroup.GetConstNameForEdgeName(edgeName)
-			constValue := strings.ToLower(
-				base.GetNameFromParts(
-					[]string{
-						nodeData.Node,
-						edgeName,
-					},
-				))
-
-			nodeData.addConstInfo(
-				edgeGroup.ConstType,
-				constName,
-				&ConstInfo{
-					ConstName:  constName,
-					ConstValue: strconv.Quote(constValue),
-					Comment: fmt.Sprintf(
-						"%s is the edge representing the status for the %s edge.",
-						constName,
-						edgeName,
-					),
-				},
-			)
-
-		}
-
-		unknownConst := edgeGroup.GetConstNameForUnknown()
-		constValue := strings.ToLower(
-			base.GetNameFromParts(
-				[]string{
-					nodeData.Node,
-					"Unknown",
-				},
-			))
-		nodeData.addConstInfo(
-			edgeGroup.ConstType,
-			unknownConst,
-			&ConstInfo{
-				ConstName:  unknownConst,
-				ConstValue: strconv.Quote(constValue),
-				Comment: fmt.Sprintf(
-					"%s is the edge representing the unknown status for the %s edgegroup.",
-					unknownConst,
-					edgeGroup.GroupStatusName,
-				),
-			},
-		)
-	}
 }
 
 func (s *Schema) getInverseEdgeType(assocEdge *edge.AssociationEdge, inverseEdge *edge.InverseAssocEdge, edgeData *assocEdgeData) (string, string, bool, error) {
