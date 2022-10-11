@@ -207,7 +207,6 @@ func (f *Field) GetDbColName() string {
 }
 
 func (f *Field) GetQuotedDBColName() string {
-	// TODO audit this and verify
 	return strconv.Quote(f.dbName)
 }
 
@@ -454,7 +453,6 @@ func (f *Field) DefaultValue() *string {
 	return f.defaultValue
 }
 
-// TODO add GoFieldName and kill FieldName as public...
 func (f *Field) TsFieldName(cfg codegenapi.Config) string {
 	// TODO need to solve these id issues generally
 	if f.FieldName == "ID" {

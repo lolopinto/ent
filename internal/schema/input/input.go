@@ -156,13 +156,6 @@ type Field struct {
 	UserConvert         *UserConvertType    `json:"convert,omitempty"`
 	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
 
-	// TODO kill all references...
-	// Go specific information here
-	// TagMap          map[string]string `json:"-"`
-	// GoType          types.Type        `json:"-"`
-	// PkgPath         string            `json:"-"`
-	// DataTypePkgPath string            `json:"-"`
-
 	// set when parsed via tsent generate schema
 	Import enttype.Import `json:"-"`
 
