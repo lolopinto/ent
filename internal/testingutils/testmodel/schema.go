@@ -85,7 +85,7 @@ func initSyncs() {
 							{
 								Name: "LastLoginAt",
 								Type: &input.FieldType{
-									DBType: input.String,
+									DBType: input.Timestamp,
 								},
 								StorageKey:  "last_login_time",
 								GraphQLName: "lastLoginTime",
@@ -136,8 +136,10 @@ func initSyncs() {
 									},
 								},
 							},
-
-							// TODO TodosAssoc
+							{
+								Name:       "TodosAssoc",
+								SchemaName: "Todo",
+							},
 						},
 						AssocEdgeGroups: []*input.AssocEdgeGroup{
 							{
