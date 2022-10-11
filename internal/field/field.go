@@ -277,14 +277,6 @@ func (f *Field) GetGraphQLTypeForField() string {
 	return f.fieldType.GetGraphQLType()
 }
 
-func (f *Field) GetCastToMethod() string {
-	return f.fieldType.GetCastToMethod()
-}
-
-func (f *Field) GetZeroValue() string {
-	return f.fieldType.GetZeroValue()
-}
-
 func (f *Field) ExposeToGraphQL() bool {
 	// note this only applies to if the field should be exposed as readable
 	// if the field is part of an action, it's exposed since either it's a create action or
