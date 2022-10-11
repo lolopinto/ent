@@ -2,7 +2,6 @@ package enttype_test
 
 import (
 	"fmt"
-	"go/types"
 	"strconv"
 	"strings"
 	"testing"
@@ -10,7 +9,6 @@ import (
 	"github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +18,6 @@ type expType struct {
 	db                  string
 	graphql             string
 	graphqlImports      []*tsimport.ImportPath
-	graphqlPanics       bool
 	nullableType        enttype.Type
 	nonNullableType     enttype.Type
 	defaultGQLFieldName string
@@ -53,7 +50,6 @@ func TestCustomTypes(t *testing.T) {
 					tsType:       "string",
 					importType:   &enttype.EmailImport{},
 				},
-				nil,
 			},
 			"nullable email": {
 				&enttype.NullableEmailType{},
@@ -67,7 +63,6 @@ func TestCustomTypes(t *testing.T) {
 					tsType:          "string | null",
 					importType:      &enttype.EmailImport{},
 				},
-				nil,
 			},
 			"password": {
 				&enttype.PasswordType{},
@@ -82,7 +77,6 @@ func TestCustomTypes(t *testing.T) {
 					tsType:       "string",
 					importType:   &enttype.PasswordImport{},
 				},
-				nil,
 			},
 			"nullable password": {
 				&enttype.NullablePasswordType{},
@@ -96,7 +90,6 @@ func TestCustomTypes(t *testing.T) {
 					tsType:          "string | null",
 					importType:      &enttype.PasswordImport{},
 				},
-				nil,
 			},
 			"phone": {
 				&enttype.PhoneType{},
@@ -111,7 +104,6 @@ func TestCustomTypes(t *testing.T) {
 					tsType:       "string",
 					importType:   &enttype.PhoneImport{},
 				},
-				nil,
 			},
 			"nullable phone": {
 				&enttype.NullablePhoneType{},
@@ -125,7 +117,6 @@ func TestCustomTypes(t *testing.T) {
 					tsType:          "string | null",
 					importType:      &enttype.PhoneImport{},
 				},
-				nil,
 			},
 		},
 	)
@@ -146,7 +137,6 @@ func TestStringType(t *testing.T) {
 				tsType:       "string",
 				importType:   &enttype.StringImport{},
 			},
-			nil,
 		},
 		"nullable": {
 			&enttype.NullableStringType{},
@@ -160,7 +150,6 @@ func TestStringType(t *testing.T) {
 				tsType:          "string | null",
 				importType:      &enttype.StringImport{},
 			},
-			nil,
 		},
 	})
 }
@@ -182,7 +171,7 @@ func TestBoolType(t *testing.T) {
 					tsType:           "boolean",
 					convertSqliteFns: []string{"convertBool"},
 					importType:       &enttype.BoolImport{},
-				}, nil,
+				},
 			},
 			"nullable": {
 				&enttype.NullableBoolType{},
@@ -197,7 +186,6 @@ func TestBoolType(t *testing.T) {
 					convertSqliteFns: []string{"convertNullableBool"},
 					importType:       &enttype.BoolImport{},
 				},
-				nil,
 			},
 		},
 	)
@@ -221,7 +209,6 @@ func TestIDType(t *testing.T) {
 				},
 				importType: &enttype.UUIDImport{},
 			},
-			nil,
 		},
 		"nullable": {
 			&enttype.NullableIDType{},
@@ -237,7 +224,7 @@ func TestIDType(t *testing.T) {
 					tsimport.NewEntImportPath("ID"),
 				},
 				importType: &enttype.UUIDImport{},
-			}, nil,
+			},
 		},
 	})
 }
@@ -256,7 +243,7 @@ func TestIntegerType(t *testing.T) {
 				nullableType: &enttype.NullableIntegerType{},
 				tsType:       "number",
 				importType:   &enttype.IntImport{},
-			}, nil,
+			},
 		},
 		"nullable": {
 			&enttype.NullableIntegerType{},
@@ -269,7 +256,7 @@ func TestIntegerType(t *testing.T) {
 				nonNullableType: &enttype.IntegerType{},
 				tsType:          "number | null",
 				importType:      &enttype.IntImport{},
-			}, nil,
+			},
 		},
 	})
 
@@ -291,7 +278,7 @@ func TestBigIntegerType(t *testing.T) {
 				importType:         &enttype.BigIntImport{},
 				convertSqliteFns:   []string{"BigInt"},
 				convertPostgresFns: []string{"BigInt"},
-			}, nil,
+			},
 		},
 		"nullable": {
 			&enttype.NullableBigIntegerType{},
@@ -307,7 +294,6 @@ func TestBigIntegerType(t *testing.T) {
 				convertSqliteFns:   []string{"BigInt"},
 				convertPostgresFns: []string{"BigInt"},
 			},
-			nil,
 		},
 	})
 }
@@ -326,7 +312,7 @@ func TestFloatType(t *testing.T) {
 				nullableType: &enttype.NullableFloatType{},
 				tsType:       "number",
 				importType:   &enttype.FloatImport{},
-			}, nil,
+			},
 		},
 		"nullable": {
 			&enttype.NullableFloatType{},
@@ -339,7 +325,7 @@ func TestFloatType(t *testing.T) {
 				nonNullableType: &enttype.FloatType{},
 				tsType:          "number | null",
 				importType:      &enttype.FloatImport{},
-			}, nil,
+			},
 		},
 	})
 }
@@ -361,7 +347,6 @@ func TestTimestampType(t *testing.T) {
 				convertSqliteFns:    []string{"convertDate"},
 				importType:          &enttype.TimestampImport{},
 			},
-			nil,
 		},
 		"nullable": {
 			&enttype.NullableTimestampType{},
@@ -376,7 +361,7 @@ func TestTimestampType(t *testing.T) {
 				tsType:              "Date | null",
 				convertSqliteFns:    []string{"convertNullableDate"},
 				importType:          &enttype.TimestampImport{},
-			}, nil,
+			},
 		},
 	})
 
@@ -418,7 +403,6 @@ func TestStringEnumType(t *testing.T) {
 						},
 					},
 				},
-				nil,
 			},
 			"not nullable": {
 				&enttype.StringEnumType{
@@ -454,7 +438,6 @@ func TestStringEnumType(t *testing.T) {
 						},
 					},
 				},
-				nil,
 			},
 			"not nullable db enum": {
 				&enttype.StringEnumType{
@@ -497,7 +480,6 @@ func TestStringEnumType(t *testing.T) {
 						},
 					},
 				},
-				nil,
 			},
 			"nullable db enum": {
 				&enttype.NullableStringEnumType{
@@ -539,7 +521,6 @@ func TestStringEnumType(t *testing.T) {
 						},
 					},
 				},
-				nil,
 			},
 		},
 	)
@@ -581,7 +562,6 @@ func TestIntEnumType(t *testing.T) {
 						},
 					},
 				},
-				nil,
 			},
 			"not nullable": {
 				&enttype.IntegerEnumType{
@@ -617,7 +597,6 @@ func TestIntEnumType(t *testing.T) {
 						},
 					},
 				},
-				nil,
 			},
 			"nullable w deprecated": {
 				&enttype.NullableIntegerEnumType{
@@ -656,7 +635,6 @@ func TestIntEnumType(t *testing.T) {
 						},
 					},
 				},
-				nil,
 			},
 			"not nullable w depreated": {
 				&enttype.IntegerEnumType{
@@ -696,7 +674,6 @@ func TestIntEnumType(t *testing.T) {
 						},
 					},
 				},
-				nil,
 			},
 		},
 	)
@@ -718,7 +695,6 @@ func TestTimestamptzType(t *testing.T) {
 				convertSqliteFns:    []string{"convertNullableDate"},
 				importType:          &enttype.TimestamptzImport{},
 			},
-			nil,
 		},
 		"not nullable": {
 			&enttype.TimestamptzType{},
@@ -735,7 +711,6 @@ func TestTimestamptzType(t *testing.T) {
 				convertSqliteFns:    []string{"convertDate"},
 				importType:          &enttype.TimestamptzImport{},
 			},
-			nil,
 		},
 	})
 }
@@ -755,7 +730,6 @@ func TestTimeType(t *testing.T) {
 				defaultGQLFieldName: "time",
 				importType:          &enttype.TimeImport{},
 			},
-			nil,
 		},
 		"not nullable": {
 			&enttype.TimeType{},
@@ -771,7 +745,6 @@ func TestTimeType(t *testing.T) {
 				defaultGQLFieldName: "time",
 				importType:          &enttype.TimeImport{},
 			},
-			nil,
 		},
 	})
 }
@@ -791,7 +764,6 @@ func TestTimetzType(t *testing.T) {
 				defaultGQLFieldName: "time",
 				importType:          &enttype.TimetzImport{},
 			},
-			nil,
 		},
 		"not nullable": {
 			&enttype.TimetzType{},
@@ -807,7 +779,6 @@ func TestTimetzType(t *testing.T) {
 				defaultGQLFieldName: "time",
 				importType:          &enttype.TimetzImport{},
 			},
-			nil,
 		},
 	})
 }
@@ -828,7 +799,6 @@ func TestDateType(t *testing.T) {
 				convertSqliteFns:    []string{"convertNullableDate"},
 				importType:          &enttype.DateImport{},
 			},
-			nil,
 		},
 		"not nullable": {
 			&enttype.DateType{},
@@ -845,7 +815,6 @@ func TestDateType(t *testing.T) {
 				convertSqliteFns:    []string{"convertDate"},
 				importType:          &enttype.DateImport{},
 			},
-			nil,
 		},
 	})
 }
@@ -854,14 +823,7 @@ func testTypeDirectly(t *testing.T, testCases map[string]*typeTestCase) {
 	for name, tt := range testCases {
 		t.Run(name, func(t *testing.T) {
 
-			ret := returnType{
-				entType: tt.typ,
-			}
-			if tt.fn != nil {
-				tt.fn(&ret, &tt.exp)
-			}
-			// TODO kill returnType...
-			testType(t, tt.exp, ret)
+			testType(t, tt.exp, tt.typ)
 		})
 	}
 }
@@ -870,49 +832,20 @@ func testTypeDirectly(t *testing.T, testCases map[string]*typeTestCase) {
 type typeTestCase struct {
 	typ enttype.Type
 	exp expType
-	fn  func(ret *returnType, exp *expType)
 }
 
-type returnType struct {
-	entType enttype.Type
-	goType  types.Type
-}
-
-func getTestReturnType(t *testing.T, code string) returnType {
-	pkg, fn, err := schemaparser.FindFunction(code, "main", "f")
-	assert.Nil(t, err)
-	assert.NotNil(t, fn)
-	assert.NotNil(t, pkg)
-
-	assert.NotNil(t, fn.Type.Results)
-	results := fn.Type.Results
-	assert.Len(t, results.List, 1)
-
-	goType := pkg.TypesInfo.TypeOf(results.List[0].Type)
-	return returnType{
-		goType:  goType,
-		entType: enttype.GetType(goType),
-	}
-}
-
-func testType(t *testing.T, exp expType, ret returnType) {
-	typ := ret.entType
-	// TODO when is this true?
-	if exp.graphqlPanics {
-		assert.Panics(t, func() { typ.GetGraphQLType() })
-	} else {
-		assert.Equal(t, exp.graphql, typ.GetGraphQLType())
-		gqlType, ok := typ.(enttype.TSGraphQLType)
-		if ok {
-			if exp.graphqlImports == nil {
-				assert.Len(t, gqlType.GetTSGraphQLImports(false), 0)
-			} else {
-				assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports(false))
-			}
+func testType(t *testing.T, exp expType, typ enttype.Type) {
+	assert.Equal(t, exp.graphql, typ.GetGraphQLType())
+	gqlType, ok := typ.(enttype.TSGraphQLType)
+	if ok {
+		if exp.graphqlImports == nil {
+			assert.Len(t, gqlType.GetTSGraphQLImports(false), 0)
 		} else {
-			// not a gqlType. this should be 0
-			assert.Len(t, exp.graphqlImports, 0)
+			assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports(false))
 		}
+	} else {
+		// not a gqlType. this should be 0
+		assert.Len(t, exp.graphqlImports, 0)
 	}
 
 	entType, ok := typ.(enttype.EntType)
@@ -925,11 +858,7 @@ func testType(t *testing.T, exp expType, ret returnType) {
 		nullType := nullableType.GetNullableType()
 
 		assert.Equal(t, exp.nullableType, nullType)
-		if exp.graphqlPanics {
-			assert.Panics(t, func() { nullType.GetGraphQLType() })
-		} else {
-			assert.False(t, strings.HasSuffix(nullType.GetGraphQLType(), "!"))
-		}
+		assert.False(t, strings.HasSuffix(nullType.GetGraphQLType(), "!"))
 	}
 
 	nonNullableType, ok := typ.(enttype.NonNullableType)
@@ -937,11 +866,7 @@ func testType(t *testing.T, exp expType, ret returnType) {
 		nonNullType := nonNullableType.GetNonNullableType()
 
 		assert.Equal(t, exp.nonNullableType, nonNullType)
-		if exp.graphqlPanics {
-			assert.Panics(t, func() { nonNullType.GetGraphQLType() })
-		} else {
-			assert.True(t, strings.HasSuffix(nonNullType.GetGraphQLType(), "!"))
-		}
+		assert.True(t, strings.HasSuffix(nonNullType.GetGraphQLType(), "!"))
 	}
 
 	defaultFieldNameType, ok := typ.(enttype.DefaulFieldNameType)
