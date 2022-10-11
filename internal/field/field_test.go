@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
-	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -337,12 +336,6 @@ func testField(t *testing.T, f, expFieldProps *Field) {
 		"expected fkey values were not equal",
 	)
 
-	// some old go types are uncloneable and we just ignore
-	// them here. will be killed once we clean this up
-	_, ok := f.fieldType.(enttype.UncloneableType)
-	if ok {
-		return
-	}
 	// clone and confirm that the clone is equal
 	f2, err := f.Clone()
 	require.Nil(t, err)

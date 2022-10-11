@@ -22,7 +22,6 @@ func TestJSONType(t *testing.T) {
 				},
 				tsType:           "any",
 				nullableType:     &enttype.NullableJSONType{},
-				goTypePanics:     true,
 				importType:       &enttype.JSONImport{},
 				convertSqliteFns: []string{"convertJSON"},
 			},
@@ -39,7 +38,6 @@ func TestJSONType(t *testing.T) {
 				},
 				tsType:           "any",
 				nullableType:     &enttype.NullableJSONBType{},
-				goTypePanics:     true,
 				importType:       &enttype.JSONBImport{},
 				convertSqliteFns: []string{"convertJSON"},
 			},
@@ -56,7 +54,6 @@ func TestJSONType(t *testing.T) {
 				// any works for null so keeping that
 				tsType:           "any",
 				nonNullableType:  &enttype.JSONType{},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertNullableJSON"},
 				importType:       &enttype.JSONImport{},
 			},
@@ -73,7 +70,6 @@ func TestJSONType(t *testing.T) {
 				// any works for null so keeping that
 				tsType:           "any",
 				nonNullableType:  &enttype.JSONBType{},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertNullableJSON"},
 				importType:       &enttype.JSONBImport{},
 			},
@@ -104,7 +100,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					{
@@ -140,7 +135,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					{
@@ -177,7 +171,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					{
@@ -213,7 +206,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					{
@@ -262,7 +254,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
@@ -315,7 +306,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
@@ -369,7 +359,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
@@ -422,7 +411,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
@@ -548,7 +536,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
@@ -707,7 +694,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
@@ -869,7 +855,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
@@ -1028,7 +1013,6 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:     true,
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
