@@ -3,10 +3,8 @@ package enttype
 import (
 	"fmt"
 	"go/types"
-	"path/filepath"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent/config"
@@ -1930,26 +1928,6 @@ func GetNonNullableType(typ types.Type, forceRequired bool) Type {
 		return nonNullableType.GetNonNullableType()
 	}
 	panic(fmt.Errorf("couldn't find non-nullable version of type %s", types.TypeString(typ, nil)))
-}
-
-// GetGoType returns the type that should be put in a golang-declaration
-// for the type e.g. in structs, in generated graphql code, etc
-func GetGoType(typ types.Type) string {
-	str := typ.String()
-
-	var letterIdx int
-	for idx, c := range str {
-		if unicode.IsLetter(c) {
-			letterIdx = idx
-			break
-		}
-	}
-
-	_, fp := filepath.Split(str[letterIdx:])
-	if letterIdx == 0 {
-		return fp
-	}
-	return str[:letterIdx] + fp
 }
 
 func IsImportDepsType(t EntType) bool {
