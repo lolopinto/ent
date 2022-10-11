@@ -1248,6 +1248,8 @@ func TestIndices(t *testing.T) {
 			},
 		},
 		"gist-index-type-specified": {
+			// TODO https://github.com/lolopinto/ent/issues/1029
+			skip: true,
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
 					`import {Schema, Field, StringListType, Index, BaseEntSchema} from "{schema}";

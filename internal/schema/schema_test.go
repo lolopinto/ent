@@ -9,65 +9,63 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
-	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TODO convert everything here to typescript
 func TestInverseFieldEdge(t *testing.T) {
-	sources := make(map[string]string)
+	s := testhelper.ParseSchemaForTestFixed(t,
+		map[string]string{
+			"account_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType} from "{schema}";
 
-	sources["account_config.go"] = `
-	package configs
+			const AccountSchema = new EntSchema({
+				fields: {
+					firstName: StringType(),
+				},
 
-	import "github.com/lolopinto/ent/ent"
+				edges: [
+					{
+						name: 'Todos',
+						schemaName: 'Todo',
+					},
+				],
+			});
+			export default AccountSchema;
+			`),
+			"todo_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, UUIDType} from "{schema}";
 
-type AccountConfig struct {
-	FirstName string
-}
+			const TodoSchema = new EntSchema({
+				fields: {
+					text: StringType(),
+					accountID: UUIDType({
+						fieldEdge: {
+							schema: 'Account',
+							inverseEdge: 'Todos',
+						}
+					}),
+				},
 
-	func (config *AccountConfig) GetTableName() string {
-		return "accounts"
-	}
-
-	func (config *AccountConfig) GetEdges() ent.EdgeMap{
-		return ent.EdgeMap{
-			"Todos": ent.AssociationEdge{
-				EntConfig:   TodoConfig{},
-			},
-		}
-	}
-	`
-
-	sources["todo_config.go"] = `
-	package configs
-
-	import "github.com/lolopinto/ent/ent"
-	import "github.com/lolopinto/ent/ent/field"
-
-type TodoConfig struct {}
-
-func (config *TodoConfig) GetFields() ent.FieldMap {
-	return ent.FieldMap {
-		"Text": field.F(field.StringType()),
-		"AccountID": field.F(field.StringType(), field.FieldEdge("AccountConfig", "Todos")),
-	}
-}
-
-	func (config *TodoConfig) GetTableName() string {
-		return "todos"
-	}
-	`
-	s := parseSchema(t, sources, "InverseFieldEdge")
-	textField := getFieldFromSchema(t, s, "TodoConfig", "Text")
+				edges: [
+					{
+						name: 'Todos',
+						schemaName: 'Todo',
+					},
+				],
+			});
+			export default TodoSchema;
+			`),
+		})
+	textField := getFieldFromSchema(t, s, "Todo", "text")
 
 	require.Nil(t, textField.GetInverseEdge(), "expected the text field to have no inverse edge. instead it did")
 
 	// creating a fieldEdge above does 2 things:
 	// 	1. it adds an inverse edge to the field
-	accountField := getFieldFromSchema(t, s, "TodoConfig", "AccountID")
+	accountField := getFieldFromSchema(t, s, "Todo", "accountID")
 	inverseEdge := accountField.GetInverseEdge()
 	require.NotNil(
 		t,
@@ -101,154 +99,130 @@ func (config *TodoConfig) GetFields() ent.FieldMap {
 	)
 
 	// 2. adds a fieldEdge on source edgeInfo
-	todoInfo := s.Nodes["TodoConfig"]
-	require.NotNil(t, todoInfo)
-	accountEdge := todoInfo.NodeData.EdgeInfo.GetFieldEdgeByName("Account")
+	todo, err := s.GetNodeDataForNode("Todo")
+	require.Nil(t, err)
+	require.NotNil(t, todo)
+	accountEdge := todo.EdgeInfo.GetFieldEdgeByName("account")
 	require.NotNil(t, accountEdge)
-	assert.Equal(t, "Account", accountEdge.EdgeName)
+	assert.Equal(t, "account", accountEdge.EdgeName)
 	assert.Equal(t, "AccountConfig", accountEdge.GetEntConfig().ConfigName)
 }
 
 func TestForeignKey(t *testing.T) {
-	sources := make(map[string]string)
+	s := testhelper.ParseSchemaForTestFixed(t,
+		map[string]string{
+			"account_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType} from "{schema}";
 
-	sources["account_config.go"] = `
-	package configs
+			const AccountSchema = new EntSchema({
+				fields: {
+					firstName: StringType(),
+				},
+			});
+			export default AccountSchema;
+			`),
+			"todo_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, UUIDType} from "{schema}";
 
-type AccountConfig struct {
-	FirstName string
-}
+			const TodoSchema = new EntSchema({
+				fields: {
+					text: StringType(),
+					accountID: UUIDType({
+						foreignKey: {
+							schema: 'Account',
+							column: 'ID',
+						}
+					}),
+				},
+			});
+			export default TodoSchema;
+			`),
+		})
 
-	func (config *AccountConfig) GetTableName() string {
-		return "accounts"
-	}
-	`
-
-	sources["todo_config.go"] = `
-	package configs
-
-	import "github.com/lolopinto/ent/ent"
-	import "github.com/lolopinto/ent/ent/field"
-
-type TodoConfig struct {}
-
-func (config *TodoConfig) GetFields() ent.FieldMap {
-	return ent.FieldMap {
-		"Text": field.F(field.StringType()),
-		"AccountID": field.F(field.StringType(), field.ForeignKey("AccountConfig", "ID")),
-	}
-}
-
-	func (config *TodoConfig) GetTableName() string {
-		return "todos"
-	}
-	`
-
-	// creating a foreign key also does 2 things:
-	// 1. adds a fieldedge on source edge
-	s := parseSchema(t, sources, "ForeignKeyEdge")
-	todoInfo := s.Nodes["TodoConfig"]
-	require.NotNil(t, todoInfo)
-	accountEdge := todoInfo.NodeData.EdgeInfo.GetFieldEdgeByName("Account")
+	todo, err := s.GetNodeDataForNode("Todo")
+	require.NotNil(t, todo)
+	require.Nil(t, err)
+	accountEdge := todo.EdgeInfo.GetFieldEdgeByName("account")
 	require.NotNil(t, accountEdge)
-	assert.Equal(t, "Account", accountEdge.EdgeName)
+	assert.Equal(t, "account", accountEdge.EdgeName)
 	assert.Equal(t, "AccountConfig", accountEdge.GetEntConfig().ConfigName)
 
 	// 2. adds a foreign key edge on inverse node
-	accountInfo := s.Nodes["AccountConfig"]
-	require.NotNil(t, accountInfo)
-	todosEdge := accountInfo.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Todos")
+	account, err := s.GetNodeDataForNode("Account")
+	require.NotNil(t, account)
+	require.Nil(t, err)
+	todosEdge := account.EdgeInfo.GetForeignKeyEdgeByName("Todos")
 	require.NotNil(t, todosEdge)
 	assert.Equal(t, "Todos", todosEdge.EdgeName)
 	assert.Equal(t, "TodoConfig", todosEdge.GetEntConfig().ConfigName)
 }
 
 func TestForeignKeyInvalidKeys(t *testing.T) {
-	sources := make(map[string]string)
+	_, err := testhelper.ParseSchemaForTestFullFixed(t,
+		map[string]string{
+			"todo_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, UUIDType} from "{schema}";
 
-	sources["account_config.go"] = `
-	package configs
+			const TodoSchema = new EntSchema({
+				fields: {
+					text: StringType(),
+					accountID: UUIDType({
+						foreignKey: {
+							schema: 'Account',
+							column: 'ID',
+						}
+					}),
+				},
+			});
+			export default TodoSchema;
+			`),
+		})
 
-type AccountConfig struct {
-	FirstName string
-}
-
-	func (config *AccountConfig) GetTableName() string {
-		return "accounts"
-	}
-	`
-
-	sources["todo_config.go"] = `
-	package configs
-
-	import "github.com/lolopinto/ent/ent"
-	import "github.com/lolopinto/ent/ent/field"
-
-type TodoConfig struct {}
-
-func (config *TodoConfig) GetFields() ent.FieldMap {
-	return ent.FieldMap {
-		"Text": field.F(field.StringType()),
-		"AccountID": field.F(field.StringType(), field.ForeignKey("Accounts", "ID")),
-	}
-}
-
-	func (config *TodoConfig) GetTableName() string {
-		return "todos"
-	}
-	`
-
-	_, err := parseSchemaPlusError(t, sources, "ForeignKeyEdgeInvalid")
 	assert.Error(t, err)
 }
 
 func TestInverseAssocEdge(t *testing.T) {
-	sources := make(map[string]string)
+	s := testhelper.ParseSchemaForTestFixed(t,
+		map[string]string{
+			"account_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType} from "{schema}";
 
-	sources["account_config.go"] = `
-	package configs
-
-	import "github.com/lolopinto/ent/ent"
-
-type AccountConfig struct {
-	FirstName string
-}
-
-	func (config *AccountConfig) GetTableName() string {
-		return "accounts"
-	}
-
-	func (config *AccountConfig) GetEdges() ent.EdgeMap{
-		return ent.EdgeMap{
-			"Todos": ent.AssociationEdge{
-				EntConfig:   TodoConfig{},
-				InverseEdge: &ent.InverseAssocEdge{
-					EdgeName: "Accounts",
+			const AccountSchema = new EntSchema({
+				fields: {
+					firstName: StringType(),
 				},
-			},
-		}
-	}
-	`
 
-	sources["todo_config.go"] = `
-	package configs
+				edges: [
+					{
+						name: 'Todos',
+						schemaName: 'Todo',
+						inverseEdge: {
+							name: 'Accounts',
+						},
+					},
+				],
+			});
+			export default AccountSchema;
+			`),
+			"todo_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, UUIDType} from "{schema}";
 
-type TodoConfig struct {
-	Text string
-}
+			const TodoSchema = new EntSchema({
+				fields: {
+					text: StringType(),
+				},
+			});
+			export default TodoSchema;
+			`),
+		})
 
-	func (config *TodoConfig) GetTableName() string {
-		return "todos"
-	}
-	`
-	s := parseSchema(t, sources, "InverseAssocEdge")
-	todos := getEdgeFromSchema(t, s, "AccountConfig", "Todos")
+	todos := getEdgeFromSchema(t, s, "Account", "Todos")
 
 	require.NotNil(t, todos, "expected the todos edge to not be nil")
 
 	require.NotNil(t, todos.InverseEdge, "expected the todos edge to have an inverse edge")
 
-	accounts := getEdgeFromSchema(t, s, "TodoConfig", "Accounts")
+	accounts := getEdgeFromSchema(t, s, "Todo", "Accounts")
 
 	require.NotNil(t, accounts, "expected the todo -> accounts edge to not be nil")
 
@@ -316,64 +290,60 @@ type TodoConfig struct {
 }
 
 func TestEdgeGroup(t *testing.T) {
-	sources := make(map[string]string)
+	s := testhelper.ParseSchemaForTestFixed(t,
+		map[string]string{
+			"account_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType} from "{schema}";
 
-	sources["account_config.go"] = `
-	package configs
-
-type AccountConfig struct {
-	FirstName string
-}
-
-	func (config *AccountConfig) GetTableName() string {
-		return "accounts"
-	}
-	`
-
-	sources["event_config.go"] = `
-	package configs
-
-	import "time"
-	import "github.com/lolopinto/ent/ent"
-
-type EventConfig struct {
-	StartTime time.Time
-}
-
-	func (config *EventConfig) GetTableName() string {
-		return "events"
-	}
-
-	func (config *EventConfig) GetEdges() ent.EdgeMap {
-		return ent.EdgeMap {
-			"Rsvps": ent.AssociationEdgeGroup {
-				GroupStatusName: "Rsvp",
-				EdgeGroups: ent.AssocEdgeMap{
-					"AttendingUsers": &ent.AssociationEdge{
-						EntConfig: AccountConfig{},
-						InverseEdge: &ent.InverseAssocEdge{
-							EdgeName: "EventsAttending",
-						},
-					},
-					"DeclinedUsers": &ent.AssociationEdge{
-						EntConfig: AccountConfig{},
-						InverseEdge: &ent.InverseAssocEdge{
-							EdgeName: "DeclinedEvents",
-						},
-					},
+			const AccountSchema = new EntSchema({
+				fields: {
+					firstName: StringType(),
 				},
-			},
-		}
-	}
-	`
-	s := parseSchema(t, sources, "EdgeGroup")
-	attendees := getEdgeFromSchema(t, s, "EventConfig", "AttendingUsers")
+			});
+			export default AccountSchema;
+			`),
+			"event_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, UUIDType, TimestampType} from "{schema}";
+
+			const EventSchema = new EntSchema({
+				fields: {
+					startTime: TimestampType(),
+				},
+
+				edgeGroups: [
+					{
+						name: 'Rsvps',
+						groupStatusName: 'Rsvp',
+						assocEdges: [
+							{
+								name: 'AttendingUsers',
+								schemaName: 'Account',
+								inverseEdge: {
+									name: 'EventsAttending',
+								},
+							},
+							{
+								name: 'DeclinedUsers',
+								schemaName: 'Account',
+								inverseEdge: {
+									name: 'DeclinedEvents',
+								},
+							},
+						],
+					},
+				],
+			});
+			export default EventSchema;
+			`),
+		})
+
+	attendees := getEdgeFromSchema(t, s, "Event", "AttendingUsers")
 
 	require.NotNil(t, attendees, "expected the attendees edge to not be nil")
 
 	require.NotNil(t, attendees.InverseEdge, "expected the attendes edge to have an inverse edge")
 
-	eventsAttending := getEdgeFromSchema(t, s, "AccountConfig", "EventsAttending")
+	eventsAttending := getEdgeFromSchema(t, s, "Account", "EventsAttending")
 	require.NotNil(t, eventsAttending, "expected the account -> events attending edge to not be nil")
 
 	require.Nil(t, eventsAttending.InverseEdge, "expected the events attending inverse edge field to be nil")
@@ -412,48 +382,35 @@ type EventConfig struct {
 		testEdge(t, edge, expectedEdge)
 	}
 
-	// accountInfo := s.Nodes["AccountConfig"]
-	// testConstants(
-	// 	t,
-	// 	accountInfo,
-	// 	map[string]map[string]string{
-	// 		"ent.NodeType": map[string]string{
-	// 			"AccountType": "account",
-	// 		},
-	// 		"ent.EdgeType": map[string]string{
-	// 			"AccountToTodosEdge": "",
-	// 		},
-	// 	},
-	// )
-
-	// todoInfo := s.Nodes["TodoConfig"]
-	// testConstants(
-	// 	t,
-	// 	todoInfo,
-	// 	map[string]map[string]string{
-	// 		"ent.NodeType": map[string]string{
-	// 			"TodoType": "todo",
-	// 		},
-	// 		"ent.EdgeType": map[string]string{
-	// 			"TodoToAccountsEdge": "",
-	// 		},
-	// 	},
-	// )
-}
-
-// inlining this in a bunch of places to break the import cycle
-func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources string) *schema.Schema {
-	s, err := parseSchemaPlusError(t, sources, uniqueKeyForSources)
-	require.NoError(t, err)
-	return s
-}
-
-func parseSchemaPlusError(t *testing.T, sources map[string]string, uniqueKeyForSources string) (*schema.Schema, error) {
-	data := parsehelper.ParseFilesForTest(
+	accountInfo := s.Nodes["AccountConfig"]
+	testConstants(
 		t,
-		parsehelper.Sources(uniqueKeyForSources, sources),
+		accountInfo,
+		map[string]map[string]string{
+			"ent.NodeType": {
+				"AccountType": "account",
+			},
+			"ent.EdgeType": {
+				"AccountToEventsAttendingEdge": "",
+				"AccountToDeclinedEventsEdge":  "",
+			},
+		},
 	)
-	return schema.ParsePackage(data.Pkg)
+
+	eventInfo := s.Nodes["EventConfig"]
+	testConstants(
+		t,
+		eventInfo,
+		map[string]map[string]string{
+			"ent.NodeType": {
+				"EventType": "event",
+			},
+			"ent.EdgeType": {
+				"EventToAttendingUsersEdge": "",
+				"EventToDeclinedUsersEdge":  "",
+			},
+		},
+	)
 }
 
 func getEdgeFromSchema(t *testing.T, s *schema.Schema, configName, edgeName string) *edge.AssociationEdge {
@@ -462,8 +419,8 @@ func getEdgeFromSchema(t *testing.T, s *schema.Schema, configName, edgeName stri
 	return ret
 }
 
-func getFieldFromSchema(t *testing.T, s *schema.Schema, configName, fieldName string) *field.Field {
-	ret, err := s.GetFieldByName(configName, fieldName)
+func getFieldFromSchema(t *testing.T, s *schema.Schema, nodeName, fieldName string) *field.Field {
+	ret, err := s.GetFieldByName(nodeName, fieldName)
 	require.Nil(t, err)
 	return ret
 }
