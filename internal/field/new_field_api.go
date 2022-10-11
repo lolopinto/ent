@@ -118,18 +118,12 @@ func modifyFieldForDataType(
 		resChan := explorer.getTypeForInfo(pkg, info)
 		res := <-resChan
 
-		if res.entType != nil {
-			f.GoType = res.entType
-		}
-		if res.pkgPath != "" {
-			f.PkgPath = res.pkgPath
-		}
+		panic("TODO ola. fixxxx")
+
 		// if the datatype is specifically private, field makes it private
 		if res.private {
 			f.Private = &input.PrivateOptions{}
 		}
-
-		f.DataTypePkgPath = getImportedPackageThatMatchesIdent(pkg, info.PkgName, info.IdentName).PkgPath
 
 		// return error or lack thereof from result
 		errChan <- res.err

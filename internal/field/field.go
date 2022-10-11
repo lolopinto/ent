@@ -28,8 +28,6 @@ type Options struct {
 func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*input.Field, options *Options) (*FieldInfo, error) {
 	fieldInfo := &FieldInfo{
 		fieldMap:       make(map[string]*Field),
-		emailFields:    make(map[string]bool),
-		passwordFields: make(map[string]bool),
 		names:          make(map[string]bool),
 		cols:           make(map[string]*Field),
 		computedFields: make(map[string]bool),
@@ -103,21 +101,9 @@ type FieldInfo struct {
 
 	primaryKeys []string
 
-	// go only
-	emailFields    map[string]bool
-	passwordFields map[string]bool
-
 	names map[string]bool
 	cols  map[string]*Field
 }
-
-const (
-	// EmailPkgPath is the package path for the built-in email datatype
-	EmailPkgPath = "github.com/lolopinto/ent/ent/field/email"
-
-	// PasswordPkgPath is the package path for the built-in password datatype
-	PasswordPkgPath = "github.com/lolopinto/ent/ent/field/password"
-)
 
 func NormalizedField(s string) string {
 	return strings.ToLower(s)
@@ -156,38 +142,7 @@ func (fieldInfo *FieldInfo) addField(f *Field) error {
 	fieldInfo.Fields = append(fieldInfo.Fields, f)
 	fieldInfo.fieldMap[f.FieldName] = f
 
-	if f.dataTypePkgPath == EmailPkgPath {
-		fieldInfo.emailFields[f.FieldName] = true
-	}
-	if f.dataTypePkgPath == PasswordPkgPath {
-		fieldInfo.passwordFields[f.FieldName] = true
-	}
 	return nil
-}
-
-// EmailPasswordCombo holds a Pair of EmailPassword field used for validation
-type EmailPasswordCombo struct {
-	Email    *Field
-	Password *Field
-}
-
-// GetEmailPasswordCombo returns an instance of EmailPasswordCombo if we should have
-// the ValidateEmailPassword method for email/password validation
-func (fieldInfo *FieldInfo) GetEmailPasswordCombo() *EmailPasswordCombo {
-	// what happens if there's more than one?
-	// deal with that in the future
-	if len(fieldInfo.passwordFields) != 1 || len(fieldInfo.emailFields) != 1 {
-		return nil
-	}
-
-	ret := &EmailPasswordCombo{}
-	for key := range fieldInfo.emailFields {
-		ret.Email = fieldInfo.fieldMap[key]
-	}
-	for key := range fieldInfo.passwordFields {
-		ret.Password = fieldInfo.fieldMap[key]
-	}
-	return ret
 }
 
 // GetFieldsFn returns a boolean which when returns true indicates that
@@ -278,7 +233,7 @@ func GetNonNilableGoType(f *Field) string {
 	// and we can just return the string representation here
 	// since nullable is currently encoded as a struct tag or a different flag
 	// To enforce nullable value, see above
-	return enttype.GetGoType(f.entType)
+	return enttype.GetGoType(nil)
 }
 
 func addBaseFields(fieldInfo *FieldInfo) error {
@@ -316,6 +271,7 @@ func addBaseFields(fieldInfo *FieldInfo) error {
 	return fieldInfo.addField(updatedAtField)
 }
 
+// TODO kill
 func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, error) {
 	getUnquotedKeyFromTag := func(tagMap map[string]string, key string) string {
 		val := tagMap[key]
@@ -346,7 +302,6 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, err
 		}
 
 		tagMap := parseFieldTag(fieldName, f.Tag)
-		field.TagMap = tagMap
 
 		// override dbName
 		if tagMap["db"] != "" {
@@ -360,8 +315,6 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, err
 		field.Nullable = isKeyTrue(tagMap, "nullable")
 		field.Unique = isKeyTrue(tagMap, "unique")
 		field.Index = isKeyTrue(tagMap, "index")
-
-		field.GoType = info.TypeOf(f.Type)
 
 		fkey := getUnquotedKeyFromTag(tagMap, "fkey")
 		if fkey != "" {

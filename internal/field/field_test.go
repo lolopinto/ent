@@ -1,264 +1,267 @@
 package field
 
 import (
-	"strconv"
-	"sync"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/enttype"
-	"github.com/lolopinto/ent/internal/parsehelper"
-	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestFieldInfo(t *testing.T) {
-	fieldInfo := getTestFieldInfo(t, "AccountConfig")
-
-	length := len(fieldInfo.Fields)
-	expectedLength := 11
-	assert.Equal(t, expectedLength, len(fieldInfo.Fields), "expected %d fields generated. got %d instead", expectedLength, length)
-}
-
 func TestIDField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "ID")
-
-	testField(
-		t,
-		f,
-		&Field{
-			FieldName:             "ID",
-			singleFieldPrimaryKey: true,
-			hideFromGraphQL:       false,
-			topLevelStructField:   false,
-			dbColumn:              true,
-			nullable:              false,
-			dbName:                "id",
-			graphQLName:           "id",
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType: input.UUID,
+			},
+			Name: "ID",
 		},
-	)
-	testDBType(t, f, "postgresql.UUID()")
-	testGraphQLType(t, f, "ID!")
-}
-
-func TestCreatedAtField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "CreatedAt")
-
-	testField(
-		t,
-		f,
 		&Field{
-			FieldName:             "CreatedAt",
-			singleFieldPrimaryKey: false,
-			hideFromGraphQL:       true,
-			topLevelStructField:   false,
-			dbColumn:              true,
-			nullable:              false,
-			dbName:                "created_at",
-			graphQLName:           "createdAt",
+			FieldName:                "ID",
+			dbName:                   "id",
+			graphQLName:              "id",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
-	)
-	testDBType(t, f, "sa.TIMESTAMP()")
-	testGraphQLType(t, f, "Time!")
-}
-
-func TestUpdatedAtField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "UpdatedAt")
-
-	testField(
-		t,
-		f,
-		&Field{
-			FieldName:             "UpdatedAt",
-			singleFieldPrimaryKey: false,
-			hideFromGraphQL:       true,
-			topLevelStructField:   false,
-			dbColumn:              true,
-			nullable:              false,
-			dbName:                "updated_at",
-			graphQLName:           "updatedAt",
-		},
-	)
-	testDBType(t, f, "sa.TIMESTAMP()")
-	testGraphQLType(t, f, "Time!")
-}
-
-func TestDefaultGraphQLField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "FirstName")
-
-	testField(
-		t,
-		f,
-		&Field{
-			FieldName:             "FirstName",
-			singleFieldPrimaryKey: false,
-			hideFromGraphQL:       false,
-			topLevelStructField:   true,
-			dbColumn:              true,
-			nullable:              false,
-			dbName:                "first_name",
-			graphQLName:           "firstName",
-		},
+		"postgresql.UUID()",
+		"ID!",
 	)
 }
 
-func TestOverridenGraphQLField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "LastLoginAt")
-
-	testField(
-		t,
-		f,
-		&Field{
-			FieldName:             "LastLoginAt",
-			singleFieldPrimaryKey: false,
-			hideFromGraphQL:       false,
-			topLevelStructField:   true,
-			dbColumn:              true,
-			nullable:              false,
-			dbName:                "last_login_time",
-			graphQLName:           "lastLoginTime",
+func TestIntField(t *testing.T) {
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType: input.Int,
+			},
+			Name:        "InvitesLeft",
+			GraphQLName: "numInvitesLeft",
 		},
+		&Field{
+			FieldName:                "InvitesLeft",
+			dbName:                   "invites_left",
+			graphQLName:              "numInvitesLeft",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+		},
+		"sa.Integer()",
+		"Int!",
+	)
+}
+
+func TestStringField(t *testing.T) {
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType: input.String,
+			},
+			Name:       "EmailAddress",
+			StorageKey: "email",
+			Unique:     true,
+		},
+		&Field{
+			FieldName:                "EmailAddress",
+			dbName:                   "email",
+			graphQLName:              "emailAddress",
+			unique:                   true,
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+		},
+		"sa.Text()",
+		"String!",
+	)
+}
+
+func TestNullableStringField(t *testing.T) {
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType: input.String,
+			},
+			Name:     "Bio",
+			Nullable: true,
+		},
+		&Field{
+			FieldName:                "Bio",
+			dbName:                   "bio",
+			graphQLName:              "bio",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			nullable:                 true,
+		},
+		"sa.Text()",
+		"String",
+	)
+}
+
+func TestFloatField(t *testing.T) {
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType: input.Float,
+			},
+			Name:     "Balance",
+			Nullable: true,
+		},
+		&Field{
+			FieldName:                "Balance",
+			dbName:                   "balance",
+			graphQLName:              "balance",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			nullable:                 true,
+		},
+		"sa.Float()",
+		"Float",
+	)
+}
+
+func TestBoolField(t *testing.T) {
+	dv := "true"
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType: input.Boolean,
+			},
+			Name:          "ShowBioOnProfile",
+			StorageKey:    "show_bio",
+			Nullable:      true,
+			ServerDefault: &dv,
+		},
+		&Field{
+			FieldName:                "ShowBioOnProfile",
+			dbName:                   "show_bio",
+			graphQLName:              "showBioOnProfile",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			nullable:                 true,
+			defaultValue:             &dv,
+		},
+		"sa.Boolean()",
+		"Boolean")
+}
+
+func TestTimeField(t *testing.T) {
+	testFieldFromInput(t,
+		&input.Field{
+			Name:  "StartTime",
+			Index: true,
+			Type: &input.FieldType{
+				DBType: input.Timestamp,
+			},
+		},
+		&Field{
+			FieldName:                "StartTime",
+			dbName:                   "start_time",
+			graphQLName:              "startTime",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			index:                    true,
+		},
+		"sa.TIMESTAMP()",
+		"Time!")
+}
+
+func TestStringWithMoreCustomizationsField(t *testing.T) {
+	dv := "Ola"
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType: input.String,
+			},
+			Name:          "LastName",
+			ServerDefault: &dv,
+			Nullable:      true,
+		},
+		&Field{
+			FieldName:                "LastName",
+			dbName:                   "last_name",
+			graphQLName:              "lastName",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			nullable:                 true,
+			defaultValue:             &dv,
+		},
+		"sa.Text()",
+		"String",
 	)
 }
 
 func TestHiddenGraphQLField(t *testing.T) {
-	// Also tests default value...
-	f := getTestFieldByName(t, "AccountConfig", "NumberOfLogins")
-
-	dv := "0"
-	testField(
-		t,
-		f,
-		&Field{
-			FieldName:             "NumberOfLogins",
-			singleFieldPrimaryKey: false,
-			hideFromGraphQL:       true,
-			topLevelStructField:   true,
-			dbColumn:              true,
-			nullable:              false,
-			defaultValue:          &dv,
-			dbName:                "number_of_logins",
-			graphQLName:           "numberOfLogins",
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType: input.String,
+			},
+			Name:            "LastName",
+			HideFromGraphQL: true,
 		},
+		&Field{
+			FieldName:                "LastName",
+			dbName:                   "last_name",
+			graphQLName:              "lastName",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			hideFromGraphQL:          true,
+		},
+		"sa.Text()",
+		"String!",
 	)
 }
 
-func TestTypesForStringField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "FirstName")
-
-	testDBType(t, f, "sa.Text()")
-	testGraphQLType(t, f, "String!")
-	testStructType(t, f, "string")
-}
-
-func TestNullableStringField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "Bio")
-
-	testField(
-		t,
-		f,
-		&Field{
-			FieldName:             "Bio",
-			singleFieldPrimaryKey: false,
-			hideFromGraphQL:       false,
-			topLevelStructField:   true,
-			dbColumn:              true,
-			nullable:              true,
-			dbName:                "bio",
-			graphQLName:           "bio",
+func TestForeignKey(t *testing.T) {
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType: input.UUID,
+			},
+			Name: "UserID",
+			ForeignKey: &input.ForeignKey{
+				Schema: "User",
+				Column: "ID",
+			},
 		},
-	)
-	testDBType(t, f, "sa.Text()")
-	testGraphQLType(t, f, "String")
-	testStructType(t, f, "*string")
-}
-
-func TestTypesForIntegerField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "NumberOfLogins")
-
-	testDBType(t, f, "sa.Integer()")
-	testGraphQLType(t, f, "Int!") // this is a weird ish test because it's not exposed to graphql but that's neither here nor there...
-	testStructType(t, f, "int")
-}
-
-func TestTypesForTimeField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "LastLoginAt")
-
-	testDBType(t, f, "sa.TIMESTAMP()")
-	testGraphQLType(t, f, "Time!")
-	testStructType(t, f, "time.Time")
-}
-
-func TestNullableTimeField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "DateOfBirth")
-
-	testField(
-		t,
-		f,
 		&Field{
-			FieldName:             "DateOfBirth",
-			singleFieldPrimaryKey: false,
-			hideFromGraphQL:       false,
-			topLevelStructField:   true,
-			dbColumn:              true,
-			nullable:              true,
-			dbName:                "date_of_birth",
-			graphQLName:           "dateOfBirth",
+			FieldName:                "UserID",
+			dbName:                   "user_id",
+			graphQLName:              "userID", // probably not exposed to gql
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			fkey: &ForeignKeyInfo{
+				Schema: "User",
+				Field:  "ID",
+			},
 		},
+		"postgresql.UUID()",
+		"ID!",
 	)
-	testDBType(t, f, "sa.TIMESTAMP()")
-	testGraphQLType(t, f, "Time")
-	testStructType(t, f, "*time.Time")
 }
 
-func TestTypesForBoolField(t *testing.T) {
-	f := getTestFieldByName(t, "TodoConfig", "Completed")
+func getFieldFromInput(t *testing.T, f *input.Field) *Field {
+	cfg := &codegenapi.DummyConfig{}
 
-	testDBType(t, f, "sa.Boolean()")
-	testGraphQLType(t, f, "Boolean!")
-	testStructType(t, f, "bool")
+	f2, err := newFieldFromInputTest(cfg, f)
+	require.Nil(t, err)
+	return f2
 }
 
-func TestNullableBoolField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "ShowBioOnProfile")
-
-	testField(
-		t,
-		f,
-		&Field{
-			FieldName:             "ShowBioOnProfile",
-			singleFieldPrimaryKey: false,
-			hideFromGraphQL:       false,
-			topLevelStructField:   true,
-			dbColumn:              true,
-			nullable:              true,
-			dbName:                "show_bio_on_profile",
-			graphQLName:           "showBioOnProfile",
-		},
-	)
-	testDBType(t, f, "sa.Boolean()")
-	testGraphQLType(t, f, "Boolean")
-	testStructType(t, f, "*bool")
-}
-
-func TestTypesForCustomStringField(t *testing.T) {
-	f := getTestFieldByName(t, "TodoConfig", "AccountType")
-
-	testDBType(t, f, "sa.Text()")        // string in db because yup
-	testGraphQLType(t, f, "String!")     // string in graphql because enum not exposed
-	testStructType(t, f, "ent.NodeType") // strongly typed in golang
-}
-
-func TestDefaultDBField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "FirstName")
-
-	testColName(t, f, "first_name")
-}
-
-func TestOverridenDBField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "LastLoginAt")
-
-	testColName(t, f, "last_login_time")
+func testFieldFromInput(t *testing.T, f *input.Field, expectedField *Field, db, graphql string) {
+	f2 := getFieldFromInput(t, f)
+	testField(t, f2, expectedField)
+	testDBType(t, f2, db)
+	testGraphQLType(t, f2, graphql)
 }
 
 func testField(t *testing.T, f, expFieldProps *Field) {
@@ -354,15 +357,6 @@ func testField(t *testing.T, f, expFieldProps *Field) {
 		"expected fkey values were not equal",
 	)
 
-	assert.Equal(
-		t,
-		expFieldProps.pkgPath,
-		f.pkgPath,
-		"expected package path values were not equal. expected %s got %s",
-		expFieldProps.pkgPath,
-		f.pkgPath,
-	)
-
 	// some old go types are uncloneable and we just ignore
 	// them here. will be killed once we clean this up
 	_, ok := f.fieldType.(enttype.UncloneableType)
@@ -398,70 +392,4 @@ func testGraphQLType(t *testing.T, f *Field, expectedType string) {
 		expectedType,
 		f.GetGraphQLTypeForField(),
 	)
-}
-
-func testStructType(t *testing.T, f *Field, expectedType string) {
-	typ := GetNilableGoType(f)
-	assert.Equal(
-		t,
-		expectedType,
-		typ,
-		"expected type in struct definition for field %T to be %s, got %s instead",
-		f.fieldType,
-		expectedType,
-		typ,
-	)
-}
-
-func testColName(t *testing.T, f *Field, expectedColName string) {
-	assert.Equal(
-		t,
-		expectedColName,
-		f.GetDbColName(),
-		"expected col name for field %s to be %s, got %s instead",
-		f.FieldName,
-		expectedColName,
-		f.GetDbColName(),
-	)
-
-	assert.Equal(
-		t,
-		strconv.Quote(expectedColName),
-		f.GetQuotedDBColName(),
-		"expected quoted col name for field %s to be %s, got %s instead",
-		f.FieldName,
-		strconv.Quote(expectedColName),
-		f.GetQuotedDBColName(),
-	)
-}
-
-var r *testsync.RunOnce
-var once sync.Once
-
-func getFieldInfoMap() *testsync.RunOnce {
-	once.Do(func() {
-		r = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
-			data := parsehelper.ParseFilesForTest(t, parsehelper.ParseFuncs(parsehelper.ParseStruct))
-
-			fieldInfo, err := GetFieldInfoForStruct(data.StructMap[configName], data.Info)
-
-			assert.Nil(t, err)
-			assert.NotNil(t, fieldInfo, "invalid fieldInfo retrieved")
-			return fieldInfo
-		})
-	})
-	return r
-}
-
-// in an ideal world, this is also in asttester but code duplication here is fine for now
-// don't wanna deal with untangling the circular dependencies by making this package field_test
-// because I like using private field Info to indicate expected behavior...
-// these 2 copied into action_test.go for now...
-func getTestFieldInfo(t *testing.T, configName string) *FieldInfo {
-	return getFieldInfoMap().Get(t, configName).(*FieldInfo)
-}
-
-func getTestFieldByName(t *testing.T, configName string, fieldName string) *Field {
-	fieldInfo := getTestFieldInfo(t, configName)
-	return fieldInfo.GetFieldByName(fieldName)
 }

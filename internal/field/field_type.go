@@ -3,9 +3,7 @@ package field
 import (
 	"errors"
 	"fmt"
-	"go/types"
 	"path"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -23,9 +21,7 @@ type Field struct {
 	// note that if this changes, need to update FieldEqual
 	// todo: abstract out these 2 also...
 	FieldName           string
-	tagMap              map[string]string
-	topLevelStructField bool       // id, updated_at, created_at no...
-	entType             types.Type // not all fields will have an entType. probably don't need this...
+	topLevelStructField bool // id, updated_at, created_at no...
 
 	fieldType enttype.TSGraphQLType // this is the underlying type for the field for graphql, db, etc
 	// in certain scenarios we need a different type for graphql vs typescript
@@ -63,12 +59,6 @@ type Field struct {
 
 	singleFieldPrimaryKey bool
 	inverseEdge           *edge.AssociationEdge
-	// this is the package path that should be imported when the field is rendered in the ent
-	// TODO use it
-	pkgPath string
-
-	// this is the package path of the datatype that referenced this field
-	dataTypePkgPath string
 
 	// these 3 should override exposeToActionsByDefault and topLevelStructField at some point since they're built to be reusable and work across types
 	disableUserEditable        bool
@@ -122,12 +112,6 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
 		patternName:                f.PatternName,
 		userConvert:                f.UserConvert,
-
-		// go specific things
-		entType:         f.GoType,
-		tagMap:          make(map[string]string),
-		pkgPath:         f.PkgPath,
-		dataTypePkgPath: f.DataTypePkgPath,
 	}
 
 	// todo need GoFieldName, TsFieldName, etc
@@ -146,25 +130,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		ret.dbName = strcase.ToSnake(ret.FieldName)
 	}
 
-	// override default tagMap if not nil
-	if f.TagMap != nil {
-		ret.tagMap = f.TagMap
-	}
-
-	// add db name to tag map regardless of source for now
-	ret.addTag("db", strconv.Quote(ret.dbName))
-
-	if ret.entType != nil {
-		if ret.nullable {
-			if err := ret.setFieldType(enttype.GetNullableType(ret.entType, true)); err != nil {
-				return nil, err
-			}
-		} else {
-			if err := ret.setFieldType(enttype.GetType(ret.entType)); err != nil {
-				return nil, err
-			}
-		}
-	} else if f.Type != nil {
+	if f.Type != nil {
 		typ, err := f.GetEntType(nodeName)
 		if err != nil {
 			return nil, err
@@ -252,15 +218,8 @@ func newField(cfg codegenapi.Config, fieldName string) *Field {
 		exposeToActionsByDefault: true,
 		dbName:                   strcase.ToSnake(fieldName),
 		graphQLName:              graphQLName,
-		tagMap:                   make(map[string]string),
 	}
-	// seed with db name
-	f.addTag("db", strconv.Quote(f.dbName))
 	return f
-}
-
-func (f *Field) addTag(key, value string) {
-	f.tagMap[key] = value
 }
 
 func (f *Field) GetDbColName() string {
@@ -268,8 +227,8 @@ func (f *Field) GetDbColName() string {
 }
 
 func (f *Field) GetQuotedDBColName() string {
-	// this works because there's enough places that need to quote this so easier to just get this from tagMap as long as we keep it there
-	return f.tagMap["db"]
+	// TODO audit this and verify
+	return strconv.Quote(f.dbName)
 }
 
 // We're going from field -> edge to be consistent and
@@ -513,26 +472,6 @@ func (f *Field) ForceOptionalInAction() bool {
 
 func (f *Field) DefaultValue() *string {
 	return f.defaultValue
-}
-
-func (f *Field) PkgPath() string {
-	return f.pkgPath
-}
-
-func (f *Field) GetFieldTag() string {
-	// convert the map back to the struct tag string format
-	var tags []string
-	for key, value := range f.tagMap {
-		// TODO: abstract this out better. only specific tags should we written to the ent
-		if key == "db" || key == "graphql" {
-			tags = append(tags, key+":"+value)
-		}
-	}
-	if len(tags) == 0 {
-		return ""
-	}
-	sort.Strings(tags)
-	return "`" + strings.Join(tags, " ") + "`"
 }
 
 // TODO add GoFieldName and kill FieldName as public...
@@ -999,14 +938,9 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		derivedWhenEmbedded:        f.derivedWhenEmbedded,
 		patternName:                f.patternName,
 
-		// go specific things
-		entType: f.entType,
 		// can't just clone this. have to update this...
 		fieldType:        f.fieldType,
 		graphqlFieldType: f.graphqlFieldType,
-		tagMap:           f.tagMap,
-		pkgPath:          f.pkgPath,
-		dataTypePkgPath:  f.dataTypePkgPath,
 
 		// derived fields
 		fkey:      f.fkey,
