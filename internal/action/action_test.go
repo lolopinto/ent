@@ -1,29 +1,25 @@
 package action_test
 
 import (
-	"sync"
 	"testing"
 
-	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
-	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
-	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
-	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
-	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
+	"github.com/lolopinto/ent/internal/testingutils/testmodel"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRequiredField(t *testing.T) {
-	f := getFieldFromSchema(t, "Account", "LastName")
-	f2 := getFieldFromSchema(t, "Account", "Bio")
+	f := testmodel.GetFieldFromSchema(t, "Account", "LastName")
+	f2 := testmodel.GetFieldFromSchema(t, "Account", "Bio")
 
-	a := getActionFromSchema(t, "Account", "CreateAccountAction")
-	a2 := getActionFromSchema(t, "Account", "EditAccountAction")
+	a := testmodel.GetActionFromSchema(t, "Account", "CreateAccountAction")
+	a2 := testmodel.GetActionFromSchema(t, "Account", "EditAccountAction")
 
 	assert.True(t, action.IsRequiredField(a, f), "LastName field not required in CreateAction as expected")
 	assert.False(t, action.IsRequiredField(a2, f), "LastName field required in EditAction not expected")
@@ -32,11 +28,11 @@ func TestRequiredField(t *testing.T) {
 }
 
 func TestEdgeActions(t *testing.T) {
-	edge := getEdgeFromSchema(t, "Account", "Folders")
+	edge := testmodel.GetEdgeFromSchema(t, "Account", "Folders")
 	// 2 actions!
 	assert.Equal(t, len(edge.EdgeActions), 2)
 
-	actionInfo := getActionInfoFromSchema(t, "Account")
+	actionInfo := testmodel.GetActionInfoFromSchema(t, "Account")
 
 	var testCases = []struct {
 		actionName       string
@@ -96,13 +92,13 @@ func TestEdgeActions(t *testing.T) {
 }
 
 func TestEdgeGroupActions(t *testing.T) {
-	edgeInfo := getEdgeInfoFromSchema(t, "Account")
+	edgeInfo := testmodel.GetEdgeInfoFromSchema(t, "Account")
 	edgeGroup := edgeInfo.GetAssociationEdgeGroupByStatusName("FriendshipStatus")
 	assert.NotNil(t, edgeGroup)
 
 	assert.Equal(t, len(edgeGroup.EdgeActions), 1)
 
-	actionInfo := getActionInfoFromSchema(t, "Account")
+	actionInfo := testmodel.GetActionInfoFromSchema(t, "Account")
 
 	assert.NotNil(
 		t,
@@ -1183,257 +1179,4 @@ func verifyNonEntFields(t *testing.T, nonEntFields []*field.NonEntField, expFiel
 		require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.GetFieldType().GetGraphQLType(), "graphql type %s not equal. idx %d", fieldName, idx)
 		require.Equal(t, actionOnlyField.typ.tsType, nonEntField.GetGraphQLFieldType().GetTSType(), "ts type %s not equal. idx %d", fieldName, idx)
 	}
-}
-
-var rSchema *testsync.RunOnce
-
-var once sync.Once
-
-func initSyncs() {
-	once.Do(func() {
-
-		// TODO move this out of here into somewhere central...
-		// this starts the process of converting the go model in internal/testdata/models/configs/ into new API format instead of storing as-is
-		rSchema = testsync.NewRunOnce(func(t *testing.T, _ string) interface{} {
-			loginsServerDefault := "0"
-
-			s, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, &input.Schema{
-				Nodes: map[string]*input.Node{
-					"Account": {
-						Fields: []*input.Field{
-							{
-								Name: "id",
-								Type: &input.FieldType{
-									DBType: input.UUID,
-								},
-								PrimaryKey: true,
-							},
-							{
-								Name: "createdAt",
-								Type: &input.FieldType{
-									DBType: input.Timestamp,
-								},
-							},
-							{
-								Name: "updatedAt",
-								Type: &input.FieldType{
-									DBType: input.Timestamp,
-								},
-							},
-							{
-								Name: "FirstName",
-								Type: &input.FieldType{
-									DBType: input.String,
-								},
-							},
-							{
-								Name: "LastName",
-								Type: &input.FieldType{
-									DBType: input.String,
-								},
-								Index: true,
-							},
-							{
-								Name: "PhoneNumber",
-								Type: &input.FieldType{
-									DBType: input.String,
-								},
-								Unique: true,
-							},
-							{
-								Name: "NumberOfLogins",
-								Type: &input.FieldType{
-									DBType: input.Int,
-								},
-								HideFromGraphQL: true,
-								ServerDefault:   &loginsServerDefault,
-							},
-							{
-								Name: "LastLoginAt",
-								Type: &input.FieldType{
-									DBType: input.String,
-								},
-								StorageKey:  "last_login_time",
-								GraphQLName: "lastLoginTime",
-							},
-							{
-								Name: "Bio",
-								Type: &input.FieldType{
-									DBType: input.String,
-								},
-								Nullable: true,
-							},
-							{
-								Name: "DateOfBirth",
-								Type: &input.FieldType{
-									DBType: input.Timestamp,
-								},
-								Nullable: true,
-							},
-							{
-								Name: "ShowBioOnProfile",
-								Type: &input.FieldType{
-									DBType: input.Boolean,
-								},
-								Nullable: true,
-							},
-						},
-						TableName: "accounts",
-						Actions: []*input.Action{
-							{
-								Operation: ent.CreateAction,
-							},
-							{
-								Operation: ent.EditAction,
-							},
-						},
-						AssocEdges: []*input.AssocEdge{
-							{
-								Name: "Folders",
-								EdgeActions: []*input.EdgeAction{
-									{
-										Operation:         ent.AddEdgeAction,
-										CustomActionName:  "AccountAddFolderAction",
-										CustomGraphQLName: "accountFolderAdd",
-									},
-									{
-										Operation: ent.RemoveEdgeAction,
-									},
-								},
-							},
-
-							// TODO TodosAssoc
-						},
-						AssocEdgeGroups: []*input.AssocEdgeGroup{
-							{
-								Name:            "Friendships",
-								GroupStatusName: "FriendshipStatus",
-								AssocEdges: []*input.AssocEdge{
-									{
-										Name:       "FriendRequests",
-										SchemaName: "Account",
-										InverseEdge: &input.InverseAssocEdge{
-											Name: "FriendRequestsReceived",
-										},
-									},
-									{
-										Name:       "Friends",
-										SchemaName: "Account",
-										Symmetric:  true,
-									},
-								},
-								EdgeActions: []*input.EdgeAction{
-									{
-										Operation:         ent.AddEdgeAction,
-										CustomActionName:  "AccountFriendshipStatusAction",
-										CustomGraphQLName: "accountSetFriendshipStatus",
-									},
-								},
-							},
-						},
-					},
-					"Folder": {
-						Fields: []*input.Field{
-							{
-								Name: "id",
-								Type: &input.FieldType{
-									DBType: input.UUID,
-								},
-								PrimaryKey: true,
-							},
-							{
-								Name: "createdAt",
-								Type: &input.FieldType{
-									DBType: input.Timestamp,
-								},
-							},
-							{
-								Name: "updatedAt",
-								Type: &input.FieldType{
-									DBType: input.Timestamp,
-								},
-							},
-							{
-								Name: "Name",
-								Type: &input.FieldType{
-									DBType: input.String,
-								},
-							},
-							{
-								Name: "AccountID",
-								Type: &input.FieldType{
-									DBType: input.UUID,
-								},
-								FieldEdge: &input.FieldEdge{
-									Schema: "Account",
-									InverseEdge: &input.InverseFieldEdge{
-										Name: "Folders",
-									},
-								},
-							},
-							{
-								Name: "NumberOfFiles",
-								Type: &input.FieldType{
-									DBType: input.Int,
-								},
-							},
-						},
-						// TODO edges
-					},
-				},
-			}, base.TypeScript)
-			require.Nil(t, err)
-			return s
-		})
-	})
-}
-
-func getSchema(t *testing.T) *schema.Schema {
-	initSyncs()
-	return rSchema.Get(t, "").(*schema.Schema)
-}
-
-func getFieldFromSchema(t *testing.T, nodeName, fieldName string) *field.Field {
-	s := getSchema(t)
-	info := s.Nodes[nodeName+"Config"]
-	require.NotNil(t, info)
-	f := info.NodeData.FieldInfo.GetFieldByName(fieldName)
-	require.NotNil(t, f)
-	return f
-}
-
-func getActionFromSchema(t *testing.T, nodeName, actionName string) action.Action {
-	s := getSchema(t)
-	info := s.Nodes[nodeName+"Config"]
-	require.NotNil(t, info)
-	a := info.NodeData.ActionInfo.GetByName(actionName)
-	require.NotNil(t, a)
-	return a
-}
-
-func getActionInfoFromSchema(t *testing.T, nodeName string) *action.ActionInfo {
-	s := getSchema(t)
-	info := s.Nodes[nodeName+"Config"]
-	require.NotNil(t, info)
-	actionInfo := info.NodeData.ActionInfo
-	require.NotNil(t, actionInfo)
-	return actionInfo
-}
-
-func getEdgeFromSchema(t *testing.T, nodeName, edgeName string) *edge.AssociationEdge {
-	s := getSchema(t)
-	info := s.Nodes[nodeName+"Config"]
-	require.NotNil(t, info)
-	edge := info.NodeData.EdgeInfo.GetAssociationEdgeByName(edgeName)
-	require.NotNil(t, edge)
-	return edge
-}
-
-func getEdgeInfoFromSchema(t *testing.T, nodeName string) *edge.EdgeInfo {
-	s := getSchema(t)
-	info := s.Nodes[nodeName+"Config"]
-	require.NotNil(t, info)
-	edgeInfo := info.NodeData.EdgeInfo
-	require.NotNil(t, edgeInfo)
-	return edgeInfo
 }

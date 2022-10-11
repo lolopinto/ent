@@ -239,7 +239,7 @@ func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldNa
 		validSchema)
 }
 
-func getFieldEdge(cfg codegenapi.Config,
+func GetFieldEdge(cfg codegenapi.Config,
 	fieldName string,
 	fieldEdgeInfo *base.FieldEdgeInfo,
 	nullable bool,
@@ -311,7 +311,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 	fieldType enttype.EntType,
 	validSchema func(str string) bool,
 ) error {
-	edge, err := getFieldEdge(cfg, fieldName, fieldEdgeInfo, nullable, fieldType)
+	edge, err := GetFieldEdge(cfg, fieldName, fieldEdgeInfo, nullable, fieldType)
 	if err != nil || edge == nil {
 		return err
 	}
@@ -322,7 +322,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 	return e.addEdge(edge)
 }
 
-func getForeignKeyEdge(cfg codegenapi.Config, dbColName, edgeName, nodeName, sourceNodeName string) *ForeignKeyEdge {
+func GetForeignKeyEdge(cfg codegenapi.Config, dbColName, edgeName, nodeName, sourceNodeName string) *ForeignKeyEdge {
 	return &ForeignKeyEdge{
 		SourceNodeName: sourceNodeName,
 		destinationEdge: destinationEdge{
@@ -337,7 +337,7 @@ func getForeignKeyEdge(cfg codegenapi.Config, dbColName, edgeName, nodeName, sou
 }
 
 func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(cfg codegenapi.Config, dbColName, edgeName, nodeName string) error {
-	edge := getForeignKeyEdge(cfg, dbColName, edgeName, nodeName, e.SourceNodeName)
+	edge := GetForeignKeyEdge(cfg, dbColName, edgeName, nodeName, e.SourceNodeName)
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.destinationEdgesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
@@ -376,7 +376,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 	return e.addEdge(edge)
 }
 
-func getIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
+func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edgeName := inflection.Plural(nodeName)
 	if polymorphic != nil && polymorphic.Name != "" {
@@ -402,7 +402,7 @@ func getIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeNam
 }
 
 func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
-	edge := getIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, polymorphic, foreignNode)
+	edge := GetIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, polymorphic, foreignNode)
 	edgeName := edge.GetEdgeName()
 	e.destinationEdgesMap[edgeName] = edge
 	e.DestinationEdges = append(e.DestinationEdges, edge)
@@ -611,12 +611,21 @@ var _ PluralEdge = &ForeignKeyEdge{}
 var _ ConnectionEdge = &ForeignKeyEdge{}
 var _ IndexedConnectionEdge = &ForeignKeyEdge{}
 
+type DestinationEdgeInterface interface {
+	UniqueEdge() bool
+	QuotedDBColName() string
+	GetEntConfig() *schemaparser.EntConfigInfo
+	GetNodeInfo() nodeinfo.NodeInfo
+}
+
 type destinationEdge struct {
 	// note that if anything is changed here, need to update destinationEdgeEqual() in compare_edge.go
 	commonEdgeInfo
 	quotedDbColName string
 	unique          bool
 }
+
+var _ DestinationEdgeInterface = &destinationEdge{}
 
 func (e destinationEdge) Singular() string {
 	return inflection.Singular(e.EdgeName)
@@ -1114,7 +1123,7 @@ func EdgeInfoFromInput(cfg codegenapi.Config, packageName string, node *input.No
 	}
 
 	for _, edgeGroup := range node.AssocEdgeGroups {
-		group, err := assocEdgeGroupFromInput(cfg, packageName, node, edgeGroup, edgeInfo)
+		group, err := AssocEdgeGroupFromInput(cfg, packageName, node, edgeGroup, edgeInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -1154,6 +1163,7 @@ func ForceEdgePolymorphic() func(*opts) {
 		o.forcePolymorphic = true
 	}
 }
+
 func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.AssocEdge, fns ...func(*opts)) (*AssociationEdge, error) {
 	assocEdge := &AssociationEdge{
 		Symmetric:          edge.Symmetric,
@@ -1280,7 +1290,7 @@ func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.A
 	return assocEdge, nil
 }
 
-func assocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *input.Node, edgeGroup *input.AssocEdgeGroup, edgeInfo *EdgeInfo) (*AssociationEdgeGroup, error) {
+func AssocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *input.Node, edgeGroup *input.AssocEdgeGroup, edgeInfo *EdgeInfo) (*AssociationEdgeGroup, error) {
 	assocEdgeGroup := &AssociationEdgeGroup{
 		GroupName:         edgeGroup.Name,
 		GroupStatusName:   edgeGroup.GroupStatusName,
@@ -1446,7 +1456,7 @@ func (g *parseEdgeGraph) RunLoop() error {
 	return g.RunQueuedUpItems()
 }
 
-func getCommonEdgeInfoForTest(edgeName string,
+func GetCommonEdgeInfoForTest(edgeName string,
 	entConfig *schemaparser.EntConfigInfo,
 ) commonEdgeInfo {
 	return getCommonEdgeInfo(

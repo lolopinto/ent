@@ -233,7 +233,7 @@ func inverseAssocEdgeEqual(existing, inverseEdge *InverseAssocEdge) bool {
 		existing.EdgeConst == inverseEdge.EdgeConst
 }
 
-func compareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
+func CompareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
 	var ret []change.Change
 	if !foreignKeyEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
@@ -257,7 +257,7 @@ func destinationEdgeEqual(existingEdge, edge destinationEdge) bool {
 
 }
 
-func compareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
+func CompareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
 	var ret []change.Change
 	if !indexedEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
@@ -277,7 +277,7 @@ func indexedEdgeEqual(existingEdge, edge *IndexedEdge) bool {
 		destinationEdgeEqual(existingEdge.destinationEdge, edge.destinationEdge)
 }
 
-func compareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
+func CompareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
 	var ret []change.Change
 	if !fieldEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
