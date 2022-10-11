@@ -22,7 +22,6 @@ func TestIDField(t *testing.T) {
 			FieldName:                "ID",
 			dbName:                   "id",
 			graphQLName:              "id",
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 		},
@@ -44,7 +43,6 @@ func TestIntField(t *testing.T) {
 			FieldName:                "InvitesLeft",
 			dbName:                   "invites_left",
 			graphQLName:              "numInvitesLeft",
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 		},
@@ -68,7 +66,6 @@ func TestStringField(t *testing.T) {
 			dbName:                   "email",
 			graphQLName:              "emailAddress",
 			unique:                   true,
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 		},
@@ -90,7 +87,6 @@ func TestNullableStringField(t *testing.T) {
 			FieldName:                "Bio",
 			dbName:                   "bio",
 			graphQLName:              "bio",
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			nullable:                 true,
@@ -113,7 +109,6 @@ func TestFloatField(t *testing.T) {
 			FieldName:                "Balance",
 			dbName:                   "balance",
 			graphQLName:              "balance",
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			nullable:                 true,
@@ -139,7 +134,6 @@ func TestBoolField(t *testing.T) {
 			FieldName:                "ShowBioOnProfile",
 			dbName:                   "show_bio",
 			graphQLName:              "showBioOnProfile",
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			nullable:                 true,
@@ -162,7 +156,6 @@ func TestTimeField(t *testing.T) {
 			FieldName:                "StartTime",
 			dbName:                   "start_time",
 			graphQLName:              "startTime",
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			index:                    true,
@@ -186,7 +179,6 @@ func TestStringWithMoreCustomizationsField(t *testing.T) {
 			FieldName:                "LastName",
 			dbName:                   "last_name",
 			graphQLName:              "lastName",
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			nullable:                 true,
@@ -210,7 +202,6 @@ func TestHiddenGraphQLField(t *testing.T) {
 			FieldName:                "LastName",
 			dbName:                   "last_name",
 			graphQLName:              "lastName",
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			hideFromGraphQL:          true,
@@ -236,7 +227,6 @@ func TestForeignKey(t *testing.T) {
 			FieldName:                "UserID",
 			dbName:                   "user_id",
 			graphQLName:              "userID", // probably not exposed to gql
-			topLevelStructField:      true,
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			fkey: &ForeignKeyInfo{
@@ -310,16 +300,6 @@ func testField(t *testing.T, f, expFieldProps *Field) {
 		"expected db field to be %s, got %s instead",
 		expFieldProps.dbName,
 		f.dbName,
-	)
-
-	structField := f.TopLevelStructField()
-	assert.Equal(
-		t,
-		expFieldProps.topLevelStructField,
-		structField,
-		"expected top level struct field to be %v, got %v instead",
-		expFieldProps.topLevelStructField,
-		structField,
 	)
 
 	dbColumn := f.CreateDBColumn()

@@ -54,8 +54,6 @@ func compareType(t1, t2 enttype.TSGraphQLType) bool {
 
 func FieldEqual(existing, field *Field) bool {
 	return existing.FieldName == field.FieldName &&
-		// ignore entType, tagMap, pkgPath, dataTypePkgPath since all go specific
-		existing.topLevelStructField == field.topLevelStructField &&
 		compareType(existing.fieldType, field.fieldType) &&
 		compareType(existing.graphqlFieldType, field.graphqlFieldType) &&
 		existing.dbColumn == field.dbColumn &&

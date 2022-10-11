@@ -20,8 +20,7 @@ import (
 type Field struct {
 	// note that if this changes, need to update FieldEqual
 	// todo: abstract out these 2 also...
-	FieldName           string
-	topLevelStructField bool // id, updated_at, created_at no...
+	FieldName string
 
 	fieldType enttype.TSGraphQLType // this is the underlying type for the field for graphql, db, etc
 	// in certain scenarios we need a different type for graphql vs typescript
@@ -60,7 +59,7 @@ type Field struct {
 	singleFieldPrimaryKey bool
 	inverseEdge           *edge.AssociationEdge
 
-	// these 3 should override exposeToActionsByDefault and topLevelStructField at some point since they're built to be reusable and work across types
+	// these 3 should override exposeToActionsByDefault
 	disableUserEditable        bool
 	disableUserGraphQLEditable bool
 	hasDefaultValueOnCreate    bool
@@ -99,7 +98,6 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		graphQLName:                f.GraphQLName,
 		defaultValue:               f.ServerDefault,
 		unique:                     f.Unique,
-		topLevelStructField:        true,
 		dbColumn:                   true,
 		exposeToActionsByDefault:   true,
 		singleFieldPrimaryKey:      f.PrimaryKey,
@@ -343,10 +341,6 @@ func (f *Field) ExposeToActionsByDefault() bool {
 	return f.exposeToActionsByDefault
 }
 
-func (f *Field) TopLevelStructField() bool {
-	return f.topLevelStructField
-}
-
 func (f *Field) CreateDBColumn() bool {
 	return f.dbColumn
 }
@@ -386,9 +380,6 @@ func (f *Field) FetchOnLoad() bool {
 }
 
 func (f *Field) IDField() bool {
-	if !f.topLevelStructField {
-		return false
-	}
 	// TOOD this needs a better name, way of figuring out etc
 	// TODO kill this and replace with EvolvedIDField
 	return strings.HasSuffix(f.FieldName, "ID") || strings.HasSuffix(f.FieldName, "_id")
@@ -899,7 +890,6 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		graphQLName:                f.graphQLName,
 		defaultValue:               f.defaultValue,
 		unique:                     f.unique,
-		topLevelStructField:        f.topLevelStructField,
 		dbColumn:                   f.dbColumn,
 		exposeToActionsByDefault:   f.exposeToActionsByDefault,
 		singleFieldPrimaryKey:      f.singleFieldPrimaryKey,
