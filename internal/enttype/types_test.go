@@ -36,27 +36,6 @@ type expType struct {
 	unionFields         []*input.Field
 }
 
-func TestStringType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() string {
-	return ""
-	}`)
-
-	assert.IsType(t, &enttype.StringType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.Text()",
-		graphql: "String!",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLString"),
-		},
-		nullableType: &enttype.NullableStringType{},
-		tsType:       "string",
-		importType:   &enttype.StringImport{},
-	}, ret)
-}
-
 func TestCustomTypes(t *testing.T) {
 	testTypeDirectly(
 		t,
@@ -152,310 +131,255 @@ func TestCustomTypes(t *testing.T) {
 	)
 }
 
-func TestNullableStringType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() *string {
-	return nil
-	}`)
-
-	assert.IsType(t, &enttype.NullableStringType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.Text()",
-		graphql: "String",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLString"),
+func TestStringType(t *testing.T) {
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"string": {
+			&enttype.StringType{},
+			expType{
+				db:      "sa.Text()",
+				graphql: "String!",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
+				},
+				nullableType: &enttype.NullableStringType{},
+				tsType:       "string",
+				importType:   &enttype.StringImport{},
+			},
+			nil,
 		},
-		nonNullableType: &enttype.StringType{},
-		tsType:          "string | null",
-		importType:      &enttype.StringImport{},
-	}, ret)
-}
-
-func TestBoolType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() bool {
-	return true
-	}`)
-
-	assert.IsType(t, &enttype.BoolType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.Boolean()",
-		graphql: "Boolean!",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLBoolean"),
+		"nullable": {
+			&enttype.NullableStringType{},
+			expType{
+				db:      "sa.Text()",
+				graphql: "String",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLString"),
+				},
+				nonNullableType: &enttype.StringType{},
+				tsType:          "string | null",
+				importType:      &enttype.StringImport{},
+			},
+			nil,
 		},
-		nullableType:     &enttype.NullableBoolType{},
-		tsType:           "boolean",
-		convertSqliteFns: []string{"convertBool"},
-		importType:       &enttype.BoolImport{},
-	}, ret)
-}
-
-func TestNullableBoolType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() *bool {
-	return nil
-	}`)
-
-	assert.IsType(t, &enttype.NullableBoolType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.Boolean()",
-		graphql: "Boolean",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLBoolean"),
-		},
-		nonNullableType:  &enttype.BoolType{},
-		tsType:           "boolean | null",
-		convertSqliteFns: []string{"convertNullableBool"},
-		importType:       &enttype.BoolImport{},
-	}, ret)
-}
-
-func TestIDType(t *testing.T) {
-	testType(t, expType{
-		db:      "postgresql.UUID()",
-		graphql: "ID!",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLID"),
-		},
-		nullableType: &enttype.NullableIDType{},
-		tsType:       "ID",
-		tsTypeImports: []*tsimport.ImportPath{
-			tsimport.NewEntImportPath("ID"),
-		},
-		importType: &enttype.UUIDImport{},
-	}, returnType{
-		entType: &enttype.IDType{},
 	})
 }
 
-func TestNullableIDType(t *testing.T) {
-	testType(t, expType{
-		db:      "postgresql.UUID()",
-		graphql: "ID",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLID"),
+func TestBoolType(t *testing.T) {
+	testTypeDirectly(
+		t,
+		map[string]*typeTestCase{
+			"bool": {
+				&enttype.BoolType{},
+				expType{
+					db:      "sa.Boolean()",
+					graphql: "Boolean!",
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+						tsimport.NewGQLImportPath("GraphQLBoolean"),
+					},
+					nullableType:     &enttype.NullableBoolType{},
+					tsType:           "boolean",
+					convertSqliteFns: []string{"convertBool"},
+					importType:       &enttype.BoolImport{},
+				}, nil,
+			},
+			"nullable": {
+				&enttype.NullableBoolType{},
+				expType{
+					db:      "sa.Boolean()",
+					graphql: "Boolean",
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLImportPath("GraphQLBoolean"),
+					},
+					nonNullableType:  &enttype.BoolType{},
+					tsType:           "boolean | null",
+					convertSqliteFns: []string{"convertNullableBool"},
+					importType:       &enttype.BoolImport{},
+				},
+				nil,
+			},
 		},
-		nonNullableType: &enttype.IDType{},
-		tsType:          "ID | null",
-		tsTypeImports: []*tsimport.ImportPath{
-			tsimport.NewEntImportPath("ID"),
+	)
+}
+
+func TestIDType(t *testing.T) {
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"id": {
+			&enttype.IDType{},
+			expType{
+				db:      "postgresql.UUID()",
+				graphql: "ID!",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLID"),
+				},
+				nullableType: &enttype.NullableIDType{},
+				tsType:       "ID",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewEntImportPath("ID"),
+				},
+				importType: &enttype.UUIDImport{},
+			},
+			nil,
 		},
-		importType: &enttype.UUIDImport{},
-	}, returnType{
-		entType: &enttype.NullableIDType{},
+		"nullable": {
+			&enttype.NullableIDType{},
+			expType{
+				db:      "postgresql.UUID()",
+				graphql: "ID",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLID"),
+				},
+				nonNullableType: &enttype.IDType{},
+				tsType:          "ID | null",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewEntImportPath("ID"),
+				},
+				importType: &enttype.UUIDImport{},
+			}, nil,
+		},
 	})
 }
 
 func TestIntegerType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() int {
-	return 1
-	}`)
-
-	assert.IsType(t, &enttype.IntegerType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.Integer()",
-		graphql: "Int!",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLInt"),
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"int": {
+			&enttype.IntegerType{},
+			expType{
+				db:      "sa.Integer()",
+				graphql: "Int!",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLInt"),
+				},
+				nullableType: &enttype.NullableIntegerType{},
+				tsType:       "number",
+				importType:   &enttype.IntImport{},
+			}, nil,
 		},
-		nullableType: &enttype.NullableIntegerType{},
-		tsType:       "number",
-		importType:   &enttype.IntImport{},
-	}, ret)
+		"nullable": {
+			&enttype.NullableIntegerType{},
+			expType{
+				db:      "sa.Integer()",
+				graphql: "Int",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLInt"),
+				},
+				nonNullableType: &enttype.IntegerType{},
+				tsType:          "number | null",
+				importType:      &enttype.IntImport{},
+			}, nil,
+		},
+	})
+
 }
 
 func TestBigIntegerType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() int64 {
-	return 1
-	}`)
-
-	assert.IsType(t, &enttype.BigIntegerType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.BigInteger()",
-		graphql: "String!",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLString"),
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"bigint": {
+			&enttype.BigIntegerType{},
+			expType{
+				db:      "sa.BigInteger()",
+				graphql: "String!",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
+				},
+				nullableType:       &enttype.NullableBigIntegerType{},
+				tsType:             "BigInt",
+				importType:         &enttype.BigIntImport{},
+				convertSqliteFns:   []string{"BigInt"},
+				convertPostgresFns: []string{"BigInt"},
+			}, nil,
 		},
-		nullableType:       &enttype.NullableBigIntegerType{},
-		tsType:             "BigInt",
-		importType:         &enttype.BigIntImport{},
-		convertSqliteFns:   []string{"BigInt"},
-		convertPostgresFns: []string{"BigInt"},
-	}, ret)
-}
-
-func TestNullableIntegerType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() *int {
-	return nil
-	}`)
-
-	assert.IsType(t, &enttype.NullableIntegerType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.Integer()",
-		graphql: "Int",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLInt"),
+		"nullable": {
+			&enttype.NullableBigIntegerType{},
+			expType{
+				db:      "sa.BigInteger()",
+				graphql: "String",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLString"),
+				},
+				nonNullableType:    &enttype.BigIntegerType{},
+				tsType:             "BigInt | null",
+				importType:         &enttype.BigIntImport{},
+				convertSqliteFns:   []string{"BigInt"},
+				convertPostgresFns: []string{"BigInt"},
+			},
+			nil,
 		},
-		nonNullableType: &enttype.IntegerType{},
-		tsType:          "number | null",
-		importType:      &enttype.IntImport{},
-	}, ret)
+	})
 }
 
-func TestNullableBigIntegerType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() *int64 {
-	return nil
-	}`)
-
-	assert.IsType(t, &enttype.NullableBigIntegerType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.BigInteger()",
-		graphql: "String",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLString"),
+func TestFloatType(t *testing.T) {
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"float": {
+			&enttype.FloatType{},
+			expType{
+				db:      "sa.Float()",
+				graphql: "Float!",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLFloat"),
+				},
+				nullableType: &enttype.NullableFloatType{},
+				tsType:       "number",
+				importType:   &enttype.FloatImport{},
+			}, nil,
 		},
-		nonNullableType:    &enttype.BigIntegerType{},
-		tsType:             "BigInt | null",
-		importType:         &enttype.BigIntImport{},
-		convertSqliteFns:   []string{"BigInt"},
-		convertPostgresFns: []string{"BigInt"},
-	}, ret)
-}
-
-func TestFloat64Type(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() float64 {
-	return 1.0
-	}`)
-	testFloatType(t, ret)
-}
-
-func TestFloat32Type(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() float32 {
-	return 1.0
-	}`)
-	testFloatType(t, ret)
-}
-
-func testFloatType(t *testing.T, ret returnType) {
-	assert.IsType(t, &enttype.FloatType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.Float()",
-		graphql: "Float!",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLFloat"),
+		"nullable": {
+			&enttype.NullableFloatType{},
+			expType{
+				db:      "sa.Float()",
+				graphql: "Float",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLFloat"),
+				},
+				nonNullableType: &enttype.FloatType{},
+				tsType:          "number | null",
+				importType:      &enttype.FloatImport{},
+			}, nil,
 		},
-		nullableType: &enttype.NullableFloatType{},
-		tsType:       "number",
-		importType:   &enttype.FloatImport{},
-	}, ret)
-}
-
-func TestNullableFloat64Type(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() *float64 {
-	return nil
-	}`)
-	testNullableFloatType(t, ret)
-}
-
-func TestNullableFloat32Type(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-func f() *float32 {
-	return nil
-	}`)
-	testNullableFloatType(t, ret)
-}
-
-func testNullableFloatType(t *testing.T, ret returnType) {
-	assert.IsType(t, &enttype.NullableFloatType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.Float()",
-		graphql: "Float",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLFloat"),
-		},
-		nonNullableType: &enttype.FloatType{},
-		tsType:          "number | null",
-		importType:      &enttype.FloatImport{},
-	}, ret)
+	})
 }
 
 func TestTimestampType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-	import "time"
-
-func f() time.Time {
-	return time.Time{}
-	}`)
-
-	assert.IsType(t, &enttype.TimestampType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.TIMESTAMP()",
-		graphql: "Time!",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"timestamp": {
+			&enttype.TimestampType{},
+			expType{
+				db:      "sa.TIMESTAMP()",
+				graphql: "Time!",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+				},
+				nullableType:        &enttype.NullableTimestampType{},
+				defaultGQLFieldName: "time",
+				tsType:              "Date",
+				convertSqliteFns:    []string{"convertDate"},
+				importType:          &enttype.TimestampImport{},
+			},
+			nil,
 		},
-		nullableType:        &enttype.NullableTimestampType{},
-		defaultGQLFieldName: "time",
-		tsType:              "Date",
-		convertSqliteFns:    []string{"convertDate"},
-		importType:          &enttype.TimestampImport{},
-	}, ret)
-}
-
-func TestNullableTimestampType(t *testing.T) {
-	ret := getTestReturnType(t, `package main 
-
-	import "time"
-
-func f() *time.Time {
-	return nil
-	}`)
-
-	assert.IsType(t, &enttype.NullableTimestampType{}, ret.entType)
-	testType(t, expType{
-		db:      "sa.TIMESTAMP()",
-		graphql: "Time",
-		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+		"nullable": {
+			&enttype.NullableTimestampType{},
+			expType{
+				db:      "sa.TIMESTAMP()",
+				graphql: "Time",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+				},
+				nonNullableType:     &enttype.TimestampType{},
+				defaultGQLFieldName: "time",
+				tsType:              "Date | null",
+				convertSqliteFns:    []string{"convertNullableDate"},
+				importType:          &enttype.TimestampImport{},
+			}, nil,
 		},
-		nonNullableType:     &enttype.TimestampType{},
-		defaultGQLFieldName: "time",
-		tsType:              "Date | null",
-		convertSqliteFns:    []string{"convertNullableDate"},
-		importType:          &enttype.TimestampImport{},
-	}, ret)
-}
+	})
 
-type testCase struct {
-	code string
-	exp  expType
-	fn   func(ret *returnType, exp *expType)
 }
 
 func TestStringEnumType(t *testing.T) {
@@ -936,6 +860,7 @@ func testTypeDirectly(t *testing.T, testCases map[string]*typeTestCase) {
 			if tt.fn != nil {
 				tt.fn(&ret, &tt.exp)
 			}
+			// TODO kill returnType...
 			testType(t, tt.exp, ret)
 		})
 	}
@@ -972,6 +897,7 @@ func getTestReturnType(t *testing.T, code string) returnType {
 
 func testType(t *testing.T, exp expType, ret returnType) {
 	typ := ret.entType
+	// TODO when is this true?
 	if exp.graphqlPanics {
 		assert.Panics(t, func() { typ.GetGraphQLType() })
 	} else {
