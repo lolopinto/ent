@@ -2,7 +2,6 @@ package action
 
 import (
 	"fmt"
-	"go/ast"
 	"regexp"
 	"sort"
 	"strconv"
@@ -21,7 +20,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
 
-	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/field"
 )
 
@@ -350,32 +348,6 @@ type RemoveEdgeAction struct {
 type EdgeGroupAction struct {
 	commonActionInfo
 	mutationExistingObjAction
-}
-
-func ParseActions(cfg codegenapi.Config, nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
-	// get the actions in the function
-	elts := astparser.GetEltsInFunc(fn)
-
-	var inputActions []*input.Action
-	for _, expr := range elts {
-		result, err := astparser.Parse(expr)
-		if err != nil {
-			return nil, err
-		}
-
-		typeName := result.GetTypeName()
-		if typeName != "ent.ActionConfig" {
-			return nil, fmt.Errorf("expected type name to ent.ActionConfig, got %s instead", typeName)
-		}
-
-		inputAction, err := getInputAction(nodeName, result)
-		if err != nil {
-			return nil, err
-		}
-		inputActions = append(inputActions, inputAction)
-	}
-
-	return ParseFromInput(cfg, nodeName, inputActions, fieldInfo, edgeInfo, lang)
 }
 
 type option struct {

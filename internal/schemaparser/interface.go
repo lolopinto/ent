@@ -211,23 +211,6 @@ func FindFunction(code, pkgName, fnName string) (*packages.Package, *ast.FuncDec
 	return pkg, fn, nil
 }
 
-func FindFunctions(code, pkgName string, fnNames ...string) (*packages.Package, map[string]*ast.FuncDecl, error) {
-	overlay := make(map[string]string)
-	overlay["code.go"] = code
-
-	parser := &SourceSchemaParser{
-		Sources:     overlay,
-		PackageName: pkgName,
-	}
-	fss := make([]FunctionSearch, len(fnNames))
-	for idx, fnName := range fnNames {
-		fss[idx] = FunctionSearch{
-			FnName: fnName,
-		}
-	}
-	return FindFunctionFromParser(parser, fss...)
-}
-
 func FindFunctionFromParser(parser Parser, fss ...FunctionSearch) (*packages.Package, map[string]*ast.FuncDecl, error) {
 	pkg, err := LoadPackage(parser)
 	if err != nil {

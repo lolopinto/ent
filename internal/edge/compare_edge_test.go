@@ -9,7 +9,6 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,7 +22,7 @@ func TestSimpleAssocEdge(t *testing.T) {
 		EdgeConst:   "UserToCreatedEventsEdge",
 		TsEdgeConst: "UserToCreatedEvents",
 		TableName:   "user_created_events_edges",
-	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("CreatedEvents", schemaparser.GetEntConfigFromName("Event"))))
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("CreatedEvents", edge.GetEntConfigFromName("Event"))))
 
 	testAssocEdge(t, edge1, edge2)
 
@@ -37,13 +36,13 @@ func TestUnequalAssocEdge(t *testing.T) {
 		TsEdgeConst: "UserToCreatedEvents",
 		TableName:   "user_created_events_edges",
 	}).SetCommonEdgeInfo(
-		edge.GetCommonEdgeInfoForTest("CreatedEvents", schemaparser.GetEntConfigFromName("Event")),
+		edge.GetCommonEdgeInfoForTest("CreatedEvents", edge.GetEntConfigFromName("Event")),
 	)
 	edge2 := (&edge.AssociationEdge{
 		EdgeConst:   "UserToCreatedEventsEdge",
 		TsEdgeConst: "UserToCreatedEvents",
 		TableName:   "user_created_events_edges2",
-	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("CreatedEvents", schemaparser.GetEntConfigFromName("Event")))
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("CreatedEvents", edge.GetEntConfigFromName("Event")))
 
 	l := edge.CompareAssociationEdge(edge1, edge2)
 	require.Len(t, l, 1)
@@ -61,7 +60,7 @@ func TestSymmetricAssocEdge(t *testing.T) {
 		TsEdgeConst: "UserToFriends",
 		TableName:   "user_friends_edges",
 		Symmetric:   true,
-	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("Friends", schemaparser.GetEntConfigFromName("User"))))
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("Friends", edge.GetEntConfigFromName("User"))))
 
 	testAssocEdge(t, edge1, edge2)
 
@@ -84,8 +83,8 @@ func TestInverseAssocEdge(t *testing.T) {
 		TableName:   "user_friend_requests_sent_edges",
 		InverseEdge: (&edge.InverseAssocEdge{
 			EdgeConst: "UserToFriendRequestsReceivedEdge",
-		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User"))),
-	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsSent", schemaparser.GetEntConfigFromName("User"))))
+		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsReceived", edge.GetEntConfigFromName("User"))),
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsSent", edge.GetEntConfigFromName("User"))))
 
 	testAssocEdge(t, edge1, edge2)
 
@@ -100,8 +99,8 @@ func TestUnequalInverseAssocEdge(t *testing.T) {
 		TableName:   "user_friend_requests_sent_edges",
 		InverseEdge: (&edge.InverseAssocEdge{
 			EdgeConst: "UserToFriendRequestsReceivedEdge",
-		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User"))),
-	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")))
+		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsReceived", edge.GetEntConfigFromName("User"))),
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsSent", edge.GetEntConfigFromName("User")))
 
 	edge2 := (&edge.AssociationEdge{
 		EdgeConst:   "UserToFriendRequestsSentEdge",
@@ -109,8 +108,8 @@ func TestUnequalInverseAssocEdge(t *testing.T) {
 		TableName:   "user_friend_requests_sent_edges",
 		InverseEdge: (&edge.InverseAssocEdge{
 			EdgeConst: "UserToFriendRequestsReceivedEdge2",
-		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User"))),
-	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")))
+		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsReceived", edge.GetEntConfigFromName("User"))),
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsSent", edge.GetEntConfigFromName("User")))
 
 	l := edge.CompareAssociationEdge(edge1, edge2)
 	require.Len(t, l, 1)
@@ -136,8 +135,8 @@ func TestAssocEdgeWithPattern(t *testing.T) {
 		PatternName: "Likes",
 		InverseEdge: (&edge.InverseAssocEdge{
 			EdgeConst: "UserToLikedObjectsEdge",
-		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("likes", schemaparser.GetEntConfigFromName("User"))),
-	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("likers", schemaparser.GetEntConfigFromName("User"))).
+		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("likes", edge.GetEntConfigFromName("User"))),
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("likers", edge.GetEntConfigFromName("User"))).
 		SetOverridenEdgeName("UserToLikersEdge").
 		SetOverridenGraphQLName("UserToLikersConnection").
 		SetOverridenQueryName("UserToLikersQuery"),

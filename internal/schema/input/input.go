@@ -8,7 +8,6 @@ import (
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/enttype"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -455,18 +454,16 @@ func (f *Field) GetEntType(nodeName string) (enttype.TSGraphQLType, error) {
 
 type AssocEdge struct {
 	// Note that anytime anything changes here, have to update assocEdgeEqual in compare.go
-	Name        string            `json:"name,omitempty"`
-	SchemaName  string            `json:"schemaName,omitempty"`
-	Symmetric   bool              `json:"symmetric,omitempty"`
-	Unique      bool              `json:"unique,omitempty"`
-	TableName   string            `json:"tableName,omitempty"`
-	InverseEdge *InverseAssocEdge `json:"inverseEdge,omitempty"`
-	EdgeActions []*EdgeAction     `json:"edgeActions,omitempty"`
-	// Go specific
-	EntConfig       *schemaparser.EntConfigInfo `json:"-"`
-	HideFromGraphQL bool                        `json:"hideFromGraphQL,omitempty"`
-	EdgeConstName   string                      `json:"edgeConstName,omitempty"`
-	PatternName     string                      `json:"patternName,omitempty"`
+	Name            string            `json:"name,omitempty"`
+	SchemaName      string            `json:"schemaName,omitempty"`
+	Symmetric       bool              `json:"symmetric,omitempty"`
+	Unique          bool              `json:"unique,omitempty"`
+	TableName       string            `json:"tableName,omitempty"`
+	InverseEdge     *InverseAssocEdge `json:"inverseEdge,omitempty"`
+	EdgeActions     []*EdgeAction     `json:"edgeActions,omitempty"`
+	HideFromGraphQL bool              `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName   string            `json:"edgeConstName,omitempty"`
+	PatternName     string            `json:"patternName,omitempty"`
 	// do we need a flag to know it's a pattern's edge?
 	// PatternEdge
 }

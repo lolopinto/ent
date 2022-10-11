@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
@@ -18,67 +17,7 @@ import (
 	"github.com/lolopinto/ent/internal/tsimport"
 
 	"github.com/lolopinto/ent/internal/field"
-
-	"github.com/lolopinto/ent/internal/astparser"
 )
-
-// copied to internal/edge/edge.go
-func getActionOperationFromTypeName(typeName string) (ent.ActionOperation, error) {
-	switch typeName {
-	case "ent.CreateAction":
-		return ent.CreateAction, nil
-	case "ent.EditAction":
-		return ent.EditAction, nil
-	case "ent.DeleteAction":
-		return ent.DeleteAction, nil
-	case "ent.MutationsAction":
-		return ent.MutationsAction, nil
-	case "ent.AddEdgeAction":
-		return ent.AddEdgeAction, nil
-	case "ent.RemoveEdgeAction":
-		return ent.RemoveEdgeAction, nil
-	case "ent.EdgeGroupAction":
-		return ent.EdgeGroupAction, nil
-	}
-	return 0, fmt.Errorf("invalid action type passed %s", typeName)
-}
-
-func getInputAction(nodeName string, result *astparser.Result) (*input.Action, error) {
-	var action input.Action
-	for _, elem := range result.Elems {
-		if elem.Value == nil {
-			return nil, fmt.Errorf("elem with nil value")
-		}
-
-		switch elem.IdentName {
-		case "Action":
-			var err error
-			action.Operation, err = getActionOperationFromTypeName(elem.Value.GetTypeName())
-			if err != nil {
-				return nil, err
-			}
-
-		case "Fields":
-			for _, child := range elem.Value.Elems {
-				action.Fields = append(action.Fields, child.Literal)
-			}
-
-		case "CustomActionName":
-			action.CustomActionName = elem.Value.Literal
-
-		case "HideFromGraphQL":
-			action.HideFromGraphQL = astparser.IsTrueBooleanResult(elem.Value)
-
-		case "CustomGraphQLName":
-			action.CustomGraphQLName = elem.Value.Literal
-
-		case "CustomInputName":
-			action.CustomInputName = elem.Value.Literal
-		}
-	}
-
-	return &action, nil
-}
 
 func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input.Action, fieldInfo *field.FieldInfo, opt *option) ([]Action, error) {
 	// exposeToGraphQL is inverse of HideFromGraphQL

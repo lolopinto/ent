@@ -12,7 +12,6 @@ import (
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -894,8 +893,8 @@ func (e *CustomEdge) GetNodeInfo() nodeinfo.NodeInfo {
 	return nodeinfo.GetNodeInfo(e.Type)
 }
 
-func (e *CustomEdge) GetEntConfig() *schemaparser.EntConfigInfo {
-	return schemaparser.GetEntConfigFromName(e.Type)
+func (e *CustomEdge) GetEntConfig() *edge.EntConfigInfo {
+	return edge.GetEntConfigFromName(e.Type)
 }
 
 func (e *CustomEdge) GraphQLEdgeName() string {

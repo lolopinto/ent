@@ -1,7 +1,5 @@
 package edge
 
-import "github.com/lolopinto/ent/internal/schemaparser"
-
 func (edge *AssociationEdge) SetCommonEdgeInfo(c commonEdgeInfo) *AssociationEdge {
 	edge.commonEdgeInfo = c
 	return edge
@@ -34,7 +32,7 @@ func (edge *AssociationEdge) GetOverridenGraphQLName() string {
 	return edge.overridenGraphQLName
 }
 
-func (edge *AssociationEdge) GetEntConfig() *schemaparser.EntConfigInfo {
+func (edge *AssociationEdge) GetEntConfig() *EntConfigInfo {
 	return edge.entConfig
 }
 
