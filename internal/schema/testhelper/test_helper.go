@@ -80,9 +80,22 @@ func ParseSchemaForTest(t *testing.T, code map[string]string, lang base.Language
 	return s
 }
 
+func ParseSchemaForTestFixed(t *testing.T, code map[string]string, opts ...func(*Options)) *schema.Schema {
+	s, err := ParseSchemaForTestFull(t, code, base.TypeScript, opts...)
+	require.NoError(t, err)
+
+	require.NotNil(t, s)
+	return s
+}
+
 func ParseSchemaForTestFull(t *testing.T, code map[string]string, lang base.Language, opts ...func(*Options)) (*schema.Schema, error) {
 	inputSchema := ParseInputSchemaForTest(t, code, opts...)
 	return schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, lang)
+}
+
+func ParseSchemaForTestFullFixed(t *testing.T, code map[string]string, opts ...func(*Options)) (*schema.Schema, error) {
+	inputSchema := ParseInputSchemaForTest(t, code, opts...)
+	return schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.TypeScript)
 }
 
 func ParseActionInfoForTest(t *testing.T, code map[string]string, lang base.Language, nodeName string) *action.ActionInfo {

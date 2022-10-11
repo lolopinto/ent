@@ -340,7 +340,10 @@ func (s *Schema) getActionFromGraphQLName(graphQLName string) action.Action {
 func (s *Schema) GetAssocEdgeByName(entConfig, edgeName string) (*edge.AssociationEdge, error) {
 	info := s.Nodes[entConfig]
 	if info == nil {
-		return nil, errors.New("invalid EntConfig passed to getAssocEdgeByName")
+		info = s.Nodes[entConfig+"Config"]
+		if info == nil {
+			return nil, errors.New("invalid EntConfig passed to getAssocEdgeByName")
+		}
 	}
 	ret := info.NodeData.GetAssociationEdgeByName(edgeName)
 	if ret == nil {
@@ -352,7 +355,10 @@ func (s *Schema) GetAssocEdgeByName(entConfig, edgeName string) (*edge.Associati
 func (s *Schema) GetFieldByName(entConfig, fieldName string) (*field.Field, error) {
 	info := s.Nodes[entConfig]
 	if info == nil {
-		return nil, fmt.Errorf("invalid EntConfig %s passed to getFieldByName", entConfig)
+		info = s.Nodes[entConfig+"Config"]
+		if info == nil {
+			return nil, fmt.Errorf("invalid EntConfig %s passed to getFieldByName", entConfig)
+		}
 	}
 	ret := info.NodeData.GetFieldByName(fieldName)
 	if ret == nil {
