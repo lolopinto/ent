@@ -48,7 +48,7 @@ func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 	}
 
 	if !util.EnvIsTrue("DISABLE_SWC") {
-		cmdArgs = append(cmdArgs, "--swc")
+		// cmdArgs = append(cmdArgs, "--swc")
 	}
 
 	cmdArgs = append(

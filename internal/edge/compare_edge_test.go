@@ -1,4 +1,4 @@
-package edge
+package edge_test
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
+	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -13,65 +14,63 @@ import (
 )
 
 func TestSimpleAssocEdge(t *testing.T) {
-	edge, edge2 := createDuplicateAssocEdgeFromInput(t, "user", &input.AssocEdge{
+	edge1, edge2 := createDuplicateAssocEdgeFromInput(t, "user", &input.AssocEdge{
 		Name:       "CreatedEvents",
 		SchemaName: "Event",
 	})
 
-	testAssocEdge(t, edge, &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfoForTest("CreatedEvents", schemaparser.GetEntConfigFromName("Event")),
-		EdgeConst:      "UserToCreatedEventsEdge",
-		TsEdgeConst:    "UserToCreatedEvents",
-		TableName:      "user_created_events_edges",
-	})
+	testAssocEdge(t, edge1, (&edge.AssociationEdge{
+		EdgeConst:   "UserToCreatedEventsEdge",
+		TsEdgeConst: "UserToCreatedEvents",
+		TableName:   "user_created_events_edges",
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("CreatedEvents", schemaparser.GetEntConfigFromName("Event"))))
 
-	testAssocEdge(t, edge, edge2)
+	testAssocEdge(t, edge1, edge2)
 
-	l := CompareAssociationEdge(edge, edge2)
+	l := edge.CompareAssociationEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
 func TestUnequalAssocEdge(t *testing.T) {
-	edge := &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfoForTest("CreatedEvents", schemaparser.GetEntConfigFromName("Event")),
-		EdgeConst:      "UserToCreatedEventsEdge",
-		TsEdgeConst:    "UserToCreatedEvents",
-		TableName:      "user_created_events_edges",
-	}
-	edge2 := &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfoForTest("CreatedEvents", schemaparser.GetEntConfigFromName("Event")),
-		EdgeConst:      "UserToCreatedEventsEdge",
-		TsEdgeConst:    "UserToCreatedEvents",
-		TableName:      "user_created_events_edges2",
-	}
+	edge1 := (&edge.AssociationEdge{
+		EdgeConst:   "UserToCreatedEventsEdge",
+		TsEdgeConst: "UserToCreatedEvents",
+		TableName:   "user_created_events_edges",
+	}).SetCommonEdgeInfo(
+		edge.GetCommonEdgeInfoForTest("CreatedEvents", schemaparser.GetEntConfigFromName("Event")),
+	)
+	edge2 := (&edge.AssociationEdge{
+		EdgeConst:   "UserToCreatedEventsEdge",
+		TsEdgeConst: "UserToCreatedEvents",
+		TableName:   "user_created_events_edges2",
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("CreatedEvents", schemaparser.GetEntConfigFromName("Event")))
 
-	l := CompareAssociationEdge(edge, edge2)
+	l := edge.CompareAssociationEdge(edge1, edge2)
 	require.Len(t, l, 1)
 }
 
 func TestSymmetricAssocEdge(t *testing.T) {
-	edge, edge2 := createDuplicateAssocEdgeFromInput(t, "user", &input.AssocEdge{
+	edge1, edge2 := createDuplicateAssocEdgeFromInput(t, "user", &input.AssocEdge{
 		Name:       "Friends",
 		SchemaName: "User",
 		Symmetric:  true,
 	})
 
-	testAssocEdge(t, edge, &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfoForTest("Friends", schemaparser.GetEntConfigFromName("User")),
-		EdgeConst:      "UserToFriendsEdge",
-		TsEdgeConst:    "UserToFriends",
-		TableName:      "user_friends_edges",
-		Symmetric:      true,
-	})
+	testAssocEdge(t, edge1, (&edge.AssociationEdge{
+		EdgeConst:   "UserToFriendsEdge",
+		TsEdgeConst: "UserToFriends",
+		TableName:   "user_friends_edges",
+		Symmetric:   true,
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("Friends", schemaparser.GetEntConfigFromName("User"))))
 
-	testAssocEdge(t, edge, edge2)
+	testAssocEdge(t, edge1, edge2)
 
-	l := CompareAssociationEdge(edge, edge2)
+	l := edge.CompareAssociationEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
 func TestInverseAssocEdge(t *testing.T) {
-	edge, edge2 := createDuplicateAssocEdgeFromInput(t, "user", &input.AssocEdge{
+	edge1, edge2 := createDuplicateAssocEdgeFromInput(t, "user", &input.AssocEdge{
 		Name:       "FriendRequestsSent",
 		SchemaName: "User",
 		InverseEdge: &input.InverseAssocEdge{
@@ -79,52 +78,46 @@ func TestInverseAssocEdge(t *testing.T) {
 		},
 	})
 
-	testAssocEdge(t, edge, &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfoForTest("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")),
-		EdgeConst:      "UserToFriendRequestsSentEdge",
-		TsEdgeConst:    "UserToFriendRequestsSent",
-		TableName:      "user_friend_requests_sent_edges",
-		InverseEdge: &InverseAssocEdge{
-			commonEdgeInfo: getCommonEdgeInfoForTest("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User")),
-			EdgeConst:      "UserToFriendRequestsReceivedEdge",
-		},
-	})
+	testAssocEdge(t, edge1, (&edge.AssociationEdge{
+		EdgeConst:   "UserToFriendRequestsSentEdge",
+		TsEdgeConst: "UserToFriendRequestsSent",
+		TableName:   "user_friend_requests_sent_edges",
+		InverseEdge: (&edge.InverseAssocEdge{
+			EdgeConst: "UserToFriendRequestsReceivedEdge",
+		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User"))),
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsSent", schemaparser.GetEntConfigFromName("User"))))
 
-	testAssocEdge(t, edge, edge2)
+	testAssocEdge(t, edge1, edge2)
 
-	l := CompareAssociationEdge(edge, edge2)
+	l := edge.CompareAssociationEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
 func TestUnequalInverseAssocEdge(t *testing.T) {
-	edge := &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfoForTest("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")),
-		EdgeConst:      "UserToFriendRequestsSentEdge",
-		TsEdgeConst:    "UserToFriendRequestsSent",
-		TableName:      "user_friend_requests_sent_edges",
-		InverseEdge: &InverseAssocEdge{
-			commonEdgeInfo: getCommonEdgeInfoForTest("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User")),
-			EdgeConst:      "UserToFriendRequestsReceivedEdge",
-		},
-	}
+	edge1 := (&edge.AssociationEdge{
+		EdgeConst:   "UserToFriendRequestsSentEdge",
+		TsEdgeConst: "UserToFriendRequestsSent",
+		TableName:   "user_friend_requests_sent_edges",
+		InverseEdge: (&edge.InverseAssocEdge{
+			EdgeConst: "UserToFriendRequestsReceivedEdge",
+		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User"))),
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")))
 
-	edge2 := &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfoForTest("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")),
-		EdgeConst:      "UserToFriendRequestsSentEdge",
-		TsEdgeConst:    "UserToFriendRequestsSent",
-		TableName:      "user_friend_requests_sent_edges",
-		InverseEdge: &InverseAssocEdge{
-			commonEdgeInfo: getCommonEdgeInfoForTest("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User")),
-			EdgeConst:      "UserToFriendRequestsReceivedEdge2",
-		},
-	}
+	edge2 := (&edge.AssociationEdge{
+		EdgeConst:   "UserToFriendRequestsSentEdge",
+		TsEdgeConst: "UserToFriendRequestsSent",
+		TableName:   "user_friend_requests_sent_edges",
+		InverseEdge: (&edge.InverseAssocEdge{
+			EdgeConst: "UserToFriendRequestsReceivedEdge2",
+		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User"))),
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")))
 
-	l := CompareAssociationEdge(edge, edge2)
+	l := edge.CompareAssociationEdge(edge1, edge2)
 	require.Len(t, l, 1)
 }
 
 func TestAssocEdgeWithPattern(t *testing.T) {
-	edge, edge2 := createDuplicateAssocEdgeFromInput(t, "user", &input.AssocEdge{
+	edge1, edge2 := createDuplicateAssocEdgeFromInput(t, "user", &input.AssocEdge{
 		Name:       "likers",
 		SchemaName: "User",
 		InverseEdge: &input.InverseAssocEdge{
@@ -135,25 +128,24 @@ func TestAssocEdgeWithPattern(t *testing.T) {
 		PatternName:   "Likes",
 	})
 
-	testAssocEdge(t, edge, &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfoForTest("likers", schemaparser.GetEntConfigFromName("User")),
+	testAssocEdge(t, edge1, (&edge.AssociationEdge{
 		// legacy hence confusing
 		EdgeConst:   "UserToLikersEdge",
 		TsEdgeConst: "LikedPostToLikers",
 		TableName:   "user_likers_edges",
 		PatternName: "Likes",
-		InverseEdge: &InverseAssocEdge{
-			commonEdgeInfo: getCommonEdgeInfoForTest("likes", schemaparser.GetEntConfigFromName("User")),
-			EdgeConst:      "UserToLikedObjectsEdge",
-		},
-		overridenQueryName:   "UserToLikersQuery",
-		overridenEdgeName:    "UserToLikersEdge",
-		overridenGraphQLName: "UserToLikersConnection",
-	})
+		InverseEdge: (&edge.InverseAssocEdge{
+			EdgeConst: "UserToLikedObjectsEdge",
+		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("likes", schemaparser.GetEntConfigFromName("User"))),
+	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest("likers", schemaparser.GetEntConfigFromName("User"))).
+		SetOverridenEdgeName("UserToLikersEdge").
+		SetOverridenGraphQLName("UserToLikersConnection").
+		SetOverridenQueryName("UserToLikersQuery"),
+	)
 
-	testAssocEdge(t, edge, edge2)
+	testAssocEdge(t, edge1, edge2)
 
-	l := CompareAssociationEdge(edge, edge2)
+	l := edge.CompareAssociationEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
@@ -166,54 +158,54 @@ func marshallAndUnmarshallInputAssocEdge(t *testing.T, inputEdge *input.AssocEdg
 	return edge2
 }
 
-func createDuplicateAssocEdgeFromInput(t *testing.T, packageName string, inputEdge *input.AssocEdge) (*AssociationEdge, *AssociationEdge) {
-	edge, err := AssocEdgeFromInput(&codegenapi.DummyConfig{}, packageName, inputEdge)
+func createDuplicateAssocEdgeFromInput(t *testing.T, packageName string, inputEdge *input.AssocEdge) (*edge.AssociationEdge, *edge.AssociationEdge) {
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, packageName, inputEdge)
 	require.Nil(t, err)
 	inputEdge2 := marshallAndUnmarshallInputAssocEdge(t, inputEdge)
-	edge2, err := AssocEdgeFromInput(&codegenapi.DummyConfig{}, packageName, inputEdge2)
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, packageName, inputEdge2)
 	require.Nil(t, err)
 
-	return edge, edge2
+	return edge1, edge2
 }
 
-func getForeignKeyEdgeForTest(dbColName, edgeName, nodeName, sourceNodeName string) *ForeignKeyEdge {
-	return getForeignKeyEdge(&codegenapi.DummyConfig{}, dbColName, edgeName, nodeName, sourceNodeName)
+func getForeignKeyEdgeForTest(dbColName, edgeName, nodeName, sourceNodeName string) *edge.ForeignKeyEdge {
+	return edge.GetForeignKeyEdge(&codegenapi.DummyConfig{}, dbColName, edgeName, nodeName, sourceNodeName)
 }
 
-func getIndexedEdgeForTest(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
-	return getIndexedEdge(&codegenapi.DummyConfig{}, tsFieldName, quotedDBColName, nodeName, polymorphic, foreignNode)
+func getIndexedEdgeForTest(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *edge.IndexedEdge {
+	return edge.GetIndexedEdge(&codegenapi.DummyConfig{}, tsFieldName, quotedDBColName, nodeName, polymorphic, foreignNode)
 }
 
 func TestForeignKeyEdge(t *testing.T) {
-	edge := getForeignKeyEdgeForTest("user_id", "users", "User", "Contact")
+	edge1 := getForeignKeyEdgeForTest("user_id", "users", "User", "Contact")
 	edge2 := getForeignKeyEdgeForTest("user_id", "users", "User", "Contact")
 
-	testForeignKeyEdge(t, edge, edge2)
+	testForeignKeyEdge(t, edge1, edge2)
 
-	l := compareForeignKeyEdge(edge, edge2)
+	l := edge.CompareForeignKeyEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
 func TestUnequalForeignKeyEdge(t *testing.T) {
-	edge := getForeignKeyEdgeForTest("user_id", "users", "User", "Contact")
+	edge1 := getForeignKeyEdgeForTest("user_id", "users", "User", "Contact")
 	edge2 := getForeignKeyEdgeForTest("user_id", "users", "User2", "Contact")
 
-	l := compareForeignKeyEdge(edge, edge2)
+	l := edge.CompareForeignKeyEdge(edge1, edge2)
 	require.Len(t, l, 1)
 }
 
 func TestIndexedEdge(t *testing.T) {
-	edge := getIndexedEdgeForTest("ownerId", "owner_id", "User", nil, "Contact")
+	edge1 := getIndexedEdgeForTest("ownerId", "owner_id", "User", nil, "Contact")
 	edge2 := getIndexedEdgeForTest("ownerId", "owner_id", "User", nil, "Contact")
 
-	testIndexedEdge(t, edge, edge2)
+	testIndexedEdge(t, edge1, edge2)
 
-	l := compareIndexedEdge(edge, edge2)
+	l := edge.CompareIndexedEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
 func TestPolymorphicIndexedEdge(t *testing.T) {
-	edge := getIndexedEdgeForTest("ownerId", "owner_id", "User", &base.PolymorphicOptions{
+	edge1 := getIndexedEdgeForTest("ownerId", "owner_id", "User", &base.PolymorphicOptions{
 		PolymorphicOptions: &input.PolymorphicOptions{},
 		NodeTypeField:      "Node",
 		Unique:             true,
@@ -224,14 +216,14 @@ func TestPolymorphicIndexedEdge(t *testing.T) {
 		Unique:             true,
 	}, "Contact")
 
-	testIndexedEdge(t, edge, edge2)
+	testIndexedEdge(t, edge1, edge2)
 
-	l := compareIndexedEdge(edge, edge2)
+	l := edge.CompareIndexedEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
 func TestUnEqualPolymorphicIndexedEdge(t *testing.T) {
-	edge := getIndexedEdgeForTest("ownerId", "owner_id", "User", &base.PolymorphicOptions{
+	edge1 := getIndexedEdgeForTest("ownerId", "owner_id", "User", &base.PolymorphicOptions{
 		PolymorphicOptions: &input.PolymorphicOptions{},
 		NodeTypeField:      "Node",
 		Unique:             true,
@@ -245,20 +237,20 @@ func TestUnEqualPolymorphicIndexedEdge(t *testing.T) {
 		Unique:        true,
 	}, "Contact")
 
-	l := compareIndexedEdge(edge, edge2)
+	l := edge.CompareIndexedEdge(edge1, edge2)
 	require.Len(t, l, 1)
 }
 
 func TestFieldEdge(t *testing.T) {
-	edge, err := getFieldEdge(
+	edge1, err := edge.GetFieldEdge(
 		&codegenapi.DummyConfig{},
 		"user_id",
 		&base.FieldEdgeInfo{
 			Schema: "Contact",
 		}, true, nil)
 	require.Nil(t, err)
-	require.NotNil(t, edge)
-	edge2, err := getFieldEdge(
+	require.NotNil(t, edge1)
+	edge2, err := edge.GetFieldEdge(
 		&codegenapi.DummyConfig{},
 		"user_id",
 		&base.FieldEdgeInfo{
@@ -267,21 +259,21 @@ func TestFieldEdge(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, edge2)
 
-	testFieldEdge(t, edge, edge2)
+	testFieldEdge(t, edge1, edge2)
 
-	l := compareFieldEdge(edge, edge2)
+	l := edge.CompareFieldEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
 func TestUnequalFieldEdge(t *testing.T) {
-	edge, err := getFieldEdge(
+	edge1, err := edge.GetFieldEdge(
 		&codegenapi.DummyConfig{},
 		"user_id", &base.FieldEdgeInfo{
 			Schema: "Contact",
 		}, true, nil)
 	require.Nil(t, err)
-	require.NotNil(t, edge)
-	edge2, err := getFieldEdge(
+	require.NotNil(t, edge1)
+	edge2, err := edge.GetFieldEdge(
 		&codegenapi.DummyConfig{},
 		"user_id", &base.FieldEdgeInfo{
 			Schema: "Contact",
@@ -289,12 +281,12 @@ func TestUnequalFieldEdge(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, edge2)
 
-	l := compareFieldEdge(edge, edge2)
+	l := edge.CompareFieldEdge(edge1, edge2)
 	require.Len(t, l, 1)
 }
 
 func TestFieldEdgeWithInverse(t *testing.T) {
-	edge, err := getFieldEdge(
+	edge1, err := edge.GetFieldEdge(
 		&codegenapi.DummyConfig{},
 		"user_id", &base.FieldEdgeInfo{
 			Schema: "Contact",
@@ -303,8 +295,8 @@ func TestFieldEdgeWithInverse(t *testing.T) {
 			},
 		}, true, nil)
 	require.Nil(t, err)
-	require.NotNil(t, edge)
-	edge2, err := getFieldEdge(
+	require.NotNil(t, edge1)
+	edge2, err := edge.GetFieldEdge(
 		&codegenapi.DummyConfig{},
 		"user_id", &base.FieldEdgeInfo{
 			Schema: "Contact",
@@ -315,14 +307,14 @@ func TestFieldEdgeWithInverse(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, edge2)
 
-	testFieldEdge(t, edge, edge2)
+	testFieldEdge(t, edge1, edge2)
 
-	l := compareFieldEdge(edge, edge2)
+	l := edge.CompareFieldEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
 func TestPolymorphicFieldEdge(t *testing.T) {
-	edge, err := getFieldEdge(
+	edge1, err := edge.GetFieldEdge(
 		&codegenapi.DummyConfig{},
 		"user_id", &base.FieldEdgeInfo{
 			Schema: "Contact",
@@ -334,8 +326,8 @@ func TestPolymorphicFieldEdge(t *testing.T) {
 			},
 		}, true, nil)
 	require.Nil(t, err)
-	require.NotNil(t, edge)
-	edge2, err := getFieldEdge(
+	require.NotNil(t, edge1)
+	edge2, err := edge.GetFieldEdge(
 		&codegenapi.DummyConfig{},
 		"user_id", &base.FieldEdgeInfo{
 			Schema: "Contact",
@@ -349,51 +341,49 @@ func TestPolymorphicFieldEdge(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, edge2)
 
-	testFieldEdge(t, edge, edge2)
+	testFieldEdge(t, edge1, edge2)
 
-	l := compareFieldEdge(edge, edge2)
+	l := edge.CompareFieldEdge(edge1, edge2)
 	require.Len(t, l, 0)
 }
 
 func TestAssociationEdgeGroup(t *testing.T) {
-	edge1, err := AssocEdgeFromInput(&codegenapi.DummyConfig{}, "Event", &input.AssocEdge{
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "Event", &input.AssocEdge{
 		Name:       "Attending",
 		SchemaName: "User",
 	})
 	require.Nil(t, err)
-	edge2, err := AssocEdgeFromInput(&codegenapi.DummyConfig{}, "Event", &input.AssocEdge{
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "Event", &input.AssocEdge{
 		Name:       "Declined",
 		SchemaName: "User",
 	})
 	require.Nil(t, err)
 
-	g := &AssociationEdgeGroup{
+	g := (&edge.AssociationEdgeGroup{
 		GroupName:         "rsvps",
 		GroupStatusName:   "RsvpStatus",
 		TSGroupStatusName: "rsvpStatus",
 		NodeInfo:          nodeinfo.GetNodeInfo("Event"),
 		DestNodeInfo:      nodeinfo.GetNodeInfo("User"),
-		statusEdges:       []*AssociationEdge{edge1, edge2},
-		Edges: map[string]*AssociationEdge{
+		Edges: map[string]*edge.AssociationEdge{
 			"Attending": edge1,
 			"Declined":  edge2,
 		},
 		StatusEnums: []string{"Attending", "Declined"},
-	}
+	}).SetStatusEdges([]*edge.AssociationEdge{edge1, edge2})
 
-	g2 := &AssociationEdgeGroup{
+	g2 := (&edge.AssociationEdgeGroup{
 		GroupName:         "rsvps",
 		GroupStatusName:   "RsvpStatus",
 		TSGroupStatusName: "rsvpStatus",
 		NodeInfo:          nodeinfo.GetNodeInfo("Event"),
 		DestNodeInfo:      nodeinfo.GetNodeInfo("User"),
-		statusEdges:       []*AssociationEdge{edge1, edge2},
-		Edges: map[string]*AssociationEdge{
+		Edges: map[string]*edge.AssociationEdge{
 			"Attending": edge1,
 			"Declined":  edge2,
 		},
 		StatusEnums: []string{"Attending", "Declined"},
-	}
+	}).SetStatusEdges([]*edge.AssociationEdge{edge1, edge2})
 
-	require.True(t, AssocEdgeGroupEqual(g, g2))
+	require.True(t, edge.AssocEdgeGroupEqual(g, g2))
 }
