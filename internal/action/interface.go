@@ -451,7 +451,6 @@ type FieldActionTemplateInfo struct {
 	NullableSetterMethodName string
 	GetterMethodName         string
 	InstanceName             string
-	InstanceType             string
 	FieldKey                 string
 	FieldName                string
 	QuotedFieldName          string
@@ -497,7 +496,6 @@ func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
 			NullableSetterMethodName: "SetNilable" + f.FieldName,
 			GetterMethodName:         "Get" + f.FieldName,
 			InstanceName:             strcase.ToLowerCamel(f.FieldName),
-			InstanceType:             field.GetNonNilableGoType(f),
 			FieldName:                f.FieldName,
 			QuotedFieldName:          strconv.Quote(f.FieldName),
 			QuotedDBName:             f.GetQuotedDBColName(),
@@ -518,7 +516,6 @@ func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 		fields = append(fields, FieldActionTemplateInfo{
 			SetterMethodName: "Add" + fieldName,
 			InstanceName:     strcase.ToLowerCamel(fieldName),
-			InstanceType:     "string", // TODO this needs to work for other
 			FieldName:        fieldName,
 			IsStatusEnum:     f.Flag == "Enum", // TODO best way?
 			IsGroupID:        f.Flag == "ID",

@@ -3,7 +3,6 @@ package input
 import (
 	"encoding/json"
 	"fmt"
-	"go/types"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -156,12 +155,6 @@ type Field struct {
 	DerivedFields       []*Field            `json:"derivedFields,omitempty"`
 	UserConvert         *UserConvertType    `json:"convert,omitempty"`
 	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
-
-	// Go specific information here
-	TagMap          map[string]string `json:"-"`
-	GoType          types.Type        `json:"-"`
-	PkgPath         string            `json:"-"`
-	DataTypePkgPath string            `json:"-"`
 
 	// set when parsed via tsent generate schema
 	Import enttype.Import `json:"-"`
