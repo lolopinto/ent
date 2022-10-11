@@ -4,27 +4,26 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
-	"github.com/lolopinto/ent/internal/parsehelper"
+	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRequiredField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "LastName")
-	f2 := getTestFieldByName(t, "AccountConfig", "Bio")
+	f := getFieldFromSchema(t, "Account", "LastName")
+	f2 := getFieldFromSchema(t, "Account", "Bio")
 
-	a := getTestActionByName(t, "account", "CreateAccountAction")
-	a2 := getTestActionByName(t, "account", "EditAccountAction")
+	a := getActionFromSchema(t, "Account", "CreateAccountAction")
+	a2 := getActionFromSchema(t, "Account", "EditAccountAction")
 
 	assert.True(t, action.IsRequiredField(a, f), "LastName field not required in CreateAction as expected")
 	assert.False(t, action.IsRequiredField(a2, f), "LastName field required in EditAction not expected")
@@ -33,13 +32,11 @@ func TestRequiredField(t *testing.T) {
 }
 
 func TestEdgeActions(t *testing.T) {
-	edgeInfo := getTestEdgeInfo(t, "account")
-	edge := edgeInfo.GetAssociationEdgeByName("Folders")
-	assert.NotNil(t, edge)
+	edge := getEdgeFromSchema(t, "Account", "Folders")
 	// 2 actions!
 	assert.Equal(t, len(edge.EdgeActions), 2)
 
-	actionInfo := getTestActionInfo(t, "account")
+	actionInfo := getActionInfoFromSchema(t, "Account")
 
 	var testCases = []struct {
 		actionName       string
@@ -48,18 +45,16 @@ func TestEdgeActions(t *testing.T) {
 		actionMethodName string
 	}{
 		{
-			// these 2 are custom
 			"AccountAddFolderAction",
 			true,
 			"accountFolderAdd",
 			"AccountAddFolder",
 		},
 		{
-			// these 2 are defaults
-			"RemoveFolderAction",
+			"AccountRemoveFolderAction",
 			true,
 			"accountRemoveFolder",
-			"RemoveFolder",
+			"AccountRemoveFolder",
 		},
 	}
 
@@ -101,13 +96,13 @@ func TestEdgeActions(t *testing.T) {
 }
 
 func TestEdgeGroupActions(t *testing.T) {
-	edgeInfo := getTestEdgeInfo(t, "account")
+	edgeInfo := getEdgeInfoFromSchema(t, "Account")
 	edgeGroup := edgeInfo.GetAssociationEdgeGroupByStatusName("FriendshipStatus")
 	assert.NotNil(t, edgeGroup)
 
 	assert.Equal(t, len(edgeGroup.EdgeActions), 1)
 
-	actionInfo := getTestActionInfo(t, "account")
+	actionInfo := getActionInfoFromSchema(t, "Account")
 
 	assert.NotNil(
 		t,
@@ -156,34 +151,35 @@ type fieldType struct {
 }
 
 func TestActionFields(t *testing.T) {
-	verifyExpectedFields(
+	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		`package configs
+		map[string]string{
+			"contact.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, ActionOperation} from "{schema}";
 
-	import "github.com/lolopinto/ent/ent"
-	import "github.com/lolopinto/ent/ent/field"
+			const ContactSchema = new EntSchema({
+				fields: {
+					EmailAddress: StringType(),
+					FirstName: StringType(),
+					LastName: StringType(),
+					PhoneNumber: StringType(),
+				},
+				actions: [
+					{
+						operation: ActionOperation.Mutations,
+					},
+				],
+ 			});
+			export default ContactSchema;
+			`),
+		},
+		base.TypeScript,
+		"ContactConfig",
+	)
 
-	type ContactConfig struct {}
-	
-	func (config *ContactConfig) GetFields() ent.FieldMap {
-		return ent.FieldMap {
-			"EmailAddress": field.F(
-				field.StringType(),
-			),
-			"FirstName": field.F(field.StringType()),
-			"LastName": field.F(field.StringType()),
-			"PhoneNumber": field.F(field.StringType()),
-		}
-	}
-	
-	func (config *ContactConfig) GetActions() []*ent.ActionConfig {
-		return []*ent.ActionConfig{
-			&ent.ActionConfig{
-				Action: ent.MutationsAction,
-			},
-		}
-	}`,
-		"contact",
+	verifyExpectedActions(
+		t,
+		actionInfo,
 		[]expectedAction{
 			{
 				name: "CreateContactAction",
@@ -243,47 +239,41 @@ func TestActionFields(t *testing.T) {
 }
 
 func TestActionFieldsWithPrivateFields(t *testing.T) {
-	verifyExpectedFields(
+	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		`package configs
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, ActionOperation} from "{schema}";
 
-	import "github.com/lolopinto/ent/ent"
-	import "github.com/lolopinto/ent/ent/field"
+			const UserSchema = new EntSchema({
+				fields: {
+					EmailAddress: StringType({unique:true}),
+					Password: StringType({private:true, hideFromGraphQL: true}),
+					FirstName: StringType(),
+				},
 
-	type UserConfig struct {}
-	
-	func (config *UserConfig) GetFields() ent.FieldMap {
-		return ent.FieldMap {
-			"EmailAddress": field.F(
-				field.StringType(),
-				field.Unique(), 
-			),
-			"Password": field.F(
-				field.StringType(),
-			),
-			"FirstName": field.F(field.StringType()),
-		}
-	}
-	
-	func (config *UserConfig) GetActions() []*ent.ActionConfig {
-		return []*ent.ActionConfig{
-			&ent.ActionConfig{
-				Action: ent.CreateAction,
-				Fields: []string{
-					"FirstName",
-					"EmailAddress",
-					"Password",
-				},
-			},
-			&ent.ActionConfig{
-				Action: ent.EditAction,
-				Fields: []string{
-					"FirstName",
-				},
-			},
-		}
-	}`,
-		"user",
+				actions: [
+					{
+						operation: ActionOperation.Create,
+						fields: ["FirstName", "EmailAddress", "Password"]
+					},
+					{
+						operation: ActionOperation.Edit,
+						fields: ["FirstName"]
+					},
+				],
+			
+			});
+			export default UserSchema;
+			`),
+		},
+		base.TypeScript,
+		"UserConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
 		[]expectedAction{
 			{
 				name: "CreateUserAction",
@@ -320,43 +310,39 @@ func TestActionFieldsWithPrivateFields(t *testing.T) {
 }
 
 func TestDefaultActionFieldsWithPrivateFields(t *testing.T) {
-	t.Skip()
-	verifyExpectedFields(
+	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		`package configs
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, ActionOperation} from "{schema}";
 
-	import "github.com/lolopinto/ent/ent"
-	import "github.com/lolopinto/ent/ent/field"
+			const UserSchema = new EntSchema({
+				fields: {
+					EmailAddress: StringType({unique:true}),
+					Password: StringType({private:true, hideFromGraphQL: true}),
+					FirstName: StringType(),
+				},
 
-	type UserConfig struct {}
-	
-	func (config *UserConfig) GetFields() ent.FieldMap {
-		return ent.FieldMap {
-			"EmailAddress": field.F(
-				field.StringType(),
-				field.Unique(), 
-			),
-			"Password": field.F(
-				field.StringType(),
-				// doesn't work with change to password
-				// we can kill bcrypt in password to make this work...
-				// field.Private(),
-			),
-			"FirstName": field.F(field.StringType()),
-		}
-	}
-	
-	func (config *UserConfig) GetActions() []*ent.ActionConfig {
-		return []*ent.ActionConfig{
-			&ent.ActionConfig{
-				Action: ent.CreateAction,
-			},
-			&ent.ActionConfig{
-				Action: ent.EditAction,
-			},
-		}
-	}`,
-		"user",
+				actions: [
+					{
+						operation: ActionOperation.Create,
+					},
+					{
+						operation: ActionOperation.Edit,
+					},
+				],
+			
+			});
+			export default UserSchema;
+			`),
+		},
+		base.TypeScript,
+		"UserConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
 		// Password not show up here by default since private
 		[]expectedAction{
 			{
@@ -1137,27 +1123,6 @@ func TestFieldEdgeFields(t *testing.T) {
 	)
 }
 
-func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expectedAction) {
-	pkg, fnMap, err := schemaparser.FindFunctions(code, "configs", "GetFields", "GetActions")
-	require.Nil(t, err)
-	require.Len(t, fnMap, 2)
-	require.NotNil(t, pkg)
-	require.NotNil(t, fnMap["GetFields"])
-
-	fieldInfo, err := field.ParseFieldsFunc(pkg, fnMap["GetFields"])
-	spew.Dump(fieldInfo, err)
-	require.NotNil(t, fieldInfo)
-	require.Nil(t, err)
-
-	require.NotNil(t, fnMap["GetActions"])
-
-	actionInfo, err := action.ParseActions(
-		&codegenapi.DummyConfig{},
-		nodeName, fnMap["GetActions"], fieldInfo, nil, base.GoLang)
-	require.Nil(t, err)
-	verifyExpectedActions(t, actionInfo, expActions)
-}
-
 func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActions []expectedAction) {
 	require.Len(t, actionInfo.Actions, len(expActions))
 
@@ -1220,95 +1185,255 @@ func verifyNonEntFields(t *testing.T, nonEntFields []*field.NonEntField, expFiel
 	}
 }
 
-func getParsedConfig(t *testing.T) *parsehelper.FileConfigData {
-	return parsehelper.ParseFilesForTest(t, parsehelper.ParseFuncs(parsehelper.ParseStruct|parsehelper.ParseEdges|parsehelper.ParseActions))
-}
-
-// this is slightly confusing but we have multi-caching going on here
-// similar to field_test, edge_test, we're caching the results of parsing fields, edges, actions into separate
-// instances of RunOnce.
-// They all use getParsedConfig() which has its own caching based on flags passed above.
-var rF *testsync.RunOnce
-var rA *testsync.RunOnce
-var rE *testsync.RunOnce
+var rSchema *testsync.RunOnce
 
 var once sync.Once
 
 func initSyncs() {
 	once.Do(func() {
-		rF = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
-			data := getParsedConfig(t)
-			fieldInfo, err := field.GetFieldInfoForStruct(data.StructMap[configName], data.Info)
-			assert.Nil(t, err)
-			assert.NotNil(t, fieldInfo, "invalid fieldInfo retrieved")
-			return fieldInfo
-		})
 
-		rE = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
-			data := getParsedConfig(t)
-			fn := data.GetEdgesFn(configName)
-			assert.NotNil(t, fn, "GetEdges fn was unexpectedly nil")
-			edgeInfo, err := edge.ParseEdgesFunc(configName, fn)
+		// TODO move this out of here into somewhere central...
+		// this starts the process of converting the go model in internal/testdata/models/configs/ into new API format instead of storing as-is
+		rSchema = testsync.NewRunOnce(func(t *testing.T, _ string) interface{} {
+			loginsServerDefault := "0"
+
+			s, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, &input.Schema{
+				Nodes: map[string]*input.Node{
+					"Account": {
+						Fields: []*input.Field{
+							{
+								Name: "id",
+								Type: &input.FieldType{
+									DBType: input.UUID,
+								},
+								PrimaryKey: true,
+							},
+							{
+								Name: "createdAt",
+								Type: &input.FieldType{
+									DBType: input.Timestamp,
+								},
+							},
+							{
+								Name: "updatedAt",
+								Type: &input.FieldType{
+									DBType: input.Timestamp,
+								},
+							},
+							{
+								Name: "FirstName",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+							{
+								Name: "LastName",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+								Index: true,
+							},
+							{
+								Name: "PhoneNumber",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+								Unique: true,
+							},
+							{
+								Name: "NumberOfLogins",
+								Type: &input.FieldType{
+									DBType: input.Int,
+								},
+								HideFromGraphQL: true,
+								ServerDefault:   &loginsServerDefault,
+							},
+							{
+								Name: "LastLoginAt",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+								StorageKey:  "last_login_time",
+								GraphQLName: "lastLoginTime",
+							},
+							{
+								Name: "Bio",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+								Nullable: true,
+							},
+							{
+								Name: "DateOfBirth",
+								Type: &input.FieldType{
+									DBType: input.Timestamp,
+								},
+								Nullable: true,
+							},
+							{
+								Name: "ShowBioOnProfile",
+								Type: &input.FieldType{
+									DBType: input.Boolean,
+								},
+								Nullable: true,
+							},
+						},
+						TableName: "accounts",
+						Actions: []*input.Action{
+							{
+								Operation: ent.CreateAction,
+							},
+							{
+								Operation: ent.EditAction,
+							},
+						},
+						AssocEdges: []*input.AssocEdge{
+							{
+								Name: "Folders",
+								EdgeActions: []*input.EdgeAction{
+									{
+										Operation:         ent.AddEdgeAction,
+										CustomActionName:  "AccountAddFolderAction",
+										CustomGraphQLName: "accountFolderAdd",
+									},
+									{
+										Operation: ent.RemoveEdgeAction,
+									},
+								},
+							},
+
+							// TODO TodosAssoc
+						},
+						AssocEdgeGroups: []*input.AssocEdgeGroup{
+							{
+								Name:            "Friendships",
+								GroupStatusName: "FriendshipStatus",
+								AssocEdges: []*input.AssocEdge{
+									{
+										Name:       "FriendRequests",
+										SchemaName: "Account",
+										InverseEdge: &input.InverseAssocEdge{
+											Name: "FriendRequestsReceived",
+										},
+									},
+									{
+										Name:       "Friends",
+										SchemaName: "Account",
+										Symmetric:  true,
+									},
+								},
+								EdgeActions: []*input.EdgeAction{
+									{
+										Operation:         ent.AddEdgeAction,
+										CustomActionName:  "AccountFriendshipStatusAction",
+										CustomGraphQLName: "accountSetFriendshipStatus",
+									},
+								},
+							},
+						},
+					},
+					"Folder": {
+						Fields: []*input.Field{
+							{
+								Name: "id",
+								Type: &input.FieldType{
+									DBType: input.UUID,
+								},
+								PrimaryKey: true,
+							},
+							{
+								Name: "createdAt",
+								Type: &input.FieldType{
+									DBType: input.Timestamp,
+								},
+							},
+							{
+								Name: "updatedAt",
+								Type: &input.FieldType{
+									DBType: input.Timestamp,
+								},
+							},
+							{
+								Name: "Name",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+							{
+								Name: "AccountID",
+								Type: &input.FieldType{
+									DBType: input.UUID,
+								},
+								FieldEdge: &input.FieldEdge{
+									Schema: "Account",
+									InverseEdge: &input.InverseFieldEdge{
+										Name: "Folders",
+									},
+								},
+							},
+							{
+								Name: "NumberOfFiles",
+								Type: &input.FieldType{
+									DBType: input.Int,
+								},
+							},
+						},
+						// TODO edges
+					},
+				},
+			}, base.TypeScript)
 			require.Nil(t, err)
-			assert.NotNil(t, edgeInfo, "invalid edgeInfo retrieved")
-			return edgeInfo
-		})
-
-		rA = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
-			data := getParsedConfig(t)
-
-			fn := data.GetActionsFn(configName)
-			assert.NotNil(t, fn, "GetActions fn was unexpectedly nil")
-
-			// TODO need to fix this dissonance...
-			fieldInfo := getTestFieldInfo(t, strcase.ToCamel(configName)+"Config")
-			edgeInfo := getTestEdgeInfo(t, configName)
-			actionInfo, err := action.ParseActions(
-				&codegenapi.DummyConfig{},
-				"Account", fn, fieldInfo, edgeInfo, base.GoLang)
-			assert.NotNil(t, actionInfo, "invalid actionInfo retrieved")
-			require.NoError(t, err)
-			return actionInfo
+			return s
 		})
 	})
 }
 
-func getFieldInfoMap() *testsync.RunOnce {
+func getSchema(t *testing.T) *schema.Schema {
 	initSyncs()
-	return rF
+	return rSchema.Get(t, "").(*schema.Schema)
 }
 
-func getActionInfoMap() *testsync.RunOnce {
-	initSyncs()
-	return rA
+func getFieldFromSchema(t *testing.T, nodeName, fieldName string) *field.Field {
+	s := getSchema(t)
+	info := s.Nodes[nodeName+"Config"]
+	require.NotNil(t, info)
+	f := info.NodeData.FieldInfo.GetFieldByName(fieldName)
+	require.NotNil(t, f)
+	return f
 }
 
-func getEdgeInfoMap() *testsync.RunOnce {
-	initSyncs()
-	return rE
-}
-
-func getTestActionInfo(t *testing.T, configName string) *action.ActionInfo {
-	return getActionInfoMap().Get(t, configName).(*action.ActionInfo)
-}
-
-func getTestActionByName(t *testing.T, configName string, actionName string) action.Action {
-	//	name := action.GetActionTypeFromString(actionType).(actionWithDefaultActionName).getDefaultActionName(configName)
-	a := getTestActionInfo(t, configName).GetByName(actionName)
-	assert.NotNil(t, a, "invalid action retrieved")
+func getActionFromSchema(t *testing.T, nodeName, actionName string) action.Action {
+	s := getSchema(t)
+	info := s.Nodes[nodeName+"Config"]
+	require.NotNil(t, info)
+	a := info.NodeData.ActionInfo.GetByName(actionName)
+	require.NotNil(t, a)
 	return a
 }
 
-// copied and modified from field_test.go
-func getTestFieldInfo(t *testing.T, configName string) *field.FieldInfo {
-	return getFieldInfoMap().Get(t, configName).(*field.FieldInfo)
+func getActionInfoFromSchema(t *testing.T, nodeName string) *action.ActionInfo {
+	s := getSchema(t)
+	info := s.Nodes[nodeName+"Config"]
+	require.NotNil(t, info)
+	actionInfo := info.NodeData.ActionInfo
+	require.NotNil(t, actionInfo)
+	return actionInfo
 }
 
-func getTestEdgeInfo(t *testing.T, configName string) *edge.EdgeInfo {
-	return getEdgeInfoMap().Get(t, configName).(*edge.EdgeInfo)
+func getEdgeFromSchema(t *testing.T, nodeName, edgeName string) *edge.AssociationEdge {
+	s := getSchema(t)
+	info := s.Nodes[nodeName+"Config"]
+	require.NotNil(t, info)
+	edge := info.NodeData.EdgeInfo.GetAssociationEdgeByName(edgeName)
+	require.NotNil(t, edge)
+	return edge
 }
 
-func getTestFieldByName(t *testing.T, configName string, fieldName string) *field.Field {
-	fieldInfo := getTestFieldInfo(t, configName)
-	return fieldInfo.GetFieldByName(fieldName)
+func getEdgeInfoFromSchema(t *testing.T, nodeName string) *edge.EdgeInfo {
+	s := getSchema(t)
+	info := s.Nodes[nodeName+"Config"]
+	require.NotNil(t, info)
+	edgeInfo := info.NodeData.EdgeInfo
+	require.NotNil(t, edgeInfo)
+	return edgeInfo
 }
