@@ -114,8 +114,6 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		userConvert:                f.UserConvert,
 	}
 
-	// todo need GoFieldName, TsFieldName, etc
-
 	// default graphqlName
 	if ret.graphQLName == "" {
 		if ret.FieldName == "ID" {
@@ -202,24 +200,6 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 	}
 
 	return ret, nil
-}
-
-func newField(cfg codegenapi.Config, fieldName string) *Field {
-	graphQLName := codegenapi.GraphQLName(cfg, fieldName)
-	// TODO come up with a better way of handling this
-	if fieldName == "ID" {
-		graphQLName = "id"
-	}
-
-	f := &Field{
-		FieldName:                fieldName,
-		topLevelStructField:      true,
-		dbColumn:                 true,
-		exposeToActionsByDefault: true,
-		dbName:                   strcase.ToSnake(fieldName),
-		graphQLName:              graphQLName,
-	}
-	return f
 }
 
 func (f *Field) GetDbColName() string {
@@ -718,9 +698,6 @@ func (f *Field) GetTSFieldType(cfg codegenapi.Config) enttype.EntType {
 }
 
 func (f *Field) setFieldType(fieldType enttype.Type) error {
-	// TODO does this break golang?
-	// if so, might be time?
-	// we can pin to an old release to get the golang code generation working
 	fieldEntType, ok := fieldType.(enttype.TSGraphQLType)
 	if !ok {
 		return fmt.Errorf("invalid type %T that cannot be stored in db etc", fieldType)
