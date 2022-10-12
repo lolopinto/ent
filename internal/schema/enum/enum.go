@@ -302,8 +302,8 @@ func (i *Input) getValuesFromIntEnumMap(m map[string]int) ([]Data, []Data) {
 func NewInputFromEnumType(enumType enttype.EnumeratedType, fkey bool) (*Input, error) {
 	data := enumType.GetEnumData()
 	input := &Input{
-		TSName:               enumType.GetTSName(),
-		GQLName:              enumType.GetGraphQLName(),
+		TSName:               data.TSName,
+		GQLName:              data.GraphQLName,
 		GQLType:              enumType.GetTSType(),
 		Values:               data.Values,
 		EnumMap:              data.EnumMap,

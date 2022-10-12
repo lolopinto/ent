@@ -15,22 +15,20 @@ import (
 )
 
 type expType struct {
-	db                  string
-	graphql             string
-	graphqlImports      []*tsimport.ImportPath
-	nullableType        enttype.Type
-	nonNullableType     enttype.Type
-	defaultGQLFieldName string
-	elemGraphql         string
-	enumType            bool
-	tsListType          bool
-	tsType              string
-	convertSqliteFns    []string
-	convertPostgresFns  []string
-	importType          enttype.Import
-	tsTypeImports       []*tsimport.ImportPath
-	subFields           []*input.Field
-	unionFields         []*input.Field
+	db                 string
+	graphql            string
+	graphqlImports     []*tsimport.ImportPath
+	nullableType       enttype.Type
+	nonNullableType    enttype.Type
+	enumType           bool
+	tsListType         bool
+	tsType             string
+	convertSqliteFns   []string
+	convertPostgresFns []string
+	importType         enttype.Import
+	tsTypeImports      []*tsimport.ImportPath
+	subFields          []*input.Field
+	unionFields        []*input.Field
 }
 
 func TestCustomTypes(t *testing.T) {
@@ -341,11 +339,10 @@ func TestTimestampType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
-				nullableType:        &enttype.NullableTimestampType{},
-				defaultGQLFieldName: "time",
-				tsType:              "Date",
-				convertSqliteFns:    []string{"convertDate"},
-				importType:          &enttype.TimestampImport{},
+				nullableType:     &enttype.NullableTimestampType{},
+				tsType:           "Date",
+				convertSqliteFns: []string{"convertDate"},
+				importType:       &enttype.TimestampImport{},
 			},
 		},
 		"nullable": {
@@ -356,11 +353,10 @@ func TestTimestampType(t *testing.T) {
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
-				nonNullableType:     &enttype.TimestampType{},
-				defaultGQLFieldName: "time",
-				tsType:              "Date | null",
-				convertSqliteFns:    []string{"convertNullableDate"},
-				importType:          &enttype.TimestampImport{},
+				nonNullableType:  &enttype.TimestampType{},
+				tsType:           "Date | null",
+				convertSqliteFns: []string{"convertNullableDate"},
+				importType:       &enttype.TimestampImport{},
 			},
 		},
 	})
@@ -689,11 +685,10 @@ func TestTimestamptzType(t *testing.T) {
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
-				tsType:              "Date | null",
-				nonNullableType:     &enttype.TimestamptzType{},
-				defaultGQLFieldName: "time",
-				convertSqliteFns:    []string{"convertNullableDate"},
-				importType:          &enttype.TimestamptzImport{},
+				tsType:           "Date | null",
+				nonNullableType:  &enttype.TimestamptzType{},
+				convertSqliteFns: []string{"convertNullableDate"},
+				importType:       &enttype.TimestamptzImport{},
 			},
 		},
 		"not nullable": {
@@ -705,11 +700,10 @@ func TestTimestamptzType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
-				tsType:              "Date",
-				nullableType:        &enttype.NullableTimestamptzType{},
-				defaultGQLFieldName: "time",
-				convertSqliteFns:    []string{"convertDate"},
-				importType:          &enttype.TimestamptzImport{},
+				tsType:           "Date",
+				nullableType:     &enttype.NullableTimestamptzType{},
+				convertSqliteFns: []string{"convertDate"},
+				importType:       &enttype.TimestamptzImport{},
 			},
 		},
 	})
@@ -725,10 +719,9 @@ func TestTimeType(t *testing.T) {
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
-				tsType:              "string | null",
-				nonNullableType:     &enttype.TimeType{},
-				defaultGQLFieldName: "time",
-				importType:          &enttype.TimeImport{},
+				tsType:          "string | null",
+				nonNullableType: &enttype.TimeType{},
+				importType:      &enttype.TimeImport{},
 			},
 		},
 		"not nullable": {
@@ -740,10 +733,9 @@ func TestTimeType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
-				tsType:              "string",
-				nullableType:        &enttype.NullableTimeType{},
-				defaultGQLFieldName: "time",
-				importType:          &enttype.TimeImport{},
+				tsType:       "string",
+				nullableType: &enttype.NullableTimeType{},
+				importType:   &enttype.TimeImport{},
 			},
 		},
 	})
@@ -759,10 +751,9 @@ func TestTimetzType(t *testing.T) {
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
-				tsType:              "string | null",
-				nonNullableType:     &enttype.TimetzType{},
-				defaultGQLFieldName: "time",
-				importType:          &enttype.TimetzImport{},
+				tsType:          "string | null",
+				nonNullableType: &enttype.TimetzType{},
+				importType:      &enttype.TimetzImport{},
 			},
 		},
 		"not nullable": {
@@ -774,10 +765,9 @@ func TestTimetzType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
-				tsType:              "string",
-				nullableType:        &enttype.NullableTimetzType{},
-				defaultGQLFieldName: "time",
-				importType:          &enttype.TimetzImport{},
+				tsType:       "string",
+				nullableType: &enttype.NullableTimetzType{},
+				importType:   &enttype.TimetzImport{},
 			},
 		},
 	})
@@ -793,11 +783,10 @@ func TestDateType(t *testing.T) {
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
-				tsType:              "Date | null",
-				nonNullableType:     &enttype.DateType{},
-				defaultGQLFieldName: "time",
-				convertSqliteFns:    []string{"convertNullableDate"},
-				importType:          &enttype.DateImport{},
+				tsType:           "Date | null",
+				nonNullableType:  &enttype.DateType{},
+				convertSqliteFns: []string{"convertNullableDate"},
+				importType:       &enttype.DateImport{},
 			},
 		},
 		"not nullable": {
@@ -809,11 +798,10 @@ func TestDateType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
-				tsType:              "Date",
-				nullableType:        &enttype.NullableDateType{},
-				defaultGQLFieldName: "time",
-				convertSqliteFns:    []string{"convertDate"},
-				importType:          &enttype.DateImport{},
+				tsType:           "Date",
+				nullableType:     &enttype.NullableDateType{},
+				convertSqliteFns: []string{"convertDate"},
+				importType:       &enttype.DateImport{},
 			},
 		},
 	})
@@ -836,22 +824,21 @@ type typeTestCase struct {
 
 func testType(t *testing.T, exp expType, typ enttype.Type) {
 	assert.Equal(t, exp.graphql, typ.GetGraphQLType())
-	gqlType, ok := typ.(enttype.TSGraphQLType)
+	tsType, ok := typ.(enttype.TSType)
 	if ok {
+		assert.Equal(t, exp.tsType, tsType.GetTSType())
 		if exp.graphqlImports == nil {
-			assert.Len(t, gqlType.GetTSGraphQLImports(false), 0)
+			assert.Len(t, tsType.GetTSGraphQLImports(false), 0)
 		} else {
-			assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports(false))
+			assert.Equal(t, exp.graphqlImports, tsType.GetTSGraphQLImports(false))
 		}
 	} else {
-		// not a gqlType. this should be 0
+		// not a tsType. this should be 0
 		assert.Len(t, exp.graphqlImports, 0)
+		assert.Equal(t, "", exp.tsType)
 	}
 
-	entType, ok := typ.(enttype.EntType)
-	if ok {
-		assert.Equal(t, exp.db, entType.GetDBType())
-	}
+	assert.Equal(t, exp.db, typ.GetDBType())
 
 	nullableType, ok := typ.(enttype.NullableType)
 	if ok {
@@ -867,23 +854,6 @@ func testType(t *testing.T, exp expType, typ enttype.Type) {
 
 		assert.Equal(t, exp.nonNullableType, nonNullType)
 		assert.True(t, strings.HasSuffix(nonNullType.GetGraphQLType(), "!"))
-	}
-
-	defaultFieldNameType, ok := typ.(enttype.DefaulFieldNameType)
-	if ok {
-		assert.Equal(t, exp.defaultGQLFieldName, defaultFieldNameType.DefaultGraphQLFieldName())
-	}
-
-	listType, ok := typ.(enttype.ListType)
-	if ok {
-		assert.Equal(t, exp.elemGraphql, listType.GetElemGraphQLType())
-	}
-
-	tsType, ok := typ.(enttype.TSType)
-	if ok {
-		assert.Equal(t, exp.tsType, tsType.GetTSType())
-	} else {
-		assert.Equal(t, "", exp.tsType)
 	}
 
 	_, enumType := enttype.GetEnumType(typ)

@@ -204,7 +204,7 @@ type PrivateOptions struct {
 	ExposeToActions bool `json:"exposeToActions,omitempty"`
 }
 
-func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSGraphQLType {
+func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSType {
 	importType := typ.ImportType
 	var subFields interface{}
 	var unionFields interface{}
@@ -258,7 +258,7 @@ func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSGraphQLType {
 	}
 }
 
-func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
+func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSType, error) {
 	switch typ.DBType {
 	case UUID:
 		if nullable {
@@ -430,7 +430,7 @@ func (f *Field) GetImport(nodeName string) (enttype.Import, error) {
 // need nodeName for enum
 // ideally, there's a more elegant way of doing this in the future
 // but we don't know the parent
-func (f *Field) GetEntType(nodeName string) (enttype.TSGraphQLType, error) {
+func (f *Field) GetEntType(nodeName string) (enttype.TSType, error) {
 	if f.Type.DBType == List {
 		if f.Type.ListElemType == nil {
 			return nil, fmt.Errorf("list elem type for list is nil")
@@ -621,7 +621,7 @@ func (f *ActionField) MarshalJSON() ([]byte, error) {
 	return json.Marshal(af)
 }
 
-func (f *ActionField) GetEntType(inputName string) (enttype.TSGraphQLType, error) {
+func (f *ActionField) GetEntType(inputName string) (enttype.TSType, error) {
 	if !f.list {
 		return f.getEntTypeHelper(inputName, f.Nullable)
 	}
@@ -635,7 +635,7 @@ func (f *ActionField) GetEntType(inputName string) (enttype.TSGraphQLType, error
 	}, nil
 }
 
-func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype.TSGraphQLType, error) {
+func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype.TSType, error) {
 	switch f.Type {
 	case ActionTypeID:
 		if nullable {

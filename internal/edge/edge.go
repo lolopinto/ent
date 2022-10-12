@@ -217,7 +217,7 @@ func (e *EdgeInfo) CreateEdgeBaseFile() bool {
 	return false
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldName, configName string, nullable bool, fieldType enttype.EntType, validSchema func(str string) bool,
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldName, configName string, nullable bool, fieldType enttype.Type, validSchema func(str string) bool,
 ) error {
 	node, err := GetNodeNameFromEntConfig(configName)
 	if err != nil {
@@ -237,7 +237,7 @@ func GetFieldEdge(cfg codegenapi.Config,
 	fieldName string,
 	fieldEdgeInfo *base.FieldEdgeInfo,
 	nullable bool,
-	fieldType enttype.EntType,
+	fieldType enttype.Type,
 ) (*FieldEdge, error) {
 	// TODO pass fieldType so we can check list or not...
 	validSuffixes := map[string]string{
@@ -302,7 +302,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 	fieldName string,
 	fieldEdgeInfo *base.FieldEdgeInfo,
 	nullable bool,
-	fieldType enttype.EntType,
+	fieldType enttype.Type,
 	validSchema func(str string) bool,
 ) error {
 	edge, err := GetFieldEdge(cfg, fieldName, fieldEdgeInfo, nullable, fieldType)
@@ -489,7 +489,7 @@ type FieldEdge struct {
 	//	InverseEdgeName string
 	Nullable bool
 
-	fieldType enttype.EntType
+	fieldType enttype.Type
 
 	InverseEdge *input.InverseFieldEdge
 	Polymorphic *base.PolymorphicOptions

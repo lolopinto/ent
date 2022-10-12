@@ -57,7 +57,7 @@ type Action interface {
 }
 
 type ActionField interface {
-	GetFieldType() enttype.EntType
+	GetFieldType() enttype.Type
 	TsFieldName(cfg codegenapi.Config) string
 	TsBuilderType(cfg codegenapi.Config) string
 	TSPublicAPIName() string
@@ -255,7 +255,7 @@ func (action *commonActionInfo) AddCustomField(typ enttype.TSTypeWithCustomType,
 	if !ok {
 		return
 	}
-	ci.AddEnumImport(enumType.GetTSName())
+	ci.AddEnumImport(enumType.GetEnumData().TSName)
 }
 
 func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSTypeWithCustomType, cf *field.NonEntField) {

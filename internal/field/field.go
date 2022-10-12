@@ -22,10 +22,10 @@ type Field struct {
 	// todo: abstract out these 2 also...
 	FieldName string
 
-	fieldType enttype.TSGraphQLType // this is the underlying type for the field for graphql, db, etc
+	fieldType enttype.TSType // this is the underlying type for the field for graphql, db, etc
 	// in certain scenarios we need a different type for graphql vs typescript
-	graphqlFieldType enttype.TSGraphQLType
-	tsFieldType      enttype.TSGraphQLType
+	graphqlFieldType enttype.TSType
+	tsFieldType      enttype.TSType
 
 	dbColumn        bool
 	hideFromGraphQL bool
@@ -75,7 +75,7 @@ type Field struct {
 }
 
 // mostly used by tests
-func NewFieldFromNameAndType(name string, typ enttype.TSGraphQLType) *Field {
+func NewFieldFromNameAndType(name string, typ enttype.TSType) *Field {
 	return &Field{
 		FieldName: name,
 		fieldType: typ,
@@ -497,8 +497,8 @@ func (f *Field) GetTsType() string {
 	return f.TsType()
 }
 
-func (f *Field) GetPossibleTypes() []enttype.EntType {
-	typs := []enttype.EntType{f.fieldType}
+func (f *Field) GetPossibleTypes() []enttype.Type {
+	typs := []enttype.Type{f.fieldType}
 	if f.tsFieldType != nil {
 		typs = append(typs, f.tsFieldType)
 	}
@@ -556,7 +556,7 @@ func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
 		if ok && (f.fkey != nil || f.patternName != "") {
 			// foreign key with enum type requires an import
 			// if pattern enum, this is defined in its own file
-			ret = append(ret, tsimport.NewLocalEntImportPath(enumType.GetTSName()))
+			ret = append(ret, tsimport.NewLocalEntImportPath(enumType.GetEnumData().TSName))
 		}
 	}
 
@@ -653,7 +653,7 @@ func (f *Field) TsBuilderImports(cfg codegenapi.Config) []*tsimport.ImportPath {
 }
 
 func (f *Field) GetNotNullableTsType() string {
-	var baseType enttype.TSGraphQLType
+	var baseType enttype.TSType
 	baseType = f.fieldType
 	nonNullableType, ok := f.fieldType.(enttype.NonNullableType)
 	if ok {
@@ -662,13 +662,13 @@ func (f *Field) GetNotNullableTsType() string {
 	return baseType.GetTSType()
 }
 
-func (f *Field) GetFieldType() enttype.EntType {
+func (f *Field) GetFieldType() enttype.Type {
 	return f.fieldType
 }
 
 // should mirror TsFieldType because it's used to determine if nullable and if
 // convertFunc
-func (f *Field) GetTSFieldType(cfg codegenapi.Config) enttype.EntType {
+func (f *Field) GetTSFieldType(cfg codegenapi.Config) enttype.Type {
 	if f.HasAsyncAccessor(cfg) {
 		return f.fieldType
 	}
@@ -679,7 +679,7 @@ func (f *Field) GetTSFieldType(cfg codegenapi.Config) enttype.EntType {
 }
 
 func (f *Field) setFieldType(fieldType enttype.Type) error {
-	fieldEntType, ok := fieldType.(enttype.TSGraphQLType)
+	fieldEntType, ok := fieldType.(enttype.TSType)
 	if !ok {
 		return fmt.Errorf("invalid type %T that cannot be stored in db etc", fieldType)
 	}
@@ -688,7 +688,7 @@ func (f *Field) setFieldType(fieldType enttype.Type) error {
 }
 
 func (f *Field) setGraphQLFieldType(fieldType enttype.Type) error {
-	gqlType, ok := fieldType.(enttype.TSGraphQLType)
+	gqlType, ok := fieldType.(enttype.TSType)
 	if !ok {
 		return fmt.Errorf("invalid type %T that's not a graphql type", fieldType)
 	}
@@ -697,7 +697,7 @@ func (f *Field) setGraphQLFieldType(fieldType enttype.Type) error {
 }
 
 func (f *Field) setTsFieldType(fieldType enttype.Type) error {
-	gqlType, ok := fieldType.(enttype.TSGraphQLType)
+	gqlType, ok := fieldType.(enttype.TSType)
 	if !ok {
 		return fmt.Errorf("invalid type %T that's not a graphql type", fieldType)
 	}
@@ -737,7 +737,7 @@ func (f *Field) GetTSGraphQLTypeForFieldImports(input bool) []*tsimport.ImportPa
 // in mutations, we ignore any graphql specific nature of the field and use underlying API
 // TODO multiple booleans is a horrible code-smell. fix with options or something
 func (f *Field) GetTSMutationGraphQLTypeForFieldImports(forceOptional, input bool) []*tsimport.ImportPath {
-	var tsGQLType enttype.TSGraphQLType
+	var tsGQLType enttype.TSType
 	// spew.Dump(f.fieldType, f.graphqlFieldType)
 	tsGQLType = f.fieldType
 	nullableType, ok := f.fieldType.(enttype.NullableType)

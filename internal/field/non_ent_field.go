@@ -11,7 +11,7 @@ type NonEntField struct {
 	// note that if this changes, need to update NonEntFieldEqual
 	fieldName   string
 	graphqlName string
-	fieldType   enttype.TSGraphQLType
+	fieldType   enttype.TSType
 	nullable    bool // required default = true
 	// TODO these are both go things. ignore
 	// Flag enum or ID
@@ -20,7 +20,7 @@ type NonEntField struct {
 	NodeType string
 }
 
-func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSGraphQLType, nullable bool) *NonEntField {
+func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSType, nullable bool) *NonEntField {
 	return &NonEntField{
 		fieldName:   fieldName,
 		graphqlName: codegenapi.GraphQLName(cfg, fieldName),
@@ -60,11 +60,11 @@ func (f *NonEntField) TsBuilderType(cfg codegenapi.Config) string {
 	return f.fieldType.GetTSType()
 }
 
-func (f *NonEntField) GetFieldType() enttype.EntType {
+func (f *NonEntField) GetFieldType() enttype.Type {
 	return f.fieldType
 }
 
-func (f *NonEntField) GetGraphQLFieldType() enttype.TSGraphQLType {
+func (f *NonEntField) GetGraphQLFieldType() enttype.TSType {
 	return f.fieldType
 }
 
