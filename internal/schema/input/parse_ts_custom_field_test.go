@@ -89,7 +89,7 @@ func TestCustomFields(t *testing.T) {
 	validateField(t, getField("nullable_password"), &enttype.NullablePasswordType{})
 }
 
-func validateField(t *testing.T, f *input.Field, expType enttype.TSGraphQLType) {
+func validateField(t *testing.T, f *input.Field, expType enttype.TSType) {
 	typ, err := f.GetEntType("User")
 	require.Nil(t, err)
 	assert.Equal(t, expType, typ)

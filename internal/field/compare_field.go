@@ -41,7 +41,7 @@ func NonEntFieldEqual(existing, field *NonEntField) bool {
 		existing.NodeType == field.NodeType
 }
 
-func compareType(t1, t2 enttype.TSGraphQLType) bool {
+func compareType(t1, t2 enttype.TSType) bool {
 	ret := change.CompareNilVals(t1 == nil, t2 == nil)
 	if ret != nil {
 		return *ret

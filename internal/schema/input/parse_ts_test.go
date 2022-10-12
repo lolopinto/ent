@@ -98,7 +98,7 @@ type actionField struct {
 	name     string
 	typ      input.ActionType
 	nullable bool
-	tsType   enttype.TSGraphQLType
+	tsType   enttype.TSType
 }
 
 type constraint struct {
