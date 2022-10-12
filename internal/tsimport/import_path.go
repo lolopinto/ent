@@ -23,6 +23,10 @@ type ImportPath struct {
 
 	TransformedForGraphQLMutation bool `json:"transformedForGraphQLMutation,omitempty"`
 	TransformedForExternalEnt     bool `json:"transformedForExternalEnt,omitempty"`
+
+	// automatically imported and we don't need to use it
+	// imported as follows: `import from "{path}";`
+	SideEffect bool `json:"sideEffect"`
 }
 
 // NewGQLImportPath creates a new import from "graphql"

@@ -10,6 +10,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -1135,18 +1136,21 @@ func writeInternalEntFile(s *schema.Schema, processor *codegen.Processor) error 
 	path := filepath.Join(cfg.GetAbsPathToRoot(), codepath.GetFilePathForInternalFile())
 	imps := tsimport.NewImports(processor.Config, path)
 
+	spew.Dump(cfg.GetGlobalImportPath())
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			SortedLines []string
-			Schema      *schema.Schema
-			Config      *codegen.Config
-			Package     *codegen.ImportPackage
+			SortedLines      []string
+			Schema           *schema.Schema
+			Config           *codegen.Config
+			Package          *codegen.ImportPackage
+			GlobalImportPath *tsimport.ImportPath
 		}{
 			getSortedInternalEntFileLines(s),
 			s,
 			processor.Config,
 			cfg.GetImportPackage(),
+			cfg.GetGlobalImportPath(),
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		TemplateName:      "internal.tmpl",
