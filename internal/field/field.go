@@ -917,7 +917,8 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 			return nil, err
 		}
 	}
-	if ret.graphqlNullable && !f.graphqlNullable {
+	// if field already nullable, nothing to do here
+	if ret.graphqlNullable && !f.graphqlNullable && !ret.nullable {
 		nullableType, ok := ret.fieldType.(enttype.NullableType)
 		if !ok {
 			return nil, fmt.Errorf("couldn't covert the type %v to its nullable version for field %s", ret.fieldType, ret.FieldName)
