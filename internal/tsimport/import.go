@@ -96,6 +96,7 @@ func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, 
 		defaultImport: defaultExport,
 		alias:         alias,
 		imports:       imports,
+		sideEffect:    imp.SideEffect,
 	})
 }
 
@@ -105,7 +106,8 @@ type importInfoInput struct {
 	importAll     bool
 	imports       []string
 	// only works when there's 1 import
-	alias string
+	alias      string
+	sideEffect bool
 }
 
 func (imps *Imports) reserve(input *importInfoInput) (string, error) {
@@ -139,6 +141,7 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 			imports:       imports,
 			importAll:     input.importAll,
 			defaultExport: input.defaultImport,
+			sideEffect:    input.sideEffect,
 		}
 
 		imps.pathMap[input.path] = imp
@@ -343,9 +346,22 @@ type importInfo struct {
 	imports       []importedItem
 	defaultExport string
 	importAll     bool
+	// import just for side effect
+	sideEffect bool
 }
 
 func (imp *importInfo) String(cfg Config, filePath string, usedExportsMap map[string]bool) (string, error) {
+	if imp.sideEffect {
+		impPath, err := getImportPath(cfg, filePath, imp.path)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf(
+			"import %s;",
+			strconv.Quote(impPath),
+		), nil
+	}
+
 	var usedImports []importedItem
 	var defaultExport string
 	seen := make(map[string]bool)

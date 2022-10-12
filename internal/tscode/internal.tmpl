@@ -1,3 +1,7 @@
+{{ if .GlobalImportPath -}}
+  {{reserveImportPath .GlobalImportPath false }}
+{{ end -}}
+
 {{range .SortedLines -}}
   {{exportAll .}}
 {{end -}}

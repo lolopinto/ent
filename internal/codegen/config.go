@@ -12,6 +12,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
+	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -390,6 +391,19 @@ func (cfg *Config) GetGlobalSchemaImportPath() string {
 	return "src/schema/__global__schema"
 }
 
+func (cfg *Config) GetGlobalImportPath() *tsimport.ImportPath {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		path := codegen.GlobalImportPath
+		if path != "" {
+			return &tsimport.ImportPath{
+				ImportPath: path,
+				SideEffect: true,
+			}
+		}
+	}
+	return nil
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -541,6 +555,7 @@ type CodegenConfig struct {
 	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
 	TemplatizedViewer          *codegenapi.ImportedObject       `yaml:"templatizedViewer"`
 	CustomAssocEdgePath        *codegenapi.ImportedObject       `yaml:"customAssocEdgePath"`
+	GlobalImportPath           string                           `yaml:"globalImportPath"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -567,6 +582,7 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		FieldPrivacyEvaluated:      cfg.FieldPrivacyEvaluated,
 		TemplatizedViewer:          cloneImportedObject(cfg.TemplatizedViewer),
 		CustomAssocEdgePath:        cloneImportedObject(cfg.CustomAssocEdgePath),
+		GlobalImportPath:           cfg.GlobalImportPath,
 	}
 }
 

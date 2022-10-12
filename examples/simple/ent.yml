@@ -18,6 +18,7 @@ codegen:
   prettier:
     custom: true
   schemaSQLFilePath: "src/schema/schema.sql"
+  globalImportPath: "src/global_augment"
   templatizedViewer:
     path: src/viewer/viewer
     name: ExampleViewer

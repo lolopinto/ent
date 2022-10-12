@@ -370,6 +370,17 @@ func TestImports(t *testing.T) {
 				getLine("import ViewerDefault, {Viewer as FooViewer, ViewerFoo} from {path};", "src/lib/viewer/viewer"),
 			},
 		},
+		"reserve import path with side effect": {
+			fn: func(imps *Imports) {
+				reserveImportPath(imps, &ImportPath{
+					ImportPath: "src/lib/viewer/viewer",
+					SideEffect: true,
+				}, false)
+			},
+			expectedLines: []string{
+				getLine("import {path};", "src/lib/viewer/viewer"),
+			},
+		},
 		"reserve alias and multiple imports at same time": {
 			fn: func(imps *Imports) {
 				_, err := imps.reserve(&importInfoInput{

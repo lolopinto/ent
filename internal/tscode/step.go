@@ -1138,15 +1138,17 @@ func writeInternalEntFile(s *schema.Schema, processor *codegen.Processor) error 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			SortedLines []string
-			Schema      *schema.Schema
-			Config      *codegen.Config
-			Package     *codegen.ImportPackage
+			SortedLines      []string
+			Schema           *schema.Schema
+			Config           *codegen.Config
+			Package          *codegen.ImportPackage
+			GlobalImportPath *tsimport.ImportPath
 		}{
 			getSortedInternalEntFileLines(s),
 			s,
 			processor.Config,
 			cfg.GetImportPackage(),
+			cfg.GetGlobalImportPath(),
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		TemplateName:      "internal.tmpl",
