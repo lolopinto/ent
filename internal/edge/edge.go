@@ -72,6 +72,13 @@ func (e *EdgeInfo) HasAssociationEdges() bool {
 
 func (e *EdgeInfo) addEdge(edge Edge) error {
 	if e.keys[edge.GetEdgeName()] {
+		conflict, ok := edge.(EdgeWithNameConflict)
+		if ok {
+			err := conflict.ErrorMessage(e)
+			if err != nil {
+				return err
+			}
+		}
 		return fmt.Errorf("tried to add a new edge named %s to node %s when name already taken", edge.GetEdgeName(), e.SourcePackageName)
 	}
 	e.keys[edge.GetEdgeName()] = true
@@ -422,6 +429,11 @@ type Edge interface {
 	GetTSGraphQLTypeImports() []*tsimport.ImportPath
 }
 
+type EdgeWithNameConflict interface {
+	Edge
+	ErrorMessage(e *EdgeInfo) error
+}
+
 type ConnectionEdge interface {
 	// NOTE: update compareConnectionEdge if anything changes here
 	Edge
@@ -598,6 +610,19 @@ func (e *ForeignKeyEdge) GetCountFactoryName() string {
 
 func (e *ForeignKeyEdge) GetDataFactoryName() string {
 	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
+}
+
+func (e *ForeignKeyEdge) ErrorMessage(edgeInfo *EdgeInfo) error {
+	edgeName := e.GetEdgeName()
+	// edge name is plural of destination node
+	if edgeName != inflection.Plural(e.NodeInfo.Node) {
+		return nil
+	}
+	fkey := edgeInfo.GetForeignKeyEdgeByName(e.GetEdgeName())
+	if fkey == nil {
+		return nil
+	}
+	return fmt.Errorf("To have multiple ForeignKey Edges pointing to %s, set the name on `foreignKey`", e.NodeInfo.Node)
 }
 
 var _ Edge = &ForeignKeyEdge{}

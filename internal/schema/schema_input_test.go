@@ -387,6 +387,7 @@ func TestMultipleForeignKeysDuplicateEdgeName(t *testing.T) {
 	// errors because duplicate edge name since edgeName wasn't given for either
 	s, err := parseFromInputSchema(inputSchema, base.GoLang)
 	require.Error(t, err)
+	require.Regexp(t, "To have multiple ForeignKey Edges", err.Error())
 	require.Nil(t, s)
 }
 
