@@ -2,25 +2,7 @@ package util
 
 import (
 	"strings"
-
-	"golang.org/x/tools/go/packages"
 )
-
-func ErrSlice(err []packages.Error) {
-	str := ""
-	for _, e := range err {
-		str += e.Error() + "\n"
-	}
-	GoSchemaKill(str)
-}
-
-func CoalesceErrSlice(err []packages.Error) error {
-	var errs = make([]error, len(err))
-	for idx, e := range err {
-		errs[idx] = e
-	}
-	return CoalesceErr(errs...)
-}
 
 // CoalesceErr takes a variable numbers of errors and returns an error
 func CoalesceErr(errs ...error) error {
