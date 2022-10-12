@@ -8,7 +8,6 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema/input"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/testingutils/testmodel"
 
 	"github.com/stretchr/testify/assert"
@@ -37,7 +36,7 @@ func TestAssociationEdge(t *testing.T) {
 		},
 	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest(
 		"Folders",
-		schemaparser.GetEntConfigFromName("folder"),
+		edge.GetEntConfigFromName("folder"),
 	))
 
 	testAssocEdge(t, e, expectedAssocEdge)
@@ -57,7 +56,7 @@ func TestSymmetricAssociationEdge(t *testing.T) {
 		TableName:   "account_friendships_edges",
 	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest(
 		"Friends",
-		schemaparser.GetEntConfigFromName("account"),
+		edge.GetEntConfigFromName("account"),
 	))
 
 	testAssocEdge(t, e, expectedAssocEdge)
@@ -77,7 +76,7 @@ func TestUniqueAssociationEdge(t *testing.T) {
 		TableName:   "event_creator_edges",
 	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest(
 		"Creator",
-		schemaparser.GetEntConfigFromName("account"),
+		edge.GetEntConfigFromName("account"),
 	))
 
 	testAssocEdge(t, e, expectedAssocEdge)
@@ -98,12 +97,12 @@ func TestInverseAssociationEdge(t *testing.T) {
 			EdgeConst: "TodoToFoldersEdge",
 		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest(
 			"Folders",
-			schemaparser.GetEntConfigFromName("folder"),
+			edge.GetEntConfigFromName("folder"),
 		)),
 		TableName: "folder_todos_edges",
 	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest(
 		"Todos",
-		schemaparser.GetEntConfigFromName("todo"),
+		edge.GetEntConfigFromName("todo"),
 	))
 
 	testAssocEdge(t, e, expectedAssocEdge)
@@ -124,12 +123,12 @@ func TestEdgeGroup(t *testing.T) {
 			EdgeConst: "AccountToFriendRequestsReceivedEdge",
 		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest(
 			"FriendRequestsReceived",
-			schemaparser.GetEntConfigFromName("account"),
+			edge.GetEntConfigFromName("account"),
 		)),
 		TableName: "account_friendships_edges",
 	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest(
 		"FriendRequests",
-		schemaparser.GetEntConfigFromName("account"),
+		edge.GetEntConfigFromName("account"),
 	))
 
 	testAssocEdge(t, friendRequestsEdge, expectedFriendRequestsEdge)
@@ -176,13 +175,13 @@ func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
 			EdgeConst: "AccountToInvitedEventsEdge",
 		}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest(
 			"InvitedEvents",
-			schemaparser.GetEntConfigFromName("event"),
+			edge.GetEntConfigFromName("event"),
 		)),
 		// custom table name!
 		TableName: "event_rsvp_edges",
 	}).SetCommonEdgeInfo(edge.GetCommonEdgeInfoForTest(
 		"Invited",
-		schemaparser.GetEntConfigFromName("account"),
+		edge.GetEntConfigFromName("account"),
 	))
 
 	testAssocEdge(t, invitedEdge, expectedInvitedEdge)
@@ -527,7 +526,7 @@ func testEdgeActions(t *testing.T, edgeName string, edgeActions, expectedEdgeAct
 	}
 }
 
-func testEntConfig(t *testing.T, entConfig, expectedEntConfig *schemaparser.EntConfigInfo) {
+func testEntConfig(t *testing.T, entConfig, expectedEntConfig *edge.EntConfigInfo) {
 	// apparently, this is how it should work?
 	if entConfig == nil {
 		require.Nil(t, expectedEntConfig)

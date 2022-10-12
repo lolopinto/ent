@@ -5,7 +5,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -213,7 +212,7 @@ func commonEdgeInfoEqual(existing, common commonEdgeInfo) bool {
 		entConfigEqual(existing.entConfig, common.entConfig)
 }
 
-func entConfigEqual(existing, entConfig *schemaparser.EntConfigInfo) bool {
+func entConfigEqual(existing, entConfig *EntConfigInfo) bool {
 	ret := change.CompareNilVals(existing == nil, entConfig == nil)
 	if ret != nil {
 		return *ret

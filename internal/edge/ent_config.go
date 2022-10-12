@@ -1,4 +1,4 @@
-package schemaparser
+package edge
 
 import (
 	"fmt"
