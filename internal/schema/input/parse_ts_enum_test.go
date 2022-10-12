@@ -250,6 +250,6 @@ func validateEnumNames(t *testing.T, f *input.Field, tsName, graphqlName string)
 	require.Nil(t, err)
 	enumType, ok := enttype.GetEnumType(entType)
 	require.True(t, ok)
-	assert.Equal(t, enumType.GetTSName(), tsName)
-	assert.Equal(t, enumType.GetGraphQLName(), graphqlName)
+	assert.Equal(t, enumType.GetEnumData().TSName, tsName)
+	assert.Equal(t, enumType.GetEnumData().GraphQLName, graphqlName)
 }
