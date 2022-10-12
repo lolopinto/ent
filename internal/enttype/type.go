@@ -2,7 +2,6 @@ package enttype
 
 import (
 	"fmt"
-	"go/types"
 	"strconv"
 	"strings"
 
@@ -1827,107 +1826,6 @@ func (t *NullableJSONBType) convertNullableListWithItem() ConvertDataTypeRet {
 
 func (t *NullableJSONBType) GetImportType() Import {
 	return &JSONBImport{}
-}
-
-func getBasicType(typ types.Type) Type {
-	typeStr := types.TypeString(typ, nil)
-	switch typeStr {
-	case "string":
-		return &StringType{}
-	case "*string":
-		return &NullableStringType{}
-	case "bool":
-		return &BoolType{}
-	case "*bool":
-		return &NullableBoolType{}
-	case "int", "int16", "int32":
-		return &IntegerType{}
-	case "int64":
-		return &BigIntegerType{}
-	case "*int", "*int16", "*int32":
-		return &NullableIntegerType{}
-	case "*int64":
-		return &NullableBigIntegerType{}
-	case "float32", "float64":
-		return &FloatType{}
-	case "*float32", "*float64":
-		return &NullableFloatType{}
-	case "time.Time":
-		return &TimestampType{}
-	case "*time.Time":
-		return &NullableTimestampType{}
-	default:
-		return nil
-	}
-}
-
-// TODO kill this and everything depending on this
-func GetType(typ types.Type) Type {
-	if ret := getBasicType(typ); ret != nil {
-		return ret
-	}
-	switch typ2 := typ.(type) {
-	case *types.Basic:
-		panic("unsupported basic type")
-	case *types.Named:
-		panic("todo interface unsupported for now")
-
-	case *types.Pointer:
-		panic("todo interface unsupported for now")
-
-	case *types.Interface:
-		panic("todo interface unsupported for now")
-
-	case *types.Struct:
-		panic("todo struct unsupported for now")
-
-	case *types.Chan:
-		panic("todo chan unsupported for now")
-
-	case *types.Map:
-		panic("todo signature unsupported for now")
-
-	case *types.Signature:
-		panic("todo signature unsupported for now")
-
-	case *types.Tuple:
-		panic("todo tuple unsupported for now")
-
-	case *types.Slice:
-		panic("todo signature unsupported for now")
-
-	case *types.Array:
-		panic("todo signature unsupported for now")
-
-	default:
-		panic(fmt.Errorf("unsupported type %s for now", typ2.String()))
-	}
-}
-
-// GetNullableType takes a type where the nullable-ness is not encoded in the type but alas
-// somewhere else so we need to get the nullable type from a different place
-func GetNullableType(typ types.Type, nullable bool) Type {
-	fieldType := GetType(typ)
-	if !nullable {
-		return fieldType
-	}
-	nullableType, ok := fieldType.(NullableType)
-	if ok {
-		return nullableType.GetNullableType()
-	}
-	panic(fmt.Errorf("couldn't find nullable version of type %s", types.TypeString(typ, nil)))
-}
-
-func GetNonNullableType(typ types.Type, forceRequired bool) Type {
-	fieldType := GetType(typ)
-	if !forceRequired {
-		return fieldType
-	}
-	nonNullableType, ok := fieldType.(NonNullableType)
-	if ok {
-		return nonNullableType.GetNonNullableType()
-	}
-	panic(fmt.Errorf("couldn't find non-nullable version of type %s", types.TypeString(typ, nil)))
 }
 
 func IsImportDepsType(t EntType) bool {
