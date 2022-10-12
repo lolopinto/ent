@@ -456,7 +456,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 		nodeData.ActionInfo, err = action.ParseFromInput(cfg, packageName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang, opts...)
 		if err != nil {
-			errs = append(errs, err)
+			return nil, err
 		}
 
 		// not in schema.Nodes...
