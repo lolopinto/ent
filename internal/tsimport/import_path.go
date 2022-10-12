@@ -25,7 +25,7 @@ type ImportPath struct {
 	TransformedForExternalEnt     bool `json:"transformedForExternalEnt,omitempty"`
 
 	// automatically imported and we don't need to use it
-	// imported as follows: `import from "{path}";`
+	// imported as follows: `import "{path}";`
 	SideEffect bool `json:"sideEffect"`
 }
 
