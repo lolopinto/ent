@@ -283,6 +283,8 @@ CREATE TABLE contacts (
     CONSTRAINT contacts_user_id_fkey FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+CREATE INDEX contacts_created_at_idx ON contacts (created_at);
+
 CREATE INDEX contacts_email_ids_idx ON contacts USING gin (email_ids);
 
 CREATE INDEX contacts_phone_number_ids_idx ON contacts USING gin (phone_number_ids);

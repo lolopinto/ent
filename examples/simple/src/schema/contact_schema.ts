@@ -26,6 +26,12 @@ const ContactSchema = new EntSchema({
     userID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
   },
 
+  fieldOverrides: {
+    createdAt: {
+      index: true,
+    },
+  },
+
   // create, edit, delete
   actions: [
     {

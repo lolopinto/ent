@@ -94,6 +94,8 @@ CREATE INDEX todos_completed_date_idx ON todos (completed_date);
 
 CREATE INDEX todos_completed_idx ON todos (completed);
 
+CREATE INDEX todos_created_at_idx ON todos (created_at);
+
 CREATE INDEX todos_creator_id_idx ON todos (creator_id);
 
 CREATE INDEX todos_deleted_at_idx ON todos (deleted_at);

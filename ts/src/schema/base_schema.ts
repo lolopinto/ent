@@ -1,4 +1,4 @@
-import { Field, FieldMap, Pattern } from "./schema";
+import { Field, FieldMap, Pattern, FieldOverrideMap } from "./schema";
 import { v4 as uuidv4 } from "uuid";
 import { TimestampType, UUIDType } from "./field";
 import { Action, AssocEdgeGroup, Constraint, Edge, Index, Schema } from ".";
@@ -82,6 +82,8 @@ export class EntSchema implements Schema {
   // Field[] compatibility reasons
   fields: FieldMap | Field[];
 
+  fieldOverrides: FieldOverrideMap | undefined;
+
   tableName: string | undefined;
 
   patterns: Pattern[] = [Node];
@@ -104,6 +106,7 @@ export class EntSchema implements Schema {
 
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
+    this.fieldOverrides = cfg.fieldOverrides;
     this.tableName = cfg.tableName;
     if (cfg.patterns) {
       this.patterns.push(...cfg.patterns);
@@ -122,6 +125,8 @@ export class EntSchema implements Schema {
 export class EntSchemaWithTZ implements Schema {
   // Field[] compatibility reasons
   fields: FieldMap | Field[];
+
+  fieldOverrides: FieldOverrideMap | undefined;
 
   tableName: string | undefined;
 
@@ -152,6 +157,7 @@ export class EntSchemaWithTZ implements Schema {
 
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
+    this.fieldOverrides = cfg.fieldOverrides;
     this.tableName = cfg.tableName;
     if (cfg.patterns) {
       this.patterns.push(...cfg.patterns);
