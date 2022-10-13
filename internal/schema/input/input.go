@@ -172,27 +172,27 @@ func (f *Field) ApplyOverride(override *FieldOverride) {
 	if override.StorageKey != "" {
 		f.StorageKey = override.StorageKey
 	}
-	if override.HideFromGraphQL != f.HideFromGraphQL {
-		f.HideFromGraphQL = override.HideFromGraphQL
+	if override.HideFromGraphQL != nil {
+		f.HideFromGraphQL = *override.HideFromGraphQL
 	}
-	if override.Index != f.Index {
-		f.Index = override.Index
+	if override.Index != nil {
+		f.Index = *override.Index
 	}
-	if override.Unique != f.Unique {
-		f.Unique = override.Unique
+	if override.Unique != nil {
+		f.Unique = *override.Unique
 	}
-	if override.Nullable != f.Nullable {
-		f.Nullable = override.Nullable
+	if override.Nullable != nil {
+		f.Nullable = *override.Nullable
 	}
 }
 
 type FieldOverride struct {
-	Nullable        bool    `json:"nullable,omitempty"`
+	Nullable        *bool   `json:"nullable,omitempty"`
 	StorageKey      string  `json:"storageKey,omitempty"`
-	Unique          bool    `json:"unique,omitempty"`
-	HideFromGraphQL bool    `json:"hideFromGraphQL,omitempty"`
+	Unique          *bool   `json:"unique,omitempty"`
+	HideFromGraphQL *bool   `json:"hideFromGraphQL,omitempty"`
 	GraphQLName     string  `json:"graphqlName,omitempty"`
-	Index           bool    `json:"index,omitempty"`
+	Index           *bool   `json:"index,omitempty"`
 	ServerDefault   *string `json:"serverDefault,omitempty"`
 }
 

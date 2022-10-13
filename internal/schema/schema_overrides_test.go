@@ -21,8 +21,11 @@ func getTestFieldInfo(t *testing.T, nodeName string, fields []*input.Field) *fie
 
 func TestOverrides(t *testing.T) {
 	dv := "now()"
+	trueVal := true
+	falseVal := false
+
 	cases := map[string]*overrideTestCase{
-		"index override": {
+		"index override: false -> true": {
 			schema: &input.Schema{
 				Patterns: map[string]*input.Pattern{
 					"node": {
@@ -83,7 +86,7 @@ func TestOverrides(t *testing.T) {
 						},
 						FieldOverrides: map[string]*input.FieldOverride{
 							"createdAt": {
-								Index: true,
+								Index: &trueVal,
 							},
 						},
 					},
@@ -116,7 +119,7 @@ func TestOverrides(t *testing.T) {
 				},
 			},
 		},
-		"nullable override": {
+		"nullable override: false -> true": {
 			schema: &input.Schema{
 				Patterns: map[string]*input.Pattern{
 					"node": {
@@ -177,7 +180,7 @@ func TestOverrides(t *testing.T) {
 						},
 						FieldOverrides: map[string]*input.FieldOverride{
 							"createdAt": {
-								Nullable: true,
+								Nullable: &trueVal,
 							},
 						},
 					},
@@ -210,7 +213,7 @@ func TestOverrides(t *testing.T) {
 				},
 			},
 		},
-		"unique override": {
+		"unique override: false -> true": {
 			schema: &input.Schema{
 				Patterns: map[string]*input.Pattern{
 					"node": {
@@ -271,7 +274,7 @@ func TestOverrides(t *testing.T) {
 						},
 						FieldOverrides: map[string]*input.FieldOverride{
 							"createdAt": {
-								Unique: true,
+								Unique: &trueVal,
 							},
 						},
 					},
@@ -398,7 +401,7 @@ func TestOverrides(t *testing.T) {
 				},
 			},
 		},
-		"expose to graphql override": {
+		"expose to graphql override: true -> false": {
 			schema: &input.Schema{
 				Patterns: map[string]*input.Pattern{
 					"node": {
@@ -463,7 +466,7 @@ func TestOverrides(t *testing.T) {
 						},
 						FieldOverrides: map[string]*input.FieldOverride{
 							"createdAt": {
-								HideFromGraphQL: false,
+								HideFromGraphQL: &falseVal,
 							},
 						},
 					},
