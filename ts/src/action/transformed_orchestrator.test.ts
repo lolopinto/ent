@@ -5,14 +5,17 @@ import { Data, Ent, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
 import { StringType, TimestampType } from "../schema/field";
 import {
-  BaseEntSchema,
   Pattern,
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
 } from "../schema";
-import { User, SimpleAction, Contact } from "../testutils/builder";
-import { QueryRecorder } from "../testutils/db_mock";
+import {
+  User,
+  SimpleAction,
+  Contact,
+  EntBuilderSchema,
+} from "../testutils/builder";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
 import { snakeCase } from "snake-case";
@@ -175,43 +178,34 @@ class DeletedAtPatternWithExtraWrites implements Pattern {
   }
 }
 
-class UserSchema extends BaseEntSchema {
-  constructor() {
-    super();
-    this.addPatterns(new DeletedAtPattern());
-  }
-  fields: FieldMap = {
+const UserSchema = new EntBuilderSchema(User, {
+  patterns: [new DeletedAtPattern()],
+
+  fields: {
     FirstName: StringType(),
     LastName: StringType(),
-  };
-  ent = User;
-}
+  },
+});
 
-class ContactSchema extends BaseEntSchema {
-  constructor() {
-    super();
-    this.addPatterns(new DeletedAtSnakeCasePattern());
-  }
-  fields: FieldMap = {
+const ContactSchema = new EntBuilderSchema(Contact, {
+  patterns: [new DeletedAtSnakeCasePattern()],
+
+  fields: {
     first_name: StringType(),
     last_name: StringType(),
-  };
-  ent = Contact;
-}
+  },
+});
 
 class Account extends User {}
 
-class AccountSchema extends BaseEntSchema {
-  constructor() {
-    super();
-    this.addPatterns(new DeletedAtPatternWithExtraWrites());
-  }
-  fields: FieldMap = {
+const AccountSchema = new EntBuilderSchema(Account, {
+  patterns: [new DeletedAtPatternWithExtraWrites()],
+
+  fields: {
     FirstName: StringType(),
     LastName: StringType(),
-  };
-  ent = Account;
-}
+  },
+});
 
 const getTables = () => {
   const tables: Table[] = [assoc_edge_config_table()];
@@ -219,7 +213,7 @@ const getTables = () => {
     tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
   );
 
-  [new UserSchema(), new ContactSchema(), new AccountSchema()].map((s) =>
+  [UserSchema, ContactSchema, AccountSchema].map((s) =>
     tables.push(getSchemaTable(s, Dialect.SQLite)),
   );
   return tables;
@@ -340,13 +334,7 @@ function getInsertUserAction(
   map: Map<string, any>,
   viewer: Viewer = new LoggedOutViewer(),
 ) {
-  return new SimpleAction(
-    viewer,
-    new UserSchema(),
-    map,
-    WriteOperation.Insert,
-    null,
-  );
+  return new SimpleAction(viewer, UserSchema, map, WriteOperation.Insert, null);
 }
 
 function getInsertAccountAction(
@@ -355,7 +343,7 @@ function getInsertAccountAction(
 ) {
   return new SimpleAction(
     viewer,
-    new AccountSchema(),
+    AccountSchema,
     map,
     WriteOperation.Insert,
     null,
@@ -368,7 +356,7 @@ function getInsertContactAction(
 ) {
   return new SimpleAction(
     viewer,
-    new ContactSchema(),
+    ContactSchema,
     map,
     WriteOperation.Insert,
     null,
@@ -398,7 +386,7 @@ function commonTests() {
     advanceTo(d);
     const action2 = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map(),
       WriteOperation.Delete,
       user,
@@ -496,7 +484,7 @@ function commonTests() {
 
     const action4 = new SimpleAction(
       new LoggedOutViewer(),
-      new AccountSchema(),
+      AccountSchema,
       new Map(),
       WriteOperation.Delete,
       account3,
@@ -558,7 +546,7 @@ function commonTests() {
 
     const action2 = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map(),
       WriteOperation.Delete,
       user,
@@ -681,7 +669,7 @@ function commonTests() {
     advanceTo(d);
     const action2 = new SimpleAction(
       new LoggedOutViewer(),
-      new ContactSchema(),
+      ContactSchema,
       new Map(),
       WriteOperation.Delete,
       contact,
@@ -724,7 +712,7 @@ function commonTests() {
 
     const action2 = new SimpleAction(
       new LoggedOutViewer(),
-      new ContactSchema(),
+      ContactSchema,
       new Map(),
       WriteOperation.Delete,
       contact,
