@@ -28,22 +28,23 @@ type Pattern struct {
 
 type Node struct {
 	// Note that anytime anything changes here, have to update nodeEqual in compare.go
-	TableName        string                   `json:"tableName,omitempty"`
-	Fields           []*Field                 `json:"fields,omitempty"`
-	AssocEdges       []*AssocEdge             `json:"assocEdges,omitempty"`
-	AssocEdgeGroups  []*AssocEdgeGroup        `json:"assocEdgeGroups,omitempty"`
-	Actions          []*Action                `json:"actions,omitempty"`
-	EnumTable        bool                     `json:"enumTable,omitempty"`
-	DBRows           []map[string]interface{} `json:"dbRows,omitempty"`
-	Constraints      []*Constraint            `json:"constraints,omitempty"`
-	Indices          []*Index                 `json:"indices,omitempty"`
-	HideFromGraphQL  bool                     `json:"hideFromGraphQL,omitempty"`
-	EdgeConstName    string                   `json:"edgeConstName,omitempty"`
-	PatternName      string                   `json:"patternName,omitempty"`
-	TransformsSelect bool                     `json:"transformsSelect,omitempty"`
-	TransformsDelete bool                     `json:"transformsDelete,omitempty"`
-	SchemaPath       string                   `json:"schemaPath,omitempty"`
-	Patterns         []string                 `json:"patternNames,omitempty"`
+	TableName        string                    `json:"tableName,omitempty"`
+	Fields           []*Field                  `json:"fields,omitempty"`
+	FieldOverrides   map[string]*FieldOverride `json:"fieldOverrides"`
+	AssocEdges       []*AssocEdge              `json:"assocEdges,omitempty"`
+	AssocEdgeGroups  []*AssocEdgeGroup         `json:"assocEdgeGroups,omitempty"`
+	Actions          []*Action                 `json:"actions,omitempty"`
+	EnumTable        bool                      `json:"enumTable,omitempty"`
+	DBRows           []map[string]interface{}  `json:"dbRows,omitempty"`
+	Constraints      []*Constraint             `json:"constraints,omitempty"`
+	Indices          []*Index                  `json:"indices,omitempty"`
+	HideFromGraphQL  bool                      `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName    string                    `json:"edgeConstName,omitempty"`
+	PatternName      string                    `json:"patternName,omitempty"`
+	TransformsSelect bool                      `json:"transformsSelect,omitempty"`
+	TransformsDelete bool                      `json:"transformsDelete,omitempty"`
+	SchemaPath       string                    `json:"schemaPath,omitempty"`
+	Patterns         []string                  `json:"patternNames,omitempty"`
 	// these 2 not used yet so ignoring for now
 	// TransformsInsert bool `json:"transformsInsert,omitempty"`
 	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`
@@ -159,6 +160,40 @@ type Field struct {
 	Import enttype.Import `json:"-"`
 
 	PatternName string `json:"patternName,omitempty"`
+}
+
+func (f *Field) ApplyOverride(override *FieldOverride) {
+	if override.GraphQLName != "" {
+		f.GraphQLName = override.GraphQLName
+	}
+	if override.ServerDefault != nil {
+		f.ServerDefault = override.ServerDefault
+	}
+	if override.StorageKey != "" {
+		f.StorageKey = override.StorageKey
+	}
+	if override.HideFromGraphQL != f.HideFromGraphQL {
+		f.HideFromGraphQL = override.HideFromGraphQL
+	}
+	if override.Index != f.Index {
+		f.Index = override.Index
+	}
+	if override.Unique != f.Unique {
+		f.Unique = override.Unique
+	}
+	if override.Nullable != f.Nullable {
+		f.Nullable = override.Nullable
+	}
+}
+
+type FieldOverride struct {
+	Nullable        bool    `json:"nullable,omitempty"`
+	StorageKey      string  `json:"storageKey,omitempty"`
+	Unique          bool    `json:"unique,omitempty"`
+	HideFromGraphQL bool    `json:"hideFromGraphQL,omitempty"`
+	GraphQLName     string  `json:"graphqlName,omitempty"`
+	Index           bool    `json:"index,omitempty"`
+	ServerDefault   *string `json:"serverDefault,omitempty"`
 }
 
 type ForeignKey struct {

@@ -384,6 +384,7 @@ export async function parseSchema(
     }
     let processedSchema: ProcessedSchema = {
       fields: [],
+      fieldOverrides: schema.fieldOverrides,
       schemaPath: schema.schemaPath,
       tableName: schema.tableName,
       enumTable: schema.enumTable,

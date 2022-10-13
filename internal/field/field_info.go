@@ -11,7 +11,8 @@ import (
 )
 
 type Options struct {
-	SortFields bool
+	SortFields     bool
+	FieldOverrides map[string]*input.FieldOverride
 }
 
 // NewFieldInfoFromInputs generates Fields based on FieldInputs
@@ -28,8 +29,18 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*in
 	}
 	var errs []error
 
+	overrides := make(map[string]*input.FieldOverride)
+	if options.FieldOverrides != nil {
+		overrides = options.FieldOverrides
+	}
 	var primaryKeys []string
 	for _, field := range fields {
+		// apply overrides if it applies
+		override := overrides[field.Name]
+		if override != nil {
+			field.ApplyOverride(override)
+		}
+
 		f, err := newFieldFromInput(cfg, nodeName, field)
 		if err != nil {
 			return nil, err

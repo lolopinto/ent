@@ -15,6 +15,7 @@ import (
 type node struct {
 	tableName       string
 	fields          []field
+	fieldOverrides  map[string]*input.FieldOverride
 	assocEdges      []assocEdge
 	assocEdgeGroups []assocEdgeGroup
 	actions         []action
@@ -161,6 +162,8 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 
 				verifyFields(t, expectedNode.fields, node.Fields)
 
+				verifyFieldOverrides(t, expectedNode.fieldOverrides, node.FieldOverrides)
+
 				verifyAssocEdges(t, expectedNode.assocEdges, node.AssocEdges)
 
 				verifyAssocEdgeGroups(t, expectedNode.assocEdgeGroups, node.AssocEdgeGroups)
@@ -196,6 +199,26 @@ func verifyFields(t *testing.T, expFields []field, fields []*input.Field) {
 	}
 }
 
+func verifyFieldOverrides(t *testing.T, exp, actual map[string]*input.FieldOverride) {
+	require.Len(t, exp, len(actual))
+
+	for k, exp1 := range exp {
+		require.NotNil(t, actual[k], k)
+		verifyFieldOverride(t, exp1, actual[k])
+	}
+}
+
+func verifyFieldOverride(t *testing.T, exp, actual *input.FieldOverride) {
+	assert.Equal(t, exp.GraphQLName, actual.GraphQLName)
+	assert.Equal(t, exp.Index, actual.Index)
+	assert.Equal(t, exp.Unique, actual.Unique)
+	assert.Equal(t, exp.ServerDefault, actual.ServerDefault)
+	assert.Equal(t, exp.StorageKey, actual.StorageKey)
+	assert.Equal(t, exp.Nullable, actual.Nullable)
+	assert.Equal(t, exp.HideFromGraphQL, actual.HideFromGraphQL)
+}
+
+// TODO verifyFieldOverride
 func verifyField(t *testing.T, expField field, field *input.Field) {
 	if expField.typ != nil {
 		assert.Equal(t, expField.typ, field.Type)

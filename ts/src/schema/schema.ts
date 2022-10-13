@@ -33,10 +33,29 @@ export interface GlobalSchema {
   ) => TransformedEdgeUpdateOperation | null;
 }
 
+// we may eventually support more properties but for now, minimal field properties
+// which affect specific codegen/db/graphql but nothing at runtime
+type FieldOverride = Pick<
+  FieldOptions,
+  | "nullable"
+  | "storageKey"
+  | "serverDefault"
+  | "unique"
+  | "hideFromGraphQL"
+  | "graphqlName"
+  | "index"
+>;
+
+export type FieldOverrideMap = {
+  [key: string]: FieldOverride;
+};
+
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
   fields: FieldMap | Field[];
+
+  fieldOverrides?: FieldOverrideMap;
 
   // optional, can be overriden as needed
   tableName?: string;

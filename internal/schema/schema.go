@@ -419,7 +419,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			return s.addEnum(enumType, nodeData, f.ForeignKeyInfo(), f.ExposeToGraphQL())
 		}
 
-		fieldInfo, err := s.processFields(cfg, nodeName, node.Fields, addEnum, false)
+		fieldInfo, err := s.processFields(cfg, nodeName, node.Fields, addEnum, node)
 		if err != nil {
 			return nil, err
 		}
@@ -520,7 +520,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			return nil
 		}
 
-		fieldInfo, err := s.processFields(cfg, name, pattern.Fields, addEnum, true)
+		fieldInfo, err := s.processFields(cfg, name, pattern.Fields, addEnum, nil)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -670,12 +670,20 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 // patternField explicitly passed as a param to remind clients to check it
 type processEnum func(enumType enttype.EnumeratedType, f *field.Field, patternField bool) error
 
-func (s *Schema) processFields(cfg codegenapi.Config, nodeName string, fields []*input.Field, fn processEnum, sourceIsPattern bool) (*field.FieldInfo, error) {
+func (s *Schema) processFields(cfg codegenapi.Config, nodeName string, fields []*input.Field, fn processEnum, node *input.Node) (*field.FieldInfo, error) {
+	sourceIsPattern := node == nil
+	var overrides map[string]*input.FieldOverride
+	if node != nil {
+		overrides = node.FieldOverrides
+	}
+
 	fieldInfo, err := field.NewFieldInfoFromInputs(
 		cfg,
 		nodeName,
 		fields,
-		&field.Options{},
+		&field.Options{
+			FieldOverrides: overrides,
+		},
 	)
 
 	if err != nil {
@@ -702,6 +710,12 @@ func (s *Schema) processFields(cfg codegenapi.Config, nodeName string, fields []
 			if err := s.checkCustomInterface(cfg, f, nil); err != nil {
 				return nil, err
 			}
+		}
+	}
+
+	for k := range overrides {
+		if fieldInfo.GetFieldByName(k) == nil {
+			return nil, fmt.Errorf("invalid Field %s passed to override for Node %s", k, nodeName)
 		}
 	}
 
