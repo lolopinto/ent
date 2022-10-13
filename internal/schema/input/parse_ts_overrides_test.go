@@ -7,6 +7,7 @@ import (
 )
 
 func TestParseOverrides(t *testing.T) {
+	trueVal := true
 	testCases := map[string]testCase{
 		"override index": {
 			code: map[string]string{
@@ -50,7 +51,7 @@ func TestParseOverrides(t *testing.T) {
 					}),
 					fieldOverrides: map[string]*input.FieldOverride{
 						"createdAt": {
-							Index: true,
+							Index: &trueVal,
 						},
 					},
 				},
@@ -104,7 +105,7 @@ func TestParseOverrides(t *testing.T) {
 					}),
 					fieldOverrides: map[string]*input.FieldOverride{
 						"createdAt": {
-							Unique: true,
+							Unique: &trueVal,
 						},
 					},
 				},
