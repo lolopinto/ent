@@ -27,6 +27,12 @@ const TodoSchema = new TodoEntSchema({
     completedDate: TimestampType({ index: true, nullable: true }),
   },
 
+  fieldOverrides: {
+    createdAt: {
+      index: true,
+    },
+  },
+
   edges: [
     {
       name: "tags",
