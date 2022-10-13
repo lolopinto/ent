@@ -218,7 +218,6 @@ func verifyFieldOverride(t *testing.T, exp, actual *input.FieldOverride) {
 	assert.Equal(t, exp.HideFromGraphQL, actual.HideFromGraphQL)
 }
 
-// TODO verifyFieldOverride
 func verifyField(t *testing.T, expField field, field *input.Field) {
 	if expField.typ != nil {
 		assert.Equal(t, expField.typ, field.Type)

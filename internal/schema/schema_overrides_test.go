@@ -759,8 +759,6 @@ func TestOverrides(t *testing.T) {
 		},
 	}
 
-	// TODO keys that don't exist
-
 	runOverrideTestCases(t, cases)
 }
 
@@ -827,7 +825,6 @@ func testOverrides(
 			assert.Equal(t, exp.GetDbColName(), f.GetDbColName())
 			assert.Equal(t, exp.Unique(), f.Unique())
 			assert.Equal(t, exp.Nullable(), f.Nullable())
-
 		}
 	}
 }
