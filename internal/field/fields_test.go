@@ -15,10 +15,10 @@ func TestDerivedFields(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
+		import {EntSchema, StringType, UUIDType} from "{schema}";
 
-		export default class Address extends BaseEntSchema {
-			fields: FieldMap = {
+		const Address = new EntSchema({
+			fields: {
 				Street: StringType(),
 				City: StringType(),
 				State: StringType(),
@@ -27,8 +27,9 @@ func TestDerivedFields(t *testing.T) {
 					index: true, 
 					polymorphic: true,
 				}),
-			};
-		}`),
+			},
+		});
+		export default Address`),
 		},
 		base.TypeScript,
 	)
@@ -64,14 +65,15 @@ func TestDuplicateFields(t *testing.T) {
 	schema, err := testhelper.ParseSchemaForTestFull(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {Schema, FieldMap, StringType, UUIDType} from "{schema}";
+		import {EntSchema, StringType, UUIDType} from "{schema}";
 
-		export default class Address implements Schema {
-			fields: FieldMap = {
+		const Address = new EntSchema({
+			fields: {
 				Street: StringType(),
 				street: StringType(),
-			};
-		}`),
+			},
+		});
+		export default Address`),
 		},
 		base.TypeScript,
 	)
@@ -85,10 +87,10 @@ func TestDisableBuilderIDField(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
+		import {EntSchema, StringType, UUIDType} from "{schema}";
 
-		export default class Address extends BaseEntSchema {
-			fields: FieldMap = {
+		const Address = new EntSchema({
+			fields: {
 				Street: StringType(),
 				City: StringType(),
 				State: StringType(),
@@ -99,8 +101,9 @@ func TestDisableBuilderIDField(t *testing.T) {
 						disableBuilderType: true,
 					},
 				}),
-			};
-		}`),
+			},
+		});
+		export default Address`),
 		},
 		base.TypeScript,
 	)
@@ -123,10 +126,10 @@ func TestUUIDFieldList(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"contact.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, FieldMap, StringType, UUIDListType} from "{schema}";
+		import {EntSchema, FieldMap, StringType, UUIDListType} from "{schema}";
 
-		export default class Contact extends BaseEntSchema {
-			fields: FieldMap = {
+		const Contact = new EntSchema({
+			fields: {
 				FirstName: StringType(),
 				LastName: StringType(),
 				contactEmailIDs: UUIDListType({
@@ -134,19 +137,21 @@ func TestUUIDFieldList(t *testing.T) {
 						schema: "ContactEmail",
 					},
 				}),
-			};
-		}`),
+			},
+		});
+		export default Contact`),
 			"contact_email.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
+		import {EntSchema, FieldMap, StringType, UUIDType} from "{schema}";
 
-		export default class ContactEmail extends BaseEntSchema {
-			fields: FieldMap = {
+		const ContactEmail = new EntSchema({
+			fields: {
 				EmailAddress: StringType(),
 				OwnerID: UUIDType({
 					fieldEdge: {schema: "Contact"},
 				}),
-			};
-		}`),
+			},
+		});
+		export default ContactEmail`),
 		},
 		base.TypeScript,
 	)
@@ -199,10 +204,10 @@ func TestNullableUUIDFieldList(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"contact.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, FieldMap, StringType, UUIDListType} from "{schema}";
+		import {EntSchema, StringType, UUIDListType} from "{schema}";
 
-		export default class Contact extends BaseEntSchema {
-			fields: FieldMap = {
+		const Contact = new EntSchema({
+			fields: {
 				FirstName: StringType(),
 				LastName: StringType(),
 				contactEmailIDs: UUIDListType({
@@ -211,19 +216,21 @@ func TestNullableUUIDFieldList(t *testing.T) {
 						schema: "ContactEmail",
 					},
 				}),
-			};
-		}`),
+			},
+		});
+		export default Contact`),
 			"contact_email.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
+		import {EntSchema, StringType, UUIDType} from "{schema}";
 
-		export default class ContactEmail extends BaseEntSchema {
-			fields: FieldMap = {
+		const ContactEmail = new EntSchema({
+			fields: {
 				EmailAddress: StringType(),
 				OwnerID: UUIDType({
 					fieldEdge: {schema: "Contact"},
 				}),
-			};
-		}`),
+			},
+		});
+		export default ContactEmail`),
 		},
 		base.TypeScript,
 	)
