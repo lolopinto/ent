@@ -25,31 +25,27 @@ func TestPatternsWithEdge(t *testing.T) {
 					];
 				}
 				`),
-				"post.ts": getCodeWithSchema(`
-				import {BaseEntSchema, FieldMap} from "{schema}";
+				"post_schema.ts": getCodeWithSchema(`
+				import {EntSchema} from "{schema}";
 				import Feedback from "./patterns/feedback";
 
-				export default class Post extends BaseEntSchema {
+				const PostSchema = new EntSchema({
 
-					constructor() {
-						super();
-						this.addPatterns(new Feedback());
-					}
-					fields: FieldMap = {};
-				}
+					patterns: [new Feedback()],
+					fields:  {},
+				});
+				export default PostSchema;
 				`),
-				"group.ts": getCodeWithSchema(`
-				import {BaseEntSchema, FieldMap} from "{schema}";
+				"group_schema.ts": getCodeWithSchema(`
+				import {EntSchema } from "{schema}";
 				import Feedback from "./patterns/feedback";
 
-				export default class Group extends BaseEntSchema {
+				const GroupSchema = new EntSchema({
 
-					constructor() {
-						super();
-						this.addPatterns(new Feedback());
-					}
-					fields: FieldMap = {};
-				}
+					patterns: [new Feedback()],
+					fields: {},
+				});
+				export default GroupSchema;
 				`),
 			},
 			expectedNodes: map[string]node{

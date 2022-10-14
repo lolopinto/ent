@@ -380,20 +380,21 @@ func TestDefaultNoFields(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, NoFields} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, NoFields} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
@@ -429,21 +430,22 @@ func TestExplicitNoFields(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, NoFields} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, NoFields} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 							fields: [NoFields],
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
@@ -468,24 +470,25 @@ func TestNullableFieldInAction(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastNAme: StringType(),
 						EmailAddress: StringType({nullable: true}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 							actionName: "EditEmailAddressAction",
 							graphQLName: "editEmailAddressAction",
 							fields: ["EmailAddress"],
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
@@ -516,24 +519,25 @@ func TestOverriddenRequiredActionField(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, requiredField} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
 						EmailAddress: StringType({nullable: true}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 							actionName: "EditEmailAddressAction",
 							graphQLName: "editEmailAddressAction",
 							fields: [requiredField("EmailAddress")],
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
@@ -565,10 +569,10 @@ func TestPrivateFieldExposedToActions(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, requiredField} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
 						EmailAddress: StringType(),
@@ -577,14 +581,15 @@ func TestPrivateFieldExposedToActions(t *testing.T) {
 								exposeToActions: true,
 							},
 						}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create, 
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
@@ -630,24 +635,25 @@ func TestPrivateField(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, requiredField} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema ({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
 						EmailAddress: StringType(),
 						Password: StringType({
 							private: true,
 						}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create, 
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
@@ -688,24 +694,25 @@ func TestOverriddenOptionalActionField(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, optionalField} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, optionalField} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
 						EmailAddress: StringType({nullable: true}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 							actionName: "EditNameAction",
 							graphQLName: "editUserName",
 							fields: [optionalField("FirstName"), optionalField("LastName")],
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
@@ -742,15 +749,15 @@ func TestActionOnlyFields(t *testing.T) {
 		map[string]string{
 			"event.ts": testhelper.GetCodeWithSchema(
 				`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType, TimestampType} from "{schema}";
 
-				export default class Event extends BaseEntSchema {
-					fields: FieldMap = {
+				const Event = new EntSchema({
+					fields: {
 						name: StringType(),
 						start_time: TimestampType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 							actionOnlyFields: [{
@@ -763,8 +770,9 @@ func TestActionOnlyFields(t *testing.T) {
 								nullable: true,
 							}],
 						},
-					];
-				};`),
+					],
+				});
+				export default Event;`),
 		},
 		base.TypeScript,
 		"EventConfig",
@@ -816,14 +824,14 @@ func TestActionOnlyFieldsInvalidAction(t *testing.T) {
 		map[string]string{
 			"contact.ts": testhelper.GetCodeWithSchema(
 				`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType} from "{schema}";
 
-				export default class Contact extends BaseEntSchema {
-					fields: FieldMap = {
+				const Contact = new EntSchema({
+					fields: {
 						name: StringType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 							actionOnlyFields: [{
@@ -833,24 +841,26 @@ func TestActionOnlyFieldsInvalidAction(t *testing.T) {
 								actionName: "CreateEmailAction",
 							}],
 						},
-					];
-				};`),
+					],
+				});
+				export default Contact`),
 			"contact_email.ts": testhelper.GetCodeWithSchema(
 				`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType} from "{schema}";
 
-				export default class ContactEmail extends BaseEntSchema {
-					fields: FieldMap = {
+				const ContactEmail = new EntSchema({
+					fields: {
 						email: StringType(),
 						label: StringType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 						},
-					];
-				};`,
+					],
+				})
+				export default ContactEmail;`,
 			),
 		},
 		base.TypeScript,
@@ -866,32 +876,33 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 		t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(
-				`import {BaseEntSchema, Action, FieldMap, StringType, UUIDType, ActionOperation} from "{schema}";
+				`import {EntSchema, StringType, UUIDType, ActionOperation} from "{schema}";
 
-		export default class Address extends BaseEntSchema {
-		fields: FieldMap = {
+		const Address = new EntSchema({
+		fields: {
 			Street: StringType(),
 			City: StringType(),
 			State: StringType(),
 			ZipCode: StringType(), 
-		};
+		},
 
-		actions: Action[] = [
+		actions: [
 			{
 				operation: ActionOperation.Create,
 			},
-		];
-	}`),
+		],
+	});
+	export default Address`),
 			"event_activity.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
 
-				export default class EventActivity extends BaseEntSchema {
-					fields: FieldMap = {
+				const EventActivity = new EntSchema({
+					fields: {
 						name: StringType(),
 						eventID: UUIDType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 							actionOnlyFields: [{
@@ -900,19 +911,20 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 								type: "Object",
 							}],
 						},
-					];
-				};`),
+					],
+				});
+				export default EventActivity`),
 			"event.ts": testhelper.GetCodeWithSchema(
 				`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType, TimestampType} from "{schema}";
 
-				export default class Event extends BaseEntSchema {
-					fields: FieldMap = {
+				const Event = new EntSchema({
+					fields: {
 						name: StringType(),
 						start_time: TimestampType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 							actionOnlyFields: [{
@@ -922,8 +934,9 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 								type: "Object",
 							}],
 						},
-					];
-				};`),
+					],
+				});
+				export default Event;`),
 		},
 		base.TypeScript,
 	)
@@ -1056,31 +1069,33 @@ func TestFieldEdgeFields(t *testing.T) {
 		t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(
-				`import {BaseEntSchema, Action, FieldMap, StringType, UUIDType, ActionOperation} from "{schema}";
+				`import {EntSchema, StringType, UUIDType, ActionOperation} from "{schema}";
 
-		export default class Address extends BaseEntSchema {
-		fields: FieldMap = {
-			Street: StringType(),
-			City: StringType(),
-			State: StringType(),
-			ZipCode: StringType(), 
-		};
-	}`),
+		const Address = new EntSchema({
+			fields: {
+				Street: StringType(),
+				City: StringType(),
+				State: StringType(),
+				ZipCode: StringType(), 
+			},
+		});
+		export default Address;`),
 			"profile.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
 
-				export default class Profile extends BaseEntSchema {
-					fields: FieldMap = {
+				const Profile = new EntSchema({
+					fields: {
 						name: StringType(),
 						addressID: UUIDType({fieldEdge: { schema: "Address", inverseEdge: "residents"}}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 						},
-					];
-				};`),
+					],
+				});
+				export default Profile`),
 		},
 		base.TypeScript,
 	)

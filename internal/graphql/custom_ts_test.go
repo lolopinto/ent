@@ -44,14 +44,15 @@ func TestCustomMutation(t *testing.T) {
 	// very complicated but simplest no-frills way to test things
 	m := map[string]string{
 		"contact.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
+			import {EntSchema, StringType} from "{schema}";
 
-			export default class Contact extends BaseEntSchema {
-				fields: FieldMap = {
+			const Contact = new EntSchema({
+				fields: {
 					firstName: StringType(),
 					lastName: StringType(),
-				};
-			}
+				},
+			});
+			export default Contact;
 		`),
 	}
 
@@ -175,14 +176,15 @@ func TestCustomMutation(t *testing.T) {
 func TestCustomQuery(t *testing.T) {
 	m := map[string]string{
 		"contact.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
+			import {EntSchema, StringType} from "{schema}";
 
-			export default class Contact extends BaseEntSchema {
-				fields: FieldMap = {
+			const Contact = new EntSchema({
+				fields: {
 					firstName: StringType(),
 					lastName: StringType(),
-				};
-			}
+				},
+			});
+			export default Contact;
 		`),
 	}
 
@@ -431,28 +433,30 @@ func TestCustomListQuery(t *testing.T) {
 func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	m := map[string]string{
 		"user.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
+			import {EntSchema, StringType} from "{schema}";
 
-			export default class User extends BaseEntSchema {
-				fields: FieldMap = {
+			const User = new EntSchema({
+				fields: {
 					firstName: StringType(),
 					lastName: StringType(),
-				};
-			}
+				},
+			});
+			export default User;
 		`),
 		"username.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
+			import {EntSchema, StringType, UUIDType} from "{schema}";
 
-			export default class Username extends BaseEntSchema {
-				fields: FieldMap = {
+			const Username = new EntSchema({
+				fields: {
 					username: StringType({
 						unique:true,
 					}),
 					userID: UUIDType({
 						foreignKey: {schema: "User", column: "ID"},
 					}),
-				};
-			}
+				},
+			});
+			export default Username;
 		`),
 	}
 

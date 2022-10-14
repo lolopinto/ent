@@ -71,267 +71,236 @@ func TestParseFields(t *testing.T) {
 		"nullable field": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, StringType} from "{schema}";
+				import {EntSchema, StringType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						bio: StringType({nullable: true}),
-					};
-				}`),
+					},
+				});
+				export default User;
+				`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:     "bio",
-							dbType:   input.String,
-							nullable: true,
-						},
-					},
+					fields: fieldsWithNodeFields(field{
+						name:     "bio",
+						dbType:   input.String,
+						nullable: true,
+					}),
 				},
 			},
 		},
 		"renamed storageKey": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, StringType} from "{schema}";
+				import {EntSchema, StringType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						bio: StringType({storageKey: "about_me"}),
-					}
-				}`),
+					},
+				});
+				export default User;
+				`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:       "bio",
-							dbType:     input.String,
-							storageKey: "about_me",
-						},
-					},
+					fields: fieldsWithNodeFields(field{
+						name:       "bio",
+						dbType:     input.String,
+						storageKey: "about_me",
+					}),
 				},
 			},
 		},
 		"renamed graphqlName": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, StringType} from "{schema}";
+				import {EntSchema, StringType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						bio: StringType({graphqlName: "aboutMe"}),
-					}
-				}`),
+					},
+				});
+				export default User;`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:        "bio",
-							dbType:      input.String,
-							graphqlName: "aboutMe",
-						},
+					fields: fieldsWithNodeFields(field{
+						name:        "bio",
+						dbType:      input.String,
+						graphqlName: "aboutMe",
 					},
+					),
 				},
 			},
 		},
 		"unique": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, StringType} from "{schema}";
+				import {StringType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const UserSchema = new EntSchema({
+					fields: {
 						email: StringType({unique: true}),
-					};
-				}`),
+					},
+				});
+				export default UserSchema;`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:   "email",
-							dbType: input.String,
-							unique: true,
-						},
+					fields: fieldsWithNodeFields(field{
+						name:   "email",
+						dbType: input.String,
+						unique: true,
 					},
+					),
 				},
 			},
 		},
 		"hideFromGraphQL": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, StringType} from "{schema}";
+				import {EntSchema, StringType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const UserSchema = new EntSchema({
+					fields: {
 						password: StringType({hideFromGraphQL: true}),
-					};
-				}`),
+					},
+				});
+				export default UserSchema;`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:            "password",
-							dbType:          input.String,
-							hideFromGraphQL: true,
-						},
-					},
+					fields: fieldsWithNodeFields(field{
+						name:            "password",
+						dbType:          input.String,
+						hideFromGraphQL: true,
+					}),
 				},
 			},
 		},
 		"private field": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, StringType} from "{schema}";
+				import {EntSchema, StringType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const UserSchema = new EntSchema({
+					fields: {
 						password: StringType({private: true}),
-					};
-				}`),
+					},
+				});
+				export default UserSchema;`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:    "password",
-							dbType:  input.String,
-							private: &input.PrivateOptions{},
-						},
-					},
+					fields: fieldsWithNodeFields(field{
+						name:    "password",
+						dbType:  input.String,
+						private: &input.PrivateOptions{},
+					}),
 				},
 			},
 		},
 		"private field exposed to actions": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, StringType} from "{schema}";
+				import {EntSchema, StringType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const UserSchema = new EntSchema({
+					fields: {
 						password: StringType({private: {
 							exposeToActions: true,
 						}}),
-					};
-				}`),
+					},
+				});
+				export default UserSchema;`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:   "password",
-							dbType: input.String,
-							private: &input.PrivateOptions{
-								ExposeToActions: true,
-							},
+					fields: fieldsWithNodeFields(field{
+						name:   "password",
+						dbType: input.String,
+						private: &input.PrivateOptions{
+							ExposeToActions: true,
 						},
-					},
+					}),
 				},
 			},
 		},
 		"index": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, StringType} from "{schema}";
+				import {EntSchema, StringType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						last_name: StringType({index: true}),
-					}
-				}`),
+					},
+				});
+				export default User;`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:   "last_name",
-							dbType: input.String,
-							index:  true,
-						},
-					},
+					fields: fieldsWithNodeFields(field{
+						name:   "last_name",
+						dbType: input.String,
+						index:  true,
+					}),
 				},
 			},
 		},
 		"server default": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, TimestampType} from "{schema}";
+				import {EntSchema, TimestampType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						updated_at: TimestampType({serverDefault: 'now()'}),
-					}
-				}`),
-			},
-			expectedNodes: map[string]node{
-				"User": {
-					fields: []field{
-						{
-							name:          "updated_at",
-							dbType:        input.Timestamp,
-							serverDefault: "now()",
-						},
 					},
-				},
-			},
-		},
-		"with base schema": {
-			code: map[string]string{
-				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, BaseEntSchema, StringType} from "{schema}";
-
-				export default class User extends BaseEntSchema implements Schema {
-					fields: FieldMap = {
-						firstName: StringType(),
-					};
-				}`),
-			},
-			expectedPatterns: map[string]pattern{
-				"node": {
-					name:   "node",
-					fields: nodeFields(),
-				},
+				});
+				export default User;`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: fieldsWithNodeFields(
-						field{
-							name:   "firstName",
-							dbType: input.String,
-						},
-					),
+					fields: fieldsWithNodeFields(field{
+						name:          "updated_at",
+						dbType:        input.Timestamp,
+						serverDefault: "now()",
+					}),
 				},
 			},
 		},
 		"multiple files/complicated": {
 			code: map[string]string{
-				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, BaseEntSchema, UUIDType, StringType } from "{schema}"
+				"user_schema.ts": getCodeWithSchema(`
+				import {EntSchema, UUIDType, StringType } from "{schema}"
 
-				export default class User extends BaseEntSchema implements Schema {
-					fields: FieldMap = {
+				const UserSchema = new EntSchema({
+					fields: {
 						first_name: StringType(),
 						last_name: StringType(),
 						email: StringType({unique: true}),
 						password: StringType({private: true, hideFromGraphQL: true}),
-					};
-				}`),
-				"event.ts": getCodeWithSchema(`
-				import {Schema, BaseEntSchema, FieldMap, TimestampType, StringType, UUIDType} from "{schema}"
+					},
+				});
+				export default UserSchema;`),
+				"event_schema.ts": getCodeWithSchema(`
+				import {EntSchema, TimestampType, StringType, UUIDType} from "{schema}"
 
-				export default class Event extends BaseEntSchema implements Schema {
-					fields: FieldMap = {
+				const EventSchema = new EntSchema({
+					fields: {
 						name: StringType(),
 						creator_id: UUIDType({foreignKey: {schema:"User", column:"ID"}}),
 						start_time: TimestampType(),
 						end_time: TimestampType({ nullable: true}),
 						location: StringType(),
-					};
-				}`),
+					},
+				});
+				export default EventSchema;`),
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
@@ -394,131 +363,127 @@ func TestParseFields(t *testing.T) {
 		"enum": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, EnumType} from "{schema}";
+				import {EntSchema, EnumType} from "{schema}";
 
-				export default class User implements Schema {
-					fields: FieldMap = {
+				const UserSchema = new EntSchema({
+					fields: {
 						AccountStatus: EnumType({values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"]}),
-					};
-				}`),
+					},
+				});
+				export default UserSchema`),
 			},
 			expectedNodes: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name: "AccountStatus",
-							typ: &input.FieldType{
-								DBType: input.StringEnum,
-								Values: []string{
-									"UNVERIFIED",
-									"VERIFIED",
-									"DEACTIVATED",
-									"DISABLED",
-								},
+					fields: fieldsWithNodeFields(field{
+						name: "AccountStatus",
+						typ: &input.FieldType{
+							DBType: input.StringEnum,
+							Values: []string{
+								"UNVERIFIED",
+								"VERIFIED",
+								"DEACTIVATED",
+								"DISABLED",
 							},
 						},
-					},
+					}),
 				},
 			},
 		},
 		"enum with custom type": {
 			code: map[string]string{
-				"request.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, EnumType} from "{schema}";
+				"request_schema.ts": getCodeWithSchema(`
+				import {EntSchema, EnumType} from "{schema}";
 
-				export default class Request implements Schema {
-					fields: FieldMap = {
+				const RequestSchema = new EntSchema({
+					fields: {
 						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
-					};
-				}`),
+					},
+				});
+				export default RequestSchema;`),
 			},
 			expectedNodes: map[string]node{
 				"Request": {
-					fields: []field{
-						{
-							name: "Status",
-							typ: &input.FieldType{
-								DBType: input.StringEnum,
-								Values: []string{
-									"OPEN",
-									"PENDING",
-									"CLOSED",
-								},
-								Type:        "RequestStatus",
-								GraphQLType: "RequestStatus",
+					fields: fieldsWithNodeFields(field{
+						name: "Status",
+						typ: &input.FieldType{
+							DBType: input.StringEnum,
+							Values: []string{
+								"OPEN",
+								"PENDING",
+								"CLOSED",
 							},
+							Type:        "RequestStatus",
+							GraphQLType: "RequestStatus",
 						},
-					},
+					}),
 				},
 			},
 		},
 		"db enum with custom type": {
 			code: map[string]string{
-				"request.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, EnumType} from "{schema}";
+				"request_schema.ts": getCodeWithSchema(`
+				import {EntSchema, EnumType} from "{schema}";
 
-				export default class Request implements Schema {
-					fields: FieldMap = {
+				const RequestSchema = new EntSchema({
+					fields: {
 						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
-					}
-				}`),
+					},
+				});
+				export default RequestSchema;`),
 			},
 			expectedNodes: map[string]node{
 				"Request": {
-					fields: []field{
-						{
-							name: "Status",
-							typ: &input.FieldType{
-								DBType: input.Enum,
-								Values: []string{
-									"OPEN",
-									"PENDING",
-									"CLOSED",
-								},
-								Type:        "RequestStatus",
-								GraphQLType: "RequestStatus",
+					fields: fieldsWithNodeFields(field{
+						name: "Status",
+						typ: &input.FieldType{
+							DBType: input.Enum,
+							Values: []string{
+								"OPEN",
+								"PENDING",
+								"CLOSED",
 							},
+							Type:        "RequestStatus",
+							GraphQLType: "RequestStatus",
 						},
-					},
+					}),
 				},
 			},
 		},
-		"db enum ": {
+		"db enum": {
 			code: map[string]string{
 				"request.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, EnumType} from "{schema}";
+				import {EntSchema, EnumType} from "{schema}";
 
-				export default class Request implements Schema {
-					fields: FieldMap = {
+				const RequestSchema = new EntSchema({
+					fields: {
 						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], createEnumType: true}),
-					}
-				}`),
+					},
+				});
+				export default RequestSchema;`),
 			},
 			expectedNodes: map[string]node{
 				"Request": {
-					fields: []field{
-						{
-							name: "Status",
-							typ: &input.FieldType{
-								DBType: input.Enum,
-								Values: []string{
-									"OPEN",
-									"PENDING",
-									"CLOSED",
-								},
+					fields: fieldsWithNodeFields(field{
+						name: "Status",
+						typ: &input.FieldType{
+							DBType: input.Enum,
+							Values: []string{
+								"OPEN",
+								"PENDING",
+								"CLOSED",
 							},
 						},
-					},
+					}),
 				},
 			},
 		},
 		"polymorphic field": {
 			code: map[string]string{
 				"address.ts": getCodeWithSchema(`
-					import {Schema, FieldMap, StringType, UUIDType} from "{schema}";
+					import {EntSchema, StringType, UUIDType} from "{schema}";
 
-					export default class Address implements Schema {
-						fields: FieldMap = {
+					const AddressSchema = new EntSchema({
+						fields: {
 							Street: StringType(),
 					    City: StringType(),
 							State: StringType(),
@@ -527,38 +492,39 @@ func TestParseFields(t *testing.T) {
 								index: true, 
 								polymorphic: true,
 							}),
-						};
-					}
+						},
+					});
+					export default AddressSchema;
 				`),
 			},
 			expectedNodes: map[string]node{
 				"Address": {
-					fields: []field{
-						{
+					fields: fieldsWithNodeFields(
+						field{
 							name: "Street",
 							typ: &input.FieldType{
 								DBType: input.String,
 							},
 						},
-						{
+						field{
 							name: "City",
 							typ: &input.FieldType{
 								DBType: input.String,
 							},
 						},
-						{
+						field{
 							name: "State",
 							typ: &input.FieldType{
 								DBType: input.String,
 							},
 						},
-						{
+						field{
 							name: "ZipCode",
 							typ: &input.FieldType{
 								DBType: input.String,
 							},
 						},
-						{
+						field{
 							name: "OwnerID",
 							typ: &input.FieldType{
 								DBType: input.UUID,
@@ -573,17 +539,17 @@ func TestParseFields(t *testing.T) {
 								},
 							},
 						},
-					},
+					),
 				},
 			},
 		},
 		"polymorphic field with restricted types": {
 			code: map[string]string{
 				"address.ts": getCodeWithSchema(`
-					import {Schema, FieldMap, StringType, UUIDType} from "{schema}";
+					import {EntSchema, StringType, UUIDType} from "{schema}";
 
-					export default class Address implements Schema {
-						fields: FieldMap = {
+					const AddressSchema = new EntSchema({
+						fields: {
 							street: StringType(),
 					    city: StringType(),
 							state: StringType(),
@@ -595,38 +561,39 @@ func TestParseFields(t *testing.T) {
 									hideFromInverseGraphQL:true,
 								},
 							}),
-						};
-					}
+						},
+					});
+					export default AddressSchema;
 				`),
 			},
 			expectedNodes: map[string]node{
 				"Address": {
-					fields: []field{
-						{
+					fields: fieldsWithNodeFields(
+						field{
 							name: "street",
 							typ: &input.FieldType{
 								DBType: input.String,
 							},
 						},
-						{
+						field{
 							name: "city",
 							typ: &input.FieldType{
 								DBType: input.String,
 							},
 						},
-						{
+						field{
 							name: "state",
 							typ: &input.FieldType{
 								DBType: input.String,
 							},
 						},
-						{
+						field{
 							name: "zip_code",
 							typ: &input.FieldType{
 								DBType: input.String,
 							},
 						},
-						{
+						field{
 							name: "owner_id",
 							typ: &input.FieldType{
 								DBType: input.UUID,
@@ -650,31 +617,33 @@ func TestParseFields(t *testing.T) {
 								},
 							},
 						},
-					},
+					),
 				},
 			},
 		},
 		"disable index in foreign key": {
 			code: map[string]string{
-				"user.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, BaseEntSchema, UUIDType, StringType } from "{schema}"
+				"user_schema.ts": getCodeWithSchema(`
+				import {EntSchema, UUIDType, StringType } from "{schema}"
 
-				export default class User extends BaseEntSchema implements Schema {
-					fields: FieldMap = {
+				const UserSchema = new EntSchema({
+					fields: {
 						first_name: StringType(),
 						last_name: StringType(),
 						email: StringType({ unique: true}),
-					};
-				}`),
-				"event.ts": getCodeWithSchema(`
-				import {Schema, BaseEntSchema, FieldMap, TimestampType, StringType, UUIDType} from "{schema}"
+					},
+				});
+				export default UserSchema;`),
+				"event_schema.ts": getCodeWithSchema(`
+				import {EntSchema, TimestampType, StringType, UUIDType} from "{schema}"
 
-				export default class Event extends BaseEntSchema implements Schema {
-					fields: FieldMap = {
+				const EventSchema = new EntSchema({
+					fields: {
 						name: StringType(),
 						creator_id: UUIDType({foreignKey: {schema:"User", column:"ID", disableIndex: true}}),
-					}
-				}`),
+					},
+				});
+				export default EventSchema;`),
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
@@ -717,17 +686,20 @@ func TestParseFields(t *testing.T) {
 		},
 		"jsonb import type": {
 			code: map[string]string{
-				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, BaseEntSchema, JSONBType } from "{schema}"
+				"user_schema.ts": getCodeWithSchema(`
+				import {EntSchema, JSONBType } from "{schema}"
 
-				export default class User extends BaseEntSchema implements Schema {
-					fields: Field[] = [
-						JSONBType({name: "foo", importType: {
-							type: "Foo",
-							path: "path/to_foo.ts",
-						} }),
-					]
-				}`),
+				const UserSchema = new EntSchema({
+					fields: {
+						foo: JSONBType({
+							importType: {
+								type: "Foo",
+								path: "path/to_foo.ts",
+							},
+						}),
+					},
+				});
+				export default UserSchema;`),
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
@@ -756,16 +728,17 @@ func TestParseFields(t *testing.T) {
 		"jsonb import type as list": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, BaseEntSchema, JSONBTypeAsList } from "{schema}"
+				import {EntSchema, JSONBTypeAsList } from "{schema}"
 
-				export default class User extends BaseEntSchema implements Schema {
-					fields: Field[] = [
-						JSONBTypeAsList({name: "foo", importType: {
+				const UserSchema = new EntSchema({
+					fields: {
+						foo: JSONBTypeAsList({importType: {
 							type: "Foo",
 							path: "path/to_foo.ts",
 						} }),
-					]
-				}`),
+					},
+				});
+				export default UserSchema;`),
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
