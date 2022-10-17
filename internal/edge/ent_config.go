@@ -1,43 +1,21 @@
 package edge
 
 import (
-	"fmt"
-	"regexp"
-
 	"github.com/iancoleman/strcase"
 )
 
 // TODO kill this
 type EntConfigInfo struct {
 	PackageName string `json:"packageName"`
-	ConfigName  string `json:"configName"`
+	NodeName    string
 }
 
-func GetNodeNameFromEntConfig(configName string) (string, error) {
-	r := regexp.MustCompile("([A-Za-z]+)Config")
-	match := r.FindStringSubmatch(configName)
-	if len(match) == 2 {
-		return match[1], nil
-	}
-	return "", fmt.Errorf("couldn't match EntConfig name")
-}
-
+// TODO kill
 func GetEntConfigFromName(packageName string) *EntConfigInfo {
 	name := strcase.ToCamel(packageName)
 
 	return &EntConfigInfo{
 		PackageName: name,
-		ConfigName:  fmt.Sprintf("%sConfig", name),
+		NodeName:    name,
 	}
-}
-
-func GetEntConfigFromEntConfig(configName string) (*EntConfigInfo, error) {
-	nodeName, err := GetNodeNameFromEntConfig(configName)
-	if err != nil {
-		return nil, err
-	}
-	return &EntConfigInfo{
-		PackageName: nodeName,
-		ConfigName:  configName,
-	}, nil
 }

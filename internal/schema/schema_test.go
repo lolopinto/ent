@@ -105,7 +105,7 @@ func TestInverseFieldEdge(t *testing.T) {
 	accountEdge := todo.EdgeInfo.GetFieldEdgeByName("account")
 	require.NotNil(t, accountEdge)
 	assert.Equal(t, "account", accountEdge.EdgeName)
-	assert.Equal(t, "AccountConfig", accountEdge.GetEntConfig().ConfigName)
+	assert.Equal(t, "Account", accountEdge.GetEntConfig().NodeName)
 }
 
 func TestForeignKey(t *testing.T) {
@@ -145,7 +145,7 @@ func TestForeignKey(t *testing.T) {
 	accountEdge := todo.EdgeInfo.GetFieldEdgeByName("account")
 	require.NotNil(t, accountEdge)
 	assert.Equal(t, "account", accountEdge.EdgeName)
-	assert.Equal(t, "AccountConfig", accountEdge.GetEntConfig().ConfigName)
+	assert.Equal(t, "Account", accountEdge.GetEntConfig().NodeName)
 
 	// 2. adds a foreign key edge on inverse node
 	account, err := s.GetNodeDataForNode("Account")
@@ -154,7 +154,7 @@ func TestForeignKey(t *testing.T) {
 	todosEdge := account.EdgeInfo.GetForeignKeyEdgeByName("Todos")
 	require.NotNil(t, todosEdge)
 	assert.Equal(t, "Todos", todosEdge.EdgeName)
-	assert.Equal(t, "TodoConfig", todosEdge.GetEntConfig().ConfigName)
+	assert.Equal(t, "Todo", todosEdge.GetEntConfig().NodeName)
 }
 
 func TestForeignKeyInvalidKeys(t *testing.T) {
@@ -260,7 +260,7 @@ func TestInverseAssocEdge(t *testing.T) {
 	}
 	testEdge(t, todoAccountsEdge, expectedInverseEdge)
 
-	accountInfo := s.Nodes["AccountConfig"]
+	accountInfo := s.Nodes["Account"]
 	testConstants(
 		t,
 		accountInfo,
@@ -274,7 +274,7 @@ func TestInverseAssocEdge(t *testing.T) {
 		},
 	)
 
-	todoInfo := s.Nodes["TodoConfig"]
+	todoInfo := s.Nodes["Todo"]
 	testConstants(
 		t,
 		todoInfo,
@@ -382,7 +382,7 @@ func TestEdgeGroup(t *testing.T) {
 		testEdge(t, edge, expectedEdge)
 	}
 
-	accountInfo := s.Nodes["AccountConfig"]
+	accountInfo := s.Nodes["Account"]
 	testConstants(
 		t,
 		accountInfo,
@@ -397,7 +397,7 @@ func TestEdgeGroup(t *testing.T) {
 		},
 	)
 
-	eventInfo := s.Nodes["EventConfig"]
+	eventInfo := s.Nodes["Event"]
 	testConstants(
 		t,
 		eventInfo,
@@ -413,8 +413,8 @@ func TestEdgeGroup(t *testing.T) {
 	)
 }
 
-func getEdgeFromSchema(t *testing.T, s *schema.Schema, configName, edgeName string) *edge.AssociationEdge {
-	ret, err := s.GetAssocEdgeByName(configName, edgeName)
+func getEdgeFromSchema(t *testing.T, s *schema.Schema, nodeName, edgeName string) *edge.AssociationEdge {
+	ret, err := s.GetAssocEdgeByName(nodeName, edgeName)
 	require.Nil(t, err)
 	return ret
 }

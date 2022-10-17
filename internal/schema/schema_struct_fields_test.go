@@ -78,8 +78,8 @@ func TestWithSubFields(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	userNode := schema.Nodes["UserConfig"]
-	require.NotNil(t, userNode)
+	userInfo := schema.Nodes["User"]
+	require.NotNil(t, userInfo)
 
 	require.Len(t, schema.CustomInterfaces, 1)
 
@@ -210,8 +210,8 @@ func TestWithNestedSubFields(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	userNode := schema.Nodes["UserConfig"]
-	require.NotNil(t, userNode)
+	userInfo := schema.Nodes["User"]
+	require.NotNil(t, userInfo)
 
 	require.Len(t, schema.CustomInterfaces, 1)
 
@@ -376,8 +376,8 @@ func TestWithUnionFields(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	userNode := schema.Nodes["UserConfig"]
-	require.NotNil(t, userNode)
+	userInfo := schema.Nodes["User"]
+	require.NotNil(t, userInfo)
 
 	require.Len(t, schema.CustomInterfaces, 1)
 
@@ -541,11 +541,13 @@ func TestWithSubFieldsInPattern(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	userNode := schema.Nodes["UserConfig"]
-	require.NotNil(t, userNode)
+	userNodeData, err := schema.GetNodeDataForNode("User")
+	require.Nil(t, err)
+	require.NotNil(t, userNodeData)
 
-	groupNode := schema.Nodes["GroupConfig"]
-	require.NotNil(t, groupNode)
+	groupNodeData, err := schema.GetNodeDataForNode("Group")
+	require.Nil(t, err)
+	require.NotNil(t, groupNodeData)
 
 	require.Len(t, schema.CustomInterfaces, 1)
 

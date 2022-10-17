@@ -218,8 +218,8 @@ func entConfigEqual(existing, entConfig *EntConfigInfo) bool {
 		return *ret
 	}
 
-	return existing.ConfigName == entConfig.ConfigName &&
-		existing.PackageName == entConfig.PackageName
+	return existing.PackageName == entConfig.PackageName &&
+		existing.NodeName == entConfig.NodeName
 }
 
 func inverseAssocEdgeEqual(existing, inverseEdge *InverseAssocEdge) bool {
@@ -348,8 +348,8 @@ func assocEdgesMapEqual(m1, m2 map[string]*AssociationEdge) bool {
 func compareEdge(e1, e2 Edge) bool {
 	return e1.GetEdgeName() == e2.GetEdgeName() &&
 		nodeinfo.NodeInfoEqual(e1.GetNodeInfo(), e2.GetNodeInfo()) &&
-		e1.GetEntConfig().ConfigName == e2.GetEntConfig().ConfigName &&
 		e1.GetEntConfig().PackageName == e2.GetEntConfig().PackageName &&
+		e1.GetEntConfig().NodeName == e2.GetEntConfig().NodeName &&
 		e1.GraphQLEdgeName() == e2.GraphQLEdgeName() &&
 		e1.CamelCaseEdgeName() == e2.CamelCaseEdgeName() &&
 		e1.HideFromGraphQL() == e2.HideFromGraphQL() &&

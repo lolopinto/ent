@@ -2768,7 +2768,7 @@ func getTestTable(nodeName string, t *testing.T) *dbTable {
 }
 
 func getTestTableFromSchema(nodeName string, s *dbSchema, t *testing.T) *dbTable {
-	node := s.schema.Nodes[nodeName+"Config"]
+	node := s.schema.Nodes[nodeName]
 	require.NotNil(t, node, "no codegen info for %s table", nodeName)
 	table := s.getTableForNode(node.NodeData)
 	require.NotNil(t, table, "no dbtable info for %s", nodeName)

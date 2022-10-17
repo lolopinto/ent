@@ -53,7 +53,7 @@ func TestActionWithFieldEdgeFieldConfig(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	profileCfg := schema.Nodes["ProfileConfig"]
+	profileCfg := schema.Nodes["Profile"]
 	require.NotNil(t, profileCfg)
 
 	createAction := profileCfg.NodeData.ActionInfo.GetByName("CreateProfileAction")
