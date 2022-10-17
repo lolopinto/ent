@@ -8,7 +8,6 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
@@ -62,7 +61,7 @@ func TestCustomMutation(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),
@@ -194,7 +193,7 @@ func TestCustomQuery(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),
@@ -314,7 +313,7 @@ func TestCustomListQuery(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),
@@ -466,7 +465,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),
@@ -589,7 +588,7 @@ func TestCustomUploadType(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),

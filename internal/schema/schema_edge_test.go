@@ -6,7 +6,6 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/testingutils/test_db"
@@ -111,7 +110,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 	code := make(map[string]string)
 	code["account_schema.ts"] = getSourceForEdgeWithoutInverse(suite.T())
 
-	s := testhelper.ParseSchemaForTest(suite.T(), code, base.TypeScript)
+	s := testhelper.ParseSchemaForTest(suite.T(), code)
 	friendRequests := getEdgeFromSchema(suite.T(), s, "AccountConfig", "FriendRequests")
 
 	require.NotNil(
@@ -167,7 +166,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 
 	code2 := make(map[string]string)
 	code2["account_schema.ts"] = getSourceForInverseAssocEdgeSameEnt(suite.T())
-	s2 := testhelper.ParseSchemaForTest(suite.T(), code2, base.TypeScript)
+	s2 := testhelper.ParseSchemaForTest(suite.T(), code2)
 	verifyInverseAssocEdgeSameEnt(suite.T(), s2)
 
 	// 1 new edge added. 2 edge total
@@ -178,7 +177,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeSameEnt() {
 	code := make(map[string]string)
 	code["account_schema.ts"] = getSourceForInverseAssocEdgeSameEnt(suite.T())
 
-	s := testhelper.ParseSchemaForTest(suite.T(), code, base.TypeScript)
+	s := testhelper.ParseSchemaForTest(suite.T(), code)
 	verifyInverseAssocEdgeSameEnt(suite.T(), s)
 }
 
@@ -271,7 +270,7 @@ func getCodeForNewConstsAndEdges2(t *testing.T) map[string]string {
 
 func getSchemaForNewConstsAndEdges2(t *testing.T) *schema.Schema {
 	code := getCodeForNewConstsAndEdges2(t)
-	return testhelper.ParseSchemaForTest(t, code, base.TypeScript)
+	return testhelper.ParseSchemaForTest(t, code)
 }
 
 func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
@@ -367,11 +366,7 @@ func getCodeForNewConstsAndEdges() map[string]string {
 
 func getSchemaForNewConstsAndEdges(t *testing.T) *schema.Schema {
 	code := getCodeForNewConstsAndEdges()
-	s, err := testhelper.ParseSchemaForTestFull(
-		t,
-		code,
-		base.TypeScript,
-	)
+	s, err := testhelper.ParseSchemaForTestFull(t, code)
 	require.Nil(t, err)
 	return s
 }

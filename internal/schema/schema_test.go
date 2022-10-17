@@ -16,7 +16,7 @@ import (
 )
 
 func TestInverseFieldEdge(t *testing.T) {
-	s := testhelper.ParseSchemaForTestFixed(t,
+	s := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"account_schema.ts": testhelper.GetCodeWithSchema(`
 			import {EntSchema, StringType} from "{schema}";
@@ -109,7 +109,7 @@ func TestInverseFieldEdge(t *testing.T) {
 }
 
 func TestForeignKey(t *testing.T) {
-	s := testhelper.ParseSchemaForTestFixed(t,
+	s := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"account_schema.ts": testhelper.GetCodeWithSchema(`
 			import {EntSchema, StringType} from "{schema}";
@@ -158,7 +158,7 @@ func TestForeignKey(t *testing.T) {
 }
 
 func TestForeignKeyInvalidKeys(t *testing.T) {
-	_, err := testhelper.ParseSchemaForTestFullFixed(t,
+	_, err := testhelper.ParseSchemaForTestFull(t,
 		map[string]string{
 			"todo_schema.ts": testhelper.GetCodeWithSchema(`
 			import {EntSchema, StringType, UUIDType} from "{schema}";
@@ -182,7 +182,7 @@ func TestForeignKeyInvalidKeys(t *testing.T) {
 }
 
 func TestInverseAssocEdge(t *testing.T) {
-	s := testhelper.ParseSchemaForTestFixed(t,
+	s := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"account_schema.ts": testhelper.GetCodeWithSchema(`
 			import {EntSchema, StringType} from "{schema}";
@@ -290,7 +290,7 @@ func TestInverseAssocEdge(t *testing.T) {
 }
 
 func TestEdgeGroup(t *testing.T) {
-	s := testhelper.ParseSchemaForTestFixed(t,
+	s := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"account_schema.ts": testhelper.GetCodeWithSchema(`
 			import {EntSchema, StringType} from "{schema}";
