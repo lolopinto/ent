@@ -2,7 +2,6 @@ package schema
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
@@ -110,12 +109,10 @@ func blankNodeDataInfo() *NodeDataInfo {
 
 func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	ret := *m
-	getSchemaName := func(config string) string {
-		return strings.TrimSuffix(config, "Config")
-	}
+
 	for k, ndi1 := range m1 {
 		ndi2, ok := m2[k]
-		name := getSchemaName(k)
+		name := k
 		var changes []change.Change
 		opts := compareNodeOptions{}
 		if !ok {
@@ -144,13 +141,12 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	for k, ndi2 := range m2 {
 		_, ok := m1[k]
 		if !ok {
-			name := getSchemaName(k)
 
 			changes := []change.Change{
 				{
 					Change:      change.AddNode,
-					Name:        name,
-					GraphQLName: name,
+					Name:        k,
+					GraphQLName: k,
 				},
 			}
 			ndi1 := blankNodeDataInfo()
@@ -163,7 +159,7 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 				return err
 			}
 			changes = append(changes, diff...)
-			ret[name] = changes
+			ret[k] = changes
 		}
 	}
 	return nil

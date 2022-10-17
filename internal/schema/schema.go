@@ -27,18 +27,16 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes           NodeMapInfo
-	Patterns        map[string]*PatternInfo
-	globalEdges     []*edge.AssociationEdge
-	globalConsts    *objWithConsts
-	extraEdgeFields []*field.Field
-	initForEdges    bool
-	tables          NodeMapInfo
-	edges           map[string]*ent.AssocEdgeData
-	newEdges        []*ent.AssocEdgeData
-	edgesToUpdate   []*ent.AssocEdgeData
-	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
-	// confusing but gets us closer to what we want
+	Nodes            NodeMapInfo
+	Patterns         map[string]*PatternInfo
+	globalEdges      []*edge.AssociationEdge
+	globalConsts     *objWithConsts
+	extraEdgeFields  []*field.Field
+	initForEdges     bool
+	tables           NodeMapInfo
+	edges            map[string]*ent.AssocEdgeData
+	newEdges         []*ent.AssocEdgeData
+	edgesToUpdate    []*ent.AssocEdgeData
 	Enums            map[string]*EnumInfo
 	enumTables       map[string]*EnumInfo
 	CustomInterfaces map[string]*customtype.CustomInterface
@@ -89,7 +87,7 @@ func (s *Schema) addPattern(name string, p *PatternInfo) error {
 }
 
 func (s *Schema) GetNodeDataForNode(nodeName string) (*NodeData, error) {
-	info := s.Nodes[nodeName+"Config"]
+	info := s.Nodes[nodeName]
 	if info == nil {
 		return nil, fmt.Errorf("cannot find NodeInfo for %s", nodeName)
 	}
@@ -98,7 +96,7 @@ func (s *Schema) GetNodeDataForNode(nodeName string) (*NodeData, error) {
 }
 
 func (s *Schema) NodeNameExists(nodeName string) bool {
-	_, ok := s.Nodes[nodeName+"Config"]
+	_, ok := s.Nodes[nodeName]
 	return ok
 }
 
@@ -316,13 +314,10 @@ func (s *Schema) getActionFromGraphQLName(graphQLName string) action.Action {
 }
 
 // below really only exist for tests but yolo
-func (s *Schema) GetAssocEdgeByName(entConfig, edgeName string) (*edge.AssociationEdge, error) {
-	info := s.Nodes[entConfig]
+func (s *Schema) GetAssocEdgeByName(nodeName, edgeName string) (*edge.AssociationEdge, error) {
+	info := s.Nodes[nodeName]
 	if info == nil {
-		info = s.Nodes[entConfig+"Config"]
-		if info == nil {
-			return nil, errors.New("invalid EntConfig passed to getAssocEdgeByName")
-		}
+		return nil, fmt.Errorf("invalid NodeName %s passed to getAssocEdgeByName", nodeName)
 	}
 	ret := info.NodeData.GetAssociationEdgeByName(edgeName)
 	if ret == nil {
@@ -331,17 +326,14 @@ func (s *Schema) GetAssocEdgeByName(entConfig, edgeName string) (*edge.Associati
 	return ret, nil
 }
 
-func (s *Schema) GetFieldByName(entConfig, fieldName string) (*field.Field, error) {
-	info := s.Nodes[entConfig]
+func (s *Schema) GetFieldByName(nodeName, fieldName string) (*field.Field, error) {
+	info := s.Nodes[nodeName]
 	if info == nil {
-		info = s.Nodes[entConfig+"Config"]
-		if info == nil {
-			return nil, fmt.Errorf("invalid EntConfig %s passed to getFieldByName", entConfig)
-		}
+		return nil, fmt.Errorf("invalid NodeName %s passed to getFieldByName", nodeName)
 	}
 	ret := info.NodeData.GetFieldByName(fieldName)
 	if ret == nil {
-		return nil, fmt.Errorf("error getting field %s by name in EntConfig %s", fieldName, entConfig)
+		return nil, fmt.Errorf("error getting field %s by name with nodeName %s", fieldName, nodeName)
 	}
 	return ret, nil
 }
@@ -907,7 +899,7 @@ func (s *Schema) addGQLType(name string) error {
 
 func (s *Schema) addConfig(info *NodeDataInfo) error {
 	// validate schema and table name
-	if s.Nodes[info.NodeData.EntConfigName] != nil {
+	if s.Nodes[info.NodeData.Node] != nil {
 		return fmt.Errorf("schema with name %s already exists", info.NodeData.EntConfigName)
 	}
 	if s.tables[info.NodeData.TableName] != nil {
@@ -944,7 +936,7 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 			return fmt.Errorf("enum schema with table name %s already exists", info.NodeData.TableName)
 		}
 	}
-	s.Nodes[info.NodeData.EntConfigName] = info
+	s.Nodes[info.NodeData.Node] = info
 	s.tables[info.NodeData.TableName] = info
 	return nil
 }
@@ -1143,7 +1135,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 			}
 			for _, typ := range e.Polymorphic.Types {
 				// convert to Node type
-				typ = strcase.ToCamel(typ) + "Config"
+				typ = strcase.ToCamel(typ)
 				foreign, ok := s.Nodes[typ]
 				if ok {
 
@@ -1174,13 +1166,13 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 		edgeName := e.InverseEdge.Name
 
 		config := e.GetEntConfig()
-		if config.ConfigName == "" {
+		if config.NodeName == "" {
 			continue
 		}
 
-		foreignInfo, ok := s.Nodes[config.ConfigName]
+		foreignInfo, ok := s.Nodes[config.NodeName]
 		if !ok {
-			return fmt.Errorf("could not find the EntConfig codegen info for %s", config.ConfigName)
+			return fmt.Errorf("could not find the NodeData info for %s", config.NodeName)
 		}
 		foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
 		fEdge := foreignEdgeInfo.GetAssociationEdgeByName(edgeName)
@@ -1233,8 +1225,7 @@ func (s *Schema) addForeignKeyEdges(
 	f *field.Field,
 	fkeyInfo *field.ForeignKeyInfo,
 ) error {
-	// this seems like it's verified...
-	foreignInfo, ok := s.Nodes[fkeyInfo.Schema+"Config"]
+	foreignInfo, ok := s.Nodes[fkeyInfo.Schema]
 	if !ok {
 		// enum, that's ok. nothing to do here
 		if s.EnumNameExists(fkeyInfo.Schema) {
@@ -1287,10 +1278,10 @@ func (s *Schema) maybeAddInverseAssocEdge(assocEdge *edge.AssociationEdge) error
 	if assocEdge.PatternName != "" {
 		return nil
 	}
-	configName := assocEdge.NodeInfo.EntConfigName
-	inverseInfo, ok := s.Nodes[configName]
+	nodeName := assocEdge.NodeInfo.Node
+	inverseInfo, ok := s.Nodes[nodeName]
 	if !ok {
-		return fmt.Errorf("could not find the EntConfig codegen info for %s", configName)
+		return fmt.Errorf("could not find the NodeData info for %s", nodeName)
 	}
 
 	inverseEdgeInfo := inverseInfo.NodeData.EdgeInfo
@@ -1428,9 +1419,9 @@ func (s *Schema) nonEntFieldActionInfo(f *field.NonEntField) *enttype.ActionFiel
 	return actionFieldsInfo
 }
 
-func (s *Schema) findActionByName(currentConfigName, actionName string) action.Action {
+func (s *Schema) findActionByName(nodeName, actionName string) action.Action {
 	for k, v := range s.Nodes {
-		if k == currentConfigName {
+		if k == nodeName {
 			continue
 		}
 		a2 := v.NodeData.ActionInfo.GetByName(actionName)
@@ -1455,7 +1446,7 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 				excludedFields[v] = true
 			}
 
-			a2 := s.findActionByName(info.NodeData.Node+"Config", actionName)
+			a2 := s.findActionByName(info.NodeData.Node, actionName)
 			if a2 == nil {
 				return fmt.Errorf("invalid action only field %s. couldn't find action with name %s", f.GetFieldName(), actionName)
 			}
@@ -1499,7 +1490,7 @@ func (s *Schema) addActionFieldsPostProcess(nodeData *NodeData) {
 				continue
 			}
 			actionName := actionFieldsInfo.ActionName
-			a2 := s.findActionByName(nodeData.Node+"Config", actionName)
+			a2 := s.findActionByName(nodeData.Node, actionName)
 			if a2 != nil {
 				a.AddCustomInterfaces(a2)
 			}
@@ -1540,8 +1531,7 @@ func (s *Schema) processConstraints(nodeData *NodeData) error {
 		fkey := f.ForeignKeyInfo()
 		var enumInfo *EnumInfo
 		if fkey != nil {
-			// s.Nodes still keyed by Config :(
-			foreignInfo := s.Nodes[fkey.Schema+"Config"]
+			foreignInfo := s.Nodes[fkey.Schema]
 			if foreignInfo == nil {
 				var ok bool
 				enumInfo, ok = s.Enums[fkey.Schema]
@@ -1637,10 +1627,10 @@ func (s *Schema) getInverseEdgeType(assocEdge *edge.AssociationEdge, inverseEdge
 
 	// so for inverse edge of patterns, we need the inverse edge to be polymorphic
 	// e.g. when trying to get things you've liked
-	cfg := assocEdge.GetEntConfig().ConfigName
-	inverseNodeDataInfo := s.Nodes[assocEdge.GetEntConfig().ConfigName]
+	nodeName := assocEdge.GetEntConfig().NodeName
+	inverseNodeDataInfo := s.Nodes[assocEdge.GetEntConfig().NodeName]
 	if inverseNodeDataInfo == nil {
-		return "", "", false, fmt.Errorf("invalid inverse edge node %s", cfg)
+		return "", "", false, fmt.Errorf("invalid inverse edge node %s", nodeName)
 	}
 	inverseNodeData := inverseNodeDataInfo.NodeData
 

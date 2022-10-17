@@ -99,7 +99,7 @@ func TestGlobalEdgeWithInverse(t *testing.T) {
 
 	require.NotNil(t, edgeConsts.Constants["GlobalToExternalInfoEdge"])
 
-	user := schema.Nodes["UserConfig"]
+	user := schema.Nodes["User"]
 	userGroups := user.NodeData.GetConstantGroups()
 	require.Len(t, userGroups, 2)
 

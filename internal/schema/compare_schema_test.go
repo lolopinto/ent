@@ -270,7 +270,7 @@ func TestCompareAddNode(t *testing.T) {
 	s1 := &schema.Schema{}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -295,7 +295,7 @@ func TestCompareAddNodeTableNameSet(t *testing.T) {
 	s1 := &schema.Schema{}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -320,7 +320,7 @@ func TestCompareAddNodeTableNameSet(t *testing.T) {
 func TestCompareAddEnumTableNode(t *testing.T) {
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -354,7 +354,7 @@ func TestCompareAddEnumTableNode(t *testing.T) {
 func TestCompareRemoveNode(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -379,7 +379,7 @@ func TestCompareRemoveNode(t *testing.T) {
 func TestCompareRemoveNodeTableNameSet(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -405,7 +405,7 @@ func TestCompareRemoveNodeTableNameSet(t *testing.T) {
 func TestCompareRemoveEnumTableNode(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -439,7 +439,7 @@ func TestCompareRemoveEnumTableNode(t *testing.T) {
 func TestCompareNodesNoChange(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -449,7 +449,7 @@ func TestCompareNodesNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -466,7 +466,7 @@ func TestCompareNodesNoChange(t *testing.T) {
 func TestCompareNodesAddField(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -492,7 +492,7 @@ func TestCompareNodesAddField(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -551,7 +551,7 @@ func TestCompareNodesRemoveField(t *testing.T) {
 		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -573,7 +573,7 @@ func TestCompareNodesRemoveField(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -613,7 +613,7 @@ func TestCompareNodesModifyField(t *testing.T) {
 		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -636,7 +636,7 @@ func TestCompareNodesModifyField(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -676,7 +676,7 @@ func TestCompareNodesModifyDBType(t *testing.T) {
 		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -698,7 +698,7 @@ func TestCompareNodesModifyDBType(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -726,7 +726,7 @@ func TestCompareNodesChangeFieldKeepDBKey(t *testing.T) {
 		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -748,7 +748,7 @@ func TestCompareNodesChangeFieldKeepDBKey(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -801,7 +801,7 @@ func TestCompareNodesWithEdgesNoChange(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -812,7 +812,7 @@ func TestCompareNodesWithEdgesNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -840,7 +840,7 @@ func TestCompareNodesWithEdgesAdded(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -851,7 +851,7 @@ func TestCompareNodesWithEdgesAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -893,7 +893,7 @@ func TestCompareNodesWithRemovedEdge(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -904,7 +904,7 @@ func TestCompareNodesWithRemovedEdge(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -959,7 +959,7 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -970,7 +970,7 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1025,7 +1025,7 @@ func TestCompareNodesWithRenamedEdge(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1036,7 +1036,7 @@ func TestCompareNodesWithRenamedEdge(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1124,7 +1124,7 @@ func TestCompareNodesWithEdgeGroupNoChange(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1135,7 +1135,7 @@ func TestCompareNodesWithEdgeGroupNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1178,7 +1178,7 @@ func TestCompareNodesWithEdgeGroupAdded(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1188,7 +1188,7 @@ func TestCompareNodesWithEdgeGroupAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1244,7 +1244,7 @@ func TestCompareNodesWithEdgeGroupRemoved(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1255,7 +1255,7 @@ func TestCompareNodesWithEdgeGroupRemoved(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1340,7 +1340,7 @@ func TestCompareNodesWithEdgeGroupModified(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1351,7 +1351,7 @@ func TestCompareNodesWithEdgeGroupModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1439,7 +1439,7 @@ func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1450,7 +1450,7 @@ func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1541,7 +1541,7 @@ func TestCompareActionsNoChange(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1552,7 +1552,7 @@ func TestCompareActionsNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1585,7 +1585,7 @@ func TestCompareActionsAdded(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1595,7 +1595,7 @@ func TestCompareActionsAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1641,7 +1641,7 @@ func TestCompareActionsRemoved(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1652,7 +1652,7 @@ func TestCompareActionsRemoved(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1727,7 +1727,7 @@ func TestCompareActionsModified(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1738,7 +1738,7 @@ func TestCompareActionsModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1815,7 +1815,7 @@ func TestCompareActionsGraphQLNameModified(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1826,7 +1826,7 @@ func TestCompareActionsGraphQLNameModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1883,7 +1883,7 @@ func TestForeignKeyEdgeNoChange(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1894,7 +1894,7 @@ func TestForeignKeyEdgeNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1916,7 +1916,7 @@ func TestForeignKeyEdgeAdded(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1926,7 +1926,7 @@ func TestForeignKeyEdgeAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1962,7 +1962,7 @@ func TestForeignKeyEdgeRemoved(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1973,7 +1973,7 @@ func TestForeignKeyEdgeRemoved(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2016,7 +2016,7 @@ func TestForeignKeyEdgeModified(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2027,7 +2027,7 @@ func TestForeignKeyEdgeModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2084,7 +2084,7 @@ func TestIndexedEdgeNochange(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2095,7 +2095,7 @@ func TestIndexedEdgeNochange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2123,7 +2123,7 @@ func TestIndexedEdgeAdded(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2133,7 +2133,7 @@ func TestIndexedEdgeAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2175,7 +2175,7 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2186,7 +2186,7 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2239,7 +2239,7 @@ func TestIndexedEdgeModified(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2250,7 +2250,7 @@ func TestIndexedEdgeModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2618,7 +2618,7 @@ func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
 	s1 := &schema.Schema{}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2701,7 +2701,7 @@ func TestCompareSchemaRemoveNodePlusActionsAndFields(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2752,7 +2752,7 @@ func TestAddIndex(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2764,7 +2764,7 @@ func TestAddIndex(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2812,7 +2812,7 @@ func TestRemoveIndex(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2831,7 +2831,7 @@ func TestRemoveIndex(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2872,7 +2872,7 @@ func TestModifyIndex(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2891,7 +2891,7 @@ func TestModifyIndex(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2938,7 +2938,7 @@ func TestAddConstraint(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -2950,7 +2950,7 @@ func TestAddConstraint(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3000,7 +3000,7 @@ func TestRemoveConstraint(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3019,7 +3019,7 @@ func TestRemoveConstraint(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3068,7 +3068,7 @@ func TestModifyConstraint(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3088,7 +3088,7 @@ func TestModifyConstraint(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3126,7 +3126,7 @@ func TestModifyConstraint(t *testing.T) {
 func TestAddDBRows(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -3138,7 +3138,7 @@ func TestAddDBRows(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -3177,7 +3177,7 @@ func TestAddDBRows(t *testing.T) {
 func TestRemoveDBRows(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -3197,7 +3197,7 @@ func TestRemoveDBRows(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",

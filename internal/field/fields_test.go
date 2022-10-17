@@ -31,7 +31,7 @@ func TestDerivedFields(t *testing.T) {
 		export default Address`),
 		},
 	)
-	info := schema.Nodes["AddressConfig"]
+	info := schema.Nodes["Address"]
 	require.NotNil(t, info)
 
 	fieldInfo := info.NodeData.FieldInfo
@@ -103,7 +103,7 @@ func TestDisableBuilderIDField(t *testing.T) {
 		export default Address`),
 		},
 	)
-	info := schema.Nodes["AddressConfig"]
+	info := schema.Nodes["Address"]
 	require.NotNil(t, info)
 
 	fieldInfo := info.NodeData.FieldInfo
@@ -150,7 +150,7 @@ func TestUUIDFieldList(t *testing.T) {
 		export default ContactEmail`),
 		},
 	)
-	info := schema.Nodes["ContactConfig"]
+	info := schema.Nodes["Contact"]
 	require.NotNil(t, info)
 
 	fieldInfo := info.NodeData.FieldInfo
@@ -167,7 +167,7 @@ func TestUUIDFieldList(t *testing.T) {
 	assert.Len(t, info.NodeData.EdgeInfo.FieldEdges, 1)
 	assert.True(t, info.NodeData.EdgeInfo.FieldEdges[0].IsList())
 
-	info2 := schema.Nodes["ContactEmailConfig"]
+	info2 := schema.Nodes["ContactEmail"]
 	require.NotNil(t, info2)
 
 	fieldInfo2 := info2.NodeData.FieldInfo
@@ -228,7 +228,7 @@ func TestNullableUUIDFieldList(t *testing.T) {
 		export default ContactEmail`),
 		},
 	)
-	info := schema.Nodes["ContactConfig"]
+	info := schema.Nodes["Contact"]
 	require.NotNil(t, info)
 
 	fieldInfo := info.NodeData.FieldInfo
@@ -245,7 +245,7 @@ func TestNullableUUIDFieldList(t *testing.T) {
 	assert.Len(t, info.NodeData.EdgeInfo.FieldEdges, 1)
 	assert.True(t, info.NodeData.EdgeInfo.FieldEdges[0].IsList())
 
-	info2 := schema.Nodes["ContactEmailConfig"]
+	info2 := schema.Nodes["ContactEmail"]
 	require.NotNil(t, info2)
 
 	fieldInfo2 := info2.NodeData.FieldInfo

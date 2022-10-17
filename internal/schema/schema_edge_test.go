@@ -22,7 +22,7 @@ func TestGenerateNewEdges(t *testing.T) {
 func TestGeneratedConstants(t *testing.T) {
 	s := getSchemaForNewConstsAndEdges(t)
 
-	accountInfo := s.Nodes["AccountConfig"]
+	accountInfo := s.Nodes["Account"]
 
 	testConstants(
 		t,
@@ -37,7 +37,7 @@ func TestGeneratedConstants(t *testing.T) {
 		},
 	)
 
-	todoInfo := s.Nodes["TodoConfig"]
+	todoInfo := s.Nodes["Todo"]
 
 	testConstants(
 		t,
@@ -111,7 +111,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 	code["account_schema.ts"] = getSourceForEdgeWithoutInverse(suite.T())
 
 	s := testhelper.ParseSchemaForTest(suite.T(), code)
-	friendRequests := getEdgeFromSchema(suite.T(), s, "AccountConfig", "FriendRequests")
+	friendRequests := getEdgeFromSchema(suite.T(), s, "Account", "FriendRequests")
 
 	require.NotNil(
 		suite.T(),
@@ -146,7 +146,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 
 	testEdge(suite.T(), friendRequestsEdge, expectedEdge)
 
-	accountInfo := s.Nodes["AccountConfig"]
+	accountInfo := s.Nodes["Account"]
 
 	testConstants(
 		suite.T(),
@@ -274,13 +274,13 @@ func getSchemaForNewConstsAndEdges2(t *testing.T) *schema.Schema {
 }
 
 func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
-	friendRequests := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequests")
+	friendRequests := getEdgeFromSchema(t, s, "Account", "FriendRequests")
 
 	require.NotNil(t, friendRequests, "expected the friend requests edge to not be nil")
 
 	assert.NotNil(t, friendRequests.InverseEdge, "expected the friend requests edge to have an inverse edge")
 
-	friendRequestsReceived := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequestsReceived")
+	friendRequestsReceived := getEdgeFromSchema(t, s, "Account", "FriendRequestsReceived")
 	require.NotNil(t, friendRequestsReceived, "expected the friend requests received edge to not be nil")
 
 	assert.Nil(t, friendRequestsReceived.InverseEdge, "expected the friend requests inverse edge field to be nil")
@@ -317,7 +317,7 @@ func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 	}
 	testEdge(t, friendRequestsReceivedEdge, expectedInverseEdge)
 
-	accountInfo := s.Nodes["AccountConfig"]
+	accountInfo := s.Nodes["Account"]
 
 	testConstants(
 		t,

@@ -1339,7 +1339,7 @@ func testConstraints(
 	}
 
 	for k, expNodeData := range expectedMap {
-		info := s.Nodes[k+"Config"]
+		info := s.Nodes[k]
 		var nodeData *schema.NodeData
 		if info != nil {
 			nodeData = info.NodeData

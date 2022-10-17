@@ -805,7 +805,7 @@ func testOverrides(
 	}
 
 	for k, expNodeData := range expectedMap {
-		info := s.Nodes[k+"Config"]
+		info := s.Nodes[k]
 		require.NotNil(t, info)
 		nodeData := info.NodeData
 

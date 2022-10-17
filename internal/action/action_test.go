@@ -168,7 +168,7 @@ func TestActionFields(t *testing.T) {
 			export default ContactSchema;
 			`),
 		},
-		"ContactConfig",
+		"Contact",
 	)
 
 	verifyExpectedActions(
@@ -261,7 +261,7 @@ func TestActionFieldsWithPrivateFields(t *testing.T) {
 			export default UserSchema;
 			`),
 		},
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -329,7 +329,7 @@ func TestDefaultActionFieldsWithPrivateFields(t *testing.T) {
 			export default UserSchema;
 			`),
 		},
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -394,7 +394,7 @@ func TestDefaultNoFields(t *testing.T) {
 				`,
 			),
 		},
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -444,7 +444,7 @@ func TestExplicitNoFields(t *testing.T) {
 				`,
 			),
 		},
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -486,7 +486,7 @@ func TestNullableFieldInAction(t *testing.T) {
 				`,
 			),
 		},
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -534,7 +534,7 @@ func TestOverriddenRequiredActionField(t *testing.T) {
 				`,
 			),
 		},
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -585,7 +585,7 @@ func TestPrivateFieldExposedToActions(t *testing.T) {
 				`,
 			),
 		},
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -648,7 +648,7 @@ func TestPrivateField(t *testing.T) {
 				`,
 			),
 		},
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -706,7 +706,7 @@ func TestOverriddenOptionalActionField(t *testing.T) {
 				`,
 			),
 		},
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -763,7 +763,7 @@ func TestActionOnlyFields(t *testing.T) {
 				});
 				export default Event;`),
 		},
-		"EventConfig",
+		"Event",
 	)
 
 	verifyExpectedActions(
@@ -927,7 +927,7 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 		},
 	)
 
-	activityActionInfo := schema.Nodes["EventActivityConfig"].NodeData.ActionInfo
+	activityActionInfo := schema.Nodes["EventActivity"].NodeData.ActionInfo
 	require.NotNil(t, activityActionInfo)
 
 	activityCoreFields := []expectedField{
@@ -993,7 +993,7 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 			},
 		},
 	)
-	eventActionInfo := schema.Nodes["EventConfig"].NodeData.ActionInfo
+	eventActionInfo := schema.Nodes["Event"].NodeData.ActionInfo
 	require.NotNil(t, eventActionInfo)
 
 	verifyExpectedActions(
@@ -1085,7 +1085,7 @@ func TestFieldEdgeFields(t *testing.T) {
 		},
 	)
 
-	addressInfo := schema.Nodes["AddressConfig"].NodeData.ActionInfo
+	addressInfo := schema.Nodes["Address"].NodeData.ActionInfo
 	require.NotNil(t, addressInfo)
 
 	verifyExpectedActions(
@@ -1094,7 +1094,7 @@ func TestFieldEdgeFields(t *testing.T) {
 		[]expectedAction{},
 	)
 
-	profileInfo := schema.Nodes["ProfileConfig"].NodeData.ActionInfo
+	profileInfo := schema.Nodes["Profile"].NodeData.ActionInfo
 	require.NotNil(t, profileInfo)
 	verifyExpectedActions(
 		t,

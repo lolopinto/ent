@@ -224,16 +224,12 @@ func (e *EdgeInfo) CreateEdgeBaseFile() bool {
 	return false
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldName, configName string, nullable bool, fieldType enttype.Type, validSchema func(str string) bool,
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldName, nodeName string, nullable bool, fieldType enttype.Type, validSchema func(str string) bool,
 ) error {
-	node, err := GetNodeNameFromEntConfig(configName)
-	if err != nil {
-		return err
-	}
 	return e.AddFieldEdgeFromFieldEdgeInfo(cfg,
 		fieldName,
 		&base.FieldEdgeInfo{
-			Schema: node,
+			Schema: nodeName,
 		},
 		nullable,
 		fieldType,
@@ -938,11 +934,8 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 	})
 }
 
-func (e *AssociationEdge) CloneWithCommonInfo(cfg codegenapi.Config, configName string) (*AssociationEdge, error) {
-	config, err := GetEntConfigFromEntConfig(configName)
-	if err != nil {
-		return nil, err
-	}
+func (e *AssociationEdge) CloneWithCommonInfo(cfg codegenapi.Config, nodeName string) (*AssociationEdge, error) {
+	config := GetEntConfigFromName(nodeName)
 
 	return &AssociationEdge{
 		EdgeConst:   e.EdgeConst,

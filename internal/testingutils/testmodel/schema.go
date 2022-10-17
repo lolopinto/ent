@@ -384,7 +384,7 @@ func GetSchema(t *testing.T) *schema.Schema {
 
 func GetFieldFromSchema(t *testing.T, nodeName, fieldName string) *field.Field {
 	s := GetSchema(t)
-	info := s.Nodes[nodeName+"Config"]
+	info := s.Nodes[nodeName]
 	require.NotNil(t, info)
 	f := info.NodeData.FieldInfo.GetFieldByName(fieldName)
 	require.NotNil(t, f)
@@ -393,7 +393,7 @@ func GetFieldFromSchema(t *testing.T, nodeName, fieldName string) *field.Field {
 
 func GetActionFromSchema(t *testing.T, nodeName, actionName string) action.Action {
 	s := GetSchema(t)
-	info := s.Nodes[nodeName+"Config"]
+	info := s.Nodes[nodeName]
 	require.NotNil(t, info)
 	a := info.NodeData.ActionInfo.GetByName(actionName)
 	require.NotNil(t, a)
@@ -402,7 +402,7 @@ func GetActionFromSchema(t *testing.T, nodeName, actionName string) action.Actio
 
 func GetActionInfoFromSchema(t *testing.T, nodeName string) *action.ActionInfo {
 	s := GetSchema(t)
-	info := s.Nodes[nodeName+"Config"]
+	info := s.Nodes[nodeName]
 	require.NotNil(t, info)
 	actionInfo := info.NodeData.ActionInfo
 	require.NotNil(t, actionInfo)
@@ -411,7 +411,7 @@ func GetActionInfoFromSchema(t *testing.T, nodeName string) *action.ActionInfo {
 
 func GetEdgeFromSchema(t *testing.T, nodeName, edgeName string) *edge.AssociationEdge {
 	s := GetSchema(t)
-	info := s.Nodes[nodeName+"Config"]
+	info := s.Nodes[nodeName]
 	require.NotNil(t, info)
 	edge := info.NodeData.EdgeInfo.GetAssociationEdgeByName(edgeName)
 	require.NotNil(t, edge)
@@ -420,7 +420,7 @@ func GetEdgeFromSchema(t *testing.T, nodeName, edgeName string) *edge.Associatio
 
 func GetEdgeInfoFromSchema(t *testing.T, nodeName string) *edge.EdgeInfo {
 	s := GetSchema(t)
-	info := s.Nodes[nodeName+"Config"]
+	info := s.Nodes[nodeName]
 	require.NotNil(t, info)
 	edgeInfo := info.NodeData.EdgeInfo
 	require.NotNil(t, edgeInfo)

@@ -533,7 +533,6 @@ func testEntConfig(t *testing.T, entConfig, expectedEntConfig *edge.EntConfigInf
 		return
 	}
 	expectedPackageName := expectedEntConfig.PackageName
-	expectedConfigName := expectedEntConfig.ConfigName
 
 	// TODO PackageName is useless and we should fix it/remove it in this instance
 	assert.Equal(
@@ -547,12 +546,13 @@ func testEntConfig(t *testing.T, entConfig, expectedEntConfig *edge.EntConfigInf
 
 	assert.Equal(
 		t,
-		expectedConfigName,
-		entConfig.ConfigName,
-		"config name for ent config was not as expected. expected %s, got %s instead",
-		expectedConfigName,
-		entConfig.ConfigName,
+		expectedEntConfig.NodeName,
+		entConfig.NodeName,
+		"node name for ent config was not as expected. expected %s, got %s instead",
+		expectedEntConfig.NodeName,
+		entConfig.NodeName,
 	)
+
 }
 
 func testNodeInfo(t *testing.T, nodeInfo nodeinfo.NodeInfo, expectedNodename string) {

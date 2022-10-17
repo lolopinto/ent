@@ -142,18 +142,12 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		ret.setPrivate(f.Private)
 	}
 
-	getSchemaName := func(config string) string {
-		// making TS and golang consistent
-		// removing the Config suffix from golang
-		return strings.TrimSuffix(config, "Config")
-	}
-
 	if f.ForeignKey != nil {
 		if !f.ForeignKey.DisableIndex && !f.Unique {
 			ret.index = true
 		}
 		ret.fkey = &ForeignKeyInfo{
-			Schema:       getSchemaName(f.ForeignKey.Schema),
+			Schema:       f.ForeignKey.Schema,
 			Field:        f.ForeignKey.Column,
 			Name:         f.ForeignKey.Name,
 			DisableIndex: f.ForeignKey.DisableIndex,
@@ -163,7 +157,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 
 	if f.FieldEdge != nil {
 		ret.fieldEdge = &base.FieldEdgeInfo{
-			Schema:      getSchemaName(f.FieldEdge.Schema),
+			Schema:      f.FieldEdge.Schema,
 			InverseEdge: f.FieldEdge.InverseEdge,
 		}
 		ret.disableBuilderType = f.FieldEdge.DisableBuilderType
@@ -220,7 +214,7 @@ func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(cfg, f.FieldName, fkeyInfo.Schema+"Config", f.Nullable(), f.fieldType, validSchema)
+	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(cfg, f.FieldName, fkeyInfo.Schema, f.Nullable(), f.fieldType, validSchema)
 }
 
 func (f *Field) AddFieldEdgeToEdgeInfo(
@@ -716,7 +710,7 @@ func (f *Field) AddInverseEdge(cfg codegenapi.Config, edge *edge.AssociationEdge
 		return fmt.Errorf("cannot add an inverse edge on a field without a field edge")
 	}
 	var err error
-	f.inverseEdge, err = edge.CloneWithCommonInfo(cfg, f.fieldEdge.Schema+"Config")
+	f.inverseEdge, err = edge.CloneWithCommonInfo(cfg, f.fieldEdge.Schema)
 	return err
 }
 
