@@ -6,7 +6,6 @@ import (
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/field"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/testingutils/testmodel"
 
@@ -169,7 +168,6 @@ func TestActionFields(t *testing.T) {
 			export default ContactSchema;
 			`),
 		},
-		base.TypeScript,
 		"ContactConfig",
 	)
 
@@ -263,7 +261,6 @@ func TestActionFieldsWithPrivateFields(t *testing.T) {
 			export default UserSchema;
 			`),
 		},
-		base.TypeScript,
 		"UserConfig",
 	)
 
@@ -332,7 +329,6 @@ func TestDefaultActionFieldsWithPrivateFields(t *testing.T) {
 			export default UserSchema;
 			`),
 		},
-		base.TypeScript,
 		"UserConfig",
 	)
 
@@ -398,7 +394,6 @@ func TestDefaultNoFields(t *testing.T) {
 				`,
 			),
 		},
-		base.TypeScript,
 		"UserConfig",
 	)
 
@@ -449,7 +444,6 @@ func TestExplicitNoFields(t *testing.T) {
 				`,
 			),
 		},
-		base.TypeScript,
 		"UserConfig",
 	)
 
@@ -492,7 +486,6 @@ func TestNullableFieldInAction(t *testing.T) {
 				`,
 			),
 		},
-		base.TypeScript,
 		"UserConfig",
 	)
 
@@ -541,7 +534,6 @@ func TestOverriddenRequiredActionField(t *testing.T) {
 				`,
 			),
 		},
-		base.TypeScript,
 		"UserConfig",
 	)
 
@@ -593,7 +585,6 @@ func TestPrivateFieldExposedToActions(t *testing.T) {
 				`,
 			),
 		},
-		base.TypeScript,
 		"UserConfig",
 	)
 
@@ -657,7 +648,6 @@ func TestPrivateField(t *testing.T) {
 				`,
 			),
 		},
-		base.TypeScript,
 		"UserConfig",
 	)
 
@@ -716,7 +706,6 @@ func TestOverriddenOptionalActionField(t *testing.T) {
 				`,
 			),
 		},
-		base.TypeScript,
 		"UserConfig",
 	)
 
@@ -774,7 +763,6 @@ func TestActionOnlyFields(t *testing.T) {
 				});
 				export default Event;`),
 		},
-		base.TypeScript,
 		"EventConfig",
 	)
 
@@ -863,7 +851,6 @@ func TestActionOnlyFieldsInvalidAction(t *testing.T) {
 				export default ContactEmail;`,
 			),
 		},
-		base.TypeScript,
 	)
 
 	require.Nil(t, schema)
@@ -938,7 +925,6 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 				});
 				export default Event;`),
 		},
-		base.TypeScript,
 	)
 
 	activityActionInfo := schema.Nodes["EventActivityConfig"].NodeData.ActionInfo
@@ -1097,7 +1083,6 @@ func TestFieldEdgeFields(t *testing.T) {
 				});
 				export default Profile`),
 		},
-		base.TypeScript,
 	)
 
 	addressInfo := schema.Nodes["AddressConfig"].NodeData.ActionInfo

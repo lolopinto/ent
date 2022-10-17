@@ -6,7 +6,6 @@ import (
 
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +47,6 @@ func TestActionWithFieldEdgeFieldConfig(t *testing.T) {
 				});
 				export default Profile`),
 		},
-		base.TypeScript,
 	)
 	processor, err := codegen.NewTestCodegenProcessor("src/schema", schema, &codegen.CodegenConfig{
 		DisableGraphQLRoot: true,

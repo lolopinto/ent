@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/stretchr/testify/assert"
@@ -1330,11 +1329,7 @@ func testConstraints(
 	expectedMap map[string]*schema.NodeData,
 	expectedErr error,
 ) {
-	s, err := testhelper.ParseSchemaForTestFull(
-		t,
-		code,
-		base.TypeScript,
-	)
+	s, err := testhelper.ParseSchemaForTestFull(t, code)
 	if expectedErr != nil {
 		require.Error(t, err)
 		assert.Equal(t, err.Error(), expectedErr.Error())

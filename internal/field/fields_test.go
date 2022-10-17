@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +30,6 @@ func TestDerivedFields(t *testing.T) {
 		});
 		export default Address`),
 		},
-		base.TypeScript,
 	)
 	info := schema.Nodes["AddressConfig"]
 	require.NotNil(t, info)
@@ -75,7 +73,6 @@ func TestDuplicateFields(t *testing.T) {
 		});
 		export default Address`),
 		},
-		base.TypeScript,
 	)
 
 	require.Error(t, err)
@@ -105,7 +102,6 @@ func TestDisableBuilderIDField(t *testing.T) {
 		});
 		export default Address`),
 		},
-		base.TypeScript,
 	)
 	info := schema.Nodes["AddressConfig"]
 	require.NotNil(t, info)
@@ -153,7 +149,6 @@ func TestUUIDFieldList(t *testing.T) {
 		});
 		export default ContactEmail`),
 		},
-		base.TypeScript,
 	)
 	info := schema.Nodes["ContactConfig"]
 	require.NotNil(t, info)
@@ -232,7 +227,6 @@ func TestNullableUUIDFieldList(t *testing.T) {
 		});
 		export default ContactEmail`),
 		},
-		base.TypeScript,
 	)
 	info := schema.Nodes["ContactConfig"]
 	require.NotNil(t, info)
