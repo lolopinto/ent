@@ -2,7 +2,6 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
-  Ent,
   ID,
   PrivacyPolicy,
   Viewer,
@@ -23,7 +22,7 @@ export interface TodoCreateInput {
   text: string;
   creatorID: ID | Builder<Account, Viewer>;
   assigneeID: ID | Builder<Account, Viewer>;
-  scopeID: ID | Builder<Ent<Viewer>, Viewer>;
+  scopeID: ID;
   scopeType: string;
 }
 

@@ -3,8 +3,11 @@ import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 import { ActionOperation, StringType } from "@snowtop/ent";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import { TodoBaseEntSchema } from "src/schema/patterns/base";
+import { TodoContainerPattern } from "./patterns/todo_pattern";
 
 const AccountSchema = new TodoBaseEntSchema({
+  patterns: [new TodoContainerPattern()],
+
   fields: {
     Name: StringType(),
     PhoneNumber: PhoneNumberType({

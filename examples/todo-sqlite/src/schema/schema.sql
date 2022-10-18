@@ -31,6 +31,20 @@ CREATE TABLE assoc_edge_config (
     CONSTRAINT assoc_edge_config_unique_edge_name UNIQUE (edge_name)
 );
 
+CREATE TABLE object_scoped_todos_edges (
+    id1 TEXT NOT NULL, 
+    id1_type TEXT NOT NULL, 
+    edge_type TEXT NOT NULL, 
+    id2 TEXT NOT NULL, 
+    id2_type TEXT NOT NULL, 
+    time TIMESTAMP NOT NULL, 
+    data TEXT, 
+    deleted_at TIMESTAMP, 
+    CONSTRAINT object_scoped_todos_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
+);
+
+CREATE INDEX object_scoped_todos_edges_time_idx ON object_scoped_todos_edges (time);
+
 CREATE TABLE todo_edges (
     id1 TEXT NOT NULL, 
     id1_type TEXT NOT NULL, 
@@ -137,7 +151,9 @@ CREATE INDEX workspaces_deleted_at_idx ON workspaces (deleted_at);
 INSERT INTO assoc_edge_config(edge_name, edge_type, edge_table, symmetric_edge, inverse_edge_type, created_at, updated_at) VALUES('AccountToClosedTodosDupEdge', '7dcd1712-6a08-4253-96d9-068996bb6e4a', 'todo_edges', false, NULL, datetime(), datetime()),
 ('AccountToOpenTodosDupEdge', 'a75dafbf-0051-4804-bb99-a0c212599af3', 'todo_edges', false, NULL, datetime(), datetime()),
 ('AccountToWorkspacesEdge', 'b27492cd-a064-4e74-a3af-59256352ed91', 'workspace_members_edges', false, '1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0', datetime(), datetime()),
+('ObjectToScopedTodosEdge', '2a4965c1-c959-4a2d-9f93-afd131baf16b', 'object_scoped_todos_edges', false, '04ad27c4-1da0-4a90-aa2d-df4e95e381da', datetime(), datetime()),
 ('TagToTodosEdge', '33dd169d-a290-4d3f-8b09-b74628bec247', 'todo_tags_edges', false, '546160e1-224a-42ef-92c7-46089ab5e06e', datetime(), datetime()),
 ('TodoToTagsEdge', '546160e1-224a-42ef-92c7-46089ab5e06e', 'todo_tags_edges', false, '33dd169d-a290-4d3f-8b09-b74628bec247', datetime(), datetime()),
+('TodoToTodoScopeEdge', '04ad27c4-1da0-4a90-aa2d-df4e95e381da', 'object_scoped_todos_edges', false, '2a4965c1-c959-4a2d-9f93-afd131baf16b', datetime(), datetime()),
 ('WorkspaceToMembersEdge', '1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0', 'workspace_members_edges', false, 'b27492cd-a064-4e74-a3af-59256352ed91', datetime(), datetime());
 

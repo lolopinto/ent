@@ -43,6 +43,7 @@ type Account implements Node {
   account_prefs: AccountPrefs
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
+  scoped_todos(first: Int, after: String, last: Int, before: String): AccountToScopedTodosConnection!
   workspaces(first: Int, after: String, last: Int, before: String): AccountToWorkspacesConnection!
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
@@ -69,6 +70,7 @@ type Todo implements Node {
   completed: Boolean!
   completed_date: Time
   tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
+  todo_scope(first: Int, after: String, last: Int, before: String): TodoToTodoScopeConnection!
 }
 
 type Workspace implements Node {
@@ -77,6 +79,7 @@ type Workspace implements Node {
   name: String!
   slug: String!
   members(first: Int, after: String, last: Int, before: String): WorkspaceToMembersConnection!
+  scoped_todos(first: Int, after: String, last: Int, before: String): WorkspaceToScopedTodosConnection!
 }
 
 type AccountToClosedTodosDupEdge implements Edge {
@@ -110,6 +113,18 @@ type AccountToOpenTodosDupEdge implements Edge {
 
 type AccountToOpenTodosDupConnection implements Connection {
   edges: [AccountToOpenTodosDupEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AccountToScopedTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type AccountToScopedTodosConnection implements Connection {
+  edges: [AccountToScopedTodosEdge!]!
   nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -199,6 +214,18 @@ type TodoToTagsConnection implements Connection {
   rawCount: Int!
 }
 
+type TodoToTodoScopeEdge implements Edge {
+  node: Node!
+  cursor: String!
+}
+
+type TodoToTodoScopeConnection implements Connection {
+  edges: [TodoToTodoScopeEdge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type WorkspaceToMembersEdge implements Edge {
   node: Account!
   cursor: String!
@@ -207,6 +234,18 @@ type WorkspaceToMembersEdge implements Edge {
 type WorkspaceToMembersConnection implements Connection {
   edges: [WorkspaceToMembersEdge!]!
   nodes: [Account!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type WorkspaceToScopedTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type WorkspaceToScopedTodosConnection implements Connection {
+  edges: [WorkspaceToScopedTodosEdge!]!
+  nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

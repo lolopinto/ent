@@ -73,6 +73,10 @@ export async function createTodoForSelf(opts?: Partial<TodoCreateInput>) {
   const creator = await todo.loadCreatorX();
   const status = await creator.todoStatusFor(todo);
   expect(status).toBeNull();
+
+  const scopedEnts = await todo.queryTodoScope().queryEnts();
+  expect(scopedEnts.length).toBe(1);
+  expect(scopedEnts[0].id).toBe(creatorID);
   return todo;
 }
 
@@ -100,6 +104,11 @@ export async function createTodoSelfInWorkspace() {
 
   const status = await creator.todoStatusFor(todo);
   expect(status).toBeNull();
+
+  const scopedEnts = await todo.queryTodoScope().queryEnts();
+  expect(scopedEnts.length).toBe(1);
+  expect(scopedEnts[0].id).toBe(workspace.id);
+
   return todo;
 }
 

@@ -18,8 +18,10 @@ import {
   Tag,
   Todo,
   TodoToTagsQuery,
+  TodoToTodoScopeQuery,
   Workspace,
   WorkspaceToMembersQuery,
+  WorkspaceToScopedTodosQuery,
 } from "src/ent/internal";
 
 export const accountToClosedTodosDupCountLoaderFactory =
@@ -76,6 +78,10 @@ export abstract class AccountToClosedTodosDupQueryBase extends AssocEdgeQueryBas
   queryTags(): TodoToTagsQuery {
     return TodoToTagsQuery.query(this.viewer, this);
   }
+
+  queryTodoScope(): TodoToTodoScopeQuery {
+    return TodoToTodoScopeQuery.query(this.viewer, this);
+  }
 }
 
 export abstract class AccountToOpenTodosDupQueryBase extends AssocEdgeQueryBase<
@@ -108,6 +114,10 @@ export abstract class AccountToOpenTodosDupQueryBase extends AssocEdgeQueryBase<
 
   queryTags(): TodoToTagsQuery {
     return TodoToTagsQuery.query(this.viewer, this);
+  }
+
+  queryTodoScope(): TodoToTodoScopeQuery {
+    return TodoToTodoScopeQuery.query(this.viewer, this);
   }
 }
 
@@ -144,6 +154,10 @@ export abstract class AccountToWorkspacesQueryBase extends AssocEdgeQueryBase<
 
   queryMembers(): WorkspaceToMembersQuery {
     return WorkspaceToMembersQuery.query(this.viewer, this);
+  }
+
+  queryScopedTodos(): WorkspaceToScopedTodosQuery {
+    return WorkspaceToScopedTodosQuery.query(this.viewer, this);
   }
 }
 

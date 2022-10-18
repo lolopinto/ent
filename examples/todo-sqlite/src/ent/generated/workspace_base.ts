@@ -28,7 +28,14 @@ import {
   workspaceNoTransformLoader,
   workspaceSlugLoader,
 } from "src/ent/generated/loaders";
-import { Account, NodeType, WorkspaceToMembersQuery } from "src/ent/internal";
+import {
+  Account,
+  ITodoContainer,
+  NodeType,
+  TodoContainerMixin,
+  WorkspaceToMembersQuery,
+  WorkspaceToScopedTodosQuery,
+} from "src/ent/internal";
 import schema from "src/schema/workspace_schema";
 
 interface WorkspaceDBData {
@@ -41,7 +48,10 @@ interface WorkspaceDBData {
   slug: string;
 }
 
-export class WorkspaceBase implements Ent<Viewer> {
+export class WorkspaceBase
+  extends TodoContainerMixin(class {})
+  implements Ent<Viewer>, ITodoContainer
+{
   readonly nodeType = NodeType.Workspace;
   readonly id: ID;
   readonly createdAt: Date;
@@ -52,6 +62,8 @@ export class WorkspaceBase implements Ent<Viewer> {
   readonly slug: string;
 
   constructor(public viewer: Viewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -267,6 +279,10 @@ export class WorkspaceBase implements Ent<Viewer> {
 
   queryMembers(): WorkspaceToMembersQuery {
     return WorkspaceToMembersQuery.query(this.viewer, this.id);
+  }
+
+  queryScopedTodos(): WorkspaceToScopedTodosQuery {
+    return WorkspaceToScopedTodosQuery.query(this.viewer, this.id);
   }
 
   async loadCreator(): Promise<Account | null> {

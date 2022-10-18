@@ -1,8 +1,11 @@
 import { UUIDType } from "@snowtop/ent";
 import { ActionOperation, StringType } from "@snowtop/ent";
 import { TodoBaseEntSchema } from "src/schema/patterns/base";
+import { TodoContainerPattern } from "./patterns/todo_pattern";
 
 const WorkSpaceSchema = new TodoBaseEntSchema({
+  patterns: [new TodoContainerPattern()],
+
   fields: {
     name: StringType(),
     creatorID: UUIDType({

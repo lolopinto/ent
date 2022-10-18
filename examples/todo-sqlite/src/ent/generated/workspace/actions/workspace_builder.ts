@@ -13,6 +13,7 @@ import {
 import { Account, Workspace } from "src/ent/";
 import { EdgeType, NodeType } from "src/ent/generated/const";
 import { workspaceLoaderInfo } from "src/ent/generated/loaders";
+import { TodoContainerBuilder } from "src/ent/generated/mixins/todo_container/actions/todo_container_builder";
 import schema from "src/schema/workspace_schema";
 
 export interface WorkspaceInput {
@@ -28,13 +29,28 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+class Base {
+  // @ts-ignore not assigning. need for Mixin
+  orchestrator: Orchestrator<Workspace, any, Viewer>;
+
+  constructor() {}
+
+  isBuilder<T extends Ent>(
+    node: ID | T | Builder<T, any>,
+  ): node is Builder<T, any> {
+    return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+}
+
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export class WorkspaceBuilder<
-  TInput extends WorkspaceInput = WorkspaceInput,
-  TExistingEnt extends TMaybleNullableEnt<Workspace> = Workspace | null,
-> implements Builder<Workspace, Viewer, TExistingEnt>
+    TInput extends WorkspaceInput = WorkspaceInput,
+    TExistingEnt extends TMaybleNullableEnt<Workspace> = Workspace | null,
+  >
+  extends TodoContainerBuilder(Base)
+  implements Builder<Workspace, Viewer, TExistingEnt>
 {
   orchestrator: Orchestrator<Workspace, TInput, Viewer, TExistingEnt>;
   readonly placeholderID: ID;
@@ -55,6 +71,7 @@ export class WorkspaceBuilder<
     >,
     public readonly existingEnt: TExistingEnt,
   ) {
+    super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Workspace`;
     this.input = action.getInput();
     const updateInput = (d: WorkspaceInput) =>

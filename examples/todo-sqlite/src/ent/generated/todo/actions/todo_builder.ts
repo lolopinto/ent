@@ -22,7 +22,7 @@ export interface TodoInput {
   creatorID?: ID | Builder<Account, Viewer>;
   completedDate?: Date | null;
   assigneeID?: ID | Builder<Account, Viewer>;
-  scopeID?: ID | Builder<Ent<Viewer>, Viewer>;
+  scopeID?: ID;
   scopeType?: string;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -161,6 +161,51 @@ export class TodoBuilder<
     return this;
   }
 
+  addTodoScope(...nodes: (Ent | Builder<Ent, any>)[]): this {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.orchestrator.addOutboundEdge(
+          node,
+          EdgeType.TodoToTodoScope,
+          // nodeType will be gotten from Executor later
+          "",
+        );
+      } else {
+        this.orchestrator.addOutboundEdge(
+          node.id,
+          EdgeType.TodoToTodoScope,
+          node.nodeType,
+        );
+      }
+    }
+    return this;
+  }
+
+  addTodoScopeID(
+    id: ID | Builder<Ent, any>,
+    nodeType: NodeType,
+    options?: AssocEdgeInputOptions,
+  ): this {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.TodoToTodoScope,
+      nodeType,
+      options,
+    );
+    return this;
+  }
+
+  removeTodoScope(...nodes: (ID | Ent)[]): this {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(node.id, EdgeType.TodoToTodoScope);
+      } else {
+        this.orchestrator.removeOutboundEdge(node, EdgeType.TodoToTodoScope);
+      }
+    }
+    return this;
+  }
+
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
   }
@@ -287,7 +332,7 @@ export class TodoBuilder<
   }
 
   // get value of scopeID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewScopeIDValue(): ID | Builder<Ent<Viewer>, Viewer> {
+  getNewScopeIDValue(): ID {
     if (this.input.scopeID !== undefined) {
       return this.input.scopeID;
     }

@@ -27,7 +27,12 @@ import {
   todoLoaderInfo,
   todoNoTransformLoader,
 } from "src/ent/generated/loaders";
-import { Account, NodeType, TodoToTagsQuery } from "src/ent/internal";
+import {
+  Account,
+  NodeType,
+  TodoToTagsQuery,
+  TodoToTodoScopeQuery,
+} from "src/ent/internal";
 import schema from "src/schema/todo_schema";
 
 interface TodoDBData {
@@ -235,6 +240,10 @@ export class TodoBase implements Ent<Viewer> {
 
   queryTags(): TodoToTagsQuery {
     return TodoToTagsQuery.query(this.viewer, this.id);
+  }
+
+  queryTodoScope(): TodoToTodoScopeQuery {
+    return TodoToTodoScopeQuery.query(this.viewer, this.id);
   }
 
   async loadAssignee(): Promise<Account | null> {

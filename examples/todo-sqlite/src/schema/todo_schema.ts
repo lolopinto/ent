@@ -26,15 +26,11 @@ const TodoSchema = new TodoBaseEntSchema({
     // moving away from creatorID to assigneeID to indicate who the todo is assigned to
     assigneeID: UUIDType({ index: true, fieldEdge: { schema: "Account" } }),
     scopeID: UUIDType({
-      // index: true,
       polymorphic: {
+        disableBuilderType: true,
         // a todo can be created in a personal account or as part of a workspace/team situation
         types: ["Account", "Workspace"],
       },
-      // fieldEdge: {
-      //   inverseEdge: "Foo",
-      //   // schema: "Account",
-      // },
     }),
   },
 

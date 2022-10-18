@@ -18,6 +18,7 @@ import {
   Account,
   AccountToClosedTodosDupQuery,
   AccountToOpenTodosDupQuery,
+  AccountToScopedTodosQuery,
   AccountToTagsQuery,
   AccountToTodosQuery,
   AccountToWorkspacesQuery,
@@ -28,6 +29,7 @@ import {
   AccountToClosedTodosDupConnectionType,
   AccountToOpenTodosConnectionType,
   AccountToOpenTodosDupConnectionType,
+  AccountToScopedTodosConnectionType,
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
   AccountToWorkspacesConnectionType,
@@ -111,6 +113,35 @@ export const AccountType = new GraphQLObjectType({
           account.viewer,
           account,
           (v, account: Account) => AccountToOpenTodosDupQuery.query(v, account),
+          args,
+        );
+      },
+    },
+    scoped_todos: {
+      type: new GraphQLNonNull(AccountToScopedTodosConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) => AccountToScopedTodosQuery.query(v, account),
           args,
         );
       },

@@ -13,10 +13,15 @@ import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
 } from "@snowtop/ent/graphql";
-import { Workspace, WorkspaceToMembersQuery } from "src/ent/";
+import {
+  Workspace,
+  WorkspaceToMembersQuery,
+  WorkspaceToScopedTodosQuery,
+} from "src/ent/";
 import {
   AccountType,
   WorkspaceToMembersConnectionType,
+  WorkspaceToScopedTodosConnectionType,
 } from "src/graphql/resolvers/internal";
 
 export const WorkspaceType = new GraphQLObjectType({
@@ -63,6 +68,36 @@ export const WorkspaceType = new GraphQLObjectType({
           workspace,
           (v, workspace: Workspace) =>
             WorkspaceToMembersQuery.query(v, workspace),
+          args,
+        );
+      },
+    },
+    scoped_todos: {
+      type: new GraphQLNonNull(WorkspaceToScopedTodosConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (workspace: Workspace, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          workspace.viewer,
+          workspace,
+          (v, workspace: Workspace) =>
+            WorkspaceToScopedTodosQuery.query(v, workspace),
           args,
         );
       },
