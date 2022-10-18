@@ -73,7 +73,6 @@ test("create todo self in workspace", async () => {
 });
 
 test("create todo for other in workspace", async () => {
-  // in real life, you shouldn't just be able to create a TODO for anyone randomly lol
   const creator = await createAccount();
   const assignee = await createAccount();
   const workspace = await createWorkspace(creator);
