@@ -14,7 +14,7 @@ const WorkSpaceSchema = new TodoBaseEntSchema({
       defaultToViewerOnCreate: true,
     }),
     // used to make the url
-    slug: StringType({ unique: true }),
+    slug: StringType({ unique: true }).toLowerCase().trim(),
   },
 
   actions: [
