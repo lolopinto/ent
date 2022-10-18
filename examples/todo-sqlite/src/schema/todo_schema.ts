@@ -5,12 +5,9 @@ import {
   TimestampType,
   UUIDType,
 } from "@snowtop/ent";
-import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
-import { TodoEntSchema } from "src/schema/patterns/base";
+import { TodoBaseEntSchema } from "src/schema/patterns/base";
 
-const TodoSchema = new TodoEntSchema({
-  patterns: [new DeletedAtPattern()],
-
+const TodoSchema = new TodoBaseEntSchema({
   fields: {
     Text: StringType(),
     Completed: BooleanType({

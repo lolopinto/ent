@@ -7,6 +7,8 @@ export enum NodeType {
   Tag = "tag",
   // Todo is the node type for the Todo object. Used to identify this node in edges and other places.
   Todo = "todo",
+  // Workspace is the node type for the Workspace object. Used to identify this node in edges and other places.
+  Workspace = "workspace",
 }
 
 export enum EdgeType {

@@ -93,6 +93,20 @@ sa.Table("todos", metadata,
     sa.PrimaryKeyConstraint("id", name="todos_id_pkey"),
     sa.ForeignKeyConstraint(["creator_id"], ["accounts.id"], name="todos_creator_id_fkey", ondelete="CASCADE"),
 )
+   
+sa.Table("workspaces", metadata,
+    sa.Column("id", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
+    sa.Column("name", sa.Text(), nullable=False),
+    sa.Column("creator_id", sa.Text(), nullable=False),
+    sa.Column("slug", sa.Text(), nullable=False),
+    sa.Index("workspaces_deleted_at_idx", "deleted_at"),
+    sa.PrimaryKeyConstraint("id", name="workspaces_id_pkey"),
+    sa.ForeignKeyConstraint(["creator_id"], ["accounts.id"], name="workspaces_creator_id_fkey", ondelete="CASCADE"),
+    sa.UniqueConstraint("slug", name="workspaces_unique_slug"),
+)
   
 
 metadata.info["edges"] = {

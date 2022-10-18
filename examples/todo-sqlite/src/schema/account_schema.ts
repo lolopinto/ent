@@ -2,12 +2,9 @@ import { BooleanType, EnumType, StructType } from "@snowtop/ent";
 import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 import { ActionOperation, StringType } from "@snowtop/ent";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
-import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
-import { TodoEntSchema } from "src/schema/patterns/base";
+import { TodoBaseEntSchema } from "src/schema/patterns/base";
 
-const AccountSchema = new TodoEntSchema({
-  patterns: [new DeletedAtPattern()],
-
+const AccountSchema = new TodoBaseEntSchema({
   fields: {
     Name: StringType(),
     PhoneNumber: PhoneNumberType({

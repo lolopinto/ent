@@ -5,15 +5,14 @@ import {
   StringType,
   UUIDType,
 } from "@snowtop/ent";
-import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
-import { TodoEntSchema } from "src/schema/patterns/base";
+import { TodoBaseEntSchema } from "src/schema/patterns/base";
 
-const TagSchema = new TodoEntSchema({
-  patterns: [new DeletedAtPattern()],
-
+const TagSchema = new TodoBaseEntSchema({
   fields: {
     DisplayName: StringType(),
     canonicalName: StringType().trim().toLowerCase(),
+    // tag has one own todo or something else?
+    // AccountToTagsQuery needs to change
     ownerID: UUIDType({
       foreignKey: { schema: "Account", column: "ID" },
     }),

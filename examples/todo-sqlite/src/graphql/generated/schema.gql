@@ -68,6 +68,13 @@ type Todo implements Node {
   tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
 }
 
+type Workspace implements Node {
+  creator: Account
+  id: ID!
+  name: String!
+  slug: String!
+}
+
 type AccountToClosedTodosDupEdge implements Edge {
   node: Todo!
   cursor: String!
@@ -237,6 +244,15 @@ type CreateTodoPayload {
   todo: Todo!
 }
 
+input CreateWorkspaceInput {
+  name: String!
+  slug: String!
+}
+
+type CreateWorkspacePayload {
+  workspace: Workspace!
+}
+
 input DeleteAccountInput {
   """id of Account"""
   id: ID!
@@ -255,6 +271,15 @@ type DeleteTodoPayload {
   deleted_todo_id: ID
 }
 
+input DeleteWorkspaceInput {
+  """id of Workspace"""
+  id: ID!
+}
+
+type DeleteWorkspacePayload {
+  deleted_workspace_id: ID
+}
+
 input EditAccountInput {
   """id of Account"""
   id: ID!
@@ -265,6 +290,18 @@ input EditAccountInput {
 
 type EditAccountPayload {
   account: Account!
+}
+
+input EditWorkspaceInput {
+  """id of Workspace"""
+  id: ID!
+  name: String
+  creator_id: ID
+  slug: String
+}
+
+type EditWorkspacePayload {
+  workspace: Workspace!
 }
 
 input RemoveTodoTagInput {
@@ -306,6 +343,7 @@ type Query {
   open_todos_plural(id: ID!): [Todo!]!
   tag(id: ID!): Tag
   todo(id: ID!): Todo
+  workspace(id: ID!): Workspace
 }
 
 type Mutation {
@@ -314,9 +352,12 @@ type Mutation {
   createAccount(input: CreateAccountInput!): CreateAccountPayload!
   createTag(input: CreateTagInput!): CreateTagPayload!
   createTodo(input: CreateTodoInput!): CreateTodoPayload!
+  createWorkspace(input: CreateWorkspaceInput!): CreateWorkspacePayload!
   deleteAccount(input: DeleteAccountInput!): DeleteAccountPayload!
   deleteTodo(input: DeleteTodoInput!): DeleteTodoPayload!
+  deleteWorkspace(input: DeleteWorkspaceInput!): DeleteWorkspacePayload!
   editAccount(input: EditAccountInput!): EditAccountPayload!
+  editWorkspace(input: EditWorkspaceInput!): EditWorkspacePayload!
   markAllTodosAs(accountID: ID!, completed: Boolean!): Account!
   removeCompletedTodos(accountID: ID!): Account!
   removeTodoTag(input: RemoveTodoTagInput!): RemoveTodoTagPayload!

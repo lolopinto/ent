@@ -100,6 +100,21 @@ CREATE INDEX todos_creator_id_idx ON todos (creator_id);
 
 CREATE INDEX todos_deleted_at_idx ON todos (deleted_at);
 
+CREATE TABLE workspaces (
+    id TEXT NOT NULL, 
+    created_at TIMESTAMP NOT NULL, 
+    updated_at TIMESTAMP NOT NULL, 
+    deleted_at TIMESTAMP, 
+    name TEXT NOT NULL, 
+    creator_id TEXT NOT NULL, 
+    slug TEXT NOT NULL, 
+    CONSTRAINT workspaces_id_pkey PRIMARY KEY (id), 
+    CONSTRAINT workspaces_creator_id_fkey FOREIGN KEY(creator_id) REFERENCES accounts (id) ON DELETE CASCADE, 
+    CONSTRAINT workspaces_unique_slug UNIQUE (slug)
+);
+
+CREATE INDEX workspaces_deleted_at_idx ON workspaces (deleted_at);
+
 INSERT INTO assoc_edge_config(edge_name, edge_type, edge_table, symmetric_edge, inverse_edge_type, created_at, updated_at) VALUES('AccountToClosedTodosDupEdge', '7dcd1712-6a08-4253-96d9-068996bb6e4a', 'todo_edges', false, NULL, datetime(), datetime()),
 ('AccountToOpenTodosDupEdge', 'a75dafbf-0051-4804-bb99-a0c212599af3', 'todo_edges', false, NULL, datetime(), datetime()),
 ('TagToTodosEdge', '33dd169d-a290-4d3f-8b09-b74628bec247', 'todo_tags_edges', false, '546160e1-224a-42ef-92c7-46089ab5e06e', datetime(), datetime()),

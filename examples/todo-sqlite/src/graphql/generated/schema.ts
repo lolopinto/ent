@@ -48,6 +48,18 @@ import {
   RenameTodoInputType,
   RenameTodoPayloadType,
 } from "src/graphql/generated/mutations/todo/rename_todo_type";
+import {
+  CreateWorkspaceInputType,
+  CreateWorkspacePayloadType,
+} from "src/graphql/generated/mutations/workspace/create_workspace_type";
+import {
+  DeleteWorkspaceInputType,
+  DeleteWorkspacePayloadType,
+} from "src/graphql/generated/mutations/workspace/delete_workspace_type";
+import {
+  EditWorkspaceInputType,
+  EditWorkspacePayloadType,
+} from "src/graphql/generated/mutations/workspace/edit_workspace_type";
 import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
   AccountPrefsType,
@@ -64,6 +76,7 @@ import {
   TagType,
   TodoToTagsConnectionType,
   TodoType,
+  WorkspaceType,
 } from "src/graphql/resolvers";
 
 export default new GraphQLSchema({
@@ -75,6 +88,7 @@ export default new GraphQLSchema({
     AccountType,
     TagType,
     TodoType,
+    WorkspaceType,
     AccountToClosedTodosDupConnectionType(),
     AccountToOpenTodosConnectionType(),
     AccountToOpenTodosDupConnectionType(),
@@ -96,12 +110,18 @@ export default new GraphQLSchema({
     CreateTagPayloadType,
     CreateTodoInputType,
     CreateTodoPayloadType,
+    CreateWorkspaceInputType,
+    CreateWorkspacePayloadType,
     DeleteAccountInputType,
     DeleteAccountPayloadType,
     DeleteTodoInputType,
     DeleteTodoPayloadType,
+    DeleteWorkspaceInputType,
+    DeleteWorkspacePayloadType,
     EditAccountInputType,
     EditAccountPayloadType,
+    EditWorkspaceInputType,
+    EditWorkspacePayloadType,
     RemoveTodoTagInputType,
     RemoveTodoTagPayloadType,
     RenameTodoInputType,
