@@ -82,7 +82,7 @@ func getAddColumnPrompt(nodeData *schema.NodeData, f fieldInfo) (prompt.Prompt, 
 	}
 
 	// adding new field which isn't nullable, prompt needed
-	if !fld.Nullable() {
+	if !fld.Nullable() && fld.DefaultValue() == nil {
 		return &prompt.YesNoQuestion{
 			Question: fmt.Sprintf(
 				"You're adding a new field '%s' to an existing Node '%s' which isn't nullable. This could result in database errors. Are you sure you want to do that? Y/N: ",
