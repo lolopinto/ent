@@ -169,6 +169,9 @@ const todoFields = [
   "completed",
   "creator_id",
   "completed_date",
+  "assignee_id",
+  "scope_id",
+  "scope_type",
 ];
 
 export const todoLoader = new ObjectLoaderFactory({
@@ -221,6 +224,18 @@ export const todoLoaderInfo = {
     completedDate: {
       dbCol: "completed_date",
       inputKey: "completedDate",
+    },
+    assigneeID: {
+      dbCol: "assignee_id",
+      inputKey: "assigneeID",
+    },
+    scopeID: {
+      dbCol: "scope_id",
+      inputKey: "scopeID",
+    },
+    scopeType: {
+      dbCol: "scope_type",
+      inputKey: "scopeType",
     },
   },
 };

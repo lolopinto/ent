@@ -17,7 +17,7 @@ export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
   constructor(viewer: Viewer, src: ID | Account) {
     super(viewer, {
       src,
-      groupCol: "creator_id",
+      groupCol: "assignee_id",
       loadEntOptions: Todo.loaderOptions(),
       clause: query.Eq("completed", false),
       name: "account_to_open_todos",
@@ -39,7 +39,7 @@ export class Account extends AccountBase {
   async openTodosPlural() {
     return await Todo.loadCustom(
       this.viewer,
-      query.And(query.Eq("creator_id", this.id), query.Eq("completed", false)),
+      query.And(query.Eq("assignee_id", this.id), query.Eq("completed", false)),
     );
   }
 

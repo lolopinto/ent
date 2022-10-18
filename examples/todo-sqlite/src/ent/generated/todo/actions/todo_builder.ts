@@ -21,6 +21,9 @@ export interface TodoInput {
   completed?: boolean;
   creatorID?: ID | Builder<Account, Viewer>;
   completedDate?: Date | null;
+  assigneeID?: ID | Builder<Account, Viewer>;
+  scopeID?: ID | Builder<Ent<Viewer>, Viewer>;
+  scopeType?: string;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -201,6 +204,9 @@ export class TodoBuilder<
     addField("Completed", fields.completed);
     addField("creatorID", fields.creatorID);
     addField("completedDate", fields.completedDate);
+    addField("assigneeID", fields.assigneeID);
+    addField("scopeID", fields.scopeID);
+    addField("scopeType", fields.scopeType);
     return result;
   }
 
@@ -264,5 +270,47 @@ export class TodoBuilder<
     }
 
     return this.existingEnt?.completedDate ?? null;
+  }
+
+  // get value of assigneeID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAssigneeIDValue(): ID | Builder<Account, Viewer> {
+    if (this.input.assigneeID !== undefined) {
+      return this.input.assigneeID;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `assigneeID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.assigneeID;
+  }
+
+  // get value of scopeID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewScopeIDValue(): ID | Builder<Ent<Viewer>, Viewer> {
+    if (this.input.scopeID !== undefined) {
+      return this.input.scopeID;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `scopeID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.scopeID;
+  }
+
+  // get value of scopeType. Retrieves it from the input if specified or takes it from existingEnt
+  getNewScopeTypeValue(): string {
+    if (this.input.scopeType !== undefined) {
+      return this.input.scopeType;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `scopeType` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.scopeType;
   }
 }

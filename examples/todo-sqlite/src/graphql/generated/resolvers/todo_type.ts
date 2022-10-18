@@ -24,10 +24,22 @@ import {
 export const TodoType = new GraphQLObjectType({
   name: "Todo",
   fields: (): GraphQLFieldConfigMap<Todo, RequestContext> => ({
+    assignee: {
+      type: AccountType,
+      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+        return todo.loadAssignee();
+      },
+    },
     creator: {
       type: AccountType,
       resolve: (todo: Todo, args: {}, context: RequestContext) => {
         return todo.loadCreator();
+      },
+    },
+    scope: {
+      type: GraphQLNodeInterface,
+      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+        return todo.loadScope();
       },
     },
     id: {

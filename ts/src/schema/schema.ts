@@ -504,6 +504,7 @@ export interface PolymorphicOptions {
   // would always have been previously created. simplifies validation
   disableBuilderType?: boolean;
   // serverDefault for derived polymorphic field
+  // TODO rename this. it's not clear...
   serverDefault?: any;
 }
 

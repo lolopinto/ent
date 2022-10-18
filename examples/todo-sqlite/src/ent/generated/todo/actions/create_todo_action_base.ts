@@ -2,6 +2,7 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  Ent,
   ID,
   PrivacyPolicy,
   Viewer,
@@ -21,6 +22,9 @@ import { TodoBuilder } from "src/ent/generated/todo/actions/todo_builder";
 export interface TodoCreateInput {
   text: string;
   creatorID: ID | Builder<Account, Viewer>;
+  assigneeID: ID | Builder<Account, Viewer>;
+  scopeID: ID | Builder<Ent<Viewer>, Viewer>;
+  scopeType: string;
 }
 
 export type CreateTodoActionTriggers = (

@@ -100,9 +100,14 @@ CREATE TABLE todos (
     completed BOOLEAN NOT NULL, 
     creator_id TEXT NOT NULL, 
     completed_date TIMESTAMP, 
+    assignee_id TEXT NOT NULL, 
+    scope_id TEXT NOT NULL, 
+    scope_type TEXT NOT NULL, 
     CONSTRAINT todos_id_pkey PRIMARY KEY (id), 
     CONSTRAINT todos_creator_id_fkey FOREIGN KEY(creator_id) REFERENCES accounts (id) ON DELETE CASCADE
 );
+
+CREATE INDEX todos_assignee_id_idx ON todos (assignee_id);
 
 CREATE INDEX todos_completed_date_idx ON todos (completed_date);
 

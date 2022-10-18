@@ -18,8 +18,11 @@ import CreateTodoAction, {
 } from "src/ent/todo/actions/create_todo_action";
 import { TodoType } from "src/graphql/resolvers/";
 
-interface customCreateTodoInput extends TodoCreateInput {
+interface customCreateTodoInput extends Omit<TodoCreateInput, "scopeType"> {
   creator_id: string;
+  assignee_id: string;
+  scope_id: string;
+  scope_type: string;
 }
 
 interface CreateTodoPayload {
@@ -34,6 +37,15 @@ export const CreateTodoInputType = new GraphQLInputObjectType({
     },
     creator_id: {
       type: new GraphQLNonNull(GraphQLID),
+    },
+    assignee_id: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    scope_id: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    scope_type: {
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -68,6 +80,9 @@ export const CreateTodoType: GraphQLFieldConfig<
     const todo = await CreateTodoAction.create(context.getViewer(), {
       text: input.text,
       creatorID: input.creator_id,
+      assigneeID: input.assignee_id,
+      scopeID: input.scope_id,
+      scopeType: input.scope_type,
     }).saveX();
     return { todo: todo };
   },

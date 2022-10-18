@@ -11,8 +11,9 @@ const TagSchema = new TodoBaseEntSchema({
   fields: {
     DisplayName: StringType(),
     canonicalName: StringType().trim().toLowerCase(),
-    // tag has one own todo or something else?
-    // AccountToTagsQuery needs to change
+    // TODO migrate away from Owner to something else...
+    // similar to what we're doing in Todo
+    // TODO https://github.com/lolopinto/ent/issues/1185
     ownerID: UUIDType({
       foreignKey: { schema: "Account", column: "ID" },
     }),

@@ -61,7 +61,9 @@ type Tag implements Node {
 }
 
 type Todo implements Node {
+  assignee: Account
   creator: Account
+  scope: Node
   id: ID!
   text: String!
   completed: Boolean!
@@ -264,6 +266,9 @@ type CreateTagPayload {
 input CreateTodoInput {
   text: String!
   creator_id: ID!
+  assignee_id: ID!
+  scope_id: ID!
+  scope_type: String!
 }
 
 type CreateTodoPayload {

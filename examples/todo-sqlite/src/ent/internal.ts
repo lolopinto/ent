@@ -21,6 +21,7 @@ export * from "src/ent/account/query/account_to_tags_query";
 export * from "src/ent/account/query/account_to_todos_query";
 export * from "src/ent/account/query/account_to_workspaces_query";
 export * from "src/ent/tag/query/tag_to_todos_query";
+export * from "src/ent/todo/query/scope_to_todos_query";
 export * from "src/ent/todo/query/todo_to_tags_query";
 export * from "src/ent/workspace/query/workspace_to_members_query";
 import { setGlobalSchema } from "@snowtop/ent";

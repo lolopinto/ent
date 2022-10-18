@@ -1,20 +1,7 @@
-import { randomInt } from "crypto";
-import { createAccount } from "../testutils/util";
+import { createAccount, createWorkspace } from "../testutils/util";
 import { Workspace } from "../workspace";
-import CreateWorkspaceAction from "../workspace/actions/create_workspace_action";
 import DeleteWorkspaceAction from "../workspace/actions/delete_workspace_action";
 import EditWorkspaceAction from "../workspace/actions/edit_workspace_action";
-
-async function createWorkspace() {
-  const account = await createAccount();
-  const workspace = await CreateWorkspaceAction.create(account.viewer, {
-    name: "test",
-    slug: `fun-workspace-${randomInt(1000000000000)}`,
-  }).saveX();
-  expect(workspace.creatorID).toBe(account.id);
-  expect(workspace.name).toBe("test");
-  return workspace;
-}
 
 test("create", async () => {
   await createWorkspace();

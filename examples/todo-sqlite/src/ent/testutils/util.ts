@@ -1,4 +1,4 @@
-import { LoggedOutViewer, ID, IDViewer } from "@snowtop/ent";
+import { LoggedOutViewer, ID, IDViewer, Viewer } from "@snowtop/ent";
 import CreateAccountAction, {
   AccountCreateInput,
 } from "src/ent/account/actions/create_account_action";
@@ -8,7 +8,9 @@ import CreateTodoAction, {
   TodoCreateInput,
 } from "src/ent/todo/actions/create_todo_action";
 import CreateTagAction from "../tag/actions/create_tag_action";
-import { Account } from "src/ent";
+import { Account, NodeType } from "src/ent";
+import CreateWorkspaceAction from "../workspace/actions/create_workspace_action";
+import { randomInt } from "crypto";
 
 export function randomPhoneNumber(): string {
   const phone = Math.random().toString(10).substring(2, 12);
@@ -31,7 +33,20 @@ export async function createAccount(input?: Partial<AccountCreateInput>) {
   return account;
 }
 
-export async function createTodo(opts?: Partial<TodoCreateInput>) {
+export async function createWorkspace(account?: Account) {
+  if (!account) {
+    account = await createAccount();
+  }
+  const workspace = await CreateWorkspaceAction.create(account.viewer, {
+    name: "test",
+    slug: `fun-workspace-${randomInt(1000000000000)}`,
+  }).saveX();
+  expect(workspace.creatorID).toBe(account.id);
+  expect(workspace.name).toBe("test");
+  return workspace;
+}
+
+export async function createTodoForSelf(opts?: Partial<TodoCreateInput>) {
   let creatorID: ID;
   if (opts?.creatorID) {
     creatorID = opts.creatorID as ID;
@@ -43,13 +58,46 @@ export async function createTodo(opts?: Partial<TodoCreateInput>) {
   const todo = await CreateTodoAction.create(new IDViewer(creatorID), {
     text,
     creatorID: creatorID,
+    assigneeID: creatorID,
+    scopeID: creatorID,
+    scopeType: NodeType.Account,
     ...opts,
   }).saveX();
   expect(todo.text).toBe(text);
   expect(todo.creatorID).toBe(creatorID);
   expect(todo.completed).toBe(false);
+  expect(todo.assigneeID).toBe(creatorID);
+  expect(todo.scopeID).toBe(creatorID);
+  expect(todo.scopeType).toBe(NodeType.Account);
 
   const creator = await todo.loadCreatorX();
+  const status = await creator.todoStatusFor(todo);
+  expect(status).toBeNull();
+  return todo;
+}
+
+export async function createTodoSelfInWorkspace() {
+  const creator = await createAccount();
+  const workspace = await CreateWorkspaceAction.create(creator.viewer, {
+    name: "test",
+    slug: `fun-workspace-${randomInt(1000000000000)}`,
+  }).saveX();
+
+  const text = "watch Game of Thrones";
+  const todo = await CreateTodoAction.create(creator.viewer, {
+    text,
+    creatorID: creator.id,
+    assigneeID: creator.id,
+    scopeID: workspace.id,
+    scopeType: NodeType.Workspace,
+  }).saveX();
+  expect(todo.text).toBe(text);
+  expect(todo.creatorID).toBe(creator.id);
+  expect(todo.completed).toBe(false);
+  expect(todo.assigneeID).toBe(creator.id);
+  expect(todo.scopeID).toBe(workspace.id);
+  expect(todo.scopeType).toBe(NodeType.Workspace);
+
   const status = await creator.todoStatusFor(todo);
   expect(status).toBeNull();
   return todo;
