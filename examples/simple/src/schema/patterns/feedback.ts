@@ -1,8 +1,8 @@
-import { Edge, Field, Pattern } from "@snowtop/ent";
+import { Edge, Pattern } from "@snowtop/ent";
 
 export default class Feedback implements Pattern {
   name = "feedback";
-  fields: Field[] = [];
+  fields = {};
   edges: Edge[] = [
     {
       // object to liker

@@ -43,6 +43,8 @@ type Account implements Node {
   account_prefs: AccountPrefs
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
+  scoped_todos(first: Int, after: String, last: Int, before: String): AccountToScopedTodosConnection!
+  workspaces(first: Int, after: String, last: Int, before: String): AccountToWorkspacesConnection!
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
   todoStatusFor(id: ID!): AccountTodoStatus
@@ -60,12 +62,24 @@ type Tag implements Node {
 }
 
 type Todo implements Node {
+  assignee: Account
   creator: Account
+  scope: Node
   id: ID!
   text: String!
   completed: Boolean!
   completed_date: Time
   tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
+  todo_scope(first: Int, after: String, last: Int, before: String): TodoToTodoScopeConnection!
+}
+
+type Workspace implements Node {
+  creator: Account
+  id: ID!
+  name: String!
+  slug: String!
+  members(first: Int, after: String, last: Int, before: String): WorkspaceToMembersConnection!
+  scoped_todos(first: Int, after: String, last: Int, before: String): WorkspaceToScopedTodosConnection!
 }
 
 type AccountToClosedTodosDupEdge implements Edge {
@@ -104,6 +118,18 @@ type AccountToOpenTodosDupConnection implements Connection {
   rawCount: Int!
 }
 
+type AccountToScopedTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type AccountToScopedTodosConnection implements Connection {
+  edges: [AccountToScopedTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type AccountToTagsEdge implements Edge {
   node: Tag!
   cursor: String!
@@ -124,6 +150,18 @@ type AccountToTodosEdge implements Edge {
 type AccountToTodosConnection implements Connection {
   edges: [AccountToTodosEdge!]!
   nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AccountToWorkspacesEdge implements Edge {
+  node: Workspace!
+  cursor: String!
+}
+
+type AccountToWorkspacesConnection implements Connection {
+  edges: [AccountToWorkspacesEdge!]!
+  nodes: [Workspace!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -172,6 +210,42 @@ type TodoToTagsEdge implements Edge {
 type TodoToTagsConnection implements Connection {
   edges: [TodoToTagsEdge!]!
   nodes: [Tag!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type TodoToTodoScopeEdge implements Edge {
+  node: Node!
+  cursor: String!
+}
+
+type TodoToTodoScopeConnection implements Connection {
+  edges: [TodoToTodoScopeEdge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type WorkspaceToMembersEdge implements Edge {
+  node: Account!
+  cursor: String!
+}
+
+type WorkspaceToMembersConnection implements Connection {
+  edges: [WorkspaceToMembersEdge!]!
+  nodes: [Account!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type WorkspaceToScopedTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type WorkspaceToScopedTodosConnection implements Connection {
+  edges: [WorkspaceToScopedTodosEdge!]!
+  nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -231,10 +305,22 @@ type CreateTagPayload {
 input CreateTodoInput {
   text: String!
   creator_id: ID!
+  assignee_id: ID!
+  scope_id: ID!
+  scope_type: String!
 }
 
 type CreateTodoPayload {
   todo: Todo!
+}
+
+input CreateWorkspaceInput {
+  name: String!
+  slug: String!
+}
+
+type CreateWorkspacePayload {
+  workspace: Workspace!
 }
 
 input DeleteAccountInput {
@@ -255,6 +341,15 @@ type DeleteTodoPayload {
   deleted_todo_id: ID
 }
 
+input DeleteWorkspaceInput {
+  """id of Workspace"""
+  id: ID!
+}
+
+type DeleteWorkspacePayload {
+  deleted_workspace_id: ID
+}
+
 input EditAccountInput {
   """id of Account"""
   id: ID!
@@ -265,6 +360,18 @@ input EditAccountInput {
 
 type EditAccountPayload {
   account: Account!
+}
+
+input EditWorkspaceInput {
+  """id of Workspace"""
+  id: ID!
+  name: String
+  creator_id: ID
+  slug: String
+}
+
+type EditWorkspacePayload {
+  workspace: Workspace!
 }
 
 input RemoveTodoTagInput {
@@ -306,6 +413,7 @@ type Query {
   open_todos_plural(id: ID!): [Todo!]!
   tag(id: ID!): Tag
   todo(id: ID!): Todo
+  workspace(id: ID!): Workspace
 }
 
 type Mutation {
@@ -314,9 +422,12 @@ type Mutation {
   createAccount(input: CreateAccountInput!): CreateAccountPayload!
   createTag(input: CreateTagInput!): CreateTagPayload!
   createTodo(input: CreateTodoInput!): CreateTodoPayload!
+  createWorkspace(input: CreateWorkspaceInput!): CreateWorkspacePayload!
   deleteAccount(input: DeleteAccountInput!): DeleteAccountPayload!
   deleteTodo(input: DeleteTodoInput!): DeleteTodoPayload!
+  deleteWorkspace(input: DeleteWorkspaceInput!): DeleteWorkspacePayload!
   editAccount(input: EditAccountInput!): EditAccountPayload!
+  editWorkspace(input: EditWorkspaceInput!): EditWorkspacePayload!
   markAllTodosAs(accountID: ID!, completed: Boolean!): Account!
   removeCompletedTodos(accountID: ID!): Account!
   removeTodoTag(input: RemoveTodoTagInput!): RemoveTodoTagPayload!

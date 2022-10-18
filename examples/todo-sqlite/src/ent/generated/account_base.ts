@@ -37,11 +37,15 @@ import {
 import {
   AccountToClosedTodosDupQuery,
   AccountToOpenTodosDupQuery,
+  AccountToScopedTodosQuery,
   AccountToTagsQuery,
   AccountToTodosQuery,
+  AccountToWorkspacesQuery,
   EdgeType,
+  ITodoContainer,
   NodeType,
   Todo,
+  TodoContainerMixin,
 } from "src/ent/internal";
 import schema from "src/schema/account_schema";
 
@@ -68,7 +72,10 @@ interface AccountDBData {
   account_prefs: AccountPrefs | null;
 }
 
-export class AccountBase implements Ent<Viewer> {
+export class AccountBase
+  extends TodoContainerMixin(class {})
+  implements Ent<Viewer>, ITodoContainer
+{
   readonly nodeType = NodeType.Account;
   readonly id: ID;
   readonly createdAt: Date;
@@ -80,6 +87,8 @@ export class AccountBase implements Ent<Viewer> {
   readonly accountPrefs: AccountPrefs | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -325,6 +334,14 @@ export class AccountBase implements Ent<Viewer> {
 
   queryOpenTodosDup(): AccountToOpenTodosDupQuery {
     return AccountToOpenTodosDupQuery.query(this.viewer, this.id);
+  }
+
+  queryScopedTodos(): AccountToScopedTodosQuery {
+    return AccountToScopedTodosQuery.query(this.viewer, this.id);
+  }
+
+  queryWorkspaces(): AccountToWorkspacesQuery {
+    return AccountToWorkspacesQuery.query(this.viewer, this.id);
   }
 
   queryTags(): AccountToTagsQuery {

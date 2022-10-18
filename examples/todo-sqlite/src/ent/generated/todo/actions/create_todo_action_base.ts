@@ -21,6 +21,9 @@ import { TodoBuilder } from "src/ent/generated/todo/actions/todo_builder";
 export interface TodoCreateInput {
   text: string;
   creatorID: ID | Builder<Account, Viewer>;
+  assigneeID: ID | Builder<Account, Viewer>;
+  scopeID: ID;
+  scopeType: string;
 }
 
 export type CreateTodoActionTriggers = (

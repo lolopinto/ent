@@ -31,6 +31,20 @@ CREATE TABLE assoc_edge_config (
     CONSTRAINT assoc_edge_config_unique_edge_name UNIQUE (edge_name)
 );
 
+CREATE TABLE object_scoped_todos_edges (
+    id1 TEXT NOT NULL, 
+    id1_type TEXT NOT NULL, 
+    edge_type TEXT NOT NULL, 
+    id2 TEXT NOT NULL, 
+    id2_type TEXT NOT NULL, 
+    time TIMESTAMP NOT NULL, 
+    data TEXT, 
+    deleted_at TIMESTAMP, 
+    CONSTRAINT object_scoped_todos_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
+);
+
+CREATE INDEX object_scoped_todos_edges_time_idx ON object_scoped_todos_edges (time);
+
 CREATE TABLE todo_edges (
     id1 TEXT NOT NULL, 
     id1_type TEXT NOT NULL, 
@@ -59,6 +73,20 @@ CREATE TABLE todo_tags_edges (
 
 CREATE INDEX todo_tags_edges_time_idx ON todo_tags_edges (time);
 
+CREATE TABLE workspace_members_edges (
+    id1 TEXT NOT NULL, 
+    id1_type TEXT NOT NULL, 
+    edge_type TEXT NOT NULL, 
+    id2 TEXT NOT NULL, 
+    id2_type TEXT NOT NULL, 
+    time TIMESTAMP NOT NULL, 
+    data TEXT, 
+    deleted_at TIMESTAMP, 
+    CONSTRAINT workspace_members_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
+);
+
+CREATE INDEX workspace_members_edges_time_idx ON workspace_members_edges (time);
+
 CREATE TABLE tags (
     id TEXT NOT NULL, 
     created_at TIMESTAMP NOT NULL, 
@@ -86,9 +114,14 @@ CREATE TABLE todos (
     completed BOOLEAN NOT NULL, 
     creator_id TEXT NOT NULL, 
     completed_date TIMESTAMP, 
+    assignee_id TEXT NOT NULL, 
+    scope_id TEXT NOT NULL, 
+    scope_type TEXT NOT NULL, 
     CONSTRAINT todos_id_pkey PRIMARY KEY (id), 
     CONSTRAINT todos_creator_id_fkey FOREIGN KEY(creator_id) REFERENCES accounts (id) ON DELETE CASCADE
 );
+
+CREATE INDEX todos_assignee_id_idx ON todos (assignee_id);
 
 CREATE INDEX todos_completed_date_idx ON todos (completed_date);
 
@@ -100,8 +133,27 @@ CREATE INDEX todos_creator_id_idx ON todos (creator_id);
 
 CREATE INDEX todos_deleted_at_idx ON todos (deleted_at);
 
+CREATE TABLE workspaces (
+    id TEXT NOT NULL, 
+    created_at TIMESTAMP NOT NULL, 
+    updated_at TIMESTAMP NOT NULL, 
+    deleted_at TIMESTAMP, 
+    name TEXT NOT NULL, 
+    creator_id TEXT NOT NULL, 
+    slug TEXT NOT NULL, 
+    CONSTRAINT workspaces_id_pkey PRIMARY KEY (id), 
+    CONSTRAINT workspaces_creator_id_fkey FOREIGN KEY(creator_id) REFERENCES accounts (id) ON DELETE CASCADE, 
+    CONSTRAINT workspaces_unique_slug UNIQUE (slug)
+);
+
+CREATE INDEX workspaces_deleted_at_idx ON workspaces (deleted_at);
+
 INSERT INTO assoc_edge_config(edge_name, edge_type, edge_table, symmetric_edge, inverse_edge_type, created_at, updated_at) VALUES('AccountToClosedTodosDupEdge', '7dcd1712-6a08-4253-96d9-068996bb6e4a', 'todo_edges', false, NULL, datetime(), datetime()),
 ('AccountToOpenTodosDupEdge', 'a75dafbf-0051-4804-bb99-a0c212599af3', 'todo_edges', false, NULL, datetime(), datetime()),
+('AccountToWorkspacesEdge', 'b27492cd-a064-4e74-a3af-59256352ed91', 'workspace_members_edges', false, '1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0', datetime(), datetime()),
+('ObjectToScopedTodosEdge', '2a4965c1-c959-4a2d-9f93-afd131baf16b', 'object_scoped_todos_edges', false, '04ad27c4-1da0-4a90-aa2d-df4e95e381da', datetime(), datetime()),
 ('TagToTodosEdge', '33dd169d-a290-4d3f-8b09-b74628bec247', 'todo_tags_edges', false, '546160e1-224a-42ef-92c7-46089ab5e06e', datetime(), datetime()),
-('TodoToTagsEdge', '546160e1-224a-42ef-92c7-46089ab5e06e', 'todo_tags_edges', false, '33dd169d-a290-4d3f-8b09-b74628bec247', datetime(), datetime());
+('TodoToTagsEdge', '546160e1-224a-42ef-92c7-46089ab5e06e', 'todo_tags_edges', false, '33dd169d-a290-4d3f-8b09-b74628bec247', datetime(), datetime()),
+('TodoToTodoScopeEdge', '04ad27c4-1da0-4a90-aa2d-df4e95e381da', 'object_scoped_todos_edges', false, '2a4965c1-c959-4a2d-9f93-afd131baf16b', datetime(), datetime()),
+('WorkspaceToMembersEdge', '1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0', 'workspace_members_edges', false, 'b27492cd-a064-4e74-a3af-59256352ed91', datetime(), datetime());
 

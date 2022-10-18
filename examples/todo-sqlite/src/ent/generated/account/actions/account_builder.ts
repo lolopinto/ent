@@ -10,10 +10,11 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Account, AccountState, Todo } from "src/ent/";
+import { Account, AccountState, Todo, Workspace } from "src/ent/";
 import { AccountPrefs } from "src/ent/generated/account_prefs";
 import { EdgeType, NodeType } from "src/ent/generated/const";
 import { accountLoaderInfo } from "src/ent/generated/loaders";
+import { TodoContainerBuilder } from "src/ent/generated/mixins/todo_container/actions/todo_container_builder";
 import schema from "src/schema/account_schema";
 
 export interface AccountInput {
@@ -30,13 +31,28 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+class Base {
+  // @ts-ignore not assigning. need for Mixin
+  orchestrator: Orchestrator<Account, any, Viewer>;
+
+  constructor() {}
+
+  isBuilder<T extends Ent>(
+    node: ID | T | Builder<T, any>,
+  ): node is Builder<T, any> {
+    return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+}
+
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export class AccountBuilder<
-  TInput extends AccountInput = AccountInput,
-  TExistingEnt extends TMaybleNullableEnt<Account> = Account | null,
-> implements Builder<Account, Viewer, TExistingEnt>
+    TInput extends AccountInput = AccountInput,
+    TExistingEnt extends TMaybleNullableEnt<Account> = Account | null,
+  >
+  extends TodoContainerBuilder(Base)
+  implements Builder<Account, Viewer, TExistingEnt>
 {
   orchestrator: Orchestrator<Account, TInput, Viewer, TExistingEnt>;
   readonly placeholderID: ID;
@@ -57,6 +73,7 @@ export class AccountBuilder<
     >,
     public readonly existingEnt: TExistingEnt,
   ) {
+    super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Account`;
     this.input = action.getInput();
     const updateInput = (d: AccountInput) => this.updateInput.apply(this, [d]);
@@ -205,6 +222,49 @@ export class AccountBuilder<
         this.orchestrator.removeOutboundEdge(
           node,
           EdgeType.AccountToOpenTodosDup,
+        );
+      }
+    }
+    return this;
+  }
+
+  addWorkspace(...nodes: (ID | Workspace | Builder<Workspace, any>)[]): this {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addWorkspaceID(node);
+      } else if (typeof node === "object") {
+        this.addWorkspaceID(node.id);
+      } else {
+        this.addWorkspaceID(node);
+      }
+    }
+    return this;
+  }
+
+  addWorkspaceID(
+    id: ID | Builder<Workspace, any>,
+    options?: AssocEdgeInputOptions,
+  ): this {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.AccountToWorkspaces,
+      NodeType.Workspace,
+      options,
+    );
+    return this;
+  }
+
+  removeWorkspace(...nodes: (ID | Workspace)[]): this {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(
+          node.id,
+          EdgeType.AccountToWorkspaces,
+        );
+      } else {
+        this.orchestrator.removeOutboundEdge(
+          node,
+          EdgeType.AccountToWorkspaces,
         );
       }
     }

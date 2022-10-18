@@ -7,6 +7,8 @@ export enum NodeType {
   Tag = "tag",
   // Todo is the node type for the Todo object. Used to identify this node in edges and other places.
   Todo = "todo",
+  // Workspace is the node type for the Workspace object. Used to identify this node in edges and other places.
+  Workspace = "workspace",
 }
 
 export enum EdgeType {
@@ -14,8 +16,16 @@ export enum EdgeType {
   AccountToClosedTodosDup = "7dcd1712-6a08-4253-96d9-068996bb6e4a",
   // AccountToOpenTodosDup is the edgeType for the account to opentodosdup edge.
   AccountToOpenTodosDup = "a75dafbf-0051-4804-bb99-a0c212599af3",
+  // AccountToWorkspaces is the edgeType for the account to workspaces edge.
+  AccountToWorkspaces = "b27492cd-a064-4e74-a3af-59256352ed91",
+  // ObjectToScopedTodos is the edgeType for the object to scopedtodos edge.
+  ObjectToScopedTodos = "2a4965c1-c959-4a2d-9f93-afd131baf16b",
   // TagToTodos is the edgeType for the tag to todos edge.
   TagToTodos = "33dd169d-a290-4d3f-8b09-b74628bec247",
   // TodoToTags is the edgeType for the todo to tags edge.
   TodoToTags = "546160e1-224a-42ef-92c7-46089ab5e06e",
+  // TodoToTodoScope is the edgeType for the todo to todoscope edge.
+  TodoToTodoScope = "04ad27c4-1da0-4a90-aa2d-df4e95e381da",
+  // WorkspaceToMembers is the edgeType for the workspace to members edge.
+  WorkspaceToMembers = "1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0",
 }

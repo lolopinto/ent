@@ -5,6 +5,7 @@ import { getObjectLoaderProperties } from "@snowtop/ent/schema";
 import AccountSchema from "src/schema/account_schema";
 import TagSchema from "src/schema/tag_schema";
 import TodoSchema from "src/schema/todo_schema";
+import WorkspaceSchema from "src/schema/workspace_schema";
 import { NodeType } from "./const";
 
 const accountTable = "accounts";
@@ -168,6 +169,9 @@ const todoFields = [
   "completed",
   "creator_id",
   "completed_date",
+  "assignee_id",
+  "scope_id",
+  "scope_type",
 ];
 
 export const todoLoader = new ObjectLoaderFactory({
@@ -221,8 +225,100 @@ export const todoLoaderInfo = {
       dbCol: "completed_date",
       inputKey: "completedDate",
     },
+    assigneeID: {
+      dbCol: "assignee_id",
+      inputKey: "assigneeID",
+    },
+    scopeID: {
+      dbCol: "scope_id",
+      inputKey: "scopeID",
+    },
+    scopeType: {
+      dbCol: "scope_type",
+      inputKey: "scopeType",
+    },
   },
 };
+
+const workspaceTable = "workspaces";
+const workspaceFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "name",
+  "creator_id",
+  "slug",
+];
+
+export const workspaceLoader = new ObjectLoaderFactory({
+  tableName: workspaceTable,
+  fields: workspaceFields,
+  key: "id",
+  ...getObjectLoaderProperties(WorkspaceSchema, workspaceTable),
+});
+
+export const workspaceSlugLoader = new ObjectLoaderFactory({
+  tableName: workspaceTable,
+  fields: workspaceFields,
+  key: "slug",
+  ...getObjectLoaderProperties(WorkspaceSchema, workspaceTable),
+});
+
+export const workspaceNoTransformLoader = new ObjectLoaderFactory({
+  tableName: workspaceTable,
+  fields: workspaceFields,
+  key: "id",
+});
+
+export const workspaceSlugNoTransformLoader = new ObjectLoaderFactory({
+  tableName: workspaceTable,
+  fields: workspaceFields,
+  key: "slug",
+});
+
+export const workspaceLoaderInfo = {
+  tableName: workspaceTable,
+  fields: workspaceFields,
+  nodeType: NodeType.Workspace,
+  loaderFactory: workspaceLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    deleted_at: {
+      dbCol: "deleted_at",
+      inputKey: "deletedAt",
+    },
+    name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    creatorID: {
+      dbCol: "creator_id",
+      inputKey: "creatorID",
+    },
+    slug: {
+      dbCol: "slug",
+      inputKey: "slug",
+    },
+  },
+};
+
+workspaceLoader.addToPrime(workspaceSlugLoader);
+workspaceSlugLoader.addToPrime(workspaceLoader);
+
+workspaceNoTransformLoader.addToPrime(workspaceSlugNoTransformLoader);
+workspaceSlugNoTransformLoader.addToPrime(workspaceNoTransformLoader);
 
 export function getLoaderInfoFromSchema(schema: string) {
   switch (schema) {
@@ -232,6 +328,8 @@ export function getLoaderInfoFromSchema(schema: string) {
       return tagLoaderInfo;
     case "Todo":
       return todoLoaderInfo;
+    case "Workspace":
+      return workspaceLoaderInfo;
     default:
       throw new Error(
         `invalid schema ${schema} passed to getLoaderInfoFromSchema`,
@@ -247,6 +345,8 @@ export function getLoaderInfoFromNodeType(nodeType: NodeType) {
       return tagLoaderInfo;
     case NodeType.Todo:
       return todoLoaderInfo;
+    case NodeType.Workspace:
+      return workspaceLoaderInfo;
     default:
       throw new Error(
         `invalid nodeType ${nodeType} passed to getLoaderInfoFromNodeType`,

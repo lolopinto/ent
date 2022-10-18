@@ -5,12 +5,9 @@ import {
   TimestampType,
   UUIDType,
 } from "@snowtop/ent";
-import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
-import { TodoEntSchema } from "src/schema/patterns/base";
+import { TodoBaseEntSchema } from "src/schema/patterns/base";
 
-const TodoSchema = new TodoEntSchema({
-  patterns: [new DeletedAtPattern()],
-
+const TodoSchema = new TodoBaseEntSchema({
   fields: {
     Text: StringType(),
     Completed: BooleanType({
@@ -21,10 +18,20 @@ const TodoSchema = new TodoEntSchema({
         return false;
       },
     }),
+    // TODO remove foreignKey here?? https://github.com/lolopinto/ent/issues/1185
     creatorID: UUIDType({
       foreignKey: { schema: "Account", column: "ID" },
     }),
     completedDate: TimestampType({ index: true, nullable: true }),
+    // moving away from creatorID to assigneeID to indicate who the todo is assigned to
+    assigneeID: UUIDType({ index: true, fieldEdge: { schema: "Account" } }),
+    scopeID: UUIDType({
+      polymorphic: {
+        disableBuilderType: true,
+        // a todo can be created in a personal account or as part of a workspace/team situation
+        types: ["Account", "Workspace"],
+      },
+    }),
   },
 
   fieldOverrides: {
@@ -54,8 +61,7 @@ const TodoSchema = new TodoEntSchema({
   actions: [
     {
       operation: ActionOperation.Create,
-      // TODO can it know not to make completed required if defaultValueOnCreate is set?
-      fields: ["Text", "creatorID"],
+      excludedFields: ["Completed", "completedDate"],
     },
     {
       operation: ActionOperation.Edit,

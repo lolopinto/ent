@@ -1,7 +1,11 @@
-import { EntSchema } from "@snowtop/ent";
-import { BaseEntSchema } from "@snowtop/ent";
+import { EntSchema, SchemaConfig } from "@snowtop/ent";
+import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
 
-// doesn't really do anything other than to test what happens with custom
-export default class BaseEntTodoSchema extends BaseEntSchema {}
-
-export class TodoEntSchema extends EntSchema {}
+export class TodoBaseEntSchema extends EntSchema {
+  constructor(cfg: SchemaConfig) {
+    super({
+      ...cfg,
+      patterns: [new DeletedAtPattern(), ...(cfg.patterns ?? [])],
+    });
+  }
+}

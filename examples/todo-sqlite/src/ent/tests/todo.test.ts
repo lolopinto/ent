@@ -1,17 +1,124 @@
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import RenameTodoStatusAction from "src/ent/todo/actions/rename_todo_status_action";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
-import { Todo, EdgeType, AccountTodoStatus } from "src/ent/";
-import { createAccount, createTag, createTodo } from "../testutils/util";
-import { query, setLogLevels } from "@snowtop/ent";
+import { Todo, NodeType, EdgeType, AccountTodoStatus } from "src/ent/";
+import {
+  createAccount,
+  createTag,
+  createTodoForSelf,
+  createTodoSelfInWorkspace,
+  createWorkspace,
+} from "../testutils/util";
+import { query } from "@snowtop/ent";
 import { advanceTo } from "jest-date-mock";
 import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
 import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
 import { loadCustomEdges } from "@snowtop/ent/core/ent";
 import { CustomTodoEdge } from "../edge/custom_edge";
+import CreateTodoAction from "../todo/actions/create_todo_action";
 
-test("create", async () => {
-  await createTodo();
+test("create for self", async () => {
+  await createTodoForSelf();
+});
+
+test("create for other", async () => {
+  // in real life, you shouldn't just be able to create a TODO for anyone randomly lol
+  const creator = await createAccount();
+  const assignee = await createAccount();
+
+  const todo = await CreateTodoAction.create(creator.viewer, {
+    text: "watch GOT",
+    creatorID: creator.id,
+    assigneeID: assignee.id,
+    scopeID: assignee.id,
+    scopeType: NodeType.Account,
+  }).saveX();
+  expect(todo.text).toBe("watch GOT");
+  expect(todo.creatorID).toBe(creator.id);
+  expect(todo.completed).toBe(false);
+  expect(todo.assigneeID).toBe(assignee.id);
+  expect(todo.scopeID).toBe(assignee.id);
+  expect(todo.scopeType).toBe(NodeType.Account);
+
+  const scopedEnts = await todo.queryTodoScope().queryEnts();
+  expect(scopedEnts.length).toBe(1);
+  expect(scopedEnts[0].id).toBe(assignee.id);
+
+  const todo2 = await CreateTodoAction.create(creator.viewer, {
+    text: "watch GOT",
+    creatorID: creator.id,
+    assigneeID: assignee.id,
+    scopeID: assignee.id,
+    scopeType: NodeType.Account,
+  }).saveX();
+  expect(todo2.text).toBe("watch GOT");
+  expect(todo2.creatorID).toBe(creator.id);
+  expect(todo2.completed).toBe(false);
+  expect(todo2.assigneeID).toBe(assignee.id);
+  expect(todo2.scopeID).toBe(assignee.id);
+  expect(todo2.scopeType).toBe(NodeType.Account);
+
+  const scopedEnts2 = await todo2.queryTodoScope().queryEnts();
+  expect(scopedEnts2.length).toBe(1);
+  expect(scopedEnts2[0].id).toBe(assignee.id);
+
+  const scopedTodos = await assignee.queryScopedTodos().queryEnts();
+  expect(scopedTodos.length).toBe(2);
+  expect(scopedTodos.map((t) => t.id).includes(todo.id)).toBe(true);
+  expect(scopedTodos.map((t) => t.id).includes(todo2.id)).toBe(true);
+});
+
+test("create todo self in workspace", async () => {
+  await createTodoSelfInWorkspace();
+});
+
+test("create todo for other in workspace", async () => {
+  const creator = await createAccount();
+  const assignee = await createAccount();
+  const workspace = await createWorkspace(creator);
+
+  const todo = await CreateTodoAction.create(creator.viewer, {
+    text: "watch GOT",
+    creatorID: creator.id,
+    assigneeID: assignee.id,
+    scopeID: workspace.id,
+    scopeType: NodeType.Workspace,
+  }).saveX();
+  expect(todo.text).toBe("watch GOT");
+  expect(todo.creatorID).toBe(creator.id);
+  expect(todo.completed).toBe(false);
+  expect(todo.assigneeID).toBe(assignee.id);
+  expect(todo.scopeID).toBe(workspace.id);
+  expect(todo.scopeType).toBe(NodeType.Workspace);
+
+  const scopedEnts = await todo.queryTodoScope().queryEnts();
+  expect(scopedEnts.length).toBe(1);
+  expect(scopedEnts[0].id).toBe(workspace.id);
+
+  const assignee2 = await createAccount();
+
+  const todo2 = await CreateTodoAction.create(creator.viewer, {
+    text: "watch GOT",
+    creatorID: creator.id,
+    assigneeID: assignee2.id,
+    scopeID: workspace.id,
+    scopeType: NodeType.Workspace,
+  }).saveX();
+  expect(todo2.text).toBe("watch GOT");
+  expect(todo2.creatorID).toBe(creator.id);
+  expect(todo2.completed).toBe(false);
+  expect(todo2.assigneeID).toBe(assignee2.id);
+  expect(todo2.scopeID).toBe(workspace.id);
+  expect(todo2.scopeType).toBe(NodeType.Workspace);
+
+  const scopedEnts2 = await todo2.queryTodoScope().queryEnts();
+  expect(scopedEnts2.length).toBe(1);
+  expect(scopedEnts2[0].id).toBe(workspace.id);
+
+  const scopedTodos = await workspace.queryScopedTodos().queryEnts();
+  expect(scopedTodos.length).toBe(2);
+  expect(scopedTodos.map((t) => t.id).includes(todo.id)).toBe(true);
+  expect(scopedTodos.map((t) => t.id).includes(todo2.id)).toBe(true);
 });
 
 async function changeCompleted(todo: Todo, completed: boolean) {
@@ -32,7 +139,7 @@ async function changeCompleted(todo: Todo, completed: boolean) {
 }
 
 test("mark as completed", async () => {
-  let todo = await createTodo();
+  let todo = await createTodoForSelf();
 
   todo = await changeCompleted(todo, true);
 
@@ -41,7 +148,7 @@ test("mark as completed", async () => {
 });
 
 test("rename todo", async () => {
-  let todo = await createTodo();
+  let todo = await createTodoForSelf();
 
   todo = await RenameTodoStatusAction.create(todo.viewer, todo, {
     text: "re-watch GOT",
@@ -51,7 +158,7 @@ test("rename todo", async () => {
 });
 
 test("delete todo", async () => {
-  let todo = await createTodo();
+  let todo = await createTodoForSelf();
   expect(todo.getDeletedAt()).toBeNull();
 
   const d = new Date();
@@ -72,7 +179,7 @@ test("delete todo", async () => {
 });
 
 test("really delete", async () => {
-  let todo = await createTodo();
+  let todo = await createTodoForSelf();
   expect(todo.getDeletedAt()).toBeNull();
 
   const d = new Date();
@@ -89,7 +196,7 @@ test("really delete", async () => {
 test("querying todos", async () => {
   const account = await createAccount();
   const todos = await Promise.all(
-    [1, 2, 3, 4, 5].map(() => createTodo({ creatorID: account.id })),
+    [1, 2, 3, 4, 5].map(() => createTodoForSelf({ creatorID: account.id })),
   );
   expect(todos.length).toBe(5);
 
@@ -99,29 +206,35 @@ test("querying todos", async () => {
 
   const openTodos = await Todo.loadCustom(
     account.viewer,
-    query.And(query.Eq("creator_id", account.id), query.Eq("completed", false)),
+    query.And(
+      query.Eq("assignee_id", account.id),
+      query.Eq("completed", false),
+    ),
   );
   expect(openTodos.length).toBe(3);
 
   const openTodosCount = await Todo.loadCustomCount(
-    query.And(query.Eq("creator_id", account.id), query.Eq("completed", false)),
+    query.And(
+      query.Eq("assignee_id", account.id),
+      query.Eq("completed", false),
+    ),
   );
   expect(openTodosCount).toBe(3);
 
   const closedTodos = await Todo.loadCustom(
     account.viewer,
-    query.And(query.Eq("creator_id", account.id), query.Eq("completed", true)),
+    query.And(query.Eq("assignee_id", account.id), query.Eq("completed", true)),
   );
   expect(closedTodos.length).toBe(2);
 
   const closedTodosCount = await Todo.loadCustomCount(
-    query.And(query.Eq("creator_id", account.id), query.Eq("completed", true)),
+    query.And(query.Eq("assignee_id", account.id), query.Eq("completed", true)),
   );
   expect(closedTodosCount).toBe(2);
 
   const orderedOpenedTodos = await Todo.loadCustom(account.viewer, {
     clause: query.And(
-      query.Eq("creator_id", account.id),
+      query.Eq("assignee_id", account.id),
       query.Eq("completed", false),
     ),
     orderby: "created_at desc",
@@ -130,7 +243,7 @@ test("querying todos", async () => {
 });
 
 test("tags", async () => {
-  const todo = await createTodo();
+  const todo = await createTodoForSelf();
   const account = await todo.loadCreatorX();
   const tag = await createTag("sports", account);
   const tag2 = await createTag("hello", account);

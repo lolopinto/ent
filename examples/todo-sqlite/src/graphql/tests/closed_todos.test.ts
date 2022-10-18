@@ -2,7 +2,7 @@ import { Account, Todo } from "src/ent";
 import { expectQueryFromRoot } from "@snowtop/ent-graphql-tests";
 import schema from "src/graphql/generated/schema";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
-import { createAccount, createTodo } from "src/ent/testutils/util";
+import { createAccount, createTodoForSelf } from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
 import { DB, loadConfig } from "@snowtop/ent";
 import * as fs from "fs";
@@ -29,7 +29,7 @@ async function createTodos(): Promise<[Account, Todo[]]> {
   for (const text of texts) {
     // make deterministic
     advanceBy(-10);
-    const todo = await createTodo({
+    const todo = await createTodoForSelf({
       creatorID: account.id,
       text: text,
     });
