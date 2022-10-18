@@ -20,6 +20,7 @@ import {
   AccountToOpenTodosDupQuery,
   AccountToTagsQuery,
   AccountToTodosQuery,
+  AccountToWorkspacesQuery,
   Todo,
 } from "src/ent/";
 import {
@@ -29,6 +30,7 @@ import {
   AccountToOpenTodosDupConnectionType,
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
+  AccountToWorkspacesConnectionType,
   AccountTodoStatusType,
   TodoType,
 } from "src/graphql/resolvers/internal";
@@ -109,6 +111,35 @@ export const AccountType = new GraphQLObjectType({
           account.viewer,
           account,
           (v, account: Account) => AccountToOpenTodosDupQuery.query(v, account),
+          args,
+        );
+      },
+    },
+    workspaces: {
+      type: new GraphQLNonNull(AccountToWorkspacesConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) => AccountToWorkspacesQuery.query(v, account),
           args,
         );
       },

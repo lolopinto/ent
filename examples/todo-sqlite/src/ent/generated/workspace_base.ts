@@ -28,7 +28,7 @@ import {
   workspaceNoTransformLoader,
   workspaceSlugLoader,
 } from "src/ent/generated/loaders";
-import { Account, NodeType } from "src/ent/internal";
+import { Account, NodeType, WorkspaceToMembersQuery } from "src/ent/internal";
 import schema from "src/schema/workspace_schema";
 
 interface WorkspaceDBData {
@@ -263,6 +263,10 @@ export class WorkspaceBase implements Ent<Viewer> {
 
   static getField(key: string): Field | undefined {
     return WorkspaceBase.getSchemaFields().get(key);
+  }
+
+  queryMembers(): WorkspaceToMembersQuery {
+    return WorkspaceToMembersQuery.query(this.viewer, this.id);
   }
 
   async loadCreator(): Promise<Account | null> {

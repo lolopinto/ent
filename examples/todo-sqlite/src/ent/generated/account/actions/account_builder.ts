@@ -10,7 +10,7 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Account, AccountState, Todo } from "src/ent/";
+import { Account, AccountState, Todo, Workspace } from "src/ent/";
 import { AccountPrefs } from "src/ent/generated/account_prefs";
 import { EdgeType, NodeType } from "src/ent/generated/const";
 import { accountLoaderInfo } from "src/ent/generated/loaders";
@@ -205,6 +205,49 @@ export class AccountBuilder<
         this.orchestrator.removeOutboundEdge(
           node,
           EdgeType.AccountToOpenTodosDup,
+        );
+      }
+    }
+    return this;
+  }
+
+  addWorkspace(...nodes: (ID | Workspace | Builder<Workspace, any>)[]): this {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addWorkspaceID(node);
+      } else if (typeof node === "object") {
+        this.addWorkspaceID(node.id);
+      } else {
+        this.addWorkspaceID(node);
+      }
+    }
+    return this;
+  }
+
+  addWorkspaceID(
+    id: ID | Builder<Workspace, any>,
+    options?: AssocEdgeInputOptions,
+  ): this {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.AccountToWorkspaces,
+      NodeType.Workspace,
+      options,
+    );
+    return this;
+  }
+
+  removeWorkspace(...nodes: (ID | Workspace)[]): this {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(
+          node.id,
+          EdgeType.AccountToWorkspaces,
+        );
+      } else {
+        this.orchestrator.removeOutboundEdge(
+          node,
+          EdgeType.AccountToWorkspaces,
         );
       }
     }

@@ -3,14 +3,21 @@
 import {
   GraphQLFieldConfigMap,
   GraphQLID,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLNodeInterface } from "@snowtop/ent/graphql";
-import { Workspace } from "src/ent/";
-import { AccountType } from "src/graphql/resolvers/internal";
+import {
+  GraphQLEdgeConnection,
+  GraphQLNodeInterface,
+} from "@snowtop/ent/graphql";
+import { Workspace, WorkspaceToMembersQuery } from "src/ent/";
+import {
+  AccountType,
+  WorkspaceToMembersConnectionType,
+} from "src/graphql/resolvers/internal";
 
 export const WorkspaceType = new GraphQLObjectType({
   name: "Workspace",
@@ -29,6 +36,36 @@ export const WorkspaceType = new GraphQLObjectType({
     },
     slug: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    members: {
+      type: new GraphQLNonNull(WorkspaceToMembersConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (workspace: Workspace, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          workspace.viewer,
+          workspace,
+          (v, workspace: Workspace) =>
+            WorkspaceToMembersQuery.query(v, workspace),
+          args,
+        );
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],

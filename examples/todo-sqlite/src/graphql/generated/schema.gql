@@ -43,6 +43,7 @@ type Account implements Node {
   account_prefs: AccountPrefs
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
+  workspaces(first: Int, after: String, last: Int, before: String): AccountToWorkspacesConnection!
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
   todoStatusFor(id: ID!): AccountTodoStatus
@@ -73,6 +74,7 @@ type Workspace implements Node {
   id: ID!
   name: String!
   slug: String!
+  members(first: Int, after: String, last: Int, before: String): WorkspaceToMembersConnection!
 }
 
 type AccountToClosedTodosDupEdge implements Edge {
@@ -135,6 +137,18 @@ type AccountToTodosConnection implements Connection {
   rawCount: Int!
 }
 
+type AccountToWorkspacesEdge implements Edge {
+  node: Workspace!
+  cursor: String!
+}
+
+type AccountToWorkspacesConnection implements Connection {
+  edges: [AccountToWorkspacesEdge!]!
+  nodes: [Workspace!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type RootToClosedTodosLastDayEdge implements Edge {
   node: Todo!
   cursor: String!
@@ -179,6 +193,18 @@ type TodoToTagsEdge implements Edge {
 type TodoToTagsConnection implements Connection {
   edges: [TodoToTagsEdge!]!
   nodes: [Tag!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type WorkspaceToMembersEdge implements Edge {
+  node: Account!
+  cursor: String!
+}
+
+type WorkspaceToMembersConnection implements Connection {
+  edges: [WorkspaceToMembersEdge!]!
+  nodes: [Account!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

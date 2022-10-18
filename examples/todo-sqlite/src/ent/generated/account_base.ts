@@ -39,6 +39,7 @@ import {
   AccountToOpenTodosDupQuery,
   AccountToTagsQuery,
   AccountToTodosQuery,
+  AccountToWorkspacesQuery,
   EdgeType,
   NodeType,
   Todo,
@@ -325,6 +326,10 @@ export class AccountBase implements Ent<Viewer> {
 
   queryOpenTodosDup(): AccountToOpenTodosDupQuery {
     return AccountToOpenTodosDupQuery.query(this.viewer, this.id);
+  }
+
+  queryWorkspaces(): AccountToWorkspacesQuery {
+    return AccountToWorkspacesQuery.query(this.viewer, this.id);
   }
 
   queryTags(): AccountToTagsQuery {

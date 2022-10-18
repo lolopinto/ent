@@ -94,6 +94,19 @@ sa.Table("todos", metadata,
     sa.ForeignKeyConstraint(["creator_id"], ["accounts.id"], name="todos_creator_id_fkey", ondelete="CASCADE"),
 )
    
+sa.Table("workspace_members_edges", metadata,
+    sa.Column("id1", sa.Text(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", sa.Text(), nullable=False),
+    sa.Column("id2", sa.Text(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_members_edges_id1_edge_type_id2_pkey"),
+    sa.Index("workspace_members_edges_time_idx", "time"),
+)
+   
 sa.Table("workspaces", metadata,
     sa.Column("id", sa.Text(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -113,8 +126,10 @@ metadata.info["edges"] = {
   'public': {
     'AccountToClosedTodosDupEdge': {"edge_name":"AccountToClosedTodosDupEdge", "edge_type":"7dcd1712-6a08-4253-96d9-068996bb6e4a", "edge_table":"todo_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'AccountToOpenTodosDupEdge': {"edge_name":"AccountToOpenTodosDupEdge", "edge_type":"a75dafbf-0051-4804-bb99-a0c212599af3", "edge_table":"todo_edges", "symmetric_edge":False, "inverse_edge_type":None},
+    'AccountToWorkspacesEdge': {"edge_name":"AccountToWorkspacesEdge", "edge_type":"b27492cd-a064-4e74-a3af-59256352ed91", "edge_table":"workspace_members_edges", "symmetric_edge":False, "inverse_edge_type":"1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0"},
     'TagToTodosEdge': {"edge_name":"TagToTodosEdge", "edge_type":"33dd169d-a290-4d3f-8b09-b74628bec247", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"546160e1-224a-42ef-92c7-46089ab5e06e"},
     'TodoToTagsEdge': {"edge_name":"TodoToTagsEdge", "edge_type":"546160e1-224a-42ef-92c7-46089ab5e06e", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"33dd169d-a290-4d3f-8b09-b74628bec247"},
+    'WorkspaceToMembersEdge': {"edge_name":"WorkspaceToMembersEdge", "edge_type":"1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0", "edge_table":"workspace_members_edges", "symmetric_edge":False, "inverse_edge_type":"b27492cd-a064-4e74-a3af-59256352ed91"},
   }
 }
 

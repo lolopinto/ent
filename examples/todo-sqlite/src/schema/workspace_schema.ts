@@ -5,7 +5,6 @@ import { TodoBaseEntSchema } from "src/schema/patterns/base";
 const WorkSpaceSchema = new TodoBaseEntSchema({
   fields: {
     name: StringType(),
-    // multiple
     creatorID: UUIDType({
       foreignKey: {
         schema: "Account",
@@ -31,14 +30,14 @@ const WorkSpaceSchema = new TodoBaseEntSchema({
     },
   ],
 
-  // edges: [
-  //   {
-  //     name: "members",
-  //     schemaName: "Account",
-  //     inverseEdge: {
-  //       name: "workspaces",
-  //     },
-  //   },
-  // ],
+  edges: [
+    {
+      name: "members",
+      schemaName: "Account",
+      inverseEdge: {
+        name: "workspaces",
+      },
+    },
+  ],
 });
 export default WorkSpaceSchema;

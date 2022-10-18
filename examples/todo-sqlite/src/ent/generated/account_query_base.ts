@@ -13,10 +13,13 @@ import {
   Account,
   AccountToClosedTodosDupEdge,
   AccountToOpenTodosDupEdge,
+  AccountToWorkspacesEdge,
   EdgeType,
   Tag,
   Todo,
   TodoToTagsQuery,
+  Workspace,
+  WorkspaceToMembersQuery,
 } from "src/ent/internal";
 
 export const accountToClosedTodosDupCountLoaderFactory =
@@ -34,6 +37,13 @@ export const accountToOpenTodosDupDataLoaderFactory =
     EdgeType.AccountToOpenTodosDup,
     () => AccountToOpenTodosDupEdge,
   );
+
+export const accountToWorkspacesCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.AccountToWorkspaces);
+export const accountToWorkspacesDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.AccountToWorkspaces,
+  () => AccountToWorkspacesEdge,
+);
 
 export abstract class AccountToClosedTodosDupQueryBase extends AssocEdgeQueryBase<
   Account,
@@ -98,6 +108,42 @@ export abstract class AccountToOpenTodosDupQueryBase extends AssocEdgeQueryBase<
 
   queryTags(): TodoToTagsQuery {
     return TodoToTagsQuery.query(this.viewer, this);
+  }
+}
+
+export abstract class AccountToWorkspacesQueryBase extends AssocEdgeQueryBase<
+  Account,
+  Workspace,
+  AccountToWorkspacesEdge,
+  Viewer
+> {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<Account, Workspace, Viewer>,
+  ) {
+    super(
+      viewer,
+      src,
+      accountToWorkspacesCountLoaderFactory,
+      accountToWorkspacesDataLoaderFactory,
+      Workspace.loaderOptions(),
+    );
+  }
+
+  static query<T extends AccountToWorkspacesQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Workspace>) => T,
+    viewer: Viewer,
+    src: EdgeQuerySource<Account, Workspace>,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return Account.load(this.viewer, id);
+  }
+
+  queryMembers(): WorkspaceToMembersQuery {
+    return WorkspaceToMembersQuery.query(this.viewer, this);
   }
 }
 

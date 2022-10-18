@@ -68,6 +68,7 @@ import {
   AccountToOpenTodosDupConnectionType,
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
+  AccountToWorkspacesConnectionType,
   AccountTodoStatusType,
   AccountType,
   RootToClosedTodosLastDayConnectionType,
@@ -76,6 +77,7 @@ import {
   TagType,
   TodoToTagsConnectionType,
   TodoType,
+  WorkspaceToMembersConnectionType,
   WorkspaceType,
 } from "src/graphql/resolvers";
 
@@ -94,10 +96,12 @@ export default new GraphQLSchema({
     AccountToOpenTodosDupConnectionType(),
     AccountToTagsConnectionType(),
     AccountToTodosConnectionType(),
+    AccountToWorkspacesConnectionType(),
     RootToClosedTodosLastDayConnectionType(),
     RootToOpenTodosConnectionType(),
     TagToTodosConnectionType(),
     TodoToTagsConnectionType(),
+    WorkspaceToMembersConnectionType(),
     AccountPrefsInputType,
     AccountTodoStatusInputType,
     AddTodoTagInputType,
