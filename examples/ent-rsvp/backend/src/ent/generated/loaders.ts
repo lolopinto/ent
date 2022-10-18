@@ -144,6 +144,64 @@ export const authCodeLoaderInfo = {
 authCodeLoader.addToPrime(authCodeGuestIDLoader);
 authCodeGuestIDLoader.addToPrime(authCodeLoader);
 
+const eventTable = "events";
+const eventFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "name",
+  "slug",
+  "creator_id",
+];
+
+export const eventLoader = new ObjectLoaderFactory({
+  tableName: eventTable,
+  fields: eventFields,
+  key: "id",
+});
+
+export const eventSlugLoader = new ObjectLoaderFactory({
+  tableName: eventTable,
+  fields: eventFields,
+  key: "slug",
+});
+
+export const eventLoaderInfo = {
+  tableName: eventTable,
+  fields: eventFields,
+  nodeType: NodeType.Event,
+  loaderFactory: eventLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    Name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    Slug: {
+      dbCol: "slug",
+      inputKey: "slug",
+    },
+    creatorID: {
+      dbCol: "creator_id",
+      inputKey: "creatorID",
+    },
+  },
+};
+
+eventLoader.addToPrime(eventSlugLoader);
+eventSlugLoader.addToPrime(eventLoader);
+
 const eventActivityTable = "event_activities";
 const eventActivityFields = [
   "id",
@@ -217,64 +275,6 @@ export const eventActivityLoaderInfo = {
     },
   },
 };
-
-const eventTable = "events";
-const eventFields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "name",
-  "slug",
-  "creator_id",
-];
-
-export const eventLoader = new ObjectLoaderFactory({
-  tableName: eventTable,
-  fields: eventFields,
-  key: "id",
-});
-
-export const eventSlugLoader = new ObjectLoaderFactory({
-  tableName: eventTable,
-  fields: eventFields,
-  key: "slug",
-});
-
-export const eventLoaderInfo = {
-  tableName: eventTable,
-  fields: eventFields,
-  nodeType: NodeType.Event,
-  loaderFactory: eventLoader,
-  fieldInfo: {
-    ID: {
-      dbCol: "id",
-      inputKey: "id",
-    },
-    createdAt: {
-      dbCol: "created_at",
-      inputKey: "createdAt",
-    },
-    updatedAt: {
-      dbCol: "updated_at",
-      inputKey: "updatedAt",
-    },
-    Name: {
-      dbCol: "name",
-      inputKey: "name",
-    },
-    Slug: {
-      dbCol: "slug",
-      inputKey: "slug",
-    },
-    creatorID: {
-      dbCol: "creator_id",
-      inputKey: "creatorID",
-    },
-  },
-};
-
-eventLoader.addToPrime(eventSlugLoader);
-eventSlugLoader.addToPrime(eventLoader);
 
 const guestTable = "guests";
 const guestFields = [
@@ -507,10 +507,10 @@ export function getLoaderInfoFromSchema(schema: string) {
       return addressLoaderInfo;
     case "AuthCode":
       return authCodeLoaderInfo;
-    case "EventActivity":
-      return eventActivityLoaderInfo;
     case "Event":
       return eventLoaderInfo;
+    case "EventActivity":
+      return eventActivityLoaderInfo;
     case "Guest":
       return guestLoaderInfo;
     case "GuestData":
@@ -532,10 +532,10 @@ export function getLoaderInfoFromNodeType(nodeType: NodeType) {
       return addressLoaderInfo;
     case NodeType.AuthCode:
       return authCodeLoaderInfo;
-    case NodeType.EventActivity:
-      return eventActivityLoaderInfo;
     case NodeType.Event:
       return eventLoaderInfo;
+    case NodeType.EventActivity:
+      return eventActivityLoaderInfo;
     case NodeType.Guest:
       return guestLoaderInfo;
     case NodeType.GuestData:
