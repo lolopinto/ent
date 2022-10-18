@@ -822,7 +822,7 @@ func (e *AssociationEdge) EdgeQueryBase() string {
 
 func (e *AssociationEdge) AssocEdgeBaseImport(cfg codegenapi.Config) *tsimport.ImportPath {
 	if e.patternEdgeConst != "" {
-		return tsimport.NewEntImportPath(fmt.Sprintf("%sEdge", e.patternEdgeConst))
+		return tsimport.NewLocalEntImportPath(fmt.Sprintf("%sEdge", e.patternEdgeConst))
 	}
 	return cfg.GetAssocEdgePath().GetImportPath()
 }
