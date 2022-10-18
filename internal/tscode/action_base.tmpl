@@ -52,6 +52,10 @@
 
     {{ range $field := $action.GetNonEntFields -}}
       {{$type := $field.GetTsType -}}
+      {{range $field.GetTsTypeImports -}}
+        {{ conditionallyReserveImportPath . true -}}
+        {{ $ignore := useImportMaybe .Import -}}
+      {{end -}}
       {{if $field.Required -}}
         {{$field.TsBuilderFieldName}}: {{$type}};
       {{else -}}
