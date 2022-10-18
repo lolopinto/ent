@@ -817,6 +817,18 @@ type ContactPhoneNumberEditPayload {
   contactPhoneNumber: ContactPhoneNumber!
 }
 
+input CustomCreateHolidayInput {
+  dayOfWeek: DayOfWeek!
+  dayOfWeekAlt: DayOfWeekAlt
+  label: String!
+  date: Time
+  fakeId: ID
+}
+
+type CustomCreateHolidayPayload {
+  holiday: Holiday!
+}
+
 type DeleteUserInput2Payload {
   deletedUserID: ID
 }
@@ -1101,6 +1113,7 @@ type Mutation {
   contactPhoneNumberCreate(input: ContactPhoneNumberCreateInput!): ContactPhoneNumberCreatePayload!
   contactPhoneNumberDelete(input: ContactPhoneNumberDeleteInput!): ContactPhoneNumberDeletePayload!
   contactPhoneNumberEdit(input: ContactPhoneNumberEditInput!): ContactPhoneNumberEditPayload!
+  customCreateHoliday(input: CustomCreateHolidayInput!): CustomCreateHolidayPayload!
   emailAddressEdit(input: EditEmailAddressInput!): EditEmailAddressPayload!
   eventAddHost(input: EventAddHostInput!): EventAddHostPayload!
   eventCreate(input: EventCreateInput!): EventCreatePayload!

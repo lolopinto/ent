@@ -2,6 +2,8 @@ package tsimport
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -71,6 +73,10 @@ func (imps *Imports) ReserveAll(path, as string) (string, error) {
 // ReserveImportPath takes an instance of importPath and reserves importing from it
 // should be default eventually
 func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, error) {
+	return imps.reserve(imps.getImportInfoInput(imp, external))
+}
+
+func (imps *Imports) getImportInfoInput(imp *ImportPath, external bool) *importInfoInput {
 	var defaultExport string
 	var imports []string
 
@@ -90,14 +96,35 @@ func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, 
 	if external && imp.TransformedForExternalEnt {
 		importPath = codepath.GetExternalImportPath()
 	}
-
-	return imps.reserve(&importInfoInput{
+	return &importInfoInput{
 		path:          importPath,
 		defaultImport: defaultExport,
 		alias:         alias,
 		imports:       imports,
 		sideEffect:    imp.SideEffect,
-	})
+	}
+}
+
+// ConditionallyReserveImportPath skips importing when the import path is same as file path
+func (imps *Imports) ConditionallyReserveImportPath(imp *ImportPath, external bool) (string, error) {
+	input := imps.getImportInfoInput(imp, external)
+
+	relPath := imps.filePath
+	if path.IsAbs(relPath) {
+		var err error
+		relPath, err = filepath.Rel(imps.cfg.GetAbsPathToRoot(), imps.filePath)
+		if err != nil {
+			return "", err
+		}
+	}
+	relPath = strings.TrimSuffix(relPath, ".ts")
+
+	// if importing file from same file, ignore
+	if relPath == input.path {
+		return "", nil
+	}
+
+	return imps.reserve(input)
 }
 
 type importInfoInput struct {
@@ -197,17 +224,18 @@ func (imps *Imports) export(path string, as string, exports ...string) (string, 
 // FuncMap returns the FuncMap to be passed to a template
 func (imps *Imports) FuncMap() template.FuncMap {
 	return template.FuncMap{
-		"reserveImport":        imps.Reserve,
-		"reserveDefaultImport": imps.ReserveDefault,
-		"reserveAllImport":     imps.ReserveAll,
-		"reserveImportPath":    imps.ReserveImportPath,
-		"useImport":            imps.Use,
-		"useImportMaybe":       imps.UseMaybe,
-		"exportAll":            imps.ExportAll,
-		"exportAllAs":          imps.ExportAllAs,
-		"export":               imps.Export,
-		"dict":                 dict,
-		"toCamel":              strcase.ToCamel,
+		"reserveImport":                  imps.Reserve,
+		"reserveDefaultImport":           imps.ReserveDefault,
+		"reserveAllImport":               imps.ReserveAll,
+		"reserveImportPath":              imps.ReserveImportPath,
+		"conditionallyReserveImportPath": imps.ConditionallyReserveImportPath,
+		"useImport":                      imps.Use,
+		"useImportMaybe":                 imps.UseMaybe,
+		"exportAll":                      imps.ExportAll,
+		"exportAllAs":                    imps.ExportAllAs,
+		"export":                         imps.Export,
+		"dict":                           dict,
+		"toCamel":                        strcase.ToCamel,
 	}
 }
 
