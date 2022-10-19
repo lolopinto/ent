@@ -196,6 +196,32 @@ type compareNodeOptions struct {
 func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, error) {
 	var ret []change.Change
 
+	// TODO need to change all the connections and actions to be exposed to graphql
+	// this isn't being tested...
+	if n1.HideFromGraphQL != n2.HideFromGraphQL {
+		// add node graphql
+		if n2.HideFromGraphQL {
+			ret = append(ret, change.Change{
+				Change:      change.AddNode,
+				Name:        n2.Node,
+				GraphQLName: n2.Node,
+				GraphQLOnly: true,
+			})
+		} else {
+			// remove node graphql
+			ret = append(ret, change.Change{
+				Change:      change.RemoveNode,
+				Name:        n2.Node,
+				GraphQLName: n2.Node,
+				GraphQLOnly: true,
+			})
+		}
+
+		// TODO edges and actions
+
+		return ret, nil
+	}
+
 	if !opts.skipFields {
 		r, err := field.CompareFieldInfo(n1.FieldInfo, n2.FieldInfo)
 		if err != nil {
@@ -203,6 +229,7 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 		}
 		ret = append(ret, r...)
 	}
+	// TODO need flags for graphql only for these two...
 
 	ret = append(ret, edge.CompareEdgeInfo(n1.EdgeInfo, n2.EdgeInfo)...)
 
@@ -248,14 +275,6 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 		})
 	}
 
-	if n1.HideFromGraphQL != n2.HideFromGraphQL {
-		ret = append(ret, change.Change{
-			Change:      change.ModifyNode,
-			Name:        n2.Node,
-			GraphQLName: n2.Node,
-			GraphQLOnly: true,
-		})
-	}
 	return ret, nil
 }
 
