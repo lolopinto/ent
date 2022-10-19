@@ -166,6 +166,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
 
     let result: (TEnt | ErrorWrapper | Error)[] = [];
 
+    const tableName = options.loaderFactory.options?.tableName;
     const loader = options.loaderFactory.createLoader(viewer.context);
     const rows = await loader.loadMany(ids);
     // this is a loader which should return the same order based on passed-in ids
@@ -179,9 +180,17 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
         result[idx] = row;
         continue;
       } else if (!row) {
-        result[idx] = new ErrorWrapper(
-          new Error(`couldn't find row for value ${ids[idx]}`),
-        );
+        if (tableName) {
+          result[idx] = new ErrorWrapper(
+            new Error(
+              `couldn't find row for value ${ids[idx]} in table ${tableName}`,
+            ),
+          );
+        } else {
+          result[idx] = new ErrorWrapper(
+            new Error(`couldn't find row for value ${ids[idx]}`),
+          );
+        }
       } else {
         const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
         if (r instanceof Error) {
