@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -77,9 +76,6 @@ type ActionInfo struct {
 	Actions          []Action
 	graphQLActionMap map[string]Action
 	actionMap        map[string]Action
-	// CreateAction     *Action
-	// EditAction       *Action
-	// DeleteAction     *Action
 }
 
 func NewActionInfo() *ActionInfo {
@@ -416,24 +412,6 @@ func ParseFromInputNode(cfg codegenapi.Config, nodeName string, node *input.Node
 	return ParseFromInput(cfg, nodeName, node.Actions, fi, ei, lang)
 }
 
-// FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate
-// the code needed for actions
-type FieldActionTemplateInfo struct {
-	SetterMethodName         string
-	NullableSetterMethodName string
-	GetterMethodName         string
-	InstanceName             string
-	FieldKey                 string
-	FieldName                string
-	QuotedFieldName          string
-	QuotedDBName             string
-	InverseEdge              *edge.AssociationEdge
-	IsStatusEnum             bool
-	IsGroupID                bool
-	NodeType                 string
-	Field                    *field.Field
-}
-
 func GetActionMethodName(action Action) (string, error) {
 	r := regexp.MustCompile(`(\w+)Action`)
 
@@ -445,10 +423,6 @@ func GetActionMethodName(action Action) (string, error) {
 	return match[1], nil
 }
 
-func GetFields(action Action) []FieldActionTemplateInfo {
-	return GetFieldsFromFields(action.GetFields())
-}
-
 func HasInput(action Action) bool {
 	return len(action.GetFields()) != 0 || len(action.GetNonEntFields()) != 0
 }
@@ -457,61 +431,12 @@ func HasOnlyActionOnlyFields(action Action) bool {
 	return len(action.GetNonEntFields()) != 0 && len(action.GetFields()) == 0
 }
 
-// TODO abstract this out somewhere else...
-func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
-	var result []FieldActionTemplateInfo
-
-	for _, f := range fields {
-
-		result = append(result, FieldActionTemplateInfo{
-			SetterMethodName:         "Set" + f.FieldName,
-			NullableSetterMethodName: "SetNilable" + f.FieldName,
-			GetterMethodName:         "Get" + f.FieldName,
-			InstanceName:             strcase.ToLowerCamel(f.FieldName),
-			FieldName:                f.FieldName,
-			QuotedFieldName:          strconv.Quote(f.FieldName),
-			QuotedDBName:             f.GetQuotedDBColName(),
-			InverseEdge:              f.GetInverseEdge(),
-			Field:                    f,
-		})
-	}
-	return result
-}
-
-func GetNonEntFields(action Action) []FieldActionTemplateInfo {
-	var fields []FieldActionTemplateInfo
-
-	// TODO this is only used by go so didn't update this
-	for _, f := range action.GetNonEntFields() {
-
-		fieldName := f.GetFieldName()
-		fields = append(fields, FieldActionTemplateInfo{
-			SetterMethodName: "Add" + fieldName,
-			InstanceName:     strcase.ToLowerCamel(fieldName),
-			FieldName:        fieldName,
-			IsStatusEnum:     f.Flag == "Enum", // TODO best way?
-			IsGroupID:        f.Flag == "ID",
-			NodeType:         f.NodeType,
-		})
-	}
-	return fields
-}
-
 type EdgeActionTemplateInfo struct {
-	AddEntMethodName         string
-	AddSingleIDMethodName    string
-	AddMultiIDMethodName     string
-	RemoveEntMethodName      string
-	RemoveSingleIDMethodName string
-	RemoveMultiIDMethodName  string
-	EdgeName                 string
-	InstanceName             string
-	InstanceType             string
+	EdgeName     string
+	InstanceName string
 	//	AssocEdge    *edge.AssociationEdge
-	EdgeConst          string
 	NodeType           string
 	Node               string
-	GraphQLNodeID      string
 	TSEdgeConst        string
 	TSNodeID           string
 	TSAddMethodName    string
@@ -524,7 +449,7 @@ func GetEdges(action Action) []EdgeActionTemplateInfo {
 	return GetEdgesFromEdges(action.GetEdges())
 }
 
-// ALso TODO...
+// this is still being used...
 func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 	var result []EdgeActionTemplateInfo
 
@@ -532,23 +457,13 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 		edgeName := edge.GetEdgeName()
 
 		result = append(result, EdgeActionTemplateInfo{
-			Edge:                     edge,
-			Node:                     edge.NodeInfo.Node,
-			AddEntMethodName:         "Add" + edge.EdgeName,
-			AddSingleIDMethodName:    "Add" + edge.Singular() + "ID",
-			AddMultiIDMethodName:     "Add" + edge.Singular() + "IDs",
-			RemoveEntMethodName:      "Remove" + edge.EdgeName,
-			RemoveSingleIDMethodName: "Remove" + edge.Singular() + "ID",
-			RemoveMultiIDMethodName:  "Remove" + edge.Singular() + "IDs",
-			EdgeName:                 edgeName,
-			InstanceName:             edge.NodeInfo.NodeInstance,
-			InstanceType:             fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
-			EdgeConst:                edge.EdgeConst,
-			TSEdgeConst:              edge.TsEdgeConst,
+			Edge:         edge,
+			Node:         edge.NodeInfo.Node,
+			EdgeName:     edgeName,
+			InstanceName: edge.NodeInfo.NodeInstance,
+			TSEdgeConst:  edge.TsEdgeConst,
 			//AssocEdge:    edge,
-			NodeType: edge.NodeInfo.NodeType,
-			// matches what we do in graphQLSchema.processAction
-			GraphQLNodeID:      fmt.Sprintf("%sID", edge.Singular()),
+			NodeType:           edge.NodeInfo.NodeType,
 			TSNodeID:           fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
 			TSAddIDMethodName:  fmt.Sprintf("add%sID", edge.Singular()),
 			TSAddMethodName:    fmt.Sprintf("add%s", edge.Singular()),
