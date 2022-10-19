@@ -248,6 +248,9 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 	return p.buildNodeWithOpts(processor, s, node, opts)
 }
 
+// TODO all of this logic should be rewritten so that the logic for the object and files rendered are tied together so that it's
+// all tied together instead of scattered all over the place
+// will eliminate this class of bugs
 func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, node *gqlNode, opts *writeOptions) fns.FunctionList {
 	var ret fns.FunctionList
 	if opts.writeNode {
@@ -256,9 +259,12 @@ func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, n
 		})
 	}
 
+	cmp := s.customData.compareResult
+
 	for idx := range node.connections {
 		conn := node.connections[idx]
-		if opts.writeAllConnections || opts.connectionFiles[conn.Connection] {
+		if opts.writeAllConnections ||
+			opts.connectionFiles[conn.Connection] || (cmp != nil && cmp.customQueriesChanged[conn.Edge.GraphQLEdgeName()]) {
 			ret = append(ret, func() error {
 				return writeConnectionFile(processor, s, conn)
 			})
