@@ -45,7 +45,6 @@ func TestParseFromInputSchema(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	// still config name because of artifact of go and old schema
 	user := schema.Nodes["User"]
 	assert.NotNil(t, user)
 
@@ -768,7 +767,6 @@ func TestParseInputWithFieldEdgeAndNoEdgeInSourceMoreOptions(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
 	eventConfig := schema.Nodes["Event"]
 	assert.NotNil(t, eventConfig)
 
@@ -777,7 +775,6 @@ func TestParseInputWithFieldEdgeAndNoEdgeInSourceMoreOptions(t *testing.T) {
 	assert.Equal(t, userEdge.NodeInfo.Node, "User")
 	assert.Equal(t, userEdge.InverseEdge.Name, "CreatedEvents")
 
-	// still config name because of artifact of go and old schema
 	userInfo := schema.Nodes["User"]
 	assert.NotNil(t, userInfo)
 
@@ -837,7 +834,6 @@ func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	// still config name because of artifact of go and old schema
 	userInfo := schema.Nodes["User"]
 	assert.NotNil(t, userInfo)
 
@@ -1912,4 +1908,76 @@ func TestDuplicateNames(t *testing.T) {
 	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.GoLang)
 	require.Nil(t, schema)
 	require.Equal(t, err.Error(), "there's already an entity with GraphQL name ProfileType")
+}
+
+func TestMultipleActionsHiddenFromGraphQL(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+				Actions: []*input.Action{
+					{
+						Operation: ent.CreateAction,
+					},
+					{
+						Operation:        ent.CreateAction,
+						HideFromGraphQL:  true,
+						CustomInputName:  "CustomCreateUserInput",
+						CustomActionName: "CustomCreateHolidayAction",
+					},
+				},
+			},
+			"Note": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "body",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+				Actions: []*input.Action{
+					{
+						Operation:       ent.DeleteAction,
+						HideFromGraphQL: true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	user := schema.Nodes["User"]
+	assert.NotNil(t, user)
+
+	note := schema.Nodes["Note"]
+	assert.NotNil(t, note)
+
+	assert.Len(t, user.NodeData.ActionInfo.Actions, 2)
+	assert.Len(t, note.NodeData.ActionInfo.Actions, 1)
 }

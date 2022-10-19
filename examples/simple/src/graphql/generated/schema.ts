@@ -76,10 +76,6 @@ import {
   EventRsvpStatusInputType,
 } from "./mutations/event/event_rsvp_status_edit_type";
 import {
-  CustomCreateHolidayInputType,
-  CustomCreateHolidayPayloadType,
-} from "./mutations/holiday/custom_create_holiday_type";
-import {
   HolidayCreateInputType,
   HolidayCreatePayloadType,
 } from "./mutations/holiday/holiday_create_type";
@@ -283,8 +279,6 @@ export default new GraphQLSchema({
     ContactPhoneNumberDeletePayloadType,
     ContactPhoneNumberEditInputType,
     ContactPhoneNumberEditPayloadType,
-    CustomCreateHolidayInputType,
-    CustomCreateHolidayPayloadType,
     DeleteUserInput2PayloadType,
     DeleteUserInput2Type,
     EditEmailAddressInputType,

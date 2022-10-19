@@ -889,6 +889,13 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	}, nil
 }
 
+// TODO refactor this
+// we need graphql and ts map
+// this should take an interface
+// list for actions which have input, payload, etc
+// GetTSNames() []string
+// GetGraphQLNames() []string
+// ExposeToGraphQL() bool
 func (s *Schema) addGQLType(name string) error {
 	if s.gqlTypeMap[name] {
 		return fmt.Errorf("there's already an entity with GraphQL name %s", name)
@@ -911,6 +918,10 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 	}
 
 	for _, action := range info.NodeData.ActionInfo.Actions {
+		if !action.ExposedToGraphQL() {
+			continue
+		}
+
 		if err := s.addGQLType(action.GetGraphQLInputTypeName()); err != nil {
 			return err
 		}
@@ -925,6 +936,9 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 	}
 
 	for _, conn := range info.NodeData.EdgeInfo.GetConnectionEdges() {
+		if conn.HideFromGraphQL() {
+			continue
+		}
 		if err := s.addGQLType(conn.GetGraphQLConnectionType()); err != nil {
 			return err
 		}
