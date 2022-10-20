@@ -78,6 +78,7 @@ func FieldEqual(existing, field *Field) bool {
 		existing.disableUserGraphQLEditable == field.disableUserGraphQLEditable &&
 		existing.hasDefaultValueOnCreate == field.hasDefaultValueOnCreate &&
 		existing.hasDefaultValueOnEdit == field.hasDefaultValueOnEdit &&
+		existing.defaultToViewerOnCreate == field.defaultToViewerOnCreate &&
 		existing.hasFieldPrivacy == field.hasFieldPrivacy &&
 		existing.forceRequiredInAction == field.forceRequiredInAction &&
 		existing.forceOptionalInAction == field.forceOptionalInAction &&

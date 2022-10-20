@@ -141,7 +141,7 @@ export class EventBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -150,9 +150,9 @@ export class EventBuilder<
         result.set(key, value);
       }
     };
-    addField("Name", fields.name);
-    addField("Slug", fields.slug);
-    addField("creatorID", fields.creatorID);
+    addField("Name", input.name);
+    addField("Slug", input.slug);
+    addField("creatorID", input.creatorID);
     return result;
   }
 

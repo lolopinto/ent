@@ -3,6 +3,20 @@ CREATE TABLE alembic_version (
     CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
 );
 
+CREATE TABLE account_created_workspaces_edges (
+    id1 TEXT NOT NULL, 
+    id1_type TEXT NOT NULL, 
+    edge_type TEXT NOT NULL, 
+    id2 TEXT NOT NULL, 
+    id2_type TEXT NOT NULL, 
+    time TIMESTAMP NOT NULL, 
+    data TEXT, 
+    deleted_at TIMESTAMP, 
+    CONSTRAINT account_created_workspaces_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
+);
+
+CREATE INDEX account_created_workspaces_edges_time_idx ON account_created_workspaces_edges (time);
+
 CREATE TABLE accounts (
     id TEXT NOT NULL, 
     created_at TIMESTAMP NOT NULL, 
@@ -140,6 +154,7 @@ CREATE TABLE workspaces (
     deleted_at TIMESTAMP, 
     name TEXT NOT NULL, 
     creator_id TEXT NOT NULL, 
+    viewer_creator_id TEXT NOT NULL, 
     slug TEXT NOT NULL, 
     CONSTRAINT workspaces_id_pkey PRIMARY KEY (id), 
     CONSTRAINT workspaces_creator_id_fkey FOREIGN KEY(creator_id) REFERENCES accounts (id) ON DELETE CASCADE, 
@@ -149,6 +164,7 @@ CREATE TABLE workspaces (
 CREATE INDEX workspaces_deleted_at_idx ON workspaces (deleted_at);
 
 INSERT INTO assoc_edge_config(edge_name, edge_type, edge_table, symmetric_edge, inverse_edge_type, created_at, updated_at) VALUES('AccountToClosedTodosDupEdge', '7dcd1712-6a08-4253-96d9-068996bb6e4a', 'todo_edges', false, NULL, datetime(), datetime()),
+('AccountToCreatedWorkspacesEdge', '533096dc-3e79-4e66-8af8-b65e4e9c86d3', 'account_created_workspaces_edges', false, NULL, datetime(), datetime()),
 ('AccountToOpenTodosDupEdge', 'a75dafbf-0051-4804-bb99-a0c212599af3', 'todo_edges', false, NULL, datetime(), datetime()),
 ('AccountToWorkspacesEdge', 'b27492cd-a064-4e74-a3af-59256352ed91', 'workspace_members_edges', false, '1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0', datetime(), datetime()),
 ('ObjectToScopedTodosEdge', '2a4965c1-c959-4a2d-9f93-afd131baf16b', 'object_scoped_todos_edges', false, '04ad27c4-1da0-4a90-aa2d-df4e95e381da', datetime(), datetime()),

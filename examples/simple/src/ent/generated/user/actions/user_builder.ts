@@ -576,7 +576,7 @@ export class UserBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -585,27 +585,27 @@ export class UserBuilder<
         result.set(key, value);
       }
     };
-    addField("FirstName", fields.firstName);
-    addField("LastName", fields.lastName);
-    addField("EmailAddress", fields.emailAddress);
-    addField("PhoneNumber", fields.phoneNumber);
-    addField("Password", fields.password);
-    addField("AccountStatus", fields.accountStatus);
-    addField("emailVerified", fields.emailVerified);
-    addField("Bio", fields.bio);
-    addField("nicknames", fields.nicknames);
-    addField("prefs", fields.prefs);
-    addField("prefsList", fields.prefsList);
-    addField("prefs_diff", fields.prefsDiff);
-    addField("daysOff", fields.daysOff);
-    addField("preferredShift", fields.preferredShift);
-    addField("timeInMs", fields.timeInMs);
-    addField("fun_uuids", fields.funUuids);
-    addField("new_col", fields.newCol);
-    addField("new_col2", fields.newCol2);
-    addField("superNestedObject", fields.superNestedObject);
-    addField("nestedList", fields.nestedList);
-    addField("int_enum", fields.intEnum);
+    addField("FirstName", input.firstName);
+    addField("LastName", input.lastName);
+    addField("EmailAddress", input.emailAddress);
+    addField("PhoneNumber", input.phoneNumber);
+    addField("Password", input.password);
+    addField("AccountStatus", input.accountStatus);
+    addField("emailVerified", input.emailVerified);
+    addField("Bio", input.bio);
+    addField("nicknames", input.nicknames);
+    addField("prefs", input.prefs);
+    addField("prefsList", input.prefsList);
+    addField("prefs_diff", input.prefsDiff);
+    addField("daysOff", input.daysOff);
+    addField("preferredShift", input.preferredShift);
+    addField("timeInMs", input.timeInMs);
+    addField("fun_uuids", input.funUuids);
+    addField("new_col", input.newCol);
+    addField("new_col2", input.newCol2);
+    addField("superNestedObject", input.superNestedObject);
+    addField("nestedList", input.nestedList);
+    addField("int_enum", input.intEnum);
     return result;
   }
 

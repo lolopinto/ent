@@ -190,7 +190,7 @@ export class TagBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -199,11 +199,11 @@ export class TagBuilder<
         result.set(key, value);
       }
     };
-    addField("deleted_at", fields.deletedAt);
-    addField("DisplayName", fields.displayName);
-    addField("canonicalName", fields.canonicalName);
-    addField("ownerID", fields.ownerID);
-    addField("relatedTagIds", fields.relatedTagIds);
+    addField("deleted_at", input.deletedAt);
+    addField("DisplayName", input.displayName);
+    addField("canonicalName", input.canonicalName);
+    addField("ownerID", input.ownerID);
+    addField("relatedTagIds", input.relatedTagIds);
     return result;
   }
 

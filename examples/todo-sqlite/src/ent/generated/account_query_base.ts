@@ -12,6 +12,7 @@ import {
 import {
   Account,
   AccountToClosedTodosDupEdge,
+  AccountToCreatedWorkspacesEdge,
   AccountToOpenTodosDupEdge,
   AccountToWorkspacesEdge,
   EdgeType,
@@ -30,6 +31,14 @@ export const accountToClosedTodosDupDataLoaderFactory =
   new AssocEdgeLoaderFactory(
     EdgeType.AccountToClosedTodosDup,
     () => AccountToClosedTodosDupEdge,
+  );
+
+export const accountToCreatedWorkspacesCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.AccountToCreatedWorkspaces);
+export const accountToCreatedWorkspacesDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.AccountToCreatedWorkspaces,
+    () => AccountToCreatedWorkspacesEdge,
   );
 
 export const accountToOpenTodosDupCountLoaderFactory =
@@ -81,6 +90,46 @@ export abstract class AccountToClosedTodosDupQueryBase extends AssocEdgeQueryBas
 
   queryTodoScope(): TodoToTodoScopeQuery {
     return TodoToTodoScopeQuery.query(this.viewer, this);
+  }
+}
+
+export abstract class AccountToCreatedWorkspacesQueryBase extends AssocEdgeQueryBase<
+  Account,
+  Workspace,
+  AccountToCreatedWorkspacesEdge,
+  Viewer
+> {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<Account, Workspace, Viewer>,
+  ) {
+    super(
+      viewer,
+      src,
+      accountToCreatedWorkspacesCountLoaderFactory,
+      accountToCreatedWorkspacesDataLoaderFactory,
+      Workspace.loaderOptions(),
+    );
+  }
+
+  static query<T extends AccountToCreatedWorkspacesQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Workspace>) => T,
+    viewer: Viewer,
+    src: EdgeQuerySource<Account, Workspace>,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return Account.load(this.viewer, id);
+  }
+
+  queryMembers(): WorkspaceToMembersQuery {
+    return WorkspaceToMembersQuery.query(this.viewer, this);
+  }
+
+  queryScopedTodos(): WorkspaceToScopedTodosQuery {
+    return WorkspaceToScopedTodosQuery.query(this.viewer, this);
   }
 }
 

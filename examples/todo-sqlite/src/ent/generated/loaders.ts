@@ -248,6 +248,7 @@ const workspaceFields = [
   "deleted_at",
   "name",
   "creator_id",
+  "viewer_creator_id",
   "slug",
 ];
 
@@ -306,6 +307,10 @@ export const workspaceLoaderInfo = {
     creatorID: {
       dbCol: "creator_id",
       inputKey: "creatorID",
+    },
+    viewerCreatorID: {
+      dbCol: "viewer_creator_id",
+      inputKey: "viewerCreatorID",
     },
     slug: {
       dbCol: "slug",

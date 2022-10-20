@@ -235,7 +235,7 @@ export class TodoBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -244,14 +244,14 @@ export class TodoBuilder<
         result.set(key, value);
       }
     };
-    addField("deleted_at", fields.deletedAt);
-    addField("Text", fields.text);
-    addField("Completed", fields.completed);
-    addField("creatorID", fields.creatorID);
-    addField("completedDate", fields.completedDate);
-    addField("assigneeID", fields.assigneeID);
-    addField("scopeID", fields.scopeID);
-    addField("scopeType", fields.scopeType);
+    addField("deleted_at", input.deletedAt);
+    addField("Text", input.text);
+    addField("Completed", input.completed);
+    addField("creatorID", input.creatorID);
+    addField("completedDate", input.completedDate);
+    addField("assigneeID", input.assigneeID);
+    addField("scopeID", input.scopeID);
+    addField("scopeType", input.scopeType);
     return result;
   }
 

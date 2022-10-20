@@ -142,7 +142,7 @@ export class UserBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -151,10 +151,10 @@ export class UserBuilder<
         result.set(key, value);
       }
     };
-    addField("FirstName", fields.firstName);
-    addField("LastName", fields.lastName);
-    addField("EmailAddress", fields.emailAddress);
-    addField("Password", fields.password);
+    addField("FirstName", input.firstName);
+    addField("LastName", input.lastName);
+    addField("EmailAddress", input.emailAddress);
+    addField("Password", input.password);
     return result;
   }
 

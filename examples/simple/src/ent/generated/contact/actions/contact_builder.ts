@@ -173,7 +173,7 @@ export class ContactBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -182,11 +182,11 @@ export class ContactBuilder<
         result.set(key, value);
       }
     };
-    addField("email_ids", fields.emailIds);
-    addField("phone_number_ids", fields.phoneNumberIds);
-    addField("firstName", fields.firstName);
-    addField("lastName", fields.lastName);
-    addField("userID", fields.userID);
+    addField("email_ids", input.emailIds);
+    addField("phone_number_ids", input.phoneNumberIds);
+    addField("firstName", input.firstName);
+    addField("lastName", input.lastName);
+    addField("userID", input.userID);
     return result;
   }
 

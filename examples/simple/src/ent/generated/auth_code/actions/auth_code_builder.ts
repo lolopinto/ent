@@ -151,7 +151,7 @@ export class AuthCodeBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -160,10 +160,10 @@ export class AuthCodeBuilder<
         result.set(key, value);
       }
     };
-    addField("code", fields.code);
-    addField("userID", fields.userID);
-    addField("emailAddress", fields.emailAddress);
-    addField("phoneNumber", fields.phoneNumber);
+    addField("code", input.code);
+    addField("userID", input.userID);
+    addField("emailAddress", input.emailAddress);
+    addField("phoneNumber", input.phoneNumber);
     return result;
   }
 

@@ -202,7 +202,7 @@ export class CommentBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -211,12 +211,12 @@ export class CommentBuilder<
         result.set(key, value);
       }
     };
-    addField("AuthorID", fields.authorID);
-    addField("Body", fields.body);
-    addField("ArticleID", fields.articleID);
-    addField("ArticleType", fields.articleType);
-    addField("StickerID", fields.stickerID);
-    addField("StickerType", fields.stickerType);
+    addField("AuthorID", input.authorID);
+    addField("Body", input.body);
+    addField("ArticleID", input.articleID);
+    addField("ArticleType", input.articleType);
+    addField("StickerID", input.stickerID);
+    addField("StickerType", input.stickerType);
     return result;
   }
 

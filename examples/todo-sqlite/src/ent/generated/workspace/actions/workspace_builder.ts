@@ -19,7 +19,6 @@ import schema from "src/schema/workspace_schema";
 export interface WorkspaceInput {
   deletedAt?: Date | null;
   name?: string;
-  creatorID?: ID | Builder<Account, Viewer>;
   slug?: string;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -97,6 +96,26 @@ export class WorkspaceBuilder<
   }
 
   updateInput(input: WorkspaceInput) {
+    // input.viewerCreatorID default value is being set, also set inverseEdge
+    if (input.viewerCreatorID !== undefined) {
+      if (input.viewerCreatorID) {
+        this.orchestrator.addInboundEdge(
+          input.viewerCreatorID,
+          EdgeType.AccountToCreatedWorkspaces,
+          NodeType.Account,
+        );
+      }
+      if (
+        this.existingEnt &&
+        this.existingEnt.viewerCreatorID &&
+        this.existingEnt.viewerCreatorID !== input.viewerCreatorID
+      ) {
+        this.orchestrator.removeInboundEdge(
+          this.existingEnt.viewerCreatorID,
+          EdgeType.AccountToCreatedWorkspaces,
+        );
+      }
+    }
     // override input
     this.input = {
       ...this.input,
@@ -210,7 +229,7 @@ export class WorkspaceBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -219,10 +238,9 @@ export class WorkspaceBuilder<
         result.set(key, value);
       }
     };
-    addField("deleted_at", fields.deletedAt);
-    addField("name", fields.name);
-    addField("creatorID", fields.creatorID);
-    addField("slug", fields.slug);
+    addField("deleted_at", input.deletedAt);
+    addField("name", input.name);
+    addField("slug", input.slug);
     return result;
   }
 
@@ -249,20 +267,6 @@ export class WorkspaceBuilder<
       );
     }
     return this.existingEnt.name;
-  }
-
-  // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreatorIDValue(): ID | Builder<Account, Viewer> {
-    if (this.input.creatorID !== undefined) {
-      return this.input.creatorID;
-    }
-
-    if (!this.existingEnt) {
-      throw new Error(
-        "no value to return for `creatorID` since not in input and no existingEnt",
-      );
-    }
-    return this.existingEnt.creatorID;
   }
 
   // get value of slug. Retrieves it from the input if specified or takes it from existingEnt

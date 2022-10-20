@@ -64,6 +64,7 @@ type Field struct {
 	disableUserGraphQLEditable bool
 	hasDefaultValueOnCreate    bool
 	hasDefaultValueOnEdit      bool
+	defaultToViewerOnCreate    bool
 	hasFieldPrivacy            bool
 	fetchOnDemand              bool
 
@@ -105,6 +106,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		disableUserGraphQLEditable: f.DisableUserGraphQLEditable,
 		hasDefaultValueOnCreate:    f.HasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:      f.HasDefaultValueOnEdit,
+		defaultToViewerOnCreate:    f.DefaultToViewerOnCreate,
 		hasFieldPrivacy:            f.HasFieldPrivacy,
 		fetchOnDemand:              f.FetchOnDemand,
 		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
@@ -351,6 +353,10 @@ func (f *Field) HasDefaultValueOnCreate() bool {
 
 func (f *Field) HasDefaultValueOnEdit() bool {
 	return f.hasDefaultValueOnEdit
+}
+
+func (f *Field) DefaultToViewerOnCreate() bool {
+	return f.defaultToViewerOnCreate
 }
 
 func (f *Field) HasFieldPrivacy() bool {
@@ -883,6 +889,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		disableUserGraphQLEditable: f.disableUserGraphQLEditable,
 		hasDefaultValueOnCreate:    f.hasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:      f.hasDefaultValueOnEdit,
+		defaultToViewerOnCreate:    f.defaultToViewerOnCreate,
 		hasFieldPrivacy:            f.hasFieldPrivacy,
 		forceRequiredInAction:      f.forceRequiredInAction,
 		forceOptionalInAction:      f.forceOptionalInAction,

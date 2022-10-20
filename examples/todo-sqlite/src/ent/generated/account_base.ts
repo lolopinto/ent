@@ -36,6 +36,7 @@ import {
 } from "src/ent/generated/loaders";
 import {
   AccountToClosedTodosDupQuery,
+  AccountToCreatedWorkspacesQuery,
   AccountToOpenTodosDupQuery,
   AccountToScopedTodosQuery,
   AccountToTagsQuery,
@@ -330,6 +331,10 @@ export class AccountBase
 
   queryClosedTodosDup(): AccountToClosedTodosDupQuery {
     return AccountToClosedTodosDupQuery.query(this.viewer, this.id);
+  }
+
+  queryCreatedWorkspaces(): AccountToCreatedWorkspacesQuery {
+    return AccountToCreatedWorkspacesQuery.query(this.viewer, this.id);
   }
 
   queryOpenTodosDup(): AccountToOpenTodosDupQuery {

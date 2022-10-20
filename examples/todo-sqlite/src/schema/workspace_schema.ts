@@ -14,7 +14,18 @@ const WorkSpaceSchema = new TodoBaseEntSchema({
         column: "ID",
         disableIndex: true,
       },
+      disableUserEditable: true,
       defaultToViewerOnCreate: true,
+    }),
+    // TODO this only exists because can't delete foreign key above
+    // https://github.com/lolopinto/ent/issues/1185
+    viewerCreatorID: UUIDType({
+      disableUserEditable: true,
+      defaultToViewerOnCreate: true,
+      fieldEdge: {
+        schema: "Account",
+        inverseEdge: "createdWorkspaces",
+      },
     }),
     // used to make the url
     slug: StringType({ unique: true }).toLowerCase().trim(),
@@ -22,14 +33,7 @@ const WorkSpaceSchema = new TodoBaseEntSchema({
 
   actions: [
     {
-      operation: ActionOperation.Create,
-      excludedFields: ["creatorID"],
-    },
-    {
-      operation: ActionOperation.Edit,
-    },
-    {
-      operation: ActionOperation.Delete,
+      operation: ActionOperation.Mutations,
     },
   ],
 

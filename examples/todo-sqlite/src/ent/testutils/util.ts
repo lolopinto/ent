@@ -42,7 +42,13 @@ export async function createWorkspace(account?: Account) {
     slug: `fun-workspace-${randomInt(1000000000000)}`,
   }).saveX();
   expect(workspace.creatorID).toBe(account.id);
+  expect(workspace.viewerCreatorID).toBe(account.id);
   expect(workspace.name).toBe("test");
+
+  const createdWorkspaces = await account.queryCreatedWorkspaces().queryEnts();
+  expect(createdWorkspaces.length).toBe(1);
+  expect(createdWorkspaces[0].id).toBe(workspace.id);
+
   return workspace;
 }
 

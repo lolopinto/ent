@@ -11,6 +11,7 @@ import {
 import {
   Account,
   AccountToClosedTodosDupQuery,
+  AccountToCreatedWorkspacesQuery,
   AccountToOpenTodosDupQuery,
   AccountToScopedTodosQuery,
   AccountToWorkspacesQuery,
@@ -59,6 +60,10 @@ export abstract class WorkspaceToMembersQueryBase extends AssocEdgeQueryBase<
 
   queryClosedTodosDup(): AccountToClosedTodosDupQuery {
     return AccountToClosedTodosDupQuery.query(this.viewer, this);
+  }
+
+  queryCreatedWorkspaces(): AccountToCreatedWorkspacesQuery {
+    return AccountToCreatedWorkspacesQuery.query(this.viewer, this);
   }
 
   queryOpenTodosDup(): AccountToOpenTodosDupQuery {

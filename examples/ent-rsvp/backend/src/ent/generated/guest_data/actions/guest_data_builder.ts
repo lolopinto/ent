@@ -143,7 +143,7 @@ export class GuestDataBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -152,10 +152,10 @@ export class GuestDataBuilder<
         result.set(key, value);
       }
     };
-    addField("guestID", fields.guestID);
-    addField("eventID", fields.eventID);
-    addField("dietaryRestrictions", fields.dietaryRestrictions);
-    addField("source", fields.source);
+    addField("guestID", input.guestID);
+    addField("eventID", input.eventID);
+    addField("dietaryRestrictions", input.dietaryRestrictions);
+    addField("source", input.source);
     return result;
   }
 
