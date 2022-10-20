@@ -181,3 +181,21 @@ func MapEqual(m1, m2 map[string]interface{}) bool {
 
 	return true
 }
+
+type CompareOpts struct {
+	RemoveEqualFromGraphQL bool
+	AddEqualToGraphQL      bool
+}
+type CompareOption func(*CompareOpts)
+
+func AddEqualToGraphQL() CompareOption {
+	return func(opt *CompareOpts) {
+		opt.AddEqualToGraphQL = true
+	}
+}
+
+func RemoveEqualFromGraphQL() CompareOption {
+	return func(opt *CompareOpts) {
+		opt.RemoveEqualFromGraphQL = true
+	}
+}

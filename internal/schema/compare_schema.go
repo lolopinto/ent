@@ -196,30 +196,32 @@ type compareNodeOptions struct {
 func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, error) {
 	var ret []change.Change
 
-	// TODO need to change all the connections and actions to be exposed to graphql
-	// this isn't being tested...
+	var compareOpts []change.CompareOption
+
 	if n1.HideFromGraphQL != n2.HideFromGraphQL {
-		// add node graphql
+		// remove node from graphql
 		if n2.HideFromGraphQL {
-			ret = append(ret, change.Change{
-				Change:      change.AddNode,
-				Name:        n2.Node,
-				GraphQLName: n2.Node,
-				GraphQLOnly: true,
-			})
-		} else {
-			// remove node graphql
 			ret = append(ret, change.Change{
 				Change:      change.RemoveNode,
 				Name:        n2.Node,
 				GraphQLName: n2.Node,
 				GraphQLOnly: true,
 			})
+
+			// this should basically be remove all from graphql
+			// in practice, doesn't matter since check in generate_ts_code.go
+			compareOpts = append(compareOpts, change.RemoveEqualFromGraphQL())
+		} else {
+			// add node to graphql
+			ret = append(ret, change.Change{
+				Change:      change.AddNode,
+				Name:        n2.Node,
+				GraphQLName: n2.Node,
+				GraphQLOnly: true,
+			})
+
+			compareOpts = append(compareOpts, change.AddEqualToGraphQL())
 		}
-
-		// TODO edges and actions
-
-		return ret, nil
 	}
 
 	if !opts.skipFields {
@@ -229,11 +231,10 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 		}
 		ret = append(ret, r...)
 	}
-	// TODO need flags for graphql only for these two...
 
-	ret = append(ret, edge.CompareEdgeInfo(n1.EdgeInfo, n2.EdgeInfo)...)
+	ret = append(ret, edge.CompareEdgeInfo(n1.EdgeInfo, n2.EdgeInfo, compareOpts...)...)
 
-	ret = append(ret, action.CompareActionInfo(n1.ActionInfo, n2.ActionInfo)...)
+	ret = append(ret, action.CompareActionInfo(n1.ActionInfo, n2.ActionInfo, compareOpts...)...)
 
 	changes, err := enum.CompareEnums(n1.tsEnums, n2.tsEnums)
 	if err != nil {

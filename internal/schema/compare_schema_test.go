@@ -3225,6 +3225,809 @@ func TestRemoveDBRows(t *testing.T) {
 	}, item[1])
 }
 
+func TestHideNodeFromGraphQL(t *testing.T) {
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 2)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[1])
+}
+
+func TestHideNodeFromGraphQLWithActions(t *testing.T) {
+	a1 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+	a2 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					ActionInfo:  a1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+					ActionInfo:      a2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 4)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// remove actions from graphql
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		GraphQLOnly: true,
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "EditUserAction",
+		GraphQLName: "userEdit",
+		GraphQLOnly: true,
+	}, user[2])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[3])
+}
+
+// TODO come back to this...
+// easier to do the second way when we go from hidden -> exposed
+func zTestHideNodeFromGraphQLWithActionsHideFromGraphQLChanges(t *testing.T) {
+	a1 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+	a2 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					ActionInfo:  a1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+					ActionInfo:      a2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 4)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// remove actions from graphql
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		GraphQLOnly: true,
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "EditUserAction",
+		GraphQLName: "userEdit",
+		GraphQLOnly: true,
+	}, user[2])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[3])
+}
+
+func TestHideNodeFromGraphQLWithForeignKeyEdges(t *testing.T) {
+	e1 := edge.NewEdgeInfo("user")
+	require.Nil(t, e1.AddEdgeFromForeignKeyIndex(
+		&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User",
+	))
+
+	e2 := edge.NewEdgeInfo("user")
+	require.Nil(t, e2.AddEdgeFromForeignKeyIndex(&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User"))
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+					EdgeInfo:        e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// remove edge from graphql
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEdge,
+		Name:        "contacts",
+		GraphQLName: "UserToContactsConnection",
+		ExtraInfo:   "UserToContactsQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestHideNodeFromGraphQLWithIndexedEdges(t *testing.T) {
+	e1 := edge.NewEdgeInfo("user")
+	require.Nil(t, e1.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
+
+	e2 := edge.NewEdgeInfo("user")
+	require.Nil(t, e2.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+					EdgeInfo:        e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// remove edge from graphql
+	verifyChange(t, change.Change{
+		Change: change.RemoveEdge,
+		Name:   "ownerIDS",
+		// no connection...
+		GraphQLName: "",
+		ExtraInfo:   "OwnerToUsersQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestHideNodeFromGraphQLWithAssocEdges(t *testing.T) {
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
+			},
+		})
+	require.Nil(t, err)
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
+			},
+		})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+					EdgeInfo:        e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// remove edge from graphql
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestExposeNodeToGraphQL(t *testing.T) {
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 2)
+	verifyChange(t, change.Change{
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[1])
+}
+
+func TestExposeNodeToGraphQLWithActions(t *testing.T) {
+	a1 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+	a2 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					ActionInfo:      a1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					ActionInfo:  a2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 4)
+	verifyChange(t, change.Change{
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// add actions to graphql
+	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		GraphQLOnly: true,
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "EditUserAction",
+		GraphQLName: "userEdit",
+		GraphQLOnly: true,
+	}, user[2])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[3])
+}
+
+func TestExposeodeToGraphQLWithForeignKeyEdges(t *testing.T) {
+	e1 := edge.NewEdgeInfo("user")
+	require.Nil(t, e1.AddEdgeFromForeignKeyIndex(
+		&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User",
+	))
+
+	e2 := edge.NewEdgeInfo("user")
+	require.Nil(t, e2.AddEdgeFromForeignKeyIndex(&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User"))
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					EdgeInfo:        e1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// add edge to graphql
+	verifyChange(t, change.Change{
+		Change:      change.AddEdge,
+		Name:        "contacts",
+		GraphQLName: "UserToContactsConnection",
+		ExtraInfo:   "UserToContactsQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestExposeNodeToGraphQLWithIndexedEdges(t *testing.T) {
+	e1 := edge.NewEdgeInfo("user")
+	require.Nil(t, e1.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
+
+	e2 := edge.NewEdgeInfo("user")
+	require.Nil(t, e2.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					EdgeInfo:        e1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// add edge to graphql
+	verifyChange(t, change.Change{
+		Change: change.AddEdge,
+		Name:   "ownerIDS",
+		// no connection...
+		GraphQLName: "",
+		ExtraInfo:   "OwnerToUsersQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestExposeNodeToGraphQLWithAssocEdges(t *testing.T) {
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
+			},
+		})
+	require.Nil(t, err)
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
+			},
+		})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					EdgeInfo:        e1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// add edge to graphql
+	verifyChange(t, change.Change{
+		Change:      change.AddEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
 func getEnumInfo(m map[string]string) *schema.EnumInfo {
 	if m == nil {
 		m = map[string]string{
