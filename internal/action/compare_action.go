@@ -46,45 +46,42 @@ func compareActionMap(m1, m2 map[string]Action, o *change.CompareOpts) []change.
 			if !ActionEqual(action1, action2) {
 				// action is different and graphql names changed
 				if action1.GetGraphQLName() != action2.GetGraphQLName() {
-					ret = append(
-						ret,
-						change.Change{
-							Change:      change.ModifyAction,
-							Name:        k,
-							GraphQLName: action1.GetGraphQLName(),
-							TSOnly:      true,
-						},
-						change.Change{
-							Change:      change.RemoveAction,
-							GraphQLOnly: true,
-							Name:        k,
-							GraphQLName: action1.GetGraphQLName(),
-						},
-						change.Change{
-							Change:      change.AddAction,
-							GraphQLOnly: true,
-							Name:        k,
-							GraphQLName: action2.GetGraphQLName(),
-						})
-				} else if action1.ExposedToGraphQL() != action2.ExposedToGraphQL() {
-					if action2.ExposedToGraphQL() {
-						// expose to graphql
-						ret = append(
-							ret,
-							change.Change{
-								Change:      change.ModifyAction,
-								Name:        k,
-								GraphQLName: action1.GetGraphQLName(),
-								TSOnly:      true,
-							},
-							change.Change{
-								Change:      change.AddAction,
-								GraphQLOnly: true,
-								Name:        k,
-								GraphQLName: action1.GetGraphQLName(),
-							})
+					// graphql name changed because hidden to graphql is different
+					if action1.ExposedToGraphQL() != action2.ExposedToGraphQL() {
+						if action2.ExposedToGraphQL() {
+							// expose to graphql
+							ret = append(
+								ret,
+								change.Change{
+									Change:      change.ModifyAction,
+									Name:        k,
+									GraphQLName: action1.GetGraphQLName(),
+									TSOnly:      true,
+								},
+								change.Change{
+									Change:      change.AddAction,
+									GraphQLOnly: true,
+									Name:        k,
+									GraphQLName: action1.GetGraphQLName(),
+								})
+						} else {
+							// now hidden from graphql
+							ret = append(
+								ret,
+								change.Change{
+									Change:      change.ModifyAction,
+									Name:        k,
+									GraphQLName: action1.GetGraphQLName(),
+									TSOnly:      true,
+								},
+								change.Change{
+									Change:      change.RemoveAction,
+									GraphQLOnly: true,
+									Name:        k,
+									GraphQLName: action1.GetGraphQLName(),
+								})
+						}
 					} else {
-						// now hidden from graphql
 						ret = append(
 							ret,
 							change.Change{
@@ -98,6 +95,12 @@ func compareActionMap(m1, m2 map[string]Action, o *change.CompareOpts) []change.
 								GraphQLOnly: true,
 								Name:        k,
 								GraphQLName: action1.GetGraphQLName(),
+							},
+							change.Change{
+								Change:      change.AddAction,
+								GraphQLOnly: true,
+								Name:        k,
+								GraphQLName: action2.GetGraphQLName(),
 							})
 					}
 				} else {

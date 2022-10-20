@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -3809,6 +3810,111 @@ func TestExposeNodeToGraphQLWithActions(t *testing.T) {
 		Name:        "User",
 		GraphQLName: "User",
 	}, user[3])
+}
+
+func TestExposeNodeToGraphQLWithActionsHideFromGraphQLChanges(t *testing.T) {
+	a1 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+	a2 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+				// edit now also hidden...
+				HideFromGraphQL: true,
+			},
+		},
+	})
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					ActionInfo:      a1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					ActionInfo:  a2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	spew.Dump(user)
+	require.Len(t, user, 5)
+	verifyChange(t, change.Change{
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
+		GraphQLOnly: true,
+	}, user[0])
+
+	// add actions to graphql
+	verifyChange(t, change.Change{
+		Change:      change.ModifyAction,
+		Name:        "EditUserAction",
+		GraphQLName: "userEdit",
+		TSOnly:      true,
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "EditUserAction",
+		GraphQLName: "userEdit",
+		// technically, does nothing since it doesn't exist
+		GraphQLOnly: true,
+	}, user[2])
+	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		GraphQLOnly: true,
+	}, user[3])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[4])
 }
 
 func TestExposeodeToGraphQLWithForeignKeyEdges(t *testing.T) {
