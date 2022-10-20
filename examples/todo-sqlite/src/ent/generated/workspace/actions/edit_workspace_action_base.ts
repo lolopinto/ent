@@ -8,19 +8,17 @@ import {
 } from "@snowtop/ent";
 import {
   Action,
-  Builder,
   Changeset,
   Observer,
   Trigger,
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Account, Workspace } from "src/ent/";
+import { Workspace } from "src/ent/";
 import { WorkspaceBuilder } from "src/ent/generated/workspace/actions/workspace_builder";
 
 export interface WorkspaceEditInput {
   name?: string;
-  creatorID?: ID | Builder<Account, Viewer>;
   slug?: string;
 }
 

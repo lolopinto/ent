@@ -185,6 +185,51 @@ export class AccountBuilder<
     return this;
   }
 
+  addCreatedWorkspace(
+    ...nodes: (ID | Workspace | Builder<Workspace, any>)[]
+  ): this {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addCreatedWorkspaceID(node);
+      } else if (typeof node === "object") {
+        this.addCreatedWorkspaceID(node.id);
+      } else {
+        this.addCreatedWorkspaceID(node);
+      }
+    }
+    return this;
+  }
+
+  addCreatedWorkspaceID(
+    id: ID | Builder<Workspace, any>,
+    options?: AssocEdgeInputOptions,
+  ): this {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.AccountToCreatedWorkspaces,
+      NodeType.Workspace,
+      options,
+    );
+    return this;
+  }
+
+  removeCreatedWorkspace(...nodes: (ID | Workspace)[]): this {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(
+          node.id,
+          EdgeType.AccountToCreatedWorkspaces,
+        );
+      } else {
+        this.orchestrator.removeOutboundEdge(
+          node,
+          EdgeType.AccountToCreatedWorkspaces,
+        );
+      }
+    }
+    return this;
+  }
+
   addOpenTodosDup(...nodes: (ID | Todo | Builder<Todo, any>)[]): this {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
@@ -300,7 +345,7 @@ export class AccountBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -309,11 +354,11 @@ export class AccountBuilder<
         result.set(key, value);
       }
     };
-    addField("deleted_at", fields.deletedAt);
-    addField("Name", fields.name);
-    addField("PhoneNumber", fields.phoneNumber);
-    addField("accountState", fields.accountState);
-    addField("accountPrefs", fields.accountPrefs);
+    addField("deleted_at", input.deletedAt);
+    addField("Name", input.name);
+    addField("PhoneNumber", input.phoneNumber);
+    addField("accountState", input.accountState);
+    addField("accountPrefs", input.accountPrefs);
     return result;
   }
 

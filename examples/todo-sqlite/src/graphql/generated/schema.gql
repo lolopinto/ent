@@ -42,6 +42,7 @@ type Account implements Node {
   phone_number: String
   account_prefs: AccountPrefs
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
+  created_workspaces(first: Int, after: String, last: Int, before: String): AccountToCreatedWorkspacesConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
   scoped_todos(first: Int, after: String, last: Int, before: String): AccountToScopedTodosConnection!
   workspaces(first: Int, after: String, last: Int, before: String): AccountToWorkspacesConnection!
@@ -75,6 +76,7 @@ type Todo implements Node {
 
 type Workspace implements Node {
   creator: Account
+  viewer_creator: Account
   id: ID!
   name: String!
   slug: String!
@@ -90,6 +92,18 @@ type AccountToClosedTodosDupEdge implements Edge {
 type AccountToClosedTodosDupConnection implements Connection {
   edges: [AccountToClosedTodosDupEdge!]!
   nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AccountToCreatedWorkspacesEdge implements Edge {
+  node: Workspace!
+  cursor: String!
+}
+
+type AccountToCreatedWorkspacesConnection implements Connection {
+  edges: [AccountToCreatedWorkspacesEdge!]!
+  nodes: [Workspace!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -366,7 +380,6 @@ input EditWorkspaceInput {
   """id of Workspace"""
   id: ID!
   name: String
-  creator_id: ID
   slug: String
 }
 

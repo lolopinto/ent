@@ -64,6 +64,7 @@ import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
+  AccountToCreatedWorkspacesConnectionType,
   AccountToOpenTodosConnectionType,
   AccountToOpenTodosDupConnectionType,
   AccountToScopedTodosConnectionType,
@@ -95,6 +96,7 @@ export default new GraphQLSchema({
     TodoType,
     WorkspaceType,
     AccountToClosedTodosDupConnectionType(),
+    AccountToCreatedWorkspacesConnectionType(),
     AccountToOpenTodosConnectionType(),
     AccountToOpenTodosDupConnectionType(),
     AccountToScopedTodosConnectionType(),

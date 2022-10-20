@@ -7,6 +7,7 @@ export * from "src/graphql/generated/resolvers/tag_type";
 export * from "src/graphql/generated/resolvers/todo_type";
 export * from "src/graphql/generated/resolvers/workspace_type";
 export * from "src/graphql/generated/resolvers/account/account_to_closed_todos_dup_connection_type";
+export * from "src/graphql/generated/resolvers/account/account_to_created_workspaces_connection_type";
 export * from "src/graphql/generated/resolvers/account/account_to_open_todos_connection_type";
 export * from "src/graphql/generated/resolvers/account/account_to_open_todos_dup_connection_type";
 export * from "src/graphql/generated/resolvers/account/account_to_scoped_todos_connection_type";

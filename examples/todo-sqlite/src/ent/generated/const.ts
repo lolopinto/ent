@@ -14,6 +14,8 @@ export enum NodeType {
 export enum EdgeType {
   // AccountToClosedTodosDup is the edgeType for the account to closedtodosdup edge.
   AccountToClosedTodosDup = "7dcd1712-6a08-4253-96d9-068996bb6e4a",
+  // AccountToCreatedWorkspaces is the edgeType for the account to createdworkspaces edge.
+  AccountToCreatedWorkspaces = "533096dc-3e79-4e66-8af8-b65e4e9c86d3",
   // AccountToOpenTodosDup is the edgeType for the account to opentodosdup edge.
   AccountToOpenTodosDup = "a75dafbf-0051-4804-bb99-a0c212599af3",
   // AccountToWorkspaces is the edgeType for the account to workspaces edge.

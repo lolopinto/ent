@@ -20,7 +20,6 @@ import { WorkspaceType } from "src/graphql/resolvers/";
 
 interface customEditWorkspaceInput extends WorkspaceEditInput {
   id: string;
-  creator_id?: string;
 }
 
 interface EditWorkspacePayload {
@@ -36,9 +35,6 @@ export const EditWorkspaceInputType = new GraphQLInputObjectType({
     },
     name: {
       type: GraphQLString,
-    },
-    creator_id: {
-      type: GraphQLID,
     },
     slug: {
       type: GraphQLString,
@@ -78,7 +74,6 @@ export const EditWorkspaceType: GraphQLFieldConfig<
       input.id,
       {
         name: input.name,
-        creatorID: input.creator_id,
         slug: input.slug,
       },
     );

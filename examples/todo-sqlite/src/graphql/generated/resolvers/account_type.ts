@@ -17,6 +17,7 @@ import {
 import {
   Account,
   AccountToClosedTodosDupQuery,
+  AccountToCreatedWorkspacesQuery,
   AccountToOpenTodosDupQuery,
   AccountToScopedTodosQuery,
   AccountToTagsQuery,
@@ -27,6 +28,7 @@ import {
 import {
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
+  AccountToCreatedWorkspacesConnectionType,
   AccountToOpenTodosConnectionType,
   AccountToOpenTodosDupConnectionType,
   AccountToScopedTodosConnectionType,
@@ -84,6 +86,36 @@ export const AccountType = new GraphQLObjectType({
           account,
           (v, account: Account) =>
             AccountToClosedTodosDupQuery.query(v, account),
+          args,
+        );
+      },
+    },
+    created_workspaces: {
+      type: new GraphQLNonNull(AccountToCreatedWorkspacesConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) =>
+            AccountToCreatedWorkspacesQuery.query(v, account),
           args,
         );
       },

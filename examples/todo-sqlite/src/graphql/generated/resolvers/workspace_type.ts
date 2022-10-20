@@ -33,6 +33,12 @@ export const WorkspaceType = new GraphQLObjectType({
         return workspace.loadCreator();
       },
     },
+    viewer_creator: {
+      type: AccountType,
+      resolve: (workspace: Workspace, args: {}, context: RequestContext) => {
+        return workspace.loadViewerCreator();
+      },
+    },
     id: {
       type: new GraphQLNonNull(GraphQLID),
     },

@@ -4,6 +4,46 @@
 {{ $cfg := .CodePath -}}
 {{ $schema := .Schema -}}
 
+{{define "inverseEdge" -}}
+  {{ $field := .Field -}}
+  {{ $inverseEdge := .InverseEdge -}}
+  {{ $cfg := .Config -}}
+  {{ $node := .Node -}}
+
+  {{$tsFieldName := $field.TsBuilderFieldName -}}
+
+  {{/* we magically expect a local variable input to be defined when this is used */ -}}
+  if (input.{{$tsFieldName}} !== undefined) {
+    if (input.{{$tsFieldName}}) {
+      this.orchestrator.addInboundEdge(
+        input.{{$tsFieldName}},
+        {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+        {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
+      );
+    }
+    {{ if $field.HasAsyncAccessor $cfg -}}
+      // can't have this be dependent on privacy so need to fetch the raw data...
+      if (this.existingEnt) {
+        {{/* TODO eventually this needs to be smart enough and parallelize with any other possible fields here */ -}}
+        const rawData = await {{$node}}.loadRawData(this.existingEnt.id, this.viewer.context);
+        if (rawData && rawData.{{$field.GetDbColName}} !== null && rawData.{{$field.GetDbColName}} !== undefined) {
+          this.orchestrator.removeInboundEdge(
+            rawData.{{$field.GetDbColName}},
+            {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+          );
+        }
+      }
+    {{ else -}}
+      if (this.existingEnt && this.existingEnt.{{$tsFieldName}} && this.existingEnt.{{$tsFieldName}} !== input.{{$tsFieldName}}) {
+        this.orchestrator.removeInboundEdge(
+          this.existingEnt.{{$tsFieldName}},
+          {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+        );
+      }
+    {{ end -}}
+  }
+{{- end -}}
+
 {{with .NodeData -}}
 {{ $schemaPath := .GetSchemaPath }}
 {{ reserveDefaultImport $schemaPath "schema"}}
@@ -118,6 +158,12 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
   }
 
   updateInput(input: {{$input}}) {
+    {{range $field := .FieldInfo.NotEditableInverseEdgeFieldsWithDefaults -}}
+      {{$tsFieldName := $field.TsBuilderFieldName -}}
+      {{ $inverseEdge := $field.GetInverseEdge -}}
+      // input.{{$tsFieldName}} default value is being set, also set inverseEdge
+      {{ template "inverseEdge" (dict "Field" $field "InverseEdge" $inverseEdge "Config" $cfg "Node" $node) }}
+    {{end -}}
     // override input
     this.input = {
       ...this.input,
@@ -198,7 +244,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -209,38 +255,10 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     };
     {{range $field := .FieldInfo.GetEditableFields -}}
       {{$tsFieldName := $field.TsBuilderFieldName -}}
-      addField("{{$field.FieldName}}", fields.{{$tsFieldName}});
+      addField("{{$field.FieldName}}", input.{{$tsFieldName}});
       {{ $inverseEdge := $field.GetInverseEdge -}}
       {{ if $inverseEdge -}}
-        if (fields.{{$tsFieldName}} !== undefined) {
-          if (fields.{{$tsFieldName}}) {
-            this.orchestrator.addInboundEdge(
-              fields.{{$tsFieldName}},
-              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-              {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
-            );
-          }
-          {{ if $field.HasAsyncAccessor $cfg -}}
-            // can't have this be dependent on privacy so need to fetch the raw data...
-            if (this.existingEnt) {
-              {{/* TODO eventually this needs to be smart enough and parallelize with any other possible fields here */ -}}
-              const rawData = await {{$node}}.loadRawData(this.existingEnt.id, this.viewer.context);
-              if (rawData && rawData.{{$field.GetDbColName}} !== null && rawData.{{$field.GetDbColName}} !== undefined) {
-                this.orchestrator.removeInboundEdge(
-                  rawData.{{$field.GetDbColName}},
-                  {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-                );
-              }
-            }
-          {{ else -}}
-            if (this.existingEnt && this.existingEnt.{{$tsFieldName}} && this.existingEnt.{{$tsFieldName}} !== fields.{{$tsFieldName}}) {
-              this.orchestrator.removeInboundEdge(
-                this.existingEnt.{{$tsFieldName}},
-                {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-              );
-            }
-          {{ end -}}
-        }
+        {{ template "inverseEdge" (dict "Field" $field "InverseEdge" $inverseEdge "Config" $cfg "Node" $node) }}
       {{end -}}
     {{end -}}
     return result;

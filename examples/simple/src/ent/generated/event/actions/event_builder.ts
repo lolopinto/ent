@@ -346,7 +346,7 @@ export class EventBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -355,12 +355,12 @@ export class EventBuilder<
         result.set(key, value);
       }
     };
-    addField("name", fields.name);
-    addField("creatorID", fields.creatorID);
-    if (fields.creatorID !== undefined) {
-      if (fields.creatorID) {
+    addField("name", input.name);
+    addField("creatorID", input.creatorID);
+    if (input.creatorID !== undefined) {
+      if (input.creatorID) {
         this.orchestrator.addInboundEdge(
-          fields.creatorID,
+          input.creatorID,
           EdgeType.UserToCreatedEvents,
           NodeType.User,
         );
@@ -368,7 +368,7 @@ export class EventBuilder<
       if (
         this.existingEnt &&
         this.existingEnt.creatorID &&
-        this.existingEnt.creatorID !== fields.creatorID
+        this.existingEnt.creatorID !== input.creatorID
       ) {
         this.orchestrator.removeInboundEdge(
           this.existingEnt.creatorID,
@@ -376,14 +376,14 @@ export class EventBuilder<
         );
       }
     }
-    addField("start_time", fields.startTime);
-    addField("end_time", fields.endTime);
-    addField("location", fields.location);
-    addField("addressID", fields.addressID);
-    if (fields.addressID !== undefined) {
-      if (fields.addressID) {
+    addField("start_time", input.startTime);
+    addField("end_time", input.endTime);
+    addField("location", input.location);
+    addField("addressID", input.addressID);
+    if (input.addressID !== undefined) {
+      if (input.addressID) {
         this.orchestrator.addInboundEdge(
-          fields.addressID,
+          input.addressID,
           EdgeType.AddressToHostedEvents,
           NodeType.Address,
         );

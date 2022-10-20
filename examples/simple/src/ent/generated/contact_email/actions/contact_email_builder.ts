@@ -153,7 +153,7 @@ export class ContactEmailBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -162,10 +162,10 @@ export class ContactEmailBuilder<
         result.set(key, value);
       }
     };
-    addField("extra", fields.extra);
-    addField("emailAddress", fields.emailAddress);
-    addField("label", fields.label);
-    addField("contactID", fields.contactID);
+    addField("extra", input.extra);
+    addField("emailAddress", input.emailAddress);
+    addField("label", input.label);
+    addField("contactID", input.contactID);
     return result;
   }
 

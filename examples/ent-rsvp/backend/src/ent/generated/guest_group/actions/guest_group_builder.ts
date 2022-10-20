@@ -196,7 +196,7 @@ export class GuestGroupBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -205,8 +205,8 @@ export class GuestGroupBuilder<
         result.set(key, value);
       }
     };
-    addField("InvitationName", fields.invitationName);
-    addField("EventID", fields.eventID);
+    addField("InvitationName", input.invitationName);
+    addField("EventID", input.eventID);
     return result;
   }
 

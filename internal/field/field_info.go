@@ -189,6 +189,19 @@ func (fieldInfo *FieldInfo) GetEditableFields() []*Field {
 	return fields
 }
 
+func (fieldInfo *FieldInfo) NotEditableInverseEdgeFieldsWithDefaults() []*Field {
+	var fields []*Field
+	for _, f := range fieldInfo.Fields {
+		if f.EditableField() || f.inverseEdge == nil {
+			continue
+		}
+		if f.hasDefaultValueOnCreate || f.hasDefaultValueOnEdit || f.defaultToViewerOnCreate {
+			fields = append(fields, f)
+		}
+	}
+	return fields
+}
+
 // ForeignKeyInfo stores config and field name of the foreign key object
 type ForeignKeyInfo struct {
 	// Note that changing this should update foreignKeyInfoEqual

@@ -45,6 +45,7 @@ interface WorkspaceDBData {
   deleted_at: Date | null;
   name: string;
   creator_id: ID;
+  viewer_creator_id: ID;
   slug: string;
 }
 
@@ -59,6 +60,7 @@ export class WorkspaceBase
   protected readonly deletedAt: Date | null;
   readonly name: string;
   readonly creatorID: ID;
+  readonly viewerCreatorID: ID;
   readonly slug: string;
 
   constructor(public viewer: Viewer, protected data: Data) {
@@ -70,6 +72,7 @@ export class WorkspaceBase
     this.deletedAt = convertNullableDate(data.deleted_at);
     this.name = data.name;
     this.creatorID = data.creator_id;
+    this.viewerCreatorID = data.viewer_creator_id;
     this.slug = data.slug;
   }
 
@@ -291,5 +294,13 @@ export class WorkspaceBase
 
   loadCreatorX(): Promise<Account> {
     return loadEntX(this.viewer, this.creatorID, Account.loaderOptions());
+  }
+
+  async loadViewerCreator(): Promise<Account | null> {
+    return loadEnt(this.viewer, this.viewerCreatorID, Account.loaderOptions());
+  }
+
+  loadViewerCreatorX(): Promise<Account> {
+    return loadEntX(this.viewer, this.viewerCreatorID, Account.loaderOptions());
   }
 }
