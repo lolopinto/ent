@@ -196,6 +196,35 @@ type compareNodeOptions struct {
 func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, error) {
 	var ret []change.Change
 
+	var compareOpts []change.CompareOption
+
+	if n1.HideFromGraphQL != n2.HideFromGraphQL {
+		// remove node from graphql
+		if n2.HideFromGraphQL {
+			ret = append(ret, change.Change{
+				Change:          change.RemoveNode,
+				Name:            n2.Node,
+				GraphQLName:     n2.Node,
+				GraphQLOnly:     true,
+				WriteAllForNode: true,
+			})
+			// this should basically be remove all from graphql
+			// in practice, doesn't matter since check in generate_ts_code.go
+			compareOpts = append(compareOpts, change.RemoveEqualFromGraphQL())
+		} else {
+			// add node to graphql
+			ret = append(ret, change.Change{
+				Change:          change.AddNode,
+				Name:            n2.Node,
+				GraphQLName:     n2.Node,
+				GraphQLOnly:     true,
+				WriteAllForNode: true,
+			})
+
+			compareOpts = append(compareOpts, change.AddEqualToGraphQL())
+		}
+	}
+
 	if !opts.skipFields {
 		r, err := field.CompareFieldInfo(n1.FieldInfo, n2.FieldInfo)
 		if err != nil {
@@ -204,9 +233,9 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 		ret = append(ret, r...)
 	}
 
-	ret = append(ret, edge.CompareEdgeInfo(n1.EdgeInfo, n2.EdgeInfo)...)
+	ret = append(ret, edge.CompareEdgeInfo(n1.EdgeInfo, n2.EdgeInfo, compareOpts...)...)
 
-	ret = append(ret, action.CompareActionInfo(n1.ActionInfo, n2.ActionInfo)...)
+	ret = append(ret, action.CompareActionInfo(n1.ActionInfo, n2.ActionInfo, compareOpts...)...)
 
 	changes, err := enum.CompareEnums(n1.tsEnums, n2.tsEnums)
 	if err != nil {
@@ -248,14 +277,6 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 		})
 	}
 
-	if n1.HideFromGraphQL != n2.HideFromGraphQL {
-		ret = append(ret, change.Change{
-			Change:      change.ModifyNode,
-			Name:        n2.Node,
-			GraphQLName: n2.Node,
-			GraphQLOnly: true,
-		})
-	}
 	return ret, nil
 }
 

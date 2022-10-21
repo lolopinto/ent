@@ -59,7 +59,11 @@ func AssocEdgesEqual(l1, l2 []*AssociationEdge) bool {
 	return true
 }
 
-func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
+func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge, opts ...change.CompareOption) []change.Change {
+	o := &change.CompareOpts{}
+	for _, fn := range opts {
+		fn(o)
+	}
 	var ret []change.Change
 	for k, edge1 := range m1 {
 		edge2, ok := m2[k]
@@ -79,6 +83,25 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 					GraphQLName: edge1.GetGraphQLConnectionName(),
 					ExtraInfo:   edge1.TsEdgeQueryName(),
 				})
+			} else {
+				if o.AddEqualToGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.AddEdge,
+						Name:        k,
+						GraphQLName: edge1.GetGraphQLConnectionName(),
+						ExtraInfo:   edge1.TsEdgeQueryName(),
+						GraphQLOnly: true,
+					})
+				}
+				if o.RemoveEqualFromGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.RemoveEdge,
+						Name:        k,
+						GraphQLName: edge1.GetGraphQLConnectionName(),
+						ExtraInfo:   edge1.TsEdgeQueryName(),
+						GraphQLOnly: true,
+					})
+				}
 			}
 		}
 	}
@@ -99,6 +122,7 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 }
 
 func compareAssocEdgeGroupMap(m1, m2 map[string]*AssociationEdgeGroup) []change.Change {
+	// NB: not using change.CompareOpts here as it doesn't affect graphql (yet)
 	var ret []change.Change
 	for k, group1 := range m1 {
 		group2, ok := m2[k]
@@ -132,6 +156,7 @@ func compareAssocEdgeGroupMap(m1, m2 map[string]*AssociationEdgeGroup) []change.
 }
 
 func compareFieldEdgeMap(m1, m2 map[string]*FieldEdge) []change.Change {
+	// NB: not using change.CompareOpts here as it doesn't affect graphql (yet)
 	var ret []change.Change
 	for k, edge1 := range m1 {
 		edge2, ok := m2[k]
@@ -166,7 +191,7 @@ func compareFieldEdgeMap(m1, m2 map[string]*FieldEdge) []change.Change {
 	return ret
 }
 
-func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []change.Change {
+func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge, o *change.CompareOpts) []change.Change {
 	var ret []change.Change
 	for k, edge1 := range m1 {
 		edge2, ok := m2[k]
@@ -186,6 +211,25 @@ func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []
 					GraphQLName: edge1.GetGraphQLConnectionName(),
 					ExtraInfo:   edge1.TsEdgeQueryName(),
 				})
+			} else {
+				if o.AddEqualToGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.AddEdge,
+						Name:        k,
+						GraphQLName: edge1.GetGraphQLConnectionName(),
+						ExtraInfo:   edge1.TsEdgeQueryName(),
+						GraphQLOnly: true,
+					})
+				}
+				if o.RemoveEqualFromGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.RemoveEdge,
+						Name:        k,
+						GraphQLName: edge1.GetGraphQLConnectionName(),
+						ExtraInfo:   edge1.TsEdgeQueryName(),
+						GraphQLOnly: true,
+					})
+				}
 			}
 		}
 	}
@@ -374,7 +418,11 @@ func compareIndexedConnectionEdge(e1, e2 IndexedConnectionEdge) bool {
 }
 
 // Compares edges, assoc edge groups, field edge, connection edge
-func CompareEdgeInfo(e1, e2 *EdgeInfo) []change.Change {
+func CompareEdgeInfo(e1, e2 *EdgeInfo, opts ...change.CompareOption) []change.Change {
+	o := &change.CompareOpts{}
+	for _, fn := range opts {
+		fn(o)
+	}
 	if e1 == nil {
 		e1 = &EdgeInfo{}
 	}
@@ -383,14 +431,14 @@ func CompareEdgeInfo(e1, e2 *EdgeInfo) []change.Change {
 	}
 	var ret []change.Change
 
-	ret = append(ret, CompareAssocEdgesMap(e1.assocMap, e2.assocMap)...)
+	ret = append(ret, CompareAssocEdgesMap(e1.assocMap, e2.assocMap, opts...)...)
 
 	ret = append(ret, compareAssocEdgeGroupMap(e1.assocGroupsMap, e2.assocGroupsMap)...)
 
 	ret = append(ret, compareFieldEdgeMap(e1.fieldEdgeMap, e2.fieldEdgeMap)...)
 
 	// Note: see comment in EdgeInfo about comparing this and not compareConnectionEdgeMap
-	ret = append(ret, compareIndexedConnectionEdgeMap(e1.indexedEdgeQueriesMap, e2.indexedEdgeQueriesMap)...)
+	ret = append(ret, compareIndexedConnectionEdgeMap(e1.indexedEdgeQueriesMap, e2.indexedEdgeQueriesMap, o)...)
 
 	return ret
 }

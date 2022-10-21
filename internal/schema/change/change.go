@@ -73,6 +73,9 @@ type Change struct {
 	ExtraInfo   interface{}
 	GraphQLOnly bool
 	TSOnly      bool
+	// write all for every dependency of this node: actions, connections etc
+	// doesn't get files to delete. ideally, we'd call detect_dangling after?
+	WriteAllForNode bool
 }
 
 type ChangeMap map[string][]Change
@@ -180,4 +183,22 @@ func MapEqual(m1, m2 map[string]interface{}) bool {
 	}
 
 	return true
+}
+
+type CompareOpts struct {
+	RemoveEqualFromGraphQL bool
+	AddEqualToGraphQL      bool
+}
+type CompareOption func(*CompareOpts)
+
+func AddEqualToGraphQL() CompareOption {
+	return func(opt *CompareOpts) {
+		opt.AddEqualToGraphQL = true
+	}
+}
+
+func RemoveEqualFromGraphQL() CompareOption {
+	return func(opt *CompareOpts) {
+		opt.RemoveEqualFromGraphQL = true
+	}
 }
