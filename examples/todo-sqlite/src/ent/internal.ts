@@ -2,6 +2,7 @@
 
 export * from "src/ent/generated/const";
 export * from "src/ent/generated/loaders";
+export * from "src/ent/generated/loadAny";
 export * from "src/ent/generated/mixins/todo_container";
 export * from "src/ent/generated/account_base";
 export * from "src/ent/generated/account_prefs";
