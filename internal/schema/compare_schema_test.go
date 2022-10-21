@@ -1843,21 +1843,21 @@ func TestCompareActionsGraphQLNameModified(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 4)
 	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "createUser",
+		GraphQLOnly: true,
+	}, user[0])
+	verifyChange(t, change.Change{
 		Change:      change.ModifyAction,
 		Name:        "CreateUserAction",
 		GraphQLName: "userCreate",
 		TSOnly:      true,
-	}, user[0])
+	}, user[1])
 	verifyChange(t, change.Change{
 		Change:      change.RemoveAction,
 		Name:        "CreateUserAction",
 		GraphQLName: "userCreate",
-		GraphQLOnly: true,
-	}, user[1])
-	verifyChange(t, change.Change{
-		Change:      change.AddAction,
-		Name:        "CreateUserAction",
-		GraphQLName: "createUser",
 		GraphQLOnly: true,
 	}, user[2])
 	verifyChange(t, change.Change{
