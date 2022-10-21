@@ -30,6 +30,7 @@ type Action interface {
 	GetFields() []*field.Field
 	GetGraphQLFields() []*field.Field
 	GetNonEntFields() []*field.NonEntField
+	GetGraphQLNonEntFields() []*field.NonEntField
 	GetEdges() []*edge.AssociationEdge
 	GetEdgeGroup() *edge.AssociationEdgeGroup
 	GetActionName() string
@@ -197,6 +198,16 @@ func (action *commonActionInfo) GetEdgeGroup() *edge.AssociationEdgeGroup {
 
 func (action *commonActionInfo) GetNonEntFields() []*field.NonEntField {
 	return action.NonEntFields
+}
+
+func (action *commonActionInfo) GetGraphQLNonEntFields() []*field.NonEntField {
+	var ret []*field.NonEntField
+	for _, f := range action.NonEntFields {
+		if f.ExposeToGraphQL() {
+			ret = append(ret, f)
+		}
+	}
+	return ret
 }
 
 func (action *commonActionInfo) GetNodeInfo() nodeinfo.NodeInfo {

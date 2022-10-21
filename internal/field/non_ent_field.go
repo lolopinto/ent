@@ -17,15 +17,17 @@ type NonEntField struct {
 	// Flag enum or ID
 	Flag string
 	// this is a go-thing. ignore for TypeScript
-	NodeType string
+	NodeType        string
+	hideFromGraphQL bool
 }
 
-func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSType, nullable bool) *NonEntField {
+func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSType, nullable, hideFromGraphQL bool) *NonEntField {
 	return &NonEntField{
-		fieldName:   fieldName,
-		graphqlName: codegenapi.GraphQLName(cfg, fieldName),
-		fieldType:   fieldType,
-		nullable:    nullable,
+		fieldName:       fieldName,
+		graphqlName:     codegenapi.GraphQLName(cfg, fieldName),
+		fieldType:       fieldType,
+		nullable:        nullable,
+		hideFromGraphQL: hideFromGraphQL,
 	}
 }
 
@@ -94,6 +96,10 @@ func (f *NonEntField) DefaultValue() *string {
 
 func (f *NonEntField) Nullable() bool {
 	return f.nullable
+}
+
+func (f *NonEntField) ExposeToGraphQL() bool {
+	return !f.hideFromGraphQL
 }
 
 func (f *NonEntField) HasDefaultValueOnCreate() bool {

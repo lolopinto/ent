@@ -584,12 +584,13 @@ const NullableContentsAndList NullableItem = "contentsAndList"
 const NullableTrue NullableItem = "true"
 
 type actionField struct {
-	Name           string       `json:"name"`
-	Type           ActionType   `json:"type"`
-	Nullable       NullableItem `json:"nullable"`
-	List           bool         `json:"list"`
-	ActionName     string       `json:"actionName"`
-	ExcludedFields []string     `json:"excludedFields"`
+	Name            string       `json:"name"`
+	Type            ActionType   `json:"type"`
+	Nullable        NullableItem `json:"nullable"`
+	List            bool         `json:"list"`
+	ActionName      string       `json:"actionName"`
+	ExcludedFields  []string     `json:"excludedFields"`
+	HideFromGraphQL bool         `json:"hideFromGraphQL"`
 }
 
 type ActionField struct {
@@ -601,6 +602,7 @@ type ActionField struct {
 	nullableContents bool
 	ActionName       string
 	ExcludedFields   []string
+	HideFromGraphQL  bool
 }
 
 func (f *ActionField) UnmarshalJSON(data []byte) error {
@@ -615,6 +617,7 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 	f.ActionName = af.ActionName
 	f.Type = af.Type
 	f.ExcludedFields = af.ExcludedFields
+	f.HideFromGraphQL = af.HideFromGraphQL
 
 	switch af.Nullable {
 	case NullableContentsAndList:
