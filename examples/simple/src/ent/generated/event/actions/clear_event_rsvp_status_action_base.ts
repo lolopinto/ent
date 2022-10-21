@@ -22,6 +22,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ClearEventRsvpStatusInput {
   userID: ID;
+  whatever?: boolean | null;
 }
 
 export type ClearEventRsvpStatusActionTriggers = (

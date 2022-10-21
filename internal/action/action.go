@@ -263,7 +263,7 @@ func getNonEntFieldsFromInput(cfg codegenapi.Config, nodeName string, action *in
 			return nil, err
 		}
 
-		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable))
+		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable, f.HideFromGraphQL))
 	}
 	return fields, nil
 }
@@ -285,7 +285,7 @@ func getNonEntFieldsFromAssocGroup(
 		if err != nil {
 			return nil, err
 		}
-		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable))
+		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable, f.HideFromGraphQL))
 	}
 	return fields, nil
 }
@@ -358,8 +358,8 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 		var fields []*field.NonEntField
 		if lang == base.GoLang {
 			fields = []*field.NonEntField{
-				field.NewNonEntField(cfg, assocGroup.GroupStatusName, &enttype.StringType{}, false).SetFlag("Enum"),
-				field.NewNonEntField(cfg, strcase.ToCamel(assocGroup.DestNodeInfo.Node+"ID"), &enttype.StringType{}, false).
+				field.NewNonEntField(cfg, assocGroup.GroupStatusName, &enttype.StringType{}, false, false).SetFlag("Enum"),
+				field.NewNonEntField(cfg, strcase.ToCamel(assocGroup.DestNodeInfo.Node+"ID"), &enttype.StringType{}, false, false).
 					SetFlag("ID").
 					SetNodeType(fmt.Sprintf("models.%sType", assocGroup.DestNodeInfo.Node)),
 			}
@@ -385,11 +385,13 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 						Import: typ + "Type",
 					}),
 					false,
+					false,
 				),
 				field.NewNonEntField(
 					cfg,
 					assocGroup.GetIDArg(),
 					&enttype.IDType{},
+					false,
 					false,
 				),
 			}

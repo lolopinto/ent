@@ -130,6 +130,12 @@ const EventSchema = new EntSchema({
           name: "userID",
           type: "ID",
         },
+        {
+          name: "whatever",
+          type: "Boolean",
+          nullable: true,
+          hideFromGraphQL: true,
+        },
       ],
     },
   ],

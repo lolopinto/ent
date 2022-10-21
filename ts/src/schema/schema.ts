@@ -768,6 +768,9 @@ export interface ActionField {
   // no validation on what can be excluded is done. things will eventually fail if done incorrectly
   excludedFields?: string[];
 
+  // hide this param from graphql. should clearly be nullable for this to make sense
+  hideFromGraphQL?: boolean;
+
   // allow other keys
   [x: string]: any;
 }

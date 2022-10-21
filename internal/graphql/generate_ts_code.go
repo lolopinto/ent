@@ -2078,7 +2078,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	}
 
 	// add custom fields to the input
-	for _, f := range a.GetNonEntFields() {
+	for _, f := range a.GetGraphQLNonEntFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetGraphQLFieldType().GetTSGraphQLImports(true), true),
@@ -2166,7 +2166,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 			processField(f)
 		}
 
-		for _, f := range a.GetNonEntFields() {
+		for _, f := range a.GetGraphQLNonEntFields() {
 			processField(f)
 		}
 
@@ -2301,7 +2301,7 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 		}
 	}
 
-	for _, f := range a.GetNonEntFields() {
+	for _, f := range a.GetGraphQLNonEntFields() {
 		if processField(f) {
 			return true
 		}
@@ -2474,7 +2474,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			addField(f)
 		}
 
-		for _, f := range a.GetNonEntFields() {
+		for _, f := range a.GetGraphQLNonEntFields() {
 			addField(f)
 		}
 		result.FunctionContents = append(result.FunctionContents, "}).saveX();")
@@ -2522,7 +2522,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			for _, f := range a.GetGraphQLFields() {
 				addField(f)
 			}
-			for _, f := range a.GetNonEntFields() {
+			for _, f := range a.GetGraphQLNonEntFields() {
 				addField(f)
 			}
 			result.FunctionContents = append(result.FunctionContents, "});")
