@@ -9,6 +9,8 @@ import { snakeCase } from "snake-case";
 import { BuilderSchema, getTableName } from "../builder";
 import { Ent } from "../../core/base";
 import { testEdgeGlobalSchema } from "../test_edge_global_schema";
+import { clearGlobalSchema, setGlobalSchema } from "../../core/ent";
+import { createRowForTest } from "../write";
 
 interface SchemaItem {
   name: string;
@@ -401,12 +403,6 @@ function randomDB(): string {
 
   // always ensure it starts with an alpha character
   return "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)] + str;
-}
-
-function isDialect(
-  dialect: Dialect | Table[] | CoreConcept[],
-): dialect is Dialect {
-  return !Array.isArray(dialect);
 }
 
 export class TempDB {

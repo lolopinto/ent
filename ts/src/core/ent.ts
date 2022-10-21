@@ -2066,7 +2066,30 @@ export function getEdgeClauseAndFields(
 export async function loadCustomEdges<T extends AssocEdge>(
   options: loadCustomEdgesOptions<T>,
 ): Promise<T[]> {
-  const { id1, edgeType, context } = options;
+  const {
+    cls: actualClause,
+    fields,
+    defaultOptions,
+    tableName,
+  } = await loadEgesInfo(options);
+
+  const rows = await loadRows({
+    tableName,
+    fields: fields,
+    clause: actualClause,
+    orderby: options.queryOptions?.orderby || defaultOptions.orderby,
+    limit: options.queryOptions?.limit || defaultOptions.limit,
+    context: options.context,
+  });
+  return rows.map((row) => {
+    return new options.ctr(row);
+  });
+}
+
+async function loadEgesInfo<T extends AssocEdge>(
+  options: loadCustomEdgesOptions<T>,
+) {
+  const { id1, edgeType } = options;
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
@@ -2074,23 +2097,16 @@ export async function loadCustomEdges<T extends AssocEdge>(
 
   const defaultOptions = defaultEdgeQueryOptions(id1, edgeType);
   let cls = defaultOptions.clause!;
+  // TODO id2 here...
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
   }
 
-  const { cls: actualClause, fields } = getEdgeClauseAndFields(cls, options);
-
-  const rows = await loadRows({
+  return {
+    ...getEdgeClauseAndFields(cls, options),
+    defaultOptions,
     tableName: edgeData.edgeTable,
-    fields: fields,
-    clause: actualClause,
-    orderby: options.queryOptions?.orderby || defaultOptions.orderby,
-    limit: options.queryOptions?.limit || defaultOptions.limit,
-    context,
-  });
-  return rows.map((row) => {
-    return new options.ctr(row);
-  });
+  };
 }
 
 export async function loadUniqueEdge(
@@ -2170,10 +2186,18 @@ interface loadEdgeForIDOptions<T extends AssocEdge>
 export async function loadEdgeForID2<T extends AssocEdge>(
   options: loadEdgeForIDOptions<T>,
 ): Promise<T | undefined> {
-  // TODO at some point, same as in go, we can be smart about this and have heuristics to determine if we fetch everything here or not
-  // we're assuming a cache here but not always true and this can be expensive if not...
-  const edges = await loadCustomEdges(options);
-  return edges.find((edge) => edge.id2 == options.id2);
+  const { cls: actualClause, fields, tableName } = await loadEgesInfo(options);
+
+  const row = await loadRow({
+    tableName,
+    fields: fields,
+    // TODO this needs to be *before* deleted_at is null
+    clause: clause.And(actualClause, clause.Eq("id2", options.id2)),
+    context: options.context,
+  });
+  if (row) {
+    return new options.ctr(row);
+  }
 }
 
 export async function loadNodesByEdge<T extends Ent>(
@@ -2298,6 +2322,8 @@ async function loadEdgeWithConst<T extends string>(
 
 // given a viewer, an id pair, and a map of edgeEnum to EdgeType
 // return the edgeEnum that's set in the group
+// TODO change this to loadEdges for id2...
+
 export async function getEdgeTypeInGroup<T extends string>(
   viewer: Viewer,
   id1: ID,
