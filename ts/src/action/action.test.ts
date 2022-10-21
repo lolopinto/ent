@@ -15,7 +15,11 @@ import {
   clearGlobalSchema,
   __hasGlobalSchema,
 } from "../core/ent";
-import { setEdgeTypeInGroup, WriteOperation } from "./action";
+import {
+  clearEdgeTypeInGroup,
+  setEdgeTypeInGroup,
+  WriteOperation,
+} from "./action";
 import { MockLogs } from "../testutils/mock_log";
 import { setLogLevels } from "../core/logger";
 import { Data, ID } from "../core/base";
@@ -485,6 +489,20 @@ function commonTests() {
         // verify said edge is set and others unset
         await verifyEdges(edgeTypes, edgeType);
       }
+
+      // clear it, nothing's set
+      const builder2 = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
+
+      await clearEdgeTypeInGroup(builder2.orchestrator, user1.id, user2.id, m);
+      await builder2.saveX();
+
+      const edge2 = await loadEdgeForID2({
+        id1: user1.id,
+        id2: user2.id,
+        edgeType: "edge1",
+        ctr: AssocEdge,
+      });
+      expect(edge2).toBeUndefined();
     });
 
     test("add data afterwards to existing edge", async () => {

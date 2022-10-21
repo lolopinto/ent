@@ -733,6 +733,9 @@ export enum ActionOperation {
   // RemoveEdge is used to provide the ability to remove an edge in an AssociationEdge.
   RemoveEdge = 32,
   // EdgeGroup is used to provide the ability to edit an edge group in an AssociationEdgeGroup.
+  // if you want to clear this edge group e.g. any set edge with id1 and id2,
+  // you should create a custom action that takes the id as an action only field,
+  // and then calls `clearEdgeTypeInGroup` in a trigger to clear
   EdgeGroup = 64,
 }
 

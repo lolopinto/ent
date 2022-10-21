@@ -294,3 +294,29 @@ export async function setEdgeTypeInGroup<T extends string>(
   }
   await Promise.all(promises);
 }
+
+export async function clearEdgeTypeInGroup<T extends string>(
+  orchestrator: Orchestrator,
+  id1: ID,
+  id2: ID,
+  m: Map<T, string>,
+) {
+  let promises: Promise<void>[] = [];
+  for (const [_, edgeType] of m) {
+    promises.push(
+      (async () => {
+        let edge = await loadEdgeForID2({
+          id1,
+          id2,
+          edgeType,
+          ctr: AssocEdge,
+          context: orchestrator.viewer.context,
+        });
+        if (edge) {
+          orchestrator.removeOutboundEdge(id2, edgeType);
+        }
+      })(),
+    );
+  }
+  await Promise.all(promises);
+}
