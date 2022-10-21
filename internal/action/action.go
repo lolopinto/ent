@@ -30,7 +30,7 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 	// create/edit/delete
 	concreteAction, ok := typ.(concreteNodeActionType)
 	if ok {
-		fields, err := getFieldsForAction(action, fieldInfo, concreteAction)
+		fields, err := getFieldsForAction(nodeName, action, fieldInfo, concreteAction)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +77,7 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 	var actions []Action
 
 	createTyp := &createActionType{}
-	fields, err := getFieldsForAction(action, fieldInfo, createTyp)
+	fields, err := getFieldsForAction(nodeName, action, fieldInfo, createTyp)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 	))
 
 	editTyp := &editActionType{}
-	fields, err = getFieldsForAction(action, fieldInfo, editTyp)
+	fields, err = getFieldsForAction(nodeName, action, fieldInfo, editTyp)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 	))
 
 	deleteTyp := &deleteActionType{}
-	fields, err = getFieldsForAction(action, fieldInfo, deleteTyp)
+	fields, err = getFieldsForAction(nodeName, action, fieldInfo, deleteTyp)
 	if err != nil {
 		return nil, err
 	}
@@ -141,15 +141,11 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 // provides a way to say this action doesn't have any fields
 const NO_FIELDS = "__NO_FIELDS__"
 
-func getFieldsForAction(action *input.Action, fieldInfo *field.FieldInfo, typ concreteNodeActionType) ([]*field.Field, error) {
+func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.FieldInfo, typ concreteNodeActionType) ([]*field.Field, error) {
 	var fields []*field.Field
 	if !typ.supportsFieldsFromEnt() {
 		return fields, nil
 	}
-
-	// TODO
-	// add ability to automatically add id field
-	// add ability to automatically remove id field
 
 	fieldNames := action.Fields
 
@@ -197,7 +193,12 @@ func getFieldsForAction(action *input.Action, fieldInfo *field.FieldInfo, typ co
 		if f == nil {
 			f = fieldInfo.GetFieldByName(fieldName)
 			if f == nil {
-				return nil, fmt.Errorf("invalid field name %s passed", fieldName)
+				name := action.CustomActionName
+				if name != "" {
+					return nil, fmt.Errorf("invalid field name `%s` passed to action `%s`", fieldName, action.CustomActionName)
+				}
+
+				return nil, fmt.Errorf("invalid field name `%s` passed to `%s` action for node `%s`", fieldName, typ.getActionVerb(), strcase.ToCamel(nodeName))
 			}
 		}
 
