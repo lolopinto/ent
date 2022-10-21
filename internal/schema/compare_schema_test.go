@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -3793,7 +3792,6 @@ func TestExposeNodeToGraphQLWithActionsHideFromGraphQLChanges(t *testing.T) {
 	require.Nil(t, err)
 	require.Len(t, m, 1)
 	user := m["User"]
-	spew.Dump(user)
 	require.Len(t, user, 5)
 	verifyChange(t, change.Change{
 		Change:          change.AddNode,
