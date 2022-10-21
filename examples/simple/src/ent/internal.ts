@@ -5,6 +5,7 @@
 
 export * from "./generated/const";
 export * from "./generated/loaders";
+export * from "./generated/loadAny";
 export * from "./generated/day_of_week";
 export * from "./generated/day_of_week_alt";
 export * from "./generated/mixins/contact_info";

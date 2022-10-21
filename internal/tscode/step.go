@@ -1070,6 +1070,7 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	lines := []string{
 		"src/ent/generated/const",
 		"src/ent/generated/loaders",
+		"src/ent/generated/loadAny",
 	}
 
 	append2 := func(list *[]string, str string) {

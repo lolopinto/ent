@@ -17,7 +17,7 @@ import {
   GuestData,
   GuestGroup,
   User,
-} from "src/ent/";
+} from "src/ent/internal";
 import { NodeType } from "./const";
 
 export async function loadEntByType(

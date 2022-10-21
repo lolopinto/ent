@@ -8,7 +8,7 @@ import {
   loadEnt,
   loadEntX,
 } from "@snowtop/ent";
-import { Account, Tag, Todo, Workspace } from "src/ent/";
+import { Account, Tag, Todo, Workspace } from "src/ent/internal";
 import { NodeType } from "./const";
 
 export async function loadEntByType(
