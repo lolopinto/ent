@@ -11,7 +11,7 @@ import (
 )
 
 type actionType interface {
-	getActionName() string
+	getActionVerb() string
 }
 
 type concreteActionType interface {
@@ -79,8 +79,8 @@ func (action *createActionType) supportsFieldsFromEnt() bool {
 	return true
 }
 
-func (action *createActionType) getActionName() string {
-	return "ent.CreateAction"
+func (action *createActionType) getActionVerb() string {
+	return "create"
 }
 
 func (action *createActionType) getOperation() ent.ActionOperation {
@@ -123,8 +123,8 @@ func (action *editActionType) supportsFieldsFromEnt() bool {
 	return true
 }
 
-func (action *editActionType) getActionName() string {
-	return "ent.EditAction"
+func (action *editActionType) getActionVerb() string {
+	return "edit"
 }
 
 func (action *editActionType) getOperation() ent.ActionOperation {
@@ -164,8 +164,8 @@ func (action *deleteActionType) supportsFieldsFromEnt() bool {
 	return false
 }
 
-func (action *deleteActionType) getActionName() string {
-	return "ent.DeleteAction"
+func (action *deleteActionType) getActionVerb() string {
+	return "delete"
 }
 
 func (action *deleteActionType) getOperation() ent.ActionOperation {
@@ -177,8 +177,8 @@ var _ concreteNodeActionType = &deleteActionType{}
 type mutationsActionType struct {
 }
 
-func (action *mutationsActionType) getActionName() string {
-	return "ent.MutationsAction"
+func (action *mutationsActionType) getActionVerb() string {
+	return "mutations"
 }
 
 var _ actionType = &mutationsActionType{}
@@ -217,13 +217,8 @@ func (action *addEdgeActionType) getAction(commonInfo commonActionInfo) Action {
 	return getAddEdgeAction(commonInfo)
 }
 
-func (action *addEdgeActionType) supportsFieldsFromEnt() bool {
-	// hmm! technically not?? todo come back
-	return true
-}
-
-func (action *addEdgeActionType) getActionName() string {
-	return "ent.AddEdgeAction"
+func (action *addEdgeActionType) getActionVerb() string {
+	return "add edge"
 }
 
 func (action *addEdgeActionType) getOperation() ent.ActionOperation {
@@ -264,13 +259,8 @@ func (action *removeEdgeActionType) getAction(commonInfo commonActionInfo) Actio
 	return getRemoveEdgeAction(commonInfo)
 }
 
-func (action *removeEdgeActionType) supportsFieldsFromEnt() bool {
-	// hmm! technically not?? todo come back
-	return true
-}
-
-func (action *removeEdgeActionType) getActionName() string {
-	return "ent.RemoveEdgeAction"
+func (action *removeEdgeActionType) getActionVerb() string {
+	return "remove edge"
 }
 
 func (action *removeEdgeActionType) getOperation() ent.ActionOperation {
@@ -305,13 +295,8 @@ func (action *groupEdgeActionType) getAction(commonInfo commonActionInfo) Action
 	return getRemoveEdgeAction(commonInfo)
 }
 
-func (action *groupEdgeActionType) supportsFieldsFromEnt() bool {
-	// hmm! technically not?? todo come back
-	return true
-}
-
-func (action *groupEdgeActionType) getActionName() string {
-	return "ent.EdgeGroupAction"
+func (action *groupEdgeActionType) getActionVerb() string {
+	return "edge group"
 }
 
 func (action *groupEdgeActionType) getOperation() ent.ActionOperation {
