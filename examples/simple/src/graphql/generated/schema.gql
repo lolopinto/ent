@@ -676,6 +676,16 @@ input CatTypeInput {
   kitten: Boolean!
 }
 
+input ClearEventRsvpStatusInput {
+  """id of Event"""
+  id: ID!
+  userID: ID!
+}
+
+type ClearEventRsvpStatusPayload {
+  event: Event!
+}
+
 input CommentCreateInput {
   authorID: ID!
   body: String!
@@ -1107,6 +1117,7 @@ type Mutation {
   eventDelete(input: EventDeleteInput!): EventDeletePayload!
   eventEdit(input: EventEditInput!): EventEditPayload!
   eventRemoveHost(input: EventRemoveHostInput!): EventRemoveHostPayload!
+  eventRsvpStatusClear(input: ClearEventRsvpStatusInput!): ClearEventRsvpStatusPayload!
   eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!

@@ -119,6 +119,19 @@ const EventSchema = new EntSchema({
     {
       operation: ActionOperation.Mutations,
     },
+    {
+      operation: ActionOperation.Edit,
+      actionName: "ClearEventRsvpStatusAction",
+      inputName: "ClearEventRsvpStatusInput",
+      graphQLName: "eventRsvpStatusClear",
+      noFields: true,
+      actionOnlyFields: [
+        {
+          name: "userID",
+          type: "ID",
+        },
+      ],
+    },
   ],
 });
 export default EventSchema;

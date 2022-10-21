@@ -71,6 +71,10 @@ import {
   EventRemoveHostPayloadType,
 } from "./mutations/event/event_remove_host_type";
 import {
+  ClearEventRsvpStatusInputType,
+  ClearEventRsvpStatusPayloadType,
+} from "./mutations/event/event_rsvp_status_clear_type";
+import {
   EventRsvpStatusEditInputType,
   EventRsvpStatusEditPayloadType,
   EventRsvpStatusInputType,
@@ -254,6 +258,8 @@ export default new GraphQLSchema({
     UserAuthPayloadType,
     AddressCreateInputType,
     AddressCreatePayloadType,
+    ClearEventRsvpStatusInputType,
+    ClearEventRsvpStatusPayloadType,
     CommentCreateInputType,
     CommentCreatePayloadType,
     ConfirmEditEmailAddressInputType,
