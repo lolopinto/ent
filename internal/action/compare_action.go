@@ -1,6 +1,8 @@
 package action
 
 import (
+	"sort"
+
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -142,6 +144,18 @@ func compareActionMap(m1, m2 map[string]Action, o *change.CompareOpts) []change.
 			})
 		}
 	}
+	// sort so that we can be consistent for tests
+	sort.Slice(ret, func(i, j int) bool {
+		a1 := ret[i]
+		a2 := ret[j]
+		if a1.GraphQLName != a2.GraphQLName {
+			return a1.GraphQLName < a2.GraphQLName
+		}
+		if a1.Name != a2.Name {
+			return a1.Name < a2.Name
+		}
+		return a1.Change < a2.Change
+	})
 	return ret
 }
 
