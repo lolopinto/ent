@@ -84,13 +84,17 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 		deletedEdgeFiles:   map[string]bool{},
 	}
 
-	if processor.Config.WriteAllFiles() {
+	writeAll := func() {
 		opts.writeAllActions = true
 		opts.writeAllEdges = true
 		opts.writeEnt = true
 		opts.writeBase = true
 		opts.writeBuilder = true
 		opts.edgeBaseFile = true
+	}
+
+	if processor.Config.WriteAllFiles() {
+		writeAll()
 	}
 
 	if processor.Config.UseChanges() {
@@ -103,17 +107,29 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 			}
 			switch c.Change {
 			case change.AddNode:
-				opts.writeEnt = true
-				opts.writeBase = true
-				opts.writeBuilder = true
-				opts.entAdded = true
+				if c.WriteAllForNode {
+					writeAll()
+				} else {
+					opts.writeEnt = true
+					opts.writeBase = true
+					opts.writeBuilder = true
+					opts.entAdded = true
+				}
 
 			case change.ModifyNode:
-				opts.writeBase = true
-				opts.writeBuilder = true
+				if c.WriteAllForNode {
+					writeAll()
+				} else {
+					opts.writeBase = true
+					opts.writeBuilder = true
+				}
 
 			case change.RemoveNode:
-				opts.entRemoved = true
+				if c.WriteAllForNode {
+					writeAll()
+				} else {
+					opts.entRemoved = true
+				}
 
 			case change.AddAction:
 				opts.actionBaseFiles[c.Name] = true

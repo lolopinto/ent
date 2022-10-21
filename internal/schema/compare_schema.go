@@ -202,22 +202,23 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 		// remove node from graphql
 		if n2.HideFromGraphQL {
 			ret = append(ret, change.Change{
-				Change:      change.RemoveNode,
-				Name:        n2.Node,
-				GraphQLName: n2.Node,
-				GraphQLOnly: true,
+				Change:          change.RemoveNode,
+				Name:            n2.Node,
+				GraphQLName:     n2.Node,
+				GraphQLOnly:     true,
+				WriteAllForNode: true,
 			})
-
 			// this should basically be remove all from graphql
 			// in practice, doesn't matter since check in generate_ts_code.go
 			compareOpts = append(compareOpts, change.RemoveEqualFromGraphQL())
 		} else {
 			// add node to graphql
 			ret = append(ret, change.Change{
-				Change:      change.AddNode,
-				Name:        n2.Node,
-				GraphQLName: n2.Node,
-				GraphQLOnly: true,
+				Change:          change.AddNode,
+				Name:            n2.Node,
+				GraphQLName:     n2.Node,
+				GraphQLOnly:     true,
+				WriteAllForNode: true,
 			})
 
 			compareOpts = append(compareOpts, change.AddEqualToGraphQL())

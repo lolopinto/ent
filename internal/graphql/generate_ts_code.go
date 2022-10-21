@@ -211,8 +211,14 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 				continue
 			}
 			switch c.Change {
-			case change.AddNode, change.ModifyNode:
-				opts.writeNode = true
+			case change.AddNode, change.RemoveNode, change.ModifyNode:
+				if c.WriteAllForNode {
+					opts.writeAllConnections = true
+					opts.writeAllMutations = true
+				}
+				if c.Change != change.RemoveNode {
+					opts.writeNode = true
+				}
 
 			case change.AddEdge, change.ModifyEdge:
 				opts.connectionFiles[c.GraphQLName] = true

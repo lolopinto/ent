@@ -3255,10 +3255,11 @@ func TestHideNodeFromGraphQL(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change:      change.RemoveNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -3335,10 +3336,11 @@ func TestHideNodeFromGraphQLWithActions(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 4)
 	verifyChange(t, change.Change{
-		Change:      change.RemoveNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 
 	// remove actions from graphql
@@ -3362,102 +3364,8 @@ func TestHideNodeFromGraphQLWithActions(t *testing.T) {
 	}, user[3])
 }
 
-// TODO come back to this...
-// easier to do the second way when we go from hidden -> exposed
-func zTestHideNodeFromGraphQLWithActionsHideFromGraphQLChanges(t *testing.T) {
-	a1 := createActionInfoFromInput(t, "user", &input.Node{
-		Fields: []*input.Field{
-			{
-				Name: "first_name",
-				Type: &input.FieldType{
-					DBType: input.String,
-				},
-			},
-		},
-		Actions: []*input.Action{
-			{
-				Operation: ent.CreateAction,
-			},
-			{
-				Operation: ent.EditAction,
-			},
-		},
-	})
-	a2 := createActionInfoFromInput(t, "user", &input.Node{
-		Fields: []*input.Field{
-			{
-				Name: "first_name",
-				Type: &input.FieldType{
-					DBType: input.String,
-				},
-			},
-		},
-		Actions: []*input.Action{
-			{
-				Operation: ent.CreateAction,
-			},
-			{
-				Operation: ent.EditAction,
-			},
-		},
-	})
-
-	s1 := &schema.Schema{
-		Nodes: map[string]*schema.NodeDataInfo{
-			"User": {
-				NodeData: &schema.NodeData{
-					NodeInfo:    nodeinfo.GetNodeInfo("user"),
-					PackageName: "user",
-					ActionInfo:  a1,
-				},
-			},
-		},
-	}
-	s2 := &schema.Schema{
-		Nodes: map[string]*schema.NodeDataInfo{
-			"User": {
-				NodeData: &schema.NodeData{
-					NodeInfo:        nodeinfo.GetNodeInfo("user"),
-					PackageName:     "user",
-					HideFromGraphQL: true,
-					ActionInfo:      a2,
-				},
-			},
-		},
-	}
-
-	m, err := schema.CompareSchemas(s1, s2)
-	require.Nil(t, err)
-	require.Len(t, m, 1)
-	user := m["User"]
-	require.Len(t, user, 4)
-	verifyChange(t, change.Change{
-		Change:      change.RemoveNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
-	}, user[0])
-
-	// remove actions from graphql
-	verifyChange(t, change.Change{
-		Change:      change.RemoveAction,
-		Name:        "CreateUserAction",
-		GraphQLName: "userCreate",
-		GraphQLOnly: true,
-	}, user[1])
-	verifyChange(t, change.Change{
-		Change:      change.RemoveAction,
-		Name:        "EditUserAction",
-		GraphQLName: "userEdit",
-		GraphQLOnly: true,
-	}, user[2])
-
-	verifyChange(t, change.Change{
-		Change:      change.ModifyNode,
-		Name:        "User",
-		GraphQLName: "User",
-	}, user[3])
-}
+// TODO we may end up with hanging edges/connections here if there's some crazy combo of changing
+// visibility of edge because we don't check state changes like we do for actions
 
 func TestHideNodeFromGraphQLWithForeignKeyEdges(t *testing.T) {
 	e1 := edge.NewEdgeInfo("user")
@@ -3504,10 +3412,11 @@ func TestHideNodeFromGraphQLWithForeignKeyEdges(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 3)
 	verifyChange(t, change.Change{
-		Change:      change.RemoveNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 
 	// remove edge from graphql
@@ -3577,10 +3486,11 @@ func TestHideNodeFromGraphQLWithIndexedEdges(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 3)
 	verifyChange(t, change.Change{
-		Change:      change.RemoveNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 
 	// remove edge from graphql
@@ -3654,10 +3564,11 @@ func TestHideNodeFromGraphQLWithAssocEdges(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 3)
 	verifyChange(t, change.Change{
-		Change:      change.RemoveNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 
 	// remove edge from graphql
@@ -3705,10 +3616,11 @@ func TestExposeNodeToGraphQL(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change:      change.AddNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -3785,10 +3697,11 @@ func TestExposeNodeToGraphQLWithActions(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 4)
 	verifyChange(t, change.Change{
-		Change:      change.AddNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 
 	// add actions to graphql
@@ -3883,30 +3796,31 @@ func TestExposeNodeToGraphQLWithActionsHideFromGraphQLChanges(t *testing.T) {
 	spew.Dump(user)
 	require.Len(t, user, 5)
 	verifyChange(t, change.Change{
-		Change:      change.AddNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 
 	// add actions to graphql
+	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		GraphQLOnly: true,
+	}, user[1])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyAction,
 		Name:        "EditUserAction",
 		GraphQLName: "userEdit",
 		TSOnly:      true,
-	}, user[1])
+	}, user[2])
 	verifyChange(t, change.Change{
 		Change:      change.RemoveAction,
 		Name:        "EditUserAction",
 		GraphQLName: "userEdit",
 		// technically, does nothing since it doesn't exist
-		GraphQLOnly: true,
-	}, user[2])
-	verifyChange(t, change.Change{
-		Change:      change.AddAction,
-		Name:        "CreateUserAction",
-		GraphQLName: "userCreate",
 		GraphQLOnly: true,
 	}, user[3])
 
@@ -3917,7 +3831,7 @@ func TestExposeNodeToGraphQLWithActionsHideFromGraphQLChanges(t *testing.T) {
 	}, user[4])
 }
 
-func TestExposeodeToGraphQLWithForeignKeyEdges(t *testing.T) {
+func TestExposeNodeToGraphQLWithForeignKeyEdges(t *testing.T) {
 	e1 := edge.NewEdgeInfo("user")
 	require.Nil(t, e1.AddEdgeFromForeignKeyIndex(
 		&codegenapi.DummyConfig{},
@@ -3962,10 +3876,11 @@ func TestExposeodeToGraphQLWithForeignKeyEdges(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 3)
 	verifyChange(t, change.Change{
-		Change:      change.AddNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 
 	// add edge to graphql
@@ -4035,10 +3950,11 @@ func TestExposeNodeToGraphQLWithIndexedEdges(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 3)
 	verifyChange(t, change.Change{
-		Change:      change.AddNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 
 	// add edge to graphql
@@ -4112,10 +4028,11 @@ func TestExposeNodeToGraphQLWithAssocEdges(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 3)
 	verifyChange(t, change.Change{
-		Change:      change.AddNode,
-		Name:        "User",
-		GraphQLName: "User",
-		GraphQLOnly: true,
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
 	}, user[0])
 
 	// add edge to graphql
@@ -4207,4 +4124,5 @@ func verifyChange(t *testing.T, expChange, change change.Change) {
 	assert.Equal(t, expChange.GraphQLOnly, change.GraphQLOnly)
 	assert.Equal(t, expChange.TSOnly, change.TSOnly)
 	assert.Equal(t, expChange.ExtraInfo, change.ExtraInfo)
+	assert.Equal(t, expChange.WriteAllForNode, change.WriteAllForNode)
 }

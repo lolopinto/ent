@@ -73,6 +73,9 @@ type Change struct {
 	ExtraInfo   interface{}
 	GraphQLOnly bool
 	TSOnly      bool
+	// write all for every dependency of this node: actions, connections etc
+	// doesn't get files to delete. ideally, we'd call detect_dangling after?
+	WriteAllForNode bool
 }
 
 type ChangeMap map[string][]Change
