@@ -78,8 +78,8 @@ func TestWithSubFields(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	userNode := schema.Nodes["UserConfig"]
-	require.NotNil(t, userNode)
+	userInfo := schema.Nodes["User"]
+	require.NotNil(t, userInfo)
 
 	require.Len(t, schema.CustomInterfaces, 1)
 
@@ -210,8 +210,8 @@ func TestWithNestedSubFields(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	userNode := schema.Nodes["UserConfig"]
-	require.NotNil(t, userNode)
+	userInfo := schema.Nodes["User"]
+	require.NotNil(t, userInfo)
 
 	require.Len(t, schema.CustomInterfaces, 1)
 
@@ -376,8 +376,8 @@ func TestWithUnionFields(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	userNode := schema.Nodes["UserConfig"]
-	require.NotNil(t, userNode)
+	userInfo := schema.Nodes["User"]
+	require.NotNil(t, userInfo)
 
 	require.Len(t, schema.CustomInterfaces, 1)
 
@@ -390,7 +390,7 @@ func TestWithUnionFields(t *testing.T) {
 
 	union := ci.Children[0]
 	require.Equal(t, union.GetTSType(), "UnionField")
-	require.Equal(t, union.GetGraphQLType(), "UnionField")
+	require.Equal(t, union.GetGraphQLName(), "UnionField")
 	require.False(t, union.IsCustomInterface())
 	require.True(t, union.IsCustomUnion())
 
@@ -403,7 +403,7 @@ func TestWithUnionFields(t *testing.T) {
 	child1 := customTypes[0]
 	ci1 := child1.(*customtype.CustomInterface)
 	require.Equal(t, child1.GetTSType(), "FooUserPrefs")
-	require.Equal(t, child1.GetGraphQLType(), "FooUserPrefs")
+	require.Equal(t, child1.GetGraphQLName(), "FooUserPrefs")
 	require.True(t, child1.IsCustomInterface())
 	require.False(t, child1.IsCustomUnion())
 	require.Len(t, ci1.Fields, 3)
@@ -414,7 +414,7 @@ func TestWithUnionFields(t *testing.T) {
 	child2 := customTypes[1]
 	ci2 := child2.(*customtype.CustomInterface)
 	require.Equal(t, child2.GetTSType(), "Foo2UserPrefs")
-	require.Equal(t, child2.GetGraphQLType(), "Foo2UserPrefs")
+	require.Equal(t, child2.GetGraphQLName(), "Foo2UserPrefs")
 	require.True(t, child2.IsCustomInterface())
 	require.False(t, child2.IsCustomUnion())
 	require.Len(t, ci2.Fields, 2)
@@ -432,6 +432,136 @@ func TestWithUnionFields(t *testing.T) {
 	enum2 := ci.GetAllEnums()[1]
 	require.Equal(t, enum2.Name, "NotifType2")
 	validateEnumValuesEqual(t, enum2, []string{"MOBILE", "WEB", "EMAIL"})
+}
+
+func TestWithSubFieldsInPattern(t *testing.T) {
+	n := &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "id",
+				Type: &input.FieldType{
+					DBType: input.UUID,
+				},
+				PrimaryKey: true,
+			},
+			{
+				Name:        "userPrefs",
+				PatternName: "pattern",
+				Type: &input.FieldType{
+					DBType:      input.JSONB,
+					Type:        "UserPrefs",
+					GraphQLType: "UserPrefs",
+					SubFields: []*input.Field{
+						{
+							Name: "finishedNux",
+							Type: &input.FieldType{
+								DBType: input.Boolean,
+							},
+							Nullable: true,
+						},
+						{
+							Name: "enableNotifs",
+							Type: &input.FieldType{
+								DBType: input.Boolean,
+							},
+							Nullable: true,
+						},
+						{
+							Name: "notifTypes",
+							Type: &input.FieldType{
+								DBType: input.List,
+								ListElemType: &input.FieldType{
+									Type:        "NotifType",
+									GraphQLType: "NotifType",
+									DBType:      input.StringEnum,
+									Values:      []string{"MOBILE", "WEB", "EMAIL"},
+								},
+							},
+							Nullable: true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User":  n,
+			"Group": n,
+		},
+		Patterns: map[string]*input.Pattern{
+			"pattern": {
+				Name: "pattern",
+				Fields: []*input.Field{
+					{
+						Name:        "userPrefs",
+						PatternName: "pattern",
+						Type: &input.FieldType{
+							DBType:      input.JSONB,
+							Type:        "UserPrefs",
+							GraphQLType: "UserPrefs",
+							SubFields: []*input.Field{
+								{
+									Name: "finishedNux",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "enableNotifs",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "notifTypes",
+									Type: &input.FieldType{
+										DBType: input.List,
+										ListElemType: &input.FieldType{
+											Type:        "NotifType",
+											GraphQLType: "NotifType",
+											DBType:      input.StringEnum,
+											Values:      []string{"MOBILE", "WEB", "EMAIL"},
+										},
+									},
+									Nullable: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	userNodeData, err := schema.GetNodeDataForNode("User")
+	require.Nil(t, err)
+	require.NotNil(t, userNodeData)
+
+	groupNodeData, err := schema.GetNodeDataForNode("Group")
+	require.Nil(t, err)
+	require.NotNil(t, groupNodeData)
+
+	require.Len(t, schema.CustomInterfaces, 1)
+
+	ci := schema.CustomInterfaces["UserPrefs"]
+	require.NotNil(t, ci)
+	require.Len(t, ci.Fields, 3)
+	require.Len(t, ci.NonEntFields, 0)
+	require.Len(t, ci.Children, 0)
+
+	require.Len(t, ci.GetTSEnums(), 1)
+
+	enum := ci.GetTSEnums()[0]
+	require.Equal(t, enum.Name, "NotifType")
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL"})
 }
 
 func validateEnumValuesEqual(t *testing.T, enum *enum.Enum, values []string) {

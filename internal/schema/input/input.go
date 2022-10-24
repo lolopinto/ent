@@ -3,13 +3,11 @@ package input
 import (
 	"encoding/json"
 	"fmt"
-	"go/types"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/enttype"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -30,22 +28,23 @@ type Pattern struct {
 
 type Node struct {
 	// Note that anytime anything changes here, have to update nodeEqual in compare.go
-	TableName        string                   `json:"tableName,omitempty"`
-	Fields           []*Field                 `json:"fields,omitempty"`
-	AssocEdges       []*AssocEdge             `json:"assocEdges,omitempty"`
-	AssocEdgeGroups  []*AssocEdgeGroup        `json:"assocEdgeGroups,omitempty"`
-	Actions          []*Action                `json:"actions,omitempty"`
-	EnumTable        bool                     `json:"enumTable,omitempty"`
-	DBRows           []map[string]interface{} `json:"dbRows,omitempty"`
-	Constraints      []*Constraint            `json:"constraints,omitempty"`
-	Indices          []*Index                 `json:"indices,omitempty"`
-	HideFromGraphQL  bool                     `json:"hideFromGraphQL,omitempty"`
-	EdgeConstName    string                   `json:"edgeConstName,omitempty"`
-	PatternName      string                   `json:"patternName,omitempty"`
-	TransformsSelect bool                     `json:"transformsSelect,omitempty"`
-	TransformsDelete bool                     `json:"transformsDelete,omitempty"`
-	SchemaPath       string                   `json:"schemaPath,omitempty"`
-	Patterns         []string                 `json:"patternNames,omitempty"`
+	TableName        string                    `json:"tableName,omitempty"`
+	Fields           []*Field                  `json:"fields,omitempty"`
+	FieldOverrides   map[string]*FieldOverride `json:"fieldOverrides"`
+	AssocEdges       []*AssocEdge              `json:"assocEdges,omitempty"`
+	AssocEdgeGroups  []*AssocEdgeGroup         `json:"assocEdgeGroups,omitempty"`
+	Actions          []*Action                 `json:"actions,omitempty"`
+	EnumTable        bool                      `json:"enumTable,omitempty"`
+	DBRows           []map[string]interface{}  `json:"dbRows,omitempty"`
+	Constraints      []*Constraint             `json:"constraints,omitempty"`
+	Indices          []*Index                  `json:"indices,omitempty"`
+	HideFromGraphQL  bool                      `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName    string                    `json:"edgeConstName,omitempty"`
+	PatternName      string                    `json:"patternName,omitempty"`
+	TransformsSelect bool                      `json:"transformsSelect,omitempty"`
+	TransformsDelete bool                      `json:"transformsDelete,omitempty"`
+	SchemaPath       string                    `json:"schemaPath,omitempty"`
+	Patterns         []string                  `json:"patternNames,omitempty"`
 	// these 2 not used yet so ignoring for now
 	// TransformsInsert bool `json:"transformsInsert,omitempty"`
 	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`
@@ -157,16 +156,44 @@ type Field struct {
 	UserConvert         *UserConvertType    `json:"convert,omitempty"`
 	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
 
-	// Go specific information here
-	TagMap          map[string]string `json:"-"`
-	GoType          types.Type        `json:"-"`
-	PkgPath         string            `json:"-"`
-	DataTypePkgPath string            `json:"-"`
-
 	// set when parsed via tsent generate schema
 	Import enttype.Import `json:"-"`
 
 	PatternName string `json:"patternName,omitempty"`
+}
+
+func (f *Field) ApplyOverride(override *FieldOverride) {
+	if override.GraphQLName != "" {
+		f.GraphQLName = override.GraphQLName
+	}
+	if override.ServerDefault != nil {
+		f.ServerDefault = override.ServerDefault
+	}
+	if override.StorageKey != "" {
+		f.StorageKey = override.StorageKey
+	}
+	if override.HideFromGraphQL != nil {
+		f.HideFromGraphQL = *override.HideFromGraphQL
+	}
+	if override.Index != nil {
+		f.Index = *override.Index
+	}
+	if override.Unique != nil {
+		f.Unique = *override.Unique
+	}
+	if override.Nullable != nil {
+		f.Nullable = *override.Nullable
+	}
+}
+
+type FieldOverride struct {
+	Nullable        *bool   `json:"nullable,omitempty"`
+	StorageKey      string  `json:"storageKey,omitempty"`
+	Unique          *bool   `json:"unique,omitempty"`
+	HideFromGraphQL *bool   `json:"hideFromGraphQL,omitempty"`
+	GraphQLName     string  `json:"graphqlName,omitempty"`
+	Index           *bool   `json:"index,omitempty"`
+	ServerDefault   *string `json:"serverDefault,omitempty"`
 }
 
 type ForeignKey struct {
@@ -212,7 +239,7 @@ type PrivateOptions struct {
 	ExposeToActions bool `json:"exposeToActions,omitempty"`
 }
 
-func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSGraphQLType {
+func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSType {
 	importType := typ.ImportType
 	var subFields interface{}
 	var unionFields interface{}
@@ -266,7 +293,7 @@ func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSGraphQLType {
 	}
 }
 
-func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
+func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSType, error) {
 	switch typ.DBType {
 	case UUID:
 		if nullable {
@@ -438,7 +465,7 @@ func (f *Field) GetImport(nodeName string) (enttype.Import, error) {
 // need nodeName for enum
 // ideally, there's a more elegant way of doing this in the future
 // but we don't know the parent
-func (f *Field) GetEntType(nodeName string) (enttype.TSGraphQLType, error) {
+func (f *Field) GetEntType(nodeName string) (enttype.TSType, error) {
 	if f.Type.DBType == List {
 		if f.Type.ListElemType == nil {
 			return nil, fmt.Errorf("list elem type for list is nil")
@@ -462,18 +489,16 @@ func (f *Field) GetEntType(nodeName string) (enttype.TSGraphQLType, error) {
 
 type AssocEdge struct {
 	// Note that anytime anything changes here, have to update assocEdgeEqual in compare.go
-	Name        string            `json:"name,omitempty"`
-	SchemaName  string            `json:"schemaName,omitempty"`
-	Symmetric   bool              `json:"symmetric,omitempty"`
-	Unique      bool              `json:"unique,omitempty"`
-	TableName   string            `json:"tableName,omitempty"`
-	InverseEdge *InverseAssocEdge `json:"inverseEdge,omitempty"`
-	EdgeActions []*EdgeAction     `json:"edgeActions,omitempty"`
-	// Go specific
-	EntConfig       *schemaparser.EntConfigInfo `json:"-"`
-	HideFromGraphQL bool                        `json:"hideFromGraphQL,omitempty"`
-	EdgeConstName   string                      `json:"edgeConstName,omitempty"`
-	PatternName     string                      `json:"patternName,omitempty"`
+	Name            string            `json:"name,omitempty"`
+	SchemaName      string            `json:"schemaName,omitempty"`
+	Symmetric       bool              `json:"symmetric,omitempty"`
+	Unique          bool              `json:"unique,omitempty"`
+	TableName       string            `json:"tableName,omitempty"`
+	InverseEdge     *InverseAssocEdge `json:"inverseEdge,omitempty"`
+	EdgeActions     []*EdgeAction     `json:"edgeActions,omitempty"`
+	HideFromGraphQL bool              `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName   string            `json:"edgeConstName,omitempty"`
+	PatternName     string            `json:"patternName,omitempty"`
 	// do we need a flag to know it's a pattern's edge?
 	// PatternEdge
 }
@@ -559,12 +584,13 @@ const NullableContentsAndList NullableItem = "contentsAndList"
 const NullableTrue NullableItem = "true"
 
 type actionField struct {
-	Name           string       `json:"name"`
-	Type           ActionType   `json:"type"`
-	Nullable       NullableItem `json:"nullable"`
-	List           bool         `json:"list"`
-	ActionName     string       `json:"actionName"`
-	ExcludedFields []string     `json:"excludedFields"`
+	Name            string       `json:"name"`
+	Type            ActionType   `json:"type"`
+	Nullable        NullableItem `json:"nullable"`
+	List            bool         `json:"list"`
+	ActionName      string       `json:"actionName"`
+	ExcludedFields  []string     `json:"excludedFields"`
+	HideFromGraphQL bool         `json:"hideFromGraphQL"`
 }
 
 type ActionField struct {
@@ -576,6 +602,7 @@ type ActionField struct {
 	nullableContents bool
 	ActionName       string
 	ExcludedFields   []string
+	HideFromGraphQL  bool
 }
 
 func (f *ActionField) UnmarshalJSON(data []byte) error {
@@ -590,6 +617,7 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 	f.ActionName = af.ActionName
 	f.Type = af.Type
 	f.ExcludedFields = af.ExcludedFields
+	f.HideFromGraphQL = af.HideFromGraphQL
 
 	switch af.Nullable {
 	case NullableContentsAndList:
@@ -631,7 +659,7 @@ func (f *ActionField) MarshalJSON() ([]byte, error) {
 	return json.Marshal(af)
 }
 
-func (f *ActionField) GetEntType(inputName string) (enttype.TSGraphQLType, error) {
+func (f *ActionField) GetEntType(inputName string) (enttype.TSType, error) {
 	if !f.list {
 		return f.getEntTypeHelper(inputName, f.Nullable)
 	}
@@ -645,7 +673,7 @@ func (f *ActionField) GetEntType(inputName string) (enttype.TSGraphQLType, error
 	}, nil
 }
 
-func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype.TSGraphQLType, error) {
+func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype.TSType, error) {
 	switch f.Type {
 	case ActionTypeID:
 		if nullable {

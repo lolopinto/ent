@@ -9,10 +9,7 @@ import (
 type NodeMapInfo map[string]*NodeDataInfo
 
 func (m NodeMapInfo) getNodeDataFromGraphQLName(nodeName string) *NodeData {
-	// just assume this for now. may not be correct in the long run
-	configName := nodeName + "Config"
-
-	nodeInfo, ok := m[configName]
+	nodeInfo, ok := m[nodeName]
 	if !ok {
 		return nil
 	}

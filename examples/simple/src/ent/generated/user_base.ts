@@ -33,11 +33,23 @@ import {
   userLoaderInfo,
   userPhoneNumberLoader,
 } from "./loaders";
-import { UserNestedObjectList } from "./user_nested_object_list";
+import {
+  UserNestedObjectList,
+  convertNullableUserNestedObjectListList,
+} from "./user_nested_object_list";
 import { UserPrefsDiff } from "./user_prefs_diff";
-import { UserPrefsStruct } from "./user_prefs_struct";
-import { UserPrefsStruct2 } from "./user_prefs_struct_2";
-import { UserSuperNestedObject } from "./user_super_nested_object";
+import {
+  UserPrefsStruct,
+  convertNullableUserPrefsStruct,
+} from "./user_prefs_struct";
+import {
+  UserPrefsStruct2,
+  convertNullableUserPrefsStruct2List,
+} from "./user_prefs_struct_2";
+import {
+  UserSuperNestedObject,
+  convertNullableUserSuperNestedObject,
+} from "./user_super_nested_object";
 import {
   Contact,
   EdgeType,
@@ -168,8 +180,8 @@ export class UserBase
     this._emailVerified = data.email_verified;
     this.bio = data.bio;
     this.nicknames = data.nicknames;
-    this._prefs = data.prefs;
-    this._prefsList = data.prefs_list;
+    this._prefs = convertNullableUserPrefsStruct(data.prefs);
+    this._prefsList = convertNullableUserPrefsStruct2List(data.prefs_list);
     this._prefsDiff = data.prefs_diff;
     this.daysOff = data.days_off;
     this.preferredShift = data.preferred_shift;
@@ -177,7 +189,7 @@ export class UserBase
     this.funUuids = data.fun_uuids;
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
-    this.nestedList = data.nested_list;
+    this.nestedList = convertNullableUserNestedObjectListList(data.nested_list);
     this.intEnum = data.int_enum;
   }
 
@@ -254,7 +266,9 @@ export class UserBase
         .load(this.id);
       this._superNestedObject = row?.super_nested_object ?? null;
     }
-    return convertSuperNestedObject(this._superNestedObject ?? null);
+    return convertSuperNestedObject(
+      convertNullableUserSuperNestedObject(this._superNestedObject ?? null),
+    );
   }
 
   static async load<T extends UserBase>(

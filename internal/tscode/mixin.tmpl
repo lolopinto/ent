@@ -2,10 +2,11 @@
 
 {{$p := .Pattern}}
 {{$cfg := .Config}}
+{{$schema := .Schema}}
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
-{{ range $p.GetImportsForMixin -}} 
+{{ range $p.GetImportsForMixin $schema $cfg -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 

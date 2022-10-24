@@ -2,13 +2,16 @@ import { WriteOperation } from "../action";
 import { Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
 import { StringType } from "../schema/field";
-import { BaseEntSchema } from "../schema";
-import { User, SimpleAction, SimpleBuilder } from "../testutils/builder";
+import {
+  User,
+  SimpleAction,
+  SimpleBuilder,
+  EntBuilderSchema,
+} from "../testutils/builder";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { Dialect } from "../core/db";
 import { getSchemaTable, setupSqlite, Table } from "../testutils/db/temp_db";
-import { FieldMap } from "../schema";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -21,20 +24,17 @@ describe("postgres", () => {
   commonTests();
 });
 
-class UserSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchema = new EntBuilderSchema(User, {
+  fields: {
     FirstName: StringType(),
     LastName: StringType(),
-  };
-  ent = User;
-}
+  },
+});
 
 describe("sqlite", () => {
   const getTables = () => {
     const tables: Table[] = [];
-    [new UserSchema()].map((s) =>
-      tables.push(getSchemaTable(s, Dialect.SQLite)),
-    );
+    [UserSchema].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
     return tables;
   };
 
@@ -46,13 +46,7 @@ function getInsertUserAction(
   map: Map<string, any>,
   viewer: Viewer = new LoggedOutViewer(),
 ) {
-  return new SimpleAction(
-    viewer,
-    new UserSchema(),
-    map,
-    WriteOperation.Insert,
-    null,
-  );
+  return new SimpleAction(viewer, UserSchema, map, WriteOperation.Insert, null);
 }
 
 function commonTests() {

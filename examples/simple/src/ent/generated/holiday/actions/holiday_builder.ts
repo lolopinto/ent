@@ -146,7 +146,7 @@ export class HolidayBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -155,10 +155,10 @@ export class HolidayBuilder<
         result.set(key, value);
       }
     };
-    addField("dayOfWeek", fields.dayOfWeek);
-    addField("dayOfWeekAlt", fields.dayOfWeekAlt);
-    addField("label", fields.label);
-    addField("date", fields.date);
+    addField("dayOfWeek", input.dayOfWeek);
+    addField("dayOfWeekAlt", input.dayOfWeekAlt);
+    addField("label", input.label);
+    addField("date", input.date);
     return result;
   }
 

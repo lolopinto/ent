@@ -8,6 +8,21 @@ test("create", async () => {
   await createAccount();
 });
 
+test("create with prefs", async () => {
+  const account = await createAccount({
+    accountPrefs: {
+      finishedNux: false,
+      enableNotifs: true,
+      preferredLanguage: "fr_FR",
+    },
+  });
+  expect(account.accountPrefs).toStrictEqual({
+    finishedNux: false,
+    enableNotifs: true,
+    preferredLanguage: "fr_FR",
+  });
+});
+
 test("field privacy", async () => {
   // viewer can see their own phone number and account state. no one else can
   const account1 = await createAccount();

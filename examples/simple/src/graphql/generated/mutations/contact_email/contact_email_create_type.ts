@@ -20,6 +20,7 @@ import { ContactEmail } from "../../../../ent";
 import CreateContactEmailAction, {
   ContactEmailCreateInput,
 } from "../../../../ent/contact_email/actions/create_contact_email_action";
+import { ContactInfoInputType } from "../input/contact_info_input_type";
 import { ContactEmailType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -34,6 +35,9 @@ interface ContactEmailCreatePayload {
 export const ContactEmailCreateInputType = new GraphQLInputObjectType({
   name: "ContactEmailCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
+    extra: {
+      type: ContactInfoInputType,
+    },
     emailAddress: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -79,6 +83,7 @@ export const ContactEmailCreateType: GraphQLFieldConfig<
     const contactEmail = await CreateContactEmailAction.create(
       context.getViewer(),
       {
+        extra: input.extra,
         emailAddress: input.emailAddress,
         label: input.label,
         contactID: mustDecodeIDFromGQLID(input.contactID),

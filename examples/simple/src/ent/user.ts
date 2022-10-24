@@ -112,11 +112,12 @@ export class User extends UserBase {
       return [];
     }
     const contactInfos = await this.queryContactInfos();
-    return contactInfos
-      .filter((contactInfo) => {
-        return domain === this.getDomainFromEmail(contactInfo.firstEmail);
-      })
-      .map((info) => info.contact);
+    return contactInfos.filterMap((contactInfo) => {
+      return {
+        include: domain === this.getDomainFromEmail(contactInfo.firstEmail),
+        return: contactInfo.contact,
+      };
+    });
   }
 
   @gqlField({
@@ -131,14 +132,15 @@ export class User extends UserBase {
       return null;
     }
     const contactInfos = await this.queryContactInfos();
-    const res = contactInfos
-      .filter((contactInfo) => {
-        return (
+    const res = contactInfos.filterMap((contactInfo) => {
+      return {
+        include:
           this.id !== contactInfo.contact.userID &&
-          domain === this.getDomainFromEmail(contactInfo.firstEmail)
-        );
-      })
-      .map((info) => info.contact);
+          domain === this.getDomainFromEmail(contactInfo.firstEmail),
+        return: contactInfo.contact,
+      };
+    });
+
     // cheats and returns null if no contacts
     if (!res.length) {
       return null;

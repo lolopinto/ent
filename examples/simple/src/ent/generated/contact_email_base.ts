@@ -20,8 +20,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { ContactInfo } from "./contact_info";
 import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders";
-import { Contact, NodeType } from "../internal";
+import { Contact, ContactInfoMixin, IContactInfo, NodeType } from "../internal";
 import schema from "../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
@@ -29,12 +30,16 @@ interface ContactEmailDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
+  extra: ContactInfo | null;
   email_address: string;
   label: string;
   contact_id: ID;
 }
 
-export class ContactEmailBase implements Ent<ExampleViewerAlias> {
+export class ContactEmailBase
+  extends ContactInfoMixin(class {})
+  implements Ent<ExampleViewerAlias>, IContactInfo
+{
   readonly nodeType = NodeType.ContactEmail;
   readonly id: ID;
   readonly createdAt: Date;
@@ -44,6 +49,8 @@ export class ContactEmailBase implements Ent<ExampleViewerAlias> {
   readonly contactID: ID;
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

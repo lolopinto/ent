@@ -84,13 +84,17 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 		deletedEdgeFiles:   map[string]bool{},
 	}
 
-	if processor.Config.WriteAllFiles() {
+	writeAll := func() {
 		opts.writeAllActions = true
 		opts.writeAllEdges = true
 		opts.writeEnt = true
 		opts.writeBase = true
 		opts.writeBuilder = true
 		opts.edgeBaseFile = true
+	}
+
+	if processor.Config.WriteAllFiles() {
+		writeAll()
 	}
 
 	if processor.Config.UseChanges() {
@@ -103,17 +107,29 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 			}
 			switch c.Change {
 			case change.AddNode:
-				opts.writeEnt = true
-				opts.writeBase = true
-				opts.writeBuilder = true
-				opts.entAdded = true
+				if c.WriteAllForNode {
+					writeAll()
+				} else {
+					opts.writeEnt = true
+					opts.writeBase = true
+					opts.writeBuilder = true
+					opts.entAdded = true
+				}
 
 			case change.ModifyNode:
-				opts.writeBase = true
-				opts.writeBuilder = true
+				if c.WriteAllForNode {
+					writeAll()
+				} else {
+					opts.writeBase = true
+					opts.writeBuilder = true
+				}
 
 			case change.RemoveNode:
-				opts.entRemoved = true
+				if c.WriteAllForNode {
+					writeAll()
+				} else {
+					opts.entRemoved = true
+				}
 
 			case change.AddAction:
 				opts.actionBaseFiles[c.Name] = true
@@ -601,6 +617,7 @@ func getFilePathForCustomInterfaceFile(cfg *codegen.Config, ci *customtype.Custo
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(ci.TSType)))
 }
 
+// copied to field_type.go
 func getImportPathForCustomInterfaceFile(ci *customtype.CustomInterface) string {
 	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(ci.TSType))
 }
@@ -741,7 +758,7 @@ func writeBaseModelFile(nodeData *schema.NodeData, processor *codegen.Processor)
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		PathToFile:         filePath,
 		TsImports:          imps,
-		FuncMap:            getBaseFuncs(imps),
+		FuncMap:            getBaseFuncs(processor.Schema, imps),
 	})
 }
 
@@ -750,6 +767,7 @@ type patternTemplateCodePath struct {
 	Config  *codegen.Config
 	Package *codegen.ImportPackage
 	Imports []*tsimport.ImportPath
+	Schema  *schema.Schema
 }
 
 func writeMixinFile(processor *codegen.Processor, pattern *schema.PatternInfo) error {
@@ -763,13 +781,14 @@ func writeMixinFile(processor *codegen.Processor, pattern *schema.PatternInfo) e
 			Pattern: pattern,
 			Config:  cfg,
 			Package: cfg.GetImportPackage(),
+			Schema:  processor.Schema,
 		},
 		AbsPathToTemplate:  util.GetAbsolutePath("mixin.tmpl"),
 		TemplateName:       "mixin.tmpl",
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		PathToFile:         filePath,
 		TsImports:          imps,
-		FuncMap:            getBaseFuncs(imps),
+		FuncMap:            getBaseFuncs(processor.Schema, imps),
 	})
 }
 
@@ -821,10 +840,12 @@ func writeCustomInterfaceFile(processor *codegen.Processor, ci *customtype.Custo
 			Interface *customtype.CustomInterface
 			Package   *codegen.ImportPackage
 			Config    *codegen.Config
+			Schema    *schema.Schema
 		}{
 			Interface: ci,
 			Package:   processor.Config.GetImportPackage(),
 			Config:    processor.Config,
+			Schema:    processor.Schema,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("custom_interface.tmpl"),
 		OtherTemplateFiles: []string{
@@ -1049,6 +1070,7 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	lines := []string{
 		"src/ent/generated/const",
 		"src/ent/generated/loaders",
+		"src/ent/generated/loadAny",
 	}
 
 	append2 := func(list *[]string, str string) {
@@ -1133,15 +1155,17 @@ func writeInternalEntFile(s *schema.Schema, processor *codegen.Processor) error 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			SortedLines []string
-			Schema      *schema.Schema
-			Config      *codegen.Config
-			Package     *codegen.ImportPackage
+			SortedLines      []string
+			Schema           *schema.Schema
+			Config           *codegen.Config
+			Package          *codegen.ImportPackage
+			GlobalImportPath *tsimport.ImportPath
 		}{
 			getSortedInternalEntFileLines(s),
 			s,
 			processor.Config,
 			cfg.GetImportPackage(),
+			cfg.GetGlobalImportPath(),
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		TemplateName:      "internal.tmpl",
@@ -1174,7 +1198,7 @@ func writeBuilderFile(nodeData *schema.NodeData, processor *codegen.Processor) e
 	filePath := getFilePathForBuilderFile(cfg, nodeData)
 	imps := tsimport.NewImports(processor.Config, filePath)
 
-	imports, err := nodeData.GetImportsForBaseFile(processor.Schema)
+	imports, err := nodeData.GetImportsForBaseFile(processor.Schema, cfg)
 	if err != nil {
 		return err
 	}
@@ -1233,41 +1257,44 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 	return m
 }
 
-func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
+func getBaseFuncs(s *schema.Schema, imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["callAndConvertFunc"] = func(f *field.Field, cfg codegenapi.Config, val string) (string, error) {
-		conv1 := enttype.ConvertFunc(f.GetTSFieldType(cfg))
-		conv2 := ""
+		// so here...
+		// there's type convert
+		// user convert
+		// custom type convert...
+		convs := enttype.ConvertFuncs(f.GetTSFieldType(cfg))
+		convImp := f.GetConvertImport(cfg, s)
+		if convImp != nil {
+			convs = append(convs, convImp.Import)
+		}
 		userConv := f.GetUserConvert()
 		if userConv != nil {
-			conv2 = userConv.Function
+			convs = append(convs, userConv.Function)
 		}
-		if conv1 == conv2 && conv1 == "" {
+
+		if len(convs) == 0 {
 			return val, nil
 		}
 
-		// could be BigInt which isn't reserved
-		if conv2 != "" {
-			_, err := imps.UseMaybe(conv2)
+		ret := val
+
+		for _, conv := range convs {
+			if conv == "" {
+				continue
+			}
+
+			// could be BigInt which isn't reserved
+			_, err := imps.UseMaybe(conv)
 			if err != nil {
 				return "", err
 			}
-		}
-		if conv1 != "" {
-			_, err := imps.UseMaybe(conv1)
 
-			if err != nil {
-				return "", err
-			}
+			ret = fmt.Sprintf("%s(%s)", conv, ret)
 		}
 
-		if conv2 != "" && conv1 != "" {
-			return fmt.Sprintf("%s(%s(%s))", conv2, conv1, val), nil
-		}
-		if conv2 != "" {
-			return fmt.Sprintf("%s(%s)", conv2, val), nil
-		}
-		return fmt.Sprintf("%s(%s)", conv1, val), nil
+		return ret, nil
 	}
 
 	m["fieldLoadedInBaseClass"] = func(s *schema.Schema, f *field.Field) bool {

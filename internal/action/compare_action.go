@@ -1,6 +1,8 @@
 package action
 
 import (
+	"sort"
+
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -31,7 +33,7 @@ func ActionEqual(a, a2 Action) bool {
 	return compareCommonActionInfo(a.getCommonInfo(), a2.getCommonInfo())
 }
 
-func compareActionMap(m1, m2 map[string]Action) []change.Change {
+func compareActionMap(m1, m2 map[string]Action, o *change.CompareOpts) []change.Change {
 	var ret []change.Change
 	for k, action1 := range m1 {
 		action2, ok := m2[k]
@@ -46,30 +48,84 @@ func compareActionMap(m1, m2 map[string]Action) []change.Change {
 			if !ActionEqual(action1, action2) {
 				// action is different and graphql names changed
 				if action1.GetGraphQLName() != action2.GetGraphQLName() {
-					ret = append(
-						ret,
-						change.Change{
-							Change:      change.ModifyAction,
-							Name:        k,
-							GraphQLName: action1.GetGraphQLName(),
-							TSOnly:      true,
-						},
-						change.Change{
-							Change:      change.RemoveAction,
-							GraphQLOnly: true,
-							Name:        k,
-							GraphQLName: action1.GetGraphQLName(),
-						},
-						change.Change{
-							Change:      change.AddAction,
-							GraphQLOnly: true,
-							Name:        k,
-							GraphQLName: action2.GetGraphQLName(),
-						})
+					// graphql name changed because hidden to graphql is different
+					if action1.ExposedToGraphQL() != action2.ExposedToGraphQL() {
+						if action2.ExposedToGraphQL() {
+							// expose to graphql
+							ret = append(
+								ret,
+								change.Change{
+									Change:      change.ModifyAction,
+									Name:        k,
+									GraphQLName: action1.GetGraphQLName(),
+									TSOnly:      true,
+								},
+								change.Change{
+									Change:      change.AddAction,
+									GraphQLOnly: true,
+									Name:        k,
+									GraphQLName: action1.GetGraphQLName(),
+								})
+						} else {
+							// now hidden from graphql
+							ret = append(
+								ret,
+								change.Change{
+									Change:      change.ModifyAction,
+									Name:        k,
+									GraphQLName: action1.GetGraphQLName(),
+									TSOnly:      true,
+								},
+								change.Change{
+									Change:      change.RemoveAction,
+									GraphQLOnly: true,
+									Name:        k,
+									GraphQLName: action1.GetGraphQLName(),
+								})
+						}
+					} else {
+						ret = append(
+							ret,
+							change.Change{
+								Change:      change.ModifyAction,
+								Name:        k,
+								GraphQLName: action1.GetGraphQLName(),
+								TSOnly:      true,
+							},
+							change.Change{
+								Change:      change.RemoveAction,
+								GraphQLOnly: true,
+								Name:        k,
+								GraphQLName: action1.GetGraphQLName(),
+							},
+							change.Change{
+								Change:      change.AddAction,
+								GraphQLOnly: true,
+								Name:        k,
+								GraphQLName: action2.GetGraphQLName(),
+							})
+					}
 				} else {
 					ret = append(ret, change.Change{
 						Change:      change.ModifyAction,
 						Name:        k,
+						GraphQLName: action1.GetGraphQLName(),
+					})
+				}
+			} else {
+				if o.AddEqualToGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.AddAction,
+						Name:        k,
+						GraphQLOnly: true,
+						GraphQLName: action1.GetGraphQLName(),
+					})
+				}
+				if o.RemoveEqualFromGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.RemoveAction,
+						Name:        k,
+						GraphQLOnly: true,
 						GraphQLName: action1.GetGraphQLName(),
 					})
 				}
@@ -88,15 +144,31 @@ func compareActionMap(m1, m2 map[string]Action) []change.Change {
 			})
 		}
 	}
+	// sort so that we can be consistent for tests
+	sort.Slice(ret, func(i, j int) bool {
+		a1 := ret[i]
+		a2 := ret[j]
+		if a1.GraphQLName != a2.GraphQLName {
+			return a1.GraphQLName < a2.GraphQLName
+		}
+		if a1.Name != a2.Name {
+			return a1.Name < a2.Name
+		}
+		return a1.Change < a2.Change
+	})
 	return ret
 }
 
-func CompareActionInfo(a1, a2 *ActionInfo) []change.Change {
+func CompareActionInfo(a1, a2 *ActionInfo, opts ...change.CompareOption) []change.Change {
+	o := &change.CompareOpts{}
+	for _, fn := range opts {
+		fn(o)
+	}
 	if a1 == nil {
 		a1 = &ActionInfo{}
 	}
 	if a2 == nil {
 		a2 = &ActionInfo{}
 	}
-	return compareActionMap(a1.actionMap, a2.actionMap)
+	return compareActionMap(a1.actionMap, a2.actionMap, o)
 }

@@ -5,7 +5,12 @@ import {
 } from "@snowtop/ent-graphql-tests";
 import schema from "src/graphql/generated/schema";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
-import { createAccount, createTodo, createTag } from "src/ent/testutils/util";
+import {
+  createAccount,
+  createTodoForSelf,
+  createTag,
+  createWorkspace,
+} from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 
@@ -17,7 +22,7 @@ async function createTodos(): Promise<[Account, Todo[]]> {
   for (const text of texts) {
     // make deterministic
     advanceBy(-10);
-    const todo = await createTodo({
+    const todo = await createTodoForSelf({
       creatorID: account.id,
       text: text,
     });
@@ -238,7 +243,13 @@ test("create", async () => {
       viewer: account.viewer,
       schema: schema,
       mutation: "createTodo",
-      args: { creator_id: account.id, text: "watch GOT" },
+      args: {
+        creator_id: account.id,
+        text: "watch GOT",
+        assignee_id: account.id,
+        scope_id: account.id,
+        scope_type: "account",
+      },
     },
     [
       "todo.id",
@@ -248,12 +259,43 @@ test("create", async () => {
     ],
     ["todo.text", "watch GOT"],
     ["todo.creator.id", account.id],
+    ["todo.assignee.id", account.id],
+    ["todo.scope.id", account.id],
+  );
+});
+
+test("create in workspace", async () => {
+  const account = await createAccount();
+  const workspace = await createWorkspace(account);
+  await expectMutation(
+    {
+      viewer: account.viewer,
+      schema: schema,
+      mutation: "createTodo",
+      args: {
+        creator_id: account.id,
+        text: "watch GOT",
+        assignee_id: account.id,
+        scope_id: workspace.id,
+        scope_type: "workspace",
+      },
+    },
+    [
+      "todo.id",
+      async (id: string) => {
+        await Todo.loadX(account.viewer, id);
+      },
+    ],
+    ["todo.text", "watch GOT"],
+    ["todo.creator.id", account.id],
+    ["todo.assignee.id", account.id],
+    ["todo.scope.id", workspace.id],
   );
 });
 
 test("edit", async () => {
   const account = await createAccount();
-  const todo = await createTodo({
+  const todo = await createTodoForSelf({
     creatorID: account.id,
     text: "watch GOT",
   });
@@ -276,7 +318,7 @@ test("edit", async () => {
 
 test("delete", async () => {
   const account = await createAccount();
-  const todo = await createTodo({
+  const todo = await createTodoForSelf({
     creatorID: account.id,
     text: "watch GOT",
   });
@@ -294,7 +336,7 @@ test("delete", async () => {
 test("todo tag", async () => {
   const account = await createAccount();
   const tag = await createTag("sports", account);
-  const todo = await createTodo({
+  const todo = await createTodoForSelf({
     creatorID: account.id,
   });
 

@@ -33,10 +33,29 @@ export interface GlobalSchema {
   ) => TransformedEdgeUpdateOperation | null;
 }
 
+// we may eventually support more properties but for now, minimal field properties
+// which affect specific codegen/db/graphql but nothing at runtime
+type FieldOverride = Pick<
+  FieldOptions,
+  | "nullable"
+  | "storageKey"
+  | "serverDefault"
+  | "unique"
+  | "hideFromGraphQL"
+  | "graphqlName"
+  | "index"
+>;
+
+export type FieldOverrideMap = {
+  [key: string]: FieldOverride;
+};
+
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
   fields: FieldMap | Field[];
+
+  fieldOverrides?: FieldOverrideMap;
 
   // optional, can be overriden as needed
   tableName?: string;
@@ -410,6 +429,12 @@ export interface FieldOptions {
   storageKey?: string; // db?
   serverDefault?: any;
   unique?: boolean;
+  // hide field from graphql
+  // does not hide field from actions by default
+  // if you want to hide it from action, use disableUserGraphQLEditable
+  // for fields which generate new types e.g. enums, you have to also set
+  // disableUserGraphQLEditable since it won't compile since it'll try and reference a type
+  // that doesn't exist
   hideFromGraphQL?: boolean;
   // private automatically hides from graphql and actions
   // but you may want something which is private and visible in actions
@@ -479,6 +504,7 @@ export interface PolymorphicOptions {
   // would always have been previously created. simplifies validation
   disableBuilderType?: boolean;
   // serverDefault for derived polymorphic field
+  // TODO rename this. it's not clear...
   serverDefault?: any;
 }
 
@@ -707,6 +733,9 @@ export enum ActionOperation {
   // RemoveEdge is used to provide the ability to remove an edge in an AssociationEdge.
   RemoveEdge = 32,
   // EdgeGroup is used to provide the ability to edit an edge group in an AssociationEdgeGroup.
+  // if you want to clear this edge group e.g. any set edge with id1 and id2,
+  // you should create a custom action that takes the id as an action only field,
+  // and then calls `clearEdgeTypeInGroup` in a trigger to clear
   EdgeGroup = 64,
 }
 
@@ -738,6 +767,9 @@ export interface ActionField {
   // either because they can be derived or optional and don't need it
   // no validation on what can be excluded is done. things will eventually fail if done incorrectly
   excludedFields?: string[];
+
+  // hide this param from graphql. should clearly be nullable for this to make sense
+  hideFromGraphQL?: boolean;
 
   // allow other keys
   [x: string]: any;

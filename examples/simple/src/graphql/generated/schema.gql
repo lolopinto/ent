@@ -36,6 +36,12 @@ enum CatBreed {
   OTHER
 }
 
+enum ContactInfoSource {
+  FRIEND
+  WORK
+  ONLINE
+}
+
 enum DayOfWeekAlt {
   FRIDAY
   MONDAY
@@ -190,13 +196,20 @@ type Comment implements Node {
 type ContactEmail implements Node {
   contact: Contact
   id: ID!
+  extra: ContactInfo
   emailAddress: String!
   label: String!
+}
+
+type ContactInfo {
+  default: Boolean!
+  source: ContactInfoSource!
 }
 
 type ContactPhoneNumber implements Node {
   contact: Contact
   id: ID!
+  extra: ContactInfo
   phoneNumber: String!
   label: String!
 }
@@ -656,6 +669,23 @@ type AddressCreatePayload {
   address: Address!
 }
 
+input CatTypeInput {
+  name: String!
+  birthday: Time!
+  breed: CatBreed!
+  kitten: Boolean!
+}
+
+input ClearEventRsvpStatusInput {
+  """id of Event"""
+  id: ID!
+  userID: ID!
+}
+
+type ClearEventRsvpStatusPayload {
+  event: Event!
+}
+
 input CommentCreateInput {
   authorID: ID!
   body: String!
@@ -727,6 +757,7 @@ type ContactEditPayload {
 }
 
 input ContactEmailCreateInput {
+  extra: ContactInfoInput
   emailAddress: String!
   label: String!
   contactID: ID!
@@ -748,6 +779,7 @@ type ContactEmailDeletePayload {
 input ContactEmailEditInput {
   """id of ContactEmail"""
   id: ID!
+  extra: ContactInfoInput
   emailAddress: String
   label: String
   contactID: ID
@@ -757,7 +789,13 @@ type ContactEmailEditPayload {
   contactEmail: ContactEmail!
 }
 
+input ContactInfoInput {
+  default: Boolean!
+  source: ContactInfoSource!
+}
+
 input ContactPhoneNumberCreateInput {
+  extra: ContactInfoInput
   phoneNumber: String!
   label: String!
   contactID: ID!
@@ -779,6 +817,7 @@ type ContactPhoneNumberDeletePayload {
 input ContactPhoneNumberEditInput {
   """id of ContactPhoneNumber"""
   id: ID!
+  extra: ContactInfoInput
   phoneNumber: String
   label: String
   contactID: ID
@@ -796,6 +835,14 @@ input DeleteUserInput2 {
   """id of User"""
   id: ID!
   log: Boolean!
+}
+
+input DogTypeInput {
+  name: String!
+  birthday: Time!
+  breed: DogBreed!
+  breedGroup: DogBreedGroup!
+  puppy: Boolean!
 }
 
 input EditEmailAddressInput {
@@ -819,6 +866,7 @@ type EditPhoneNumberPayload {
 }
 
 input EmailContactCreateInput {
+  extra: ContactInfoInput
   emailAddress: String!
   label: String!
 }
@@ -919,9 +967,22 @@ type HoursOfOperationCreatePayload {
   hoursOfOperation: HoursOfOperation!
 }
 
+input PetUnionTypeInput {
+  cat: CatTypeInput
+  dog: DogTypeInput
+  rabbit: RabbitTypeInput
+}
+
 input PhoneNumberContactCreateInput {
+  extra: ContactInfoInput
   phoneNumber: String!
   label: String!
+}
+
+input RabbitTypeInput {
+  name: String!
+  birthday: Time!
+  breed: RabbitBreed!
 }
 
 input UserCreateInput {
@@ -966,6 +1027,69 @@ type UserEditPayload {
   user: User!
 }
 
+input UserNestedNestedObjectInput {
+  nestedNestedUuid: ID!
+  nestedNestedInt: Int!
+  nestedNestedString: String!
+  nestedNestedBool: Boolean
+  nestedNestedFloat: Float!
+  nestedNestedEnum: NestedObjNestedNestedEnum!
+  nestedNestedStringList: [String!]!
+  nestedNestedIntList: [Int!]!
+}
+
+input UserNestedNestedObjectListInput {
+  int: Int!
+}
+
+input UserNestedObjectInput {
+  nestedUuid: ID!
+  nestedInt: Int!
+  nestedString: String!
+  nestedBool: Boolean!
+  nestedFloat: Float
+  nestedEnum: ObjNestedEnum!
+  nestedStringList: [String!]!
+  nestedIntList: [Int!]!
+  nestedObj: UserNestedNestedObjectInput
+}
+
+input UserNestedObjectListInput {
+  type: String!
+  enum: EnumUsedInList!
+  objects: [UserNestedNestedObjectListInput!]!
+  enumList: [IntEnumUsedInList!]!
+}
+
+input UserPrefsDiffInput {
+  type: String!
+}
+
+input UserPrefsStruct2Input {
+  finishedNux: Boolean
+  enableNotifs: Boolean
+  notifTypes: [NotifType2!]!
+}
+
+input UserPrefsStructInput {
+  finishedNux: Boolean
+  enableNotifs: Boolean
+  notifTypes: [NotifType!]!
+}
+
+input UserSuperNestedObjectInput {
+  uuid: ID!
+  int: Int!
+  string: String!
+  bool: Boolean!
+  float: Float!
+  enum: SuperNestedObjectEnum!
+  stringList: [String!]
+  intList: [Int!]!
+  obj: UserNestedObjectInput
+  union: PetUnionTypeInput
+}
+
 type Query {
   node(id: ID!): Node
   timeDiff(time: Time!, log: JSON!): String!
@@ -993,6 +1117,7 @@ type Mutation {
   eventDelete(input: EventDeleteInput!): EventDeletePayload!
   eventEdit(input: EventEditInput!): EventEditPayload!
   eventRemoveHost(input: EventRemoveHostInput!): EventRemoveHostPayload!
+  eventRsvpStatusClear(input: ClearEventRsvpStatusInput!): ClearEventRsvpStatusPayload!
   eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!

@@ -41,7 +41,7 @@ func NonEntFieldEqual(existing, field *NonEntField) bool {
 		existing.NodeType == field.NodeType
 }
 
-func compareType(t1, t2 enttype.TSGraphQLType) bool {
+func compareType(t1, t2 enttype.TSType) bool {
 	ret := change.CompareNilVals(t1 == nil, t2 == nil)
 	if ret != nil {
 		return *ret
@@ -54,8 +54,6 @@ func compareType(t1, t2 enttype.TSGraphQLType) bool {
 
 func FieldEqual(existing, field *Field) bool {
 	return existing.FieldName == field.FieldName &&
-		// ignore entType, tagMap, pkgPath, dataTypePkgPath since all go specific
-		existing.topLevelStructField == field.topLevelStructField &&
 		compareType(existing.fieldType, field.fieldType) &&
 		compareType(existing.graphqlFieldType, field.graphqlFieldType) &&
 		existing.dbColumn == field.dbColumn &&
@@ -80,6 +78,7 @@ func FieldEqual(existing, field *Field) bool {
 		existing.disableUserGraphQLEditable == field.disableUserGraphQLEditable &&
 		existing.hasDefaultValueOnCreate == field.hasDefaultValueOnCreate &&
 		existing.hasDefaultValueOnEdit == field.hasDefaultValueOnEdit &&
+		existing.defaultToViewerOnCreate == field.defaultToViewerOnCreate &&
 		existing.hasFieldPrivacy == field.hasFieldPrivacy &&
 		existing.forceRequiredInAction == field.forceRequiredInAction &&
 		existing.forceOptionalInAction == field.forceOptionalInAction &&

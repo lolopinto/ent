@@ -72,21 +72,21 @@ func ParseInputSchemaForTest(t *testing.T, code map[string]string, opts ...func(
 	return inputSchema
 }
 
-func ParseSchemaForTest(t *testing.T, code map[string]string, lang base.Language, opts ...func(*Options)) *schema.Schema {
-	s, err := ParseSchemaForTestFull(t, code, lang, opts...)
+func ParseSchemaForTest(t *testing.T, code map[string]string, opts ...func(*Options)) *schema.Schema {
+	s, err := ParseSchemaForTestFull(t, code, opts...)
 	require.NoError(t, err)
 
 	require.NotNil(t, s)
 	return s
 }
 
-func ParseSchemaForTestFull(t *testing.T, code map[string]string, lang base.Language, opts ...func(*Options)) (*schema.Schema, error) {
+func ParseSchemaForTestFull(t *testing.T, code map[string]string, opts ...func(*Options)) (*schema.Schema, error) {
 	inputSchema := ParseInputSchemaForTest(t, code, opts...)
-	return schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, lang)
+	return schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.TypeScript)
 }
 
-func ParseActionInfoForTest(t *testing.T, code map[string]string, lang base.Language, nodeName string) *action.ActionInfo {
-	schema := ParseSchemaForTest(t, code, lang)
+func ParseActionInfoForTest(t *testing.T, code map[string]string, nodeName string) *action.ActionInfo {
+	schema := ParseSchemaForTest(t, code)
 
 	info := schema.Nodes[nodeName]
 	require.NotNil(t, info)

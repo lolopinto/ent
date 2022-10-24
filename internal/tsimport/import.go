@@ -2,6 +2,8 @@ package tsimport
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -71,6 +73,10 @@ func (imps *Imports) ReserveAll(path, as string) (string, error) {
 // ReserveImportPath takes an instance of importPath and reserves importing from it
 // should be default eventually
 func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, error) {
+	return imps.reserve(imps.getImportInfoInput(imp, external))
+}
+
+func (imps *Imports) getImportInfoInput(imp *ImportPath, external bool) *importInfoInput {
 	var defaultExport string
 	var imports []string
 
@@ -90,13 +96,35 @@ func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, 
 	if external && imp.TransformedForExternalEnt {
 		importPath = codepath.GetExternalImportPath()
 	}
-
-	return imps.reserve(&importInfoInput{
+	return &importInfoInput{
 		path:          importPath,
 		defaultImport: defaultExport,
 		alias:         alias,
 		imports:       imports,
-	})
+		sideEffect:    imp.SideEffect,
+	}
+}
+
+// ConditionallyReserveImportPath skips importing when the import path is same as file path
+func (imps *Imports) ConditionallyReserveImportPath(imp *ImportPath, external bool) (string, error) {
+	input := imps.getImportInfoInput(imp, external)
+
+	relPath := imps.filePath
+	if path.IsAbs(relPath) {
+		var err error
+		relPath, err = filepath.Rel(imps.cfg.GetAbsPathToRoot(), imps.filePath)
+		if err != nil {
+			return "", err
+		}
+	}
+	relPath = strings.TrimSuffix(relPath, ".ts")
+
+	// if importing file from same file, ignore
+	if relPath == input.path {
+		return "", nil
+	}
+
+	return imps.reserve(input)
 }
 
 type importInfoInput struct {
@@ -105,7 +133,8 @@ type importInfoInput struct {
 	importAll     bool
 	imports       []string
 	// only works when there's 1 import
-	alias string
+	alias      string
+	sideEffect bool
 }
 
 func (imps *Imports) reserve(input *importInfoInput) (string, error) {
@@ -139,6 +168,7 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 			imports:       imports,
 			importAll:     input.importAll,
 			defaultExport: input.defaultImport,
+			sideEffect:    input.sideEffect,
 		}
 
 		imps.pathMap[input.path] = imp
@@ -194,17 +224,18 @@ func (imps *Imports) export(path string, as string, exports ...string) (string, 
 // FuncMap returns the FuncMap to be passed to a template
 func (imps *Imports) FuncMap() template.FuncMap {
 	return template.FuncMap{
-		"reserveImport":        imps.Reserve,
-		"reserveDefaultImport": imps.ReserveDefault,
-		"reserveAllImport":     imps.ReserveAll,
-		"reserveImportPath":    imps.ReserveImportPath,
-		"useImport":            imps.Use,
-		"useImportMaybe":       imps.UseMaybe,
-		"exportAll":            imps.ExportAll,
-		"exportAllAs":          imps.ExportAllAs,
-		"export":               imps.Export,
-		"dict":                 dict,
-		"toCamel":              strcase.ToCamel,
+		"reserveImport":                  imps.Reserve,
+		"reserveDefaultImport":           imps.ReserveDefault,
+		"reserveAllImport":               imps.ReserveAll,
+		"reserveImportPath":              imps.ReserveImportPath,
+		"conditionallyReserveImportPath": imps.ConditionallyReserveImportPath,
+		"useImport":                      imps.Use,
+		"useImportMaybe":                 imps.UseMaybe,
+		"exportAll":                      imps.ExportAll,
+		"exportAllAs":                    imps.ExportAllAs,
+		"export":                         imps.Export,
+		"dict":                           dict,
+		"toCamel":                        strcase.ToCamel,
 	}
 }
 
@@ -343,9 +374,22 @@ type importInfo struct {
 	imports       []importedItem
 	defaultExport string
 	importAll     bool
+	// import just for side effect
+	sideEffect bool
 }
 
 func (imp *importInfo) String(cfg Config, filePath string, usedExportsMap map[string]bool) (string, error) {
+	if imp.sideEffect {
+		impPath, err := getImportPath(cfg, filePath, imp.path)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf(
+			"import %s;",
+			strconv.Quote(impPath),
+		), nil
+	}
+
 	var usedImports []importedItem
 	var defaultExport string
 	seen := make(map[string]bool)

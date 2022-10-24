@@ -20,13 +20,11 @@ func TestJSONType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
-				tsType:          "any",
-				nullableType:    &enttype.NullableJSONType{},
-				goTypePanics:    true,
-				importType:      &enttype.JSONImport{},
-				convertSqliteFn: "convertJSON",
+				tsType:           "any",
+				nullableType:     &enttype.NullableJSONType{},
+				importType:       &enttype.JSONImport{},
+				convertSqliteFns: []string{"convertJSON"},
 			},
-			nil,
 		},
 		"jsonb": {
 			&enttype.JSONBType{},
@@ -37,13 +35,11 @@ func TestJSONType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
-				tsType:          "any",
-				nullableType:    &enttype.NullableJSONBType{},
-				goTypePanics:    true,
-				importType:      &enttype.JSONBImport{},
-				convertSqliteFn: "convertJSON",
+				tsType:           "any",
+				nullableType:     &enttype.NullableJSONBType{},
+				importType:       &enttype.JSONBImport{},
+				convertSqliteFns: []string{"convertJSON"},
 			},
-			nil,
 		},
 		"nullable json": {
 			&enttype.NullableJSONType{},
@@ -54,13 +50,11 @@ func TestJSONType(t *testing.T) {
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				// any works for null so keeping that
-				tsType:          "any",
-				nonNullableType: &enttype.JSONType{},
-				goTypePanics:    true,
-				convertSqliteFn: "convertNullableJSON",
-				importType:      &enttype.JSONImport{},
+				tsType:           "any",
+				nonNullableType:  &enttype.JSONType{},
+				convertSqliteFns: []string{"convertNullableJSON"},
+				importType:       &enttype.JSONImport{},
 			},
-			nil,
 		},
 		"nullable jsonb": {
 			&enttype.NullableJSONBType{},
@@ -71,13 +65,11 @@ func TestJSONType(t *testing.T) {
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				// any works for null so keeping that
-				tsType:          "any",
-				nonNullableType: &enttype.JSONBType{},
-				goTypePanics:    true,
-				convertSqliteFn: "convertNullableJSON",
-				importType:      &enttype.JSONBImport{},
+				tsType:           "any",
+				nonNullableType:  &enttype.JSONBType{},
+				convertSqliteFns: []string{"convertNullableJSON"},
+				importType:       &enttype.JSONBImport{},
 			},
-			nil,
 		},
 		"json with import type": {
 			&enttype.JSONType{
@@ -104,8 +96,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertJSON",
+				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					{
 						ImportPath: "path",
@@ -114,7 +105,6 @@ func TestJSONType(t *testing.T) {
 				},
 				importType: &enttype.JSONImport{},
 			},
-			nil,
 		},
 		"nullable json with import type": {
 			&enttype.NullableJSONType{
@@ -140,8 +130,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertNullableJSON",
+				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					{
 						ImportPath: "path",
@@ -150,7 +139,6 @@ func TestJSONType(t *testing.T) {
 				},
 				importType: &enttype.JSONImport{},
 			},
-			nil,
 		},
 		"jsonb with import type": {
 			&enttype.JSONBType{
@@ -177,8 +165,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertJSON",
+				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					{
 						ImportPath: "path",
@@ -187,7 +174,6 @@ func TestJSONType(t *testing.T) {
 				},
 				importType: &enttype.JSONBImport{},
 			},
-			nil,
 		},
 		"nullable jsonb with import type": {
 			&enttype.NullableJSONBType{
@@ -213,8 +199,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertNullableJSON",
+				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					{
 						ImportPath: "path",
@@ -223,7 +208,6 @@ func TestJSONType(t *testing.T) {
 				},
 				importType: &enttype.JSONBImport{},
 			},
-			nil,
 		},
 		"jsonb with sub fields": {
 			&enttype.JSONBType{
@@ -262,8 +246,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertJSON",
+				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
@@ -277,7 +260,6 @@ func TestJSONType(t *testing.T) {
 					},
 				},
 			},
-			nil,
 		},
 		"nullable jsonb with sub fields": {
 			&enttype.NullableJSONBType{
@@ -315,8 +297,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertNullableJSON",
+				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
@@ -330,7 +311,6 @@ func TestJSONType(t *testing.T) {
 					},
 				},
 			},
-			nil,
 		},
 		"json with sub fields": {
 			&enttype.JSONType{
@@ -369,8 +349,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertJSON",
+				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
@@ -384,7 +363,6 @@ func TestJSONType(t *testing.T) {
 					},
 				},
 			},
-			nil,
 		},
 		"nullable json with sub fields": {
 			&enttype.NullableJSONType{
@@ -422,8 +400,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertNullableJSON",
+				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
@@ -437,7 +414,6 @@ func TestJSONType(t *testing.T) {
 					},
 				},
 			},
-			nil,
 		},
 		"jsonb with union fields": {
 			&enttype.JSONBType{
@@ -548,8 +524,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertJSON",
+				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
@@ -597,7 +572,6 @@ func TestJSONType(t *testing.T) {
 					},
 				},
 			},
-			nil,
 		},
 		"nullable jsonb with union fields": {
 			&enttype.NullableJSONBType{
@@ -707,8 +681,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertNullableJSON",
+				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
@@ -758,7 +731,6 @@ func TestJSONType(t *testing.T) {
 					},
 				},
 			},
-			nil,
 		},
 		"json with union fields": {
 			&enttype.JSONType{
@@ -869,8 +841,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertJSON",
+				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
@@ -918,7 +889,6 @@ func TestJSONType(t *testing.T) {
 					},
 				},
 			},
-			nil,
 		},
 		"nullable json with union fields": {
 			&enttype.NullableJSONType{
@@ -1028,8 +998,7 @@ func TestJSONType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertNullableJSON",
+				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
@@ -1079,7 +1048,6 @@ func TestJSONType(t *testing.T) {
 					},
 				},
 			},
-			nil,
 		},
 	})
 }

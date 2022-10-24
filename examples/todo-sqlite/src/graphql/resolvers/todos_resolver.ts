@@ -24,7 +24,7 @@ export class TodoResolver {
     const viewer = new IDViewer(id);
     return await Todo.loadCustom(
       viewer,
-      query.And(query.Eq("creator_id", id), query.Eq("completed", false)),
+      query.And(query.Eq("assignee_id", id), query.Eq("completed", false)),
     );
   }
 

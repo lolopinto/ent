@@ -63,6 +63,7 @@ CREATE TABLE contact_emails (
     id UUID NOT NULL, 
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    extra JSONB, 
     email_address TEXT NOT NULL, 
     label TEXT NOT NULL, 
     contact_id UUID NOT NULL, 
@@ -73,6 +74,7 @@ CREATE TABLE contact_phone_numbers (
     id UUID NOT NULL, 
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    extra JSONB, 
     phone_number TEXT NOT NULL, 
     label TEXT NOT NULL, 
     contact_id UUID NOT NULL, 
@@ -280,6 +282,8 @@ CREATE TABLE contacts (
     CONSTRAINT contacts_id_pkey PRIMARY KEY (id), 
     CONSTRAINT contacts_user_id_fkey FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+CREATE INDEX contacts_created_at_idx ON contacts (created_at);
 
 CREATE INDEX contacts_email_ids_idx ON contacts USING gin (email_ids);
 

@@ -12,7 +12,6 @@ import (
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -143,15 +142,26 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 			// TODO for now we assume inputtype is 1:1, that's not going to remain the same forever...
 			argObj := cr.getArgObject(cd, arg)
 			typ := knownTsTypes[arg.Type]
+			// TODO use input.Field.GetEntType()
 			if typ == "" {
 				typ = "any"
+			} else {
+				if arg.Connection {
+					typ = "any"
+				} else {
+					if arg.List {
+						typ = typ + "[]"
+					}
+					if arg.Nullable == NullableTrue {
+						typ = typ + " | null"
+					}
+				}
 			}
 			if argObj == nil {
 				createInterface = true
 				intType.Fields = append(intType.Fields, &interfaceField{
-					Name:     arg.Name,
-					Type:     typ,
-					Optional: arg.Nullable != "",
+					Name: arg.Name,
+					Type: typ,
 					//
 					// arg.TSType + add to import so we can useImport
 					//					UseImport: true,
@@ -883,8 +893,8 @@ func (e *CustomEdge) GetNodeInfo() nodeinfo.NodeInfo {
 	return nodeinfo.GetNodeInfo(e.Type)
 }
 
-func (e *CustomEdge) GetEntConfig() *schemaparser.EntConfigInfo {
-	return schemaparser.GetEntConfigFromName(e.Type)
+func (e *CustomEdge) GetEntConfig() *edge.EntConfigInfo {
+	return edge.GetEntConfigFromName(e.Type)
 }
 
 func (e *CustomEdge) GraphQLEdgeName() string {
@@ -922,6 +932,10 @@ func (e *CustomEdge) GetGraphQLEdgePrefix() string {
 
 func (e *CustomEdge) GetGraphQLConnectionName() string {
 	return fmt.Sprintf("%sTo%sConnection", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
+}
+
+func (e *CustomEdge) GetGraphQLConnectionType() string {
+	return fmt.Sprintf("%sTo%sConnectionType", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
 }
 
 func (e *CustomEdge) TsEdgeQueryEdgeName() string {

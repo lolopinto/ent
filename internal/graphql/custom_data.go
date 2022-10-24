@@ -289,10 +289,11 @@ type CustomClassInfo struct {
 }
 
 type compareCustomData struct {
-	customQueriesChanged     map[string]bool
-	customMutationsChanged   map[string]bool
-	customQueriesRemoved     map[string]bool
-	customMutationsRemoved   map[string]bool
+	customQueriesChanged   map[string]bool
+	customMutationsChanged map[string]bool
+	customQueriesRemoved   map[string]bool
+	customMutationsRemoved map[string]bool
+	// NB: this seems to only affect custom connections in nodes e.g. User.custom connection but not root connections
 	customConnectionsChanged map[string]bool
 }
 

@@ -71,6 +71,10 @@ import {
   EventRemoveHostPayloadType,
 } from "./mutations/event/event_remove_host_type";
 import {
+  ClearEventRsvpStatusInputType,
+  ClearEventRsvpStatusPayloadType,
+} from "./mutations/event/event_rsvp_status_clear_type";
+import {
   EventRsvpStatusEditInputType,
   EventRsvpStatusEditPayloadType,
   EventRsvpStatusInputType,
@@ -83,6 +87,12 @@ import {
   HoursOfOperationCreateInputType,
   HoursOfOperationCreatePayloadType,
 } from "./mutations/hours_of_operation/hours_of_operation_create_type";
+import { ContactInfoInputType } from "./mutations/input/contact_info_input_type";
+import { UserNestedObjectListInputType } from "./mutations/input/user_nested_object_list_input_type";
+import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type";
+import { UserPrefsStruct2InputType } from "./mutations/input/user_prefs_struct_2_input_type";
+import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_input_type";
+import { UserSuperNestedObjectInputType } from "./mutations/input/user_super_nested_object_input_type";
 import { MutationType } from "./mutations/mutation_type";
 import {
   ConfirmEditEmailAddressInputType,
@@ -132,6 +142,8 @@ import {
   CommentToPostConnectionType,
   CommentType,
   ContactEmailType,
+  ContactInfoSourceType,
+  ContactInfoType,
   ContactPhoneNumberType,
   ContactToCommentsConnectionType,
   ContactToLikersConnectionType,
@@ -186,6 +198,7 @@ export default new GraphQLSchema({
   mutation: MutationType,
   types: [
     CatBreedType,
+    ContactInfoSourceType,
     DayOfWeekAltType,
     DayOfWeekType,
     DogBreedGroupType,
@@ -205,6 +218,7 @@ export default new GraphQLSchema({
     AddressType,
     CommentType,
     ContactEmailType,
+    ContactInfoType,
     ContactPhoneNumberType,
     ContactType,
     EventType,
@@ -244,6 +258,8 @@ export default new GraphQLSchema({
     UserAuthPayloadType,
     AddressCreateInputType,
     AddressCreatePayloadType,
+    ClearEventRsvpStatusInputType,
+    ClearEventRsvpStatusPayloadType,
     CommentCreateInputType,
     CommentCreatePayloadType,
     ConfirmEditEmailAddressInputType,
@@ -262,6 +278,7 @@ export default new GraphQLSchema({
     ContactEmailDeletePayloadType,
     ContactEmailEditInputType,
     ContactEmailEditPayloadType,
+    ContactInfoInputType,
     ContactPhoneNumberCreateInputType,
     ContactPhoneNumberCreatePayloadType,
     ContactPhoneNumberDeleteInputType,
@@ -299,5 +316,10 @@ export default new GraphQLSchema({
     UserDeletePayloadType,
     UserEditInputType,
     UserEditPayloadType,
+    UserNestedObjectListInputType,
+    UserPrefsDiffInputType,
+    UserPrefsStruct2InputType,
+    UserPrefsStructInputType,
+    UserSuperNestedObjectInputType,
   ],
 });

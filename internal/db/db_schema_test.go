@@ -2,34 +2,32 @@ package db
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
-	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/testingutils/testmodel"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestIDColumn(t *testing.T) {
-	col := getTestColumn("AccountConfig", "ID", t)
+	col := getTestColumn("Account", "id", t)
 
 	parts := []string{
 		strconv.Quote("id"),
 		"postgresql.UUID()",
 		"nullable=False",
 	}
-	testColumn(t, col, "id", "ID", "id", parts)
+	testColumn(t, col, "id", "id", "id", parts)
 
-	constraint := getTestPrimaryKeyConstraint("AccountConfig", "ID", t)
+	constraint := getTestPrimaryKeyConstraint("Account", "id", t)
 	testConstraint(
 		t,
 		constraint,
@@ -38,29 +36,29 @@ func TestIDColumn(t *testing.T) {
 }
 
 func TestCreatedAtColumn(t *testing.T) {
-	col := getTestColumn("AccountConfig", "CreatedAt", t)
+	col := getTestColumn("Account", "createdAt", t)
 
 	parts := []string{
 		strconv.Quote("created_at"),
 		"sa.TIMESTAMP()",
 		"nullable=False",
 	}
-	testColumn(t, col, "created_at", "CreatedAt", "created_at", parts)
+	testColumn(t, col, "created_at", "createdAt", "created_at", parts)
 }
 
 func TestUpdatedAtColumn(t *testing.T) {
-	col := getTestColumn("AccountConfig", "UpdatedAt", t)
+	col := getTestColumn("Account", "updatedAt", t)
 
 	parts := []string{
 		strconv.Quote("updated_at"),
 		"sa.TIMESTAMP()",
 		"nullable=False",
 	}
-	testColumn(t, col, "updated_at", "UpdatedAt", "updated_at", parts)
+	testColumn(t, col, "updated_at", "updatedAt", "updated_at", parts)
 }
 
 func TestTableForNode(t *testing.T) {
-	table := getTestTable("AccountConfig", t)
+	table := getTestTable("Account", t)
 
 	expTableName := strconv.Quote("accounts")
 	assert.Equal(
@@ -86,11 +84,13 @@ func TestTableForNode(t *testing.T) {
 	testConstraints(t, table, 3)
 
 	// 1 primary key, 1 foreign key constraint, 1 index expected
-	table = getTestTable("TodoConfig", t)
+	table = getTestTable("Todo", t)
 	testConstraints(t, table, 3)
 }
 
 func TestTablesFromSchema(t *testing.T) {
+	// TODO
+	t.Skip()
 	schema := getTestSchema(t)
 	require.Nil(t, schema.generateShemaTables())
 
@@ -117,27 +117,8 @@ func TestTablesFromSchema(t *testing.T) {
 	)
 }
 
-func TestEdgesFromSchema(t *testing.T) {
-	//	TODO this test is useless
-	//for tests like this and the one above and in graphql, we need to change things to get the value from node_schema or something and then do math based on that
-	t.Skip()
-	schema := getTestSchema(t)
-	template, err := schema.getSchemaForTemplate()
-	require.NotNil(t, err)
-
-	expEdges := 22
-	assert.Equal(
-		t,
-		expEdges,
-		len(template.Edges),
-		"incorrect number of edges generated, expected %d got %d",
-		expEdges,
-		len(template.Edges),
-	)
-}
-
 func TestStringUserDefinedColumn(t *testing.T) {
-	column := getTestColumn("AccountConfig", "FirstName", t)
+	column := getTestColumn("Account", "FirstName", t)
 
 	parts := []string{
 		strconv.Quote("first_name"),
@@ -148,7 +129,7 @@ func TestStringUserDefinedColumn(t *testing.T) {
 }
 
 func TestNullableStringUserDefinedColumn(t *testing.T) {
-	column := getTestColumn("AccountConfig", "Bio", t)
+	column := getTestColumn("Account", "Bio", t)
 
 	parts := []string{
 		strconv.Quote("bio"),
@@ -159,7 +140,7 @@ func TestNullableStringUserDefinedColumn(t *testing.T) {
 }
 
 func TestIntegerUserDefinedColumn(t *testing.T) {
-	column := getTestColumn("AccountConfig", "NumberOfLogins", t)
+	column := getTestColumn("Account", "NumberOfLogins", t)
 
 	// also tests default values...
 	parts := []string{
@@ -172,7 +153,7 @@ func TestIntegerUserDefinedColumn(t *testing.T) {
 }
 
 func TestTimeUserDefinedColumn(t *testing.T) {
-	column := getTestColumn("AccountConfig", "LastLoginAt", t)
+	column := getTestColumn("Account", "LastLoginAt", t)
 
 	// this also tests overriden fields
 	parts := []string{
@@ -184,7 +165,7 @@ func TestTimeUserDefinedColumn(t *testing.T) {
 }
 
 func TestNullableTimeUserDefinedColumn(t *testing.T) {
-	column := getTestColumn("AccountConfig", "DateOfBirth", t)
+	column := getTestColumn("Account", "DateOfBirth", t)
 
 	parts := []string{
 		strconv.Quote("date_of_birth"),
@@ -195,7 +176,7 @@ func TestNullableTimeUserDefinedColumn(t *testing.T) {
 }
 
 func TestUniqueColumn(t *testing.T) {
-	column := getTestColumn("AccountConfig", "PhoneNumber", t)
+	column := getTestColumn("Account", "PhoneNumber", t)
 
 	parts := []string{
 		strconv.Quote("phone_number"), // db field
@@ -204,7 +185,7 @@ func TestUniqueColumn(t *testing.T) {
 	}
 	testColumn(t, column, "phone_number", "PhoneNumber", "phone_number", parts)
 
-	constraint := getTestUniqueKeyConstraint(t, "AccountConfig", "PhoneNumber")
+	constraint := getTestUniqueKeyConstraint(t, "Account", "PhoneNumber")
 
 	testConstraint(
 		t,
@@ -214,7 +195,7 @@ func TestUniqueColumn(t *testing.T) {
 }
 
 func TestIndexedColumn(t *testing.T) {
-	column := getTestColumn("AccountConfig", "LastName", t)
+	column := getTestColumn("Account", "LastName", t)
 
 	parts := []string{
 		strconv.Quote("last_name"), // db field
@@ -223,7 +204,7 @@ func TestIndexedColumn(t *testing.T) {
 	}
 	testColumn(t, column, "last_name", "LastName", "last_name", parts)
 
-	constraint := getTestIndexedConstraint("AccountConfig", "LastName", t)
+	constraint := getTestIndexedConstraint("Account", "LastName", t)
 
 	testConstraint(
 		t,
@@ -233,7 +214,7 @@ func TestIndexedColumn(t *testing.T) {
 }
 
 func TestForeignKeyColumn(t *testing.T) {
-	column := getTestColumn("TodoConfig", "AccountID", t)
+	column := getTestColumn("Todo", "AccountID", t)
 
 	parts := []string{
 		strconv.Quote("account_id"), // db field
@@ -242,7 +223,7 @@ func TestForeignKeyColumn(t *testing.T) {
 	}
 	testColumn(t, column, "account_id", "AccountID", "account_id", parts)
 
-	constraint := getTestForeignKeyConstraint(t, "TodoConfig", "AccountID")
+	constraint := getTestForeignKeyConstraint(t, "Todo", "AccountID")
 	testConstraint(
 		t,
 		constraint,
@@ -254,50 +235,6 @@ func TestForeignKeyColumn(t *testing.T) {
 			strconv.Quote("CASCADE"),                                    // ondelete cascade
 		),
 	)
-}
-
-func TestInvalidForeignKeyConfig(t *testing.T) {
-	sources := make(map[string]string)
-
-	sources["account_config.go"] = getAccountConfigContents(t)
-	sources["todo_config.go"] = `
-	package configs
-
-type TodoConfig struct {
-	Text      string
-	AccountID string ` + "`fkey:\"accounts.ID\"`}" +
-		`
-	func (config *TodoConfig) GetTableName() string {
-		return "todos"
-	}
-	`
-
-	s, err := parseSchemaFull(t, sources, "InvalidForeignKeyConfig")
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "invalid schema accounts for foreign key ")
-	require.Nil(t, s)
-}
-
-func TestInvalidForeignKeyColumn(t *testing.T) {
-	sources := make(map[string]string)
-
-	sources["account_config.go"] = getAccountConfigContents(t)
-	sources["todo_config.go"] = `
-	package configs
-
-type TodoConfig struct {
-	Text      string
-	AccountID string ` + "`fkey:\"AccountConfig.Bar\"`}" +
-		`
-	func (config *TodoConfig) GetTableName() string {
-		return "todos"
-	}
-	`
-
-	s, err := parseSchemaFull(t, sources, "InvalidForeignKeyColumn")
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "could not find field Bar by name")
-	require.Nil(t, s)
 }
 
 func TestGeneratedEdgeConfigTable(t *testing.T) {
@@ -846,7 +783,7 @@ func TestMultiColumnPrimaryKey(t *testing.T) {
 			},
 		})
 
-	table := getTestTableFromSchema("UserPhotoConfig", dbSchema, t)
+	table := getTestTableFromSchema("UserPhoto", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 1)
 
@@ -934,7 +871,7 @@ func TestMultiColumnUniqueConstraint(t *testing.T) {
 			},
 		})
 
-	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	table := getTestTableFromSchema("Contact", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 4)
 
@@ -1039,7 +976,7 @@ func TestMultiColumnForeignKey(t *testing.T) {
 			},
 		})
 
-	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	table := getTestTableFromSchema("Contact", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -1108,7 +1045,7 @@ func TestCheckConstraint(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("ItemConfig", dbSchema, t)
+	table := getTestTableFromSchema("Item", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 4)
 
@@ -1198,7 +1135,7 @@ func TestPolymorphicField(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("AddressConfig", dbSchema, t)
+	table := getTestTableFromSchema("Address", dbSchema, t)
 	columns := table.Columns
 	// address. id, street, city, state, zipcode, owner_id, owner_type
 	require.Len(t, columns, 7)
@@ -1299,7 +1236,7 @@ func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("AddressConfig", dbSchema, t)
+	table := getTestTableFromSchema("Address", dbSchema, t)
 	columns := table.Columns
 	// address. id, street, city, state, zipcode, owner_id, owner_type
 	require.Len(t, columns, 7)
@@ -1356,7 +1293,7 @@ func TestForeignKeyTS(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	table := getTestTableFromSchema("Contact", dbSchema, t)
 	constraints := table.Constraints
 	// pkey, index, fkey
 	require.Len(t, constraints, 3)
@@ -1425,7 +1362,7 @@ func TestForeignKeyIndexDisabled(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	table := getTestTableFromSchema("Contact", dbSchema, t)
 	constraints := table.Constraints
 	// pkey, fkey
 	require.Len(t, constraints, 2)
@@ -1481,7 +1418,7 @@ func TestMultiColumnIndex(t *testing.T) {
 			},
 		})
 
-	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	table := getTestTableFromSchema("Contact", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -1571,7 +1508,7 @@ func TestMultiColumnUniqueIndex(t *testing.T) {
 			},
 		})
 
-	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	table := getTestTableFromSchema("Contact", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 4)
 
@@ -1691,7 +1628,7 @@ func TestFullTextIndexSingleCol(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -1750,7 +1687,7 @@ func TestFullTextIndexMultipleCols(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -1813,7 +1750,7 @@ func TestFullTextIndexMultipleColsGist(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -1875,7 +1812,7 @@ func TestFullTextIndexMultipleColsLangColumn(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -1938,7 +1875,7 @@ func TestFullTextIndexMultipleColsGeneratedColumn(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2007,7 +1944,7 @@ func TestFullTextIndexMultipleColsGeneratedColumnWeights(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2077,7 +2014,7 @@ func TestFullTextIndexMultipleColsGeneratedColumnWeightsDiff(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2146,7 +2083,7 @@ func TestFullTextIndexMultipleColsGeneratedColumnMisMatchedWeights(t *testing.T)
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2370,7 +2307,7 @@ func TestExplicitScalarIndexBtree(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2423,7 +2360,7 @@ func TestExplicitListIndexGin(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2467,7 +2404,7 @@ func TestImplicitScalarIndex(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2513,7 +2450,7 @@ func TestImplicitListIndexGin(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2565,7 +2502,7 @@ func TestImplicitListIndexGinNoIndexType(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2615,7 +2552,7 @@ func TestExplicitJSONBIndexGin(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2659,7 +2596,7 @@ func TestImplicitJSONBIndexGin(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2708,7 +2645,7 @@ func TestImplicitJSONBNoIndexType(t *testing.T) {
 		},
 	)
 
-	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	table := getTestTableFromSchema("User", dbSchema, t)
 	constraints := table.Constraints
 	require.Len(t, constraints, 2)
 
@@ -2818,31 +2755,23 @@ func testConstraints(t *testing.T, table *dbTable, expConstraints int) {
 	)
 }
 
-func getParsedTestSchema(t *testing.T) *schema.Schema {
-	// use parsehelper.ParseFilesForTest since that caches it
-	data := parsehelper.ParseFilesForTest(t)
-	schema, err := schema.ParsePackage(data.Pkg)
-	require.Nil(t, err)
-	return schema
-}
-
 func getTestSchema(t *testing.T) *dbSchema {
-	return newDBSchema(getParsedTestSchema(t), &codegenapi.DummyConfig{})
+	return newDBSchema(testmodel.GetSchema(t), &codegenapi.DummyConfig{})
 }
 
-func getTestTable(configName string, t *testing.T) *dbTable {
+func getTestTable(nodeName string, t *testing.T) *dbTable {
 	schema := getTestSchema(t)
 	// need to do this now because constraints are generated separately
 	require.Nil(t, schema.generateShemaTables())
 
-	return getTestTableFromSchema(configName, schema, t)
+	return getTestTableFromSchema(nodeName, schema, t)
 }
 
-func getTestTableFromSchema(configName string, s *dbSchema, t *testing.T) *dbTable {
-	node := s.schema.Nodes[configName]
-	require.NotNil(t, node, "no codegen info for %s table", configName)
+func getTestTableFromSchema(nodeName string, s *dbSchema, t *testing.T) *dbTable {
+	node := s.schema.Nodes[nodeName]
+	require.NotNil(t, node, "no codegen info for %s table", nodeName)
 	table := s.getTableForNode(node.NodeData)
-	require.NotNil(t, table, "no dbtable info for %s", configName)
+	require.NotNil(t, table, "no dbtable info for %s", nodeName)
 	return table
 }
 
@@ -2854,15 +2783,15 @@ func getTestEnumTableFromSchema(name string, s *dbSchema, t *testing.T) *dbTable
 	return table
 }
 
-func getTestColumn(tableConfigName, colFieldName string, t *testing.T) *dbColumn {
-	table := getTestTable(tableConfigName, t)
+func getTestColumn(nodeName, colFieldName string, t *testing.T) *dbColumn {
+	table := getTestTable(nodeName, t)
 
 	for _, column := range table.Columns {
 		if column.EntFieldName == colFieldName {
 			return column
 		}
 	}
-	require.Fail(t, "no column %s for %s table", colFieldName, tableConfigName)
+	require.Fail(t, "no column %s for %s table", colFieldName, nodeName)
 	return nil
 }
 
@@ -2891,8 +2820,8 @@ func getColNames(cols []*dbColumn) []string {
 	return res
 }
 
-func getTestForeignKeyConstraint(t *testing.T, tableConfigName, colFieldName string) dbConstraint {
-	table := getTestTable(tableConfigName, t)
+func getTestForeignKeyConstraint(t *testing.T, nodeName, colFieldName string) dbConstraint {
+	table := getTestTable(nodeName, t)
 
 	return getTestForeignKeyConstraintFromTable(t, table, colFieldName)
 }
@@ -2910,8 +2839,8 @@ func getTestForeignKeyConstraintFromTable(t *testing.T, table *dbTable, colField
 	return nil
 }
 
-func getTestPrimaryKeyConstraint(tableConfigName, colFieldName string, t *testing.T) dbConstraint {
-	table := getTestTable(tableConfigName, t)
+func getTestPrimaryKeyConstraint(nodeName, colFieldName string, t *testing.T) dbConstraint {
+	table := getTestTable(nodeName, t)
 
 	return getTestPrimaryKeyConstraintFromTable(t, table, colFieldName)
 }
@@ -2927,8 +2856,8 @@ func getTestPrimaryKeyConstraintFromTable(t *testing.T, table *dbTable, colField
 	return nil
 }
 
-func getTestUniqueKeyConstraint(t *testing.T, tableConfigName string, colFieldName ...string) dbConstraint {
-	table := getTestTable(tableConfigName, t)
+func getTestUniqueKeyConstraint(t *testing.T, nodename string, colFieldName ...string) dbConstraint {
+	table := getTestTable(nodename, t)
 
 	return getTestUniqueKeyConstraintFromTable(t, table, colFieldName...)
 }
@@ -2966,8 +2895,8 @@ func getTestFullTextIndexedConstraintFromTable(t *testing.T, table *dbTable, col
 	return nil
 }
 
-func getTestIndexedConstraint(tableConfigName, colFieldName string, t *testing.T) dbConstraint {
-	table := getTestTable(tableConfigName, t)
+func getTestIndexedConstraint(nodeName, colFieldName string, t *testing.T) dbConstraint {
+	table := getTestTable(nodeName, t)
 
 	for _, constraint := range table.Constraints {
 		idxConstraint, ok := constraint.(*indexConstraint)
@@ -2976,17 +2905,8 @@ func getTestIndexedConstraint(tableConfigName, colFieldName string, t *testing.T
 			return idxConstraint
 		}
 	}
-	require.Fail(t, "no unique constraint for %s column for %s table", colFieldName, tableConfigName)
+	require.Fail(t, "no unique constraint for %s column for %s table", colFieldName, nodeName)
 	return nil
-}
-
-func getAccountConfigContents(t *testing.T) string {
-	// use a simple non-go file that we don't care about as it changes.
-	path, err := filepath.Abs("../testdata/models/configs/simple_account_config.go.file")
-	assert.Nil(t, err)
-	file, err := os.ReadFile(path)
-	assert.Nil(t, err, "error loading account config")
-	return string(file)
 }
 
 func getTestTableByName(tableName string, t *testing.T) *dbTable {
@@ -3024,7 +2944,6 @@ func getEdgeByName(edgeName string, t *testing.T) *dbEdgeInfo {
 	template, err := s.getSchemaForTemplate()
 	require.Nil(t, err)
 
-	//	spew.Dump(template.Edges)
 	for _, edge := range template.Edges {
 		if edge.EdgeName == edgeName {
 			return &edge
@@ -3032,19 +2951,4 @@ func getEdgeByName(edgeName string, t *testing.T) *dbEdgeInfo {
 	}
 	require.Fail(t, "no edge for %s found", edgeName)
 	return nil
-}
-
-// inlining this in a bunch of places to break the import cycle
-func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources string) *schema.Schema {
-	s, err := parseSchemaFull(t, sources, uniqueKeyForSources)
-	require.Nil(t, err)
-	return s
-}
-
-func parseSchemaFull(t *testing.T, sources map[string]string, uniqueKeyForSources string) (*schema.Schema, error) {
-	data := parsehelper.ParseFilesForTest(
-		t,
-		parsehelper.Sources(uniqueKeyForSources, sources),
-	)
-	return schema.ParsePackage(data.Pkg)
 }

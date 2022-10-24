@@ -100,6 +100,10 @@ func (nodeData *NodeData) GetTableName() string {
 	return nodeData.TableName
 }
 
+func (nodeData *NodeData) GetGraphQLTypeName() string {
+	return fmt.Sprintf("%sType", strcase.ToCamel(nodeData.Node))
+}
+
 func (nodeData *NodeData) GetQuotedTableName() string {
 	return strconv.Quote(nodeData.TableName)
 }
@@ -145,18 +149,6 @@ func (nodeData *NodeData) GetActionByGraphQLName(graphQLName string) action.Acti
 		return nil
 	}
 	return nodeData.ActionInfo.GetByGraphQLName(graphQLName)
-}
-
-// HasJSONField returns a boolean indicating if this Node has any JSON fields
-// If so, we disable StructScan because we don't implement driver.Value and calling row.StructScan()
-// will fail since the datatype in the db doesn't map to what's in the struct
-func (nodeData *NodeData) HasJSONField() bool {
-	for _, field := range nodeData.FieldInfo.Fields {
-		if field.GetCastToMethod() == "cast.UnmarshallJSON" {
-			return true
-		}
-	}
-	return false
 }
 
 func (nodeData *NodeData) HasPrivateField(cfg codegenapi.Config) bool {
@@ -214,7 +206,7 @@ func (nodeData *NodeData) GetTSEnums() []*enum.Enum {
 
 // TODO kill this
 // GetImportsForBaseFile returns list of imports needed in the base generated file
-func (nodeData *NodeData) GetImportsForBaseFile(s *Schema) ([]*tsimport.ImportPath, error) {
+func (nodeData *NodeData) GetImportsForBaseFile(s *Schema, cfg codegenapi.Config) ([]*tsimport.ImportPath, error) {
 	ret := []*tsimport.ImportPath{
 		{
 			Import:        "schema",
@@ -272,7 +264,7 @@ func (nodeData *NodeData) GetImportsForBaseFile(s *Schema) ([]*tsimport.ImportPa
 			})
 		}
 
-		ret = append(ret, f.GetImportsForTypes()...)
+		ret = append(ret, f.GetImportsForTypes(cfg, s)...)
 	}
 	return ret, nil
 }

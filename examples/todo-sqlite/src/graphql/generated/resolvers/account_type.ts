@@ -17,18 +17,25 @@ import {
 import {
   Account,
   AccountToClosedTodosDupQuery,
+  AccountToCreatedWorkspacesQuery,
   AccountToOpenTodosDupQuery,
+  AccountToScopedTodosQuery,
   AccountToTagsQuery,
   AccountToTodosQuery,
+  AccountToWorkspacesQuery,
   Todo,
 } from "src/ent/";
 import {
-  AccountStateType,
+  AccountPrefs2Type,
+  AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
+  AccountToCreatedWorkspacesConnectionType,
   AccountToOpenTodosConnectionType,
   AccountToOpenTodosDupConnectionType,
+  AccountToScopedTodosConnectionType,
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
+  AccountToWorkspacesConnectionType,
   AccountTodoStatusType,
   TodoType,
 } from "src/graphql/resolvers/internal";
@@ -48,10 +55,16 @@ export const AccountType = new GraphQLObjectType({
         return account.phoneNumber;
       },
     },
-    account_state: {
-      type: AccountStateType,
+    account_prefs: {
+      type: AccountPrefsType,
       resolve: (account: Account, args: {}, context: RequestContext) => {
-        return account.accountState;
+        return account.accountPrefs;
+      },
+    },
+    account_prefs_list: {
+      type: new GraphQLList(new GraphQLNonNull(AccountPrefs2Type)),
+      resolve: (account: Account, args: {}, context: RequestContext) => {
+        return account.accountPrefsList;
       },
     },
     closed_todos_dup: {
@@ -84,6 +97,36 @@ export const AccountType = new GraphQLObjectType({
         );
       },
     },
+    created_workspaces: {
+      type: new GraphQLNonNull(AccountToCreatedWorkspacesConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) =>
+            AccountToCreatedWorkspacesQuery.query(v, account),
+          args,
+        );
+      },
+    },
     open_todos_dup: {
       type: new GraphQLNonNull(AccountToOpenTodosDupConnectionType()),
       args: {
@@ -109,6 +152,64 @@ export const AccountType = new GraphQLObjectType({
           account.viewer,
           account,
           (v, account: Account) => AccountToOpenTodosDupQuery.query(v, account),
+          args,
+        );
+      },
+    },
+    scoped_todos: {
+      type: new GraphQLNonNull(AccountToScopedTodosConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) => AccountToScopedTodosQuery.query(v, account),
+          args,
+        );
+      },
+    },
+    workspaces: {
+      type: new GraphQLNonNull(AccountToWorkspacesConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) => AccountToWorkspacesQuery.query(v, account),
           args,
         );
       },

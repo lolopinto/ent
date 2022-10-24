@@ -1,11 +1,5 @@
-import {
-  AlwaysDenyRule,
-  AssocEdge,
-  Ent,
-  loadEdgeForID2,
-  Viewer,
-} from "@snowtop/ent";
-import { Changeset, Trigger, WriteOperation } from "@snowtop/ent/action";
+import { AlwaysDenyRule, AssocEdge, loadEdgeForID2 } from "@snowtop/ent";
+import { Changeset, WriteOperation } from "@snowtop/ent/action";
 import {
   DenyIfEdgeDoesNotExistRule,
   DelayedResultRule,

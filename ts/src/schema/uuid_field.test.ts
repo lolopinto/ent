@@ -1,6 +1,11 @@
 import { Pool } from "pg";
 import { v1, validate } from "uuid";
-import { UUIDType, UUIDListType, StringType } from "./field";
+import {
+  UUIDType,
+  UUIDListType,
+  StringType,
+  PolymorphicStringField,
+} from "./field";
 import { DBType, PolymorphicOptions, Type, FieldOptions } from "./schema";
 import {
   User,
@@ -39,11 +44,10 @@ test("polymorphic object", () => {
   doTest(
     { types: ["User", "Post"] },
     {
-      dbType: DBType.StringEnum,
-      values: ["User", "Post"],
-      type: undefined,
-      graphQLType: undefined,
-      enumMap: undefined,
+      dbType: DBType.String,
+    },
+    {
+      types: ["User", "Post"],
     },
   );
 });
@@ -52,14 +56,11 @@ test("polymorphic object, nullable true", () => {
   doTest(
     { types: ["User", "Post"] },
     {
-      dbType: DBType.StringEnum,
-      values: ["User", "Post"],
-      type: undefined,
-      graphQLType: undefined,
-      enumMap: undefined,
+      dbType: DBType.String,
     },
     {
       nullable: true,
+      types: ["User", "Post"],
     },
   );
 });
@@ -68,14 +69,11 @@ test("polymorphic object. with types, serverDefault", () => {
   doTest(
     { types: ["User", "Post"], serverDefault: "hello" },
     {
-      dbType: DBType.StringEnum,
-      values: ["User", "Post"],
-      type: undefined,
-      graphQLType: undefined,
-      enumMap: undefined,
+      dbType: DBType.String,
     },
     {
       nullable: true,
+      types: ["User", "Post"],
       serverDefault: "hello",
     },
   );
@@ -111,9 +109,11 @@ function doTest(
   };
   expect(count()).toBe(1);
   const derived = derivedFields![lastKey];
+  expect(derived).toBeInstanceOf(PolymorphicStringField);
   expect(derived.type).toStrictEqual(expDerivedType);
   expect(derived.nullable).toBe(opts?.nullable);
   expect(derived.serverDefault).toBe(opts?.serverDefault);
+  expect(derived.types).toStrictEqual(opts?.types);
 }
 
 function getInsertAction<T extends Ent>(
@@ -1129,4 +1129,82 @@ describe("saving polymorphic", () => {
     }
   });
   // TODO both undefined :()
+
+  test("polymorphic object, types set. type lowerCase version", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: {
+            types: ["User", "Contact"],
+          },
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([
+        ["foo_id", v1()],
+        ["foo_type", "user"],
+      ]),
+    );
+    const ent = await action.saveX();
+    expect(validate(ent.data.foo_id)).toBe(true);
+    expect(ent.data.foo_type).toBe("user");
+  });
+
+  test("polymorphic object, types set. type uppercase version", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: {
+            types: ["User", "Contact"],
+          },
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([
+        ["foo_id", v1()],
+        ["foo_type", "User"],
+      ]),
+    );
+    const ent = await action.saveX();
+    expect(validate(ent.data.foo_id)).toBe(true);
+    expect(ent.data.foo_type).toBe("user");
+  });
+
+  test("polymorphic object, types set. type mixed case version", async () => {
+    class Contact extends User {}
+    const ContactShema = getBuilderSchemaFromFields(
+      {
+        foo_id: UUIDType({
+          polymorphic: {
+            types: ["User", "Contact", "EventActivity"],
+          },
+          nullable: true,
+        }),
+      },
+      Contact,
+    );
+
+    const action = getInsertAction(
+      ContactShema,
+      new Map<string, any>([
+        ["foo_id", v1()],
+        ["foo_type", "EventActivity"],
+      ]),
+    );
+    const ent = await action.saveX();
+    expect(validate(ent.data.foo_id)).toBe(true);
+    expect(ent.data.foo_type).toBe("eventActivity");
+  });
 });

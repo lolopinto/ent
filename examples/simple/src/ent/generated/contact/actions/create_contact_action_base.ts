@@ -19,14 +19,17 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, User } from "../../..";
 import { ContactBuilder } from "./contact_builder";
+import { ContactInfo } from "../../contact_info";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEmailInput {
+  extra?: ContactInfo | null;
   emailAddress: string;
   label: string;
 }
 
 interface customPhoneNumberInput {
+  extra?: ContactInfo | null;
   phoneNumber: string;
   label: string;
 }

@@ -1005,15 +1005,18 @@ test("jsonb types", async () => {
     ],
   }).saveX();
   expect(await user.prefs()).toStrictEqual({
+    enableNotifs: undefined,
     finishedNux: true,
     notifTypes: [NotifType.EMAIL],
   });
   expect(await user.prefsList()).toStrictEqual([
     {
+      enableNotifs: undefined,
       finishedNux: true,
       notifTypes: [NotifType.EMAIL],
     },
     {
+      enableNotifs: undefined,
       finishedNux: false,
       notifTypes: [NotifType.MOBILE],
     },
@@ -1073,7 +1076,8 @@ describe("super nested complex", () => {
       password: random(),
       superNestedObject: obj,
     }).saveX();
-    expect(await user.superNestedObject()).toStrictEqual(obj);
+    // we return fields which were not set as undefined so can't use strictEqual
+    expect(await user.superNestedObject()).toMatchObject(obj);
   });
 
   test("union. cat", async () => {
@@ -1107,7 +1111,8 @@ describe("super nested complex", () => {
         birthday: obj.union?.birthday.toISOString(),
       },
     };
-    expect(await user.superNestedObject()).toStrictEqual(formattedObj);
+    // we return fields which were not set as undefined so can't use strictEqual
+    expect(await user.superNestedObject()).toMatchObject(formattedObj);
   });
 
   test("union. dog", async () => {
@@ -1142,7 +1147,8 @@ describe("super nested complex", () => {
         birthday: obj.union?.birthday.toISOString(),
       },
     };
-    expect(await user.superNestedObject()).toStrictEqual(formattedObj);
+    // we return fields which were not set as undefined so can't use strictEqual
+    expect(await user.superNestedObject()).toMatchObject(formattedObj);
   });
 
   test("union. rabbit", async () => {
@@ -1175,7 +1181,8 @@ describe("super nested complex", () => {
         birthday: obj.union?.birthday.toISOString(),
       },
     };
-    expect(await user.superNestedObject()).toStrictEqual(formattedObj);
+    // we return fields which were not set as undefined so can't use strictEqual
+    expect(await user.superNestedObject()).toMatchObject(formattedObj);
   });
 
   test("nested list", async () => {
@@ -1242,7 +1249,8 @@ describe("super nested complex", () => {
         birthday: obj.union?.birthday.toISOString(),
       },
     };
-    expect(await user.superNestedObject()).toStrictEqual(formattedObj);
+    // we return fields which were not set as undefined so can't use strictEqual
+    expect(await user.superNestedObject()).toMatchObject(formattedObj);
 
     const editedObj: UserSuperNestedObject = {
       uuid: uuidv1(),
@@ -1269,7 +1277,8 @@ describe("super nested complex", () => {
         birthday: editedObj.union?.birthday.toISOString(),
       },
     };
-    expect(await edited.superNestedObject()).toStrictEqual(formattedEditedObj);
+    // we return fields which were not set as undefined so can't use strictEqual
+    expect(await edited.superNestedObject()).toMatchObject(formattedEditedObj);
 
     setLogLevels("query");
     const ml = new MockLogs();

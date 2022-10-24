@@ -21,6 +21,20 @@ const HolidaySchema = new EntSchemaWithTZ({
     {
       operation: ActionOperation.Create,
     },
+    {
+      operation: ActionOperation.Create,
+      inputName: "CustomCreateHolidayInput",
+      actionName: "CustomCreateHolidayAction",
+      hideFromGraphQL: true,
+      // this action exists just to test ID action only field
+      actionOnlyFields: [
+        {
+          type: "ID",
+          name: "fake_id",
+          nullable: true,
+        },
+      ],
+    },
   ],
 });
 export default HolidaySchema;

@@ -8,6 +8,7 @@ import {
   OpenTodosQueryType,
   TagQueryType,
   TodoQueryType,
+  WorkspaceQueryType,
 } from "src/graphql/resolvers/internal";
 
 export const QueryType = new GraphQLObjectType({
@@ -19,5 +20,6 @@ export const QueryType = new GraphQLObjectType({
     open_todos_plural: OpenTodosPluralQueryType,
     tag: TagQueryType,
     todo: TodoQueryType,
+    workspace: WorkspaceQueryType,
   }),
 });

@@ -14,6 +14,9 @@ import { CreateTodoType } from "src/graphql/generated/mutations/todo/create_todo
 import { DeleteTodoType } from "src/graphql/generated/mutations/todo/delete_todo_type";
 import { RemoveTodoTagType } from "src/graphql/generated/mutations/todo/remove_todo_tag_type";
 import { RenameTodoType } from "src/graphql/generated/mutations/todo/rename_todo_type";
+import { CreateWorkspaceType } from "src/graphql/generated/mutations/workspace/create_workspace_type";
+import { DeleteWorkspaceType } from "src/graphql/generated/mutations/workspace/delete_workspace_type";
+import { EditWorkspaceType } from "src/graphql/generated/mutations/workspace/edit_workspace_type";
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
@@ -23,9 +26,12 @@ export const MutationType = new GraphQLObjectType({
     createAccount: CreateAccountType,
     createTag: CreateTagType,
     createTodo: CreateTodoType,
+    createWorkspace: CreateWorkspaceType,
     deleteAccount: DeleteAccountType,
     deleteTodo: DeleteTodoType,
+    deleteWorkspace: DeleteWorkspaceType,
     editAccount: EditAccountType,
+    editWorkspace: EditWorkspaceType,
     markAllTodosAs: MarkAllTodosAsType,
     removeCompletedTodos: RemoveCompletedTodosType,
     removeTodoTag: RemoveTodoTagType,

@@ -2,7 +2,6 @@ package schema
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
@@ -110,12 +109,10 @@ func blankNodeDataInfo() *NodeDataInfo {
 
 func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	ret := *m
-	getSchemaName := func(config string) string {
-		return strings.TrimSuffix(config, "Config")
-	}
+
 	for k, ndi1 := range m1 {
 		ndi2, ok := m2[k]
-		name := getSchemaName(k)
+		name := k
 		var changes []change.Change
 		opts := compareNodeOptions{}
 		if !ok {
@@ -144,13 +141,12 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	for k, ndi2 := range m2 {
 		_, ok := m1[k]
 		if !ok {
-			name := getSchemaName(k)
 
 			changes := []change.Change{
 				{
 					Change:      change.AddNode,
-					Name:        name,
-					GraphQLName: name,
+					Name:        k,
+					GraphQLName: k,
 				},
 			}
 			ndi1 := blankNodeDataInfo()
@@ -163,7 +159,7 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 				return err
 			}
 			changes = append(changes, diff...)
-			ret[name] = changes
+			ret[k] = changes
 		}
 	}
 	return nil
@@ -200,6 +196,35 @@ type compareNodeOptions struct {
 func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, error) {
 	var ret []change.Change
 
+	var compareOpts []change.CompareOption
+
+	if n1.HideFromGraphQL != n2.HideFromGraphQL {
+		// remove node from graphql
+		if n2.HideFromGraphQL {
+			ret = append(ret, change.Change{
+				Change:          change.RemoveNode,
+				Name:            n2.Node,
+				GraphQLName:     n2.Node,
+				GraphQLOnly:     true,
+				WriteAllForNode: true,
+			})
+			// this should basically be remove all from graphql
+			// in practice, doesn't matter since check in generate_ts_code.go
+			compareOpts = append(compareOpts, change.RemoveEqualFromGraphQL())
+		} else {
+			// add node to graphql
+			ret = append(ret, change.Change{
+				Change:          change.AddNode,
+				Name:            n2.Node,
+				GraphQLName:     n2.Node,
+				GraphQLOnly:     true,
+				WriteAllForNode: true,
+			})
+
+			compareOpts = append(compareOpts, change.AddEqualToGraphQL())
+		}
+	}
+
 	if !opts.skipFields {
 		r, err := field.CompareFieldInfo(n1.FieldInfo, n2.FieldInfo)
 		if err != nil {
@@ -208,9 +233,9 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 		ret = append(ret, r...)
 	}
 
-	ret = append(ret, edge.CompareEdgeInfo(n1.EdgeInfo, n2.EdgeInfo)...)
+	ret = append(ret, edge.CompareEdgeInfo(n1.EdgeInfo, n2.EdgeInfo, compareOpts...)...)
 
-	ret = append(ret, action.CompareActionInfo(n1.ActionInfo, n2.ActionInfo)...)
+	ret = append(ret, action.CompareActionInfo(n1.ActionInfo, n2.ActionInfo, compareOpts...)...)
 
 	changes, err := enum.CompareEnums(n1.tsEnums, n2.tsEnums)
 	if err != nil {
@@ -252,14 +277,6 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 		})
 	}
 
-	if n1.HideFromGraphQL != n2.HideFromGraphQL {
-		ret = append(ret, change.Change{
-			Change:      change.ModifyNode,
-			Name:        n2.Node,
-			GraphQLName: n2.Node,
-			GraphQLOnly: true,
-		})
-	}
 	return ret, nil
 }
 

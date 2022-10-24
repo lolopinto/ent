@@ -152,7 +152,7 @@ export class HoursOfOperationBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -161,10 +161,10 @@ export class HoursOfOperationBuilder<
         result.set(key, value);
       }
     };
-    addField("dayOfWeek", fields.dayOfWeek);
-    addField("dayOfWeekAlt", fields.dayOfWeekAlt);
-    addField("open", fields.open);
-    addField("close", fields.close);
+    addField("dayOfWeek", input.dayOfWeek);
+    addField("dayOfWeekAlt", input.dayOfWeekAlt);
+    addField("open", input.open);
+    addField("close", input.close);
     return result;
   }
 

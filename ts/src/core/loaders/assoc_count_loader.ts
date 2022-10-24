@@ -27,11 +27,7 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
     }
     const { cls } = getEdgeClauseAndFields(
       clause.Eq("edge_type", this.edgeType),
-      {
-        // don't need this..
-        id1: "1",
-        edgeType: this.edgeType,
-      },
+      {},
     );
 
     this.loader = createCountDataLoader({

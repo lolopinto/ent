@@ -121,6 +121,12 @@ export interface BuilderSchema<T extends Ent> extends Schema {
   ent: EntConstructor<T>;
 }
 
+export class EntBuilderSchema<T extends Ent> extends EntSchema {
+  constructor(public ent: EntConstructor<T>, cfg: SchemaConfig) {
+    super(cfg);
+  }
+}
+
 export function getBuilderSchema<T extends Ent>(
   cfg: SchemaConfig,
   ent: EntConstructor<T>,

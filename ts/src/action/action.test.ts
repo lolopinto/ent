@@ -1,7 +1,5 @@
 import { User, BuilderSchema, SimpleBuilder } from "../testutils/builder";
 import { IDViewer, LoggedOutViewer } from "../core/viewer";
-import { Pool } from "pg";
-import { QueryRecorder } from "../testutils/db_mock";
 import { StringType, UUIDType, FieldMap } from "../schema";
 import { createRowForTest } from "../testutils/write";
 import {
@@ -15,7 +13,11 @@ import {
   clearGlobalSchema,
   __hasGlobalSchema,
 } from "../core/ent";
-import { setEdgeTypeInGroup, WriteOperation } from "./action";
+import {
+  clearEdgeTypeInGroup,
+  setEdgeTypeInGroup,
+  WriteOperation,
+} from "./action";
 import { MockLogs } from "../testutils/mock_log";
 import { setLogLevels } from "../core/logger";
 import { Data, ID } from "../core/base";
@@ -24,55 +26,87 @@ import {
   assoc_edge_table,
   setupSqlite,
   table,
+  TempDB,
   text,
 } from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
 import * as clause from "../core/clause";
 import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema";
+import { snakeCase } from "snake-case";
+import { v1 } from "uuid";
 
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
 const ml = new MockLogs();
-
-beforeEach(async () => {
-  // does assoc_edge_config loader need to be cleared?
-  await createEdgeRows(["edge"]);
-  QueryRecorder.clearQueries();
-  ml.clear();
-});
 
 afterEach(() => {
   assocEdgeLoader.clearAll();
 });
 
+function getTables(global = false) {
+  return [
+    table(
+      "users",
+      // uuid field goes here
+      text("id", { primaryKey: true }),
+      text("foo"),
+    ),
+    assoc_edge_config_table(),
+    assoc_edge_table("edge_table", global),
+    assoc_edge_table("edge1_table", global),
+    assoc_edge_table("edge2_table", global),
+    assoc_edge_table("edge3_table", global),
+  ];
+}
+
+function setupPostgresTables(tdb: TempDB, global = false) {
+  beforeAll(async () => {
+    for (const tbl of getTables(global)) {
+      await tdb.create(tbl);
+    }
+    await createEdgeRows(["edge1", "edge2", "edge3", "edge"]);
+    ml.clear();
+  });
+
+  afterAll(async () => {
+    await tdb.dropAll();
+  });
+
+  if (global) {
+    beforeAll(() => {
+      setGlobalSchema(testEdgeGlobalSchema);
+    });
+    afterAll(() => {
+      clearGlobalSchema();
+    });
+  }
+}
+
 describe("postgres", () => {
-  beforeAll(() => {
+  const tdb = new TempDB(Dialect.Postgres);
+
+  beforeAll(async () => {
+    await tdb.beforeAll();
     ml.mock();
     setLogLevels(["query", "error", "cache"]);
   });
 
-  afterAll(() => {
+  afterAll(async () => {
+    await tdb.afterAll();
     ml.restore();
   });
 
   afterEach(() => {
     ml.clear();
-    QueryRecorder.clear();
   });
 
   describe("with global schema", () => {
-    beforeAll(() => {
-      setGlobalSchema(testEdgeGlobalSchema);
-    });
-
-    afterAll(() => {
-      clearGlobalSchema();
-    });
+    setupPostgresTables(tdb, true);
 
     commonTests();
   });
 
   describe("without global schema", () => {
+    setupPostgresTables(tdb);
+
     commonTests();
   });
 });
@@ -83,29 +117,18 @@ describe("sqlite", () => {
     setLogLevels(["query", "error", "cache"]);
   });
 
-  afterAll(() => {
-    ml.restore();
-  });
-  afterEach(() => {
-    QueryRecorder.clear();
+  beforeEach(async () => {
+    await createEdgeRows(["edge", "edge1", "edge2", "edge3"]);
     ml.clear();
   });
 
-  function getTables(global = false) {
-    return [
-      table(
-        "users",
-        // uuid field goes here
-        text("id", { primaryKey: true }),
-        text("foo"),
-      ),
-      assoc_edge_config_table(),
-      assoc_edge_table("edge_table", global),
-      assoc_edge_table("edge1_table", global),
-      assoc_edge_table("edge2_table", global),
-      assoc_edge_table("edge3_table", global),
-    ];
-  }
+  afterAll(() => {
+    ml.restore();
+  });
+
+  afterEach(() => {
+    ml.clear();
+  });
 
   describe("with global schema", () => {
     beforeAll(() => {
@@ -208,7 +231,7 @@ async function createEdgeRows(edges: string[]) {
     await createRowForTest({
       tableName: "assoc_edge_config",
       fields: {
-        edge_table: `${edge}_table`,
+        edge_table: `${snakeCase(edge)}_table`,
         symmetric_edge: false,
         inverse_edge_type: null,
         edge_type: edge,
@@ -268,7 +291,7 @@ function commonTests() {
   test("new ent with edge", async () => {
     const date = new Date();
     const builder = getUserCreateBuilder();
-    const id2 = QueryRecorder.newID();
+    const id2 = v1();
     builder.orchestrator.addOutboundEdge(id2, "edge", "User", { time: date });
     await builder.saveX();
     let ent = await builder.editedEntX();
@@ -322,7 +345,7 @@ function commonTests() {
     ml.clear();
 
     const builder = getUserEditBuilder(user, new Map([["foo", "bar"]]));
-    const id2 = QueryRecorder.newID();
+    const id2 = v1();
 
     builder.orchestrator.addOutboundEdge(id2, "edge", "User", {
       time: date,
@@ -386,7 +409,9 @@ function commonTests() {
       expect(error.message).toMatch(/could not resolve placeholder value/);
     }
 
-    const id = QueryRecorder.getCurrentIDs()[0];
+    const data = await builder.orchestrator.getEditedData();
+    const id = data.id;
+
     expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM assoc_edge_config/);
     expect(ml.logs[1]).toEqual(getInsertQuery(id));
     const selectQuery = getSelectQuery(id);
@@ -396,8 +421,6 @@ function commonTests() {
       expLength = 3;
     }
     expect(ml.logs.length).toEqual(expLength);
-
-    // TODO we don't log BEGIN, ROLLBACK, COMMIT... with the refactors
   });
 
   describe("setEdgeTypeInGroup", () => {
@@ -405,19 +428,18 @@ function commonTests() {
     let user1: User, user2: User;
     let m = new Map<string, string>();
 
-    beforeEach(async () => {
-      for (const edgeType of edgeTypes) {
-        m.set(edgeType + "Enum", edgeType);
-      }
+    for (const edgeType of edgeTypes) {
+      m.set(edgeType + "Enum", edgeType);
+    }
 
-      await createEdgeRows(edgeTypes);
+    beforeAll(async () => {
       [user1, user2] = await Promise.all([createUser(), createUser()]);
     });
 
     async function verifyEdges(edgeTypes: string[], edgeSet: string) {
       const edges = await Promise.all(
         edgeTypes.map(async (edgeType) => {
-          return await loadEdgeForID2({
+          return loadEdgeForID2({
             id1: user1.id,
             id2: user2.id,
             edgeType,
@@ -485,6 +507,20 @@ function commonTests() {
         // verify said edge is set and others unset
         await verifyEdges(edgeTypes, edgeType);
       }
+
+      // clear it, nothing's set
+      const builder2 = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
+
+      await clearEdgeTypeInGroup(builder2.orchestrator, user1.id, user2.id, m);
+      await builder2.saveX();
+
+      const edge2 = await loadEdgeForID2({
+        id1: user1.id,
+        id2: user2.id,
+        edgeType: "edge1",
+        ctr: AssocEdge,
+      });
+      expect(edge2).toBeUndefined();
     });
 
     test("add data afterwards to existing edge", async () => {

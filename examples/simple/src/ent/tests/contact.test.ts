@@ -1,4 +1,4 @@
-import { User, Contact } from "../../ent";
+import { User, Contact, ContactInfoSource } from "../../ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction from "../user/actions/create_user_action";
 import CreateContactAction, {
@@ -170,10 +170,16 @@ test("multiple emails", async () => {
       {
         emailAddress: randomEmail(),
         label: "default",
+        extra: {
+          default: true,
+          source: ContactInfoSource.Online,
+        },
       },
       {
         emailAddress: randomEmail(),
         label: "work",
+        // set to make test easier
+        extra: null,
       },
     ],
     firstName: "Jon",
@@ -188,6 +194,7 @@ test("multiple emails", async () => {
   interface emailInfo {
     emailAddress: string;
     label: string;
+    extra?: any;
   }
   const emails = await contact.loadEmails();
   const sortFn = (a: emailInfo, b: emailInfo) =>
@@ -198,6 +205,7 @@ test("multiple emails", async () => {
         return {
           emailAddress: email.emailAddress,
           label: email.label,
+          extra: email.extra,
         };
       })
       .sort(sortFn),
@@ -237,10 +245,15 @@ test("multiple phonenumbers", async () => {
       {
         phoneNumber: randomPhoneNumber(),
         label: "default",
+        extra: {
+          default: true,
+          source: ContactInfoSource.Friend,
+        },
       },
       {
         phoneNumber: randomPhoneNumber(),
         label: "work",
+        extra: null,
       },
     ],
     firstName: "Jon",
@@ -254,6 +267,7 @@ test("multiple phonenumbers", async () => {
   interface phoneNmberInfo {
     phoneNumber: string;
     label: string;
+    extra?: any;
   }
   const sortFn = (a: phoneNmberInfo, b: phoneNmberInfo) =>
     a.phoneNumber < b.phoneNumber ? -1 : 1;
@@ -265,6 +279,7 @@ test("multiple phonenumbers", async () => {
         return {
           phoneNumber: phoneNumber.phoneNumber,
           label: phoneNumber.label,
+          extra: phoneNumber.extra,
         };
       })
       .sort(sortFn),
