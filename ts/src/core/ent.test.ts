@@ -153,7 +153,6 @@ function commonTests() {
   });
 
   test("getEdgeTypeInGroup different table", async () => {
-    // setLogLevels("query");
     const edgeTypes = ["edge1", "edge2", "edge3"];
     let m = new Map<string, string>();
     for (const edgeType of edgeTypes) {
@@ -175,7 +174,7 @@ function commonTests() {
     // TODO should be able to do empty map here
     const builder = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
 
-    // let's manually do edge1 and then we'll set separate edges...
+    // let's manually do edge1Group and then we'll set separate edges...
     builder.orchestrator.addOutboundEdge(user2.id, "edge1", user2.nodeType);
     await builder.saveX();
 
@@ -654,6 +653,7 @@ function getTempDB() {
 
   return sqliteTDB;
 }
+
 describe("postgres", () => {
   postgresTDB = new TempDB(Dialect.Postgres, getTables);
   commonTests();
