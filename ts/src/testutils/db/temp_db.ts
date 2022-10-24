@@ -9,8 +9,6 @@ import { snakeCase } from "snake-case";
 import { BuilderSchema, getTableName } from "../builder";
 import { Ent } from "../../core/base";
 import { testEdgeGlobalSchema } from "../test_edge_global_schema";
-import { clearGlobalSchema, setGlobalSchema } from "../../core/ent";
-import { createRowForTest } from "../write";
 
 interface SchemaItem {
   name: string;

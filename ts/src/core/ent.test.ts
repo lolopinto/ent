@@ -35,7 +35,7 @@ import {
 } from "../testutils/db/temp_db";
 import { setLogLevels } from "./logger";
 import { MockLogs } from "../testutils/mock_log";
-import { Dialect } from "./db";
+import DB, { Dialect } from "./db";
 
 class UserSchema implements BuilderSchema<User> {
   ent = User;
@@ -79,12 +79,12 @@ async function createUser(): Promise<User> {
   return await builder.editedEntX();
 }
 
-async function createEdgeRows(edges: string[]) {
+async function createEdgeRows(edges: string[], table?: string) {
   for (const edge of edges) {
     await createRowForTest({
       tableName: "assoc_edge_config",
       fields: {
-        edge_table: `${edge}_table`,
+        edge_table: table ?? `${edge}_table`,
         symmetric_edge: false,
         inverse_edge_type: null,
         edge_type: edge,
@@ -152,7 +152,8 @@ function commonTests() {
     });
   });
 
-  test("getEdgeTypeInGroup", async () => {
+  test("getEdgeTypeInGroup different table", async () => {
+    // setLogLevels("query");
     const edgeTypes = ["edge1", "edge2", "edge3"];
     let m = new Map<string, string>();
     for (const edgeType of edgeTypes) {
@@ -191,6 +192,86 @@ function commonTests() {
     expect(edge?.id1).toBe(user1.id);
     expect(edge?.id2).toBe(user2.id);
     expect(edge?.edgeType).toBe("edge1");
+
+    async function verifyEdges(edgeSet: string) {
+      const res = await getEdgeTypeInGroup(
+        new IDViewer(user1.id),
+        user1.id,
+        user2.id,
+        m,
+      );
+      expect(res).toBeDefined();
+      expect(res![0]).toBe(edgeSet + "Enum");
+      const edge = res![1];
+      expect(edge).toBeDefined();
+      expect(edge?.id1).toBe(user1.id);
+      expect(edge?.id2).toBe(user2.id);
+      expect(edge?.edgeType).toBe(edgeSet);
+    }
+
+    for (const edgeType of edgeTypes) {
+      const builder2 = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
+
+      for (const edgeType2 of edgeTypes) {
+        if (edgeType === edgeType2) {
+          builder2.orchestrator.addOutboundEdge(user2.id, edgeType2, "User");
+        } else {
+          builder2.orchestrator.removeOutboundEdge(user2.id, edgeType2);
+        }
+      }
+
+      await builder2.saveX();
+      // verify said edge is set and others unset
+      await verifyEdges(edgeType);
+    }
+  });
+
+  test("getEdgeTypeInGroup same table", async () => {
+    await getTempDB().create(assoc_edge_table("edge_group"));
+
+    const edgeTypes = ["edge1Group", "edge2Group", "edge3Group"];
+    await createEdgeRows(edgeTypes, "edge_group");
+
+    let m = new Map<string, string>();
+    for (const edgeType of edgeTypes) {
+      m.set(edgeType + "Enum", edgeType);
+    }
+
+    const [user1, user2] = await Promise.all([createUser(), createUser()]);
+
+    // nothing set yet
+    const res1 = await getEdgeTypeInGroup(
+      new IDViewer(user1.id),
+      user1.id,
+      user2.id,
+      m,
+    );
+    expect(res1).toBeUndefined();
+
+    // TODO should be able to do empty map here
+    const builder = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
+
+    // let's manually do edge1 and then we'll set separate edges...
+    builder.orchestrator.addOutboundEdge(
+      user2.id,
+      "edge1Group",
+      user2.nodeType,
+    );
+    await builder.saveX();
+
+    const res2 = await getEdgeTypeInGroup(
+      new IDViewer(user1.id),
+      user1.id,
+      user2.id,
+      m,
+    );
+    expect(res2).toBeDefined();
+    expect(res2![0]).toBe("edge1GroupEnum");
+    const edge = res2![1];
+    expect(edge).toBeDefined();
+    expect(edge?.id1).toBe(user1.id);
+    expect(edge?.id2).toBe(user2.id);
+    expect(edge?.edgeType).toBe("edge1Group");
 
     async function verifyEdges(edgeSet: string) {
       const res = await getEdgeTypeInGroup(
@@ -563,16 +644,26 @@ function getTables() {
   ];
 }
 
+let postgresTDB: TempDB;
+let sqliteTDB: TempDB;
+
+function getTempDB() {
+  if (Dialect.Postgres === DB.getDialect()) {
+    return postgresTDB;
+  }
+
+  return sqliteTDB;
+}
 describe("postgres", () => {
-  const tdb = new TempDB(Dialect.Postgres, getTables);
+  postgresTDB = new TempDB(Dialect.Postgres, getTables);
   commonTests();
 
   beforeAll(async () => {
-    await tdb.beforeAll();
+    await postgresTDB.beforeAll();
   });
 
   afterAll(async () => {
-    await tdb.afterAll();
+    await postgresTDB.afterAll();
   });
 
   beforeAll(async () => {
@@ -581,7 +672,7 @@ describe("postgres", () => {
 });
 
 describe("sqlite", () => {
-  setupSqlite(`sqlite:///ent_test.db`, getTables);
+  sqliteTDB = setupSqlite(`sqlite:///ent_test.db`, getTables);
 
   beforeEach(async () => {
     await createEdgeRows(["edge"]);

@@ -2051,7 +2051,7 @@ export async function loadEdges(
 
 export function getEdgeClauseAndFields(
   cls: clause.Clause,
-  options: loadEdgesOptions,
+  options: Pick<loadEdgesOptions, "disableTransformations">,
 ) {
   let fields = edgeFields;
 
@@ -2311,40 +2311,63 @@ export async function applyPrivacyPolicyForRows<
   return result.filter((r) => r !== undefined);
 }
 
-async function loadEdgeWithConst<T extends string>(
-  viewer: Viewer,
-  id1: ID,
-  id2: ID,
-  edgeEnum: T,
-  edgeType: string,
-): Promise<[T, AssocEdge | undefined]> {
-  const edge = await loadEdgeForID2({
-    id1: id1,
-    id2: id2,
-    edgeType: edgeType,
-    context: viewer.context,
-    ctr: AssocEdge,
-  });
-  return [edgeEnum, edge];
-}
-
 // given a viewer, an id pair, and a map of edgeEnum to EdgeType
 // return the edgeEnum that's set in the group
-// TODO change this to loadEdges for id2...
-
 export async function getEdgeTypeInGroup<T extends string>(
   viewer: Viewer,
   id1: ID,
   id2: ID,
   m: Map<T, string>,
 ): Promise<[T, AssocEdge] | undefined> {
-  let promises: Promise<[T, AssocEdge | undefined]>[] = [];
-  for (const [k, v] of m) {
-    promises.push(loadEdgeWithConst(viewer, id1, id2, k, v));
+  let promises: Promise<[T, AssocEdge | undefined] | undefined>[] = [];
+  const edgeDatas = await loadEdgeDatas(...Array.from(m.values()));
+
+  let tableToEdgeEnumMap = new Map<string, T[]>();
+  for (const [edgeEnum, edgeType] of m) {
+    const edgeData = edgeDatas.get(edgeType);
+    if (!edgeData) {
+      throw new Error(`could not load edge data for '${edgeType}'`);
+    }
+    const l = tableToEdgeEnumMap.get(edgeData.edgeTable) ?? [];
+    l.push(edgeEnum);
+    tableToEdgeEnumMap.set(edgeData.edgeTable, l);
   }
+  tableToEdgeEnumMap.forEach((edgeEnums, tableName) => {
+    promises.push(
+      (async () => {
+        const edgeTypes = edgeEnums.map((edgeEnum) => m.get(edgeEnum)!);
+
+        const { cls, fields } = getEdgeClauseAndFields(
+          clause.And(
+            clause.Eq("id1", id1),
+            clause.In("edge_type", edgeTypes),
+            clause.Eq("id2", id2),
+          ),
+          {},
+        );
+
+        const rows = await loadRows({
+          tableName,
+          fields,
+          clause: cls,
+          context: viewer.context,
+        });
+
+        const row = rows[0];
+        if (row) {
+          const edgeType = row.edge_type;
+          for (const [k, v] of m) {
+            if (v === edgeType) {
+              return [k, new AssocEdge(row)];
+            }
+          }
+        }
+      })(),
+    );
+  });
   const results = await Promise.all(promises);
   for (const res of results) {
-    if (res[1]) {
+    if (res && res[1]) {
       return [res[0], res[1]];
     }
   }
