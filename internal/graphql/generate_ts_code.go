@@ -2647,10 +2647,15 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 	}
 
 	for _, f := range ci.Fields {
-		result.Fields = append(result.Fields, &fieldType{
+		ft := &fieldType{
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(ciInfo.input), ciInfo.input),
-		})
+		}
+		if !ciInfo.input && f.FieldName != f.GetGraphQLName() {
+			ft.HasResolveFunction = true
+			ft.FunctionContents = []string{fmt.Sprintf("return %s.%s", strcase.ToLowerCamel(node), f.FieldName)}
+		}
+		result.Fields = append(result.Fields, ft)
 	}
 
 	for _, f := range ci.NonEntFields {

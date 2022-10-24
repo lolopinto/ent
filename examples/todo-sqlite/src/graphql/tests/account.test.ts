@@ -54,5 +54,13 @@ test("create with prefs", async () => {
       },
     ],
     ["account.name", "Jon Snow"],
+    [
+      "account.account_prefs",
+      {
+        finished_nux: true,
+        enable_notifs: false,
+        preferred_language: "en_US",
+      },
+    ],
   );
 });
