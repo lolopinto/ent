@@ -5,6 +5,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -16,13 +17,19 @@ import CreateAccountAction, {
   AccountCreateInput,
 } from "src/ent/account/actions/create_account_action";
 import { AccountPrefs } from "src/ent/generated/account_prefs";
+import { AccountPrefs2 } from "src/ent/generated/account_prefs_2";
+import { AccountPrefs2InputType } from "src/graphql/generated/mutations/input/account_prefs_2_input_type";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
 import { AccountType } from "src/graphql/resolvers/";
 
 interface customCreateAccountInput
-  extends Omit<AccountCreateInput, "phoneNumber" | "accountPrefs"> {
+  extends Omit<
+    AccountCreateInput,
+    "phoneNumber" | "accountPrefs" | "accountPrefsList"
+  > {
   phone_number: string;
   account_prefs?: AccountPrefs | null;
+  account_prefs_list?: AccountPrefs2[] | null;
 }
 
 interface CreateAccountPayload {
@@ -40,6 +47,9 @@ export const CreateAccountInputType = new GraphQLInputObjectType({
     },
     account_prefs: {
       type: AccountPrefsInputType,
+    },
+    account_prefs_list: {
+      type: new GraphQLList(new GraphQLNonNull(AccountPrefs2InputType)),
     },
   }),
 });
@@ -75,6 +85,7 @@ export const CreateAccountType: GraphQLFieldConfig<
       name: input.name,
       phoneNumber: input.phone_number,
       accountPrefs: input.account_prefs,
+      accountPrefsList: input.account_prefs_list,
     }).saveX();
     return { account: account };
   },

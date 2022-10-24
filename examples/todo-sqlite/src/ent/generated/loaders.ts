@@ -18,6 +18,7 @@ const accountFields = [
   "phone_number",
   "account_state",
   "account_prefs",
+  "account_prefs_list",
 ];
 
 export const accountLoader = new ObjectLoaderFactory({
@@ -83,6 +84,10 @@ export const accountLoaderInfo = {
     accountPrefs: {
       dbCol: "account_prefs",
       inputKey: "accountPrefs",
+    },
+    accountPrefsList: {
+      dbCol: "account_prefs_list",
+      inputKey: "accountPrefsList",
     },
   },
 };

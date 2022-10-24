@@ -13,6 +13,7 @@ import {
   convertDate,
   convertNullableDate,
   convertNullableJSON,
+  convertNullableJSONList,
   getEdgeTypeInGroup,
   loadCustomCount,
   loadCustomData,
@@ -28,6 +29,10 @@ import {
   AccountPrefs,
   convertNullableAccountPrefs,
 } from "src/ent/generated/account_prefs";
+import {
+  AccountPrefs2,
+  convertNullableAccountPrefs2List,
+} from "src/ent/generated/account_prefs_2";
 import {
   accountLoader,
   accountLoaderInfo,
@@ -71,6 +76,7 @@ interface AccountDBData {
   phone_number: string | null;
   account_state: AccountState | null;
   account_prefs: AccountPrefs | null;
+  account_prefs_list: AccountPrefs2[] | null;
 }
 
 export class AccountBase
@@ -86,6 +92,7 @@ export class AccountBase
   readonly phoneNumber: string | null;
   readonly accountState: AccountState | null;
   readonly accountPrefs: AccountPrefs | null;
+  readonly accountPrefsList: AccountPrefs2[] | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     // @ts-ignore pass to mixin
@@ -99,6 +106,9 @@ export class AccountBase
     this.accountState = data.account_state;
     this.accountPrefs = convertNullableAccountPrefs(
       convertNullableJSON(data.account_prefs),
+    );
+    this.accountPrefsList = convertNullableAccountPrefs2List(
+      convertNullableJSONList(data.account_prefs_list),
     );
   }
 

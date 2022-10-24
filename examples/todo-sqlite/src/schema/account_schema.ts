@@ -1,4 +1,9 @@
-import { BooleanType, EnumType, StructType } from "@snowtop/ent";
+import {
+  BooleanType,
+  EnumType,
+  StructType,
+  StructTypeAsList,
+} from "@snowtop/ent";
 import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 import { ActionOperation, StringType } from "@snowtop/ent";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
@@ -34,6 +39,16 @@ const AccountSchema = new TodoBaseEntSchema({
       nullable: true,
       tsType: "AccountPrefs",
       graphQLType: "AccountPrefs",
+      fields: {
+        finishedNux: BooleanType(),
+        enableNotifs: BooleanType(),
+        preferredLanguage: StringType(),
+      },
+    }),
+    accountPrefsList: StructTypeAsList({
+      nullable: true,
+      tsType: "AccountPrefs2",
+      graphQLType: "AccountPrefs2",
       fields: {
         finishedNux: BooleanType(),
         enableNotifs: BooleanType(),
