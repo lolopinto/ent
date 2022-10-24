@@ -6,8 +6,6 @@ import {
   SimpleAction,
 } from "../testutils/builder";
 import { IDViewer, LoggedOutViewer } from "./viewer";
-import { Pool } from "pg";
-import { QueryRecorder } from "../testutils/db_mock";
 import { FieldMap, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
 import { ID, Ent, Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
@@ -33,16 +31,11 @@ import {
   setupSqlite,
   assoc_edge_config_table,
   assoc_edge_table,
+  TempDB,
 } from "../testutils/db/temp_db";
 import { setLogLevels } from "./logger";
 import { MockLogs } from "../testutils/mock_log";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
-
-afterEach(() => {
-  QueryRecorder.clear();
-});
+import { Dialect } from "./db";
 
 class UserSchema implements BuilderSchema<User> {
   ent = User;
@@ -102,13 +95,6 @@ async function createEdgeRows(edges: string[]) {
     });
   }
 }
-
-beforeEach(async () => {
-  // does assoc_edge_config loader need to be cleared?
-  const edges = ["edge"];
-  await createEdgeRows(["edge"]);
-  QueryRecorder.clearQueries();
-});
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -564,12 +550,8 @@ function commonTests() {
   });
 }
 
-describe("postgres", () => {
-  commonTests();
-});
-
-describe("sqlite", () => {
-  setupSqlite(`sqlite:///ent_test.db`, () => [
+function getTables() {
+  return [
     // all these different tables used
     assoc_edge_config_table(),
     table("users", text("id", { primaryKey: true }), text("foo")),
@@ -578,6 +560,31 @@ describe("sqlite", () => {
     assoc_edge_table("edge2_table"),
     assoc_edge_table("edge3_table"),
     assoc_edge_table("edge_table"),
-  ]);
+  ];
+}
+
+describe("postgres", () => {
+  const tdb = new TempDB(Dialect.Postgres, getTables);
+  commonTests();
+
+  beforeAll(async () => {
+    await tdb.beforeAll();
+  });
+
+  afterAll(async () => {
+    await tdb.afterAll();
+  });
+
+  beforeAll(async () => {
+    await createEdgeRows(["edge"]);
+  });
+});
+
+describe("sqlite", () => {
+  setupSqlite(`sqlite:///ent_test.db`, getTables);
+
+  beforeEach(async () => {
+    await createEdgeRows(["edge"]);
+  });
   commonTests();
 });
