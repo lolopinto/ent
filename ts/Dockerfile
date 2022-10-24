@@ -1,7 +1,7 @@
-ARG GOLANG_VERSION=v0.1.0-alpha.34
-ARG AUTO_SCHEMA_VERSION=0.0.21
+ARG GOLANG_VERSION=v0.1.0-alpha.39
+ARG AUTO_SCHEMA_VERSION=0.0.24
 ARG NODE_VERSION=17
-ARG DOCKER_TAG=0.1.0-testtttt
+ARG DOCKER_TAG=v0.1.0-alpha.35-test
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.19-buster As golang-image
@@ -18,7 +18,7 @@ ARG TARGETOS TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
-FROM --platform=$BUILDPLATFORM python:3.8.11-buster AS python-image
+FROM python:3.8.11-buster AS python-image
 ARG AUTO_SCHEMA_VERSION
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv

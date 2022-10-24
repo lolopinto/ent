@@ -1,5 +1,4 @@
-FROM ghcr.io/lolopinto/ent:0.1.0-alpha.12-nodejs-17-dev
-# TODO ^ should be slim 
+FROM ghcr.io/lolopinto/ent:0.1.0-alpha.26-nodejs-17-slim
 
 WORKDIR /app
 
