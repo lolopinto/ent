@@ -2653,7 +2653,7 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 		}
 		if !ciInfo.input && f.TsFieldName(processor.Config) != f.GetGraphQLName() {
 			ft.HasResolveFunction = true
-			ft.FunctionContents = []string{fmt.Sprintf("return %s.%s", strcase.ToLowerCamel(node), f.FieldName)}
+			ft.FunctionContents = []string{fmt.Sprintf("return %s.%s", strcase.ToLowerCamel(node), f.TsFieldName(processor.Config))}
 		}
 		result.Fields = append(result.Fields, ft)
 	}
