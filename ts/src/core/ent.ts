@@ -2027,12 +2027,17 @@ interface loadCustomEdgesOptions<T extends AssocEdge> extends loadEdgesOptions {
 export const DefaultLimit = 1000;
 
 // TODO default limit from somewhere
-export function defaultEdgeQueryOptions(
+function defaultEdgeQueryOptions(
   id1: ID,
   edgeType: string,
+  id2?: ID,
 ): EdgeQueryableDataOptions {
+  let cls = clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType));
+  if (id2) {
+    cls = clause.And(cls, clause.Eq("id2", id2));
+  }
   return {
-    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    clause: cls,
     orderby: "time DESC",
     limit: DefaultLimit,
   };
@@ -2088,6 +2093,7 @@ export async function loadCustomEdges<T extends AssocEdge>(
 
 async function loadEgesInfo<T extends AssocEdge>(
   options: loadCustomEdgesOptions<T>,
+  id2?: ID,
 ) {
   const { id1, edgeType } = options;
   const edgeData = await loadEdgeData(edgeType);
@@ -2095,9 +2101,8 @@ async function loadEgesInfo<T extends AssocEdge>(
     throw new Error(`error loading edge data for ${edgeType}`);
   }
 
-  const defaultOptions = defaultEdgeQueryOptions(id1, edgeType);
+  const defaultOptions = defaultEdgeQueryOptions(id1, edgeType, id2);
   let cls = defaultOptions.clause!;
-  // TODO id2 here...
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
   }
@@ -2186,13 +2191,16 @@ interface loadEdgeForIDOptions<T extends AssocEdge>
 export async function loadEdgeForID2<T extends AssocEdge>(
   options: loadEdgeForIDOptions<T>,
 ): Promise<T | undefined> {
-  const { cls: actualClause, fields, tableName } = await loadEgesInfo(options);
+  const {
+    cls: actualClause,
+    fields,
+    tableName,
+  } = await loadEgesInfo(options, options.id2);
 
   const row = await loadRow({
     tableName,
     fields: fields,
-    // TODO this needs to be *before* deleted_at is null
-    clause: clause.And(actualClause, clause.Eq("id2", options.id2)),
+    clause: actualClause,
     context: options.context,
   });
   if (row) {
