@@ -2651,7 +2651,7 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(ciInfo.input), ciInfo.input),
 		}
-		if !ciInfo.input && f.FieldName != f.GetGraphQLName() {
+		if !ciInfo.input && f.TsFieldName(processor.Config) != f.GetGraphQLName() {
 			ft.HasResolveFunction = true
 			ft.FunctionContents = []string{fmt.Sprintf("return %s.%s", strcase.ToLowerCamel(node), f.FieldName)}
 		}
