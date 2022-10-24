@@ -30,6 +30,12 @@ enum AccountTodoStatus {
   CLOSED_TODOS_DUP
 }
 
+type AccountPrefs2 {
+  finished_nux: Boolean!
+  enable_notifs: Boolean!
+  preferred_language: String!
+}
+
 type AccountPrefs {
   finished_nux: Boolean!
   enable_notifs: Boolean!
@@ -41,6 +47,7 @@ type Account implements Node {
   name: String!
   phone_number: String
   account_prefs: AccountPrefs
+  account_prefs_list: [AccountPrefs2!]
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
   created_workspaces(first: Int, after: String, last: Int, before: String): AccountToCreatedWorkspacesConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
@@ -264,6 +271,12 @@ type WorkspaceToScopedTodosConnection implements Connection {
   rawCount: Int!
 }
 
+input AccountPrefs2Input {
+  finished_nux: Boolean!
+  enable_notifs: Boolean!
+  preferred_language: String!
+}
+
 input AccountPrefsInput {
   finished_nux: Boolean!
   enable_notifs: Boolean!
@@ -299,6 +312,7 @@ input CreateAccountInput {
   name: String!
   phone_number: String!
   account_prefs: AccountPrefsInput
+  account_prefs_list: [AccountPrefs2Input!]
 }
 
 type CreateAccountPayload {
@@ -370,6 +384,7 @@ input EditAccountInput {
   name: String
   phone_number: String
   account_prefs: AccountPrefsInput
+  account_prefs_list: [AccountPrefs2Input!]
 }
 
 type EditAccountPayload {

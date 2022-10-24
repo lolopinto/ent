@@ -6,6 +6,7 @@ export * from "src/ent/generated/loadAny";
 export * from "src/ent/generated/mixins/todo_container";
 export * from "src/ent/generated/account_base";
 export * from "src/ent/generated/account_prefs";
+export * from "src/ent/generated/account_prefs_2";
 export * from "src/ent/generated/patterns/todo_container_query_base";
 export * from "src/ent/generated/tag_base";
 export * from "src/ent/generated/todo_base";

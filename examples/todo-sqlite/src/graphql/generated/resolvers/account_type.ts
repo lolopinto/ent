@@ -26,6 +26,7 @@ import {
   Todo,
 } from "src/ent/";
 import {
+  AccountPrefs2Type,
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
   AccountToCreatedWorkspacesConnectionType,
@@ -58,6 +59,12 @@ export const AccountType = new GraphQLObjectType({
       type: AccountPrefsType,
       resolve: (account: Account, args: {}, context: RequestContext) => {
         return account.accountPrefs;
+      },
+    },
+    account_prefs_list: {
+      type: new GraphQLList(new GraphQLNonNull(AccountPrefs2Type)),
+      resolve: (account: Account, args: {}, context: RequestContext) => {
+        return account.accountPrefsList;
       },
     },
     closed_todos_dup: {

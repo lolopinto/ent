@@ -38,6 +38,13 @@ test("create with prefs", async () => {
           enable_notifs: false,
           preferred_language: "en_US",
         },
+        account_prefs_list: [
+          {
+            finished_nux: true,
+            enable_notifs: false,
+            preferred_language: "en_US",
+          },
+        ],
       },
     },
     [
@@ -51,6 +58,13 @@ test("create with prefs", async () => {
           enableNotifs: false,
           preferredLanguage: "en_US",
         });
+        expect(account.accountPrefsList).toStrictEqual([
+          {
+            finishedNux: true,
+            enableNotifs: false,
+            preferredLanguage: "en_US",
+          },
+        ]);
       },
     ],
     ["account.name", "Jon Snow"],
@@ -61,6 +75,16 @@ test("create with prefs", async () => {
         enable_notifs: false,
         preferred_language: "en_US",
       },
+    ],
+    [
+      "account.account_prefs_list",
+      [
+        {
+          finished_nux: true,
+          enable_notifs: false,
+          preferred_language: "en_US",
+        },
+      ],
     ],
   );
 });
