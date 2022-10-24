@@ -15,12 +15,33 @@ export const AccountPrefsType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<AccountPrefs, RequestContext> => ({
     finished_nux: {
       type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: (
+        accountPrefs: AccountPrefs,
+        args: {},
+        context: RequestContext,
+      ) => {
+        return accountPrefs.finishedNux;
+      },
     },
     enable_notifs: {
       type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: (
+        accountPrefs: AccountPrefs,
+        args: {},
+        context: RequestContext,
+      ) => {
+        return accountPrefs.enableNotifs;
+      },
     },
     preferred_language: {
       type: new GraphQLNonNull(GraphQLString),
+      resolve: (
+        accountPrefs: AccountPrefs,
+        args: {},
+        context: RequestContext,
+      ) => {
+        return accountPrefs.preferredLanguage;
+      },
     },
   }),
 });
