@@ -296,6 +296,7 @@ export interface TransformedUpdateOperation<
 // should eventually generate (boolean | null) etc
 
 // supported db types
+// copied to auto_schema/auto_schema/parse_db.py
 export enum DBType {
   UUID = "UUID",
   Int64ID = "Int64ID", // unsupported right now

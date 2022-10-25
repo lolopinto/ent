@@ -7,6 +7,7 @@ from auto_schema import runner
 from sqlalchemy.sql.sqltypes import String
 
 from auto_schema import compare
+from auto_schema.introspection import get_sorted_enum_values
 from . import conftest
 
 
@@ -313,13 +314,8 @@ def _validate_enum_column_type(metadata: sa.MetaData, db_column: sa.Column, sche
     if schema_column.type.enums == db_column.type.enums:
         return
 
-    # we gotta go to the db and check the order
-    db_sorted_enums = []
-    # https://www.postgresql.org/docs/9.5/functions-enum.html
-    query = "select unnest(enum_range(enum_first(null::%s)));" % (
-        db_column.type.name)
-    for row in metadata.bind.execute(query):
-        db_sorted_enums.append(dict(row)['unnest'])
+    db_sorted_enums = get_sorted_enum_values(
+        metadata.bind, db_column.type.name)
 
     assert schema_column.type.enums == db_sorted_enums
 
