@@ -1,6 +1,8 @@
+from sys import intern
 import sqlalchemy as sa
 import json
 import json
+import re
 from sqlalchemy.dialects import postgresql
 from enum import Enum
 from auto_schema.introspection import get_sorted_enum_values
@@ -41,6 +43,9 @@ class ConstraintType(str, Enum):
     Check = "check"
 
 
+sqltext_regex = re.compile('to_tsvector\((.+?), (.+)\)')
+
+
 class ParseDB(object):
 
     def __init__(self, engine):
@@ -60,10 +65,9 @@ class ParseDB(object):
                 edge = dict(row)
                 existing_edges[edge['edge_table']] = edge
 
-        # print(len(metadata.sorted_tables))
         for table in self.metadata.sorted_tables:
             # TODO handle these later
-            if table.name == 'alembic_version' or existing_edges.get(table.name) is not None:
+            if table.name == 'alembic_version' or existing_edges.get(table.name) is not None or table.name == "assoc_edge_config":
                 continue
             # TODO inspect table
 
@@ -79,7 +83,7 @@ class ParseDB(object):
         node["constraints"] = self._parse_constraints(table)
         node["indices"] = self._parse_indices(table)
 
-        # print(json.dumps(node))
+        print(json.dumps(node))
 
     def _parse_columns(self, table: sa.Table):
         fields = {}
@@ -251,28 +255,34 @@ class ParseDB(object):
     def _parse_indices(self, table: sa.Table):
         indices = []
 
-        for col in table.columns:
-            if not col.computed:
-                continue
-
-            if not isinstance(col.type, postgresql.TSVECTOR):
-                raise Exception(
-                    "unsupported computed type which isn't a tsvector")
-
-            # computed...
-            sqltext = col.computed.sqltext
-            print(col, col.computed.sqltext)
-
-        computed = set([col.name for col in table.columns if col.computed])
-        print(computed)
+        generated_columns = self._parse_generated_columns(table)
 
         raw_db_indexes = get_raw_db_indexes(self.connection, table)
         all_conn_indexes = raw_db_indexes.get('all')
 
         seen = {}
-        for name, v in all_conn_indexes.items():
+        for name, info in all_conn_indexes.items():
             seen[name] = True
-            print("missing", name, v)
+            internals = info.get("postgresql_using_internals")
+            internals = internals.strip().lstrip("(").rstrip(")")
+
+            generated_col_info = generated_columns[internals]
+
+            # TODO handle non-generated col...
+            if generated_col_info is None:
+                raise Exception("unsupported index %s in table %s" %
+                                (name, table.name))
+
+            idx = {
+                "name": name,
+                "columns": generated_col_info.get("columns"),
+                "fulltext": {
+                    "language": generated_col_info.get("language"),
+                    "indexType": info.get("postgresql_using"),
+                    "generatedColumnName": internals,
+                }
+            }
+            indices.append(idx)
 
         for index in table.indexes:
             if seen[index.name]:
@@ -283,9 +293,77 @@ class ParseDB(object):
                 "unique": index.unique,
                 "columns": [col.name for col in index.columns],
             }
-            # TODO indices on columns also here
-            print("indexxxx", index)
-            # indexType, fulltext
             indices.append(idx)
 
         return indices
+
+    def _parse_generated_columns(self, table: sa.Table):
+        col_names = set([col.name for col in table.columns])
+
+        generated = {}
+        for col in table.columns:
+            def unsupported_col(sqltext):
+                raise Exception("unsupported sqltext %s for col %s in table %s" % (
+                    sqltext, col.name, table.name))
+
+            if not col.computed:
+                continue
+
+            if not isinstance(col.type, postgresql.TSVECTOR):
+                raise Exception(
+                    "unsupported computed type %s which isn't a tsvector" % str(col.type))
+
+            # computed...
+            sqltext = str(col.computed.sqltext)
+            m = sqltext_regex.match(sqltext)
+            if not m:
+                unsupported_col(sqltext)
+
+            groups = m.groups()
+            lang = groups[0].rstrip("::regconfig").strip("'")
+
+            # TODO handle setweight if it exists...
+            # TODO eventually support examples with no COALESCE e.g. if you're sure not nullable
+
+            val = groups[1]
+            starts = [m.start() for m in re.finditer('COALESCE', groups[1])]
+            cols = []
+            for i in range(len(starts)):
+
+                if i + 1 == len(starts):
+                    curr = val[starts[i]: len(val)-1]
+                else:
+                    curr = val[starts[i]: starts[i+1]-1]
+
+                parts = curr.rstrip(' ||').split(' || ')
+                if len(parts) > 2:
+                    unsupported_col(sqltext)
+
+                # we added a space to concatenate. that's ok
+                # if something else was added to concatenate, currently unsupported
+                if len(parts) == 2 and parts[1] != "' '::text)":
+                    unsupported_col(sqltext)
+
+                curr = parts[0]
+
+                # COALESCE(last_name, ''::text)
+                # go from "COALESCE" to try and get the
+                text_parts = curr[8:].lstrip("(").rstrip(")").split(",")
+                if len(text_parts) > 2:
+                    unsupported_col(sqltext)
+
+                # we concatenate '' incase it's nullable, strip that part
+                if len(text_parts) == 2 and text_parts[1].lstrip() != "''::text":
+                    unsupported_col(sqltext)
+
+                if text_parts[0] in col_names:
+                    cols.append(text_parts[0])
+                else:
+                    raise Exception(
+                        "unknown col %s in sqltext %s for generated col %s", (text_parts[0], sqltext, col.name))
+
+            generated[col.name] = {
+                "language": lang,
+                "columns": cols,
+            }
+        return generated

@@ -39,7 +39,6 @@ def get_raw_db_indexes(connection: sa.engine.Connection, table: Optional[sa.Tabl
     names = set([index.name for index in table.indexes] +
                 [constraint.name for constraint in table.constraints])
     res = _get_db_indexes_for_table(connection, table.name)
-    print(names)
 
     for row in res.fetchall():
         (
