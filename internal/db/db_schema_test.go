@@ -1824,7 +1824,7 @@ func TestFullTextIndexMultipleColsLangColumn(t *testing.T) {
 			strconv.Quote("users_name_idx"),
 			getKVDict([]string{
 				getKVPair("postgresql_using", strconv.Quote("gin")),
-				getKVPair("postgresql_using_internals", strconv.Quote("to_tsvector(language::reconfig, coalesce(first_name, '') || ' ' || coalesce(last_name, ''))")),
+				getKVPair("postgresql_using_internals", strconv.Quote("to_tsvector(language::regconfig, coalesce(first_name, '') || ' ' || coalesce(last_name, ''))")),
 				getKVPair("columns",
 					fmt.Sprintf("[%s, %s]",
 						strconv.Quote("first_name"),

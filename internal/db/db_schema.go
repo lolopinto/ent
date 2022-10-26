@@ -262,7 +262,7 @@ func getSearchConfigFromIndex(fullText *input.FullText) string {
 	if fullText.LanguageColumn == "" {
 		return fmt.Sprintf("'%s'", fullText.Language)
 	} else {
-		return fmt.Sprintf("%s::reconfig", fullText.LanguageColumn)
+		return fmt.Sprintf("%s::regconfig", fullText.LanguageColumn)
 	}
 }
 
