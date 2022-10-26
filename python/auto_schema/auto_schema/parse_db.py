@@ -69,9 +69,8 @@ class ParseDB(object):
             # TODO handle these later
             if table.name == 'alembic_version' or existing_edges.get(table.name) is not None or table.name == "assoc_edge_config":
                 continue
-            # TODO inspect table
 
-            if table.name != 'users':
+            if table.name != 'comments':
                 continue
 
             print(table.name)
@@ -79,13 +78,17 @@ class ParseDB(object):
 
     def _parse_table(self, table: sa.Table):
         node = {}
-        node["fields"] = self._parse_columns(table)
+        col_indices = {}
+        # parse indices before columns and get
+        indices = self._parse_indices(table, col_indices)
+        node["fields"] = self._parse_columns(table, col_indices)
         node["constraints"] = self._parse_constraints(table)
-        node["indices"] = self._parse_indices(table)
+        node["indices"] = indices
 
         print(json.dumps(node))
 
-    def _parse_columns(self, table: sa.Table):
+    def _parse_columns(self, table: sa.Table, col_indices: dict):
+        # TODO handle column foreign key so we don't handle them in constraints below...
         fields = {}
         for col in table.columns:
             # we don't return computed fields
@@ -96,12 +99,6 @@ class ParseDB(object):
             field['storageKey'] = col.name
             if col.primary_key:
                 field['primaryKey'] = True
-            if col.nullable:
-                field["nullable"] = True
-            if col.index:
-                field["index"] = True
-            if col.unique:
-                field["unique"] = True
 
             if isinstance(col.type, postgresql.ARRAY):
                 field['type'] = {
@@ -110,6 +107,13 @@ class ParseDB(object):
                 }
             else:
                 field["type"] = self._parse_column_type(col.type)
+
+            if col.nullable:
+                field["nullable"] = True
+            if col.name in col_indices or col.index:
+                field["index"] = True
+            if col.unique:
+                field["unique"] = True
 
             fkey = self._parse_foreign_key(col)
             if fkey is not None:
@@ -252,10 +256,18 @@ class ParseDB(object):
             })
         return constraints
 
-    def _parse_indices(self, table: sa.Table):
+    # same logic as internal/db/db_schema.go
+    def _default_index(self, table: sa.Table, col_name: str):
+        col = table.columns[col_name]
+        if isinstance(col.type, postgresql.JSONB) or isinstance(col.type, postgresql.JSON) or isinstance(col.type, postgresql.ARRAY):
+            return 'gin'
+        return 'btree'
+
+    def _parse_indices(self, table: sa.Table, col_indices: dict):
         indices = []
 
-        generated_columns = self._parse_generated_columns(table)
+        col_names = set([col.name for col in table.columns])
+        generated_columns = self._parse_generated_columns(table, col_names)
 
         raw_db_indexes = get_raw_db_indexes(self.connection, table)
         all_conn_indexes = raw_db_indexes.get('all')
@@ -265,8 +277,14 @@ class ParseDB(object):
             seen[name] = True
             internals = info.get("postgresql_using_internals")
             internals = internals.strip().lstrip("(").rstrip(")")
+            index_type = info.get("postgresql_using")
 
-            generated_col_info = generated_columns[internals]
+            # nothing to do here. index on a column.
+            if internals in col_names and self._default_index(table, internals) == index_type:
+                col_indices[internals] = True
+                continue
+
+            generated_col_info = generated_columns.get(internals, None)
 
             # TODO handle non-generated col...
             if generated_col_info is None:
@@ -278,7 +296,7 @@ class ParseDB(object):
                 "columns": generated_col_info.get("columns"),
                 "fulltext": {
                     "language": generated_col_info.get("language"),
-                    "indexType": info.get("postgresql_using"),
+                    "indexType": index_type,
                     "generatedColumnName": internals,
                 }
             }
@@ -297,9 +315,7 @@ class ParseDB(object):
 
         return indices
 
-    def _parse_generated_columns(self, table: sa.Table):
-        col_names = set([col.name for col in table.columns])
-
+    def _parse_generated_columns(self, table: sa.Table, col_names: set):
         generated = {}
         for col in table.columns:
             def unsupported_col(sqltext):
