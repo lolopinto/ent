@@ -64,16 +64,20 @@ class ParseDB(object):
                 edge = dict(row)
                 existing_edges[edge['edge_table']] = edge
 
+        nodes = {}
         for table in self.metadata.sorted_tables:
             # TODO handle these later
             if table.name == 'alembic_version' or existing_edges.get(table.name) is not None or table.name == "assoc_edge_config":
                 continue
 
-            if table.name != 'holidays':
-                continue
+            # if table.name != 'holidays':
+            #     continue
 
             print(table.name)
-            self._parse_table(table)
+            node = self._parse_table(table)
+            nodes[self._table_to_node(table.name)] = node
+
+        print(json.dumps(nodes))
 
     def _parse_table(self, table: sa.Table):
         node = {}
@@ -84,7 +88,7 @@ class ParseDB(object):
         node["constraints"] = self._parse_constraints(table)
         node["indices"] = indices
 
-        print(json.dumps(node))
+        return node
 
     def _parse_columns(self, table: sa.Table, col_indices: dict):
         # TODO handle column foreign key so we don't handle them in constraints below...
