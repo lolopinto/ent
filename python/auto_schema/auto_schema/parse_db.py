@@ -1,13 +1,12 @@
-from sys import intern
 import sqlalchemy as sa
 import json
 import json
 import re
 from sqlalchemy.dialects import postgresql
-from enum import Enum
-from auto_schema.introspection import get_sorted_enum_values
 import inflect
-from auto_schema.introspection import get_raw_db_indexes
+from enum import Enum
+from auto_schema.introspection import get_sorted_enum_values, get_raw_db_indexes
+from auto_schema.clause_text import get_clause_text
 
 # copied from ts/src/schema/schema.ts
 
@@ -70,7 +69,7 @@ class ParseDB(object):
             if table.name == 'alembic_version' or existing_edges.get(table.name) is not None or table.name == "assoc_edge_config":
                 continue
 
-            if table.name != 'comments':
+            if table.name != 'holidays':
                 continue
 
             print(table.name)
@@ -119,6 +118,10 @@ class ParseDB(object):
             if fkey is not None:
                 field["foreignKey"] = fkey
 
+            server_default = get_clause_text(col.server_default, col.type)
+            if server_default is not None:
+                field["serverDefault"] = server_default
+
             # TODO foreign key, server default
             if len(col.constraints) != 0:
                 raise Exception(
@@ -159,6 +162,11 @@ class ParseDB(object):
                 }
             return {
                 "dbType": DBType.Time
+            }
+
+        if isinstance(col_type, sa.Date):
+            return {
+                "dbType": DBType.Date
             }
 
         # ignoring precision for now
