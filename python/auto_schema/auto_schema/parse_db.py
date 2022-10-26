@@ -5,6 +5,7 @@ from sqlalchemy.dialects import postgresql
 from enum import Enum
 from auto_schema.introspection import get_sorted_enum_values
 import inflect
+from auto_schema.introspection import get_raw_db_indexes
 
 # copied from ts/src/schema/schema.ts
 
@@ -66,7 +67,7 @@ class ParseDB(object):
                 continue
             # TODO inspect table
 
-            if table.name != 'auth_codes':
+            if table.name != 'users':
                 continue
 
             print(table.name)
@@ -76,12 +77,17 @@ class ParseDB(object):
         node = {}
         node["fields"] = self._parse_columns(table)
         node["constraints"] = self._parse_constraints(table)
+        node["indices"] = self._parse_indices(table)
 
-        print(json.dumps(node))
+        # print(json.dumps(node))
 
     def _parse_columns(self, table: sa.Table):
         fields = {}
         for col in table.columns:
+            # we don't return computed fields
+            if col.computed:
+                continue
+
             field = {}
             field['storageKey'] = col.name
             if col.primary_key:
@@ -241,3 +247,45 @@ class ParseDB(object):
                 "columns": [col.name for col in constraint.columns],
             })
         return constraints
+
+    def _parse_indices(self, table: sa.Table):
+        indices = []
+
+        for col in table.columns:
+            if not col.computed:
+                continue
+
+            if not isinstance(col.type, postgresql.TSVECTOR):
+                raise Exception(
+                    "unsupported computed type which isn't a tsvector")
+
+            # computed...
+            sqltext = col.computed.sqltext
+            print(col, col.computed.sqltext)
+
+        computed = set([col.name for col in table.columns if col.computed])
+        print(computed)
+
+        raw_db_indexes = get_raw_db_indexes(self.connection, table)
+        all_conn_indexes = raw_db_indexes.get('all')
+
+        seen = {}
+        for name, v in all_conn_indexes.items():
+            seen[name] = True
+            print("missing", name, v)
+
+        for index in table.indexes:
+            if seen[index.name]:
+                continue
+
+            idx = {
+                "name": index.name,
+                "unique": index.unique,
+                "columns": [col.name for col in index.columns],
+            }
+            # TODO indices on columns also here
+            print("indexxxx", index)
+            # indexType, fulltext
+            indices.append(idx)
+
+        return indices

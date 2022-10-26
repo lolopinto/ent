@@ -3,6 +3,7 @@ from alembic.autogenerate import comparators
 from alembic.autogenerate.api import AutogenContext
 
 from auto_schema.schema_item import FullTextIndex
+from auto_schema.introspection import get_raw_db_indexes
 from . import ops
 from alembic.operations import Operations, MigrateOperation
 import sqlalchemy as sa
@@ -444,8 +445,8 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
-    raw_db_indexes = _get_raw_db_indexes(
-        autogen_context, conn_table)
+    raw_db_indexes = get_raw_db_indexes(
+        autogen_context.connection, conn_table)
     missing_conn_indexes = raw_db_indexes.get('missing')
     all_conn_indexes = raw_db_indexes.get('all')
     conn_indexes = {}
@@ -524,56 +525,3 @@ def _compare_indexes(autogen_context: AutogenContext,
                         unique=index.unique,
                         info=index.info,
                     )
-
-
-index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
-
-
-# sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
-# fetch these indices from pg_indices to find them
-# warning: "Skipped unsupported reflection of expression-based index accounts_full_text_idx"
-def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa.Table]):
-    if conn_table is None or _dialect_name(autogen_context) != 'postgresql':
-        return {'missing': {}, 'all': {}}
-
-    missing = {}
-    all = {}
-    # we cache the db hit but the table seems to change across the same call and so we're
-    # just paying the CPU price. can probably be fixed in some way...
-    names = set([index.name for index in conn_table.indexes] +
-                [constraint.name for constraint in conn_table.constraints])
-    res = get_db_indexes_for_table(autogen_context.connection, conn_table.name)
-
-    for row in res.fetchall():
-        (
-            name,
-            details
-        ) = row
-        m = index_regex.match(details)
-        if m is None:
-            continue
-        r = m.groups()
-
-        all[name] = {
-            'postgresql_using': r[1],
-            'postgresql_using_internals': r[2],
-            # TODO don't have columns|column to pass to FullTextIndex
-        }
-
-        # missing!
-        if name not in names:
-            missing[name] = {
-                'postgresql_using': r[1],
-                'postgresql_using_internals': r[2],
-                # TODO don't have columns|column to pass to FullTextIndex
-            }
-
-    return {'missing': missing, 'all': all}
-
-
-# use a cache so we only hit the db once for each table
-# @functools.lru_cache()
-def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
-    res = connection.execute(
-        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname)
-    return res
