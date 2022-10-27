@@ -73,7 +73,7 @@ class ParseDB(object):
             if table.name == 'alembic_version' or existing_edges.get(table.name) is not None or table.name == "assoc_edge_config":
                 continue
 
-            # if table.name != 'auth_codes':
+            # if table.name != 'accounts':
             #     continue
 
             # print(table.name)
@@ -461,7 +461,7 @@ class ParseDB(object):
             indices.append(idx)
 
         for index in table.indexes:
-            if seen[index.name]:
+            if seen.get(index.name, False):
                 continue
 
             idx = {
