@@ -195,7 +195,7 @@ class ParseDB(object):
                 continue
 
             node = t1[0]
-            inverseNode = t2[1]
+            inverseNode = t2[0]
 
             node_edges = edges_map.get(node, [])
             node_edges.append({
