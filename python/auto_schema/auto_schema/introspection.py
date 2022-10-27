@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 import re
 from typing import Optional
 
@@ -48,6 +49,8 @@ def get_raw_db_indexes(connection: sa.engine.Connection, table: Optional[sa.Tabl
         m = index_regex.match(details)
         if m is None:
             continue
+
+        print('yay', details)
         r = m.groups()
 
         all[name] = {
@@ -73,3 +76,10 @@ def _get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
     res = connection.execute(
         "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname)
     return res
+
+
+def default_index(table: sa.Table, col_name: str):
+    col = table.columns[col_name]
+    if isinstance(col.type, postgresql.JSONB) or isinstance(col.type, postgresql.JSON) or isinstance(col.type, postgresql.ARRAY):
+        return 'gin'
+    return 'btree'

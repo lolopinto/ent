@@ -7,7 +7,7 @@ from sqlalchemy.dialects import postgresql
 
 clause_regex = re.compile("(.+)'::(.+)")
 date_regex = re.compile(
-    '([0-9]{4})-([0-9]{2})-([0-9]{2})[T| ]([0-9]{2}):([0-9]{2}):([0-9]{2})(\.[0-9]{3})?(.+)?')
+    r"([0-9]{4})-([0-9]{2})-([0-9]{2})[T| ]([0-9]{2}):([0-9]{2}):([0-9]{2})(\.[0-9]{3})?(.+)?")
 
 
 valid_suffixes = {
@@ -68,6 +68,9 @@ def get_clause_text(server_default, col_type):
     def normalize(arg):
         # return the underlying string instead of quoted
         arg = str(arg).strip("'")
+
+        # condition `price > 0` ends up as `price > (0)::numeric` so we're trying to fix that
+        arg = re.sub(r"\(([0-9]+)\)::numeric", r'\1', arg)
 
         # strip the extra text padding added so we can compare effectively
         m = clause_regex.match(arg)

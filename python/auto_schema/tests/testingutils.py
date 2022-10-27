@@ -4,11 +4,13 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from auto_schema.clause_text import get_clause_text
 from auto_schema import runner
+from auto_schema.parse_db import ParseDB, DBType, ConstraintType
 from sqlalchemy.sql.sqltypes import String
 
 from auto_schema import compare
-from auto_schema.introspection import get_sorted_enum_values
+from auto_schema.introspection import get_sorted_enum_values, default_index
 from . import conftest
+from typing import Optional
 
 
 def assert_num_files(r: runner.Runner, expected_count):
@@ -128,13 +130,21 @@ def validate_metadata_after_change(r: runner.Runner, old_metadata: sa.MetaData):
 # TODO why is this here?
 #    assert(len(old_metadata.sorted_tables)) != len(new_metadata.sorted_tables)
 
-    new_metadata.bind = r.get_connection()
+    conn = r.get_connection()
+    new_metadata.bind = conn
+    parse_db = ParseDB(conn)
+    parsed = parse_db.parse()
     for db_table in new_metadata.sorted_tables:
         schema_table = next(
             (t for t in old_metadata.sorted_tables if db_table.name == t.name), None)
 
         if schema_table is not None:
-            _validate_table(schema_table, db_table, dialect, new_metadata)
+            # we'll do only nodes for now
+            node_name = parse_db.table_to_node(db_table.name)
+            parsed_data = parsed.get(node_name, None)
+            print(parsed_data)
+            _validate_table(schema_table, db_table, dialect,
+                            new_metadata, parsed_data)
         else:
             # no need to do too much testing on this since we'll just have to trust that alembic works.
             assert db_table.name == 'alembic_version'
@@ -204,42 +214,72 @@ def _get_new_metadata_for_runner(r: runner.Runner) -> sa.MetaData:
     return new_metadata
 
 
-def _validate_table(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData):
+def _validate_table(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData, parsed_data: Optional[dict]):
     assert schema_table != db_table
     assert id(schema_table) != id(db_table)
 
     assert schema_table.name == db_table.name
 
-    _validate_columns(schema_table, db_table, metadata, dialect)
-    _validate_constraints(schema_table, db_table, dialect, metadata)
-    _validate_indexes(schema_table, db_table, metadata, dialect)
+    _validate_columns(schema_table, db_table, metadata, dialect, parsed_data)
+    _validate_constraints(schema_table, db_table,
+                          dialect, metadata, parsed_data)
+    _validate_indexes(schema_table, db_table, metadata, dialect, parsed_data)
 
 
-def _validate_columns(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String):
+def _validate_columns(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String, parsed_data: Optional[dict]):
     schema_columns = schema_table.columns
     db_columns = db_table.columns
     assert len(schema_columns) == len(db_columns)
     for schema_column, db_column in zip(schema_columns, db_columns):
-        _validate_column(schema_column, db_column, metadata, dialect)
+        _validate_column(schema_column, db_column,
+                         metadata, dialect, parsed_data)
 
 
-def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String):
+def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String, parsed_data: Optional[dict] = None):
     assert schema_column != db_column
     assert(id(schema_column)) != id(db_column)
 
     assert schema_column.name == db_column.name
-    _validate_column_type(schema_column, db_column, metadata, dialect)
+    parsed_data_column = None
+    if parsed_data is not None:
+        parsed_data_fields = parsed_data['fields']
+        parsed_data_column = parsed_data_fields.get(schema_column.name, None)
+        assert parsed_data_column is not None
+
+    _validate_column_type(schema_column, db_column,
+                          metadata, dialect, parsed_data_column)
+
     assert schema_column.primary_key == db_column.primary_key
+    if parsed_data_column:
+        assert parsed_data_column.get(
+            "primaryKey", False) == schema_column.primary_key
+
     assert schema_column.nullable == db_column.nullable
+    if parsed_data_column:
+        assert parsed_data_column.get(
+            "nullable", False) == schema_column.nullable
 
     _validate_foreign_key(schema_column, db_column)
-    _validate_column_server_default(schema_column, db_column)
+    _validate_column_server_default(
+        schema_column, db_column, parsed_data_column)
 
+    assert schema_column.index == db_column.index
+    # we do sa.Index in all tests + generated code
+    # this is really handled in _validate_indexes
+    if parsed_data_column and schema_column.index:
+        assert parsed_data_column.get(
+            "index", None) == schema_column.index, schema_column.name
+
+    assert schema_column.unique == db_column.unique
+    # we do sa.UniqueConstraint in all tests + generated code
+    # this is really handled in _validate_constraints
+    if parsed_data_column and schema_column.unique:
+        assert parsed_data_column.get(
+            "unique", None) == schema_column.unique, schema_column.name
+
+    # assert schema_column.autoincrement == db_column.autoincrement # ignore autoincrement for now as there's differences btw default behavior and postgres
     # we don't actually support all these below yet but when we do, it should start failing and we should know that
     assert schema_column.default == db_column.default
-    assert schema_column.index == db_column.index
-    assert schema_column.unique == db_column.unique
-    # assert schema_column.autoincrement == db_column.autoincrement # ignore autoincrement for now as there's differences btw default behavior and postgres
     assert schema_column.key == db_column.key
     assert schema_column.onupdate == db_column.onupdate
     assert schema_column.constraints == db_column.constraints
@@ -247,7 +287,7 @@ def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: s
     assert schema_column.comment == db_column.comment
 
 
-def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Column):
+def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Column, parsed_data_column: Optional[dict] = None):
     schema_clause_text = get_clause_text(
         schema_column.server_default, schema_column.type)
     db_clause_text = get_clause_text(db_column.server_default, db_column.type)
@@ -261,23 +301,37 @@ def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Colu
         assert db_clause_text.startswith("nextval")
     else:
         assert str(schema_clause_text) == str(db_clause_text)
+        if parsed_data_column:
+            # doesn't apply to autoincrement yet so ignoring this here
+            assert parsed_data_column.get(
+                "serverDefault", None) == schema_clause_text, schema_column.name
 
 
-def _validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String):
+def _validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String, parsed_data_column: Optional[dict] = None):
     # array type. validate contents
+    print('parsed data col', parsed_data_column)
     if isinstance(schema_column.type, postgresql.ARRAY):
         assert isinstance(db_column.type, postgresql.ARRAY)
 
+        parsed_data_type = None
+        if parsed_data_column is not None:
+            assert parsed_data_column.get("type").get("dbType") == DBType.List
+            parsed_data_type = parsed_data_column.get(
+                "type").get("listElemType")
+
         _validate_column_type_impl(
-            schema_column.type.item_type, db_column.type.item_type, metadata, dialect, db_column, schema_column)
+            schema_column.type.item_type, db_column.type.item_type, metadata, dialect, db_column, schema_column, parsed_data_type)
     else:
 
+        parsed_data_type = None
+        if parsed_data_column is not None:
+            parsed_data_type = parsed_data_column.get("type")
+
         _validate_column_type_impl(
-            schema_column.type, db_column.type, metadata, dialect, db_column, schema_column)
-    pass
+            schema_column.type, db_column.type, metadata, dialect, db_column, schema_column, parsed_data_type)
 
 
-def _validate_column_type_impl(schema_column_type, db_column_type, metadata: sa.MetaData, dialect, db_column: sa.Column, schema_column: sa.Column):
+def _validate_column_type_impl(schema_column_type, db_column_type, metadata: sa.MetaData, dialect, db_column: sa.Column, schema_column: sa.Column, parsed_data_type: Optional[dict] = None):
 
     if isinstance(schema_column_type, sa.TIMESTAMP):
         # timezone not supported in sqlite so this is just ignored there
@@ -305,6 +359,91 @@ def _validate_column_type_impl(schema_column_type, db_column_type, metadata: sa.
 
         assert str(schema_column_type) == str(db_column_type)
 
+    if parsed_data_type is not None:
+        _validate_parsed_data_type(
+            schema_column_type, parsed_data_type, metadata, dialect)
+
+
+def _validate_parsed_data_type(schema_column_type, parsed_data_type: dict, metadata: sa.MetaData, dialect: str):
+
+    if isinstance(schema_column_type, sa.TIMESTAMP):
+        # sqlite doesn't support timestamp with timezone
+        if schema_column_type.timezone and dialect != 'sqlite':
+            assert parsed_data_type == {
+                "dbType": DBType.Timestamptz
+            }
+        else:
+            assert parsed_data_type == {
+                "dbType": DBType.Timestamp
+            }
+
+    if isinstance(schema_column_type, sa.Time):
+        # sqlite doesn't support with timezone
+        if schema_column_type.timezone and dialect != 'sqlite':
+            assert parsed_data_type == {
+                "dbType": DBType.Timetz
+            }
+        else:
+            assert parsed_data_type == {
+                "dbType": DBType.Time
+            }
+
+    if isinstance(schema_column_type, sa.Date):
+        assert parsed_data_type == {
+            "dbType": DBType.Date
+        }
+
+    if isinstance(schema_column_type, sa.Numeric):
+        assert parsed_data_type == {
+            "dbType": DBType.Float
+        }
+
+    if isinstance(schema_column_type, postgresql.ENUM) or (isinstance(schema_column_type, sa.VARCHAR) and len(schema_column_type.enums) > 0):
+        db_sorted_enums = get_sorted_enum_values(
+            metadata.bind, schema_column_type.name)
+
+        assert parsed_data_type == {
+            "dbType": DBType.Enum,
+            "values": db_sorted_enums,
+        }
+        return
+
+    if isinstance(schema_column_type, postgresql.JSONB):
+        assert parsed_data_type == {
+            "dbType": DBType.JSONB
+        }
+        return
+
+    if isinstance(schema_column_type, postgresql.JSON):
+        assert parsed_data_type == {
+            "dbType": DBType.JSON
+        }
+
+    if isinstance(schema_column_type, postgresql.UUID):
+        assert parsed_data_type == {
+            "dbType": DBType.UUID
+        }
+
+    if isinstance(schema_column_type, sa.String):
+        assert parsed_data_type == {
+            "dbType": DBType.String
+        }
+
+    if isinstance(schema_column_type, sa.Boolean):
+        assert parsed_data_type == {
+            "dbType": DBType.Boolean
+        }
+
+    if isinstance(schema_column_type, sa.Integer):
+        if isinstance(schema_column_type, sa.BigInteger) or schema_column_type.__visit_name__ == 'big_integer':
+            assert parsed_data_type == {
+                "dbType": DBType.BigInt
+            }
+        else:
+            assert parsed_data_type == {
+                "dbType": DBType.Int
+            }
+
 
 def _validate_enum_column_type(metadata: sa.MetaData, db_column: sa.Column, schema_column: sa.Column):
     # has to be same length
@@ -328,7 +467,7 @@ def _sort_fn(item):
     return type(item).__name__ + item.name
 
 
-def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String):
+def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String, parsed_data: Optional[dict]):
     # sort indexes so that the order for both are the same
     schema_indexes = sorted(schema_table.indexes, key=_sort_fn)
     db_indexes = sorted(db_table.indexes, key=_sort_fn)
@@ -343,8 +482,38 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
         for schema_column, db_column in zip(schema_index_columns, db_index_columns):
             _validate_column(schema_column, db_column, metadata, dialect)
 
+    if parsed_data:
+        parsed_indexes = parsed_data["indices"]
+        # print('validate indexes', len(schema_indexes), len(parsed_indexes))
 
-def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData):
+        for index in schema_indexes:
+            single_col = None
+            if len(index.columns) == 1:
+                single_col = index.columns[0]
+
+            if single_col is not None and default_index(schema_table, single_col.name) == index.kwargs.get('postgresql_using'):
+                # when index is on one column, we choose to store it on the column
+                # in parsed_data since easier to read
+                assert parsed_data['fields'].get(
+                    single_col.name).get('index', None) == True
+                continue
+
+            # print('TODO index', index.name, index)
+            parsed_index = [
+                i for i in parsed_indexes if i.get("name") == index.name]
+
+            assert len(parsed_index) == 1
+            parsed_index = parsed_index[0]
+
+            assert parsed_index.get("columns") == [
+                col.name for col in index.columns]
+            assert parsed_index.get("unique", False) == index.unique
+
+            if parsed_index.get('fulltext', None) is not None:
+                print('TODOOOOOO full_text', parsed_index, index)
+
+
+def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData, parsed_data: Optional[dict]):
     # sort constraints so that the order for both are the same
     schema_constraints = sorted(schema_table.constraints, key=_sort_fn)
     db_constraints = sorted(db_table.constraints, key=_sort_fn)
@@ -392,8 +561,57 @@ def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect: S
         for schema_column, db_column in zip(schema_constraint_columns, db_constraint_columns):
             _validate_column(schema_column, db_column, metadata, dialect)
 
+    if parsed_data:
+        parsed_constraints = parsed_data["constraints"]
+        for constraint in schema_constraints:
+            single_col = None
+            if len(constraint.columns) == 1:
+                single_col = constraint.columns[0]
+
+            constraint_type = None
+            condition = None
+
+            if isinstance(constraint, sa.PrimaryKeyConstraint):
+                constraint_type = ConstraintType.PrimaryKey
+                if single_col is not None:
+                    assert parsed_data["fields"][single_col.name].get(
+                        'primaryKey', None) == True
+                    continue
+
+            if isinstance(constraint, sa.UniqueConstraint):
+                constraint_type = ConstraintType.Unique
+                if single_col is not None:
+                    assert parsed_data["fields"][single_col.name].get(
+                        'unique', None) == True
+                    continue
+
+            if isinstance(constraint, sa.ForeignKeyConstraint):
+                constraint_type = ConstraintType.ForeignKey
+                if single_col is not None:
+                    assert parsed_data["fields"][single_col.name].get(
+                        'foreignKey', None) is not None
+                    continue
+
+            if isinstance(constraint, sa.CheckConstraint):
+                constraint_type = ConstraintType.Check
+                condition = constraint.sqltext
+
+            parsed_constraint = [
+                c for c in parsed_constraints if c.get("name") == constraint.name]
+
+            assert len(parsed_constraint) == 1
+            parsed_constraint = parsed_constraint[0]
+
+            assert parsed_constraint.get("type") == constraint_type
+            assert parsed_constraint.get("columns") == [
+                col.name for col in constraint.columns]
+
+            assert get_clause_text(parsed_constraint.get(
+                "condition", None), None) == get_clause_text(condition, None)
+
 
 def _validate_foreign_key(schema_column: sa.Column, db_column: sa.Column):
+    # TODO parsed_data fkey
     assert len(schema_column.foreign_keys) == len(schema_column.foreign_keys)
 
     for db_fkey, schema_fkey in zip(db_column.foreign_keys, schema_column.foreign_keys):
@@ -433,6 +651,8 @@ def make_changes_and_restore(
     r3_message,
     validate_schema=True,
     post_r2_func=None,
+
+
 ):
     r = new_test_runner(metadata_with_table)
     run_and_validate_with_standard_metadata_tables(

@@ -94,7 +94,7 @@ def main():
 
             if args.import_db is True:
                 p = ParseDB(args.engine)
-                p.parse()
+                p.parse_and_print()
                 return
 
             sys.path.append(os.path.relpath(args.schema))

@@ -4,7 +4,7 @@ import re
 from sqlalchemy.dialects import postgresql
 import inflect
 from enum import Enum
-from auto_schema.introspection import get_sorted_enum_values, get_raw_db_indexes
+from auto_schema.introspection import get_sorted_enum_values, get_raw_db_indexes, default_index
 from auto_schema.clause_text import get_clause_text
 
 # copied from ts/src/schema/schema.ts
@@ -41,15 +41,18 @@ class ConstraintType(str, Enum):
     Check = "check"
 
 
-sqltext_regex = re.compile('to_tsvector\((.+?), (.+)\)')
+sqltext_regex = re.compile(r"to_tsvector\((.+?), (.+)\)")
 edge_name_regex = re.compile('(.+?)To(.+)Edge')
 
 
 class ParseDB(object):
 
-    def __init__(self, engine):
-        engine = sa.create_engine(engine)
-        self.connection = engine.connect()
+    def __init__(self, engine_conn):
+        if isinstance(engine_conn, sa.engine.Connection):
+            self.connection = engine_conn
+        else:
+            engine = sa.create_engine(engine_conn)
+            self.connection = engine.connect()
         self.metadata = sa.MetaData()
         self.metadata.bind = self.connection
         self.metadata.reflect()
@@ -77,7 +80,7 @@ class ParseDB(object):
 
             # print(table.name)
             node = self._parse_table(table)
-            nodes[self._table_to_node(table.name)] = node
+            nodes[self.table_to_node(table.name)] = node
 
         (unknown_edges, edges_map) = self._parse_edges_info(existing_edges, nodes)
 
@@ -85,7 +88,10 @@ class ParseDB(object):
             node = nodes[k]
             node["edges"] = v
 
-        print(json.dumps(nodes))
+        return nodes
+
+    def parse_and_print(self):
+        print(json.dumps(self.parse()))
 
     def _parse_edges_info(self, existing_edges: dict, nodes: dict):
         unknown_edges = []
@@ -278,9 +284,12 @@ class ParseDB(object):
 
         return fields
 
+    # keep this in sync with testingutils._validate_parsed_data_type
     def _parse_column_type(self, col_type):
         if isinstance(col_type, sa.TIMESTAMP):
-            if col_type.timezone:
+            # sqlite doesn't support timestamp with timezone
+            dialect = self.connection.dialect.name
+            if col_type.timezone and dialect != 'sqlite':
                 return {
                     "dbType": DBType.Timestamptz
                 }
@@ -289,7 +298,9 @@ class ParseDB(object):
             }
 
         if isinstance(col_type, sa.Time):
-            if col_type.timezone:
+            # sqlite doesn't support with timezone
+            dialect = self.connection.dialect.name
+            if col_type.timezone and dialect != 'sqlite':
                 return {
                     "dbType": DBType.Timetz
                 }
@@ -322,6 +333,7 @@ class ParseDB(object):
             return {
                 "dbType": DBType.JSONB
             }
+
         if isinstance(col_type, postgresql.JSON):
             return {
                 "dbType": DBType.JSON
@@ -343,13 +355,12 @@ class ParseDB(object):
             }
 
         if isinstance(col_type, sa.Integer):
+            if isinstance(col_type, sa.BigInteger) or col_type.__visit_name__ == 'big_integer' or col_type.__visit_name__ == 'BIGINT':
+                return {
+                    "dbType": DBType.BigInt
+                }
             return {
                 "dbType": DBType.Int
-            }
-
-        if isinstance(col_type, sa.BigInteger):
-            return {
-                "dbType": DBType.BigInt
             }
 
         raise Exception("unsupported type %s" % str(col_type))
@@ -361,43 +372,54 @@ class ParseDB(object):
 
         for fkey in col.foreign_keys:
             return {
-                "schema": self._table_to_node(fkey.column.table.name),
+                "schema": self.table_to_node(fkey.column.table.name),
                 "column": fkey.column.name,
             }
 
         return None
 
-    def _table_to_node(self, table_name) -> str:
+    def _singular(self, table_name) -> str:
         p = inflect.engine()
+        ret = p.singular_noun(table_name)
+        # TODO address this for not-tests
+        # what should the node be called??
+        # how does this affect GraphQL/TypeScript names etc?
+        if ret is False:
+            return table_name
+        return ret
+
+    def table_to_node(self, table_name) -> str:
         return "".join([t.title()
-                        for t in p.singular_noun(table_name).split("_")])
+                        for t in self._singular(table_name).split("_")])
 
     def _parse_constraints(self, table: sa.Table, col_unique: dict):
         constraints = []
         for constraint in table.constraints:
             constraint_type = None
-            col = None
+            condition = None
+            single_col = None
             if len(constraint.columns) == 1:
-                col = constraint.columns[0]
+                single_col = constraint.columns[0]
 
             if isinstance(constraint, sa.CheckConstraint):
                 constraint_type = ConstraintType.Check
+                condition = constraint.sqltext
 
             if isinstance(constraint, sa.UniqueConstraint):
-                if col is not None:
-                    col_unique[col.name] = True
+                if single_col is not None:
+                    col_unique[single_col.name] = True
                     continue
                 constraint_type = ConstraintType.Unique
 
             if isinstance(constraint, sa.ForeignKeyConstraint):
-                if col is not None:
-                    if len(col.foreign_keys) == 1:
+                if single_col is not None:
+                    if len(single_col.foreign_keys) == 1:
                         # handled at the column level
                         continue
                 constraint_type = ConstraintType.ForeignKey
 
             if isinstance(constraint, sa.PrimaryKeyConstraint):
-                if col is not None and col.primary_key:
+                if single_col is not None and single_col.primary_key:
                     continue
                 constraint_type = ConstraintType.PrimaryKey
 
@@ -410,15 +432,9 @@ class ParseDB(object):
                 "name": constraint.name,
                 "type": constraint_type,
                 "columns": [col.name for col in constraint.columns],
+                'condition': condition,
             })
         return constraints
-
-    # same logic as internal/db/db_schema.go
-    def _default_index(self, table: sa.Table, col_name: str):
-        col = table.columns[col_name]
-        if isinstance(col.type, postgresql.JSONB) or isinstance(col.type, postgresql.JSON) or isinstance(col.type, postgresql.ARRAY):
-            return 'gin'
-        return 'btree'
 
     def _parse_indices(self, table: sa.Table, col_indices: dict):
         indices = []
@@ -428,20 +444,37 @@ class ParseDB(object):
 
         raw_db_indexes = get_raw_db_indexes(self.connection, table)
         all_conn_indexes = raw_db_indexes.get('all')
+        missing_conn_indexes = raw_db_indexes.get('missing')
 
         seen = {}
+        print("all_conn", generated_columns,
+              all_conn_indexes, missing_conn_indexes)
         for name, info in all_conn_indexes.items():
             seen[name] = True
             internals = info.get("postgresql_using_internals")
             internals = internals.strip().lstrip("(").rstrip(")")
             index_type = info.get("postgresql_using")
 
+            generated_col_info = generated_columns.get(internals, None)
+
+            print(col_names, internals, default_index(
+                table, internals), index_type, generated_col_info)
             # nothing to do here. index on a column.
-            if internals in col_names and self._default_index(table, internals) == index_type:
+            if internals in col_names and default_index(table, internals) == index_type:
+                # print('first name full text dropped??? 11112')
                 col_indices[internals] = True
                 continue
 
-            generated_col_info = generated_columns.get(internals, None)
+            # col index with different type
+            if internals in col_names and index_type is not None:
+                # print('first name, full text droppedd?? ')
+                idx = {
+                    "name": name,
+                    "columns": [internals],
+                    "indexType": index_type,
+                }
+                indices.append(idx)
+                continue
 
             # TODO handle non-generated col...
             if generated_col_info is None:

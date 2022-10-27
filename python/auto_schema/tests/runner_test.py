@@ -42,6 +42,7 @@ class BaseTestRunner(object):
         assert len(r.compute_changes()) == 2
         testingutils.assert_no_changes_made(r)
 
+    # TODO no fkey...
     @pytest.mark.usefixtures("metadata_with_foreign_key")
     def test_compute_changes_with_foreign_key_table(self, new_test_runner, metadata_with_foreign_key):
         r = new_test_runner(metadata_with_foreign_key)
@@ -133,6 +134,7 @@ class BaseTestRunner(object):
             conftest.metadata_with_multi_column_index,
             "add index accounts_first_name_last_name_idx to accounts",
             "drop index accounts_first_name_last_name_idx from accounts",
+            # TODO why is this false??
             validate_schema=False,
             post_r2_func=post_r2_func
         )
@@ -1379,6 +1381,7 @@ class TestPostgresRunner(BaseTestRunner):
             "add full text index accounts_first_name_idx to accounts",
             "drop full text index accounts_first_name_idx from accounts",
             # skip validation because of complications with idx
+            # TODO no validation here either...
             validate_schema=False
         )
 
@@ -1402,6 +1405,7 @@ class TestPostgresRunner(BaseTestRunner):
             "add full text index accounts_full_text_idx to accounts",
             "drop full text index accounts_full_text_idx from accounts",
             # skip validation because of complications with idx
+            # TODO validation broken
             validate_schema=False
         )
 
@@ -1417,6 +1421,7 @@ class TestPostgresRunner(BaseTestRunner):
             "add full text index accounts_full_text_idx to accounts",
             "drop full text index accounts_full_text_idx from accounts",
             # skip validation because of complications with idx
+            # TODO no validation
             validate_schema=False
         )
 
@@ -1429,6 +1434,7 @@ class TestPostgresRunner(BaseTestRunner):
             "add full text index accounts_full_text_idx to accounts",
             "drop full text index accounts_full_text_idx from accounts",
             # skip validation because of complications with idx
+            # TODO no validation...
             validate_schema=False
         )
 
@@ -1441,6 +1447,7 @@ class TestPostgresRunner(BaseTestRunner):
             "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
             "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
             # skip validation because of complications with idx
+            # TODO no validation....
             validate_schema=False
         )
 
@@ -1453,6 +1460,7 @@ class TestPostgresRunner(BaseTestRunner):
             "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
             "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
             # skip validation because of complications with idx
+            # TODO no validation...
             validate_schema=False
         )
 
