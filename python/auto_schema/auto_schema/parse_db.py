@@ -73,7 +73,7 @@ class ParseDB(object):
             if table.name == 'alembic_version' or existing_edges.get(table.name) is not None or table.name == "assoc_edge_config":
                 continue
 
-            # if table.name != 'holidays':
+            # if table.name != 'auth_codes':
             #     continue
 
             # print(table.name)
@@ -210,15 +210,17 @@ class ParseDB(object):
     def _parse_table(self, table: sa.Table):
         node = {}
         col_indices = {}
-        # parse indices before columns and get
+        col_unique = {}
+        # parse indices and constraints before columns and get col specific data
         indices = self._parse_indices(table, col_indices)
-        node["fields"] = self._parse_columns(table, col_indices)
-        node["constraints"] = self._parse_constraints(table)
+        constraints = self._parse_constraints(table, col_unique)
+        node["fields"] = self._parse_columns(table, col_indices, col_unique)
+        node["constraints"] = constraints
         node["indices"] = indices
 
         return node
 
-    def _parse_columns(self, table: sa.Table, col_indices: dict):
+    def _parse_columns(self, table: sa.Table, col_indices: dict, col_unique: dict):
         # TODO handle column foreign key so we don't handle them in constraints below...
         fields = {}
         for col in table.columns:
@@ -243,7 +245,7 @@ class ParseDB(object):
                 field["nullable"] = True
             if col.name in col_indices or col.index:
                 field["index"] = True
-            if col.unique:
+            if col.name in col_unique or col.unique:
                 field["unique"] = True
 
             fkey = self._parse_foreign_key(col)
@@ -371,17 +373,33 @@ class ParseDB(object):
         return "".join([t.title()
                         for t in p.singular_noun(table_name).split("_")])
 
-    def _parse_constraints(self, table: sa.Table):
+    def _parse_constraints(self, table: sa.Table, col_unique: dict):
         constraints = []
         for constraint in table.constraints:
             constraint_type = None
+            col = None
+            if len(constraint.columns) == 1:
+                col = constraint.columns[0]
+
             if isinstance(constraint, sa.CheckConstraint):
                 constraint_type = ConstraintType.Check
+
             if isinstance(constraint, sa.UniqueConstraint):
+                if col is not None:
+                    col_unique[col.name] = True
+                    continue
                 constraint_type = ConstraintType.Unique
+
             if isinstance(constraint, sa.ForeignKeyConstraint):
+                if col is not None:
+                    if len(col.foreign_keys) == 1:
+                        # handled at the column level
+                        continue
                 constraint_type = ConstraintType.ForeignKey
+
             if isinstance(constraint, sa.PrimaryKeyConstraint):
+                if col is not None and col.primary_key:
+                    continue
                 constraint_type = ConstraintType.PrimaryKey
 
             if not constraint_type:
