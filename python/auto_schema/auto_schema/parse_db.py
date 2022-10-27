@@ -43,6 +43,7 @@ class ConstraintType(str, Enum):
 
 
 sqltext_regex = re.compile('to_tsvector\((.+?), (.+)\)')
+edge_name_regex = re.compile('(.+)To(.+)Edge')
 
 
 class ParseDB(object):
@@ -62,22 +63,149 @@ class ParseDB(object):
         if assoc_edge_config:
             for row in self.connection.execute('select * from assoc_edge_config'):
                 edge = dict(row)
-                existing_edges[edge['edge_table']] = edge
+                edge_table = edge['edge_table']
+                edges = existing_edges.get(edge_table, [])
+                edges.append(edge)
+                existing_edges[edge_table] = edges
 
         nodes = {}
         for table in self.metadata.sorted_tables:
-            # TODO handle these later
             if table.name == 'alembic_version' or existing_edges.get(table.name) is not None or table.name == "assoc_edge_config":
                 continue
 
             # if table.name != 'holidays':
             #     continue
 
-            print(table.name)
+            # print(table.name)
             node = self._parse_table(table)
             nodes[self._table_to_node(table.name)] = node
 
+        (unknown_edges, edges_map) = self._parse_edges_info(existing_edges, nodes)
+
+        for (k, v) in edges_map.items():
+            node = nodes[k]
+            node["edges"] = v
+
         print(json.dumps(nodes))
+
+    def _parse_edges_info(self, existing_edges: dict, nodes: dict):
+        unknown_edges = []
+        edges_map = {}
+
+        # todo global edge
+        for item in existing_edges.items():
+            table_name = item[0]
+            edges = item[1]
+            if len(edges) == 1:
+                self._handle_single_edge_in_table(
+                    edges[0], nodes, edges_map, unknown_edges)
+            else:
+                self._handle_multi_edges_in_table(
+                    edges, nodes, edges_map, unknown_edges)
+
+        return (unknown_edges, edges_map)
+
+    def _parse_edge_name(self, edge: dict):
+        m = edge_name_regex.match(edge['edge_name'])
+        if m is None:
+            return None
+        return m.groups()
+
+    def _handle_single_edge_in_table(self, edge, nodes, edges_map, unknown_edges):
+        t = self._parse_edge_name(edge)
+        # unknown edges
+        if t is None or nodes.get(t[0], None) is None:
+            print("unknown edge", edge, '\n')
+            unknown_edges.append(edge)
+            return
+
+        if edge["symmetric_edge"]:
+            # symmetric
+            node_edges = edges_map.get(t[0], [])
+            node_edges.append({
+                "name": t[1],
+                "schemaName": t[0],
+                "symmetric": True,
+            })
+            edges_map[t[0]] = node_edges
+        else:
+
+            res = self.connection.execute(
+                'select id2_type, count(id2_type) from %s group by id2_type' % (edge["edge_table"])).fetchall()
+
+            if len(res) != 1:
+                print("unknown edge can't determine schemaName", edge, '\n')
+                unknown_edges.append(edge)
+                return
+
+            toNode = res[0][0].title()
+            if nodes.get(toNode, None) is None:
+                print(
+                    "unknown edge can't determine schemaName because toNode is unknown", edge, toNode, '\n')
+                unknown_edges.append(edge)
+                return
+
+            node_edges = edges_map.get(t[0], [])
+            node_edges.append({
+                "name": t[1],
+                "schemaName": toNode,
+            })
+            edges_map[t[0]] = node_edges
+
+    def _handle_multi_edges_in_table(self, edges, nodes, edges_map, unknown_edges):
+        edge_types = {}
+        for edge in edges:
+            edge_types[str(edge['edge_type'])] = edge
+
+        seen = {}
+        for edge in edges:
+            edge_type = str(edge["edge_type"])
+            if seen.get(edge_type, False):
+                continue
+
+            seen[edge_type] = True
+
+            # assoc edge group??
+            if edge["symmetric_edge"] or edge['inverse_edge_type'] is None:
+                self._handle_single_edge_in_table(
+                    edge, nodes, edges_map, unknown_edges)
+                continue
+
+            # for inverse edges, we don't know which schema should be the source of truth
+            # so it ends up being randomly placed in one or the other
+
+            inverse_edge_type = str(edge['inverse_edge_type'])
+            if inverse_edge_type not in edge_types:
+                print('unknown inverse edge', inverse_edge_type)
+                unknown_edges.append(edge)
+                continue
+
+            inverse_edge = edge_types[inverse_edge_type]
+            seen[inverse_edge_type] = True
+
+            t1 = self._parse_edge_name(edge)
+            t2 = self._parse_edge_name(inverse_edge)
+
+            # pattern or polymorphic edge...
+            if t1 is None or t2 is None or nodes.get(t1[0], None) is None or nodes.get(t2[0], None) is None:
+                print("unknown edge or inverse edge", edge, inverse_edge, "\n")
+
+                unknown_edges.append(edge)
+                unknown_edges.append(inverse_edge)
+                continue
+
+            node = t1[0]
+            inverseNode = t2[1]
+
+            node_edges = edges_map.get(node, [])
+            node_edges.append({
+                "name": t1[1],
+                "schemaName": inverseNode,
+                "inverseEdge": {
+                    "name": t2[1]
+                },
+            })
+            edges_map[node] = node_edges
 
     def _parse_table(self, table: sa.Table):
         node = {}
