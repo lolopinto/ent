@@ -43,7 +43,7 @@ class ConstraintType(str, Enum):
 
 
 sqltext_regex = re.compile('to_tsvector\((.+?), (.+)\)')
-edge_name_regex = re.compile('(.+)To(.+)Edge')
+edge_name_regex = re.compile('(.+?)To(.+)Edge')
 
 
 class ParseDB(object):
