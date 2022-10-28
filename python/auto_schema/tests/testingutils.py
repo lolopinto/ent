@@ -491,12 +491,22 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
             if len(index.columns) == 1:
                 single_col = index.columns[0]
 
-            if single_col is not None and default_index(schema_table, single_col.name) == index.kwargs.get('postgresql_using'):
-                # when index is on one column, we choose to store it on the column
-                # in parsed_data since easier to read
-                assert parsed_data['fields'].get(
-                    single_col.name).get('index', None) == True
-                continue
+            # print('tododdd', index, single_col,
+            #       parsed_data, default_index(schema_table, single_col.name),
+            #       index.kwargs.get('postgresql_using', 'btree'))
+            # print('parse coollllll', parsed_data['fields'].get(
+            #     single_col.name))
+
+            if single_col is not None:
+                def_index_type = default_index(schema_table, single_col.name)
+                postgres_using = index.kwargs.get('postgresql_using')
+                print('sssssss', postgres_using, def_index_type)
+                if postgres_using is False or def_index_type == postgres_using:
+                    # when index is on one column, we choose to store it on the column
+                    # in parsed_data since easier to read
+                    assert parsed_data['fields'].get(
+                        single_col.name).get('index', None) == True
+                    continue
 
             # print('TODO index', index.name, index)
             parsed_index = [

@@ -218,6 +218,7 @@ class ParseDB(object):
         col_unique = {}
         # parse indices and constraints before columns and get col specific data
         indices = self._parse_indices(table, col_indices)
+        print('colindicessss', col_indices)
         constraints = self._parse_constraints(table, col_unique)
         node["fields"] = self._parse_columns(table, col_indices, col_unique)
         node["constraints"] = constraints
@@ -457,16 +458,17 @@ class ParseDB(object):
 
             generated_col_info = generated_columns.get(internals, None)
 
-            print(col_names, internals, default_index(
-                table, internals), index_type, generated_col_info)
+            # print('parse_indices', col_names, internals, default_index(
+            #     table, internals), index_type, generated_col_info)
             # nothing to do here. index on a column.
             if internals in col_names and default_index(table, internals) == index_type:
-                # print('first name full text dropped??? 11112')
+                # print('col index %s' % internals, len(internals))
                 col_indices[internals] = True
                 continue
 
             # col index with different type
             if internals in col_names and index_type is not None:
+                # print('col_index with different type')
                 # print('first name, full text droppedd?? ')
                 idx = {
                     "name": name,
@@ -495,6 +497,20 @@ class ParseDB(object):
         for index in table.indexes:
             if seen.get(index.name, False):
                 continue
+
+            # we don't get raw sqlite cols above so need this for sqlite...
+            single_col = None
+            if len(index.columns) == 1:
+                single_col = index.columns[0]
+                index_type = index.kwargs.get('postgresql_using')
+
+                print('index_typppppe', index_type)
+                # index.
+                if index_type == False or default_index(table, single_col.name) == index_type:
+                    print('collllllllindice')
+                    col_indices[single_col.name] = True
+                    continue
+                    # pass
 
             idx = {
                 "name": index.name,
