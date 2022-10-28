@@ -33,7 +33,6 @@ class BaseTestRunner(object):
             conftest.metadata_with_table_with_index,
             "add index accounts_first_name_idx to accounts",
             "drop index accounts_first_name_idx from accounts",
-            # validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_two_tables")

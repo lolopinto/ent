@@ -445,11 +445,8 @@ class ParseDB(object):
 
         raw_db_indexes = get_raw_db_indexes(self.connection, table)
         all_conn_indexes = raw_db_indexes.get('all')
-        missing_conn_indexes = raw_db_indexes.get('missing')
 
         seen = {}
-        print("all_conn", generated_columns,
-              all_conn_indexes, missing_conn_indexes)
         for name, info in all_conn_indexes.items():
             seen[name] = True
             internals = info.get("postgresql_using_internals")
@@ -458,18 +455,13 @@ class ParseDB(object):
 
             generated_col_info = generated_columns.get(internals, None)
 
-            # print('parse_indices', col_names, internals, default_index(
-            #     table, internals), index_type, generated_col_info)
             # nothing to do here. index on a column.
             if internals in col_names and default_index(table, internals) == index_type:
-                # print('col index %s' % internals, len(internals))
                 col_indices[internals] = True
                 continue
 
             # col index with different type
             if internals in col_names and index_type is not None:
-                # print('col_index with different type')
-                # print('first name, full text droppedd?? ')
                 idx = {
                     "name": name,
                     "columns": [internals],
@@ -503,14 +495,11 @@ class ParseDB(object):
             if len(index.columns) == 1:
                 single_col = index.columns[0]
                 index_type = index.kwargs.get('postgresql_using')
+                default_index_type = default_index(table, single_col.name)
 
-                print('index_typppppe', index_type)
-                # index.
-                if index_type == False or default_index(table, single_col.name) == index_type:
-                    print('collllllllindice')
+                if (index_type == False and default_index_type == 'btree') or default_index(table, single_col.name) == index_type:
                     col_indices[single_col.name] = True
                     continue
-                    # pass
 
             idx = {
                 "name": index.name,
