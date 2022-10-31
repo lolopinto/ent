@@ -41,12 +41,14 @@ class BaseTestRunner(object):
         assert len(r.compute_changes()) == 2
         testingutils.assert_no_changes_made(r)
 
-    # TODO no fkey...
     @pytest.mark.usefixtures("metadata_with_foreign_key")
     def test_compute_changes_with_foreign_key_table(self, new_test_runner, metadata_with_foreign_key):
         r = new_test_runner(metadata_with_foreign_key)
         assert len(r.compute_changes()) == 2
         testingutils.assert_no_changes_made(r)
+
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_foreign_key, new_table_names=['accounts', 'contacts'])
 
     @pytest.mark.usefixtures("metadata_with_foreign_key_to_same_table")
     def test_compute_changes_with_foreign_key_to_same_table(self, new_test_runner, metadata_with_foreign_key_to_same_table):

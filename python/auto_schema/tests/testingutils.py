@@ -141,7 +141,7 @@ def validate_metadata_after_change(r: runner.Runner, old_metadata: sa.MetaData):
 
         if schema_table is not None:
             # we'll do only nodes for now
-            node_name = parse_db.table_to_node(db_table.name)
+            node_name = ParseDB.table_to_node(db_table.name)
             parsed_data = parsed.get(node_name, None)
             _validate_table(schema_table, db_table, dialect,
                             new_metadata, parsed_data)
@@ -266,7 +266,8 @@ def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: s
         assert parsed_data_column.get(
             "nullable", False) == schema_column.nullable
 
-    _validate_foreign_key(schema_column, db_column)
+    _validate_foreign_key(schema_column, db_column, parsed_data_column)
+
     _validate_column_server_default(
         schema_column, db_column, parsed_data_column)
 
@@ -645,9 +646,22 @@ def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect: S
                 "condition", None), None) == get_clause_text(condition, None)
 
 
-def _validate_foreign_key(schema_column: sa.Column, db_column: sa.Column):
-    # TODO parsed_data fkey
-    assert len(schema_column.foreign_keys) == len(schema_column.foreign_keys)
+def _validate_foreign_key(schema_column: sa.Column, db_column: sa.Column, parsed_data_column: Optional[dict]):
+    assert len(schema_column.foreign_keys) == len(db_column.foreign_keys)
+
+    if parsed_data_column is not None:
+        fkey = parsed_data_column.get('foreignKey')
+        if len(schema_column.foreign_keys) == 0:
+            assert fkey is None
+        else:
+            assert fkey is not None
+            assert len(schema_column.foreign_keys) == 1
+
+            fkeyInfo = list(schema_column.foreign_keys)[0]
+            assert fkey == {
+                'schema': ParseDB.table_to_node(fkeyInfo.column.table.name),
+                'column': fkeyInfo.column.name,
+            }
 
     for db_fkey, schema_fkey in zip(db_column.foreign_keys, schema_column.foreign_keys):
         # similar to what we do in validate_table on column.type

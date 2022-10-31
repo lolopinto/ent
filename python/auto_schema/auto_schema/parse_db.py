@@ -80,7 +80,7 @@ class ParseDB(object):
 
             # print(table.name)
             node = self._parse_table(table)
-            nodes[self.table_to_node(table.name)] = node
+            nodes[ParseDB.table_to_node(table.name)] = node
 
         (unknown_edges, edges_map) = self._parse_edges_info(existing_edges, nodes)
 
@@ -372,13 +372,14 @@ class ParseDB(object):
 
         for fkey in col.foreign_keys:
             return {
-                "schema": self.table_to_node(fkey.column.table.name),
+                "schema": ParseDB.table_to_node(fkey.column.table.name),
                 "column": fkey.column.name,
             }
 
         return None
 
-    def _singular(self, table_name) -> str:
+    @classmethod
+    def _singular(cls, table_name) -> str:
         p = inflect.engine()
         ret = p.singular_noun(table_name)
         # TODO address this for not-tests
@@ -388,9 +389,10 @@ class ParseDB(object):
             return table_name
         return ret
 
-    def table_to_node(self, table_name) -> str:
+    @classmethod
+    def table_to_node(cls, table_name) -> str:
         return "".join([t.title()
-                        for t in self._singular(table_name).split("_")])
+                        for t in cls._singular(table_name).split("_")])
 
     def _parse_constraints(self, table: sa.Table, col_unique: dict):
         constraints = []
