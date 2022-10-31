@@ -143,7 +143,6 @@ def validate_metadata_after_change(r: runner.Runner, old_metadata: sa.MetaData):
             # we'll do only nodes for now
             node_name = parse_db.table_to_node(db_table.name)
             parsed_data = parsed.get(node_name, None)
-            print(parsed_data)
             _validate_table(schema_table, db_table, dialect,
                             new_metadata, parsed_data)
         else:
@@ -325,7 +324,6 @@ def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Colu
 
 def _validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String, parsed_data_column: Optional[dict] = None):
     # array type. validate contents
-    # print('parsed data col', parsed_data_column)
     if isinstance(schema_column.type, postgresql.ARRAY):
         assert isinstance(db_column.type, postgresql.ARRAY)
 
@@ -485,21 +483,12 @@ def _sort_fn(item):
 
 def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String, parsed_data: Optional[dict]):
     # sort indexes so that the order for both are the same
+    # skip FullTextIndexes because not reflected
+    # we're ignoring FullTextIndexes for now
+    # they are tested/confirmed in parsed_data
     schema_indexes = sorted([
         idx for idx in schema_table.indexes if not isinstance(idx, FullTextIndex)], key=_sort_fn)
     db_indexes = sorted(db_table.indexes, key=_sort_fn)
-
-    # TODO augment indexesss
-    # TODO handle missing db indexes e.g. FullTextIndex
-    full_text_indexes = [
-        idx for idx in schema_table.indexes if isinstance(idx, FullTextIndex)]
-    # no fts, no info
-    # it's like everything that's happening here is weird.
-    # these are the instanecs here but by the time we parse, it's after this
-    # print('fts', len(full_text_indexes))
-    # for idx in full_text_indexes:
-    #     print(isinstance(idx, FullTextIndex))
-    #     print(idx.kwwwww)
 
     assert len(schema_indexes) == len(db_indexes)
     for schema_index, db_index in zip(schema_indexes, db_indexes):
@@ -513,12 +502,8 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
 
     if parsed_data:
         parsed_indexes = parsed_data["indices"]
-        print('parsed_indexesss', parsed_indexes)
 
         # go through all indexes
-        # print(len(schema_table.indexes))
-        # why do we have 4 indexes that are the same here???
-        # print([idx.name for idx in set(schema_table.indexes)])
         for index in schema_table.indexes:
             single_col = None
             if len(index.columns) == 1:
@@ -527,11 +512,10 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
             parsed_index = [
                 i for i in parsed_indexes if i.get("name") == index.name]
 
-            assert len(parsed_index) == 1
-            parsed_index = parsed_index[0]
-            print(parsed_index)
+            fulltext = None
+            if len(parsed_index) > 0:
+                fulltext = parsed_index[0].get('fulltext', None)
 
-            fulltext = parsed_index.get('fulltext', None)
             if single_col is not None:
                 def_index_type = default_index(schema_table, single_col.name)
                 index_type = index.kwargs.get('postgresql_using')
@@ -540,8 +524,10 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
                     # in parsed_data since easier to read
                     assert parsed_data['fields'].get(
                         single_col.name).get('index', None) == True
-                    # print('ssso continue')
                     continue
+
+            assert len(parsed_index) == 1
+            parsed_index = parsed_index[0]
 
             assert parsed_index.get("columns") == [
                 col.name for col in index.columns]
@@ -550,7 +536,6 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
             if parsed_index.get('fulltext', None) is not None:
                 info = index.kwwwww['info']
 
-                # print(info)
                 fulltext = parsed_index.get('fulltext')
 
                 m = sqltext_regex.match(info['postgresql_using_internals'])
@@ -561,8 +546,6 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
                     'indexType': info['postgresql_using'],
                     'language': lang,
                 }
-                # print('TODOOOOOO full_text', index.name, parsed_index, index, index.kwargs.get(
-                #     'info'), len(index.kwwwww))
 
 
 def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData, parsed_data: Optional[dict]):

@@ -50,7 +50,6 @@ def get_raw_db_indexes(connection: sa.engine.Connection, table: Optional[sa.Tabl
         if m is None:
             continue
 
-        print('yay', details)
         r = m.groups()
 
         all[name] = {

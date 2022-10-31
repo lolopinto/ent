@@ -445,7 +445,6 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
-    print('_compare_indexes before get_raw_db_indexes')
     raw_db_indexes = get_raw_db_indexes(
         autogen_context.connection, conn_table)
     missing_conn_indexes = raw_db_indexes.get('missing')

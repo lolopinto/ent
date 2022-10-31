@@ -218,7 +218,6 @@ class ParseDB(object):
         col_unique = {}
         # parse indices and constraints before columns and get col specific data
         indices = self._parse_indices(table, col_indices)
-        print('colindicessss', col_indices)
         constraints = self._parse_constraints(table, col_unique)
         node["fields"] = self._parse_columns(table, col_indices, col_unique)
         node["constraints"] = constraints
@@ -443,12 +442,9 @@ class ParseDB(object):
         col_names = set([col.name for col in table.columns])
         generated_columns = self._parse_generated_columns(table, col_names)
 
-        print('parse_indices before get_raw_db_indexes')
         raw_db_indexes = get_raw_db_indexes(self.connection, table)
         all_conn_indexes = raw_db_indexes.get('all')
 
-        print("all_conn", generated_columns,
-              all_conn_indexes)
         seen = {}
         for name, info in all_conn_indexes.items():
             seen[name] = True
@@ -489,8 +485,6 @@ class ParseDB(object):
                 })
                 continue
 
-            print('internals', internals)
-            print('index_type', index_type)
             internals_parsed = self._parse_postgres_using_internals(
                 internals, index_type, col_names)
 
@@ -512,8 +506,6 @@ class ParseDB(object):
                 })
                 continue
 
-            # TODO handle other casesa
-            print(info)
             raise Exception("unsupported index %s in table %s" %
                             (name, table.name))
 
@@ -585,18 +577,17 @@ class ParseDB(object):
             }
         return generated
 
+    # TODO inline this back?
     def _parse_parts_from_sqltext(self, curr: str, sqltext: str, col_names, err_fn):
         # non -coalesce logic that can be shared???
         # doesn't like it can be shared...
         parts = curr.rstrip(' ||').split(' || ')
         if len(parts) > 2:
-            print('sss', parts)
             err_fn(sqltext)
 
         # we added a space to concatenate. that's ok
         # if something else was added to concatenate, currently unsupported
         if len(parts) == 2 and parts[1] != "' '::text)":
-            print('11')
             err_fn(sqltext)
 
         curr = parts[0]
@@ -605,13 +596,10 @@ class ParseDB(object):
         # go from "COALESCE" to try and get the
         text_parts = curr[8:].lstrip("(").rstrip(")").split(",")
         if len(text_parts) > 2:
-            print('ssss', text_parts)
             err_fn(sqltext)
 
         # we concatenate '' incase it's nullable, strip that part
-        print(text_parts)
         if len(text_parts) == 2 and text_parts[1].lstrip() != "''::text":
-            print('ggg')
             err_fn(sqltext)
 
         if text_parts[0] in col_names:
@@ -623,10 +611,6 @@ class ParseDB(object):
                 "unknown col %s in sqltext %s for generated col %s", (text_parts[0], sqltext, col.name))
 
     def _parse_postgres_using_internals(self, internals: str, index_type: str, col_names):
-        def err_fn(sqltext):
-            raise Exception('TODO %s' % sqltext)
-
-        # TODO...
         # single-col to_tsvector('english'::regconfig, first_name)
         # multi-col to_tsvector('english'::regconfig, ((first_name || ' '::text) || last_name))
         m = sqltext_regex.match(internals)
@@ -643,17 +627,11 @@ class ParseDB(object):
             for p in parts:
                 col = s[p[0]: p[1]].replace(
                     "' '::text", "").strip().strip("||").strip()
-                # if endswith(col, "' '::text"):
-                #     col = col.
 
-                # print('collllllll', temp, temp.strip())
-                # col = temp.strip().rstrip(
-                #     "' '::text").strip(" || ")
                 if col in col_names:
                     cols.append(col)
-                    print('colll', col)
                 else:
-                    print('not col TODO throw...', col)
+                    raise Exception('%s not a column' % col)
 
             if len(cols) > 0:
                 return {
@@ -663,24 +641,6 @@ class ParseDB(object):
                         'indexType': index_type,
                     }
                 }
-
-            # TODO delete these...
-            if groups[1] in col_names:
-                print('collll', lang, groups[1])
-                # single col
-
-            else:
-                # doesn't work for this???
-                # no COALESCE so this logic doesn't work...
-                print('TODOO')
-                s = groups[1]
-                for p in self._parse_str(s):
-                    print(s[p[0]: p[1]])
-                # print(self._parse_parts_from_sqltext(
-                #     groups[1], internals, col_names, err_fn))
-            # lang = groups[0].rstrip("::regconfig").strip("'")
-            # print(groups, lang)
-            # # TODO>>>
 
         cols = [col.strip() for col in internals.split(',')]
         # multi-column index
@@ -699,14 +659,10 @@ class ParseDB(object):
             if c == '(':
                 left.append(i+1)
             if c == ')':
-                # TODO...
                 l = left[-1]
                 if l == 1:
                     l = (res[-1][1])+1
                 res.append((l, i))
                 # remove last
                 left = left[:-1]
-                # res.append((left[-1], i))
-                # # remove last
-                # left = left[:-1]
         return res
