@@ -443,14 +443,22 @@ class ParseDB(object):
         col_names = set([col.name for col in table.columns])
         generated_columns = self._parse_generated_columns(table, col_names)
 
+        print('parse_indices before get_raw_db_indexes')
         raw_db_indexes = get_raw_db_indexes(self.connection, table)
         all_conn_indexes = raw_db_indexes.get('all')
 
+        print("all_conn", generated_columns,
+              all_conn_indexes)
         seen = {}
         for name, info in all_conn_indexes.items():
             seen[name] = True
             internals = info.get("postgresql_using_internals")
-            internals = internals.strip().lstrip("(").rstrip(")")
+            internals = internals.strip()
+            if internals.startswith("("):
+                internals = internals[1:]
+            if internals.endswith(")"):
+                internals = internals[:-1]
+
             index_type = info.get("postgresql_using")
 
             generated_col_info = generated_columns.get(internals, None)
@@ -462,29 +470,52 @@ class ParseDB(object):
 
             # col index with different type
             if internals in col_names and index_type is not None:
-                idx = {
+                indices.append({
                     "name": name,
                     "columns": [internals],
                     "indexType": index_type,
-                }
-                indices.append(idx)
+                })
                 continue
 
-            # TODO handle non-generated col...
-            if generated_col_info is None:
-                raise Exception("unsupported index %s in table %s" %
-                                (name, table.name))
+            if generated_col_info is not None:
+                indices.append({
+                    "name": name,
+                    "columns": generated_col_info.get("columns"),
+                    "fulltext": {
+                        "language": generated_col_info.get("language"),
+                        "indexType": index_type,
+                        "generatedColumnName": internals,
+                    }
+                })
+                continue
 
-            idx = {
-                "name": name,
-                "columns": generated_col_info.get("columns"),
-                "fulltext": {
-                    "language": generated_col_info.get("language"),
+            print('internals', internals)
+            print('index_type', index_type)
+            internals_parsed = self._parse_postgres_using_internals(
+                internals, index_type, col_names)
+
+            if internals_parsed.get('fulltext', None):
+                indices.append({
+                    'columns': internals_parsed['columns'],
+                    'fulltext': internals_parsed['fulltext'],
+                    'name': name,
+                })
+                continue
+
+            # TODO we can actually punt this to regular indexes below...
+            # difference is index_type here vs below...
+            if internals_parsed.get('columns', None):
+                indices.append({
+                    "name": name,
+                    "columns": internals_parsed.get('columns'),
                     "indexType": index_type,
-                    "generatedColumnName": internals,
-                }
-            }
-            indices.append(idx)
+                })
+                continue
+
+            # TODO handle other casesa
+            print(info)
+            raise Exception("unsupported index %s in table %s" %
+                            (name, table.name))
 
         for index in table.indexes:
             if seen.get(index.name, False):
@@ -501,12 +532,11 @@ class ParseDB(object):
                     col_indices[single_col.name] = True
                     continue
 
-            idx = {
+            indices.append({
                 "name": index.name,
                 "unique": index.unique,
                 "columns": [col.name for col in index.columns],
-            }
-            indices.append(idx)
+            })
 
         return indices
 
@@ -526,6 +556,7 @@ class ParseDB(object):
 
             # computed...
             sqltext = str(col.computed.sqltext)
+            # all this logic with no coalesce is what we want i think...
             m = sqltext_regex.match(sqltext)
             if not m:
                 unsupported_col(sqltext)
@@ -540,41 +571,142 @@ class ParseDB(object):
             starts = [m.start() for m in re.finditer('COALESCE', groups[1])]
             cols = []
             for i in range(len(starts)):
-
                 if i + 1 == len(starts):
                     curr = val[starts[i]: len(val)-1]
                 else:
                     curr = val[starts[i]: starts[i+1]-1]
 
-                parts = curr.rstrip(' ||').split(' || ')
-                if len(parts) > 2:
-                    unsupported_col(sqltext)
-
-                # we added a space to concatenate. that's ok
-                # if something else was added to concatenate, currently unsupported
-                if len(parts) == 2 and parts[1] != "' '::text)":
-                    unsupported_col(sqltext)
-
-                curr = parts[0]
-
-                # COALESCE(last_name, ''::text)
-                # go from "COALESCE" to try and get the
-                text_parts = curr[8:].lstrip("(").rstrip(")").split(",")
-                if len(text_parts) > 2:
-                    unsupported_col(sqltext)
-
-                # we concatenate '' incase it's nullable, strip that part
-                if len(text_parts) == 2 and text_parts[1].lstrip() != "''::text":
-                    unsupported_col(sqltext)
-
-                if text_parts[0] in col_names:
-                    cols.append(text_parts[0])
-                else:
-                    raise Exception(
-                        "unknown col %s in sqltext %s for generated col %s", (text_parts[0], sqltext, col.name))
+                cols.append(self._parse_parts_from_sqltext(
+                    curr, sqltext, col_names, unsupported_col))
 
             generated[col.name] = {
                 "language": lang,
                 "columns": cols,
             }
         return generated
+
+    def _parse_parts_from_sqltext(self, curr: str, sqltext: str, col_names, err_fn):
+        # non -coalesce logic that can be shared???
+        # doesn't like it can be shared...
+        parts = curr.rstrip(' ||').split(' || ')
+        if len(parts) > 2:
+            print('sss', parts)
+            err_fn(sqltext)
+
+        # we added a space to concatenate. that's ok
+        # if something else was added to concatenate, currently unsupported
+        if len(parts) == 2 and parts[1] != "' '::text)":
+            print('11')
+            err_fn(sqltext)
+
+        curr = parts[0]
+
+        # COALESCE(last_name, ''::text)
+        # go from "COALESCE" to try and get the
+        text_parts = curr[8:].lstrip("(").rstrip(")").split(",")
+        if len(text_parts) > 2:
+            print('ssss', text_parts)
+            err_fn(sqltext)
+
+        # we concatenate '' incase it's nullable, strip that part
+        print(text_parts)
+        if len(text_parts) == 2 and text_parts[1].lstrip() != "''::text":
+            print('ggg')
+            err_fn(sqltext)
+
+        if text_parts[0] in col_names:
+            return text_parts[0]
+        else:
+            # TODO err_fn_2
+            print(text_parts[0])
+            raise Exception(
+                "unknown col %s in sqltext %s for generated col %s", (text_parts[0], sqltext, col.name))
+
+    def _parse_postgres_using_internals(self, internals: str, index_type: str, col_names):
+        def err_fn(sqltext):
+            raise Exception('TODO %s' % sqltext)
+
+        # TODO...
+        # single-col to_tsvector('english'::regconfig, first_name)
+        # multi-col to_tsvector('english'::regconfig, ((first_name || ' '::text) || last_name))
+        m = sqltext_regex.match(internals)
+        if m:
+            groups = m.groups()
+            lang = groups[0].rstrip("::regconfig").strip("'")
+
+            cols = []
+            s = groups[1]
+            parts = self._parse_str(s)
+            if len(parts) == 0 and groups[1] in col_names:
+                cols = [groups[1]]
+
+            for p in parts:
+                col = s[p[0]: p[1]].replace(
+                    "' '::text", "").strip().strip("||").strip()
+                # if endswith(col, "' '::text"):
+                #     col = col.
+
+                # print('collllllll', temp, temp.strip())
+                # col = temp.strip().rstrip(
+                #     "' '::text").strip(" || ")
+                if col in col_names:
+                    cols.append(col)
+                    print('colll', col)
+                else:
+                    print('not col TODO throw...', col)
+
+            if len(cols) > 0:
+                return {
+                    'columns': cols,
+                    'fulltext': {
+                        'language': lang,
+                        'indexType': index_type,
+                    }
+                }
+
+            # TODO delete these...
+            if groups[1] in col_names:
+                print('collll', lang, groups[1])
+                # single col
+
+            else:
+                # doesn't work for this???
+                # no COALESCE so this logic doesn't work...
+                print('TODOO')
+                s = groups[1]
+                for p in self._parse_str(s):
+                    print(s[p[0]: p[1]])
+                # print(self._parse_parts_from_sqltext(
+                #     groups[1], internals, col_names, err_fn))
+            # lang = groups[0].rstrip("::regconfig").strip("'")
+            # print(groups, lang)
+            # # TODO>>>
+
+        cols = [col.strip() for col in internals.split(',')]
+        # multi-column index
+        if len(cols) > 1:
+            return {
+                'columns': cols,
+            }
+
+        return {}
+
+    def _parse_str(self, s: str):
+        res = []
+        left = []
+        for i in range(0, len(s)):
+            c = s[i]
+            if c == '(':
+                left.append(i+1)
+            if c == ')':
+                # TODO...
+                l = left[-1]
+                if l == 1:
+                    l = (res[-1][1])+1
+                res.append((l, i))
+                # remove last
+                left = left[:-1]
+                # res.append((left[-1], i))
+                # # remove last
+                # left = left[:-1]
+        return res

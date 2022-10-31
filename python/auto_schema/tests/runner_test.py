@@ -133,8 +133,6 @@ class BaseTestRunner(object):
             conftest.metadata_with_multi_column_index,
             "add index accounts_first_name_last_name_idx to accounts",
             "drop index accounts_first_name_last_name_idx from accounts",
-            # TODO why is this false??
-            validate_schema=False,
             post_r2_func=post_r2_func
         )
 
@@ -1379,9 +1377,6 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_fulltext_search_index,
             "add full text index accounts_first_name_idx to accounts",
             "drop full text index accounts_first_name_idx from accounts",
-            # skip validation because of complications with idx
-            # TODO no validation here either...
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_multicolumn_fulltext_search")
@@ -1403,9 +1398,6 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_multicolumn_fulltext_search_index,
             "add full text index accounts_full_text_idx to accounts",
             "drop full text index accounts_full_text_idx from accounts",
-            # skip validation because of complications with idx
-            # TODO validation broken
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
@@ -1419,9 +1411,6 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_multicolumn_fulltext_search_index_gist,
             "add full text index accounts_full_text_idx to accounts",
             "drop full text index accounts_full_text_idx from accounts",
-            # skip validation because of complications with idx
-            # TODO no validation
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
@@ -1432,9 +1421,6 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_multicolumn_fulltext_search_index_btree,
             "add full text index accounts_full_text_idx to accounts",
             "drop full text index accounts_full_text_idx from accounts",
-            # skip validation because of complications with idx
-            # TODO no validation...
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
@@ -1445,9 +1431,6 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_generated_col_fulltext_search_index,
             "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
             "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
-            # skip validation because of complications with idx
-            # TODO no validation....
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
@@ -1458,9 +1441,6 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_generated_col_fulltext_search_index_gist,
             "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
             "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
-            # skip validation because of complications with idx
-            # TODO no validation...
-            validate_schema=False
         )
 
 

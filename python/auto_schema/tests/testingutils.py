@@ -4,7 +4,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from auto_schema.clause_text import get_clause_text
 from auto_schema import runner
-from auto_schema.parse_db import ParseDB, DBType, ConstraintType
+from auto_schema.parse_db import ParseDB, DBType, ConstraintType, sqltext_regex
+from auto_schema.schema_item import FullTextIndex
 from sqlalchemy.sql.sqltypes import String
 
 from auto_schema import compare
@@ -240,11 +241,18 @@ def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: s
     assert(id(schema_column)) != id(db_column)
 
     assert schema_column.name == db_column.name
+    if schema_column.computed is None:
+        assert db_column.computed == None
+
+    if schema_column.computed is not None:
+        assert db_column.computed is not None
+
     parsed_data_column = None
     if parsed_data is not None:
         parsed_data_fields = parsed_data['fields']
         parsed_data_column = parsed_data_fields.get(schema_column.name, None)
-        assert parsed_data_column is not None
+        if not schema_column.computed:
+            assert parsed_data_column is not None
 
     _validate_column_type(schema_column, db_column,
                           metadata, dialect, parsed_data_column)
@@ -297,6 +305,14 @@ def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Colu
             schema_clause_text)
         db_clause_text = runner.Runner.convert_postgres_boolean(db_clause_text)
 
+    if schema_column.computed is not None:
+        schema_clause_text = schema_column.computed.sqltext
+        db_clause_text = db_column.computed.sqltext
+        # TODO test_full_text_index_with_generated_column
+#        to_tsvector('english', first_name || ' ' || last_name) to_tsvector('english'::regconfig, ((first_name || ' '::text) || last_name))
+# need to parse these...
+        return
+
     if schema_clause_text is None and db_column.autoincrement == True:
         assert db_clause_text.startswith("nextval")
     else:
@@ -309,7 +325,7 @@ def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Colu
 
 def _validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String, parsed_data_column: Optional[dict] = None):
     # array type. validate contents
-    print('parsed data col', parsed_data_column)
+    # print('parsed data col', parsed_data_column)
     if isinstance(schema_column.type, postgresql.ARRAY):
         assert isinstance(db_column.type, postgresql.ARRAY)
 
@@ -469,8 +485,21 @@ def _sort_fn(item):
 
 def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String, parsed_data: Optional[dict]):
     # sort indexes so that the order for both are the same
-    schema_indexes = sorted(schema_table.indexes, key=_sort_fn)
+    schema_indexes = sorted([
+        idx for idx in schema_table.indexes if not isinstance(idx, FullTextIndex)], key=_sort_fn)
     db_indexes = sorted(db_table.indexes, key=_sort_fn)
+
+    # TODO augment indexesss
+    # TODO handle missing db indexes e.g. FullTextIndex
+    full_text_indexes = [
+        idx for idx in schema_table.indexes if isinstance(idx, FullTextIndex)]
+    # no fts, no info
+    # it's like everything that's happening here is weird.
+    # these are the instanecs here but by the time we parse, it's after this
+    # print('fts', len(full_text_indexes))
+    # for idx in full_text_indexes:
+    #     print(isinstance(idx, FullTextIndex))
+    #     print(idx.kwwwww)
 
     assert len(schema_indexes) == len(db_indexes)
     for schema_index, db_index in zip(schema_indexes, db_indexes):
@@ -484,34 +513,56 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
 
     if parsed_data:
         parsed_indexes = parsed_data["indices"]
+        print('parsed_indexesss', parsed_indexes)
 
-        for index in schema_indexes:
+        # go through all indexes
+        # print(len(schema_table.indexes))
+        # why do we have 4 indexes that are the same here???
+        # print([idx.name for idx in set(schema_table.indexes)])
+        for index in schema_table.indexes:
             single_col = None
             if len(index.columns) == 1:
                 single_col = index.columns[0]
-
-            if single_col is not None:
-                def_index_type = default_index(schema_table, single_col.name)
-                index_type = index.kwargs.get('postgresql_using')
-                if (index_type == False and def_index_type == 'btree') or def_index_type == index_type:
-                    # when index is on one column, we choose to store it on the column
-                    # in parsed_data since easier to read
-                    assert parsed_data['fields'].get(
-                        single_col.name).get('index', None) == True
-                    continue
 
             parsed_index = [
                 i for i in parsed_indexes if i.get("name") == index.name]
 
             assert len(parsed_index) == 1
             parsed_index = parsed_index[0]
+            print(parsed_index)
+
+            fulltext = parsed_index.get('fulltext', None)
+            if single_col is not None:
+                def_index_type = default_index(schema_table, single_col.name)
+                index_type = index.kwargs.get('postgresql_using')
+                if fulltext is None and ((index_type == False and def_index_type == 'btree') or def_index_type == index_type):
+                    # when index is on one column, we choose to store it on the column
+                    # in parsed_data since easier to read
+                    assert parsed_data['fields'].get(
+                        single_col.name).get('index', None) == True
+                    # print('ssso continue')
+                    continue
 
             assert parsed_index.get("columns") == [
                 col.name for col in index.columns]
             assert parsed_index.get("unique", False) == index.unique
 
             if parsed_index.get('fulltext', None) is not None:
-                print('TODOOOOOO full_text', parsed_index, index)
+                info = index.kwwwww['info']
+
+                # print(info)
+                fulltext = parsed_index.get('fulltext')
+
+                m = sqltext_regex.match(info['postgresql_using_internals'])
+                groups = m.groups()
+                lang = groups[0].rstrip("::regconfig").strip("'")
+
+                assert fulltext == {
+                    'indexType': info['postgresql_using'],
+                    'language': lang,
+                }
+                # print('TODOOOOOO full_text', index.name, parsed_index, index, index.kwargs.get(
+                #     'info'), len(index.kwwwww))
 
 
 def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData, parsed_data: Optional[dict]):
@@ -667,6 +718,10 @@ def make_changes_and_restore(
 
     r2.run()
 
+# TODO play with moving this around
+    if validate_schema:
+        validate_metadata_after_change(r2, r2.get_metadata())
+
     # should have the expected files with the expected tables
     assert_num_files(r2, 2)
     assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
@@ -680,9 +735,6 @@ def make_changes_and_restore(
     # downgrade and upgrade back should work
     r2.downgrade(delete_files=False, revision='-1')
     r2.upgrade()
-
-    if validate_schema:
-        validate_metadata_after_change(r2, r2.get_metadata())
 
     r3 = recreate_metadata_fixture(
         new_test_runner, conftest.metadata_with_base_table_restored(), r2)
