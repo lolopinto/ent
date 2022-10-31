@@ -684,7 +684,6 @@ def make_changes_and_restore(
     metadata_change_func,
     r2_message,
     r3_message,
-    validate_schema=True,
     post_r2_func=None,
 
 
@@ -701,9 +700,7 @@ def make_changes_and_restore(
 
     r2.run()
 
-# TODO play with moving this around
-    if validate_schema:
-        validate_metadata_after_change(r2, r2.get_metadata())
+    validate_metadata_after_change(r2, r2.get_metadata())
 
     # should have the expected files with the expected tables
     assert_num_files(r2, 2)
