@@ -591,7 +591,7 @@ class ParseDB(object):
                     print('has setweight')
                     idx = text.rfind(',')
                     weight = text[idx +
-                                  1:].rstrip('::"char').replace("'", "").strip()
+                                  1:].rstrip(')').rstrip('::"char').replace("'", "").strip()
 
                     text = child.str[1:idx]
 
@@ -601,6 +601,8 @@ class ParseDB(object):
                 m = sqltext_regex.match(text)
 
                 if not m:
+                    print('text', text)
+                    print('sqltext', sqltext)
                     unsupported_col(text)
 
                 groups = m.groups()
@@ -621,6 +623,7 @@ class ParseDB(object):
                         curr = val[starts[i]: starts[i+1]-1]
 
                     # print('crsdsdsdsdsd', curr, sqltext)
+                    print('sfsfsf', curr)
                     coll = self._parse_parts_from_sqltext(
                         curr, sqltext, col_names, unsupported_col)
                     cols.append(coll)
@@ -780,7 +783,7 @@ class ParseDB(object):
 
                     # TODO children somehow
                 curr.str = s[l:i]
-                curr.end = i
+                curr.end = i+1
 
                 stack.pop()
                 # res.append(s[l:i])

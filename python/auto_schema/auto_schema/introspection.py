@@ -16,7 +16,7 @@ def get_sorted_enum_values(connection: sa.engine.Connection, enum_type: str):
     return db_sorted_enums
 
 
-index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
+index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree|gist)(.+)')
 
 
 def _dialect_name(conn: sa.engine.Connection) -> str:

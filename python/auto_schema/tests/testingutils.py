@@ -501,9 +501,10 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
         for schema_column, db_column in zip(schema_index_columns, db_index_columns):
             _validate_column(schema_column, db_column, metadata, dialect)
 
+    print('parsed_data', parsed_data)
     if parsed_data:
         parsed_indexes = parsed_data["indices"]
-        # print('parsed_data', parsed_indexes)
+        print('parsed_indices', parsed_indexes)
 
         # go through all indexes
         for index in schema_table.indexes:
@@ -544,14 +545,18 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
                     assert len(index.columns) == 1
                     assert index.columns[0].name == generated_col
 
-                    test_data = index.kwargs.get('test_data')
+                    test_data = index.kwargs.get('test_data', {})
 
-                    assert fulltext == {
+                    expected = {
                         'indexType': index.kwargs.get('postgresql_using'),
                         'language': test_data.get('language'),
-                        'weights': test_data.get('weights'),
                         'generatedColumnName': generated_col,
                     }
+                    if test_data.get('weights', None) is not None:
+                        expected['weights'] = test_data.get('weights', None)
+                    print('fsfsfsf', fulltext, expected)
+
+                    assert fulltext == expected
                 else:
 
                     info = index.kwwwww['info']
