@@ -1283,6 +1283,7 @@ export class EdgeOperation implements DataOperation {
         tableName: params.options.tableName,
         whereClause: params.clause,
         fields: params.updateData!,
+        fieldsToLog: params.updateData!,
       });
     }
   }
