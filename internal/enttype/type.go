@@ -1233,15 +1233,11 @@ func (t *ArrayListType) GetNullableType() TSType {
 }
 
 func (t *ArrayListType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
-	gqlType, ok := t.ElemType.(TSType)
-	if !ok {
-		panic(fmt.Sprintf("got TSType %v which is not a GraphQL type", t.ElemType))
-	}
 	ret := []*tsimport.ImportPath{
 		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLClassImportPath("GraphQLList"),
 	}
-	ret = append(ret, gqlType.GetTSGraphQLImports(input)...)
+	ret = append(ret, t.ElemType.GetTSGraphQLImports(input)...)
 	return ret
 }
 
