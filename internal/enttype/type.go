@@ -917,6 +917,14 @@ func (t *ListWrapperType) GetImportDepsType() *tsimport.ImportPath {
 	return t2.GetImportDepsType()
 }
 
+func (t *ListWrapperType) GetTsTypeImports() []*tsimport.ImportPath {
+	t2, ok := t.Type.(TSTypeWithImports)
+	if !ok {
+		return []*tsimport.ImportPath{}
+	}
+	return t2.GetTsTypeImports()
+}
+
 type enumType struct {
 }
 
