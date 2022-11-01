@@ -16,6 +16,7 @@ import {
   loadEdgeForID2,
   buildGroupQuery,
   AssocEdgeData,
+  getEdgeClauseAndFields,
 } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
@@ -62,22 +63,18 @@ function createLoader<T extends AssocEdge>(
     options.limit = options.limit || DefaultLimit;
 
     const tableName = edgeData.edgeTable;
+    const { cls: cls1, fields } = getEdgeClauseAndFields(
+      clause.Eq("edge_type", edgeType),
+      {},
+    );
     const [query, cls] = buildGroupQuery({
       tableName: tableName,
-      fields: [
-        "id1",
-        "id2",
-        "edge_type",
-        "id1_type",
-        "id2_type",
-        "data",
-        "time",
-      ],
+      fields,
       values: keys,
       orderby: options.orderby,
       limit: options.limit || DefaultLimit,
       groupColumn: "id1",
-      clause: clause.Eq("edge_type", edgeType),
+      clause: cls1,
     });
 
     const rows = await performRawQuery(query, cls.values(), cls.logValues());
