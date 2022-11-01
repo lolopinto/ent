@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.1.0-alpha.29"
+const TAG = "0.1.0-alpha.30"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 18
@@ -26,14 +26,14 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	14,
-	16,
+	// 14,
+	// 16,
 	17,
-	18,
+	// 18,
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.24"
-const TSENT_VERSION = "v0.1.0-alpha.41"
+const TSENT_VERSION = "v0.1.0-alpha.42"
 
 var SUFFIXES = []string{
 	"dev",
