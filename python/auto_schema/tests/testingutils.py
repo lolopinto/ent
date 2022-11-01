@@ -503,6 +503,7 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
 
     if parsed_data:
         parsed_indexes = parsed_data["indices"]
+        # print('parsed_data', parsed_indexes)
 
         # go through all indexes
         for index in schema_table.indexes:
@@ -530,23 +531,47 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
             assert len(parsed_index) == 1
             parsed_index = parsed_index[0]
 
-            assert parsed_index.get("columns") == [
-                col.name for col in index.columns]
+            # print(parsed_index, index.columns)
+            # assert parsed_index.get("columns") == [
+            #     col.name for col in index.columns]
             assert parsed_index.get("unique", False) == index.unique
 
             if parsed_index.get('fulltext', None) is not None:
-                info = index.kwwwww['info']
-
                 fulltext = parsed_index.get('fulltext')
 
-                m = sqltext_regex.match(info['postgresql_using_internals'])
-                groups = m.groups()
-                lang = groups[0].rstrip("::regconfig").strip("'")
+                generated_col = fulltext.get('generatedColumnName', None)
+                if generated_col:
+                    assert len(index.columns) == 1
+                    assert index.columns[0].name == generated_col
 
-                assert fulltext == {
-                    'indexType': info['postgresql_using'],
-                    'language': lang,
-                }
+                    test_data = index.kwargs.get('test_data')
+
+                    assert fulltext == {
+                        'indexType': index.kwargs.get('postgresql_using'),
+                        'language': test_data.get('language'),
+                        'weights': test_data.get('weights'),
+                        'generatedColumnName': generated_col,
+                    }
+                else:
+
+                    info = index.kwwwww['info']
+
+                    m = sqltext_regex.match(info['postgresql_using_internals'])
+                    groups = m.groups()
+                    lang = groups[0].rstrip("::regconfig").strip("'")
+
+                    # print('fulltext', fulltext)
+                    assert fulltext == {
+                        'indexType': info['postgresql_using'],
+                        'language': lang,
+                    }
+                    # TODO how do we get the columns here correctly??
+                    assert parsed_index.get("columns") == info['columns']
+                    # col.name for col in index.columns]
+
+            else:
+                assert parsed_index.get("columns") == [
+                    col.name for col in index.columns]
 
 
 def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData, parsed_data: Optional[dict]):

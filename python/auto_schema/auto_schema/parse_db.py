@@ -1,3 +1,4 @@
+from cgi import test
 import sqlalchemy as sa
 import json
 import re
@@ -378,7 +379,7 @@ class ParseDB(object):
 
         return None
 
-    @classmethod
+    @ classmethod
     def _singular(cls, table_name) -> str:
         p = inflect.engine()
         ret = p.singular_noun(table_name)
@@ -389,7 +390,7 @@ class ParseDB(object):
             return table_name
         return ret
 
-    @classmethod
+    @ classmethod
     def table_to_node(cls, table_name) -> str:
         return "".join([t.title()
                         for t in cls._singular(table_name).split("_")])
@@ -463,20 +464,25 @@ class ParseDB(object):
 
             # nothing to do here. index on a column.
             if internals in col_names and default_index(table, internals) == index_type:
+                print('col indices, false')
                 col_indices[internals] = True
                 continue
 
             # col index with different type
-            if internals in col_names and index_type is not None:
-                indices.append({
-                    "name": name,
-                    "columns": [internals],
-                    "indexType": index_type,
-                })
-                continue
+            # if internals in col_names and index_type is not None:
+            #     print('col index, diff type', generated_col_info)
+            #     indices.append({
+            #         "name": name,
+            #         "columns": [internals],
+            #         "indexType": index_type,
+            #     })
+            #     continue
+
+            # print(generated_col_info)
 
             if generated_col_info is not None:
-                indices.append({
+                # print('generated col', generated_col_info)
+                idx = {
                     "name": name,
                     "columns": generated_col_info.get("columns"),
                     "fulltext": {
@@ -484,6 +490,19 @@ class ParseDB(object):
                         "indexType": index_type,
                         "generatedColumnName": internals,
                     }
+                }
+                if generated_col_info.get('weights', None) is not None:
+                    idx['fulltext']['weights'] = generated_col_info['weights']
+
+                indices.append(idx)
+                continue
+
+            if internals in col_names and index_type is not None:
+                # print('col index, diff type', generated_col_info)
+                indices.append({
+                    "name": name,
+                    "columns": [internals],
+                    "indexType": index_type,
                 })
                 continue
 
@@ -551,39 +570,84 @@ class ParseDB(object):
             # computed...
             sqltext = str(col.computed.sqltext)
             # all this logic with no coalesce is what we want i think...
-            m = sqltext_regex.match(sqltext)
-            if not m:
-                unsupported_col(sqltext)
+            # print('sqltext - m', sqltext, m)
+            # TODO handle setweight here....
+            # this logic is broken. no setweight in it...
+            res = self._parse_str_into_parts(sqltext)
+            if len(res) != 1:
+                raise Exception('parsed incorrect')
 
-            groups = m.groups()
-            lang = groups[0].rstrip("::regconfig").strip("'")
-
-            # TODO handle setweight if it exists...
-            # TODO eventually support examples with no COALESCE e.g. if you're sure not nullable
-
-            val = groups[1]
-            starts = [m.start() for m in re.finditer('COALESCE', groups[1])]
             cols = []
-            for i in range(len(starts)):
-                if i + 1 == len(starts):
-                    curr = val[starts[i]: len(val)-1]
-                else:
-                    curr = val[starts[i]: starts[i+1]-1]
+            lang = ''
+            weights = {}
 
-                cols.append(self._parse_parts_from_sqltext(
-                    curr, sqltext, col_names, unsupported_col))
+            for child in res[0].children:
+                text = sqltext[child.beg_cursor:child.end].strip().strip(
+                    '||').lstrip('(').strip()
+                print('text', text)
 
-            generated[col.name] = {
+                weight = None
+                if text.startswith('setweight'):
+                    print('has setweight')
+                    idx = text.rfind(',')
+                    weight = text[idx +
+                                  1:].rstrip('::"char').replace("'", "").strip()
+
+                    text = child.str[1:idx]
+
+                # print(child, child.children,
+                #       child.str, child.beg_paren, child.end, child.beg_cursor, sqltext[child.beg_cursor:child.end])
+
+                m = sqltext_regex.match(text)
+
+                if not m:
+                    unsupported_col(text)
+
+                groups = m.groups()
+                lang = groups[0].rstrip("::regconfig").strip("'")
+                # TODO ensure lang is consistent?
+                print('lang', lang)
+
+                # TODO handle setweight if it exists...
+                # TODO eventually support examples with no COALESCE e.g. if you're sure not nullable
+
+                val = groups[1]
+                starts = [m.start()
+                          for m in re.finditer('COALESCE', groups[1])]
+                for i in range(len(starts)):
+                    if i + 1 == len(starts):
+                        curr = val[starts[i]: len(val)-1]
+                    else:
+                        curr = val[starts[i]: starts[i+1]-1]
+
+                    # print('crsdsdsdsdsd', curr, sqltext)
+                    coll = self._parse_parts_from_sqltext(
+                        curr, sqltext, col_names, unsupported_col)
+                    cols.append(coll)
+
+                    if weight is not None:
+                        l = weights.get(weight, [])
+                        l.append(coll)
+                        weights[weight] = l
+
+            ret = {
                 "language": lang,
                 "columns": cols,
             }
+            if weights:
+                ret['weights'] = weights
+
+            generated[col.name] = ret
+
         return generated
 
     # TODO inline this back?
     def _parse_parts_from_sqltext(self, curr: str, sqltext: str, col_names, err_fn):
         # non -coalesce logic that can be shared???
         # doesn't like it can be shared...
+        print(sqltext)
         parts = curr.rstrip(' ||').split(' || ')
+        print('parts', parts)
         if len(parts) > 2:
             err_fn(sqltext)
 
@@ -668,3 +732,79 @@ class ParseDB(object):
                 # remove last
                 left = left[:-1]
         return res
+
+    # TODO...
+    def _parse_str_into_parts(self, s: str):
+        res = []
+        # left = []
+        stack = []
+        # don't need depth if we're also going to have a stack
+        # depth = 0
+        # last = None
+        end = -1
+        for i in range(0, len(s)):
+            c = s[i]
+            if c == '(':
+                # print('(', len(stack))
+                curr = Tree(i, end+1)
+                # last = curr
+
+                # how to know when to add another top level
+                if len(stack) == 0:
+                    res.append(curr)
+
+                if len(stack) > 0:
+                    # add as child
+                    stack[-1].append(curr)
+
+                stack.append(curr)
+
+                # all.append(curr)
+                # depth = depth+1
+                # left.append(i+1)
+            if c == ')':
+                # print(')', len(stack))
+                end = i
+
+                curr = stack[-1]
+                l = curr.beg_paren
+
+                # first one
+                # if curr.pos == 1:
+
+                # l = left[-1]
+                # TODO...
+                if len(stack) == 1:
+                    l = curr.end + 1
+                    # l = (res[-1][1])+1
+
+                    # TODO children somehow
+                curr.str = s[l:i]
+                curr.end = i
+
+                stack.pop()
+                # res.append(s[l:i])
+                # remove last
+                # left = left[:-1]
+
+                # depth = depth-1
+
+        return res
+
+
+class Tree:
+    def __init__(self, beg_paren, beg_cursor) -> None:
+        self.children = []
+        self.str = ''
+        self.beg_paren = beg_paren
+        self.beg_cursor = beg_cursor
+        self.end = -1
+
+    def append(self, child):
+        self.children.append(child)
+
+    # def set_str(self, str):
+    #     self.str = str
+
+    # def set_end(self, end):
+    #     self.end = end
