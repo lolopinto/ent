@@ -570,9 +570,8 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
                         'indexType': info['postgresql_using'],
                         'language': lang,
                     }
-                    # TODO how do we get the columns here correctly??
-                    assert parsed_index.get("columns") == info['columns']
-                    # col.name for col in index.columns]
+                    assert parsed_index.get("columns") == info.get(
+                        'columns', [info.get('column')])
 
             else:
                 assert parsed_index.get("columns") == [
