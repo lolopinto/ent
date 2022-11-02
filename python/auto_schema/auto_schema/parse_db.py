@@ -425,8 +425,6 @@ class ParseDB(object):
             if not constraint_type:
                 raise Exception("invalid constraint_type %s" % str(constraint))
 
-            # TODO there's duplicate logic here btw this and column. primaryKey/foreignKey
-            # which one is better/preferred???
             constraints.append({
                 "name": constraint.name,
                 "type": constraint_type,
@@ -550,7 +548,6 @@ class ParseDB(object):
                 raise Exception(
                     "unsupported computed type %s which isn't a tsvector" % str(col.type))
 
-            # computed...
             sqltext = str(col.computed.sqltext)
             # wrap in () if not wrapped. needed for parsing logic to be consistent
             if not sqltext.startswith("("):
@@ -558,8 +555,6 @@ class ParseDB(object):
 
             # all this logic with no coalesce is what we want i think...
             # print('sqltext - m', sqltext, m)
-            # TODO handle setweight here....
-            # this logic is broken. no setweight in it...
             res = self._parse_str_into_parts(sqltext)
             if len(res) != 1:
                 raise Exception('parsed incorrect')
@@ -614,6 +609,7 @@ class ParseDB(object):
                     cols2 = self._parse_cols_from(
                         curr, sqltext, col_names, unsupported_col)
                     cols = cols + cols2
+                    # This exists for tests
                     cols.sort()
 
                     if weight is not None:
@@ -621,6 +617,7 @@ class ParseDB(object):
                         l = l + cols2
                         # l.append(coll)
                         weights[weight] = list(set(l))
+                        # this exists for tests
                         weights[weight].sort()
 
             ret = {
