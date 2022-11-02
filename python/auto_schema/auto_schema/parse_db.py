@@ -569,6 +569,10 @@ class ParseDB(object):
 
             # computed...
             sqltext = str(col.computed.sqltext)
+            # wrap in () if not wrapped. needed for parsing logic to be consistent
+            if not sqltext.startswith("("):
+                sqltext = "(%s)" % sqltext
+
             # all this logic with no coalesce is what we want i think...
             # print('sqltext - m', sqltext, m)
             # TODO handle setweight here....
@@ -615,7 +619,12 @@ class ParseDB(object):
 
                 val = groups[1]
                 starts = [m.start()
-                          for m in re.finditer('COALESCE', groups[1])]
+                          for m in re.finditer('COALESCE', val)]
+
+                # no coalesce...
+                if len(starts) == 0:
+                    starts = [0]
+
                 for i in range(len(starts)):
                     if i + 1 == len(starts):
                         curr = val[starts[i]: len(val)-1]
@@ -624,14 +633,17 @@ class ParseDB(object):
 
                     # print('crsdsdsdsdsd', curr, sqltext)
                     print('sfsfsf', curr)
-                    coll = self._parse_parts_from_sqltext(
+                    cols2 = self._parse_cols_in_generated_col(
                         curr, sqltext, col_names, unsupported_col)
-                    cols.append(coll)
+                    cols = cols + cols2
+                    cols.sort()
 
                     if weight is not None:
                         l = weights.get(weight, [])
-                        l.append(coll)
-                        weights[weight] = l
+                        l = l + cols2
+                        # l.append(coll)
+                        weights[weight] = list(set(l))
+                        weights[weight].sort()
 
             ret = {
                 "language": lang,
@@ -644,40 +656,27 @@ class ParseDB(object):
 
         return generated
 
-    # TODO inline this back?
-    def _parse_parts_from_sqltext(self, curr: str, sqltext: str, col_names, err_fn):
-        # non -coalesce logic that can be shared???
-        # doesn't like it can be shared...
-        print(sqltext)
-        parts = curr.rstrip(' ||').split(' || ')
-        print('parts', parts)
-        if len(parts) > 2:
-            err_fn(sqltext)
+    def _parse_cols_in_generated_col(self, curr: str, sqltext: str, col_names, err_fn):
+        cols = []
+        for s in curr.strip().split('||'):
+            if not s:
+                continue
+            s = s.strip().strip('(').strip(')')
+            if s.startswith('COALESCE'):
+                s = s[8:]
 
-        # we added a space to concatenate. that's ok
-        # if something else was added to concatenate, currently unsupported
-        if len(parts) == 2 and parts[1] != "' '::text)":
-            err_fn(sqltext)
+            for s2 in s.split(','):
+                s2 = s2.strip().strip('(').strip(')')
+                if s2 == "''::text" or s2 == "' '::text":
+                    continue
 
-        curr = parts[0]
+                if s2 in col_names:
+                    cols.append(s2)
 
-        # COALESCE(last_name, ''::text)
-        # go from "COALESCE" to try and get the
-        text_parts = curr[8:].lstrip("(").rstrip(")").split(",")
-        if len(text_parts) > 2:
-            err_fn(sqltext)
+                else:
+                    err_fn(sqltext)
 
-        # we concatenate '' incase it's nullable, strip that part
-        if len(text_parts) == 2 and text_parts[1].lstrip() != "''::text":
-            err_fn(sqltext)
-
-        if text_parts[0] in col_names:
-            return text_parts[0]
-        else:
-            # TODO err_fn_2
-            print(text_parts[0])
-            raise Exception(
-                "unknown col %s in sqltext %s for generated col %s", (text_parts[0], sqltext, col.name))
+        return cols
 
     def _parse_postgres_using_internals(self, internals: str, index_type: str, col_names):
         # single-col to_tsvector('english'::regconfig, first_name)
@@ -736,7 +735,6 @@ class ParseDB(object):
                 left = left[:-1]
         return res
 
-    # TODO...
     def _parse_str_into_parts(self, s: str):
         res = []
         # left = []

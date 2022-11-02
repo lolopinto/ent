@@ -557,6 +557,10 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
                     print('fsfsfsf', fulltext, expected)
 
                     assert fulltext == expected
+
+                    assert parsed_index.get(
+                        "columns") == test_data.get('columns')
+
                 else:
 
                     info = index.kwwwww['info']
