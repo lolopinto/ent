@@ -589,8 +589,6 @@ class ParseDB(object):
                 # TODO ensure lang is consistent?
                 print('lang', lang)
 
-                # TODO eventually support examples with no COALESCE e.g. if you're sure not nullable
-
                 val = groups[1]
                 starts = [m.start()
                           for m in re.finditer('COALESCE', val)]
@@ -601,7 +599,7 @@ class ParseDB(object):
 
                 for i in range(len(starts)):
                     if i + 1 == len(starts):
-                        curr = val[starts[i]: len(val)-1]
+                        curr = val[starts[i]: len(val)]
                     else:
                         curr = val[starts[i]: starts[i+1]-1]
 

@@ -816,6 +816,24 @@ def metadata_with_generated_col_fulltext_search_index_matched_weights(metadata_w
     return metadata_with_table
 
 
+def metadata_with_generated_col_fulltext_search_index_matched_weights_no_coalesce(metadata_with_table):
+    sa.Table('accounts', metadata_with_table,
+             sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
+                 "setweight(to_tsvector('english', first_name), 'A')  || setweight(to_tsvector('english', last_name), 'A')")),
+             sa.Index('accounts_full_text_idx',
+                      'full_name', postgresql_using='gin', test_data={
+                          'language': 'english',
+                          'weights': {
+                              'A': ['first_name', 'last_name'],
+                          },
+                          'columns': ['first_name', 'last_name'],
+                      }),
+
+             extend_existing=True)
+
+    return metadata_with_table
+
+
 def metadata_with_generated_col_fulltext_search_index_mismatched_weights(metadata_with_table):
     sa.Table('accounts', metadata_with_table,
              sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(

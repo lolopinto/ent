@@ -1456,6 +1456,16 @@ class TestPostgresRunner(BaseTestRunner):
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_with_generated_column_matched_weights_no_coalesce(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index_matched_weights_no_coalesce,
+            "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
+            "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
+        )
+
+    @pytest.mark.usefixtures("metadata_with_table")
     def test_full_text_index_with_generated_column_mismatched_weights(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,
