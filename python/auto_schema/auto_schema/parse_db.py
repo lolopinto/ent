@@ -76,10 +76,6 @@ class ParseDB(object):
             if table.name == 'alembic_version' or existing_edges.get(table.name) is not None or table.name == "assoc_edge_config":
                 continue
 
-            # if table.name != 'accounts':
-            #     continue
-
-            # print(table.name)
             node = self._parse_table(table)
             nodes[ParseDB.table_to_node(table.name)] = node
 
@@ -468,20 +464,7 @@ class ParseDB(object):
                 col_indices[internals] = True
                 continue
 
-            # col index with different type
-            # if internals in col_names and index_type is not None:
-            #     print('col index, diff type', generated_col_info)
-            #     indices.append({
-            #         "name": name,
-            #         "columns": [internals],
-            #         "indexType": index_type,
-            #     })
-            #     continue
-
-            # print(generated_col_info)
-
             if generated_col_info is not None:
-                # print('generated col', generated_col_info)
                 idx = {
                     "name": name,
                     "columns": generated_col_info.get("columns"),
@@ -599,9 +582,6 @@ class ParseDB(object):
 
                     text = child.str[1:idx]
 
-                # print(child, child.children,
-                #       child.str, child.beg_paren, child.end, child.beg_cursor, sqltext[child.beg_cursor:child.end])
-
                 m = sqltext_regex.match(text)
 
                 if not m:
@@ -614,7 +594,6 @@ class ParseDB(object):
                 # TODO ensure lang is consistent?
                 print('lang', lang)
 
-                # TODO handle setweight if it exists...
                 # TODO eventually support examples with no COALESCE e.g. if you're sure not nullable
 
                 val = groups[1]
@@ -631,9 +610,8 @@ class ParseDB(object):
                     else:
                         curr = val[starts[i]: starts[i+1]-1]
 
-                    # print('crsdsdsdsdsd', curr, sqltext)
                     print('sfsfsf', curr)
-                    cols2 = self._parse_cols_in_generated_col(
+                    cols2 = self._parse_cols_from(
                         curr, sqltext, col_names, unsupported_col)
                     cols = cols + cols2
                     cols.sort()
@@ -656,7 +634,7 @@ class ParseDB(object):
 
         return generated
 
-    def _parse_cols_in_generated_col(self, curr: str, sqltext: str, col_names, err_fn):
+    def _parse_cols_from(self, curr: str, sqltext: str, col_names, err_fn):
         cols = []
         for s in curr.strip().split('||'):
             if not s:
@@ -686,20 +664,11 @@ class ParseDB(object):
             groups = m.groups()
             lang = groups[0].rstrip("::regconfig").strip("'")
 
-            cols = []
-            s = groups[1]
-            parts = self._parse_str(s)
-            if len(parts) == 0 and groups[1] in col_names:
-                cols = [groups[1]]
+            def error_fn(s):
+                raise Exception('error parsing columns' % s)
 
-            for p in parts:
-                col = s[p[0]: p[1]].replace(
-                    "' '::text", "").strip().strip("||").strip()
-
-                if col in col_names:
-                    cols.append(col)
-                else:
-                    raise Exception('%s not a column' % col)
+            cols = self._parse_cols_from(
+                groups[1], internals, col_names, error_fn)
 
             if len(cols) > 0:
                 return {
@@ -719,36 +688,14 @@ class ParseDB(object):
 
         return {}
 
-    def _parse_str(self, s: str):
-        res = []
-        left = []
-        for i in range(0, len(s)):
-            c = s[i]
-            if c == '(':
-                left.append(i+1)
-            if c == ')':
-                l = left[-1]
-                if l == 1:
-                    l = (res[-1][1])+1
-                res.append((l, i))
-                # remove last
-                left = left[:-1]
-        return res
-
     def _parse_str_into_parts(self, s: str):
         res = []
-        # left = []
         stack = []
-        # don't need depth if we're also going to have a stack
-        # depth = 0
-        # last = None
         end = -1
         for i in range(0, len(s)):
             c = s[i]
             if c == '(':
-                # print('(', len(stack))
                 curr = Tree(i, end+1)
-                # last = curr
 
                 # how to know when to add another top level
                 if len(stack) == 0:
@@ -760,35 +707,19 @@ class ParseDB(object):
 
                 stack.append(curr)
 
-                # all.append(curr)
-                # depth = depth+1
-                # left.append(i+1)
             if c == ')':
-                # print(')', len(stack))
                 end = i
 
                 curr = stack[-1]
                 l = curr.beg_paren
 
-                # first one
-                # if curr.pos == 1:
-
-                # l = left[-1]
-                # TODO...
                 if len(stack) == 1:
                     l = curr.end + 1
-                    # l = (res[-1][1])+1
 
-                    # TODO children somehow
                 curr.str = s[l:i]
                 curr.end = i+1
 
                 stack.pop()
-                # res.append(s[l:i])
-                # remove last
-                # left = left[:-1]
-
-                # depth = depth-1
 
         return res
 
@@ -803,9 +734,3 @@ class Tree:
 
     def append(self, child):
         self.children.append(child)
-
-    # def set_str(self, str):
-    #     self.str = str
-
-    # def set_end(self, end):
-    #     self.end = end
