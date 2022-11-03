@@ -26,7 +26,8 @@ setuptools.setup(
                       "datetime==4.3",
                       "psycopg2==2.8.6",
                       "autopep8==1.5.4",
-                      "python-dateutil==2.8.2"
+                      "python-dateutil==2.8.2",
+                      "inflect==6.0.2"
                       ],
     entry_points={'console_scripts': ["auto_schema = auto_schema.cli:main"]},
     include_package_data=True

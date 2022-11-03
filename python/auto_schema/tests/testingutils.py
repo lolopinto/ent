@@ -308,9 +308,9 @@ def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Colu
     if schema_column.computed is not None:
         schema_clause_text = schema_column.computed.sqltext
         db_clause_text = db_column.computed.sqltext
-        # TODO test_full_text_index_with_generated_column
+        # TODO ideally refactor logic used in parse_db here and compare it
 #        to_tsvector('english', first_name || ' ' || last_name) to_tsvector('english'::regconfig, ((first_name || ' '::text) || last_name))
-# need to parse these...
+# or setweight variants
         return
 
     if schema_clause_text is None and db_column.autoincrement == True:
