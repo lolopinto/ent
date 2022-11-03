@@ -32,7 +32,7 @@ import {
 import { AssocEdgeLoaderFactory } from "./assoc_edge_loader";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
-import { WriteOperation } from "@snowtop/ent/action";
+import { WriteOperation } from "../../action/action";
 
 const ml = new MockLogs();
 
