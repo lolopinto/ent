@@ -458,7 +458,6 @@ class ParseDB(object):
 
             # nothing to do here. index on a column.
             if internals in col_names and default_index(table, internals) == index_type:
-                print('col indices, false')
                 col_indices[internals] = True
                 continue
 
@@ -479,7 +478,6 @@ class ParseDB(object):
                 continue
 
             if internals in col_names and index_type is not None:
-                # print('col index, diff type', generated_col_info)
                 indices.append({
                     "name": name,
                     "columns": [internals],
@@ -566,11 +564,9 @@ class ParseDB(object):
             for child in res[0].children:
                 text = sqltext[child.beg_cursor:child.end].strip().strip(
                     '||').lstrip('(').strip()
-                print('text', text)
 
                 weight = None
                 if text.startswith('setweight'):
-                    print('has setweight')
                     idx = text.rfind(',')
                     weight = text[idx +
                                   1:].rstrip(')').rstrip('::"char').replace("'", "").strip()
@@ -580,14 +576,11 @@ class ParseDB(object):
                 m = sqltext_regex.match(text)
 
                 if not m:
-                    print('text', text)
-                    print('sqltext', sqltext)
                     unsupported_col(text)
 
                 groups = m.groups()
                 lang = groups[0].rstrip("::regconfig").strip("'")
                 # TODO ensure lang is consistent?
-                print('lang', lang)
 
                 val = groups[1]
                 starts = [m.start()
@@ -603,7 +596,6 @@ class ParseDB(object):
                     else:
                         curr = val[starts[i]: starts[i+1]-1]
 
-                    print('sfsfsf', curr)
                     cols2 = self._parse_cols_from(
                         curr, sqltext, col_names, unsupported_col)
                     cols = cols + cols2

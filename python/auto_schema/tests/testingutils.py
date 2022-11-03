@@ -501,10 +501,8 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
         for schema_column, db_column in zip(schema_index_columns, db_index_columns):
             _validate_column(schema_column, db_column, metadata, dialect)
 
-    print('parsed_data', parsed_data)
     if parsed_data:
         parsed_indexes = parsed_data["indices"]
-        print('parsed_indices', parsed_indexes)
 
         # go through all indexes
         for index in schema_table.indexes:
@@ -532,9 +530,6 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
             assert len(parsed_index) == 1
             parsed_index = parsed_index[0]
 
-            # print(parsed_index, index.columns)
-            # assert parsed_index.get("columns") == [
-            #     col.name for col in index.columns]
             assert parsed_index.get("unique", False) == index.unique
 
             if parsed_index.get('fulltext', None) is not None:
@@ -554,7 +549,6 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
                     }
                     if test_data.get('weights', None) is not None:
                         expected['weights'] = test_data.get('weights', None)
-                    print('fsfsfsf', fulltext, expected)
 
                     assert fulltext == expected
 
@@ -569,7 +563,6 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
                     groups = m.groups()
                     lang = groups[0].rstrip("::regconfig").strip("'")
 
-                    # print('fulltext', fulltext)
                     assert fulltext == {
                         'indexType': info['postgresql_using'],
                         'language': lang,
