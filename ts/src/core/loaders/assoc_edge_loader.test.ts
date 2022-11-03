@@ -3,7 +3,14 @@ import { v4 as uuidv4 } from "uuid";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { AssocEdge, buildQuery, DefaultLimit } from "../ent";
+import {
+  AssocEdge,
+  buildQuery,
+  clearGlobalSchema,
+  DefaultLimit,
+  setGlobalSchema,
+  __hasGlobalSchema,
+} from "../ent";
 import * as clause from "../clause";
 
 import { EdgeQueryableDataOptions, ID, Loader } from "../base";
@@ -12,6 +19,7 @@ import {
   FakeUser,
   FakeContact,
   EdgeType,
+  FakeUserSchema,
 } from "../../testutils/fake_data/index";
 import {
   createAllContacts,
@@ -22,6 +30,9 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 
 import { AssocEdgeLoaderFactory } from "./assoc_edge_loader";
+import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
+import { SimpleAction } from "../../testutils/builder";
+import { WriteOperation } from "@snowtop/ent/action";
 
 const ml = new MockLogs();
 
@@ -70,8 +81,36 @@ describe("postgres", () => {
   commonTests();
 });
 
+describe("postgres global", () => {
+  let tdb: TempDB;
+
+  beforeAll(async () => {
+    setLogLevels(["query", "error", "cache"]);
+    ml.mock();
+    setGlobalSchema(testEdgeGlobalSchema);
+
+    tdb = await setupTempDB(true);
+  });
+
+  beforeEach(() => {
+    // reset context for each test
+    ctx = new TestContext();
+  });
+
+  afterEach(() => {
+    ml.clear();
+  });
+
+  afterAll(async () => {
+    ml.restore();
+    await tdb.afterAll();
+    clearGlobalSchema();
+  });
+  commonTests();
+});
+
 describe("sqlite", () => {
-  setupSqlite(`sqlite:///assoc_edge_loader.db`, tempDBTables);
+  setupSqlite(`sqlite:///assoc_edge_loader.db`, tempDBTables, {});
 
   beforeAll(async () => {
     setLogLevels(["query", "error", "cache"]);
@@ -94,6 +133,37 @@ describe("sqlite", () => {
   commonTests();
 });
 
+describe("sqlite global ", () => {
+  setupSqlite(
+    `sqlite:///assoc_edge_loader_global.db`,
+    () => tempDBTables(true),
+    {},
+  );
+
+  beforeAll(async () => {
+    setLogLevels(["query", "error", "cache"]);
+    setGlobalSchema(testEdgeGlobalSchema);
+
+    ml.mock();
+  });
+
+  beforeEach(async () => {
+    // reset context for each test
+    ctx = new TestContext();
+    await createEdges();
+  });
+
+  afterEach(() => {
+    ml.clear();
+  });
+
+  afterAll(async () => {
+    ml.restore();
+    clearGlobalSchema();
+  });
+  commonTests();
+});
+
 function commonTests() {
   test("multi-ids. with context", async () => {
     await testMultiQueryDataAvail(
@@ -107,8 +177,33 @@ function commonTests() {
     );
   });
 
+  test("multi-ids. with context and deletion", async () => {
+    await testWithDeleteMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(true, opts),
+      (ids) => {
+        expect(ml.logs.length).toBe(1);
+        expect(ml.logs[0].query).toMatch(/^SELECT * /);
+        expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      },
+      (ids) => {
+        // 1 query again since there was a write and should have cleared context cache
+        expect(ml.logs.length).toBe(1);
+        expect(ml.logs[0].query).toMatch(/^SELECT * /);
+        expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      },
+    );
+  });
+
   test("multi-ids. without context", async () => {
     await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(false, opts),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+    );
+  });
+
+  test("multi-ids. without context and deletion", async () => {
+    await testWithDeleteMultiQueryDataAvail(
       (opts) => getConfigurableLoader(false, opts),
       verifyMultiCountQueryCacheMiss,
       verifyMultiCountQueryCacheMiss,
@@ -402,6 +497,68 @@ async function testMultiQueryDataAvail(
   verifyPostSecondQuery(ids, slice);
 }
 
+// sss
+async function testWithDeleteMultiQueryDataAvail(
+  loaderFn: (opts: EdgeQueryableDataOptions) => Loader<ID, AssocEdge[]>,
+  verifyPostFirstQuery: (ids: ID[], slice?: number) => void,
+  verifyPostSecondQuery: (ids: ID[], slice?: number) => void,
+  slice?: number,
+  data?: createdData,
+) {
+  if (!data) {
+    data = await createData();
+  }
+  let { m, ids, users } = data;
+
+  // clear post creation
+  ml.clear();
+
+  // TODO this needs to be done prior to the JS event loop
+  // need to make this work for scenarios where the loader is created in same loop
+  const loader = loaderFn({
+    limit: slice,
+  });
+  const edges = await Promise.all(ids.map(async (id) => loader.load(id)));
+  ml.verifyNoErrors();
+
+  verifyGroupedData(ids, users, edges, m, slice);
+
+  verifyPostFirstQuery(ids, slice);
+
+  // delete
+  const userToDelete = data.users[0];
+  const action = new SimpleAction(
+    userToDelete.viewer,
+    FakeUserSchema,
+    new Map(),
+    WriteOperation.Edit,
+    userToDelete,
+  );
+  for (const edge of edges[0]) {
+    action.builder.orchestrator.removeOutboundEdge(
+      edge.id2,
+      EdgeType.UserToContacts,
+    );
+  }
+  await action.saveX();
+  ml.clear();
+
+  // clear loader
+  loader.clearAll();
+  // reload data
+  const edges2 = await Promise.all(ids.map(async (id) => loader.load(id)));
+  // console.debug(edges2);
+
+  // deleted everything
+  // verify data is as expected
+  m.set(userToDelete.id, []);
+
+  // console.debug(edges2);
+  verifyGroupedData(ids, users, edges2, m);
+
+  verifyPostSecondQuery(ids, slice);
+}
+
 async function testMultiQueryDataOffset(
   loaderFn: (opts: EdgeQueryableDataOptions) => Loader<ID, AssocEdge[]>,
   context?: boolean,
@@ -520,10 +677,12 @@ function verifyMultiCountQueryCacheMiss(ids: ID[], slice?: number) {
         "id2_type",
         "time",
         "data",
-      ],
-      clause: clause.And(
+        __hasGlobalSchema() ? "deleted_at" : "",
+      ].filter((v) => v !== ""),
+      clause: clause.AndOptional(
         clause.Eq("id1", ids[idx]),
         clause.Eq("edge_type", EdgeType.UserToContacts),
+        __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
       ),
       orderby: "time DESC",
       limit: slice || DefaultLimit,
@@ -551,11 +710,13 @@ function verifyMultiCountQueryOffset(
       "id2_type",
       "time",
       "data",
-    ];
-    const cls = clause.And(
+      __hasGlobalSchema() ? "deleted_at" : "",
+    ].filter((v) => v !== "");
+    const cls = clause.AndOptional(
       clause.Eq("id1", ids[idx]),
       clause.Eq("edge_type", EdgeType.UserToContacts),
       clause.Less("time", contacts[0].createdAt.toISOString()),
+      __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
     );
     if (cachehit) {
       // have queried before. we don't hit db again

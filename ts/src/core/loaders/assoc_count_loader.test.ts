@@ -4,7 +4,12 @@ import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { ID } from "../base";
-import { buildQuery } from "../ent";
+import {
+  buildQuery,
+  clearGlobalSchema,
+  setGlobalSchema,
+  __hasGlobalSchema,
+} from "../ent";
 
 import * as clause from "../clause";
 
@@ -16,6 +21,7 @@ import {
   tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
 import { AssocEdgeCountLoader } from "./assoc_count_loader";
+import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 
 const ml = new MockLogs();
 
@@ -46,6 +52,28 @@ describe("postgres", () => {
   commonTests();
 });
 
+describe("postgres global", () => {
+  let tdb: TempDB;
+  beforeAll(async () => {
+    setLogLevels(["query", "error", "cache"]);
+    ml.mock();
+
+    setGlobalSchema(testEdgeGlobalSchema);
+    tdb = await setupTempDB(true);
+  });
+
+  afterEach(() => {
+    ml.clear();
+  });
+
+  afterAll(async () => {
+    ml.restore();
+    await tdb.afterAll();
+    clearGlobalSchema();
+  });
+  commonTests();
+});
+
 describe("sqlite", () => {
   setupSqlite(`sqlite:///assoc_count_loader.db`, tempDBTables);
 
@@ -60,6 +88,30 @@ describe("sqlite", () => {
 
   afterAll(async () => {
     ml.restore();
+  });
+
+  commonTests();
+});
+
+describe("sqlite global", () => {
+  setupSqlite(`sqlite:///assoc_count_loader_global.db`, () =>
+    tempDBTables(true),
+  );
+
+  beforeAll(async () => {
+    setLogLevels(["query", "error", "cache"]);
+    setGlobalSchema(testEdgeGlobalSchema);
+
+    ml.mock();
+  });
+
+  beforeEach(() => {
+    ml.clear();
+  });
+
+  afterAll(async () => {
+    ml.restore();
+    clearGlobalSchema();
   });
 
   commonTests();
@@ -185,9 +237,10 @@ function verifySingleIDQuery(id) {
     query: buildQuery({
       tableName: "user_to_contacts_table",
       fields: ["count(1) as count"],
-      clause: clause.And(
+      clause: clause.AndOptional(
         clause.Eq("id1", id),
         clause.Eq("edge_type", EdgeType.UserToContacts),
+        __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
       ),
     }),
     values: [id, EdgeType.UserToContacts],
@@ -275,9 +328,10 @@ function verifyGroupedQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "user_to_contacts_table",
     fields: ["count(1) as count", "id1"],
-    clause: clause.And(
+    clause: clause.AndOptional(
       clause.In("id1", ...ids),
       clause.Eq("edge_type", EdgeType.UserToContacts),
+      __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
     ),
     groupby: "id1",
   });
@@ -305,9 +359,10 @@ function verifyMultiCountQueryCacheMiss(ids: ID[]) {
     const expQuery = buildQuery({
       tableName: "user_to_contacts_table",
       fields: ["count(1) as count"],
-      clause: clause.And(
+      clause: clause.AndOptional(
         clause.Eq("id1", ids[idx]),
         clause.Eq("edge_type", EdgeType.UserToContacts),
+        __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
       ),
     });
     expect(log).toStrictEqual({
