@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { ID } from "../base";
+import { ID, WriteOperation } from "../base";
 import {
   buildQuery,
   clearGlobalSchema,
@@ -14,7 +14,12 @@ import {
 import * as clause from "../clause";
 
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
-import { EdgeType, FakeContact } from "../../testutils/fake_data/index";
+import {
+  EdgeType,
+  FakeContact,
+  FakeUser,
+  FakeUserSchema,
+} from "../../testutils/fake_data/index";
 import {
   createAllContacts,
   setupTempDB,
@@ -22,6 +27,7 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 import { AssocEdgeCountLoader } from "./assoc_count_loader";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
+import { SimpleAction } from "../../testutils/builder";
 
 const ml = new MockLogs();
 
@@ -158,8 +164,24 @@ function commonTests() {
     );
   });
 
+  test("with context and deletion. cache hit. multi -ids", async () => {
+    await testWithDeleteMultiQueryDataAvail(
+      getNewLoader,
+      verifyGroupedQuery,
+      verifyGroupedQuery,
+    );
+  });
+
   test("without context. cache hit. multi -ids", async () => {
     await testMultiQueryDataAvail(
+      () => getNewLoader(false),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+    );
+  });
+
+  test("without context and deletion. cache hit. multi -ids", async () => {
+    await testWithDeleteMultiQueryDataAvail(
       () => getNewLoader(false),
       verifyMultiCountQueryCacheMiss,
       verifyMultiCountQueryCacheMiss,
@@ -295,6 +317,75 @@ async function testMultiQueryDataAvail(
       counts2[i],
       `count for idx ${i} for id ${ids[0]} was not as expected`,
     ).toBe(m.get(ids[i])?.length);
+  }
+
+  verifyPostSecondQuery(ids);
+}
+
+async function testWithDeleteMultiQueryDataAvail(
+  loaderFn: () => AssocEdgeCountLoader,
+  verifyPostFirstQuery: (ids: ID[]) => void,
+  verifyPostSecondQuery: (ids: ID[]) => void,
+) {
+  const m = new Map<ID, FakeContact[]>();
+  const ids: ID[] = [];
+  const users: FakeUser[] = [];
+
+  await Promise.all(
+    [1, 2, 3, 4, 5].map(async (count, idx) => {
+      const [user, contacts] = await createAllContacts({ slice: count });
+
+      m.set(user.id, contacts);
+      ids[idx] = user.id;
+      users[idx] = user;
+    }),
+  );
+
+  ml.clear();
+
+  const loader = loaderFn();
+
+  const counts = await Promise.all(ids.map(async (id) => loader.load(id)));
+  for (let i = 0; i < ids.length; i++) {
+    expect(
+      counts[i],
+      `count for idx ${i} for id ${ids[0]} was not as expected`,
+    ).toBe(m.get(ids[i])?.length);
+  }
+
+  verifyPostFirstQuery(ids);
+
+  const userToDelete = users[0];
+  const action = new SimpleAction(
+    userToDelete.viewer,
+    FakeUserSchema,
+    new Map(),
+    WriteOperation.Edit,
+    userToDelete,
+  );
+  for (const contact of m.get(userToDelete.id) ?? []) {
+    action.builder.orchestrator.removeOutboundEdge(
+      contact.id,
+      EdgeType.UserToContacts,
+    );
+  }
+  await action.saveX();
+  // clear the logs
+  ml.clear();
+  loader.clearAll();
+
+  // re-load
+  const counts2 = await Promise.all(ids.map(async (id) => loader.load(id)));
+  for (let i = 0; i < ids.length; i++) {
+    const ct = counts2[i];
+    if (i === 0) {
+      expect(ct).toBe(0);
+    } else {
+      expect(
+        ct,
+        `count for idx ${i} for id ${ids[0]} was not as expected`,
+      ).toBe(m.get(ids[i])?.length);
+    }
   }
 
   verifyPostSecondQuery(ids);

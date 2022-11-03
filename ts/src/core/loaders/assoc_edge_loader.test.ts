@@ -13,7 +13,7 @@ import {
 } from "../ent";
 import * as clause from "../clause";
 
-import { EdgeQueryableDataOptions, ID, Loader } from "../base";
+import { EdgeQueryableDataOptions, ID, Loader, WriteOperation } from "../base";
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import {
   FakeUser,
@@ -32,7 +32,6 @@ import {
 import { AssocEdgeLoaderFactory } from "./assoc_edge_loader";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
-import { WriteOperation } from "../../action/action";
 
 const ml = new MockLogs();
 
@@ -497,7 +496,6 @@ async function testMultiQueryDataAvail(
   verifyPostSecondQuery(ids, slice);
 }
 
-// sss
 async function testWithDeleteMultiQueryDataAvail(
   loaderFn: (opts: EdgeQueryableDataOptions) => Loader<ID, AssocEdge[]>,
   verifyPostFirstQuery: (ids: ID[], slice?: number) => void,
