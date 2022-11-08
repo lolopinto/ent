@@ -201,7 +201,7 @@ export class AddressBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -210,12 +210,12 @@ export class AddressBuilder<
         result.set(key, value);
       }
     };
-    addField("street_name", fields.streetName);
-    addField("city", fields.city);
-    addField("state", fields.state);
-    addField("zip", fields.zip);
-    addField("apartment", fields.apartment);
-    addField("country", fields.country);
+    addField("street_name", input.streetName);
+    addField("city", input.city);
+    addField("state", input.state);
+    addField("zip", input.zip);
+    addField("apartment", input.apartment);
+    addField("country", input.country);
     return result;
   }
 

@@ -5,7 +5,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -60,7 +59,11 @@ func AssocEdgesEqual(l1, l2 []*AssociationEdge) bool {
 	return true
 }
 
-func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
+func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge, opts ...change.CompareOption) []change.Change {
+	o := &change.CompareOpts{}
+	for _, fn := range opts {
+		fn(o)
+	}
 	var ret []change.Change
 	for k, edge1 := range m1 {
 		edge2, ok := m2[k]
@@ -80,6 +83,25 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 					GraphQLName: edge1.GetGraphQLConnectionName(),
 					ExtraInfo:   edge1.TsEdgeQueryName(),
 				})
+			} else {
+				if o.AddEqualToGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.AddEdge,
+						Name:        k,
+						GraphQLName: edge1.GetGraphQLConnectionName(),
+						ExtraInfo:   edge1.TsEdgeQueryName(),
+						GraphQLOnly: true,
+					})
+				}
+				if o.RemoveEqualFromGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.RemoveEdge,
+						Name:        k,
+						GraphQLName: edge1.GetGraphQLConnectionName(),
+						ExtraInfo:   edge1.TsEdgeQueryName(),
+						GraphQLOnly: true,
+					})
+				}
 			}
 		}
 	}
@@ -100,6 +122,7 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 }
 
 func compareAssocEdgeGroupMap(m1, m2 map[string]*AssociationEdgeGroup) []change.Change {
+	// NB: not using change.CompareOpts here as it doesn't affect graphql (yet)
 	var ret []change.Change
 	for k, group1 := range m1 {
 		group2, ok := m2[k]
@@ -133,6 +156,7 @@ func compareAssocEdgeGroupMap(m1, m2 map[string]*AssociationEdgeGroup) []change.
 }
 
 func compareFieldEdgeMap(m1, m2 map[string]*FieldEdge) []change.Change {
+	// NB: not using change.CompareOpts here as it doesn't affect graphql (yet)
 	var ret []change.Change
 	for k, edge1 := range m1 {
 		edge2, ok := m2[k]
@@ -167,7 +191,7 @@ func compareFieldEdgeMap(m1, m2 map[string]*FieldEdge) []change.Change {
 	return ret
 }
 
-func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []change.Change {
+func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge, o *change.CompareOpts) []change.Change {
 	var ret []change.Change
 	for k, edge1 := range m1 {
 		edge2, ok := m2[k]
@@ -187,6 +211,25 @@ func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []
 					GraphQLName: edge1.GetGraphQLConnectionName(),
 					ExtraInfo:   edge1.TsEdgeQueryName(),
 				})
+			} else {
+				if o.AddEqualToGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.AddEdge,
+						Name:        k,
+						GraphQLName: edge1.GetGraphQLConnectionName(),
+						ExtraInfo:   edge1.TsEdgeQueryName(),
+						GraphQLOnly: true,
+					})
+				}
+				if o.RemoveEqualFromGraphQL {
+					ret = append(ret, change.Change{
+						Change:      change.RemoveEdge,
+						Name:        k,
+						GraphQLName: edge1.GetGraphQLConnectionName(),
+						ExtraInfo:   edge1.TsEdgeQueryName(),
+						GraphQLOnly: true,
+					})
+				}
 			}
 		}
 	}
@@ -213,14 +256,14 @@ func commonEdgeInfoEqual(existing, common commonEdgeInfo) bool {
 		entConfigEqual(existing.entConfig, common.entConfig)
 }
 
-func entConfigEqual(existing, entConfig *schemaparser.EntConfigInfo) bool {
+func entConfigEqual(existing, entConfig *EntConfigInfo) bool {
 	ret := change.CompareNilVals(existing == nil, entConfig == nil)
 	if ret != nil {
 		return *ret
 	}
 
-	return existing.ConfigName == entConfig.ConfigName &&
-		existing.PackageName == entConfig.PackageName
+	return existing.PackageName == entConfig.PackageName &&
+		existing.NodeName == entConfig.NodeName
 }
 
 func inverseAssocEdgeEqual(existing, inverseEdge *InverseAssocEdge) bool {
@@ -233,7 +276,7 @@ func inverseAssocEdgeEqual(existing, inverseEdge *InverseAssocEdge) bool {
 		existing.EdgeConst == inverseEdge.EdgeConst
 }
 
-func compareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
+func CompareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
 	var ret []change.Change
 	if !foreignKeyEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
@@ -257,7 +300,7 @@ func destinationEdgeEqual(existingEdge, edge destinationEdge) bool {
 
 }
 
-func compareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
+func CompareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
 	var ret []change.Change
 	if !indexedEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
@@ -277,7 +320,7 @@ func indexedEdgeEqual(existingEdge, edge *IndexedEdge) bool {
 		destinationEdgeEqual(existingEdge.destinationEdge, edge.destinationEdge)
 }
 
-func compareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
+func CompareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
 	var ret []change.Change
 	if !fieldEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
@@ -349,8 +392,8 @@ func assocEdgesMapEqual(m1, m2 map[string]*AssociationEdge) bool {
 func compareEdge(e1, e2 Edge) bool {
 	return e1.GetEdgeName() == e2.GetEdgeName() &&
 		nodeinfo.NodeInfoEqual(e1.GetNodeInfo(), e2.GetNodeInfo()) &&
-		e1.GetEntConfig().ConfigName == e2.GetEntConfig().ConfigName &&
 		e1.GetEntConfig().PackageName == e2.GetEntConfig().PackageName &&
+		e1.GetEntConfig().NodeName == e2.GetEntConfig().NodeName &&
 		e1.GraphQLEdgeName() == e2.GraphQLEdgeName() &&
 		e1.CamelCaseEdgeName() == e2.CamelCaseEdgeName() &&
 		e1.HideFromGraphQL() == e2.HideFromGraphQL() &&
@@ -375,7 +418,11 @@ func compareIndexedConnectionEdge(e1, e2 IndexedConnectionEdge) bool {
 }
 
 // Compares edges, assoc edge groups, field edge, connection edge
-func CompareEdgeInfo(e1, e2 *EdgeInfo) []change.Change {
+func CompareEdgeInfo(e1, e2 *EdgeInfo, opts ...change.CompareOption) []change.Change {
+	o := &change.CompareOpts{}
+	for _, fn := range opts {
+		fn(o)
+	}
 	if e1 == nil {
 		e1 = &EdgeInfo{}
 	}
@@ -384,14 +431,14 @@ func CompareEdgeInfo(e1, e2 *EdgeInfo) []change.Change {
 	}
 	var ret []change.Change
 
-	ret = append(ret, CompareAssocEdgesMap(e1.assocMap, e2.assocMap)...)
+	ret = append(ret, CompareAssocEdgesMap(e1.assocMap, e2.assocMap, opts...)...)
 
 	ret = append(ret, compareAssocEdgeGroupMap(e1.assocGroupsMap, e2.assocGroupsMap)...)
 
 	ret = append(ret, compareFieldEdgeMap(e1.fieldEdgeMap, e2.fieldEdgeMap)...)
 
 	// Note: see comment in EdgeInfo about comparing this and not compareConnectionEdgeMap
-	ret = append(ret, compareIndexedConnectionEdgeMap(e1.indexedEdgeQueriesMap, e2.indexedEdgeQueriesMap)...)
+	ret = append(ret, compareIndexedConnectionEdgeMap(e1.indexedEdgeQueriesMap, e2.indexedEdgeQueriesMap, o)...)
 
 	return ret
 }

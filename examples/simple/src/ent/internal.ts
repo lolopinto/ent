@@ -5,8 +5,10 @@
 
 export * from "./generated/const";
 export * from "./generated/loaders";
+export * from "./generated/loadAny";
 export * from "./generated/day_of_week";
 export * from "./generated/day_of_week_alt";
+export * from "./generated/mixins/contact_info";
 export * from "./generated/mixins/day_of_week";
 export * from "./generated/mixins/feedback";
 export * from "./generated/address_base";
@@ -14,6 +16,7 @@ export * from "./generated/auth_code_base";
 export * from "./generated/comment_base";
 export * from "./generated/contact_base";
 export * from "./generated/contact_email_base";
+export * from "./generated/contact_info";
 export * from "./generated/contact_phone_number_base";
 export * from "./generated/event_base";
 export * from "./generated/holiday_base";
@@ -65,3 +68,4 @@ export * from "./user/query/user_to_likers_query";
 export * from "./user/query/user_to_likes_query";
 export * from "./user/query/user_to_maybe_events_query";
 export * from "./user/query/user_to_self_contact_query";
+import "../global_augment";

@@ -21,12 +21,18 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { loadEntByType, loadEntXByType } from "src/ent/generated/loadAny";
 import {
   todoLoader,
   todoLoaderInfo,
   todoNoTransformLoader,
 } from "src/ent/generated/loaders";
-import { Account, NodeType, TodoToTagsQuery } from "src/ent/internal";
+import {
+  Account,
+  NodeType,
+  TodoToTagsQuery,
+  TodoToTodoScopeQuery,
+} from "src/ent/internal";
 import schema from "src/schema/todo_schema";
 
 interface TodoDBData {
@@ -38,6 +44,9 @@ interface TodoDBData {
   completed: boolean;
   creator_id: ID;
   completed_date: Date | null;
+  assignee_id: ID;
+  scope_id: ID;
+  scope_type: string;
 }
 
 export class TodoBase implements Ent<Viewer> {
@@ -50,6 +59,9 @@ export class TodoBase implements Ent<Viewer> {
   readonly completed: boolean;
   readonly creatorID: ID;
   readonly completedDate: Date | null;
+  readonly assigneeID: ID;
+  readonly scopeID: ID;
+  readonly scopeType: string;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -60,6 +72,9 @@ export class TodoBase implements Ent<Viewer> {
     this.completed = convertBool(data.completed);
     this.creatorID = data.creator_id;
     this.completedDate = convertNullableDate(data.completed_date);
+    this.assigneeID = data.assignee_id;
+    this.scopeID = data.scope_id;
+    this.scopeType = data.scope_type;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
@@ -227,11 +242,39 @@ export class TodoBase implements Ent<Viewer> {
     return TodoToTagsQuery.query(this.viewer, this.id);
   }
 
+  queryTodoScope(): TodoToTodoScopeQuery {
+    return TodoToTodoScopeQuery.query(this.viewer, this.id);
+  }
+
+  async loadAssignee(): Promise<Account | null> {
+    return loadEnt(this.viewer, this.assigneeID, Account.loaderOptions());
+  }
+
+  loadAssigneeX(): Promise<Account> {
+    return loadEntX(this.viewer, this.assigneeID, Account.loaderOptions());
+  }
+
   async loadCreator(): Promise<Account | null> {
     return loadEnt(this.viewer, this.creatorID, Account.loaderOptions());
   }
 
   loadCreatorX(): Promise<Account> {
     return loadEntX(this.viewer, this.creatorID, Account.loaderOptions());
+  }
+
+  async loadScope(): Promise<Ent | null> {
+    return loadEntByType(
+      this.viewer,
+      this.scopeType as unknown as NodeType,
+      this.scopeID,
+    );
+  }
+
+  loadScopeX(): Promise<Ent> {
+    return loadEntXByType(
+      this.viewer,
+      this.scopeType as unknown as NodeType,
+      this.scopeID,
+    );
   }
 }

@@ -10,7 +10,7 @@ import (
 func TestCompare(t *testing.T) {
 	ci := &CustomInterface{
 		TSType:  "Foo",
-		GQLType: "Foo",
+		GQLName: "Foo",
 		Fields: []*field.Field{
 			{
 				FieldName: "Foo",
@@ -19,7 +19,7 @@ func TestCompare(t *testing.T) {
 	}
 	ci2 := &CustomInterface{
 		TSType:  "Foo",
-		GQLType: "Foo",
+		GQLName: "Foo",
 		Fields: []*field.Field{
 			{
 				FieldName: "Foo",
@@ -32,7 +32,7 @@ func TestCompare(t *testing.T) {
 func TestCompareWithAction(t *testing.T) {
 	ci := &CustomInterface{
 		TSType:  "Foo",
-		GQLType: "Foo",
+		GQLName: "Foo",
 		Fields: []*field.Field{
 			{
 				FieldName: "Foo",
@@ -43,7 +43,7 @@ func TestCompareWithAction(t *testing.T) {
 	}
 	ci2 := &CustomInterface{
 		TSType:  "Foo",
-		GQLType: "Foo",
+		GQLName: "Foo",
 		Fields: []*field.Field{
 			{
 				FieldName: "Foo",
@@ -58,7 +58,7 @@ func TestCompareWithAction(t *testing.T) {
 func TestCompareWithOneNullAction(t *testing.T) {
 	ci := &CustomInterface{
 		TSType:  "Foo",
-		GQLType: "Foo",
+		GQLName: "Foo",
 		Fields: []*field.Field{
 			{
 				FieldName: "Foo",
@@ -67,7 +67,7 @@ func TestCompareWithOneNullAction(t *testing.T) {
 	}
 	ci2 := &CustomInterface{
 		TSType:  "Foo",
-		GQLType: "Foo",
+		GQLName: "Foo",
 		Fields: []*field.Field{
 			{
 				FieldName: "Foo",

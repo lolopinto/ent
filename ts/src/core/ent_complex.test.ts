@@ -3,9 +3,9 @@ import {
   SimpleAction,
   getTableName,
   getFieldInfo,
+  EntBuilderSchema,
 } from "../testutils/builder";
 import {
-  BaseEntSchema,
   BooleanType,
   EnumType,
   JSONBType,
@@ -14,7 +14,6 @@ import {
   getFields,
   getFieldsWithPrivacy,
   getStorageKey,
-  FieldMap,
   Schema,
 } from "../schema";
 import {
@@ -145,10 +144,8 @@ const sharedPolicyLoadEnt: PrivacyPolicy = {
   ],
 };
 
-class UserSchema extends BaseEntSchema {
-  ent = User;
-
-  fields: FieldMap = {
+const UserSchema = new EntBuilderSchema(User, {
+  fields: {
     firstName: StringType({
       privacyPolicy: sharedPolicy,
     }),
@@ -200,14 +197,12 @@ class UserSchema extends BaseEntSchema {
       nullable: true,
       privacyPolicy: sharedPolicy,
     }),
-  };
-}
+  },
+});
 
 // basically same as UserSchema but more complicated privacy policy
-class AccountSchema extends BaseEntSchema {
-  ent = User;
-
-  fields: FieldMap = {
+const AccountSchema = new EntBuilderSchema(User, {
+  fields: {
     firstName: StringType({
       privacyPolicy: sharedPolicyLoadEnt,
     }),
@@ -259,8 +254,8 @@ class AccountSchema extends BaseEntSchema {
       nullable: true,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-  };
-}
+  },
+});
 
 function getCols(schema: Schema) {
   const fields = getFields(schema);
@@ -271,7 +266,7 @@ function getCols(schema: Schema) {
   return cols;
 }
 
-const userSchema = new UserSchema();
+const userSchema = UserSchema;
 const userFields = getCols(userSchema);
 const userTableName = getTableName(userSchema);
 const userLoaderFactory = new ObjectLoaderFactory({
@@ -287,7 +282,7 @@ const userLoaderOptions = {
   fieldPrivacy: getFieldsWithPrivacy(userSchema, getFieldInfo(userSchema)),
 };
 
-const accountSchema = new AccountSchema();
+const accountSchema = AccountSchema;
 const accountFields = getCols(accountSchema);
 const accountTableName = getTableName(accountSchema);
 const accountLoaderFactory = new ObjectLoaderFactory({

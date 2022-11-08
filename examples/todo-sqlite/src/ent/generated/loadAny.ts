@@ -8,7 +8,7 @@ import {
   loadEnt,
   loadEntX,
 } from "@snowtop/ent";
-import { Account, Tag, Todo } from "src/ent/";
+import { Account, Tag, Todo, Workspace } from "src/ent/internal";
 import { NodeType } from "./const";
 
 export async function loadEntByType(
@@ -35,6 +35,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent, any> {
       return Tag.loaderOptions();
     case NodeType.Todo:
       return Todo.loaderOptions();
+    case NodeType.Workspace:
+      return Workspace.loaderOptions();
     default:
       throw new Error(`invalid nodeType ${type} passed to getLoaderOptions`);
   }

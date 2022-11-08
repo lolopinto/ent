@@ -11,21 +11,23 @@ type NonEntField struct {
 	// note that if this changes, need to update NonEntFieldEqual
 	fieldName   string
 	graphqlName string
-	fieldType   enttype.TSGraphQLType
+	fieldType   enttype.TSType
 	nullable    bool // required default = true
 	// TODO these are both go things. ignore
 	// Flag enum or ID
 	Flag string
 	// this is a go-thing. ignore for TypeScript
-	NodeType string
+	NodeType        string
+	hideFromGraphQL bool
 }
 
-func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSGraphQLType, nullable bool) *NonEntField {
+func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSType, nullable, hideFromGraphQL bool) *NonEntField {
 	return &NonEntField{
-		fieldName:   fieldName,
-		graphqlName: codegenapi.GraphQLName(cfg, fieldName),
-		fieldType:   fieldType,
-		nullable:    nullable,
+		fieldName:       fieldName,
+		graphqlName:     codegenapi.GraphQLName(cfg, fieldName),
+		fieldType:       fieldType,
+		nullable:        nullable,
+		hideFromGraphQL: hideFromGraphQL,
 	}
 }
 
@@ -60,11 +62,11 @@ func (f *NonEntField) TsBuilderType(cfg codegenapi.Config) string {
 	return f.fieldType.GetTSType()
 }
 
-func (f *NonEntField) GetFieldType() enttype.EntType {
+func (f *NonEntField) GetFieldType() enttype.Type {
 	return f.fieldType
 }
 
-func (f *NonEntField) GetGraphQLFieldType() enttype.TSGraphQLType {
+func (f *NonEntField) GetGraphQLFieldType() enttype.TSType {
 	return f.fieldType
 }
 
@@ -94,6 +96,10 @@ func (f *NonEntField) DefaultValue() *string {
 
 func (f *NonEntField) Nullable() bool {
 	return f.nullable
+}
+
+func (f *NonEntField) ExposeToGraphQL() bool {
+	return !f.hideFromGraphQL
 }
 
 func (f *NonEntField) HasDefaultValueOnCreate() bool {

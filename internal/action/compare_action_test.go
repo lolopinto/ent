@@ -91,6 +91,7 @@ func TestCompareDeleteActionWithNonEntFields(t *testing.T) {
 					"log",
 					&enttype.BoolType{},
 					false,
+					false,
 				),
 			},
 		},
@@ -105,6 +106,7 @@ func TestCompareDeleteActionWithNonEntFields(t *testing.T) {
 					&codegenapi.DummyConfig{},
 					"log",
 					&enttype.BoolType{},
+					false,
 					false,
 				),
 			},
@@ -719,7 +721,7 @@ func TestCompareCustomInterfaces(t *testing.T) {
 			customInterfaces: map[string]*customtype.CustomInterface{
 				"Foo": {
 					TSType:  "Foo",
-					GQLType: "Foo",
+					GQLName: "Foo",
 					Fields: []*field.Field{
 						{
 							FieldName: "Foo",
@@ -740,7 +742,7 @@ func TestCompareCustomInterfaces(t *testing.T) {
 			customInterfaces: map[string]*customtype.CustomInterface{
 				"Foo": {
 					TSType:  "Foo",
-					GQLType: "Foo",
+					GQLName: "Foo",
 					Fields: []*field.Field{
 						{
 							FieldName: "Foo",
@@ -765,7 +767,7 @@ func TestCompareUnequalCustomInterfaces(t *testing.T) {
 			customInterfaces: map[string]*customtype.CustomInterface{
 				"Foo": {
 					TSType:  "Foo",
-					GQLType: "GQLFoo",
+					GQLName: "GQLFoo",
 					Fields: []*field.Field{
 						{
 							FieldName: "Foo",
@@ -786,7 +788,7 @@ func TestCompareUnequalCustomInterfaces(t *testing.T) {
 			customInterfaces: map[string]*customtype.CustomInterface{
 				"Foo": {
 					TSType:  "Foo",
-					GQLType: "Foo",
+					GQLName: "Foo",
 					Fields: []*field.Field{
 						{
 							FieldName: "Foo",

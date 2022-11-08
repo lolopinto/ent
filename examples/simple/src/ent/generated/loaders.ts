@@ -252,6 +252,7 @@ const contactEmailFields = [
   "id",
   "created_at",
   "updated_at",
+  "extra",
   "email_address",
   "label",
   "contact_id",
@@ -281,6 +282,10 @@ export const contactEmailLoaderInfo = {
       dbCol: "updated_at",
       inputKey: "updatedAt",
     },
+    extra: {
+      dbCol: "extra",
+      inputKey: "extra",
+    },
     emailAddress: {
       dbCol: "email_address",
       inputKey: "emailAddress",
@@ -301,6 +306,7 @@ const contactPhoneNumberFields = [
   "id",
   "created_at",
   "updated_at",
+  "extra",
   "phone_number",
   "label",
   "contact_id",
@@ -329,6 +335,10 @@ export const contactPhoneNumberLoaderInfo = {
     updatedAt: {
       dbCol: "updated_at",
       inputKey: "updatedAt",
+    },
+    extra: {
+      dbCol: "extra",
+      inputKey: "extra",
     },
     phoneNumber: {
       dbCol: "phone_number",

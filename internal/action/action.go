@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
@@ -18,67 +17,7 @@ import (
 	"github.com/lolopinto/ent/internal/tsimport"
 
 	"github.com/lolopinto/ent/internal/field"
-
-	"github.com/lolopinto/ent/internal/astparser"
 )
-
-// copied to internal/edge/edge.go
-func getActionOperationFromTypeName(typeName string) (ent.ActionOperation, error) {
-	switch typeName {
-	case "ent.CreateAction":
-		return ent.CreateAction, nil
-	case "ent.EditAction":
-		return ent.EditAction, nil
-	case "ent.DeleteAction":
-		return ent.DeleteAction, nil
-	case "ent.MutationsAction":
-		return ent.MutationsAction, nil
-	case "ent.AddEdgeAction":
-		return ent.AddEdgeAction, nil
-	case "ent.RemoveEdgeAction":
-		return ent.RemoveEdgeAction, nil
-	case "ent.EdgeGroupAction":
-		return ent.EdgeGroupAction, nil
-	}
-	return 0, fmt.Errorf("invalid action type passed %s", typeName)
-}
-
-func getInputAction(nodeName string, result *astparser.Result) (*input.Action, error) {
-	var action input.Action
-	for _, elem := range result.Elems {
-		if elem.Value == nil {
-			return nil, fmt.Errorf("elem with nil value")
-		}
-
-		switch elem.IdentName {
-		case "Action":
-			var err error
-			action.Operation, err = getActionOperationFromTypeName(elem.Value.GetTypeName())
-			if err != nil {
-				return nil, err
-			}
-
-		case "Fields":
-			for _, child := range elem.Value.Elems {
-				action.Fields = append(action.Fields, child.Literal)
-			}
-
-		case "CustomActionName":
-			action.CustomActionName = elem.Value.Literal
-
-		case "HideFromGraphQL":
-			action.HideFromGraphQL = astparser.IsTrueBooleanResult(elem.Value)
-
-		case "CustomGraphQLName":
-			action.CustomGraphQLName = elem.Value.Literal
-
-		case "CustomInputName":
-			action.CustomInputName = elem.Value.Literal
-		}
-	}
-
-	return &action, nil
-}
 
 func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input.Action, fieldInfo *field.FieldInfo, opt *option) ([]Action, error) {
 	// exposeToGraphQL is inverse of HideFromGraphQL
@@ -91,7 +30,7 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 	// create/edit/delete
 	concreteAction, ok := typ.(concreteNodeActionType)
 	if ok {
-		fields, err := getFieldsForAction(action, fieldInfo, concreteAction)
+		fields, err := getFieldsForAction(nodeName, action, fieldInfo, concreteAction)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +77,7 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 	var actions []Action
 
 	createTyp := &createActionType{}
-	fields, err := getFieldsForAction(action, fieldInfo, createTyp)
+	fields, err := getFieldsForAction(nodeName, action, fieldInfo, createTyp)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +97,7 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 	))
 
 	editTyp := &editActionType{}
-	fields, err = getFieldsForAction(action, fieldInfo, editTyp)
+	fields, err = getFieldsForAction(nodeName, action, fieldInfo, editTyp)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +117,7 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 	))
 
 	deleteTyp := &deleteActionType{}
-	fields, err = getFieldsForAction(action, fieldInfo, deleteTyp)
+	fields, err = getFieldsForAction(nodeName, action, fieldInfo, deleteTyp)
 	if err != nil {
 		return nil, err
 	}
@@ -202,15 +141,11 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 // provides a way to say this action doesn't have any fields
 const NO_FIELDS = "__NO_FIELDS__"
 
-func getFieldsForAction(action *input.Action, fieldInfo *field.FieldInfo, typ concreteNodeActionType) ([]*field.Field, error) {
+func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.FieldInfo, typ concreteNodeActionType) ([]*field.Field, error) {
 	var fields []*field.Field
 	if !typ.supportsFieldsFromEnt() {
 		return fields, nil
 	}
-
-	// TODO
-	// add ability to automatically add id field
-	// add ability to automatically remove id field
 
 	fieldNames := action.Fields
 
@@ -258,7 +193,12 @@ func getFieldsForAction(action *input.Action, fieldInfo *field.FieldInfo, typ co
 		if f == nil {
 			f = fieldInfo.GetFieldByName(fieldName)
 			if f == nil {
-				return nil, fmt.Errorf("invalid field name %s passed", fieldName)
+				name := action.CustomActionName
+				if name != "" {
+					return nil, fmt.Errorf("invalid field name `%s` passed to action `%s`", fieldName, action.CustomActionName)
+				}
+
+				return nil, fmt.Errorf("invalid field name `%s` passed to `%s` action for node `%s`", fieldName, typ.getActionVerb(), strcase.ToCamel(nodeName))
 			}
 		}
 
@@ -324,7 +264,7 @@ func getNonEntFieldsFromInput(cfg codegenapi.Config, nodeName string, action *in
 			return nil, err
 		}
 
-		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable))
+		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable, f.HideFromGraphQL))
 	}
 	return fields, nil
 }
@@ -346,7 +286,7 @@ func getNonEntFieldsFromAssocGroup(
 		if err != nil {
 			return nil, err
 		}
-		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable))
+		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable, f.HideFromGraphQL))
 	}
 	return fields, nil
 }
@@ -419,8 +359,8 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 		var fields []*field.NonEntField
 		if lang == base.GoLang {
 			fields = []*field.NonEntField{
-				field.NewNonEntField(cfg, assocGroup.GroupStatusName, &enttype.StringType{}, false).SetFlag("Enum"),
-				field.NewNonEntField(cfg, strcase.ToCamel(assocGroup.DestNodeInfo.Node+"ID"), &enttype.StringType{}, false).
+				field.NewNonEntField(cfg, assocGroup.GroupStatusName, &enttype.StringType{}, false, false).SetFlag("Enum"),
+				field.NewNonEntField(cfg, strcase.ToCamel(assocGroup.DestNodeInfo.Node+"ID"), &enttype.StringType{}, false, false).
 					SetFlag("ID").
 					SetNodeType(fmt.Sprintf("models.%sType", assocGroup.DestNodeInfo.Node)),
 			}
@@ -446,11 +386,13 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 						Import: typ + "Type",
 					}),
 					false,
+					false,
 				),
 				field.NewNonEntField(
 					cfg,
 					assocGroup.GetIDArg(),
 					&enttype.IDType{},
+					false,
 					false,
 				),
 			}

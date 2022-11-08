@@ -3,6 +3,7 @@
 {{ $ci := .Interface}}
 {{ $pkg := .Package }}
 {{ $cfg := .Config }}
+{{ $schema := .Schema }}
 {{ range $ci.GetAllEnums -}}
   {{/* TODO when imported here? */}}
   {{if not .Imported -}}
@@ -13,9 +14,72 @@
 {{ range $ci.GetAllCustomTypes -}}
   {{ if .IsCustomInterface -}}
     {{ template "interface.tmpl" (dict "RootInterface" $ci "Interface" . "Package" $pkg "Config" $cfg)}}
+    {{ if .HasConvertFunction $cfg }}
+      {{ if .Exported -}}
+        export function {{.GetConvertMethod}}(input: any): {{.TSType}} {
+      {{ else -}}
+        function {{.GetConvertMethod}}(input: any): {{.TSType}} {
+      {{ end -}}
+        return {
+          {{range $field := .Fields -}}
+            {{ if $field.HasConvertFunction $cfg $schema -}}
+              {{$field.TsFieldName $cfg}}: {{$field.GetConvertMethod $cfg}}(input.{{$field.GetDbColName}}),
+            {{else -}}
+              {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}},
+            {{end -}}
+          {{end -}}
+        };
+      }
+
+      {{ if .Exported -}}
+        export function {{.GetConvertNullableMethod}}(input: any): {{.TSType}} | null {
+      {{ else -}}
+        function {{.GetConvertNullableMethod}}(input: any): {{.TSType}} | null {
+      {{ end -}}
+        if (input === undefined || input === null) {
+          return null;
+        }
+        return {{.GetConvertMethod}}(input);
+        }
+
+
+      {{ if .GenerateListConvert}}
+        export function {{.GetConvertListMethod}}(input: any[]): {{.TSType}}[] {
+          return input.map(v => {{.GetConvertMethod}}(v));
+        }
+
+        export function {{.GetConvertNullableListMethod}}(input: any[] | null): {{.TSType}}[] | null {
+          if (input === null || input === undefined) {
+            return null;
+          }
+          return input.map(v => {{.GetConvertMethod}}(v));
+        }
+      {{ end }}
+    {{end -}}
   {{ end }}
   {{ if .IsCustomUnion -}}
     {{ .GetTypeDeclaration }}
+    {{$info := .GetConvertMethodInfo $cfg }}
+    function {{$info.Method}}(input: any): {{.TSType}} {
+      {{range $info.Infos -}} 
+        {{if .HasConvertFunction -}}
+          if (input.{{.Field}} !== undefined) {
+            return {{.ReturnFunction}}(input);
+          }
+        {{ end -}}
+      {{ end -}}
+      {{ if $info.Default -}}
+        return {{$info.Default}}(input);
+      {{ else -}}
+        return input;
+      {{ end -}}
+    }
+
+    function {{$info.NullableMethod}}(input: any): {{.TSType}} | null {
+      if (input === null || input === undefined) {
+        return null;
+      }
+      return {{$info.Method}}(input);
+    }
   {{ end -}}
 {{ end -}}
-

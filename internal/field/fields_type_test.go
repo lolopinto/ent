@@ -33,8 +33,8 @@ type expected struct {
 	// used for edit mutations for example
 	graphqlMutationImportsForceOptional []*tsimport.ImportPath
 
-	fieldTypeType   enttype.EntType
-	tsFieldTypeType enttype.EntType
+	fieldTypeType   enttype.Type
+	tsFieldTypeType enttype.Type
 
 	// if optional in action, create new field that's optional in action and then test input there
 	optionalInAction bool

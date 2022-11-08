@@ -14,6 +14,7 @@ import {
   TagToTodosEdge,
   Todo,
   TodoToTagsQuery,
+  TodoToTodoScopeQuery,
 } from "src/ent/internal";
 
 export const tagToTodosCountLoaderFactory = new AssocEdgeCountLoaderFactory(
@@ -54,5 +55,9 @@ export abstract class TagToTodosQueryBase extends AssocEdgeQueryBase<
 
   queryTags(): TodoToTagsQuery {
     return TodoToTagsQuery.query(this.viewer, this);
+  }
+
+  queryTodoScope(): TodoToTodoScopeQuery {
+    return TodoToTodoScopeQuery.query(this.viewer, this);
   }
 }

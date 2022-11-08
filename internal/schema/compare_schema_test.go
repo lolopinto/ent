@@ -270,7 +270,7 @@ func TestCompareAddNode(t *testing.T) {
 	s1 := &schema.Schema{}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -295,7 +295,7 @@ func TestCompareAddNodeTableNameSet(t *testing.T) {
 	s1 := &schema.Schema{}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -320,7 +320,7 @@ func TestCompareAddNodeTableNameSet(t *testing.T) {
 func TestCompareAddEnumTableNode(t *testing.T) {
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -354,7 +354,7 @@ func TestCompareAddEnumTableNode(t *testing.T) {
 func TestCompareRemoveNode(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -379,7 +379,7 @@ func TestCompareRemoveNode(t *testing.T) {
 func TestCompareRemoveNodeTableNameSet(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -405,7 +405,7 @@ func TestCompareRemoveNodeTableNameSet(t *testing.T) {
 func TestCompareRemoveEnumTableNode(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -439,7 +439,7 @@ func TestCompareRemoveEnumTableNode(t *testing.T) {
 func TestCompareNodesNoChange(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -449,7 +449,7 @@ func TestCompareNodesNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -466,7 +466,7 @@ func TestCompareNodesNoChange(t *testing.T) {
 func TestCompareNodesAddField(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -492,7 +492,7 @@ func TestCompareNodesAddField(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -551,7 +551,7 @@ func TestCompareNodesRemoveField(t *testing.T) {
 		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -573,7 +573,7 @@ func TestCompareNodesRemoveField(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -613,7 +613,7 @@ func TestCompareNodesModifyField(t *testing.T) {
 		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -636,7 +636,7 @@ func TestCompareNodesModifyField(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -676,7 +676,7 @@ func TestCompareNodesModifyDBType(t *testing.T) {
 		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -698,7 +698,7 @@ func TestCompareNodesModifyDBType(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -726,7 +726,7 @@ func TestCompareNodesChangeFieldKeepDBKey(t *testing.T) {
 		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -748,7 +748,7 @@ func TestCompareNodesChangeFieldKeepDBKey(t *testing.T) {
 		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -801,7 +801,7 @@ func TestCompareNodesWithEdgesNoChange(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -812,7 +812,7 @@ func TestCompareNodesWithEdgesNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -840,7 +840,7 @@ func TestCompareNodesWithEdgesAdded(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -851,7 +851,7 @@ func TestCompareNodesWithEdgesAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -893,7 +893,7 @@ func TestCompareNodesWithRemovedEdge(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -904,7 +904,7 @@ func TestCompareNodesWithRemovedEdge(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -959,7 +959,7 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -970,7 +970,7 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1025,7 +1025,7 @@ func TestCompareNodesWithRenamedEdge(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1036,7 +1036,7 @@ func TestCompareNodesWithRenamedEdge(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1124,7 +1124,7 @@ func TestCompareNodesWithEdgeGroupNoChange(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1135,7 +1135,7 @@ func TestCompareNodesWithEdgeGroupNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1178,7 +1178,7 @@ func TestCompareNodesWithEdgeGroupAdded(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1188,7 +1188,7 @@ func TestCompareNodesWithEdgeGroupAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1244,7 +1244,7 @@ func TestCompareNodesWithEdgeGroupRemoved(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1255,7 +1255,7 @@ func TestCompareNodesWithEdgeGroupRemoved(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1340,7 +1340,7 @@ func TestCompareNodesWithEdgeGroupModified(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1351,7 +1351,7 @@ func TestCompareNodesWithEdgeGroupModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1439,7 +1439,7 @@ func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1450,7 +1450,7 @@ func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1541,7 +1541,7 @@ func TestCompareActionsNoChange(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1552,7 +1552,7 @@ func TestCompareActionsNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1585,7 +1585,7 @@ func TestCompareActionsAdded(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1595,7 +1595,7 @@ func TestCompareActionsAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1641,7 +1641,7 @@ func TestCompareActionsRemoved(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1652,7 +1652,7 @@ func TestCompareActionsRemoved(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1727,7 +1727,7 @@ func TestCompareActionsModified(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1738,7 +1738,7 @@ func TestCompareActionsModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1815,7 +1815,7 @@ func TestCompareActionsGraphQLNameModified(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1826,7 +1826,7 @@ func TestCompareActionsGraphQLNameModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1842,21 +1842,21 @@ func TestCompareActionsGraphQLNameModified(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 4)
 	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "createUser",
+		GraphQLOnly: true,
+	}, user[0])
+	verifyChange(t, change.Change{
 		Change:      change.ModifyAction,
 		Name:        "CreateUserAction",
 		GraphQLName: "userCreate",
 		TSOnly:      true,
-	}, user[0])
+	}, user[1])
 	verifyChange(t, change.Change{
 		Change:      change.RemoveAction,
 		Name:        "CreateUserAction",
 		GraphQLName: "userCreate",
-		GraphQLOnly: true,
-	}, user[1])
-	verifyChange(t, change.Change{
-		Change:      change.AddAction,
-		Name:        "CreateUserAction",
-		GraphQLName: "createUser",
 		GraphQLOnly: true,
 	}, user[2])
 	verifyChange(t, change.Change{
@@ -1883,7 +1883,7 @@ func TestForeignKeyEdgeNoChange(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1894,7 +1894,7 @@ func TestForeignKeyEdgeNoChange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1916,7 +1916,7 @@ func TestForeignKeyEdgeAdded(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1926,7 +1926,7 @@ func TestForeignKeyEdgeAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1962,7 +1962,7 @@ func TestForeignKeyEdgeRemoved(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -1973,7 +1973,7 @@ func TestForeignKeyEdgeRemoved(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2016,7 +2016,7 @@ func TestForeignKeyEdgeModified(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2027,7 +2027,7 @@ func TestForeignKeyEdgeModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2084,7 +2084,7 @@ func TestIndexedEdgeNochange(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2095,7 +2095,7 @@ func TestIndexedEdgeNochange(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2123,7 +2123,7 @@ func TestIndexedEdgeAdded(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2133,7 +2133,7 @@ func TestIndexedEdgeAdded(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2175,7 +2175,7 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2186,7 +2186,7 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2239,7 +2239,7 @@ func TestIndexedEdgeModified(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2250,7 +2250,7 @@ func TestIndexedEdgeModified(t *testing.T) {
 	}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2618,7 +2618,7 @@ func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
 	s1 := &schema.Schema{}
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2701,7 +2701,7 @@ func TestCompareSchemaRemoveNodePlusActionsAndFields(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2752,7 +2752,7 @@ func TestAddIndex(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2764,7 +2764,7 @@ func TestAddIndex(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2812,7 +2812,7 @@ func TestRemoveIndex(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2831,7 +2831,7 @@ func TestRemoveIndex(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2872,7 +2872,7 @@ func TestModifyIndex(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2891,7 +2891,7 @@ func TestModifyIndex(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"UserConfig": {
+			"User": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("user"),
 					PackageName: "user",
@@ -2938,7 +2938,7 @@ func TestAddConstraint(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -2950,7 +2950,7 @@ func TestAddConstraint(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3000,7 +3000,7 @@ func TestRemoveConstraint(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3019,7 +3019,7 @@ func TestRemoveConstraint(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3068,7 +3068,7 @@ func TestModifyConstraint(t *testing.T) {
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3088,7 +3088,7 @@ func TestModifyConstraint(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"ItemConfig": {
+			"Item": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("item"),
 					PackageName: "item",
@@ -3126,7 +3126,7 @@ func TestModifyConstraint(t *testing.T) {
 func TestAddDBRows(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -3138,7 +3138,7 @@ func TestAddDBRows(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -3177,7 +3177,7 @@ func TestAddDBRows(t *testing.T) {
 func TestRemoveDBRows(t *testing.T) {
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -3197,7 +3197,7 @@ func TestRemoveDBRows(t *testing.T) {
 
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
-			"RoleConfig": {
+			"Role": {
 				NodeData: &schema.NodeData{
 					NodeInfo:    nodeinfo.GetNodeInfo("role"),
 					PackageName: "role",
@@ -3223,6 +3223,830 @@ func TestRemoveDBRows(t *testing.T) {
 		Name:        "Role",
 		GraphQLName: "Role",
 	}, item[1])
+}
+
+func TestHideNodeFromGraphQL(t *testing.T) {
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 2)
+	verifyChange(t, change.Change{
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[1])
+}
+
+func TestHideNodeFromGraphQLWithActions(t *testing.T) {
+	a1 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+	a2 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					ActionInfo:  a1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+					ActionInfo:      a2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 4)
+	verifyChange(t, change.Change{
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+
+	// remove actions from graphql
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		GraphQLOnly: true,
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "EditUserAction",
+		GraphQLName: "userEdit",
+		GraphQLOnly: true,
+	}, user[2])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[3])
+}
+
+// TODO we may end up with hanging edges/connections here if there's some crazy combo of changing
+// visibility of edge because we don't check state changes like we do for actions
+
+func TestHideNodeFromGraphQLWithForeignKeyEdges(t *testing.T) {
+	e1 := edge.NewEdgeInfo("user")
+	require.Nil(t, e1.AddEdgeFromForeignKeyIndex(
+		&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User",
+	))
+
+	e2 := edge.NewEdgeInfo("user")
+	require.Nil(t, e2.AddEdgeFromForeignKeyIndex(&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User"))
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+					EdgeInfo:        e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+
+	// remove edge from graphql
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEdge,
+		Name:        "contacts",
+		GraphQLName: "UserToContactsConnection",
+		ExtraInfo:   "UserToContactsQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestHideNodeFromGraphQLWithIndexedEdges(t *testing.T) {
+	e1 := edge.NewEdgeInfo("user")
+	require.Nil(t, e1.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
+
+	e2 := edge.NewEdgeInfo("user")
+	require.Nil(t, e2.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+					EdgeInfo:        e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+
+	// remove edge from graphql
+	verifyChange(t, change.Change{
+		Change: change.RemoveEdge,
+		Name:   "ownerIDS",
+		// no connection...
+		GraphQLName: "",
+		ExtraInfo:   "OwnerToUsersQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestHideNodeFromGraphQLWithAssocEdges(t *testing.T) {
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
+			},
+		})
+	require.Nil(t, err)
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
+			},
+		})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+					EdgeInfo:        e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:          change.RemoveNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+
+	// remove edge from graphql
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestExposeNodeToGraphQL(t *testing.T) {
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 2)
+	verifyChange(t, change.Change{
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[1])
+}
+
+func TestExposeNodeToGraphQLWithActions(t *testing.T) {
+	a1 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+	a2 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					ActionInfo:      a1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					ActionInfo:  a2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 4)
+	verifyChange(t, change.Change{
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+
+	// add actions to graphql
+	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		GraphQLOnly: true,
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "EditUserAction",
+		GraphQLName: "userEdit",
+		GraphQLOnly: true,
+	}, user[2])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[3])
+}
+
+func TestExposeNodeToGraphQLWithActionsHideFromGraphQLChanges(t *testing.T) {
+	a1 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+			},
+		},
+	})
+	a2 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+			{
+				Operation: ent.EditAction,
+				// edit now also hidden...
+				HideFromGraphQL: true,
+			},
+		},
+	})
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					ActionInfo:      a1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					ActionInfo:  a2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 5)
+	verifyChange(t, change.Change{
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+
+	// add actions to graphql
+	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		GraphQLOnly: true,
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyAction,
+		Name:        "EditUserAction",
+		GraphQLName: "userEdit",
+		TSOnly:      true,
+	}, user[2])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "EditUserAction",
+		GraphQLName: "userEdit",
+		// technically, does nothing since it doesn't exist
+		GraphQLOnly: true,
+	}, user[3])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[4])
+}
+
+func TestExposeNodeToGraphQLWithForeignKeyEdges(t *testing.T) {
+	e1 := edge.NewEdgeInfo("user")
+	require.Nil(t, e1.AddEdgeFromForeignKeyIndex(
+		&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User",
+	))
+
+	e2 := edge.NewEdgeInfo("user")
+	require.Nil(t, e2.AddEdgeFromForeignKeyIndex(&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User"))
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					EdgeInfo:        e1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+
+	// add edge to graphql
+	verifyChange(t, change.Change{
+		Change:      change.AddEdge,
+		Name:        "contacts",
+		GraphQLName: "UserToContactsConnection",
+		ExtraInfo:   "UserToContactsQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestExposeNodeToGraphQLWithIndexedEdges(t *testing.T) {
+	e1 := edge.NewEdgeInfo("user")
+	require.Nil(t, e1.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
+
+	e2 := edge.NewEdgeInfo("user")
+	require.Nil(t, e2.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					EdgeInfo:        e1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+
+	// add edge to graphql
+	verifyChange(t, change.Change{
+		Change: change.AddEdge,
+		Name:   "ownerIDS",
+		// no connection...
+		GraphQLName: "",
+		ExtraInfo:   "OwnerToUsersQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
+func TestExposeNodeToGraphQLWithAssocEdges(t *testing.T) {
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
+			},
+		})
+	require.Nil(t, err)
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
+			},
+		})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:        nodeinfo.GetNodeInfo("user"),
+					PackageName:     "user",
+					EdgeInfo:        e1,
+					HideFromGraphQL: true,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"User": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:          change.AddNode,
+		Name:            "User",
+		GraphQLName:     "User",
+		GraphQLOnly:     true,
+		WriteAllForNode: true,
+	}, user[0])
+
+	// add edge to graphql
+	verifyChange(t, change.Change{
+		Change:      change.AddEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
+		GraphQLOnly: true,
+	}, user[1])
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
 }
 
 func getEnumInfo(m map[string]string) *schema.EnumInfo {
@@ -3298,4 +4122,5 @@ func verifyChange(t *testing.T, expChange, change change.Change) {
 	assert.Equal(t, expChange.GraphQLOnly, change.GraphQLOnly)
 	assert.Equal(t, expChange.TSOnly, change.TSOnly)
 	assert.Equal(t, expChange.ExtraInfo, change.ExtraInfo)
+	assert.Equal(t, expChange.WriteAllForNode, change.WriteAllForNode)
 }

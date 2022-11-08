@@ -12,6 +12,8 @@ import {
   Viewer,
   convertDate,
   convertNullableDate,
+  convertNullableJSON,
+  convertNullableJSONList,
   getEdgeTypeInGroup,
   loadCustomCount,
   loadCustomData,
@@ -24,6 +26,14 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
+  AccountPrefs,
+  convertNullableAccountPrefs,
+} from "src/ent/generated/account_prefs";
+import {
+  AccountPrefs2,
+  convertNullableAccountPrefs2List,
+} from "src/ent/generated/account_prefs_2";
+import {
   accountLoader,
   accountLoaderInfo,
   accountNoTransformLoader,
@@ -31,12 +41,17 @@ import {
 } from "src/ent/generated/loaders";
 import {
   AccountToClosedTodosDupQuery,
+  AccountToCreatedWorkspacesQuery,
   AccountToOpenTodosDupQuery,
+  AccountToScopedTodosQuery,
   AccountToTagsQuery,
   AccountToTodosQuery,
+  AccountToWorkspacesQuery,
   EdgeType,
+  ITodoContainer,
   NodeType,
   Todo,
+  TodoContainerMixin,
 } from "src/ent/internal";
 import schema from "src/schema/account_schema";
 
@@ -60,9 +75,14 @@ interface AccountDBData {
   name: string;
   phone_number: string | null;
   account_state: AccountState | null;
+  account_prefs: AccountPrefs | null;
+  account_prefs_list: AccountPrefs2[] | null;
 }
 
-export class AccountBase implements Ent<Viewer> {
+export class AccountBase
+  extends TodoContainerMixin(class {})
+  implements Ent<Viewer>, ITodoContainer
+{
   readonly nodeType = NodeType.Account;
   readonly id: ID;
   readonly createdAt: Date;
@@ -71,8 +91,12 @@ export class AccountBase implements Ent<Viewer> {
   readonly name: string;
   readonly phoneNumber: string | null;
   readonly accountState: AccountState | null;
+  readonly accountPrefs: AccountPrefs | null;
+  readonly accountPrefsList: AccountPrefs2[] | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -80,6 +104,12 @@ export class AccountBase implements Ent<Viewer> {
     this.name = data.name;
     this.phoneNumber = data.phone_number;
     this.accountState = data.account_state;
+    this.accountPrefs = convertNullableAccountPrefs(
+      convertNullableJSON(data.account_prefs),
+    );
+    this.accountPrefsList = convertNullableAccountPrefs2List(
+      convertNullableJSONList(data.account_prefs_list),
+    );
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
@@ -313,8 +343,20 @@ export class AccountBase implements Ent<Viewer> {
     return AccountToClosedTodosDupQuery.query(this.viewer, this.id);
   }
 
+  queryCreatedWorkspaces(): AccountToCreatedWorkspacesQuery {
+    return AccountToCreatedWorkspacesQuery.query(this.viewer, this.id);
+  }
+
   queryOpenTodosDup(): AccountToOpenTodosDupQuery {
     return AccountToOpenTodosDupQuery.query(this.viewer, this.id);
+  }
+
+  queryScopedTodos(): AccountToScopedTodosQuery {
+    return AccountToScopedTodosQuery.query(this.viewer, this.id);
+  }
+
+  queryWorkspaces(): AccountToWorkspacesQuery {
+    return AccountToWorkspacesQuery.query(this.viewer, this.id);
   }
 
   queryTags(): AccountToTagsQuery {

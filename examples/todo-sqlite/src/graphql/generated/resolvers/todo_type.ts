@@ -15,19 +15,32 @@ import {
   GraphQLNodeInterface,
   GraphQLTime,
 } from "@snowtop/ent/graphql";
-import { Todo, TodoToTagsQuery } from "src/ent/";
+import { Todo, TodoToTagsQuery, TodoToTodoScopeQuery } from "src/ent/";
 import {
   AccountType,
   TodoToTagsConnectionType,
+  TodoToTodoScopeConnectionType,
 } from "src/graphql/resolvers/internal";
 
 export const TodoType = new GraphQLObjectType({
   name: "Todo",
   fields: (): GraphQLFieldConfigMap<Todo, RequestContext> => ({
+    assignee: {
+      type: AccountType,
+      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+        return todo.loadAssignee();
+      },
+    },
     creator: {
       type: AccountType,
       resolve: (todo: Todo, args: {}, context: RequestContext) => {
         return todo.loadCreator();
+      },
+    },
+    scope: {
+      type: GraphQLNodeInterface,
+      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+        return todo.loadScope();
       },
     },
     id: {
@@ -70,6 +83,35 @@ export const TodoType = new GraphQLObjectType({
           todo.viewer,
           todo,
           (v, todo: Todo) => TodoToTagsQuery.query(v, todo),
+          args,
+        );
+      },
+    },
+    todo_scope: {
+      type: new GraphQLNonNull(TodoToTodoScopeConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (todo: Todo, args: any, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          todo.viewer,
+          todo,
+          (v, todo: Todo) => TodoToTodoScopeQuery.query(v, todo),
           args,
         );
       },

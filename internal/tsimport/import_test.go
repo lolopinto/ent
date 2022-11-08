@@ -50,6 +50,11 @@ func useImport(imps *Imports, imp string) error {
 	return err
 }
 
+func useImportMaybe(imps *Imports, imp string) error {
+	_, err := imps.UseMaybe(imp)
+	return err
+}
+
 func reserveDefaultImport(imps *Imports, path, defaultImport string, imports ...string) error {
 	_, err := imps.ReserveDefault(path, defaultImport, imports...)
 	return err
@@ -62,6 +67,11 @@ func reserveAllImport(imps *Imports, path, as string) error {
 
 func reserveImportPath(imps *Imports, imp *ImportPath, external bool) error {
 	_, err := imps.ReserveImportPath(imp, external)
+	return err
+}
+
+func conditionallyReserveImportPath(imps *Imports, imp *ImportPath, external bool) error {
+	_, err := imps.ConditionallyReserveImportPath(imp, external)
 	return err
 }
 
@@ -148,6 +158,124 @@ func TestImports(t *testing.T) {
 				getLine("import User, {createUser, editUser} from {path};", "../user"),
 			},
 		},
+		"conditionally reserve import. different import": {
+			filePath: "src/ent/generated/user_base.ts",
+			fn: func(imps *Imports) {
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/lib/viewer/viewer",
+						Import:     "Viewer",
+					}, false))
+
+				require.Nil(t, useImport(imps, "Viewer"))
+			},
+			expectedLines: []string{
+				getLine("import {Viewer} from {path};", "src/lib/viewer/viewer"),
+			},
+		},
+		"conditionally reserve import. different import. relPath": {
+			filePath: "src/ent/generated/user_base.ts",
+			relPaths: true,
+			fn: func(imps *Imports) {
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/lib/viewer/viewer",
+						Import:     "Viewer",
+					}, false))
+
+				require.Nil(t, useImport(imps, "Viewer"))
+			},
+			expectedLines: []string{
+				getLine("import {Viewer} from {path};", "../../lib/viewer/viewer"),
+			},
+		},
+		"conditionally reserve import. different + same import": {
+			filePath: "src/ent/generated/user_base.ts",
+			fn: func(imps *Imports) {
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/lib/viewer/viewer",
+						Import:     "Viewer",
+					}, false))
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/ent/generated/user_base",
+						Import:     "FooInput",
+					}, false))
+
+				require.Nil(t, useImport(imps, "Viewer"))
+				require.Nil(t, useImportMaybe(imps, "FooInput"))
+			},
+			expectedLines: []string{
+				getLine("import {Viewer} from {path};", "src/lib/viewer/viewer"),
+			},
+		},
+		"conditionally reserve import. relPath. different + same import": {
+			filePath: "src/ent/generated/user_base.ts",
+			relPaths: true,
+			fn: func(imps *Imports) {
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/lib/viewer/viewer",
+						Import:     "Viewer",
+					}, false))
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/ent/generated/user_base",
+						Import:     "FooInput",
+					}, false))
+
+				require.Nil(t, useImport(imps, "Viewer"))
+				require.Nil(t, useImportMaybe(imps, "FooInput"))
+			},
+			expectedLines: []string{
+				getLine("import {Viewer} from {path};", "../../lib/viewer/viewer"),
+			},
+		},
+		"conditionally reserve import. different + same import. useImport error": {
+			filePath: "src/ent/generated/user_base.ts",
+			fn: func(imps *Imports) {
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/lib/viewer/viewer",
+						Import:     "Viewer",
+					}, false))
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/ent/generated/user_base",
+						Import:     "FooInput",
+					}, false))
+
+				require.Nil(t, useImport(imps, "Viewer"))
+				require.Error(t, useImport(imps, "FooInput"))
+			},
+			expectedLines: []string{
+				getLine("import {Viewer} from {path};", "src/lib/viewer/viewer"),
+			},
+		},
+		"conditionally reserve import. different + same import. useImport error. relPath": {
+			filePath: "src/ent/generated/user_base.ts",
+			relPaths: true,
+			fn: func(imps *Imports) {
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/lib/viewer/viewer",
+						Import:     "Viewer",
+					}, false))
+				require.Nil(t, conditionallyReserveImportPath(imps,
+					&ImportPath{
+						ImportPath: "src/ent/generated/user_base",
+						Import:     "FooInput",
+					}, false))
+
+				require.Nil(t, useImport(imps, "Viewer"))
+				require.Error(t, useImport(imps, "FooInput"))
+			},
+			expectedLines: []string{
+				getLine("import {Viewer} from {path};", "../../lib/viewer/viewer"),
+			},
+		},
+
 		"reserve default. mix relPaths. no filePath": {
 			relPaths: true,
 			fn: func(imps *Imports) {
@@ -195,10 +323,10 @@ func TestImports(t *testing.T) {
 		},
 		"use multiple times": {
 			fn: func(imps *Imports) {
-				reserveAllImport(imps, "./core/clause", "clause")
+				require.Nil(t, reserveAllImport(imps, "./core/clause", "clause"))
 
-				useImport(imps, "clause")
-				useImport(imps, "clause")
+				require.Nil(t, useImport(imps, "clause"))
+				require.Nil(t, useImport(imps, "clause"))
 			},
 			expectedLines: []string{
 				getLine("import * as clause from {path};", "./core/clause"),
@@ -206,25 +334,25 @@ func TestImports(t *testing.T) {
 		},
 		"sorted_combo": {
 			fn: func(imps *Imports) {
-				reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer", "ID")
-				reserveImport(imps, "src/graphql/resolvers/internal", "UserType")
-				reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser")
-				reserveDefaultImport(imps, "src/ent/contact", "Contact", "createContact", "editContact")
-				reserveImport(imps, "graphql", "GraphQLString")
-				reserveImport(imps, codepath.GraphQLPackage, "GraphQLTime")
+				require.Nil(t, reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer", "ID"))
+				require.Nil(t, reserveImport(imps, "src/graphql/resolvers/internal", "UserType"))
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser"))
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/contact", "Contact", "createContact", "editContact"))
+				require.Nil(t, reserveImport(imps, "graphql", "GraphQLString"))
+				require.Nil(t, reserveImport(imps, codepath.GraphQLPackage, "GraphQLTime"))
 
-				reserveAllImport(imps, "./core/clause", "clause")
+				require.Nil(t, reserveAllImport(imps, "./core/clause", "clause"))
 
-				useImport(imps, "ID")
-				useImport(imps, "loadEnt")
-				useImport(imps, "loadEntX")
+				require.Nil(t, useImport(imps, "ID"))
+				require.Nil(t, useImport(imps, "loadEnt"))
+				require.Nil(t, useImport(imps, "loadEntX"))
 
-				useImport(imps, "User")
-				useImport(imps, "editUser")
-				useImport(imps, "clause")
-				useImport(imps, "GraphQLString")
-				useImport(imps, "GraphQLTime")
-				useImport(imps, "UserType")
+				require.Nil(t, useImport(imps, "User"))
+				require.Nil(t, useImport(imps, "editUser"))
+				require.Nil(t, useImport(imps, "clause"))
+				require.Nil(t, useImport(imps, "GraphQLString"))
+				require.Nil(t, useImport(imps, "GraphQLTime"))
+				require.Nil(t, useImport(imps, "UserType"))
 			},
 			expectedLines: []string{
 				getLine("import {GraphQLString} from {path};", "graphql"),
@@ -237,11 +365,11 @@ func TestImports(t *testing.T) {
 		},
 		"reserve separately": {
 			fn: func(imps *Imports) {
-				reserveImport(imps, codepath.Package, "loadEnt")
-				reserveImport(imps, codepath.Package, "ID")
+				require.Nil(t, reserveImport(imps, codepath.Package, "loadEnt"))
+				require.Nil(t, reserveImport(imps, codepath.Package, "ID"))
 
-				useImport(imps, "ID")
-				useImport(imps, "loadEnt")
+				require.Nil(t, useImport(imps, "ID"))
+				require.Nil(t, useImport(imps, "loadEnt"))
 			},
 			expectedLines: []string{
 				getLine("import {ID, loadEnt} from {root};"),
@@ -249,16 +377,16 @@ func TestImports(t *testing.T) {
 		},
 		"reserve default separately": {
 			fn: func(imps *Imports) {
-				reserveDefaultImport(imps, "src/ent/user", "User")
-				reserveImport(imps, "src/ent/user", "createUser", "editUser")
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User"))
+				require.Nil(t, reserveImport(imps, "src/ent/user", "createUser", "editUser"))
 
-				reserveImport(imps, codepath.Package, "loadEnt")
-				reserveImport(imps, codepath.Package, "ID")
+				require.Nil(t, reserveImport(imps, codepath.Package, "loadEnt"))
+				require.Nil(t, reserveImport(imps, codepath.Package, "ID"))
 
-				useImport(imps, "ID")
-				useImport(imps, "loadEnt")
-				useImport(imps, "User")
-				useImport(imps, "createUser")
+				require.Nil(t, useImport(imps, "ID"))
+				require.Nil(t, useImport(imps, "loadEnt"))
+				require.Nil(t, useImport(imps, "User"))
+				require.Nil(t, useImport(imps, "createUser"))
 			},
 			expectedLines: []string{
 				getLine("import {ID, loadEnt} from {root};"),
@@ -267,16 +395,16 @@ func TestImports(t *testing.T) {
 		},
 		"reserve default import after import": {
 			fn: func(imps *Imports) {
-				reserveImport(imps, "src/ent/user", "createUser", "editUser")
-				reserveDefaultImport(imps, "src/ent/user", "User")
+				require.Nil(t, reserveImport(imps, "src/ent/user", "createUser", "editUser"))
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User"))
 
-				reserveImport(imps, codepath.Package, "loadEnt")
-				reserveImport(imps, codepath.Package, "ID")
+				require.Nil(t, reserveImport(imps, codepath.Package, "loadEnt"))
+				require.Nil(t, reserveImport(imps, codepath.Package, "ID"))
 
-				useImport(imps, "ID")
-				useImport(imps, "loadEnt")
-				useImport(imps, "User")
-				useImport(imps, "createUser")
+				require.Nil(t, useImport(imps, "ID"))
+				require.Nil(t, useImport(imps, "loadEnt"))
+				require.Nil(t, useImport(imps, "User"))
+				require.Nil(t, useImport(imps, "createUser"))
 			},
 			expectedLines: []string{
 				getLine("import {ID, loadEnt} from {path};", codepath.Package),
@@ -285,8 +413,8 @@ func TestImports(t *testing.T) {
 		},
 		"reserve exact same thing": {
 			fn: func(imps *Imports) {
-				reserveDefaultImport(imps, "src/ent/user", "User")
-				reserveDefaultImport(imps, "src/ent/user", "User")
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User"))
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User"))
 
 				useImport(imps, "User")
 			},
@@ -303,11 +431,11 @@ func TestImports(t *testing.T) {
 		},
 		"reserve import path": {
 			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
+				require.Nil(t, reserveImportPath(imps, &ImportPath{
 					ImportPath: "src/lib/viewer/viewer",
 					Import:     "Viewer",
-				}, false)
-				useImport(imps, "Viewer")
+				}, false))
+				require.Nil(t, useImport(imps, "Viewer"))
 			},
 			expectedLines: []string{
 				getLine("import {Viewer} from {path};", "src/lib/viewer/viewer"),
@@ -315,12 +443,12 @@ func TestImports(t *testing.T) {
 		},
 		"reserve import path with alias": {
 			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
+				require.Nil(t, reserveImportPath(imps, &ImportPath{
 					ImportPath:     "src/lib/viewer/viewer",
 					Import:         "FooViewer",
 					OriginalImport: "Viewer",
-				}, false)
-				useImport(imps, "FooViewer")
+				}, false))
+				require.Nil(t, useImport(imps, "FooViewer"))
 			},
 			expectedLines: []string{
 				getLine("import {Viewer as FooViewer} from {path};", "src/lib/viewer/viewer"),
@@ -328,25 +456,25 @@ func TestImports(t *testing.T) {
 		},
 		"reserve import path with alias. use non-alias": {
 			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
+				require.Nil(t, reserveImportPath(imps, &ImportPath{
 					ImportPath:     "src/lib/viewer/viewer",
 					Import:         "FooViewer",
 					OriginalImport: "Viewer",
-				}, false)
+				}, false))
 				require.Error(t, useImport(imps, "Viewer"))
 			},
 			errorThrown: true,
 		},
 		"reserve import path with alias + other imports same path": {
 			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
+				require.Nil(t, reserveImportPath(imps, &ImportPath{
 					ImportPath:     "src/lib/viewer/viewer",
 					Import:         "FooViewer",
 					OriginalImport: "Viewer",
-				}, false)
-				reserveImport(imps, "src/lib/viewer/viewer", "ViewerFoo")
-				useImport(imps, "FooViewer")
-				useImport(imps, "ViewerFoo")
+				}, false))
+				require.Nil(t, reserveImport(imps, "src/lib/viewer/viewer", "ViewerFoo"))
+				require.Nil(t, useImport(imps, "FooViewer"))
+				require.Nil(t, useImport(imps, "ViewerFoo"))
 			},
 			expectedLines: []string{
 				getLine("import {Viewer as FooViewer, ViewerFoo} from {path};", "src/lib/viewer/viewer"),
@@ -354,20 +482,31 @@ func TestImports(t *testing.T) {
 		},
 		"reserve import path with alias + default": {
 			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
+				require.Nil(t, reserveImportPath(imps, &ImportPath{
 					ImportPath:     "src/lib/viewer/viewer",
 					Import:         "FooViewer",
 					OriginalImport: "Viewer",
-				}, false)
-				reserveDefaultImport(imps, "src/lib/viewer/viewer", "ViewerDefault")
-				reserveImport(imps, "src/lib/viewer/viewer", "ViewerFoo")
+				}, false))
+				require.Nil(t, reserveDefaultImport(imps, "src/lib/viewer/viewer", "ViewerDefault"))
+				require.Nil(t, reserveImport(imps, "src/lib/viewer/viewer", "ViewerFoo"))
 
-				useImport(imps, "FooViewer")
-				useImport(imps, "ViewerDefault")
-				useImport(imps, "ViewerFoo")
+				require.Nil(t, useImport(imps, "FooViewer"))
+				require.Nil(t, useImport(imps, "ViewerDefault"))
+				require.Nil(t, useImport(imps, "ViewerFoo"))
 			},
 			expectedLines: []string{
 				getLine("import ViewerDefault, {Viewer as FooViewer, ViewerFoo} from {path};", "src/lib/viewer/viewer"),
+			},
+		},
+		"reserve import path with side effect": {
+			fn: func(imps *Imports) {
+				require.Nil(t, reserveImportPath(imps, &ImportPath{
+					ImportPath: "src/lib/viewer/viewer",
+					SideEffect: true,
+				}, false))
+			},
+			expectedLines: []string{
+				getLine("import {path};", "src/lib/viewer/viewer"),
 			},
 		},
 		"reserve alias and multiple imports at same time": {

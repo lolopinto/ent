@@ -114,6 +114,11 @@ interface CodegenConfig {
 
   // if you want a new base class for AssocEdge e.g. to get extra data stored in custom assoc table
   customAssocEdgePath?: importedObject;
+
+  // path to add to src/ent/internal.ts so that it's included everywhere
+  // where things like global augmentation can be done
+  // https://www.typescriptlang.org/docs/handbook/declaration-merging.html#global-augmentation
+  globalImportPath?: string;
 }
 
 interface PrettierConfig {

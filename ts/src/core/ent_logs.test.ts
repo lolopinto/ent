@@ -593,7 +593,9 @@ function commonTests() {
         await loadEntX(ctx.getViewer(), 13, options);
         throw new Error("should have thrown");
       } catch (err) {
-        expect((err as Error).message).toBe(`couldn't find row for value 13`);
+        expect((err as Error).message).toBe(
+          `couldn't find row for value 13 in table users`,
+        );
       }
 
       // regular row fetch. hit db
@@ -615,7 +617,9 @@ function commonTests() {
         await loadEntX(ctx.getViewer(), 13, options);
         throw new Error("should have thrown");
       } catch (err) {
-        expect((err as Error).message).toBe(`couldn't find row for value 13`);
+        expect((err as Error).message).toBe(
+          `couldn't find row for value 13 in table users`,
+        );
       }
 
       expect(ml.logs.length).toEqual(1);

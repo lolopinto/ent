@@ -15,7 +15,7 @@ export abstract class {{$name}} extends {{useImport $base}} {
 export class {{$name}} extends {{useImport $base}} {
 {{ end -}}
   {{if .Edge.GenerateSourceLoadEntOptions -}}
-  {{reserveImport .Package.ExternalImportPath .SourceNode -}}
+  {{reserveImport .Package.InternalImportPath .SourceNode -}}
     getSourceLoadEntOptions() {
       return {{useImport .SourceNode}}.loaderOptions();
     }

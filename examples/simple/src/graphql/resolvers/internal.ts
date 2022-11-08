@@ -4,6 +4,7 @@
  */
 
 export * from "../generated/resolvers/cat_breed_type";
+export * from "../generated/resolvers/contact_info_source_type";
 export * from "../generated/resolvers/day_of_week_alt_type";
 export * from "../generated/resolvers/day_of_week_type";
 export * from "../generated/resolvers/dog_breed_group_type";
@@ -20,6 +21,7 @@ export * from "../generated/resolvers/super_nested_object_enum_type";
 export * from "../generated/resolvers/user_days_off_type";
 export * from "../generated/resolvers/user_int_enum_type";
 export * from "../generated/resolvers/user_preferred_shift_type";
+export * from "../generated/resolvers/contact_info_type";
 export * from "../generated/resolvers/user_nested_object_list_type";
 export * from "../generated/resolvers/user_prefs_diff_type";
 export * from "../generated/resolvers/user_prefs_struct_2_type";

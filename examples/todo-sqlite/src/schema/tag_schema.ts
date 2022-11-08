@@ -5,15 +5,15 @@ import {
   StringType,
   UUIDType,
 } from "@snowtop/ent";
-import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
-import { TodoEntSchema } from "src/schema/patterns/base";
+import { TodoBaseEntSchema } from "src/schema/patterns/base";
 
-const TagSchema = new TodoEntSchema({
-  patterns: [new DeletedAtPattern()],
-
+const TagSchema = new TodoBaseEntSchema({
   fields: {
     DisplayName: StringType(),
     canonicalName: StringType().trim().toLowerCase(),
+    // TODO migrate away from Owner to something else...
+    // similar to what we're doing in Todo
+    // TODO https://github.com/lolopinto/ent/issues/1185
     ownerID: UUIDType({
       foreignKey: { schema: "Account", column: "ID" },
     }),

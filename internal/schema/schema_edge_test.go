@@ -6,7 +6,6 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/testingutils/test_db"
@@ -23,7 +22,7 @@ func TestGenerateNewEdges(t *testing.T) {
 func TestGeneratedConstants(t *testing.T) {
 	s := getSchemaForNewConstsAndEdges(t)
 
-	accountInfo := s.Nodes["AccountConfig"]
+	accountInfo := s.Nodes["Account"]
 
 	testConstants(
 		t,
@@ -38,7 +37,7 @@ func TestGeneratedConstants(t *testing.T) {
 		},
 	)
 
-	todoInfo := s.Nodes["TodoConfig"]
+	todoInfo := s.Nodes["Todo"]
 
 	testConstants(
 		t,
@@ -111,8 +110,8 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 	code := make(map[string]string)
 	code["account_schema.ts"] = getSourceForEdgeWithoutInverse(suite.T())
 
-	s := testhelper.ParseSchemaForTest(suite.T(), code, base.TypeScript)
-	friendRequests := getEdgeFromSchema(suite.T(), s, "AccountConfig", "FriendRequests")
+	s := testhelper.ParseSchemaForTest(suite.T(), code)
+	friendRequests := getEdgeFromSchema(suite.T(), s, "Account", "FriendRequests")
 
 	require.NotNil(
 		suite.T(),
@@ -147,7 +146,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 
 	testEdge(suite.T(), friendRequestsEdge, expectedEdge)
 
-	accountInfo := s.Nodes["AccountConfig"]
+	accountInfo := s.Nodes["Account"]
 
 	testConstants(
 		suite.T(),
@@ -167,7 +166,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 
 	code2 := make(map[string]string)
 	code2["account_schema.ts"] = getSourceForInverseAssocEdgeSameEnt(suite.T())
-	s2 := testhelper.ParseSchemaForTest(suite.T(), code2, base.TypeScript)
+	s2 := testhelper.ParseSchemaForTest(suite.T(), code2)
 	verifyInverseAssocEdgeSameEnt(suite.T(), s2)
 
 	// 1 new edge added. 2 edge total
@@ -178,7 +177,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeSameEnt() {
 	code := make(map[string]string)
 	code["account_schema.ts"] = getSourceForInverseAssocEdgeSameEnt(suite.T())
 
-	s := testhelper.ParseSchemaForTest(suite.T(), code, base.TypeScript)
+	s := testhelper.ParseSchemaForTest(suite.T(), code)
 	verifyInverseAssocEdgeSameEnt(suite.T(), s)
 }
 
@@ -271,17 +270,17 @@ func getCodeForNewConstsAndEdges2(t *testing.T) map[string]string {
 
 func getSchemaForNewConstsAndEdges2(t *testing.T) *schema.Schema {
 	code := getCodeForNewConstsAndEdges2(t)
-	return testhelper.ParseSchemaForTest(t, code, base.TypeScript)
+	return testhelper.ParseSchemaForTest(t, code)
 }
 
 func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
-	friendRequests := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequests")
+	friendRequests := getEdgeFromSchema(t, s, "Account", "FriendRequests")
 
 	require.NotNil(t, friendRequests, "expected the friend requests edge to not be nil")
 
 	assert.NotNil(t, friendRequests.InverseEdge, "expected the friend requests edge to have an inverse edge")
 
-	friendRequestsReceived := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequestsReceived")
+	friendRequestsReceived := getEdgeFromSchema(t, s, "Account", "FriendRequestsReceived")
 	require.NotNil(t, friendRequestsReceived, "expected the friend requests received edge to not be nil")
 
 	assert.Nil(t, friendRequestsReceived.InverseEdge, "expected the friend requests inverse edge field to be nil")
@@ -318,7 +317,7 @@ func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 	}
 	testEdge(t, friendRequestsReceivedEdge, expectedInverseEdge)
 
-	accountInfo := s.Nodes["AccountConfig"]
+	accountInfo := s.Nodes["Account"]
 
 	testConstants(
 		t,
@@ -367,11 +366,7 @@ func getCodeForNewConstsAndEdges() map[string]string {
 
 func getSchemaForNewConstsAndEdges(t *testing.T) *schema.Schema {
 	code := getCodeForNewConstsAndEdges()
-	s, err := testhelper.ParseSchemaForTestFull(
-		t,
-		code,
-		base.TypeScript,
-	)
+	s, err := testhelper.ParseSchemaForTestFull(t, code)
 	require.Nil(t, err)
 	return s
 }

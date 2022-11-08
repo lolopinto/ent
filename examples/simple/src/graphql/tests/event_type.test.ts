@@ -256,4 +256,27 @@ test("event rsvp status edit", async () => {
     },
     ["event.viewerRsvpStatus", "MAYBE"],
   );
+
+  await expectQueryFromRoot(getConfig(new ExampleViewer(user.id), event, {}), [
+    "viewerRsvpStatus",
+    "MAYBE",
+  ]);
+
+  await expectMutation(
+    {
+      mutation: "eventRsvpStatusClear",
+      schema,
+      args: {
+        id: encodeGQLID(event),
+        userID: encodeGQLID(user),
+      },
+      viewer: user.viewer,
+    },
+    ["event.viewerRsvpStatus", "CAN_RSVP"],
+  );
+
+  await expectQueryFromRoot(getConfig(new ExampleViewer(user.id), event, {}), [
+    "viewerRsvpStatus",
+    "CAN_RSVP",
+  ]);
 });

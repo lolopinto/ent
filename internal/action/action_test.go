@@ -1,30 +1,24 @@
 package action_test
 
 import (
-	"sync"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
-	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
-	"github.com/lolopinto/ent/internal/parsehelper"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
-	"github.com/lolopinto/ent/internal/schemaparser"
-	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
+	"github.com/lolopinto/ent/internal/testingutils/testmodel"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRequiredField(t *testing.T) {
-	f := getTestFieldByName(t, "AccountConfig", "LastName")
-	f2 := getTestFieldByName(t, "AccountConfig", "Bio")
+	f := testmodel.GetFieldFromSchema(t, "Account", "LastName")
+	f2 := testmodel.GetFieldFromSchema(t, "Account", "Bio")
 
-	a := getTestActionByName(t, "account", "CreateAccountAction")
-	a2 := getTestActionByName(t, "account", "EditAccountAction")
+	a := testmodel.GetActionFromSchema(t, "Account", "CreateAccountAction")
+	a2 := testmodel.GetActionFromSchema(t, "Account", "EditAccountAction")
 
 	assert.True(t, action.IsRequiredField(a, f), "LastName field not required in CreateAction as expected")
 	assert.False(t, action.IsRequiredField(a2, f), "LastName field required in EditAction not expected")
@@ -33,13 +27,11 @@ func TestRequiredField(t *testing.T) {
 }
 
 func TestEdgeActions(t *testing.T) {
-	edgeInfo := getTestEdgeInfo(t, "account")
-	edge := edgeInfo.GetAssociationEdgeByName("Folders")
-	assert.NotNil(t, edge)
+	edge := testmodel.GetEdgeFromSchema(t, "Account", "Folders")
 	// 2 actions!
 	assert.Equal(t, len(edge.EdgeActions), 2)
 
-	actionInfo := getTestActionInfo(t, "account")
+	actionInfo := testmodel.GetActionInfoFromSchema(t, "Account")
 
 	var testCases = []struct {
 		actionName       string
@@ -48,18 +40,16 @@ func TestEdgeActions(t *testing.T) {
 		actionMethodName string
 	}{
 		{
-			// these 2 are custom
 			"AccountAddFolderAction",
 			true,
 			"accountFolderAdd",
 			"AccountAddFolder",
 		},
 		{
-			// these 2 are defaults
-			"RemoveFolderAction",
+			"AccountRemoveFolderAction",
 			true,
 			"accountRemoveFolder",
-			"RemoveFolder",
+			"AccountRemoveFolder",
 		},
 	}
 
@@ -101,13 +91,13 @@ func TestEdgeActions(t *testing.T) {
 }
 
 func TestEdgeGroupActions(t *testing.T) {
-	edgeInfo := getTestEdgeInfo(t, "account")
+	edgeInfo := testmodel.GetEdgeInfoFromSchema(t, "Account")
 	edgeGroup := edgeInfo.GetAssociationEdgeGroupByStatusName("FriendshipStatus")
 	assert.NotNil(t, edgeGroup)
 
 	assert.Equal(t, len(edgeGroup.EdgeActions), 1)
 
-	actionInfo := getTestActionInfo(t, "account")
+	actionInfo := testmodel.GetActionInfoFromSchema(t, "Account")
 
 	assert.NotNil(
 		t,
@@ -156,34 +146,34 @@ type fieldType struct {
 }
 
 func TestActionFields(t *testing.T) {
-	verifyExpectedFields(
+	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		`package configs
+		map[string]string{
+			"contact.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, ActionOperation} from "{schema}";
 
-	import "github.com/lolopinto/ent/ent"
-	import "github.com/lolopinto/ent/ent/field"
+			const ContactSchema = new EntSchema({
+				fields: {
+					EmailAddress: StringType(),
+					FirstName: StringType(),
+					LastName: StringType(),
+					PhoneNumber: StringType(),
+				},
+				actions: [
+					{
+						operation: ActionOperation.Mutations,
+					},
+				],
+ 			});
+			export default ContactSchema;
+			`),
+		},
+		"Contact",
+	)
 
-	type ContactConfig struct {}
-	
-	func (config *ContactConfig) GetFields() ent.FieldMap {
-		return ent.FieldMap {
-			"EmailAddress": field.F(
-				field.StringType(),
-			),
-			"FirstName": field.F(field.StringType()),
-			"LastName": field.F(field.StringType()),
-			"PhoneNumber": field.F(field.StringType()),
-		}
-	}
-	
-	func (config *ContactConfig) GetActions() []*ent.ActionConfig {
-		return []*ent.ActionConfig{
-			&ent.ActionConfig{
-				Action: ent.MutationsAction,
-			},
-		}
-	}`,
-		"contact",
+	verifyExpectedActions(
+		t,
+		actionInfo,
 		[]expectedAction{
 			{
 				name: "CreateContactAction",
@@ -243,47 +233,40 @@ func TestActionFields(t *testing.T) {
 }
 
 func TestActionFieldsWithPrivateFields(t *testing.T) {
-	verifyExpectedFields(
+	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		`package configs
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, ActionOperation} from "{schema}";
 
-	import "github.com/lolopinto/ent/ent"
-	import "github.com/lolopinto/ent/ent/field"
+			const UserSchema = new EntSchema({
+				fields: {
+					EmailAddress: StringType({unique:true}),
+					Password: StringType({private:true, hideFromGraphQL: true}),
+					FirstName: StringType(),
+				},
 
-	type UserConfig struct {}
-	
-	func (config *UserConfig) GetFields() ent.FieldMap {
-		return ent.FieldMap {
-			"EmailAddress": field.F(
-				field.StringType(),
-				field.Unique(), 
-			),
-			"Password": field.F(
-				field.StringType(),
-			),
-			"FirstName": field.F(field.StringType()),
-		}
-	}
-	
-	func (config *UserConfig) GetActions() []*ent.ActionConfig {
-		return []*ent.ActionConfig{
-			&ent.ActionConfig{
-				Action: ent.CreateAction,
-				Fields: []string{
-					"FirstName",
-					"EmailAddress",
-					"Password",
-				},
-			},
-			&ent.ActionConfig{
-				Action: ent.EditAction,
-				Fields: []string{
-					"FirstName",
-				},
-			},
-		}
-	}`,
-		"user",
+				actions: [
+					{
+						operation: ActionOperation.Create,
+						fields: ["FirstName", "EmailAddress", "Password"]
+					},
+					{
+						operation: ActionOperation.Edit,
+						fields: ["FirstName"]
+					},
+				],
+			
+			});
+			export default UserSchema;
+			`),
+		},
+		"User",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
 		[]expectedAction{
 			{
 				name: "CreateUserAction",
@@ -320,43 +303,38 @@ func TestActionFieldsWithPrivateFields(t *testing.T) {
 }
 
 func TestDefaultActionFieldsWithPrivateFields(t *testing.T) {
-	t.Skip()
-	verifyExpectedFields(
+	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		`package configs
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType, ActionOperation} from "{schema}";
 
-	import "github.com/lolopinto/ent/ent"
-	import "github.com/lolopinto/ent/ent/field"
+			const UserSchema = new EntSchema({
+				fields: {
+					EmailAddress: StringType({unique:true}),
+					Password: StringType({private:true, hideFromGraphQL: true}),
+					FirstName: StringType(),
+				},
 
-	type UserConfig struct {}
-	
-	func (config *UserConfig) GetFields() ent.FieldMap {
-		return ent.FieldMap {
-			"EmailAddress": field.F(
-				field.StringType(),
-				field.Unique(), 
-			),
-			"Password": field.F(
-				field.StringType(),
-				// doesn't work with change to password
-				// we can kill bcrypt in password to make this work...
-				// field.Private(),
-			),
-			"FirstName": field.F(field.StringType()),
-		}
-	}
-	
-	func (config *UserConfig) GetActions() []*ent.ActionConfig {
-		return []*ent.ActionConfig{
-			&ent.ActionConfig{
-				Action: ent.CreateAction,
-			},
-			&ent.ActionConfig{
-				Action: ent.EditAction,
-			},
-		}
-	}`,
-		"user",
+				actions: [
+					{
+						operation: ActionOperation.Create,
+					},
+					{
+						operation: ActionOperation.Edit,
+					},
+				],
+			
+			});
+			export default UserSchema;
+			`),
+		},
+		"User",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
 		// Password not show up here by default since private
 		[]expectedAction{
 			{
@@ -398,25 +376,25 @@ func TestDefaultNoFields(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, NoFields} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, NoFields} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
-		base.TypeScript,
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -447,26 +425,26 @@ func TestExplicitNoFields(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, NoFields} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, NoFields} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 							fields: [NoFields],
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
-		base.TypeScript,
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -486,29 +464,29 @@ func TestNullableFieldInAction(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastNAme: StringType(),
 						EmailAddress: StringType({nullable: true}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 							actionName: "EditEmailAddressAction",
 							graphQLName: "editEmailAddressAction",
 							fields: ["EmailAddress"],
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
-		base.TypeScript,
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -534,29 +512,29 @@ func TestOverriddenRequiredActionField(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, requiredField} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
 						EmailAddress: StringType({nullable: true}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 							actionName: "EditEmailAddressAction",
 							graphQLName: "editEmailAddressAction",
 							fields: [requiredField("EmailAddress")],
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
-		base.TypeScript,
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -583,10 +561,10 @@ func TestPrivateFieldExposedToActions(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, requiredField} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
 						EmailAddress: StringType(),
@@ -595,19 +573,19 @@ func TestPrivateFieldExposedToActions(t *testing.T) {
 								exposeToActions: true,
 							},
 						}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create, 
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
-		base.TypeScript,
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -648,29 +626,29 @@ func TestPrivateField(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, requiredField} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema ({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
 						EmailAddress: StringType(),
 						Password: StringType({
 							private: true,
 						}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create, 
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
-		base.TypeScript,
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -706,29 +684,29 @@ func TestOverriddenOptionalActionField(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, optionalField} from "{schema}";
+				`import {StringType, ActionOperation, EntSchema, optionalField} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						FirstName: StringType(),
 						LastName: StringType(),
 						EmailAddress: StringType({nullable: true}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Edit, 
 							actionName: "EditNameAction",
 							graphQLName: "editUserName",
 							fields: [optionalField("FirstName"), optionalField("LastName")],
 						},
-					];
-				}
+					],
+				});
+				export default User;
 				`,
 			),
 		},
-		base.TypeScript,
-		"UserConfig",
+		"User",
 	)
 
 	verifyExpectedActions(
@@ -760,15 +738,15 @@ func TestActionOnlyFields(t *testing.T) {
 		map[string]string{
 			"event.ts": testhelper.GetCodeWithSchema(
 				`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType, TimestampType} from "{schema}";
 
-				export default class Event extends BaseEntSchema {
-					fields: FieldMap = {
+				const Event = new EntSchema({
+					fields: {
 						name: StringType(),
 						start_time: TimestampType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 							actionOnlyFields: [{
@@ -781,11 +759,11 @@ func TestActionOnlyFields(t *testing.T) {
 								nullable: true,
 							}],
 						},
-					];
-				};`),
+					],
+				});
+				export default Event;`),
 		},
-		base.TypeScript,
-		"EventConfig",
+		"Event",
 	)
 
 	verifyExpectedActions(
@@ -834,14 +812,14 @@ func TestActionOnlyFieldsInvalidAction(t *testing.T) {
 		map[string]string{
 			"contact.ts": testhelper.GetCodeWithSchema(
 				`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType} from "{schema}";
 
-				export default class Contact extends BaseEntSchema {
-					fields: FieldMap = {
+				const Contact = new EntSchema({
+					fields: {
 						name: StringType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 							actionOnlyFields: [{
@@ -851,27 +829,28 @@ func TestActionOnlyFieldsInvalidAction(t *testing.T) {
 								actionName: "CreateEmailAction",
 							}],
 						},
-					];
-				};`),
+					],
+				});
+				export default Contact`),
 			"contact_email.ts": testhelper.GetCodeWithSchema(
 				`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType} from "{schema}";
 
-				export default class ContactEmail extends BaseEntSchema {
-					fields: FieldMap = {
+				const ContactEmail = new EntSchema({
+					fields: {
 						email: StringType(),
 						label: StringType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 						},
-					];
-				};`,
+					],
+				})
+				export default ContactEmail;`,
 			),
 		},
-		base.TypeScript,
 	)
 
 	require.Nil(t, schema)
@@ -884,32 +863,33 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 		t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(
-				`import {BaseEntSchema, Action, FieldMap, StringType, UUIDType, ActionOperation} from "{schema}";
+				`import {EntSchema, StringType, UUIDType, ActionOperation} from "{schema}";
 
-		export default class Address extends BaseEntSchema {
-		fields: FieldMap = {
+		const Address = new EntSchema({
+		fields: {
 			Street: StringType(),
 			City: StringType(),
 			State: StringType(),
 			ZipCode: StringType(), 
-		};
+		},
 
-		actions: Action[] = [
+		actions: [
 			{
 				operation: ActionOperation.Create,
 			},
-		];
-	}`),
+		],
+	});
+	export default Address`),
 			"event_activity.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
 
-				export default class EventActivity extends BaseEntSchema {
-					fields: FieldMap = {
+				const EventActivity = new EntSchema({
+					fields: {
 						name: StringType(),
 						eventID: UUIDType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 							actionOnlyFields: [{
@@ -918,19 +898,20 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 								type: "Object",
 							}],
 						},
-					];
-				};`),
+					],
+				});
+				export default EventActivity`),
 			"event.ts": testhelper.GetCodeWithSchema(
 				`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType, TimestampType} from "{schema}";
 
-				export default class Event extends BaseEntSchema {
-					fields: FieldMap = {
+				const Event = new EntSchema({
+					fields: {
 						name: StringType(),
 						start_time: TimestampType(),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 							actionOnlyFields: [{
@@ -940,13 +921,13 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 								type: "Object",
 							}],
 						},
-					];
-				};`),
+					],
+				});
+				export default Event;`),
 		},
-		base.TypeScript,
 	)
 
-	activityActionInfo := schema.Nodes["EventActivityConfig"].NodeData.ActionInfo
+	activityActionInfo := schema.Nodes["EventActivity"].NodeData.ActionInfo
 	require.NotNil(t, activityActionInfo)
 
 	activityCoreFields := []expectedField{
@@ -1012,7 +993,7 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 			},
 		},
 	)
-	eventActionInfo := schema.Nodes["EventConfig"].NodeData.ActionInfo
+	eventActionInfo := schema.Nodes["Event"].NodeData.ActionInfo
 	require.NotNil(t, eventActionInfo)
 
 	verifyExpectedActions(
@@ -1074,36 +1055,37 @@ func TestFieldEdgeFields(t *testing.T) {
 		t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(
-				`import {BaseEntSchema, Action, FieldMap, StringType, UUIDType, ActionOperation} from "{schema}";
+				`import {EntSchema, StringType, UUIDType, ActionOperation} from "{schema}";
 
-		export default class Address extends BaseEntSchema {
-		fields: FieldMap = {
-			Street: StringType(),
-			City: StringType(),
-			State: StringType(),
-			ZipCode: StringType(), 
-		};
-	}`),
+		const Address = new EntSchema({
+			fields: {
+				Street: StringType(),
+				City: StringType(),
+				State: StringType(),
+				ZipCode: StringType(), 
+			},
+		});
+		export default Address;`),
 			"profile.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
 
-				export default class Profile extends BaseEntSchema {
-					fields: FieldMap = {
+				const Profile = new EntSchema({
+					fields: {
 						name: StringType(),
 						addressID: UUIDType({fieldEdge: { schema: "Address", inverseEdge: "residents"}}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 						},
-					];
-				};`),
+					],
+				});
+				export default Profile`),
 		},
-		base.TypeScript,
 	)
 
-	addressInfo := schema.Nodes["AddressConfig"].NodeData.ActionInfo
+	addressInfo := schema.Nodes["Address"].NodeData.ActionInfo
 	require.NotNil(t, addressInfo)
 
 	verifyExpectedActions(
@@ -1112,7 +1094,7 @@ func TestFieldEdgeFields(t *testing.T) {
 		[]expectedAction{},
 	)
 
-	profileInfo := schema.Nodes["ProfileConfig"].NodeData.ActionInfo
+	profileInfo := schema.Nodes["Profile"].NodeData.ActionInfo
 	require.NotNil(t, profileInfo)
 	verifyExpectedActions(
 		t,
@@ -1137,27 +1119,6 @@ func TestFieldEdgeFields(t *testing.T) {
 	)
 }
 
-func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expectedAction) {
-	pkg, fnMap, err := schemaparser.FindFunctions(code, "configs", "GetFields", "GetActions")
-	require.Nil(t, err)
-	require.Len(t, fnMap, 2)
-	require.NotNil(t, pkg)
-	require.NotNil(t, fnMap["GetFields"])
-
-	fieldInfo, err := field.ParseFieldsFunc(pkg, fnMap["GetFields"])
-	spew.Dump(fieldInfo, err)
-	require.NotNil(t, fieldInfo)
-	require.Nil(t, err)
-
-	require.NotNil(t, fnMap["GetActions"])
-
-	actionInfo, err := action.ParseActions(
-		&codegenapi.DummyConfig{},
-		nodeName, fnMap["GetActions"], fieldInfo, nil, base.GoLang)
-	require.Nil(t, err)
-	verifyExpectedActions(t, actionInfo, expActions)
-}
-
 func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActions []expectedAction) {
 	require.Len(t, actionInfo.Actions, len(expActions))
 
@@ -1179,7 +1140,7 @@ func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActio
 				expCustomInt := expAction.customInterfaces[idx]
 
 				assert.Equal(t, customInt.TSType, expCustomInt.tsType)
-				assert.Equal(t, customInt.GQLType, expCustomInt.gqlType)
+				assert.Equal(t, customInt.GQLName, expCustomInt.gqlType)
 
 				verifyFields(t, customInt.Fields, expCustomInt.fields)
 				verifyNonEntFields(t, customInt.NonEntFields, expCustomInt.nonEntFields)
@@ -1218,97 +1179,4 @@ func verifyNonEntFields(t *testing.T, nonEntFields []*field.NonEntField, expFiel
 		require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.GetFieldType().GetGraphQLType(), "graphql type %s not equal. idx %d", fieldName, idx)
 		require.Equal(t, actionOnlyField.typ.tsType, nonEntField.GetGraphQLFieldType().GetTSType(), "ts type %s not equal. idx %d", fieldName, idx)
 	}
-}
-
-func getParsedConfig(t *testing.T) *parsehelper.FileConfigData {
-	return parsehelper.ParseFilesForTest(t, parsehelper.ParseFuncs(parsehelper.ParseStruct|parsehelper.ParseEdges|parsehelper.ParseActions))
-}
-
-// this is slightly confusing but we have multi-caching going on here
-// similar to field_test, edge_test, we're caching the results of parsing fields, edges, actions into separate
-// instances of RunOnce.
-// They all use getParsedConfig() which has its own caching based on flags passed above.
-var rF *testsync.RunOnce
-var rA *testsync.RunOnce
-var rE *testsync.RunOnce
-
-var once sync.Once
-
-func initSyncs() {
-	once.Do(func() {
-		rF = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
-			data := getParsedConfig(t)
-			fieldInfo, err := field.GetFieldInfoForStruct(data.StructMap[configName], data.Info)
-			assert.Nil(t, err)
-			assert.NotNil(t, fieldInfo, "invalid fieldInfo retrieved")
-			return fieldInfo
-		})
-
-		rE = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
-			data := getParsedConfig(t)
-			fn := data.GetEdgesFn(configName)
-			assert.NotNil(t, fn, "GetEdges fn was unexpectedly nil")
-			edgeInfo, err := edge.ParseEdgesFunc(configName, fn)
-			require.Nil(t, err)
-			assert.NotNil(t, edgeInfo, "invalid edgeInfo retrieved")
-			return edgeInfo
-		})
-
-		rA = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
-			data := getParsedConfig(t)
-
-			fn := data.GetActionsFn(configName)
-			assert.NotNil(t, fn, "GetActions fn was unexpectedly nil")
-
-			// TODO need to fix this dissonance...
-			fieldInfo := getTestFieldInfo(t, strcase.ToCamel(configName)+"Config")
-			edgeInfo := getTestEdgeInfo(t, configName)
-			actionInfo, err := action.ParseActions(
-				&codegenapi.DummyConfig{},
-				"Account", fn, fieldInfo, edgeInfo, base.GoLang)
-			assert.NotNil(t, actionInfo, "invalid actionInfo retrieved")
-			require.NoError(t, err)
-			return actionInfo
-		})
-	})
-}
-
-func getFieldInfoMap() *testsync.RunOnce {
-	initSyncs()
-	return rF
-}
-
-func getActionInfoMap() *testsync.RunOnce {
-	initSyncs()
-	return rA
-}
-
-func getEdgeInfoMap() *testsync.RunOnce {
-	initSyncs()
-	return rE
-}
-
-func getTestActionInfo(t *testing.T, configName string) *action.ActionInfo {
-	return getActionInfoMap().Get(t, configName).(*action.ActionInfo)
-}
-
-func getTestActionByName(t *testing.T, configName string, actionName string) action.Action {
-	//	name := action.GetActionTypeFromString(actionType).(actionWithDefaultActionName).getDefaultActionName(configName)
-	a := getTestActionInfo(t, configName).GetByName(actionName)
-	assert.NotNil(t, a, "invalid action retrieved")
-	return a
-}
-
-// copied and modified from field_test.go
-func getTestFieldInfo(t *testing.T, configName string) *field.FieldInfo {
-	return getFieldInfoMap().Get(t, configName).(*field.FieldInfo)
-}
-
-func getTestEdgeInfo(t *testing.T, configName string) *edge.EdgeInfo {
-	return getEdgeInfoMap().Get(t, configName).(*edge.EdgeInfo)
-}
-
-func getTestFieldByName(t *testing.T, configName string, fieldName string) *field.Field {
-	fieldInfo := getTestFieldInfo(t, configName)
-	return fieldInfo.GetFieldByName(fieldName)
 }

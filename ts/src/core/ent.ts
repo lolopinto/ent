@@ -166,6 +166,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
 
     let result: (TEnt | ErrorWrapper | Error)[] = [];
 
+    const tableName = options.loaderFactory.options?.tableName;
     const loader = options.loaderFactory.createLoader(viewer.context);
     const rows = await loader.loadMany(ids);
     // this is a loader which should return the same order based on passed-in ids
@@ -179,9 +180,17 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
         result[idx] = row;
         continue;
       } else if (!row) {
-        result[idx] = new ErrorWrapper(
-          new Error(`couldn't find row for value ${ids[idx]}`),
-        );
+        if (tableName) {
+          result[idx] = new ErrorWrapper(
+            new Error(
+              `couldn't find row for value ${ids[idx]} in table ${tableName}`,
+            ),
+          );
+        } else {
+          result[idx] = new ErrorWrapper(
+            new Error(`couldn't find row for value ${ids[idx]}`),
+          );
+        }
       } else {
         const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
         if (r instanceof Error) {
@@ -1274,6 +1283,7 @@ export class EdgeOperation implements DataOperation {
         tableName: params.options.tableName,
         whereClause: params.clause,
         fields: params.updateData!,
+        fieldsToLog: params.updateData!,
       });
     }
   }
@@ -2018,12 +2028,17 @@ interface loadCustomEdgesOptions<T extends AssocEdge> extends loadEdgesOptions {
 export const DefaultLimit = 1000;
 
 // TODO default limit from somewhere
-export function defaultEdgeQueryOptions(
+function defaultEdgeQueryOptions(
   id1: ID,
   edgeType: string,
+  id2?: ID,
 ): EdgeQueryableDataOptions {
+  let cls = clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType));
+  if (id2) {
+    cls = clause.And(cls, clause.Eq("id2", id2));
+  }
   return {
-    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    clause: cls,
     orderby: "time DESC",
     limit: DefaultLimit,
   };
@@ -2037,7 +2052,7 @@ export async function loadEdges(
 
 export function getEdgeClauseAndFields(
   cls: clause.Clause,
-  options: loadEdgesOptions,
+  options: Pick<loadEdgesOptions, "disableTransformations">,
 ) {
   let fields = edgeFields;
 
@@ -2057,31 +2072,47 @@ export function getEdgeClauseAndFields(
 export async function loadCustomEdges<T extends AssocEdge>(
   options: loadCustomEdgesOptions<T>,
 ): Promise<T[]> {
-  const { id1, edgeType, context } = options;
+  const {
+    cls: actualClause,
+    fields,
+    defaultOptions,
+    tableName,
+  } = await loadEgesInfo(options);
+
+  const rows = await loadRows({
+    tableName,
+    fields: fields,
+    clause: actualClause,
+    orderby: options.queryOptions?.orderby || defaultOptions.orderby,
+    limit: options.queryOptions?.limit || defaultOptions.limit,
+    context: options.context,
+  });
+  return rows.map((row) => {
+    return new options.ctr(row);
+  });
+}
+
+async function loadEgesInfo<T extends AssocEdge>(
+  options: loadCustomEdgesOptions<T>,
+  id2?: ID,
+) {
+  const { id1, edgeType } = options;
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
   }
 
-  const defaultOptions = defaultEdgeQueryOptions(id1, edgeType);
+  const defaultOptions = defaultEdgeQueryOptions(id1, edgeType, id2);
   let cls = defaultOptions.clause!;
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
   }
 
-  const { cls: actualClause, fields } = getEdgeClauseAndFields(cls, options);
-
-  const rows = await loadRows({
+  return {
+    ...getEdgeClauseAndFields(cls, options),
+    defaultOptions,
     tableName: edgeData.edgeTable,
-    fields: fields,
-    clause: actualClause,
-    orderby: options.queryOptions?.orderby || defaultOptions.orderby,
-    limit: options.queryOptions?.limit || defaultOptions.limit,
-    context,
-  });
-  return rows.map((row) => {
-    return new options.ctr(row);
-  });
+  };
 }
 
 export async function loadUniqueEdge(
@@ -2161,10 +2192,21 @@ interface loadEdgeForIDOptions<T extends AssocEdge>
 export async function loadEdgeForID2<T extends AssocEdge>(
   options: loadEdgeForIDOptions<T>,
 ): Promise<T | undefined> {
-  // TODO at some point, same as in go, we can be smart about this and have heuristics to determine if we fetch everything here or not
-  // we're assuming a cache here but not always true and this can be expensive if not...
-  const edges = await loadCustomEdges(options);
-  return edges.find((edge) => edge.id2 == options.id2);
+  const {
+    cls: actualClause,
+    fields,
+    tableName,
+  } = await loadEgesInfo(options, options.id2);
+
+  const row = await loadRow({
+    tableName,
+    fields: fields,
+    clause: actualClause,
+    context: options.context,
+  });
+  if (row) {
+    return new options.ctr(row);
+  }
 }
 
 export async function loadNodesByEdge<T extends Ent>(
@@ -2270,23 +2312,6 @@ export async function applyPrivacyPolicyForRows<
   return result.filter((r) => r !== undefined);
 }
 
-async function loadEdgeWithConst<T extends string>(
-  viewer: Viewer,
-  id1: ID,
-  id2: ID,
-  edgeEnum: T,
-  edgeType: string,
-): Promise<[T, AssocEdge | undefined]> {
-  const edge = await loadEdgeForID2({
-    id1: id1,
-    id2: id2,
-    edgeType: edgeType,
-    context: viewer.context,
-    ctr: AssocEdge,
-  });
-  return [edgeEnum, edge];
-}
-
 // given a viewer, an id pair, and a map of edgeEnum to EdgeType
 // return the edgeEnum that's set in the group
 export async function getEdgeTypeInGroup<T extends string>(
@@ -2295,13 +2320,55 @@ export async function getEdgeTypeInGroup<T extends string>(
   id2: ID,
   m: Map<T, string>,
 ): Promise<[T, AssocEdge] | undefined> {
-  let promises: Promise<[T, AssocEdge | undefined]>[] = [];
-  for (const [k, v] of m) {
-    promises.push(loadEdgeWithConst(viewer, id1, id2, k, v));
+  let promises: Promise<[T, AssocEdge | undefined] | undefined>[] = [];
+  const edgeDatas = await loadEdgeDatas(...Array.from(m.values()));
+
+  let tableToEdgeEnumMap = new Map<string, T[]>();
+  for (const [edgeEnum, edgeType] of m) {
+    const edgeData = edgeDatas.get(edgeType);
+    if (!edgeData) {
+      throw new Error(`could not load edge data for '${edgeType}'`);
+    }
+    const l = tableToEdgeEnumMap.get(edgeData.edgeTable) ?? [];
+    l.push(edgeEnum);
+    tableToEdgeEnumMap.set(edgeData.edgeTable, l);
   }
+  tableToEdgeEnumMap.forEach((edgeEnums, tableName) => {
+    promises.push(
+      (async () => {
+        const edgeTypes = edgeEnums.map((edgeEnum) => m.get(edgeEnum)!);
+
+        const { cls, fields } = getEdgeClauseAndFields(
+          clause.And(
+            clause.Eq("id1", id1),
+            clause.In("edge_type", edgeTypes),
+            clause.Eq("id2", id2),
+          ),
+          {},
+        );
+
+        const rows = await loadRows({
+          tableName,
+          fields,
+          clause: cls,
+          context: viewer.context,
+        });
+
+        const row = rows[0];
+        if (row) {
+          const edgeType = row.edge_type;
+          for (const [k, v] of m) {
+            if (v === edgeType) {
+              return [k, new AssocEdge(row)];
+            }
+          }
+        }
+      })(),
+    );
+  });
   const results = await Promise.all(promises);
   for (const res of results) {
-    if (res[1]) {
+    if (res && res[1]) {
       return [res[0], res[1]];
     }
   }

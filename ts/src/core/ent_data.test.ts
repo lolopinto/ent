@@ -1136,7 +1136,9 @@ function commonTests() {
         await ent.loadEntX(vc, 6, User.loaderOptions());
         throw new Error(`should throw`);
       } catch (err) {
-        expect((err as Error).message).toBe(`couldn't find row for value 6`);
+        expect((err as Error).message).toBe(
+          `couldn't find row for value 6 in table users`,
+        );
         expect(ml.logs).toStrictEqual([
           { "ent-cache-hit": "idViewer:1:users:bar::6" },
         ]);

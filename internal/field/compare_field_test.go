@@ -12,22 +12,22 @@ import (
 )
 
 func TestCompareNonEntField(t *testing.T) {
-	f := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.IntegerType{}, true)
-	f2 := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.IntegerType{}, true)
+	f := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.IntegerType{}, true, true)
+	f2 := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.IntegerType{}, true, true)
 
 	require.True(t, NonEntFieldEqual(f, f2))
 }
 
 func TestCompareUnequalNonEntField(t *testing.T) {
-	f := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.IntegerType{}, true)
-	f2 := NewNonEntField(&codegenapi.DummyConfig{}, "f2", &enttype.IntegerType{}, true)
+	f := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.IntegerType{}, true, true)
+	f2 := NewNonEntField(&codegenapi.DummyConfig{}, "f2", &enttype.IntegerType{}, true, true)
 
 	require.False(t, NonEntFieldEqual(f, f2))
 }
 
 func TestCompareUnequalNonEntFieldType(t *testing.T) {
-	f := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.IntegerType{}, true)
-	f2 := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.StringType{}, true)
+	f := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.IntegerType{}, true, true)
+	f2 := NewNonEntField(&codegenapi.DummyConfig{}, "f1", &enttype.StringType{}, true, true)
 
 	require.False(t, NonEntFieldEqual(f, f2))
 }

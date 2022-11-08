@@ -8,7 +8,6 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
@@ -44,14 +43,15 @@ func TestCustomMutation(t *testing.T) {
 	// very complicated but simplest no-frills way to test things
 	m := map[string]string{
 		"contact.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
+			import {EntSchema, StringType} from "{schema}";
 
-			export default class Contact extends BaseEntSchema {
-				fields: FieldMap = {
+			const Contact = new EntSchema({
+				fields: {
 					firstName: StringType(),
 					lastName: StringType(),
-				};
-			}
+				},
+			});
+			export default Contact;
 		`),
 	}
 
@@ -61,7 +61,7 @@ func TestCustomMutation(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),
@@ -175,14 +175,15 @@ func TestCustomMutation(t *testing.T) {
 func TestCustomQuery(t *testing.T) {
 	m := map[string]string{
 		"contact.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
+			import {EntSchema, StringType} from "{schema}";
 
-			export default class Contact extends BaseEntSchema {
-				fields: FieldMap = {
+			const Contact = new EntSchema({
+				fields: {
 					firstName: StringType(),
 					lastName: StringType(),
-				};
-			}
+				},
+			});
+			export default Contact;
 		`),
 	}
 
@@ -192,7 +193,7 @@ func TestCustomQuery(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),
@@ -312,7 +313,7 @@ func TestCustomListQuery(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),
@@ -431,28 +432,30 @@ func TestCustomListQuery(t *testing.T) {
 func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	m := map[string]string{
 		"user.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
+			import {EntSchema, StringType} from "{schema}";
 
-			export default class User extends BaseEntSchema {
-				fields: FieldMap = {
+			const User = new EntSchema({
+				fields: {
 					firstName: StringType(),
 					lastName: StringType(),
-				};
-			}
+				},
+			});
+			export default User;
 		`),
 		"username.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
+			import {EntSchema, StringType, UUIDType} from "{schema}";
 
-			export default class Username extends BaseEntSchema {
-				fields: FieldMap = {
+			const Username = new EntSchema({
+				fields: {
 					username: StringType({
 						unique:true,
 					}),
 					userID: UUIDType({
 						foreignKey: {schema: "User", column: "ID"},
 					}),
-				};
-			}
+				},
+			});
+			export default Username;
 		`),
 	}
 
@@ -462,7 +465,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),
@@ -585,7 +588,7 @@ func TestCustomUploadType(t *testing.T) {
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
 	data := &codegen.Processor{
 		Schema: schema,
 		Config: getCodePath(t, dirPath),

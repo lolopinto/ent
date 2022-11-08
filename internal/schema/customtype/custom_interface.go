@@ -1,13 +1,16 @@
 package customtype
 
 import (
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/enum"
 )
 
 type CustomType interface {
+	field.CustomTypeWithHasConvertFunction
 	GetTSType() string
+	GetGraphQLName() string
 	GetGraphQLType() string
 	IsCustomInterface() bool
 	IsCustomUnion() bool
@@ -16,11 +19,24 @@ type CustomType interface {
 	// put self last because you can reference
 	// want to render in order so that dependencies are rendered first
 	GetAllCustomTypes() []CustomType
+	Equal(ct CustomType) bool
+}
+
+func customTypeListEqual(l1, l2 []CustomType) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+	for i, ci1 := range l1 {
+		if !ci1.Equal(l2[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 type CustomInterface struct {
 	TSType       string
-	GQLType      string
+	GQLName      string
 	Fields       []*field.Field
 	NonEntFields []*field.NonEntField
 
@@ -36,7 +52,10 @@ type CustomInterface struct {
 	// children of this interface. could be other interfaces or unions
 	Children []CustomType
 
+	// right now they're all exported??
 	Exported bool
+
+	GenerateListConvert bool
 
 	tsEnums  []*enum.Enum
 	gqlEnums []*enum.GQLEnum
@@ -108,8 +127,12 @@ func (ci *CustomInterface) GetTSTypes() []string {
 	return types
 }
 
+func (ci *CustomInterface) GetGraphQLName() string {
+	return ci.GQLName
+}
+
 func (ci *CustomInterface) GetGraphQLType() string {
-	return ci.GQLType
+	return ci.GQLName + "Type"
 }
 
 func (ci *CustomInterface) IsCustomInterface() bool {
@@ -118,6 +141,40 @@ func (ci *CustomInterface) IsCustomInterface() bool {
 
 func (ci *CustomInterface) IsCustomUnion() bool {
 	return false
+}
+
+func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
+	for _, c := range ci.Children {
+		if c.HasConvertFunction(cfg) {
+			return true
+		}
+	}
+
+	for _, f := range ci.Fields {
+		if f.TsFieldName(cfg) != f.GetDbColName() {
+			return true
+		}
+	}
+
+	// this is (currently) only used in actions and should not apply. but to be safe, if exists, have a convert function
+	return len(ci.NonEntFields) > 0
+}
+
+// note the logic for these 4 duplicated in Field.GetConvertMethod() in field_type.go
+func (ci *CustomInterface) GetConvertMethod() string {
+	return "convert" + ci.TSType
+}
+
+func (ci *CustomInterface) GetConvertNullableMethod() string {
+	return "convertNullable" + ci.TSType
+}
+
+func (ci *CustomInterface) GetConvertListMethod() string {
+	return "convert" + ci.TSType + "List"
+}
+
+func (ci *CustomInterface) GetConvertNullableListMethod() string {
+	return "convertNullable" + ci.TSType + "List"
 }
 
 func (ci *CustomInterface) GetAllCustomTypes() []CustomType {
@@ -132,6 +189,11 @@ func (ci *CustomInterface) GetAllCustomTypes() []CustomType {
 	return ret
 }
 
+func (ci *CustomInterface) Equal(ct CustomType) bool {
+	ci2, ok := ct.(*CustomInterface)
+	return ok && CustomInterfaceEqual(ci, ci2)
+}
+
 func CustomInterfaceEqual(ci1, ci2 *CustomInterface) bool {
 	ret := change.CompareNilVals(ci1.Action == nil, ci2.Action == nil)
 	if ret != nil && !*ret {
@@ -139,10 +201,29 @@ func CustomInterfaceEqual(ci1, ci2 *CustomInterface) bool {
 	}
 
 	return ci1.TSType == ci2.TSType &&
-		ci1.GQLType == ci2.GQLType &&
+		ci1.GQLName == ci2.GQLName &&
 		field.FieldsEqual(ci1.Fields, ci2.Fields) &&
 		field.NonEntFieldsEqual(ci1.NonEntFields, ci2.NonEntFields) &&
-		change.StringListEqual(ci1.enumImports, ci2.enumImports)
+		// Action handled above
+		ci1.GraphQLFieldName == ci2.GraphQLFieldName &&
+		change.StringListEqual(ci1.enumImports, ci2.enumImports) &&
+		customTypeListEqual(ci1.Children, ci2.Children) &&
+		ci1.Exported == ci2.Exported &&
+		ci1.GenerateListConvert == ci2.GenerateListConvert &&
+		enum.EnumsEqual(ci1.tsEnums, ci2.tsEnums) &&
+		enum.GQLEnumsEqual(ci1.gqlEnums, ci1.gqlEnums)
+}
+
+func customInterfaceListEqual(l1, l2 []*CustomInterface) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+	for i, ci1 := range l1 {
+		if !CustomInterfaceEqual(ci1, l2[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func CompareInterfacesMapEqual(m1, m2 map[string]*CustomInterface) bool {

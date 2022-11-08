@@ -10,9 +10,12 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Account, AccountState, Todo } from "src/ent/";
+import { Account, AccountState, Todo, Workspace } from "src/ent/";
+import { AccountPrefs } from "src/ent/generated/account_prefs";
+import { AccountPrefs2 } from "src/ent/generated/account_prefs_2";
 import { EdgeType, NodeType } from "src/ent/generated/const";
 import { accountLoaderInfo } from "src/ent/generated/loaders";
+import { TodoContainerBuilder } from "src/ent/generated/mixins/todo_container/actions/todo_container_builder";
 import schema from "src/schema/account_schema";
 
 export interface AccountInput {
@@ -20,6 +23,8 @@ export interface AccountInput {
   name?: string;
   phoneNumber?: string;
   accountState?: AccountState | null;
+  accountPrefs?: AccountPrefs | null;
+  accountPrefsList?: AccountPrefs2[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -28,13 +33,28 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+class Base {
+  // @ts-ignore not assigning. need for Mixin
+  orchestrator: Orchestrator<Account, any, Viewer>;
+
+  constructor() {}
+
+  isBuilder<T extends Ent>(
+    node: ID | T | Builder<T, any>,
+  ): node is Builder<T, any> {
+    return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+}
+
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export class AccountBuilder<
-  TInput extends AccountInput = AccountInput,
-  TExistingEnt extends TMaybleNullableEnt<Account> = Account | null,
-> implements Builder<Account, Viewer, TExistingEnt>
+    TInput extends AccountInput = AccountInput,
+    TExistingEnt extends TMaybleNullableEnt<Account> = Account | null,
+  >
+  extends TodoContainerBuilder(Base)
+  implements Builder<Account, Viewer, TExistingEnt>
 {
   orchestrator: Orchestrator<Account, TInput, Viewer, TExistingEnt>;
   readonly placeholderID: ID;
@@ -55,6 +75,7 @@ export class AccountBuilder<
     >,
     public readonly existingEnt: TExistingEnt,
   ) {
+    super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Account`;
     this.input = action.getInput();
     const updateInput = (d: AccountInput) => this.updateInput.apply(this, [d]);
@@ -166,6 +187,51 @@ export class AccountBuilder<
     return this;
   }
 
+  addCreatedWorkspace(
+    ...nodes: (ID | Workspace | Builder<Workspace, any>)[]
+  ): this {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addCreatedWorkspaceID(node);
+      } else if (typeof node === "object") {
+        this.addCreatedWorkspaceID(node.id);
+      } else {
+        this.addCreatedWorkspaceID(node);
+      }
+    }
+    return this;
+  }
+
+  addCreatedWorkspaceID(
+    id: ID | Builder<Workspace, any>,
+    options?: AssocEdgeInputOptions,
+  ): this {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.AccountToCreatedWorkspaces,
+      NodeType.Workspace,
+      options,
+    );
+    return this;
+  }
+
+  removeCreatedWorkspace(...nodes: (ID | Workspace)[]): this {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(
+          node.id,
+          EdgeType.AccountToCreatedWorkspaces,
+        );
+      } else {
+        this.orchestrator.removeOutboundEdge(
+          node,
+          EdgeType.AccountToCreatedWorkspaces,
+        );
+      }
+    }
+    return this;
+  }
+
   addOpenTodosDup(...nodes: (ID | Todo | Builder<Todo, any>)[]): this {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
@@ -209,6 +275,49 @@ export class AccountBuilder<
     return this;
   }
 
+  addWorkspace(...nodes: (ID | Workspace | Builder<Workspace, any>)[]): this {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addWorkspaceID(node);
+      } else if (typeof node === "object") {
+        this.addWorkspaceID(node.id);
+      } else {
+        this.addWorkspaceID(node);
+      }
+    }
+    return this;
+  }
+
+  addWorkspaceID(
+    id: ID | Builder<Workspace, any>,
+    options?: AssocEdgeInputOptions,
+  ): this {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.AccountToWorkspaces,
+      NodeType.Workspace,
+      options,
+    );
+    return this;
+  }
+
+  removeWorkspace(...nodes: (ID | Workspace)[]): this {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(
+          node.id,
+          EdgeType.AccountToWorkspaces,
+        );
+      } else {
+        this.orchestrator.removeOutboundEdge(
+          node,
+          EdgeType.AccountToWorkspaces,
+        );
+      }
+    }
+    return this;
+  }
+
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
   }
@@ -238,7 +347,7 @@ export class AccountBuilder<
   }
 
   private async getEditedFields(): Promise<Map<string, any>> {
-    const fields = this.input;
+    const input = this.input;
 
     const result = new Map<string, any>();
 
@@ -247,10 +356,12 @@ export class AccountBuilder<
         result.set(key, value);
       }
     };
-    addField("deleted_at", fields.deletedAt);
-    addField("Name", fields.name);
-    addField("PhoneNumber", fields.phoneNumber);
-    addField("accountState", fields.accountState);
+    addField("deleted_at", input.deletedAt);
+    addField("Name", input.name);
+    addField("PhoneNumber", input.phoneNumber);
+    addField("accountState", input.accountState);
+    addField("accountPrefs", input.accountPrefs);
+    addField("accountPrefsList", input.accountPrefsList);
     return result;
   }
 
@@ -300,5 +411,23 @@ export class AccountBuilder<
     }
 
     return this.existingEnt?.accountState ?? null;
+  }
+
+  // get value of accountPrefs. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAccountPrefsValue(): AccountPrefs | null {
+    if (this.input.accountPrefs !== undefined) {
+      return this.input.accountPrefs;
+    }
+
+    return this.existingEnt?.accountPrefs ?? null;
+  }
+
+  // get value of accountPrefsList. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAccountPrefsListValue(): AccountPrefs2[] | null {
+    if (this.input.accountPrefsList !== undefined) {
+      return this.input.accountPrefsList;
+    }
+
+    return this.existingEnt?.accountPrefsList ?? null;
   }
 }

@@ -1,4 +1,4 @@
-import { createAccount, createTodo, createTag } from "../testutils/util";
+import { createAccount, createTodoForSelf, createTag } from "../testutils/util";
 import { AccountToTagsQuery } from "../account/query/account_to_tags_query";
 import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
 import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
@@ -61,8 +61,8 @@ describe("tag + todo", () => {
   test("add tag to todo", async () => {
     const account = await createAccount();
 
-    const todo1 = await createTodo({ creatorID: account.id });
-    const todo2 = await createTodo({
+    const todo1 = await createTodoForSelf({ creatorID: account.id });
+    const todo2 = await createTodoForSelf({
       creatorID: account.id,
       text: "remember to have fun",
     });
@@ -88,7 +88,7 @@ describe("tag + todo", () => {
   test("remove tag from todo", async () => {
     const account = await createAccount();
 
-    const todo = await createTodo({ creatorID: account.id });
+    const todo = await createTodoForSelf({ creatorID: account.id });
     const tag = await createTag("kids", account);
 
     await TodoAddTagAction.saveXFromID(account.viewer, todo.id, tag.id);

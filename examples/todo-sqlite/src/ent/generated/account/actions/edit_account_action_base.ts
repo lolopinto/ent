@@ -16,11 +16,15 @@ import {
 } from "@snowtop/ent/action";
 import { Account, AccountState } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
+import { AccountPrefs } from "src/ent/generated/account_prefs";
+import { AccountPrefs2 } from "src/ent/generated/account_prefs_2";
 
 export interface AccountEditInput {
   name?: string;
   phoneNumber?: string;
   accountState?: AccountState | null;
+  accountPrefs?: AccountPrefs | null;
+  accountPrefsList?: AccountPrefs2[] | null;
 }
 
 export type EditAccountActionTriggers = (

@@ -45,13 +45,12 @@ func TestParseFromInputSchema(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	user := schema.Nodes["User"]
+	assert.NotNil(t, user)
 
 	// no table name provided and one automatically generated
-	assert.Equal(t, "users", userConfig.NodeData.TableName)
-	field, err := schema.GetFieldByName("UserConfig", "id")
+	assert.Equal(t, "users", user.NodeData.TableName)
+	field, err := schema.GetFieldByName("User", "id")
 	assert.Nil(t, err)
 	assert.NotNil(t, field)
 }
@@ -84,17 +83,17 @@ func TestCompoundName(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	// still config name because of artifact of go and old schema
-	config := schema.Nodes["PickupLocationConfig"]
-	assert.NotNil(t, config)
+	// still pickupLocation name because of artifact of go and old schema
+	pickupLocation := schema.Nodes["PickupLocation"]
+	assert.NotNil(t, pickupLocation)
 
-	nodeData := config.NodeData
+	nodeData := pickupLocation.NodeData
 	// no table name provided and one automatically generated
 	assert.Equal(t, "pickup_locations", nodeData.TableName)
 
 	// package name correct
 	assert.Equal(t, "pickup_location", nodeData.PackageName)
-	field, err := schema.GetFieldByName("PickupLocationConfig", "id")
+	field, err := schema.GetFieldByName("PickupLocation", "id")
 	assert.Nil(t, err)
 	assert.NotNil(t, field)
 }
@@ -124,11 +123,10 @@ func TestParseInputWithOverridenTable(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	user := schema.Nodes["User"]
+	assert.NotNil(t, user)
 
-	assert.Equal(t, "accounts", userConfig.NodeData.TableName)
+	assert.Equal(t, "accounts", user.NodeData.TableName)
 }
 
 func TestParseInputWithForeignKey(t *testing.T) {
@@ -172,18 +170,16 @@ func TestParseInputWithForeignKey(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
-	eventConfig := schema.Nodes["EventConfig"]
-	assert.NotNil(t, eventConfig)
+	event := schema.Nodes["Event"]
+	assert.NotNil(t, event)
 
-	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	userEdge := event.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.NotNil(t, userEdge)
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	user := schema.Nodes["User"]
+	assert.NotNil(t, user)
 
-	eventsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Events")
+	eventsEdge := user.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Events")
 	assert.NotNil(t, eventsEdge)
 }
 
@@ -270,19 +266,17 @@ func TestParseInputWithForeignKeyIndexDisabled(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
-	eventConfig := schema.Nodes["EventConfig"]
-	assert.NotNil(t, eventConfig)
+	eventInfo := schema.Nodes["Event"]
+	assert.NotNil(t, eventInfo)
 
 	// hmm should there be a fieldEdge here? it seems like yes
-	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	userEdge := eventInfo.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.NotNil(t, userEdge)
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
 
-	eventsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Events")
+	eventsEdge := userInfo.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Events")
 	assert.Nil(t, eventsEdge)
 }
 
@@ -326,19 +320,17 @@ func TestParseInputWithForeignKeyWithCustomName(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
-	eventConfig := schema.Nodes["EventConfig"]
-	assert.NotNil(t, eventConfig)
+	eventInfo := schema.Nodes["Event"]
+	assert.NotNil(t, eventInfo)
 
-	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	userEdge := eventInfo.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.NotNil(t, userEdge)
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
 
 	// edge name is different since name was given
-	createdEventsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("CreatedEvents")
+	createdEventsEdge := userInfo.NodeData.EdgeInfo.GetForeignKeyEdgeByName("CreatedEvents")
 	assert.NotNil(t, createdEventsEdge)
 }
 
@@ -387,6 +379,7 @@ func TestMultipleForeignKeysDuplicateEdgeName(t *testing.T) {
 	// errors because duplicate edge name since edgeName wasn't given for either
 	s, err := parseFromInputSchema(inputSchema, base.GoLang)
 	require.Error(t, err)
+	require.Regexp(t, "To have multiple ForeignKey Edges", err.Error())
 	require.Nil(t, s)
 }
 
@@ -436,24 +429,22 @@ func TestMultipleForeignKeysOneEdgeName(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
-	requestConfig := schema.Nodes["RequestConfig"]
-	assert.NotNil(t, requestConfig)
+	requestInfo := schema.Nodes["Request"]
+	assert.NotNil(t, requestInfo)
 
-	helperEdge := requestConfig.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
+	helperEdge := requestInfo.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
 	assert.NotNil(t, helperEdge)
 
-	creatorEdge := requestConfig.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
+	creatorEdge := requestInfo.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
 	assert.NotNil(t, creatorEdge)
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
 
-	requestsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Requests")
+	requestsEdge := userInfo.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Requests")
 	assert.NotNil(t, requestsEdge)
 
-	helpedRequestsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("helpedRequests")
+	helpedRequestsEdge := userInfo.NodeData.EdgeInfo.GetForeignKeyEdgeByName("helpedRequests")
 	assert.NotNil(t, helpedRequestsEdge)
 }
 
@@ -503,24 +494,22 @@ func TestMultipleForeignKeys(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
-	requestConfig := schema.Nodes["RequestConfig"]
-	assert.NotNil(t, requestConfig)
+	requestInfo := schema.Nodes["Request"]
+	assert.NotNil(t, requestInfo)
 
-	helperEdge := requestConfig.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
+	helperEdge := requestInfo.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
 	assert.NotNil(t, helperEdge)
 
-	creatorEdge := requestConfig.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
+	creatorEdge := requestInfo.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
 	assert.NotNil(t, creatorEdge)
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
 
-	requestsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("createdRequests")
+	requestsEdge := userInfo.NodeData.EdgeInfo.GetForeignKeyEdgeByName("createdRequests")
 	assert.NotNil(t, requestsEdge)
 
-	helpedRequestsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("helpedRequests")
+	helpedRequestsEdge := userInfo.NodeData.EdgeInfo.GetForeignKeyEdgeByName("helpedRequests")
 	assert.NotNil(t, helpedRequestsEdge)
 }
 
@@ -564,26 +553,24 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
-	eventConfig := schema.Nodes["EventConfig"]
-	assert.NotNil(t, eventConfig)
+	eventInfo := schema.Nodes["Event"]
+	assert.NotNil(t, eventInfo)
 
-	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	userEdge := eventInfo.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.NotNil(t, userEdge)
 	assert.Equal(t, userEdge.NodeInfo.Node, "User")
 	assert.Equal(t, userEdge.InverseEdge.Name, "CreatedEvents")
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
 
-	eventsEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
+	eventsEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
 	assert.NotNil(t, eventsEdge)
 	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
 
 	// 2 nodes, 1 edge
-	testConsts(t, eventConfig.NodeData.ConstantGroups, 1, 0)
-	testConsts(t, userConfig.NodeData.ConstantGroups, 1, 1)
+	testConsts(t, eventInfo.NodeData.ConstantGroups, 1, 0)
+	testConsts(t, userInfo.NodeData.ConstantGroups, 1, 1)
 }
 
 func TestParseInputWitPrivateFieldEdge(t *testing.T) {
@@ -629,11 +616,10 @@ func TestParseInputWitPrivateFieldEdge(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
-	eventConfig := schema.Nodes["EventConfig"]
-	assert.NotNil(t, eventConfig)
+	eventInfo := schema.Nodes["Event"]
+	assert.NotNil(t, eventInfo)
 
-	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	userEdge := eventInfo.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.Nil(t, userEdge)
 }
 
@@ -719,28 +705,26 @@ func TestParseInputWithFieldEdgeAndNoEdgeInSource(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
-	eventConfig := schema.Nodes["EventConfig"]
-	assert.NotNil(t, eventConfig)
+	eventInfo := schema.Nodes["Event"]
+	assert.NotNil(t, eventInfo)
 
-	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	userEdge := eventInfo.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.NotNil(t, userEdge)
 	assert.Equal(t, userEdge.NodeInfo.Node, "User")
 	assert.Equal(t, userEdge.InverseEdge.Name, "CreatedEvents")
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
 
-	eventsEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
+	eventsEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
 	assert.NotNil(t, eventsEdge)
 	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
 	assert.Equal(t, eventsEdge.HideFromGraphQL(), false)
 	assert.Equal(t, eventsEdge.EdgeConst, "UserToCreatedEventsEdge")
 
 	// 2 nodes, 1 edge
-	testConsts(t, eventConfig.NodeData.ConstantGroups, 1, 0)
-	testConsts(t, userConfig.NodeData.ConstantGroups, 1, 1)
+	testConsts(t, eventInfo.NodeData.ConstantGroups, 1, 0)
+	testConsts(t, userInfo.NodeData.ConstantGroups, 1, 1)
 }
 
 func TestParseInputWithFieldEdgeAndNoEdgeInSourceMoreOptions(t *testing.T) {
@@ -783,8 +767,7 @@ func TestParseInputWithFieldEdgeAndNoEdgeInSourceMoreOptions(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	// still config name because of artifact of go and old schema
-	eventConfig := schema.Nodes["EventConfig"]
+	eventConfig := schema.Nodes["Event"]
 	assert.NotNil(t, eventConfig)
 
 	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
@@ -792,11 +775,10 @@ func TestParseInputWithFieldEdgeAndNoEdgeInSourceMoreOptions(t *testing.T) {
 	assert.Equal(t, userEdge.NodeInfo.Node, "User")
 	assert.Equal(t, userEdge.InverseEdge.Name, "CreatedEvents")
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
 
-	eventsEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
+	eventsEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
 	assert.NotNil(t, eventsEdge)
 	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
 	// these 2 are different from above test
@@ -805,7 +787,7 @@ func TestParseInputWithFieldEdgeAndNoEdgeInSourceMoreOptions(t *testing.T) {
 
 	// 2 nodes, 1 edge
 	testConsts(t, eventConfig.NodeData.ConstantGroups, 1, 0)
-	testConsts(t, userConfig.NodeData.ConstantGroups, 1, 1)
+	testConsts(t, userInfo.NodeData.ConstantGroups, 1, 1)
 }
 
 // has symmetric and inverse edge!
@@ -852,24 +834,23 @@ func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	// still config name because of artifact of go and old schema
-	userConfig := schema.Nodes["UserConfig"]
-	assert.NotNil(t, userConfig)
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
 
-	edgeGroup := userConfig.NodeData.EdgeInfo.GetAssociationEdgeGroupByStatusName("FriendshipStatus")
+	edgeGroup := userInfo.NodeData.EdgeInfo.GetAssociationEdgeGroupByStatusName("FriendshipStatus")
 	require.NotNil(t, edgeGroup)
 
-	friendsEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("Friends")
+	friendsEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("Friends")
 	require.NotNil(t, friendsEdge)
 	assert.True(t, friendsEdge.Symmetric)
 	require.NotNil(t, edgeGroup.GetAssociationByName("Friends"))
 
-	friendsRequestSentEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("FriendRequestsSent")
+	friendsRequestSentEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("FriendRequestsSent")
 	require.NotNil(t, friendsRequestSentEdge)
 	assert.NotNil(t, friendsRequestSentEdge.InverseEdge)
 	require.NotNil(t, edgeGroup.GetAssociationByName("FriendRequestsSent"))
 
-	friendRequestsReceivedEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("FriendRequestsReceived")
+	friendRequestsReceivedEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("FriendRequestsReceived")
 	require.NotNil(t, friendRequestsReceivedEdge)
 	// inverse edge not added to map
 	//	require.NotNil(t, edgeGroup.GetAssociationByName("FriendRequestsReceived"))
@@ -912,10 +893,10 @@ func TestParseInputWithPolymorphicFieldEdge(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
-	addressCfg := schema.Nodes["AddressConfig"]
-	assert.NotNil(t, addressCfg)
+	addressInfo := schema.Nodes["Address"]
+	assert.NotNil(t, addressInfo)
 
-	ownerEdge := addressCfg.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
 	assert.NotNil(t, ownerEdge)
 }
 
@@ -976,18 +957,18 @@ func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	addressCfg := schema.Nodes["AddressConfig"]
-	require.NotNil(t, addressCfg)
+	addressInfo := schema.Nodes["Address"]
+	require.NotNil(t, addressInfo)
 
-	ownerEdge := addressCfg.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
 	require.NotNil(t, ownerEdge)
-	addressesEdge := addressCfg.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	addressesEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
 	require.NotNil(t, addressesEdge)
 	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
 	// TODO tied to IndexedEdge.GetGraphQLConnectionName
 	assert.Equal(t, "", addressesEdge.GetGraphQLConnectionName())
 
-	userCfg := schema.Nodes["UserConfig"]
+	userCfg := schema.Nodes["User"]
 	assert.NotNil(t, userCfg)
 
 	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
@@ -1075,18 +1056,18 @@ func TestParseInputWithMultiplePolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	addressCfg := schema.Nodes["AddressConfig"]
-	require.NotNil(t, addressCfg)
+	addressInfo := schema.Nodes["Address"]
+	require.NotNil(t, addressInfo)
 
-	ownerEdge := addressCfg.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
 	require.NotNil(t, ownerEdge)
-	addressesEdge := addressCfg.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	addressesEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
 	require.NotNil(t, addressesEdge)
 	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
 	// TODO tied to IndexedEdge.GetGraphQLConnectionName
 	assert.Equal(t, "", addressesEdge.GetGraphQLConnectionName())
 
-	userCfg := schema.Nodes["UserConfig"]
+	userCfg := schema.Nodes["User"]
 	assert.NotNil(t, userCfg)
 
 	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
@@ -1096,7 +1077,7 @@ func TestParseInputWithMultiplePolymorphicFieldEdgeInverseTypes(t *testing.T) {
 
 	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "UserToAddressesConnection")
 
-	fooEdge := addressCfg.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("fooIDS")
+	fooEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("fooIDS")
 	require.NotNil(t, fooEdge)
 	assert.Equal(t, fooEdge.TsEdgeQueryName(), "FooToAddressesQuery")
 
@@ -1160,13 +1141,13 @@ func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
-	addressCfg := schema.Nodes["AddressConfig"]
-	assert.NotNil(t, addressCfg)
+	addressInfo := schema.Nodes["Address"]
+	assert.NotNil(t, addressInfo)
 
-	ownerEdge := addressCfg.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
 	assert.NotNil(t, ownerEdge)
 
-	userCfg := schema.Nodes["UserConfig"]
+	userCfg := schema.Nodes["User"]
 	assert.NotNil(t, userCfg)
 
 	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("ownerIDS")
@@ -1265,7 +1246,7 @@ func TestWithPatterns(t *testing.T) {
 	assert.Equal(t, edge0.InverseEdgeType.String, string(edge1.EdgeType))
 	assert.Equal(t, edge1.InverseEdgeType.String, string(edge0.EdgeType))
 
-	userCfg := schema.Nodes["UserConfig"]
+	userCfg := schema.Nodes["User"]
 	// user node and inverse edge
 	testConsts(t, userCfg.NodeData.ConstantGroups, 1, 1)
 
@@ -1274,21 +1255,22 @@ func TestWithPatterns(t *testing.T) {
 	require.NotNil(t, likesEdge)
 	assert.Len(t, userCfg.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "UserToLikedObjects", likesEdge.TsEdgeConst)
-	assert.Equal(t, "AssocEdge", likesEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
+
+	assert.Equal(t, tsimport.NewEntImportPath("AssocEdge"), likesEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}))
 	assert.Equal(t, "UserToLikedObjectsQueryBase", likesEdge.EdgeQueryBase())
 	assert.Equal(t, "UserToLikedObjectsEdge", likesEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "UserToLikedObjectsQuery", likesEdge.TsEdgeQueryName())
 	assert.False(t, likesEdge.CreateEdge())
 	assert.True(t, likesEdge.PolymorphicEdge())
 
-	postCfg := schema.Nodes["PostConfig"]
+	postInfo := schema.Nodes["Post"]
 	//	post node and no edge
-	testConsts(t, postCfg.NodeData.ConstantGroups, 1, 0)
-	likersEdge := postCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
+	testConsts(t, postInfo.NodeData.ConstantGroups, 1, 0)
+	likersEdge := postInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
 	require.NotNil(t, likersEdge)
-	assert.Len(t, postCfg.NodeData.EdgeInfo.Associations, 1)
+	assert.Len(t, postInfo.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "LikedPostToLikers", likersEdge.TsEdgeConst)
-	assert.Equal(t, "LikedPostToLikersEdge", likersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
+	assert.Equal(t, tsimport.NewLocalEntImportPath("LikedPostToLikersEdge"), likersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}))
 	assert.Equal(t, "LikedPostToLikersQuery", likersEdge.EdgeQueryBase())
 	assert.Equal(t, "PostToLikersEdge", likersEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "PostToLikersQuery", likersEdge.TsEdgeQueryName())
@@ -1296,13 +1278,13 @@ func TestWithPatterns(t *testing.T) {
 	assert.False(t, likersEdge.PolymorphicEdge())
 
 	// group node and no edge
-	groupCfg := schema.Nodes["GroupConfig"]
-	testConsts(t, groupCfg.NodeData.ConstantGroups, 1, 0)
-	likersEdge2 := groupCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
+	groupInfo := schema.Nodes["Group"]
+	testConsts(t, groupInfo.NodeData.ConstantGroups, 1, 0)
+	likersEdge2 := groupInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
 	require.NotNil(t, likersEdge2)
-	assert.Len(t, groupCfg.NodeData.EdgeInfo.Associations, 1)
+	assert.Len(t, groupInfo.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "LikedPostToLikers", likersEdge2.TsEdgeConst)
-	assert.Equal(t, "LikedPostToLikersEdge", likersEdge2.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
+	assert.Equal(t, tsimport.NewLocalEntImportPath("LikedPostToLikersEdge"), likersEdge2.AssocEdgeBaseImport(&codegenapi.DummyConfig{}))
 	assert.Equal(t, "LikedPostToLikersQuery", likersEdge2.EdgeQueryBase())
 	assert.Equal(t, "GroupToLikersEdge", likersEdge2.TsEdgeQueryEdgeName())
 	assert.Equal(t, "GroupToLikersQuery", likersEdge2.TsEdgeQueryName())
@@ -1318,7 +1300,7 @@ func TestWithPatterns(t *testing.T) {
 	patternLikersEdge := likersPattern.AssocEdges["likers"]
 	require.NotNil(t, patternLikersEdge)
 	assert.Equal(t, "LikedPostToLikers", patternLikersEdge.TsEdgeConst)
-	assert.Equal(t, "AssocEdge", patternLikersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
+	assert.Equal(t, tsimport.NewEntImportPath("AssocEdge"), patternLikersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}))
 	assert.Equal(t, "LikedPostToLikersQueryBase", patternLikersEdge.EdgeQueryBase())
 	assert.Equal(t, "LikedPostToLikersEdge", patternLikersEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "LikedPostToLikersQuery", patternLikersEdge.TsEdgeQueryName())
@@ -1404,7 +1386,155 @@ func TestWithMultipleEnumsInPattern(t *testing.T) {
 	assert.Len(t, schema.Enums, 2)
 	for _, info := range schema.Enums {
 		assert.True(t, info.OwnEnumFile(), true)
+		assert.NotNil(t, info.GQLEnum)
 	}
+}
+
+func TestWithEnumInPatternHiddenFromGraphQL(t *testing.T) {
+	n := &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "id",
+				Type: &input.FieldType{
+					DBType: input.UUID,
+				},
+				PrimaryKey: true,
+			},
+			{
+				Name: "DayOfWeek",
+				Type: &input.FieldType{
+					Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+					DBType:      input.StringEnum,
+					Type:        "DayOfWeek",
+					GraphQLType: "DayOfWeek",
+				},
+				HideFromGraphQL: true,
+				PatternName:     "days",
+			},
+		},
+	}
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Event": n,
+			"Group": n,
+		},
+		Patterns: map[string]*input.Pattern{
+			"days": {
+				Name: "days",
+				Fields: []*input.Field{
+					{
+						Name: "DayOfWeek",
+						Type: &input.FieldType{
+							Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+							DBType:      input.StringEnum,
+							Type:        "DayOfWeek",
+							GraphQLType: "DayOfWeek",
+						},
+						PatternName:     "days",
+						HideFromGraphQL: true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	assert.Len(t, schema.Patterns, 1)
+
+	assert.Len(t, schema.Enums, 1)
+	for _, info := range schema.Enums {
+		assert.True(t, info.OwnEnumFile(), true)
+		assert.Nil(t, info.GQLEnum)
+	}
+}
+
+func TestWithEnumFromField(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "DayOfWeek",
+						Type: &input.FieldType{
+							Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+							DBType:      input.StringEnum,
+							Type:        "DayOfWeek",
+							GraphQLType: "DayOfWeek",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	assert.Len(t, schema.Patterns, 0)
+
+	assert.Len(t, schema.Enums, 1)
+	for _, enum := range schema.Enums {
+		assert.False(t, enum.OwnEnumFile())
+		assert.NotNil(t, enum.Enum)
+		assert.NotNil(t, enum.GQLEnum)
+	}
+	tsEnums := schema.Nodes["Event"].NodeData.GetTSEnums()
+	require.Len(t, tsEnums, 1)
+}
+
+func TestWithEnumFromFieldHiddenFromGraphQL(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "DayOfWeek",
+						Type: &input.FieldType{
+							Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+							DBType:      input.StringEnum,
+							Type:        "DayOfWeek",
+							GraphQLType: "DayOfWeek",
+						},
+						HideFromGraphQL: true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	assert.Len(t, schema.Patterns, 0)
+
+	assert.Len(t, schema.Enums, 1)
+	for _, enum := range schema.Enums {
+		assert.False(t, enum.OwnEnumFile())
+		assert.NotNil(t, enum.Enum)
+		assert.Nil(t, enum.GQLEnum)
+	}
+	tsEnums := schema.Nodes["Event"].NodeData.GetTSEnums()
+	require.Len(t, tsEnums, 1)
 }
 
 func TestWithInverseFieldEdgeInPatterns(t *testing.T) {
@@ -1490,7 +1620,7 @@ func TestWithInverseFieldEdgeInPatterns(t *testing.T) {
 	assert.False(t, edge0.InverseEdgeType.Valid)
 	assert.Equal(t, edge0.EdgeTable, "user_foos_edges")
 
-	userCfg := schema.Nodes["UserConfig"]
+	userCfg := schema.Nodes["User"]
 	// user node and edge
 	testConsts(t, userCfg.NodeData.ConstantGroups, 1, 1)
 
@@ -1499,7 +1629,7 @@ func TestWithInverseFieldEdgeInPatterns(t *testing.T) {
 	require.NotNil(t, edge)
 	assert.Len(t, userCfg.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "UserToFoos", edge.TsEdgeConst)
-	assert.Equal(t, "AssocEdge", edge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
+	assert.Equal(t, tsimport.NewEntImportPath("AssocEdge"), edge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}))
 	assert.Equal(t, "UserToFoosQueryBase", edge.EdgeQueryBase())
 	assert.Equal(t, "UserToFoosEdge", edge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "UserToFoosQuery", edge.TsEdgeQueryName())
@@ -1515,13 +1645,13 @@ func TestWithInverseFieldEdgeInPatterns(t *testing.T) {
 	assert.Equal(t, "Foos", edge.CamelCaseEdgeName())
 	assert.Equal(t, "Ent", edge.NodeInfo.Node)
 
-	postCfg := schema.Nodes["PostConfig"]
+	postInfo := schema.Nodes["Post"]
 	//	post node and no edge
-	testConsts(t, postCfg.NodeData.ConstantGroups, 1, 0)
+	testConsts(t, postInfo.NodeData.ConstantGroups, 1, 0)
 
 	// group node and no edge
-	groupCfg := schema.Nodes["GroupConfig"]
-	testConsts(t, groupCfg.NodeData.ConstantGroups, 1, 0)
+	groupInfo := schema.Nodes["Group"]
+	testConsts(t, groupInfo.NodeData.ConstantGroups, 1, 0)
 
 	// nothing for node
 	testConsts(t, schema.Patterns["node"].ConstantGroups, 0, 0)
@@ -1636,7 +1766,7 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	assert.Equal(t, edge0.InverseEdgeType.String, string(edge1.EdgeType))
 	assert.Equal(t, edge1.InverseEdgeType.String, string(edge0.EdgeType))
 
-	userCfg := schema.Nodes["UserConfig"]
+	userCfg := schema.Nodes["User"]
 	// user node and inverse edge
 	testConsts(t, userCfg.NodeData.ConstantGroups, 1, 1)
 
@@ -1645,22 +1775,22 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	require.NotNil(t, likesEdge)
 	assert.Len(t, userCfg.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "UserToLikes", likesEdge.TsEdgeConst)
-	assert.Equal(t, "AssocEdge", likesEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
+	assert.Equal(t, tsimport.NewEntImportPath("AssocEdge"), likesEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}))
 	assert.Equal(t, "UserToLikesQueryBase", likesEdge.EdgeQueryBase())
 	assert.Equal(t, "UserToLikesEdge", likesEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "UserToLikesQuery", likesEdge.TsEdgeQueryName())
 	assert.False(t, likesEdge.CreateEdge())
 	assert.True(t, likesEdge.PolymorphicEdge())
 
-	postCfg := schema.Nodes["PostConfig"]
+	postInfo := schema.Nodes["Post"]
 	//	post node and no edge
-	testConsts(t, postCfg.NodeData.ConstantGroups, 1, 0)
-	likersEdge := postCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
+	testConsts(t, postInfo.NodeData.ConstantGroups, 1, 0)
+	likersEdge := postInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
 	require.NotNil(t, likersEdge)
-	assert.Len(t, postCfg.NodeData.EdgeInfo.Associations, 1)
+	assert.Len(t, postInfo.NodeData.EdgeInfo.Associations, 1)
 	// these 3 are wrong and lead to codegen issues
 	assert.Equal(t, "ObjectToLikers", likersEdge.TsEdgeConst)
-	assert.Equal(t, "ObjectToLikersEdge", likersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
+	assert.Equal(t, tsimport.NewLocalEntImportPath("ObjectToLikersEdge"), likersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}))
 	assert.Equal(t, "ObjectToLikersQuery", likersEdge.EdgeQueryBase())
 	assert.Equal(t, "PostToLikersEdge", likersEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "PostToLikersQuery", likersEdge.TsEdgeQueryName())
@@ -1668,13 +1798,13 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	assert.False(t, likersEdge.PolymorphicEdge())
 
 	// group node and no edge
-	groupCfg := schema.Nodes["GroupConfig"]
-	testConsts(t, groupCfg.NodeData.ConstantGroups, 1, 0)
-	likersEdge2 := groupCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
+	groupInfo := schema.Nodes["Group"]
+	testConsts(t, groupInfo.NodeData.ConstantGroups, 1, 0)
+	likersEdge2 := groupInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
 	require.NotNil(t, likersEdge2)
-	assert.Len(t, groupCfg.NodeData.EdgeInfo.Associations, 1)
+	assert.Len(t, groupInfo.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "ObjectToLikers", likersEdge2.TsEdgeConst)
-	assert.Equal(t, "ObjectToLikersEdge", likersEdge2.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
+	assert.Equal(t, tsimport.NewLocalEntImportPath("ObjectToLikersEdge"), likersEdge2.AssocEdgeBaseImport(&codegenapi.DummyConfig{}))
 	assert.Equal(t, "ObjectToLikersQuery", likersEdge2.EdgeQueryBase())
 	assert.Equal(t, "GroupToLikersEdge", likersEdge2.TsEdgeQueryEdgeName())
 	assert.Equal(t, "GroupToLikersQuery", likersEdge2.TsEdgeQueryName())
@@ -1690,7 +1820,7 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	patternLikersEdge := likersPattern.AssocEdges["likers"]
 	require.NotNil(t, patternLikersEdge)
 	assert.Equal(t, "ObjectToLikers", patternLikersEdge.TsEdgeConst)
-	assert.Equal(t, "AssocEdge", patternLikersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
+	assert.Equal(t, tsimport.NewEntImportPath("AssocEdge"), patternLikersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}))
 	assert.Equal(t, "ObjectToLikersQueryBase", patternLikersEdge.EdgeQueryBase())
 	assert.Equal(t, "ObjectToLikersEdge", patternLikersEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "ObjectToLikersQuery", patternLikersEdge.TsEdgeQueryName())
@@ -1777,5 +1907,77 @@ func TestDuplicateNames(t *testing.T) {
 
 	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.GoLang)
 	require.Nil(t, schema)
-	require.Equal(t, err.Error(), "there's already an entity with GraphQL name Profile")
+	require.Equal(t, err.Error(), "there's already an entity with GraphQL name ProfileType")
+}
+
+func TestMultipleActionsHiddenFromGraphQL(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+				Actions: []*input.Action{
+					{
+						Operation: ent.CreateAction,
+					},
+					{
+						Operation:        ent.CreateAction,
+						HideFromGraphQL:  true,
+						CustomInputName:  "CustomCreateUserInput",
+						CustomActionName: "CustomCreateHolidayAction",
+					},
+				},
+			},
+			"Note": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "body",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+				Actions: []*input.Action{
+					{
+						Operation:       ent.DeleteAction,
+						HideFromGraphQL: true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	user := schema.Nodes["User"]
+	assert.NotNil(t, user)
+
+	note := schema.Nodes["Note"]
+	assert.NotNil(t, note)
+
+	assert.Len(t, user.NodeData.ActionInfo.Actions, 2)
+	assert.Len(t, note.NodeData.ActionInfo.Actions, 1)
 }

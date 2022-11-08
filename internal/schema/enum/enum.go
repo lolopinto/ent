@@ -132,6 +132,10 @@ func (g GQLEnum) GetGraphQLNames() []string {
 	return ret
 }
 
+func (g GQLEnum) GetGraphQLType() string {
+	return g.Name + "Type"
+}
+
 func GQLEnumEqual(e1, e2 *GQLEnum) bool {
 	ret := change.CompareNilVals(e1 == nil, e2 == nil)
 	if ret != nil {
@@ -298,8 +302,8 @@ func (i *Input) getValuesFromIntEnumMap(m map[string]int) ([]Data, []Data) {
 func NewInputFromEnumType(enumType enttype.EnumeratedType, fkey bool) (*Input, error) {
 	data := enumType.GetEnumData()
 	input := &Input{
-		TSName:               enumType.GetTSName(),
-		GQLName:              enumType.GetGraphQLName(),
+		TSName:               data.TSName,
+		GQLName:              data.GraphQLName,
 		GQLType:              enumType.GetTSType(),
 		Values:               data.Values,
 		EnumMap:              data.EnumMap,

@@ -409,7 +409,7 @@ export class Orchestrator<
           ops.push(edgeOp);
           const edgeData = edgeDatas.get(edgeType);
           if (!edgeData) {
-            throw new Error(`could not load edge data for ${edgeType}`);
+            throw new Error(`could not load edge data for '${edgeType}'`);
           }
 
           if (edgeData.symmetricEdge) {

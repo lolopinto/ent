@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/stretchr/testify/assert"
@@ -17,14 +16,15 @@ func TestPrimaryKeyFieldConstraint(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {FieldMap, StringType, BaseEntSchema} from "{schema}";
+				`import {EntSchema, StringType} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const UserSchema = new EntSchema({
+					fields: {
 						firstName: StringType(),
 						lastName: StringType(),
-					};
-				}
+					},
+				});
+				export default UserSchema;
 			`,
 			),
 		},
@@ -42,28 +42,30 @@ func TestForeignKeyFieldConstraint(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {FieldMap, StringType, BaseEntSchema} from "{schema}";
+				`import {StringType, EntSchema} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						firstName: StringType(),
 						lastName: StringType(),
-					};
-				}
+					},
+				});
+				export default User;
 			`,
 			),
 			"contact.ts": testhelper.GetCodeWithSchema(
-				`import {FieldMap, StringType, BaseEntSchema, UUIDType} from "{schema}";
+				`import {StringType, EntSchema, UUIDType} from "{schema}";
 
-				export default class Contact extends BaseEntSchema {
-					fields: FieldMap = {
+				const Contact = new EntSchema({
+					fields: {
 						firstName: StringType(),
 						lastName: StringType(),
 						ownerID: UUIDType({
 							foreignKey: {schema:"User", column:"ID"},
 						}),
-					};
-				}
+					},
+				});
+				export default Contact;
 			`,
 			),
 		},
@@ -95,17 +97,18 @@ func TestUniqueFieldConstraint(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {FieldMap, StringType, BaseEntSchema} from "{schema}";
+				`import {StringType, EntSchema} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						firstName: StringType(),
 						lastName: StringType(),
 						emailAddress: StringType({
 							unique: true,
 						})
-					};
-				}
+					},
+				});
+				export default User;
 			`,
 			),
 		},
@@ -162,34 +165,36 @@ func TestConstraints(t *testing.T) {
 		"multi-column-unique key": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(`
-					import {FieldMap, StringType, BaseEntSchema} from "{schema}";
+					import {StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: FieldMap = {
+					export const User = new EntSchema({
+						fields: {
 							firstName: StringType(),
 							lastName: StringType(),
-						};
-					}
+						},
+					});
+					export default User;
 				`),
 				"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, FieldMap, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+					import {EntSchema, FieldMap, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
 
-					export default class Contact extends BaseEntSchema {
-						fields: FieldMap = {
+					const Contact = new EntSchema({
+						fields: {
 							emailAddress: StringType(),
 							userID: UUIDType({
 								foreignKey: {schema:"User", column:"ID"},
 							}),
-						};
+						},
 
-						constraints: Constraint[] = [
+						constraints: [
 							{
 								name: "contacts_unique_email",
 								type: ConstraintType.Unique,
 								columns: ["emailAddress", "userID"],
 							},
-						];
-					}
+						],
+					});
+					export default Contact;
 				`),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -219,34 +224,35 @@ func TestConstraints(t *testing.T) {
 		"multi-column-foreign key": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(`
-					import {FieldMap, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {StringType, EntSchema, ConstraintType} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: FieldMap = {
+					const User = new EntSchema({
+						fields: {
 							firstName: StringType(),
 							lastName: StringType(),
 							emailAddress: StringType(),
-						};
+						},
 
-						constraints: Constraint[] = [
+						constraints: [
 							{
 								name: "users_unique",
 								type: ConstraintType.Unique,
 								columns: ["id", "emailAddress"],
 							},
-						];
-					}
+						],
+					});
+					export default User;
 				`),
 				"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, FieldMap, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+					import {EntSchema, UUIDType, StringType, ConstraintType} from "{schema}";
 
-					export default class Contact extends BaseEntSchema {
-						fields: FieldMap = {
+					const Contact = new EntSchema({
+						fields: {
 							emailAddress: StringType(),
 							userID: UUIDType(),
-						};
+						},
 
-						constraints: Constraint[] = [
+						constraints: [
 							{
 								name: "contacts_user_fkey",
 								type: ConstraintType.ForeignKey,
@@ -257,8 +263,9 @@ func TestConstraints(t *testing.T) {
 									columns: ["ID", "emailAddress"],
 								}
 							},
-						];
-					}
+						],
+					});
+					export default Contact;
 				`),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -289,22 +296,23 @@ func TestConstraints(t *testing.T) {
 		"check constraint no columns": {
 			code: map[string]string{
 				"item.ts": testhelper.GetCodeWithSchema(`
-					import {FieldMap, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {FloatType, EntSchema, ConstraintType} from "{schema}";
 
-					export default class Item extends BaseEntSchema {
-						fields: FieldMap = {
+					const Item = new EntSchema({
+						fields: {
 							price: FloatType(),
-						};
+						},
 
-						constraints: Constraint[] = [
+						constraints: [
 							{
 								name: "item_positive_price",
 								type: ConstraintType.Check,
 								condition: 'price > 0',
 								columns: [],
 							},
-						];
-					}`),
+						],
+					});
+					export default Item;`),
 			},
 			expectedMap: map[string]*schema.NodeData{
 				"Item": {
@@ -320,15 +328,15 @@ func TestConstraints(t *testing.T) {
 		"check constraint multiple columns": {
 			code: map[string]string{
 				"item.ts": testhelper.GetCodeWithSchema(`
-					import {FieldMap, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {FloatType, EntSchema, ConstraintType} from "{schema}";
 
-					export default class Item extends BaseEntSchema {
-						fields: FieldMap = {
+					const Item = new EntSchema({
+						fields: {
 							price: FloatType(),
 							discount_price: FloatType(),
-						};
+						},
 
-						constraints: Constraint[] = [
+						constraints: [
 							{
 								name: "item_positive_price",
 								type: ConstraintType.Check,
@@ -352,8 +360,9 @@ func TestConstraints(t *testing.T) {
 								condition: 'price > discount_price',
 								columns: ['price', 'discount_price'],
 							},
-						];
-					}`),
+						],
+					});
+					export default Item;`),
 			},
 			expectedMap: map[string]*schema.NodeData{
 				"Item": {
@@ -434,14 +443,15 @@ func TestEnumConstraints(t *testing.T) {
 		"enum-type constraint": {
 			code: map[string]string{
 				"request.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, FieldMap, EnumType, StringType, BaseEntSchema} from "{schema}";
+					`import {Schema, EnumType, StringType, EntSchema} from "{schema}";
 
-				export default class Request extends BaseEntSchema {
-					fields: FieldMap = {
+				const Request = new EntSchema({
+					fields: {
 						info: StringType(),
 						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
-					}
-				}
+					},
+				});
+				export default Request;
 				`,
 				),
 			},
@@ -455,14 +465,15 @@ func TestEnumConstraints(t *testing.T) {
 		"enum values constraint": {
 			code: map[string]string{
 				"request.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, FieldMap, EnumType, StringType, BaseEntSchema} from "{schema}";
+					`import {EnumType, StringType, EntSchema} from "{schema}";
 
-				export default class Request extends BaseEntSchema {
-					fields: FieldMap = {
+				const Request = new EntSchema({
+					fields: {
 						info: StringType(),
 						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
-					}
-				}
+					},
+				});
+				export default Request;
 				`,
 				),
 			},
@@ -499,15 +510,16 @@ func TestEnumConstraints(t *testing.T) {
 						];
 					}`),
 				"request.ts": testhelper.GetCodeWithSchema(`
-					import {Schema, FieldMap, StringType, EnumType, BaseEntSchema} from "{schema}";
+					import {Schema, StringType, EnumType, EntSchema} from "{schema}";
 
-					export default class Request extends BaseEntSchema {
-						fields: FieldMap = {
+					const Request = new EntSchema({
+						fields: {
 							status: EnumType({
 								foreignKey: {schema:"RequestStatus", column:"status"},
 							}),
-						};
-					}`),
+						},
+					});
+					export default Request;`),
 			},
 			expectedMap: map[string]*schema.NodeData{
 				"RequestStatus": {
@@ -560,13 +572,15 @@ func TestEnumConstraints(t *testing.T) {
 						];
 					}`),
 				"request.ts": testhelper.GetCodeWithSchema(`
-					import {Schema, FieldMap, StringType, EnumType, BaseEntSchema} from "{schema}";
+					import {Schema, StringType, EnumType, EntSchema} from "{schema}";
 
-					export default class Request extends BaseEntSchema {
-						fields: FieldMap = {
+					const Request = new EntSchema({
+						fields:  {
 							Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
-						};
-					}`),
+						},
+					});
+					export default Request;
+					`),
 			},
 			expectedErr: fmt.Errorf("enum schema with gqlname RequestStatus already exists"),
 		},
@@ -580,35 +594,37 @@ func TestInvalidConstraints(t *testing.T) {
 		"missing fkey field": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(`
-					import {FieldMap, StringType, BaseEntSchema} from "{schema}";
+					import {StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: FieldMap = {
+					const User = new EntSchema({
+						fields: {
 							firstName: StringType(),
 							lastName: StringType(),
 							emailAddress: StringType({
 								unique: true,
 							}),
-						};
-					}
+						},
+					});
+					export default User;
 				`),
 				"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, FieldMap, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+					import {EntSchema, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
 
-					export default class Contact extends BaseEntSchema {
-						fields: FieldMap = {
+					const Contact = new EntSchema({
+						fields: {
 							emailAddress: StringType(),
 							userID: UUIDType(),
-						};
+						},
 
-						constraints: Constraint[] = [
+						constraints: [
 							{
 								name: "contacts_user_fkey",
 								type: ConstraintType.ForeignKey,
 								columns: ["userID", "emailAddress"],
 							},
-						];
-					}
+						],
+					});
+					export default Contact;
 				`),
 			},
 			expectedErr: fmt.Errorf("ForeignKey cannot be nil when type is ForeignKey"),
@@ -616,48 +632,51 @@ func TestInvalidConstraints(t *testing.T) {
 		"missing condition check constraint": {
 			code: map[string]string{
 				"item.ts": testhelper.GetCodeWithSchema(`
-					import {FieldMap, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {FloatType, EntSchema, ConstraintType} from "{schema}";
 
-					export default class Item extends BaseEntSchema {
-						fields: FieldMap = {
+					const Item = new EntSchema({
+						fields: {
 							price: FloatType(),
-						};
+						},
 
-						constraints: Constraint[] = [
+						constraints:  [
 							{
 								name: "item_positive_price",
 								type: ConstraintType.Check,
 								columns: [],
 							},
-						];
-					}`),
+						],
+					});
+					export default Item;`),
 			},
 			expectedErr: fmt.Errorf("Condition is required when constraint type is Check"),
 		},
 		"fkey on non-unique field": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {FieldMap, StringType, BaseEntSchema} from "{schema}";
+					`import {StringType, EntSchema} from "{schema}";
 
-				export default class User extends BaseEntSchema {
-					fields: FieldMap = {
+				const User = new EntSchema({
+					fields: {
 						firstName: StringType(),
 						lastName: StringType(),
-					};
-				}
+					},
+				});
+				export default User;
 			`,
 				),
 				"contact.ts": testhelper.GetCodeWithSchema(
-					`import {FieldMap, StringType, BaseEntSchema, UUIDType} from "{schema}";
+					`import {StringType, EntSchema, UUIDType} from "{schema}";
 
-				export default class Contact extends BaseEntSchema {
-					fields: FieldMap = {
+				const Contact = new EntSchema({
+					fields: {
 						firstName: StringType({
 							foreignKey: {schema:"User", column:"firstName"},
 						}),
 						lastName: StringType(),
-					};
-				}
+					},
+				});
+				export default Contact;
 			`,
 				),
 			},
@@ -666,26 +685,27 @@ func TestInvalidConstraints(t *testing.T) {
 		"multi-column-foreign on non unique keys": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(`
-					import {FieldMap, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {StringType, EntSchema, ConstraintType} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: FieldMap = {
+					const User = new EntSchema({
+						fields: {
 							firstName: StringType(),
 							lastName: StringType(),
 							emailAddress: StringType(),
-						};
-					}
+						},
+					});
+					export default User;
 				`),
 				"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, FieldMap, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+					import {EntSchema, UUIDType, StringType, ConstraintType} from "{schema}";
 
-					export default class Contact extends BaseEntSchema {
-						fields: FieldMap = {
+					const Contact = new EntSchema({
+						fields: {
 							emailAddress: StringType(),
 							userID: UUIDType(),
-						};
+						},
 
-						constraints: Constraint[] = [
+						constraints: [
 							{
 								name: "contacts_user_fkey",
 								type: ConstraintType.ForeignKey,
@@ -696,8 +716,9 @@ func TestInvalidConstraints(t *testing.T) {
 									columns: ["ID", "emailAddress"],
 								}
 							},
-						];
-					}
+						],
+					});
+					export default Contact;
 				`),
 			},
 			expectedErr: fmt.Errorf("foreign key contacts_user_fkey with columns which aren't unique in table users"),
@@ -711,16 +732,14 @@ func TestFullTextIndex(t *testing.T) {
 		"single-column": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_first_name_idx",
 								columns: ["firstName"],
@@ -728,8 +747,9 @@ func TestFullTextIndex(t *testing.T) {
 									language: 'english',
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -750,19 +770,15 @@ func TestFullTextIndex(t *testing.T) {
 		"multi-column": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {Field, StringType, Index, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_name_idx",
 								columns: ["firstName", "lastName"],
@@ -770,8 +786,9 @@ func TestFullTextIndex(t *testing.T) {
 									language: 'english',
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -792,19 +809,15 @@ func TestFullTextIndex(t *testing.T) {
 		"multi-column-gist": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {Field, StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_name_idx",
 								columns: ["firstName", "lastName"],
@@ -813,8 +826,9 @@ func TestFullTextIndex(t *testing.T) {
 									indexType: "gist",
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -836,19 +850,15 @@ func TestFullTextIndex(t *testing.T) {
 		"multi-column-lang-column": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {Schema, Field, StringType, Index, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_name_idx",
 								columns: ["firstName", "lastName"],
@@ -857,8 +867,9 @@ func TestFullTextIndex(t *testing.T) {
 									indexType: "gist",
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -880,19 +891,15 @@ func TestFullTextIndex(t *testing.T) {
 		"generated-column": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {Schema, StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_name_idx",
 								columns: ["firstName", "lastName"],
@@ -902,8 +909,9 @@ func TestFullTextIndex(t *testing.T) {
 									indexType: "gist",
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -926,16 +934,14 @@ func TestFullTextIndex(t *testing.T) {
 		"lang-andlang-column": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {Field, StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_first_name_idx",
 								columns: ["firstName"],
@@ -944,8 +950,9 @@ func TestFullTextIndex(t *testing.T) {
 									languageColumn: 'language',
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedErr: fmt.Errorf("cannot specify both language and language column for index users_first_name_idx"),
@@ -953,24 +960,23 @@ func TestFullTextIndex(t *testing.T) {
 		"neither-lang-and-lang-column": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import { StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_first_name_idx",
 								columns: ["firstName"],
 								fullText: {
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedErr: fmt.Errorf("have to specify at least one of language and language column for index users_first_name_idx"),
@@ -978,16 +984,14 @@ func TestFullTextIndex(t *testing.T) {
 		"weights-no-generated-column": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {StringType,  EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_first_name_idx",
 								columns: ["firstName"],
@@ -998,8 +1002,9 @@ func TestFullTextIndex(t *testing.T) {
 									},
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedErr: fmt.Errorf("cannot specify weights if no generated column name for index users_first_name_idx"),
@@ -1007,16 +1012,14 @@ func TestFullTextIndex(t *testing.T) {
 		"invalid-weight-passed": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {StringType,  EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_first_name_idx",
 								columns: ["firstName"],
@@ -1028,8 +1031,9 @@ func TestFullTextIndex(t *testing.T) {
 									},
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedErr: fmt.Errorf("invalid field fname passed as weight for index users_first_name_idx"),
@@ -1037,19 +1041,15 @@ func TestFullTextIndex(t *testing.T) {
 		"existing-col-passed-generated-name": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {StringType, Index, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_first_name_idx",
 								columns: ["firstName"],
@@ -1058,8 +1058,9 @@ func TestFullTextIndex(t *testing.T) {
 									generatedColumnName: 'lastName',
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedErr: fmt.Errorf("name lastName already exists for a field and cannot be used as a generated column name for index users_first_name_idx"),
@@ -1067,19 +1068,15 @@ func TestFullTextIndex(t *testing.T) {
 		"duplicated-generated-name": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_first_name_idx",
 								columns: ["firstName", "lastName"],
@@ -1096,8 +1093,9 @@ func TestFullTextIndex(t *testing.T) {
 									generatedColumnName: 'name_idx',
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedErr: fmt.Errorf("already have generated computed column name_idx"),
@@ -1105,16 +1103,14 @@ func TestFullTextIndex(t *testing.T) {
 		"index-type-specified": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_first_name_idx",
 								columns: ["firstName"],
@@ -1123,8 +1119,9 @@ func TestFullTextIndex(t *testing.T) {
 									language: 'english',
 								},
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedErr: fmt.Errorf("if you want to specify the full text index type, specify it in FullText object"),
@@ -1139,23 +1136,22 @@ func TestIndices(t *testing.T) {
 		"valid-indices": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'email',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							email: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_unique_email_idx",
 								columns: ["email"],
 								unique: true
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -1174,23 +1170,22 @@ func TestIndices(t *testing.T) {
 		"list-index-type-specified": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringListType, Index, BaseEntSchema} from "{schema}";
+					`import {StringListType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringListType({
-								name: 'emails',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							emails: StringListType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_emails_idx",
 								columns: ["emails"],
 								indexType: 'gin',
 							},
-						];
-					}`,
+						],
+					});
+					export default User`,
 				),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -1248,11 +1243,13 @@ func TestIndices(t *testing.T) {
 			},
 		},
 		"gist-index-type-specified": {
+			// TODO https://github.com/lolopinto/ent/issues/1029
+			skip: true,
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringListType, Index, BaseEntSchema} from "{schema}";
+					`import {Schema, Field, StringListType, Index, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
+					export default class User = new EntSchema({
 						fields: Field[] = [
 							StringListType({
 								name: 'emails',
@@ -1274,23 +1271,22 @@ func TestIndices(t *testing.T) {
 		"invalid-column": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+					`import {StringType, EntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'email',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							email: StringType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_unique_email_idx",
 								columns: ["email_address"],
 								unique: true
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedErr: fmt.Errorf("invalid field email_address passed as col for index users_unique_email_idx"),
@@ -1333,11 +1329,7 @@ func testConstraints(
 	expectedMap map[string]*schema.NodeData,
 	expectedErr error,
 ) {
-	s, err := testhelper.ParseSchemaForTestFull(
-		t,
-		code,
-		base.TypeScript,
-	)
+	s, err := testhelper.ParseSchemaForTestFull(t, code)
 	if expectedErr != nil {
 		require.Error(t, err)
 		assert.Equal(t, err.Error(), expectedErr.Error())
@@ -1347,7 +1339,7 @@ func testConstraints(
 	}
 
 	for k, expNodeData := range expectedMap {
-		info := s.Nodes[k+"Config"]
+		info := s.Nodes[k]
 		var nodeData *schema.NodeData
 		if info != nil {
 			nodeData = info.NodeData

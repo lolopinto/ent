@@ -403,12 +403,6 @@ function randomDB(): string {
   return "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)] + str;
 }
 
-function isDialect(
-  dialect: Dialect | Table[] | CoreConcept[],
-): dialect is Dialect {
-  return !Array.isArray(dialect);
-}
-
 export class TempDB {
   private db: string;
   private client: PGClient;

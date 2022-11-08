@@ -6,7 +6,6 @@ import (
 
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,43 +16,44 @@ func TestActionWithFieldEdgeFieldConfig(t *testing.T) {
 		t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(
-				`import {BaseEntSchema, Action, FieldMap, StringType, UUIDType, ActionOperation} from "{schema}";
+				`import {EntSchema, StringType, UUIDType, ActionOperation} from "{schema}";
 
-		export default class Address extends BaseEntSchema {
-			fields: FieldMap = {
+		const Address = new EntSchema({
+			fields: {
 				Street: StringType(),
 				City: StringType(),
 				State: StringType(),
 				ZipCode: StringType(), 
-			};
-	}`),
+			},
+		});
+		export default Address;`),
 			"profile.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+				import {EntSchema, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
 
-				export default class Profile extends BaseEntSchema {
-					fields: FieldMap = {
+				const Profile = new EntSchema({
+					fields: {
 						name: StringType(),
 						addressID: UUIDType({fieldEdge: { schema: "Address", inverseEdge: "residents"}}),
-					};
+					},
 
-					actions: Action[] = [
+					actions: [
 						{
 							operation: ActionOperation.Create,
 						},
 						{
 							operation: ActionOperation.Edit,
 						},
-					];
-				};`),
+					],
+				});
+				export default Profile`),
 		},
-		base.TypeScript,
 	)
 	processor, err := codegen.NewTestCodegenProcessor("src/schema", schema, &codegen.CodegenConfig{
 		DisableGraphQLRoot: true,
 	})
 	require.Nil(t, err)
 
-	profileCfg := schema.Nodes["ProfileConfig"]
+	profileCfg := schema.Nodes["Profile"]
 	require.NotNil(t, profileCfg)
 
 	createAction := profileCfg.NodeData.ActionInfo.GetByName("CreateProfileAction")

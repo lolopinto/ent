@@ -1,12 +1,17 @@
-import { EnumType } from "@snowtop/ent";
+import {
+  BooleanType,
+  EnumType,
+  StructType,
+  StructTypeAsList,
+} from "@snowtop/ent";
 import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 import { ActionOperation, StringType } from "@snowtop/ent";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
-import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
-import { TodoEntSchema } from "src/schema/patterns/base";
+import { TodoBaseEntSchema } from "src/schema/patterns/base";
+import { TodoContainerPattern } from "./patterns/todo_pattern";
 
-const AccountSchema = new TodoEntSchema({
-  patterns: [new DeletedAtPattern()],
+const AccountSchema = new TodoBaseEntSchema({
+  patterns: [new TodoContainerPattern()],
 
   fields: {
     Name: StringType(),
@@ -23,6 +28,32 @@ const AccountSchema = new TodoEntSchema({
       defaultValueOnCreate: () => "UNVERIFIED",
       // only viewer can see their account state
       privacyPolicy: AllowIfViewerPrivacyPolicy,
+      hideFromGraphQL: true,
+      // if hidden from graphql and an enum, this also needs to be set
+      // TODO we should have an error for this...
+      // can check import types and see if it makes sense?
+      // if referencing a local import?
+      disableUserGraphQLEditable: true,
+    }),
+    accountPrefs: StructType({
+      nullable: true,
+      tsType: "AccountPrefs",
+      graphQLType: "AccountPrefs",
+      fields: {
+        finishedNux: BooleanType(),
+        enableNotifs: BooleanType(),
+        preferredLanguage: StringType(),
+      },
+    }),
+    accountPrefsList: StructTypeAsList({
+      nullable: true,
+      tsType: "AccountPrefs2",
+      graphQLType: "AccountPrefs2",
+      fields: {
+        finishedNux: BooleanType(),
+        enableNotifs: BooleanType(),
+        preferredLanguage: StringType(),
+      },
     }),
   },
 
