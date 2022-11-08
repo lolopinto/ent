@@ -33,7 +33,6 @@ class BaseTestRunner(object):
             conftest.metadata_with_table_with_index,
             "add index accounts_first_name_idx to accounts",
             "drop index accounts_first_name_idx from accounts",
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_two_tables")
@@ -47,6 +46,9 @@ class BaseTestRunner(object):
         r = new_test_runner(metadata_with_foreign_key)
         assert len(r.compute_changes()) == 2
         testingutils.assert_no_changes_made(r)
+
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_foreign_key, new_table_names=['accounts', 'contacts'])
 
     @pytest.mark.usefixtures("metadata_with_foreign_key_to_same_table")
     def test_compute_changes_with_foreign_key_to_same_table(self, new_test_runner, metadata_with_foreign_key_to_same_table):
@@ -133,7 +135,6 @@ class BaseTestRunner(object):
             conftest.metadata_with_multi_column_index,
             "add index accounts_first_name_last_name_idx to accounts",
             "drop index accounts_first_name_last_name_idx from accounts",
-            validate_schema=False,
             post_r2_func=post_r2_func
         )
 
@@ -1378,8 +1379,6 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_fulltext_search_index,
             "add full text index accounts_first_name_idx to accounts",
             "drop full text index accounts_first_name_idx from accounts",
-            # skip validation because of complications with idx
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_multicolumn_fulltext_search")
@@ -1401,8 +1400,6 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_multicolumn_fulltext_search_index,
             "add full text index accounts_full_text_idx to accounts",
             "drop full text index accounts_full_text_idx from accounts",
-            # skip validation because of complications with idx
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
@@ -1416,8 +1413,6 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_multicolumn_fulltext_search_index_gist,
             "add full text index accounts_full_text_idx to accounts",
             "drop full text index accounts_full_text_idx from accounts",
-            # skip validation because of complications with idx
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
@@ -1428,20 +1423,16 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_multicolumn_fulltext_search_index_btree,
             "add full text index accounts_full_text_idx to accounts",
             "drop full text index accounts_full_text_idx from accounts",
-            # skip validation because of complications with idx
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
-    def test_full_text_index_with_generated_column(self, new_test_runner, metadata_with_table):
+    def test_full_text_index_with_generated_column_gin(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,
             metadata_with_table,
             conftest.metadata_with_generated_col_fulltext_search_index,
             "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
             "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
-            # skip validation because of complications with idx
-            validate_schema=False
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
@@ -1452,8 +1443,56 @@ class TestPostgresRunner(BaseTestRunner):
             conftest.metadata_with_generated_col_fulltext_search_index_gist,
             "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
             "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
-            # skip validation because of complications with idx
-            validate_schema=False
+        )
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_with_generated_column_matched_weights(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index_matched_weights,
+            "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
+            "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
+        )
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_with_generated_column_matched_weights_no_coalesce(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index_matched_weights_no_coalesce,
+            "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
+            "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
+        )
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_with_generated_column_mismatched_weights(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index_mismatched_weights,
+            "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
+            "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
+        )
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_with_generated_column_one_weight(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index_one_weight,
+            "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
+            "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
+        )
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_with_generated_column_one_cols_in_setweight(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index_cols_in_setweight,
+            "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
+            "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
         )
 
 

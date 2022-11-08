@@ -5,7 +5,6 @@ import argparse
 import warnings
 import alembic
 
-import sqlalchemy
 
 # if env variable is set, manipulate the path to put local
 # current directory over possibly installed auto_schema so that we
@@ -17,6 +16,7 @@ if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
 # run from auto_schema root. conflicts with pip-installed auto_schema when that exists so can't have
 # that installed when runnning this...
 from auto_schema.runner import Runner
+from auto_schema.parse_db import ParseDB
 
 from importlib import import_module
 
@@ -53,6 +53,8 @@ parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
 parser.add_argument(
     '--debug', help='if debug flag passed', action='store_true')
+parser.add_argument(
+    '--import_db', help='import given a schema uri', action='store_true')
 
 # see https://alembic.sqlalchemy.org/en/latest/offline.html
 # if true, pased to u
@@ -89,6 +91,12 @@ def main():
 
         try:
             args = parser.parse_args()
+
+            if args.import_db is True:
+                p = ParseDB(args.engine)
+                p.parse_and_print()
+                return
+
             sys.path.append(os.path.relpath(args.schema))
 
             schema = import_module('schema')

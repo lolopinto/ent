@@ -1104,6 +1104,7 @@ func (s *dbSchema) addUniqueConstraint(nodeData *schema.NodeData, inputConstrain
 	return nil
 }
 
+// same logic as parse_db._default_index
 func (s *dbSchema) getDefaultIndexType(f *field.Field) input.IndexType {
 	// default index type for lists|jsonb when not specified is gin type
 	typ := f.GetFieldType()

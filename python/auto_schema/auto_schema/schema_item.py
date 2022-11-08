@@ -19,3 +19,5 @@ class FullTextIndex(Index):
         elif 'column' in info:
             cols = [info.get('column')]
         super().__init__(name, *cols, **kw)
+        # can't seem to always access this from the base class and not sure why so storing this here for now
+        self.kwwwww = kw
