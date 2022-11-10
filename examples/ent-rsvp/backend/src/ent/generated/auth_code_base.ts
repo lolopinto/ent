@@ -63,7 +63,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async load<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -75,7 +78,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadX<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -87,7 +93,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadMany<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -99,7 +108,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadCustom<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -114,7 +126,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadCustomData<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<AuthCodeDBData[]> {
@@ -129,7 +144,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadCustomCount<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -143,7 +161,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadRawData<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AuthCodeDBData | null> {
@@ -155,7 +176,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AuthCodeDBData> {
@@ -167,7 +191,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadFromGuestID<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     guestID: ID,
   ): Promise<T | null> {
@@ -178,7 +205,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadFromGuestIDX<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     guestID: ID,
   ): Promise<T> {
@@ -189,7 +219,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadIDFromGuestID<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     guestID: ID,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -198,7 +231,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static async loadRawDataFromGuestID<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     guestID: ID,
     context?: Context,
   ): Promise<AuthCodeDBData | null> {
@@ -210,7 +246,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   static loaderOptions<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: authCodeLoaderInfo.tableName,

@@ -67,7 +67,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async load<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -79,7 +82,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadX<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -91,7 +97,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadMany<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -103,7 +112,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadCustom<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -118,7 +130,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadCustomData<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<EventDBData[]> {
@@ -133,7 +148,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadCustomCount<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -147,7 +165,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadRawData<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<EventDBData | null> {
@@ -159,7 +180,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadRawDataX<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<EventDBData> {
@@ -171,7 +195,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadFromSlug<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     slug: string,
   ): Promise<T | null> {
@@ -182,7 +209,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadFromSlugX<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     slug: string,
   ): Promise<T> {
@@ -193,7 +223,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadIDFromSlug<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     slug: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -202,7 +235,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static async loadRawDataFromSlug<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     slug: string,
     context?: Context,
   ): Promise<EventDBData | null> {
@@ -214,7 +250,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   static loaderOptions<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: eventLoaderInfo.tableName,

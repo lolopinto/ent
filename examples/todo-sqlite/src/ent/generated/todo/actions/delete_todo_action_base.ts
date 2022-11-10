@@ -42,8 +42,7 @@ export type DeleteTodoActionValidators = Validator<
 >[];
 
 export class DeleteTodoActionBase
-  implements
-    Action<Todo, TodoBuilder<TodoInput, Todo>, Viewer, TodoInput, Todo>
+  implements Action<Todo, TodoBuilder<TodoInput, Todo>, Viewer, TodoInput, Todo>
 {
   public readonly builder: TodoBuilder<TodoInput, Todo>;
   public readonly viewer: Viewer;
@@ -111,7 +110,10 @@ export class DeleteTodoActionBase
   }
 
   static create<T extends DeleteTodoActionBase>(
-    this: new (viewer: Viewer, todo: Todo) => T,
+    this: new (
+      viewer: Viewer,
+      todo: Todo,
+    ) => T,
     viewer: Viewer,
     todo: Todo,
   ): T {
@@ -119,7 +121,10 @@ export class DeleteTodoActionBase
   }
 
   static async saveXFromID<T extends DeleteTodoActionBase>(
-    this: new (viewer: Viewer, todo: Todo) => T,
+    this: new (
+      viewer: Viewer,
+      todo: Todo,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<void> {

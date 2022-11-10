@@ -43,7 +43,10 @@ export abstract class ObjectToScopedTodosQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends ObjectToScopedTodosQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Ent<Viewer>, Todo>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Ent<Viewer>, Todo>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Ent<Viewer>, Todo>,
   ): T {

@@ -128,7 +128,10 @@ export class CreateGuestActionBase
   }
 
   static create<T extends CreateGuestActionBase>(
-    this: new (viewer: Viewer, input: GuestCreateInput) => T,
+    this: new (
+      viewer: Viewer,
+      input: GuestCreateInput,
+    ) => T,
     viewer: Viewer,
     input: GuestCreateInput,
   ): T {

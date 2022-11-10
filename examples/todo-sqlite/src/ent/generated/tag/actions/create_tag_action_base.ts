@@ -126,7 +126,10 @@ export class CreateTagActionBase
   }
 
   static create<T extends CreateTagActionBase>(
-    this: new (viewer: Viewer, input: TagCreateInput) => T,
+    this: new (
+      viewer: Viewer,
+      input: TagCreateInput,
+    ) => T,
     viewer: Viewer,
     input: TagCreateInput,
   ): T {

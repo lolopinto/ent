@@ -141,7 +141,10 @@ export class CreateEventActivityActionBase
   }
 
   static create<T extends CreateEventActivityActionBase>(
-    this: new (viewer: Viewer, input: EventActivityCreateInput) => T,
+    this: new (
+      viewer: Viewer,
+      input: EventActivityCreateInput,
+    ) => T,
     viewer: Viewer,
     input: EventActivityCreateInput,
   ): T {

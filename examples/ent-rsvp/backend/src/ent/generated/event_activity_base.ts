@@ -94,7 +94,10 @@ export class EventActivityBase
   }
 
   static async load<T extends EventActivityBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -106,7 +109,10 @@ export class EventActivityBase
   }
 
   static async loadX<T extends EventActivityBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -118,7 +124,10 @@ export class EventActivityBase
   }
 
   static async loadMany<T extends EventActivityBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -130,7 +139,10 @@ export class EventActivityBase
   }
 
   static async loadCustom<T extends EventActivityBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -145,7 +157,10 @@ export class EventActivityBase
   }
 
   static async loadCustomData<T extends EventActivityBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<EventActivityDBData[]> {
@@ -160,7 +175,10 @@ export class EventActivityBase
   }
 
   static async loadCustomCount<T extends EventActivityBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -174,7 +192,10 @@ export class EventActivityBase
   }
 
   static async loadRawData<T extends EventActivityBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<EventActivityDBData | null> {
@@ -186,7 +207,10 @@ export class EventActivityBase
   }
 
   static async loadRawDataX<T extends EventActivityBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<EventActivityDBData> {
@@ -198,7 +222,10 @@ export class EventActivityBase
   }
 
   static loaderOptions<T extends EventActivityBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: eventActivityLoaderInfo.tableName,

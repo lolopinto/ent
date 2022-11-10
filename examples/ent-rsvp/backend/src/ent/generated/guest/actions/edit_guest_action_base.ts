@@ -125,7 +125,11 @@ export class EditGuestActionBase
   }
 
   static create<T extends EditGuestActionBase>(
-    this: new (viewer: Viewer, guest: Guest, input: GuestEditInput) => T,
+    this: new (
+      viewer: Viewer,
+      guest: Guest,
+      input: GuestEditInput,
+    ) => T,
     viewer: Viewer,
     guest: Guest,
     input: GuestEditInput,
@@ -134,7 +138,11 @@ export class EditGuestActionBase
   }
 
   static async saveXFromID<T extends EditGuestActionBase>(
-    this: new (viewer: Viewer, guest: Guest, input: GuestEditInput) => T,
+    this: new (
+      viewer: Viewer,
+      guest: Guest,
+      input: GuestEditInput,
+    ) => T,
     viewer: Viewer,
     id: ID,
     input: GuestEditInput,

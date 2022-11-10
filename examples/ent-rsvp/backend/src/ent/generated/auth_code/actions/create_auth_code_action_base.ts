@@ -129,7 +129,10 @@ export class CreateAuthCodeActionBase
   }
 
   static create<T extends CreateAuthCodeActionBase>(
-    this: new (viewer: Viewer, input: AuthCodeCreateInput) => T,
+    this: new (
+      viewer: Viewer,
+      input: AuthCodeCreateInput,
+    ) => T,
     viewer: Viewer,
     input: AuthCodeCreateInput,
   ): T {

@@ -58,7 +58,10 @@ export abstract class GuestToAttendingEventsQueryBase extends AssocEdgeQueryBase
   }
 
   static query<T extends GuestToAttendingEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Guest, EventActivity>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Guest, EventActivity>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Guest, EventActivity>,
   ): T {
@@ -102,7 +105,10 @@ export abstract class GuestToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends GuestToDeclinedEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Guest, EventActivity>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Guest, EventActivity>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Guest, EventActivity>,
   ): T {
@@ -142,7 +148,10 @@ export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends GuestToAuthCodesQueryBase>(
-    this: new (viewer: Viewer, src: Guest | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: Guest | ID,
+    ) => T,
     viewer: Viewer,
     src: Guest | ID,
   ): T {
@@ -170,7 +179,10 @@ export class GuestToGuestDataQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends GuestToGuestDataQueryBase>(
-    this: new (viewer: Viewer, src: Guest | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: Guest | ID,
+    ) => T,
     viewer: Viewer,
     src: Guest | ID,
   ): T {

@@ -47,7 +47,10 @@ export abstract class WorkspaceToMembersQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends WorkspaceToMembersQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Workspace, Account>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Workspace, Account>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Workspace, Account>,
   ): T {

@@ -77,7 +77,10 @@ export class GuestBase
   }
 
   static async load<T extends GuestBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -89,7 +92,10 @@ export class GuestBase
   }
 
   static async loadX<T extends GuestBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -101,7 +107,10 @@ export class GuestBase
   }
 
   static async loadMany<T extends GuestBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -113,7 +122,10 @@ export class GuestBase
   }
 
   static async loadCustom<T extends GuestBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -128,7 +140,10 @@ export class GuestBase
   }
 
   static async loadCustomData<T extends GuestBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<GuestDBData[]> {
@@ -143,7 +158,10 @@ export class GuestBase
   }
 
   static async loadCustomCount<T extends GuestBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -157,7 +175,10 @@ export class GuestBase
   }
 
   static async loadRawData<T extends GuestBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<GuestDBData | null> {
@@ -169,7 +190,10 @@ export class GuestBase
   }
 
   static async loadRawDataX<T extends GuestBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<GuestDBData> {
@@ -181,7 +205,10 @@ export class GuestBase
   }
 
   static loaderOptions<T extends GuestBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: guestLoaderInfo.tableName,

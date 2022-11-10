@@ -129,7 +129,10 @@ export class DeleteWorkspaceActionBase
   }
 
   static create<T extends DeleteWorkspaceActionBase>(
-    this: new (viewer: Viewer, workspace: Workspace) => T,
+    this: new (
+      viewer: Viewer,
+      workspace: Workspace,
+    ) => T,
     viewer: Viewer,
     workspace: Workspace,
   ): T {
@@ -137,7 +140,10 @@ export class DeleteWorkspaceActionBase
   }
 
   static async saveXFromID<T extends DeleteWorkspaceActionBase>(
-    this: new (viewer: Viewer, workspace: Workspace) => T,
+    this: new (
+      viewer: Viewer,
+      workspace: Workspace,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<void> {

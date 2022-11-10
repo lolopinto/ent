@@ -434,7 +434,7 @@ var defaultArgs = []string{
 // options: https://docs.rome.tools/formatter/#use-the-formatter-with-the-cli
 // everything else is sticking with default...
 var defaultRomeArgs = []string{
-	"--indent-style", "tabs",
+	"--indent-style", "space",
 }
 
 func (cfg *Config) getPrettierArgs() [][]string {

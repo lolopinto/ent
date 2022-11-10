@@ -132,7 +132,11 @@ export class EditAddressActionBase
   }
 
   static create<T extends EditAddressActionBase>(
-    this: new (viewer: Viewer, address: Address, input: AddressEditInput) => T,
+    this: new (
+      viewer: Viewer,
+      address: Address,
+      input: AddressEditInput,
+    ) => T,
     viewer: Viewer,
     address: Address,
     input: AddressEditInput,
@@ -141,7 +145,11 @@ export class EditAddressActionBase
   }
 
   static async saveXFromID<T extends EditAddressActionBase>(
-    this: new (viewer: Viewer, address: Address, input: AddressEditInput) => T,
+    this: new (
+      viewer: Viewer,
+      address: Address,
+      input: AddressEditInput,
+    ) => T,
     viewer: Viewer,
     id: ID,
     input: AddressEditInput,
