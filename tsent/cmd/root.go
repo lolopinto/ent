@@ -98,6 +98,7 @@ func init() {
 	codegenCmd.Flags().BoolVar(&codegenInfo.disableCustomGraphQL, "disable-custom-graphql", false, "to disable custom graphql during codegen. used when we need to rebuild everything and minimize parsing code")
 	codegenCmd.Flags().BoolVar(&codegenInfo.disablePrompts, "disable_prompts", false, "disable prompts")
 	codegenCmd.Flags().BoolVar(&codegenInfo.disableUpgrade, "disable_upgrade", false, "disable upgrade when running codegen. codegen automatically checks that the db is upgraded before making any changes. if you want to disable that for any reason, use this flag")
+	codegenCmd.Flags().BoolVar(&codegenInfo.forcePrettier, "force_prettier", false, "force prettier instead of rome when running codegen.")
 
 	generateSchemasCmd.Flags().StringVar(&schemasInfo.file, "file", "", "file to get data from. also supports piping it through")
 	generateSchemasCmd.Flags().BoolVar(&schemasInfo.force, "force", false, "if force is true, it overwrites existing schema, otherwise throws error")

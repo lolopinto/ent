@@ -18,6 +18,7 @@ type codegenArgs struct {
 	disableCustomGraphQL bool
 	disablePrompts       bool
 	disableUpgrade       bool
+	forcePrettier        bool
 }
 
 var codegenInfo codegenArgs
@@ -77,6 +78,13 @@ var codegenCmd = &cobra.Command{
 		// flag that next time we do this, we force write all
 		if codegenInfo.step != "" {
 			bi.ForceWriteAllNextTime = true
+		}
+		if codegenInfo.forcePrettier {
+			opts = append(opts, codegen.ForcePrettier())
+		} else {
+			// automatically --write-all with rome
+			// TODO would be nice to eventually differentiate this vs not
+			opts = append(opts, codegen.WriteAll())
 		}
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
 		processor, err := codegen.NewCodegenProcessor(currentSchema, "src/schema", opts...)

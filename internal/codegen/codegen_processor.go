@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/file"
@@ -201,7 +200,6 @@ func (p *Processor) FormatTS() error {
 	if p.Config.forcePrettier {
 		return p.formatWithPrettier()
 	}
-	spew.Dump("rome...")
 
 	return p.formatWithRome()
 }
@@ -239,7 +237,6 @@ func (p *Processor) formatWithRome() error {
 	cmd := exec.Command("rome", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
 		str := stderr.String()
 		err = errors.Wrap(err, str)
