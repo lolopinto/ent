@@ -131,7 +131,10 @@ export class CreateEventActionBase
   }
 
   static create<T extends CreateEventActionBase>(
-    this: new (viewer: ExampleViewerAlias, input: EventCreateInput) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      input: EventCreateInput,
+    ) => T,
     viewer: ExampleViewerAlias,
     input: EventCreateInput,
   ): T {

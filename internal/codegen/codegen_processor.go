@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/file"
@@ -197,6 +198,57 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 }
 
 func (p *Processor) FormatTS() error {
+	if p.Config.forcePrettier {
+		return p.formatWithPrettier()
+	}
+	spew.Dump("rome...")
+
+	return p.formatWithRome()
+}
+
+func (p *Processor) formatWithRome() error {
+	// TODO need to deal with write-all logic
+	rome := p.Config.GetRomeConfig()
+	var args []string
+	if rome != nil {
+		args = rome.GetArgs()
+	} else {
+		args = defaultRomeArgs
+	}
+	if len(args) == 0 {
+		if p.debugMode {
+			fmt.Printf("no args to pass to rome to format\n")
+		}
+		return nil
+	}
+
+	args = append(args, "--write")
+
+	// doesn't use globs when done from here
+	dirs := []string{"src/graphql", "src/ent"}
+	for _, dir := range dirs {
+		_, err := os.Stat(dir)
+		// path doesn't exist. nothing to do here
+		if os.IsNotExist(err) {
+			return nil
+		}
+
+		args = append(args, dir)
+	}
+	args = append([]string{"format"}, args...)
+	cmd := exec.Command("rome", args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		str := stderr.String()
+		err = errors.Wrap(err, str)
+		return err
+	}
+	return nil
+}
+
+func (p *Processor) formatWithPrettier() error {
 	// nothing to do here
 	args := p.Config.getPrettierArgs()
 	if args == nil {
@@ -305,9 +357,12 @@ type StepWithPostProcess interface {
 type constructOption struct {
 	debugMode bool
 	writeAll  bool
-	step      string
-	buildInfo *build_info.BuildInfo
-	cfg       *Config
+	// we're using rome as default for now so
+	// this provides a way to force prettier if we want to test or if somehow something
+	// wrong with rome
+	forcePrettier bool
+	buildInfo     *build_info.BuildInfo
+	cfg           *Config
 }
 
 type ConstructOption func(*constructOption)
@@ -333,6 +388,12 @@ func ProcessorConfig(cfg *Config) ConstructOption {
 func WriteAll() ConstructOption {
 	return func(opt *constructOption) {
 		opt.writeAll = true
+	}
+}
+
+func ForcePrettier() ConstructOption {
+	return func(opt *constructOption) {
+		opt.forcePrettier = true
 	}
 }
 
@@ -375,6 +436,7 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	cfg.SetUseChanges(useChanges)
 	cfg.SetWriteAll(writeAll)
 	cfg.SetChangeMap(changes)
+	cfg.forcePrettier = opt.forcePrettier
 
 	t2 := time.Now()
 	diff := t2.Sub(t1)
@@ -427,6 +489,9 @@ func parseExistingSchema(cfg *Config, buildInfo *build_info.BuildInfo) *schema.S
 	if err != nil {
 		return nil
 	}
+	// set input cfg
+	cfg.SetInputConfig(existingSchema.Config)
+
 	mutationName := codegenapi.DefaultGraphQLMutationName
 	if buildInfo != nil {
 		mutationName = buildInfo.PrevGraphQLMutationName()

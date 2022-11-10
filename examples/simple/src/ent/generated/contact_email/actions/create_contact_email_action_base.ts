@@ -133,7 +133,10 @@ export class CreateContactEmailActionBase
   }
 
   static create<T extends CreateContactEmailActionBase>(
-    this: new (viewer: ExampleViewerAlias, input: ContactEmailCreateInput) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      input: ContactEmailCreateInput,
+    ) => T,
     viewer: ExampleViewerAlias,
     input: ContactEmailCreateInput,
   ): T {

@@ -127,7 +127,10 @@ export class CreateHolidayActionBase
   }
 
   static create<T extends CreateHolidayActionBase>(
-    this: new (viewer: ExampleViewerAlias, input: HolidayCreateInput) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      input: HolidayCreateInput,
+    ) => T,
     viewer: ExampleViewerAlias,
     input: HolidayCreateInput,
   ): T {

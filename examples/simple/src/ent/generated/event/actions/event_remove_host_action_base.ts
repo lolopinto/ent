@@ -125,7 +125,10 @@ export class EventRemoveHostActionBase
   }
 
   static create<T extends EventRemoveHostActionBase>(
-    this: new (viewer: ExampleViewerAlias, event: Event) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      event: Event,
+    ) => T,
     viewer: ExampleViewerAlias,
     event: Event,
   ): T {
@@ -133,7 +136,10 @@ export class EventRemoveHostActionBase
   }
 
   static async saveXFromID<T extends EventRemoveHostActionBase>(
-    this: new (viewer: ExampleViewerAlias, event: Event) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      event: Event,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
     hostID: ID,

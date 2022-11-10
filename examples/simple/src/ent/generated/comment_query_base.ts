@@ -79,7 +79,10 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends ArticleToCommentsQueryBase>(
-    this: new (viewer: ExampleViewerAlias, src: Ent<ExampleViewerAlias>) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: Ent<ExampleViewerAlias>,
+    ) => T,
     viewer: ExampleViewerAlias,
     src: Ent<ExampleViewerAlias>,
   ): T {
@@ -111,7 +114,10 @@ export class StickerToCommentsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends StickerToCommentsQueryBase>(
-    this: new (viewer: ExampleViewerAlias, src: Ent<ExampleViewerAlias>) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: Ent<ExampleViewerAlias>,
+    ) => T,
     viewer: ExampleViewerAlias,
     src: Ent<ExampleViewerAlias>,
   ): T {

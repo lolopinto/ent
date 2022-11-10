@@ -60,7 +60,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   static async load<T extends AuthCodeBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
@@ -72,7 +75,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadX<T extends AuthCodeBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
@@ -84,7 +90,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadMany<T extends AuthCodeBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -96,7 +105,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustom<T extends AuthCodeBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -111,7 +123,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustomData<T extends AuthCodeBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<AuthCodeDBData[]> {
@@ -126,7 +141,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustomCount<T extends AuthCodeBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -140,7 +158,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadRawData<T extends AuthCodeBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AuthCodeDBData | null> {
@@ -152,7 +173,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AuthCodeDBData> {
@@ -164,7 +188,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   static loaderOptions<T extends AuthCodeBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: authCodeLoaderInfo.tableName,

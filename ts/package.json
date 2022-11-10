@@ -10,6 +10,7 @@
   "dependencies": {
     "@types/node": "^15.0.2",
     "camel-case": "^4.1.2",
+    "cosmiconfig": "^7.0.1",
     "dataloader": "^2.0.0",
     "glob": "^7.1.6",
     "graph-data-structure": "^1.12.0",

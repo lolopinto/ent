@@ -12,6 +12,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -31,11 +32,13 @@ type Config struct {
 	// writeAll, even if changes are valid, still write all the files
 	writeAll bool
 	// changes are valid
-	useChanges bool
-	dummyWrite bool
-	changes    change.ChangeMap
+	useChanges    bool
+	dummyWrite    bool
+	changes       change.ChangeMap
+	forcePrettier bool
 	// keep track of changed ts files to pass to prettier
 	changedTSFiles []string
+	inputConfig    *input.Config
 }
 
 // Clone doesn't clone changes and changedTSFiles
@@ -51,6 +54,7 @@ func (cfg *Config) Clone() *Config {
 		debugMode:             cfg.debugMode,
 		writeAll:              cfg.writeAll,
 		useChanges:            cfg.useChanges,
+		inputConfig:           cfg.inputConfig,
 	}
 }
 
@@ -64,6 +68,10 @@ func (cfg *Config) OverrideGraphQLMutationName(mutationName codegenapi.GraphQLMu
 			DefaultGraphQLMutationName: mutationName,
 		},
 	}
+}
+
+func (cfg *Config) SetInputConfig(inputCfg *input.Config) {
+	cfg.inputConfig = inputCfg
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -264,6 +272,13 @@ func (cfg *Config) DummyWrite() bool {
 	return cfg.dummyWrite
 }
 
+func (cfg *Config) GetRomeConfig() *input.RomeConfig {
+	if cfg.inputConfig == nil {
+		return nil
+	}
+	return cfg.inputConfig.RomeConfig
+}
+
 func (cfg *Config) SetDummyWrite(val bool) {
 	cfg.dummyWrite = val
 }
@@ -404,6 +419,7 @@ func (cfg *Config) GetGlobalImportPath() *tsimport.ImportPath {
 	return nil
 }
 
+// use rome instead of prettier to speed up
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -413,6 +429,12 @@ var defaultArgs = []string{
 	"--quote-props", "consistent",
 	"--parser", "typescript",
 	"--end-of-line", "lf",
+}
+
+// options: https://docs.rome.tools/formatter/#use-the-formatter-with-the-cli
+// everything else is sticking with default...
+var defaultRomeArgs = []string{
+	"--indent-style", "tabs",
 }
 
 func (cfg *Config) getPrettierArgs() [][]string {
@@ -435,6 +457,7 @@ func (cfg *Config) getPrettierArgs() [][]string {
 		}
 	}
 
+	// writeAll
 	// if writeAll, break into src/ent/**/*.ts and src/graphql/**/*.ts
 	if cfg.writeAll {
 		return [][]string{

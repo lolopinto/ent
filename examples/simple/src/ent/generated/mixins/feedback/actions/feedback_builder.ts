@@ -7,7 +7,9 @@ import { AssocEdgeInputOptions, Ent, ID } from "@snowtop/ent";
 import { Builder, Orchestrator } from "@snowtop/ent/action";
 import { EdgeType, NodeType } from "../../../const";
 import { Comment, IFeedback, User } from "../../../../internal";
-import { ExampleViewer as ExampleViewerAlias } from "../../../../../viewer/viewer";
+import {
+  ExampleViewer as ExampleViewerAlias,
+} from "../../../../../viewer/viewer";
 
 interface IEntWithFeedback extends Ent<ExampleViewerAlias>, IFeedback {}
 

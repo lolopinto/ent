@@ -72,7 +72,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static async load<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
@@ -84,7 +87,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadX<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
@@ -96,7 +102,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadMany<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -108,7 +117,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustom<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -123,7 +135,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustomData<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<CommentDBData[]> {
@@ -138,7 +153,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustomCount<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -152,7 +170,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadRawData<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<CommentDBData | null> {
@@ -164,7 +185,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadRawDataX<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<CommentDBData> {
@@ -176,7 +200,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static queryFromArticle<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ent: Ent<ExampleViewerAlias>,
   ): ArticleToCommentsQuery {
@@ -184,7 +211,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   }
 
   static loaderOptions<T extends CommentBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: commentLoaderInfo.tableName,

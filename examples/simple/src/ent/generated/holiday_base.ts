@@ -67,7 +67,10 @@ export class HolidayBase
   }
 
   static async load<T extends HolidayBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
@@ -79,7 +82,10 @@ export class HolidayBase
   }
 
   static async loadX<T extends HolidayBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
@@ -91,7 +97,10 @@ export class HolidayBase
   }
 
   static async loadMany<T extends HolidayBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -103,7 +112,10 @@ export class HolidayBase
   }
 
   static async loadCustom<T extends HolidayBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -118,7 +130,10 @@ export class HolidayBase
   }
 
   static async loadCustomData<T extends HolidayBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<HolidayDBData[]> {
@@ -133,7 +148,10 @@ export class HolidayBase
   }
 
   static async loadCustomCount<T extends HolidayBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -147,7 +165,10 @@ export class HolidayBase
   }
 
   static async loadRawData<T extends HolidayBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<HolidayDBData | null> {
@@ -159,7 +180,10 @@ export class HolidayBase
   }
 
   static async loadRawDataX<T extends HolidayBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<HolidayDBData> {
@@ -171,7 +195,10 @@ export class HolidayBase
   }
 
   static loaderOptions<T extends HolidayBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: holidayLoaderInfo.tableName,

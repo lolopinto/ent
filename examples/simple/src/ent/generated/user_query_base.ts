@@ -619,7 +619,10 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends UserToAuthCodesQueryBase>(
-    this: new (viewer: ExampleViewerAlias, src: User | ID) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: User | ID,
+    ) => T,
     viewer: ExampleViewerAlias,
     src: User | ID,
   ): T {
@@ -647,7 +650,10 @@ export class UserToContactsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends UserToContactsQueryBase>(
-    this: new (viewer: ExampleViewerAlias, src: User | ID) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: User | ID,
+    ) => T,
     viewer: ExampleViewerAlias,
     src: User | ID,
   ): T {
