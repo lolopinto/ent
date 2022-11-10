@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -205,8 +207,24 @@ func (p *Processor) FormatTS() error {
 }
 
 func (p *Processor) formatWithRome() error {
-	// TODO need to deal with write-all logic
 	rome := p.Config.GetRomeConfig()
+	// get files without "generated" in the path and pass them manually to rome
+	// for the generated paths, we'll pass src/ent/generated and src/graphql/generated to handle that
+	var nonGenerated []string
+	root := p.Config.GetAbsPathToRoot()
+	for _, f := range p.Config.changedTSFiles {
+		if !strings.Contains(f, "generated") {
+			if path.IsAbs(f) {
+				p, err := filepath.Rel(root, f)
+				if err != nil {
+					return err
+				}
+				f = p
+			}
+			nonGenerated = append(nonGenerated, f)
+		}
+	}
+
 	var args []string
 	if rome != nil {
 		args = rome.GetArgs()
@@ -223,7 +241,7 @@ func (p *Processor) formatWithRome() error {
 	args = append(args, "--write")
 
 	// doesn't use globs when done from here
-	dirs := []string{"src/graphql", "src/ent"}
+	dirs := []string{"src/graphql/generated", "src/ent/generated"}
 	for _, dir := range dirs {
 		_, err := os.Stat(dir)
 		// path doesn't exist. nothing to do here
@@ -233,7 +251,10 @@ func (p *Processor) formatWithRome() error {
 
 		args = append(args, dir)
 	}
+	// add any non-generated paths
+	args = append(args, nonGenerated...)
 	args = append([]string{"format"}, args...)
+
 	cmd := exec.Command("rome", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
