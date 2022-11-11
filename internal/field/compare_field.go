@@ -52,6 +52,15 @@ func compareType(t1, t2 enttype.TSType) bool {
 		t1.GetTSType() == t2.GetTSType()
 }
 
+func compareDefaultValue(existing, field *Field) bool {
+	ret := change.CompareNilVals(existing.defaultValue == nil, field.defaultValue == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return *existing.defaultValue == *field.defaultValue
+}
+
 func FieldEqual(existing, field *Field) bool {
 	return existing.FieldName == field.FieldName &&
 		compareType(existing.fieldType, field.fieldType) &&
@@ -62,7 +71,7 @@ func FieldEqual(existing, field *Field) bool {
 		input.PolymorphicOptionsEqual(existing.polymorphic, field.polymorphic) &&
 		existing.nullable == field.nullable &&
 		existing.graphqlNullable == field.graphqlNullable &&
-		existing.defaultValue == field.defaultValue &&
+		compareDefaultValue(existing, field) &&
 		existing.unique == field.unique &&
 		foreignKeyInfoEqual(existing.fkey, field.fkey) &&
 		base.FieldEdgeInfoEqual(existing.fieldEdge, field.fieldEdge) &&
