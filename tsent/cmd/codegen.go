@@ -84,7 +84,9 @@ var codegenCmd = &cobra.Command{
 		} else {
 			// automatically --write-all with rome
 			// TODO would be nice to eventually differentiate this vs not
-			opts = append(opts, codegen.WriteAll())
+			// TODO this flag use changes
+			// and use bi.Changes() or something
+			opts = append(opts, codegen.ForceWriteAll())
 		}
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
 		processor, err := codegen.NewCodegenProcessor(currentSchema, "src/schema", opts...)

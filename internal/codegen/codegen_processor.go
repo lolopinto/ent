@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/file"
@@ -376,8 +377,9 @@ type StepWithPostProcess interface {
 }
 
 type constructOption struct {
-	debugMode bool
-	writeAll  bool
+	debugMode     bool
+	writeAll      bool
+	forceWriteAll bool
 	// we're using rome as default for now so
 	// this provides a way to force prettier if we want to test or if somehow something
 	// wrong with rome
@@ -412,6 +414,12 @@ func WriteAll() ConstructOption {
 	}
 }
 
+func ForceWriteAll() ConstructOption {
+	return func(opt *constructOption) {
+		opt.forceWriteAll = true
+	}
+}
+
 func ForcePrettier() ConstructOption {
 	return func(opt *constructOption) {
 		opt.forcePrettier = true
@@ -443,10 +451,17 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	}
 	// if changes == nil, don't use changes
 	useChanges := changes != nil
+	spew.Dump("changes", changes)
 	writeAll := !useChanges
+	// this is different
 	if opt.writeAll {
 		writeAll = true
 		useChanges = false
+	}
+	// different than --write-all, we don't change useChanges
+	// we still check changes and use it for things like db schema etc
+	if opt.forceWriteAll {
+		writeAll = true
 	}
 	if !writeAll && opt.buildInfo != nil && opt.buildInfo.Changed() {
 		writeAll = true

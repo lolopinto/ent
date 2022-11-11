@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 
 	"github.com/lolopinto/ent/ent"
@@ -46,8 +47,10 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	if s.db == nil {
 		return errors.New("weirdness. dbSchema is nil when it shouldn't be")
 	}
-	// if write all, process db changes also
-	if processor.NoDBChanges() && !processor.Config.WriteAllFiles() {
+	// no changes and we should use changes, nothing to do
+	spew.Dump(processor.NoDBChanges(), processor.Config.UseChanges())
+	if processor.NoDBChanges() && processor.Config.UseChanges() {
+		spew.Dump("no changes bye")
 		return nil
 	}
 	return s.db.makeDBChanges(processor.Config)
