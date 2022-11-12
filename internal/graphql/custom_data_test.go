@@ -67,7 +67,7 @@ func TestCustomFieldMarshall(t *testing.T) {
 				},
 			},
 		},
-		"with both": {
+		"with both args + conns": {
 			Node:         "User",
 			GraphQLName:  "contactsSameDomain",
 			FunctionName: "getContactsSameDomain",
@@ -155,6 +155,18 @@ func TestCustomFieldMarshall(t *testing.T) {
 				eq = customFieldEqual(&cf, &cf2)
 				assert.True(t, eq)
 			}
+
+			// marshall 2nd one again!
+			// and connection args don't get added twice and it's equal
+			b, err = json.Marshal(cf2)
+			require.Nil(t, err)
+
+			var cf3 CustomField
+			err = json.Unmarshal(b, &cf3)
+			require.Nil(t, err)
+
+			eq = customFieldEqual(&cf2, &cf3)
+			assert.True(t, eq)
 		})
 	}
 }
