@@ -67,7 +67,7 @@ func TestCustomFieldMarshall(t *testing.T) {
 				},
 			},
 		},
-		"with both args + conns": {
+		"with both args + results": {
 			Node:         "User",
 			GraphQLName:  "contactsSameDomain",
 			FunctionName: "getContactsSameDomain",
