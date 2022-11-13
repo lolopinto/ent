@@ -85,10 +85,7 @@ var codegenCmd = &cobra.Command{
 		if codegenInfo.forcePrettier {
 			opts = append(opts, codegen.ForcePrettier())
 		} else {
-			// automatically --write-all with rome
-			// TODO would be nice to eventually differentiate this vs not
-			// TODO this flag use changes
-			// and use bi.Changes() or something
+			// automatically force write-all with rome
 			opts = append(opts, codegen.ForceWriteAll())
 		}
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually

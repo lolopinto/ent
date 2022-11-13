@@ -46,7 +46,6 @@ func (cfg *RomeConfig) GetArgs() []string {
 	}
 
 	if cfg.IndentSize != nil {
-		// int to string
 		ret = append(ret, "--indent-size", fmt.Sprintf("%v", *cfg.IndentSize))
 	}
 

@@ -207,9 +207,6 @@ func (p *Processor) FormatTS() error {
 }
 
 func (p *Processor) formatWithRome() error {
-	// TODO need to deal with write-all logic
-	// TODO in tsent/cmd/codegen.go is related.
-
 	rome := p.Config.GetRomeConfig()
 	// get files without "generated" in the path and pass them manually to rome
 	// for the generated paths, we'll pass src/ent/generated and src/graphql/generated to handle that

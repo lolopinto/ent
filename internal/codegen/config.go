@@ -428,10 +428,10 @@ func (cfg *Config) GetGlobalImportPath() *tsimport.ImportPath {
 	return nil
 }
 
-// use rome instead of prettier to speed up
-const DEFAULT_GLOB = "src/**/*.ts"
+const DEFAULT_PRETTIER_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
+// use rome instead of prettier to speed up
 // options: https://prettier.io/docs/en/options.html
 var defaultArgs = []string{
 	"--trailing-comma", "all",
@@ -452,7 +452,7 @@ func (cfg *Config) getPrettierArgs() [][]string {
 		return nil
 	}
 
-	glob := DEFAULT_GLOB
+	glob := DEFAULT_PRETTIER_GLOB
 	args := defaultArgs
 
 	if cfg.config != nil && cfg.config.Codegen != nil && cfg.config.Codegen.Prettier != nil {
@@ -466,7 +466,6 @@ func (cfg *Config) getPrettierArgs() [][]string {
 		}
 	}
 
-	// writeAll
 	// if writeAll, break into src/ent/**/*.ts and src/graphql/**/*.ts
 	if cfg.writeAll {
 		return [][]string{
