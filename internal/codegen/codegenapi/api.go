@@ -75,6 +75,7 @@ type Config interface {
 	FieldPrivacyEvaluated() FieldPrivacyEvaluated
 	GetRootPathToConfigs() string
 	DebugMode() bool
+	DebugFilesMode() bool
 	// doesn't actually writes the files, just keeps track of which files were going to be written
 	// used to detect dangling files...
 	DummyWrite() bool
@@ -99,6 +100,10 @@ func (cfg *DummyConfig) GetRootPathToConfigs() string {
 }
 
 func (cfg *DummyConfig) DebugMode() bool {
+	return false
+}
+
+func (cfg *DummyConfig) DebugFilesMode() bool {
 	return false
 }
 

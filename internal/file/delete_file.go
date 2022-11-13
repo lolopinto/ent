@@ -7,7 +7,7 @@ import (
 
 func GetDeleteFileFunction(cfg Config, fileName string) func() error {
 	return func() error {
-		debug := cfg.DebugMode()
+		debug := cfg.DebugFilesMode()
 		if debug {
 			fmt.Printf("deleting file %s \n", fileName)
 		}
