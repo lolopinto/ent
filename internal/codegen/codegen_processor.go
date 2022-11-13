@@ -376,9 +376,10 @@ type StepWithPostProcess interface {
 }
 
 type constructOption struct {
-	debugMode     bool
-	writeAll      bool
-	forceWriteAll bool
+	debugMode      bool
+	debugFilesMode bool
+	writeAll       bool
+	forceWriteAll  bool
 	// we're using rome as default for now so
 	// this provides a way to force prettier if we want to test or if somehow something
 	// wrong with rome
@@ -392,6 +393,12 @@ type ConstructOption func(*constructOption)
 func DebugMode() ConstructOption {
 	return func(opt *constructOption) {
 		opt.debugMode = true
+	}
+}
+
+func DebugFileMode() ConstructOption {
+	return func(opt *constructOption) {
+		opt.debugFilesMode = true
 	}
 }
 
@@ -442,6 +449,7 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 		}
 	}
 	cfg.SetDebugMode(opt.debugMode)
+	cfg.SetDebugFilesMode(opt.debugFilesMode)
 
 	existingSchema := parseExistingSchema(cfg, opt.buildInfo)
 	changes, err := schema.CompareSchemas(existingSchema, currentSchema)

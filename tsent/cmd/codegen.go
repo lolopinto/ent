@@ -71,6 +71,9 @@ var codegenCmd = &cobra.Command{
 		if rootInfo.debug {
 			opts = append(opts, codegen.DebugMode())
 		}
+		if rootInfo.debugFiles {
+			opts = append(opts, codegen.DebugFileMode())
+		}
 
 		if codegenInfo.writeAll {
 			opts = append(opts, codegen.WriteAll())

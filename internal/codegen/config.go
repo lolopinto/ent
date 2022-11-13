@@ -29,6 +29,7 @@ type Config struct {
 	absPathToConfigs      string
 	config                *config
 	debugMode             bool
+	debugFilesMode        bool
 	// writeAll, even if changes are valid, still write all the files
 	writeAll bool
 	// changes are valid
@@ -115,6 +116,10 @@ func (cfg *Config) SetDebugMode(debugMode bool) {
 	cfg.debugMode = debugMode
 }
 
+func (cfg *Config) SetDebugFilesMode(debugFilesMode bool) {
+	cfg.debugFilesMode = debugFilesMode
+}
+
 func (cfg *Config) SetWriteAll(writeAll bool) {
 	cfg.writeAll = writeAll
 }
@@ -143,6 +148,10 @@ func (cfg *Config) ChangeMap() change.ChangeMap {
 
 func (cfg *Config) DebugMode() bool {
 	return cfg.debugMode
+}
+
+func (cfg *Config) DebugFilesMode() bool {
+	return cfg.debugFilesMode
 }
 
 func (cfg *Config) OverrideImportPathToModels(importPath string) {
