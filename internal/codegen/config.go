@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
@@ -121,7 +120,6 @@ func (cfg *Config) SetWriteAll(writeAll bool) {
 }
 
 func (cfg *Config) SetUseChanges(useChanges bool) {
-	spew.Dump("setUseChanges", useChanges)
 	cfg.useChanges = useChanges
 }
 

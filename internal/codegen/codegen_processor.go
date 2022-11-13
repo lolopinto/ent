@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/file"
@@ -451,7 +450,6 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	}
 	// if changes == nil, don't use changes
 	useChanges := changes != nil
-	spew.Dump("changes", changes)
 	writeAll := !useChanges
 	// this is different
 	if opt.writeAll {
