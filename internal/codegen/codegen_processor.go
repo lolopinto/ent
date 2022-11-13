@@ -303,11 +303,11 @@ type StepWithPostProcess interface {
 }
 
 type constructOption struct {
-	debugMode bool
-	writeAll  bool
-	step      string
-	buildInfo *build_info.BuildInfo
-	cfg       *Config
+	debugMode      bool
+	debugFilesMode bool
+	writeAll       bool
+	buildInfo      *build_info.BuildInfo
+	cfg            *Config
 }
 
 type ConstructOption func(*constructOption)
@@ -315,6 +315,12 @@ type ConstructOption func(*constructOption)
 func DebugMode() ConstructOption {
 	return func(opt *constructOption) {
 		opt.debugMode = true
+	}
+}
+
+func DebugFileMode() ConstructOption {
+	return func(opt *constructOption) {
+		opt.debugFilesMode = true
 	}
 }
 
@@ -353,6 +359,7 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 		}
 	}
 	cfg.SetDebugMode(opt.debugMode)
+	cfg.SetDebugFilesMode(opt.debugFilesMode)
 
 	existingSchema := parseExistingSchema(cfg, opt.buildInfo)
 	changes, err := schema.CompareSchemas(existingSchema, currentSchema)
