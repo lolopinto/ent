@@ -38,7 +38,7 @@ var codegenCmd = &cobra.Command{
 			if rootInfo.debug {
 				t2 := time.Now()
 				diff := t2.Sub(t1)
-				fmt.Println("maybe update took", diff)
+				fmt.Println("maybe upgrade took", diff)
 			}
 		}
 		cfg, err := codegen.NewConfig("src/schema", "")
