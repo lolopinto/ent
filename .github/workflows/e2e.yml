@@ -73,7 +73,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18.x
-      - run: npm install -g ts-node prettier typescript@4.8.3 @swc/core @swc/cli jest
+      - run: npm install -g ts-node prettier typescript@4.8.3 @swc/core @swc/cli jest rome@10.0.1
       - run: |
           cd ts 
           npm ci
