@@ -34,6 +34,8 @@ import {
   userPhoneNumberLoader,
 } from "./loaders";
 import {
+  EdgeType,
+  NodeType,
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
@@ -49,10 +51,8 @@ import {
 } from "./types";
 import {
   Contact,
-  EdgeType,
   FeedbackMixin,
   IFeedback,
-  NodeType,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
   UserToContactsQuery,

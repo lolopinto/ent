@@ -1,3 +1,9 @@
+{{template "enum.tmpl" .NodeType }}
+
+{{ if .EdgeType.Values -}}
+  {{template "enum.tmpl" .EdgeType }}
+{{end -}}
+
 {{ range .Schema.Enums }}
   {{ template "enum.tmpl" .Enum -}}
 {{ end -}}

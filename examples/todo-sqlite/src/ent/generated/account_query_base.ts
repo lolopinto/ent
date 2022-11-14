@@ -9,13 +9,13 @@ import {
   ID,
   Viewer,
 } from "@snowtop/ent";
+import { EdgeType } from "src/ent/generated/types";
 import {
   Account,
   AccountToClosedTodosDupEdge,
   AccountToCreatedWorkspacesEdge,
   AccountToOpenTodosDupEdge,
   AccountToWorkspacesEdge,
-  EdgeType,
   Tag,
   Todo,
   TodoToTagsQuery,

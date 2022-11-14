@@ -21,7 +21,8 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { addressLoader, addressLoaderInfo } from "./loaders";
-import { AddressToHostedEventsQuery, NodeType } from "../internal";
+import { NodeType } from "./types";
+import { AddressToHostedEventsQuery } from "../internal";
 import schema from "../../schema/address";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 

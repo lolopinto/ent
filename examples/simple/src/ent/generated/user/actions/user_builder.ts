@@ -14,10 +14,11 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Contact, Event, User } from "../../..";
-import { EdgeType, NodeType } from "../../const";
 import { userLoaderInfo } from "../../loaders";
 import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
 import {
+  EdgeType,
+  NodeType,
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,

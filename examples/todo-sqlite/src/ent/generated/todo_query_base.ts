@@ -11,9 +11,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "src/ent/generated/loadAny";
+import { EdgeType, NodeType } from "src/ent/generated/types";
 import {
-  EdgeType,
-  NodeType,
   Tag,
   TagToTodosQuery,
   Todo,

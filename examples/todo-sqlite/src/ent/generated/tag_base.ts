@@ -26,7 +26,8 @@ import {
   tagLoaderInfo,
   tagNoTransformLoader,
 } from "src/ent/generated/loaders";
-import { Account, NodeType, Tag, TagToTodosQuery } from "src/ent/internal";
+import { NodeType } from "src/ent/generated/types";
+import { Account, Tag, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag_schema";
 
 interface TagDBData {

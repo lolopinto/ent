@@ -25,12 +25,12 @@ import {
   eventLoaderInfo,
   eventSlugLoader,
 } from "src/ent/generated/loaders";
+import { NodeType } from "src/ent/generated/types";
 import {
   EventToEventActivitiesQuery,
   EventToGuestDataQuery,
   EventToGuestGroupsQuery,
   EventToGuestsQuery,
-  NodeType,
   User,
 } from "src/ent/internal";
 import schema from "src/schema/event_schema";

@@ -36,6 +36,8 @@ import {
   AccountPrefs2,
   AccountState,
   AccountTodoStatus,
+  EdgeType,
+  NodeType,
   convertNullableAccountPrefs,
   convertNullableAccountPrefs2List,
 } from "src/ent/generated/types";
@@ -47,9 +49,7 @@ import {
   AccountToTagsQuery,
   AccountToTodosQuery,
   AccountToWorkspacesQuery,
-  EdgeType,
   ITodoContainer,
-  NodeType,
   Todo,
   TodoContainerMixin,
 } from "src/ent/internal";

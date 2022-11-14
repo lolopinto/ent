@@ -11,8 +11,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Event, EventActivity, GuestGroup } from "src/ent/";
-import { EdgeType, NodeType } from "src/ent/generated/const";
 import { guestGroupLoaderInfo } from "src/ent/generated/loaders";
+import { EdgeType, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/guest_group_schema";
 
 export interface GuestGroupInput {

@@ -8,9 +8,10 @@ import CreateTodoAction, {
   TodoCreateInput,
 } from "src/ent/todo/actions/create_todo_action";
 import CreateTagAction from "../tag/actions/create_tag_action";
-import { Account, NodeType } from "src/ent";
+import { Account } from "src/ent";
 import CreateWorkspaceAction from "../workspace/actions/create_workspace_action";
 import { randomInt } from "crypto";
+import { NodeType } from "../generated/types";
 
 export function randomPhoneNumber(): string {
   const phone = Math.random().toString(10).substring(2, 12);

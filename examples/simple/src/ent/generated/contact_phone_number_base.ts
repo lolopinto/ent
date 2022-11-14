@@ -24,8 +24,8 @@ import {
   contactPhoneNumberLoader,
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
-import { ContactInfo } from "./types";
-import { Contact, ContactInfoMixin, IContactInfo, NodeType } from "../internal";
+import { ContactInfo, NodeType } from "./types";
+import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 

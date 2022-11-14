@@ -2,7 +2,7 @@
 
 import { AssocEdgeInputOptions, Ent, ID, Viewer } from "@snowtop/ent";
 import { Builder, Orchestrator } from "@snowtop/ent/action";
-import { EdgeType, NodeType } from "src/ent/generated/const";
+import { EdgeType, NodeType } from "src/ent/generated/types";
 import { ITodoContainer, Todo } from "src/ent/internal";
 
 interface IEntWithTodoContainer extends Ent<Viewer>, ITodoContainer {}

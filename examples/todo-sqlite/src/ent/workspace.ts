@@ -5,7 +5,8 @@ import {
   PrivacyPolicy,
   Viewer,
 } from "@snowtop/ent";
-import { EdgeType, WorkspaceBase } from "src/ent/internal";
+import { WorkspaceBase } from "src/ent/internal";
+import { EdgeType } from "src/ent/generated/types";
 
 export class Workspace extends WorkspaceBase {
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

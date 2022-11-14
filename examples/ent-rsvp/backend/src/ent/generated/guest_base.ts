@@ -19,6 +19,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { guestLoader, guestLoaderInfo } from "src/ent/generated/loaders";
+import { NodeType } from "src/ent/generated/types";
 import {
   Address,
   Event,
@@ -28,7 +29,6 @@ import {
   GuestToDeclinedEventsQuery,
   GuestToGuestDataQuery,
   IWithAddress,
-  NodeType,
   WithAddressMixin,
 } from "src/ent/internal";
 import schema from "src/schema/guest_schema";

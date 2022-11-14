@@ -23,17 +23,19 @@ import {
   eventActivityLoader,
   eventActivityLoaderInfo,
 } from "src/ent/generated/loaders";
-import { EventActivityRsvpStatus } from "src/ent/generated/types";
+import {
+  EdgeType,
+  EventActivityRsvpStatus,
+  NodeType,
+} from "src/ent/generated/types";
 import {
   Address,
-  EdgeType,
   Event,
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
   Guest,
   IWithAddress,
-  NodeType,
   WithAddressMixin,
 } from "src/ent/internal";
 import schema from "src/schema/event_activity_schema";

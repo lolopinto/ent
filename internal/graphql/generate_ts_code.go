@@ -3200,7 +3200,7 @@ func buildNodeRootQuery(processor *codegen.Processor) *rootQuery {
 				Import:     "loadEntByType",
 			},
 			{
-				ImportPath: "src/ent/",
+				ImportPath: codepath.GetTypesImportPath(),
 				Import:     "NodeType",
 			},
 			{

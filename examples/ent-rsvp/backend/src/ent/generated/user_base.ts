@@ -25,7 +25,8 @@ import {
   userLoader,
   userLoaderInfo,
 } from "src/ent/generated/loaders";
-import { NodeType, UserToEventsQuery } from "src/ent/internal";
+import { NodeType } from "src/ent/generated/types";
+import { UserToEventsQuery } from "src/ent/internal";
 import schema from "src/schema/user_schema";
 
 interface UserDBData {

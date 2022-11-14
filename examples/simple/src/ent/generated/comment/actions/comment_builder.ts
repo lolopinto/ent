@@ -14,8 +14,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Comment, User } from "../../..";
-import { EdgeType, NodeType } from "../../const";
 import { commentLoaderInfo } from "../../loaders";
+import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/comment_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 

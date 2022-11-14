@@ -21,6 +21,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { contactLoader, contactLoaderInfo } from "./loaders";
+import { NodeType } from "./types";
 import {
   ContactEmail,
   ContactPhoneNumber,
@@ -28,7 +29,6 @@ import {
   ContactToLikersQuery,
   FeedbackMixin,
   IFeedback,
-  NodeType,
   User,
 } from "../internal";
 import schema from "../../schema/contact_schema";

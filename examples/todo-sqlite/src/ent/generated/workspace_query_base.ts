@@ -8,6 +8,7 @@ import {
   ID,
   Viewer,
 } from "@snowtop/ent";
+import { EdgeType } from "src/ent/generated/types";
 import {
   Account,
   AccountToClosedTodosDupQuery,
@@ -15,7 +16,6 @@ import {
   AccountToOpenTodosDupQuery,
   AccountToScopedTodosQuery,
   AccountToWorkspacesQuery,
-  EdgeType,
   Workspace,
   WorkspaceToMembersEdge,
 } from "src/ent/internal";

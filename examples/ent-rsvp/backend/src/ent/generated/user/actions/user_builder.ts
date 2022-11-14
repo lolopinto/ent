@@ -11,8 +11,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { User } from "src/ent/";
-import { NodeType } from "src/ent/generated/const";
 import { userLoaderInfo } from "src/ent/generated/loaders";
+import { NodeType } from "src/ent/generated/types";
 import schema from "src/schema/user_schema";
 
 export interface UserInput {

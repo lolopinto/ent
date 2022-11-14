@@ -28,10 +28,10 @@ import {
   workspaceNoTransformLoader,
   workspaceSlugLoader,
 } from "src/ent/generated/loaders";
+import { NodeType } from "src/ent/generated/types";
 import {
   Account,
   ITodoContainer,
-  NodeType,
   TodoContainerMixin,
   WorkspaceToMembersQuery,
   WorkspaceToScopedTodosQuery,

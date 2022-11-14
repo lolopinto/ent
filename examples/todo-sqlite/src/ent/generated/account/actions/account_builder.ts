@@ -11,13 +11,14 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Account, Todo, Workspace } from "src/ent/";
-import { EdgeType, NodeType } from "src/ent/generated/const";
 import { accountLoaderInfo } from "src/ent/generated/loaders";
 import { TodoContainerBuilder } from "src/ent/generated/mixins/todo_container/actions/todo_container_builder";
 import {
   AccountPrefs,
   AccountPrefs2,
   AccountState,
+  EdgeType,
+  NodeType,
 } from "src/ent/generated/types";
 import schema from "src/schema/account_schema";
 

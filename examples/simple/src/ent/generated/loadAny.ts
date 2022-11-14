@@ -11,6 +11,7 @@ import {
   loadEnt,
   loadEntX,
 } from "@snowtop/ent";
+import { NodeType } from "./types";
 import {
   Address,
   AuthCode,
@@ -23,7 +24,6 @@ import {
   HoursOfOperation,
   User,
 } from "../internal";
-import { NodeType } from "./const";
 
 export async function loadEntByType(
   viewer: Viewer,

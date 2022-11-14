@@ -11,9 +11,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Event, Guest, GuestData } from "src/ent/";
-import { NodeType } from "src/ent/generated/const";
 import { guestDataLoaderInfo } from "src/ent/generated/loaders";
-import { GuestDataSource } from "src/ent/generated/types";
+import { GuestDataSource, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/guest_data_schema";
 
 export interface GuestDataInput {

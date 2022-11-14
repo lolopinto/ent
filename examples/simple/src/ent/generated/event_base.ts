@@ -23,16 +23,14 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import { eventLoader, eventLoaderInfo } from "./loaders";
-import { EventRsvpStatus } from "./types";
+import { EdgeType, EventRsvpStatus, NodeType } from "./types";
 import {
   Address,
-  EdgeType,
   EventToAttendingQuery,
   EventToDeclinedQuery,
   EventToHostsQuery,
   EventToInvitedQuery,
   EventToMaybeQuery,
-  NodeType,
   User,
 } from "../internal";
 import schema from "../../schema/event_schema";

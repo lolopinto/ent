@@ -14,9 +14,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
-import { NodeType } from "../../const";
 import { contactEmailLoaderInfo } from "../../loaders";
-import { ContactInfo } from "../../types";
+import { ContactInfo, NodeType } from "../../types";
 import schema from "../../../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 

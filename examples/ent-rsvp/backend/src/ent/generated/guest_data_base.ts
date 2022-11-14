@@ -22,8 +22,8 @@ import {
   guestDataLoader,
   guestDataLoaderInfo,
 } from "src/ent/generated/loaders";
-import { GuestDataSource } from "src/ent/generated/types";
-import { Event, Guest, NodeType } from "src/ent/internal";
+import { GuestDataSource, NodeType } from "src/ent/generated/types";
+import { Event, Guest } from "src/ent/internal";
 import schema from "src/schema/guest_data_schema";
 
 interface GuestDataDBData {

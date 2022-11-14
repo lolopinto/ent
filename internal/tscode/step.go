@@ -390,15 +390,11 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	var serr syncerr.Error
 
 	var entAddedOrRemoved bool
-	var edgeAddedOrRemoved bool
 	var funcs fns.FunctionList
 
 	for _, p := range processor.Schema.Patterns {
-		fns, opts := s.processPattern(processor, p, &serr)
+		fns, _ := s.processPattern(processor, p, &serr)
 		funcs = append(funcs, fns...)
-		if opts.edgeAdded || opts.edgeRemoved {
-			edgeAddedOrRemoved = true
-		}
 	}
 	funcs = append(funcs, s.processDeletedPatterns(processor)...)
 	for _, info := range processor.Schema.Nodes {
@@ -406,9 +402,6 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		funcs = append(funcs, fns...)
 		if opts.entAdded || opts.entRemoved {
 			entAddedOrRemoved = true
-		}
-		if opts.edgeAdded || opts.edgeRemoved {
-			edgeAddedOrRemoved = true
 		}
 	}
 
@@ -429,13 +422,6 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	})
 
 	funcs = append(funcs,
-		func() error {
-			// ent or edge added or removed
-			if writeAll || entAddedOrRemoved || edgeAddedOrRemoved {
-				return writeConstFile(processor, s.nodeTypes, s.edgeTypes)
-			}
-			return nil
-		},
 		func() error {
 			// if any changes, update this
 			// eventually only wanna do this if add|remove something
@@ -458,7 +444,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		func() error {
 			if updateBecauseChanges {
 				// if node added or removed
-				return writeTypesFile(processor)
+				return writeTypesFile(processor, s.nodeTypes, s.edgeTypes)
 			}
 			return nil
 		},
@@ -641,10 +627,6 @@ func getImportPathForBaseQueryFile(packageName string) string {
 
 func getImportPathForPatternBaseQueryFile(name string) string {
 	return fmt.Sprintf("src/ent/generated/patterns/%s_query_base", strcase.ToSnake(name))
-}
-
-func getFilePathForConstFile(cfg *codegen.Config) string {
-	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/const.ts")
 }
 
 func getFilePathForLoaderFile(cfg *codegen.Config) string {
@@ -886,45 +868,6 @@ func writeBaseQueryFileImpl(processor *codegen.Processor, info *BaseQueryEdgeInf
 	})
 }
 
-func writeConstFile(processor *codegen.Processor, nodeData []enum.Data, edgeData []enum.Data) error {
-	cfg := processor.Config
-	// sort data so that the enum is stable
-	sort.Slice(nodeData, func(i, j int) bool {
-		return nodeData[i].Name < nodeData[j].Name
-	})
-	sort.Slice(edgeData, func(i, j int) bool {
-		return edgeData[i].Name < edgeData[j].Name
-	})
-
-	filePath := getFilePathForConstFile(cfg)
-	imps := tsimport.NewImports(processor.Config, filePath)
-
-	return file.Write(&file.TemplatedBasedFileWriter{
-		Config: processor.Config,
-		Data: struct {
-			NodeType enum.Enum
-			EdgeType enum.Enum
-		}{
-			enum.Enum{
-				Name:   "NodeType",
-				Values: nodeData,
-			},
-			enum.Enum{
-				Name:   "EdgeType",
-				Values: edgeData,
-			},
-		},
-		AbsPathToTemplate: util.GetAbsolutePath("const.tmpl"),
-		TemplateName:      "const.tmpl",
-		OtherTemplateFiles: []string{
-			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
-		},
-		PathToFile: filePath,
-		TsImports:  imps,
-		FuncMap:    imps.FuncMap(),
-	})
-}
-
 func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error {
 	cfg := processor.Config
 	filePath := getFilePathForLoadAnyFile(cfg)
@@ -947,21 +890,39 @@ func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error 
 	})
 }
 
-func writeTypesFile(processor *codegen.Processor) error {
+func writeTypesFile(processor *codegen.Processor, nodeData []enum.Data, edgeData []enum.Data) error {
 	cfg := processor.Config
 	filePath := getFilePathForTypesFile(cfg)
 	imps := tsimport.NewImports(processor.Config, filePath)
 
+	// sort data so that the enum is stable
+	sort.Slice(nodeData, func(i, j int) bool {
+		return nodeData[i].Name < nodeData[j].Name
+	})
+	sort.Slice(edgeData, func(i, j int) bool {
+		return edgeData[i].Name < edgeData[j].Name
+	})
+
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			Schema  *schema.Schema
-			Package *codegen.ImportPackage
-			Config  *codegen.Config
+			Schema   *schema.Schema
+			Package  *codegen.ImportPackage
+			Config   *codegen.Config
+			NodeType enum.Enum
+			EdgeType enum.Enum
 		}{
 			processor.Schema,
 			cfg.GetImportPackage(),
 			processor.Config,
+			enum.Enum{
+				Name:   "NodeType",
+				Values: nodeData,
+			},
+			enum.Enum{
+				Name:   "EdgeType",
+				Values: edgeData,
+			},
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("types.tmpl"),
 		OtherTemplateFiles: []string{
@@ -1000,7 +961,6 @@ func writeLoaderFile(processor *codegen.Processor) error {
 
 func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	lines := []string{
-		"src/ent/generated/const",
 		"src/ent/generated/loaders",
 		"src/ent/generated/loadAny",
 	}

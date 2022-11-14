@@ -14,8 +14,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Address, Event, User } from "../../..";
-import { EdgeType, NodeType } from "../../const";
 import { eventLoaderInfo } from "../../loaders";
+import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/event_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 

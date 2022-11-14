@@ -1,4 +1,5 @@
-import { UserBase, Contact, EdgeType, Comment } from "./internal";
+import { UserBase, Contact, Comment } from "./internal";
+import { EdgeType } from "./generated/types";
 import {
   AllowIfViewerRule,
   AlwaysDenyRule,
