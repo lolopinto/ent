@@ -1,5 +1,5 @@
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
-import { DayOfWeek, DayOfWeekAlt } from "../";
+import { DayOfWeek, DayOfWeekAlt } from "../generated/types";
 import CreateHoursOfOperationAction from "../hours_of_operation/actions/create_hours_of_operation_action";
 
 test("create", async () => {

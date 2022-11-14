@@ -11,15 +11,7 @@ import schema from "../generated/schema";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../ent/user/actions/create_user_action";
-import {
-  Contact,
-  User,
-  NotifType,
-  NotifType2,
-  UserDaysOff,
-  UserPreferredShift,
-  UserIntEnum,
-} from "../../ent/";
+import { Contact, User } from "../../ent/";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction, {
@@ -28,6 +20,11 @@ import CreateContactAction, {
 import { GraphQLObjectType } from "graphql";
 import { v1 } from "uuid";
 import {
+  NotifType,
+  NotifType2,
+  UserDaysOff,
+  UserPreferredShift,
+  UserIntEnum,
   CatBreed,
   DogBreed,
   DogBreedGroup,
@@ -35,7 +32,7 @@ import {
   ObjNestedEnum,
   RabbitBreed,
   SuperNestedObjectEnum,
-} from "../../ent/generated/user_super_nested_object";
+} from "../../ent/generated/types";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import CreateCommentAction from "../../ent/comment/actions/create_comment_action";
 

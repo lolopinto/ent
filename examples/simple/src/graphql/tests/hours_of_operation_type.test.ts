@@ -2,7 +2,8 @@ import { ID } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import schema from "../generated/schema";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "src/ent";
+import { HoursOfOperation } from "src/ent";
+import { DayOfWeek, DayOfWeekAlt } from "src/ent/generated/types";
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
 import { DBTimeZone } from "@snowtop/ent/testutils/db_time_zone";
 
