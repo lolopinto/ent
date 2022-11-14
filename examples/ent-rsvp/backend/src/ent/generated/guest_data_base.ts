@@ -22,13 +22,9 @@ import {
   guestDataLoader,
   guestDataLoaderInfo,
 } from "src/ent/generated/loaders";
+import { GuestDataSource } from "src/ent/generated/types";
 import { Event, Guest, NodeType } from "src/ent/internal";
 import schema from "src/schema/guest_data_schema";
-
-export enum GuestDataSource {
-  EventPage = "event_page",
-  HomePage = "home_page",
-}
 
 interface GuestDataDBData {
   id: ID;

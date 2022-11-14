@@ -15,8 +15,9 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Event, Guest, GuestData, GuestDataSource } from "src/ent/";
+import { Event, Guest, GuestData } from "src/ent/";
 import { GuestDataBuilder } from "src/ent/generated/guest_data/actions/guest_data_builder";
+import { GuestDataSource } from "src/ent/generated/types";
 
 export interface GuestDataCreateInput {
   guestID: ID | Builder<Guest, Viewer>;
