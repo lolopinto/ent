@@ -2634,14 +2634,14 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 	if ciInfo.exported {
 		result.Imports = []*tsimport.ImportPath{
 			{
-				ImportPath: codepath.GetExternalImportPath(),
+				ImportPath: codepath.GetTypesImportPath(),
 				Import:     ci.TSType,
 			},
 		}
 	}
 	for _, imp := range ciInfo.imports {
 		result.Imports = append(result.Imports, &tsimport.ImportPath{
-			ImportPath: codepath.GetExternalImportPath(),
+			ImportPath: codepath.GetTypesImportPath(),
 			Import:     imp,
 		})
 	}

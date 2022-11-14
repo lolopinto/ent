@@ -13,9 +13,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
+import { Holiday } from "../../..";
 import { NodeType } from "../../const";
 import { holidayLoaderInfo } from "../../loaders";
+import { DayOfWeek, DayOfWeekAlt } from "../../types";
 import schema from "../../../../schema/holiday_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 

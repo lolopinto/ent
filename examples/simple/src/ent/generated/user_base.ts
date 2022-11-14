@@ -33,6 +33,7 @@ import {
   userLoaderInfo,
   userPhoneNumberLoader,
 } from "./loaders";
+import { UserDaysOff, UserIntEnum, UserPreferredShift } from "./types";
 import {
   UserNestedObjectList,
   convertNullableUserNestedObjectListList,
@@ -75,31 +76,6 @@ import {
   convertSuperNestedObject,
 } from "../../util/convert_user_fields";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
-
-export enum UserDaysOff {
-  Monday = "monday",
-  Tuesday = "tuesday",
-  Wednesday = "wednesday",
-  Thursday = "thursday",
-  Friday = "friday",
-  Saturday = "saturday",
-  Sunday = "sunday",
-}
-
-export enum UserPreferredShift {
-  Morning = "morning",
-  Afternoon = "afternoon",
-  Evening = "evening",
-  Graveyard = "graveyard",
-}
-
-export enum UserIntEnum {
-  VERIFIED = 1,
-  UNVERIFIED = 2,
-  DISABLED = 3,
-  DEACTIVATED = 4,
-  // @deprecated FOO = 5,
-}
 
 interface UserDBData {
   id: ID;

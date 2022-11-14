@@ -10,7 +10,7 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { ContactInfo } from "../../../ent";
+import { ContactInfo } from "../../../ent/generated/types";
 import { ContactInfoSourceType } from "../../resolvers/internal";
 
 export const ContactInfoType = new GraphQLObjectType({

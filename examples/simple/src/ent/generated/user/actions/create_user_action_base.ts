@@ -16,7 +16,8 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { User, UserDaysOff, UserIntEnum, UserPreferredShift } from "../../..";
+import { User } from "../../..";
+import { UserDaysOff, UserIntEnum, UserPreferredShift } from "../../types";
 import { UserBuilder } from "./user_builder";
 import { UserNestedObjectList } from "../../user_nested_object_list";
 import { UserPrefsDiff } from "../../user_prefs_diff";

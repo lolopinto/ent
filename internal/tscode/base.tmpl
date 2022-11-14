@@ -33,11 +33,6 @@
 {{$ignore := useImport "Data" -}}
 {{$thisType := printf ("new (viewer: %s, data: Data) => T") $viewerType}}
 
-{{ range .GetTSEnums -}}
-  {{if not .Imported -}}
-    {{ template "enum.tmpl" . -}}
-  {{end -}}
-{{ end}}
 {{$nodeData := .}}
 
 {{$dataType := printf "%sDBData" .Node -}}
@@ -414,7 +409,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{end}}
 
     {{$group.GetStatusMapMethod}}() {
-      let m:Map<{{$group.ConstType}}, {{useImport "EdgeType"}}> = new Map();
+      let m:Map<{{useImport $group.ConstType}}, {{useImport "EdgeType"}}> = new Map();
       {{range $k, $v := $group.GetStatusMap -}}
         m.set({{$group.ConstType}}.{{$k}}, {{useImport "EdgeType"}}.{{$v}});
       {{end -}}

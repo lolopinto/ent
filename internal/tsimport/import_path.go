@@ -104,6 +104,13 @@ func NewLocalEntImportPath(typ string) *ImportPath {
 	}
 }
 
+func NewTypesEntImportPath(typ string) *ImportPath {
+	return &ImportPath{
+		Import:     typ,
+		ImportPath: codepath.GetTypesImportPath(),
+	}
+}
+
 func NewLocalEntConnectionImportPath(typ string) *ImportPath {
 	return &ImportPath{
 		// TODO always adding type for now. may need to different paths

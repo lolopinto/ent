@@ -556,7 +556,7 @@ func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
 		if ok && (f.fkey != nil || f.patternName != "") {
 			// foreign key with enum type requires an import
 			// if pattern enum, this is defined in its own file
-			ret = append(ret, tsimport.NewLocalEntImportPath(enumType.GetEnumData().TSName))
+			ret = append(ret, tsimport.NewTypesEntImportPath(enumType.GetEnumData().TSName))
 		}
 	}
 

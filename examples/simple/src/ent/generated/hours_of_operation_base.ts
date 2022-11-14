@@ -21,13 +21,8 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
-import {
-  DayOfWeek,
-  DayOfWeekAlt,
-  DayOfWeekMixin,
-  IDayOfWeek,
-  NodeType,
-} from "../internal";
+import { DayOfWeek, DayOfWeekAlt } from "./types";
+import { DayOfWeekMixin, IDayOfWeek, NodeType } from "../internal";
 import schema from "../../schema/hours_of_operation_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 

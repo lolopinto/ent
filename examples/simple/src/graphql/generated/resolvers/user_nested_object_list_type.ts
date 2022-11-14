@@ -12,7 +12,10 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { UserNestedNestedObjectList, UserNestedObjectList } from "../../../ent";
+import {
+  UserNestedNestedObjectList,
+  UserNestedObjectList,
+} from "../../../ent/generated/types";
 import {
   EnumUsedInListType,
   IntEnumUsedInListType,

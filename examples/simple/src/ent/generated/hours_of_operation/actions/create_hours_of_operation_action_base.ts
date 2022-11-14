@@ -15,8 +15,9 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
+import { HoursOfOperation } from "../../..";
 import { HoursOfOperationBuilder } from "./hours_of_operation_builder";
+import { DayOfWeek, DayOfWeekAlt } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface HoursOfOperationCreateInput {

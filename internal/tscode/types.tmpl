@@ -1,0 +1,11 @@
+{{ range .Schema.Enums }}
+  {{ template "enum.tmpl" .Enum -}}
+{{ end -}}
+
+{{ $schema := .Schema }}
+{{ $package := .Package }}
+{{ $config := .Config }}
+
+{{ range .Schema.CustomInterfaces }}
+  {{ template "custom_interface.tmpl" (dict "Interface" .  "Package" $package "Schema" $schema  "Config" $config) }}
+{{ end -}}

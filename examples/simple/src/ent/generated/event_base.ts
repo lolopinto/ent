@@ -23,6 +23,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import { eventLoader, eventLoaderInfo } from "./loaders";
+import { EventRsvpStatus } from "./types";
 import {
   Address,
   EdgeType,
@@ -36,13 +37,6 @@ import {
 } from "../internal";
 import schema from "../../schema/event_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
-
-export enum EventRsvpStatus {
-  Attending = "attending",
-  Declined = "declined",
-  Maybe = "maybe",
-  CanRsvp = "canRsvp",
-}
 
 interface EventDBData {
   id: ID;

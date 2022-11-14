@@ -62,16 +62,6 @@ type writeOptions struct {
 	edgeRemoved        bool
 }
 
-func (s *Step) processCustomInterface(processor *codegen.Processor, ci *customtype.CustomInterface, serr *syncerr.Error) fns.FunctionList {
-	// TODO this needs to depend on if that has changed
-	var ret fns.FunctionList
-
-	ret = append(ret, func() error {
-		return writeCustomInterfaceFile(processor, ci)
-	})
-	return ret
-}
-
 func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) (fns.FunctionList, *writeOptions) {
 	var ret fns.FunctionList
 	nodeData := info.NodeData
@@ -395,38 +385,6 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 	return ret
 }
 
-func (s *Step) processEnums(processor *codegen.Processor) fns.FunctionList {
-	var ret fns.FunctionList
-
-	writeAll := processor.Config.WriteAllFiles()
-
-	for k := range processor.Schema.Enums {
-		info := processor.Schema.Enums[k]
-		if !info.OwnEnumFile() {
-			continue
-		}
-
-		if writeAll ||
-			processor.ChangeMap.ChangesExist(info.Enum.Name, change.AddEnum, change.ModifyEnum) {
-			ret = append(ret, func() error {
-				return writeEnumFile(info, processor)
-			})
-		}
-	}
-
-	// TODO this isn't ideal. we should process this once and flag deleted ish separately
-	for k := range processor.ChangeMap {
-		if processor.Schema.NodeNameExists(k) || processor.Schema.EnumNameExists(k) {
-			continue
-		}
-		if processor.ChangeMap.ChangesExist(k, change.RemoveEnum) {
-			filePath := getFilePathForEnumFile(processor.Config, k)
-			ret = append(ret, file.GetDeleteFileFunction(processor.Config, filePath))
-		}
-	}
-	return ret
-}
-
 func (s *Step) ProcessData(processor *codegen.Processor) error {
 	fmt.Println("generating ent code...")
 	var serr syncerr.Error
@@ -434,9 +392,6 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	var entAddedOrRemoved bool
 	var edgeAddedOrRemoved bool
 	var funcs fns.FunctionList
-	for _, ci := range processor.Schema.CustomInterfaces {
-		funcs = append(funcs, s.processCustomInterface(processor, ci, &serr)...)
-	}
 
 	for _, p := range processor.Schema.Patterns {
 		fns, opts := s.processPattern(processor, p, &serr)
@@ -461,17 +416,9 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		serr.Append(err)
 	}
 
-	for k := range processor.Schema.Enums {
-		info := processor.Schema.Enums[k]
-		if !info.OwnEnumFile() {
-			continue
-		}
-	}
-
 	writeAll := processor.Config.WriteAllFiles()
 	changes := processor.ChangeMap
 	updateBecauseChanges := writeAll || len(changes) > 0
-	funcs = append(funcs, s.processEnums(processor)...)
 
 	// sort data so that the enum is stable
 	sort.Slice(s.nodeTypes, func(i, j int) bool {
@@ -505,6 +452,13 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 			if writeAll || entAddedOrRemoved {
 				// if node added or removed
 				return writeLoadAnyFile(s.nodeTypes, processor)
+			}
+			return nil
+		},
+		func() error {
+			if updateBecauseChanges {
+				// if node added or removed
+				return writeTypesFile(processor)
 			}
 			return nil
 		},
@@ -608,15 +562,6 @@ func getFilePathForModelFile(cfg *codegen.Config, nodeData *schema.NodeData) str
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s.ts", nodeData.PackageName))
 }
 
-func getFilePathForEnumFile(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(name)))
-}
-
-// copied to input.go
-func getFilePathForCustomInterfaceFile(cfg *codegen.Config, ci *customtype.CustomInterface) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(ci.TSType)))
-}
-
 // copied to field_type.go
 func getImportPathForCustomInterfaceFile(ci *customtype.CustomInterface) string {
 	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(ci.TSType))
@@ -708,6 +653,10 @@ func getFilePathForLoaderFile(cfg *codegen.Config) string {
 
 func getFilePathForLoadAnyFile(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/loadAny.ts")
+}
+
+func getFilePathForTypesFile(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/types.ts")
 }
 
 // TODO
@@ -812,52 +761,6 @@ func writeEntFile(nodeData *schema.NodeData, processor *codegen.Processor) error
 		// only write this file once.
 		// TODO need a flag to overwrite this later.
 	}, file.WriteOnce())
-}
-
-func writeEnumFile(enumInfo *schema.EnumInfo, processor *codegen.Processor) error {
-	filePath := getFilePathForEnumFile(processor.Config, enumInfo.Enum.Name)
-	imps := tsimport.NewImports(processor.Config, filePath)
-	return file.Write(&file.TemplatedBasedFileWriter{
-		// enum file can be rendered on its own so just render it
-		Config:            processor.Config,
-		Data:              enumInfo.Enum,
-		AbsPathToTemplate: util.GetAbsolutePath("../schema/enum/enum.tmpl"),
-		TemplateName:      "enum.tmpl",
-		PathToFile:        filePath,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
-	})
-}
-
-func writeCustomInterfaceFile(processor *codegen.Processor, ci *customtype.CustomInterface) error {
-	// TODO we should store the file path here instead of this...
-	filePath := getFilePathForCustomInterfaceFile(processor.Config, ci)
-	imps := tsimport.NewImports(processor.Config, filePath)
-
-	return file.Write(&file.TemplatedBasedFileWriter{
-		Config: processor.Config,
-		Data: struct {
-			Interface *customtype.CustomInterface
-			Package   *codegen.ImportPackage
-			Config    *codegen.Config
-			Schema    *schema.Schema
-		}{
-			Interface: ci,
-			Package:   processor.Config.GetImportPackage(),
-			Config:    processor.Config,
-			Schema:    processor.Schema,
-		},
-		AbsPathToTemplate: util.GetAbsolutePath("custom_interface.tmpl"),
-		OtherTemplateFiles: []string{
-			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
-			util.GetAbsolutePath("interface.tmpl"),
-		},
-		TemplateName: "custom_interface.tmpl",
-		PathToFile:   filePath,
-		TsImports:    imps,
-		FuncMap:      imps.FuncMap(),
-		EditableCode: true,
-	})
 }
 
 func writeBaseQueryFile(processor *codegen.Processor, nodeData *schema.NodeData) error {
@@ -1044,6 +947,35 @@ func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error 
 	})
 }
 
+func writeTypesFile(processor *codegen.Processor) error {
+	cfg := processor.Config
+	filePath := getFilePathForTypesFile(cfg)
+	imps := tsimport.NewImports(processor.Config, filePath)
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
+		Data: struct {
+			Schema  *schema.Schema
+			Package *codegen.ImportPackage
+			Config  *codegen.Config
+		}{
+			processor.Schema,
+			cfg.GetImportPackage(),
+			processor.Config,
+		},
+		AbsPathToTemplate: util.GetAbsolutePath("types.tmpl"),
+		OtherTemplateFiles: []string{
+			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
+			util.GetAbsolutePath("interface.tmpl"),
+			util.GetAbsolutePath("custom_interface.tmpl"),
+		},
+		TemplateName: "types.tmpl",
+		PathToFile:   filePath,
+		TsImports:    imps,
+		FuncMap:      imps.FuncMap(),
+	})
+}
+
 func writeLoaderFile(processor *codegen.Processor) error {
 	cfg := processor.Config
 	filePath := getFilePathForLoaderFile(cfg)
@@ -1078,9 +1010,6 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	}
 
 	var baseFiles []string
-	for _, ci := range s.CustomInterfaces {
-		append2(&baseFiles, getImportPathForCustomInterfaceFile(ci))
-	}
 	for _, info := range s.Nodes {
 		append2(&baseFiles, getImportPathForBaseModelFile(info.NodeData.PackageName))
 	}
@@ -1088,13 +1017,6 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	var entFiles []string
 	for _, info := range s.Nodes {
 		append2(&entFiles, getImportPathForModelFile(info.NodeData))
-	}
-
-	var enums []string
-	for _, enum := range s.Enums {
-		if enum.OwnEnumFile() {
-			append2(&enums, getImportPathForEnumFile(enum))
-		}
 	}
 
 	var baseQueryFiles []string
@@ -1133,7 +1055,6 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	// bucket each group, make sure it's sorted within each bucket so that it doesn't randomly change
 	// and make sure we get the order we want
 	list := [][]string{
-		enums,
 		mixins,
 		baseFiles,
 		entFiles,

@@ -24,7 +24,7 @@ import {
   UserNestedNestedObject,
   UserNestedObject,
   UserSuperNestedObject,
-} from "../../../ent";
+} from "../../../ent/generated/types";
 import {
   CatBreedType,
   DogBreedGroupType,
