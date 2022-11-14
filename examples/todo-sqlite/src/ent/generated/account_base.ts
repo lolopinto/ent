@@ -26,19 +26,19 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
-  AccountPrefs,
-  convertNullableAccountPrefs,
-} from "src/ent/generated/account_prefs";
-import {
-  AccountPrefs2,
-  convertNullableAccountPrefs2List,
-} from "src/ent/generated/account_prefs_2";
-import {
   accountLoader,
   accountLoaderInfo,
   accountNoTransformLoader,
   accountPhoneNumberLoader,
 } from "src/ent/generated/loaders";
+import {
+  AccountPrefs,
+  AccountPrefs2,
+  AccountState,
+  AccountTodoStatus,
+  convertNullableAccountPrefs,
+  convertNullableAccountPrefs2List,
+} from "src/ent/generated/types";
 import {
   AccountToClosedTodosDupQuery,
   AccountToCreatedWorkspacesQuery,
@@ -54,18 +54,6 @@ import {
   TodoContainerMixin,
 } from "src/ent/internal";
 import schema from "src/schema/account_schema";
-
-export enum AccountState {
-  UNVERIFIED = "UNVERIFIED",
-  VERIFIED = "VERIFIED",
-  DEACTIVATED = "DEACTIVATED",
-  DISABLED = "DISABLED",
-}
-
-export enum AccountTodoStatus {
-  OpenTodosDup = "openTodosDup",
-  ClosedTodosDup = "closedTodosDup",
-}
 
 interface AccountDBData {
   id: ID;

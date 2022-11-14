@@ -8,7 +8,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { AccountPrefs } from "src/ent/";
+import { AccountPrefs } from "src/ent/generated/types";
 
 export const AccountPrefsType = new GraphQLObjectType({
   name: "AccountPrefs",

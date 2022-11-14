@@ -1,7 +1,8 @@
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import RenameTodoStatusAction from "src/ent/todo/actions/rename_todo_status_action";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
-import { Todo, NodeType, EdgeType, AccountTodoStatus } from "src/ent/";
+import { Todo, NodeType, EdgeType } from "src/ent/";
+import { AccountTodoStatus } from "src/ent/generated/types";
 import {
   createAccount,
   createTag,
