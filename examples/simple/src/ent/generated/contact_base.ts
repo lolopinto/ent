@@ -77,7 +77,10 @@ export class ContactBase
   }
 
   static async load<T extends ContactBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
@@ -89,7 +92,10 @@ export class ContactBase
   }
 
   static async loadX<T extends ContactBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
@@ -101,7 +107,10 @@ export class ContactBase
   }
 
   static async loadMany<T extends ContactBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -113,7 +122,10 @@ export class ContactBase
   }
 
   static async loadCustom<T extends ContactBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -128,7 +140,10 @@ export class ContactBase
   }
 
   static async loadCustomData<T extends ContactBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<ContactDBData[]> {
@@ -143,7 +158,10 @@ export class ContactBase
   }
 
   static async loadCustomCount<T extends ContactBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -157,7 +175,10 @@ export class ContactBase
   }
 
   static async loadRawData<T extends ContactBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactDBData | null> {
@@ -169,7 +190,10 @@ export class ContactBase
   }
 
   static async loadRawDataX<T extends ContactBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactDBData> {
@@ -181,7 +205,10 @@ export class ContactBase
   }
 
   static loaderOptions<T extends ContactBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: contactLoaderInfo.tableName,

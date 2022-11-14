@@ -161,7 +161,13 @@ const RabbitTypeType = new GraphQLObjectType({
 
 const PetUnionTypeType = new GraphQLUnionType({
   name: "PetUnionType",
-  types: [CatTypeType, DogTypeType, RabbitTypeType],
+  types: [
+    CatTypeType,
+
+    DogTypeType,
+
+    RabbitTypeType,
+  ],
 });
 
 export const UserSuperNestedObjectType = new GraphQLObjectType({

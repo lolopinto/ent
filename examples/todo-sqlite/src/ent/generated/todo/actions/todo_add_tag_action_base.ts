@@ -44,8 +44,7 @@ export type TodoAddTagActionValidators = Validator<
 >[];
 
 export class TodoAddTagActionBase
-  implements
-    Action<Todo, TodoBuilder<TodoInput, Todo>, Viewer, TodoInput, Todo>
+  implements Action<Todo, TodoBuilder<TodoInput, Todo>, Viewer, TodoInput, Todo>
 {
   public readonly builder: TodoBuilder<TodoInput, Todo>;
   public readonly viewer: Viewer;
@@ -114,7 +113,10 @@ export class TodoAddTagActionBase
   }
 
   static create<T extends TodoAddTagActionBase>(
-    this: new (viewer: Viewer, todo: Todo) => T,
+    this: new (
+      viewer: Viewer,
+      todo: Todo,
+    ) => T,
     viewer: Viewer,
     todo: Todo,
   ): T {
@@ -122,7 +124,10 @@ export class TodoAddTagActionBase
   }
 
   static async saveXFromID<T extends TodoAddTagActionBase>(
-    this: new (viewer: Viewer, todo: Todo) => T,
+    this: new (
+      viewer: Viewer,
+      todo: Todo,
+    ) => T,
     viewer: Viewer,
     id: ID,
     tagID: ID,

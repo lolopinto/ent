@@ -81,7 +81,10 @@ export class WorkspaceBase
   }
 
   static async load<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -93,7 +96,10 @@ export class WorkspaceBase
   }
 
   static async loadX<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -109,7 +115,10 @@ export class WorkspaceBase
   // we don't generate the full complement of read-APIs
   // but can easily query the raw data with workspaceNoTransformLoader
   static async loadNoTransform<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -122,7 +131,10 @@ export class WorkspaceBase
   }
 
   static async loadNoTransformX<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -134,7 +146,10 @@ export class WorkspaceBase
   }
 
   static async loadMany<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -146,7 +161,10 @@ export class WorkspaceBase
   }
 
   static async loadCustom<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -161,7 +179,10 @@ export class WorkspaceBase
   }
 
   static async loadCustomData<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<WorkspaceDBData[]> {
@@ -176,7 +197,10 @@ export class WorkspaceBase
   }
 
   static async loadCustomCount<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -190,7 +214,10 @@ export class WorkspaceBase
   }
 
   static async loadRawData<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<WorkspaceDBData | null> {
@@ -202,7 +229,10 @@ export class WorkspaceBase
   }
 
   static async loadRawDataX<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<WorkspaceDBData> {
@@ -214,7 +244,10 @@ export class WorkspaceBase
   }
 
   static async loadFromSlug<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     slug: string,
   ): Promise<T | null> {
@@ -225,7 +258,10 @@ export class WorkspaceBase
   }
 
   static async loadFromSlugX<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     slug: string,
   ): Promise<T> {
@@ -236,7 +272,10 @@ export class WorkspaceBase
   }
 
   static async loadIDFromSlug<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     slug: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -245,7 +284,10 @@ export class WorkspaceBase
   }
 
   static async loadRawDataFromSlug<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     slug: string,
     context?: Context,
   ): Promise<WorkspaceDBData | null> {
@@ -257,7 +299,10 @@ export class WorkspaceBase
   }
 
   static loaderOptions<T extends WorkspaceBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: workspaceLoaderInfo.tableName,

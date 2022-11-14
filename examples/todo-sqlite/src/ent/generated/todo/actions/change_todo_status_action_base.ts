@@ -124,7 +124,11 @@ export class ChangeTodoStatusActionBase
   }
 
   static create<T extends ChangeTodoStatusActionBase>(
-    this: new (viewer: Viewer, todo: Todo, input: ChangeTodoStatusInput) => T,
+    this: new (
+      viewer: Viewer,
+      todo: Todo,
+      input: ChangeTodoStatusInput,
+    ) => T,
     viewer: Viewer,
     todo: Todo,
     input: ChangeTodoStatusInput,
@@ -133,7 +137,11 @@ export class ChangeTodoStatusActionBase
   }
 
   static async saveXFromID<T extends ChangeTodoStatusActionBase>(
-    this: new (viewer: Viewer, todo: Todo, input: ChangeTodoStatusInput) => T,
+    this: new (
+      viewer: Viewer,
+      todo: Todo,
+      input: ChangeTodoStatusInput,
+    ) => T,
     viewer: Viewer,
     id: ID,
     input: ChangeTodoStatusInput,

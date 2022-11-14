@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.1.0-alpha93",
+  "version": "0.1.0-alpha93-9117d260-61f6-11ed-8b12-01f8b91c91d4",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -10,6 +10,7 @@
   "dependencies": {
     "@types/node": "^15.0.2",
     "camel-case": "^4.1.2",
+    "cosmiconfig": "^7.0.1",
     "dataloader": "^2.0.0",
     "glob": "^7.1.6",
     "graph-data-structure": "^1.12.0",

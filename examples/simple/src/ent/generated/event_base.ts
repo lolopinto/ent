@@ -98,7 +98,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   static async load<T extends EventBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
@@ -110,7 +113,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadX<T extends EventBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
@@ -122,7 +128,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadMany<T extends EventBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -134,7 +143,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustom<T extends EventBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -149,7 +161,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustomData<T extends EventBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<EventDBData[]> {
@@ -164,7 +179,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustomCount<T extends EventBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -178,7 +196,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadRawData<T extends EventBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<EventDBData | null> {
@@ -190,7 +211,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadRawDataX<T extends EventBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<EventDBData> {
@@ -202,7 +226,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   static loaderOptions<T extends EventBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: eventLoaderInfo.tableName,

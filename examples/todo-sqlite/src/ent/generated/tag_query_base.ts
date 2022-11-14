@@ -42,7 +42,10 @@ export abstract class TagToTodosQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends TagToTodosQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Tag, Todo>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Tag, Todo>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Tag, Todo>,
   ): T {

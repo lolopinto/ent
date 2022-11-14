@@ -46,8 +46,8 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	if s.db == nil {
 		return errors.New("weirdness. dbSchema is nil when it shouldn't be")
 	}
-	// if write all, process db changes also
-	if processor.NoDBChanges() && !processor.Config.WriteAllFiles() {
+	// no changes and we should use changes, nothing to do
+	if processor.NoDBChanges() && processor.Config.UseChanges() {
 		return nil
 	}
 	return s.db.makeDBChanges(processor.Config)

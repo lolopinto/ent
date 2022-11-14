@@ -63,7 +63,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async load<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -75,7 +78,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -87,7 +93,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadMany<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -99,7 +108,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadCustom<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -114,7 +126,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadCustomData<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<UserDBData[]> {
@@ -129,7 +144,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadCustomCount<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -143,7 +161,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadRawData<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<UserDBData | null> {
@@ -155,7 +176,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadRawDataX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<UserDBData> {
@@ -167,7 +191,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T | null> {
@@ -178,7 +205,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadFromEmailAddressX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T> {
@@ -189,7 +219,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadIDFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     emailAddress: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -200,7 +233,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static async loadRawDataFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     emailAddress: string,
     context?: Context,
   ): Promise<UserDBData | null> {
@@ -214,7 +250,10 @@ export class UserBase implements Ent<Viewer> {
   }
 
   static loaderOptions<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: userLoaderInfo.tableName,

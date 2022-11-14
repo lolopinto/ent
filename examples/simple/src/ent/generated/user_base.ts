@@ -272,7 +272,10 @@ export class UserBase
   }
 
   static async load<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
@@ -284,7 +287,10 @@ export class UserBase
   }
 
   static async loadX<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
@@ -296,7 +302,10 @@ export class UserBase
   }
 
   static async loadMany<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -308,7 +317,10 @@ export class UserBase
   }
 
   static async loadCustom<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -323,7 +335,10 @@ export class UserBase
   }
 
   static async loadCustomData<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<UserDBData[]> {
@@ -338,7 +353,10 @@ export class UserBase
   }
 
   static async loadCustomCount<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -352,7 +370,10 @@ export class UserBase
   }
 
   static async loadRawData<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<UserDBData | null> {
@@ -364,7 +385,10 @@ export class UserBase
   }
 
   static async loadRawDataX<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<UserDBData> {
@@ -376,7 +400,10 @@ export class UserBase
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     emailAddress: string,
   ): Promise<T | null> {
@@ -387,7 +414,10 @@ export class UserBase
   }
 
   static async loadFromEmailAddressX<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     emailAddress: string,
   ): Promise<T> {
@@ -398,7 +428,10 @@ export class UserBase
   }
 
   static async loadIDFromEmailAddress<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     emailAddress: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -409,7 +442,10 @@ export class UserBase
   }
 
   static async loadRawDataFromEmailAddress<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     emailAddress: string,
     context?: Context,
   ): Promise<UserDBData | null> {
@@ -423,7 +459,10 @@ export class UserBase
   }
 
   static async loadFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     phoneNumber: string,
   ): Promise<T | null> {
@@ -434,7 +473,10 @@ export class UserBase
   }
 
   static async loadFromPhoneNumberX<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     phoneNumber: string,
   ): Promise<T> {
@@ -445,7 +487,10 @@ export class UserBase
   }
 
   static async loadIDFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     phoneNumber: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -456,7 +501,10 @@ export class UserBase
   }
 
   static async loadRawDataFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     phoneNumber: string,
     context?: Context,
   ): Promise<UserDBData | null> {
@@ -470,7 +518,10 @@ export class UserBase
   }
 
   static loaderOptions<T extends UserBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: userLoaderInfo.tableName,

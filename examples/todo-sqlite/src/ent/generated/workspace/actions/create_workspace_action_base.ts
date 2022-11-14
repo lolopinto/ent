@@ -125,7 +125,10 @@ export class CreateWorkspaceActionBase
   }
 
   static create<T extends CreateWorkspaceActionBase>(
-    this: new (viewer: Viewer, input: WorkspaceCreateInput) => T,
+    this: new (
+      viewer: Viewer,
+      input: WorkspaceCreateInput,
+    ) => T,
     viewer: Viewer,
     input: WorkspaceCreateInput,
   ): T {

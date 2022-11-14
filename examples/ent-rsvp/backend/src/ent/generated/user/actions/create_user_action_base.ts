@@ -124,7 +124,10 @@ export class CreateUserActionBase
   }
 
   static create<T extends CreateUserActionBase>(
-    this: new (viewer: Viewer, input: UserCreateInput) => T,
+    this: new (
+      viewer: Viewer,
+      input: UserCreateInput,
+    ) => T,
     viewer: Viewer,
     input: UserCreateInput,
   ): T {

@@ -130,7 +130,11 @@ export class EditAccountActionBase
   }
 
   static create<T extends EditAccountActionBase>(
-    this: new (viewer: Viewer, account: Account, input: AccountEditInput) => T,
+    this: new (
+      viewer: Viewer,
+      account: Account,
+      input: AccountEditInput,
+    ) => T,
     viewer: Viewer,
     account: Account,
     input: AccountEditInput,
@@ -139,7 +143,11 @@ export class EditAccountActionBase
   }
 
   static async saveXFromID<T extends EditAccountActionBase>(
-    this: new (viewer: Viewer, account: Account, input: AccountEditInput) => T,
+    this: new (
+      viewer: Viewer,
+      account: Account,
+      input: AccountEditInput,
+    ) => T,
     viewer: Viewer,
     id: ID,
     input: AccountEditInput,

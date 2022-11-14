@@ -91,7 +91,10 @@ export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends GuestGroupToGuestsQueryBase>(
-    this: new (viewer: Viewer, src: GuestGroup | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: GuestGroup | ID,
+    ) => T,
     viewer: Viewer,
     src: GuestGroup | ID,
   ): T {

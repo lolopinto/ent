@@ -19,7 +19,10 @@ export class UserToEventsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends UserToEventsQueryBase>(
-    this: new (viewer: Viewer, src: User | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: User | ID,
+    ) => T,
     viewer: Viewer,
     src: User | ID,
   ): T {

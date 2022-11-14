@@ -27,7 +27,10 @@ export default class CreateAddressAction extends CreateAddressActionBase {
           return (
             (this.input.ownerID as Builder<Ent>).placeholderID === undefined
           );
-        }, new AllowIfEntIsVisibleRule(this.input.ownerID as ID, getLoaderOptions(this.input.ownerType as unknown as NodeType))),
+        }, new AllowIfEntIsVisibleRule(
+          this.input.ownerID as ID,
+          getLoaderOptions(this.input.ownerType as unknown as NodeType),
+        )),
         AlwaysDenyRule,
       ],
     };

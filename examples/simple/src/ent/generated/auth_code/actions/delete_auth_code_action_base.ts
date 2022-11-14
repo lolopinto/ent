@@ -119,7 +119,10 @@ export class DeleteAuthCodeActionBase
   }
 
   static create<T extends DeleteAuthCodeActionBase>(
-    this: new (viewer: ExampleViewerAlias, authCode: AuthCode) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      authCode: AuthCode,
+    ) => T,
     viewer: ExampleViewerAlias,
     authCode: AuthCode,
   ): T {
@@ -127,7 +130,10 @@ export class DeleteAuthCodeActionBase
   }
 
   static async saveXFromID<T extends DeleteAuthCodeActionBase>(
-    this: new (viewer: ExampleViewerAlias, authCode: AuthCode) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      authCode: AuthCode,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<void> {

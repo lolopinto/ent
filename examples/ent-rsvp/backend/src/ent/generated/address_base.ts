@@ -73,7 +73,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async load<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -85,7 +88,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadX<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -97,7 +103,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadMany<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -109,7 +118,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadCustom<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -124,7 +136,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadCustomData<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<AddressDBData[]> {
@@ -139,7 +154,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadCustomCount<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -153,7 +171,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadRawData<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AddressDBData | null> {
@@ -165,7 +186,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadRawDataX<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AddressDBData> {
@@ -177,7 +201,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadFromOwnerID<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ownerID: ID,
   ): Promise<T | null> {
@@ -188,7 +215,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadFromOwnerIDX<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ownerID: ID,
   ): Promise<T> {
@@ -199,7 +229,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadIDFromOwnerID<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     ownerID: ID,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -208,7 +241,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static async loadRawDataFromOwnerID<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     ownerID: ID,
     context?: Context,
   ): Promise<AddressDBData | null> {
@@ -220,7 +256,10 @@ export class AddressBase implements Ent<Viewer> {
   }
 
   static loaderOptions<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: addressLoaderInfo.tableName,

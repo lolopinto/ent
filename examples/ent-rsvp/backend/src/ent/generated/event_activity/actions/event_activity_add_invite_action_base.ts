@@ -138,7 +138,10 @@ export class EventActivityAddInviteActionBase
   }
 
   static create<T extends EventActivityAddInviteActionBase>(
-    this: new (viewer: Viewer, eventActivity: EventActivity) => T,
+    this: new (
+      viewer: Viewer,
+      eventActivity: EventActivity,
+    ) => T,
     viewer: Viewer,
     eventActivity: EventActivity,
   ): T {
@@ -146,7 +149,10 @@ export class EventActivityAddInviteActionBase
   }
 
   static async saveXFromID<T extends EventActivityAddInviteActionBase>(
-    this: new (viewer: Viewer, eventActivity: EventActivity) => T,
+    this: new (
+      viewer: Viewer,
+      eventActivity: EventActivity,
+    ) => T,
     viewer: Viewer,
     id: ID,
     inviteID: ID,

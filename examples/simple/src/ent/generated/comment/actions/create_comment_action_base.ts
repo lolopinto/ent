@@ -132,7 +132,10 @@ export class CreateCommentActionBase
   }
 
   static create<T extends CreateCommentActionBase>(
-    this: new (viewer: ExampleViewerAlias, input: CommentCreateInput) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      input: CommentCreateInput,
+    ) => T,
     viewer: ExampleViewerAlias,
     input: CommentCreateInput,
   ): T {

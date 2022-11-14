@@ -66,7 +66,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   }
 
   static async load<T extends AddressBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
@@ -78,7 +81,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadX<T extends AddressBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
@@ -90,7 +96,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadMany<T extends AddressBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -102,7 +111,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustom<T extends AddressBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -117,7 +129,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustomData<T extends AddressBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<AddressDBData[]> {
@@ -132,7 +147,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadCustomCount<T extends AddressBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -146,7 +164,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadRawData<T extends AddressBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AddressDBData | null> {
@@ -158,7 +179,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   }
 
   static async loadRawDataX<T extends AddressBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AddressDBData> {
@@ -170,7 +194,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   }
 
   static loaderOptions<T extends AddressBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: addressLoaderInfo.tableName,

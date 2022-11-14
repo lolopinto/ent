@@ -122,7 +122,10 @@ export class DeleteContactEmailActionBase
   }
 
   static create<T extends DeleteContactEmailActionBase>(
-    this: new (viewer: ExampleViewerAlias, contactEmail: ContactEmail) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      contactEmail: ContactEmail,
+    ) => T,
     viewer: ExampleViewerAlias,
     contactEmail: ContactEmail,
   ): T {
@@ -130,7 +133,10 @@ export class DeleteContactEmailActionBase
   }
 
   static async saveXFromID<T extends DeleteContactEmailActionBase>(
-    this: new (viewer: ExampleViewerAlias, contactEmail: ContactEmail) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      contactEmail: ContactEmail,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<void> {
