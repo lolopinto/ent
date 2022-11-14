@@ -3,7 +3,6 @@ package field
 import (
 	"errors"
 	"fmt"
-	"path"
 	"strconv"
 	"strings"
 
@@ -808,23 +807,15 @@ func (f *Field) HasConvertFunction(cfg codegenapi.Config, g CustomInterfaceGette
 	return custom != nil && custom.HasConvertFunction(cfg)
 }
 
-func getImportPathForCustomInterfaceFile(typ string) string {
-	return path.Join(fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(typ)))
-}
-
 func (f *Field) GetConvertImport(cfg codegenapi.Config, g CustomInterfaceGetter) *tsimport.ImportPath {
 	if !f.HasConvertFunction(cfg, g) {
 		return nil
 	}
 
-	method, typ := f.getConvertMethodInfo(cfg)
-	return &tsimport.ImportPath{
-		Import:     method,
-		ImportPath: getImportPathForCustomInterfaceFile(typ),
-	}
+	return tsimport.NewTypesEntImportPath(f.GetConvertMethod(cfg))
 }
 
-func (f *Field) getConvertMethodInfo(cfg codegenapi.Config) (string, string) {
+func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
 	t := f.GetTSFieldType(cfg)
 
 	list := enttype.IsListType(t)
@@ -843,13 +834,7 @@ func (f *Field) getConvertMethodInfo(cfg codegenapi.Config) (string, string) {
 		prefix += "Nullable"
 	}
 
-	return fmt.Sprintf("%s%s%s", prefix, typ, suffix), typ
-}
-
-func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
-	// assumes HasConvertFunction is true
-	method, _ := f.getConvertMethodInfo(cfg)
-	return method
+	return fmt.Sprintf("%s%s%s", prefix, typ, suffix)
 }
 
 type Option func(*Field)

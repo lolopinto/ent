@@ -17,13 +17,17 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { User } from "../../..";
-import { UserDaysOff, UserIntEnum, UserPreferredShift } from "../../types";
+import {
+  UserDaysOff,
+  UserIntEnum,
+  UserNestedObjectList,
+  UserPreferredShift,
+  UserPrefsDiff,
+  UserPrefsStruct,
+  UserPrefsStruct2,
+  UserSuperNestedObject,
+} from "../../types";
 import { UserBuilder } from "./user_builder";
-import { UserNestedObjectList } from "../../user_nested_object_list";
-import { UserPrefsDiff } from "../../user_prefs_diff";
-import { UserPrefsStruct } from "../../user_prefs_struct";
-import { UserPrefsStruct2 } from "../../user_prefs_struct_2";
-import { UserSuperNestedObject } from "../../user_super_nested_object";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface EditUserAllFieldsInput {

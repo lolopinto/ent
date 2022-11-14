@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
 import { ContactEmailBuilder } from "./contact_email_builder";
-import { ContactInfo } from "../../contact_info";
+import { ContactInfo } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactEmailEditInput {

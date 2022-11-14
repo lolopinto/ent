@@ -4,7 +4,7 @@
  */
 
 import { Data, Viewer } from "@snowtop/ent";
-import { ContactInfo } from "../contact_info";
+import { ContactInfo } from "../types";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
