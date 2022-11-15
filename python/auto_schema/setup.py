@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 # https://test.pypi.org/project/auto-schema-test/#history
 setuptools.setup(
     name="auto_schema",  # auto_schema_test to test
-    version="0.0.24",  # 0.0.24 was last test version
+    version="0.0.25",  # 0.0.24 was last test version
     author="Ola Okelola",
     author_email="email@email.com",
     description="auto schema for a db",
@@ -20,12 +20,12 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
-    install_requires=["sqlalchemy==1.4.31",
-                      "alembic==1.7.6",
+    python_requires='==3.11',
+    install_requires=["sqlalchemy==1.4.44",
+                      "alembic==1.8.1",
                       "datetime==4.3",
-                      "psycopg2==2.8.6",
-                      "autopep8==1.5.4",
+                      "psycopg2==2.9.5",
+                      "autopep8==2.0.0",
                       "python-dateutil==2.8.2"
                       ],
     entry_points={'console_scripts': ["auto_schema = auto_schema.cli:main"]},
