@@ -67,7 +67,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pipenv install -deploy -dev
+        pipenv install -deploy --dev
 
     - name: run test suite
       run: |
