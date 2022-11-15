@@ -6,6 +6,7 @@ import {
   transformImport,
 } from "../tsc/ast";
 import ts, { isImportDeclaration } from "typescript";
+import path from "path";
 
 class GatherExportsInGeneratedTypes implements TransformFile {
   glob = "src/ent/generated/types.ts";
@@ -55,6 +56,15 @@ class TransformImports implements TransformFile {
     this.relative = getCustomInfo().relativeImports ?? this.relative;
   }
 
+  private getSrcPath(file: string, text: string) {
+    if (text.startsWith("src")) {
+      return text;
+    }
+    const dir = path.dirname(path.join(this.cwd, file));
+    const fullPath = path.join(dir, text);
+    return path.relative(this.cwd, fullPath);
+  }
+
   traverseChild(
     sourceFile: ts.SourceFile,
     contents: string,
@@ -70,6 +80,17 @@ class TransformImports implements TransformFile {
       return { node };
     }
     const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
+    const pathToWrite = transformRelative(
+      file,
+      "src/ent/generated/types",
+      this.relative,
+    );
+    const current = transformRelative(file, text, this.relative);
+    const srcPath = this.getSrcPath(file, text);
+    // nothing to do here
+    if (!srcPath.startsWith("src/ent") || pathToWrite === current) {
+      return { node };
+    }
 
     // let's see if we can simplify
     let seenImports: string[] = [];
@@ -80,15 +101,7 @@ class TransformImports implements TransformFile {
       }
     }
 
-    const pathToWrite = transformRelative(
-      file,
-      "src/ent/generated/types",
-      this.relative,
-    );
-    const current = transformRelative(file, text, this.relative);
-
-    // nothing to do here
-    if (pathToWrite === current || !seenImports.length) {
+    if (!seenImports.length) {
       return { node };
     }
 
