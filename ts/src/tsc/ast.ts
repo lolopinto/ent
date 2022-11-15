@@ -161,6 +161,10 @@ export function transformImport(
 
   const comment = getPreText(fileContents, importNode, sourceFile);
 
+  if (!finalImports.size) {
+    return;
+  }
+
   return (
     comment +
     "import " +

@@ -19,6 +19,8 @@ interface TraverseChildResponse {
   imports?: Map<string, string[]>;
 
   removeImports?: string[];
+
+  allowSeenImportsAdded?: boolean;
 }
 
 interface NodeInfo {
@@ -75,6 +77,7 @@ export function transform(transform: TransformFile) {
     let imports: Map<string, string[]> = new Map();
     let removeImports: string[] = [];
     let traversed = false;
+    let allowSeenImportsAdded = false;
 
     let seenImports: Map<string, boolean> = new Map();
     ts.forEachChild(sourceFile, function (node: ts.Node) {
@@ -107,6 +110,10 @@ export function transform(transform: TransformFile) {
       if (ret.removeImports?.length) {
         removeImports.push(...ret.removeImports);
       }
+
+      if (ret.allowSeenImportsAdded) {
+        allowSeenImportsAdded = ret.allowSeenImportsAdded;
+      }
     });
 
     if (!traversed) {
@@ -127,7 +134,12 @@ export function transform(transform: TransformFile) {
           if (seen.has(imp)) {
             continue;
           }
-          const final = list.filter((v) => !seenImports.has(v));
+          // this says only add things you haven't seen
+          // we want to add something we've seen in this case
+          let final = list;
+          if (!allowSeenImportsAdded) {
+            final = list.filter((v) => !seenImports.has(v));
+          }
           if (final.length) {
             newContents += `\nimport { ${final.join(", ")} } from "${imp}"`;
           }
