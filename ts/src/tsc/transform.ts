@@ -141,7 +141,7 @@ export function transform(transform: TransformFile) {
             final = list.filter((v) => !seenImports.has(v));
           }
           if (final.length) {
-            newContents += `\nimport { ${final.join(", ")} } from "${imp}"`;
+            newContents += `\nimport { ${final.join(", ")} } from "${imp}";`;
           }
         }
         afterProcessed = true;

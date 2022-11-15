@@ -9,9 +9,9 @@ import {
 import ts, { isImportDeclaration } from "typescript";
 
 class TransformImports implements TransformFile {
-  glob = "src/**/*.test.ts";
+  glob = "src/**/*.ts";
 
-  prettierGlob = "src/**/*.test.ts";
+  prettierGlob = "src/**/*.ts";
 
   impsToMove = new Map();
   cwd = "";
