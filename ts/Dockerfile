@@ -18,7 +18,7 @@ ARG TARGETOS TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
-FROM python:3.8.11-buster AS python-image
+FROM python:3.11.0-buster AS python-image
 ARG AUTO_SCHEMA_VERSION
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv
@@ -28,7 +28,7 @@ RUN python3 -m pip install auto_schema==$AUTO_SCHEMA_VERSION
 #RUN python3 -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ auto_schema_test==$AUTO_SCHEMA_VERSION
 
 # final image needs to be python-based to have auto-schema work
-FROM python:3.8.11-slim AS final-image
+FROM python:3.11.0-slim AS final-image
 ARG GOLANG_VERSION
 ARG NODE_VERSION
 
