@@ -1,7 +1,7 @@
-ARG GOLANG_VERSION=v0.1.0-alpha.39
-ARG AUTO_SCHEMA_VERSION=0.0.24
+ARG GOLANG_VERSION=v0.1.0-alpha.43
+ARG AUTO_SCHEMA_VERSION=0.0.25
 ARG NODE_VERSION=17
-ARG DOCKER_TAG=v0.1.0-alpha.35-test
+ARG DOCKER_TAG=v0.1.0-alpha.31
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.19-buster As golang-image
@@ -62,7 +62,7 @@ RUN \
 
 RUN apt update && apt --assume-yes install zsh && \
   rm -rf /var/lib/apt/lists/*
-RUN npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @swc/cli@0.1.55
+RUN npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @swc/cli@0.1.55 rome@10.0.1
 
 WORKDIR /app
 RUN npm install --save-dev tsconfig-paths@3.11.0
