@@ -129,6 +129,8 @@ export function transform(transform: TransformFile) {
       // do this for the first non-import node we see
       // we want to add new imports to end of imports and there's an assumption that imports are ordered
       // at top of file
+
+      // TODO account for placement after first comment
       if (!afterProcessed) {
         for (const [imp, list] of imports) {
           if (seen.has(imp)) {
@@ -141,7 +143,7 @@ export function transform(transform: TransformFile) {
             final = list.filter((v) => !seenImports.has(v));
           }
           if (final.length) {
-            newContents += `\nimport { ${final.join(", ")} } from "${imp}";`;
+            newContents += `\nimport { ${final.join(", ")} } from "${imp}";\n`;
           }
         }
         afterProcessed = true;
