@@ -11,8 +11,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Address, Event, EventActivity, Guest, GuestGroup } from "src/ent/";
-import { EdgeType, NodeType } from "src/ent/generated/const";
 import { eventActivityLoaderInfo } from "src/ent/generated/loaders";
+import { EdgeType, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/event_activity_schema";
 
 export interface EventActivityInput {

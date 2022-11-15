@@ -13,10 +13,10 @@ import {
   LoadEntOptions,
   loadEnt,
 } from "@snowtop/ent";
+import { EdgeType } from "../types";
 import {
   Comment,
   CommentToPostQuery,
-  EdgeType,
   ObjectToCommentsEdge,
   ObjectToLikersEdge,
   User,

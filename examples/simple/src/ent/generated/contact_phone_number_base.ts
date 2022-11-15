@@ -20,12 +20,12 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { ContactInfo } from "./contact_info";
 import {
   contactPhoneNumberLoader,
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
-import { Contact, ContactInfoMixin, IContactInfo, NodeType } from "../internal";
+import { ContactInfo, NodeType } from "./types";
+import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
@@ -67,7 +67,10 @@ export class ContactPhoneNumberBase
   }
 
   static async load<T extends ContactPhoneNumberBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
@@ -79,7 +82,10 @@ export class ContactPhoneNumberBase
   }
 
   static async loadX<T extends ContactPhoneNumberBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
@@ -91,7 +97,10 @@ export class ContactPhoneNumberBase
   }
 
   static async loadMany<T extends ContactPhoneNumberBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -103,7 +112,10 @@ export class ContactPhoneNumberBase
   }
 
   static async loadCustom<T extends ContactPhoneNumberBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -118,7 +130,10 @@ export class ContactPhoneNumberBase
   }
 
   static async loadCustomData<T extends ContactPhoneNumberBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<ContactPhoneNumberDBData[]> {
@@ -133,7 +148,10 @@ export class ContactPhoneNumberBase
   }
 
   static async loadCustomCount<T extends ContactPhoneNumberBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -147,7 +165,10 @@ export class ContactPhoneNumberBase
   }
 
   static async loadRawData<T extends ContactPhoneNumberBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactPhoneNumberDBData | null> {
@@ -159,7 +180,10 @@ export class ContactPhoneNumberBase
   }
 
   static async loadRawDataX<T extends ContactPhoneNumberBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactPhoneNumberDBData> {
@@ -171,7 +195,10 @@ export class ContactPhoneNumberBase
   }
 
   static loaderOptions<T extends ContactPhoneNumberBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: contactPhoneNumberLoaderInfo.tableName,

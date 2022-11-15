@@ -22,13 +22,9 @@ import {
   guestDataLoader,
   guestDataLoaderInfo,
 } from "src/ent/generated/loaders";
-import { Event, Guest, NodeType } from "src/ent/internal";
+import { GuestDataSource, NodeType } from "src/ent/generated/types";
+import { Event, Guest } from "src/ent/internal";
 import schema from "src/schema/guest_data_schema";
-
-export enum GuestDataSource {
-  EventPage = "event_page",
-  HomePage = "home_page",
-}
 
 interface GuestDataDBData {
   id: ID;
@@ -65,7 +61,10 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   static async load<T extends GuestDataBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -77,7 +76,10 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   static async loadX<T extends GuestDataBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -89,7 +91,10 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   static async loadMany<T extends GuestDataBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -101,7 +106,10 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   static async loadCustom<T extends GuestDataBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -116,7 +124,10 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   static async loadCustomData<T extends GuestDataBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<GuestDataDBData[]> {
@@ -131,7 +142,10 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   static async loadCustomCount<T extends GuestDataBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -145,7 +159,10 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   static async loadRawData<T extends GuestDataBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<GuestDataDBData | null> {
@@ -157,7 +174,10 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   static async loadRawDataX<T extends GuestDataBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<GuestDataDBData> {
@@ -169,7 +189,10 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   static loaderOptions<T extends GuestDataBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: guestDataLoaderInfo.tableName,

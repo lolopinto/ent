@@ -15,6 +15,56 @@ type Schema struct {
 	Nodes        map[string]*Node    `json:"schemas,omitempty"`
 	Patterns     map[string]*Pattern `json:"patterns,omitempty"`
 	GlobalSchema *GlobalSchema       `json:"globalSchema"`
+	Config       *Config             `json:"config"`
+}
+
+type Config struct {
+	// the prettier config that's being used is parsed and sent up to format the files as needed
+	// since we're trying to use rome...
+	RomeConfig *RomeConfig `json:"rome"`
+}
+
+// indicates the rome onfig that should be used here
+// taken from the prettier config
+// https://prettier.io/docs/en/options.html#quotes
+// https://docs.rome.tools/formatter/#use-the-formatter-with-the-cli
+type RomeConfig struct {
+	// we always do --indent-style=space
+	IndentStyle     *string `json:"indentStyle"`
+	LineWidth       *int    `json:"lineWidth"`
+	IndentSize      *int    `json:"indentSize"`
+	QuoteStyle      *string `json:"quoteStyle"`
+	QuoteProperties *string `json:"quoteProperties"`
+	TrailingComma   *string `json:"trailingComma"`
+}
+
+func (cfg *RomeConfig) GetArgs() []string {
+	var ret []string
+
+	if cfg.IndentStyle != nil {
+		ret = append(ret, "--indent-style", *cfg.IndentStyle)
+	}
+
+	if cfg.IndentSize != nil {
+		ret = append(ret, "--indent-size", fmt.Sprintf("%v", *cfg.IndentSize))
+	}
+
+	if cfg.LineWidth != nil {
+		ret = append(ret, "--line-width", fmt.Sprintf("%v", *cfg.LineWidth))
+	}
+
+	if cfg.QuoteStyle != nil {
+		ret = append(ret, "--quote-style", *cfg.QuoteStyle)
+	}
+
+	if cfg.QuoteProperties != nil {
+		ret = append(ret, "--quote-properties", *cfg.QuoteProperties)
+	}
+
+	if cfg.TrailingComma != nil {
+		ret = append(ret, "--trailing-comma", *cfg.TrailingComma)
+	}
+	return ret
 }
 
 type Pattern struct {
@@ -247,10 +297,7 @@ func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSType {
 		// only set this if we actually have fields. otherwise, we want this to be nil
 		subFields = typ.SubFields
 		if importType == nil && typ.Type != "" {
-			importType = &tsimport.ImportPath{
-				ImportPath: getImportPathForCustomInterfaceFile(typ.Type),
-				Import:     typ.Type,
-			}
+			importType = tsimport.NewTypesEntImportPath(typ.Type)
 		}
 	}
 	if len(typ.UnionFields) != 0 {
@@ -865,9 +912,4 @@ func ParseSchema(input []byte) (*Schema, error) {
 		return nil, err
 	}
 	return s, nil
-}
-
-// copied from step.go
-func getImportPathForCustomInterfaceFile(tsType string) string {
-	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(tsType))
 }

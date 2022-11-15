@@ -130,7 +130,10 @@ export class CreateAddressActionBase
   }
 
   static create<T extends CreateAddressActionBase>(
-    this: new (viewer: Viewer, input: AddressCreateInput) => T,
+    this: new (
+      viewer: Viewer,
+      input: AddressCreateInput,
+    ) => T,
     viewer: Viewer,
     input: AddressCreateInput,
   ): T {

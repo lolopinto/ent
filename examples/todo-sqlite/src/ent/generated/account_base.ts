@@ -26,19 +26,21 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
-  AccountPrefs,
-  convertNullableAccountPrefs,
-} from "src/ent/generated/account_prefs";
-import {
-  AccountPrefs2,
-  convertNullableAccountPrefs2List,
-} from "src/ent/generated/account_prefs_2";
-import {
   accountLoader,
   accountLoaderInfo,
   accountNoTransformLoader,
   accountPhoneNumberLoader,
 } from "src/ent/generated/loaders";
+import {
+  AccountPrefs,
+  AccountPrefs2,
+  AccountState,
+  AccountTodoStatus,
+  EdgeType,
+  NodeType,
+  convertNullableAccountPrefs,
+  convertNullableAccountPrefs2List,
+} from "src/ent/generated/types";
 import {
   AccountToClosedTodosDupQuery,
   AccountToCreatedWorkspacesQuery,
@@ -47,25 +49,11 @@ import {
   AccountToTagsQuery,
   AccountToTodosQuery,
   AccountToWorkspacesQuery,
-  EdgeType,
   ITodoContainer,
-  NodeType,
   Todo,
   TodoContainerMixin,
 } from "src/ent/internal";
 import schema from "src/schema/account_schema";
-
-export enum AccountState {
-  UNVERIFIED = "UNVERIFIED",
-  VERIFIED = "VERIFIED",
-  DEACTIVATED = "DEACTIVATED",
-  DISABLED = "DISABLED",
-}
-
-export enum AccountTodoStatus {
-  OpenTodosDup = "openTodosDup",
-  ClosedTodosDup = "closedTodosDup",
-}
 
 interface AccountDBData {
   id: ID;
@@ -117,7 +105,10 @@ export class AccountBase
   }
 
   static async load<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -129,7 +120,10 @@ export class AccountBase
   }
 
   static async loadX<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -145,7 +139,10 @@ export class AccountBase
   // we don't generate the full complement of read-APIs
   // but can easily query the raw data with accountNoTransformLoader
   static async loadNoTransform<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -158,7 +155,10 @@ export class AccountBase
   }
 
   static async loadNoTransformX<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -170,7 +170,10 @@ export class AccountBase
   }
 
   static async loadMany<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -182,7 +185,10 @@ export class AccountBase
   }
 
   static async loadCustom<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -197,7 +203,10 @@ export class AccountBase
   }
 
   static async loadCustomData<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<AccountDBData[]> {
@@ -212,7 +221,10 @@ export class AccountBase
   }
 
   static async loadCustomCount<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -226,7 +238,10 @@ export class AccountBase
   }
 
   static async loadRawData<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AccountDBData | null> {
@@ -238,7 +253,10 @@ export class AccountBase
   }
 
   static async loadRawDataX<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<AccountDBData> {
@@ -250,7 +268,10 @@ export class AccountBase
   }
 
   static async loadFromPhoneNumber<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T | null> {
@@ -261,7 +282,10 @@ export class AccountBase
   }
 
   static async loadFromPhoneNumberX<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T> {
@@ -272,7 +296,10 @@ export class AccountBase
   }
 
   static async loadIDFromPhoneNumber<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     phoneNumber: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -283,7 +310,10 @@ export class AccountBase
   }
 
   static async loadRawDataFromPhoneNumber<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     phoneNumber: string,
     context?: Context,
   ): Promise<AccountDBData | null> {
@@ -297,7 +327,10 @@ export class AccountBase
   }
 
   static loaderOptions<T extends AccountBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: accountLoaderInfo.tableName,

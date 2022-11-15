@@ -119,7 +119,10 @@ export class DeleteGuestGroupActionBase
   }
 
   static create<T extends DeleteGuestGroupActionBase>(
-    this: new (viewer: Viewer, guestGroup: GuestGroup) => T,
+    this: new (
+      viewer: Viewer,
+      guestGroup: GuestGroup,
+    ) => T,
     viewer: Viewer,
     guestGroup: GuestGroup,
   ): T {
@@ -127,7 +130,10 @@ export class DeleteGuestGroupActionBase
   }
 
   static async saveXFromID<T extends DeleteGuestGroupActionBase>(
-    this: new (viewer: Viewer, guestGroup: GuestGroup) => T,
+    this: new (
+      viewer: Viewer,
+      guestGroup: GuestGroup,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<void> {

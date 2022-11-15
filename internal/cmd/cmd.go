@@ -11,7 +11,7 @@ func GetTsconfigPaths() string {
 }
 
 // initial args for ts-node-script
-// we need tsconfig.json referenced because of relative paths like src/ent/generated/const.ts
+// we need tsconfig.json referenced because of relative paths like src/ent/generated/types.ts
 func GetArgsForScript(rootPath string) []string {
 	return []string{
 		// this seems to let the errors pass through s opposed to giving compile error

@@ -18,6 +18,7 @@ type codegenArgs struct {
 	disableCustomGraphQL bool
 	disablePrompts       bool
 	disableUpgrade       bool
+	forcePrettier        bool
 }
 
 var codegenInfo codegenArgs
@@ -37,7 +38,7 @@ var codegenCmd = &cobra.Command{
 			if rootInfo.debug {
 				t2 := time.Now()
 				diff := t2.Sub(t1)
-				fmt.Println("maybe update took", diff)
+				fmt.Println("maybe upgrade took", diff)
 			}
 		}
 		cfg, err := codegen.NewConfig("src/schema", "")
@@ -70,6 +71,9 @@ var codegenCmd = &cobra.Command{
 		if rootInfo.debug {
 			opts = append(opts, codegen.DebugMode())
 		}
+		if rootInfo.debugFiles {
+			opts = append(opts, codegen.DebugFileMode())
+		}
 
 		if codegenInfo.writeAll {
 			opts = append(opts, codegen.WriteAll())
@@ -77,6 +81,12 @@ var codegenCmd = &cobra.Command{
 		// flag that next time we do this, we force write all
 		if codegenInfo.step != "" {
 			bi.ForceWriteAllNextTime = true
+		}
+		if codegenInfo.forcePrettier {
+			opts = append(opts, codegen.ForcePrettier())
+		} else {
+			// automatically force write-all with rome
+			opts = append(opts, codegen.ForceWriteAll())
 		}
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
 		processor, err := codegen.NewCodegenProcessor(currentSchema, "src/schema", opts...)

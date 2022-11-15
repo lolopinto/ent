@@ -222,12 +222,10 @@ func (nodeData *NodeData) GetImportsForBaseFile(s *Schema, cfg codegenapi.Config
 	}
 
 	for _, enum := range nodeData.tsEnums {
-		if enum.Imported {
-			ret = append(ret, &tsimport.ImportPath{
-				Import:     enum.Name,
-				ImportPath: codepath.GetInternalImportPath(),
-			})
-		}
+		ret = append(ret, &tsimport.ImportPath{
+			Import:     enum.Name,
+			ImportPath: codepath.GetTypesImportPath(),
+		})
 	}
 
 	for _, edge := range nodeData.EdgeInfo.GetConnectionEdges() {
@@ -269,17 +267,19 @@ func (nodeData *NodeData) GetImportsForBaseFile(s *Schema, cfg codegenapi.Config
 	return ret, nil
 }
 
+// TODO kill
+// seems like it was mostly used for enums
 func (nodeData *NodeData) ForeignImport(imp string) bool {
 	// not the most performant but ok
 	// most classes won't have that many enums
-	for _, enum := range nodeData.tsEnums {
-		if enum.Imported {
-			continue
-		}
-		if enum.Name == imp {
-			return false
-		}
-	}
+	// for _, enum := range nodeData.tsEnums {
+	// 	if enum.Imported {
+	// 		continue
+	// 	}
+	// 	if enum.Name == imp {
+	// 		return false
+	// 	}
+	// }
 	return true
 }
 
@@ -291,7 +291,7 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 	for _, enum := range nodeData.GetTSEnums() {
 		ret = append(ret, &tsimport.ImportPath{
 			Import:     enum.Name,
-			ImportPath: codepath.GetExternalImportPath(),
+			ImportPath: codepath.GetTypesImportPath(),
 		})
 	}
 

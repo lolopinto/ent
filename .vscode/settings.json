@@ -10,7 +10,8 @@
     "DB_CONNECTION_STRING": "postgres://ola:@localhost/ent_test?sslmode=disable"
   },
   "go.testTimeout": "90s",
-  "prettier.configPath": "ts/.prettierrc"
+  "prettier.configPath": "ts/.prettierrc",
+  "prettier.ignorePath": "ts/.prettierignore"
   // "jest.pathToConfig": "jest.config.js",
   // // TODO need to figure out how to get vscode intellisense to understand all these paths
   // "jest.rootPath": "ts",

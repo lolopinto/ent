@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import { LoggedOutExampleViewer } from "src/viewer/viewer";
 import CreateHolidayAction from "../holiday/actions/create_holiday_action";
-import { DayOfWeek, DayOfWeekAlt } from "../";
+import { DayOfWeek, DayOfWeekAlt } from "../generated/types";
 import CustomCreateHolidayAction from "../holiday/actions/custom_create_holiday_action";
 import { v1 } from "uuid";
 

@@ -15,8 +15,9 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
+import { Holiday } from "../../..";
 import { HolidayBuilder } from "./holiday_builder";
+import { DayOfWeek, DayOfWeekAlt } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface HolidayCreateInput {
@@ -127,7 +128,10 @@ export class CreateHolidayActionBase
   }
 
   static create<T extends CreateHolidayActionBase>(
-    this: new (viewer: ExampleViewerAlias, input: HolidayCreateInput) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      input: HolidayCreateInput,
+    ) => T,
     viewer: ExampleViewerAlias,
     input: HolidayCreateInput,
   ): T {

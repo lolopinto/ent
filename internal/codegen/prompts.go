@@ -170,9 +170,13 @@ func getPromptsFromChanges(p *Processor) ([]prompt.Prompt, error) {
 		return nil, nil
 	}
 
+	allGraphQLOnly := true
 	var prompts []prompt.Prompt
 	for k, changes := range p.ChangeMap {
 		for _, c := range changes {
+			if !c.GraphQLOnly {
+				allGraphQLOnly = false
+			}
 			var pt prompt.Prompt
 			var err error
 
@@ -198,6 +202,12 @@ func getPromptsFromChanges(p *Processor) ([]prompt.Prompt, error) {
 				prompts = append(prompts, pt)
 			}
 		}
+	}
+
+	// somehow there were changes and they were all graphql only.
+	// flag as no db changes
+	if allGraphQLOnly {
+		p.noDBChanges = true
 	}
 
 	return prompts, nil

@@ -13,7 +13,7 @@ import EventActivityRemoveInviteAction from "../event_activity/actions/event_act
 import { Guest } from "../guest";
 import EditEventActivityRsvpStatusAction from "../event_activity/actions/edit_event_activity_rsvp_status_action";
 import { EventActivityRsvpStatusInput } from "../generated/event_activity/actions/edit_event_activity_rsvp_status_action_base";
-import { EventActivityRsvpStatus } from "../generated/event_activity_base";
+import { EventActivityRsvpStatus } from "../generated/types";
 
 import {
   createUser,

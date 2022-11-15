@@ -11,8 +11,8 @@ import {
   Viewer,
   loadEnt,
 } from "@snowtop/ent";
+import { EdgeType } from "src/ent/generated/types";
 import {
-  EdgeType,
   ObjectToScopedTodosEdge,
   Todo,
   TodoToTagsQuery,
@@ -43,7 +43,10 @@ export abstract class ObjectToScopedTodosQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends ObjectToScopedTodosQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Ent<Viewer>, Todo>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Ent<Viewer>, Todo>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Ent<Viewer>, Todo>,
   ): T {

@@ -386,7 +386,7 @@ func TestStringEnumType(t *testing.T) {
 					enumType: true,
 					tsType:   "AccountStatus | null",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewTypesEntImportPath("AccountStatus"),
 					},
 					nonNullableType: &enttype.StringEnumType{
 						Type:        "AccountStatus",
@@ -421,7 +421,7 @@ func TestStringEnumType(t *testing.T) {
 					tsType:   "AccountStatus",
 					enumType: true,
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewTypesEntImportPath("AccountStatus"),
 					},
 					nullableType: &enttype.NullableStringEnumType{
 						Type:        "AccountStatus",
@@ -463,7 +463,7 @@ func TestStringEnumType(t *testing.T) {
 					},
 					tsType: "AccountStatus",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewTypesEntImportPath("AccountStatus"),
 					},
 					nullableType: &enttype.NullableStringEnumType{
 						Type:        "AccountStatus",
@@ -504,7 +504,7 @@ func TestStringEnumType(t *testing.T) {
 					},
 					tsType: "AccountStatus | null",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewTypesEntImportPath("AccountStatus"),
 					},
 					nonNullableType: &enttype.StringEnumType{
 						Type:        "AccountStatus",
@@ -545,7 +545,7 @@ func TestIntEnumType(t *testing.T) {
 					enumType: true,
 					tsType:   "AccountStatus | null",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewTypesEntImportPath("AccountStatus"),
 					},
 					nonNullableType: &enttype.IntegerEnumType{
 						Type:        "AccountStatus",
@@ -580,7 +580,7 @@ func TestIntEnumType(t *testing.T) {
 					tsType:   "AccountStatus",
 					enumType: true,
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewTypesEntImportPath("AccountStatus"),
 					},
 					nullableType: &enttype.NullableIntegerEnumType{
 						Type:        "AccountStatus",
@@ -616,7 +616,7 @@ func TestIntEnumType(t *testing.T) {
 					enumType: true,
 					tsType:   "AccountStatus | null",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewTypesEntImportPath("AccountStatus"),
 					},
 					nonNullableType: &enttype.IntegerEnumType{
 						Type:        "AccountStatus",
@@ -655,7 +655,7 @@ func TestIntEnumType(t *testing.T) {
 					tsType:   "AccountStatus",
 					enumType: true,
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewTypesEntImportPath("AccountStatus"),
 					},
 					nullableType: &enttype.NullableIntegerEnumType{
 						Type:        "AccountStatus",

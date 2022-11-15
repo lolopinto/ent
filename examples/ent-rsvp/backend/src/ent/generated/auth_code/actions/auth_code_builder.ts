@@ -11,8 +11,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { AuthCode, Guest } from "src/ent/";
-import { NodeType } from "src/ent/generated/const";
 import { authCodeLoaderInfo } from "src/ent/generated/loaders";
+import { NodeType } from "src/ent/generated/types";
 import schema from "src/schema/auth_code_schema";
 
 export interface AuthCodeInput {

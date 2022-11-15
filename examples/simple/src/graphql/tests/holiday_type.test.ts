@@ -3,8 +3,9 @@ import { expectMutation } from "@snowtop/ent-graphql-tests";
 import schema from "../generated/schema";
 import { DateTime } from "luxon";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { DayOfWeek, DayOfWeekAlt, Holiday } from "src/ent";
+import { Holiday } from "src/ent";
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
+import { DayOfWeek, DayOfWeekAlt } from "../../ent/generated/types";
 
 test("create holiday", async () => {
   let id: ID;

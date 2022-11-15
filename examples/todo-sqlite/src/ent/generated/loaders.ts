@@ -6,7 +6,7 @@ import AccountSchema from "src/schema/account_schema";
 import TagSchema from "src/schema/tag_schema";
 import TodoSchema from "src/schema/todo_schema";
 import WorkspaceSchema from "src/schema/workspace_schema";
-import { NodeType } from "./const";
+import { NodeType } from "./types";
 
 const accountTable = "accounts";
 const accountFields = [

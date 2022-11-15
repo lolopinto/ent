@@ -302,3 +302,77 @@ func TestFieldWithUnequalInverseEdge(t *testing.T) {
 	}
 	require.False(t, FieldEqual(f, f2))
 }
+
+func TestFieldWithEqualServerDefault(t *testing.T) {
+	def := "true"
+	f := &Field{
+		FieldName:    "name",
+		fieldType:    &enttype.TimeType{},
+		defaultValue: &def,
+	}
+	f2 := &Field{
+		FieldName:    "name",
+		fieldType:    &enttype.TimeType{},
+		defaultValue: &def,
+	}
+	require.True(t, FieldEqual(f, f2))
+}
+
+func TestFieldWithEqualServerDefaultDate(t *testing.T) {
+	def := "2020-01-01"
+	f := &Field{
+		FieldName:    "date",
+		fieldType:    &enttype.TimeType{},
+		defaultValue: &def,
+	}
+	f2 := &Field{
+		FieldName:    "date",
+		fieldType:    &enttype.TimeType{},
+		defaultValue: &def,
+	}
+	require.True(t, FieldEqual(f, f2))
+}
+
+func TestFieldWithUnEqualServerDefaultDate(t *testing.T) {
+	def1 := "2020-01-01"
+	def2 := "2020-01-02"
+	f := &Field{
+		FieldName:    "date",
+		fieldType:    &enttype.TimeType{},
+		defaultValue: &def1,
+	}
+	f2 := &Field{
+		FieldName:    "date",
+		fieldType:    &enttype.TimeType{},
+		defaultValue: &def2,
+	}
+	require.False(t, FieldEqual(f, f2))
+}
+
+func TestFieldWithNoServerDefault2(t *testing.T) {
+	def1 := "2020-01-01"
+	f := &Field{
+		FieldName:    "date",
+		fieldType:    &enttype.TimeType{},
+		defaultValue: &def1,
+	}
+	f2 := &Field{
+		FieldName: "date",
+		fieldType: &enttype.TimeType{},
+	}
+	require.False(t, FieldEqual(f, f2))
+}
+
+func TestFieldWithNoServerDefault1(t *testing.T) {
+	def2 := "2020-01-01"
+	f := &Field{
+		FieldName: "date",
+		fieldType: &enttype.TimeType{},
+	}
+	f2 := &Field{
+		FieldName:    "date",
+		fieldType:    &enttype.TimeType{},
+		defaultValue: &def2,
+	}
+	require.False(t, FieldEqual(f, f2))
+}

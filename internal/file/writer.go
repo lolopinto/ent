@@ -10,6 +10,7 @@ import (
 
 type Config interface {
 	DebugMode() bool
+	DebugFilesMode() bool
 	GeneratedHeader() string
 	AddChangedFile(file string)
 	// doesn't actually writes the files, just keeps track of which files were going to be written
@@ -36,7 +37,7 @@ func debugLogInfo(opt *Options, str string, a ...interface{}) {
 
 func writeFile(w Writer, cfg Config, opts ...func(opt *Options)) error {
 	option := &Options{}
-	if !cfg.DebugMode() {
+	if !cfg.DebugFilesMode() {
 		opts = append(opts, DisableLog())
 	}
 	for _, opt := range opts {

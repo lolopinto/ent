@@ -14,9 +14,9 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Contact, User } from "../../..";
-import { EdgeType, NodeType } from "../../const";
 import { contactLoaderInfo } from "../../loaders";
 import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
+import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/contact_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 

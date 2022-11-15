@@ -25,7 +25,10 @@ export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends EventToEventActivitiesQueryBase>(
-    this: new (viewer: Viewer, src: Event | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: Event | ID,
+    ) => T,
     viewer: Viewer,
     src: Event | ID,
   ): T {
@@ -53,7 +56,10 @@ export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends EventToGuestDataQueryBase>(
-    this: new (viewer: Viewer, src: Event | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: Event | ID,
+    ) => T,
     viewer: Viewer,
     src: Event | ID,
   ): T {
@@ -81,7 +87,10 @@ export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends EventToGuestGroupsQueryBase>(
-    this: new (viewer: Viewer, src: Event | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: Event | ID,
+    ) => T,
     viewer: Viewer,
     src: Event | ID,
   ): T {
@@ -109,7 +118,10 @@ export class EventToGuestsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends EventToGuestsQueryBase>(
-    this: new (viewer: Viewer, src: Event | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: Event | ID,
+    ) => T,
     viewer: Viewer,
     src: Event | ID,
   ): T {

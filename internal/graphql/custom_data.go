@@ -35,7 +35,7 @@ type CustomItem struct {
 	Connection   bool         `json:"connection,omitempty"`
 	IsContextArg bool         `json:"isContextArg,omitempty"`
 	// indicates not to pass it to calling function
-	GraphQLOnlyArg bool                   `json:"_"`
+	GraphQLOnlyArg bool                   `json:"graphQLOnlyArg,omitempty"`
 	TSType         string                 `json:"tsType,omitempty"`
 	imports        []*tsimport.ImportPath `json:"-"`
 }
@@ -178,7 +178,7 @@ type CustomField struct {
 	Args         []CustomItem    `json:"args"`
 	Results      []CustomItem    `json:"results"`
 	FieldType    CustomFieldType `json:"fieldType"`
-	Connection   bool            `json:"_"`
+	Connection   bool            `json:"-"`
 }
 
 func (cf CustomField) getArg() string {
@@ -229,7 +229,16 @@ func (cf *CustomField) UnmarshalJSON(data []byte) error {
 	if isConnection(cf) {
 		cf.Connection = true
 		// add connection args...
-		cf.Args = append(cf.Args, getConnectionArgs()...)
+		add := true
+		connArgs := getConnectionArgs()
+		// don't add twice if already there
+		// will already be there for args that are being read from custom_schema.json
+		if len(cf.Args) != 0 {
+			add = !hasConnectionArgs(cf, connArgs)
+		}
+		if add {
+			cf.Args = append(cf.Args, connArgs...)
+		}
 	}
 
 	return nil
@@ -491,6 +500,30 @@ func customFieldListComparison(cfg codegenapi.Config, l1, l2 []CustomField) (boo
 	}
 
 	return listEqual, conns
+}
+
+func mapifyCustomItemList(l []CustomItem) map[string]CustomItem {
+	m := make(map[string]CustomItem)
+
+	for _, v := range l {
+		m[v.Name] = v
+	}
+	return m
+}
+
+func hasConnectionArgs(cf *CustomField, connArgs []CustomItem) bool {
+	existing := mapifyCustomItemList(cf.Args)
+	connMap := mapifyCustomItemList(connArgs)
+	for k, v := range connMap {
+		existingItem, ok := existing[k]
+		if !ok {
+			return false
+		}
+		if !customItemEqual(existingItem, v) {
+			return false
+		}
+	}
+	return true
 }
 
 func customItemEqual(item1, item2 CustomItem) bool {

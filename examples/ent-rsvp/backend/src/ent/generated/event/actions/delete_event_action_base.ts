@@ -101,7 +101,10 @@ export class DeleteEventActionBase
   }
 
   static create<T extends DeleteEventActionBase>(
-    this: new (viewer: Viewer, event: Event) => T,
+    this: new (
+      viewer: Viewer,
+      event: Event,
+    ) => T,
     viewer: Viewer,
     event: Event,
   ): T {
@@ -109,7 +112,10 @@ export class DeleteEventActionBase
   }
 
   static async saveXFromID<T extends DeleteEventActionBase>(
-    this: new (viewer: Viewer, event: Event) => T,
+    this: new (
+      viewer: Viewer,
+      event: Event,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<void> {

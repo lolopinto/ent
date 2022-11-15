@@ -18,8 +18,8 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
-import { ContactInfo } from "../../contact_info";
 import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
+import { ContactInfo } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberCreateInput {

@@ -15,8 +15,9 @@ import {
   WriteOperation,
   setEdgeTypeInGroup,
 } from "@snowtop/ent/action";
-import { Account, NodeType } from "src/ent/";
+import { Account } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
+import { NodeType } from "src/ent/generated/types";
 
 export enum AccountTodoStatusInput {
   OpenTodosDup = "openTodosDup",

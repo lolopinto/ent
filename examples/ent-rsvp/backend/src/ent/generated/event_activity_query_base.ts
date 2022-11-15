@@ -8,8 +8,8 @@ import {
   ID,
   Viewer,
 } from "@snowtop/ent";
+import { EdgeType } from "src/ent/generated/types";
 import {
-  EdgeType,
   EventActivity,
   EventActivityToAttendingEdge,
   EventActivityToDeclinedEdge,
@@ -65,7 +65,10 @@ export abstract class EventActivityToAttendingQueryBase extends AssocEdgeQueryBa
   }
 
   static query<T extends EventActivityToAttendingQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity, Guest>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<EventActivity, Guest>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<EventActivity, Guest>,
   ): T {
@@ -105,7 +108,10 @@ export abstract class EventActivityToDeclinedQueryBase extends AssocEdgeQueryBas
   }
 
   static query<T extends EventActivityToDeclinedQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity, Guest>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<EventActivity, Guest>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<EventActivity, Guest>,
   ): T {

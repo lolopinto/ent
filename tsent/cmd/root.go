@@ -21,8 +21,8 @@ var rootCmd = &cobra.Command{
 }
 
 type rootArgs struct {
-	debug          bool
-	disablePrompts bool
+	debug      bool
+	debugFiles bool
 }
 
 var rootInfo rootArgs
@@ -83,6 +83,7 @@ func init() {
 		deleteSchemaCmd,
 		detectDanglingFilesCmd,
 		migratev1Cmd,
+		runScriptCmd,
 	})
 
 	addCommands(generateCmd, []*cobra.Command{
@@ -91,13 +92,15 @@ func init() {
 		generateSchemasCmd,
 	})
 
-	rootCmd.PersistentFlags().BoolVar(&rootInfo.debug, "debug", false, "debug mode. add debug information to codegen e.g. files written etc")
+	rootCmd.PersistentFlags().BoolVar(&rootInfo.debug, "debug", false, "debug mode. add debug information to codegen e.g. how long commands take")
+	rootCmd.PersistentFlags().BoolVar(&rootInfo.debugFiles, "debug_files", false, "debug files mode. log files written and not written")
 
 	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
 	codegenCmd.Flags().BoolVar(&codegenInfo.writeAll, "write-all", false, "to force writing all files and skip the logic we have for only selectively writing some files")
 	codegenCmd.Flags().BoolVar(&codegenInfo.disableCustomGraphQL, "disable-custom-graphql", false, "to disable custom graphql during codegen. used when we need to rebuild everything and minimize parsing code")
 	codegenCmd.Flags().BoolVar(&codegenInfo.disablePrompts, "disable_prompts", false, "disable prompts")
 	codegenCmd.Flags().BoolVar(&codegenInfo.disableUpgrade, "disable_upgrade", false, "disable upgrade when running codegen. codegen automatically checks that the db is upgraded before making any changes. if you want to disable that for any reason, use this flag")
+	codegenCmd.Flags().BoolVar(&codegenInfo.forcePrettier, "force_prettier", false, "force prettier instead of rome when running codegen.")
 
 	generateSchemasCmd.Flags().StringVar(&schemasInfo.file, "file", "", "file to get data from. also supports piping it through")
 	generateSchemasCmd.Flags().BoolVar(&schemasInfo.force, "force", false, "if force is true, it overwrites existing schema, otherwise throws error")

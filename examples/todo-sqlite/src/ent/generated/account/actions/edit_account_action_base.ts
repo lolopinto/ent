@@ -14,10 +14,13 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Account, AccountState } from "src/ent/";
+import { Account } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
-import { AccountPrefs } from "src/ent/generated/account_prefs";
-import { AccountPrefs2 } from "src/ent/generated/account_prefs_2";
+import {
+  AccountPrefs,
+  AccountPrefs2,
+  AccountState,
+} from "src/ent/generated/types";
 
 export interface AccountEditInput {
   name?: string;
@@ -130,7 +133,11 @@ export class EditAccountActionBase
   }
 
   static create<T extends EditAccountActionBase>(
-    this: new (viewer: Viewer, account: Account, input: AccountEditInput) => T,
+    this: new (
+      viewer: Viewer,
+      account: Account,
+      input: AccountEditInput,
+    ) => T,
     viewer: Viewer,
     account: Account,
     input: AccountEditInput,
@@ -139,7 +146,11 @@ export class EditAccountActionBase
   }
 
   static async saveXFromID<T extends EditAccountActionBase>(
-    this: new (viewer: Viewer, account: Account, input: AccountEditInput) => T,
+    this: new (
+      viewer: Viewer,
+      account: Account,
+      input: AccountEditInput,
+    ) => T,
     viewer: Viewer,
     id: ID,
     input: AccountEditInput,

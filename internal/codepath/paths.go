@@ -33,6 +33,10 @@ func GetInternalImportPath() string {
 	return "src/ent/internal"
 }
 
+func GetTypesImportPath() string {
+	return "src/ent/generated/types"
+}
+
 func GetExternalImportPath() string {
 	return "src/ent/"
 }

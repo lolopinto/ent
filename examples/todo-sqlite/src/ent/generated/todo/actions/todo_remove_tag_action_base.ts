@@ -42,8 +42,7 @@ export type TodoRemoveTagActionValidators = Validator<
 >[];
 
 export class TodoRemoveTagActionBase
-  implements
-    Action<Todo, TodoBuilder<TodoInput, Todo>, Viewer, TodoInput, Todo>
+  implements Action<Todo, TodoBuilder<TodoInput, Todo>, Viewer, TodoInput, Todo>
 {
   public readonly builder: TodoBuilder<TodoInput, Todo>;
   public readonly viewer: Viewer;
@@ -107,7 +106,10 @@ export class TodoRemoveTagActionBase
   }
 
   static create<T extends TodoRemoveTagActionBase>(
-    this: new (viewer: Viewer, todo: Todo) => T,
+    this: new (
+      viewer: Viewer,
+      todo: Todo,
+    ) => T,
     viewer: Viewer,
     todo: Todo,
   ): T {
@@ -115,7 +117,10 @@ export class TodoRemoveTagActionBase
   }
 
   static async saveXFromID<T extends TodoRemoveTagActionBase>(
-    this: new (viewer: Viewer, todo: Todo) => T,
+    this: new (
+      viewer: Viewer,
+      todo: Todo,
+    ) => T,
     viewer: Viewer,
     id: ID,
     tagID: ID,

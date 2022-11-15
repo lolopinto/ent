@@ -1,6 +1,6 @@
 {{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "loadCustomCount" "applyPrivacyPolicy" "Ent"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy"}}
-{{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
+{{ reserveImport .Package.TypesImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/generated/loadAny" "loadEntByType" "loadEntXByType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
@@ -33,11 +33,6 @@
 {{$ignore := useImport "Data" -}}
 {{$thisType := printf ("new (viewer: %s, data: Data) => T") $viewerType}}
 
-{{ range .GetTSEnums -}}
-  {{if not .Imported -}}
-    {{ template "enum.tmpl" . -}}
-  {{end -}}
-{{ end}}
 {{$nodeData := .}}
 
 {{$dataType := printf "%sDBData" .Node -}}
@@ -414,7 +409,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{end}}
 
     {{$group.GetStatusMapMethod}}() {
-      let m:Map<{{$group.ConstType}}, {{useImport "EdgeType"}}> = new Map();
+      let m:Map<{{useImport $group.ConstType}}, {{useImport "EdgeType"}}> = new Map();
       {{range $k, $v := $group.GetStatusMap -}}
         m.set({{$group.ConstType}}.{{$k}}, {{useImport "EdgeType"}}.{{$v}});
       {{end -}}

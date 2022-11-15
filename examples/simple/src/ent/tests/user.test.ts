@@ -1,21 +1,29 @@
 import { AssocEdge, AssocEdgeInput, setLogLevels } from "@snowtop/ent";
 import { MockLogs } from "@snowtop/ent/testutils/mock_log";
 import { TestContext } from "@snowtop/ent/testutils/context/test_context";
+import { User, Contact, Event, ArticleToCommentsQuery } from "..";
 import {
-  User,
-  Contact,
-  Event,
   UserDaysOff,
   UserPreferredShift,
-  ArticleToCommentsQuery,
   IntEnumUsedInList,
   UserIntEnum,
-} from "..";
-
+  NotifType,
+  NotifType2,
+  EnumUsedInList,
+  UserNestedObjectList,
+  CatBreed,
+  DogBreed,
+  DogBreedGroup,
+  NestedObjNestedNestedEnum,
+  ObjNestedEnum,
+  RabbitBreed,
+  SuperNestedObjectEnum,
+  UserSuperNestedObject,
+  NodeType,
+  EdgeType,
+} from "../generated/types";
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
-import { NodeType, EdgeType } from "../generated/const";
 import { random, randomEmail, randomPhoneNumber } from "../../util/random";
-
 import CreateUserAction, {
   UserCreateInput,
 } from "../user/actions/create_user_action";
@@ -31,22 +39,6 @@ import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 import CreateCommentAction from "../comment/actions/create_comment_action";
 import DeleteUserAction2 from "../user/actions/delete_user_action_2";
-import { NotifType } from "../generated/user_prefs_struct";
-import { NotifType2 } from "../generated/user_prefs_struct_2";
-import {
-  EnumUsedInList,
-  UserNestedObjectList,
-} from "../generated/user_nested_object_list";
-import {
-  CatBreed,
-  DogBreed,
-  DogBreedGroup,
-  NestedObjNestedNestedEnum,
-  ObjNestedEnum,
-  RabbitBreed,
-  SuperNestedObjectEnum,
-  UserSuperNestedObject,
-} from "../generated/user_super_nested_object";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import EditUserAllFieldsAction from "../user/actions/edit_user_all_fields_action";
 

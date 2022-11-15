@@ -1,3 +1,4 @@
+import { cosmiconfigSync } from "cosmiconfig";
 import {
   Pattern,
   Schema,
@@ -348,6 +349,9 @@ interface Result {
   schemas: schemasDict;
   patterns: patternsDict;
   globalSchema?: ProcessedGlobalSchema;
+  config?: {
+    rome?: RomeConfig;
+  };
 }
 
 declare type PotentialSchemas = {
@@ -435,8 +439,61 @@ export async function parseSchema(
 
     schemas[key] = processedSchema;
   }
+  const rome = translatePrettier();
 
-  return { schemas, patterns, globalSchema: parsedGlobalSchema };
+  return {
+    schemas,
+    patterns,
+    globalSchema: parsedGlobalSchema,
+    config: {
+      rome,
+    },
+  };
+}
+
+interface RomeConfig {
+  indentStyle?: string;
+  lineWidth?: number;
+  indentSize?: number;
+  quoteStyle?: string;
+  quoteProperties?: string;
+  trailingComma?: string;
+}
+
+function translatePrettier(): RomeConfig | undefined {
+  const r = cosmiconfigSync("prettier").search();
+  if (!r) {
+    return;
+  }
+  const ret: RomeConfig = {};
+  if (r.config.printWidth !== undefined) {
+    ret.lineWidth = parseInt(r.config.printWidth);
+  }
+  if (r.config.useTabs) {
+    ret.indentStyle = "tab";
+  } else {
+    ret.indentStyle = "space";
+  }
+  if (r.config.tabWidth !== undefined) {
+    ret.indentSize = parseInt(r.config.tabWidth);
+  }
+  if (r.config.singleQuote) {
+    ret.quoteStyle = "single";
+  } else {
+    ret.quoteStyle = "double";
+  }
+  if (r.config.quoteProps !== undefined) {
+    if (r.config.quoteProps === "consistent") {
+      // rome doesn't support this
+      ret.quoteProperties = "as-needed";
+    } else {
+      ret.quoteProperties = r.config.quoteProps;
+    }
+  }
+  if (r.config.trailingComma !== undefined) {
+    ret.trailingComma = r.config.trailingComma;
+  }
+  return ret;
 }
 
 interface ProcessedGlobalSchema {

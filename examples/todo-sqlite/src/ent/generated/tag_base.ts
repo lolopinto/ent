@@ -26,7 +26,8 @@ import {
   tagLoaderInfo,
   tagNoTransformLoader,
 } from "src/ent/generated/loaders";
-import { Account, NodeType, Tag, TagToTodosQuery } from "src/ent/internal";
+import { NodeType } from "src/ent/generated/types";
+import { Account, Tag, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag_schema";
 
 interface TagDBData {
@@ -67,7 +68,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static async load<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -79,7 +83,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static async loadX<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -91,7 +98,10 @@ export class TagBase implements Ent<Viewer> {
   // we don't generate the full complement of read-APIs
   // but can easily query the raw data with tagNoTransformLoader
   static async loadNoTransform<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -104,7 +114,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static async loadNoTransformX<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -116,7 +129,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static async loadMany<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -128,7 +144,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static async loadCustom<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -143,7 +162,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static async loadCustomData<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<TagDBData[]> {
@@ -158,7 +180,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static async loadCustomCount<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -172,7 +197,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static async loadRawData<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<TagDBData | null> {
@@ -184,7 +212,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static async loadRawDataX<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<TagDBData> {
@@ -196,7 +227,10 @@ export class TagBase implements Ent<Viewer> {
   }
 
   static loaderOptions<T extends TagBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (
+      viewer: Viewer,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, Viewer> {
     return {
       tableName: tagLoaderInfo.tableName,

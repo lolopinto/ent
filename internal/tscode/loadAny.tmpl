@@ -1,4 +1,4 @@
-{{ reserveImport "./const" "NodeType"}}
+{{ reserveImport .Package.TypesImportPath "NodeType"}}
 {{ reserveImport .Package.PackagePath "loadEnt" "loadEntX" "ID" "Viewer" "Ent" "LoadEntOptions"}}
 {{ $impPath := .Package.InternalImportPath }}
 {{ range .NodeData -}}

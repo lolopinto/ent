@@ -17,8 +17,7 @@ import { Account } from "src/ent/";
 import EditAccountAction, {
   AccountEditInput,
 } from "src/ent/account/actions/edit_account_action";
-import { AccountPrefs } from "src/ent/generated/account_prefs";
-import { AccountPrefs2 } from "src/ent/generated/account_prefs_2";
+import { AccountPrefs, AccountPrefs2 } from "src/ent/generated/types";
 import { AccountPrefs2InputType } from "src/graphql/generated/mutations/input/account_prefs_2_input_type";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
 import { AccountType } from "src/graphql/resolvers/";

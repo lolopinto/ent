@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, User } from "../../..";
 import { ContactBuilder } from "./contact_builder";
-import { ContactInfo } from "../../contact_info";
+import { ContactInfo } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEmailInput {
@@ -142,7 +142,10 @@ export class CreateContactActionBase
   }
 
   static create<T extends CreateContactActionBase>(
-    this: new (viewer: ExampleViewerAlias, input: ContactCreateInput) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      input: ContactCreateInput,
+    ) => T,
     viewer: ExampleViewerAlias,
     input: ContactCreateInput,
   ): T {

@@ -11,12 +11,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "src/ent/generated/loadAny";
-import {
-  Address,
-  AddressToLocatedAtEdge,
-  EdgeType,
-  NodeType,
-} from "src/ent/internal";
+import { EdgeType, NodeType } from "src/ent/generated/types";
+import { Address, AddressToLocatedAtEdge } from "src/ent/internal";
 
 export const addressToLocatedAtCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.AddressToLocatedAt);
@@ -45,7 +41,10 @@ export abstract class AddressToLocatedAtQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends AddressToLocatedAtQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Address, Ent<Viewer>>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Address, Ent<Viewer>>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Address, Ent<Viewer>>,
   ): T {
@@ -77,7 +76,10 @@ export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends OwnerToAddressesQueryBase>(
-    this: new (viewer: Viewer, src: Ent<Viewer>) => T,
+    this: new (
+      viewer: Viewer,
+      src: Ent<Viewer>,
+    ) => T,
     viewer: Viewer,
     src: Ent<Viewer>,
   ): T {

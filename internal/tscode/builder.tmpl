@@ -47,7 +47,7 @@
 {{with .NodeData -}}
 {{ $schemaPath := .GetSchemaPath }}
 {{ reserveDefaultImport $schemaPath "schema"}}
-{{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
+{{ reserveImport "src/ent/generated/types" "EdgeType" "NodeType" }}
 {{$loaderInfo := printf "%sLoaderInfo" .NodeInstance -}}
 {{ reserveImport "src/ent/generated/loaders" $loaderInfo -}}
 

@@ -4,7 +4,7 @@
 {{$p := .Pattern}}
 {{ $cfg := .Config -}}
 
-{{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
+{{ reserveImport "src/ent/generated/types" "EdgeType" "NodeType" }}
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
 {{ reserveImportPath $viewerInfo.GetImportPath false -}}

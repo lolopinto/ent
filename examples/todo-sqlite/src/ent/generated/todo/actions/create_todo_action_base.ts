@@ -127,7 +127,10 @@ export class CreateTodoActionBase
   }
 
   static create<T extends CreateTodoActionBase>(
-    this: new (viewer: Viewer, input: TodoCreateInput) => T,
+    this: new (
+      viewer: Viewer,
+      input: TodoCreateInput,
+    ) => T,
     viewer: Viewer,
     input: TodoCreateInput,
   ): T {

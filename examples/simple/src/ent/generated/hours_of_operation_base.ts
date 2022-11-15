@@ -21,13 +21,8 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
-import {
-  DayOfWeek,
-  DayOfWeekAlt,
-  DayOfWeekMixin,
-  IDayOfWeek,
-  NodeType,
-} from "../internal";
+import { DayOfWeek, DayOfWeekAlt, NodeType } from "./types";
+import { DayOfWeekMixin, IDayOfWeek } from "../internal";
 import schema from "../../schema/hours_of_operation_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
@@ -67,7 +62,10 @@ export class HoursOfOperationBase
   }
 
   static async load<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
@@ -79,7 +77,10 @@ export class HoursOfOperationBase
   }
 
   static async loadX<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
@@ -91,7 +92,10 @@ export class HoursOfOperationBase
   }
 
   static async loadMany<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
@@ -103,7 +107,10 @@ export class HoursOfOperationBase
   }
 
   static async loadCustom<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
@@ -118,7 +125,10 @@ export class HoursOfOperationBase
   }
 
   static async loadCustomData<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<HoursOfOperationDBData[]> {
@@ -133,7 +143,10 @@ export class HoursOfOperationBase
   }
 
   static async loadCustomCount<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<number> {
@@ -147,7 +160,10 @@ export class HoursOfOperationBase
   }
 
   static async loadRawData<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<HoursOfOperationDBData | null> {
@@ -159,7 +175,10 @@ export class HoursOfOperationBase
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
     id: ID,
     context?: Context,
   ): Promise<HoursOfOperationDBData> {
@@ -171,7 +190,10 @@ export class HoursOfOperationBase
   }
 
   static loaderOptions<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: hoursOfOperationLoaderInfo.tableName,

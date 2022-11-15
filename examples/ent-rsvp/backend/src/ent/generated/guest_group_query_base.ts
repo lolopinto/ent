@@ -9,8 +9,8 @@ import {
   ID,
   Viewer,
 } from "@snowtop/ent";
+import { EdgeType } from "src/ent/generated/types";
 import {
-  EdgeType,
   EventActivity,
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
@@ -91,7 +91,10 @@ export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends GuestGroupToGuestsQueryBase>(
-    this: new (viewer: Viewer, src: GuestGroup | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: GuestGroup | ID,
+    ) => T,
     viewer: Viewer,
     src: GuestGroup | ID,
   ): T {

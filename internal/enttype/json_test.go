@@ -248,7 +248,7 @@ func TestJSONType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
 				},
 				importType: &enttype.JSONBImport{},
 				subFields: []*input.Field{
@@ -299,7 +299,7 @@ func TestJSONType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
 				},
 				importType: &enttype.JSONBImport{},
 				subFields: []*input.Field{
@@ -351,7 +351,7 @@ func TestJSONType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
 				},
 				importType: &enttype.JSONImport{},
 				subFields: []*input.Field{
@@ -402,7 +402,7 @@ func TestJSONType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
 				},
 				importType: &enttype.JSONImport{},
 				subFields: []*input.Field{
@@ -526,7 +526,7 @@ func TestJSONType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+					tsimport.NewTypesEntImportPath("TypeWithUnionFields"),
 				},
 				importType: &enttype.JSONBImport{},
 				unionFields: []*input.Field{
@@ -683,7 +683,7 @@ func TestJSONType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+					tsimport.NewTypesEntImportPath("TypeWithUnionFields"),
 				},
 				importType: &enttype.JSONBImport{},
 				unionFields: []*input.Field{
@@ -843,7 +843,7 @@ func TestJSONType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+					tsimport.NewTypesEntImportPath("TypeWithUnionFields"),
 				},
 				importType: &enttype.JSONImport{},
 				unionFields: []*input.Field{
@@ -1000,7 +1000,7 @@ func TestJSONType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertNullableJSON"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+					tsimport.NewTypesEntImportPath("TypeWithUnionFields"),
 				},
 				importType: &enttype.JSONImport{},
 				unionFields: []*input.Field{
