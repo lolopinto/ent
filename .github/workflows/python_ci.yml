@@ -5,7 +5,7 @@ name: Python auto_schema tests
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - python/**
 
@@ -35,13 +35,12 @@ jobs:
         ports:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
-          
+
       sqlite:
         image: nouchka/sqlite3
-          
     steps:
     - uses: actions/checkout@v3
-      
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -60,14 +59,18 @@ jobs:
         key: ${{ runner.os }}-pipenv-${{ hashFiles('Pipfile.lock') }}
         restore-keys: |
           ${{ runner.os }}-pipenv-
-    
-    - name: Install dependencies
+
+    - name: Install pipenv
       run: |
         python -m pip install --upgrade pip 
-        pip install pytest
+        pip install pipenv=2022.11.11
+
+    - name: Install dependencies
+      run: |
+        pipenv install -deploy -dev
 
     - name: run test suite
       run: |
-        python -m pytest -svv
-      env: 
+        pipenv run pytest -svv
+      env:
         DB_CONNECTION_STRING: 'postgresql://postgres:postgres@localhost:5432'
