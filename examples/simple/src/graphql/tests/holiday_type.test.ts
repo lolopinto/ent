@@ -4,8 +4,8 @@ import schema from "../generated/schema";
 import { DateTime } from "luxon";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Holiday } from "src/ent";
-import { DayOfWeek, DayOfWeekAlt } from "src/ent/generated/types";
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
+import { DayOfWeek, DayOfWeekAlt } from "../../ent/generated/types";
 
 test("create holiday", async () => {
   let id: ID;

@@ -19,9 +19,10 @@ import {
   RabbitBreed,
   SuperNestedObjectEnum,
   UserSuperNestedObject,
+  NodeType,
+  EdgeType,
 } from "../generated/types";
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
-import { NodeType, EdgeType } from "../generated/const";
 import { random, randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction, {
   UserCreateInput,

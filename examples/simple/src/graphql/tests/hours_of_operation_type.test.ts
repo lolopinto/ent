@@ -3,9 +3,9 @@ import { expectMutation } from "@snowtop/ent-graphql-tests";
 import schema from "../generated/schema";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { HoursOfOperation } from "src/ent";
-import { DayOfWeek, DayOfWeekAlt } from "src/ent/generated/types";
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
 import { DBTimeZone } from "@snowtop/ent/testutils/db_time_zone";
+import { DayOfWeek, DayOfWeekAlt } from "../../ent/generated/types";
 
 test("create hours of operation", async () => {
   let id: ID;
