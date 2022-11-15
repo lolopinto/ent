@@ -302,6 +302,9 @@ function normalizePath(p: string) {
   if (p.endsWith("..")) {
     return p + "/";
   }
+  if (!p.startsWith("..")) {
+    return "./" + p;
+  }
   return p;
 }
 
