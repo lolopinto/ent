@@ -8,6 +8,36 @@ import {
 } from "../tsc/ast";
 import ts, { isImportDeclaration } from "typescript";
 
+class GatherExportsInGeneratedTypes implements TransformFile {
+  glob = "src/ent/generated/types.ts";
+  names: string[] = [];
+  traverseChild(
+    sourceFile: ts.SourceFile,
+    contents: string,
+    file: string,
+    node: ts.Node,
+  ) {
+    const exported = node.modifiers?.filter(
+      (mod) => mod.getText(sourceFile) === "export",
+    );
+
+    if (exported?.length) {
+      if (
+        ts.isEnumDeclaration(node) ||
+        ts.isInterfaceDeclaration(node) ||
+        ts.isTypeAliasDeclaration(node)
+      ) {
+        this.names.push(node.name.text);
+      }
+
+      if (ts.isFunctionDeclaration(node) && node.name?.text) {
+        this.names.push(node.name.text);
+      }
+    }
+    return { node };
+  }
+}
+
 class TransformImports implements TransformFile {
   glob = "src/**/*.ts";
 
@@ -19,8 +49,9 @@ class TransformImports implements TransformFile {
 
   constructor() {
     this.cwd = process.cwd();
-    const result = require("src/ent/generated/types");
-    Object.keys(result).forEach((v) => this.impsToMove.set(v, true));
+    const gt = new GatherExportsInGeneratedTypes();
+    transform(gt);
+    gt.names.forEach((v) => this.impsToMove.set(v, true));
 
     this.relative = getCustomInfo().relativeImports ?? this.relative;
   }
@@ -61,11 +92,7 @@ class TransformImports implements TransformFile {
     }
 
     // nothing to do here
-    if (pathToWrite === current) {
-      return { node };
-    }
-
-    if (!seenImports.length) {
+    if (pathToWrite === current || !seenImports.length) {
       return { node };
     }
 
