@@ -4,7 +4,6 @@ import {
   getCustomInfo,
   transformRelative,
   transformImport,
-  isRelativeImport,
 } from "../tsc/ast";
 import ts, { isImportDeclaration } from "typescript";
 
@@ -86,10 +85,7 @@ class TransformImports implements TransformFile {
       "src/ent/generated/types",
       this.relative,
     );
-    let current = text;
-    if (isRelativeImport(node, sourceFile)) {
-      current = transformRelative(file, text, this.relative);
-    }
+    const current = transformRelative(file, text, this.relative);
 
     // nothing to do here
     if (pathToWrite === current || !seenImports.length) {
