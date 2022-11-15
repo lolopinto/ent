@@ -297,10 +297,7 @@ func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSType {
 		// only set this if we actually have fields. otherwise, we want this to be nil
 		subFields = typ.SubFields
 		if importType == nil && typ.Type != "" {
-			importType = &tsimport.ImportPath{
-				ImportPath: getImportPathForCustomInterfaceFile(typ.Type),
-				Import:     typ.Type,
-			}
+			importType = tsimport.NewTypesEntImportPath(typ.Type)
 		}
 	}
 	if len(typ.UnionFields) != 0 {
@@ -915,9 +912,4 @@ func ParseSchema(input []byte) (*Schema, error) {
 		return nil, err
 	}
 	return s, nil
-}
-
-// copied from step.go
-func getImportPathForCustomInterfaceFile(tsType string) string {
-	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(tsType))
 }

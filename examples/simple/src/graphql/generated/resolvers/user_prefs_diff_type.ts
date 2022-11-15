@@ -10,7 +10,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { UserPrefsDiff } from "../../../ent";
+import { UserPrefsDiff } from "../../../ent/generated/types";
 
 export const UserPrefsDiffType = new GraphQLObjectType({
   name: "UserPrefsDiff",

@@ -83,6 +83,7 @@ func init() {
 		deleteSchemaCmd,
 		detectDanglingFilesCmd,
 		migratev1Cmd,
+		runScriptCmd,
 	})
 
 	addCommands(generateCmd, []*cobra.Command{

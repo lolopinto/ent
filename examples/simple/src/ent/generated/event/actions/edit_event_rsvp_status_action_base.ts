@@ -17,8 +17,9 @@ import {
   WriteOperation,
   setEdgeTypeInGroup,
 } from "@snowtop/ent/action";
-import { Event, NodeType } from "../../..";
+import { Event } from "../../..";
 import { EventBuilder } from "./event_builder";
+import { NodeType } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export enum EventRsvpStatusInput {

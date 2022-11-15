@@ -22,6 +22,7 @@ func (info *EnumInfo) LookupTableEnum() bool {
 }
 
 // OwnEnumFile: LookupTable enums or enums from patterns get their own file
+// TODO kill this. all enums go in types.ts...
 func (info *EnumInfo) OwnEnumFile() bool {
 	return info.InputNode != nil || info.Pattern != nil
 }

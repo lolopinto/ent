@@ -11,9 +11,9 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Account, Workspace } from "src/ent/";
-import { EdgeType, NodeType } from "src/ent/generated/const";
 import { workspaceLoaderInfo } from "src/ent/generated/loaders";
 import { TodoContainerBuilder } from "src/ent/generated/mixins/todo_container/actions/todo_container_builder";
+import { EdgeType, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/workspace_schema";
 
 export interface WorkspaceInput {

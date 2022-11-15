@@ -13,7 +13,8 @@ import {
   ID,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
-import { Comment, CommentToPostEdge, EdgeType, NodeType } from "../internal";
+import { EdgeType, NodeType } from "./types";
+import { Comment, CommentToPostEdge } from "../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(

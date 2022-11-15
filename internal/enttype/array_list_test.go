@@ -406,7 +406,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				tsType: "AccountStatus[]",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("AccountStatus"),
+					tsimport.NewTypesEntImportPath("AccountStatus"),
 				},
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.StringEnumType{
@@ -448,7 +448,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				tsType: "AccountStatus[] | null",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("AccountStatus"),
+					tsimport.NewTypesEntImportPath("AccountStatus"),
 				},
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.StringEnumType{
@@ -663,7 +663,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertJSONList"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
 				},
 				subFields: []*input.Field{
 					{
@@ -722,7 +722,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertNullableJSONList"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
 				},
 				subFields: []*input.Field{
 					{
@@ -780,7 +780,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertJSONList"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
 				},
 				subFields: []*input.Field{
 					{
@@ -837,7 +837,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertNullableJSONList"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
 				},
 				subFields: []*input.Field{
 					{
@@ -968,7 +968,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertJSONList"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+					tsimport.NewTypesEntImportPath("TypeWithUnionFields"),
 				},
 				unionFields: []*input.Field{
 					{
@@ -1133,7 +1133,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertNullableJSONList"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+					tsimport.NewTypesEntImportPath("TypeWithUnionFields"),
 				},
 				unionFields: []*input.Field{
 					{
@@ -1299,7 +1299,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertJSONList"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+					tsimport.NewTypesEntImportPath("TypeWithUnionFields"),
 				},
 				unionFields: []*input.Field{
 					{
@@ -1464,7 +1464,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				convertSqliteFns: []string{"convertNullableJSONList"},
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+					tsimport.NewTypesEntImportPath("TypeWithUnionFields"),
 				},
 				unionFields: []*input.Field{
 					{

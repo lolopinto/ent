@@ -14,10 +14,13 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Account, AccountState } from "src/ent/";
+import { Account } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
-import { AccountPrefs } from "src/ent/generated/account_prefs";
-import { AccountPrefs2 } from "src/ent/generated/account_prefs_2";
+import {
+  AccountPrefs,
+  AccountPrefs2,
+  AccountState,
+} from "src/ent/generated/types";
 
 export interface AccountEditInput {
   name?: string;

@@ -22,11 +22,11 @@ import {
   guestGroupLoader,
   guestGroupLoaderInfo,
 } from "src/ent/generated/loaders";
+import { NodeType } from "src/ent/generated/types";
 import {
   Event,
   GuestGroupToGuestsQuery,
   GuestGroupToInvitedEventsQuery,
-  NodeType,
 } from "src/ent/internal";
 import schema from "src/schema/guest_group_schema";
 

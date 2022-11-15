@@ -4,7 +4,7 @@
  */
 
 import { Data, Viewer } from "@snowtop/ent";
-import { DayOfWeek, DayOfWeekAlt } from "../../internal";
+import { DayOfWeek, DayOfWeekAlt } from "../types";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 

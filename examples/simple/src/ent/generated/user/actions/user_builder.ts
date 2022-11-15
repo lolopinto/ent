@@ -13,22 +13,21 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import {
-  Contact,
-  Event,
-  User,
-  UserDaysOff,
-  UserIntEnum,
-  UserPreferredShift,
-} from "../../..";
-import { EdgeType, NodeType } from "../../const";
+import { Contact, Event, User } from "../../..";
 import { userLoaderInfo } from "../../loaders";
 import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
-import { UserNestedObjectList } from "../../user_nested_object_list";
-import { UserPrefsDiff } from "../../user_prefs_diff";
-import { UserPrefsStruct } from "../../user_prefs_struct";
-import { UserPrefsStruct2 } from "../../user_prefs_struct_2";
-import { UserSuperNestedObject } from "../../user_super_nested_object";
+import {
+  EdgeType,
+  NodeType,
+  UserDaysOff,
+  UserIntEnum,
+  UserNestedObjectList,
+  UserPreferredShift,
+  UserPrefsDiff,
+  UserPrefsStruct,
+  UserPrefsStruct2,
+  UserSuperNestedObject,
+} from "../../types";
 import schema from "../../../../schema/user_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 

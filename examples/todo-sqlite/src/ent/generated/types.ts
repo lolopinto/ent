@@ -31,3 +31,70 @@ export enum EdgeType {
   // WorkspaceToMembers is the edgeType for the workspace to members edge.
   WorkspaceToMembers = "1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0",
 }
+
+export enum AccountState {
+  UNVERIFIED = "UNVERIFIED",
+  VERIFIED = "VERIFIED",
+  DEACTIVATED = "DEACTIVATED",
+  DISABLED = "DISABLED",
+}
+
+export enum AccountTodoStatus {
+  OpenTodosDup = "openTodosDup",
+  ClosedTodosDup = "closedTodosDup",
+}
+
+export interface AccountPrefs {
+  finishedNux: boolean;
+  enableNotifs: boolean;
+  preferredLanguage: string;
+}
+
+export function convertAccountPrefs(input: any): AccountPrefs {
+  return {
+    finishedNux: input.finished_nux,
+    enableNotifs: input.enable_notifs,
+    preferredLanguage: input.preferred_language,
+  };
+}
+
+export function convertNullableAccountPrefs(input: any): AccountPrefs | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertAccountPrefs(input);
+}
+
+export interface AccountPrefs2 {
+  finishedNux: boolean;
+  enableNotifs: boolean;
+  preferredLanguage: string;
+}
+
+export function convertAccountPrefs2(input: any): AccountPrefs2 {
+  return {
+    finishedNux: input.finished_nux,
+    enableNotifs: input.enable_notifs,
+    preferredLanguage: input.preferred_language,
+  };
+}
+
+export function convertNullableAccountPrefs2(input: any): AccountPrefs2 | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertAccountPrefs2(input);
+}
+
+export function convertAccountPrefs2List(input: any[]): AccountPrefs2[] {
+  return input.map((v) => convertAccountPrefs2(v));
+}
+
+export function convertNullableAccountPrefs2List(
+  input: any[] | null,
+): AccountPrefs2[] | null {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  return input.map((v) => convertAccountPrefs2(v));
+}

@@ -4,12 +4,7 @@
 {{ $pkg := .Package }}
 {{ $cfg := .Config }}
 {{ $schema := .Schema }}
-{{ range $ci.GetAllEnums -}}
-  {{/* TODO when imported here? */}}
-  {{if not .Imported -}}
-    {{ template "enum.tmpl" .}}
-  {{end -}}
-{{ end}}
+
 
 {{ range $ci.GetAllCustomTypes -}}
   {{ if .IsCustomInterface -}}

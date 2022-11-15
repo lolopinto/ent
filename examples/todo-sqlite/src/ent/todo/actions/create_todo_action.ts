@@ -4,7 +4,7 @@ import {
   CreateTodoActionTriggers,
   TodoCreateInput,
 } from "src/ent/generated/todo/actions/create_todo_action_base";
-import { NodeType } from "src/ent/internal";
+import { NodeType } from "src/ent/generated/types";
 
 export { TodoCreateInput };
 

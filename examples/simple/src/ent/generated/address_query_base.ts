@@ -10,10 +10,10 @@ import {
   EdgeQuerySource,
   ID,
 } from "@snowtop/ent";
+import { EdgeType } from "./types";
 import {
   Address,
   AddressToHostedEventsEdge,
-  EdgeType,
   Event,
   EventToAttendingQuery,
   EventToDeclinedQuery,

@@ -11,12 +11,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "src/ent/generated/loadAny";
-import {
-  Address,
-  AddressToLocatedAtEdge,
-  EdgeType,
-  NodeType,
-} from "src/ent/internal";
+import { EdgeType, NodeType } from "src/ent/generated/types";
+import { Address, AddressToLocatedAtEdge } from "src/ent/internal";
 
 export const addressToLocatedAtCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.AddressToLocatedAt);

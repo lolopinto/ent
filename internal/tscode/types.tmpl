@@ -1,0 +1,17 @@
+{{template "enum.tmpl" .NodeType }}
+
+{{ if .EdgeType.Values -}}
+  {{template "enum.tmpl" .EdgeType }}
+{{end -}}
+
+{{ range .Schema.Enums }}
+  {{ template "enum.tmpl" .Enum -}}
+{{ end -}}
+
+{{ $schema := .Schema }}
+{{ $package := .Package }}
+{{ $config := .Config }}
+
+{{ range .Schema.CustomInterfaces }}
+  {{ template "custom_interface.tmpl" (dict "Interface" .  "Package" $package "Schema" $schema  "Config" $config) }}
+{{ end -}}

@@ -11,8 +11,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Account, Tag, Todo } from "src/ent/";
-import { EdgeType, NodeType } from "src/ent/generated/const";
 import { tagLoaderInfo } from "src/ent/generated/loaders";
+import { EdgeType, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/tag_schema";
 
 export interface TagInput {

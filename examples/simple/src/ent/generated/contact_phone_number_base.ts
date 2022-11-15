@@ -20,12 +20,12 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { ContactInfo } from "./contact_info";
 import {
   contactPhoneNumberLoader,
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
-import { Contact, ContactInfoMixin, IContactInfo, NodeType } from "../internal";
+import { ContactInfo, NodeType } from "./types";
+import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 

@@ -1,4 +1,4 @@
-import { User, Contact, ContactInfoSource } from "../../ent";
+import { User, Contact } from "../../ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction from "../user/actions/create_user_action";
 import CreateContactAction, {
@@ -9,6 +9,7 @@ import EditContactAction from "../contact/actions/edit_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import { query } from "@snowtop/ent";
 import { v4 } from "uuid";
+import { ContactInfoSource } from "../generated/types";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 

@@ -14,9 +14,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
-import { NodeType } from "../../const";
-import { ContactInfo } from "../../contact_info";
 import { contactPhoneNumberLoaderInfo } from "../../loaders";
+import { ContactInfo, NodeType } from "../../types";
 import schema from "../../../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 

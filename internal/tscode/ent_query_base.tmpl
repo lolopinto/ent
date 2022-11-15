@@ -1,4 +1,4 @@
-{{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
+{{ reserveImport .Package.TypesImportPath "EdgeType" "NodeType" }}
 {{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "IndexLoaderFactory" "loadEnt" "LoadEntOptions"}}
 {{$importPath := .Package.InternalImportPath -}}
 {{reserveImport "src/ent/generated/loadAny" "getLoaderOptions" -}}

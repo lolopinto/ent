@@ -34,28 +34,25 @@ import {
   userPhoneNumberLoader,
 } from "./loaders";
 import {
+  EdgeType,
+  NodeType,
+  UserDaysOff,
+  UserIntEnum,
   UserNestedObjectList,
-  convertNullableUserNestedObjectListList,
-} from "./user_nested_object_list";
-import { UserPrefsDiff } from "./user_prefs_diff";
-import {
+  UserPreferredShift,
+  UserPrefsDiff,
   UserPrefsStruct,
-  convertNullableUserPrefsStruct,
-} from "./user_prefs_struct";
-import {
   UserPrefsStruct2,
-  convertNullableUserPrefsStruct2List,
-} from "./user_prefs_struct_2";
-import {
   UserSuperNestedObject,
+  convertNullableUserNestedObjectListList,
+  convertNullableUserPrefsStruct,
+  convertNullableUserPrefsStruct2List,
   convertNullableUserSuperNestedObject,
-} from "./user_super_nested_object";
+} from "./types";
 import {
   Contact,
-  EdgeType,
   FeedbackMixin,
   IFeedback,
-  NodeType,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
   UserToContactsQuery,
@@ -75,31 +72,6 @@ import {
   convertSuperNestedObject,
 } from "../../util/convert_user_fields";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
-
-export enum UserDaysOff {
-  Monday = "monday",
-  Tuesday = "tuesday",
-  Wednesday = "wednesday",
-  Thursday = "thursday",
-  Friday = "friday",
-  Saturday = "saturday",
-  Sunday = "sunday",
-}
-
-export enum UserPreferredShift {
-  Morning = "morning",
-  Afternoon = "afternoon",
-  Evening = "evening",
-  Graveyard = "graveyard",
-}
-
-export enum UserIntEnum {
-  VERIFIED = 1,
-  UNVERIFIED = 2,
-  DISABLED = 3,
-  DEACTIVATED = 4,
-  // @deprecated FOO = 5,
-}
 
 interface UserDBData {
   id: ID;

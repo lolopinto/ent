@@ -161,6 +161,10 @@ export function transformImport(
 
   const comment = getPreText(fileContents, importNode, sourceFile);
 
+  if (!finalImports.size) {
+    return;
+  }
+
   return (
     comment +
     "import " +
@@ -297,6 +301,9 @@ export function transformRelative(
 function normalizePath(p: string) {
   if (p.endsWith("..")) {
     return p + "/";
+  }
+  if (!p.startsWith("..")) {
+    return "./" + p;
   }
   return p;
 }

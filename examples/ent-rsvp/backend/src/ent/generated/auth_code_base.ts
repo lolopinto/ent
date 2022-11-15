@@ -25,7 +25,8 @@ import {
   authCodeLoader,
   authCodeLoaderInfo,
 } from "src/ent/generated/loaders";
-import { Guest, NodeType } from "src/ent/internal";
+import { NodeType } from "src/ent/generated/types";
+import { Guest } from "src/ent/internal";
 import schema from "src/schema/auth_code_schema";
 
 interface AuthCodeDBData {

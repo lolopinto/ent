@@ -13,9 +13,9 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
-import { NodeType } from "../../const";
+import { HoursOfOperation } from "../../..";
 import { hoursOfOperationLoaderInfo } from "../../loaders";
+import { DayOfWeek, DayOfWeekAlt, NodeType } from "../../types";
 import schema from "../../../../schema/hours_of_operation_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 

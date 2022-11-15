@@ -26,7 +26,8 @@ import {
   addressLoaderInfo,
   addressOwnerIDLoader,
 } from "src/ent/generated/loaders";
-import { AddressToLocatedAtQuery, NodeType } from "src/ent/internal";
+import { NodeType } from "src/ent/generated/types";
+import { AddressToLocatedAtQuery } from "src/ent/internal";
 import schema from "src/schema/address_schema";
 
 interface AddressDBData {

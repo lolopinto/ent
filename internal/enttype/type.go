@@ -996,7 +996,7 @@ func (t *StringEnumType) GetTsTypeImports() []*tsimport.ImportPath {
 		}
 	}
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(t.Type),
+		tsimport.NewTypesEntImportPath(t.Type),
 	}
 }
 
@@ -1058,7 +1058,7 @@ func (t *NullableStringEnumType) GetTSType() string {
 
 func (t *NullableStringEnumType) GetTsTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(t.Type),
+		tsimport.NewTypesEntImportPath(t.Type),
 	}
 }
 
@@ -1108,7 +1108,7 @@ func (t *IntegerEnumType) GetTSType() string {
 
 func (t *IntegerEnumType) GetTsTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(t.Type),
+		tsimport.NewTypesEntImportPath(t.Type),
 	}
 }
 
@@ -1160,7 +1160,7 @@ func (t *NullableIntegerEnumType) GetTSType() string {
 
 func (t *NullableIntegerEnumType) GetTsTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(t.Type),
+		tsimport.NewTypesEntImportPath(t.Type),
 	}
 }
 
@@ -1411,7 +1411,7 @@ func (t *CommonJSONType) getTsTypeImports(impType *tsimport.ImportPath) []*tsimp
 	}
 
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(typ),
+		tsimport.NewTypesEntImportPath(typ),
 	}
 }
 

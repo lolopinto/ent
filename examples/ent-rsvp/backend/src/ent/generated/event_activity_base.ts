@@ -24,25 +24,21 @@ import {
   eventActivityLoaderInfo,
 } from "src/ent/generated/loaders";
 import {
-  Address,
   EdgeType,
+  EventActivityRsvpStatus,
+  NodeType,
+} from "src/ent/generated/types";
+import {
+  Address,
   Event,
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
   Guest,
   IWithAddress,
-  NodeType,
   WithAddressMixin,
 } from "src/ent/internal";
 import schema from "src/schema/event_activity_schema";
-
-export enum EventActivityRsvpStatus {
-  Attending = "attending",
-  Declined = "declined",
-  CanRsvp = "canRsvp",
-  CannotRsvp = "cannotRsvp",
-}
 
 interface EventActivityDBData {
   id: ID;

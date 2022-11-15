@@ -22,12 +22,8 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import { loadEntByType, loadEntXByType } from "./loadAny";
 import { commentLoader, commentLoaderInfo } from "./loaders";
-import {
-  ArticleToCommentsQuery,
-  CommentToPostQuery,
-  NodeType,
-  User,
-} from "../internal";
+import { NodeType } from "./types";
+import { ArticleToCommentsQuery, CommentToPostQuery, User } from "../internal";
 import schema from "../../schema/comment_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 

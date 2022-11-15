@@ -14,8 +14,8 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { AuthCode, User } from "../../..";
-import { NodeType } from "../../const";
 import { authCodeLoaderInfo } from "../../loaders";
+import { NodeType } from "../../types";
 import schema from "../../../../schema/auth_code_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 

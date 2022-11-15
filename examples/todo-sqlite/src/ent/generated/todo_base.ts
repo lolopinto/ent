@@ -27,9 +27,9 @@ import {
   todoLoaderInfo,
   todoNoTransformLoader,
 } from "src/ent/generated/loaders";
+import { NodeType } from "src/ent/generated/types";
 import {
   Account,
-  NodeType,
   TodoToTagsQuery,
   TodoToTodoScopeQuery,
 } from "src/ent/internal";

@@ -72,7 +72,7 @@ func TestSimpleCodegen(t *testing.T) {
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
-	validateFileExists(t, rootDir, "src/ent/generated/const.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/types.ts")
 	validateFileExists(t, rootDir, "src/ent/internal.ts")
 	validateFileExists(t, rootDir, "src/ent/index.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/loadAny.ts")
@@ -131,7 +131,7 @@ func TestDisableGraphQLRoot(t *testing.T) {
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
-	validateFileExists(t, rootDir, "src/ent/generated/const.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/types.ts")
 	validateFileExists(t, rootDir, "src/ent/internal.ts")
 	validateFileExists(t, rootDir, "src/ent/index.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/loadAny.ts")
@@ -178,7 +178,7 @@ func TestGeneratedHeader(t *testing.T) {
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
-	validateFileExists(t, rootDir, "src/ent/generated/const.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/types.ts")
 	validateFileExists(t, rootDir, "src/ent/internal.ts")
 	validateFileExists(t, rootDir, "src/ent/index.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/loadAny.ts")
@@ -286,7 +286,7 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/ent/user.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/contact_base.ts")
 	validateFileExists(t, rootDir, "src/ent/contact.ts")
-	validateFileExists(t, rootDir, "src/ent/generated/const.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/types.ts")
 	validateFileExists(t, rootDir, "src/ent/internal.ts")
 	validateFileExists(t, rootDir, "src/ent/index.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/loadAny.ts")
@@ -362,7 +362,7 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
-	validateFileExists(t, rootDir, "src/ent/generated/const.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/types.ts")
 	validateFileExists(t, rootDir, "src/ent/internal.ts")
 	validateFileExists(t, rootDir, "src/ent/index.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/loadAny.ts")
@@ -440,7 +440,7 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
-	validateFileExists(t, rootDir, "src/ent/generated/const.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/types.ts")
 	validateFileExists(t, rootDir, "src/ent/internal.ts")
 	validateFileExists(t, rootDir, "src/ent/index.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/loadAny.ts")
@@ -516,7 +516,7 @@ func TestSchemaWithPattern(t *testing.T) {
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
-	validateFileExists(t, rootDir, "src/ent/generated/const.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/types.ts")
 	validateFileExists(t, rootDir, "src/ent/internal.ts")
 	validateFileExists(t, rootDir, "src/ent/index.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/loadAny.ts")

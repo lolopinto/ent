@@ -13,19 +13,18 @@ import {
   ID,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
+import { EdgeType, NodeType } from "./types";
 import {
   AuthCode,
   Contact,
   ContactToCommentsQuery,
   ContactToLikersQuery,
-  EdgeType,
   Event,
   EventToAttendingQuery,
   EventToDeclinedQuery,
   EventToHostsQuery,
   EventToInvitedQuery,
   EventToMaybeQuery,
-  NodeType,
   User,
   UserToCommentsQuery,
   UserToCreatedEventsEdge,

@@ -301,6 +301,7 @@ func init() {
 		GraphQLPackagePath: codepath.GraphQLPackage,
 		InternalImportPath: codepath.GetInternalImportPath(),
 		ExternalImportPath: codepath.GetExternalImportPath(),
+		TypesImportPath:    codepath.GetTypesImportPath(),
 	}
 }
 
@@ -513,6 +514,7 @@ type ImportPackage struct {
 	GraphQLPackagePath string
 	InternalImportPath string
 	ExternalImportPath string
+	TypesImportPath    string
 }
 
 func parseConfig() (*config, error) {

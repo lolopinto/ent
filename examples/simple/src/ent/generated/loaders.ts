@@ -4,7 +4,7 @@
  */
 
 import { ObjectLoaderFactory } from "@snowtop/ent";
-import { NodeType } from "./const";
+import { NodeType } from "./types";
 
 const addressTable = "addresses";
 const addressFields = [
