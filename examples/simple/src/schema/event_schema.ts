@@ -10,7 +10,7 @@ import {
   TimestampType,
   UUIDType,
 } from "@snowtop/ent/schema/";
-import { EdgeType } from "../ent/generated/const";
+import { EdgeType } from "../ent/generated/types";
 
 /// explicit schema
 const EventSchema = new EntSchema({

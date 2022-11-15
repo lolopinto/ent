@@ -4,7 +4,6 @@
 
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import { Trigger } from "@snowtop/ent/action";
-import { NodeType } from "../../generated/const";
 import { CommentBuilder } from "../../generated/comment/actions/comment_builder";
 import {
   CommentCreateInput,
@@ -14,6 +13,7 @@ import { Comment } from "../../../ent";
 import { ExampleViewer } from "../../../viewer/viewer";
 
 export { CommentCreateInput };
+import { NodeType } from "../../generated/types";
 
 export default class CreateCommentAction extends CreateCommentActionBase {
   getPrivacyPolicy() {
