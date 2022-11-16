@@ -1,7 +1,7 @@
-ARG GOLANG_VERSION=v0.1.0-alpha.39
-ARG AUTO_SCHEMA_VERSION=0.0.24
+ARG GOLANG_VERSION=v0.1.0-alpha.43
+ARG AUTO_SCHEMA_VERSION=0.0.25
 ARG NODE_VERSION=17
-ARG DOCKER_TAG=v0.1.0-alpha.35-test
+ARG DOCKER_TAG=v0.1.0-alpha.31
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.19-buster As golang-image
@@ -18,7 +18,7 @@ ARG TARGETOS TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
-FROM python:3.8.11-buster AS python-image
+FROM python:3.11.0-buster AS python-image
 ARG AUTO_SCHEMA_VERSION
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv
@@ -28,7 +28,7 @@ RUN python3 -m pip install auto_schema==$AUTO_SCHEMA_VERSION
 #RUN python3 -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ auto_schema_test==$AUTO_SCHEMA_VERSION
 
 # final image needs to be python-based to have auto-schema work
-FROM python:3.8.11-slim AS final-image
+FROM python:3.11.0-slim AS final-image
 ARG GOLANG_VERSION
 ARG NODE_VERSION
 
@@ -62,7 +62,7 @@ RUN \
 
 RUN apt update && apt --assume-yes install zsh && \
   rm -rf /var/lib/apt/lists/*
-RUN npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @swc/cli@0.1.55
+RUN npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @swc/cli@0.1.55 rome@10.0.1
 
 WORKDIR /app
 RUN npm install --save-dev tsconfig-paths@3.11.0
