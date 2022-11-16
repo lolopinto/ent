@@ -89,7 +89,6 @@ jobs:
           # clone ent-starter
           git clone https://github.com/lolopinto/ent-starter.git 
           cd ent-starter
-          git checkout update-package-json 
           npm install @snowtop/ent '@snowtop/ent-email@0.1.0-alpha1'
           mkdir -p src/schema
           cat ../.github/testdata/schema1.json | tsent generate schemas 
