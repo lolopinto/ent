@@ -4,7 +4,7 @@ sidebar_position: 6
 
 # Running Locally
 
-You may notice that running via Docker is slow. The preferred way to address this is to use [docker-sync](/docs/advanced-topics/docker-sync) to speed things up. Another approach is to get all the dependencies and run things locally.
+You may notice that running via Docker is relatively slow. The preferred way to address this is to use [docker-sync](/docs/advanced-topics/docker-sync) to speed things up. Another approach is to get all the dependencies and run things locally.
 
 There's 3 major runtimes we use:
 
@@ -14,25 +14,25 @@ There's 3 major runtimes we use:
 
 Here's the steps to install locally:
 
-* Install [golang](https://golang.org/doc/install#download) version of 1.17.9
+* Install [golang](https://golang.org/doc/install#download) version of 1.19
 * Get the latest version of the Ent CLI:
 
 ```shell
-go install github.com/lolopinto/ent/tsent@v0.0.39
+go install github.com/lolopinto/ent/tsent@v0.0.43
 ```
 
-* Install [Python](https://www.python.org/downloads/) >= 3.8
+* Install [Python](https://www.python.org/downloads/) 3.11
   * Ensure you have `pip` [installed](https://pip.pypa.io/en/stable/installing/)
 * Install [auto-schema](https://pypi.org/project/auto-schema/):
 
 ```shell
-python3 -m pip install auto_schema==0.0.18
+python3 -m pip install auto_schema==0.0.25
 ```
 
 * Install the following TypeScript packages globally:
 
 ```shell
-npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @swc/cli@0.1.55
+npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @swc/cli@0.1.55 rome@10.0.1
 ```
 
 * Install `tsconfig-paths` locally:
