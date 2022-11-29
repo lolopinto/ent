@@ -78,12 +78,43 @@ export enum CatBreed {
   Siamese = "siamese",
   Tabby = "tabby",
   Other = "other",
+  Unknown = "%unknown%",
+}
+
+export function convertCatBreed(val: string): CatBreed {
+  switch (val) {
+    case CatBreed.Bengal:
+    case CatBreed.Burmese:
+    case CatBreed.Himalayan:
+    case CatBreed.Somali:
+    case CatBreed.Persian:
+    case CatBreed.Siamese:
+    case CatBreed.Tabby:
+    case CatBreed.Other:
+    case CatBreed.Unknown:
+      return val;
+    default:
+      return CatBreed.Unknown;
+  }
 }
 
 export enum ContactInfoSource {
   Friend = "friend",
   Work = "work",
   Online = "online",
+  Unknown = "%unknown%",
+}
+
+export function convertContactInfoSource(val: string): ContactInfoSource {
+  switch (val) {
+    case ContactInfoSource.Friend:
+    case ContactInfoSource.Work:
+    case ContactInfoSource.Online:
+    case ContactInfoSource.Unknown:
+      return val;
+    default:
+      return ContactInfoSource.Unknown;
+  }
 }
 
 export enum DayOfWeek {
@@ -94,6 +125,23 @@ export enum DayOfWeek {
   Thursday = "Thursday",
   Friday = "Friday",
   Saturday = "Saturday",
+  Unknown = "%Unknown%",
+}
+
+export function convertDayOfWeek(val: string): DayOfWeek {
+  switch (val) {
+    case DayOfWeek.Sunday:
+    case DayOfWeek.Monday:
+    case DayOfWeek.Tuesday:
+    case DayOfWeek.Wednesday:
+    case DayOfWeek.Thursday:
+    case DayOfWeek.Friday:
+    case DayOfWeek.Saturday:
+    case DayOfWeek.Unknown:
+      return val;
+    default:
+      return DayOfWeek.Unknown;
+  }
 }
 
 export enum DayOfWeekAlt {
@@ -103,7 +151,24 @@ export enum DayOfWeekAlt {
   Sunday = "sun",
   Thursday = "thu",
   Tuesday = "tue",
+  Unknown = "%unknown%",
   Wednesday = "wed",
+}
+
+export function convertDayOfWeekAlt(val: string): DayOfWeekAlt {
+  switch (val) {
+    case DayOfWeekAlt.Friday:
+    case DayOfWeekAlt.Monday:
+    case DayOfWeekAlt.Saturday:
+    case DayOfWeekAlt.Sunday:
+    case DayOfWeekAlt.Thursday:
+    case DayOfWeekAlt.Tuesday:
+    case DayOfWeekAlt.Unknown:
+    case DayOfWeekAlt.Wednesday:
+      return val;
+    default:
+      return DayOfWeekAlt.Wednesday;
+  }
 }
 
 export enum DogBreed {
@@ -114,6 +179,23 @@ export enum DogBreed {
   Poodle = "poodle",
   GoldenRetriever = "golden_retriever",
   Other = "other",
+  Unknown = "%unknown%",
+}
+
+export function convertDogBreed(val: string): DogBreed {
+  switch (val) {
+    case DogBreed.GermanShepherd:
+    case DogBreed.Labrador:
+    case DogBreed.Pomerian:
+    case DogBreed.SiberianHusky:
+    case DogBreed.Poodle:
+    case DogBreed.GoldenRetriever:
+    case DogBreed.Other:
+    case DogBreed.Unknown:
+      return val;
+    default:
+      return DogBreed.Unknown;
+  }
 }
 
 export enum DogBreedGroup {
@@ -124,12 +206,42 @@ export enum DogBreedGroup {
   Toy = "toy",
   NonSporting = "non_sporting",
   Herding = "herding",
+  Unknown = "%unknown%",
+}
+
+export function convertDogBreedGroup(val: string): DogBreedGroup {
+  switch (val) {
+    case DogBreedGroup.Sporting:
+    case DogBreedGroup.Hound:
+    case DogBreedGroup.Working:
+    case DogBreedGroup.Terrier:
+    case DogBreedGroup.Toy:
+    case DogBreedGroup.NonSporting:
+    case DogBreedGroup.Herding:
+    case DogBreedGroup.Unknown:
+      return val;
+    default:
+      return DogBreedGroup.Unknown;
+  }
 }
 
 export enum EnumUsedInList {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
+  Unknown = "%unknown%",
+}
+
+export function convertEnumUsedInList(val: string): EnumUsedInList {
+  switch (val) {
+    case EnumUsedInList.Yes:
+    case EnumUsedInList.No:
+    case EnumUsedInList.Maybe:
+    case EnumUsedInList.Unknown:
+      return val;
+    default:
+      return EnumUsedInList.Unknown;
+  }
 }
 
 export enum EventRsvpStatus {
@@ -137,36 +249,117 @@ export enum EventRsvpStatus {
   Declined = "declined",
   Maybe = "maybe",
   CanRsvp = "canRsvp",
+  Unknown = "%Unknown%",
+}
+
+export function convertEventRsvpStatus(val: string): EventRsvpStatus {
+  switch (val) {
+    case EventRsvpStatus.Attending:
+    case EventRsvpStatus.Declined:
+    case EventRsvpStatus.Maybe:
+    case EventRsvpStatus.CanRsvp:
+    case EventRsvpStatus.Unknown:
+      return val;
+    default:
+      return EventRsvpStatus.Unknown;
+  }
 }
 
 export enum IntEnumUsedInList {
+  Unknown = -9007199254740991,
   Yes = 1,
   No = 2,
   Maybe = 3,
+}
+
+export function convertIntEnumUsedInList(val: number): IntEnumUsedInList {
+  switch (val) {
+    case IntEnumUsedInList.Unknown:
+    case IntEnumUsedInList.Yes:
+    case IntEnumUsedInList.No:
+    case IntEnumUsedInList.Maybe:
+      return val;
+    default:
+      return IntEnumUsedInList.Maybe;
+  }
 }
 
 export enum NestedObjNestedNestedEnum {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
+  Unknown = "%unknown%",
+}
+
+export function convertNestedObjNestedNestedEnum(
+  val: string,
+): NestedObjNestedNestedEnum {
+  switch (val) {
+    case NestedObjNestedNestedEnum.Yes:
+    case NestedObjNestedNestedEnum.No:
+    case NestedObjNestedNestedEnum.Maybe:
+    case NestedObjNestedNestedEnum.Unknown:
+      return val;
+    default:
+      return NestedObjNestedNestedEnum.Unknown;
+  }
 }
 
 export enum NotifType {
   MOBILE = "MOBILE",
   WEB = "WEB",
   EMAIL = "EMAIL",
+  UNKNOWN = "%UNKNOWN%",
+}
+
+export function convertNotifType(val: string): NotifType {
+  switch (val) {
+    case NotifType.MOBILE:
+    case NotifType.WEB:
+    case NotifType.EMAIL:
+    case NotifType.UNKNOWN:
+      return val;
+    default:
+      return NotifType.UNKNOWN;
+  }
 }
 
 export enum NotifType2 {
   MOBILE = "MOBILE",
   WEB = "WEB",
   EMAIL = "EMAIL",
+  UNKNOWN = "%UNKNOWN%",
+}
+
+export function convertNotifType2(val: string): NotifType2 {
+  switch (val) {
+    case NotifType2.MOBILE:
+    case NotifType2.WEB:
+    case NotifType2.EMAIL:
+    case NotifType2.UNKNOWN:
+      return val;
+    default:
+      return NotifType2.UNKNOWN;
+  }
 }
 
 export enum ObjNestedEnum {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
+  Unknown = "%unknown%",
+}
+
+export function convertObjNestedEnum(val: string): ObjNestedEnum {
+  switch (val) {
+    case ObjNestedEnum.Yes:
+    case ObjNestedEnum.No:
+    case ObjNestedEnum.Maybe:
+    case ObjNestedEnum.Unknown:
+      return val;
+    default:
+      return ObjNestedEnum.Unknown;
+  }
 }
 
 export enum RabbitBreed {
@@ -178,12 +371,45 @@ export enum RabbitBreed {
   BelgianHare = "belgian_hare",
   Beveren = "beveren",
   Other = "other",
+  Unknown = "%unknown%",
+}
+
+export function convertRabbitBreed(val: string): RabbitBreed {
+  switch (val) {
+    case RabbitBreed.AmericanRabbit:
+    case RabbitBreed.AmericanChincilla:
+    case RabbitBreed.AmericanFuzzyLop:
+    case RabbitBreed.AmericanSable:
+    case RabbitBreed.ArgenteBrun:
+    case RabbitBreed.BelgianHare:
+    case RabbitBreed.Beveren:
+    case RabbitBreed.Other:
+    case RabbitBreed.Unknown:
+      return val;
+    default:
+      return RabbitBreed.Unknown;
+  }
 }
 
 export enum SuperNestedObjectEnum {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
+  Unknown = "%unknown%",
+}
+
+export function convertSuperNestedObjectEnum(
+  val: string,
+): SuperNestedObjectEnum {
+  switch (val) {
+    case SuperNestedObjectEnum.Yes:
+    case SuperNestedObjectEnum.No:
+    case SuperNestedObjectEnum.Maybe:
+    case SuperNestedObjectEnum.Unknown:
+      return val;
+    default:
+      return SuperNestedObjectEnum.Unknown;
+  }
 }
 
 export enum UserDaysOff {
@@ -194,9 +420,27 @@ export enum UserDaysOff {
   Friday = "friday",
   Saturday = "saturday",
   Sunday = "sunday",
+  Unknown = "%unknown%",
+}
+
+export function convertUserDaysOff(val: string): UserDaysOff {
+  switch (val) {
+    case UserDaysOff.Monday:
+    case UserDaysOff.Tuesday:
+    case UserDaysOff.Wednesday:
+    case UserDaysOff.Thursday:
+    case UserDaysOff.Friday:
+    case UserDaysOff.Saturday:
+    case UserDaysOff.Sunday:
+    case UserDaysOff.Unknown:
+      return val;
+    default:
+      return UserDaysOff.Unknown;
+  }
 }
 
 export enum UserIntEnum {
+  UNKNOWN = -9007199254740991,
   VERIFIED = 1,
   UNVERIFIED = 2,
   DISABLED = 3,
@@ -204,11 +448,38 @@ export enum UserIntEnum {
   // @deprecated FOO = 5,
 }
 
+export function convertUserIntEnum(val: number): UserIntEnum {
+  switch (val) {
+    case UserIntEnum.UNKNOWN:
+    case UserIntEnum.VERIFIED:
+    case UserIntEnum.UNVERIFIED:
+    case UserIntEnum.DISABLED:
+    case UserIntEnum.DEACTIVATED:
+      return val;
+    default:
+      return UserIntEnum.DEACTIVATED;
+  }
+}
+
 export enum UserPreferredShift {
   Morning = "morning",
   Afternoon = "afternoon",
   Evening = "evening",
   Graveyard = "graveyard",
+  Unknown = "%unknown%",
+}
+
+export function convertUserPreferredShift(val: string): UserPreferredShift {
+  switch (val) {
+    case UserPreferredShift.Morning:
+    case UserPreferredShift.Afternoon:
+    case UserPreferredShift.Evening:
+    case UserPreferredShift.Graveyard:
+    case UserPreferredShift.Unknown:
+      return val;
+    default:
+      return UserPreferredShift.Unknown;
+  }
 }
 
 export interface ContactInfo {

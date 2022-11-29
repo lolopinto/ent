@@ -8,6 +8,9 @@ import { GraphQLEnumType } from "graphql";
 export const IntEnumUsedInListType = new GraphQLEnumType({
   name: "IntEnumUsedInList",
   values: {
+    UNKNOWN: {
+      value: -9007199254740991,
+    },
     YES: {
       value: 1,
     },

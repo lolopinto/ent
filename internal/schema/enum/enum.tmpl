@@ -13,3 +13,18 @@ export enum {{.Name}} {
     // @deprecated {{.Name}} = {{.Value}},
   {{ end -}}
 }
+
+{{ $conv := .GetConvertFunctionInfo }}
+{{if $conv }}
+  {{$enumName := .Name}}
+  export function {{$conv.Name}}(val: {{$conv.ConvertFuncTSType}}): {{$enumName}} {
+    switch (val) {
+      {{ range $data := .Values -}} 
+        case {{$enumName}}.{{.Name}}:
+      {{ end -}}
+      return val;
+    default:
+    return {{$enumName}}.{{$conv.UnknownKey}}
+    }
+  }
+{{end -}}

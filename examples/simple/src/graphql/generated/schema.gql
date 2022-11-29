@@ -34,12 +34,14 @@ enum CatBreed {
   SIAMESE
   TABBY
   OTHER
+  UNKNOWN
 }
 
 enum ContactInfoSource {
   FRIEND
   WORK
   ONLINE
+  UNKNOWN
 }
 
 enum DayOfWeekAlt {
@@ -49,6 +51,7 @@ enum DayOfWeekAlt {
   SUNDAY
   THURSDAY
   TUESDAY
+  UNKNOWN
   WEDNESDAY
 }
 
@@ -60,6 +63,7 @@ enum DayOfWeek {
   THURSDAY
   FRIDAY
   SATURDAY
+  UNKNOWN
 }
 
 enum DogBreedGroup {
@@ -70,6 +74,7 @@ enum DogBreedGroup {
   TOY
   NON_SPORTING
   HERDING
+  UNKNOWN
 }
 
 enum DogBreed {
@@ -80,12 +85,14 @@ enum DogBreed {
   POODLE
   GOLDEN_RETRIEVER
   OTHER
+  UNKNOWN
 }
 
 enum EnumUsedInList {
   YES
   NO
   MAYBE
+  UNKNOWN
 }
 
 enum EventRsvpStatus {
@@ -93,9 +100,11 @@ enum EventRsvpStatus {
   DECLINED
   MAYBE
   CAN_RSVP
+  UNKNOWN
 }
 
 enum IntEnumUsedInList {
+  UNKNOWN
   YES
   NO
   MAYBE
@@ -105,24 +114,28 @@ enum NestedObjNestedNestedEnum {
   YES
   NO
   MAYBE
+  UNKNOWN
 }
 
 enum NotifType2 {
   MOBILE
   WEB
   EMAIL
+  UNKNOWN
 }
 
 enum NotifType {
   MOBILE
   WEB
   EMAIL
+  UNKNOWN
 }
 
 enum ObjNestedEnum {
   YES
   NO
   MAYBE
+  UNKNOWN
 }
 
 enum RabbitBreed {
@@ -134,12 +147,14 @@ enum RabbitBreed {
   BELGIAN_HARE
   BEVEREN
   OTHER
+  UNKNOWN
 }
 
 enum SuperNestedObjectEnum {
   YES
   NO
   MAYBE
+  UNKNOWN
 }
 
 enum UserDaysOff {
@@ -150,9 +165,11 @@ enum UserDaysOff {
   FRIDAY
   SATURDAY
   SUNDAY
+  UNKNOWN
 }
 
 enum UserIntEnum {
+  UNKNOWN
   VERIFIED
   UNVERIFIED
   DISABLED
@@ -164,6 +181,7 @@ enum UserPreferredShift {
   AFTERNOON
   EVENING
   GRAVEYARD
+  UNKNOWN
 }
 
 type Address implements Node {
@@ -943,6 +961,7 @@ enum EventRsvpStatusInput {
   ATTENDING
   DECLINED
   MAYBE
+  UNKNOWN
 }
 
 input HolidayCreateInput {

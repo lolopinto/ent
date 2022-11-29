@@ -909,17 +909,17 @@ func writeTypesFile(processor *codegen.Processor, nodeData []enum.Data, edgeData
 			Schema   *schema.Schema
 			Package  *codegen.ImportPackage
 			Config   *codegen.Config
-			NodeType enum.Enum
-			EdgeType enum.Enum
+			NodeType *enum.Enum
+			EdgeType *enum.Enum
 		}{
 			processor.Schema,
 			cfg.GetImportPackage(),
 			processor.Config,
-			enum.Enum{
+			&enum.Enum{
 				Name:   "NodeType",
 				Values: nodeData,
 			},
-			enum.Enum{
+			&enum.Enum{
 				Name:   "EdgeType",
 				Values: edgeData,
 			},

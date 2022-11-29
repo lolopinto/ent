@@ -29,5 +29,8 @@ export const UserDaysOffType = new GraphQLEnumType({
     SUNDAY: {
       value: "sunday",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });

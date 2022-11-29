@@ -1021,6 +1021,18 @@ func (t *StringEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath 
 	}
 }
 
+// TODO support disable flag
+func getEnumConvertMap(typ string) ConvertDataTypeRet {
+	return getAllDialectsImportMap(&tsimport.ImportPath{
+		ImportPath: "src/ent/generated/types",
+		Import:     fmt.Sprintf("convert%s", typ),
+	})
+}
+
+func (t *StringEnumType) Convert() ConvertDataTypeRet {
+	return getEnumConvertMap(t.Type)
+}
+
 var _ EnumeratedType = &StringEnumType{}
 
 type NullableStringEnumType struct {
@@ -1076,6 +1088,10 @@ func (t *NullableStringEnumType) GetTSGraphQLImports(input bool) []*tsimport.Imp
 	}
 }
 
+func (t *NullableStringEnumType) Convert() ConvertDataTypeRet {
+	return getEnumConvertMap(t.Type)
+}
+
 var _ EnumeratedType = &NullableStringEnumType{}
 
 type IntegerEnumType struct {
@@ -1128,6 +1144,10 @@ func (t *IntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath
 	}
 }
 
+func (t *IntegerEnumType) Convert() ConvertDataTypeRet {
+	return getEnumConvertMap(t.Type)
+}
+
 var _ EnumeratedType = &IntegerEnumType{}
 
 type NullableIntegerEnumType struct {
@@ -1177,6 +1197,10 @@ func (t *NullableIntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.Im
 	return []*tsimport.ImportPath{
 		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
 	}
+}
+
+func (t *NullableIntegerEnumType) Convert() ConvertDataTypeRet {
+	return getEnumConvertMap(t.Type)
 }
 
 var _ EnumeratedType = &NullableIntegerEnumType{}

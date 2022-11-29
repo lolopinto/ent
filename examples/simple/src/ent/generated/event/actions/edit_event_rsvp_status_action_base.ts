@@ -26,6 +26,19 @@ export enum EventRsvpStatusInput {
   Attending = "attending",
   Declined = "declined",
   Maybe = "maybe",
+  Unknown = "%unknown%",
+}
+
+export function convertEventRsvpStatusInput(val: string): EventRsvpStatusInput {
+  switch (val) {
+    case EventRsvpStatusInput.Attending:
+    case EventRsvpStatusInput.Declined:
+    case EventRsvpStatusInput.Maybe:
+    case EventRsvpStatusInput.Unknown:
+      return val;
+    default:
+      return EventRsvpStatusInput.Unknown;
+  }
 }
 
 export interface EditEventRsvpStatusInput {

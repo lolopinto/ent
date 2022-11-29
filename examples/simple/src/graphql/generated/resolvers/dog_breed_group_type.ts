@@ -29,5 +29,8 @@ export const DogBreedGroupType = new GraphQLEnumType({
     HERDING: {
       value: "herding",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });

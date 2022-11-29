@@ -17,5 +17,8 @@ export const EnumUsedInListType = new GraphQLEnumType({
     MAYBE: {
       value: "maybe",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });
