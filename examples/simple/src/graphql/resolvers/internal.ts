@@ -18,6 +18,7 @@ export * from "../generated/resolvers/notif_type_type";
 export * from "../generated/resolvers/obj_nested_enum_type";
 export * from "../generated/resolvers/rabbit_breed_type";
 export * from "../generated/resolvers/super_nested_object_enum_type";
+export * from "../generated/resolvers/user_account_status_type";
 export * from "../generated/resolvers/user_days_off_type";
 export * from "../generated/resolvers/user_int_enum_type";
 export * from "../generated/resolvers/user_preferred_shift_type";

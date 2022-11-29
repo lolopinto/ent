@@ -34,6 +34,7 @@ import {
 } from "../../../ent";
 import {
   ContactType,
+  UserAccountStatusType,
   UserDaysOffType,
   UserIntEnumType,
   UserNestedObjectListType,
@@ -76,7 +77,7 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLString,
     },
     accountStatus: {
-      type: GraphQLString,
+      type: UserAccountStatusType,
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.accountStatus();
       },

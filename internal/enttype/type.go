@@ -1029,6 +1029,13 @@ func getEnumConvertMap(typ string) ConvertDataTypeRet {
 	})
 }
 
+func getNullableEnumConvertMap(typ string) ConvertDataTypeRet {
+	return getAllDialectsImportMap(&tsimport.ImportPath{
+		ImportPath: "src/ent/generated/types",
+		Import:     fmt.Sprintf("convertNullable%s", typ),
+	})
+}
+
 func (t *StringEnumType) Convert() ConvertDataTypeRet {
 	return getEnumConvertMap(t.Type)
 }
@@ -1089,7 +1096,7 @@ func (t *NullableStringEnumType) GetTSGraphQLImports(input bool) []*tsimport.Imp
 }
 
 func (t *NullableStringEnumType) Convert() ConvertDataTypeRet {
-	return getEnumConvertMap(t.Type)
+	return getNullableEnumConvertMap(t.Type)
 }
 
 var _ EnumeratedType = &NullableStringEnumType{}
@@ -1145,7 +1152,7 @@ func (t *IntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath
 }
 
 func (t *IntegerEnumType) Convert() ConvertDataTypeRet {
-	return getEnumConvertMap(t.Type)
+	return getNullableEnumConvertMap(t.Type)
 }
 
 var _ EnumeratedType = &IntegerEnumType{}

@@ -41,6 +41,15 @@ export function convertEventRsvpStatusInput(val: string): EventRsvpStatusInput {
   }
 }
 
+export function convertNullableEventRsvpStatusInput(
+  val: string | null,
+): EventRsvpStatusInput | null {
+  if (val === null) {
+    return null;
+  }
+  return convertEventRsvpStatusInput(val);
+}
+
 export interface EditEventRsvpStatusInput {
   rsvpStatus: EventRsvpStatusInput;
   userID: ID;

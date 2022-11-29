@@ -19,6 +19,7 @@ import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder"
 import {
   EdgeType,
   NodeType,
+  UserAccountStatus,
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
@@ -37,7 +38,7 @@ export interface UserInput {
   emailAddress?: string;
   phoneNumber?: string | null;
   password?: string | null;
-  accountStatus?: string | null;
+  accountStatus?: UserAccountStatus | null;
   emailVerified?: boolean;
   bio?: string | null;
   nicknames?: string[] | null;
@@ -671,7 +672,7 @@ export class UserBuilder<
   }
 
   // get value of AccountStatus. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAccountStatusValue(): string | null | undefined {
+  getNewAccountStatusValue(): UserAccountStatus | null | undefined {
     return this.input.accountStatus;
   }
 

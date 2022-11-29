@@ -8,7 +8,7 @@ import {
   DayOfWeek,
   DayOfWeekAlt,
   convertDayOfWeek,
-  convertDayOfWeekAlt,
+  convertNullableDayOfWeekAlt,
 } from "../types";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
@@ -39,7 +39,7 @@ export function DayOfWeekMixin<T extends Constructor>(BaseClass: T) {
       super(...args);
       const { data } = extractFromArgs(args);
       this.dayOfWeek = convertDayOfWeek(data.day_of_week);
-      this.dayOfWeekAlt = convertDayOfWeekAlt(data.day_of_week_alt);
+      this.dayOfWeekAlt = convertNullableDayOfWeekAlt(data.day_of_week_alt);
     }
 
     isDayOfWeek() {

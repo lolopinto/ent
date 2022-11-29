@@ -18,6 +18,7 @@ import {
 } from "@snowtop/ent/action";
 import { User } from "../../..";
 import {
+  UserAccountStatus,
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
@@ -35,7 +36,7 @@ export interface EditUserAllFieldsInput {
   lastName?: string;
   emailAddress?: string;
   phoneNumber?: string | null;
-  accountStatus?: string | null;
+  accountStatus?: UserAccountStatus | null;
   emailVerified?: boolean;
   bio?: string | null;
   nicknames?: string[] | null;

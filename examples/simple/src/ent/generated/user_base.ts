@@ -36,6 +36,7 @@ import {
 import {
   EdgeType,
   NodeType,
+  UserAccountStatus,
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
@@ -44,6 +45,7 @@ import {
   UserPrefsStruct,
   UserPrefsStruct2,
   UserSuperNestedObject,
+  convertNullableUserAccountStatus,
   convertNullableUserNestedObjectListList,
   convertNullableUserPrefsStruct,
   convertNullableUserPrefsStruct2List,
@@ -69,8 +71,8 @@ import {
 } from "../internal";
 import schema from "../../schema/user_schema";
 import {
-  convertAccountStatus,
   convertSuperNestedObject,
+  userConvertAccountStatus,
 } from "../../util/convert_user_fields";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
@@ -83,7 +85,7 @@ interface UserDBData {
   email_address: string;
   phone_number: string | null;
   password: string | null;
-  account_status: string | null;
+  account_status: UserAccountStatus | null;
   email_verified: boolean | null;
   bio: string | null;
   nicknames: string[] | null;
@@ -121,7 +123,7 @@ export class UserBase
   readonly emailAddress: string;
   readonly phoneNumber: string | null;
   protected readonly password: string | null;
-  protected readonly _accountStatus: string | null;
+  protected readonly _accountStatus: UserAccountStatus | null;
   protected readonly _emailVerified: boolean;
   readonly bio: string | null;
   readonly nicknames: string[] | null;
@@ -149,7 +151,9 @@ export class UserBase
     this.emailAddress = data.email_address;
     this.phoneNumber = data.phone_number;
     this.password = data.password;
-    this._accountStatus = convertAccountStatus(data.account_status);
+    this._accountStatus = userConvertAccountStatus(
+      convertNullableUserAccountStatus(data.account_status),
+    );
     this._emailVerified = data.email_verified;
     this.bio = data.bio;
     this.nicknames = data.nicknames;
@@ -170,7 +174,7 @@ export class UserBase
     return AllowIfViewerPrivacyPolicy;
   }
 
-  async accountStatus(): Promise<string | null> {
+  async accountStatus(): Promise<UserAccountStatus | null> {
     if (this._accountStatus === null) {
       return null;
     }

@@ -157,6 +157,14 @@ enum SuperNestedObjectEnum {
   UNKNOWN
 }
 
+enum UserAccountStatus {
+  UNVERIFIED
+  VERIFIED
+  DEACTIVATED
+  DISABLED
+  UNKNOWN
+}
+
 enum UserDaysOff {
   MONDAY
   TUESDAY
@@ -361,7 +369,7 @@ type User implements Node {
   lastName: String!
   emailAddress: String!
   phoneNumber: String
-  accountStatus: String
+  accountStatus: UserAccountStatus
   bio: String
   nicknames: [String!]
   prefs: UserPrefsStruct

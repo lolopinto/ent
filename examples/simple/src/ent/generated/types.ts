@@ -98,6 +98,13 @@ export function convertCatBreed(val: string): CatBreed {
   }
 }
 
+export function convertNullableCatBreed(val: string | null): CatBreed | null {
+  if (val === null) {
+    return null;
+  }
+  return convertCatBreed(val);
+}
+
 export enum ContactInfoSource {
   Friend = "friend",
   Work = "work",
@@ -115,6 +122,15 @@ export function convertContactInfoSource(val: string): ContactInfoSource {
     default:
       return ContactInfoSource.Unknown;
   }
+}
+
+export function convertNullableContactInfoSource(
+  val: string | null,
+): ContactInfoSource | null {
+  if (val === null) {
+    return null;
+  }
+  return convertContactInfoSource(val);
 }
 
 export enum DayOfWeek {
@@ -144,6 +160,13 @@ export function convertDayOfWeek(val: string): DayOfWeek {
   }
 }
 
+export function convertNullableDayOfWeek(val: string | null): DayOfWeek | null {
+  if (val === null) {
+    return null;
+  }
+  return convertDayOfWeek(val);
+}
+
 export enum DayOfWeekAlt {
   Friday = "fri",
   Monday = "mon",
@@ -169,6 +192,15 @@ export function convertDayOfWeekAlt(val: string): DayOfWeekAlt {
     default:
       return DayOfWeekAlt.Wednesday;
   }
+}
+
+export function convertNullableDayOfWeekAlt(
+  val: string | null,
+): DayOfWeekAlt | null {
+  if (val === null) {
+    return null;
+  }
+  return convertDayOfWeekAlt(val);
 }
 
 export enum DogBreed {
@@ -198,6 +230,13 @@ export function convertDogBreed(val: string): DogBreed {
   }
 }
 
+export function convertNullableDogBreed(val: string | null): DogBreed | null {
+  if (val === null) {
+    return null;
+  }
+  return convertDogBreed(val);
+}
+
 export enum DogBreedGroup {
   Sporting = "sporting",
   Hound = "hound",
@@ -225,6 +264,15 @@ export function convertDogBreedGroup(val: string): DogBreedGroup {
   }
 }
 
+export function convertNullableDogBreedGroup(
+  val: string | null,
+): DogBreedGroup | null {
+  if (val === null) {
+    return null;
+  }
+  return convertDogBreedGroup(val);
+}
+
 export enum EnumUsedInList {
   Yes = "yes",
   No = "no",
@@ -242,6 +290,15 @@ export function convertEnumUsedInList(val: string): EnumUsedInList {
     default:
       return EnumUsedInList.Unknown;
   }
+}
+
+export function convertNullableEnumUsedInList(
+  val: string | null,
+): EnumUsedInList | null {
+  if (val === null) {
+    return null;
+  }
+  return convertEnumUsedInList(val);
 }
 
 export enum EventRsvpStatus {
@@ -265,6 +322,15 @@ export function convertEventRsvpStatus(val: string): EventRsvpStatus {
   }
 }
 
+export function convertNullableEventRsvpStatus(
+  val: string | null,
+): EventRsvpStatus | null {
+  if (val === null) {
+    return null;
+  }
+  return convertEventRsvpStatus(val);
+}
+
 export enum IntEnumUsedInList {
   Unknown = -9007199254740991,
   Yes = 1,
@@ -282,6 +348,15 @@ export function convertIntEnumUsedInList(val: number): IntEnumUsedInList {
     default:
       return IntEnumUsedInList.Maybe;
   }
+}
+
+export function convertNullableIntEnumUsedInList(
+  val: number | null,
+): IntEnumUsedInList | null {
+  if (val === null) {
+    return null;
+  }
+  return convertIntEnumUsedInList(val);
 }
 
 export enum NestedObjNestedNestedEnum {
@@ -305,6 +380,15 @@ export function convertNestedObjNestedNestedEnum(
   }
 }
 
+export function convertNullableNestedObjNestedNestedEnum(
+  val: string | null,
+): NestedObjNestedNestedEnum | null {
+  if (val === null) {
+    return null;
+  }
+  return convertNestedObjNestedNestedEnum(val);
+}
+
 export enum NotifType {
   MOBILE = "MOBILE",
   WEB = "WEB",
@@ -322,6 +406,13 @@ export function convertNotifType(val: string): NotifType {
     default:
       return NotifType.UNKNOWN;
   }
+}
+
+export function convertNullableNotifType(val: string | null): NotifType | null {
+  if (val === null) {
+    return null;
+  }
+  return convertNotifType(val);
 }
 
 export enum NotifType2 {
@@ -343,6 +434,15 @@ export function convertNotifType2(val: string): NotifType2 {
   }
 }
 
+export function convertNullableNotifType2(
+  val: string | null,
+): NotifType2 | null {
+  if (val === null) {
+    return null;
+  }
+  return convertNotifType2(val);
+}
+
 export enum ObjNestedEnum {
   Yes = "yes",
   No = "no",
@@ -360,6 +460,15 @@ export function convertObjNestedEnum(val: string): ObjNestedEnum {
     default:
       return ObjNestedEnum.Unknown;
   }
+}
+
+export function convertNullableObjNestedEnum(
+  val: string | null,
+): ObjNestedEnum | null {
+  if (val === null) {
+    return null;
+  }
+  return convertObjNestedEnum(val);
 }
 
 export enum RabbitBreed {
@@ -391,6 +500,15 @@ export function convertRabbitBreed(val: string): RabbitBreed {
   }
 }
 
+export function convertNullableRabbitBreed(
+  val: string | null,
+): RabbitBreed | null {
+  if (val === null) {
+    return null;
+  }
+  return convertRabbitBreed(val);
+}
+
 export enum SuperNestedObjectEnum {
   Yes = "yes",
   No = "no",
@@ -410,6 +528,45 @@ export function convertSuperNestedObjectEnum(
     default:
       return SuperNestedObjectEnum.Unknown;
   }
+}
+
+export function convertNullableSuperNestedObjectEnum(
+  val: string | null,
+): SuperNestedObjectEnum | null {
+  if (val === null) {
+    return null;
+  }
+  return convertSuperNestedObjectEnum(val);
+}
+
+export enum UserAccountStatus {
+  UNVERIFIED = "UNVERIFIED",
+  VERIFIED = "VERIFIED",
+  DEACTIVATED = "DEACTIVATED",
+  DISABLED = "DISABLED",
+  UNKNOWN = "%UNKNOWN%",
+}
+
+export function convertUserAccountStatus(val: string): UserAccountStatus {
+  switch (val) {
+    case UserAccountStatus.UNVERIFIED:
+    case UserAccountStatus.VERIFIED:
+    case UserAccountStatus.DEACTIVATED:
+    case UserAccountStatus.DISABLED:
+    case UserAccountStatus.UNKNOWN:
+      return val;
+    default:
+      return UserAccountStatus.UNKNOWN;
+  }
+}
+
+export function convertNullableUserAccountStatus(
+  val: string | null,
+): UserAccountStatus | null {
+  if (val === null) {
+    return null;
+  }
+  return convertUserAccountStatus(val);
 }
 
 export enum UserDaysOff {
@@ -439,6 +596,15 @@ export function convertUserDaysOff(val: string): UserDaysOff {
   }
 }
 
+export function convertNullableUserDaysOff(
+  val: string | null,
+): UserDaysOff | null {
+  if (val === null) {
+    return null;
+  }
+  return convertUserDaysOff(val);
+}
+
 export enum UserIntEnum {
   UNKNOWN = -9007199254740991,
   VERIFIED = 1,
@@ -461,6 +627,15 @@ export function convertUserIntEnum(val: number): UserIntEnum {
   }
 }
 
+export function convertNullableUserIntEnum(
+  val: number | null,
+): UserIntEnum | null {
+  if (val === null) {
+    return null;
+  }
+  return convertUserIntEnum(val);
+}
+
 export enum UserPreferredShift {
   Morning = "morning",
   Afternoon = "afternoon",
@@ -480,6 +655,15 @@ export function convertUserPreferredShift(val: string): UserPreferredShift {
     default:
       return UserPreferredShift.Unknown;
   }
+}
+
+export function convertNullableUserPreferredShift(
+  val: string | null,
+): UserPreferredShift | null {
+  if (val === null) {
+    return null;
+  }
+  return convertUserPreferredShift(val);
 }
 
 export interface ContactInfo {
