@@ -163,6 +163,64 @@ test("create user with deprecated account_status", async () => {
   expect(status).toBe(UserAccountStatus.UNKNOWN);
 });
 
+test("create user with invalid days off value", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    daysOff: [UserDaysOff.Monday, "hello"],
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+
+  const user = await User.loadX(new ExampleViewer(id), id);
+  // wrong value comes out
+  expect(user.daysOff).toStrictEqual([UserDaysOff.Monday, "hello"]);
+});
+
+// TODO need to fix list
+test.skip("create user with invalid preferred shift value", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    preferredShift: [UserPreferredShift.Morning, "hello"],
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+
+  const user = await User.loadX(new ExampleViewer(id), id);
+  // converted to unknown
+  expect(user.preferredShift).toStrictEqual([
+    UserPreferredShift.Morning,
+    UserPreferredShift.Unknown,
+  ]);
+});
+
 test("edit user", async () => {
   let user = await create({
     firstName: "Jon",

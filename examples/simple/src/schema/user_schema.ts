@@ -116,6 +116,9 @@ const UserSchema = new EntSchema({
         "saturday",
         "sunday",
       ],
+      // days of the week are known. we're not adding a new one anytime soon
+      // and we can test behavior when this isn't set
+      disableUnknownType: true,
     }),
     preferredShift: EnumListType({
       nullable: true,

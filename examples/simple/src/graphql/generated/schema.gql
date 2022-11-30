@@ -173,7 +173,6 @@ enum UserDaysOff {
   FRIDAY
   SATURDAY
   SUNDAY
-  UNKNOWN
 }
 
 enum UserIntEnum {

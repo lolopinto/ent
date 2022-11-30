@@ -1192,3 +1192,75 @@ test("create user with deprecated account_status", async () => {
     ["accountStatus", "UNKNOWN"],
   );
 });
+
+test("create user with invalid days off value", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    daysOff: [UserDaysOff.Monday, "hello"],
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+
+  const user = await User.loadX(new ExampleViewer(id), id);
+
+  await expectQueryFromRoot(
+    getConfig(new ExampleViewer(id), user, {
+      expectedError: 'Enum "UserDaysOff" cannot represent value: "hello"',
+    }),
+    [
+      "",
+      {
+        id: encodeGQLID(user),
+        daysOff: ["MONDAY", "hello"],
+      },
+    ],
+  );
+});
+
+// TODO list
+test.skip("create user with invalid days off value", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    preferredShift: [UserPreferredShift.Morning, "hello"],
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+
+  const user = await User.loadX(new ExampleViewer(id), id);
+
+  await expectQueryFromRoot(getConfig(new ExampleViewer(id), user), [
+    "",
+    {
+      id: encodeGQLID(user),
+      preferredShift: ["MORNING", "UNKNOWN"],
+    },
+  ]);
+});

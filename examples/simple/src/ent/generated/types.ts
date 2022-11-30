@@ -577,32 +577,6 @@ export enum UserDaysOff {
   Friday = "friday",
   Saturday = "saturday",
   Sunday = "sunday",
-  Unknown = "%unknown%",
-}
-
-export function convertUserDaysOff(val: string): UserDaysOff {
-  switch (val) {
-    case UserDaysOff.Monday:
-    case UserDaysOff.Tuesday:
-    case UserDaysOff.Wednesday:
-    case UserDaysOff.Thursday:
-    case UserDaysOff.Friday:
-    case UserDaysOff.Saturday:
-    case UserDaysOff.Sunday:
-    case UserDaysOff.Unknown:
-      return val;
-    default:
-      return UserDaysOff.Unknown;
-  }
-}
-
-export function convertNullableUserDaysOff(
-  val: string | null,
-): UserDaysOff | null {
-  if (val === null) {
-    return null;
-  }
-  return convertUserDaysOff(val);
 }
 
 export enum UserIntEnum {

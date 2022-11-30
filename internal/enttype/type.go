@@ -951,6 +951,7 @@ type StringEnumType struct {
 	GraphQLType              string
 	Values                   []string
 	EnumMap                  map[string]string
+	DisableUnknownType       bool
 	overrideImportPath       *tsimport.ImportPath
 	overideGraphQLImportPath *tsimport.ImportPath
 }
@@ -974,10 +975,11 @@ func (t *StringEnumType) SetGraphQLImportPath(imp *tsimport.ImportPath) *StringE
 
 func (t *StringEnumType) GetEnumData() *EnumData {
 	return &EnumData{
-		TSName:      t.Type,
-		GraphQLName: t.GraphQLType,
-		Values:      t.Values,
-		EnumMap:     t.EnumMap,
+		TSName:             t.Type,
+		GraphQLName:        t.GraphQLType,
+		Values:             t.Values,
+		EnumMap:            t.EnumMap,
+		DisableUnknownType: t.DisableUnknownType,
 	}
 }
 
@@ -1021,15 +1023,20 @@ func (t *StringEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath 
 	}
 }
 
-// TODO support disable flag
-func getEnumConvertMap(typ string) ConvertDataTypeRet {
+func getEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
+	if disable {
+		return nil
+	}
 	return getAllDialectsImportMap(&tsimport.ImportPath{
 		ImportPath: "src/ent/generated/types",
 		Import:     fmt.Sprintf("convert%s", typ),
 	})
 }
 
-func getNullableEnumConvertMap(typ string) ConvertDataTypeRet {
+func getNullableEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
+	if disable {
+		return nil
+	}
 	return getAllDialectsImportMap(&tsimport.ImportPath{
 		ImportPath: "src/ent/generated/types",
 		Import:     fmt.Sprintf("convertNullable%s", typ),
@@ -1037,18 +1044,19 @@ func getNullableEnumConvertMap(typ string) ConvertDataTypeRet {
 }
 
 func (t *StringEnumType) Convert() ConvertDataTypeRet {
-	return getEnumConvertMap(t.Type)
+	return getEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
 var _ EnumeratedType = &StringEnumType{}
 
 type NullableStringEnumType struct {
 	enumType
-	EnumDBType  bool
-	Type        string
-	GraphQLType string
-	Values      []string
-	EnumMap     map[string]string
+	EnumDBType         bool
+	Type               string
+	GraphQLType        string
+	Values             []string
+	EnumMap            map[string]string
+	DisableUnknownType bool
 }
 
 func (t *NullableStringEnumType) GetDBType() string {
@@ -1060,10 +1068,11 @@ func (t *NullableStringEnumType) GetDBType() string {
 
 func (t *NullableStringEnumType) GetEnumData() *EnumData {
 	return &EnumData{
-		TSName:      t.Type,
-		GraphQLName: t.GraphQLType,
-		Values:      t.Values,
-		EnumMap:     t.EnumMap,
+		TSName:             t.Type,
+		GraphQLName:        t.GraphQLType,
+		Values:             t.Values,
+		EnumMap:            t.EnumMap,
+		DisableUnknownType: t.DisableUnknownType,
 	}
 }
 
@@ -1096,16 +1105,17 @@ func (t *NullableStringEnumType) GetTSGraphQLImports(input bool) []*tsimport.Imp
 }
 
 func (t *NullableStringEnumType) Convert() ConvertDataTypeRet {
-	return getNullableEnumConvertMap(t.Type)
+	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
 var _ EnumeratedType = &NullableStringEnumType{}
 
 type IntegerEnumType struct {
-	Type              string
-	GraphQLType       string
-	EnumMap           map[string]int
-	DeprecatedEnumMap map[string]int
+	Type               string
+	GraphQLType        string
+	EnumMap            map[string]int
+	DeprecatedEnumMap  map[string]int
+	DisableUnknownType bool
 }
 
 func (t *IntegerEnumType) GetDBType() string {
@@ -1118,6 +1128,7 @@ func (t *IntegerEnumType) GetEnumData() *EnumData {
 		GraphQLName:          t.GraphQLType,
 		IntEnumMap:           t.EnumMap,
 		DeprecatedIntEnumMap: t.DeprecatedEnumMap,
+		DisableUnknownType:   t.DisableUnknownType,
 	}
 }
 
@@ -1152,16 +1163,17 @@ func (t *IntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath
 }
 
 func (t *IntegerEnumType) Convert() ConvertDataTypeRet {
-	return getNullableEnumConvertMap(t.Type)
+	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
 var _ EnumeratedType = &IntegerEnumType{}
 
 type NullableIntegerEnumType struct {
-	Type              string
-	GraphQLType       string
-	EnumMap           map[string]int
-	DeprecatedEnumMap map[string]int
+	Type               string
+	GraphQLType        string
+	EnumMap            map[string]int
+	DeprecatedEnumMap  map[string]int
+	DisableUnknownType bool
 }
 
 func (t *NullableIntegerEnumType) GetDBType() string {
@@ -1174,6 +1186,7 @@ func (t *NullableIntegerEnumType) GetEnumData() *EnumData {
 		GraphQLName:          t.GraphQLType,
 		IntEnumMap:           t.EnumMap,
 		DeprecatedIntEnumMap: t.DeprecatedEnumMap,
+		DisableUnknownType:   t.DisableUnknownType,
 	}
 }
 
@@ -1207,7 +1220,7 @@ func (t *NullableIntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.Im
 }
 
 func (t *NullableIntegerEnumType) Convert() ConvertDataTypeRet {
-	return getEnumConvertMap(t.Type)
+	return getEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
 var _ EnumeratedType = &NullableIntegerEnumType{}

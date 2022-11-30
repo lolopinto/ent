@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
@@ -161,7 +162,8 @@ type FieldType struct {
 	Type                 string            `json:"type,omitempty"`
 	GraphQLType          string            `json:"graphQLType,omitempty"`
 	// optional used by generator to specify different types e.g. email, phone, password
-	CustomType CustomType `json:"customType,omitempty"`
+	CustomType         CustomType `json:"customType,omitempty"`
+	DisableUnknownType bool       `json:"disableUnknownType"`
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
@@ -448,21 +450,24 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			tsType = foreignKey.Schema
 			graphqlType = foreignKey.Schema
 		}
+		spew.Dump(typ.DisableUnknownType)
 		if nullable {
 			return &enttype.NullableStringEnumType{
-				EnumDBType:  typ.DBType == Enum,
-				Type:        tsType,
-				GraphQLType: graphqlType,
-				Values:      typ.Values,
-				EnumMap:     typ.EnumMap,
+				EnumDBType:         typ.DBType == Enum,
+				Type:               tsType,
+				GraphQLType:        graphqlType,
+				Values:             typ.Values,
+				EnumMap:            typ.EnumMap,
+				DisableUnknownType: typ.DisableUnknownType,
 			}, nil
 		}
 		return &enttype.StringEnumType{
-			EnumDBType:  typ.DBType == Enum,
-			Type:        tsType,
-			GraphQLType: graphqlType,
-			Values:      typ.Values,
-			EnumMap:     typ.EnumMap,
+			EnumDBType:         typ.DBType == Enum,
+			Type:               tsType,
+			GraphQLType:        graphqlType,
+			Values:             typ.Values,
+			EnumMap:            typ.EnumMap,
+			DisableUnknownType: typ.DisableUnknownType,
 		}, nil
 
 	case IntEnum:
@@ -477,17 +482,19 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		}
 		if nullable {
 			return &enttype.NullableIntegerEnumType{
-				Type:              tsType,
-				GraphQLType:       graphqlType,
-				EnumMap:           typ.IntEnumMap,
-				DeprecatedEnumMap: typ.DeprecatedIntEnumMap,
+				Type:               tsType,
+				GraphQLType:        graphqlType,
+				EnumMap:            typ.IntEnumMap,
+				DeprecatedEnumMap:  typ.DeprecatedIntEnumMap,
+				DisableUnknownType: typ.DisableUnknownType,
 			}, nil
 		}
 		return &enttype.IntegerEnumType{
-			Type:              tsType,
-			GraphQLType:       graphqlType,
-			EnumMap:           typ.IntEnumMap,
-			DeprecatedEnumMap: typ.DeprecatedIntEnumMap,
+			Type:               tsType,
+			GraphQLType:        graphqlType,
+			EnumMap:            typ.IntEnumMap,
+			DeprecatedEnumMap:  typ.DeprecatedIntEnumMap,
+			DisableUnknownType: typ.DisableUnknownType,
 		}, nil
 
 	}

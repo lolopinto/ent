@@ -123,6 +123,7 @@ type EnumData struct {
 	EnumMap              map[string]string
 	IntEnumMap           map[string]int
 	DeprecatedIntEnumMap map[string]int
+	DisableUnknownType   bool
 }
 
 // EnumeratedType indicates that this is an enum type

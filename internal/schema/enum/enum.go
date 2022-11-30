@@ -13,11 +13,12 @@ import (
 )
 
 type Enum struct {
-	Name              string
-	Values            []Data
-	DeprecatedValues  []Data
-	Imported          bool // Imported enum that's not in this file
-	convertFuncTSType string
+	Name               string
+	Values             []Data
+	DeprecatedValues   []Data
+	Imported           bool // Imported enum that's not in this file
+	convertFuncTSType  string
+	DisableUnknownType bool
 }
 
 func (c *Enum) Clone() *Enum {
@@ -37,6 +38,9 @@ type convertFunctionInfo struct {
 }
 
 func (c *Enum) GetConvertFunctionInfo() *convertFunctionInfo {
+	if c.DisableUnknownType {
+		return nil
+	}
 	var unknown *Data
 	for _, v := range c.Values {
 		if v.UnknownVal {
@@ -266,6 +270,7 @@ type Input struct {
 	EnumMap              map[string]string
 	IntEnumMap           map[string]int
 	DeprecatedIntEnumMap map[string]int
+	DisableUnknownType   bool
 }
 
 func (i *Input) HasValues() bool {
@@ -339,12 +344,14 @@ func (i *Input) getValuesFromValues() ([]Data, []Data) {
 		}
 	}
 
-	tsVal, gqlVal := getUnknownVals(allUpper, allUpper, allLower, keys)
-	if gqlVal != nil {
-		gqlVals = append(gqlVals, *gqlVal)
-	}
-	if tsVal != nil {
-		tsVals = append(tsVals, *tsVal)
+	if !i.DisableUnknownType {
+		tsVal, gqlVal := getUnknownVals(allUpper, allUpper, allLower, keys)
+		if gqlVal != nil {
+			gqlVals = append(gqlVals, *gqlVal)
+		}
+		if tsVal != nil {
+			tsVals = append(tsVals, *tsVal)
+		}
 	}
 
 	return tsVals, gqlVals
@@ -377,13 +384,15 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 		j++
 	}
 
-	tsVal, gqlVal := getUnknownVals(allUpper, valAllUpper, valAllLower, i.EnumMap)
+	if !i.DisableUnknownType {
+		tsVal, gqlVal := getUnknownVals(allUpper, valAllUpper, valAllLower, i.EnumMap)
 
-	if gqlVal != nil {
-		gqlVals = append(gqlVals, *gqlVal)
-	}
-	if tsVal != nil {
-		tsVals = append(tsVals, *tsVal)
+		if gqlVal != nil {
+			gqlVals = append(gqlVals, *gqlVal)
+		}
+		if tsVal != nil {
+			tsVals = append(tsVals, *tsVal)
+		}
 	}
 
 	// golang maps are not stable so sort for stability
@@ -420,7 +429,7 @@ func (i *Input) getValuesFromIntEnumMap(m map[string]int, addUnknown bool) ([]Da
 		j++
 	}
 
-	if addUnknown {
+	if addUnknown && !i.DisableUnknownType {
 		tsVal, gqlVal := getUnknownVals(allUpper, allUpper, false, i.IntEnumMap)
 		if tsVal != nil {
 			// TODO this should be an option...
@@ -454,6 +463,7 @@ func NewInputFromEnumType(enumType enttype.EnumeratedType, fkey bool) (*Input, e
 		EnumMap:              data.EnumMap,
 		IntEnumMap:           data.IntEnumMap,
 		DeprecatedIntEnumMap: data.DeprecatedIntEnumMap,
+		DisableUnknownType:   data.DisableUnknownType,
 	}
 	if !input.HasValues() && !fkey {
 		return nil, fmt.Errorf("Enum %s has no values", input.TSName)
@@ -488,9 +498,10 @@ func GetEnums(input *Input) (*Enum, *GQLEnum) {
 		Name:   input.TSName,
 		Values: tsVals,
 		// not the best way to determine this but works for now
-		Imported:          len(tsVals) == 0,
-		DeprecatedValues:  deprecatedTSVals,
-		convertFuncTSType: convertFuncTSType,
+		Imported:           len(tsVals) == 0,
+		DeprecatedValues:   deprecatedTSVals,
+		convertFuncTSType:  convertFuncTSType,
+		DisableUnknownType: input.DisableUnknownType,
 	}
 	return tsEnum, gqlEnum
 }
