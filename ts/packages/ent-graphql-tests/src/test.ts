@@ -8,6 +8,7 @@ import {
   GraphQLList,
   GraphQLBoolean,
   GraphQLInt,
+  GraphQLEnumType,
 } from "graphql";
 import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
 import * as fs from "fs";
@@ -67,13 +68,24 @@ class Address implements Node {
   apartment?: string | null;
 }
 
+enum DayOfWeek {
+  Sunday = "Sunday",
+  Monday = "Monday",
+  Tuesday = "Tuesday",
+  Wednesday = "Wednesday",
+  Thursday = "Thursday",
+  Friday = "Friday",
+  Saturday = "Saturday",
+}
+
 class User implements Node {
   id: string;
   firstName: string;
   lastName: string;
   address?: Address | null;
-  contacts?({ first: number }): Contact[];
+  contacts?(arg: { first: number }): Contact[];
   nicknames?: string[] | null;
+  daysOff: DayOfWeek[];
 }
 
 class Contact implements Node {
@@ -108,11 +120,15 @@ export const names: Partial<Pick<Contact, "firstName" | "lastName">>[] = [
 ];
 
 const NickNames = ["Lord Snow", "The Prince That was Promised"];
+const weekends = [DayOfWeek.Saturday, DayOfWeek.Sunday];
+const weekendsGQL = weekends.map((v) => v.toUpperCase());
+
 function getUser(id: string): User {
   let result = new User();
   result.id = id;
   result.firstName = "Jon";
   result.lastName = "Snow";
+  result.daysOff = weekends;
 
   let num = parseInt(id, 0) || 0;
   if (num % 2 == 0) {
@@ -203,6 +219,33 @@ let contactType = new GraphQLObjectType({
   interfaces: [GraphQLNodeInterface],
 });
 
+const dayOfWeekType = new GraphQLEnumType({
+  name: "DayOfWeek",
+  values: {
+    MONDAY: {
+      value: DayOfWeek.Monday,
+    },
+    TUESDAY: {
+      value: DayOfWeek.Tuesday,
+    },
+    WEDNESDAY: {
+      value: DayOfWeek.Wednesday,
+    },
+    THURSDAY: {
+      value: DayOfWeek.Thursday,
+    },
+    FRIDAY: {
+      value: DayOfWeek.Friday,
+    },
+    SATURDAY: {
+      value: DayOfWeek.Saturday,
+    },
+    SUNDAY: {
+      value: DayOfWeek.Sunday,
+    },
+  },
+});
+
 let userType = new GraphQLObjectType({
   name: "User",
   fields: {
@@ -228,6 +271,9 @@ let userType = new GraphQLObjectType({
     },
     nicknames: {
       type: new GraphQLList(new GraphQLNonNull(GraphQLString)),
+    },
+    daysOff: {
+      type: new GraphQLList(new GraphQLNonNull(dayOfWeekType)),
     },
   },
   interfaces: [GraphQLNodeInterface],
@@ -256,6 +302,17 @@ let rootQuery = new GraphQLObjectType({
         },
       },
       type: userType,
+      resolve(_source, { id }) {
+        return getUser(id);
+      },
+    },
+    node: {
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      type: GraphQLNodeInterface,
       resolve(_source, { id }) {
         return getUser(id);
       },
@@ -529,6 +586,7 @@ test("query with object values", async () => {
       },
     ],
     ["nicknames", null],
+    ["daysOff", weekendsGQL],
   );
 });
 
@@ -551,6 +609,28 @@ test("query scalar list", async () => {
     ["firstName", "Jon"],
     ["lastName", "Snow"],
     ["nicknames", NickNames],
+  );
+});
+
+test("query enum list", async () => {
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "1001",
+    },
+    root: "user",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "1001"],
+    ["firstName", "Jon"],
+    ["lastName", "Snow"],
+    ["daysOff", weekendsGQL],
   );
 });
 
@@ -798,6 +878,24 @@ describe("inline fragments", () => {
     ]);
   });
 
+  test("enum list", async () => {
+    let cfg2 = {
+      ...cfg,
+      args: {
+        id: "1001",
+      },
+    };
+    await expectQueryFromRoot(cfg2, [
+      "...on User",
+      {
+        id: "1001",
+        firstName: "Jon",
+        lastName: "Snow",
+        daysOff: weekendsGQL,
+      },
+    ]);
+  });
+
   test("inline fragment root", async () => {
     let cfg: queryRootConfig = {
       schema: schema,
@@ -832,6 +930,25 @@ describe("inline fragments", () => {
       ["firstName", "Jon"],
       ["lastName", "Snow"],
       ["nicknames", NickNames],
+    );
+  });
+
+  test("inline fragment root with enum list", async () => {
+    let cfg: queryRootConfig = {
+      schema: schema,
+      args: {
+        id: "1001",
+      },
+      root: "node",
+      inlineFragmentRoot: "User",
+    };
+
+    await expectQueryFromRoot(
+      cfg,
+      ["id", "1001"],
+      ["firstName", "Jon"],
+      ["lastName", "Snow"],
+      ["daysOff", weekendsGQL],
     );
   });
 });
