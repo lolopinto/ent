@@ -18,6 +18,7 @@ import {
   isScalarType,
   GraphQLType,
   GraphQLFieldMap,
+  isEnumType,
 } from "graphql";
 import { buildContext, registerAuthHandler } from "../../auth";
 import supertest from "supertest";
@@ -176,7 +177,7 @@ function buildTreeFromQueryPaths(
     let parts: string[] = [];
     let match = fragmentRegex.exec(path);
     if (match) {
-      // fragment, keep the part of the fragment e.g.  ...onUser, and then split the rest....
+      // fragment, keep the part of the fragment e.g. `...on User`, and then split the rest....
       parts = [match[0], ...match[2].split(".")];
 
       const typ = schema.getType(match[1]);
@@ -238,7 +239,7 @@ function buildTreeFromQueryPaths(
 
         // only spread out if an object
         const [typ, _] = getInnerType(subField.type, true);
-        return isScalarType(typ);
+        return isScalarType(typ) || isEnumType(typ);
       }
 
       if (i === parts.length - 1 && typeof option[1] === "object") {
