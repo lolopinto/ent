@@ -33,6 +33,8 @@ func (c *Enum) Clone() *Enum {
 type convertFunctionInfo struct {
 	Name              string
 	NullableName      string
+	ListName          string
+	NullableListName  string
 	UnknownKey        string
 	ConvertFuncTSType string
 }
@@ -53,6 +55,8 @@ func (c *Enum) GetConvertFunctionInfo() *convertFunctionInfo {
 	return &convertFunctionInfo{
 		Name:              fmt.Sprintf("convert%s", c.Name),
 		NullableName:      fmt.Sprintf("convertNullable%s", c.Name),
+		ListName:          fmt.Sprintf("convert%sList", c.Name),
+		NullableListName:  fmt.Sprintf("convertNullable%sList", c.Name),
 		UnknownKey:        unknown.Name,
 		ConvertFuncTSType: c.convertFuncTSType,
 	}

@@ -190,8 +190,7 @@ test("create user with invalid days off value", async () => {
   expect(user.daysOff).toStrictEqual([UserDaysOff.Monday, "hello"]);
 });
 
-// TODO need to fix list
-test.skip("create user with invalid preferred shift value", async () => {
+test("create user with invalid preferred shift value", async () => {
   // @ts-ignore
   const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
     firstName: "Jon",

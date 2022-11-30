@@ -1231,8 +1231,7 @@ test("create user with invalid days off value", async () => {
   );
 });
 
-// TODO list
-test.skip("create user with invalid days off value", async () => {
+test("create user with invalid days off value", async () => {
   // @ts-ignore
   const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
     firstName: "Jon",

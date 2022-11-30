@@ -1043,8 +1043,36 @@ func getNullableEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
 	})
 }
 
+func getListEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
+	if disable {
+		return nil
+	}
+	return getAllDialectsImportMap(&tsimport.ImportPath{
+		ImportPath: "src/ent/generated/types",
+		Import:     fmt.Sprintf("convert%sList", typ),
+	})
+}
+
+func getNullableListEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
+	if disable {
+		return nil
+	}
+	return getAllDialectsImportMap(&tsimport.ImportPath{
+		ImportPath: "src/ent/generated/types",
+		Import:     fmt.Sprintf("convertNullable%sList", typ),
+	})
+}
+
 func (t *StringEnumType) Convert() ConvertDataTypeRet {
 	return getEnumConvertMap(t.Type, t.DisableUnknownType)
+}
+
+func (t *StringEnumType) convertListWithItem() ConvertDataTypeRet {
+	return getListEnumConvertMap(t.Type, t.DisableUnknownType)
+}
+
+func (t *StringEnumType) convertNullableListWithItem() ConvertDataTypeRet {
+	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
 var _ EnumeratedType = &StringEnumType{}
@@ -1108,6 +1136,14 @@ func (t *NullableStringEnumType) Convert() ConvertDataTypeRet {
 	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
+func (t *NullableStringEnumType) convertListWithItem() ConvertDataTypeRet {
+	return getListEnumConvertMap(t.Type, t.DisableUnknownType)
+}
+
+func (t *NullableStringEnumType) convertNullableListWithItem() ConvertDataTypeRet {
+	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType)
+}
+
 var _ EnumeratedType = &NullableStringEnumType{}
 
 type IntegerEnumType struct {
@@ -1166,6 +1202,14 @@ func (t *IntegerEnumType) Convert() ConvertDataTypeRet {
 	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
+func (t *IntegerEnumType) convertListWithItem() ConvertDataTypeRet {
+	return getListEnumConvertMap(t.Type, t.DisableUnknownType)
+}
+
+func (t *IntegerEnumType) convertNullableListWithItem() ConvertDataTypeRet {
+	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType)
+}
+
 var _ EnumeratedType = &IntegerEnumType{}
 
 type NullableIntegerEnumType struct {
@@ -1221,6 +1265,14 @@ func (t *NullableIntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.Im
 
 func (t *NullableIntegerEnumType) Convert() ConvertDataTypeRet {
 	return getEnumConvertMap(t.Type, t.DisableUnknownType)
+}
+
+func (t *NullableIntegerEnumType) convertListWithItem() ConvertDataTypeRet {
+	return getListEnumConvertMap(t.Type, t.DisableUnknownType)
+}
+
+func (t *NullableIntegerEnumType) convertNullableListWithItem() ConvertDataTypeRet {
+	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
 var _ EnumeratedType = &NullableIntegerEnumType{}
@@ -1288,6 +1340,7 @@ func (t *ArrayListType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 func (t *ArrayListType) Convert() ConvertDataTypeRet {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
+		// NB: this is intentionally only sqlite because postgres automatically returns as a list but sqlite doesn't
 		return getSqliteImportMap(tsimport.NewEntImportPath("convertList"))
 	}
 	return elem.convertListWithItem()

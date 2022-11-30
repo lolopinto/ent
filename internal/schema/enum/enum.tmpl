@@ -29,9 +29,20 @@ export enum {{.Name}} {
   }
 
   export function {{$conv.NullableName}}(val: {{$conv.ConvertFuncTSType}} | null): {{$enumName}} | null {
-    if (val === null) {
+    if (val === null || val === undefined) {
       return null;
     } 
     return {{$conv.Name}}(val);
   }
+
+  export function {{$conv.ListName}}(val: {{$conv.ConvertFuncTSType}}[]): {{$enumName}}[] {
+    return val.map(v => {{$conv.Name}}(v))
+  }
+
+  export function {{$conv.NullableListName}}(val: {{$conv.ConvertFuncTSType}}[] | null): {{$enumName}}[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return {{$conv.ListName}}(val);
+}
 {{end -}}

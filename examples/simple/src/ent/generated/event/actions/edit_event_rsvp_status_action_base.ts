@@ -44,10 +44,25 @@ export function convertEventRsvpStatusInput(val: string): EventRsvpStatusInput {
 export function convertNullableEventRsvpStatusInput(
   val: string | null,
 ): EventRsvpStatusInput | null {
-  if (val === null) {
+  if (val === null || val === undefined) {
     return null;
   }
   return convertEventRsvpStatusInput(val);
+}
+
+export function convertEventRsvpStatusInputList(
+  val: string[],
+): EventRsvpStatusInput[] {
+  return val.map((v) => convertEventRsvpStatusInput(v));
+}
+
+export function convertNullableEventRsvpStatusInputList(
+  val: string[] | null,
+): EventRsvpStatusInput[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertEventRsvpStatusInputList(val);
 }
 
 export interface EditEventRsvpStatusInput {

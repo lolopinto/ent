@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
@@ -450,7 +449,6 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			tsType = foreignKey.Schema
 			graphqlType = foreignKey.Schema
 		}
-		spew.Dump(typ.DisableUnknownType)
 		if nullable {
 			return &enttype.NullableStringEnumType{
 				EnumDBType:         typ.DBType == Enum,
