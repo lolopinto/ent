@@ -1199,7 +1199,7 @@ func (t *IntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath
 }
 
 func (t *IntegerEnumType) Convert() ConvertDataTypeRet {
-	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType)
+	return getEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
 func (t *IntegerEnumType) convertListWithItem() ConvertDataTypeRet {
@@ -1264,7 +1264,7 @@ func (t *NullableIntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.Im
 }
 
 func (t *NullableIntegerEnumType) Convert() ConvertDataTypeRet {
-	return getEnumConvertMap(t.Type, t.DisableUnknownType)
+	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType)
 }
 
 func (t *NullableIntegerEnumType) convertListWithItem() ConvertDataTypeRet {
