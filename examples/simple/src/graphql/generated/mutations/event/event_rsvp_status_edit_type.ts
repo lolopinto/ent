@@ -44,6 +44,9 @@ export const EventRsvpStatusInputType = new GraphQLEnumType({
     MAYBE: {
       value: "maybe",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });
 

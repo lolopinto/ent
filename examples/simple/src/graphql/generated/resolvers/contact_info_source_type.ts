@@ -17,5 +17,8 @@ export const ContactInfoSourceType = new GraphQLEnumType({
     ONLINE: {
       value: "online",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });

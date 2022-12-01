@@ -29,5 +29,8 @@ export const DogBreedType = new GraphQLEnumType({
     OTHER: {
       value: "other",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });

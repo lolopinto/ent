@@ -32,5 +32,8 @@ export const RabbitBreedType = new GraphQLEnumType({
     OTHER: {
       value: "other",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });

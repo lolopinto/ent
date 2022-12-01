@@ -17,5 +17,8 @@ export const NotifTypeType = new GraphQLEnumType({
     EMAIL: {
       value: "EMAIL",
     },
+    UNKNOWN: {
+      value: "%UNKNOWN%",
+    },
   },
 });

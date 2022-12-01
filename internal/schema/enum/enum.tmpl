@@ -13,3 +13,36 @@ export enum {{.Name}} {
     // @deprecated {{.Name}} = {{.Value}},
   {{ end -}}
 }
+
+{{ $conv := .GetConvertFunctionInfo }}
+{{if $conv }}
+  {{$enumName := .Name}}
+  export function {{$conv.Name}}(val: {{$conv.ConvertFuncTSType}}): {{$enumName}} {
+    switch (val) {
+      {{ range $data := .Values -}} 
+        case {{$enumName}}.{{.Name}}:
+      {{ end -}}
+      return val;
+    default:
+    return {{$enumName}}.{{$conv.UnknownKey}}
+    }
+  }
+
+  export function {{$conv.NullableName}}(val: {{$conv.ConvertFuncTSType}} | null): {{$enumName}} | null {
+    if (val === null || val === undefined) {
+      return null;
+    } 
+    return {{$conv.Name}}(val);
+  }
+
+  export function {{$conv.ListName}}(val: {{$conv.ConvertFuncTSType}}[]): {{$enumName}}[] {
+    return val.map(v => {{$conv.Name}}(v))
+  }
+
+  export function {{$conv.NullableListName}}(val: {{$conv.ConvertFuncTSType}}[] | null): {{$enumName}}[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return {{$conv.ListName}}(val);
+}
+{{end -}}

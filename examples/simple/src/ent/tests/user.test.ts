@@ -1,4 +1,4 @@
-import { AssocEdge, AssocEdgeInput, setLogLevels } from "@snowtop/ent";
+import { AssocEdge, AssocEdgeInput, DB, setLogLevels } from "@snowtop/ent";
 import { MockLogs } from "@snowtop/ent/testutils/mock_log";
 import { TestContext } from "@snowtop/ent/testutils/context/test_context";
 import { User, Contact, Event, ArticleToCommentsQuery } from "..";
@@ -21,6 +21,7 @@ import {
   UserSuperNestedObject,
   NodeType,
   EdgeType,
+  UserAccountStatus,
 } from "../generated/types";
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
 import { random, randomEmail, randomPhoneNumber } from "../../util/random";
@@ -41,6 +42,9 @@ import CreateCommentAction from "../comment/actions/create_comment_action";
 import DeleteUserAction2 from "../user/actions/delete_user_action_2";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import EditUserAllFieldsAction from "../user/actions/edit_user_all_fields_action";
+import { getSimpleInsertAction } from "@snowtop/ent/action/experimental_action";
+import { UserBuilder } from "../generated/user/actions/user_builder";
+import { buildInsertQuery } from "@snowtop/ent/core/ent";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -112,7 +116,7 @@ test("create user with accountstatus", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    accountStatus: "VERIFIED",
+    accountStatus: UserAccountStatus.VERIFIED,
   });
 
   expect(user.firstName).toBe("Jon");
@@ -130,6 +134,90 @@ test("create user with accountstatus explicitly null", async () => {
   expect(user.firstName).toBe("Jon");
   expect(user.lastName).toBe("Snow");
   expect(await user.accountStatus()).toBe("UNVERIFIED");
+});
+
+test("create user with deprecated account_status", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    accountStatus: "hello",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+
+  const user = await User.loadX(new ExampleViewer(id), id);
+  const status = await user.accountStatus();
+  expect(status).toBe(UserAccountStatus.UNKNOWN);
+});
+
+test("create user with invalid days off value", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    daysOff: [UserDaysOff.Monday, "hello"],
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+
+  const user = await User.loadX(new ExampleViewer(id), id);
+  // wrong value comes out
+  expect(user.daysOff).toStrictEqual([UserDaysOff.Monday, "hello"]);
+});
+
+test("create user with invalid preferred shift value", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    preferredShift: [UserPreferredShift.Morning, "hello"],
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+
+  const user = await User.loadX(new ExampleViewer(id), id);
+  // converted to unknown
+  expect(user.preferredShift).toStrictEqual([
+    UserPreferredShift.Morning,
+    UserPreferredShift.Unknown,
+  ]);
 });
 
 test("edit user", async () => {
@@ -292,12 +380,12 @@ describe("privacy", () => {
       firstName: "Jon",
       lastName: "Snow",
     });
-    expect(await user1.accountStatus()).toBe("UNVERIFIED");
+    expect(await user1.accountStatus()).toBe(UserAccountStatus.UNVERIFIED);
     let user2 = await create({
       firstName: "Daenerys",
       lastName: "Targaryen",
     });
-    expect(await user2.accountStatus()).toBe("UNVERIFIED");
+    expect(await user2.accountStatus()).toBe(UserAccountStatus.UNVERIFIED);
 
     // can't see user when not friends
     expect(await User.load(user2.viewer, user1.id)).toBe(null);

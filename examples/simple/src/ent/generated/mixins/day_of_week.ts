@@ -4,7 +4,12 @@
  */
 
 import { Data, Viewer } from "@snowtop/ent";
-import { DayOfWeek, DayOfWeekAlt } from "../types";
+import {
+  DayOfWeek,
+  DayOfWeekAlt,
+  convertDayOfWeek,
+  convertNullableDayOfWeekAlt,
+} from "../types";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
@@ -33,8 +38,8 @@ export function DayOfWeekMixin<T extends Constructor>(BaseClass: T) {
     constructor(...args: any[]) {
       super(...args);
       const { data } = extractFromArgs(args);
-      this.dayOfWeek = data.day_of_week;
-      this.dayOfWeekAlt = data.day_of_week_alt;
+      this.dayOfWeek = convertDayOfWeek(data.day_of_week);
+      this.dayOfWeekAlt = convertNullableDayOfWeekAlt(data.day_of_week_alt);
     }
 
     isDayOfWeek() {

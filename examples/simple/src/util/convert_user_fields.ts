@@ -1,4 +1,4 @@
-export function convertAccountStatus(status: any) {
+export function userConvertAccountStatus(status: any) {
   if (status === null) {
     return "UNVERIFIED";
   }

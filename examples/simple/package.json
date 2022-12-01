@@ -19,7 +19,7 @@
   "license": "ISC",
   "devDependencies": {
     "@alex_neo/jest-expect-message": "^1.0.5",
-    "@snowtop/ent-graphql-tests": "^0.1.0-alpha3",
+    "@snowtop/ent-graphql-tests": "^0.1.0-alpha4",
     "@types/bcryptjs": "^2.4.2",
     "@types/express": "^4.17.11",
     "@types/jest": "^29.2.3",
@@ -34,7 +34,7 @@
     "tsconfig-paths": "^3.11.0"
   },
   "dependencies": {
-    "@snowtop/ent": "^0.1.0-alpha94",
+    "@snowtop/ent": "^0.1.0-alpha94-a5abc190-7043-11ed-8732-0d14aac90782",
     "@snowtop/ent-email": "^0.1.0-alpha1",
     "@snowtop/ent-passport": "^0.1.0-alpha2",
     "@snowtop/ent-password": "^0.1.0-alpha1",

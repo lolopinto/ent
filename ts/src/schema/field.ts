@@ -614,6 +614,11 @@ export interface EnumOptions extends FieldOptions {
   graphQLType?: string;
 
   createEnumType?: boolean;
+
+  // if set to true, we don't add an `UNKNOWN` or `Unknown` type to deal with invalid|deprecated|old types
+  // coming from the db.
+  // GraphQL is strict about old values so we are adding this
+  disableUnknownType?: boolean;
 }
 
 /**
@@ -633,6 +638,7 @@ export class EnumField extends BaseField implements Field {
       enumMap: options.map,
       type: options.tsType,
       graphQLType: options.graphQLType,
+      disableUnknownType: options.disableUnknownType,
     };
     if (!options.foreignKey) {
       if (!options.values && !options.map) {

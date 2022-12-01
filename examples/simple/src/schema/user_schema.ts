@@ -43,9 +43,9 @@ const UserSchema = new EntSchema({
     // TODO shouldn't really be nullable. same issue as #35
     // TODO we need a way to say a field can be nullable in db but required in actions for new actions
     Password: PasswordType({ nullable: true }),
-    // TODO support enums: UNVERIFIED, VERIFIED, DEACTIVATED, DISABLED etc.
     // TODO shouldn't really be nullable. same issue as #35
-    AccountStatus: StringType({
+    AccountStatus: EnumType({
+      values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"],
       nullable: true,
       // allows scripts, internal tools etc to set this but not graphql
       disableUserGraphQLEditable: true,
@@ -53,7 +53,7 @@ const UserSchema = new EntSchema({
       privacyPolicy: AllowIfViewerPrivacyPolicy,
       convert: {
         path: "src/util/convert_user_fields",
-        function: "convertAccountStatus",
+        function: "userConvertAccountStatus",
       },
     }),
     emailVerified: BooleanType({
@@ -116,6 +116,9 @@ const UserSchema = new EntSchema({
         "saturday",
         "sunday",
       ],
+      // days of the week are known. we're not adding a new one anytime soon
+      // and we can test behavior when this isn't set
+      disableUnknownType: true,
     }),
     preferredShift: EnumListType({
       nullable: true,

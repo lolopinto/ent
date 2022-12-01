@@ -20,5 +20,8 @@ export const EventRsvpStatusType = new GraphQLEnumType({
     CAN_RSVP: {
       value: "canRsvp",
     },
+    UNKNOWN: {
+      value: "%Unknown%",
+    },
   },
 });
