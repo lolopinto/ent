@@ -21,7 +21,10 @@ import CreateContactPhoneNumberAction, {
   ContactPhoneNumberCreateInput,
 } from "../../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
 import { ContactInfoInputType } from "../input/contact_info_input_type";
-import { ContactPhoneNumberType } from "../../../resolvers";
+import {
+  ContactPhoneNumberLabelType,
+  ContactPhoneNumberType,
+} from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactPhoneNumberCreateInput
@@ -43,7 +46,7 @@ export const ContactPhoneNumberCreateInputType = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(ContactPhoneNumberLabelType),
     },
     contactID: {
       type: new GraphQLNonNull(GraphQLID),

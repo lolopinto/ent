@@ -1,7 +1,7 @@
 import {
   ActionOperation,
   EntSchema,
-  StringType,
+  EnumType,
   UUIDType,
 } from "@snowtop/ent/schema/";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
@@ -13,7 +13,10 @@ const ContactPhoneNumberSchema = new EntSchema({
 
   fields: {
     phoneNumber: PhoneNumberType(),
-    label: StringType(),
+    label: EnumType({
+      // unknown val?
+      values: ["work", "home", "default", "unknown"],
+    }),
     contactID: UUIDType({
       fieldEdge: {
         schema: "Contact",

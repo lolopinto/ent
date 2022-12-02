@@ -281,25 +281,36 @@ func (i *Input) HasValues() bool {
 	return len(i.Values) > 0 || len(i.EnumMap) > 0 || len(i.IntEnumMap) > 0
 }
 
-func getUnknownVals[T any](keyAllUpper, valAllUpper, valAllLower bool, m map[string]T) (*Data, *Data) {
+type unknownInfo struct {
+	keyAllUpper, keyAllLower, valAllLower, valAllUpper bool
+}
+
+func getUnknownVals[T any](v unknownInfo, m map[string]T) (*Data, *Data) {
 	var ok bool
 	var key string
 	var value string
-	if keyAllUpper {
+	if v.keyAllUpper {
 		key = "UNKNOWN"
 		_, ok = m["UNKNOWN"]
+	} else if v.keyAllLower {
+		key = "Unknown"
+		_, ok = m["unknown"]
 	} else {
 		key = "Unknown"
 		_, ok = m["Unknown"]
 	}
 
-	if valAllUpper {
+	if v.valAllUpper {
 		value = "%UNKNOWN%"
-	} else if valAllLower {
+	} else if v.valAllLower {
 		value = "%unknown%"
 	} else {
 		value = "%Unknown%"
 	}
+
+	// here????
+	// TODO unknown val missing
+	// key all lower needs to check for unknown
 
 	// no unknown, add unknown
 	if !ok {
@@ -349,7 +360,12 @@ func (i *Input) getValuesFromValues() ([]Data, []Data) {
 	}
 
 	if !i.DisableUnknownType {
-		tsVal, gqlVal := getUnknownVals(allUpper, allUpper, allLower, keys)
+		tsVal, gqlVal := getUnknownVals(unknownInfo{
+			keyAllUpper: allUpper,
+			valAllUpper: allUpper,
+			valAllLower: allLower,
+			keyAllLower: allLower,
+		}, keys)
 		if gqlVal != nil {
 			gqlVals = append(gqlVals, *gqlVal)
 		}
@@ -389,7 +405,11 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 	}
 
 	if !i.DisableUnknownType {
-		tsVal, gqlVal := getUnknownVals(allUpper, valAllUpper, valAllLower, i.EnumMap)
+		tsVal, gqlVal := getUnknownVals(unknownInfo{
+			keyAllUpper: allUpper,
+			valAllUpper: valAllUpper,
+			valAllLower: valAllLower,
+		}, i.EnumMap)
 
 		if gqlVal != nil {
 			gqlVals = append(gqlVals, *gqlVal)
@@ -434,7 +454,11 @@ func (i *Input) getValuesFromIntEnumMap(m map[string]int, addUnknown bool) ([]Da
 	}
 
 	if addUnknown && !i.DisableUnknownType {
-		tsVal, gqlVal := getUnknownVals(allUpper, allUpper, false, i.IntEnumMap)
+		tsVal, gqlVal := getUnknownVals(unknownInfo{
+			keyAllUpper: allUpper,
+			valAllUpper: allUpper,
+		}, i.EnumMap)
+
 		if tsVal != nil {
 			// TODO this should be an option...
 			tsVal.Value = JS_MIN_SAFE_INT

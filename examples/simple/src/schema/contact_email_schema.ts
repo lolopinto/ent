@@ -1,7 +1,7 @@
 import {
   ActionOperation,
   EntSchema,
-  StringType,
+  EnumType,
   UUIDType,
 } from "@snowtop/ent/schema/";
 import { EmailType } from "@snowtop/ent-email";
@@ -13,7 +13,10 @@ const ContactEmailSchema = new EntSchema({
 
   fields: {
     emailAddress: EmailType(),
-    label: StringType(),
+    label: EnumType({
+      // unknown val?
+      values: ["work", "home", "default", "unknown"],
+    }),
     contactID: UUIDType({
       fieldEdge: {
         schema: "Contact",

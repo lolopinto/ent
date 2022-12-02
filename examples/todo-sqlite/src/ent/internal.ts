@@ -30,38 +30,7 @@ export * from "src/ent/todo/query/todo_to_tags_query";
 export * from "src/ent/todo/query/todo_to_todo_scope_query";
 export * from "src/ent/workspace/query/workspace_to_members_query";
 export * from "src/ent/workspace/query/workspace_to_scoped_todos_query";
-import {setGlobalSchema} from "@snowtop/ent";
+import { setGlobalSchema } from "@snowtop/ent";
 import globalSchema from "src/schema/global_schema";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-  setGlobalSchema(globalSchema);
+setGlobalSchema(globalSchema);
