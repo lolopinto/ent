@@ -21,7 +21,12 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders";
-import { ContactInfo, NodeType } from "./types";
+import {
+  ContactEmailLabel,
+  ContactInfo,
+  NodeType,
+  convertContactEmailLabel,
+} from "./types";
 import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
@@ -32,7 +37,7 @@ interface ContactEmailDBData {
   updated_at: Date;
   extra: ContactInfo | null;
   email_address: string;
-  label: string;
+  label: ContactEmailLabel;
   contact_id: ID;
 }
 
@@ -45,7 +50,7 @@ export class ContactEmailBase
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly emailAddress: string;
-  readonly label: string;
+  readonly label: ContactEmailLabel;
   readonly contactID: ID;
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
@@ -55,7 +60,7 @@ export class ContactEmailBase
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.emailAddress = data.email_address;
-    this.label = data.label;
+    this.label = convertContactEmailLabel(data.label);
     this.contactID = data.contact_id;
   }
 

@@ -19,13 +19,13 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
-import { ContactInfo } from "../../types";
+import { ContactInfo, ContactPhoneNumberLabel } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberCreateInput {
   extra?: ContactInfo | null;
   phoneNumber: string;
-  label: string;
+  label: ContactPhoneNumberLabel;
   contactID: ID | Builder<Contact, ExampleViewerAlias>;
 }
 

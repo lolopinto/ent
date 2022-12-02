@@ -13,6 +13,7 @@ import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+import { ContactEmailLabel } from "src/ent/generated/types";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -71,7 +72,7 @@ async function createContact(user?: User): Promise<Contact> {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: "default",
+        label: ContactEmailLabel.Default,
       },
     ],
     firstName: "Jon",

@@ -37,10 +37,25 @@ enum CatBreed {
   UNKNOWN
 }
 
+enum ContactEmailLabel {
+  WORK
+  HOME
+  DEFAULT
+  UNKNOWN
+  SELF
+}
+
 enum ContactInfoSource {
   FRIEND
   WORK
   ONLINE
+  UNKNOWN
+}
+
+enum ContactPhoneNumberLabel {
+  WORK
+  HOME
+  DEFAULT
   UNKNOWN
 }
 
@@ -223,7 +238,7 @@ type ContactEmail implements Node {
   id: ID!
   extra: ContactInfo
   emailAddress: String!
-  label: String!
+  label: ContactEmailLabel!
 }
 
 type ContactInfo {
@@ -236,7 +251,7 @@ type ContactPhoneNumber implements Node {
   id: ID!
   extra: ContactInfo
   phoneNumber: String!
-  label: String!
+  label: ContactPhoneNumberLabel!
 }
 
 type Contact implements Node {
@@ -784,7 +799,7 @@ type ContactEditPayload {
 input ContactEmailCreateInput {
   extra: ContactInfoInput
   emailAddress: String!
-  label: String!
+  label: ContactEmailLabel!
   contactID: ID!
 }
 
@@ -806,7 +821,7 @@ input ContactEmailEditInput {
   id: ID!
   extra: ContactInfoInput
   emailAddress: String
-  label: String
+  label: ContactEmailLabel
   contactID: ID
 }
 
@@ -822,7 +837,7 @@ input ContactInfoInput {
 input ContactPhoneNumberCreateInput {
   extra: ContactInfoInput
   phoneNumber: String!
-  label: String!
+  label: ContactPhoneNumberLabel!
   contactID: ID!
 }
 
@@ -844,7 +859,7 @@ input ContactPhoneNumberEditInput {
   id: ID!
   extra: ContactInfoInput
   phoneNumber: String
-  label: String
+  label: ContactPhoneNumberLabel
   contactID: ID
 }
 
@@ -893,7 +908,7 @@ type EditPhoneNumberPayload {
 input EmailContactCreateInput {
   extra: ContactInfoInput
   emailAddress: String!
-  label: String!
+  label: ContactEmailLabel!
 }
 
 input EventAddHostInput {
@@ -1002,7 +1017,7 @@ input PetUnionTypeInput {
 input PhoneNumberContactCreateInput {
   extra: ContactInfoInput
   phoneNumber: String!
-  label: String!
+  label: ContactPhoneNumberLabel!
 }
 
 input RabbitTypeInput {
