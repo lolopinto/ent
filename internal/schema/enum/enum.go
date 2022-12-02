@@ -308,10 +308,6 @@ func getUnknownVals[T any](v unknownInfo, m map[string]T) (*Data, *Data) {
 		value = "%Unknown%"
 	}
 
-	// here????
-	// TODO unknown val missing
-	// key all lower needs to check for unknown
-
 	// no unknown, add unknown
 	if !ok {
 		gqlVal := &Data{

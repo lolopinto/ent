@@ -42,7 +42,6 @@ enum ContactEmailLabel {
   HOME
   DEFAULT
   UNKNOWN
-  UNKNOWN
 }
 
 enum ContactInfoSource {
@@ -56,7 +55,6 @@ enum ContactPhoneNumberLabel {
   WORK
   HOME
   DEFAULT
-  UNKNOWN
   UNKNOWN
 }
 
