@@ -287,18 +287,27 @@ type unknownInfo struct {
 }
 
 func augmentUnknownVals(v unknownInfo, keys map[string]int, tsVals, gqlVals []*Data) ([]*Data, []*Data) {
-	var ok bool
+
+	// found, edit in place, nothing else to do here.
+	for k := range keys {
+		if strings.ToLower(k) == "unknown" {
+			idx := keys[k]
+			tsVals[idx].UnknownVal = true
+			gqlVals[idx].UnknownVal = true
+
+			return tsVals, gqlVals
+		}
+	}
+
 	var key string
 	var value string
+
 	if v.keyAllUpper {
 		key = "UNKNOWN"
-		_, ok = keys["UNKNOWN"]
 	} else if v.keyAllLower {
 		key = "Unknown"
-		_, ok = keys["unknown"]
 	} else {
 		key = "Unknown"
-		_, ok = keys["Unknown"]
 	}
 
 	if v.valAllUpper {
@@ -310,40 +319,26 @@ func augmentUnknownVals(v unknownInfo, keys map[string]int, tsVals, gqlVals []*D
 	}
 
 	// no unknown, add unknown
-	if !ok {
-		gqlVal := &Data{
-			// norm for graphql enums is all caps
-			Name:       strings.ToUpper(key),
-			Value:      strconv.Quote(value),
-			UnknownVal: true,
-		}
-
-		tsVal := &Data{
-			Name:       key,
-			Value:      strconv.Quote(value),
-			UnknownVal: true,
-		}
-
-		if v.defaultValue != nil {
-			gqlVal.Value = v.defaultValue
-			tsVal.Value = v.defaultValue
-		}
-
-		gqlVals = append(gqlVals, gqlVal)
-		tsVals = append(tsVals, tsVal)
-	} else {
-
-		// find unknown
-
-		for k := range keys {
-			if strings.ToLower(k) == "unknown" {
-				idx := keys[k]
-				tsVals[idx].UnknownVal = true
-				gqlVals[idx].UnknownVal = true
-				break
-			}
-		}
+	gqlVal := &Data{
+		// norm for graphql enums is all caps
+		Name:       strings.ToUpper(key),
+		Value:      strconv.Quote(value),
+		UnknownVal: true,
 	}
+
+	tsVal := &Data{
+		Name:       key,
+		Value:      strconv.Quote(value),
+		UnknownVal: true,
+	}
+
+	if v.defaultValue != nil {
+		gqlVal.Value = v.defaultValue
+		tsVal.Value = v.defaultValue
+	}
+
+	gqlVals = append(gqlVals, gqlVal)
+	tsVals = append(tsVals, tsVal)
 
 	return tsVals, gqlVals
 }
@@ -413,8 +408,8 @@ func (i *Input) getValuesFromEnumMap() ([]*Data, []*Data) {
 			Name:  tsName,
 			Value: strconv.Quote(val),
 		}
-		j++
 		keys[k] = j
+		j++
 	}
 
 	if !i.DisableUnknownType {
@@ -457,8 +452,8 @@ func (i *Input) getValuesFromIntEnumMap(m map[string]int, addUnknown bool) ([]*D
 			Name:  tsName,
 			Value: val,
 		}
-		j++
 		keys[k] = j
+		j++
 	}
 
 	if addUnknown && !i.DisableUnknownType {
