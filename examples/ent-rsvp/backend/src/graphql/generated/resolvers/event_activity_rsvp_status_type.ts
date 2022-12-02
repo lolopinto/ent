@@ -17,5 +17,8 @@ export const EventActivityRsvpStatusType = new GraphQLEnumType({
     CANNOT_RSVP: {
       value: "cannotRsvp",
     },
+    UNKNOWN: {
+      value: "%Unknown%",
+    },
   },
 });

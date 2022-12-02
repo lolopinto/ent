@@ -40,6 +40,7 @@ import {
   NodeType,
   convertNullableAccountPrefs,
   convertNullableAccountPrefs2List,
+  convertNullableAccountState,
 } from "src/ent/generated/types";
 import {
   AccountToClosedTodosDupQuery,
@@ -91,7 +92,7 @@ export class AccountBase
     this.deletedAt = convertNullableDate(data.deleted_at);
     this.name = data.name;
     this.phoneNumber = data.phone_number;
-    this.accountState = data.account_state;
+    this.accountState = convertNullableAccountState(data.account_state);
     this.accountPrefs = convertNullableAccountPrefs(
       convertNullableJSON(data.account_prefs),
     );

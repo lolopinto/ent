@@ -39,6 +39,9 @@ export const AccountTodoStatusInputType = new GraphQLEnumType({
     CLOSED_TODOS_DUP: {
       value: "closedTodosDup",
     },
+    UNKNOWN: {
+      value: "%Unknown%",
+    },
   },
 });
 

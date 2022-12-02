@@ -39,6 +39,9 @@ export const EventActivityRsvpStatusInputType = new GraphQLEnumType({
     DECLINED: {
       value: "declined",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });
 
