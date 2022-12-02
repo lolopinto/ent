@@ -2,10 +2,7 @@
 {{$int := .Interface}}
 {{$extImpPath := .Package.ExternalImportPath -}}
 {{$cfg := .Config}}
-{{ range $imp := $int.GetEnumImports -}}
-  {{ reserveImport $extImpPath $imp -}}
-{{ end -}}
- {{ if $int.Exported -}}
+{{ if $int.Exported -}}
   export interface {{$int.TSType}} {
 {{ else -}}
   interface {{$int.TSType}} {
