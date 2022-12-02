@@ -122,7 +122,7 @@ func TestEnumMap(t *testing.T) {
 	require.NotNil(t, tsEnum)
 	require.NotNil(t, tsEnum2)
 	assert.Equal(t, tsEnum.Name, typ)
-	assert.Equal(t, tsEnum.Values, []Data{
+	assert.Equal(t, tsEnum.Values, []*Data{
 		{
 			Name:  "CPlusPlus",
 			Value: strconv.Quote("c++"),
@@ -163,7 +163,7 @@ func TestEnumMap(t *testing.T) {
 	require.NotNil(t, gqlEnum2)
 	assert.Equal(t, gqlEnum.Name, typ)
 	assert.Equal(t, gqlEnum.Type, typ)
-	assert.Equal(t, gqlEnum.Values, []Data{
+	assert.Equal(t, gqlEnum.Values, []*Data{
 		{
 			Name:  "C_PLUS_PLUS",
 			Value: strconv.Quote("c++"),
@@ -238,7 +238,7 @@ func TestEnumMapDisableUnknownType(t *testing.T) {
 	require.NotNil(t, tsEnum)
 	require.NotNil(t, tsEnum2)
 	assert.Equal(t, tsEnum.Name, typ)
-	assert.Equal(t, tsEnum.Values, []Data{
+	assert.Equal(t, tsEnum.Values, []*Data{
 		{
 			Name:  "CPlusPlus",
 			Value: strconv.Quote("c++"),
@@ -274,7 +274,7 @@ func TestEnumMapDisableUnknownType(t *testing.T) {
 	require.NotNil(t, gqlEnum2)
 	assert.Equal(t, gqlEnum.Name, typ)
 	assert.Equal(t, gqlEnum.Type, typ)
-	assert.Equal(t, gqlEnum.Values, []Data{
+	assert.Equal(t, gqlEnum.Values, []*Data{
 		{
 			Name:  "C_PLUS_PLUS",
 			Value: strconv.Quote("c++"),
@@ -336,7 +336,7 @@ func TestIntEnumMap(t *testing.T) {
 	require.NotNil(t, tsEnum)
 	require.NotNil(t, tsEnum2)
 	assert.Equal(t, tsEnum.Name, typ)
-	assert.Equal(t, tsEnum.Values, []Data{
+	assert.Equal(t, tsEnum.Values, []*Data{
 		{
 			Name:       "UNKNOWN",
 			Value:      JS_MIN_SAFE_INT,
@@ -365,7 +365,7 @@ func TestIntEnumMap(t *testing.T) {
 	require.NotNil(t, gqlEnum2)
 	assert.Equal(t, gqlEnum.Name, typ)
 	assert.Equal(t, gqlEnum.Type, typ)
-	assert.Equal(t, gqlEnum.Values, []Data{
+	assert.Equal(t, gqlEnum.Values, []*Data{
 		{
 			Name:       "UNKNOWN",
 			Value:      JS_MIN_SAFE_INT,
@@ -422,7 +422,7 @@ func TestIntEnumMapDisableUnknownType(t *testing.T) {
 	require.NotNil(t, tsEnum)
 	require.NotNil(t, tsEnum2)
 	assert.Equal(t, tsEnum.Name, typ)
-	assert.Equal(t, tsEnum.Values, []Data{
+	assert.Equal(t, tsEnum.Values, []*Data{
 		{
 			Name:  "VERIFIED",
 			Value: 1,
@@ -446,7 +446,7 @@ func TestIntEnumMapDisableUnknownType(t *testing.T) {
 	require.NotNil(t, gqlEnum2)
 	assert.Equal(t, gqlEnum.Name, typ)
 	assert.Equal(t, gqlEnum.Type, typ)
-	assert.Equal(t, gqlEnum.Values, []Data{
+	assert.Equal(t, gqlEnum.Values, []*Data{
 		{
 			Name:  "VERIFIED",
 			Value: 1,
@@ -553,16 +553,16 @@ func TestFkeyEnumNoValues(t *testing.T) {
 	require.NotNil(t, input)
 }
 
-func getValues(values []string, addUnknown bool) []Data {
-	ret := make([]Data, len(values))
+func getValues(values []string, addUnknown bool) []*Data {
+	ret := make([]*Data, len(values))
 	for k, v := range values {
-		ret[k] = Data{
+		ret[k] = &Data{
 			Name:  GetTSEnumNameForVal(v),
 			Value: strconv.Quote(v),
 		}
 	}
 	if addUnknown {
-		return append(ret, Data{
+		return append(ret, &Data{
 			Name:       "Unknown",
 			Value:      strconv.Quote("%Unknown%"),
 			UnknownVal: true,
@@ -571,16 +571,16 @@ func getValues(values []string, addUnknown bool) []Data {
 	return ret
 }
 
-func getGQLValues(values []string, addUnknown bool) []Data {
-	ret := make([]Data, len(values))
+func getGQLValues(values []string, addUnknown bool) []*Data {
+	ret := make([]*Data, len(values))
 	for k, v := range values {
-		ret[k] = Data{
+		ret[k] = &Data{
 			Name:  strings.ToUpper(strcase.ToSnake(v)),
 			Value: strconv.Quote(v),
 		}
 	}
 	if addUnknown {
-		return append(ret, Data{
+		return append(ret, &Data{
 			Name:       "UNKNOWN",
 			Value:      strconv.Quote("%Unknown%"),
 			UnknownVal: true,
