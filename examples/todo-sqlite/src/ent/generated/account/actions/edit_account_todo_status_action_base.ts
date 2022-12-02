@@ -22,6 +22,44 @@ import { NodeType } from "src/ent/generated/types";
 export enum AccountTodoStatusInput {
   OpenTodosDup = "openTodosDup",
   ClosedTodosDup = "closedTodosDup",
+  Unknown = "%Unknown%",
+}
+
+export function convertAccountTodoStatusInput(
+  val: string,
+): AccountTodoStatusInput {
+  switch (val) {
+    case AccountTodoStatusInput.OpenTodosDup:
+    case AccountTodoStatusInput.ClosedTodosDup:
+    case AccountTodoStatusInput.Unknown:
+      return val;
+    default:
+      return AccountTodoStatusInput.Unknown;
+  }
+}
+
+export function convertNullableAccountTodoStatusInput(
+  val: string | null,
+): AccountTodoStatusInput | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertAccountTodoStatusInput(val);
+}
+
+export function convertAccountTodoStatusInputList(
+  val: string[],
+): AccountTodoStatusInput[] {
+  return val.map((v) => convertAccountTodoStatusInput(v));
+}
+
+export function convertNullableAccountTodoStatusInputList(
+  val: string[] | null,
+): AccountTodoStatusInput[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertAccountTodoStatusInputList(val);
 }
 
 export interface EditAccountTodoStatusInput {

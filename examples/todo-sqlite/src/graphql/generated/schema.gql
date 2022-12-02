@@ -28,6 +28,7 @@ type PageInfo {
 enum AccountTodoStatus {
   OPEN_TODOS_DUP
   CLOSED_TODOS_DUP
+  UNKNOWN
 }
 
 type AccountPrefs2 {
@@ -286,6 +287,7 @@ input AccountPrefsInput {
 enum AccountTodoStatusInput {
   OPEN_TODOS_DUP
   CLOSED_TODOS_DUP
+  UNKNOWN
 }
 
 input AddTodoTagInput {

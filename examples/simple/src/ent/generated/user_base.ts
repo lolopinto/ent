@@ -46,12 +46,12 @@ import {
   UserPrefsStruct2,
   UserSuperNestedObject,
   convertNullableUserAccountStatus,
+  convertNullableUserIntEnum,
   convertNullableUserNestedObjectListList,
   convertNullableUserPreferredShiftList,
   convertNullableUserPrefsStruct,
   convertNullableUserPrefsStruct2List,
   convertNullableUserSuperNestedObject,
-  convertUserIntEnum,
 } from "./types";
 import {
   Contact,
@@ -170,7 +170,7 @@ export class UserBase
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
     this.nestedList = convertNullableUserNestedObjectListList(data.nested_list);
-    this.intEnum = convertUserIntEnum(data.int_enum);
+    this.intEnum = convertNullableUserIntEnum(data.int_enum);
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

@@ -30,6 +30,7 @@ enum EventActivityRsvpStatus {
   DECLINED
   CAN_RSVP
   CANNOT_RSVP
+  UNKNOWN
 }
 
 type Address implements Node {
@@ -404,6 +405,7 @@ type EventActivityRsvpStatusEditPayload {
 enum EventActivityRsvpStatusInput {
   ATTENDING
   DECLINED
+  UNKNOWN
 }
 
 input EventCreateInput {
