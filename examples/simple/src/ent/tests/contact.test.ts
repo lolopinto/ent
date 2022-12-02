@@ -9,7 +9,11 @@ import EditContactAction from "../contact/actions/edit_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import { query } from "@snowtop/ent";
 import { v4 } from "uuid";
-import { ContactInfoSource } from "../generated/types";
+import {
+  ContactEmailLabel,
+  ContactInfoSource,
+  ContactPhoneNumberLabel,
+} from "../generated/types";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -32,7 +36,7 @@ async function create(
     emails: [
       {
         emailAddress: randomEmail(),
-        label: "default",
+        label: ContactEmailLabel.Default,
       },
     ],
     firstName: firstName,
@@ -52,7 +56,7 @@ async function createMany(
       emails: [
         {
           emailAddress: randomEmail(),
-          label: "default",
+          label: ContactEmailLabel.Default,
         },
       ],
       firstName: name.firstName,
@@ -170,7 +174,7 @@ test("multiple emails", async () => {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: "default",
+        label: ContactEmailLabel.Default,
         extra: {
           default: true,
           source: ContactInfoSource.Online,
@@ -178,7 +182,7 @@ test("multiple emails", async () => {
       },
       {
         emailAddress: randomEmail(),
-        label: "work",
+        label: ContactEmailLabel.Work,
         // set to make test easier
         extra: null,
       },
@@ -194,7 +198,7 @@ test("multiple emails", async () => {
 
   interface emailInfo {
     emailAddress: string;
-    label: string;
+    label: ContactEmailLabel;
     extra?: any;
   }
   const emails = await contact.loadEmails();
@@ -245,7 +249,7 @@ test("multiple phonenumbers", async () => {
     phoneNumbers: [
       {
         phoneNumber: randomPhoneNumber(),
-        label: "default",
+        label: ContactPhoneNumberLabel.Default,
         extra: {
           default: true,
           source: ContactInfoSource.Friend,
@@ -253,7 +257,7 @@ test("multiple phonenumbers", async () => {
       },
       {
         phoneNumber: randomPhoneNumber(),
-        label: "work",
+        label: ContactPhoneNumberLabel.Default,
         extra: null,
       },
     ],
@@ -267,7 +271,7 @@ test("multiple phonenumbers", async () => {
   ).saveX();
   interface phoneNmberInfo {
     phoneNumber: string;
-    label: string;
+    label: ContactPhoneNumberLabel;
     extra?: any;
   }
   const sortFn = (a: phoneNmberInfo, b: phoneNmberInfo) =>

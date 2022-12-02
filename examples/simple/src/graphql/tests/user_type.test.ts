@@ -32,6 +32,7 @@ import {
   ObjNestedEnum,
   RabbitBreed,
   SuperNestedObjectEnum,
+  ContactEmailLabel,
 } from "../../ent/generated/types";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import CreateCommentAction from "../../ent/comment/actions/create_comment_action";
@@ -204,7 +205,7 @@ test("query custom async function", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -224,7 +225,7 @@ test("query custom async function", async () => {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -252,7 +253,7 @@ test("query custom async function list", async () => {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -293,7 +294,7 @@ test("query custom async function nullable contents", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -327,7 +328,7 @@ test("query custom async function nullable list contents", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -366,7 +367,7 @@ test("query custom async function nullable list and contents", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -609,7 +610,7 @@ async function createMany(
       emails: [
         {
           emailAddress: randomEmail(),
-          label: "fun",
+          label: ContactEmailLabel.Unknown,
         },
       ],
       firstName: name.firstName,

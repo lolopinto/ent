@@ -20,5 +20,8 @@ export const ContactEmailLabelType = new GraphQLEnumType({
     UNKNOWN: {
       value: "unknown",
     },
+    SELF: {
+      value: "self",
+    },
   },
 });

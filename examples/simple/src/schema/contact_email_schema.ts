@@ -14,8 +14,7 @@ const ContactEmailSchema = new EntSchema({
   fields: {
     emailAddress: EmailType(),
     label: EnumType({
-      // unknown val?
-      values: ["work", "home", "default", "unknown"],
+      values: ["work", "home", "default", "unknown", "self"],
     }),
     contactID: UUIDType({
       fieldEdge: {

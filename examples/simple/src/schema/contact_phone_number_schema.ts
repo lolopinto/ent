@@ -14,7 +14,6 @@ const ContactPhoneNumberSchema = new EntSchema({
   fields: {
     phoneNumber: PhoneNumberType(),
     label: EnumType({
-      // unknown val?
       values: ["work", "home", "default", "unknown"],
     }),
     contactID: UUIDType({

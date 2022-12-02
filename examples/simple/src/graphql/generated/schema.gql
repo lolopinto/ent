@@ -42,6 +42,7 @@ enum ContactEmailLabel {
   HOME
   DEFAULT
   UNKNOWN
+  SELF
 }
 
 enum ContactInfoSource {

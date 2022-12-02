@@ -123,6 +123,7 @@ export enum ContactEmailLabel {
   Home = "home",
   Default = "default",
   Unknown = "unknown",
+  Self = "self",
 }
 
 export function convertContactEmailLabel(val: string): ContactEmailLabel {
@@ -131,6 +132,7 @@ export function convertContactEmailLabel(val: string): ContactEmailLabel {
     case ContactEmailLabel.Home:
     case ContactEmailLabel.Default:
     case ContactEmailLabel.Unknown:
+    case ContactEmailLabel.Self:
       return val;
     default:
       return ContactEmailLabel.Unknown;
