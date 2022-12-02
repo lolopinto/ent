@@ -40,7 +40,7 @@ export const ContactEmailDeletePayloadType = new GraphQLObjectType({
   name: "ContactEmailDeletePayload",
   fields: (): GraphQLFieldConfigMap<
     ContactEmailDeletePayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     deletedContactEmailID: {
       type: GraphQLID,

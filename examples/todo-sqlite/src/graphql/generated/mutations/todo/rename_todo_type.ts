@@ -46,7 +46,10 @@ export const RenameTodoInputType = new GraphQLInputObjectType({
 
 export const RenameTodoPayloadType = new GraphQLObjectType({
   name: "RenameTodoPayload",
-  fields: (): GraphQLFieldConfigMap<RenameTodoPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    RenameTodoPayload,
+    RequestContext<Viewer>
+  > => ({
     todo: {
       type: new GraphQLNonNull(TodoType),
     },

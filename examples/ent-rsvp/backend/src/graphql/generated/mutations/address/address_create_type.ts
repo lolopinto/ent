@@ -56,7 +56,10 @@ export const AddressCreateInputType = new GraphQLInputObjectType({
 
 export const AddressCreatePayloadType = new GraphQLObjectType({
   name: "AddressCreatePayload",
-  fields: (): GraphQLFieldConfigMap<AddressCreatePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    AddressCreatePayload,
+    RequestContext<Viewer>
+  > => ({
     address: {
       type: new GraphQLNonNull(AddressType),
     },

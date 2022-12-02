@@ -34,7 +34,10 @@ export const AddressDeleteInputType = new GraphQLInputObjectType({
 
 export const AddressDeletePayloadType = new GraphQLObjectType({
   name: "AddressDeletePayload",
-  fields: (): GraphQLFieldConfigMap<AddressDeletePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    AddressDeletePayload,
+    RequestContext<Viewer>
+  > => ({
     deletedAddressID: {
       type: GraphQLID,
     },

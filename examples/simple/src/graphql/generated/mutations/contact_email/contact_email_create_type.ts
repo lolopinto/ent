@@ -54,7 +54,7 @@ export const ContactEmailCreatePayloadType = new GraphQLObjectType({
   name: "ContactEmailCreatePayload",
   fields: (): GraphQLFieldConfigMap<
     ContactEmailCreatePayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     contactEmail: {
       type: new GraphQLNonNull(ContactEmailType),

@@ -50,7 +50,10 @@ export const HolidayCreateInputType = new GraphQLInputObjectType({
 
 export const HolidayCreatePayloadType = new GraphQLObjectType({
   name: "HolidayCreatePayload",
-  fields: (): GraphQLFieldConfigMap<HolidayCreatePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    HolidayCreatePayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     holiday: {
       type: new GraphQLNonNull(HolidayType),
     },

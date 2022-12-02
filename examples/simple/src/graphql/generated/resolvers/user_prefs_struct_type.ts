@@ -13,10 +13,14 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { UserPrefsStruct } from "../../../ent/generated/types";
 import { NotifTypeType } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const UserPrefsStructType = new GraphQLObjectType({
   name: "UserPrefsStruct",
-  fields: (): GraphQLFieldConfigMap<UserPrefsStruct, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    UserPrefsStruct,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     finishedNux: {
       type: GraphQLBoolean,
     },

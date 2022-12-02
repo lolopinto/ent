@@ -12,16 +12,24 @@ import ViewerResolver, { ViewerType } from "../../resolvers/viewer";
 
 export const ViewerTypeType = new GraphQLObjectType({
   name: "Viewer",
-  fields: (): GraphQLFieldConfigMap<ViewerType, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<ViewerType, RequestContext<Viewer>> => ({
     user: {
       type: UserType,
-      resolve: async (obj: ViewerType, args: {}, context: RequestContext) => {
+      resolve: async (
+        obj: ViewerType,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return obj.user();
       },
     },
     guest: {
       type: GuestType,
-      resolve: async (obj: ViewerType, args: {}, context: RequestContext) => {
+      resolve: async (
+        obj: ViewerType,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return obj.guest();
       },
     },

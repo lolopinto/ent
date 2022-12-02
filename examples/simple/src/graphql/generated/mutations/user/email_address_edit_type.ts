@@ -48,7 +48,7 @@ export const EditEmailAddressPayloadType = new GraphQLObjectType({
   name: "EditEmailAddressPayload",
   fields: (): GraphQLFieldConfigMap<
     EditEmailAddressPayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     user: {
       type: new GraphQLNonNull(UserType),

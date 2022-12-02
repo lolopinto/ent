@@ -36,7 +36,10 @@ export const UserAuthInputType = new GraphQLInputObjectType({
 
 export const UserAuthPayloadType = new GraphQLObjectType({
   name: "UserAuthPayload",
-  fields: (): GraphQLFieldConfigMap<UserAuthPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    UserAuthPayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     viewerID: {
       type: new GraphQLNonNull(GraphQLID),
     },

@@ -64,7 +64,10 @@ export const AddressEditInputType = new GraphQLInputObjectType({
 
 export const AddressEditPayloadType = new GraphQLObjectType({
   name: "AddressEditPayload",
-  fields: (): GraphQLFieldConfigMap<AddressEditPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    AddressEditPayload,
+    RequestContext<Viewer>
+  > => ({
     address: {
       type: new GraphQLNonNull(AddressType),
     },

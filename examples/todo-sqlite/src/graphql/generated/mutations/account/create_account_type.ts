@@ -55,7 +55,10 @@ export const CreateAccountInputType = new GraphQLInputObjectType({
 
 export const CreateAccountPayloadType = new GraphQLObjectType({
   name: "CreateAccountPayload",
-  fields: (): GraphQLFieldConfigMap<CreateAccountPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    CreateAccountPayload,
+    RequestContext<Viewer>
+  > => ({
     account: {
       type: new GraphQLNonNull(AccountType),
     },

@@ -52,7 +52,7 @@ export const ConfirmEditPhoneNumberPayloadType = new GraphQLObjectType({
   name: "ConfirmEditPhoneNumberPayload",
   fields: (): GraphQLFieldConfigMap<
     ConfirmEditPhoneNumberPayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     user: {
       type: new GraphQLNonNull(UserType),

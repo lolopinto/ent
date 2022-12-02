@@ -37,7 +37,7 @@ export const CreateWorkspacePayloadType = new GraphQLObjectType({
   name: "CreateWorkspacePayload",
   fields: (): GraphQLFieldConfigMap<
     CreateWorkspacePayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     workspace: {
       type: new GraphQLNonNull(WorkspaceType),

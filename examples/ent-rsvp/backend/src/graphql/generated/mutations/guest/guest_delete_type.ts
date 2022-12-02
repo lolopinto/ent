@@ -34,7 +34,10 @@ export const GuestDeleteInputType = new GraphQLInputObjectType({
 
 export const GuestDeletePayloadType = new GraphQLObjectType({
   name: "GuestDeletePayload",
-  fields: (): GraphQLFieldConfigMap<GuestDeletePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    GuestDeletePayload,
+    RequestContext<Viewer>
+  > => ({
     deletedGuestID: {
       type: GraphQLID,
     },

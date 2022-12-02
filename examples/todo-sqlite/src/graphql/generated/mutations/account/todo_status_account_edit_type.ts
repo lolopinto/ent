@@ -65,7 +65,7 @@ export const TodoStatusAccountEditPayloadType = new GraphQLObjectType({
   name: "TodoStatusAccountEditPayload",
   fields: (): GraphQLFieldConfigMap<
     TodoStatusAccountEditPayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     account: {
       type: new GraphQLNonNull(AccountType),

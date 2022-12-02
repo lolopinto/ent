@@ -39,7 +39,10 @@ export const AddTodoTagInputType = new GraphQLInputObjectType({
 
 export const AddTodoTagPayloadType = new GraphQLObjectType({
   name: "AddTodoTagPayload",
-  fields: (): GraphQLFieldConfigMap<AddTodoTagPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    AddTodoTagPayload,
+    RequestContext<Viewer>
+  > => ({
     todo: {
       type: new GraphQLNonNull(TodoType),
     },

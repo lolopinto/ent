@@ -43,7 +43,7 @@ export const ChangeTodoStatusPayloadType = new GraphQLObjectType({
   name: "ChangeTodoStatusPayload",
   fields: (): GraphQLFieldConfigMap<
     ChangeTodoStatusPayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     todo: {
       type: new GraphQLNonNull(TodoType),

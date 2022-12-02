@@ -34,10 +34,14 @@ import {
   RabbitBreedType,
   SuperNestedObjectEnumType,
 } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 const UserNestedObjectType = new GraphQLObjectType({
   name: "UserNestedObject",
-  fields: (): GraphQLFieldConfigMap<UserNestedObject, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    UserNestedObject,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     nestedUuid: {
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -74,7 +78,7 @@ const UserNestedNestedObjectType = new GraphQLObjectType({
   name: "UserNestedNestedObject",
   fields: (): GraphQLFieldConfigMap<
     UserNestedNestedObject,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     nestedNestedUuid: {
       type: new GraphQLNonNull(GraphQLID),
@@ -107,7 +111,10 @@ const UserNestedNestedObjectType = new GraphQLObjectType({
 
 const CatTypeType = new GraphQLObjectType({
   name: "CatType",
-  fields: (): GraphQLFieldConfigMap<CatType, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    CatType,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -125,7 +132,10 @@ const CatTypeType = new GraphQLObjectType({
 
 const DogTypeType = new GraphQLObjectType({
   name: "DogType",
-  fields: (): GraphQLFieldConfigMap<DogType, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    DogType,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -146,7 +156,10 @@ const DogTypeType = new GraphQLObjectType({
 
 const RabbitTypeType = new GraphQLObjectType({
   name: "RabbitType",
-  fields: (): GraphQLFieldConfigMap<RabbitType, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    RabbitType,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -172,7 +185,10 @@ const PetUnionTypeType = new GraphQLUnionType({
 
 export const UserSuperNestedObjectType = new GraphQLObjectType({
   name: "UserSuperNestedObject",
-  fields: (): GraphQLFieldConfigMap<UserSuperNestedObject, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    UserSuperNestedObject,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     uuid: {
       type: new GraphQLNonNull(GraphQLID),
     },

@@ -63,7 +63,10 @@ export const ContactEditInputType = new GraphQLInputObjectType({
 
 export const ContactEditPayloadType = new GraphQLObjectType({
   name: "ContactEditPayload",
-  fields: (): GraphQLFieldConfigMap<ContactEditPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    ContactEditPayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     contact: {
       type: new GraphQLNonNull(ContactType),
     },

@@ -20,12 +20,13 @@ import {
   EnumUsedInListType,
   IntEnumUsedInListType,
 } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 const UserNestedNestedObjectListType = new GraphQLObjectType({
   name: "UserNestedNestedObjectList",
   fields: (): GraphQLFieldConfigMap<
     UserNestedNestedObjectList,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     int: {
       type: new GraphQLNonNull(GraphQLInt),
@@ -35,7 +36,10 @@ const UserNestedNestedObjectListType = new GraphQLObjectType({
 
 export const UserNestedObjectListType = new GraphQLObjectType({
   name: "UserNestedObjectList",
-  fields: (): GraphQLFieldConfigMap<UserNestedObjectList, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    UserNestedObjectList,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     type: {
       type: new GraphQLNonNull(GraphQLString),
     },

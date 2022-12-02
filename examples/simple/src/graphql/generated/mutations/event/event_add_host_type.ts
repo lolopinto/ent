@@ -44,7 +44,10 @@ export const EventAddHostInputType = new GraphQLInputObjectType({
 
 export const EventAddHostPayloadType = new GraphQLObjectType({
   name: "EventAddHostPayload",
-  fields: (): GraphQLFieldConfigMap<EventAddHostPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    EventAddHostPayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     event: {
       type: new GraphQLNonNull(EventType),
     },

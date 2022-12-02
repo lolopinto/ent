@@ -42,7 +42,7 @@ export const EventActivityRemoveInvitePayloadType = new GraphQLObjectType({
   name: "EventActivityRemoveInvitePayload",
   fields: (): GraphQLFieldConfigMap<
     EventActivityRemoveInvitePayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     eventActivity: {
       type: new GraphQLNonNull(EventActivityType),

@@ -52,7 +52,7 @@ export const ConfirmEditEmailAddressPayloadType = new GraphQLObjectType({
   name: "ConfirmEditEmailAddressPayload",
   fields: (): GraphQLFieldConfigMap<
     ConfirmEditEmailAddressPayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     user: {
       type: new GraphQLNonNull(UserType),

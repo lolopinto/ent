@@ -46,7 +46,7 @@ export const EventRemoveHostPayloadType = new GraphQLObjectType({
   name: "EventRemoveHostPayload",
   fields: (): GraphQLFieldConfigMap<
     EventRemoveHostPayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     event: {
       type: new GraphQLNonNull(EventType),

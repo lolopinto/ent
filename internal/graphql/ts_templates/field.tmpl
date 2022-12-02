@@ -1,6 +1,7 @@
 {{$gqlNode := .Node -}}
 {{$baseObj := .Base -}}
 {{$nodeInstance := .NodeInstance -}}
+{{$viewerType := .ViewerType -}}
 
 {{ range $field := $gqlNode.Fields -}}
   {{$field.Name}}: {
@@ -26,9 +27,9 @@
         {{$args = "any" -}}
       {{ end -}}
       {{if $field.HasAsyncModifier -}}
-        resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useImport "RequestContext"}}) => {
+        resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useImport "RequestContext"}}<{{useImport $viewerType}}>) => {
       {{ else -}}
-        resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useImport "RequestContext"}}) => {
+        resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useImport "RequestContext"}}<{{useImport $viewerType}}>) => {
       {{ end -}}
         {{ range $field.FunctionContents -}}
           {{.}}

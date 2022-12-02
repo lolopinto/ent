@@ -19,10 +19,14 @@ import {
 } from "@snowtop/ent/graphql";
 import { Address, AddressToHostedEventsQuery } from "../../../ent";
 import { AddressToHostedEventsConnectionType } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",
-  fields: (): GraphQLFieldConfigMap<Address, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    Address,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     id: {
       type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
@@ -65,7 +69,11 @@ export const AddressType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (address: Address, args: any, context: RequestContext) => {
+      resolve: (
+        address: Address,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return new GraphQLEdgeConnection(
           address.viewer,
           address,

@@ -9,7 +9,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -34,13 +34,13 @@ import {
 
 export const EventActivityType = new GraphQLObjectType({
   name: "EventActivity",
-  fields: (): GraphQLFieldConfigMap<EventActivity, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<EventActivity, RequestContext<Viewer>> => ({
     address: {
       type: AddressType,
       resolve: (
         eventActivity: EventActivity,
         args: {},
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         return eventActivity.loadAddress();
       },
@@ -50,7 +50,7 @@ export const EventActivityType = new GraphQLObjectType({
       resolve: (
         eventActivity: EventActivity,
         args: {},
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         return eventActivity.loadEvent();
       },
@@ -100,7 +100,7 @@ export const EventActivityType = new GraphQLObjectType({
       resolve: (
         eventActivity: EventActivity,
         args: any,
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         return new GraphQLEdgeConnection(
           eventActivity.viewer,
@@ -134,7 +134,7 @@ export const EventActivityType = new GraphQLObjectType({
       resolve: (
         eventActivity: EventActivity,
         args: any,
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         return new GraphQLEdgeConnection(
           eventActivity.viewer,
@@ -168,7 +168,7 @@ export const EventActivityType = new GraphQLObjectType({
       resolve: (
         eventActivity: EventActivity,
         args: any,
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         return new GraphQLEdgeConnection(
           eventActivity.viewer,
@@ -190,7 +190,7 @@ export const EventActivityType = new GraphQLObjectType({
       resolve: async (
         eventActivity: EventActivity,
         args: any,
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         const ent = await Guest.loadX(context.getViewer(), args.id);
         return eventActivity.rsvpStatusFor(ent);
@@ -201,7 +201,7 @@ export const EventActivityType = new GraphQLObjectType({
       resolve: async (
         eventActivity: EventActivity,
         args: {},
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         return eventActivity.address();
       },

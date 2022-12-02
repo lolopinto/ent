@@ -7,18 +7,18 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import { AccountPrefs2 } from "src/ent/generated/types";
 
 export const AccountPrefs2Type = new GraphQLObjectType({
   name: "AccountPrefs2",
-  fields: (): GraphQLFieldConfigMap<AccountPrefs2, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<AccountPrefs2, RequestContext<Viewer>> => ({
     finished_nux: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: (
         accountPrefs2: AccountPrefs2,
         args: {},
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         return accountPrefs2.finishedNux;
       },
@@ -28,7 +28,7 @@ export const AccountPrefs2Type = new GraphQLObjectType({
       resolve: (
         accountPrefs2: AccountPrefs2,
         args: {},
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         return accountPrefs2.enableNotifs;
       },
@@ -38,7 +38,7 @@ export const AccountPrefs2Type = new GraphQLObjectType({
       resolve: (
         accountPrefs2: AccountPrefs2,
         args: {},
-        context: RequestContext,
+        context: RequestContext<Viewer>,
       ) => {
         return accountPrefs2.preferredLanguage;
       },

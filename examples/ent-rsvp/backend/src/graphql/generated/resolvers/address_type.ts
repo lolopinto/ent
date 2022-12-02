@@ -8,7 +8,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -19,10 +19,14 @@ import { AddressToLocatedAtConnectionType } from "src/graphql/resolvers/internal
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",
-  fields: (): GraphQLFieldConfigMap<Address, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<Address, RequestContext<Viewer>> => ({
     owner: {
       type: GraphQLNodeInterface,
-      resolve: (address: Address, args: {}, context: RequestContext) => {
+      resolve: (
+        address: Address,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return address.loadOwner();
       },
     },
@@ -65,7 +69,11 @@ export const AddressType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (address: Address, args: any, context: RequestContext) => {
+      resolve: (
+        address: Address,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           address.viewer,
           address,

@@ -51,7 +51,7 @@ export const HoursOfOperationCreatePayloadType = new GraphQLObjectType({
   name: "HoursOfOperationCreatePayload",
   fields: (): GraphQLFieldConfigMap<
     HoursOfOperationCreatePayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     hoursOfOperation: {
       type: new GraphQLNonNull(HoursOfOperationType),

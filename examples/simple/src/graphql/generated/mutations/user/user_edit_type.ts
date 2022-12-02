@@ -49,7 +49,10 @@ export const UserEditInputType = new GraphQLInputObjectType({
 
 export const UserEditPayloadType = new GraphQLObjectType({
   name: "UserEditPayload",
-  fields: (): GraphQLFieldConfigMap<UserEditPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    UserEditPayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     user: {
       type: new GraphQLNonNull(UserType),
     },

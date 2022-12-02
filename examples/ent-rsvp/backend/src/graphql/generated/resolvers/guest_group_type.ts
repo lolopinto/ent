@@ -8,7 +8,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -27,10 +27,14 @@ import {
 
 export const GuestGroupType = new GraphQLObjectType({
   name: "GuestGroup",
-  fields: (): GraphQLFieldConfigMap<GuestGroup, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<GuestGroup, RequestContext<Viewer>> => ({
     event: {
       type: EventType,
-      resolve: (guestGroup: GuestGroup, args: {}, context: RequestContext) => {
+      resolve: (
+        guestGroup: GuestGroup,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return guestGroup.loadEvent();
       },
     },
@@ -61,7 +65,11 @@ export const GuestGroupType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guestGroup: GuestGroup, args: any, context: RequestContext) => {
+      resolve: (
+        guestGroup: GuestGroup,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           guestGroup.viewer,
           guestGroup,
@@ -91,7 +99,11 @@ export const GuestGroupType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guestGroup: GuestGroup, args: any, context: RequestContext) => {
+      resolve: (
+        guestGroup: GuestGroup,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           guestGroup.viewer,
           guestGroup,

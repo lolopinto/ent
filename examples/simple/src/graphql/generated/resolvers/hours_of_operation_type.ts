@@ -14,10 +14,14 @@ import { RequestContext } from "@snowtop/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { HoursOfOperation } from "../../../ent";
 import { DayOfWeekAltType, DayOfWeekType } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const HoursOfOperationType = new GraphQLObjectType({
   name: "HoursOfOperation",
-  fields: (): GraphQLFieldConfigMap<HoursOfOperation, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    HoursOfOperation,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     id: {
       type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,

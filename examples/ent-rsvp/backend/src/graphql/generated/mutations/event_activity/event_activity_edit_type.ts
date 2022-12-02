@@ -72,7 +72,7 @@ export const EventActivityEditPayloadType = new GraphQLObjectType({
   name: "EventActivityEditPayload",
   fields: (): GraphQLFieldConfigMap<
     EventActivityEditPayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     eventActivity: {
       type: new GraphQLNonNull(EventActivityType),

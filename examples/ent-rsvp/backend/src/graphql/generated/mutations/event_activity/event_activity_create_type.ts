@@ -91,7 +91,7 @@ export const EventActivityCreatePayloadType = new GraphQLObjectType({
   name: "EventActivityCreatePayload",
   fields: (): GraphQLFieldConfigMap<
     EventActivityCreatePayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     eventActivity: {
       type: new GraphQLNonNull(EventActivityType),
