@@ -22,6 +22,7 @@ import {
   NodeType,
   EdgeType,
   UserAccountStatus,
+  ContactEmailLabel,
 } from "../generated/types";
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
 import { random, randomEmail, randomPhoneNumber } from "../../util/random";
@@ -685,7 +686,7 @@ test("uniqueEdge|Node", async () => {
     emails: [
       {
         emailAddress: sansa.emailAddress,
-        label: "main",
+        label: ContactEmailLabel.Default,
       },
     ],
     firstName: sansa.firstName,

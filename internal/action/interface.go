@@ -258,11 +258,6 @@ func (action *commonActionInfo) getCustomInterface(typ enttype.TSTypeWithCustomT
 func (action *commonActionInfo) AddCustomField(typ enttype.TSTypeWithCustomType, cf *field.Field) {
 	ci := action.getCustomInterface(typ)
 	ci.Fields = append(ci.Fields, cf)
-	enumType, ok := enttype.GetEnumType(cf.GetFieldType())
-	if !ok {
-		return
-	}
-	ci.AddEnumImport(enumType.GetEnumData().TSName)
 }
 
 func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSTypeWithCustomType, cf *field.NonEntField) {

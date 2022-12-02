@@ -13,7 +13,11 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { ContactEmail } from "../../../ent";
-import { ContactInfoType, ContactType } from "../../resolvers/internal";
+import {
+  ContactEmailLabelType,
+  ContactInfoType,
+  ContactType,
+} from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const ContactEmailType = new GraphQLObjectType({
@@ -43,7 +47,7 @@ export const ContactEmailType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(ContactEmailLabelType),
     },
   }),
   interfaces: [GraphQLNodeInterface],
