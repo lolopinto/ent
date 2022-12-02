@@ -18,10 +18,14 @@ import {
 } from "@snowtop/ent/graphql";
 import { Holiday } from "../../../ent";
 import { DayOfWeekAltType, DayOfWeekType } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const HolidayType = new GraphQLObjectType({
   name: "Holiday",
-  fields: (): GraphQLFieldConfigMap<Holiday, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    Holiday,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     id: {
       type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,

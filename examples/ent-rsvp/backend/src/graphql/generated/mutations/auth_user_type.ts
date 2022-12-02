@@ -33,7 +33,10 @@ export const AuthUserInputType = new GraphQLInputObjectType({
 
 export const AuthUserPayloadType = new GraphQLObjectType({
   name: "AuthUserPayload",
-  fields: (): GraphQLFieldConfigMap<AuthUserPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    AuthUserPayload,
+    RequestContext<Viewer>
+  > => ({
     token: {
       type: new GraphQLNonNull(GraphQLString),
     },

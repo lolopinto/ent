@@ -41,7 +41,10 @@ export const UserCreateInputType = new GraphQLInputObjectType({
 
 export const UserCreatePayloadType = new GraphQLObjectType({
   name: "UserCreatePayload",
-  fields: (): GraphQLFieldConfigMap<UserCreatePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    UserCreatePayload,
+    RequestContext<Viewer>
+  > => ({
     user: {
       type: new GraphQLNonNull(UserType),
     },

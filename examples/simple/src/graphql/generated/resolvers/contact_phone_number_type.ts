@@ -14,16 +14,20 @@ import { RequestContext } from "@snowtop/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { ContactPhoneNumber } from "../../../ent";
 import { ContactInfoType, ContactType } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const ContactPhoneNumberType = new GraphQLObjectType({
   name: "ContactPhoneNumber",
-  fields: (): GraphQLFieldConfigMap<ContactPhoneNumber, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    ContactPhoneNumber,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     contact: {
       type: ContactType,
       resolve: (
         contactPhoneNumber: ContactPhoneNumber,
         args: {},
-        context: RequestContext,
+        context: RequestContext<ExampleViewerAlias>,
       ) => {
         return contactPhoneNumber.loadContact();
       },

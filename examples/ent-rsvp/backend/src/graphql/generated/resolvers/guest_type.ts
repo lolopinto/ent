@@ -8,7 +8,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -29,22 +29,22 @@ import {
 
 export const GuestType = new GraphQLObjectType({
   name: "Guest",
-  fields: (): GraphQLFieldConfigMap<Guest, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<Guest, RequestContext<Viewer>> => ({
     address: {
       type: AddressType,
-      resolve: (guest: Guest, args: {}, context: RequestContext) => {
+      resolve: (guest: Guest, args: {}, context: RequestContext<Viewer>) => {
         return guest.loadAddress();
       },
     },
     event: {
       type: EventType,
-      resolve: (guest: Guest, args: {}, context: RequestContext) => {
+      resolve: (guest: Guest, args: {}, context: RequestContext<Viewer>) => {
         return guest.loadEvent();
       },
     },
     guestGroup: {
       type: GuestGroupType,
-      resolve: (guest: Guest, args: {}, context: RequestContext) => {
+      resolve: (guest: Guest, args: {}, context: RequestContext<Viewer>) => {
         return guest.loadGuestGroup();
       },
     },
@@ -81,7 +81,7 @@ export const GuestType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guest: Guest, args: any, context: RequestContext) => {
+      resolve: (guest: Guest, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
           guest.viewer,
           guest,
@@ -110,7 +110,7 @@ export const GuestType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guest: Guest, args: any, context: RequestContext) => {
+      resolve: (guest: Guest, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
           guest.viewer,
           guest,

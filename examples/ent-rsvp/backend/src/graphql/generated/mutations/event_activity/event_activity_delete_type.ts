@@ -36,7 +36,7 @@ export const EventActivityDeletePayloadType = new GraphQLObjectType({
   name: "EventActivityDeletePayload",
   fields: (): GraphQLFieldConfigMap<
     EventActivityDeletePayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     deletedEventActivityID: {
       type: GraphQLID,

@@ -8,7 +8,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -26,16 +26,24 @@ import {
 
 export const WorkspaceType = new GraphQLObjectType({
   name: "Workspace",
-  fields: (): GraphQLFieldConfigMap<Workspace, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<Workspace, RequestContext<Viewer>> => ({
     creator: {
       type: AccountType,
-      resolve: (workspace: Workspace, args: {}, context: RequestContext) => {
+      resolve: (
+        workspace: Workspace,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return workspace.loadCreator();
       },
     },
     viewer_creator: {
       type: AccountType,
-      resolve: (workspace: Workspace, args: {}, context: RequestContext) => {
+      resolve: (
+        workspace: Workspace,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return workspace.loadViewerCreator();
       },
     },
@@ -68,7 +76,11 @@ export const WorkspaceType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (workspace: Workspace, args: any, context: RequestContext) => {
+      resolve: (
+        workspace: Workspace,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           workspace.viewer,
           workspace,
@@ -98,7 +110,11 @@ export const WorkspaceType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (workspace: Workspace, args: any, context: RequestContext) => {
+      resolve: (
+        workspace: Workspace,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           workspace.viewer,
           workspace,

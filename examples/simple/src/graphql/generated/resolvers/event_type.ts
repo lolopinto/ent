@@ -36,19 +36,31 @@ import {
   EventToMaybeConnectionType,
   UserType,
 } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const EventType = new GraphQLObjectType({
   name: "Event",
-  fields: (): GraphQLFieldConfigMap<Event, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    Event,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     address: {
       type: AddressType,
-      resolve: (event: Event, args: {}, context: RequestContext) => {
+      resolve: (
+        event: Event,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return event.loadAddress();
       },
     },
     creator: {
       type: UserType,
-      resolve: (event: Event, args: {}, context: RequestContext) => {
+      resolve: (
+        event: Event,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return event.loadCreator();
       },
     },
@@ -67,7 +79,11 @@ export const EventType = new GraphQLObjectType({
     },
     eventLocation: {
       type: new GraphQLNonNull(GraphQLString),
-      resolve: (event: Event, args: {}, context: RequestContext) => {
+      resolve: (
+        event: Event,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return event.location;
       },
     },
@@ -91,7 +107,11 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext) => {
+      resolve: (
+        event: Event,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -120,7 +140,11 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext) => {
+      resolve: (
+        event: Event,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -149,7 +173,11 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext) => {
+      resolve: (
+        event: Event,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -178,7 +206,11 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext) => {
+      resolve: (
+        event: Event,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -207,7 +239,11 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext) => {
+      resolve: (
+        event: Event,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,

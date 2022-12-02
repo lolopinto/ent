@@ -12,10 +12,14 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { ContactInfo } from "../../../ent/generated/types";
 import { ContactInfoSourceType } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const ContactInfoType = new GraphQLObjectType({
   name: "ContactInfo",
-  fields: (): GraphQLFieldConfigMap<ContactInfo, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    ContactInfo,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     default: {
       type: new GraphQLNonNull(GraphQLBoolean),
     },

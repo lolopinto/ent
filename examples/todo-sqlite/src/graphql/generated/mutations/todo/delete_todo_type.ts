@@ -33,7 +33,10 @@ export const DeleteTodoInputType = new GraphQLInputObjectType({
 
 export const DeleteTodoPayloadType = new GraphQLObjectType({
   name: "DeleteTodoPayload",
-  fields: (): GraphQLFieldConfigMap<DeleteTodoPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    DeleteTodoPayload,
+    RequestContext<Viewer>
+  > => ({
     deleted_todo_id: {
       type: GraphQLID,
     },

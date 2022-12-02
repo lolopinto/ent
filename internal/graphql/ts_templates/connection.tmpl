@@ -8,6 +8,10 @@
   {{reserveImport .ImportPath .Import}}
 {{ end -}}
 
+{{$viewerInfo := .Config.GetTemplatizedViewer -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := $viewerInfo.GetImport -}}
+
 var connType: {{useImport "GraphQLConnectionType"}}<{{useImport "GraphQLObjectType"}}, {{useImport $conn.Edge.TsEdgeQueryEdgeName}}>;
 
 export const {{ $conn.ConnType}} = () => {
@@ -31,9 +35,9 @@ export const {{ $conn.ConnType}} = () => {
       {
         fields: (): {{useImport "GraphQLFieldConfigMap"}}<
           {{useImport "GraphQLEdge"}}<{{useImport $conn.Edge.TsEdgeQueryEdgeName}}>,
-          {{useImport "RequestContext"}}
+          {{useImport "RequestContext"}}<{{useImport $viewerType}}>
         > => ({
-          {{ template "field.tmpl" (dict "Base" $baseObj "Node" $obj "NodeInstance" "edge") -}}
+          {{ template "field.tmpl" (dict "Base" $baseObj "Node" $obj "NodeInstance" "edge" "ViewerType" $viewerType) -}}
         }),
       },
     {{ end -}}

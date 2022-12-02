@@ -11,10 +11,14 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { UserPrefsDiff } from "../../../ent/generated/types";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const UserPrefsDiffType = new GraphQLObjectType({
   name: "UserPrefsDiff",
-  fields: (): GraphQLFieldConfigMap<UserPrefsDiff, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    UserPrefsDiff,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     type: {
       type: new GraphQLNonNull(GraphQLString),
     },

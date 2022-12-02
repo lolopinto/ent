@@ -65,7 +65,7 @@ export const GuestGroupCreatePayloadType = new GraphQLObjectType({
   name: "GuestGroupCreatePayload",
   fields: (): GraphQLFieldConfigMap<
     GuestGroupCreatePayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     guestGroup: {
       type: new GraphQLNonNull(GuestGroupType),

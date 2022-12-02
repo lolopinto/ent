@@ -8,7 +8,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -19,7 +19,7 @@ import { UserToEventsConnectionType } from "src/graphql/resolvers/internal";
 
 export const UserType = new GraphQLObjectType({
   name: "User",
-  fields: (): GraphQLFieldConfigMap<User, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<User, RequestContext<Viewer>> => ({
     id: {
       type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
@@ -53,7 +53,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: any, context: RequestContext) => {
+      resolve: (user: User, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,

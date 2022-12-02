@@ -22,25 +22,41 @@ import {
   CommentToPostConnectionType,
   UserType,
 } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const CommentType = new GraphQLObjectType({
   name: "Comment",
-  fields: (): GraphQLFieldConfigMap<Comment, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    Comment,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     article: {
       type: GraphQLNodeInterface,
-      resolve: (comment: Comment, args: {}, context: RequestContext) => {
+      resolve: (
+        comment: Comment,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return comment.loadArticle();
       },
     },
     author: {
       type: UserType,
-      resolve: (comment: Comment, args: {}, context: RequestContext) => {
+      resolve: (
+        comment: Comment,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return comment.loadAuthor();
       },
     },
     sticker: {
       type: GraphQLNodeInterface,
-      resolve: (comment: Comment, args: {}, context: RequestContext) => {
+      resolve: (
+        comment: Comment,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return comment.loadSticker();
       },
     },
@@ -71,7 +87,11 @@ export const CommentType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (comment: Comment, args: any, context: RequestContext) => {
+      resolve: (
+        comment: Comment,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return new GraphQLEdgeConnection(
           comment.viewer,
           comment,

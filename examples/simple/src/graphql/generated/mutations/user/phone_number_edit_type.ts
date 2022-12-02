@@ -48,7 +48,7 @@ export const EditPhoneNumberPayloadType = new GraphQLObjectType({
   name: "EditPhoneNumberPayload",
   fields: (): GraphQLFieldConfigMap<
     EditPhoneNumberPayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     user: {
       type: new GraphQLNonNull(UserType),

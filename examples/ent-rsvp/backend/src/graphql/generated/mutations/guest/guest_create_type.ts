@@ -58,7 +58,10 @@ export const GuestCreateInputType = new GraphQLInputObjectType({
 
 export const GuestCreatePayloadType = new GraphQLObjectType({
   name: "GuestCreatePayload",
-  fields: (): GraphQLFieldConfigMap<GuestCreatePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    GuestCreatePayload,
+    RequestContext<Viewer>
+  > => ({
     guest: {
       type: new GraphQLNonNull(GuestType),
     },

@@ -9,7 +9,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -24,22 +24,22 @@ import {
 
 export const TodoType = new GraphQLObjectType({
   name: "Todo",
-  fields: (): GraphQLFieldConfigMap<Todo, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<Todo, RequestContext<Viewer>> => ({
     assignee: {
       type: AccountType,
-      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+      resolve: (todo: Todo, args: {}, context: RequestContext<Viewer>) => {
         return todo.loadAssignee();
       },
     },
     creator: {
       type: AccountType,
-      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+      resolve: (todo: Todo, args: {}, context: RequestContext<Viewer>) => {
         return todo.loadCreator();
       },
     },
     scope: {
       type: GraphQLNodeInterface,
-      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+      resolve: (todo: Todo, args: {}, context: RequestContext<Viewer>) => {
         return todo.loadScope();
       },
     },
@@ -54,7 +54,7 @@ export const TodoType = new GraphQLObjectType({
     },
     completed_date: {
       type: GraphQLTime,
-      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+      resolve: (todo: Todo, args: {}, context: RequestContext<Viewer>) => {
         return todo.completedDate;
       },
     },
@@ -78,7 +78,7 @@ export const TodoType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (todo: Todo, args: any, context: RequestContext) => {
+      resolve: (todo: Todo, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
           todo.viewer,
           todo,
@@ -107,7 +107,7 @@ export const TodoType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (todo: Todo, args: any, context: RequestContext) => {
+      resolve: (todo: Todo, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
           todo.viewer,
           todo,

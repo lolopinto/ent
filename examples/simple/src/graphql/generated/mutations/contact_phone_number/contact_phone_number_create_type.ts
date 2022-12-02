@@ -55,7 +55,7 @@ export const ContactPhoneNumberCreatePayloadType = new GraphQLObjectType({
   name: "ContactPhoneNumberCreatePayload",
   fields: (): GraphQLFieldConfigMap<
     ContactPhoneNumberCreatePayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     contactPhoneNumber: {
       type: new GraphQLNonNull(ContactPhoneNumberType),

@@ -1696,11 +1696,13 @@ func writeConnectionFile(processor *codegen.Processor, s *gqlSchema, conn *gqlCo
 			CustomObject *objectType
 			BaseObj      *connectionBaseObj
 			Package      *codegen.ImportPackage
+			Config       *codegen.Config
 		}{
 			conn,
 			s.customEdges[conn.Edge.TsEdgeQueryEdgeName()],
 			&connectionBaseObj{},
 			processor.Config.GetImportPackage(),
+			processor.Config,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/connection.tmpl"),
 		TemplateName:      "connection.tmpl",

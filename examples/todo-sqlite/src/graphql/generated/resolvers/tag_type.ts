@@ -9,7 +9,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -22,16 +22,16 @@ import {
 
 export const TagType = new GraphQLObjectType({
   name: "Tag",
-  fields: (): GraphQLFieldConfigMap<Tag, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<Tag, RequestContext<Viewer>> => ({
     owner: {
       type: AccountType,
-      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+      resolve: (tag: Tag, args: {}, context: RequestContext<Viewer>) => {
         return tag.loadOwner();
       },
     },
     related_tags: {
       type: new GraphQLList(new GraphQLNonNull(TagType)),
-      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+      resolve: (tag: Tag, args: {}, context: RequestContext<Viewer>) => {
         return tag.loadRelatedTags();
       },
     },
@@ -40,13 +40,13 @@ export const TagType = new GraphQLObjectType({
     },
     display_name: {
       type: new GraphQLNonNull(GraphQLString),
-      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+      resolve: (tag: Tag, args: {}, context: RequestContext<Viewer>) => {
         return tag.displayName;
       },
     },
     canonical_name: {
       type: new GraphQLNonNull(GraphQLString),
-      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+      resolve: (tag: Tag, args: {}, context: RequestContext<Viewer>) => {
         return tag.canonicalName;
       },
     },
@@ -70,7 +70,7 @@ export const TagType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (tag: Tag, args: any, context: RequestContext) => {
+      resolve: (tag: Tag, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
           tag.viewer,
           tag,

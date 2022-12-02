@@ -54,7 +54,10 @@ export const CreateTagInputType = new GraphQLInputObjectType({
 
 export const CreateTagPayloadType = new GraphQLObjectType({
   name: "CreateTagPayload",
-  fields: (): GraphQLFieldConfigMap<CreateTagPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    CreateTagPayload,
+    RequestContext<Viewer>
+  > => ({
     tag: {
       type: new GraphQLNonNull(TagType),
     },

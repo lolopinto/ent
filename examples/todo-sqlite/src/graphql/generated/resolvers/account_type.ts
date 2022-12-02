@@ -9,7 +9,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -42,7 +42,7 @@ import {
 
 export const AccountType = new GraphQLObjectType({
   name: "Account",
-  fields: (): GraphQLFieldConfigMap<Account, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<Account, RequestContext<Viewer>> => ({
     id: {
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -51,19 +51,31 @@ export const AccountType = new GraphQLObjectType({
     },
     phone_number: {
       type: GraphQLString,
-      resolve: (account: Account, args: {}, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return account.phoneNumber;
       },
     },
     account_prefs: {
       type: AccountPrefsType,
-      resolve: (account: Account, args: {}, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return account.accountPrefs;
       },
     },
     account_prefs_list: {
       type: new GraphQLList(new GraphQLNonNull(AccountPrefs2Type)),
-      resolve: (account: Account, args: {}, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return account.accountPrefsList;
       },
     },
@@ -87,7 +99,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: any, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
@@ -117,7 +133,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: any, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
@@ -147,7 +167,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: any, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
@@ -176,7 +200,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: any, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
@@ -205,7 +233,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: any, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
@@ -234,7 +266,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: any, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
@@ -263,7 +299,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: any, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
@@ -280,14 +320,22 @@ export const AccountType = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (account: Account, args: any, context: RequestContext) => {
+      resolve: async (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         const ent = await Todo.loadX(context.getViewer(), args.id);
         return account.todoStatusFor(ent);
       },
     },
     open_todos_plural: {
       type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(TodoType))),
-      resolve: async (account: Account, args: {}, context: RequestContext) => {
+      resolve: async (
+        account: Account,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
         return account.openTodosPlural();
       },
     },
@@ -311,7 +359,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (account: Account, args: any, context: RequestContext) => {
+      resolve: (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
         return new GraphQLEdgeConnection(
           account.viewer,
           account,
