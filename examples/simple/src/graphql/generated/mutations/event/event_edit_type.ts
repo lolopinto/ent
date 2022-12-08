@@ -68,7 +68,10 @@ export const EventEditInputType = new GraphQLInputObjectType({
 
 export const EventEditPayloadType = new GraphQLObjectType({
   name: "EventEditPayload",
-  fields: (): GraphQLFieldConfigMap<EventEditPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    EventEditPayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     event: {
       type: new GraphQLNonNull(EventType),
     },

@@ -20,5 +20,8 @@ export const UserPreferredShiftType = new GraphQLEnumType({
     GRAVEYARD: {
       value: "graveyard",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });

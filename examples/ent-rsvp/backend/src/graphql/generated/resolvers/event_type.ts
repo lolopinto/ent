@@ -8,7 +8,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -29,10 +29,10 @@ import {
 
 export const EventType = new GraphQLObjectType({
   name: "Event",
-  fields: (): GraphQLFieldConfigMap<Event, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<Event, RequestContext<Viewer>> => ({
     creator: {
       type: UserType,
-      resolve: (event: Event, args: {}, context: RequestContext) => {
+      resolve: (event: Event, args: {}, context: RequestContext<Viewer>) => {
         return event.loadCreator();
       },
     },
@@ -66,7 +66,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext) => {
+      resolve: (event: Event, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -95,7 +95,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext) => {
+      resolve: (event: Event, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -124,7 +124,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext) => {
+      resolve: (event: Event, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,

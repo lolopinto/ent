@@ -37,11 +37,83 @@ export enum AccountState {
   VERIFIED = "VERIFIED",
   DEACTIVATED = "DEACTIVATED",
   DISABLED = "DISABLED",
+  UNKNOWN = "%UNKNOWN%",
+}
+
+export function convertAccountState(val: string): AccountState {
+  switch (val) {
+    case AccountState.UNVERIFIED:
+    case AccountState.VERIFIED:
+    case AccountState.DEACTIVATED:
+    case AccountState.DISABLED:
+    case AccountState.UNKNOWN:
+      return val;
+    default:
+      return AccountState.UNKNOWN;
+  }
+}
+
+export function convertNullableAccountState(
+  val: string | null,
+): AccountState | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertAccountState(val);
+}
+
+export function convertAccountStateList(val: string[]): AccountState[] {
+  return val.map((v) => convertAccountState(v));
+}
+
+export function convertNullableAccountStateList(
+  val: string[] | null,
+): AccountState[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertAccountStateList(val);
 }
 
 export enum AccountTodoStatus {
   OpenTodosDup = "openTodosDup",
   ClosedTodosDup = "closedTodosDup",
+  Unknown = "%Unknown%",
+}
+
+export function convertAccountTodoStatus(val: string): AccountTodoStatus {
+  switch (val) {
+    case AccountTodoStatus.OpenTodosDup:
+    case AccountTodoStatus.ClosedTodosDup:
+    case AccountTodoStatus.Unknown:
+      return val;
+    default:
+      return AccountTodoStatus.Unknown;
+  }
+}
+
+export function convertNullableAccountTodoStatus(
+  val: string | null,
+): AccountTodoStatus | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertAccountTodoStatus(val);
+}
+
+export function convertAccountTodoStatusList(
+  val: string[],
+): AccountTodoStatus[] {
+  return val.map((v) => convertAccountTodoStatus(v));
+}
+
+export function convertNullableAccountTodoStatusList(
+  val: string[] | null,
+): AccountTodoStatus[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertAccountTodoStatusList(val);
 }
 
 export interface AccountPrefs {

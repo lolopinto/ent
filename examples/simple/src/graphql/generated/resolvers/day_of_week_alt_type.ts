@@ -26,6 +26,9 @@ export const DayOfWeekAltType = new GraphQLEnumType({
     TUESDAY: {
       value: "tue",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
     WEDNESDAY: {
       value: "wed",
     },

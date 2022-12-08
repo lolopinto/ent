@@ -36,7 +36,7 @@ export const GuestGroupDeletePayloadType = new GraphQLObjectType({
   name: "GuestGroupDeletePayload",
   fields: (): GraphQLFieldConfigMap<
     GuestGroupDeletePayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     deletedGuestGroupID: {
       type: GraphQLID,

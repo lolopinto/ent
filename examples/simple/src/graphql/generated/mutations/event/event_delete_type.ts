@@ -38,7 +38,10 @@ export const EventDeleteInputType = new GraphQLInputObjectType({
 
 export const EventDeletePayloadType = new GraphQLObjectType({
   name: "EventDeletePayload",
-  fields: (): GraphQLFieldConfigMap<EventDeletePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    EventDeletePayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     deletedEventID: {
       type: GraphQLID,
     },

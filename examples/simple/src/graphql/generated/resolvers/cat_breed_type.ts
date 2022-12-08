@@ -32,5 +32,8 @@ export const CatBreedType = new GraphQLEnumType({
     OTHER: {
       value: "other",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });

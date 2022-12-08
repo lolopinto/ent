@@ -47,8 +47,6 @@ type CustomInterface struct {
 	// if part of input, we store GraphQLFieldName here and use it later on.
 	GraphQLFieldName string
 
-	enumImports []string
-
 	// children of this interface. could be other interfaces or unions
 	Children []CustomType
 
@@ -59,17 +57,6 @@ type CustomInterface struct {
 
 	tsEnums  []*enum.Enum
 	gqlEnums []*enum.GQLEnum
-}
-
-func (ci *CustomInterface) GetEnumImports() []string {
-	// TODO https://github.com/lolopinto/ent/issues/703
-	// if we had the correct imports in TsBuilderImports, we don't need this.
-	// can just reserveImports and skip this.
-	return ci.enumImports
-}
-
-func (ci *CustomInterface) AddEnumImport(enumImport string) {
-	ci.enumImports = append(ci.enumImports, enumImport)
 }
 
 func (ci *CustomInterface) AddEnum(tsEnum *enum.Enum, gqlEnum *enum.GQLEnum) {
@@ -206,7 +193,6 @@ func CustomInterfaceEqual(ci1, ci2 *CustomInterface) bool {
 		field.NonEntFieldsEqual(ci1.NonEntFields, ci2.NonEntFields) &&
 		// Action handled above
 		ci1.GraphQLFieldName == ci2.GraphQLFieldName &&
-		change.StringListEqual(ci1.enumImports, ci2.enumImports) &&
 		customTypeListEqual(ci1.Children, ci2.Children) &&
 		ci1.Exported == ci2.Exported &&
 		ci1.GenerateListConvert == ci2.GenerateListConvert &&

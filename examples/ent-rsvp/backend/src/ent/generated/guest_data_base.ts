@@ -22,7 +22,11 @@ import {
   guestDataLoader,
   guestDataLoaderInfo,
 } from "src/ent/generated/loaders";
-import { GuestDataSource, NodeType } from "src/ent/generated/types";
+import {
+  GuestDataSource,
+  NodeType,
+  convertNullableGuestDataSource,
+} from "src/ent/generated/types";
 import { Event, Guest } from "src/ent/internal";
 import schema from "src/schema/guest_data_schema";
 
@@ -53,7 +57,7 @@ export class GuestDataBase implements Ent<Viewer> {
     this.guestID = data.guest_id;
     this.eventID = data.event_id;
     this.dietaryRestrictions = data.dietary_restrictions;
-    this.source = data.source;
+    this.source = convertNullableGuestDataSource(data.source);
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

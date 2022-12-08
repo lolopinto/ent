@@ -343,6 +343,27 @@ class UserToBookmarksQuery extends UserToBookmarksQueryBase {
 
 This indicates that just the user can see the edge from the user to their bookmarks. It doesn't affect the privacy of the underlying links, posts, tweets etc which have their own privacy.
 
+### ent
+
+Note that the ent used for the privacy policy check is derived from the `sourceEnt` method in the generated base class.
+
+In the example above, it'd be:
+
+```ts
+class UserToBookmarksQueryBase extends AssocEdgeQueryBase<
+  User,
+  Bookmark,
+  UserToBookmarksEdge,
+  Viewer
+> {
+  sourceEnt(id: ID) {
+    return User.load(this.viewer, id);
+  }
+}
+```
+
+This ent is what's passed to each [PrivacyPolicyRule](/docs/core-concepts/privacy-policy) to evaluate if the query is visible.
+
 ## ents
 
 Note that when querying ents at the end of a query, we do privacy aware loading and so we only return nodes at the end of the edge that are visible based on the ent's [privacy policy](/docs/core-concepts/ent#privacy-policy).

@@ -61,7 +61,10 @@ export const EditAccountInputType = new GraphQLInputObjectType({
 
 export const EditAccountPayloadType = new GraphQLObjectType({
   name: "EditAccountPayload",
-  fields: (): GraphQLFieldConfigMap<EditAccountPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    EditAccountPayload,
+    RequestContext<Viewer>
+  > => ({
     account: {
       type: new GraphQLNonNull(AccountType),
     },

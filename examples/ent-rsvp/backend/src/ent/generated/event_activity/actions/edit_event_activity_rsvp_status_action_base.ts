@@ -22,6 +22,44 @@ import { NodeType } from "src/ent/generated/types";
 export enum EventActivityRsvpStatusInput {
   Attending = "attending",
   Declined = "declined",
+  Unknown = "%unknown%",
+}
+
+export function convertEventActivityRsvpStatusInput(
+  val: string,
+): EventActivityRsvpStatusInput {
+  switch (val) {
+    case EventActivityRsvpStatusInput.Attending:
+    case EventActivityRsvpStatusInput.Declined:
+    case EventActivityRsvpStatusInput.Unknown:
+      return val;
+    default:
+      return EventActivityRsvpStatusInput.Unknown;
+  }
+}
+
+export function convertNullableEventActivityRsvpStatusInput(
+  val: string | null,
+): EventActivityRsvpStatusInput | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertEventActivityRsvpStatusInput(val);
+}
+
+export function convertEventActivityRsvpStatusInputList(
+  val: string[],
+): EventActivityRsvpStatusInput[] {
+  return val.map((v) => convertEventActivityRsvpStatusInput(v));
+}
+
+export function convertNullableEventActivityRsvpStatusInputList(
+  val: string[] | null,
+): EventActivityRsvpStatusInput[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertEventActivityRsvpStatusInputList(val);
 }
 
 export interface EditEventActivityRsvpStatusInput {

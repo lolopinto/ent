@@ -41,9 +41,83 @@ export enum EventActivityRsvpStatus {
   Declined = "declined",
   CanRsvp = "canRsvp",
   CannotRsvp = "cannotRsvp",
+  Unknown = "%Unknown%",
+}
+
+export function convertEventActivityRsvpStatus(
+  val: string,
+): EventActivityRsvpStatus {
+  switch (val) {
+    case EventActivityRsvpStatus.Attending:
+    case EventActivityRsvpStatus.Declined:
+    case EventActivityRsvpStatus.CanRsvp:
+    case EventActivityRsvpStatus.CannotRsvp:
+    case EventActivityRsvpStatus.Unknown:
+      return val;
+    default:
+      return EventActivityRsvpStatus.Unknown;
+  }
+}
+
+export function convertNullableEventActivityRsvpStatus(
+  val: string | null,
+): EventActivityRsvpStatus | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertEventActivityRsvpStatus(val);
+}
+
+export function convertEventActivityRsvpStatusList(
+  val: string[],
+): EventActivityRsvpStatus[] {
+  return val.map((v) => convertEventActivityRsvpStatus(v));
+}
+
+export function convertNullableEventActivityRsvpStatusList(
+  val: string[] | null,
+): EventActivityRsvpStatus[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertEventActivityRsvpStatusList(val);
 }
 
 export enum GuestDataSource {
   EventPage = "event_page",
   HomePage = "home_page",
+  Unknown = "%unknown%",
+}
+
+export function convertGuestDataSource(val: string): GuestDataSource {
+  switch (val) {
+    case GuestDataSource.EventPage:
+    case GuestDataSource.HomePage:
+    case GuestDataSource.Unknown:
+      return val;
+    default:
+      return GuestDataSource.Unknown;
+  }
+}
+
+export function convertNullableGuestDataSource(
+  val: string | null,
+): GuestDataSource | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertGuestDataSource(val);
+}
+
+export function convertGuestDataSourceList(val: string[]): GuestDataSource[] {
+  return val.map((v) => convertGuestDataSource(v));
+}
+
+export function convertNullableGuestDataSourceList(
+  val: string[] | null,
+): GuestDataSource[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertGuestDataSourceList(val);
 }

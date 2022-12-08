@@ -457,7 +457,7 @@ func TestCompareTsEnums(t *testing.T) {
 			tsEnums: []*enum.Enum{
 				{
 					Name: "AccountStatus",
-					Values: []enum.Data{
+					Values: []*enum.Data{
 						{
 							Name:  "Deactivated",
 							Value: "deactivated",
@@ -487,7 +487,7 @@ func TestCompareTsEnums(t *testing.T) {
 			tsEnums: []*enum.Enum{
 				{
 					Name: "AccountStatus",
-					Values: []enum.Data{
+					Values: []*enum.Data{
 						{
 							Name:  "Deactivated",
 							Value: "deactivated",
@@ -521,7 +521,7 @@ func TestCompareUnequalTsEnums(t *testing.T) {
 			tsEnums: []*enum.Enum{
 				{
 					Name: "AccountStatus",
-					Values: []enum.Data{
+					Values: []*enum.Data{
 						{
 							Name:  "Deactivated",
 							Value: "deactivated",
@@ -551,7 +551,7 @@ func TestCompareUnequalTsEnums(t *testing.T) {
 			tsEnums: []*enum.Enum{
 				{
 					Name: "AccountStatus",
-					Values: []enum.Data{
+					Values: []*enum.Data{
 						{
 							Name:  "Deactivated",
 							Value: "deactivated",
@@ -590,7 +590,7 @@ func TestCompareGQLEnums(t *testing.T) {
 				{
 					Name: "AccountStatus",
 					Type: "AccountStatus",
-					Values: []enum.Data{
+					Values: []*enum.Data{
 						{
 							Name:  "DEACTIVATED",
 							Value: "deactivated",
@@ -620,7 +620,7 @@ func TestCompareGQLEnums(t *testing.T) {
 				{
 					Name: "AccountStatus",
 					Type: "AccountStatus",
-					Values: []enum.Data{
+					Values: []*enum.Data{
 						{
 							Name:  "DEACTIVATED",
 							Value: "deactivated",
@@ -654,7 +654,7 @@ func TestCompareUnequalGQLEnums(t *testing.T) {
 				{
 					Name: "AccountStatus",
 					Type: "AccountStatus",
-					Values: []enum.Data{
+					Values: []*enum.Data{
 						{
 							Name:  "DEACTIVATED",
 							Value: "deactivated",
@@ -684,7 +684,7 @@ func TestCompareUnequalGQLEnums(t *testing.T) {
 				{
 					Name: "AccountStatus",
 					Type: "AccountStatus",
-					Values: []enum.Data{
+					Values: []*enum.Data{
 						{
 							Name:  "DEACTIVATED",
 							Value: "deactivated",

@@ -17,6 +17,7 @@ import { User } from "../../";
 
 export { UserCreateInput };
 import { ExampleViewer } from "../../../viewer/viewer";
+import { ContactEmailLabel } from "src/ent/generated/types";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateUserAction extends CreateUserActionBase {
@@ -52,7 +53,7 @@ export default class CreateUserAction extends CreateUserActionBase {
             emails: [
               {
                 emailAddress: input.emailAddress,
-                label: "self",
+                label: ContactEmailLabel.Self,
               },
             ],
             userID: builder,

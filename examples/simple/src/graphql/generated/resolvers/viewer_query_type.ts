@@ -18,16 +18,27 @@ import { GQLViewer, ViewerResolver } from "../../resolvers/viewer";
 
 export const GQLViewerType = new GraphQLObjectType({
   name: "Viewer",
-  fields: (): GraphQLFieldConfigMap<GQLViewer, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    GQLViewer,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     viewerID: {
       type: GraphQLID,
-      resolve: async (obj: GQLViewer, args: {}, context: RequestContext) => {
+      resolve: async (
+        obj: GQLViewer,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return obj.viewerID();
       },
     },
     user: {
       type: UserType,
-      resolve: async (obj: GQLViewer, args: {}, context: RequestContext) => {
+      resolve: async (
+        obj: GQLViewer,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return obj.user();
       },
     },

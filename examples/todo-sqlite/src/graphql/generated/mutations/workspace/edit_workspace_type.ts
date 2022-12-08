@@ -44,7 +44,10 @@ export const EditWorkspaceInputType = new GraphQLInputObjectType({
 
 export const EditWorkspacePayloadType = new GraphQLObjectType({
   name: "EditWorkspacePayload",
-  fields: (): GraphQLFieldConfigMap<EditWorkspacePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    EditWorkspacePayload,
+    RequestContext<Viewer>
+  > => ({
     workspace: {
       type: new GraphQLNonNull(WorkspaceType),
     },

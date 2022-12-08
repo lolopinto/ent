@@ -5,7 +5,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, Viewer } from "@snowtop/ent";
 import { GraphQLConnectionType, GraphQLEdge } from "@snowtop/ent/graphql";
 import { EventActivityToAttendingEdge } from "src/ent/";
 import { GuestType } from "src/graphql/resolvers/internal";
@@ -23,14 +23,14 @@ export const EventActivityToAttendingConnectionType = () => {
       {
         fields: (): GraphQLFieldConfigMap<
           GraphQLEdge<EventActivityToAttendingEdge>,
-          RequestContext
+          RequestContext<Viewer>
         > => ({
           dietaryRestrictions: {
             type: GraphQLString,
             resolve: async (
               edge: GraphQLEdge<EventActivityToAttendingEdge>,
               args: {},
-              context: RequestContext,
+              context: RequestContext<Viewer>,
             ) => {
               return edge.edge.dietaryRestrictions(context);
             },

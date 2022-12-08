@@ -93,6 +93,89 @@ func TestWithSubFields(t *testing.T) {
 
 	enum := ci.GetTSEnums()[0]
 	require.Equal(t, enum.Name, "NotifType")
+	// UNKNOWN always added
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL", "%UNKNOWN%"})
+}
+
+func TestWithSubFieldsUnknownDisabled(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "userPrefs",
+						Type: &input.FieldType{
+							DBType:      input.JSONB,
+							Type:        "UserPrefs",
+							GraphQLType: "UserPrefs",
+							SubFields: []*input.Field{
+								{
+									Name: "finishedNux",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "enableNotifs",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "notifTypes",
+									Type: &input.FieldType{
+										DBType: input.List,
+										ListElemType: &input.FieldType{
+											Type:               "NotifType",
+											GraphQLType:        "NotifType",
+											DBType:             input.StringEnum,
+											Values:             []string{"MOBILE", "WEB", "EMAIL"},
+											DisableUnknownType: true,
+										},
+									},
+									Nullable: true,
+								},
+							},
+						},
+					},
+				},
+				Actions: []*input.Action{
+					{
+						Operation: ent.CreateAction,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	userInfo := schema.Nodes["User"]
+	require.NotNil(t, userInfo)
+
+	require.Len(t, schema.CustomInterfaces, 1)
+
+	ci := schema.CustomInterfaces["UserPrefs"]
+	require.NotNil(t, ci)
+	require.Len(t, ci.Fields, 3)
+	require.Len(t, ci.NonEntFields, 0)
+	require.Len(t, ci.Children, 0)
+
+	require.Len(t, ci.GetTSEnums(), 1)
+
+	enum := ci.GetTSEnums()[0]
+	require.Equal(t, enum.Name, "NotifType")
 	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL"})
 }
 
@@ -245,11 +328,13 @@ func TestWithNestedSubFields(t *testing.T) {
 
 	enum := ci.GetTSEnums()[0]
 	require.Equal(t, enum.Name, "NotifType")
-	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL"})
+	// UNKNOWN added
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL", "%UNKNOWN%"})
 
 	enum2 := ci.GetTSEnums()[1]
 	require.Equal(t, enum2.Name, "NotifType2")
-	validateEnumValuesEqual(t, enum2, []string{"MOBILE", "WEB", "EMAIL"})
+	// UNKNOWN added
+	validateEnumValuesEqual(t, enum2, []string{"MOBILE", "WEB", "EMAIL", "%UNKNOWN%"})
 }
 
 func TestWithUnionFields(t *testing.T) {
@@ -427,11 +512,13 @@ func TestWithUnionFields(t *testing.T) {
 
 	enum := ci.GetAllEnums()[0]
 	require.Equal(t, enum.Name, "NotifType")
-	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL"})
+	// UNKNOWN added
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL", "%UNKNOWN%"})
 
 	enum2 := ci.GetAllEnums()[1]
 	require.Equal(t, enum2.Name, "NotifType2")
-	validateEnumValuesEqual(t, enum2, []string{"MOBILE", "WEB", "EMAIL"})
+	// UNKNOWN added
+	validateEnumValuesEqual(t, enum2, []string{"MOBILE", "WEB", "EMAIL", "%UNKNOWN%"})
 }
 
 func TestWithSubFieldsInPattern(t *testing.T) {
@@ -525,6 +612,139 @@ func TestWithSubFieldsInPattern(t *testing.T) {
 											GraphQLType: "NotifType",
 											DBType:      input.StringEnum,
 											Values:      []string{"MOBILE", "WEB", "EMAIL"},
+										},
+									},
+									Nullable: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	userNodeData, err := schema.GetNodeDataForNode("User")
+	require.Nil(t, err)
+	require.NotNil(t, userNodeData)
+
+	groupNodeData, err := schema.GetNodeDataForNode("Group")
+	require.Nil(t, err)
+	require.NotNil(t, groupNodeData)
+
+	require.Len(t, schema.CustomInterfaces, 1)
+
+	ci := schema.CustomInterfaces["UserPrefs"]
+	require.NotNil(t, ci)
+	require.Len(t, ci.Fields, 3)
+	require.Len(t, ci.NonEntFields, 0)
+	require.Len(t, ci.Children, 0)
+
+	require.Len(t, ci.GetTSEnums(), 1)
+
+	enum := ci.GetTSEnums()[0]
+	require.Equal(t, enum.Name, "NotifType")
+	// UNKNOWN added
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL", "%UNKNOWN%"})
+}
+
+func TestWithSubFieldsInPatternUnknownDisabled(t *testing.T) {
+	n := &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "id",
+				Type: &input.FieldType{
+					DBType: input.UUID,
+				},
+				PrimaryKey: true,
+			},
+			{
+				Name:        "userPrefs",
+				PatternName: "pattern",
+				Type: &input.FieldType{
+					DBType:      input.JSONB,
+					Type:        "UserPrefs",
+					GraphQLType: "UserPrefs",
+					SubFields: []*input.Field{
+						{
+							Name: "finishedNux",
+							Type: &input.FieldType{
+								DBType: input.Boolean,
+							},
+							Nullable: true,
+						},
+						{
+							Name: "enableNotifs",
+							Type: &input.FieldType{
+								DBType: input.Boolean,
+							},
+							Nullable: true,
+						},
+						{
+							Name: "notifTypes",
+							Type: &input.FieldType{
+								DBType: input.List,
+								ListElemType: &input.FieldType{
+									Type:               "NotifType",
+									GraphQLType:        "NotifType",
+									DBType:             input.StringEnum,
+									Values:             []string{"MOBILE", "WEB", "EMAIL"},
+									DisableUnknownType: true,
+								},
+							},
+							Nullable: true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User":  n,
+			"Group": n,
+		},
+		Patterns: map[string]*input.Pattern{
+			"pattern": {
+				Name: "pattern",
+				Fields: []*input.Field{
+					{
+						Name:        "userPrefs",
+						PatternName: "pattern",
+						Type: &input.FieldType{
+							DBType:      input.JSONB,
+							Type:        "UserPrefs",
+							GraphQLType: "UserPrefs",
+							SubFields: []*input.Field{
+								{
+									Name: "finishedNux",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "enableNotifs",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "notifTypes",
+									Type: &input.FieldType{
+										DBType: input.List,
+										ListElemType: &input.FieldType{
+											Type:               "NotifType",
+											GraphQLType:        "NotifType",
+											DBType:             input.StringEnum,
+											Values:             []string{"MOBILE", "WEB", "EMAIL"},
+											DisableUnknownType: true,
 										},
 									},
 									Nullable: true,

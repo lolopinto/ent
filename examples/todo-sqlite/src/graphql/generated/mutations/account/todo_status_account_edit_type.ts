@@ -39,6 +39,9 @@ export const AccountTodoStatusInputType = new GraphQLEnumType({
     CLOSED_TODOS_DUP: {
       value: "closedTodosDup",
     },
+    UNKNOWN: {
+      value: "%Unknown%",
+    },
   },
 });
 
@@ -62,7 +65,7 @@ export const TodoStatusAccountEditPayloadType = new GraphQLObjectType({
   name: "TodoStatusAccountEditPayload",
   fields: (): GraphQLFieldConfigMap<
     TodoStatusAccountEditPayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     account: {
       type: new GraphQLNonNull(AccountType),

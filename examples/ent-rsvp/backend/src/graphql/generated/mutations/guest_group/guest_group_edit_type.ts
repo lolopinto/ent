@@ -42,7 +42,10 @@ export const GuestGroupEditInputType = new GraphQLInputObjectType({
 
 export const GuestGroupEditPayloadType = new GraphQLObjectType({
   name: "GuestGroupEditPayload",
-  fields: (): GraphQLFieldConfigMap<GuestGroupEditPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    GuestGroupEditPayload,
+    RequestContext<Viewer>
+  > => ({
     guestGroup: {
       type: new GraphQLNonNull(GuestGroupType),
     },

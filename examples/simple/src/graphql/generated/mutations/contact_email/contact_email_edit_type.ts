@@ -24,7 +24,7 @@ import EditContactEmailAction, {
   ContactEmailEditInput,
 } from "../../../../ent/contact_email/actions/edit_contact_email_action";
 import { ContactInfoInputType } from "../input/contact_info_input_type";
-import { ContactEmailType } from "../../../resolvers";
+import { ContactEmailLabelType, ContactEmailType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactEmailEditInput extends ContactEmailEditInput {
@@ -50,7 +50,7 @@ export const ContactEmailEditInputType = new GraphQLInputObjectType({
       type: GraphQLString,
     },
     label: {
-      type: GraphQLString,
+      type: ContactEmailLabelType,
     },
     contactID: {
       type: GraphQLID,
@@ -62,7 +62,7 @@ export const ContactEmailEditPayloadType = new GraphQLObjectType({
   name: "ContactEmailEditPayload",
   fields: (): GraphQLFieldConfigMap<
     ContactEmailEditPayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     contactEmail: {
       type: new GraphQLNonNull(ContactEmailType),

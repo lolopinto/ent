@@ -30,15 +30,23 @@ import {
   ContactToLikersConnectionType,
   UserType,
 } from "../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
-  fields: (): GraphQLFieldConfigMap<Contact, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    Contact,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     emails: {
       type: new GraphQLNonNull(
         new GraphQLList(new GraphQLNonNull(ContactEmailType)),
       ),
-      resolve: (contact: Contact, args: {}, context: RequestContext) => {
+      resolve: (
+        contact: Contact,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return contact.loadEmails();
       },
     },
@@ -46,13 +54,21 @@ export const ContactType = new GraphQLObjectType({
       type: new GraphQLNonNull(
         new GraphQLList(new GraphQLNonNull(ContactPhoneNumberType)),
       ),
-      resolve: (contact: Contact, args: {}, context: RequestContext) => {
+      resolve: (
+        contact: Contact,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return contact.loadPhoneNumbers();
       },
     },
     user: {
       type: UserType,
-      resolve: (contact: Contact, args: {}, context: RequestContext) => {
+      resolve: (
+        contact: Contact,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return contact.loadUser();
       },
     },
@@ -86,7 +102,11 @@ export const ContactType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (contact: Contact, args: any, context: RequestContext) => {
+      resolve: (
+        contact: Contact,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return new GraphQLEdgeConnection(
           contact.viewer,
           contact,
@@ -115,7 +135,11 @@ export const ContactType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (contact: Contact, args: any, context: RequestContext) => {
+      resolve: (
+        contact: Contact,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
         return new GraphQLEdgeConnection(
           contact.viewer,
           contact,

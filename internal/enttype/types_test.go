@@ -398,6 +398,8 @@ func TestStringEnumType(t *testing.T) {
 							"DISABLED",
 						},
 					},
+					convertSqliteFns:   []string{"convertNullableAccountStatus"},
+					convertPostgresFns: []string{"convertNullableAccountStatus"},
 				},
 			},
 			"not nullable": {
@@ -433,6 +435,8 @@ func TestStringEnumType(t *testing.T) {
 							"DISABLED",
 						},
 					},
+					convertSqliteFns:   []string{"convertAccountStatus"},
+					convertPostgresFns: []string{"convertAccountStatus"},
 				},
 			},
 			"not nullable db enum": {
@@ -475,6 +479,8 @@ func TestStringEnumType(t *testing.T) {
 							"DISABLED",
 						},
 					},
+					convertSqliteFns:   []string{"convertAccountStatus"},
+					convertPostgresFns: []string{"convertAccountStatus"},
 				},
 			},
 			"nullable db enum": {
@@ -516,6 +522,8 @@ func TestStringEnumType(t *testing.T) {
 							"DISABLED",
 						},
 					},
+					convertSqliteFns:   []string{"convertNullableAccountStatus"},
+					convertPostgresFns: []string{"convertNullableAccountStatus"},
 				},
 			},
 		},
@@ -557,6 +565,8 @@ func TestIntEnumType(t *testing.T) {
 							"DISABLED":    3,
 						},
 					},
+					convertSqliteFns:   []string{"convertNullableAccountStatus"},
+					convertPostgresFns: []string{"convertNullableAccountStatus"},
 				},
 			},
 			"not nullable": {
@@ -592,6 +602,8 @@ func TestIntEnumType(t *testing.T) {
 							"DISABLED":    3,
 						},
 					},
+					convertSqliteFns:   []string{"convertAccountStatus"},
+					convertPostgresFns: []string{"convertAccountStatus"},
 				},
 			},
 			"nullable w deprecated": {
@@ -630,9 +642,11 @@ func TestIntEnumType(t *testing.T) {
 							"UNVERIFIED": 0,
 						},
 					},
+					convertSqliteFns:   []string{"convertNullableAccountStatus"},
+					convertPostgresFns: []string{"convertNullableAccountStatus"},
 				},
 			},
-			"not nullable w depreated": {
+			"not nullable w deprecated": {
 				&enttype.IntegerEnumType{
 					Type:        "AccountStatus",
 					GraphQLType: "AccountStatus",
@@ -669,6 +683,8 @@ func TestIntEnumType(t *testing.T) {
 							"UNVERIFIED": 0,
 						},
 					},
+					convertSqliteFns:   []string{"convertAccountStatus"},
+					convertPostgresFns: []string{"convertAccountStatus"},
 				},
 			},
 		},

@@ -1,5 +1,5 @@
 import { advanceBy } from "jest-date-mock";
-import { Viewer } from "@snowtop/ent";
+import { DB, Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import {
@@ -32,9 +32,13 @@ import {
   ObjNestedEnum,
   RabbitBreed,
   SuperNestedObjectEnum,
+  ContactEmailLabel,
 } from "../../ent/generated/types";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import CreateCommentAction from "../../ent/comment/actions/create_comment_action";
+import { buildInsertQuery } from "@snowtop/ent/core/ent";
+import { getSimpleInsertAction } from "@snowtop/ent/action/experimental_action";
+import { UserBuilder } from "src/ent/generated/user/actions/user_builder";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -201,7 +205,7 @@ test("query custom async function", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -221,7 +225,7 @@ test("query custom async function", async () => {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -249,7 +253,7 @@ test("query custom async function list", async () => {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -290,7 +294,7 @@ test("query custom async function nullable contents", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -324,7 +328,7 @@ test("query custom async function nullable list contents", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -363,7 +367,7 @@ test("query custom async function nullable list and contents", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: "fun",
+        label: ContactEmailLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -606,7 +610,7 @@ async function createMany(
       emails: [
         {
           emailAddress: randomEmail(),
-          label: "fun",
+          label: ContactEmailLabel.Unknown,
         },
       ],
       firstName: name.firstName,
@@ -1156,4 +1160,107 @@ test("custom connection. comments", async () => {
     ["commentsAuthored.rawCount", 1],
     ["commentsAuthored.nodes[0].body", comment.body],
   );
+});
+
+test("create user with deprecated account_status", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    accountStatus: "hello",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+  const user = await User.loadX(new ExampleViewer(id), id);
+
+  await expectQueryFromRoot(
+    getConfig(new ExampleViewer(id), user),
+    ["id", encodeGQLID(user)],
+    // graphql returns UNKNOWN instead of throwing
+    // unhandled error [{"message":"Enum \"UserAccountStatus\" cannot represent value: \"hello\"","locations":[{"line":2,"column":34}],"path":["node","accountStatus"]}]
+    ["accountStatus", "UNKNOWN"],
+  );
+});
+
+test("create user with invalid days off value", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    daysOff: [UserDaysOff.Monday, "hello"],
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+
+  const user = await User.loadX(new ExampleViewer(id), id);
+
+  await expectQueryFromRoot(
+    getConfig(new ExampleViewer(id), user, {
+      expectedError: 'Enum "UserDaysOff" cannot represent value: "hello"',
+    }),
+    [
+      "",
+      {
+        id: encodeGQLID(user),
+        daysOff: ["MONDAY", "hello"],
+      },
+    ],
+  );
+});
+
+test("create user with invalid days off value", async () => {
+  // @ts-ignore
+  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    preferredShift: [UserPreferredShift.Morning, "hello"],
+  });
+  const data = await action.builder.orchestrator.getEditedData();
+  const [query, values] = buildInsertQuery({
+    tableName: "users",
+    fields: data,
+  });
+
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(query, values);
+  client.release();
+
+  const id = data.id;
+
+  const user = await User.loadX(new ExampleViewer(id), id);
+
+  await expectQueryFromRoot(getConfig(new ExampleViewer(id), user), [
+    "",
+    {
+      id: encodeGQLID(user),
+      preferredShift: ["MORNING", "UNKNOWN"],
+    },
+  ]);
 });

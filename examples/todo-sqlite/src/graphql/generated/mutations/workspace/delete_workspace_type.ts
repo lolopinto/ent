@@ -35,7 +35,7 @@ export const DeleteWorkspacePayloadType = new GraphQLObjectType({
   name: "DeleteWorkspacePayload",
   fields: (): GraphQLFieldConfigMap<
     DeleteWorkspacePayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     deleted_workspace_id: {
       type: GraphQLID,

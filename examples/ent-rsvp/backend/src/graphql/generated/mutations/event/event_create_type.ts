@@ -73,7 +73,10 @@ export const EventCreateInputType = new GraphQLInputObjectType({
 
 export const EventCreatePayloadType = new GraphQLObjectType({
   name: "EventCreatePayload",
-  fields: (): GraphQLFieldConfigMap<EventCreatePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    EventCreatePayload,
+    RequestContext<Viewer>
+  > => ({
     event: {
       type: new GraphQLNonNull(EventType),
     },

@@ -78,12 +78,177 @@ export enum CatBreed {
   Siamese = "siamese",
   Tabby = "tabby",
   Other = "other",
+  Unknown = "%unknown%",
+}
+
+export function convertCatBreed(val: string): CatBreed {
+  switch (val) {
+    case CatBreed.Bengal:
+    case CatBreed.Burmese:
+    case CatBreed.Himalayan:
+    case CatBreed.Somali:
+    case CatBreed.Persian:
+    case CatBreed.Siamese:
+    case CatBreed.Tabby:
+    case CatBreed.Other:
+    case CatBreed.Unknown:
+      return val;
+    default:
+      return CatBreed.Unknown;
+  }
+}
+
+export function convertNullableCatBreed(val: string | null): CatBreed | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertCatBreed(val);
+}
+
+export function convertCatBreedList(val: string[]): CatBreed[] {
+  return val.map((v) => convertCatBreed(v));
+}
+
+export function convertNullableCatBreedList(
+  val: string[] | null,
+): CatBreed[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertCatBreedList(val);
+}
+
+export enum ContactEmailLabel {
+  Work = "work",
+  Home = "home",
+  Default = "default",
+  Unknown = "unknown",
+  Self = "self",
+}
+
+export function convertContactEmailLabel(val: string): ContactEmailLabel {
+  switch (val) {
+    case ContactEmailLabel.Work:
+    case ContactEmailLabel.Home:
+    case ContactEmailLabel.Default:
+    case ContactEmailLabel.Unknown:
+    case ContactEmailLabel.Self:
+      return val;
+    default:
+      return ContactEmailLabel.Unknown;
+  }
+}
+
+export function convertNullableContactEmailLabel(
+  val: string | null,
+): ContactEmailLabel | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertContactEmailLabel(val);
+}
+
+export function convertContactEmailLabelList(
+  val: string[],
+): ContactEmailLabel[] {
+  return val.map((v) => convertContactEmailLabel(v));
+}
+
+export function convertNullableContactEmailLabelList(
+  val: string[] | null,
+): ContactEmailLabel[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertContactEmailLabelList(val);
 }
 
 export enum ContactInfoSource {
   Friend = "friend",
   Work = "work",
   Online = "online",
+  Unknown = "%unknown%",
+}
+
+export function convertContactInfoSource(val: string): ContactInfoSource {
+  switch (val) {
+    case ContactInfoSource.Friend:
+    case ContactInfoSource.Work:
+    case ContactInfoSource.Online:
+    case ContactInfoSource.Unknown:
+      return val;
+    default:
+      return ContactInfoSource.Unknown;
+  }
+}
+
+export function convertNullableContactInfoSource(
+  val: string | null,
+): ContactInfoSource | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertContactInfoSource(val);
+}
+
+export function convertContactInfoSourceList(
+  val: string[],
+): ContactInfoSource[] {
+  return val.map((v) => convertContactInfoSource(v));
+}
+
+export function convertNullableContactInfoSourceList(
+  val: string[] | null,
+): ContactInfoSource[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertContactInfoSourceList(val);
+}
+
+export enum ContactPhoneNumberLabel {
+  Work = "work",
+  Home = "home",
+  Default = "default",
+  Unknown = "unknown",
+}
+
+export function convertContactPhoneNumberLabel(
+  val: string,
+): ContactPhoneNumberLabel {
+  switch (val) {
+    case ContactPhoneNumberLabel.Work:
+    case ContactPhoneNumberLabel.Home:
+    case ContactPhoneNumberLabel.Default:
+    case ContactPhoneNumberLabel.Unknown:
+      return val;
+    default:
+      return ContactPhoneNumberLabel.Unknown;
+  }
+}
+
+export function convertNullableContactPhoneNumberLabel(
+  val: string | null,
+): ContactPhoneNumberLabel | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertContactPhoneNumberLabel(val);
+}
+
+export function convertContactPhoneNumberLabelList(
+  val: string[],
+): ContactPhoneNumberLabel[] {
+  return val.map((v) => convertContactPhoneNumberLabel(v));
+}
+
+export function convertNullableContactPhoneNumberLabelList(
+  val: string[] | null,
+): ContactPhoneNumberLabel[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertContactPhoneNumberLabelList(val);
 }
 
 export enum DayOfWeek {
@@ -94,6 +259,43 @@ export enum DayOfWeek {
   Thursday = "Thursday",
   Friday = "Friday",
   Saturday = "Saturday",
+  Unknown = "%Unknown%",
+}
+
+export function convertDayOfWeek(val: string): DayOfWeek {
+  switch (val) {
+    case DayOfWeek.Sunday:
+    case DayOfWeek.Monday:
+    case DayOfWeek.Tuesday:
+    case DayOfWeek.Wednesday:
+    case DayOfWeek.Thursday:
+    case DayOfWeek.Friday:
+    case DayOfWeek.Saturday:
+    case DayOfWeek.Unknown:
+      return val;
+    default:
+      return DayOfWeek.Unknown;
+  }
+}
+
+export function convertNullableDayOfWeek(val: string | null): DayOfWeek | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertDayOfWeek(val);
+}
+
+export function convertDayOfWeekList(val: string[]): DayOfWeek[] {
+  return val.map((v) => convertDayOfWeek(v));
+}
+
+export function convertNullableDayOfWeekList(
+  val: string[] | null,
+): DayOfWeek[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertDayOfWeekList(val);
 }
 
 export enum DayOfWeekAlt {
@@ -103,7 +305,46 @@ export enum DayOfWeekAlt {
   Sunday = "sun",
   Thursday = "thu",
   Tuesday = "tue",
+  Unknown = "%unknown%",
   Wednesday = "wed",
+}
+
+export function convertDayOfWeekAlt(val: string): DayOfWeekAlt {
+  switch (val) {
+    case DayOfWeekAlt.Friday:
+    case DayOfWeekAlt.Monday:
+    case DayOfWeekAlt.Saturday:
+    case DayOfWeekAlt.Sunday:
+    case DayOfWeekAlt.Thursday:
+    case DayOfWeekAlt.Tuesday:
+    case DayOfWeekAlt.Unknown:
+    case DayOfWeekAlt.Wednesday:
+      return val;
+    default:
+      return DayOfWeekAlt.Unknown;
+  }
+}
+
+export function convertNullableDayOfWeekAlt(
+  val: string | null,
+): DayOfWeekAlt | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertDayOfWeekAlt(val);
+}
+
+export function convertDayOfWeekAltList(val: string[]): DayOfWeekAlt[] {
+  return val.map((v) => convertDayOfWeekAlt(v));
+}
+
+export function convertNullableDayOfWeekAltList(
+  val: string[] | null,
+): DayOfWeekAlt[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertDayOfWeekAltList(val);
 }
 
 export enum DogBreed {
@@ -114,6 +355,43 @@ export enum DogBreed {
   Poodle = "poodle",
   GoldenRetriever = "golden_retriever",
   Other = "other",
+  Unknown = "%unknown%",
+}
+
+export function convertDogBreed(val: string): DogBreed {
+  switch (val) {
+    case DogBreed.GermanShepherd:
+    case DogBreed.Labrador:
+    case DogBreed.Pomerian:
+    case DogBreed.SiberianHusky:
+    case DogBreed.Poodle:
+    case DogBreed.GoldenRetriever:
+    case DogBreed.Other:
+    case DogBreed.Unknown:
+      return val;
+    default:
+      return DogBreed.Unknown;
+  }
+}
+
+export function convertNullableDogBreed(val: string | null): DogBreed | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertDogBreed(val);
+}
+
+export function convertDogBreedList(val: string[]): DogBreed[] {
+  return val.map((v) => convertDogBreed(v));
+}
+
+export function convertNullableDogBreedList(
+  val: string[] | null,
+): DogBreed[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertDogBreedList(val);
 }
 
 export enum DogBreedGroup {
@@ -124,12 +402,86 @@ export enum DogBreedGroup {
   Toy = "toy",
   NonSporting = "non_sporting",
   Herding = "herding",
+  Unknown = "%unknown%",
+}
+
+export function convertDogBreedGroup(val: string): DogBreedGroup {
+  switch (val) {
+    case DogBreedGroup.Sporting:
+    case DogBreedGroup.Hound:
+    case DogBreedGroup.Working:
+    case DogBreedGroup.Terrier:
+    case DogBreedGroup.Toy:
+    case DogBreedGroup.NonSporting:
+    case DogBreedGroup.Herding:
+    case DogBreedGroup.Unknown:
+      return val;
+    default:
+      return DogBreedGroup.Unknown;
+  }
+}
+
+export function convertNullableDogBreedGroup(
+  val: string | null,
+): DogBreedGroup | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertDogBreedGroup(val);
+}
+
+export function convertDogBreedGroupList(val: string[]): DogBreedGroup[] {
+  return val.map((v) => convertDogBreedGroup(v));
+}
+
+export function convertNullableDogBreedGroupList(
+  val: string[] | null,
+): DogBreedGroup[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertDogBreedGroupList(val);
 }
 
 export enum EnumUsedInList {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
+  Unknown = "%unknown%",
+}
+
+export function convertEnumUsedInList(val: string): EnumUsedInList {
+  switch (val) {
+    case EnumUsedInList.Yes:
+    case EnumUsedInList.No:
+    case EnumUsedInList.Maybe:
+    case EnumUsedInList.Unknown:
+      return val;
+    default:
+      return EnumUsedInList.Unknown;
+  }
+}
+
+export function convertNullableEnumUsedInList(
+  val: string | null,
+): EnumUsedInList | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertEnumUsedInList(val);
+}
+
+export function convertEnumUsedInListList(val: string[]): EnumUsedInList[] {
+  return val.map((v) => convertEnumUsedInList(v));
+}
+
+export function convertNullableEnumUsedInListList(
+  val: string[] | null,
+): EnumUsedInList[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertEnumUsedInListList(val);
 }
 
 export enum EventRsvpStatus {
@@ -137,36 +489,251 @@ export enum EventRsvpStatus {
   Declined = "declined",
   Maybe = "maybe",
   CanRsvp = "canRsvp",
+  Unknown = "%Unknown%",
+}
+
+export function convertEventRsvpStatus(val: string): EventRsvpStatus {
+  switch (val) {
+    case EventRsvpStatus.Attending:
+    case EventRsvpStatus.Declined:
+    case EventRsvpStatus.Maybe:
+    case EventRsvpStatus.CanRsvp:
+    case EventRsvpStatus.Unknown:
+      return val;
+    default:
+      return EventRsvpStatus.Unknown;
+  }
+}
+
+export function convertNullableEventRsvpStatus(
+  val: string | null,
+): EventRsvpStatus | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertEventRsvpStatus(val);
+}
+
+export function convertEventRsvpStatusList(val: string[]): EventRsvpStatus[] {
+  return val.map((v) => convertEventRsvpStatus(v));
+}
+
+export function convertNullableEventRsvpStatusList(
+  val: string[] | null,
+): EventRsvpStatus[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertEventRsvpStatusList(val);
 }
 
 export enum IntEnumUsedInList {
+  Unknown = -9007199254740991,
   Yes = 1,
   No = 2,
   Maybe = 3,
+}
+
+export function convertIntEnumUsedInList(val: number): IntEnumUsedInList {
+  switch (val) {
+    case IntEnumUsedInList.Unknown:
+    case IntEnumUsedInList.Yes:
+    case IntEnumUsedInList.No:
+    case IntEnumUsedInList.Maybe:
+      return val;
+    default:
+      return IntEnumUsedInList.Unknown;
+  }
+}
+
+export function convertNullableIntEnumUsedInList(
+  val: number | null,
+): IntEnumUsedInList | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertIntEnumUsedInList(val);
+}
+
+export function convertIntEnumUsedInListList(
+  val: number[],
+): IntEnumUsedInList[] {
+  return val.map((v) => convertIntEnumUsedInList(v));
+}
+
+export function convertNullableIntEnumUsedInListList(
+  val: number[] | null,
+): IntEnumUsedInList[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertIntEnumUsedInListList(val);
 }
 
 export enum NestedObjNestedNestedEnum {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
+  Unknown = "%unknown%",
+}
+
+export function convertNestedObjNestedNestedEnum(
+  val: string,
+): NestedObjNestedNestedEnum {
+  switch (val) {
+    case NestedObjNestedNestedEnum.Yes:
+    case NestedObjNestedNestedEnum.No:
+    case NestedObjNestedNestedEnum.Maybe:
+    case NestedObjNestedNestedEnum.Unknown:
+      return val;
+    default:
+      return NestedObjNestedNestedEnum.Unknown;
+  }
+}
+
+export function convertNullableNestedObjNestedNestedEnum(
+  val: string | null,
+): NestedObjNestedNestedEnum | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertNestedObjNestedNestedEnum(val);
+}
+
+export function convertNestedObjNestedNestedEnumList(
+  val: string[],
+): NestedObjNestedNestedEnum[] {
+  return val.map((v) => convertNestedObjNestedNestedEnum(v));
+}
+
+export function convertNullableNestedObjNestedNestedEnumList(
+  val: string[] | null,
+): NestedObjNestedNestedEnum[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertNestedObjNestedNestedEnumList(val);
 }
 
 export enum NotifType {
   MOBILE = "MOBILE",
   WEB = "WEB",
   EMAIL = "EMAIL",
+  UNKNOWN = "%UNKNOWN%",
+}
+
+export function convertNotifType(val: string): NotifType {
+  switch (val) {
+    case NotifType.MOBILE:
+    case NotifType.WEB:
+    case NotifType.EMAIL:
+    case NotifType.UNKNOWN:
+      return val;
+    default:
+      return NotifType.UNKNOWN;
+  }
+}
+
+export function convertNullableNotifType(val: string | null): NotifType | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertNotifType(val);
+}
+
+export function convertNotifTypeList(val: string[]): NotifType[] {
+  return val.map((v) => convertNotifType(v));
+}
+
+export function convertNullableNotifTypeList(
+  val: string[] | null,
+): NotifType[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertNotifTypeList(val);
 }
 
 export enum NotifType2 {
   MOBILE = "MOBILE",
   WEB = "WEB",
   EMAIL = "EMAIL",
+  UNKNOWN = "%UNKNOWN%",
+}
+
+export function convertNotifType2(val: string): NotifType2 {
+  switch (val) {
+    case NotifType2.MOBILE:
+    case NotifType2.WEB:
+    case NotifType2.EMAIL:
+    case NotifType2.UNKNOWN:
+      return val;
+    default:
+      return NotifType2.UNKNOWN;
+  }
+}
+
+export function convertNullableNotifType2(
+  val: string | null,
+): NotifType2 | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertNotifType2(val);
+}
+
+export function convertNotifType2List(val: string[]): NotifType2[] {
+  return val.map((v) => convertNotifType2(v));
+}
+
+export function convertNullableNotifType2List(
+  val: string[] | null,
+): NotifType2[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertNotifType2List(val);
 }
 
 export enum ObjNestedEnum {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
+  Unknown = "%unknown%",
+}
+
+export function convertObjNestedEnum(val: string): ObjNestedEnum {
+  switch (val) {
+    case ObjNestedEnum.Yes:
+    case ObjNestedEnum.No:
+    case ObjNestedEnum.Maybe:
+    case ObjNestedEnum.Unknown:
+      return val;
+    default:
+      return ObjNestedEnum.Unknown;
+  }
+}
+
+export function convertNullableObjNestedEnum(
+  val: string | null,
+): ObjNestedEnum | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertObjNestedEnum(val);
+}
+
+export function convertObjNestedEnumList(val: string[]): ObjNestedEnum[] {
+  return val.map((v) => convertObjNestedEnum(v));
+}
+
+export function convertNullableObjNestedEnumList(
+  val: string[] | null,
+): ObjNestedEnum[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertObjNestedEnumList(val);
 }
 
 export enum RabbitBreed {
@@ -178,12 +745,136 @@ export enum RabbitBreed {
   BelgianHare = "belgian_hare",
   Beveren = "beveren",
   Other = "other",
+  Unknown = "%unknown%",
+}
+
+export function convertRabbitBreed(val: string): RabbitBreed {
+  switch (val) {
+    case RabbitBreed.AmericanRabbit:
+    case RabbitBreed.AmericanChincilla:
+    case RabbitBreed.AmericanFuzzyLop:
+    case RabbitBreed.AmericanSable:
+    case RabbitBreed.ArgenteBrun:
+    case RabbitBreed.BelgianHare:
+    case RabbitBreed.Beveren:
+    case RabbitBreed.Other:
+    case RabbitBreed.Unknown:
+      return val;
+    default:
+      return RabbitBreed.Unknown;
+  }
+}
+
+export function convertNullableRabbitBreed(
+  val: string | null,
+): RabbitBreed | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertRabbitBreed(val);
+}
+
+export function convertRabbitBreedList(val: string[]): RabbitBreed[] {
+  return val.map((v) => convertRabbitBreed(v));
+}
+
+export function convertNullableRabbitBreedList(
+  val: string[] | null,
+): RabbitBreed[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertRabbitBreedList(val);
 }
 
 export enum SuperNestedObjectEnum {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
+  Unknown = "%unknown%",
+}
+
+export function convertSuperNestedObjectEnum(
+  val: string,
+): SuperNestedObjectEnum {
+  switch (val) {
+    case SuperNestedObjectEnum.Yes:
+    case SuperNestedObjectEnum.No:
+    case SuperNestedObjectEnum.Maybe:
+    case SuperNestedObjectEnum.Unknown:
+      return val;
+    default:
+      return SuperNestedObjectEnum.Unknown;
+  }
+}
+
+export function convertNullableSuperNestedObjectEnum(
+  val: string | null,
+): SuperNestedObjectEnum | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertSuperNestedObjectEnum(val);
+}
+
+export function convertSuperNestedObjectEnumList(
+  val: string[],
+): SuperNestedObjectEnum[] {
+  return val.map((v) => convertSuperNestedObjectEnum(v));
+}
+
+export function convertNullableSuperNestedObjectEnumList(
+  val: string[] | null,
+): SuperNestedObjectEnum[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertSuperNestedObjectEnumList(val);
+}
+
+export enum UserAccountStatus {
+  UNVERIFIED = "UNVERIFIED",
+  VERIFIED = "VERIFIED",
+  DEACTIVATED = "DEACTIVATED",
+  DISABLED = "DISABLED",
+  UNKNOWN = "%UNKNOWN%",
+}
+
+export function convertUserAccountStatus(val: string): UserAccountStatus {
+  switch (val) {
+    case UserAccountStatus.UNVERIFIED:
+    case UserAccountStatus.VERIFIED:
+    case UserAccountStatus.DEACTIVATED:
+    case UserAccountStatus.DISABLED:
+    case UserAccountStatus.UNKNOWN:
+      return val;
+    default:
+      return UserAccountStatus.UNKNOWN;
+  }
+}
+
+export function convertNullableUserAccountStatus(
+  val: string | null,
+): UserAccountStatus | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertUserAccountStatus(val);
+}
+
+export function convertUserAccountStatusList(
+  val: string[],
+): UserAccountStatus[] {
+  return val.map((v) => convertUserAccountStatus(v));
+}
+
+export function convertNullableUserAccountStatusList(
+  val: string[] | null,
+): UserAccountStatus[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertUserAccountStatusList(val);
 }
 
 export enum UserDaysOff {
@@ -197,6 +888,7 @@ export enum UserDaysOff {
 }
 
 export enum UserIntEnum {
+  UNKNOWN = -9007199254740991,
   VERIFIED = 1,
   UNVERIFIED = 2,
   DISABLED = 3,
@@ -204,11 +896,84 @@ export enum UserIntEnum {
   // @deprecated FOO = 5,
 }
 
+export function convertUserIntEnum(val: number): UserIntEnum {
+  switch (val) {
+    case UserIntEnum.UNKNOWN:
+    case UserIntEnum.VERIFIED:
+    case UserIntEnum.UNVERIFIED:
+    case UserIntEnum.DISABLED:
+    case UserIntEnum.DEACTIVATED:
+      return val;
+    default:
+      return UserIntEnum.UNKNOWN;
+  }
+}
+
+export function convertNullableUserIntEnum(
+  val: number | null,
+): UserIntEnum | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertUserIntEnum(val);
+}
+
+export function convertUserIntEnumList(val: number[]): UserIntEnum[] {
+  return val.map((v) => convertUserIntEnum(v));
+}
+
+export function convertNullableUserIntEnumList(
+  val: number[] | null,
+): UserIntEnum[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertUserIntEnumList(val);
+}
+
 export enum UserPreferredShift {
   Morning = "morning",
   Afternoon = "afternoon",
   Evening = "evening",
   Graveyard = "graveyard",
+  Unknown = "%unknown%",
+}
+
+export function convertUserPreferredShift(val: string): UserPreferredShift {
+  switch (val) {
+    case UserPreferredShift.Morning:
+    case UserPreferredShift.Afternoon:
+    case UserPreferredShift.Evening:
+    case UserPreferredShift.Graveyard:
+    case UserPreferredShift.Unknown:
+      return val;
+    default:
+      return UserPreferredShift.Unknown;
+  }
+}
+
+export function convertNullableUserPreferredShift(
+  val: string | null,
+): UserPreferredShift | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertUserPreferredShift(val);
+}
+
+export function convertUserPreferredShiftList(
+  val: string[],
+): UserPreferredShift[] {
+  return val.map((v) => convertUserPreferredShift(v));
+}
+
+export function convertNullableUserPreferredShiftList(
+  val: string[] | null,
+): UserPreferredShift[] | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertUserPreferredShiftList(val);
 }
 
 export interface ContactInfo {

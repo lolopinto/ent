@@ -44,6 +44,9 @@ export const EventRsvpStatusInputType = new GraphQLEnumType({
     MAYBE: {
       value: "maybe",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });
 
@@ -67,7 +70,7 @@ export const EventRsvpStatusEditPayloadType = new GraphQLObjectType({
   name: "EventRsvpStatusEditPayload",
   fields: (): GraphQLFieldConfigMap<
     EventRsvpStatusEditPayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     event: {
       type: new GraphQLNonNull(EventType),

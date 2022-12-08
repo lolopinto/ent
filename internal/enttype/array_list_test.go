@@ -420,7 +420,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				convertSqliteFns: []string{"convertList"},
+				convertSqliteFns:   []string{"convertAccountStatusList"},
+				convertPostgresFns: []string{"convertAccountStatusList"},
 			},
 		},
 		"nullable enum list": {
@@ -462,7 +463,8 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				convertSqliteFns: []string{"convertNullableList"},
+				convertSqliteFns:   []string{"convertNullableAccountStatusList"},
+				convertPostgresFns: []string{"convertNullableAccountStatusList"},
 			},
 		},
 		"jsonb list": {

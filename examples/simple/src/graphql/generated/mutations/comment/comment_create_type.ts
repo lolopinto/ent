@@ -62,7 +62,10 @@ export const CommentCreateInputType = new GraphQLInputObjectType({
 
 export const CommentCreatePayloadType = new GraphQLObjectType({
   name: "CommentCreatePayload",
-  fields: (): GraphQLFieldConfigMap<CommentCreatePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    CommentCreatePayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     comment: {
       type: new GraphQLNonNull(CommentType),
     },

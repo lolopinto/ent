@@ -39,6 +39,9 @@ export const EventActivityRsvpStatusInputType = new GraphQLEnumType({
     DECLINED: {
       value: "declined",
     },
+    UNKNOWN: {
+      value: "%unknown%",
+    },
   },
 });
 
@@ -65,7 +68,7 @@ export const EventActivityRsvpStatusEditPayloadType = new GraphQLObjectType({
   name: "EventActivityRsvpStatusEditPayload",
   fields: (): GraphQLFieldConfigMap<
     EventActivityRsvpStatusEditPayload,
-    RequestContext
+    RequestContext<Viewer>
   > => ({
     eventActivity: {
       type: new GraphQLNonNull(EventActivityType),

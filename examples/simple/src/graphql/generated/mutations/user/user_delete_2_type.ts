@@ -46,7 +46,7 @@ export const DeleteUserInput2PayloadType = new GraphQLObjectType({
   name: "DeleteUserInput2Payload",
   fields: (): GraphQLFieldConfigMap<
     DeleteUserInput2Payload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     deletedUserID: {
       type: GraphQLID,

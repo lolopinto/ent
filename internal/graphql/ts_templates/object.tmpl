@@ -5,6 +5,10 @@
 {{reserveImport $baseObj.Package.PackagePath "ID" "RequestContext" }}
 {{reserveImport $baseObj.Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "nodeIDEncoder" "resolveID" "mustDecodeIDFromGQLID" "encodeGQLID" }}
 
+{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := $viewerInfo.GetImport -}}
+
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
 {{ range $baseObj.Imports -}} 
   {{if .ImportPath -}}
@@ -51,9 +55,9 @@
         {{ if $baseObj.ForeignImport $tsType -}}
           {{$tsType = useImport $tsType -}}
         {{ end -}}
-        fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}> => ({
+        fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}<{{useImport $viewerType}}>> => ({
       {{ end -}}
-        {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance) -}}
+        {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance "ViewerType" $viewerType) -}}
         }),
       {{if .GQLInterfaces -}}
       interfaces: [

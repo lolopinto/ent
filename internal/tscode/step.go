@@ -31,8 +31,8 @@ import (
 
 type Step struct {
 	m         sync.Mutex
-	nodeTypes []enum.Data
-	edgeTypes []enum.Data
+	nodeTypes []*enum.Data
+	edgeTypes []*enum.Data
 }
 
 func (s *Step) Name() string {
@@ -468,7 +468,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 func (s *Step) addNodeType(name, value, comment string) {
 	s.m.Lock()
 	defer s.m.Unlock()
-	s.nodeTypes = append(s.nodeTypes, enum.Data{
+	s.nodeTypes = append(s.nodeTypes, &enum.Data{
 		Name:    name,
 		Value:   value,
 		Comment: comment,
@@ -478,7 +478,7 @@ func (s *Step) addNodeType(name, value, comment string) {
 func (s *Step) addEdgeType(name, value, comment string) {
 	s.m.Lock()
 	defer s.m.Unlock()
-	s.edgeTypes = append(s.edgeTypes, enum.Data{
+	s.edgeTypes = append(s.edgeTypes, &enum.Data{
 		Name:    name,
 		Value:   value,
 		Comment: comment,
@@ -868,7 +868,7 @@ func writeBaseQueryFileImpl(processor *codegen.Processor, info *BaseQueryEdgeInf
 	})
 }
 
-func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error {
+func writeLoadAnyFile(nodeData []*enum.Data, processor *codegen.Processor) error {
 	cfg := processor.Config
 	filePath := getFilePathForLoadAnyFile(cfg)
 	imps := tsimport.NewImports(processor.Config, filePath)
@@ -876,7 +876,7 @@ func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			NodeData []enum.Data
+			NodeData []*enum.Data
 			Package  *codegen.ImportPackage
 		}{
 			nodeData,
@@ -890,7 +890,7 @@ func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error 
 	})
 }
 
-func writeTypesFile(processor *codegen.Processor, nodeData []enum.Data, edgeData []enum.Data) error {
+func writeTypesFile(processor *codegen.Processor, nodeData []*enum.Data, edgeData []*enum.Data) error {
 	cfg := processor.Config
 	filePath := getFilePathForTypesFile(cfg)
 	imps := tsimport.NewImports(processor.Config, filePath)
@@ -909,17 +909,17 @@ func writeTypesFile(processor *codegen.Processor, nodeData []enum.Data, edgeData
 			Schema   *schema.Schema
 			Package  *codegen.ImportPackage
 			Config   *codegen.Config
-			NodeType enum.Enum
-			EdgeType enum.Enum
+			NodeType *enum.Enum
+			EdgeType *enum.Enum
 		}{
 			processor.Schema,
 			cfg.GetImportPackage(),
 			processor.Config,
-			enum.Enum{
+			&enum.Enum{
 				Name:   "NodeType",
 				Values: nodeData,
 			},
-			enum.Enum{
+			&enum.Enum{
 				Name:   "EdgeType",
 				Values: edgeData,
 			},

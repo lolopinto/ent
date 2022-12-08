@@ -39,7 +39,10 @@ export const RemoveTodoTagInputType = new GraphQLInputObjectType({
 
 export const RemoveTodoTagPayloadType = new GraphQLObjectType({
   name: "RemoveTodoTagPayload",
-  fields: (): GraphQLFieldConfigMap<RemoveTodoTagPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    RemoveTodoTagPayload,
+    RequestContext<Viewer>
+  > => ({
     todo: {
       type: new GraphQLNonNull(TodoType),
     },

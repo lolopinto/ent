@@ -18,6 +18,7 @@ import {
 } from "@snowtop/ent/action";
 import { User } from "../../..";
 import {
+  UserAccountStatus,
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
@@ -33,7 +34,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 export interface UserCreateInput {
   firstName: string;
   lastName: string;
-  accountStatus?: string | null;
+  accountStatus?: UserAccountStatus | null;
   emailAddress: string;
   phoneNumber: string;
   password: string;

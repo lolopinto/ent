@@ -5,20 +5,20 @@
 
 import { GraphQLEnumType } from "graphql";
 
-export const ContactInfoSourceType = new GraphQLEnumType({
-  name: "ContactInfoSource",
+export const ContactPhoneNumberLabelType = new GraphQLEnumType({
+  name: "ContactPhoneNumberLabel",
   values: {
-    FRIEND: {
-      value: "friend",
-    },
     WORK: {
       value: "work",
     },
-    ONLINE: {
-      value: "online",
+    HOME: {
+      value: "home",
+    },
+    DEFAULT: {
+      value: "default",
     },
     UNKNOWN: {
-      value: "%unknown%",
+      value: "unknown",
     },
   },
 });

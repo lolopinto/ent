@@ -34,12 +34,29 @@ enum CatBreed {
   SIAMESE
   TABBY
   OTHER
+  UNKNOWN
+}
+
+enum ContactEmailLabel {
+  WORK
+  HOME
+  DEFAULT
+  UNKNOWN
+  SELF
 }
 
 enum ContactInfoSource {
   FRIEND
   WORK
   ONLINE
+  UNKNOWN
+}
+
+enum ContactPhoneNumberLabel {
+  WORK
+  HOME
+  DEFAULT
+  UNKNOWN
 }
 
 enum DayOfWeekAlt {
@@ -49,6 +66,7 @@ enum DayOfWeekAlt {
   SUNDAY
   THURSDAY
   TUESDAY
+  UNKNOWN
   WEDNESDAY
 }
 
@@ -60,6 +78,7 @@ enum DayOfWeek {
   THURSDAY
   FRIDAY
   SATURDAY
+  UNKNOWN
 }
 
 enum DogBreedGroup {
@@ -70,6 +89,7 @@ enum DogBreedGroup {
   TOY
   NON_SPORTING
   HERDING
+  UNKNOWN
 }
 
 enum DogBreed {
@@ -80,12 +100,14 @@ enum DogBreed {
   POODLE
   GOLDEN_RETRIEVER
   OTHER
+  UNKNOWN
 }
 
 enum EnumUsedInList {
   YES
   NO
   MAYBE
+  UNKNOWN
 }
 
 enum EventRsvpStatus {
@@ -93,9 +115,11 @@ enum EventRsvpStatus {
   DECLINED
   MAYBE
   CAN_RSVP
+  UNKNOWN
 }
 
 enum IntEnumUsedInList {
+  UNKNOWN
   YES
   NO
   MAYBE
@@ -105,24 +129,28 @@ enum NestedObjNestedNestedEnum {
   YES
   NO
   MAYBE
+  UNKNOWN
 }
 
 enum NotifType2 {
   MOBILE
   WEB
   EMAIL
+  UNKNOWN
 }
 
 enum NotifType {
   MOBILE
   WEB
   EMAIL
+  UNKNOWN
 }
 
 enum ObjNestedEnum {
   YES
   NO
   MAYBE
+  UNKNOWN
 }
 
 enum RabbitBreed {
@@ -134,12 +162,22 @@ enum RabbitBreed {
   BELGIAN_HARE
   BEVEREN
   OTHER
+  UNKNOWN
 }
 
 enum SuperNestedObjectEnum {
   YES
   NO
   MAYBE
+  UNKNOWN
+}
+
+enum UserAccountStatus {
+  UNVERIFIED
+  VERIFIED
+  DEACTIVATED
+  DISABLED
+  UNKNOWN
 }
 
 enum UserDaysOff {
@@ -153,6 +191,7 @@ enum UserDaysOff {
 }
 
 enum UserIntEnum {
+  UNKNOWN
   VERIFIED
   UNVERIFIED
   DISABLED
@@ -164,6 +203,7 @@ enum UserPreferredShift {
   AFTERNOON
   EVENING
   GRAVEYARD
+  UNKNOWN
 }
 
 type Address implements Node {
@@ -198,7 +238,7 @@ type ContactEmail implements Node {
   id: ID!
   extra: ContactInfo
   emailAddress: String!
-  label: String!
+  label: ContactEmailLabel!
 }
 
 type ContactInfo {
@@ -211,7 +251,7 @@ type ContactPhoneNumber implements Node {
   id: ID!
   extra: ContactInfo
   phoneNumber: String!
-  label: String!
+  label: ContactPhoneNumberLabel!
 }
 
 type Contact implements Node {
@@ -343,7 +383,7 @@ type User implements Node {
   lastName: String!
   emailAddress: String!
   phoneNumber: String
-  accountStatus: String
+  accountStatus: UserAccountStatus
   bio: String
   nicknames: [String!]
   prefs: UserPrefsStruct
@@ -759,7 +799,7 @@ type ContactEditPayload {
 input ContactEmailCreateInput {
   extra: ContactInfoInput
   emailAddress: String!
-  label: String!
+  label: ContactEmailLabel!
   contactID: ID!
 }
 
@@ -781,7 +821,7 @@ input ContactEmailEditInput {
   id: ID!
   extra: ContactInfoInput
   emailAddress: String
-  label: String
+  label: ContactEmailLabel
   contactID: ID
 }
 
@@ -797,7 +837,7 @@ input ContactInfoInput {
 input ContactPhoneNumberCreateInput {
   extra: ContactInfoInput
   phoneNumber: String!
-  label: String!
+  label: ContactPhoneNumberLabel!
   contactID: ID!
 }
 
@@ -819,7 +859,7 @@ input ContactPhoneNumberEditInput {
   id: ID!
   extra: ContactInfoInput
   phoneNumber: String
-  label: String
+  label: ContactPhoneNumberLabel
   contactID: ID
 }
 
@@ -868,7 +908,7 @@ type EditPhoneNumberPayload {
 input EmailContactCreateInput {
   extra: ContactInfoInput
   emailAddress: String!
-  label: String!
+  label: ContactEmailLabel!
 }
 
 input EventAddHostInput {
@@ -943,6 +983,7 @@ enum EventRsvpStatusInput {
   ATTENDING
   DECLINED
   MAYBE
+  UNKNOWN
 }
 
 input HolidayCreateInput {
@@ -976,7 +1017,7 @@ input PetUnionTypeInput {
 input PhoneNumberContactCreateInput {
   extra: ContactInfoInput
   phoneNumber: String!
-  label: String!
+  label: ContactPhoneNumberLabel!
 }
 
 input RabbitTypeInput {

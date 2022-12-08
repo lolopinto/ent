@@ -22,7 +22,11 @@ import CreateContactAction, {
   ContactCreateInput,
 } from "../../../../ent/contact/actions/create_contact_action";
 import { ContactInfoInputType } from "../input/contact_info_input_type";
-import { ContactType } from "../../../resolvers";
+import {
+  ContactEmailLabelType,
+  ContactPhoneNumberLabelType,
+  ContactType,
+} from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactCreateInput extends ContactCreateInput {
@@ -43,7 +47,7 @@ export const EmailContactCreateInput = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(ContactEmailLabelType),
     },
   }),
 });
@@ -58,7 +62,7 @@ export const PhoneNumberContactCreateInput = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(ContactPhoneNumberLabelType),
     },
   }),
 });
@@ -86,7 +90,10 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
 
 export const ContactCreatePayloadType = new GraphQLObjectType({
   name: "ContactCreatePayload",
-  fields: (): GraphQLFieldConfigMap<ContactCreatePayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    ContactCreatePayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     contact: {
       type: new GraphQLNonNull(ContactType),
     },

@@ -357,6 +357,7 @@ export interface Type {
   enumMap?: EnumMap; // enumMap e.g. k->v pair for enums
   intEnumMap?: IntEnumMap;
   deprecatedIntEnumMap?: IntEnumMap;
+  disableUnknownType?: boolean;
 
   // @deprecated eventually kill this
   importType?: ImportType;

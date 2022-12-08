@@ -42,7 +42,10 @@ export const UserAuthJWTInputType = new GraphQLInputObjectType({
 
 export const UserAuthJWTPayloadType = new GraphQLObjectType({
   name: "UserAuthJWTPayload",
-  fields: (): GraphQLFieldConfigMap<UserAuthJWTPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    UserAuthJWTPayload,
+    RequestContext<ExampleViewerAlias>
+  > => ({
     token: {
       type: new GraphQLNonNull(GraphQLString),
     },

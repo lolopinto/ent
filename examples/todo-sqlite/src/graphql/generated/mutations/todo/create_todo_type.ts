@@ -52,7 +52,10 @@ export const CreateTodoInputType = new GraphQLInputObjectType({
 
 export const CreateTodoPayloadType = new GraphQLObjectType({
   name: "CreateTodoPayload",
-  fields: (): GraphQLFieldConfigMap<CreateTodoPayload, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<
+    CreateTodoPayload,
+    RequestContext<Viewer>
+  > => ({
     todo: {
       type: new GraphQLNonNull(TodoType),
     },

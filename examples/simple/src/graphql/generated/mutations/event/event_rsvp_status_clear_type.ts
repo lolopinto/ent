@@ -48,7 +48,7 @@ export const ClearEventRsvpStatusPayloadType = new GraphQLObjectType({
   name: "ClearEventRsvpStatusPayload",
   fields: (): GraphQLFieldConfigMap<
     ClearEventRsvpStatusPayload,
-    RequestContext
+    RequestContext<ExampleViewerAlias>
   > => ({
     event: {
       type: new GraphQLNonNull(EventType),

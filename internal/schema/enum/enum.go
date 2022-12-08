@@ -13,10 +13,12 @@ import (
 )
 
 type Enum struct {
-	Name             string
-	Values           []Data
-	DeprecatedValues []Data
-	Imported         bool // Imported enum that's not in this file
+	Name               string
+	Values             []*Data
+	DeprecatedValues   []*Data
+	Imported           bool // Imported enum that's not in this file
+	convertFuncTSType  string
+	DisableUnknownType bool
 }
 
 func (c *Enum) Clone() *Enum {
@@ -26,6 +28,38 @@ func (c *Enum) Clone() *Enum {
 		Imported: c.Imported,
 	}
 	return ret
+}
+
+type convertFunctionInfo struct {
+	Name              string
+	NullableName      string
+	ListName          string
+	NullableListName  string
+	UnknownKey        string
+	ConvertFuncTSType string
+}
+
+func (c *Enum) GetConvertFunctionInfo() *convertFunctionInfo {
+	if c.DisableUnknownType {
+		return nil
+	}
+	var unknown *Data
+	for _, v := range c.Values {
+		if v.UnknownVal {
+			unknown = v
+		}
+	}
+	if unknown == nil {
+		return nil
+	}
+	return &convertFunctionInfo{
+		Name:              fmt.Sprintf("convert%s", c.Name),
+		NullableName:      fmt.Sprintf("convertNullable%s", c.Name),
+		ListName:          fmt.Sprintf("convert%sList", c.Name),
+		NullableListName:  fmt.Sprintf("convertNullable%sList", c.Name),
+		UnknownKey:        unknown.Name,
+		ConvertFuncTSType: c.convertFuncTSType,
+	}
 }
 
 func EnumEqual(e1, e2 *Enum) bool {
@@ -120,8 +154,8 @@ func (c *Enum) GetEnumValues() []interface{} {
 type GQLEnum struct {
 	Name             string // Name is the name of the enum
 	Type             string // type of the enum e.g. nullable or not
-	Values           []Data
-	DeprecatedValues []Data
+	Values           []*Data
+	DeprecatedValues []*Data
 }
 
 func (g GQLEnum) GetGraphQLNames() []string {
@@ -164,9 +198,10 @@ type Data struct {
 	Value       interface{}
 	Comment     string
 	PackagePath string
+	UnknownVal  bool
 }
 
-func datasEqual(l1, l2 []Data) bool {
+func datasEqual(l1, l2 []*Data) bool {
 	if len(l1) != len(l2) {
 		return false
 	}
@@ -179,7 +214,7 @@ func datasEqual(l1, l2 []Data) bool {
 	return true
 }
 
-func dataEqual(d1, d2 Data) bool {
+func dataEqual(d1, d2 *Data) bool {
 	return d1.Name == d2.Name &&
 		d1.Value == d2.Value &&
 		d1.Comment == d2.Comment &&
@@ -187,21 +222,48 @@ func dataEqual(d1, d2 Data) bool {
 }
 
 func GetTSEnumNameForVal(val string) string {
-	allUpper := true
+	ret, _ := GetTSEnumNameForValInfo(val)
+	return ret
+}
+
+func stringAllUpper(val string) bool {
+	all := true
 	for _, char := range val {
 		if !unicode.IsLetter(char) {
 			continue
 		}
 		if !unicode.IsUpper(char) {
-			allUpper = false
+			all = false
 			break
 		}
 	}
-	// keep all caps constants as all caps constants
-	if allUpper {
-		return val
+	return all
+}
+
+func stringAllLower(val string) bool {
+	all := true
+	for _, char := range val {
+		if !unicode.IsLetter(char) {
+			continue
+		}
+		if !unicode.IsLower(char) {
+			all = false
+			break
+		}
 	}
-	return strcase.ToCamel(val)
+	return all
+}
+
+// min int. weird to have enum with unknown value
+const JS_MIN_SAFE_INT = -9007199254740991
+
+func GetTSEnumNameForValInfo(val string) (string, bool) {
+	all := stringAllUpper(val)
+	// keep all caps constants as all caps constants
+	if all {
+		return val, all
+	}
+	return strcase.ToCamel(val), false
 }
 
 type Input struct {
@@ -212,53 +274,152 @@ type Input struct {
 	EnumMap              map[string]string
 	IntEnumMap           map[string]int
 	DeprecatedIntEnumMap map[string]int
+	DisableUnknownType   bool
 }
 
 func (i *Input) HasValues() bool {
 	return len(i.Values) > 0 || len(i.EnumMap) > 0 || len(i.IntEnumMap) > 0
 }
 
-func (i *Input) getValuesFromValues() ([]Data, []Data) {
-	tsVals := make([]Data, len(i.Values))
-	gqlVals := make([]Data, len(i.Values))
-	for j, val := range i.Values {
-		tsName := GetTSEnumNameForVal(val)
+type unknownInfo struct {
+	keyAllUpper, keyAllLower, valAllLower, valAllUpper bool
+	defaultValue                                       interface{}
+}
 
-		gqlVals[j] = Data{
+func augmentUnknownVals(v unknownInfo, keys map[string]int, tsVals, gqlVals []*Data) ([]*Data, []*Data) {
+
+	// found, edit in place, nothing else to do here.
+	for k := range keys {
+		if strings.ToLower(k) == "unknown" {
+			idx := keys[k]
+			tsVals[idx].UnknownVal = true
+			gqlVals[idx].UnknownVal = true
+
+			return tsVals, gqlVals
+		}
+	}
+
+	var key string
+	var value string
+
+	if v.keyAllUpper {
+		key = "UNKNOWN"
+	} else if v.keyAllLower {
+		key = "Unknown"
+	} else {
+		key = "Unknown"
+	}
+
+	if v.valAllUpper {
+		value = "%UNKNOWN%"
+	} else if v.valAllLower {
+		value = "%unknown%"
+	} else {
+		value = "%Unknown%"
+	}
+
+	// no unknown, add unknown
+	gqlVal := &Data{
+		// norm for graphql enums is all caps
+		Name:       strings.ToUpper(key),
+		Value:      strconv.Quote(value),
+		UnknownVal: true,
+	}
+
+	tsVal := &Data{
+		Name:       key,
+		Value:      strconv.Quote(value),
+		UnknownVal: true,
+	}
+
+	if v.defaultValue != nil {
+		gqlVal.Value = v.defaultValue
+		tsVal.Value = v.defaultValue
+	}
+
+	gqlVals = append(gqlVals, gqlVal)
+	tsVals = append(tsVals, tsVal)
+
+	return tsVals, gqlVals
+}
+
+func (i *Input) getValuesFromValues() ([]*Data, []*Data) {
+	tsVals := make([]*Data, len(i.Values))
+	gqlVals := make([]*Data, len(i.Values))
+
+	keys := make(map[string]int)
+	allUpper := true
+	allLower := true
+	for j, val := range i.Values {
+		tsName, upper := GetTSEnumNameForValInfo(val)
+		allUpper = allUpper && upper
+		allLower = allLower && stringAllLower(val)
+
+		gqlVals[j] = &Data{
 			// norm for graphql enum names is all caps
 			Name:  strings.ToUpper(strcase.ToSnake(val)),
 			Value: strconv.Quote(val),
 		}
-		tsVals[j] = Data{
+		tsVals[j] = &Data{
 			Name: tsName,
 			// value is actually what's put there for now
 			// TODO we need to figure out if there's a standard here
 			// or a way to have keys: values for the generated enums
 			Value: strconv.Quote(val),
 		}
+
+		keys[val] = j
 	}
+
+	if !i.DisableUnknownType {
+		return augmentUnknownVals(unknownInfo{
+			keyAllUpper: allUpper,
+			valAllUpper: allUpper,
+			valAllLower: allLower,
+			keyAllLower: allLower,
+		}, keys, tsVals, gqlVals)
+	}
+
 	return tsVals, gqlVals
 }
 
-func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
-	tsVals := make([]Data, len(i.EnumMap))
-	gqlVals := make([]Data, len(i.EnumMap))
+func (i *Input) getValuesFromEnumMap() ([]*Data, []*Data) {
+	tsVals := make([]*Data, len(i.EnumMap))
+	gqlVals := make([]*Data, len(i.EnumMap))
 	j := 0
-	for k, val := range i.EnumMap {
-		tsName := GetTSEnumNameForVal(k)
+	allUpper := true
+	valAllUpper := true
+	valAllLower := true
+	keys := make(map[string]int)
 
-		gqlVals[j] = Data{
+	for k, val := range i.EnumMap {
+		tsName, upper := GetTSEnumNameForValInfo(k)
+		allUpper = allUpper && upper
+		valAllUpper = valAllUpper && stringAllUpper(val)
+		valAllLower = valAllLower && stringAllLower(val)
+
+		gqlVals[j] = &Data{
 			// norm for graphql enums is all caps
 			Name:  strings.ToUpper(strcase.ToSnake(k)),
 			Value: strconv.Quote(val),
 		}
 
-		tsVals[j] = Data{
+		tsVals[j] = &Data{
 			Name:  tsName,
 			Value: strconv.Quote(val),
 		}
+		keys[k] = j
 		j++
 	}
+
+	if !i.DisableUnknownType {
+		tsVals, gqlVals = augmentUnknownVals(unknownInfo{
+			keyAllUpper: allUpper,
+			valAllUpper: valAllUpper,
+			valAllLower: valAllLower,
+		}, keys, tsVals, gqlVals)
+	}
+
 	// golang maps are not stable so sort for stability
 	sort.Slice(tsVals, func(i, j int) bool {
 		return tsVals[i].Name < tsVals[j].Name
@@ -269,26 +430,41 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 	return tsVals, gqlVals
 }
 
-func (i *Input) getValuesFromIntEnumMap(m map[string]int) ([]Data, []Data) {
-	tsVals := make([]Data, len(m))
-	gqlVals := make([]Data, len(m))
+func (i *Input) getValuesFromIntEnumMap(m map[string]int, addUnknown bool) ([]*Data, []*Data) {
+	tsVals := make([]*Data, len(m))
+	gqlVals := make([]*Data, len(m))
 	j := 0
+	keys := make(map[string]int)
+
+	allUpper := true
 
 	for k, val := range m {
-		tsName := GetTSEnumNameForVal(k)
+		tsName, upper := GetTSEnumNameForValInfo(k)
+		allUpper = allUpper && upper
 
-		gqlVals[j] = Data{
+		gqlVals[j] = &Data{
 			// norm for graphql enums is all caps
 			Name:  strings.ToUpper(strcase.ToSnake(k)),
 			Value: val,
 		}
 
-		tsVals[j] = Data{
+		tsVals[j] = &Data{
 			Name:  tsName,
 			Value: val,
 		}
+		keys[k] = j
 		j++
 	}
+
+	if addUnknown && !i.DisableUnknownType {
+		tsVals, gqlVals = augmentUnknownVals(unknownInfo{
+			keyAllUpper: allUpper,
+			valAllUpper: allUpper,
+			// TODO this should be an option...
+			defaultValue: JS_MIN_SAFE_INT,
+		}, keys, tsVals, gqlVals)
+	}
+
 	// golang maps are not stable so sort for stability
 	sort.Slice(tsVals, func(i, j int) bool {
 		return tsVals[i].Value.(int) < tsVals[j].Value.(int)
@@ -309,6 +485,7 @@ func NewInputFromEnumType(enumType enttype.EnumeratedType, fkey bool) (*Input, e
 		EnumMap:              data.EnumMap,
 		IntEnumMap:           data.IntEnumMap,
 		DeprecatedIntEnumMap: data.DeprecatedIntEnumMap,
+		DisableUnknownType:   data.DisableUnknownType,
 	}
 	if !input.HasValues() && !fkey {
 		return nil, fmt.Errorf("Enum %s has no values", input.TSName)
@@ -317,15 +494,18 @@ func NewInputFromEnumType(enumType enttype.EnumeratedType, fkey bool) (*Input, e
 }
 
 func GetEnums(input *Input) (*Enum, *GQLEnum) {
-	var tsVals []Data
-	var gqlVals []Data
-	var deprecatedTSVals []Data
-	var deprecatedgqlVals []Data
+	var tsVals []*Data
+	var gqlVals []*Data
+	var deprecatedTSVals []*Data
+	var deprecatedgqlVals []*Data
+	convertFuncTSType := "string"
+	// include UNKNOWN
 	if len(input.EnumMap) > 0 {
 		tsVals, gqlVals = input.getValuesFromEnumMap()
 	} else if len(input.IntEnumMap) > 0 {
-		tsVals, gqlVals = input.getValuesFromIntEnumMap(input.IntEnumMap)
-		deprecatedTSVals, deprecatedgqlVals = input.getValuesFromIntEnumMap(input.DeprecatedIntEnumMap)
+		tsVals, gqlVals = input.getValuesFromIntEnumMap(input.IntEnumMap, true)
+		deprecatedTSVals, deprecatedgqlVals = input.getValuesFromIntEnumMap(input.DeprecatedIntEnumMap, false)
+		convertFuncTSType = "number"
 	} else {
 		tsVals, gqlVals = input.getValuesFromValues()
 	}
@@ -340,8 +520,10 @@ func GetEnums(input *Input) (*Enum, *GQLEnum) {
 		Name:   input.TSName,
 		Values: tsVals,
 		// not the best way to determine this but works for now
-		Imported:         len(tsVals) == 0,
-		DeprecatedValues: deprecatedTSVals,
+		Imported:           len(tsVals) == 0,
+		DeprecatedValues:   deprecatedTSVals,
+		convertFuncTSType:  convertFuncTSType,
+		DisableUnknownType: input.DisableUnknownType,
 	}
 	return tsEnum, gqlEnum
 }
