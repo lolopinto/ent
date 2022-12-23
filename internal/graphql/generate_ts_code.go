@@ -2330,7 +2330,7 @@ func checkUnionType(cfg codegenapi.Config, nodeName string, f *field.Field, curr
 			if err != nil {
 				return nil, false, err
 			}
-			for _, v := range fi.Fields {
+			for _, v := range fi.EntFields() {
 				ret, done, err := checkUnionType(cfg, nodeName, v, newCurr)
 				if err != nil {
 					return nil, false, err

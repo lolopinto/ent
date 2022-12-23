@@ -70,16 +70,16 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*in
 
 	if options.SortFields {
 		//		sort fields
-		sort.Slice(fieldInfo.Fields, func(i, j int) bool {
+		sort.Slice(fieldInfo.fields, func(i, j int) bool {
 			// sort lexicographically but put ID first
-			if fieldInfo.Fields[i].FieldName == "ID" {
+			if fieldInfo.fields[i].FieldName == "ID" {
 				return true
 			}
-			if fieldInfo.Fields[j].FieldName == "ID" {
+			if fieldInfo.fields[j].FieldName == "ID" {
 				return false
 			}
 
-			return fieldInfo.Fields[i].FieldName < fieldInfo.Fields[j].FieldName
+			return fieldInfo.fields[i].FieldName < fieldInfo.fields[j].FieldName
 		})
 	}
 
@@ -87,7 +87,7 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*in
 }
 
 type FieldInfo struct {
-	Fields   []*Field
+	fields   []*Field
 	fieldMap map[string]*Field
 	// really only used in tests and old go schema
 	NonEntFields []*NonEntField
@@ -135,17 +135,10 @@ func (fieldInfo *FieldInfo) addField(f *Field) error {
 	fieldInfo.cols[f.dbName] = f
 	fieldInfo.names[name] = true
 
-	fieldInfo.Fields = append(fieldInfo.Fields, f)
+	fieldInfo.fields = append(fieldInfo.fields, f)
 	fieldInfo.fieldMap[f.FieldName] = f
 
 	return nil
-}
-
-// GetFieldsFn returns a boolean which when returns true indicates that
-// the Node used the GetFields() API in the config to define fields as
-// opposed to fields in a struct
-func (fieldInfo *FieldInfo) GetFieldsFn() bool {
-	return fieldInfo.getFieldsFn
 }
 
 func (fieldInfo *FieldInfo) GetFieldByName(fieldName string) *Field {
@@ -171,8 +164,23 @@ func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) error {
 func (fieldInfo *FieldInfo) GraphQLFields() []*Field {
 	var fields []*Field
 
-	for _, f := range fieldInfo.Fields {
-		if !f.hideFromGraphQL {
+	for _, f := range fieldInfo.fields {
+		if !f.hideFromGraphQL && !f.dbOnly {
+			fields = append(fields, f)
+		}
+	}
+	return fields
+}
+
+func (fieldInfo *FieldInfo) AllFields() []*Field {
+	return fieldInfo.fields
+}
+
+func (fieldInfo *FieldInfo) EntFields() []*Field {
+	var fields []*Field
+
+	for _, f := range fieldInfo.fields {
+		if !f.dbOnly {
 			fields = append(fields, f)
 		}
 	}
@@ -181,8 +189,8 @@ func (fieldInfo *FieldInfo) GraphQLFields() []*Field {
 
 func (fieldInfo *FieldInfo) GetEditableFields() []*Field {
 	var fields []*Field
-	for _, f := range fieldInfo.Fields {
-		if f.EditableField() {
+	for _, f := range fieldInfo.fields {
+		if f.EditableField() && !f.dbOnly {
 			fields = append(fields, f)
 		}
 	}
@@ -191,7 +199,7 @@ func (fieldInfo *FieldInfo) GetEditableFields() []*Field {
 
 func (fieldInfo *FieldInfo) NotEditableInverseEdgeFieldsWithDefaults() []*Field {
 	var fields []*Field
-	for _, f := range fieldInfo.Fields {
+	for _, f := range fieldInfo.fields {
 		if f.EditableField() || f.inverseEdge == nil {
 			continue
 		}

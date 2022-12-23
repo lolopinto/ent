@@ -227,7 +227,7 @@ func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.
 
 	// no override of fields so we should get default fields
 	if len(fieldNames) == 0 {
-		for _, f := range fieldInfo.Fields {
+		for _, f := range fieldInfo.EntFields() {
 			if f.ExposeToActionsByDefault() && f.EditableField() && !excludedFields[f.FieldName] {
 				f2, err := getField(f, f.FieldName)
 				if err != nil {

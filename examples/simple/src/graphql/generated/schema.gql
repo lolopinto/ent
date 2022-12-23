@@ -393,8 +393,6 @@ type User implements Node {
   preferredShift: [UserPreferredShift!]
   timeInMs: String
   funUuids: [ID!]
-  newCol: String
-  newCol2: String
   superNestedObject: UserSuperNestedObject
   nestedList: [UserNestedObjectList!]
   intEnum: UserIntEnum

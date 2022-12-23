@@ -37,7 +37,7 @@ func TestDerivedFields(t *testing.T) {
 	fieldInfo := info.NodeData.FieldInfo
 
 	// 5 fields above + OwnerType field + id,createdat,updatedat
-	require.Len(t, fieldInfo.Fields, 9)
+	require.Len(t, fieldInfo.AllFields(), 9)
 
 	// field exists
 	f := fieldInfo.GetFieldByName("OwnerType")
