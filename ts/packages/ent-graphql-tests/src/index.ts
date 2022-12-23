@@ -22,6 +22,7 @@ import {
 import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
 import supertest from "supertest";
 import * as fs from "fs";
+import { inspect } from "util";
 
 // TODO need to make it obvious that jest-expect-message is a peer?dependency and setupFilesAfterEnv is a requirement to use this
 // or change the usage here.
@@ -450,7 +451,7 @@ async function expectFromRoot(
   let [st, temp] = makeGraphQLRequest(config, q, fieldArgs);
   const res = await temp.expect("Content-Type", /json/);
   if (config.debugMode) {
-    console.log(res.body);
+    console.log(inspect(res.body, false, 3));
   }
   // if there's a callback, let everything be done there and we're done
   if (config.callback) {
