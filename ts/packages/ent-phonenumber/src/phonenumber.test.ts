@@ -242,7 +242,9 @@ describe("list", () => {
     const expected = ["+14159876543", "+16501234567"];
     expect(await typ.valid(input)).toBe(true);
     // postgres stored in db style
-    expect(typ.format(input)).toEqual(`{${expected.join(",")}}`);
+    expect(typ.format(input)).toEqual(
+      `{${expected.map((v) => JSON.stringify(v)).join(",")}}`,
+    );
   });
 
   test("invalid", async () => {
