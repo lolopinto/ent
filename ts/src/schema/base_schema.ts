@@ -1,4 +1,4 @@
-import { Field, FieldMap, Pattern, FieldOverrideMap } from "./schema";
+import { FieldMap, Pattern, FieldOverrideMap } from "./schema";
 import { v4 as uuidv4 } from "uuid";
 import { TimestampType, UUIDType } from "./field";
 import { Action, AssocEdgeGroup, Constraint, Edge, Index, Schema } from ".";
@@ -79,8 +79,7 @@ export interface SchemaConfig extends Schema {}
 // Ent schema. has Node Pattern by default.
 // exists just to have less typing and easier for clients to implement
 export class EntSchema implements Schema {
-  // Field[] compatibility reasons
-  fields: FieldMap | Field[];
+  fields: FieldMap;
 
   fieldOverrides: FieldOverrideMap | undefined;
 
@@ -123,8 +122,7 @@ export class EntSchema implements Schema {
 }
 
 export class EntSchemaWithTZ implements Schema {
-  // Field[] compatibility reasons
-  fields: FieldMap | Field[];
+  fields: FieldMap;
 
   fieldOverrides: FieldOverrideMap | undefined;
 
