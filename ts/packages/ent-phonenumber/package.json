@@ -29,15 +29,15 @@
   },
   "homepage": "https://github.com/lolopinto/ent#readme",
   "devDependencies": {
-    "@snowtop/ent": "^0.1.0-alpha1",
-    "@types/jest": "^26.0.23",
-    "jest": "^26.6.3",
-    "ts-jest": "^26.5.6"
+    "@snowtop/ent": "^0.1.0-alpha95",
+    "@types/jest": "^29.2.4",
+    "jest": "^29.3.1",
+    "ts-jest": "^29.0.3"
   },
   "dependencies": {
-    "libphonenumber-js": "^1.9.17"
+    "libphonenumber-js": "^1.10.15"
   },
   "peerDependencies": {
-    "@snowtop/ent": ">= 0.1.0-alpha"
+    "@snowtop/ent": ">= 0.1.0-alpha95"
   }
 }
