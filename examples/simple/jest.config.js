@@ -9,7 +9,7 @@ module.exports = {
     "^src/(.*)": "<rootDir>/src/$1",
   },
   setupFilesAfterEnv: [
-    "@alex_neo/jest-expect-message",
+    "jest-expect-message",
     "jest-date-mock",
     "./src/testsetup/setup.ts",
   ],
