@@ -194,6 +194,10 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		}
 	}
 
+	if f.DBOnly && !(f.Nullable || f.ServerDefault != nil) {
+		return nil, fmt.Errorf("for field %s to be db only, it needs to be nullable or have a server default", f.Name)
+	}
+
 	return ret, nil
 }
 

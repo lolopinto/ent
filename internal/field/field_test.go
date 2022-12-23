@@ -238,6 +238,44 @@ func TestForeignKey(t *testing.T) {
 	)
 }
 
+func TestDBOnlyNullableField(t *testing.T) {
+	_, err := newFieldFromInputTest(&codegenapi.DummyConfig{}, &input.Field{
+		Name: "foo",
+		Type: &input.FieldType{
+			DBType: input.Int,
+		},
+		DBOnly:   true,
+		Nullable: true,
+	})
+	require.Nil(t, err)
+}
+
+func TestDBOnlyServerDefaultField(t *testing.T) {
+	dv := "2"
+
+	_, err := newFieldFromInputTest(&codegenapi.DummyConfig{}, &input.Field{
+		Name: "foo",
+		Type: &input.FieldType{
+			DBType: input.Int,
+		},
+		DBOnly:        true,
+		Nullable:      true,
+		ServerDefault: &dv,
+	})
+	require.Nil(t, err)
+}
+
+func TestDBOnlyNoNullableNoServerDefault(t *testing.T) {
+	_, err := newFieldFromInputTest(&codegenapi.DummyConfig{}, &input.Field{
+		Name: "foo",
+		Type: &input.FieldType{
+			DBType: input.Int,
+		},
+		DBOnly: true,
+	})
+	require.NotNil(t, err)
+}
+
 func getFieldFromInput(t *testing.T, f *input.Field) *Field {
 	cfg := &codegenapi.DummyConfig{}
 
