@@ -141,7 +141,9 @@ test("list", async () => {
   const input = ["first_last@email.com", "first_last@bar.com"];
   expect(await tt.valid(input)).toBe(true);
   // postgres stored in db style
-  expect(tt.format(input)).toEqual(`{${input.join(",")}}`);
+  expect(tt.format(input)).toEqual(
+    `{${input.map((v) => JSON.stringify(v)).join(",")}}`,
+  );
 });
 
 test("list with invalid", async () => {
