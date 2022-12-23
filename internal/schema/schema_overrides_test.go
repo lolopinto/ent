@@ -812,7 +812,7 @@ func testOverrides(
 		require.NotNil(t, expNodeData)
 		require.NotNil(t, nodeData)
 
-		for _, exp := range expNodeData.FieldInfo.Fields {
+		for _, exp := range expNodeData.FieldInfo.AllFields() {
 			f := nodeData.FieldInfo.GetFieldByName(exp.FieldName)
 
 			require.NotNil(t, f)

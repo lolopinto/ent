@@ -414,7 +414,7 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	colMap := make(map[string]*dbColumn)
 	var constraints []dbConstraint
 
-	for _, f := range nodeData.FieldInfo.Fields {
+	for _, f := range nodeData.FieldInfo.AllFields() {
 		if !f.CreateDBColumn() {
 			continue
 		}
@@ -440,7 +440,7 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 }
 
 func (s *dbSchema) findFieldForCol(nodeData *schema.NodeData, col string) *field.Field {
-	for _, f := range nodeData.FieldInfo.Fields {
+	for _, f := range nodeData.FieldInfo.AllFields() {
 		if f.GetDbColName() == col {
 			return f
 		}
@@ -680,7 +680,7 @@ func (s *dbSchema) getSchemaForTemplate() (*dbSchemaTemplate, error) {
 
 	addData := func(nodeData *schema.NodeData) error {
 		pkeys := []string{}
-		for _, field := range nodeData.FieldInfo.Fields {
+		for _, field := range nodeData.FieldInfo.AllFields() {
 			// we only support single field primary keys here so this is the solution
 			// eventually, this needs to change...
 			if field.SingleFieldPrimaryKey() {

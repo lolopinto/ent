@@ -49,8 +49,6 @@ export interface UserInput {
   preferredShift?: UserPreferredShift[] | null;
   timeInMs?: BigInt | null;
   funUuids?: ID[] | null;
-  newCol?: string | null;
-  newCol2?: string | null;
   superNestedObject?: UserSuperNestedObject | null;
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;
@@ -601,8 +599,6 @@ export class UserBuilder<
     addField("preferredShift", input.preferredShift);
     addField("timeInMs", input.timeInMs);
     addField("fun_uuids", input.funUuids);
-    addField("new_col", input.newCol);
-    addField("new_col2", input.newCol2);
     addField("superNestedObject", input.superNestedObject);
     addField("nestedList", input.nestedList);
     addField("int_enum", input.intEnum);
@@ -748,24 +744,6 @@ export class UserBuilder<
     }
 
     return this.existingEnt?.funUuids ?? null;
-  }
-
-  // get value of new_col. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNewColValue(): string | null {
-    if (this.input.newCol !== undefined) {
-      return this.input.newCol;
-    }
-
-    return this.existingEnt?.newCol ?? null;
-  }
-
-  // get value of new_col2. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNewCol2Value(): string | null {
-    if (this.input.newCol2 !== undefined) {
-      return this.input.newCol2;
-    }
-
-    return this.existingEnt?.newCol2 ?? null;
   }
 
   // get value of superNestedObject. Retrieves it from the input if specified or takes it from existingEnt

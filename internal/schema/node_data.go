@@ -152,7 +152,7 @@ func (nodeData *NodeData) GetActionByGraphQLName(graphQLName string) action.Acti
 }
 
 func (nodeData *NodeData) HasPrivateField(cfg codegenapi.Config) bool {
-	for _, field := range nodeData.FieldInfo.Fields {
+	for _, field := range nodeData.FieldInfo.EntFields() {
 		if field.Private(cfg) {
 			return true
 		}
@@ -173,7 +173,7 @@ func (nodeData *NodeData) HasAssocGroups() bool {
 }
 
 func (nodeData *NodeData) FieldsWithFieldPrivacy() bool {
-	for _, f := range nodeData.FieldInfo.Fields {
+	for _, f := range nodeData.FieldInfo.EntFields() {
 		if f.HasFieldPrivacy() {
 			return true
 		}
@@ -250,7 +250,7 @@ func (nodeData *NodeData) GetImportsForBaseFile(s *Schema, cfg codegenapi.Config
 		})
 	}
 
-	for _, f := range nodeData.FieldInfo.Fields {
+	for _, f := range nodeData.FieldInfo.EntFields() {
 		if f.Index() && f.EvolvedIDField() {
 			imp, err := nodeData.GetFieldQueryName(f)
 			if err != nil {
@@ -304,7 +304,7 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 		})
 	}
 
-	for _, f := range nodeData.FieldInfo.Fields {
+	for _, f := range nodeData.FieldInfo.EntFields() {
 		t := f.GetFieldType()
 		if enttype.IsImportDepsType(t) {
 			t2 := t.(enttype.ImportDepsType)
@@ -493,7 +493,7 @@ func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
 		}
 	}
 
-	for _, field := range nodeData.FieldInfo.Fields {
+	for _, field := range nodeData.FieldInfo.EntFields() {
 		if field.Unique() {
 			group1 = append(group1, &loader{
 				Name:                 nodeData.GetFieldLoaderName(field),

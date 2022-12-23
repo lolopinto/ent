@@ -38,7 +38,7 @@
 {{$dataType := printf "%sDBData" .Node -}}
 
 interface {{$dataType}} {
-  {{range $field := .FieldInfo.Fields -}}
+  {{range $field := .FieldInfo.EntFields -}}
     {{ range $field.GetTsTypeImports -}}
       {{ if ($nodeData.ForeignImport .Import) -}}
         {{ reserveImportPath . false -}}
@@ -50,7 +50,7 @@ interface {{$dataType}} {
   {{ end -}}
 }
 
-{{range $field := .FieldInfo.Fields -}}
+{{range $field := .FieldInfo.EntFields -}}
   {{ if $field.FetchOnDemand -}}
     const {{$field.TSPublicAPIName}}Loader = new {{useImport "ObjectLoaderFactory"}}({
       tableName: {{useImport $loaderInfo}}.tableName,
@@ -81,7 +81,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
-  {{range $field := .FieldInfo.Fields -}}
+  {{range $field := .FieldInfo.EntFields -}}
     {{ range $field.GetTsTypeImports -}}
       {{ if ($nodeData.ForeignImport .Import) -}}
         {{ reserveImportPath . false -}}
@@ -106,7 +106,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       // @ts-ignore pass to mixin
       super(viewer, data);
     {{ end -}}
-    {{range $field := .FieldInfo.Fields -}}
+    {{range $field := .FieldInfo.EntFields -}}
       {{ if fieldLoadedInBaseClass $schema $field -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
         this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg $val }}
@@ -123,7 +123,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   }
 
   {{$node := .Node}}
-  {{range $field := .FieldInfo.Fields -}}
+  {{range $field := .FieldInfo.EntFields -}}
     {{ if $field.HasAsyncAccessor $cfg -}}
       async {{$field.TSPublicAPIName}}(): Promise<{{$field.TsType}}> {
         {{ $fieldName := $field.TsFieldName $cfg -}}
@@ -302,7 +302,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   }
 
 
-  {{ range $field := .FieldInfo.Fields -}}
+  {{ range $field := .FieldInfo.EntFields -}}
     {{ if $field.Unique  -}}
       {{$fieldLoader := useImport ($this.GetFieldLoaderName $field) -}}
       static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(

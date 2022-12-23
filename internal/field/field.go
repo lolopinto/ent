@@ -66,6 +66,7 @@ type Field struct {
 	defaultToViewerOnCreate    bool
 	hasFieldPrivacy            bool
 	fetchOnDemand              bool
+	dbOnly                     bool
 
 	forceRequiredInAction bool
 	forceOptionalInAction bool
@@ -108,6 +109,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		defaultToViewerOnCreate:    f.DefaultToViewerOnCreate,
 		hasFieldPrivacy:            f.HasFieldPrivacy,
 		fetchOnDemand:              f.FetchOnDemand,
+		dbOnly:                     f.DBOnly,
 		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
 		patternName:                f.PatternName,
 		userConvert:                f.UserConvert,
@@ -876,6 +878,8 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		hasDefaultValueOnEdit:      f.hasDefaultValueOnEdit,
 		defaultToViewerOnCreate:    f.defaultToViewerOnCreate,
 		hasFieldPrivacy:            f.hasFieldPrivacy,
+		fetchOnDemand:              f.fetchOnDemand,
+		dbOnly:                     f.dbOnly,
 		forceRequiredInAction:      f.forceRequiredInAction,
 		forceOptionalInAction:      f.forceOptionalInAction,
 		derivedWhenEmbedded:        f.derivedWhenEmbedded,

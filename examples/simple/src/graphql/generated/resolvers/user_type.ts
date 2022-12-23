@@ -138,12 +138,6 @@ export const UserType = new GraphQLObjectType({
     funUuids: {
       type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
     },
-    newCol: {
-      type: GraphQLString,
-    },
-    newCol2: {
-      type: GraphQLString,
-    },
     superNestedObject: {
       type: UserSuperNestedObjectType,
       resolve: async (

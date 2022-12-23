@@ -206,6 +206,7 @@ type Field struct {
 	DerivedFields       []*Field            `json:"derivedFields,omitempty"`
 	UserConvert         *UserConvertType    `json:"convert,omitempty"`
 	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
+	DBOnly              bool                `json:"dbOnly,omitempty"`
 
 	// set when parsed via tsent generate schema
 	Import enttype.Import `json:"-"`

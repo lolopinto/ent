@@ -487,6 +487,13 @@ export interface FieldOptions {
 
   fetchOnDemand?: boolean;
 
+  // if dbOnly, field isn't exposed in ent and graphql
+  // will still exit in the db and not be removed
+  // allows keeping the field in the db and avoid data loss if we still want the field for some reason
+  // won't be queryable automatically though
+  // can't use deprecated because intEnum uses it
+  dbOnly?: boolean;
+
   // allow name for now
   [x: string]: any;
 }
@@ -559,6 +566,9 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
   function addFields(fields: FieldMap | Field[]) {
     if (Array.isArray(fields)) {
       for (const field of fields) {
+        if (field.dbOnly) {
+          continue;
+        }
         const name = field.name;
         if (!name) {
           throw new Error(`name required`);
@@ -572,6 +582,9 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
     }
     for (const name in fields) {
       const field = fields[name];
+      if (field.dbOnly) {
+        continue;
+      }
       if (field.getDerivedFields !== undefined) {
         addFields(field.getDerivedFields(name));
       }

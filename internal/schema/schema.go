@@ -574,7 +574,7 @@ func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema
 		if err != nil {
 			errs = append(errs, err)
 		}
-		s.extraEdgeFields = fi.Fields
+		s.extraEdgeFields = fi.AllFields()
 	}
 
 	s.initForEdges = gs.InitForEdges
@@ -682,7 +682,7 @@ func (s *Schema) processFields(cfg codegenapi.Config, nodeName string, fields []
 		return nil, err
 	}
 
-	for _, f := range fieldInfo.Fields {
+	for _, f := range fieldInfo.EntFields() {
 		entType := f.GetFieldType()
 		enumType, ok := enttype.GetEnumType(entType)
 		// don't add enums which are defined in patterns
@@ -744,7 +744,7 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 	if err != nil {
 		return err
 	}
-	for _, f2 := range fi.Fields {
+	for _, f2 := range fi.EntFields() {
 		if err := s.checkForEnum(cfg, f2, ci); err != nil {
 			return err
 		}
@@ -797,7 +797,7 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 	if err != nil {
 		return err
 	}
-	for _, f2 := range fi.Fields {
+	for _, f2 := range fi.EntFields() {
 		ci.Fields = append(ci.Fields, f2)
 		// add custom interface maybe
 		if err := s.checkCustomInterface(cfg, f2, root); err != nil {
@@ -845,7 +845,7 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customt
 	if err != nil {
 		return nil, err
 	}
-	for _, f2 := range fi.Fields {
+	for _, f2 := range fi.EntFields() {
 		ci, subFields := s.getCustomInterfaceFromField(f2)
 		if ci == nil || subFields == nil {
 			return nil, fmt.Errorf("couldn't get custom interface from field %s", f.FieldName)
@@ -857,7 +857,7 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customt
 		if err != nil {
 			return nil, err
 		}
-		ci.Fields = fi2.Fields
+		ci.Fields = fi2.EntFields()
 		// TODO getCustomInterfaceFromField needs to handle this all
 		// instead of this mess
 		for _, f3 := range ci.Fields {
@@ -1213,7 +1213,7 @@ func (s *Schema) addEdgesFromFields(
 	fieldInfo := nodeData.FieldInfo
 	edgeInfo := nodeData.EdgeInfo
 
-	for _, f := range fieldInfo.Fields {
+	for _, f := range fieldInfo.EntFields() {
 		fkeyInfo := f.ForeignKeyInfo()
 		if fkeyInfo != nil {
 			if err := s.addForeignKeyEdges(cfg, nodeData, fieldInfo, edgeInfo, f, fkeyInfo); err != nil {
@@ -1522,7 +1522,7 @@ func (s *Schema) processConstraints(nodeData *NodeData) error {
 	tableName := nodeData.TableName
 
 	var constraints []*input.Constraint
-	for _, f := range nodeData.FieldInfo.Fields {
+	for _, f := range nodeData.FieldInfo.EntFields() {
 		// always use db col name here
 		cols := []string{f.GetDbColName()}
 

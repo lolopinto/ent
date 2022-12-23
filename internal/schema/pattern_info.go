@@ -113,7 +113,7 @@ func (p *PatternInfo) ForeignImport(imp string) bool {
 }
 
 func (p *PatternInfo) HasFields() bool {
-	return len(p.FieldInfo.Fields) > 0
+	return len(p.FieldInfo.EntFields()) > 0
 }
 
 func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*tsimport.ImportPath {
@@ -126,7 +126,7 @@ func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*ts
 		})
 	}
 
-	for _, f := range p.FieldInfo.Fields {
+	for _, f := range p.FieldInfo.EntFields() {
 		ret = append(ret, f.GetImportsForTypes(cfg, s)...)
 	}
 	return ret

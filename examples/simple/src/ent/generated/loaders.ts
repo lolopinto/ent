@@ -548,8 +548,6 @@ const userFields = [
   "preferred_shift",
   "time_in_ms",
   "fun_uuids",
-  "new_col",
-  "new_col_2",
   "nested_list",
   "int_enum",
 ];
@@ -653,14 +651,6 @@ export const userLoaderInfo = {
     fun_uuids: {
       dbCol: "fun_uuids",
       inputKey: "funUuids",
-    },
-    new_col: {
-      dbCol: "new_col",
-      inputKey: "newCol",
-    },
-    new_col2: {
-      dbCol: "new_col_2",
-      inputKey: "newCol2",
     },
     superNestedObject: {
       dbCol: "super_nested_object",
