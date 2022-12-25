@@ -213,7 +213,7 @@ export type Edge = AssocEdge;
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
   name: string;
-  fields: FieldMap | Field[];
+  fields: FieldMap;
   disableMixin?: boolean;
   edges?: Edge[];
 
@@ -563,23 +563,7 @@ export function getSchema(value: SchemaInputType): Schema {
 
 export function getFields(value: SchemaInputType): Map<string, Field> {
   const schema = getSchema(value);
-  function addFields(fields: FieldMap | Field[]) {
-    if (Array.isArray(fields)) {
-      for (const field of fields) {
-        if (field.dbOnly) {
-          continue;
-        }
-        const name = field.name;
-        if (!name) {
-          throw new Error(`name required`);
-        }
-        if (field.getDerivedFields !== undefined) {
-          addFields(field.getDerivedFields(name));
-        }
-        m.set(name, field);
-      }
-      return;
-    }
+  function addFields(fields: FieldMap) {
     for (const name in fields) {
       const field = fields[name];
       if (field.dbOnly) {
