@@ -220,7 +220,8 @@ function commonTests() {
 
   test("query error throws for loadEnt", async () => {
     try {
-      await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
+      const r = await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
+      console.log(r);
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());

@@ -399,6 +399,83 @@ describe("sqlite", () => {
       ],
     });
   });
+
+  test("select error", async () => {
+    try {
+      await DB.getInstance()
+        .getPool()
+        .query("SELECT id, foo, bar, hello From users WHERE id = ?", [1]);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe("no such column: hello");
+    }
+  });
+
+  test("insert error", async () => {
+    try {
+      await createRowForTest({
+        fields: {
+          id: 1,
+          bar: "bar",
+          foo: "foo",
+          hello: "ss",
+        },
+        tableName: "users",
+      });
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        "table users has no column named hello",
+      );
+    }
+  });
+
+  test("update error", async () => {
+    try {
+      await createRowForTest({
+        fields: {
+          id: 1,
+          bar: "bar",
+          foo: "foo",
+        },
+        tableName: "users",
+      });
+
+      await editRowForTest({
+        fields: {
+          hello: "fff",
+        },
+        tableName: "users",
+        whereClause: clause.Eq("id", 1),
+      });
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe("no such column: hello");
+    }
+  });
+
+  test("delete error", async () => {
+    try {
+      await createRowForTest({
+        fields: {
+          id: 1,
+          bar: "bar",
+          foo: "foo",
+        },
+        tableName: "users",
+      });
+
+      await deleteRowsForTest(
+        {
+          tableName: "hello",
+        },
+        clause.Eq("id", 1),
+      );
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe("no such table: hello");
+    }
+  });
 });
 
 function validateSQLiteMemory(memory: boolean) {
