@@ -76,7 +76,7 @@ function commonTests() {
     const requiredKeys = {
       context: true,
     };
-    for (const k in val) {
+    for (const _ in val) {
       if (val === undefined) {
         return false;
       }

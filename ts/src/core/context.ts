@@ -1,4 +1,4 @@
-import { Viewer, Data, Loader, Ent, LoaderWithLoadMany } from "./base";
+import { Viewer, Data, Loader, LoaderWithLoadMany } from "./base";
 import { IncomingMessage, ServerResponse } from "http";
 
 import * as clause from "./clause";

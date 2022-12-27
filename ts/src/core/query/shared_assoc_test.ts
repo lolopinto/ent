@@ -896,10 +896,9 @@ export function assocTests(ml: MockLogs, global = false) {
     let user: FakeUser;
     let friendRequests: FakeUser[];
     let user2: FakeUser;
-    let friendRequests2: FakeUser[];
     beforeEach(async () => {
       [user, friendRequests] = await createUserPlusFriendRequests();
-      [user2, friendRequests2] = await createUserPlusFriendRequests();
+      [user2] = await createUserPlusFriendRequests();
     });
 
     function getQuery(viewer?: Viewer) {

@@ -37,7 +37,6 @@ import { clearLogLevels, setLogLevels } from "./logger";
 import DB, { Dialect } from "./db";
 import { ObjectLoaderFactory } from "./loaders";
 import { CustomEdgeQueryBase } from "./query";
-import { CustomEdgeQueryOptions } from "./query/custom_query";
 
 let ctx: Context;
 const ml = new MockLogs();

@@ -1,12 +1,7 @@
 import { ObjectLoader, ObjectLoaderFactory } from "./object_loader";
 import { Pool } from "pg";
 import { QueryRecorder } from "../../testutils/db_mock";
-
-import {
-  createRowForTest,
-  deleteRowsForTest,
-  editRowForTest,
-} from "../../testutils/write";
+import { createRowForTest, editRowForTest } from "../../testutils/write";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
@@ -31,7 +26,6 @@ import {
   text,
   timestamp,
 } from "../../testutils/db/temp_db";
-import DB, { Dialect } from "../db";
 import { advanceTo } from "jest-date-mock";
 import { convertDate } from "../convert";
 
@@ -450,7 +444,7 @@ function commonTests() {
     });
 
     // same data loaded  but not same row
-    const row2 = await loader.load(1);
+    await loader.load(1);
 
     expect(row).toBe(null);
 

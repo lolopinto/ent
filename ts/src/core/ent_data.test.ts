@@ -1330,8 +1330,6 @@ function commonTests() {
       expect(ents.size).toBe(1);
       expect(ents.has(1)).toBe(true);
 
-      const expQueries = [qOption];
-
       validateQueries([qOption]);
 
       const ents2 = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
@@ -1423,8 +1421,6 @@ function commonTests() {
       // only loading self worked because of privacy
       expect(ents.size).toBe(1);
       expect(ents.has(1)).toBe(true);
-
-      const expQueries = [qOption];
 
       validateQueries([qOption]);
 

@@ -131,7 +131,7 @@ function makeGraphQLRequest(
 
     let m = {};
     let idx = 0;
-    for (const [key, val] of files) {
+    for (const [key] of files) {
       m[idx] = [`variables.${key}`];
       idx++;
     }
