@@ -9,14 +9,6 @@ import { EdgeType, FakeEvent } from "./internal";
 import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
 
-interface EventsDestQuery {
-  queryHosts(): EventToHostsQuery;
-  queryAttendees(): EventToAttendeesQuery;
-  queryInvited(): EventToInvitedQuery;
-  queryDeclined(): EventToDeclinedQuery;
-  queryMaybe(): EventToMaybeQuery;
-}
-
 export class EventToAttendeesQuery extends AssocEdgeQueryBase<
   FakeEvent,
   FakeUser,

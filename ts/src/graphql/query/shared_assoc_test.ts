@@ -207,7 +207,7 @@ export function sharedAssocTests() {
 
     const length = (m: GraphQLFieldMap<any, any>) => {
       let count = 0;
-      for (let k in m) {
+      for (let _ in m) {
         count++;
       }
       return count;

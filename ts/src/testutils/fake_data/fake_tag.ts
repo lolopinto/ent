@@ -8,17 +8,12 @@ import {
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
 import {
-  AllowIfViewerRule,
   AlwaysDenyRule,
-  AllowIfViewerInboundEdgeExistsRule,
-  AllowIfConditionAppliesRule,
   AllowIfViewerIsEntPropertyRule,
 } from "../../core/privacy";
 import { getBuilderSchemaFromFields, SimpleAction } from "../builder";
 import { StringType, UUIDType } from "../../schema";
-import { EdgeType } from "./internal";
 import { NodeType } from "./const";
-import { IDViewer, IDViewerOptions } from "../../core/viewer";
 import { table, uuid, text, timestamptz, index } from "../db/temp_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate } from "../../core/convert";

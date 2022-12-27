@@ -228,8 +228,6 @@ describe("sqlite", () => {
   });
 
   test("rollback transaction", async () => {
-    const client = DB.getInstance().getSQLiteClient();
-
     try {
       await createUsers([1, 2], { rollback: true });
       throw new Error("should have thrown");

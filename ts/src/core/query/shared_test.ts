@@ -153,8 +153,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
 
     private verifyEdges(edges: Data[]) {
-      const q = this.getQuery();
-
       // TODO sad not generic enough
       if (this.customQuery) {
         verifyUserToContactRawData(this.user, edges, this.filteredContacts);

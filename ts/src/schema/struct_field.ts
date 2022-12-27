@@ -1,5 +1,4 @@
 import { camelCase } from "camel-case";
-import { snakeCase } from "snake-case";
 import { BaseField, ListField } from "./field";
 import {
   FieldOptions,

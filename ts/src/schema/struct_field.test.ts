@@ -352,7 +352,6 @@ describe("struct as list", () => {
 
   test("invalid item in list", async () => {
     const d = new Date();
-    const d2 = new Date();
     const val = {
       uuid: v1(),
       int: 2,
