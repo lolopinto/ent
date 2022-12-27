@@ -26,10 +26,12 @@ jobs:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:13.4
+        image: postgres:14.6
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
+          name: 'PGOPTIONS'
+          value: '-c max_connections=200'
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
