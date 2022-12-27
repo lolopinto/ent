@@ -230,8 +230,6 @@ export const defaultTimestampParser = pg.types.getTypeParser(
 // it's parsed as UTC time as opposed to the local time
 pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, function (val: string) {
   return DateTime.fromSQL(val + "Z").toJSDate();
-  // let d = new Date(val + "Z");
-  // return d;
 });
 
 export interface Queryer {

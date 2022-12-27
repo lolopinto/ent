@@ -23,7 +23,6 @@ log_config = {
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            # 'args': '(sys.stderr,)',
             'stream': 'ext://sys.stdout',
             'level': 'NOTSET',
             'formatter': 'generic'
