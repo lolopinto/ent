@@ -7,11 +7,7 @@ export function parseDate(val: any, throwErr: (s: string) => Error): DateTime {
   } else if (typeof val === "string") {
     dt = DateTime.fromISO(val);
     if (!dt.isValid) {
-      let ms = Date.parse(val);
-      if (ms === NaN) {
-        throw throwErr(`invalid input for type Time ${val}`);
-      }
-      dt = DateTime.fromMillis(ms);
+      dt = DateTime.fromMillis(Date.parse(val));
     }
   } else if (val instanceof Date) {
     dt = DateTime.fromJSDate(val);
