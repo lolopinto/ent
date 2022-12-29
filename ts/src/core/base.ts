@@ -107,6 +107,15 @@ export interface Viewer<
   context?: Context<any>;
 }
 
+// TODO may not need this?
+// don't need context
+export interface ViewerWithContext<
+  TEnt extends any = Ent<any> | null,
+  TID extends any = ID | null,
+> extends Viewer<TEnt, TID> {
+  context: Context<any>;
+}
+
 export interface Ent<TViewer extends Viewer = Viewer> {
   id: ID;
   viewer: TViewer;

@@ -41,7 +41,6 @@ import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
 import { createRowForTest } from "../testutils/write";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
-import { BaseAction } from "./experimental_action";
 import { MockLogs } from "../testutils/mock_log";
 import { setLogLevels } from "../core/logger";
 import {
@@ -55,6 +54,7 @@ import {
 import * as action from "../action";
 import { convertJSON } from "../core/convert";
 import { v4 } from "uuid";
+import { Transaction } from "./transaction";
 
 const ml = new MockLogs();
 let operations: DataOperation[] = [];
@@ -1228,7 +1228,7 @@ function commonTests() {
     expect(editedGroup?.data["fun_field"]).toBe("22");
   });
 
-  test("nested siblings via bulk-action", async () => {
+  test.only("nested siblings via transaction", async () => {
     const group = await createGroup();
     const inputs: { firstName: string; lastName: string }[] = [
       {
@@ -1275,22 +1275,6 @@ function commonTests() {
     );
     actions.push(accountAction);
 
-    type MaybeNull<T extends Ent> = T | null;
-    type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
-
-    class GroupBuilder<
-      TExistingEnt extends TMaybleNullableEnt<Group> = MaybeNull<Group>,
-    > extends SimpleBuilder<Group, TExistingEnt> {
-      constructor(
-        viewer: Viewer,
-        operation: WriteOperation,
-        action: SimpleAction<Group, TExistingEnt>,
-        existingEnt: TExistingEnt,
-      ) {
-        super(viewer, GroupSchema, new Map(), operation, existingEnt, action);
-      }
-    }
-
     let action1 = actions[0];
     let action2 = actions[1];
     actions.push(
@@ -1308,14 +1292,11 @@ function commonTests() {
       ),
     );
 
-    // @ts-ignore why??
-    const action = BaseAction.bulkAction(group, GroupBuilder, ...actions);
-    await action.saveX();
+    const tx = new Transaction(group.viewer, actions);
+    await tx.run();
 
-    const ents = (await Promise.all(
-      actions.map((action) => action.editedEnt()),
-    )) as User[];
-    const users = ents.slice(0, inputs.length);
+    const ents = await Promise.all(actions.map((action) => action.editedEnt()));
+    const users = ents.slice(0, inputs.length) as User[];
     expect(users.length).toBe(inputs.length);
     const account = ents[inputs.length];
     const message = ents[inputs.length + 1];
