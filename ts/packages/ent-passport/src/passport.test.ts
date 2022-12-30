@@ -18,7 +18,7 @@ import {
   expectMutation,
 } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
-import { TempDB, table, text } from "@snowtop/ent/testutils/db/test_db";
+import { TempDB, table, text } from "@snowtop/ent/testutils/db/temp_db";
 import {
   GraphQLSchema,
   GraphQLObjectType,

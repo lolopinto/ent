@@ -35,7 +35,10 @@ export enum Dialect {
   SQLite = "sqlite",
 }
 
-function parseConnectionString(str: string): DatabaseInfo {
+function parseConnectionString(
+  str: string,
+  args?: clientConfigArgs,
+): DatabaseInfo {
   if (str.startsWith("sqlite:///")) {
     let filePath = str.substr(10);
 
@@ -43,6 +46,7 @@ function parseConnectionString(str: string): DatabaseInfo {
       dialect: Dialect.SQLite,
       config: {
         connectionString: str,
+        ...args?.db,
       },
       filePath,
     };
@@ -52,6 +56,7 @@ function parseConnectionString(str: string): DatabaseInfo {
     dialect: Dialect.Postgres,
     config: {
       connectionString: str,
+      ...args?.db,
     },
   };
 }
@@ -63,27 +68,28 @@ interface DatabaseInfo {
   filePath?: string;
 }
 
+interface clientConfigArgs {
+  connectionString?: string;
+  dbFile?: string;
+  db?: Database | DBDict;
+}
 // order
 // env variable
 // connString in config
 // db in Config file (helpful for test vs development)
 // database file in yml file
 // database/config.yml
-function getClientConfig(args?: {
-  connectionString?: string;
-  dbFile?: string;
-  db?: Database | DBDict;
-}): DatabaseInfo | null {
+function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
   // if there's a db connection string, use that first
   const str = process.env.DB_CONNECTION_STRING;
   if (str) {
-    return parseConnectionString(str);
+    return parseConnectionString(str, args);
   }
 
   let file = "config/database.yml";
   if (args) {
     if (args.connectionString) {
-      return parseConnectionString(args.connectionString);
+      return parseConnectionString(args.connectionString, args);
     }
 
     if (args.db) {
@@ -209,11 +215,7 @@ export default class DB {
     return Dialect.Postgres;
   }
 
-  static initDB(args?: {
-    connectionString?: string;
-    dbFile?: string;
-    db?: Database | DBDict;
-  }) {
+  static initDB(args?: clientConfigArgs) {
     const config = getClientConfig(args);
     if (config) {
       DB.instance = new DB(config);
@@ -447,7 +449,7 @@ export class Postgres implements Connection {
   }
 
   async close() {
-    return this.pool.end();
+    return await this.pool.end();
   }
 }
 

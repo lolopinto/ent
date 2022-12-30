@@ -391,11 +391,11 @@ describe("postgres", () => {
   commonTests();
 });
 
-// describe("sqlite", () => {
-//   setupSqlite(`sqlite:///node_resolver.db`, tempDBTables);
+describe("sqlite", () => {
+  setupSqlite(`sqlite:///node_resolver.db`, tempDBTables);
 
-//   beforeEach(async () => {
-//     await createEdges();
-//   });
-//   commonTests();
-// });
+  beforeEach(async () => {
+    await createEdges();
+  });
+  commonTests();
+});

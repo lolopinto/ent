@@ -447,12 +447,16 @@ export class TempDB {
       await this.client.query(`CREATE DATABASE ${this.db}`);
 
       if (setupConnString) {
+        delete process.env.DB_CONNECTION_STRING;
+        let connStr = "";
         if (user && password) {
-          process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+          connStr = `postgres://${user}:${password}@localhost:5432/${this.db}`;
         } else {
-          process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+          connStr = `postgres://localhost/${this.db}?`;
         }
-        DB.initDB();
+        DB.initDB({
+          connectionString: connStr,
+        });
       } else {
         // will probably be setup via loadConfig
         delete process.env.DB_CONNECTION_STRING;
@@ -515,7 +519,6 @@ export class TempDB {
   }
 
   async afterAll() {
-    console.debug("tt");
     if (this.dialect === Dialect.SQLite) {
       this.sqlite.close();
       return;
@@ -524,16 +527,12 @@ export class TempDB {
     // end our connection to db
     await this.dbClient.end();
     // end any pool connection
-    console.debug("ss");
     await DB.getInstance().endPool();
 
-    console.debug("uuv");
     // drop db
     await this.client.query(`DROP DATABASE ${this.db}`);
-    console.debug("gg");
 
     await this.client.end();
-    console.debug("ssdsd");
   }
 
   getDB(): string {
@@ -663,18 +662,19 @@ export function setupSqlite(
 export function setupPostgres(tables: () => Table[], opts?: setupOptions) {
   let tdb: TempDB;
   beforeAll(async () => {
-    //    loadConfig();
     tdb = new TempDB(Dialect.Postgres, tables());
     await tdb.beforeAll();
   });
 
+  // TODO need to fix this implementation...
   if (!opts?.disableDeleteAfterEachTest) {
     afterEach(async () => {
       const client = await DB.getInstance().getNewClient();
-      for (const [key, _] of tdb.getTables()) {
+      for (const [key, _] of tdb.__getTables()) {
         const query = `delete from ${key}`;
         await client.exec(query);
       }
+      client.release();
     });
   }
 
