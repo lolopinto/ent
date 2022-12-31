@@ -188,6 +188,11 @@ export class QueryRecorder {
     return QueryRecorder.queries;
   }
 
+  /**
+   * @deprecated will keep this since it's just using ml.logs
+   * which we still want around (I think) but we should eventually
+   * probably stop using this
+   */
   static validateQueryStructuresFromLogs(
     ml: MockLogs,
     expected: queryStructure[],
