@@ -1,5 +1,3 @@
-import { Pool } from "pg";
-import { QueryRecorder } from "../testutils/db_mock";
 import {
   createRowForTest,
   editRowForTest,
@@ -29,14 +27,13 @@ import {
   LoadRowOptions,
   LoadRowsOptions,
 } from "./base";
-import { integer, table, text, setupSqlite } from "../testutils/db/temp_db";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
-
-afterEach(() => {
-  QueryRecorder.clear();
-});
+import {
+  integer,
+  table,
+  text,
+  setupSqlite,
+  setupPostgres,
+} from "../testutils/db/temp_db";
 
 const ml = new MockLogs();
 beforeAll(() => {
@@ -60,6 +57,7 @@ function commonTests() {
   describe("raw data access", () => {
     test("createRow no fieldsToLog", async () => {
       const fields = {
+        id: 1,
         col1: "bar",
         col2: "baz",
       };
@@ -81,6 +79,7 @@ function commonTests() {
 
     test("createRow with fieldsToLog", async () => {
       const fields = {
+        id: 1,
         col1: "bar",
         col2: "baz",
       };
@@ -96,12 +95,13 @@ function commonTests() {
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         query: expQuery,
-        values: ["bar", "baz"],
+        values: [1, "bar", "baz"],
       });
     });
 
     test("createRow simulate sensitive", async () => {
       const fields = {
+        id: 1,
         col1: "bar",
         col2: "baz",
       };
@@ -109,6 +109,7 @@ function commonTests() {
         tableName: "t1",
         fields,
         fieldsToLog: {
+          id: 1,
           col1: "bar",
           col2: "***",
         },
@@ -120,12 +121,13 @@ function commonTests() {
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         query: expQuery,
-        values: ["bar", "***"],
+        values: [1, "bar", "***"],
       });
     });
 
     test("createRow. logging disabled", async () => {
       const fields = {
+        id: 1,
         col1: "bar",
         col2: "baz",
       };
@@ -134,6 +136,7 @@ function commonTests() {
         tableName: "t1",
         fields,
         fieldsToLog: {
+          id: 1,
           col1: "bar",
           col2: "***",
         },
@@ -143,6 +146,7 @@ function commonTests() {
 
     test("fieldsToLog", async () => {
       const fields = {
+        id: 5,
         col1: "bar",
         col2: "baz",
       };
@@ -833,25 +837,23 @@ function commonTests() {
   });
 }
 
+const getTables = () => [
+  table("t1", integer("id", { primaryKey: true }), text("col1"), text("col2")),
+  table(
+    "users",
+    integer("id", { primaryKey: true }),
+    text("col1"),
+    text("col2"),
+  ),
+];
+
 describe("postgres", () => {
+  setupPostgres(getTables, {});
   commonTests();
 });
 
 describe("sqlite", () => {
-  setupSqlite(`sqlite:///ent_logs_test.db`, () => [
-    table(
-      "t1",
-      integer("id", { primaryKey: true }),
-      text("col1"),
-      text("col2"),
-    ),
-    table(
-      "users",
-      integer("id", { primaryKey: true }),
-      text("col1"),
-      text("col2"),
-    ),
-  ]);
+  setupSqlite(`sqlite:///ent_logs_test.db`, getTables);
 
   commonTests();
 });

@@ -1,6 +1,4 @@
 import { ObjectLoader, ObjectLoaderFactory } from "./object_loader";
-import { Pool } from "pg";
-import { QueryRecorder } from "../../testutils/db_mock";
 import { createRowForTest, editRowForTest } from "../../testutils/write";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
@@ -21,6 +19,7 @@ import {
 } from "../../testutils/fake_data/";
 import {
   integer,
+  setupPostgres,
   setupSqlite,
   table,
   text,
@@ -28,9 +27,6 @@ import {
 } from "../../testutils/db/temp_db";
 import { advanceTo } from "jest-date-mock";
 import { convertDate } from "../convert";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
 
 const ml = new MockLogs();
 
@@ -124,20 +120,38 @@ async function createWithNullDeletedAt(id?: ID) {
 }
 
 async function createWithDeletedAt(id?: ID) {
-  await createRowForTest({
-    tableName: "users",
-    fields: {
-      id: id || 1,
-      first_name: "Jon",
-      deleted_at: new Date(),
+  const r = await createRowForTest(
+    {
+      tableName: "users",
+      fields: {
+        id: id || 1,
+        first_name: "Jon",
+        deleted_at: new Date().toISOString(),
+      },
     },
-  });
+    "RETURNING *",
+  );
 
   // clear post insert
   ml.clear();
+  return r;
 }
 
+const getTables = () => {
+  const tables = tempDBTables();
+  tables.push(
+    table(
+      "users",
+      integer("id", { primaryKey: true }),
+      text("first_name"),
+      timestamp("deleted_at", { nullable: true }),
+    ),
+  );
+  return tables;
+};
+
 describe("postgres", () => {
+  setupPostgres(getTables);
   beforeAll(async () => {
     setLogLevels(["query", "cache"]);
     ml.mock();
@@ -146,7 +160,6 @@ describe("postgres", () => {
   });
 
   beforeEach(() => {
-    QueryRecorder.clear();
     ml.clear();
   });
 
@@ -157,19 +170,7 @@ describe("postgres", () => {
 });
 
 describe("sqlite", () => {
-  const tables = () => {
-    const tables = tempDBTables();
-    tables.push(
-      table(
-        "users",
-        integer("id", { primaryKey: true }),
-        text("first_name"),
-        timestamp("deleted_at", { nullable: true }),
-      ),
-    );
-    return tables;
-  };
-  setupSqlite(`sqlite:///object_loader.db`, tables);
+  setupSqlite(`sqlite:///object_loader.db`, getTables);
 
   beforeAll(async () => {
     setLogLevels(["query", "error", "cache"]);

@@ -18,9 +18,8 @@ import {
   AlwaysAllowPrivacyPolicy,
 } from "./privacy";
 import { buildInsertQuery, buildUpdateQuery } from "./ent";
-import { QueryRecorder, queryOptions } from "../testutils/db_mock";
+import { queryOptions } from "../testutils/db_mock";
 import { createRowForTest, editRowForTest } from "../testutils/write";
-import { Pool } from "pg";
 import * as ent from "./ent";
 import { ContextCache } from "./context";
 import * as clause from "./clause";
@@ -28,7 +27,13 @@ import DB from "./db";
 import each from "jest-each";
 import { ObjectLoaderFactory } from "./loaders";
 
-import { integer, table, text, setupSqlite } from "../testutils/db/temp_db";
+import {
+  integer,
+  table,
+  text,
+  setupSqlite,
+  setupPostgres,
+} from "../testutils/db/temp_db";
 import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
 
@@ -1594,31 +1599,28 @@ function commonTests() {
   });
 }
 
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
+const tables = [
+  table(
+    "users",
+    integer("bar", { primaryKey: true }),
+    text("baz"),
+    text("foo"),
+  ),
+  table(
+    "contacts",
+    integer("bar", { primaryKey: true }),
+    text("baz"),
+    text("foo"),
+  ),
+];
 
 describe("postgres", () => {
-  afterEach(() => {
-    QueryRecorder.clear();
-  });
+  setupPostgres(() => tables);
   commonTests();
 });
 
 describe("sqlite", () => {
-  setupSqlite(`sqlite:///ent_data_test.db`, () => [
-    table(
-      "users",
-      integer("bar", { primaryKey: true }),
-      text("baz"),
-      text("foo"),
-    ),
-    table(
-      "contacts",
-      integer("bar", { primaryKey: true }),
-      text("baz"),
-      text("foo"),
-    ),
-  ]);
+  setupSqlite(`sqlite:///ent_data_test.db`, () => tables);
 
   commonTests();
 });

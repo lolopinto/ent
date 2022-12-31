@@ -11,8 +11,6 @@ import {
   getBuilderSchemaFromFields,
 } from "../testutils/builder";
 import { FakeComms } from "../testutils/fake_comms";
-import { Pool } from "pg";
-import { QueryRecorder } from "../testutils/db_mock";
 import { edgeDirection } from "./orchestrator";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
@@ -21,13 +19,11 @@ import {
   assoc_edge_config_table,
   assoc_edge_table,
   getSchemaTable,
+  setupPostgres,
   setupSqlite,
   Table,
 } from "../testutils/db/temp_db";
 import { Dialect } from "../core/db";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
@@ -49,7 +45,6 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  QueryRecorder.clear();
   FakeComms.clear();
 });
 
@@ -61,22 +56,23 @@ const UserSchema = getBuilderSchemaFromFields(
   User,
 );
 
+const getTables = () => {
+  const tables: Table[] = [assoc_edge_config_table()];
+  edges.map((edge) =>
+    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+  );
+
+  [UserSchema].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
+
+  return tables;
+};
+
 describe("postgres", () => {
+  setupPostgres(getTables);
   commonTests();
 });
 
 describe("sqlite", () => {
-  const getTables = () => {
-    const tables: Table[] = [assoc_edge_config_table()];
-    edges.map((edge) =>
-      tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
-    );
-
-    [UserSchema].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
-
-    return tables;
-  };
-
   setupSqlite(`sqlite:///orchestrator-edge-test.db`, getTables);
   commonTests();
 });

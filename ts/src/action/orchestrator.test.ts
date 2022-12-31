@@ -41,8 +41,6 @@ import {
   getBuilderSchemaFromFields,
 } from "../testutils/builder";
 import { FakeComms, Mode } from "../testutils/fake_comms";
-import { Pool } from "pg";
-import { QueryRecorder } from "../testutils/db_mock";
 import {
   AllowIfViewerRule,
   AlwaysAllowRule,
@@ -63,15 +61,13 @@ import {
   assoc_edge_config_table,
   assoc_edge_table,
   getSchemaTable,
+  setupPostgres,
   setupSqlite,
   Table,
 } from "../testutils/db/temp_db";
 import { Dialect } from "../core/db";
 import { convertDate, convertList } from "../core/convert";
 import { v4 } from "uuid";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
@@ -93,7 +89,6 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  QueryRecorder.clear();
   FakeComms.clear();
 });
 
@@ -314,38 +309,39 @@ const SchemaWithNullFields = getBuilderSchemaFromFields(
   NullableEvent,
 );
 
+const getTables = () => {
+  const tables: Table[] = [assoc_edge_config_table()];
+  edges.map((edge) =>
+    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+  );
+
+  [
+    UserSchema,
+    UserSchemaWithStatus,
+    UserSchemaExtended,
+    UserSchemaServerDefault,
+    UserSchemaDefaultValueOnCreate,
+    UserSchemaDefaultValueOnCreateJSON,
+    UserSchemaDefaultValueOnCreateInvalidJSON,
+    SchemaWithProcessors,
+    EventSchema,
+    AddressSchemaDerivedFields,
+    ContactSchema,
+    ContactSchema3,
+    CustomUserSchema,
+    ContactEmailSchema,
+    SensitiveValuesSchema,
+    SchemaWithNullFields,
+  ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
+  return tables;
+};
+
 describe("postgres", () => {
+  setupPostgres(getTables);
   commonTests();
 });
 
 describe("sqlite", () => {
-  const getTables = () => {
-    const tables: Table[] = [assoc_edge_config_table()];
-    edges.map((edge) =>
-      tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
-    );
-
-    [
-      UserSchema,
-      UserSchemaWithStatus,
-      UserSchemaExtended,
-      UserSchemaServerDefault,
-      UserSchemaDefaultValueOnCreate,
-      UserSchemaDefaultValueOnCreateJSON,
-      UserSchemaDefaultValueOnCreateInvalidJSON,
-      SchemaWithProcessors,
-      EventSchema,
-      AddressSchemaDerivedFields,
-      ContactSchema,
-      ContactSchema3,
-      CustomUserSchema,
-      ContactEmailSchema,
-      SensitiveValuesSchema,
-      SchemaWithNullFields,
-    ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
-    return tables;
-  };
-
   setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
   commonTests();
 });
