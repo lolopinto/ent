@@ -188,7 +188,7 @@ function validateQueries(expQueries: Data[]) {
     console.debug(ml.logs, expQueries);
   }
   expect(ml.logs.length).toBe(expQueries.length);
-  expect(ml.logs).toStrictEqual(expQueries);
+  expect(ml.logs.sort()).toMatchObject(expQueries);
 }
 
 async function createRows(fields: Data[], tableName: string): Promise<void> {

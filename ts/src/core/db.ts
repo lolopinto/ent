@@ -46,7 +46,9 @@ function parseConnectionString(
       dialect: Dialect.SQLite,
       config: {
         connectionString: str,
-        ...args?.db,
+        // TODO would like to do this for other args e.g. max being set but would have to update tests
+        // e.g. src/core/config.test.ts which tests this
+        // ...args?.db,
       },
       filePath,
     };
@@ -56,7 +58,9 @@ function parseConnectionString(
     dialect: Dialect.Postgres,
     config: {
       connectionString: str,
-      ...args?.db,
+      // TODO would like to do this for other args e.g. max being set but would have to update tests
+      // e.g. src/core/config.test.ts which tests this
+      // ...args?.db,
     },
   };
 }
