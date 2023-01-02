@@ -62,6 +62,9 @@ interface internalQueryStructure extends queryStructure {
   setClause?: string;
 }
 
+/**
+ * @deprecated
+ */
 export class QueryRecorder {
   private static queries: queryOptions[] = [];
   private static ids: ID[] = [];
