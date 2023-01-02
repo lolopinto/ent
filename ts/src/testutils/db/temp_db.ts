@@ -683,6 +683,29 @@ export function setupPostgres(tables: () => Table[], opts?: setupOptions) {
   });
 }
 
+export async function doSQLiteTestFromSchemas(
+  schemas: BuilderSchema<Ent>[],
+  doTest: () => Promise<void>,
+  db?: string,
+) {
+  const connString = `sqlite:///${db || randomDB()}.db`;
+  const tables = schemas.map((schema) =>
+    getSchemaTable(schema, Dialect.SQLite),
+  );
+  let tdb: TempDB = new TempDB(Dialect.SQLite, tables);
+
+  process.env.DB_CONNECTION_STRING = connString;
+  loadConfig();
+  await tdb.beforeAll();
+
+  await doTest();
+
+  await tdb.afterAll();
+  delete process.env.DB_CONNECTION_STRING;
+
+  return tdb;
+}
+
 export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
   const fields = getFields(schema);
 
