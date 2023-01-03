@@ -182,7 +182,6 @@ const emailType = {
   regex: /^email(_address)|_email$/,
 };
 
-const pdt = StringType();
 const phoneType = {
   dbType: DBType.String,
   newValue: () => {

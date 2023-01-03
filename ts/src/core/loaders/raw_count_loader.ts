@@ -2,7 +2,6 @@ import DataLoader from "dataloader";
 import {
   LoadRowOptions,
   ID,
-  DataOptions,
   Context,
   Loader,
   LoaderFactory,

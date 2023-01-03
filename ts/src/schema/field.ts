@@ -11,7 +11,6 @@ import {
   FieldMap,
   FieldOptions,
   ForeignKey,
-  getStorageKey,
   PolymorphicOptions,
   Type,
 } from "./schema";
@@ -653,7 +652,7 @@ export class EnumField extends BaseField implements Field {
       }
       if (options.map) {
         let count = 0;
-        for (const k in options.map) {
+        for (const _ in options.map) {
           count++;
           break;
         }
@@ -752,7 +751,7 @@ export class IntegerEnumField extends BaseField implements Field {
     };
 
     let count = 0;
-    for (const k in options.map) {
+    for (const _ in options.map) {
       count++;
       break;
     }

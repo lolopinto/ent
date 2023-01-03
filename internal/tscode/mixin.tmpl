@@ -13,7 +13,7 @@ type Constructor<T = {}> = new (...args: any[]) => T;
 
 export interface {{$p.GetMixinInterfaceName}} {
   {{$p.GetPatternMethod}}(): boolean;
-  {{ range $field := $p.FieldInfo.Fields -}}
+  {{ range $field := $p.FieldInfo.EntFields -}}
     {{ range $field.GetTsTypeImports -}}
       {{ if ($p.ForeignImport .Import) -}}
         {{ reserveImportPath . false -}}
@@ -48,7 +48,7 @@ export interface {{$p.GetMixinInterfaceName}} {
 export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
   return class {{$p.GetMixinName}} extends BaseClass {
 
-    {{ range $field := $p.FieldInfo.Fields -}}
+    {{ range $field := $p.FieldInfo.EntFields -}}
       readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
     {{end -}}
   
@@ -58,7 +58,7 @@ export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
         const { data } = extractFromArgs(args);
       {{ end -}}
 
-      {{ range $field := $p.FieldInfo.Fields -}}
+      {{ range $field := $p.FieldInfo.EntFields -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
         this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg  $val }}
       {{end -}}

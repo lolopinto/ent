@@ -23,7 +23,7 @@ import {
 import { buildContext, registerAuthHandler } from "../../auth";
 import supertest from "supertest";
 import * as fs from "fs";
-import { IncomingMessage, ServerResponse } from "http";
+import { inspect } from "util";
 
 function server(config: queryConfig): Express {
   const viewer = config.viewer;
@@ -131,7 +131,7 @@ function makeGraphQLRequest(
 
     let m = {};
     let idx = 0;
-    for (const [key, val] of files) {
+    for (const [key] of files) {
       m[idx] = [`variables.${key}`];
       idx++;
     }
@@ -452,7 +452,7 @@ async function expectFromRoot(
   let [st, temp] = makeGraphQLRequest(config, q, fieldArgs);
   const res = await temp.expect("Content-Type", /json/);
   if (config.debugMode) {
-    console.log(res.body);
+    console.log(inspect(res.body, false, 3));
   }
   // if there's a callback, let everything be done there and we're done
   if (config.callback) {

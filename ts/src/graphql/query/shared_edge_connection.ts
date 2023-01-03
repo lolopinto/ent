@@ -1,8 +1,6 @@
-import { Pool } from "pg";
 import { IDViewer } from "../../core/viewer";
 import { Viewer, Data, Ent } from "../../core/base";
 import { getCursor } from "../../core/ent";
-import { QueryRecorder } from "../../testutils/db_mock";
 import { GraphQLEdgeConnection } from "./edge_connection";
 import { FakeUser, FakeContact } from "../../testutils/fake_data/index";
 import {
@@ -10,8 +8,6 @@ import {
   createAllContacts,
 } from "../../testutils/fake_data/test_helpers";
 import { EdgeQuery } from "../../core/query/query";
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
 
 class TestConnection<TEdge extends Data> {
   private user: FakeUser;

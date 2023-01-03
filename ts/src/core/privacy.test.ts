@@ -22,17 +22,15 @@ import {
 } from "./privacy";
 
 import { LoggedOutViewer, IDViewer } from "./viewer";
-import { Pool } from "pg";
-import { QueryRecorder } from "../testutils/db_mock";
 import { createRowForTest } from "../testutils/write";
 import { ObjectLoaderFactory } from "./loaders";
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
-afterEach(() => {
-  QueryRecorder.clear();
-});
+import { setupPostgres, table, text } from "../testutils/db/temp_db";
 
 const loggedOutViewer = new LoggedOutViewer();
+
+setupPostgres(() => [
+  table("users", text("id", { primaryKey: true }), text("name")),
+]);
 
 class User implements Ent {
   id: ID;

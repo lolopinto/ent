@@ -126,7 +126,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
 
       graph.addNode(c.placeholderID.toString());
       if (c.dependencies) {
-        for (let [key, builder] of c.dependencies) {
+        for (let [_, builder] of c.dependencies) {
           // dependency should go first...
           graph.addEdge(
             builder.placeholderID.toString(),

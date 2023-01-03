@@ -34,5 +34,6 @@
   "exclude": [
     "node_modules",
     "tests/**/*"
-  ]
+  ],
+  "files": ["node_modules/jest-expect-message/types/index.d.ts"],
 }

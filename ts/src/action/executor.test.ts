@@ -17,7 +17,6 @@ import { EdgeInputData } from "../action/orchestrator";
 
 import { Dialect } from "../core/db";
 
-import { Pool } from "pg";
 import { QueryRecorder, queryType } from "../testutils/db_mock";
 import {
   User,
@@ -49,13 +48,13 @@ import {
   assoc_edge_config_table,
   assoc_edge_table,
   getSchemaTable,
+  setupPostgres,
   setupSqlite,
   Table,
 } from "../testutils/db/temp_db";
 import * as action from "../action";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
+import { convertJSON } from "../core/convert";
+import { v4 } from "uuid";
 
 const ml = new MockLogs();
 let operations: DataOperation[] = [];
@@ -87,7 +86,6 @@ beforeEach(async () => {
       },
     });
   }
-  QueryRecorder.clearQueries();
   ml.clear();
 });
 
@@ -104,7 +102,6 @@ afterAll(() => {
   ml.restore();
 });
 afterEach(() => {
-  QueryRecorder.clear();
   FakeLogger.clear();
   operations = [];
 });
@@ -204,27 +201,28 @@ const MessageSchema = getBuilderSchemaFromFields(
   Message,
 );
 
+const getTables = () => {
+  const tables: Table[] = [assoc_edge_config_table()];
+  edges.map((edge) => tables.push(assoc_edge_table(`${edge}_table`)));
+
+  [
+    AccountSchema,
+    ContactSchema,
+    GroupSchema,
+    UserSchema,
+    MessageSchema,
+    GroupMembershipSchema,
+    ChangelogSchema,
+  ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
+  return tables;
+};
+
 describe("postgres", () => {
+  setupPostgres(getTables);
   commonTests();
 });
 
 describe("sqlite", () => {
-  const getTables = () => {
-    const tables: Table[] = [assoc_edge_config_table()];
-    edges.map((edge) => tables.push(assoc_edge_table(`${edge}_table`)));
-
-    [
-      AccountSchema,
-      ContactSchema,
-      GroupSchema,
-      UserSchema,
-      MessageSchema,
-      GroupMembershipSchema,
-      ChangelogSchema,
-    ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
-    return tables;
-  };
-
   setupSqlite(`sqlite:///executor-test.db`, getTables);
   commonTests();
 });
@@ -264,7 +262,7 @@ async function executor<T extends Ent>(builder: Builder<T>): Promise<Executor> {
 }
 
 async function createGroup() {
-  let groupID = QueryRecorder.newID();
+  let groupID = v4();
   let groupFields = {
     id: groupID,
     name: "group",
@@ -280,7 +278,7 @@ async function createGroup() {
 }
 
 async function createUser(): Promise<User> {
-  const id = QueryRecorder.newID();
+  const id = v4();
   return new User(new IDViewer(id), { id });
 }
 
@@ -484,7 +482,7 @@ async function verifyChangelogFromMeberships(
       expect(cls.length).toBe(1);
       const cl: Changelog = cls[0];
       expect(edges[0].id2).toBe(cl.id);
-      expect(JSON.parse(cl.data.log)).toMatchObject({
+      expect(convertJSON(cl.data.log)).toMatchObject({
         // also has ownerID...
         addedBy: user.id,
         notificationsEnabled: true,
@@ -586,7 +584,7 @@ function commonTests() {
   });
 
   test("simple-one-op-no-edited-ent", async () => {
-    let id = QueryRecorder.newID();
+    let id = v4();
     await createRowForTest({
       tableName: "users",
       fields: {
@@ -607,7 +605,7 @@ function commonTests() {
       WriteOperation.Edit,
       user,
     );
-    const id2 = QueryRecorder.newID();
+    const id2 = v4();
 
     action.builder.orchestrator.addOutboundEdge(id2, "fake_edge", "user");
 
@@ -738,20 +736,20 @@ function commonTests() {
       return [
         {
           name: "#general",
-          id: QueryRecorder.newID(),
+          id: v4(),
         },
         {
           name: "#random",
-          id: QueryRecorder.newID(),
+          id: v4(),
         },
         {
           name: "#fun",
-          id: QueryRecorder.newID(),
+          id: v4(),
         },
       ];
     }
     async function getInvitee(viewer: Viewer): Promise<User> {
-      return new User(viewer, { id: QueryRecorder.newID() });
+      return new User(viewer, { id: v4() });
     }
 
     const group = await createGroup();
@@ -936,7 +934,7 @@ function commonTests() {
               ChangelogSchema,
               new Map([
                 // no dependency on fields. all new
-                ["parentID", QueryRecorder.newID()],
+                ["parentID", v4()],
                 ["parentType", "GroupMembership"],
                 ["log", input],
               ]),
@@ -1006,7 +1004,7 @@ function commonTests() {
               ChangelogSchema,
               new Map([
                 // no builder field
-                ["parentID", QueryRecorder.newID()],
+                ["parentID", v4()],
                 ["parentType", "GroupMembership"],
                 ["log", input],
               ]),
@@ -1078,7 +1076,7 @@ function commonTests() {
         expect(cls.length).toBe(1);
         const cl: Changelog = cls[0];
         expect(edges[0].id1).toBe(cl.id);
-        expect(JSON.parse(cl.data.log)).toMatchObject({
+        expect(convertJSON(cl.data.log)).toMatchObject({
           addedBy: user.id,
           notificationsEnabled: true,
         });

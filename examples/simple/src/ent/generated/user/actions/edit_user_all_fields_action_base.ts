@@ -47,8 +47,6 @@ export interface EditUserAllFieldsInput {
   preferredShift?: UserPreferredShift[] | null;
   timeInMs?: BigInt | null;
   funUuids?: ID[] | null;
-  newCol?: string | null;
-  newCol2?: string | null;
   superNestedObject?: UserSuperNestedObject | null;
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;

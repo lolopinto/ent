@@ -1,5 +1,4 @@
 import {
-  gqlInputObjectType,
   gqlField,
   gqlObjectType,
   gqlContextType,

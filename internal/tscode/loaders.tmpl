@@ -11,7 +11,7 @@
 
   const {{$table}} = '{{.TableName}}';
   const {{$fields}} = [
-    {{range $field := .FieldInfo.Fields -}}
+    {{range $field := .FieldInfo.EntFields -}}
       {{if $field.FetchOnLoad -}}
         '{{$field.GetDbColName}}',
       {{end -}}
@@ -39,7 +39,7 @@
     nodeType: {{useImport "NodeType"}}.{{.Node}},
     loaderFactory: {{printf "%sLoader" .NodeInstance }},
     fieldInfo: {
-      {{range $field := .FieldInfo.Fields -}}
+      {{range $field := .FieldInfo.EntFields -}}
       {{$field.FieldName}}: {
         dbCol: '{{$field.GetDbColName}}',
         inputKey: '{{$field.TsBuilderFieldName}}',

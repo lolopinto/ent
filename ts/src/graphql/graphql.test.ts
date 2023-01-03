@@ -5,7 +5,6 @@ import {
   gqlArgType,
   CustomFieldType,
   gqlConnection,
-  GraphQLConnection,
 } from "./graphql";
 import {
   GraphQLInt,

@@ -15,7 +15,6 @@ import {
   DateType,
   EnumType,
   Schema,
-  Field,
   StringListType,
   IntListType,
   JSONBType,
@@ -202,12 +201,11 @@ test("int enum map", async () => {
 describe("fkey enum", () => {
   test("valid", async () => {
     class RequestStatus implements Schema {
-      fields: Field[] = [
-        StringType({
-          name: "status",
+      fields = {
+        status: StringType({
           primaryKey: true,
         }),
-      ];
+      };
 
       enumTable = true;
 

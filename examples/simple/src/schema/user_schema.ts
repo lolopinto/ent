@@ -130,8 +130,9 @@ const UserSchema = new EntSchema({
       defaultValueOnCreate: () => BigInt(Date.now()),
     }),
     fun_uuids: UUIDListType({ nullable: true }),
-    new_col: StringType({ nullable: true }),
-    new_col2: StringType({ nullable: true }),
+    // drop from ent but keep in db
+    new_col: StringType({ nullable: true, dbOnly: true }),
+    new_col2: StringType({ nullable: true, dbOnly: true }),
     superNestedObject: StructType({
       fetchOnDemand: true,
       nullable: true,

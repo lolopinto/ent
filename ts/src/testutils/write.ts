@@ -1,7 +1,6 @@
 import {
   EditRowOptions,
   Data,
-  ID,
   DataOptions,
   CreateRowOptions,
 } from "../core/base";

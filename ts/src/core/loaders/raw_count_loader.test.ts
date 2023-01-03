@@ -259,7 +259,7 @@ function commonTests() {
 
     test("single id. with context", async () => {
       clear();
-      const [user, events] = await createAllEvents({
+      const [user] = await createAllEvents({
         howMany: HOW_MANY,
         interval: INTERVAL,
       });

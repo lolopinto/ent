@@ -97,8 +97,6 @@ interface UserDBData {
   preferred_shift: UserPreferredShift[] | null;
   time_in_ms: BigInt | null;
   fun_uuids: ID[] | null;
-  new_col: string | null;
-  new_col_2: string | null;
   super_nested_object: UserSuperNestedObject | null;
   nested_list: UserNestedObjectList[] | null;
   int_enum: UserIntEnum | null;
@@ -135,8 +133,6 @@ export class UserBase
   readonly preferredShift: UserPreferredShift[] | null;
   readonly timeInMs: BigInt | null;
   readonly funUuids: ID[] | null;
-  readonly newCol: string | null;
-  readonly newCol2: string | null;
   protected _superNestedObject: UserSuperNestedObject | null | undefined;
   readonly nestedList: UserNestedObjectList[] | null;
   readonly intEnum: UserIntEnum | null;
@@ -167,8 +163,6 @@ export class UserBase
     );
     this.timeInMs = BigInt(data.time_in_ms);
     this.funUuids = data.fun_uuids;
-    this.newCol = data.new_col;
-    this.newCol2 = data.new_col_2;
     this.nestedList = convertNullableUserNestedObjectListList(data.nested_list);
     this.intEnum = convertNullableUserIntEnum(data.int_enum);
   }

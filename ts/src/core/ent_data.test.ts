@@ -18,9 +18,8 @@ import {
   AlwaysAllowPrivacyPolicy,
 } from "./privacy";
 import { buildInsertQuery, buildUpdateQuery } from "./ent";
-import { QueryRecorder, queryOptions } from "../testutils/db_mock";
+import { queryOptions } from "../testutils/db_mock";
 import { createRowForTest, editRowForTest } from "../testutils/write";
-import { Pool } from "pg";
 import * as ent from "./ent";
 import { ContextCache } from "./context";
 import * as clause from "./clause";
@@ -28,7 +27,13 @@ import DB from "./db";
 import each from "jest-each";
 import { ObjectLoaderFactory } from "./loaders";
 
-import { integer, table, text, setupSqlite } from "../testutils/db/temp_db";
+import {
+  integer,
+  table,
+  text,
+  setupSqlite,
+  setupPostgres,
+} from "../testutils/db/temp_db";
 import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
 
@@ -183,28 +188,27 @@ function validateQueries(expQueries: Data[]) {
     console.debug(ml.logs, expQueries);
   }
   expect(ml.logs.length).toBe(expQueries.length);
-  expect(ml.logs).toStrictEqual(expQueries);
+  expect(ml.logs).toMatchObject(expQueries);
 }
 
 async function createRows(fields: Data[], tableName: string): Promise<void> {
   ml.clear();
   let insertStatements: queryOptions[] = [];
 
-  await Promise.all(
-    fields.map((data) => {
-      const [query, values] = buildInsertQuery({
-        fields: data,
-        tableName: tableName,
-        fieldsToLog: data,
-      });
-      insertStatements.push({ query, values });
-      return createRowForTest({
-        fields: data,
-        tableName: tableName,
-        fieldsToLog: data,
-      });
-    }),
-  );
+  // manually doing this in specified order to ensure tests are deterministic
+  for (const data of fields) {
+    const [query, values] = buildInsertQuery({
+      fields: data,
+      tableName: tableName,
+      fieldsToLog: data,
+    });
+    insertStatements.push({ query, values });
+    await createRowForTest({
+      fields: data,
+      tableName: tableName,
+      fieldsToLog: data,
+    });
+  }
 
   validateQueries(insertStatements);
   ml.clear();
@@ -1330,8 +1334,6 @@ function commonTests() {
       expect(ents.size).toBe(1);
       expect(ents.has(1)).toBe(true);
 
-      const expQueries = [qOption];
-
       validateQueries([qOption]);
 
       const ents2 = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
@@ -1423,8 +1425,6 @@ function commonTests() {
       // only loading self worked because of privacy
       expect(ents.size).toBe(1);
       expect(ents.has(1)).toBe(true);
-
-      const expQueries = [qOption];
 
       validateQueries([qOption]);
 
@@ -1598,31 +1598,28 @@ function commonTests() {
   });
 }
 
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
+const tables = [
+  table(
+    "users",
+    integer("bar", { primaryKey: true }),
+    text("baz"),
+    text("foo"),
+  ),
+  table(
+    "contacts",
+    integer("bar", { primaryKey: true }),
+    text("baz"),
+    text("foo"),
+  ),
+];
 
 describe("postgres", () => {
-  afterEach(() => {
-    QueryRecorder.clear();
-  });
+  setupPostgres(() => tables);
   commonTests();
 });
 
 describe("sqlite", () => {
-  setupSqlite(`sqlite:///ent_data_test.db`, () => [
-    table(
-      "users",
-      integer("bar", { primaryKey: true }),
-      text("baz"),
-      text("foo"),
-    ),
-    table(
-      "contacts",
-      integer("bar", { primaryKey: true }),
-      text("baz"),
-      text("foo"),
-    ),
-  ]);
+  setupSqlite(`sqlite:///ent_data_test.db`, () => tables);
 
   commonTests();
 });

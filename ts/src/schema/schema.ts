@@ -52,8 +52,8 @@ export type FieldOverrideMap = {
 
 // Schema is the base for every schema in typescript
 export default interface Schema {
-  // schema has list of fields that are unique to each node
-  fields: FieldMap | Field[];
+  // schema has fields that are unique to each node
+  fields: FieldMap;
 
   fieldOverrides?: FieldOverrideMap;
 
@@ -213,7 +213,7 @@ export type Edge = AssocEdge;
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
   name: string;
-  fields: FieldMap | Field[];
+  fields: FieldMap;
   disableMixin?: boolean;
   edges?: Edge[];
 
@@ -487,6 +487,13 @@ export interface FieldOptions {
 
   fetchOnDemand?: boolean;
 
+  // if dbOnly, field isn't exposed in ent and graphql
+  // will still exit in the db and not be removed
+  // allows keeping the field in the db and avoid data loss if we still want the field for some reason
+  // won't be queryable automatically though
+  // can't use deprecated because intEnum uses it
+  dbOnly?: boolean;
+
   // allow name for now
   [x: string]: any;
 }
@@ -556,22 +563,12 @@ export function getSchema(value: SchemaInputType): Schema {
 
 export function getFields(value: SchemaInputType): Map<string, Field> {
   const schema = getSchema(value);
-  function addFields(fields: FieldMap | Field[]) {
-    if (Array.isArray(fields)) {
-      for (const field of fields) {
-        const name = field.name;
-        if (!name) {
-          throw new Error(`name required`);
-        }
-        if (field.getDerivedFields !== undefined) {
-          addFields(field.getDerivedFields(name));
-        }
-        m.set(name, field);
-      }
-      return;
-    }
+  function addFields(fields: FieldMap) {
     for (const name in fields) {
       const field = fields[name];
+      if (field.dbOnly) {
+        continue;
+      }
       if (field.getDerivedFields !== undefined) {
         addFields(field.getDerivedFields(name));
       }

@@ -1,12 +1,10 @@
-import { Pool } from "pg";
-import { QueryRecorder } from "../../testutils/db_mock";
 import { Viewer } from "../base";
 import {
   EdgeType,
   FakeUser,
   UserToContactsQuery,
 } from "../../testutils/fake_data/index";
-import { createEdges, inputs } from "../../testutils/fake_data/test_helpers";
+import { inputs } from "../../testutils/fake_data/test_helpers";
 import { commonTests } from "./shared_test";
 import { assocTests } from "./shared_assoc_test";
 import { loadCustomEdges } from "../ent";
