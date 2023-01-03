@@ -447,12 +447,16 @@ export class TempDB {
       await this.client.query(`CREATE DATABASE ${this.db}`);
 
       if (setupConnString) {
+        delete process.env.DB_CONNECTION_STRING;
+        let connStr = "";
         if (user && password) {
-          process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+          connStr = `postgres://${user}:${password}@localhost:5432/${this.db}`;
         } else {
-          process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+          connStr = `postgres://localhost/${this.db}?`;
         }
-        DB.initDB();
+        DB.initDB({
+          connectionString: connStr,
+        });
       } else {
         // will probably be setup via loadConfig
         delete process.env.DB_CONNECTION_STRING;
@@ -610,13 +614,14 @@ export function assoc_edge_table(name: string, global?: boolean) {
   return t;
 }
 
-interface sqliteSetupOptions {
+interface setupOptions {
   disableDeleteAfterEachTest?: boolean;
 }
+
 export function setupSqlite(
   connString: string,
   tables: () => Table[],
-  opts?: sqliteSetupOptions,
+  opts?: setupOptions,
 ) {
   let tdb: TempDB = new TempDB(Dialect.SQLite, tables);
 
@@ -650,6 +655,53 @@ export function setupSqlite(
     fs.rmSync(tdb.getSqliteClient().name);
     delete process.env.DB_CONNECTION_STRING;
   });
+
+  return tdb;
+}
+
+export function setupPostgres(tables: () => Table[], opts?: setupOptions) {
+  let tdb: TempDB;
+  beforeAll(async () => {
+    tdb = new TempDB(Dialect.Postgres, tables());
+    await tdb.beforeAll();
+  });
+
+  // TODO need to fix this implementation...
+  if (!opts?.disableDeleteAfterEachTest) {
+    afterEach(async () => {
+      const client = await DB.getInstance().getNewClient();
+      for (const [key, _] of tdb.__getTables()) {
+        const query = `delete from ${key}`;
+        await client.exec(query);
+      }
+      client.release();
+    });
+  }
+
+  afterAll(async () => {
+    await tdb.afterAll();
+  });
+}
+
+export async function doSQLiteTestFromSchemas(
+  schemas: BuilderSchema<Ent>[],
+  doTest: () => Promise<void>,
+  db?: string,
+) {
+  const connString = `sqlite:///${db || randomDB()}.db`;
+  const tables = schemas.map((schema) =>
+    getSchemaTable(schema, Dialect.SQLite),
+  );
+  let tdb: TempDB = new TempDB(Dialect.SQLite, tables);
+
+  process.env.DB_CONNECTION_STRING = connString;
+  loadConfig();
+  await tdb.beforeAll();
+
+  await doTest();
+
+  await tdb.afterAll();
+  delete process.env.DB_CONNECTION_STRING;
 
   return tdb;
 }

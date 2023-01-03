@@ -8,21 +8,13 @@ import {
   SimpleBuilder,
   EntBuilderSchema,
 } from "../testutils/builder";
-import { Pool } from "pg";
-import { QueryRecorder } from "../testutils/db_mock";
 import { Dialect } from "../core/db";
-import { getSchemaTable, setupSqlite, Table } from "../testutils/db/temp_db";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
-
-afterEach(() => {
-  QueryRecorder.clear();
-});
-
-describe("postgres", () => {
-  commonTests();
-});
+import {
+  getSchemaTable,
+  setupPostgres,
+  setupSqlite,
+  Table,
+} from "../testutils/db/temp_db";
 
 const UserSchema = new EntBuilderSchema(User, {
   fields: {
@@ -31,13 +23,18 @@ const UserSchema = new EntBuilderSchema(User, {
   },
 });
 
-describe("sqlite", () => {
-  const getTables = () => {
-    const tables: Table[] = [];
-    [UserSchema].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
-    return tables;
-  };
+const getTables = () => {
+  const tables: Table[] = [];
+  [UserSchema].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
+  return tables;
+};
 
+describe("postgres", () => {
+  setupPostgres(getTables);
+  commonTests();
+});
+
+describe("sqlite", () => {
   setupSqlite(`sqlite:///trigger-priority-test.db`, getTables);
   commonTests();
 });
