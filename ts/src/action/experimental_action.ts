@@ -125,6 +125,9 @@ export class BaseAction<
 
   // perform a bulk action in a transaction rooted on ent T
   // it ends up creating triggers and having all the given actions performed in a transaction
+  /**
+   * @deprecated use Transaction
+   */
   static bulkAction<
     TEnt extends Ent<TViewer>,
     TViewer extends Viewer,

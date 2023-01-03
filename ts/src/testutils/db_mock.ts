@@ -45,6 +45,7 @@ export enum queryType {
   BEGIN,
   COMMIT,
   ROLLBACK,
+  DELETE,
 }
 
 export interface queryStructure {
@@ -73,7 +74,7 @@ export class QueryRecorder {
   private static data: Map<string, Data[]> = new Map();
 
   // TODO kill use AST or just throw away
-  private static getQueryStructure(query): internalQueryStructure | null {
+  static getQueryStructure(query): internalQueryStructure | null {
     // we parsing sql now??
     // slowing building sqlshim?
     // make it so that we return the values entered back when mocking the db
@@ -121,6 +122,40 @@ export class QueryRecorder {
           //          colummns: execArray[1].split(", "),
         };
       }
+    }
+
+    if (/^DELETE/.test(query)) {
+      // regex can't do returning
+      let execArray = /^DELETE FROM (.+) WHERE (.+) /.exec(query);
+      if (execArray) {
+        return {
+          tableName: execArray[1],
+          whereClause: execArray[2],
+          type: queryType.DELETE,
+          query: execArray[0],
+        };
+      }
+    }
+
+    if (/^BEGIN/.test(query)) {
+      return {
+        type: queryType.BEGIN,
+        query: query,
+      };
+    }
+
+    if (/^COMMIT/.test(query)) {
+      return {
+        type: queryType.COMMIT,
+        query: query,
+      };
+    }
+
+    if (/^ROLLBACK/.test(query)) {
+      return {
+        type: queryType.ROLLBACK,
+        query: query,
+      };
     }
     return null;
   }

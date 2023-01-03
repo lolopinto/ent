@@ -196,6 +196,11 @@ export default class DB {
     return this.q.close();
   }
 
+  emitsExplicitTransactionStatements() {
+    const instance = DB.getInstance();
+    return instance.q.runInTransaction === undefined;
+  }
+
   // throws if invalid
   static getInstance(): DB {
     if (DB.instance) {
@@ -259,6 +264,7 @@ export interface Connection extends Queryer {
   self(): Queryer;
   newClient(): Promise<Client>;
   close(): Promise<void>;
+  runInTransaction?(cb: () => void | Promise<void>);
 }
 
 export interface QueryResultRow {
