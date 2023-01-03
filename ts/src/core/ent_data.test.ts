@@ -188,28 +188,27 @@ function validateQueries(expQueries: Data[]) {
     console.debug(ml.logs, expQueries);
   }
   expect(ml.logs.length).toBe(expQueries.length);
-  expect(ml.logs.sort()).toMatchObject(expQueries);
+  expect(ml.logs).toMatchObject(expQueries);
 }
 
 async function createRows(fields: Data[], tableName: string): Promise<void> {
   ml.clear();
   let insertStatements: queryOptions[] = [];
 
-  await Promise.all(
-    fields.map((data) => {
-      const [query, values] = buildInsertQuery({
-        fields: data,
-        tableName: tableName,
-        fieldsToLog: data,
-      });
-      insertStatements.push({ query, values });
-      return createRowForTest({
-        fields: data,
-        tableName: tableName,
-        fieldsToLog: data,
-      });
-    }),
-  );
+  // manually doing this in specified order to ensure tests are deterministic
+  for (const data of fields) {
+    const [query, values] = buildInsertQuery({
+      fields: data,
+      tableName: tableName,
+      fieldsToLog: data,
+    });
+    insertStatements.push({ query, values });
+    await createRowForTest({
+      fields: data,
+      tableName: tableName,
+      fieldsToLog: data,
+    });
+  }
 
   validateQueries(insertStatements);
   ml.clear();

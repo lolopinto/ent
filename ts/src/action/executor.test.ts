@@ -53,7 +53,6 @@ import {
   Table,
 } from "../testutils/db/temp_db";
 import * as action from "../action";
-import { inspect } from "util";
 import { convertJSON } from "../core/convert";
 import { v4 } from "uuid";
 
