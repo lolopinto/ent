@@ -89,7 +89,7 @@ function commonTests() {
         },
       ],
       // skipping assoc_edge_config load and potentially sqlite select *
-      true,
+      { skipSelect: true },
     );
     ml.clear();
 
@@ -113,7 +113,7 @@ function commonTests() {
       ml,
       [],
       // skipping assoc_edge_config load and potentially sqlite select *
-      true,
+      { skipSelect: true },
     );
   });
 
@@ -153,7 +153,7 @@ function commonTests() {
           type: queryType.INSERT,
         },
       ],
-      true,
+      { skipSelect: true },
     );
   });
 
@@ -200,7 +200,7 @@ function commonTests() {
         },
       ],
       // skipping assoc_edge_config load and potentially sqlite select *
-      true,
+      { skipSelect: true },
     );
   });
 
@@ -284,7 +284,7 @@ function commonTests() {
           type: queryType.INSERT,
         },
       ],
-      true,
+      { skipSelect: true },
     );
     FakeLogger.verifyLogs(2);
     expect(FakeLogger.contains(`ent User created with id ${user?.id}`)).toBe(
@@ -479,7 +479,7 @@ function commonTests() {
           type: queryType.INSERT,
         },
       ],
-      true,
+      { skipSelect: true },
     );
     FakeLogger.verifyLogs(4);
     expect(FakeLogger.contains(`ent User created with id ${user?.id}`)).toBe(

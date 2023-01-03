@@ -234,7 +234,10 @@ export class QueryRecorder {
   static validateQueryStructuresFromLogs(
     ml: MockLogs,
     expected: queryStructure[],
-    skipSelect?: boolean,
+    opts?: {
+      skipSelect?: boolean;
+      flagBeginCommit?: boolean;
+    },
   ) {
     const queries = ml.logs.map((log) => {
       const qs = QueryRecorder.getQueryStructure(log.query);
@@ -247,16 +250,26 @@ export class QueryRecorder {
       };
     });
 
-    QueryRecorder.validateQuryStructuresImpl(expected, queries, skipSelect);
+    QueryRecorder.validateQueryStructuresImpl(expected, queries, opts);
   }
 
-  private static validateQuryStructuresImpl(
+  private static validateQueryStructuresImpl(
     expected: queryStructure[],
     queries: queryOptions[],
-    skipSelect?: boolean,
+    opts?: {
+      skipSelect?: boolean;
+      flagBeginCommit?: boolean;
+    },
   ) {
-    if (skipSelect) {
+    if (opts?.skipSelect) {
       queries = queries.filter((query) => query.qs?.type !== queryType.SELECT);
+    }
+    if (!opts?.flagBeginCommit) {
+      queries = queries.filter(
+        (query) =>
+          query.qs?.type !== queryType.BEGIN &&
+          query.qs?.type !== queryType.COMMIT,
+      );
     }
     //    console.log(queries, expected);
     expect(queries.length).toBe(expected.length);
@@ -278,7 +291,7 @@ export class QueryRecorder {
           expect(query.values).toBe(undefined);
           break;
         case queryType.SELECT:
-          if (!skipSelect) {
+          if (!opts?.skipSelect) {
             console.error(
               "validating select query structure not supported yet",
             );

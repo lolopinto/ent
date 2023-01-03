@@ -65,7 +65,7 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/temp_db";
-import { Dialect } from "../core/db";
+import DB, { Dialect } from "../core/db";
 import { convertDate, convertList } from "../core/convert";
 import { v4 } from "uuid";
 
@@ -1779,11 +1779,15 @@ function commonTests() {
       );
       await action.saveX();
       expect(mockLog.logs.length).toBeGreaterThanOrEqual(1);
-      const lastLog = mockLog.logAt(0);
-      expect(lastLog.query).toMatch(/INSERT INTO users/);
-      expect(lastLog.values.length).toBe(5);
+      let insertIdx = 0;
+      if (DB.getInstance().emitsExplicitTransactionStatements()) {
+        insertIdx++;
+      }
+      const insertStmt = mockLog.logAt(insertIdx);
+      expect(insertStmt.query).toMatch(/INSERT INTO users/);
+      expect(insertStmt.values.length).toBe(5);
       // get the last two
-      expect(lastLog.values.slice(3)).toStrictEqual(["Jon", "Snow"]);
+      expect(insertStmt.values.slice(3)).toStrictEqual(["Jon", "Snow"]);
     });
 
     test("sensitive", async () => {
@@ -1799,11 +1803,15 @@ function commonTests() {
       );
       await action.saveX();
       expect(mockLog.logs.length).toBeGreaterThanOrEqual(1);
-      const lastLog = mockLog.logAt(0);
-      expect(lastLog.query).toMatch(/INSERT INTO sensitive_users/);
-      expect(lastLog.values.length).toBe(5);
+      let insertIdx = 0;
+      if (DB.getInstance().emitsExplicitTransactionStatements()) {
+        insertIdx++;
+      }
+      const insertStmt = mockLog.logAt(insertIdx);
+      expect(insertStmt.query).toMatch(/INSERT INTO sensitive_users/);
+      expect(insertStmt.values.length).toBe(5);
       // get the last two. Snow replaced with **** since sensitive
-      expect(lastLog.values.slice(3)).toStrictEqual(["Jon", "****"]);
+      expect(insertStmt.values.slice(3)).toStrictEqual(["Jon", "****"]);
     });
   });
 
