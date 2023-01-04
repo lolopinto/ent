@@ -1,9 +1,19 @@
-import { Clause as BaseClause } from "./base";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
 
-export interface Clause extends BaseClause {}
+export interface Clause {
+  clause(idx: number): string;
+  columns(): string[];
+  values(): any[];
+  instanceKey(): string;
+  // values to log when querying
+  logValues(): any[];
+  // to indicate if a composite clause e.g. combining multiple things
+  // one such reason is to be used by other composite clauses to know if to add parens
+  // around a clause to ensure order of operations is met
+  compositeOp?: string; // e.g. AND, OR etc
+}
 
 export interface SensitiveValue {
   value(): any;

@@ -1,8 +1,6 @@
 import { Ent } from "../core/base";
 import { WriteOperation } from "../action/action";
-
 import DB from "../core/db";
-
 import { QueryRecorder, queryType } from "../testutils/db_mock";
 import {
   User,

@@ -1,20 +1,5 @@
 import * as clause from "./clause";
 
-// exists here to avoid circular dependencies
-// TODO?
-export interface Clause {
-  clause(idx: number): string;
-  columns(): string[];
-  values(): any[];
-  instanceKey(): string;
-  // values to log when querying
-  logValues(): any[];
-  // to indicate if a composite clause e.g. combining multiple things
-  // one such reason is to be used by other composite clauses to know if to add parens
-  // around a clause to ensure order of operations is met
-  compositeOp?: string; // e.g. AND, OR etc
-}
-
 // Loader is the primitive data fetching abstraction in the framework
 // implementation details up to each instance
 // A DataLoader could be used internally or not.
