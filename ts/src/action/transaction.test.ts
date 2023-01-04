@@ -4,7 +4,13 @@ import { WriteOperation } from "../action/action";
 import DB from "../core/db";
 
 import { QueryRecorder, queryType } from "../testutils/db_mock";
-import { User, Message, SimpleAction } from "../testutils/builder";
+import {
+  User,
+  Message,
+  SimpleAction,
+  getTableName,
+  BuilderSchema,
+} from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { setupPostgres, setupSqlite } from "../testutils/db/temp_db";
 import { Transaction } from "./transaction";
@@ -21,7 +27,14 @@ import {
   MessageAction,
   setupTest,
   UserAction,
+  UserBalanceSchema,
+  UserBalanceWithCheckSchema,
+  UserWithBalance,
 } from "../testutils/action/complex_schemas";
+import { randomEmail } from "../testutils/db/value";
+import { Clause, NumberOps } from "../core/clause";
+import { loadEntX } from "../core/ent";
+import { ObjectLoaderFactory } from "../core/loaders";
 
 setupTest();
 const ml = getML();
@@ -36,7 +49,7 @@ describe("sqlite", () => {
   commonTests();
 });
 
-function validateOneTransaction() {
+function validateOneTransaction(failed?: boolean) {
   let beginIdx: number[] = [];
   let insertIdx: number[] = [];
   let updateIdx: number[] = [];
@@ -81,9 +94,10 @@ function validateOneTransaction() {
     }
   }
 
-  const beginCommit = DB.getInstance().emitsExplicitTransactionStatements();
+  const beginCommitRollback =
+    DB.getInstance().emitsExplicitTransactionStatements();
 
-  if (beginCommit) {
+  if (beginCommitRollback) {
     expect(beginIdx.length).toBe(1);
     if (beginIdx.length === 0) {
       expect(false, "no BEGIN statement found");
@@ -91,35 +105,57 @@ function validateOneTransaction() {
       expect(false, `${beginIdx.length} BEGIN statements found`);
     }
 
-    expect(commitIdx.length).toBe(1);
-    if (commitIdx.length === 0) {
-      expect(false, "no COMMIT statement found");
-    } else if (commitIdx.length > 1) {
-      expect(false, `${commitIdx.length} COMMIT statements found`);
+    if (failed) {
+      expect(rollbackIdx.length).toBe(1);
+      if (rollbackIdx.length === 0) {
+        expect(false, "no ROLLBACK statement found");
+      } else if (rollbackIdx.length > 1) {
+        expect(false, `${rollbackIdx.length} ROLLBACK statements found`);
+      }
+      expect(commitIdx.length).toBe(0);
+    } else {
+      expect(commitIdx.length).toBe(1);
+      if (commitIdx.length === 0) {
+        expect(false, "no COMMIT statement found");
+      } else if (commitIdx.length > 1) {
+        expect(false, `${commitIdx.length} COMMIT statements found`);
+      }
+      expect(rollbackIdx.length).toBe(0);
     }
   } else {
     expect(beginIdx.length).toBe(0);
     expect(commitIdx.length).toBe(0);
+    expect(rollbackIdx.length).toBe(0);
   }
 
-  if (beginCommit) {
+  if (beginCommitRollback) {
     if (insertIdx.length) {
       expect(insertIdx[0]).toBeGreaterThan(beginIdx[0]);
-      expect(insertIdx[0]).toBeLessThan(commitIdx[0]);
+      if (failed) {
+        expect(insertIdx[0]).toBeLessThan(rollbackIdx[0]);
+      } else {
+        expect(insertIdx[0]).toBeLessThan(commitIdx[0]);
+      }
     }
 
     if (updateIdx.length) {
       expect(updateIdx[0]).toBeGreaterThan(beginIdx[0]);
-      expect(updateIdx[0]).toBeLessThan(commitIdx[0]);
+      if (failed) {
+        expect(updateIdx[0]).toBeLessThan(rollbackIdx[0]);
+      } else {
+        expect(updateIdx[0]).toBeLessThan(commitIdx[0]);
+      }
     }
 
     if (deleteIdx.length) {
       expect(deleteIdx[0]).toBeGreaterThan(beginIdx[0]);
-      expect(deleteIdx[0]).toBeLessThan(commitIdx[0]);
+      if (failed) {
+        expect(deleteIdx[0]).toBeLessThan(rollbackIdx[0]);
+      } else {
+        expect(deleteIdx[0]).toBeLessThan(commitIdx[0]);
+      }
     }
   }
-
-  expect(rollbackIdx.length).toBe(0);
 }
 
 function commonTests() {
@@ -278,6 +314,138 @@ function commonTests() {
     );
   });
 
+  const transfer = <T extends UserWithBalance = UserWithBalance>(
+    from: T,
+    to: T,
+    amt: number,
+    schema: BuilderSchema<T>,
+  ) => {
+    const add = NumberOps.addNumber(amt);
+    const sub = NumberOps.subtractNumber(amt);
+
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      schema,
+      new Map<string, any>([["balance", sub.eval(to.data.balance)]]),
+      WriteOperation.Edit,
+      from,
+      new Map<string, Clause>([["balance", sub.sqlExpression("balance")]]),
+    );
+    action.getTriggers = () => [
+      {
+        changeset(builder, input) {
+          const action2 = new SimpleAction(
+            new LoggedOutViewer(),
+            schema,
+            new Map<string, any>([["balance", add.eval(to.data.balance)]]),
+            WriteOperation.Edit,
+            to,
+            new Map<string, Clause>([
+              ["balance", add.sqlExpression("balance")],
+            ]),
+          );
+          return action2.changeset();
+        },
+      },
+    ];
+    return action;
+  };
+
+  test("update value multiple times with expressions", async () => {
+    const viewer = new LoggedOutViewer();
+    let [user1, user2, user3] = await Promise.all(
+      [1, 2, 3].map(() =>
+        new SimpleAction(
+          viewer,
+          UserBalanceSchema,
+          new Map<string, any>([
+            ["first_name", "Jon"],
+            ["last_name", "Snow"],
+            ["email_address", randomEmail()],
+            ["balance", 100],
+          ]),
+          WriteOperation.Insert,
+          null,
+        ).saveX(),
+      ),
+    );
+    expect(user1.data.balance).toBe(100);
+    expect(user2.data.balance).toBe(100);
+    expect(user3.data.balance).toBe(100);
+
+    ml.clear();
+
+    const actions = [
+      transfer(user1, user2, 50, UserBalanceSchema),
+      transfer(user1, user3, 80, UserBalanceSchema),
+    ];
+
+    const tx = new Transaction(viewer, actions);
+    await tx.run();
+
+    validateOneTransaction();
+
+    const table = getTableName(UserBalanceSchema);
+    [user1, user2, user3] = await Promise.all(
+      [user1, user2, user3].map((u) =>
+        loadEntX(viewer, u.id, {
+          tableName: table,
+          fields: ["*"],
+          ent: UserWithBalance,
+          loaderFactory: new ObjectLoaderFactory({
+            tableName: table,
+            fields: ["*"],
+            key: "id",
+          }),
+        }),
+      ),
+    );
+
+    expect(user1.data.balance).toBe(-30);
+    expect(user2.data.balance).toBe(150);
+    expect(user3.data.balance).toBe(180);
+  });
+
+  test("update value multiple times with expressions and check", async () => {
+    const viewer = new LoggedOutViewer();
+    let [user1, user2, user3] = await Promise.all(
+      [1, 2, 3].map(() =>
+        new SimpleAction(
+          viewer,
+          UserBalanceWithCheckSchema,
+          new Map<string, any>([
+            ["first_name", "Jon"],
+            ["last_name", "Snow"],
+            ["email_address", randomEmail()],
+            ["balance", 100],
+          ]),
+          WriteOperation.Insert,
+          null,
+        ).saveX(),
+      ),
+    );
+    expect(user1.data.balance).toBe(100);
+    expect(user2.data.balance).toBe(100);
+    expect(user3.data.balance).toBe(100);
+
+    ml.clear();
+
+    const actions = [
+      transfer(user1, user2, 50, UserBalanceWithCheckSchema),
+      transfer(user1, user3, 80, UserBalanceWithCheckSchema),
+    ];
+
+    const tx = new Transaction(viewer, actions);
+    try {
+      await tx.run();
+      throw new Error(`should have thrown`);
+    } catch (e) {
+      // failed transaction
+      validateOneTransaction(true);
+
+      expect((e as Error).message).toMatch(/positive_balance/);
+    }
+  });
   // TODO would be nice to test that nested transactions aren't allowed
   // i can't think of any way that doesn't involve manual SQL statements
 }

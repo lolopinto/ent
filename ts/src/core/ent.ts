@@ -1751,10 +1751,6 @@ export function buildUpdateQuery(
 
   let idx = 1;
   for (const key in options.fields) {
-    // TODO would be nice to use clause here. need update version of the queries so that
-    // we don't have to handle dialect specifics here
-    // can't use clause because of IS NULL
-    // valsString.push(clause.Eq(key, val).clause(idx));
     if (options.expressions && options.expressions.has(key)) {
       const cls = options.expressions.get(key)!;
       valsString.push(`${key} = ${cls.clause(idx)}`);
@@ -1762,12 +1758,17 @@ export function buildUpdateQuery(
       const newVals = cls.values();
       idx += newVals.length;
       values.push(...newVals);
+      logValues.push(...cls.logValues());
     } else {
       const val = options.fields[key];
       values.push(val);
       if (options.fieldsToLog) {
         logValues.push(options.fieldsToLog[key]);
       }
+      // TODO would be nice to use clause here. need update version of the queries so that
+      // we don't have to handle dialect specifics here
+      // can't use clause because of IS NULL
+      // valsString.push(clause.Eq(key, val).clause(idx));
       if (dialect === Dialect.Postgres) {
         valsString.push(`${key} = $${idx}`);
       } else {

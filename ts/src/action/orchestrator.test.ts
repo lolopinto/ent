@@ -25,6 +25,8 @@ import { Changeset } from "../action";
 import {
   EnumField,
   EnumOptions,
+  FloatType,
+  IntegerType,
   StringType,
   TimestampType,
   UUIDListType,
@@ -180,6 +182,26 @@ const SchemaWithProcessors = getBuilderSchemaFromFields(
   UserWithProcessors,
 );
 
+class UserWithBalance extends User {}
+const UserWithBalanceSchema = getBuilderSchemaFromFields(
+  {
+    first_name: StringType(),
+    last_name: StringType(),
+    balance: FloatType(),
+  },
+  UserWithBalance,
+);
+
+class UserWithIntBalance extends User {}
+const UserWithIntBalanceSchema = getBuilderSchemaFromFields(
+  {
+    first_name: StringType(),
+    last_name: StringType(),
+    balance: IntegerType(),
+  },
+  UserWithIntBalance,
+);
+
 const AddressSchemaDerivedFields = getBuilderSchemaFromFields(
   {
     Street: StringType(),
@@ -323,6 +345,8 @@ const getTables = () => {
     UserSchemaDefaultValueOnCreate,
     UserSchemaDefaultValueOnCreateJSON,
     UserSchemaDefaultValueOnCreateInvalidJSON,
+    UserWithBalanceSchema,
+    UserWithIntBalanceSchema,
     SchemaWithProcessors,
     EventSchema,
     AddressSchemaDerivedFields,
@@ -2030,6 +2054,222 @@ function commonTests() {
     const contact = await action.saveX();
     // explicit test that id gotten in trigger is still returned here
     expect(contact.id).toBe(idInTrigger);
+  });
+
+  describe("expressions", () => {
+    test("add expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 0],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(0);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 0]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          ["balance", clause.NumberOps.addNumber(50).sqlExpression("balance")],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(50);
+    });
+
+    test("subtract expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 50]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          [
+            "balance",
+            clause.NumberOps.subtractNumber(50).sqlExpression("balance"),
+          ],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(50);
+    });
+
+    test("divide expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 50]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          [
+            "balance",
+            clause.NumberOps.divideNumber(2).sqlExpression("balance"),
+          ],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(50);
+    });
+
+    test("multiply expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 200]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          [
+            "balance",
+            clause.NumberOps.multiplyNumber(2).sqlExpression("balance"),
+          ],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(200);
+    });
+
+    test("modulo expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithIntBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithIntBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 1]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          [
+            "balance",
+            clause.NumberOps.moduloNumber(3).sqlExpression("balance"),
+          ],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(1);
+    });
+
+    test("modulo expression float", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100.5],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100.5);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 1]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          [
+            "balance",
+            clause.NumberOps.moduloNumber(3).sqlExpression("balance"),
+          ],
+        ]),
+      );
+
+      if (DB.getDialect() === Dialect.Postgres) {
+        try {
+          await editAction.saveX();
+          throw new Error(`should have thrown`);
+        } catch (err) {}
+      } else {
+        user = await editAction.saveX();
+        expect(user.data.balance).toBe(1);
+      }
+    });
   });
 }
 

@@ -856,6 +856,7 @@ interface RelativeNumberOps {
   subtract?: number;
   divide?: number;
   multiply?: number;
+  // note modulo only seems to work with integer types in postgres
   modulo?: number;
 }
 
@@ -910,6 +911,7 @@ function divideNumber(delta: number): RelativeFieldValue<number> {
   };
 }
 
+// note modulo only seems to work with integer types in postgres
 function moduloNumber(delta: number): RelativeFieldValue<number> {
   return {
     delta,

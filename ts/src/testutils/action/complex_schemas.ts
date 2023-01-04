@@ -30,6 +30,7 @@ import {
   TimestampType,
   BooleanType,
   UUIDType,
+  FloatType,
 } from "../../schema/field";
 import { JSONBType } from "../../schema/json_field";
 import { FakeLogger, EntCreationObserver } from "../../testutils/fake_log";
@@ -47,6 +48,7 @@ import {
   Table,
 } from "../db/temp_db";
 import { Dialect } from "../../core/db";
+import { ConstraintType } from "../../schema";
 
 const ml = new MockLogs();
 let operations: DataOperation[] = [];
@@ -117,6 +119,40 @@ export const UserSchema = getBuilderSchemaFromFields(
     AccountID: UUIDType({ nullable: true }),
   },
   User,
+);
+
+export class UserWithBalance extends User {}
+
+export const UserBalanceSchema = getBuilderSchemaFromFields(
+  {
+    first_name: StringType(),
+    last_name: StringType(),
+    email_address: StringType({ nullable: true }),
+    balance: FloatType(),
+  },
+  UserWithBalance,
+);
+
+export class UserWithBalanceWithCheck extends UserWithBalance {}
+
+export const UserBalanceWithCheckSchema = getBuilderSchemaFromFields(
+  {
+    first_name: StringType(),
+    last_name: StringType(),
+    email_address: StringType({ nullable: true }),
+    balance: FloatType(),
+  },
+  UserWithBalanceWithCheck,
+  {
+    constraints: [
+      {
+        type: ConstraintType.Check,
+        name: "positive_balance",
+        columns: ["balance"],
+        condition: "balance >= 0",
+      },
+    ],
+  },
 );
 
 export class Account implements Ent {
@@ -498,6 +534,8 @@ export const getTables = () => {
     GroupMembershipSchema,
     ChangelogSchema,
     GroupMemberOfSchema,
+    UserBalanceSchema,
+    UserBalanceWithCheckSchema,
   ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
   return tables;
 };

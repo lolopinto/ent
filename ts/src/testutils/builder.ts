@@ -32,6 +32,7 @@ import {
   EntSchemaWithTZ,
 } from "../schema/base_schema";
 import { FieldInfoMap, getStorageKey } from "../schema/schema";
+import { Clause } from "src/core/clause";
 
 export class User implements Ent {
   id: ID;
@@ -140,9 +141,10 @@ export function getBuilderSchema<T extends Ent>(
 export function getBuilderSchemaFromFields<T extends Ent>(
   fields: FieldMap,
   ent: EntConstructor<T>,
+  opts?: Partial<Exclude<SchemaConfig, "fields">>,
 ): BuilderSchema<T> {
   return {
-    ...new EntSchema({ fields }),
+    ...new EntSchema({ ...opts, fields }),
     ent,
   };
 }
@@ -207,6 +209,7 @@ export class SimpleBuilder<
     action?:
       | Action<T, SimpleBuilder<T, TExistingEnt>, Viewer, Data, TExistingEnt>
       | undefined,
+    expressions?: Map<string, Clause>,
   ) {
     // create dynamic placeholder
     // TODO: do we need to use this as the node when there's an existingEnt
@@ -259,6 +262,7 @@ export class SimpleBuilder<
       },
       builder: this,
       action: action,
+      expressions,
       schema: this.schema,
       editedFields: () => {
         // to simulate what we do in generated builders where we return a new Map
@@ -353,6 +357,7 @@ export class SimpleAction<
     private fields: Map<string, any>,
     operation: WriteOperation = WriteOperation.Insert,
     existingEnt: TExistingEnt,
+    expressions?: Map<string, Clause>,
   ) {
     this.builder = new SimpleBuilder<T, TExistingEnt>(
       this.viewer,
@@ -361,6 +366,7 @@ export class SimpleAction<
       operation,
       existingEnt,
       this,
+      expressions,
     );
   }
 

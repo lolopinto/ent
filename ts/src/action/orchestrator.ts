@@ -334,6 +334,14 @@ export class Orchestrator<
             `existing ent required with operation ${this.actualOperation}`,
           );
         }
+        if (
+          this.options.expressions &&
+          this.actualOperation !== WriteOperation.Edit
+        ) {
+          throw new Error(
+            `expressions are only supported in edit operations for now`,
+          );
+        }
         const opts: EditNodeOptions<TEnt> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
@@ -342,6 +350,7 @@ export class Orchestrator<
           loadEntOptions: this.options.loaderOptions,
           placeholderID: this.options.builder.placeholderID,
           whereClause: clause.Eq(this.options.key, this.existingEnt?.id),
+          expressions: this.options.expressions,
         };
         if (this.logValues) {
           opts.fieldsToLog = this.logValues;
