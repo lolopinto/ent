@@ -59,6 +59,18 @@ export interface OrchestratorOptions<
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
   updateInput?: (data: TInput) => void;
+
+  // mapping of column to expressions to use
+  // if set and a column exists, we use the expression here instead of the given expression in the sql query
+  // for now, only works in an `UPDATE` query i.e. with operation === WriteOperation.Insert
+  // if passed with a different operation type, it throws an Error
+  // any value provided in editedFields for this value is ignored and we assume the right thing is done with said expression
+
+  // TODO ability to get expression value, parse it and update it
+  // e.g. if somehow there's a promotion if you play your 1000th game (which costs 5 tokens),
+  // we increase your balance by 1000000 after the cost of the ticket
+  // or we completely use your balance or something
+  expressions?: Map<string, clause.Clause>;
   fieldInfo: FieldInfoMap;
 }
 

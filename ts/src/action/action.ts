@@ -18,6 +18,7 @@ import { Queryer } from "../core/db";
 import { log } from "../core/logger";
 import { TransformedUpdateOperation, UpdateOperation } from "../schema";
 import { FieldInfoMap } from "../schema/schema";
+import { Add, Clause, Divide, Multiply, Subtract } from "../core/clause";
 
 export { WriteOperation };
 
@@ -176,6 +177,88 @@ export interface Action<
   // save(): Promise<void>;
   // saveX(): Promise<T>;
   // saveX(): Promise<T>;
+}
+
+export interface RelativeFieldValue<T extends any> {
+  delta: T;
+  sqlExpression: (col: string) => Clause;
+  eval: (curr: T) => T;
+}
+
+// TODO these 5 need to be in a public place
+
+interface EditFooRelativeInput {
+  bar: string;
+  foo?: number | RelativeFieldValue<number> | null;
+  baz: number | RelativeFieldValue<number> | null;
+}
+
+// this can tighten the values that change
+// so we can get the initial values and convert input in constructor
+// and go from relative to absolute values
+// and keep relative to be used just in CreateFoo and updateInput?
+interface EditFooInput extends EditFooRelativeInput {
+  foo?: number | null;
+  baz: number | null;
+}
+
+function editFoo(input: EditFooRelativeInput) {
+  // @ts-ignore
+  const { expressions, input: realInput } = handleRelativeInput(input, {}, {});
+  // TODO orchestrator.setExpressions
+}
+
+function getInput(): EditFooInput {
+  return {
+    bar: "",
+    baz: null,
+  };
+}
+
+// :(
+type ValidateStructure<T, Struct> = T extends Struct
+  ? Exclude<keyof T, keyof Struct> extends never
+    ? T
+    : never
+  : never;
+
+// this assumes every key in TRelativeInput is in TInput and doesn't try any crazy things
+// TODO would be nice to validate this
+function handleRelativeInput<
+  TRelativeInput extends Data,
+  // TInput extends ValidateStructure<T, TRelativeInput>,
+  TInput extends Data,
+  // T,
+>(
+  input: TRelativeInput,
+  fieldInfo: FieldInfoMap,
+  existingEnt: Ent,
+): { input: TInput; expressions: Map<string, Clause> } {
+  // @ts-ignore
+  const resolved: TInput = {};
+  const expressions = new Map();
+
+  const isRelativeFieldValue = (v: any): v is RelativeFieldValue<any> => {
+    return (
+      typeof v === "object" &&
+      (v as RelativeFieldValue<any>).sqlExpression !== undefined
+    );
+  };
+
+  for (const k in input) {
+    const v = input[k];
+    if (isRelativeFieldValue(v)) {
+      const col = fieldInfo[k].dbCol;
+      const sql = v.sqlExpression(col);
+      const curr = existingEnt[fieldInfo[k].inputKey];
+      expressions.set(col, sql);
+      resolved[k] = v.eval(curr);
+    } else {
+      // @ts-ignore
+      resolved[k] = v;
+    }
+  }
+  return { input: resolved, expressions };
 }
 
 export async function saveBuilder<

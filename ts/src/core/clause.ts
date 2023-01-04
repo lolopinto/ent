@@ -1,19 +1,9 @@
+import { Clause as BaseClause } from "./base";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
 
-export interface Clause {
-  clause(idx: number): string;
-  columns(): string[];
-  values(): any[];
-  instanceKey(): string;
-  // values to log when querying
-  logValues(): any[];
-  // to indicate if a composite clause e.g. combining multiple things
-  // one such reason is to be used by other composite clauses to know if to add parens
-  // around a clause to ensure order of operations is met
-  compositeOp?: string; // e.g. AND, OR etc
-}
+export interface Clause extends BaseClause {}
 
 export interface SensitiveValue {
   value(): any;
@@ -829,3 +819,113 @@ export function PaginationMultipleColsSubQuery(
     val,
   );
 }
+
+// These 5 are used on the RHS of an expression
+// TODO: do we want a different interface for them?
+export function Add(col: string, value: any): Clause {
+  return new simpleClause(col, value, "+", new isNullClause(col));
+}
+
+export function Subtract(col: string, value: any): Clause {
+  return new simpleClause(col, value, "-", new isNullClause(col));
+}
+
+export function Multiply(col: string, value: any): Clause {
+  return new simpleClause(col, value, "*", new isNullClause(col));
+}
+
+export function Divide(col: string, value: any): Clause {
+  return new simpleClause(col, value, "/", new isNullClause(col));
+}
+
+export function Modulo(col: string, value: any): Clause {
+  return new simpleClause(col, value, "%", new isNullClause(col));
+}
+
+// TODO remove this from here and move away from action
+// base.ts also?
+export interface RelativeFieldValue<T extends any> {
+  delta: T;
+  sqlExpression: (col: string) => Clause;
+  eval: (curr: T) => T;
+}
+
+// this is the public API instead...
+interface RelativeNumberOps {
+  add?: number;
+  subtract?: number;
+  divide?: number;
+  multiply?: number;
+  modulo?: number;
+}
+
+// and then that translates to calling these which returns a RelativeFieldValue which is much cleaner?
+// can also do it one by one instead of what we had in
+
+function addNumber(delta: number): RelativeFieldValue<number> {
+  return {
+    delta,
+    sqlExpression(col: string): Clause {
+      return Add(col, delta);
+    },
+    eval(curr) {
+      return curr + delta;
+    },
+  };
+}
+
+function subtractNumber(delta: number): RelativeFieldValue<number> {
+  return {
+    delta,
+    sqlExpression(col: string): Clause {
+      return Subtract(col, delta);
+    },
+    eval(curr) {
+      return curr - delta;
+    },
+  };
+}
+
+function multiplyNumber(delta: number): RelativeFieldValue<number> {
+  return {
+    delta,
+    sqlExpression(col: string): Clause {
+      return Multiply(col, delta);
+    },
+    eval(curr) {
+      return curr * delta;
+    },
+  };
+}
+
+function divideNumber(delta: number): RelativeFieldValue<number> {
+  return {
+    delta,
+    sqlExpression(col: string): Clause {
+      return Divide(col, delta);
+    },
+    eval(curr) {
+      return curr / delta;
+    },
+  };
+}
+
+function moduloNumber(delta: number): RelativeFieldValue<number> {
+  return {
+    delta,
+    sqlExpression(col: string): Clause {
+      return Modulo(col, delta);
+    },
+    eval(curr) {
+      return curr % delta;
+    },
+  };
+}
+
+export const NumberOps = {
+  addNumber,
+  moduloNumber,
+  divideNumber,
+  subtractNumber,
+  multiplyNumber,
+};
