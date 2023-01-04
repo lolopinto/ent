@@ -70,6 +70,7 @@ import {
 import DB, { Dialect } from "../core/db";
 import { convertDate, convertList } from "../core/convert";
 import { v4 } from "uuid";
+import { NumberOps } from "./relative_value";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
@@ -2081,7 +2082,7 @@ function commonTests() {
         WriteOperation.Edit,
         user,
         new Map<string, clause.Clause>([
-          ["balance", clause.NumberOps.addNumber(50).sqlExpression("balance")],
+          ["balance", NumberOps.addNumber(50).sqlExpression("balance")],
         ]),
       );
 
@@ -2113,10 +2114,7 @@ function commonTests() {
         WriteOperation.Edit,
         user,
         new Map<string, clause.Clause>([
-          [
-            "balance",
-            clause.NumberOps.subtractNumber(50).sqlExpression("balance"),
-          ],
+          ["balance", NumberOps.subtractNumber(50).sqlExpression("balance")],
         ]),
       );
 
@@ -2148,10 +2146,7 @@ function commonTests() {
         WriteOperation.Edit,
         user,
         new Map<string, clause.Clause>([
-          [
-            "balance",
-            clause.NumberOps.divideNumber(2).sqlExpression("balance"),
-          ],
+          ["balance", NumberOps.divideNumber(2).sqlExpression("balance")],
         ]),
       );
 
@@ -2183,10 +2178,7 @@ function commonTests() {
         WriteOperation.Edit,
         user,
         new Map<string, clause.Clause>([
-          [
-            "balance",
-            clause.NumberOps.multiplyNumber(2).sqlExpression("balance"),
-          ],
+          ["balance", NumberOps.multiplyNumber(2).sqlExpression("balance")],
         ]),
       );
 
@@ -2218,10 +2210,7 @@ function commonTests() {
         WriteOperation.Edit,
         user,
         new Map<string, clause.Clause>([
-          [
-            "balance",
-            clause.NumberOps.moduloNumber(3).sqlExpression("balance"),
-          ],
+          ["balance", NumberOps.moduloNumber(3).sqlExpression("balance")],
         ]),
       );
 
@@ -2253,10 +2242,7 @@ function commonTests() {
         WriteOperation.Edit,
         user,
         new Map<string, clause.Clause>([
-          [
-            "balance",
-            clause.NumberOps.moduloNumber(3).sqlExpression("balance"),
-          ],
+          ["balance", NumberOps.moduloNumber(3).sqlExpression("balance")],
         ]),
       );
 

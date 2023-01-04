@@ -30,9 +30,10 @@ import {
   UserWithBalance,
 } from "../testutils/action/complex_schemas";
 import { randomEmail } from "../testutils/db/value";
-import { Clause, NumberOps } from "../core/clause";
+import { Clause } from "../core/clause";
 import { loadEntX } from "../core/ent";
 import { ObjectLoaderFactory } from "../core/loaders";
+import { NumberOps } from "./relative_value";
 
 setupTest();
 const ml = getML();

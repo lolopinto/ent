@@ -1,4 +1,5 @@
-import { Eq, Clause, NumberOps } from "./clause";
+import { NumberOps } from "../action/relative_value";
+import { Eq, Clause } from "./clause";
 import { buildUpdateQuery } from "./ent";
 
 // for now, simplifying tests and assuming all postgres
