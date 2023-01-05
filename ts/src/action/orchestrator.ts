@@ -1012,6 +1012,7 @@ export class Orchestrator<
 
     await this.buildEdgeOps(ops);
 
+    // TODO throw if we try and create a new changeset after previously creating one
     return new EntChangeset(
       this.options.viewer,
       this.options.builder.placeholderID,

@@ -1,21 +1,7 @@
-import { Ent, ID, Viewer, Data, PrivacyPolicy } from "../core/base";
-import { DataOperation, loadEdges, loadEnts, loadRows } from "../core/ent";
+import { Viewer } from "../core/base";
+import { loadRows } from "../core/ent";
 import * as clause from "../core/clause";
-import { ObjectLoaderFactory } from "../core/loaders/object_loader";
-import {
-  Action,
-  Builder,
-  Changeset,
-  Executor,
-  WriteOperation,
-  Trigger,
-  Observer,
-  TriggerReturn,
-} from "../action/action";
-import { executeOperations } from "../action/executor";
-import { EdgeInputData } from "../action/orchestrator";
-
-import { Dialect } from "../core/db";
+import { Changeset, WriteOperation } from "../action/action";
 
 import { QueryRecorder, queryType } from "../testutils/db_mock";
 import {
@@ -24,198 +10,48 @@ import {
   Message,
   Contact,
   SimpleBuilder,
-  BuilderSchema,
   SimpleAction,
-  getTableName,
-  getBuilderSchemaFromFields,
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import {
-  StringType,
-  TimestampType,
-  BooleanType,
-  UUIDType,
-} from "../schema/field";
-import { JSONBType } from "../schema/json_field";
+
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
 import { createRowForTest } from "../testutils/write";
-import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
-import { BaseAction } from "./experimental_action";
-import { MockLogs } from "../testutils/mock_log";
-import { setLogLevels } from "../core/logger";
-import {
-  assoc_edge_config_table,
-  assoc_edge_table,
-  getSchemaTable,
-  setupPostgres,
-  setupSqlite,
-  Table,
-} from "../testutils/db/temp_db";
-import * as action from "../action";
+import { setupPostgres, setupSqlite } from "../testutils/db/temp_db";
 import { convertJSON } from "../core/convert";
 import { v4 } from "uuid";
-
-const ml = new MockLogs();
-let operations: DataOperation[] = [];
-
-const edges = [
-  "fake_edge",
-  "selfContact",
-  "channelMember",
-  "senderToMessage",
-  "workspaceMember",
-  "recipientToMessage",
-  "objectToChangelog",
-  "changelogToParent",
-];
-
-beforeEach(async () => {
-  // does assoc_edge_config loader need to be cleared?
-  for (const edge of edges) {
-    await createRowForTest({
-      tableName: "assoc_edge_config",
-      fields: {
-        edge_table: `${edge}_table`,
-        symmetric_edge: false,
-        inverse_edge_type: null,
-        edge_type: edge,
-        edge_name: "name",
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    });
-  }
-  ml.clear();
-});
-
-beforeAll(() => {
-  setLogLevels(["query", "error", "cache"]);
-  ml.mock();
-});
-
-afterEach(() => {
-  ml.clear();
-});
-
-afterAll(() => {
-  ml.restore();
-});
-afterEach(() => {
-  FakeLogger.clear();
-  operations = [];
-});
-
-const UserSchema = getBuilderSchemaFromFields(
-  {
-    FirstName: StringType(),
-    LastName: StringType(),
-    EmailAddress: StringType({ nullable: true }),
-    AccountID: UUIDType({ nullable: true }),
-  },
-  User,
-);
-
-class Account implements Ent {
-  id: ID;
-  accountID: string = "";
-  nodeType = "Account";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
-}
-
-const AccountSchema = getBuilderSchemaFromFields({}, Account);
-
-const ContactSchema = getBuilderSchemaFromFields(
-  {
-    FirstName: StringType(),
-    LastName: StringType(),
-    UserID: StringType(),
-  },
-  Contact,
-);
-
-const GroupSchema = getBuilderSchemaFromFields(
-  {
-    name: StringType(),
-    funField: StringType({ nullable: true }),
-  },
-  Group,
-);
-
-class GroupMembership implements Ent {
-  id: ID;
-  nodeType = "GroupMembership";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
-}
-
-const GroupMembershipSchema = getBuilderSchemaFromFields(
-  {
-    ownerID: UUIDType(),
-    addedBy: UUIDType(),
-    notificationsEnabled: BooleanType(),
-  },
-  GroupMembership,
-);
-
-class Changelog implements Ent {
-  id: ID;
-  nodeType = "Changelog";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
-}
-
-const ChangelogSchema = getBuilderSchemaFromFields(
-  {
-    parentID: UUIDType({ polymorphic: true }),
-    log: JSONBType(),
-  },
+import {
   Changelog,
-);
+  ChangelogSchema,
+  ContactSchema,
+  createGroup,
+  createUser,
+  EditGroupAction,
+  executeAction,
+  getML,
+  getOperations,
+  getTables,
+  GroupMembership,
+  GroupMembershipSchema,
+  GroupSchema,
+  loadChangelogs,
+  loadMemberships,
+  MessageAction,
+  setupTest,
+  UserAction,
+  UserSchema,
+  verifyChangelogFromMeberships,
+  verifyGroupMembers,
+} from "../testutils/action/complex_schemas";
 
-const MessageSchema = getBuilderSchemaFromFields(
-  {
-    // TODO both id fields
-    sender: StringType(), // can't use from
-    recipient: StringType(), // can't use to in sqlite
-    message: StringType(),
-    transient: BooleanType({ nullable: true }),
-    expiresAt: TimestampType({ nullable: true }),
-  },
-  Message,
-);
+setupTest();
+const ml = getML();
 
-const getTables = () => {
-  const tables: Table[] = [assoc_edge_config_table()];
-  edges.map((edge) => tables.push(assoc_edge_table(`${edge}_table`)));
+function randomEmail(): string {
+  const rand = Math.random().toString(16).substring(2);
 
-  [
-    AccountSchema,
-    ContactSchema,
-    GroupSchema,
-    UserSchema,
-    MessageSchema,
-    GroupMembershipSchema,
-    ChangelogSchema,
-  ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
-  return tables;
-};
+  return `test+${rand}@email.com`;
+}
 
 describe("postgres", () => {
   setupPostgres(getTables);
@@ -226,270 +62,6 @@ describe("sqlite", () => {
   setupSqlite(`sqlite:///executor-test.db`, getTables);
   commonTests();
 });
-
-jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
-jest.spyOn(action, "saveBuilderX").mockImplementation(saveBuilderX);
-
-async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
-  const changeset = await builder.build();
-  const executor = changeset.executor();
-  operations = await executeOperations(executor, builder.viewer.context, true);
-}
-
-async function saveBuilderX<T extends Ent>(builder: Builder<T>): Promise<void> {
-  return saveBuilder(builder);
-}
-
-async function executeAction<T extends Ent, E = any>(
-  action: Action<T, Builder<T>>,
-  name?: E,
-): Promise<Executor> {
-  const exec = await executor(action.builder);
-  if (name !== undefined) {
-    expect(exec).toBeInstanceOf(name);
-  }
-  operations = await executeOperations(
-    exec,
-    action.builder.viewer.context,
-    true,
-  );
-  return exec;
-}
-
-async function executor<T extends Ent>(builder: Builder<T>): Promise<Executor> {
-  const changeset = await builder.build();
-  return changeset.executor();
-}
-
-async function createGroup() {
-  let groupID = v4();
-  let groupFields = {
-    id: groupID,
-    name: "group",
-    created_at: new Date(),
-    updated_at: new Date(),
-  };
-  // need to create the group first
-  await createRowForTest({
-    tableName: "groups",
-    fields: groupFields,
-  });
-  return new Group(new LoggedOutViewer(), groupFields);
-}
-
-async function createUser(): Promise<User> {
-  const id = v4();
-  return new User(new IDViewer(id), { id });
-}
-
-class MessageAction extends SimpleAction<Message> {
-  constructor(
-    viewer: Viewer,
-    fields: Map<string, any>,
-    operation: WriteOperation,
-    existingEnt: Message | null,
-  ) {
-    super(viewer, MessageSchema, fields, operation, existingEnt);
-  }
-
-  getTriggers(): Trigger<Message, SimpleBuilder<Message, Message | null>>[] {
-    return [
-      {
-        changeset: (builder, _input): void => {
-          let sender = builder.fields.get("sender");
-          let recipient = builder.fields.get("recipient");
-
-          builder.orchestrator.addInboundEdge(
-            sender,
-            "senderToMessage",
-            "user",
-          );
-          builder.orchestrator.addInboundEdge(
-            recipient,
-            "recipientToMessage",
-            "user",
-          );
-        },
-      },
-    ];
-  }
-
-  getObservers(): Observer<Message, SimpleBuilder<Message>>[] {
-    return [new EntCreationObserver<Message>()];
-  }
-}
-
-class UserAction extends SimpleAction<User> {
-  contactAction: SimpleAction<Contact> | undefined;
-
-  constructor(
-    viewer: Viewer,
-    fields: Map<string, any>,
-    operation: WriteOperation,
-    existingEnt: User | null,
-  ) {
-    super(viewer, UserSchema, fields, operation, existingEnt);
-  }
-
-  getTriggers(): Trigger<User, SimpleBuilder<User>>[] {
-    return [
-      {
-        changeset: (builder): Promise<Changeset> => {
-          let firstName = builder.fields.get("FirstName");
-          let lastName = builder.fields.get("LastName");
-          this.contactAction = new SimpleAction(
-            builder.viewer,
-            ContactSchema,
-            new Map([
-              ["FirstName", firstName],
-              ["LastName", lastName],
-              ["UserID", builder],
-            ]),
-            WriteOperation.Insert,
-            null,
-          );
-
-          this.contactAction.getObservers = () => [
-            new EntCreationObserver<Contact>(),
-          ];
-
-          builder.orchestrator.addOutboundEdge(
-            this.contactAction.builder,
-            "selfContact",
-            "contact",
-          );
-          return this.contactAction.changeset();
-        },
-      },
-    ];
-  }
-
-  getObservers(): Observer<User, SimpleBuilder<User>>[] {
-    return [new EntCreationObserver<User>()];
-  }
-}
-
-type getMembershipFunction = (
-  viewer: Viewer,
-  edge: EdgeInputData,
-) => SimpleAction<Ent>;
-
-class GroupMembershipTrigger implements Trigger<Group, SimpleBuilder<Group>> {
-  constructor(private getter: getMembershipFunction) {}
-  changeset(builder: SimpleBuilder<Group>, input: Data): TriggerReturn {
-    const inputEdges = builder.orchestrator.getInputEdges(
-      "workspaceMember",
-      WriteOperation.Insert,
-    );
-    const changesets: TriggerReturn = [];
-    for (const edge of inputEdges) {
-      // we're going to simplify and assume it doesn't currently exist
-      const memberAction = this.getter(builder.viewer, edge);
-      // store the membership edge in data field of member edge
-      builder.orchestrator.addOutboundEdge(edge.id, "workspaceMember", "User", {
-        data: memberAction.builder,
-      });
-      changesets.push(memberAction.changeset());
-    }
-    return Promise.all(changesets);
-  }
-}
-
-class EditGroupAction extends SimpleAction<Group> {
-  constructor(
-    public viewer: Viewer,
-    schema: BuilderSchema<Group>,
-    fields: Map<string, any>,
-    operation: WriteOperation = WriteOperation.Insert,
-    existingEnt: Group,
-    private getter: getMembershipFunction,
-  ) {
-    super(viewer, schema, fields, operation, existingEnt);
-  }
-  getTriggers = () => [new GroupMembershipTrigger(this.getter)];
-}
-
-function randomEmail(): string {
-  const rand = Math.random().toString(16).substring(2);
-
-  return `test+${rand}@email.com`;
-}
-
-async function verifyGroupMembers(group: Group, members: User[]) {
-  const memberEdges = await loadEdges({
-    edgeType: "workspaceMember",
-    id1: group.id,
-  });
-  const memberIDs = members.map((ent) => ent.id);
-  expect(memberIDs.sort()).toEqual(memberEdges.map((edge) => edge.id2).sort());
-  // @ts-ignore
-  const membershipids: ID[] = memberEdges
-    .map((edge) => edge.data)
-    .filter((str) => str !== null && str !== undefined);
-  return membershipids;
-}
-
-async function loadMemberships(viewer: Viewer, membershipids: ID[]) {
-  const tableName = getTableName(GroupMembershipSchema);
-  const ents = await loadEnts(
-    viewer,
-    {
-      tableName,
-      ent: GroupMembership,
-      fields: ["id", "owner_id", "added_by", "notifications_enabled"],
-      loaderFactory: new ObjectLoaderFactory({
-        tableName,
-        fields: ["id", "owner_id", "added_by", "notifications_enabled"],
-        key: "id",
-      }),
-    },
-    ...membershipids,
-  );
-  return Array.from(ents.values());
-}
-
-async function loadChangelogs(viewer: Viewer, clids: ID[]) {
-  const ents = await loadEnts(
-    viewer,
-    {
-      tableName: "changelogs",
-      ent: Changelog,
-      fields: ["id", "parent_id", "log"],
-      loaderFactory: new ObjectLoaderFactory({
-        tableName: "changelogs",
-        fields: ["id", "parent_id", "log"],
-        key: "id",
-      }),
-    },
-    ...clids,
-  );
-  return Array.from(ents.values());
-}
-
-async function verifyChangelogFromMeberships(
-  user: User,
-  memberships: GroupMembership[],
-) {
-  await Promise.all(
-    memberships.map(async (membership) => {
-      const edges = await loadEdges({
-        edgeType: "objectToChangelog",
-        id1: membership.id,
-      });
-      expect(edges.length).toBe(1);
-      const clIDs = edges.map((edge) => edge.id2);
-      const cls = await loadChangelogs(user.viewer, clIDs);
-      expect(cls.length).toBe(1);
-      const cl: Changelog = cls[0];
-      expect(edges[0].id2).toBe(cl.id);
-      expect(convertJSON(cl.data.log)).toMatchObject({
-        // also has ownerID...
-        addedBy: user.id,
-        notificationsEnabled: true,
-      });
-    }),
-  );
-}
 
 function commonTests() {
   test("empty", async () => {
@@ -504,7 +76,8 @@ function commonTests() {
       null,
     );
     const user = await action.saveX();
-    expect(operations.length).toBe(1);
+
+    expect(getOperations().length).toBe(1);
 
     // insert query
     QueryRecorder.validateQueryStructuresFromLogs(
@@ -516,7 +89,7 @@ function commonTests() {
         },
       ],
       // skipping assoc_edge_config load and potentially sqlite select *
-      true,
+      { skipSelect: true },
     );
     ml.clear();
 
@@ -533,13 +106,14 @@ function commonTests() {
     await builder.saveX();
     let ent = await builder.editedEntX();
     expect(ent).toBeDefined();
-    expect(operations.length).toBe(1);
+    expect(getOperations().length).toBe(1);
+
     // there's an operation but no query.
     QueryRecorder.validateQueryStructuresFromLogs(
       ml,
       [],
       // skipping assoc_edge_config load and potentially sqlite select *
-      true,
+      { skipSelect: true },
     );
   });
 
@@ -561,7 +135,7 @@ function commonTests() {
     expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(ent);
     expect(exec.resolveValue(ent.id)).toBe(null);
 
-    expect(operations.length).toBe(1);
+    expect(getOperations().length).toBe(1);
 
     // data saved. confirm that default values on create set
     const data = ent.data;
@@ -579,7 +153,7 @@ function commonTests() {
           type: queryType.INSERT,
         },
       ],
-      true,
+      { skipSelect: true },
     );
   });
 
@@ -616,7 +190,7 @@ function commonTests() {
     // 2 operations. Edit NodeOperation still created because it's needed to resolve placeholder
     // however, no writes done. see query below
 
-    expect(operations.length).toBe(2);
+    expect(getOperations().length).toBe(2);
     QueryRecorder.validateQueryStructuresFromLogs(
       ml,
       [
@@ -626,7 +200,7 @@ function commonTests() {
         },
       ],
       // skipping assoc_edge_config load and potentially sqlite select *
-      true,
+      { skipSelect: true },
     );
   });
 
@@ -685,7 +259,7 @@ function commonTests() {
       action.editedEnt(),
       action.contactAction!.editedEnt(),
     ]);
-    expect(operations.length).toBe(3);
+    expect(getOperations().length).toBe(3);
     expect(user).toBeInstanceOf(User);
     expect(contact).toBeInstanceOf(Contact);
 
@@ -710,7 +284,7 @@ function commonTests() {
           type: queryType.INSERT,
         },
       ],
-      true,
+      { skipSelect: true },
     );
     FakeLogger.verifyLogs(2);
     expect(FakeLogger.contains(`ent User created with id ${user?.id}`)).toBe(
@@ -796,7 +370,7 @@ function commonTests() {
             );
           }
 
-          // workspaceMemeer
+          // workspaceMember
           // inbound edge from user -> group
           action.builder.orchestrator.addInboundEdge(
             userAction.builder,
@@ -846,7 +420,7 @@ function commonTests() {
     // 3 channel members (for the 3 auto-join channels)
     // 2 messages: 1 from message -> sender and one from message -> receiver
     // 1 user->contact (user -> self-contact)
-    expect(operations.length).toBe(11);
+    expect(getOperations().length).toBe(11);
     expect(createdGroup).toBeInstanceOf(Group);
     expect(user).toBeInstanceOf(User);
     expect(message).toBeInstanceOf(Message);
@@ -905,7 +479,7 @@ function commonTests() {
           type: queryType.INSERT,
         },
       ],
-      true,
+      { skipSelect: true },
     );
     FakeLogger.verifyLogs(4);
     expect(FakeLogger.contains(`ent User created with id ${user?.id}`)).toBe(
@@ -960,7 +534,6 @@ function commonTests() {
       new IDViewer(user.id),
       GroupSchema,
       new Map(),
-      WriteOperation.Edit,
       group,
       (viewer, edge) => {
         return new CreateMembershipAction(
@@ -1030,7 +603,6 @@ function commonTests() {
       new IDViewer(user.id),
       GroupSchema,
       new Map(),
-      WriteOperation.Edit,
       group,
       (viewer, edge) => {
         return new CreateMembershipAction(
@@ -1121,7 +693,6 @@ function commonTests() {
       new IDViewer(user.id),
       GroupSchema,
       new Map(),
-      WriteOperation.Edit,
       group,
       (viewer, edge) => {
         return new CreateMembershipAction(
@@ -1226,121 +797,5 @@ function commonTests() {
     const editedGroup = await action.editedEnt();
     expect(editedGroup).toBeInstanceOf(Group);
     expect(editedGroup?.data["fun_field"]).toBe("22");
-  });
-
-  test("nested siblings via bulk-action", async () => {
-    const group = await createGroup();
-    const inputs: { firstName: string; lastName: string }[] = [
-      {
-        firstName: "Arya",
-        lastName: "Stark",
-      },
-      {
-        firstName: "Robb",
-        lastName: "Stark",
-      },
-      {
-        firstName: "Sansa",
-        lastName: "Stark",
-      },
-      {
-        firstName: "Rickon",
-        lastName: "Stark",
-      },
-      {
-        firstName: "Bran",
-        lastName: "Stark",
-      },
-    ];
-    const accountAction = new SimpleAction(
-      new LoggedOutViewer(),
-      AccountSchema,
-      new Map([]),
-      WriteOperation.Insert,
-      null,
-    );
-
-    const actions: SimpleAction<Ent>[] = inputs.map(
-      (input) =>
-        new UserAction(
-          new LoggedOutViewer(),
-          new Map<string, any>([
-            ["FirstName", input.firstName],
-            ["LastName", input.lastName],
-            ["AccountID", accountAction.builder],
-          ]),
-          WriteOperation.Insert,
-          null,
-        ),
-    );
-    actions.push(accountAction);
-
-    type MaybeNull<T extends Ent> = T | null;
-    type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
-
-    class GroupBuilder<
-      TExistingEnt extends TMaybleNullableEnt<Group> = MaybeNull<Group>,
-    > extends SimpleBuilder<Group, TExistingEnt> {
-      constructor(
-        viewer: Viewer,
-        operation: WriteOperation,
-        action: SimpleAction<Group, TExistingEnt>,
-        existingEnt: TExistingEnt,
-      ) {
-        super(viewer, GroupSchema, new Map(), operation, existingEnt, action);
-      }
-    }
-
-    let action1 = actions[0];
-    let action2 = actions[1];
-    actions.push(
-      new MessageAction(
-        group.viewer,
-        new Map<string, any>([
-          ["sender", action1.builder],
-          ["recipient", action2.builder],
-          ["message", `${inputs[0].firstName} has joined!`],
-          ["transient", true],
-          ["expiresAt", new Date().setTime(new Date().getTime() + 86400)],
-        ]),
-        WriteOperation.Insert,
-        null,
-      ),
-    );
-
-    // @ts-ignore why??
-    const action = BaseAction.bulkAction(group, GroupBuilder, ...actions);
-    await action.saveX();
-
-    const ents = (await Promise.all(
-      actions.map((action) => action.editedEnt()),
-    )) as User[];
-    const users = ents.slice(0, inputs.length);
-    expect(users.length).toBe(inputs.length);
-    const account = ents[inputs.length];
-    const message = ents[inputs.length + 1];
-    expect(account).toBeInstanceOf(Account);
-    expect(message).toBeInstanceOf(Message);
-
-    for (let i = 0; i < inputs.length; i++) {
-      const input = inputs[i];
-      const user = users[i];
-      expect(user).not.toBeNull();
-      if (!user) {
-        throw new Error("impossicant");
-      }
-      expect(user).toBeInstanceOf(User);
-
-      expect(input.firstName).toBe(user.data.first_name);
-      expect(input.lastName).toBe(user.data.last_name);
-      expect(user.data.account_id).toBe(account?.id);
-    }
-
-    if (!message) {
-      throw new Error("impossicant");
-    }
-
-    expect(message["data"].sender).toBe(users[0]?.id);
-    expect(message["data"].recipient).toBe(users[1]?.id);
   });
 }

@@ -804,7 +804,7 @@ async function doFieldPrivacy<
   return ent;
 }
 
-function logQuery(query: string, logValues: any[]) {
+export function logQuery(query: string, logValues: any[]) {
   log("query", {
     query: query,
     values: logValues,
