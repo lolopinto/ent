@@ -49,6 +49,7 @@ export class GuestBase
   extends WithAddressMixin(class {})
   implements Ent<Viewer>, IWithAddress
 {
+  protected readonly data: GuestDBData;
   readonly nodeType = NodeType.Guest;
   readonly id: ID;
   readonly createdAt: Date;
@@ -59,7 +60,7 @@ export class GuestBase
   readonly guestGroupID: ID;
   readonly title: string | null;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -70,6 +71,8 @@ export class GuestBase
     this.emailAddress = data.email_address;
     this.guestGroupID = data.guest_group_id;
     this.title = data.title;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

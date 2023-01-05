@@ -58,6 +58,7 @@ export class EventActivityBase
   extends WithAddressMixin(class {})
   implements Ent<Viewer>, IWithAddress
 {
+  protected readonly data: EventActivityDBData;
   readonly nodeType = NodeType.EventActivity;
   readonly id: ID;
   readonly createdAt: Date;
@@ -70,7 +71,7 @@ export class EventActivityBase
   readonly description: string | null;
   readonly inviteAllGuests: boolean;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -83,6 +84,8 @@ export class EventActivityBase
     this.location = data.location;
     this.description = data.description;
     this.inviteAllGuests = data.invite_all_guests;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

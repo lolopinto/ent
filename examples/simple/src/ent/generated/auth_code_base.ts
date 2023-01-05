@@ -37,6 +37,7 @@ interface AuthCodeDBData {
 }
 
 export class AuthCodeBase implements Ent<ExampleViewerAlias> {
+  protected readonly data: AuthCodeDBData;
   readonly nodeType = NodeType.AuthCode;
   readonly id: ID;
   readonly createdAt: Date;
@@ -46,7 +47,7 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   readonly emailAddress: string | null;
   readonly phoneNumber: string | null;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -54,6 +55,8 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
     this.userID = data.user_id;
     this.emailAddress = data.email_address;
     this.phoneNumber = data.phone_number;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

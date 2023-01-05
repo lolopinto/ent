@@ -40,6 +40,7 @@ interface UserDBData {
 }
 
 export class UserBase implements Ent<Viewer> {
+  protected readonly data: UserDBData;
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -49,7 +50,7 @@ export class UserBase implements Ent<Viewer> {
   readonly emailAddress: string;
   protected readonly password: string;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -57,6 +58,8 @@ export class UserBase implements Ent<Viewer> {
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
     this.password = data.password;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

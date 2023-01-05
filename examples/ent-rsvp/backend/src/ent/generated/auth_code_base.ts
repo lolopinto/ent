@@ -40,6 +40,7 @@ interface AuthCodeDBData {
 }
 
 export class AuthCodeBase implements Ent<Viewer> {
+  protected readonly data: AuthCodeDBData;
   readonly nodeType = NodeType.AuthCode;
   readonly id: ID;
   readonly createdAt: Date;
@@ -49,7 +50,7 @@ export class AuthCodeBase implements Ent<Viewer> {
   readonly emailAddress: string;
   readonly sentCode: boolean;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -57,6 +58,8 @@ export class AuthCodeBase implements Ent<Viewer> {
     this.guestID = data.guest_id;
     this.emailAddress = data.email_address;
     this.sentCode = data.sent_code;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

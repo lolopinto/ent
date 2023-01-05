@@ -48,6 +48,7 @@ export class ContactPhoneNumberBase
   extends ContactInfoMixin(class {})
   implements Ent<ExampleViewerAlias>, IContactInfo
 {
+  protected readonly data: ContactPhoneNumberDBData;
   readonly nodeType = NodeType.ContactPhoneNumber;
   readonly id: ID;
   readonly createdAt: Date;
@@ -56,7 +57,7 @@ export class ContactPhoneNumberBase
   readonly label: ContactPhoneNumberLabel;
   readonly contactID: ID;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -65,6 +66,8 @@ export class ContactPhoneNumberBase
     this.phoneNumber = data.phone_number;
     this.label = convertContactPhoneNumberLabel(data.label);
     this.contactID = data.contact_id;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

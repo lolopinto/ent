@@ -49,6 +49,7 @@ interface EventDBData {
 }
 
 export class EventBase implements Ent<ExampleViewerAlias> {
+  protected readonly data: EventDBData;
   readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;
@@ -60,7 +61,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   readonly location: string;
   protected readonly _addressID: ID | null;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -70,6 +71,8 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     this.endTime = data.end_time;
     this.location = data.location;
     this._addressID = data.address_id;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
