@@ -1,4 +1,3 @@
-import { Data } from "src/core/base";
 import {
   Add,
   Clause,
@@ -241,46 +240,3 @@ export function maybeConvertRelativeInputPlusExpressions(
   expressions.set(col, clause);
   return value;
 }
-
-const input: number | RelativeNumberValue<number> | undefined = undefined;
-const existing = 3;
-const expressions = new Map();
-
-const ret = maybeConvertRelativeInputPlusExpressions(
-  input,
-  "credits",
-  existing,
-  expressions,
-);
-// TODO deletre....
-// interface RelativeNumber {
-//   [key: string]: BigInt | number | null | undefined;
-// }
-
-// interface RelativeNumberInput {
-//   [key: string]: BigInt | number | null | undefined;
-// }
-
-// // I don't have the typescript foo to make this generic...
-// // everything is generic but this only works for ids
-// export function convertRelativeObj<T extends RelativeNumber>(
-//   data: T,
-//   input: T,
-//   // fieldsWithRelativße: T2,
-// ): { resolved: T; expressions: Map<string, Clause> } {
-//   const ret: T = { ...input };
-//   const expressions = new Map<string, Clause>();
-//   for (const k in input) {
-//     const v = input[k];
-//     if (v === null || v === undefined || typeof v !== "object") {
-//       continue;
-//     }
-//     const { clause, value } = convertRelativeInput(v, k, data[k]);
-//     // replace value
-//     // @ts-expect-error
-//     ret[k] = value;
-//     expressions.set(k, clause);
-//   }
-
-//   return { resolved: ret, expressions };
-// }
