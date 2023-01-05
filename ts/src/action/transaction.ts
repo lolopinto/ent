@@ -1,4 +1,4 @@
-import { Ent, Viewer, ViewerWithContext } from "../core/base";
+import { Ent, Viewer } from "../core/base";
 import { Action, Builder, Changeset } from "./action";
 import { ComplexExecutor } from "./executor";
 
