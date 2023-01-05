@@ -16,6 +16,7 @@ import {
   Trigger,
   Validator,
   WriteOperation,
+  maybeConvertRelativeInputPlusExpressions,
 } from "@snowtop/ent/action";
 import { Account } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
@@ -89,14 +90,22 @@ export class EditAccountActionBase
   constructor(viewer: Viewer, account: Account, input: AccountEditRelativeInput) {
     this.viewer = viewer;
 
+    const data = account.___getData();
+    type Foo = Pick< typeof data, 'credits' >;
+    let expressions = new Map<string, Clause>();
 
+    const ret = maybeConvertRelativeInputPlusExpressions(input.credits, 'credits',data.credits, expressions)
+    this.input = {
+      ...input,
+      credits: maybeConvertRelativeInputPlusExpressions(input.credits, 'credits',data.credits, expressions)
+    }
+    // function foo (r: Record<keyof)
 
     // const existing = account.___getData()['credits']
-    let m = new Map<string, Clause>();
     let credits: number | undefined;
     if (typeof input.credits === "object") {
-      const { clause, value } = convertRelativeInput(input.credits, 'credits', account.credits)
-      m.set('credits', clause);
+      const { clause, value } = convertRelativeInput(input.credits, 'credits', account.___getData().credits)
+      expressions.set('credits', clause);
       credits = value
     } else {
       credits =input.credits

@@ -53,6 +53,7 @@ export class WorkspaceBase
   extends TodoContainerMixin(class {})
   implements Ent<Viewer>, ITodoContainer
 {
+  protected readonly data: WorkspaceDBData;
   readonly nodeType = NodeType.Workspace;
   readonly id: ID;
   readonly createdAt: Date;
@@ -63,7 +64,7 @@ export class WorkspaceBase
   readonly viewerCreatorID: ID;
   readonly slug: string;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -74,10 +75,12 @@ export class WorkspaceBase
     this.creatorID = data.creator_id;
     this.viewerCreatorID = data.viewer_creator_id;
     this.slug = data.slug;
+    // @ts-expect-error
+    this.data = data;
   }
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): Data {
+  ___getData(): WorkspaceDBData {
     return this.data;
   }
 

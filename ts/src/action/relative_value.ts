@@ -1,3 +1,4 @@
+import { Data } from "src/core/base";
 import {
   Add,
   Clause,
@@ -156,3 +157,124 @@ export function convertRelativeInput<T = BigInt | number>(
   }
   throw new Error(`error in convertRelativeInput. shouldn't have gotten here`);
 }
+
+export function maybeConvertRelativeInputPlusExpressions(
+  rel: number | RelativeNumberValue<number>,
+  col: string,
+  existing: number,
+  expressions: Map<string, Clause>,
+): number;
+export function maybeConvertRelativeInputPlusExpressions(
+  rel: number | RelativeNumberValue<number> | null,
+  col: string,
+  existing: number | null,
+  expressions: Map<string, Clause>,
+): number | null;
+export function maybeConvertRelativeInputPlusExpressions(
+  rel: number | RelativeNumberValue<number> | null | undefined,
+  col: string,
+  existing: number | null,
+  expressions: Map<string, Clause>,
+): number | undefined | null;
+export function maybeConvertRelativeInputPlusExpressions(
+  rel: number | RelativeNumberValue<number> | undefined,
+  col: string,
+  existing: number,
+  expressions: Map<string, Clause>,
+): number | undefined;
+
+export function maybeConvertRelativeInputPlusExpressions(
+  rel: BigInt | RelativeNumberValue<BigInt>,
+  col: string,
+  existing: BigInt,
+  expressions: Map<string, Clause>,
+): BigInt;
+export function maybeConvertRelativeInputPlusExpressions(
+  rel: BigInt | RelativeNumberValue<BigInt> | null,
+  col: string,
+  existing: BigInt | null,
+  expressions: Map<string, Clause>,
+): BigInt | null;
+export function maybeConvertRelativeInputPlusExpressions(
+  rel: BigInt | RelativeNumberValue<BigInt> | null | undefined,
+  col: string,
+  existing: BigInt | null,
+  expressions: Map<string, Clause>,
+): BigInt | null | undefined;
+export function maybeConvertRelativeInputPlusExpressions(
+  rel: BigInt | RelativeNumberValue<BigInt> | undefined,
+  col: string,
+  existing: BigInt,
+  expressions: Map<string, Clause>,
+): BigInt | undefined;
+
+export function maybeConvertRelativeInputPlusExpressions(
+  rel:
+    | number
+    | RelativeNumberValue<number>
+    | BigInt
+    | RelativeNumberValue<BigInt>
+    | null
+    | undefined,
+  col: string,
+  existing: number | BigInt | null,
+  expressions: Map<string, Clause>,
+): number | null | undefined | BigInt {
+  if (
+    rel === null ||
+    rel === undefined ||
+    typeof rel === "bigint" ||
+    typeof rel === "number"
+  ) {
+    return rel;
+  }
+  // @ts-ignore
+  // shouldn't be failing like it currently is. it thinks rel can be bigint  and it shouldn't be???
+  const { clause, value } = convertRelativeInput(rel, col, existing);
+  expressions.set(col, clause);
+  return value;
+}
+
+const input: number | RelativeNumberValue<number> | undefined = undefined;
+const existing = 3;
+const expressions = new Map();
+
+// this is number|null|undefined
+const ret = maybeConvertRelativeInputPlusExpressions(
+  input,
+  "credits",
+  existing,
+  expressions,
+);
+// TODO deletre....
+// interface RelativeNumber {
+//   [key: string]: BigInt | number | null | undefined;
+// }
+
+// interface RelativeNumberInput {
+//   [key: string]: BigInt | number | null | undefined;
+// }
+
+// // I don't have the typescript foo to make this generic...
+// // everything is generic but this only works for ids
+// export function convertRelativeObj<T extends RelativeNumber>(
+//   data: T,
+//   input: T,
+//   // fieldsWithRelativße: T2,
+// ): { resolved: T; expressions: Map<string, Clause> } {
+//   const ret: T = { ...input };
+//   const expressions = new Map<string, Clause>();
+//   for (const k in input) {
+//     const v = input[k];
+//     if (v === null || v === undefined || typeof v !== "object") {
+//       continue;
+//     }
+//     const { clause, value } = convertRelativeInput(v, k, data[k]);
+//     // replace value
+//     // @ts-expect-error
+//     ret[k] = value;
+//     expressions.set(k, clause);
+//   }
+
+//   return { resolved: ret, expressions };
+// }

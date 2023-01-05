@@ -24,4 +24,5 @@ export {
   RelativeNumberValue,
   NumberOps,
   convertRelativeInput,
+  maybeConvertRelativeInputPlusExpressions,
 } from "./relative_value";

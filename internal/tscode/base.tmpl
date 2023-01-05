@@ -118,7 +118,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   }
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): {{useImport "Data"}} {
+  ___getData(): {{$dataType}} {
     return this.data;
   }
   
