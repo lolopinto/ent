@@ -49,6 +49,7 @@ type Account implements Node {
   phone_number: String
   account_prefs: AccountPrefs
   account_prefs_list: [AccountPrefs2!]
+  credits: Int!
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
   created_workspaces(first: Int, after: String, last: Int, before: String): AccountToCreatedWorkspacesConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
@@ -78,6 +79,7 @@ type Todo implements Node {
   text: String!
   completed: Boolean!
   completed_date: Time
+  bounty: Int
   tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
   todo_scope(first: Int, after: String, last: Int, before: String): TodoToTodoScopeConnection!
 }
@@ -315,6 +317,7 @@ input CreateAccountInput {
   phone_number: String!
   account_prefs: AccountPrefsInput
   account_prefs_list: [AccountPrefs2Input!]
+  credits: Int
 }
 
 type CreateAccountPayload {
@@ -338,6 +341,7 @@ input CreateTodoInput {
   assignee_id: ID!
   scope_id: ID!
   scope_type: String!
+  bounty: Int
 }
 
 type CreateTodoPayload {
@@ -387,6 +391,7 @@ input EditAccountInput {
   phone_number: String
   account_prefs: AccountPrefsInput
   account_prefs_list: [AccountPrefs2Input!]
+  credits: Int
 }
 
 type EditAccountPayload {

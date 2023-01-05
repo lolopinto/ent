@@ -5,6 +5,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -50,6 +51,9 @@ export const CreateAccountInputType = new GraphQLInputObjectType({
     account_prefs_list: {
       type: new GraphQLList(new GraphQLNonNull(AccountPrefs2InputType)),
     },
+    credits: {
+      type: GraphQLInt,
+    },
   }),
 });
 
@@ -88,6 +92,7 @@ export const CreateAccountType: GraphQLFieldConfig<
       phoneNumber: input.phone_number,
       accountPrefs: input.account_prefs,
       accountPrefsList: input.account_prefs_list,
+      credits: input.credits,
     }).saveX();
     return { account: account };
   },

@@ -616,7 +616,7 @@ func (f *Field) TSBuilderWithRelativeType(cfg codegenapi.Config) string {
 		return typ
 	}
 
-	return fmt.Sprintf("%s | %s", typ, rel.GetRelativeImport().Import)
+	return fmt.Sprintf("%s | %s", typ, rel.GetRelativeMathInfo().Type)
 }
 
 func (f *Field) transformBuilderEnt(typ string, cfg codegenapi.Config) string {

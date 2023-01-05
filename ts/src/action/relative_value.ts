@@ -7,36 +7,34 @@ import {
   Subtract,
 } from "../core/clause";
 
-export interface RelativeFieldValue<T extends any> {
+export interface RelativeFieldValue<T = BigInt | number> {
   delta: T;
   sqlExpression: (col: string) => Clause;
   eval: (curr: T) => T;
 }
 
-export interface RelativeNumberValue {
-  add?: number;
-  subtract?: number;
-  divide?: number;
-  multiply?: number;
+export interface RelativeNumberValue<T> {
+  add?: T;
+  subtract?: T;
+  divide?: T;
+  multiply?: T;
   // note modulo only seems to work with integer types in postgres
-  modulo?: number;
+  modulo?: T;
 }
 
 // and then that translates to calling these which returns a RelativeFieldValue which is much cleaner?
 // can also do it one by one instead of what we had in
 
-// https://github.com/microsoft/TypeScript/issues/27808 is why operator overloading is happening
+// https://github.com/microsoft/TypeScript/issues/27808 is why we have the ts-expect-error below
 function addNumber(delta: number): RelativeFieldValue<number>;
 function addNumber(delta: BigInt): RelativeFieldValue<BigInt>;
-function addNumber(
-  delta: number | BigInt,
-): RelativeFieldValue<number | BigInt> {
+function addNumber<T = number | BigInt>(delta: T): RelativeFieldValue<T> {
   return {
     delta,
     sqlExpression(col: string): Clause {
       return Add(col, delta);
     },
-    eval(curr) {
+    eval(curr): T {
       // @ts-expect-error
       return curr + delta;
     },
@@ -44,50 +42,44 @@ function addNumber(
 }
 
 function subtractNumber(delta: number): RelativeFieldValue<number>;
-function subtractNumber(delta: number): RelativeFieldValue<number>;
-function subtractNumber(
-  delta: number | BigInt,
-): RelativeFieldValue<number | BigInt> {
+function subtractNumber(delta: BigInt): RelativeFieldValue<BigInt>;
+function subtractNumber<T = number | BigInt>(delta: T): RelativeFieldValue<T> {
   return {
     delta,
     sqlExpression(col: string): Clause {
       return Subtract(col, delta);
     },
-    eval(curr) {
+    eval(curr): T {
       // @ts-expect-error
       return curr - delta;
     },
   };
 }
 
-function multiplyNumber(delta: BigInt): RelativeFieldValue<BigInt>;
 function multiplyNumber(delta: number): RelativeFieldValue<number>;
-function multiplyNumber(
-  delta: number | BigInt,
-): RelativeFieldValue<number | BigInt> {
+function multiplyNumber(delta: BigInt): RelativeFieldValue<BigInt>;
+function multiplyNumber<T = number | BigInt>(delta: T): RelativeFieldValue<T> {
   return {
     delta,
     sqlExpression(col: string): Clause {
       return Multiply(col, delta);
     },
-    eval(curr) {
+    eval(curr): T {
       // @ts-expect-error
       return curr * delta;
     },
   };
 }
 
-function divideNumber(delta: BigInt): RelativeFieldValue<BigInt>;
 function divideNumber(delta: number): RelativeFieldValue<number>;
-function divideNumber(
-  delta: number | BigInt,
-): RelativeFieldValue<number | BigInt> {
+function divideNumber(delta: BigInt): RelativeFieldValue<BigInt>;
+function divideNumber<T = BigInt | number>(delta: T): RelativeFieldValue<T> {
   return {
     delta,
     sqlExpression(col: string): Clause {
       return Divide(col, delta);
     },
-    eval(curr) {
+    eval(curr): T {
       // @ts-expect-error
       return curr / delta;
     },
@@ -95,17 +87,15 @@ function divideNumber(
 }
 
 // note modulo only seems to work with integer types in postgres
-function moduloNumber(delta: BigInt): RelativeFieldValue<BigInt>;
 function moduloNumber(delta: number): RelativeFieldValue<number>;
-function moduloNumber(
-  delta: number | BigInt,
-): RelativeFieldValue<number | BigInt> {
+function moduloNumber(delta: BigInt): RelativeFieldValue<BigInt>;
+function moduloNumber<T = BigInt | number>(delta: T): RelativeFieldValue<T> {
   return {
     delta,
     sqlExpression(col: string): Clause {
       return Modulo(col, delta);
     },
-    eval(curr) {
+    eval(curr): T {
       // @ts-expect-error
       return curr % delta;
     },
@@ -119,3 +109,50 @@ export const NumberOps = {
   subtractNumber,
   multiplyNumber,
 };
+
+export function convertRelativeInput(
+  rel: RelativeNumberValue<BigInt>,
+  col: string,
+  existing: BigInt,
+): { value: BigInt; clause: Clause };
+export function convertRelativeInput(
+  rel: RelativeNumberValue<number>,
+  col: string,
+  existing: number,
+): { value: number; clause: Clause };
+export function convertRelativeInput<T = BigInt | number>(
+  rel: RelativeNumberValue<T>,
+  col: string,
+  existing: T,
+): { value: T; clause: Clause } {
+  if (Object.keys(rel).length !== 1) {
+    throw new Error(`only 1 key is expected. ${Object.keys(rel).length} given`);
+  }
+  const ret = (relField: RelativeFieldValue<T>) => {
+    return {
+      value: relField.eval(existing),
+      clause: relField.sqlExpression(col),
+    };
+  };
+  if (rel.add !== undefined) {
+    // @ts-expect-error
+    return ret(addNumber(rel.add));
+  }
+  if (rel.subtract !== undefined) {
+    // @ts-expect-error
+    return ret(subtractNumber(rel.subtract));
+  }
+  if (rel.multiply !== undefined) {
+    // @ts-expect-error
+    return ret(multiplyNumber(rel.multiply));
+  }
+  if (rel.divide !== undefined) {
+    // @ts-expect-error
+    return ret(divideNumber(rel.divide));
+  }
+  if (rel.modulo !== undefined) {
+    // @ts-expect-error
+    return ret(moduloNumber(rel.modulo));
+  }
+  throw new Error(`error in convertRelativeInput. shouldn't have gotten here`);
+}

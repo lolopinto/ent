@@ -29,7 +29,7 @@ type expType struct {
 	tsTypeImports      []*tsimport.ImportPath
 	subFields          []*input.Field
 	unionFields        []*input.Field
-	relativeImportType *tsimport.ImportPath
+	relativeMathInfo   *enttype.RelativeMathInfo
 }
 
 func TestCustomTypes(t *testing.T) {
@@ -239,10 +239,13 @@ func TestIntegerType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLInt"),
 				},
-				nullableType:       &enttype.NullableIntegerType{},
-				tsType:             "number",
-				importType:         &enttype.IntImport{},
-				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+				nullableType: &enttype.NullableIntegerType{},
+				tsType:       "number",
+				importType:   &enttype.IntImport{},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<number>",
+				},
 			},
 		},
 		"nullable": {
@@ -253,10 +256,13 @@ func TestIntegerType(t *testing.T) {
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLInt"),
 				},
-				nonNullableType:    &enttype.IntegerType{},
-				tsType:             "number | null",
-				importType:         &enttype.IntImport{},
-				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+				nonNullableType: &enttype.IntegerType{},
+				tsType:          "number | null",
+				importType:      &enttype.IntImport{},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<number>",
+				},
 			},
 		},
 	})
@@ -279,7 +285,10 @@ func TestBigIntegerType(t *testing.T) {
 				importType:         &enttype.BigIntImport{},
 				convertSqliteFns:   []string{"BigInt"},
 				convertPostgresFns: []string{"BigInt"},
-				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<BigInt>",
+				},
 			},
 		},
 		"nullable": {
@@ -295,7 +304,10 @@ func TestBigIntegerType(t *testing.T) {
 				importType:         &enttype.BigIntImport{},
 				convertSqliteFns:   []string{"BigInt"},
 				convertPostgresFns: []string{"BigInt"},
-				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<BigInt>",
+				},
 			},
 		},
 	})
@@ -312,10 +324,13 @@ func TestFloatType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLFloat"),
 				},
-				nullableType:       &enttype.NullableFloatType{},
-				tsType:             "number",
-				importType:         &enttype.FloatImport{},
-				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+				nullableType: &enttype.NullableFloatType{},
+				tsType:       "number",
+				importType:   &enttype.FloatImport{},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<number>",
+				},
 			},
 		},
 		"nullable": {
@@ -326,10 +341,13 @@ func TestFloatType(t *testing.T) {
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLFloat"),
 				},
-				nonNullableType:    &enttype.FloatType{},
-				tsType:             "number | null",
-				importType:         &enttype.FloatImport{},
-				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+				nonNullableType: &enttype.FloatType{},
+				tsType:          "number | null",
+				importType:      &enttype.FloatImport{},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<number>",
+				},
 			},
 		},
 	})
@@ -940,8 +958,8 @@ func testType(t *testing.T, exp expType, typ enttype.Type) {
 
 	relative, ok := typ.(enttype.RelativeMathType)
 	if ok {
-		require.Equal(t, exp.relativeImportType, relative.GetRelativeImport())
+		require.Equal(t, exp.relativeMathInfo, relative.GetRelativeMathInfo())
 	} else {
-		require.Nil(t, exp.relativeImportType)
+		require.Nil(t, exp.relativeMathInfo)
 	}
 }

@@ -24,6 +24,7 @@ export interface TodoCreateInput {
   assigneeID: ID | Builder<Account, Viewer>;
   scopeID: ID;
   scopeType: string;
+  bounty?: number | null;
 }
 
 export type CreateTodoActionTriggers = (
@@ -75,7 +76,11 @@ export class CreateTodoActionBase
 
   constructor(viewer: Viewer, input: TodoCreateInput) {
     this.viewer = viewer;
+
     this.input = input;
+
+    // TODO has resolved input
+    // and then resolve the input here...
     this.builder = new TodoBuilder(
       this.viewer,
       WriteOperation.Insert,

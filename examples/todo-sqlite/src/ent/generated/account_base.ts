@@ -66,6 +66,7 @@ interface AccountDBData {
   account_state: AccountState | null;
   account_prefs: AccountPrefs | null;
   account_prefs_list: AccountPrefs2[] | null;
+  credits: number;
 }
 
 export class AccountBase
@@ -82,6 +83,7 @@ export class AccountBase
   readonly accountState: AccountState | null;
   readonly accountPrefs: AccountPrefs | null;
   readonly accountPrefsList: AccountPrefs2[] | null;
+  readonly credits: number;
 
   constructor(public viewer: Viewer, protected data: Data) {
     // @ts-ignore pass to mixin
@@ -99,6 +101,12 @@ export class AccountBase
     this.accountPrefsList = convertNullableAccountPrefs2List(
       convertNullableJSONList(data.account_prefs_list),
     );
+    this.credits = data.credits;
+  }
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getData(): Data {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

@@ -1,5 +1,5 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator"}}
-{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy"}}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput"}}
+{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause"}}
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
@@ -45,7 +45,7 @@
   {{ if $inputWithRelative }}
     {{ range $imp := $inputWithRelative.Imports }} 
       {{reserveImportPath $imp true }}
-      {{ useImport $imp.Import }}
+      {{ $ignored := useImport $imp.Import -}}
     {{ end }}
   {{ end -}}
 
@@ -53,7 +53,7 @@
     {{ range $field := $action.GetFields -}}
       {{$type := $field.TsBuilderType $cfg -}}
 
-      {{ if and $inputWithRelative ($inputWithRelative.FieldsWithRelative $field.FieldName)}} 
+      {{ if and $inputWithRelative ($inputWithRelative.RelativeField $field.FieldName) -}} 
         {{ $type = $field.TSBuilderWithRelativeType $cfg -}}
       {{ end -}}
 
@@ -93,6 +93,7 @@
         {{end -}}
       {{ end -}}
     }
+  {{end }}
 {{end}}
 
 {{ $constructor := "" }}
@@ -158,9 +159,22 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   constructor({{$constructor}}) {
     this.viewer = viewer;
     {{ if $hasInput -}}
+      {{if $inputWithRelative }}
+        {{ range $field := $inputWithRelative.FieldsWithRelative }}
+          {{/* TODO this is sadly not generic even though everything else here is generic... */}}
+          let expressions = new Map<string, {{useImport "Clause"}}>();
+          if (typeof input.{{ $field.TsBuilderFieldName}} === 'object') {
+          // what if private field we can't access here???
+          // or async field?
+            const { clause, value } = {{useImport "convertRelativeInput"}}(input.{{ $field.TsBuilderFieldName}}, 'credits', account.credits)
+
+          }
+        {{ end -}}
+      {{ else }}
+        this.input = input;
+      {{ end }}
     // TODO has resolved input
     // and then resolve the input here...
-      this.input = input;
     {{end -}}
     this.builder = new {{$builderName}}(
       this.viewer,

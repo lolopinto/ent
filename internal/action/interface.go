@@ -439,6 +439,10 @@ type RelativeImports struct {
 	RelativeInputName  string
 }
 
+func (ri *RelativeImports) RelativeField(name string) bool {
+	return ri.FieldsWithRelative[name] != nil
+}
+
 var inputRegex = regexp.MustCompile(`(.+)Input`)
 
 func InputWithRelative(action Action, cfg codegenapi.Config) *RelativeImports {
@@ -454,7 +458,7 @@ func InputWithRelative(action Action, cfg codegenapi.Config) *RelativeImports {
 			continue
 		}
 		// fine if we add the same thing multiple times, just wasted CPU cycles for now...
-		imps = append(imps, relative.GetRelativeImport())
+		imps = append(imps, relative.GetRelativeMathInfo().Import)
 
 		m[f.FieldName] = f
 	}
@@ -466,7 +470,7 @@ func InputWithRelative(action Action, cfg codegenapi.Config) *RelativeImports {
 	match := inputRegex.FindStringSubmatch(action.GetActionInputName())
 	var relInputName string
 	if len(match) != 0 {
-		relInputName = match[0] + "RelativeInput"
+		relInputName = match[1] + "RelativeInput"
 	} else {
 		relInputName = action.GetActionInputName() + "Relative"
 	}

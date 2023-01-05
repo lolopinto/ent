@@ -63,6 +63,11 @@ export class TagBase implements Ent<Viewer> {
     this.relatedTagIds = convertNullableList(data.related_tag_ids);
   }
 
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getData(): Data {
+    return this.data;
+  }
+
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
     return AllowIfViewerPrivacyPolicy;
   }

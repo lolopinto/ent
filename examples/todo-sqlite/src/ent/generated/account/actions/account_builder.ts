@@ -29,6 +29,7 @@ export interface AccountInput {
   accountState?: AccountState | null;
   accountPrefs?: AccountPrefs | null;
   accountPrefsList?: AccountPrefs2[] | null;
+  credits?: number;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -366,6 +367,7 @@ export class AccountBuilder<
     addField("accountState", input.accountState);
     addField("accountPrefs", input.accountPrefs);
     addField("accountPrefsList", input.accountPrefsList);
+    addField("credits", input.credits);
     return result;
   }
 
@@ -433,5 +435,19 @@ export class AccountBuilder<
     }
 
     return this.existingEnt?.accountPrefsList ?? null;
+  }
+
+  // get value of credits. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCreditsValue(): number {
+    if (this.input.credits !== undefined) {
+      return this.input.credits;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `credits` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.credits;
   }
 }

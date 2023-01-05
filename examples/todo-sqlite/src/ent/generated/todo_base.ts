@@ -47,6 +47,7 @@ interface TodoDBData {
   assignee_id: ID;
   scope_id: ID;
   scope_type: string;
+  bounty: number | null;
 }
 
 export class TodoBase implements Ent<Viewer> {
@@ -62,6 +63,7 @@ export class TodoBase implements Ent<Viewer> {
   readonly assigneeID: ID;
   readonly scopeID: ID;
   readonly scopeType: string;
+  readonly bounty: number | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -75,6 +77,12 @@ export class TodoBase implements Ent<Viewer> {
     this.assigneeID = data.assignee_id;
     this.scopeID = data.scope_id;
     this.scopeType = data.scope_type;
+    this.bounty = data.bounty;
+  }
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getData(): Data {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

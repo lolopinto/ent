@@ -191,9 +191,16 @@ export interface RelativeFieldValue<T extends any> {
 
 interface EditFooRelativeInput {
   bar: string;
-  foo?: number | null | RelativeNumberValue;
-  baz: number | null | RelativeNumberValue;
+  foo?: number | null | RelativeNumberValue<number>;
+  baz: number | null | RelativeNumberValue<number>;
 }
+
+const input: EditFooRelativeInput = {
+  bar: "helo",
+  baz: {
+    add: 5,
+  },
+};
 
 // this can tighten the values that change
 // so we can get the initial values and convert input in constructor

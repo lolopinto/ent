@@ -132,7 +132,12 @@ type EnumeratedType interface {
 	GetEnumData() *EnumData
 }
 
+type RelativeMathInfo struct {
+	Import *tsimport.ImportPath
+	Type   string
+}
 type RelativeMathType interface {
 	TSType
-	GetRelativeImport() *tsimport.ImportPath
+	// GetRelativeImport() *tsimport.ImportPath
+	GetRelativeMathInfo() *RelativeMathInfo
 }

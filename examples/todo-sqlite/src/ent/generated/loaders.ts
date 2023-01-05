@@ -19,6 +19,7 @@ const accountFields = [
   "account_state",
   "account_prefs",
   "account_prefs_list",
+  "credits",
 ];
 
 export const accountLoader = new ObjectLoaderFactory({
@@ -88,6 +89,10 @@ export const accountLoaderInfo = {
     accountPrefsList: {
       dbCol: "account_prefs_list",
       inputKey: "accountPrefsList",
+    },
+    credits: {
+      dbCol: "credits",
+      inputKey: "credits",
     },
   },
 };
@@ -177,6 +182,7 @@ const todoFields = [
   "assignee_id",
   "scope_id",
   "scope_type",
+  "bounty",
 ];
 
 export const todoLoader = new ObjectLoaderFactory({
@@ -241,6 +247,10 @@ export const todoLoaderInfo = {
     scopeType: {
       dbCol: "scope_type",
       inputKey: "scopeType",
+    },
+    bounty: {
+      dbCol: "bounty",
+      inputKey: "bounty",
     },
   },
 };

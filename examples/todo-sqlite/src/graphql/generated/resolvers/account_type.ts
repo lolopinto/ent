@@ -79,6 +79,9 @@ export const AccountType = new GraphQLObjectType({
         return account.accountPrefsList;
       },
     },
+    credits: {
+      type: new GraphQLNonNull(GraphQLInt),
+    },
     closed_todos_dup: {
       type: new GraphQLNonNull(AccountToClosedTodosDupConnectionType()),
       args: {

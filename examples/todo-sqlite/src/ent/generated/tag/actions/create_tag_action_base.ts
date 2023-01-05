@@ -74,7 +74,11 @@ export class CreateTagActionBase
 
   constructor(viewer: Viewer, input: TagCreateInput) {
     this.viewer = viewer;
+
     this.input = input;
+
+    // TODO has resolved input
+    // and then resolve the input here...
     this.builder = new TagBuilder(
       this.viewer,
       WriteOperation.Insert,

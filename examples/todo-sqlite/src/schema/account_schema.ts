@@ -1,6 +1,7 @@
 import {
   BooleanType,
   EnumType,
+  IntegerType,
   StructType,
   StructTypeAsList,
 } from "@snowtop/ent";
@@ -54,6 +55,12 @@ const AccountSchema = new TodoBaseEntSchema({
         enableNotifs: BooleanType(),
         preferredLanguage: StringType(),
       },
+    }),
+    // new credits. everyone starts with 1000
+    // only way to currently increase this value is to do a Todo
+    // with a bounty
+    credits: IntegerType({
+      serverDefault: 1000,
     }),
   },
 

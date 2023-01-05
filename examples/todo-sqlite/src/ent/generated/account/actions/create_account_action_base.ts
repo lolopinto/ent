@@ -27,6 +27,7 @@ export interface AccountCreateInput {
   accountState?: AccountState | null;
   accountPrefs?: AccountPrefs | null;
   accountPrefsList?: AccountPrefs2[] | null;
+  credits?: number;
 }
 
 export type CreateAccountActionTriggers = (
@@ -78,7 +79,11 @@ export class CreateAccountActionBase
 
   constructor(viewer: Viewer, input: AccountCreateInput) {
     this.viewer = viewer;
+
     this.input = input;
+
+    // TODO has resolved input
+    // and then resolve the input here...
     this.builder = new AccountBuilder(
       this.viewer,
       WriteOperation.Insert,

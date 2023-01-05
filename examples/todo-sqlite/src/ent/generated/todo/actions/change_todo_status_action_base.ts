@@ -71,7 +71,11 @@ export class ChangeTodoStatusActionBase
 
   constructor(viewer: Viewer, todo: Todo, input: ChangeTodoStatusInput) {
     this.viewer = viewer;
+
     this.input = input;
+
+    // TODO has resolved input
+    // and then resolve the input here...
     this.builder = new TodoBuilder(
       this.viewer,
       WriteOperation.Edit,

@@ -2,6 +2,7 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  Clause,
   ID,
   PrivacyPolicy,
   Viewer,
@@ -9,7 +10,9 @@ import {
 import {
   Action,
   Changeset,
+  convertRelativeInput,
   Observer,
+  RelativeNumberValue,
   Trigger,
   Validator,
   WriteOperation,
@@ -22,12 +25,17 @@ import {
   AccountState,
 } from "src/ent/generated/types";
 
-export interface AccountEditInput {
+export interface AccountEditRelativeInput {
   name?: string;
   phoneNumber?: string;
   accountState?: AccountState | null;
   accountPrefs?: AccountPrefs | null;
   accountPrefsList?: AccountPrefs2[] | null;
+  credits?: number | RelativeNumberValue<number>;
+}
+
+export interface AccountEditInput extends AccountEditRelativeInput {
+  credits?: number;
 }
 
 export type EditAccountActionTriggers = (
@@ -78,9 +86,27 @@ export class EditAccountActionBase
   protected input: AccountEditInput;
   protected readonly account: Account;
 
-  constructor(viewer: Viewer, account: Account, input: AccountEditInput) {
+  constructor(viewer: Viewer, account: Account, input: AccountEditRelativeInput) {
     this.viewer = viewer;
-    this.input = input;
+
+
+
+    // const existing = account.___getData()['credits']
+    let m = new Map<string, Clause>();
+    let credits: number | undefined;
+    if (typeof input.credits === "object") {
+      const { clause, value } = convertRelativeInput(input.credits, 'credits', account.credits)
+      m.set('credits', clause);
+      credits = value
+    } else {
+      credits =input.credits
+    }
+        let input2: AccountEditInput = { ...input,credits };
+
+
+
+    // TODO has resolved input
+    // and then resolve the input here...
     this.builder = new AccountBuilder(
       this.viewer,
       WriteOperation.Edit,
