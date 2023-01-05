@@ -80,15 +80,10 @@ export function foreignKey(
   };
 }
 
-export function check(
-  name: string,
-  condition: string,
-  // cols: string[],
-): Constraint {
+export function check(name: string, condition: string): Constraint {
   return {
     name,
     generate() {
-      // TODO cols?
       return `CONSTRAINT ${name} CHECK(${condition})`;
     },
   };
@@ -747,7 +742,6 @@ export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
           break;
 
         case ConstraintType.Check:
-          // TODO
           if (!constraint.condition) {
             throw new Error(`need 'condition' field for check constraint`);
           }

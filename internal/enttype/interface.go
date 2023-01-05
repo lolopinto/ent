@@ -138,6 +138,5 @@ type RelativeMathInfo struct {
 }
 type RelativeMathType interface {
 	TSType
-	// GetRelativeImport() *tsimport.ImportPath
 	GetRelativeMathInfo() *RelativeMathInfo
 }

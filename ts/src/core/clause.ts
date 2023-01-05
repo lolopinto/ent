@@ -831,7 +831,6 @@ export function PaginationMultipleColsSubQuery(
 }
 
 // These 5 are used on the RHS of an expression
-// TODO: do we want a different interface for them?
 export function Add(col: string, value: any): Clause {
   return new simpleClause(col, value, "+", new isNullClause(col));
 }
