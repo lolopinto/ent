@@ -10,7 +10,6 @@ import {
 import {
   Action,
   Changeset,
-  convertRelativeInput,
   Observer,
   RelativeNumberValue,
   Trigger,
@@ -87,40 +86,30 @@ export class EditAccountActionBase
   protected input: AccountEditInput;
   protected readonly account: Account;
 
-  constructor(viewer: Viewer, account: Account, input: AccountEditRelativeInput) {
+  constructor(
+    viewer: Viewer,
+    account: Account,
+    input: AccountEditRelativeInput,
+  ) {
     this.viewer = viewer;
-
-    const data = account.___getData();
-    type Foo = Pick< typeof data, 'credits' >;
     let expressions = new Map<string, Clause>();
-
-    const ret = maybeConvertRelativeInputPlusExpressions(input.credits, 'credits',data.credits, expressions)
+    const data = account.___getData();
     this.input = {
       ...input,
-      credits: maybeConvertRelativeInputPlusExpressions(input.credits, 'credits',data.credits, expressions)
-    }
-    // function foo (r: Record<keyof)
+      credits: maybeConvertRelativeInputPlusExpressions(
+        input.credits,
+        "credits",
+        data.credits,
+        expressions,
+      ),
+    };
 
-    // const existing = account.___getData()['credits']
-    let credits: number | undefined;
-    if (typeof input.credits === "object") {
-      const { clause, value } = convertRelativeInput(input.credits, 'credits', account.___getData().credits)
-      expressions.set('credits', clause);
-      credits = value
-    } else {
-      credits =input.credits
-    }
-        let input2: AccountEditInput = { ...input,credits };
-
-
-
-    // TODO has resolved input
-    // and then resolve the input here...
     this.builder = new AccountBuilder(
       this.viewer,
       WriteOperation.Edit,
       this,
       account,
+      { expressions },
     );
     this.account = account;
   }
@@ -171,11 +160,11 @@ export class EditAccountActionBase
     this: new (
       viewer: Viewer,
       account: Account,
-      input: AccountEditInput,
+      input: AccountEditRelativeInput,
     ) => T,
     viewer: Viewer,
     account: Account,
-    input: AccountEditInput,
+    input: AccountEditRelativeInput,
   ): T {
     return new this(viewer, account, input);
   }
@@ -184,7 +173,7 @@ export class EditAccountActionBase
     this: new (
       viewer: Viewer,
       account: Account,
-      input: AccountEditInput,
+      input: AccountEditRelativeInput,
     ) => T,
     viewer: Viewer,
     id: ID,

@@ -79,8 +79,6 @@ export class CreateTodoActionBase
 
     this.input = input;
 
-    // TODO has resolved input
-    // and then resolve the input here...
     this.builder = new TodoBuilder(
       this.viewer,
       WriteOperation.Insert,

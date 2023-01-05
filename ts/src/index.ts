@@ -86,6 +86,7 @@ export * from "./core/query";
 
 export * from "./schema/";
 import * as q from "./core/clause";
+import { Clause } from "./core/clause";
 const query = {
   Eq: q.Eq,
   NotEq: q.NotEq,
@@ -120,6 +121,8 @@ const query = {
 };
 
 export { query };
+
+export { Clause };
 
 export { RequestContext, ContextCache } from "./core/context";
 

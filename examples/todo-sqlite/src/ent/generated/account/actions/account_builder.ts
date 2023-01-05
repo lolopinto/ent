@@ -6,6 +6,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -79,6 +80,7 @@ export class AccountBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<OrchestratorOptions<Account, TInput, Viewer, TExistingEnt>>,
   ) {
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Account`;
@@ -97,6 +99,7 @@ export class AccountBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: accountLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

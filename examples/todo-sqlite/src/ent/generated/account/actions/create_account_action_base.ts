@@ -82,8 +82,6 @@ export class CreateAccountActionBase
 
     this.input = input;
 
-    // TODO has resolved input
-    // and then resolve the input here...
     this.builder = new AccountBuilder(
       this.viewer,
       WriteOperation.Insert,

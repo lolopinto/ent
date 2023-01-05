@@ -75,8 +75,6 @@ export class EditWorkspaceActionBase
 
     this.input = input;
 
-    // TODO has resolved input
-    // and then resolve the input here...
     this.builder = new WorkspaceBuilder(
       this.viewer,
       WriteOperation.Edit,

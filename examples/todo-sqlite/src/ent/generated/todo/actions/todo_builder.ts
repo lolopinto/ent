@@ -6,6 +6,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -59,6 +60,7 @@ export class TodoBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<OrchestratorOptions<Todo, TInput, Viewer, TExistingEnt>>,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Todo`;
     this.input = action.getInput();
@@ -76,6 +78,7 @@ export class TodoBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: todoLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

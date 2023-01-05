@@ -165,6 +165,12 @@ export function maybeConvertRelativeInputPlusExpressions(
   expressions: Map<string, Clause>,
 ): number;
 export function maybeConvertRelativeInputPlusExpressions(
+  rel: number | RelativeNumberValue<number> | undefined,
+  col: string,
+  existing: number,
+  expressions: Map<string, Clause>,
+): number | undefined;
+export function maybeConvertRelativeInputPlusExpressions(
   rel: number | RelativeNumberValue<number> | null,
   col: string,
   existing: number | null,
@@ -176,12 +182,6 @@ export function maybeConvertRelativeInputPlusExpressions(
   existing: number | null,
   expressions: Map<string, Clause>,
 ): number | undefined | null;
-export function maybeConvertRelativeInputPlusExpressions(
-  rel: number | RelativeNumberValue<number> | undefined,
-  col: string,
-  existing: number,
-  expressions: Map<string, Clause>,
-): number | undefined;
 
 export function maybeConvertRelativeInputPlusExpressions(
   rel: BigInt | RelativeNumberValue<BigInt>,
@@ -189,6 +189,12 @@ export function maybeConvertRelativeInputPlusExpressions(
   existing: BigInt,
   expressions: Map<string, Clause>,
 ): BigInt;
+export function maybeConvertRelativeInputPlusExpressions(
+  rel: BigInt | RelativeNumberValue<BigInt> | undefined,
+  col: string,
+  existing: BigInt,
+  expressions: Map<string, Clause>,
+): BigInt | undefined;
 export function maybeConvertRelativeInputPlusExpressions(
   rel: BigInt | RelativeNumberValue<BigInt> | null,
   col: string,
@@ -201,12 +207,6 @@ export function maybeConvertRelativeInputPlusExpressions(
   existing: BigInt | null,
   expressions: Map<string, Clause>,
 ): BigInt | null | undefined;
-export function maybeConvertRelativeInputPlusExpressions(
-  rel: BigInt | RelativeNumberValue<BigInt> | undefined,
-  col: string,
-  existing: BigInt,
-  expressions: Map<string, Clause>,
-): BigInt | undefined;
 
 export function maybeConvertRelativeInputPlusExpressions(
   rel:
@@ -220,14 +220,21 @@ export function maybeConvertRelativeInputPlusExpressions(
   existing: number | BigInt | null,
   expressions: Map<string, Clause>,
 ): number | null | undefined | BigInt {
-  if (
-    rel === null ||
-    rel === undefined ||
-    typeof rel === "bigint" ||
-    typeof rel === "number"
-  ) {
+  if (rel === null) {
     return rel;
   }
+  if (rel === undefined) {
+    return rel;
+  }
+
+  if (typeof rel === "bigint" || typeof rel === "number") {
+    return rel;
+  }
+
+  // // TODO is this the behavior we want? should we coalesce as 0?
+  // if (existing === null) {
+  //   throw new Error(`cannot perform a relative operation on null`);
+  // }
   // @ts-ignore
   // shouldn't be failing like it currently is. it thinks rel can be bigint  and it shouldn't be???
   const { clause, value } = convertRelativeInput(rel, col, existing);
@@ -239,7 +246,6 @@ const input: number | RelativeNumberValue<number> | undefined = undefined;
 const existing = 3;
 const expressions = new Map();
 
-// this is number|null|undefined
 const ret = maybeConvertRelativeInputPlusExpressions(
   input,
   "credits",

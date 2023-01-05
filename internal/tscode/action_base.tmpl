@@ -1,4 +1,4 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput"}}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions"}}
 {{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause"}}
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
@@ -34,6 +34,8 @@
 {{$hasInput := hasInput $action -}}
 {{$inputWithRelative := inputWithRelative $action $cfg -}}
 {{$inputName := "" -}}
+{{$constructorInput := "" -}}
+
 {{ if $hasInput -}}
   {{$inputName = $action.GetActionInputName -}}
 
@@ -41,6 +43,7 @@
   {{ if $inputWithRelative }}
     {{$firstInput = $inputWithRelative.RelativeInputName}}
   {{ end -}}
+  {{$constructorInput = $firstInput }}
 
   {{ if $inputWithRelative }}
     {{ range $imp := $inputWithRelative.Imports }} 
@@ -108,7 +111,7 @@
 
 {{/* edit, whole shebang */ -}}
 {{ if and $action.MutatingExistingObject $hasInput -}}
-  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewerType $instance $node $inputName -}}
+  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewerType $instance $node $constructorInput -}}
   {{ $newArgs = printf "viewer, %s, input" $instance -}}
   {{ $hasSaveFromID = true}}
 {{/* create, no editing */ -}}
@@ -159,22 +162,19 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   constructor({{$constructor}}) {
     this.viewer = viewer;
     {{ if $hasInput -}}
-      {{if $inputWithRelative }}
-        {{ range $field := $inputWithRelative.FieldsWithRelative }}
-          {{/* TODO this is sadly not generic even though everything else here is generic... */}}
+      {{if $inputWithRelative -}}
           let expressions = new Map<string, {{useImport "Clause"}}>();
-          if (typeof input.{{ $field.TsBuilderFieldName}} === 'object') {
-          // what if private field we can't access here???
-          // or async field?
-            const { clause, value } = {{useImport "convertRelativeInput"}}(input.{{ $field.TsBuilderFieldName}}, 'credits', account.credits)
-
-          }
+          const data = {{$instance}}.___getData();
+          this.input = {
+            ...input,
+        {{ range $field := $inputWithRelative.FieldsWithRelative -}}
+          {{/* TODO this is sadly not generic even though everything else here is generic... */ -}}
+          {{$field.TsBuilderFieldName}}: {{useImport "maybeConvertRelativeInputPlusExpressions"}}(input.{{$field.TsBuilderFieldName}}, '{{$field.GetDbColName}}', data.{{$field.GetDbColName}}, expressions),
         {{ end -}}
+        };
       {{ else }}
         this.input = input;
       {{ end }}
-    // TODO has resolved input
-    // and then resolve the input here...
     {{end -}}
     this.builder = new {{$builderName}}(
       this.viewer,
@@ -184,6 +184,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
         {{$instance}},
       {{ else -}}
         null,
+      {{end -}}
+      {{ if $inputWithRelative -}}
+        {expressions},
       {{end -}}
     );
     {{if $action.MutatingExistingObject -}}
