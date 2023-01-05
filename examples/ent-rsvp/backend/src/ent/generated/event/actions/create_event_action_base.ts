@@ -36,6 +36,7 @@ interface customAddressInput {
   zipCode: string;
   apartment?: string | null;
 }
+
 export interface EventCreateInput {
   name: string;
   slug?: string | null;
