@@ -131,3 +131,8 @@ type EnumeratedType interface {
 	TSType
 	GetEnumData() *EnumData
 }
+
+type RelativeMathType interface {
+	TSType
+	GetRelativeImport() *tsimport.ImportPath
+}

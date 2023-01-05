@@ -32,13 +32,31 @@
 {{ $node := useImport .NodeData.Node -}}
 
 {{$hasInput := hasInput $action -}}
+{{$inputWithRelative := inputWithRelative $action $cfg -}}
 {{$inputName := "" -}}
 {{ if $hasInput -}}
   {{$inputName = $action.GetActionInputName -}}
 
-  export interface {{$inputName}} {
+  {{$firstInput := $inputName}}
+  {{ if $inputWithRelative }}
+    {{$firstInput = $inputWithRelative.RelativeInputName}}
+  {{ end -}}
+
+  {{ if $inputWithRelative }}
+    {{ range $imp := $inputWithRelative.Imports }} 
+      {{reserveImportPath $imp true }}
+      {{ useImport $imp.Import }}
+    {{ end }}
+  {{ end -}}
+
+  export interface {{$firstInput}} {
     {{ range $field := $action.GetFields -}}
       {{$type := $field.TsBuilderType $cfg -}}
+
+      {{ if and $inputWithRelative ($inputWithRelative.FieldsWithRelative $field.FieldName)}} 
+        {{ $type = $field.TSBuilderWithRelativeType $cfg -}}
+      {{ end -}}
+
       {{range $field.TsBuilderImports $cfg -}}
         {{ reserveImportPath . true -}}
         {{ $ignore := useImport .Import -}}
@@ -63,6 +81,18 @@
       {{end -}}
     {{end -}}
   }
+
+  {{ if $inputWithRelative }}
+    export interface {{$inputName}} extends {{$firstInput}} {
+      {{ range $field := $inputWithRelative.FieldsWithRelative }}
+        {{$type := $field.TsBuilderType $cfg -}}
+        {{if isRequiredField $action $field -}}
+          {{$field.TsBuilderFieldName}}: {{$type}};
+        {{else -}}
+          {{$field.TsBuilderFieldName}}?: {{$type}};
+        {{end -}}
+      {{ end -}}
+    }
 {{end}}
 
 {{ $constructor := "" }}
@@ -128,6 +158,8 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   constructor({{$constructor}}) {
     this.viewer = viewer;
     {{ if $hasInput -}}
+    // TODO has resolved input
+    // and then resolve the input here...
       this.input = input;
     {{end -}}
     this.builder = new {{$builderName}}(

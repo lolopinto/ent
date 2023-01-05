@@ -19,6 +19,7 @@ import { log } from "../core/logger";
 import { TransformedUpdateOperation, UpdateOperation } from "../schema";
 import { FieldInfoMap } from "../schema/schema";
 import { Add, Clause, Divide, Multiply, Subtract } from "../core/clause";
+import { RelativeNumberValue } from "./relative_value";
 
 export { WriteOperation };
 
@@ -179,6 +180,7 @@ export interface Action<
   // saveX(): Promise<T>;
 }
 
+// TODO remove...
 export interface RelativeFieldValue<T extends any> {
   delta: T;
   sqlExpression: (col: string) => Clause;
@@ -189,8 +191,8 @@ export interface RelativeFieldValue<T extends any> {
 
 interface EditFooRelativeInput {
   bar: string;
-  foo?: number | RelativeFieldValue<number> | null;
-  baz: number | RelativeFieldValue<number> | null;
+  foo?: number | null | RelativeNumberValue;
+  baz: number | null | RelativeNumberValue;
 }
 
 // this can tighten the values that change

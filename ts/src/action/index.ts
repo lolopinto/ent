@@ -19,3 +19,4 @@ export {
   EdgeInputData,
 } from "./orchestrator";
 export { DenyIfBuilder, AllowIfBuilder } from "./privacy";
+export { RelativeFieldValue, NumberOps } from "./relative_value";

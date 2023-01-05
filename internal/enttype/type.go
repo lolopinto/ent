@@ -328,7 +328,16 @@ func (t *NullableIDType) ArgImports(cfg Config) []*tsimport.ImportPath {
 	}
 }
 
-type intType struct{}
+type numberType struct {
+}
+
+func (n *numberType) GetRelativeImport() *tsimport.ImportPath {
+	return tsimport.NewEntActionImportPath("RelativeNumberValue")
+}
+
+type intType struct {
+	numberType
+}
 
 func (t *intType) GetDBType() string {
 	return "sa.Integer()"
@@ -459,7 +468,9 @@ func (t *NullableBigIntegerType) GetDBType() string {
 	return "sa.BigInteger()"
 }
 
-type floatType struct{}
+type floatType struct {
+	numberType
+}
 
 func (t *floatType) GetDBType() string {
 	return "sa.Float()"

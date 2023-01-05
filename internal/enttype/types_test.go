@@ -29,6 +29,7 @@ type expType struct {
 	tsTypeImports      []*tsimport.ImportPath
 	subFields          []*input.Field
 	unionFields        []*input.Field
+	relativeImportType *tsimport.ImportPath
 }
 
 func TestCustomTypes(t *testing.T) {
@@ -238,9 +239,10 @@ func TestIntegerType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLInt"),
 				},
-				nullableType: &enttype.NullableIntegerType{},
-				tsType:       "number",
-				importType:   &enttype.IntImport{},
+				nullableType:       &enttype.NullableIntegerType{},
+				tsType:             "number",
+				importType:         &enttype.IntImport{},
+				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
 			},
 		},
 		"nullable": {
@@ -251,9 +253,10 @@ func TestIntegerType(t *testing.T) {
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLInt"),
 				},
-				nonNullableType: &enttype.IntegerType{},
-				tsType:          "number | null",
-				importType:      &enttype.IntImport{},
+				nonNullableType:    &enttype.IntegerType{},
+				tsType:             "number | null",
+				importType:         &enttype.IntImport{},
+				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
 			},
 		},
 	})
@@ -276,6 +279,7 @@ func TestBigIntegerType(t *testing.T) {
 				importType:         &enttype.BigIntImport{},
 				convertSqliteFns:   []string{"BigInt"},
 				convertPostgresFns: []string{"BigInt"},
+				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
 			},
 		},
 		"nullable": {
@@ -291,6 +295,7 @@ func TestBigIntegerType(t *testing.T) {
 				importType:         &enttype.BigIntImport{},
 				convertSqliteFns:   []string{"BigInt"},
 				convertPostgresFns: []string{"BigInt"},
+				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
 			},
 		},
 	})
@@ -307,9 +312,10 @@ func TestFloatType(t *testing.T) {
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLFloat"),
 				},
-				nullableType: &enttype.NullableFloatType{},
-				tsType:       "number",
-				importType:   &enttype.FloatImport{},
+				nullableType:       &enttype.NullableFloatType{},
+				tsType:             "number",
+				importType:         &enttype.FloatImport{},
+				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
 			},
 		},
 		"nullable": {
@@ -320,9 +326,10 @@ func TestFloatType(t *testing.T) {
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLFloat"),
 				},
-				nonNullableType: &enttype.FloatType{},
-				tsType:          "number | null",
-				importType:      &enttype.FloatImport{},
+				nonNullableType:    &enttype.FloatType{},
+				tsType:             "number | null",
+				importType:         &enttype.FloatImport{},
+				relativeImportType: tsimport.NewEntActionImportPath("RelativeNumberValue"),
 			},
 		},
 	})
@@ -929,5 +936,12 @@ func testType(t *testing.T, exp expType, typ enttype.Type) {
 		} else {
 			assert.Len(t, exp.unionFields, len(unionFields))
 		}
+	}
+
+	relative, ok := typ.(enttype.RelativeMathType)
+	if ok {
+		require.Equal(t, exp.relativeImportType, relative.GetRelativeImport())
+	} else {
+		require.Nil(t, exp.relativeImportType)
 	}
 }
