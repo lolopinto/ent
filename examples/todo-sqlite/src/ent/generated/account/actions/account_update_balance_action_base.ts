@@ -2,6 +2,7 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  Clause,
   ID,
   PrivacyPolicy,
   Viewer,
@@ -10,82 +11,95 @@ import {
   Action,
   Changeset,
   Observer,
+  RelativeNumberValue,
   Trigger,
   Validator,
   WriteOperation,
+  maybeConvertRelativeInputPlusExpressions,
 } from "@snowtop/ent/action";
 import { Account } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
-import {
-  AccountPrefs,
-  AccountPrefs2,
-  AccountState,
-} from "src/ent/generated/types";
 
-export interface AccountEditInput {
-  name?: string;
-  phoneNumber?: string;
-  accountState?: AccountState | null;
-  accountPrefs?: AccountPrefs | null;
-  accountPrefsList?: AccountPrefs2[] | null;
+export interface AccountUpdateBalanceRelativeInput {
+  credits: number | RelativeNumberValue<number>;
 }
 
-export type EditAccountActionTriggers = (
+export interface AccountUpdateBalanceInput
+  extends AccountUpdateBalanceRelativeInput {
+  credits: number;
+}
+
+export type AccountUpdateBalanceActionTriggers = (
   | Trigger<
       Account,
-      AccountBuilder<AccountEditInput, Account>,
+      AccountBuilder<AccountUpdateBalanceInput, Account>,
       Viewer,
-      AccountEditInput,
+      AccountUpdateBalanceInput,
       Account
     >
   | Trigger<
       Account,
-      AccountBuilder<AccountEditInput, Account>,
+      AccountBuilder<AccountUpdateBalanceInput, Account>,
       Viewer,
-      AccountEditInput,
+      AccountUpdateBalanceInput,
       Account
     >[]
 )[];
 
-export type EditAccountActionObservers = Observer<
+export type AccountUpdateBalanceActionObservers = Observer<
   Account,
-  AccountBuilder<AccountEditInput, Account>,
+  AccountBuilder<AccountUpdateBalanceInput, Account>,
   Viewer,
-  AccountEditInput,
+  AccountUpdateBalanceInput,
   Account
 >[];
 
-export type EditAccountActionValidators = Validator<
+export type AccountUpdateBalanceActionValidators = Validator<
   Account,
-  AccountBuilder<AccountEditInput, Account>,
+  AccountBuilder<AccountUpdateBalanceInput, Account>,
   Viewer,
-  AccountEditInput,
+  AccountUpdateBalanceInput,
   Account
 >[];
 
-export class EditAccountActionBase
+export class AccountUpdateBalanceActionBase
   implements
     Action<
       Account,
-      AccountBuilder<AccountEditInput, Account>,
+      AccountBuilder<AccountUpdateBalanceInput, Account>,
       Viewer,
-      AccountEditInput,
+      AccountUpdateBalanceInput,
       Account
     >
 {
-  public readonly builder: AccountBuilder<AccountEditInput, Account>;
+  public readonly builder: AccountBuilder<AccountUpdateBalanceInput, Account>;
   public readonly viewer: Viewer;
-  protected input: AccountEditInput;
+  protected input: AccountUpdateBalanceInput;
   protected readonly account: Account;
 
-  constructor(viewer: Viewer, account: Account, input: AccountEditInput) {
+  constructor(
+    viewer: Viewer,
+    account: Account,
+    input: AccountUpdateBalanceRelativeInput,
+  ) {
     this.viewer = viewer;
-    this.input = input;
+    let expressions = new Map<string, Clause>();
+    const data = account.___getData();
+    this.input = {
+      ...input,
+      credits: maybeConvertRelativeInputPlusExpressions(
+        input.credits,
+        "credits",
+        data.credits,
+        expressions,
+      ),
+    };
     this.builder = new AccountBuilder(
       this.viewer,
       WriteOperation.Edit,
       this,
       account,
+      { expressions },
     );
     this.account = account;
   }
@@ -94,19 +108,19 @@ export class EditAccountActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): EditAccountActionTriggers {
+  getTriggers(): AccountUpdateBalanceActionTriggers {
     return [];
   }
 
-  getObservers(): EditAccountActionObservers {
+  getObservers(): AccountUpdateBalanceActionObservers {
     return [];
   }
 
-  getValidators(): EditAccountActionValidators {
+  getValidators(): AccountUpdateBalanceActionValidators {
     return [];
   }
 
-  getInput(): AccountEditInput {
+  getInput(): AccountUpdateBalanceInput {
     return this.input;
   }
 
@@ -132,28 +146,28 @@ export class EditAccountActionBase
     return this.builder.editedEntX();
   }
 
-  static create<T extends EditAccountActionBase>(
+  static create<T extends AccountUpdateBalanceActionBase>(
     this: new (
       viewer: Viewer,
       account: Account,
-      input: AccountEditInput,
+      input: AccountUpdateBalanceRelativeInput,
     ) => T,
     viewer: Viewer,
     account: Account,
-    input: AccountEditInput,
+    input: AccountUpdateBalanceRelativeInput,
   ): T {
     return new this(viewer, account, input);
   }
 
-  static async saveXFromID<T extends EditAccountActionBase>(
+  static async saveXFromID<T extends AccountUpdateBalanceActionBase>(
     this: new (
       viewer: Viewer,
       account: Account,
-      input: AccountEditInput,
+      input: AccountUpdateBalanceRelativeInput,
     ) => T,
     viewer: Viewer,
     id: ID,
-    input: AccountEditInput,
+    input: AccountUpdateBalanceInput,
   ): Promise<Account> {
     const account = await Account.loadX(viewer, id);
     return new this(viewer, account, input).saveX();

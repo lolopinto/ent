@@ -26,3 +26,4 @@ export {
   convertRelativeInput,
   maybeConvertRelativeInputPlusExpressions,
 } from "./relative_value";
+export { Transaction } from "./transaction";

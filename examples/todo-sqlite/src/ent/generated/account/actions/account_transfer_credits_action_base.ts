@@ -16,69 +16,65 @@ import {
 } from "@snowtop/ent/action";
 import { Account } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
-import {
-  AccountPrefs,
-  AccountPrefs2,
-  AccountState,
-} from "src/ent/generated/types";
 
-export interface AccountEditInput {
-  name?: string;
-  phoneNumber?: string;
-  accountState?: AccountState | null;
-  accountPrefs?: AccountPrefs | null;
-  accountPrefsList?: AccountPrefs2[] | null;
+export interface AccountTransferCreditsInput {
+  to: ID;
+  amount: number;
 }
 
-export type EditAccountActionTriggers = (
+export type AccountTransferCreditsActionTriggers = (
   | Trigger<
       Account,
-      AccountBuilder<AccountEditInput, Account>,
+      AccountBuilder<AccountTransferCreditsInput, Account>,
       Viewer,
-      AccountEditInput,
+      AccountTransferCreditsInput,
       Account
     >
   | Trigger<
       Account,
-      AccountBuilder<AccountEditInput, Account>,
+      AccountBuilder<AccountTransferCreditsInput, Account>,
       Viewer,
-      AccountEditInput,
+      AccountTransferCreditsInput,
       Account
     >[]
 )[];
 
-export type EditAccountActionObservers = Observer<
+export type AccountTransferCreditsActionObservers = Observer<
   Account,
-  AccountBuilder<AccountEditInput, Account>,
+  AccountBuilder<AccountTransferCreditsInput, Account>,
   Viewer,
-  AccountEditInput,
+  AccountTransferCreditsInput,
   Account
 >[];
 
-export type EditAccountActionValidators = Validator<
+export type AccountTransferCreditsActionValidators = Validator<
   Account,
-  AccountBuilder<AccountEditInput, Account>,
+  AccountBuilder<AccountTransferCreditsInput, Account>,
   Viewer,
-  AccountEditInput,
+  AccountTransferCreditsInput,
   Account
 >[];
 
-export class EditAccountActionBase
+export class AccountTransferCreditsActionBase
   implements
     Action<
       Account,
-      AccountBuilder<AccountEditInput, Account>,
+      AccountBuilder<AccountTransferCreditsInput, Account>,
       Viewer,
-      AccountEditInput,
+      AccountTransferCreditsInput,
       Account
     >
 {
-  public readonly builder: AccountBuilder<AccountEditInput, Account>;
+  public readonly builder: AccountBuilder<AccountTransferCreditsInput, Account>;
   public readonly viewer: Viewer;
-  protected input: AccountEditInput;
+  protected input: AccountTransferCreditsInput;
   protected readonly account: Account;
 
-  constructor(viewer: Viewer, account: Account, input: AccountEditInput) {
+  constructor(
+    viewer: Viewer,
+    account: Account,
+    input: AccountTransferCreditsInput,
+  ) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new AccountBuilder(
@@ -94,19 +90,19 @@ export class EditAccountActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): EditAccountActionTriggers {
+  getTriggers(): AccountTransferCreditsActionTriggers {
     return [];
   }
 
-  getObservers(): EditAccountActionObservers {
+  getObservers(): AccountTransferCreditsActionObservers {
     return [];
   }
 
-  getValidators(): EditAccountActionValidators {
+  getValidators(): AccountTransferCreditsActionValidators {
     return [];
   }
 
-  getInput(): AccountEditInput {
+  getInput(): AccountTransferCreditsInput {
     return this.input;
   }
 
@@ -132,28 +128,28 @@ export class EditAccountActionBase
     return this.builder.editedEntX();
   }
 
-  static create<T extends EditAccountActionBase>(
+  static create<T extends AccountTransferCreditsActionBase>(
     this: new (
       viewer: Viewer,
       account: Account,
-      input: AccountEditInput,
+      input: AccountTransferCreditsInput,
     ) => T,
     viewer: Viewer,
     account: Account,
-    input: AccountEditInput,
+    input: AccountTransferCreditsInput,
   ): T {
     return new this(viewer, account, input);
   }
 
-  static async saveXFromID<T extends EditAccountActionBase>(
+  static async saveXFromID<T extends AccountTransferCreditsActionBase>(
     this: new (
       viewer: Viewer,
       account: Account,
-      input: AccountEditInput,
+      input: AccountTransferCreditsInput,
     ) => T,
     viewer: Viewer,
     id: ID,
-    input: AccountEditInput,
+    input: AccountTransferCreditsInput,
   ): Promise<Account> {
     const account = await Account.loadX(viewer, id);
     return new this(viewer, account, input).saveX();

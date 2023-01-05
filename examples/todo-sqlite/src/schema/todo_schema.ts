@@ -78,6 +78,13 @@ const TodoSchema = new TodoBaseEntSchema({
     },
     {
       operation: ActionOperation.Edit,
+      fields: ["bounty"],
+      actionName: "ChangeTodoBountyAction",
+      graphQLName: "changeTodoBounty",
+      inputName: "ChangeTodoBountyInput",
+    },
+    {
+      operation: ActionOperation.Edit,
       fields: ["Text"],
       actionName: "RenameTodoStatusAction",
       graphQLName: "renameTodo",

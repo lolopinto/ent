@@ -292,6 +292,27 @@ enum AccountTodoStatusInput {
   UNKNOWN
 }
 
+input AccountTransferCreditsInput {
+  """id of Account"""
+  id: ID!
+  to: ID!
+  amount: Int!
+}
+
+type AccountTransferCreditsPayload {
+  account: Account!
+}
+
+input AccountUpdateBalanceInput {
+  """id of Account"""
+  id: ID!
+  credits: Int!
+}
+
+type AccountUpdateBalancePayload {
+  account: Account!
+}
+
 input AddTodoTagInput {
   """id of Todo"""
   id: ID!
@@ -299,6 +320,16 @@ input AddTodoTagInput {
 }
 
 type AddTodoTagPayload {
+  todo: Todo!
+}
+
+input ChangeTodoBountyInput {
+  """id of Todo"""
+  id: ID!
+  bounty: Int
+}
+
+type ChangeTodoBountyPayload {
   todo: Todo!
 }
 
@@ -391,7 +422,6 @@ input EditAccountInput {
   phone_number: String
   account_prefs: AccountPrefsInput
   account_prefs_list: [AccountPrefs2Input!]
-  credits: Int
 }
 
 type EditAccountPayload {
@@ -452,7 +482,10 @@ type Query {
 }
 
 type Mutation {
+  accountTransferCredits(input: AccountTransferCreditsInput!): AccountTransferCreditsPayload!
+  accountUpdateBalance(input: AccountUpdateBalanceInput!): AccountUpdateBalancePayload!
   addTodoTag(input: AddTodoTagInput!): AddTodoTagPayload!
+  changeTodoBounty(input: ChangeTodoBountyInput!): ChangeTodoBountyPayload!
   changeTodoStatus(input: ChangeTodoStatusInput!): ChangeTodoStatusPayload!
   createAccount(input: CreateAccountInput!): CreateAccountPayload!
   createTag(input: CreateTagInput!): CreateTagPayload!

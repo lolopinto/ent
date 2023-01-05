@@ -17,10 +17,63 @@ import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
 import { loadCustomEdges } from "@snowtop/ent/core/ent";
 import { CustomTodoEdge } from "../edge/custom_edge";
 import CreateTodoAction from "../todo/actions/create_todo_action";
+import ChangeTodoBountyAction from "../todo/actions/change_todo_bounty_action";
+import { Transaction } from "@snowtop/ent/action";
 
 test("create for self", async () => {
   await createTodoForSelf();
 });
+
+async function createTodoOtherInWorksapce() {
+  const creator = await createAccount();
+  const assignee = await createAccount();
+  const workspace = await createWorkspace(creator);
+
+  const todo = await CreateTodoAction.create(creator.viewer, {
+    text: "watch GOT",
+    creatorID: creator.id,
+    assigneeID: assignee.id,
+    scopeID: workspace.id,
+    scopeType: NodeType.Workspace,
+  }).saveX();
+  expect(todo.text).toBe("watch GOT");
+  expect(todo.creatorID).toBe(creator.id);
+  expect(todo.completed).toBe(false);
+  expect(todo.assigneeID).toBe(assignee.id);
+  expect(todo.scopeID).toBe(workspace.id);
+  expect(todo.scopeType).toBe(NodeType.Workspace);
+
+  const scopedEnts = await todo.queryTodoScope().queryEnts();
+  expect(scopedEnts.length).toBe(1);
+  expect(scopedEnts[0].id).toBe(workspace.id);
+
+  const assignee2 = await createAccount();
+
+  const todo2 = await CreateTodoAction.create(creator.viewer, {
+    text: "watch GOT",
+    creatorID: creator.id,
+    assigneeID: assignee2.id,
+    scopeID: workspace.id,
+    scopeType: NodeType.Workspace,
+  }).saveX();
+  expect(todo2.text).toBe("watch GOT");
+  expect(todo2.creatorID).toBe(creator.id);
+  expect(todo2.completed).toBe(false);
+  expect(todo2.assigneeID).toBe(assignee2.id);
+  expect(todo2.scopeID).toBe(workspace.id);
+  expect(todo2.scopeType).toBe(NodeType.Workspace);
+
+  const scopedEnts2 = await todo2.queryTodoScope().queryEnts();
+  expect(scopedEnts2.length).toBe(1);
+  expect(scopedEnts2[0].id).toBe(workspace.id);
+
+  const scopedTodos = await workspace.queryScopedTodos().queryEnts();
+  expect(scopedTodos.length).toBe(2);
+  expect(scopedTodos.map((t) => t.id).includes(todo.id)).toBe(true);
+  expect(scopedTodos.map((t) => t.id).includes(todo2.id)).toBe(true);
+
+  return { todo, todo2 };
+}
 
 test("create for other", async () => {
   // in real life, you shouldn't just be able to create a TODO for anyone randomly lol
@@ -69,57 +122,74 @@ test("create for other", async () => {
   expect(scopedTodos.map((t) => t.id).includes(todo2.id)).toBe(true);
 });
 
-test("create todo self in workspace", async () => {
-  await createTodoSelfInWorkspace();
-});
-
-test("create todo for other in workspace", async () => {
+test("assign todo other not in workspace", async () => {
   const creator = await createAccount();
   const assignee = await createAccount();
-  const workspace = await createWorkspace(creator);
 
   const todo = await CreateTodoAction.create(creator.viewer, {
     text: "watch GOT",
     creatorID: creator.id,
     assigneeID: assignee.id,
-    scopeID: workspace.id,
-    scopeType: NodeType.Workspace,
+    scopeID: assignee.id,
+    scopeType: NodeType.Account,
   }).saveX();
-  expect(todo.text).toBe("watch GOT");
-  expect(todo.creatorID).toBe(creator.id);
-  expect(todo.completed).toBe(false);
-  expect(todo.assigneeID).toBe(assignee.id);
-  expect(todo.scopeID).toBe(workspace.id);
-  expect(todo.scopeType).toBe(NodeType.Workspace);
 
-  const scopedEnts = await todo.queryTodoScope().queryEnts();
-  expect(scopedEnts.length).toBe(1);
-  expect(scopedEnts[0].id).toBe(workspace.id);
+  try {
+    await ChangeTodoBountyAction.create(todo.viewer, todo, {
+      bounty: 100,
+    }).saveX();
+    throw new Error(`should have thrown`);
+  } catch (err) {
+    expect((err as Error).message).toBe(
+      `bounties can only be created in a workspace scope`,
+    );
+  }
+});
 
-  const assignee2 = await createAccount();
+test("create todo self in workspace", async () => {
+  await createTodoSelfInWorkspace();
+});
 
-  const todo2 = await CreateTodoAction.create(creator.viewer, {
-    text: "watch GOT",
-    creatorID: creator.id,
-    assigneeID: assignee2.id,
-    scopeID: workspace.id,
-    scopeType: NodeType.Workspace,
+test("assign bounty self in workspace", async () => {
+  const todo = await createTodoSelfInWorkspace();
+
+  try {
+    await ChangeTodoBountyAction.create(todo.viewer, todo, {
+      bounty: 100,
+    }).saveX();
+    throw new Error(`should have thrown`);
+  } catch (err) {
+    expect((err as Error).message).toBe(
+      `cannot assign bounty when you're the assignee`,
+    );
+  }
+});
+
+test("create todo for other in workspace", async () => {
+  await createTodoOtherInWorksapce();
+});
+
+test("assign bounty other in workspace", async () => {
+  const { todo } = await createTodoOtherInWorksapce();
+  const editedTodo = await ChangeTodoBountyAction.create(todo.viewer, todo, {
+    bounty: 100,
   }).saveX();
-  expect(todo2.text).toBe("watch GOT");
-  expect(todo2.creatorID).toBe(creator.id);
-  expect(todo2.completed).toBe(false);
-  expect(todo2.assigneeID).toBe(assignee2.id);
-  expect(todo2.scopeID).toBe(workspace.id);
-  expect(todo2.scopeType).toBe(NodeType.Workspace);
+  expect(editedTodo.bounty).toBe(100);
+});
 
-  const scopedEnts2 = await todo2.queryTodoScope().queryEnts();
-  expect(scopedEnts2.length).toBe(1);
-  expect(scopedEnts2[0].id).toBe(workspace.id);
+test("assign bounty not enough credits", async () => {
+  const { todo } = await createTodoOtherInWorksapce();
 
-  const scopedTodos = await workspace.queryScopedTodos().queryEnts();
-  expect(scopedTodos.length).toBe(2);
-  expect(scopedTodos.map((t) => t.id).includes(todo.id)).toBe(true);
-  expect(scopedTodos.map((t) => t.id).includes(todo2.id)).toBe(true);
+  try {
+    await ChangeTodoBountyAction.create(todo.viewer, todo, {
+      bounty: 1100,
+    }).saveX();
+    throw new Error(`should have thrown`);
+  } catch (err) {
+    expect((err as Error).message).toBe(
+      `cannot create bounty when account doesn't have enough credits for it`,
+    );
+  }
 });
 
 async function changeCompleted(todo: Todo, completed: boolean) {
@@ -146,6 +216,49 @@ test("mark as completed", async () => {
 
   // reopen
   todo = await changeCompleted(todo, false);
+});
+
+test("complete with bounty", async () => {
+  let { todo } = await createTodoOtherInWorksapce();
+  todo = await ChangeTodoBountyAction.create(todo.viewer, todo, {
+    bounty: 100,
+  }).saveX();
+
+  await changeCompleted(todo, true);
+
+  const assignee = await todo.loadAssigneeX();
+  const creator = await todo.loadCreatorX();
+  // completing successfully transfered credits
+  expect(assignee.credits).toBe(1100);
+  expect(creator.credits).toBe(900);
+});
+
+test("complete with bounty, multiple in transaction", async () => {
+  let { todo, todo2 } = await createTodoOtherInWorksapce();
+  todo = await ChangeTodoBountyAction.create(todo.viewer, todo, {
+    bounty: 100,
+  }).saveX();
+  todo2 = await ChangeTodoBountyAction.create(todo2.viewer, todo2, {
+    bounty: 100,
+  }).saveX();
+
+  const tx = new Transaction(todo.viewer, [
+    ChangeTodoStatusAction.create(todo.viewer, todo, {
+      completed: true,
+    }),
+    ChangeTodoStatusAction.create(todo.viewer, todo2, {
+      completed: true,
+    }),
+  ]);
+  await tx.run();
+
+  const assignee1 = await todo.loadAssigneeX();
+  const creator = await todo.loadCreatorX();
+  const assignee2 = await todo2.loadAssigneeX();
+  // completing successfully transfered credits
+  expect(assignee1.credits).toBe(1100);
+  expect(assignee2.credits).toBe(1100);
+  expect(creator.credits).toBe(800);
 });
 
 test("rename todo", async () => {

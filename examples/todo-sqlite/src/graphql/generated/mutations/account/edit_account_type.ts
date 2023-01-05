@@ -6,7 +6,6 @@ import {
   GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
-  GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -57,9 +56,6 @@ export const EditAccountInputType = new GraphQLInputObjectType({
     account_prefs_list: {
       type: new GraphQLList(new GraphQLNonNull(AccountPrefs2InputType)),
     },
-    credits: {
-      type: GraphQLInt,
-    },
   }),
 });
 
@@ -101,7 +97,6 @@ export const EditAccountType: GraphQLFieldConfig<
         phoneNumber: input.phone_number,
         accountPrefs: input.account_prefs,
         accountPrefsList: input.account_prefs_list,
-        credits: input.credits,
       },
     );
     return { account: account };

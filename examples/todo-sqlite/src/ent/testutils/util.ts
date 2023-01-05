@@ -31,6 +31,8 @@ export async function createAccount(input?: Partial<AccountCreateInput>) {
   expect(validate(account.id as string)).toBe(true);
   expect(account.createdAt).toBeInstanceOf(Date);
   expect(account.updatedAt).toBeInstanceOf(Date);
+  // each account starts with 1000 credits
+  expect(account.credits).toBe(1000);
   return account;
 }
 
