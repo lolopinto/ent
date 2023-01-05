@@ -40,6 +40,7 @@ export class HoursOfOperationBase
   extends DayOfWeekMixin(class {})
   implements Ent<ExampleViewerAlias>, IDayOfWeek
 {
+  protected readonly data: HoursOfOperationDBData;
   readonly nodeType = NodeType.HoursOfOperation;
   readonly id: ID;
   readonly createdAt: Date;
@@ -47,7 +48,7 @@ export class HoursOfOperationBase
   readonly open: string;
   readonly close: string;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -55,6 +56,8 @@ export class HoursOfOperationBase
     this.updatedAt = data.updated_at;
     this.open = data.open;
     this.close = data.close;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

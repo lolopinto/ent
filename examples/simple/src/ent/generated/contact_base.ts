@@ -49,6 +49,7 @@ export class ContactBase
   extends FeedbackMixin(class {})
   implements Ent<ExampleViewerAlias>, IFeedback
 {
+  protected readonly data: ContactDBData;
   readonly nodeType = NodeType.Contact;
   readonly id: ID;
   readonly createdAt: Date;
@@ -59,7 +60,7 @@ export class ContactBase
   readonly lastName: string;
   readonly userID: ID;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -70,6 +71,8 @@ export class ContactBase
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.userID = data.user_id;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

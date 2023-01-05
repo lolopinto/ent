@@ -39,6 +39,7 @@ interface GuestGroupDBData {
 }
 
 export class GuestGroupBase implements Ent<Viewer> {
+  protected readonly data: GuestGroupDBData;
   readonly nodeType = NodeType.GuestGroup;
   readonly id: ID;
   readonly createdAt: Date;
@@ -46,12 +47,14 @@ export class GuestGroupBase implements Ent<Viewer> {
   readonly invitationName: string;
   readonly eventID: ID;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.invitationName = data.invitation_name;
     this.eventID = data.event_id;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

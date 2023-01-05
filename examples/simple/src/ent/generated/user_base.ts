@@ -113,6 +113,7 @@ export class UserBase
   extends FeedbackMixin(class {})
   implements Ent<ExampleViewerAlias>, IFeedback
 {
+  protected readonly data: UserDBData;
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -137,7 +138,7 @@ export class UserBase
   readonly nestedList: UserNestedObjectList[] | null;
   readonly intEnum: UserIntEnum | null;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -165,6 +166,8 @@ export class UserBase
     this.funUuids = data.fun_uuids;
     this.nestedList = convertNullableUserNestedObjectListList(data.nested_list);
     this.intEnum = convertNullableUserIntEnum(data.int_enum);
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

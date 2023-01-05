@@ -40,6 +40,7 @@ interface CommentDBData {
 }
 
 export class CommentBase implements Ent<ExampleViewerAlias> {
+  protected readonly data: CommentDBData;
   readonly nodeType = NodeType.Comment;
   readonly id: ID;
   readonly createdAt: Date;
@@ -51,7 +52,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   readonly stickerID: ID | null;
   readonly stickerType: string | null;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -61,6 +62,8 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     this.articleType = data.article_type;
     this.stickerID = data.sticker_id;
     this.stickerType = data.sticker_type;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

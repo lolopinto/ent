@@ -39,6 +39,7 @@ interface AddressDBData {
 }
 
 export class AddressBase implements Ent<ExampleViewerAlias> {
+  protected readonly data: AddressDBData;
   readonly nodeType = NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;
@@ -50,7 +51,7 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   readonly apartment: string | null;
   readonly country: string;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -60,6 +61,8 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
     this.zip = data.zip;
     this.apartment = data.apartment;
     this.country = data.country;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

@@ -45,6 +45,7 @@ export class ContactEmailBase
   extends ContactInfoMixin(class {})
   implements Ent<ExampleViewerAlias>, IContactInfo
 {
+  protected readonly data: ContactEmailDBData;
   readonly nodeType = NodeType.ContactEmail;
   readonly id: ID;
   readonly createdAt: Date;
@@ -53,7 +54,7 @@ export class ContactEmailBase
   readonly label: ContactEmailLabel;
   readonly contactID: ID;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -62,6 +63,8 @@ export class ContactEmailBase
     this.emailAddress = data.email_address;
     this.label = convertContactEmailLabel(data.label);
     this.contactID = data.contact_id;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

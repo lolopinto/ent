@@ -41,6 +41,7 @@ interface GuestDataDBData {
 }
 
 export class GuestDataBase implements Ent<Viewer> {
+  protected readonly data: GuestDataDBData;
   readonly nodeType = NodeType.GuestData;
   readonly id: ID;
   readonly createdAt: Date;
@@ -50,7 +51,7 @@ export class GuestDataBase implements Ent<Viewer> {
   readonly dietaryRestrictions: string;
   readonly source: GuestDataSource | null;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -58,6 +59,8 @@ export class GuestDataBase implements Ent<Viewer> {
     this.eventID = data.event_id;
     this.dietaryRestrictions = data.dietary_restrictions;
     this.source = convertNullableGuestDataSource(data.source);
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

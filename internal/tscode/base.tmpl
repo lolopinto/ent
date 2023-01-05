@@ -80,6 +80,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 {{ end -}}
 {
 
+  protected readonly data: {{$dataType}};
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.EntFields -}}
     {{ range $field.GetTsTypeImports -}}
@@ -101,7 +102,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{ end -}}
   {{end}}
 
-  constructor(public viewer: {{$viewerType}}, protected data:Data) {
+  constructor(public viewer: {{$viewerType}}, data:Data) {
     {{ if $hasMixins -}}
       // @ts-ignore pass to mixin
       super(viewer, data);
@@ -111,7 +112,9 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         {{$val := printf "data.%s" $field.GetDbColName -}}
         this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg $val }}
       {{ end -}}
-    {{end}}
+    {{end -}}
+    // @ts-expect-error
+    this.data = data
   }
   
   getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<this, {{$viewerType}}> {

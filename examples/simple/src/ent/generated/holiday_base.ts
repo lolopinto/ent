@@ -40,6 +40,7 @@ export class HolidayBase
   extends DayOfWeekMixin(class {})
   implements Ent<ExampleViewerAlias>, IDayOfWeek
 {
+  protected readonly data: HolidayDBData;
   readonly nodeType = NodeType.Holiday;
   readonly id: ID;
   readonly createdAt: Date;
@@ -47,7 +48,7 @@ export class HolidayBase
   readonly label: string;
   readonly date: Date;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -55,6 +56,8 @@ export class HolidayBase
     this.updatedAt = data.updated_at;
     this.label = data.label;
     this.date = data.date;
+    // @ts-expect-error
+    this.data = data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
