@@ -74,9 +74,7 @@ export class CreateTagActionBase
 
   constructor(viewer: Viewer, input: TagCreateInput) {
     this.viewer = viewer;
-
     this.input = input;
-
     this.builder = new TagBuilder(
       this.viewer,
       WriteOperation.Insert,

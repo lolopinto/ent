@@ -76,9 +76,7 @@ export class CreateTodoActionBase
 
   constructor(viewer: Viewer, input: TodoCreateInput) {
     this.viewer = viewer;
-
     this.input = input;
-
     this.builder = new TodoBuilder(
       this.viewer,
       WriteOperation.Insert,

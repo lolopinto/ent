@@ -72,9 +72,7 @@ export class EditWorkspaceActionBase
 
   constructor(viewer: Viewer, workspace: Workspace, input: WorkspaceEditInput) {
     this.viewer = viewer;
-
     this.input = input;
-
     this.builder = new WorkspaceBuilder(
       this.viewer,
       WriteOperation.Edit,

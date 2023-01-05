@@ -121,9 +121,7 @@ export class EditAccountTodoStatusActionBase
     input: EditAccountTodoStatusInput,
   ) {
     this.viewer = viewer;
-
     this.input = input;
-
     this.builder = new AccountBuilder(
       this.viewer,
       WriteOperation.Edit,

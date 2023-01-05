@@ -72,9 +72,7 @@ export class RenameTodoStatusActionBase
 
   constructor(viewer: Viewer, todo: Todo, input: RenameTodoInput) {
     this.viewer = viewer;
-
     this.input = input;
-
     this.builder = new TodoBuilder(
       this.viewer,
       WriteOperation.Edit,

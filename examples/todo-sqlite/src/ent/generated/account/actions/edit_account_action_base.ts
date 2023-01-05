@@ -103,7 +103,6 @@ export class EditAccountActionBase
         expressions,
       ),
     };
-
     this.builder = new AccountBuilder(
       this.viewer,
       WriteOperation.Edit,

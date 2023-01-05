@@ -172,9 +172,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
           {{$field.TsBuilderFieldName}}: {{useImport "maybeConvertRelativeInputPlusExpressions"}}(input.{{$field.TsBuilderFieldName}}, '{{$field.GetDbColName}}', data.{{$field.GetDbColName}}, expressions),
         {{ end -}}
         };
-      {{ else }}
+      {{ else -}}
         this.input = input;
-      {{ end }}
+      {{ end -}}
     {{end -}}
     this.builder = new {{$builderName}}(
       this.viewer,

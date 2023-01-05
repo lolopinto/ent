@@ -79,9 +79,7 @@ export class CreateAccountActionBase
 
   constructor(viewer: Viewer, input: AccountCreateInput) {
     this.viewer = viewer;
-
     this.input = input;
-
     this.builder = new AccountBuilder(
       this.viewer,
       WriteOperation.Insert,
