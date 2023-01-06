@@ -83,7 +83,7 @@ class User implements Node {
   firstName: string;
   lastName: string;
   address?: Address | null;
-  contacts?(arg: { first: number }): Contact[];
+  contacts?(arg: { first?: number; domain?: string }): Contact[];
   nicknames?: string[] | null;
   daysOff: DayOfWeek[];
 }
@@ -117,6 +117,10 @@ export const names: Partial<Pick<Contact, "firstName" | "lastName">>[] = [
     firstName: "Rickon",
     lastName: "Stark",
   },
+  {
+    firstName: "Jon",
+    lastName: "Snow",
+  },
 ];
 
 const NickNames = ["Lord Snow", "The Prince That was Promised"];
@@ -141,8 +145,30 @@ function getUser(id: string): User {
     };
   }
   if (num % 10 == 0) {
-    result.contacts = ({ first }) => {
+    result.contacts = ({ first, domain }) => {
       let ret: Contact[] = [];
+      if (domain) {
+        const parts = domain.split(".");
+        if (parts.length != 2) {
+          return [];
+        }
+        for (let i = 0; i < names.length; i++) {
+          const name = names[i];
+          if (name.lastName === parts[0]) {
+            ret.push({
+              firstName: name.firstName!,
+              lastName: name.lastName!,
+              emailAddress: `${name.firstName}@${name.lastName}.com`,
+              phoneNumber: "415-222-3322",
+              id: (i + 1000).toString(),
+            });
+          }
+        }
+        return ret;
+      }
+      if (first === undefined) {
+        first = names.length;
+      }
       for (let i = 0; i < first; i++) {
         let idx = i % names.length;
         let name = names[idx]!;
@@ -265,7 +291,10 @@ let userType = new GraphQLObjectType({
       type: new GraphQLList(contactType),
       args: {
         first: {
-          type: new GraphQLNonNull(GraphQLInt),
+          type: GraphQLInt,
+        },
+        domain: {
+          type: GraphQLString,
         },
       },
     },
@@ -518,6 +547,36 @@ test("query with nested args", async () => {
     ["contacts(first: 2)[1].firstName", "Sansa"],
     ["contacts(first: 2)[1].lastName", "Stark"],
     ["contacts(first: 2)[1].emailAddress", "Sansa@Stark.com"],
+  );
+});
+
+test("query with args. extra variables", async () => {
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "10",
+    },
+    extraVariables: {
+      domain: {
+        value: "Snow.com",
+        graphqlType: "String",
+      },
+    },
+    root: "user",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "10"],
+    ["firstName", "Jon"],
+    ["lastName", "Snow"],
+    ["contacts(domain: $domain)[0].firstName", "Jon"],
+    ["contacts(domain: $domain)[0].lastName", "Snow"],
+    ["contacts(domain: $domain)[0].emailAddress", "Jon@Snow.com"],
   );
 });
 

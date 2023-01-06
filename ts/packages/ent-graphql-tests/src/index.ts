@@ -115,6 +115,13 @@ function makeGraphQLRequest(
     }
   });
 
+  let variables = {
+    ...config.args,
+  };
+  for (const k in config.extraVariables) {
+    variables[k] = config.extraVariables[k].value;
+  }
+
   if (files.size) {
     let ret = test
       .post(config.graphQLPath || "/graphql")
@@ -124,7 +131,7 @@ function makeGraphQLRequest(
       "operations",
       JSON.stringify({
         query: query,
-        variables: config.args,
+        variables: variables,
       }),
     );
 
@@ -155,7 +162,7 @@ function makeGraphQLRequest(
         .set(config.headers || {})
         .send({
           query: query,
-          variables: JSON.stringify(config.args),
+          variables: JSON.stringify(variables),
         }),
     ];
   }
@@ -296,6 +303,14 @@ interface queryConfig {
   headers?: object;
   debugMode?: boolean;
   args: {};
+  // any variables in here get added to the query as `$foo`, in query you should use
+  // $foo
+  extraVariables?: {
+    [key: string]: {
+      graphqlType: string;
+      value: string;
+    };
+  };
   expectedStatus?: number; // expected http status code
   expectedError?: string | RegExp; // expected error message
   // todo there can be more than one etc
@@ -403,13 +418,20 @@ async function expectFromRoot(
 
   let queryParams: string[] = [];
   fieldArgs.forEach((fieldArg) => {
-    let arg = config.args[fieldArg.name];
+    const arg = config.args[fieldArg.name];
     // let the graphql runtime handle this (it may be optional for example)
     if (arg === undefined) {
       return;
     }
     queryParams.push(`$${fieldArg.name}: ${fieldArg.type}`);
   });
+
+  // add extra variables in queryArgs...
+  for (const key in config.extraVariables) {
+    const v = config.extraVariables[key];
+    queryParams.push(`$${key}: ${v.graphqlType}`);
+  }
+
   let params: string[] = [];
   for (let key in config.args) {
     params.push(`${key}: $${key}`);
