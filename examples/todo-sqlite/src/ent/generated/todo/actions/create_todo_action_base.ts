@@ -24,6 +24,7 @@ export interface TodoCreateInput {
   assigneeID: ID | Builder<Account, Viewer>;
   scopeID: ID;
   scopeType: string;
+  bounty?: number | null;
 }
 
 export type CreateTodoActionTriggers = (

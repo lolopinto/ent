@@ -75,6 +75,11 @@ export class GuestBase
     this.data = data;
   }
 
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getData(): GuestDBData {
+    return this.data;
+  }
+
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
     return AllowIfViewerPrivacyPolicy;
   }

@@ -9,26 +9,24 @@ import {
 // implicit schema
 const Address = {
   tableName: "addresses",
-  fields: [
-    {
-      name: "street_name",
+  fields: {
+    street_name: {
       type: {
         dbType: DBType.String,
       },
       logValue: (val: any) => val,
     },
-    {
-      name: "city",
+    city: {
       type: {
         dbType: DBType.String,
       },
       logValue: (val: any) => val,
     },
-    StringType({ name: "state" }),
-    StringType({ name: "zip" }),
-    StringType({ name: "apartment", nullable: true }),
-    StringType({ name: "country", serverDefault: "US" }),
-  ],
+    state: StringType(),
+    zip: StringType(),
+    apartment: StringType({ nullable: true }),
+    country: StringType({ serverDefault: "US" }),
+  },
   patterns: [Node],
 
   actions: [

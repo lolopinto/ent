@@ -42,6 +42,7 @@ interface TagDBData {
 }
 
 export class TagBase implements Ent<Viewer> {
+  protected readonly data: TagDBData;
   readonly nodeType = NodeType.Tag;
   readonly id: ID;
   readonly createdAt: Date;
@@ -52,7 +53,7 @@ export class TagBase implements Ent<Viewer> {
   readonly ownerID: ID;
   readonly relatedTagIds: ID[] | null;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -61,6 +62,13 @@ export class TagBase implements Ent<Viewer> {
     this.canonicalName = data.canonical_name;
     this.ownerID = data.owner_id;
     this.relatedTagIds = convertNullableList(data.related_tag_ids);
+    // @ts-expect-error
+    this.data = data;
+  }
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getData(): TagDBData {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

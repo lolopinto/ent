@@ -433,6 +433,55 @@ func HasInput(action Action) bool {
 	return len(action.GetFields()) != 0 || len(action.GetNonEntFields()) != 0
 }
 
+type RelativeImports struct {
+	Imports            []*tsimport.ImportPath
+	FieldsWithRelative map[string]*field.Field
+	RelativeInputName  string
+}
+
+func (ri *RelativeImports) RelativeField(name string) bool {
+	return ri.FieldsWithRelative[name] != nil
+}
+
+var inputRegex = regexp.MustCompile(`(.+)Input`)
+
+func InputWithRelative(action Action, cfg codegenapi.Config) *RelativeImports {
+	if action.GetOperation() != ent.EditAction {
+		return nil
+	}
+	m := make(map[string]*field.Field)
+	imps := []*tsimport.ImportPath{}
+	for _, f := range action.GetFields() {
+		typ := f.GetTSFieldType(cfg)
+		relative, ok := typ.(enttype.RelativeMathType)
+		if !ok {
+			continue
+		}
+		// fine if we add the same thing multiple times, just wasted CPU cycles for now...
+		imps = append(imps, relative.GetRelativeMathInfo().Import)
+
+		m[f.FieldName] = f
+	}
+
+	if len(m) == 0 {
+		return nil
+	}
+
+	match := inputRegex.FindStringSubmatch(action.GetActionInputName())
+	var relInputName string
+	if len(match) != 0 {
+		relInputName = match[1] + "RelativeInput"
+	} else {
+		relInputName = action.GetActionInputName() + "Relative"
+	}
+
+	return &RelativeImports{
+		FieldsWithRelative: m,
+		RelativeInputName:  relInputName,
+		Imports:            imps,
+	}
+}
+
 func HasOnlyActionOnlyFields(action Action) bool {
 	return len(action.GetNonEntFields()) != 0 && len(action.GetFields()) == 0
 }

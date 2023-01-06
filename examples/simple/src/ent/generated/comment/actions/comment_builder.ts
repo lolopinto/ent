@@ -9,6 +9,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -60,6 +61,9 @@ export class CommentBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<Comment, TInput, ExampleViewerAlias, TExistingEnt>
+    >,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Comment`;
     this.input = action.getInput();
@@ -77,6 +81,7 @@ export class CommentBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: commentLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

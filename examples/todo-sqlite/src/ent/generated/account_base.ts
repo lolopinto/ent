@@ -66,12 +66,14 @@ interface AccountDBData {
   account_state: AccountState | null;
   account_prefs: AccountPrefs | null;
   account_prefs_list: AccountPrefs2[] | null;
+  credits: number;
 }
 
 export class AccountBase
   extends TodoContainerMixin(class {})
   implements Ent<Viewer>, ITodoContainer
 {
+  protected readonly data: AccountDBData;
   readonly nodeType = NodeType.Account;
   readonly id: ID;
   readonly createdAt: Date;
@@ -82,8 +84,9 @@ export class AccountBase
   readonly accountState: AccountState | null;
   readonly accountPrefs: AccountPrefs | null;
   readonly accountPrefsList: AccountPrefs2[] | null;
+  readonly credits: number;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -99,6 +102,14 @@ export class AccountBase
     this.accountPrefsList = convertNullableAccountPrefs2List(
       convertNullableJSONList(data.account_prefs_list),
     );
+    this.credits = data.credits;
+    // @ts-expect-error
+    this.data = data;
+  }
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getData(): AccountDBData {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

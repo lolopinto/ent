@@ -175,6 +175,9 @@ export interface CreateRowOptions extends DataOptions {
 
 export interface EditRowOptions extends CreateRowOptions {
   whereClause: clause.Clause;
+  // if a column exists in here as opposed to in fields, we use the expression given
+  // instead of the value
+  expressions?: Map<string, clause.Clause>;
 }
 
 interface LoadableEntOptions<

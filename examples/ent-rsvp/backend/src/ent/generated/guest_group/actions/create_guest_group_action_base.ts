@@ -24,6 +24,7 @@ interface customGuestInput {
   emailAddress?: string | null;
   title?: string | null;
 }
+
 export interface GuestGroupCreateInput {
   invitationName: string;
   eventID: ID | Builder<Event, Viewer>;

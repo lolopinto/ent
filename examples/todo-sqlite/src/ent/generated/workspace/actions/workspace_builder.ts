@@ -6,6 +6,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -69,6 +70,9 @@ export class WorkspaceBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<Workspace, TInput, Viewer, TExistingEnt>
+    >,
   ) {
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Workspace`;
@@ -88,6 +92,7 @@ export class WorkspaceBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: workspaceLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

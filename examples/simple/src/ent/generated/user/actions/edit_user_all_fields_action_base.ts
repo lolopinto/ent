@@ -5,6 +5,7 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  Clause,
   ID,
   PrivacyPolicy,
 } from "@snowtop/ent";
@@ -12,9 +13,11 @@ import {
   Action,
   Changeset,
   Observer,
+  RelativeNumberValue,
   Trigger,
   Validator,
   WriteOperation,
+  maybeConvertRelativeInputPlusExpressions,
 } from "@snowtop/ent/action";
 import { User } from "../../..";
 import {
@@ -31,7 +34,7 @@ import {
 import { UserBuilder } from "./user_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
-export interface EditUserAllFieldsInput {
+export interface EditUserAllFieldsRelativeInput {
   firstName?: string;
   lastName?: string;
   emailAddress?: string;
@@ -45,11 +48,15 @@ export interface EditUserAllFieldsInput {
   prefsDiff?: UserPrefsDiff | null;
   daysOff?: UserDaysOff[] | null;
   preferredShift?: UserPreferredShift[] | null;
-  timeInMs?: BigInt | null;
+  timeInMs?: BigInt | null | RelativeNumberValue<BigInt>;
   funUuids?: ID[] | null;
   superNestedObject?: UserSuperNestedObject | null;
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;
+}
+
+export interface EditUserAllFieldsInput extends EditUserAllFieldsRelativeInput {
+  timeInMs?: BigInt | null;
 }
 
 export type EditUserAllFieldsActionTriggers = (
@@ -103,15 +110,26 @@ export class EditUserAllFieldsActionBase
   constructor(
     viewer: ExampleViewerAlias,
     user: User,
-    input: EditUserAllFieldsInput,
+    input: EditUserAllFieldsRelativeInput,
   ) {
     this.viewer = viewer;
-    this.input = input;
+    let expressions = new Map<string, Clause>();
+    const data = user.___getData();
+    this.input = {
+      ...input,
+      timeInMs: maybeConvertRelativeInputPlusExpressions(
+        input.timeInMs,
+        "time_in_ms",
+        data.time_in_ms,
+        expressions,
+      ),
+    };
     this.builder = new UserBuilder(
       this.viewer,
       WriteOperation.Edit,
       this,
       user,
+      { expressions },
     );
     this.user = user;
   }
@@ -162,11 +180,11 @@ export class EditUserAllFieldsActionBase
     this: new (
       viewer: ExampleViewerAlias,
       user: User,
-      input: EditUserAllFieldsInput,
+      input: EditUserAllFieldsRelativeInput,
     ) => T,
     viewer: ExampleViewerAlias,
     user: User,
-    input: EditUserAllFieldsInput,
+    input: EditUserAllFieldsRelativeInput,
   ): T {
     return new this(viewer, user, input);
   }
@@ -175,7 +193,7 @@ export class EditUserAllFieldsActionBase
     this: new (
       viewer: ExampleViewerAlias,
       user: User,
-      input: EditUserAllFieldsInput,
+      input: EditUserAllFieldsRelativeInput,
     ) => T,
     viewer: ExampleViewerAlias,
     id: ID,

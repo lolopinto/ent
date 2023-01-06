@@ -9,6 +9,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -101,6 +102,9 @@ export class UserBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<User, TInput, ExampleViewerAlias, TExistingEnt>
+    >,
   ) {
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-User`;
@@ -119,6 +123,7 @@ export class UserBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: userLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

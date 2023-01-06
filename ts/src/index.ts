@@ -86,6 +86,7 @@ export * from "./core/query";
 
 export * from "./schema/";
 import * as q from "./core/clause";
+export { Clause } from "./core/clause";
 const query = {
   Eq: q.Eq,
   NotEq: q.NotEq,

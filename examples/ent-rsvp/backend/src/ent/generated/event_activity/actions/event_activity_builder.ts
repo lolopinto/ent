@@ -6,6 +6,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -58,6 +59,9 @@ export class EventActivityBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<EventActivity, TInput, Viewer, TExistingEnt>
+    >,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-EventActivity`;
     this.input = action.getInput();
@@ -76,6 +80,7 @@ export class EventActivityBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: eventActivityLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

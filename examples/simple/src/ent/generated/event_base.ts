@@ -75,6 +75,11 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     this.data = data;
   }
 
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getData(): EventDBData {
+    return this.data;
+  }
+
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
     return AllowIfViewerPrivacyPolicy;
   }

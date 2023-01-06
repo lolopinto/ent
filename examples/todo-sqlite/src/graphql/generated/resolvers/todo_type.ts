@@ -58,6 +58,9 @@ export const TodoType = new GraphQLObjectType({
         return todo.completedDate;
       },
     },
+    bounty: {
+      type: GraphQLInt,
+    },
     tags: {
       type: new GraphQLNonNull(TodoToTagsConnectionType()),
       args: {

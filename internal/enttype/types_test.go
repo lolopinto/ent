@@ -29,6 +29,7 @@ type expType struct {
 	tsTypeImports      []*tsimport.ImportPath
 	subFields          []*input.Field
 	unionFields        []*input.Field
+	relativeMathInfo   *enttype.RelativeMathInfo
 }
 
 func TestCustomTypes(t *testing.T) {
@@ -241,6 +242,10 @@ func TestIntegerType(t *testing.T) {
 				nullableType: &enttype.NullableIntegerType{},
 				tsType:       "number",
 				importType:   &enttype.IntImport{},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<number>",
+				},
 			},
 		},
 		"nullable": {
@@ -254,6 +259,10 @@ func TestIntegerType(t *testing.T) {
 				nonNullableType: &enttype.IntegerType{},
 				tsType:          "number | null",
 				importType:      &enttype.IntImport{},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<number>",
+				},
 			},
 		},
 	})
@@ -276,6 +285,10 @@ func TestBigIntegerType(t *testing.T) {
 				importType:         &enttype.BigIntImport{},
 				convertSqliteFns:   []string{"BigInt"},
 				convertPostgresFns: []string{"BigInt"},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<BigInt>",
+				},
 			},
 		},
 		"nullable": {
@@ -291,6 +304,10 @@ func TestBigIntegerType(t *testing.T) {
 				importType:         &enttype.BigIntImport{},
 				convertSqliteFns:   []string{"BigInt"},
 				convertPostgresFns: []string{"BigInt"},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<BigInt>",
+				},
 			},
 		},
 	})
@@ -310,6 +327,10 @@ func TestFloatType(t *testing.T) {
 				nullableType: &enttype.NullableFloatType{},
 				tsType:       "number",
 				importType:   &enttype.FloatImport{},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<number>",
+				},
 			},
 		},
 		"nullable": {
@@ -323,6 +344,10 @@ func TestFloatType(t *testing.T) {
 				nonNullableType: &enttype.FloatType{},
 				tsType:          "number | null",
 				importType:      &enttype.FloatImport{},
+				relativeMathInfo: &enttype.RelativeMathInfo{
+					Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+					Type:   "RelativeNumberValue<number>",
+				},
 			},
 		},
 	})
@@ -929,5 +954,12 @@ func testType(t *testing.T, exp expType, typ enttype.Type) {
 		} else {
 			assert.Len(t, exp.unionFields, len(unionFields))
 		}
+	}
+
+	relative, ok := typ.(enttype.RelativeMathType)
+	if ok {
+		require.Equal(t, exp.relativeMathInfo, relative.GetRelativeMathInfo())
+	} else {
+		require.Nil(t, exp.relativeMathInfo)
 	}
 }

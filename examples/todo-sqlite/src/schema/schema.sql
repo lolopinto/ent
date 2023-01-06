@@ -27,6 +27,7 @@ CREATE TABLE accounts (
     account_state TEXT, 
     account_prefs TEXT, 
     account_prefs_list TEXT, 
+    credits INTEGER DEFAULT '1000' NOT NULL, 
     CONSTRAINT accounts_id_pkey PRIMARY KEY (id), 
     CONSTRAINT accounts_unique_phone_number UNIQUE (phone_number)
 );
@@ -132,6 +133,7 @@ CREATE TABLE todos (
     assignee_id TEXT NOT NULL, 
     scope_id TEXT NOT NULL, 
     scope_type TEXT NOT NULL, 
+    bounty INTEGER, 
     CONSTRAINT todos_id_pkey PRIMARY KEY (id), 
     CONSTRAINT todos_creator_id_fkey FOREIGN KEY(creator_id) REFERENCES accounts (id) ON DELETE CASCADE
 );

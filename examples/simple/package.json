@@ -33,7 +33,7 @@
     "tsconfig-paths": "^3.11.0"
   },
   "dependencies": {
-    "@snowtop/ent": "^0.1.0-alpha96-2a5ea200-82e5-11ed-8c55-4da1cd949242",
+    "@snowtop/ent": "^0.1.0-alpha96-74b1d9c0-8d31-11ed-8745-35ccc81d5579",
     "@snowtop/ent-email": "^0.1.0-alpha1",
     "@snowtop/ent-passport": "^0.1.0-alpha3",
     "@snowtop/ent-password": "^0.1.0-alpha1",
