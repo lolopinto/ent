@@ -264,6 +264,7 @@ type Contact implements Node {
   comments(first: Int, after: String, last: Int, before: String): ContactToCommentsConnection!
   likers(first: Int, after: String, last: Int, before: String): ContactToLikersConnection!
   fullName: String!
+  queryPlusEmails: [EmailInfo!]!
 }
 
 type DogType {
@@ -272,6 +273,11 @@ type DogType {
   breed: DogBreed!
   breedGroup: DogBreedGroup!
   puppy: Boolean!
+}
+
+type EmailInfo {
+  emails: [ContactEmail!]!
+  firstEmail: String!
 }
 
 type Event implements Node {
@@ -1133,7 +1139,6 @@ input UserSuperNestedObjectInput {
 
 type Query {
   node(id: ID!): Node
-  timeDiff(time: Time!, log: JSON!): String!
   viewer: Viewer!
 }
 

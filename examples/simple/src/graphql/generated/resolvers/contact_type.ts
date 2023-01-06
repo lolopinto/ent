@@ -31,6 +31,7 @@ import {
   UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import { EmailInfo } from "../../../ent/contact";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
@@ -151,9 +152,38 @@ export const ContactType = new GraphQLObjectType({
     fullName: {
       type: new GraphQLNonNull(GraphQLString),
     },
+    queryPlusEmails: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(EmailInfoType)),
+      ),
+      resolve: async (
+        contact: Contact,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return contact.queryPlusEmails();
+      },
+    },
   }),
   interfaces: [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Contact;
   },
+});
+
+export const EmailInfoType = new GraphQLObjectType({
+  name: "EmailInfo",
+  fields: (): GraphQLFieldConfigMap<
+    EmailInfo,
+    RequestContext<ExampleViewerAlias>
+  > => ({
+    emails: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ContactEmailType)),
+      ),
+    },
+    firstEmail: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+  }),
 });

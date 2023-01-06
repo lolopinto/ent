@@ -10,7 +10,12 @@ function getFiles(filePath: string, opts?: Options): string[] {
   }
   // graphql path should be passed to this
   // this is more agnostic about what it expect here
-  let files = glob.sync(`${filePath}/**/*.ts`, {
+
+  let pattern = `${filePath}/**/*.ts`;
+  if (opts?.justCurrentDir) {
+    pattern = `${filePath}/**.ts`;
+  }
+  let files = glob.sync(pattern, {
     ignore: opts?.ignore,
   });
   if (opts?.filter) {
@@ -21,6 +26,7 @@ function getFiles(filePath: string, opts?: Options): string[] {
 
 export interface Options {
   filter?: (file: string, index: number, array: string[]) => boolean;
+  justCurrentDir?: boolean;
   ignore?: string | Readonly<string[]> | undefined;
 }
 
@@ -35,11 +41,23 @@ interface classResult {
   file: file;
 }
 
+interface ParseInput {
+  root: string;
+  opts?: Options;
+}
+
 export function parseCustomImports(
   filePath: string,
-  opts?: Options,
+  inputs: ParseInput[],
 ): PathResult {
-  const files = getFiles(filePath, opts);
+  const files: string[] = [];
+  // simplifies tests and other simple callsites
+  if (inputs.length === 0) {
+    inputs.push({ root: filePath });
+  }
+  for (const input of inputs) {
+    files.push(...getFiles(input.root, input.opts));
+  }
   const options = readCompilerOptions(filePath);
 
   let classMap = new Map<string, file[]>();

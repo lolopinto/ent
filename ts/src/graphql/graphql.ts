@@ -78,7 +78,7 @@ export interface ProcessedCustomField extends CustomFieldImpl {
 }
 
 export type ProcessCustomFieldMap = {
-  [key: string]: ProcessedCustomField;
+  [key: string]: ProcessedCustomField[];
 };
 
 export interface CustomObject {

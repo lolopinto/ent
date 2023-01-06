@@ -5,13 +5,21 @@ import {
   AllowIfViewerIsEntPropertyRule,
   AlwaysDenyRule,
 } from "@snowtop/ent";
-import { gqlField } from "@snowtop/ent/graphql";
+import { gqlField, gqlObjectType } from "@snowtop/ent/graphql";
 import { ContactEmail } from ".";
 
-interface ContactPlusEmails {
-  contact: Contact;
+@gqlObjectType()
+export class EmailInfo {
+  @gqlField({ type: "[ContactEmail]" })
   emails: ContactEmail[];
+
+  @gqlField({ type: GraphQLString })
   firstEmail: string;
+
+  constructor(emails: ContactEmail[], firstEmail: string) {
+    this.emails = emails;
+    this.firstEmail = firstEmail;
+  }
 }
 
 export class Contact extends ContactBase {
@@ -29,10 +37,13 @@ export class Contact extends ContactBase {
     return this.firstName + " " + this.lastName;
   }
 
-  async queryPlusEmails(): Promise<ContactPlusEmails> {
+  @gqlField({
+    type: [EmailInfo],
+    name: "",
+  })
+  async queryPlusEmails(): Promise<EmailInfo> {
     const emails = await this.loadEmails();
     return {
-      contact: this,
       emails,
       firstEmail: emails[0].emailAddress,
     };

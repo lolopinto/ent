@@ -4,17 +4,12 @@
  */
 
 import { GraphQLObjectType } from "graphql";
-import {
-  NodeQueryType,
-  TimeDiffQueryType,
-  ViewerQueryType,
-} from "../../resolvers/internal";
+import { NodeQueryType, ViewerQueryType } from "../../resolvers/internal";
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({
     node: NodeQueryType,
-    timeDiff: TimeDiffQueryType,
     viewer: ViewerQueryType,
   }),
 });
