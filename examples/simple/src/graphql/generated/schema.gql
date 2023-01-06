@@ -1139,6 +1139,7 @@ input UserSuperNestedObjectInput {
 
 type Query {
   node(id: ID!): Node
+  timeDiff(time: Time!, log: JSON!): String!
   viewer: Viewer!
 }
 
