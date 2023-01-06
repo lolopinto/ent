@@ -740,6 +740,7 @@ export class GQLCapture {
     baseArgs.set("Context", true);
     this.customTypes.forEach((_val, key) => baseArgs.set(key, true));
 
+    // TODO this should be aware of knownCustomTypes
     const resolveFields = (fields: CustomField[]) => {
       fields.forEach((field) => {
         // we have a check earlier that *should* make this path impossible

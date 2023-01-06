@@ -204,6 +204,19 @@
         "fieldType": "ASYNC_FUNCTION"
       },
       {
+        "name": "contactsGivenDomain",
+        "functionName": "getContactsGivenDomain",
+        "resultType": "Contact",
+        "list": true,
+        "fieldType": "ASYNC_FUNCTION",
+        "args": [
+          {
+            "name": "domain",
+            "type": "String"
+          }
+        ]
+      },
+      {
         "name": "contactsSameDomainNullable",
         "functionName": "getContactsSameDomainNullable",
         "resultType": "Contact",

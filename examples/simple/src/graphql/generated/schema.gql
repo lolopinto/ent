@@ -412,6 +412,7 @@ type User implements Node {
   bar: String
   contactSameDomain: Contact
   contactsSameDomain: [Contact!]!
+  contactsGivenDomain(domain: String!): [Contact!]!
   contactsSameDomainNullable: [Contact!]
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]

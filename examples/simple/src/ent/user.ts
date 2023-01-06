@@ -10,7 +10,7 @@ import {
 } from "@snowtop/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { GraphQLString } from "graphql";
-import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
+import { gqlArg, gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import * as bcrypt from "bcryptjs";
 import { CustomEdgeQueryBase } from "@snowtop/ent";
 import { ExampleViewer } from "src/viewer/viewer";
@@ -112,6 +112,19 @@ export class User extends UserBase {
     if (!domain) {
       return [];
     }
+    const contactInfos = await this.queryContactInfos();
+    return contactInfos.filterMap((contactInfo) => {
+      return {
+        include: domain === this.getDomainFromEmail(contactInfo.firstEmail),
+        return: contactInfo.contact,
+      };
+    });
+  }
+
+  @gqlField({ type: "[Contact]", name: "contactsGivenDomain" })
+  async getContactsGivenDomain(
+    @gqlArg("domain", { type: GraphQLString }) domain: string,
+  ): Promise<Contact[]> {
     const contactInfos = await this.queryContactInfos();
     return contactInfos.filterMap((contactInfo) => {
       return {

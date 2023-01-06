@@ -810,7 +810,7 @@ func getCustomGQLField(cd *CustomData, field CustomField, s *gqlSchema, instance
 			args = append(args, "context")
 			continue
 		}
-		args = append(args, arg.Name)
+		args = append(args, fmt.Sprintf("args.%s", arg.Name))
 
 		cfgArg := &fieldConfigArg{
 			Name: arg.Name,

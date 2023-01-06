@@ -269,6 +269,42 @@ test("query custom async function list", async () => {
   );
 });
 
+test("query custom async function list with domain passed in", async () => {
+  let user = await create({
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+  });
+  let vc = new ExampleViewer(user.id);
+  user = await User.loadX(vc, user.id);
+  let selfContact = await user.loadSelfContact();
+  let contact = await CreateContactAction.create(vc, {
+    emails: [
+      {
+        emailAddress: randomEmail(),
+        label: ContactEmailLabel.Unknown,
+      },
+    ],
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  }).saveX();
+
+  const domain = "email.com";
+  await expectQueryFromRoot(
+    getConfig(new ExampleViewer(user.id), user, {
+      extraVariables: {
+        domain: {
+          graphqlType: "String!",
+          value: domain,
+        },
+      },
+    }),
+    ["id", encodeGQLID(user)],
+    [`contactsGivenDomain(domain: $domain)[0].id`, encodeGQLID(contact!)],
+    [`contactsGivenDomain(domain: $domain)[1].id`, encodeGQLID(selfContact!)],
+  );
+});
 test("query custom async function nullable list", async () => {
   let user = await create({
     firstName: "first",
