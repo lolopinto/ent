@@ -410,6 +410,7 @@ type User implements Node {
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   fullName: String!
   bar: String
+  """contacts same domain..."""
   contactSameDomain: Contact
   contactsSameDomain: [Contact!]!
   contactsGivenDomain(domain: String!): [Contact!]!
