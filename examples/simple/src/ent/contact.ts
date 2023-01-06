@@ -38,8 +38,8 @@ export class Contact extends ContactBase {
   }
 
   @gqlField({
-    type: [EmailInfo],
-    name: "",
+    type: EmailInfo,
+    name: "plusEmails",
   })
   async queryPlusEmails(): Promise<EmailInfo> {
     const emails = await this.loadEmails();

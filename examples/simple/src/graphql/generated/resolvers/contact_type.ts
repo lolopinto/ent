@@ -152,10 +152,8 @@ export const ContactType = new GraphQLObjectType({
     fullName: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    queryPlusEmails: {
-      type: new GraphQLNonNull(
-        new GraphQLList(new GraphQLNonNull(EmailInfoType)),
-      ),
+    plusEmails: {
+      type: new GraphQLNonNull(EmailInfoType),
       resolve: async (
         contact: Contact,
         args: {},
