@@ -14,7 +14,6 @@ import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { UserType } from "../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { User } from "../../../ent/user";
 import { ImportContactResolver } from "../../mutations/import_contact";
 
 interface BulkUploadContactArgs {

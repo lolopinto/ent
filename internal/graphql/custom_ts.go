@@ -503,9 +503,12 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		return nil, err
 	}
 
-	for _, result := range field.Results {
-		if err := addToArgImport(result.Type); err != nil {
-			return nil, err
+	// only add return type if we have a type hint
+	if builder.getReturnTypeHint() != "" {
+		for _, result := range field.Results {
+			if err := addToArgImport(result.Type); err != nil {
+				return nil, err
+			}
 		}
 	}
 
