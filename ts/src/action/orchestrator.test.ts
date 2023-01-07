@@ -41,6 +41,7 @@ import {
   SimpleBuilder,
   SimpleAction,
   getBuilderSchemaFromFields,
+  BaseEnt,
 } from "../testutils/builder";
 import { FakeComms, Mode } from "../testutils/fake_comms";
 import {
@@ -289,17 +290,13 @@ const ContactEmailSchema = getBuilderSchemaFromFields(
   ContactEmail,
 );
 
-class CustomUser implements Ent {
-  id: ID;
+class CustomUser extends BaseEnt {
   accountID: string = "";
   nodeType = "User";
   getPrivacyPolicy() {
     return {
       rules: [AllowIfViewerRule, AlwaysDenyRule],
     };
-  }
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
   }
 }
 

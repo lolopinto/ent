@@ -25,6 +25,7 @@ import { LoggedOutViewer, IDViewer } from "./viewer";
 import { createRowForTest } from "../testutils/write";
 import { ObjectLoaderFactory } from "./loaders";
 import { setupPostgres, table, text } from "../testutils/db/temp_db";
+import { BaseEnt } from "../testutils/builder";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -32,17 +33,14 @@ setupPostgres(() => [
   table("users", text("id", { primaryKey: true }), text("name")),
 ]);
 
-class User implements Ent {
-  id: ID;
+class User extends BaseEnt {
   accountID: string;
+
+  // TODO add policy here
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return { rules: [] };
   }
   nodeType = "User";
-  // TODO add policy here
-  constructor(public viewer: Viewer, data: Data) {
-    this.id = data.id;
-  }
 }
 
 const getUser = function (

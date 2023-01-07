@@ -114,7 +114,7 @@ export class EditUserAllFieldsActionBase
   ) {
     this.viewer = viewer;
     let expressions = new Map<string, Clause>();
-    const data = user.___getData();
+    const data = user.___getRawDBData();
     this.input = {
       ...input,
       timeInMs: maybeConvertRelativeInputPlusExpressions(

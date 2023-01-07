@@ -398,6 +398,7 @@ function commonTests() {
       const edge = edges[i];
       const expEdge = events[i].data;
       // both raw from db so no conversion needed
+
       expect(edge, `${i}th index`).toMatchObject(expEdge);
     }
   }

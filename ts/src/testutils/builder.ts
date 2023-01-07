@@ -34,88 +34,67 @@ import {
 import { FieldInfoMap, getStorageKey } from "../schema/schema";
 import { Clause } from "src/core/clause";
 
-export class User implements Ent {
-  id: ID;
-  accountID: string = "";
-  nodeType = "User";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
+export class BaseEnt {
+  readonly id: ID;
+
+  constructor(public viewer: Viewer, public readonly data: Data) {
+    this.data.created_at = convertDate(data.created_at);
+    this.data.updated_at = convertDate(data.updated_at);
+    this.id = data[this.getKey()];
+  }
+
+  getKey() {
+    return "id";
+  }
+
+  getPrivacyPolicy(): PrivacyPolicy {
     return AlwaysAllowPrivacyPolicy;
   }
+  __setRawDBData(data: Data) {
+    // doesn't apply here so ignore...
+  }
+}
+
+export class User extends BaseEnt implements Ent {
+  accountID: string = "";
+  nodeType = "User";
   firstName: string;
 
   constructor(public viewer: Viewer, public data: Data) {
-    this.data.created_at = convertDate(data.created_at);
-    this.data.updated_at = convertDate(data.updated_at);
-    this.id = data.id;
+    super(viewer, data);
     this.firstName = data.first_name;
   }
 }
 
-export class Event implements Ent {
-  id: ID;
+export class Event extends BaseEnt implements Ent {
   accountID: string = "";
   nodeType = "Event";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
-export class Contact implements Ent {
-  id: ID;
+export class Contact extends BaseEnt implements Ent {
   accountID: string = "";
   nodeType = "Contact";
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return AlwaysAllowPrivacyPolicy;
   }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.data.created_at = convertDate(data.created_at);
-    this.data.updated_at = convertDate(data.updated_at);
-    this.id = data.id;
-  }
 }
 
-export class Group implements Ent {
-  id: ID;
+export class Group extends BaseEnt implements Ent {
   accountID: string = "";
   nodeType = "Group";
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return AlwaysAllowPrivacyPolicy;
   }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
-export class Message implements Ent {
-  id: ID;
+export class Message extends BaseEnt implements Ent {
   accountID: string = "";
   nodeType = "Message";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
-export class Address implements Ent {
-  id: ID;
+export class Address extends BaseEnt implements Ent {
   accountID: string = "";
   nodeType = "Address";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
 export interface BuilderSchema<T extends Ent> extends Schema {

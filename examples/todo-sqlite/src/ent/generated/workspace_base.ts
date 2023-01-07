@@ -38,7 +38,7 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/workspace_schema";
 
-interface WorkspaceDBData {
+interface WorkspaceData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -53,7 +53,7 @@ export class WorkspaceBase
   extends TodoContainerMixin(class {})
   implements Ent<Viewer>, ITodoContainer
 {
-  protected readonly data: WorkspaceDBData;
+  protected readonly data: WorkspaceData;
   readonly nodeType = NodeType.Workspace;
   readonly id: ID;
   readonly createdAt: Date;
@@ -79,8 +79,10 @@ export class WorkspaceBase
     this.data = data;
   }
 
+  __setRawDBData<WorkspaceData>(data: WorkspaceData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): WorkspaceDBData {
+  ___getRawDBData(): WorkspaceData {
     return this.data;
   }
 
@@ -193,7 +195,7 @@ export class WorkspaceBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<WorkspaceDBData[]> {
+  ): Promise<WorkspaceData[]> {
     return (await loadCustomData(
       {
         ...WorkspaceBase.loaderOptions.apply(this),
@@ -201,7 +203,7 @@ export class WorkspaceBase
       },
       query,
       context,
-    )) as WorkspaceDBData[];
+    )) as WorkspaceData[];
   }
 
   static async loadCustomCount<T extends WorkspaceBase>(
@@ -228,12 +230,12 @@ export class WorkspaceBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<WorkspaceDBData | null> {
+  ): Promise<WorkspaceData | null> {
     const row = await workspaceLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as WorkspaceDBData;
+    return row as WorkspaceData;
   }
 
   static async loadRawDataX<T extends WorkspaceBase>(
@@ -243,12 +245,12 @@ export class WorkspaceBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<WorkspaceDBData> {
+  ): Promise<WorkspaceData> {
     const row = await workspaceLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as WorkspaceDBData;
+    return row as WorkspaceData;
   }
 
   static async loadFromSlug<T extends WorkspaceBase>(
@@ -298,12 +300,12 @@ export class WorkspaceBase
     ) => T,
     slug: string,
     context?: Context,
-  ): Promise<WorkspaceDBData | null> {
+  ): Promise<WorkspaceData | null> {
     const row = await workspaceSlugLoader.createLoader(context).load(slug);
     if (!row) {
       return null;
     }
-    return row as WorkspaceDBData;
+    return row as WorkspaceData;
   }
 
   static loaderOptions<T extends WorkspaceBase>(

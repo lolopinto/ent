@@ -62,6 +62,8 @@ const AccountSchema = new TodoBaseEntSchema({
     // with a bounty
     credits: IntegerType({
       serverDefault: 1000,
+      // only viewer can see their credits balance
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
   },
 

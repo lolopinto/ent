@@ -34,7 +34,7 @@ import {
 import schema from "../../schema/contact_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface ContactDBData {
+interface ContactData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -49,7 +49,7 @@ export class ContactBase
   extends FeedbackMixin(class {})
   implements Ent<ExampleViewerAlias>, IFeedback
 {
-  protected readonly data: ContactDBData;
+  protected readonly data: ContactData;
   readonly nodeType = NodeType.Contact;
   readonly id: ID;
   readonly createdAt: Date;
@@ -75,8 +75,10 @@ export class ContactBase
     this.data = data;
   }
 
+  __setRawDBData<ContactData>(data: ContactData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): ContactDBData {
+  ___getRawDBData(): ContactData {
     return this.data;
   }
 
@@ -154,7 +156,7 @@ export class ContactBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<ContactDBData[]> {
+  ): Promise<ContactData[]> {
     return (await loadCustomData(
       {
         ...ContactBase.loaderOptions.apply(this),
@@ -162,7 +164,7 @@ export class ContactBase
       },
       query,
       context,
-    )) as ContactDBData[];
+    )) as ContactData[];
   }
 
   static async loadCustomCount<T extends ContactBase>(
@@ -189,12 +191,12 @@ export class ContactBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactDBData | null> {
+  ): Promise<ContactData | null> {
     const row = await contactLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as ContactDBData;
+    return row as ContactData;
   }
 
   static async loadRawDataX<T extends ContactBase>(
@@ -204,12 +206,12 @@ export class ContactBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactDBData> {
+  ): Promise<ContactData> {
     const row = await contactLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as ContactDBData;
+    return row as ContactData;
   }
 
   static loaderOptions<T extends ContactBase>(

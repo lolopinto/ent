@@ -23,6 +23,7 @@ import {
   SimpleAction,
   getTableName,
   getBuilderSchemaFromFields,
+  BaseEnt,
 } from "../../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../../core/viewer";
 import {
@@ -155,17 +156,9 @@ export const UserBalanceWithCheckSchema = getBuilderSchemaFromFields(
   },
 );
 
-export class Account implements Ent {
-  id: ID;
+export class Account extends BaseEnt {
   accountID: string = "";
   nodeType = "Account";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
 export const AccountSchema = getBuilderSchemaFromFields({}, Account);
@@ -187,16 +180,8 @@ export const GroupSchema = getBuilderSchemaFromFields(
   Group,
 );
 
-export class GroupMembership implements Ent {
-  id: ID;
+export class GroupMembership extends BaseEnt {
   nodeType = "GroupMembership";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
 export const GroupMembershipSchema = getBuilderSchemaFromFields(
@@ -208,16 +193,8 @@ export const GroupMembershipSchema = getBuilderSchemaFromFields(
   GroupMembership,
 );
 
-export class Changelog implements Ent {
-  id: ID;
+export class Changelog extends BaseEnt {
   nodeType = "Changelog";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
 export const ChangelogSchema = getBuilderSchemaFromFields(
@@ -499,16 +476,8 @@ export async function verifyChangelogFromMeberships(
   );
 }
 
-export class GroupMemberOf implements Ent {
-  id: ID;
+export class GroupMemberOf extends BaseEnt {
   nodeType = "GroupMemberOf";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
 export const GroupMemberOfSchema = getBuilderSchemaFromFields(

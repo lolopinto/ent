@@ -77,7 +77,7 @@ import {
 } from "../../util/convert_user_fields";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface UserDBData {
+interface UserData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -113,7 +113,7 @@ export class UserBase
   extends FeedbackMixin(class {})
   implements Ent<ExampleViewerAlias>, IFeedback
 {
-  protected readonly data: UserDBData;
+  protected readonly data: UserData;
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -170,8 +170,10 @@ export class UserBase
     this.data = data;
   }
 
+  __setRawDBData<UserData>(data: UserData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): UserDBData {
+  ___getRawDBData(): UserData {
     return this.data;
   }
 
@@ -323,7 +325,7 @@ export class UserBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<UserDBData[]> {
+  ): Promise<UserData[]> {
     return (await loadCustomData(
       {
         ...UserBase.loaderOptions.apply(this),
@@ -331,7 +333,7 @@ export class UserBase
       },
       query,
       context,
-    )) as UserDBData[];
+    )) as UserData[];
   }
 
   static async loadCustomCount<T extends UserBase>(
@@ -358,12 +360,12 @@ export class UserBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<UserDBData | null> {
+  ): Promise<UserData | null> {
     const row = await userLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as UserDBData;
+    return row as UserData;
   }
 
   static async loadRawDataX<T extends UserBase>(
@@ -373,12 +375,12 @@ export class UserBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<UserDBData> {
+  ): Promise<UserData> {
     const row = await userLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as UserDBData;
+    return row as UserData;
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
@@ -430,14 +432,14 @@ export class UserBase
     ) => T,
     emailAddress: string,
     context?: Context,
-  ): Promise<UserDBData | null> {
+  ): Promise<UserData | null> {
     const row = await userEmailAddressLoader
       .createLoader(context)
       .load(emailAddress);
     if (!row) {
       return null;
     }
-    return row as UserDBData;
+    return row as UserData;
   }
 
   static async loadFromPhoneNumber<T extends UserBase>(
@@ -489,14 +491,14 @@ export class UserBase
     ) => T,
     phoneNumber: string,
     context?: Context,
-  ): Promise<UserDBData | null> {
+  ): Promise<UserData | null> {
     const row = await userPhoneNumberLoader
       .createLoader(context)
       .load(phoneNumber);
     if (!row) {
       return null;
     }
-    return row as UserDBData;
+    return row as UserData;
   }
 
   static loaderOptions<T extends UserBase>(

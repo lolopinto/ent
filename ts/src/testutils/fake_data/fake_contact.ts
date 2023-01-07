@@ -45,6 +45,8 @@ export class FakeContact implements Ent {
     this.userID = data.user_id;
   }
 
+  __setRawDBData(data: Data) {}
+
   static getFields(): string[] {
     return [
       "id",

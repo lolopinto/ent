@@ -30,7 +30,7 @@ import { NodeType } from "src/ent/generated/types";
 import { Account, Tag, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag_schema";
 
-interface TagDBData {
+interface TagData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -42,7 +42,7 @@ interface TagDBData {
 }
 
 export class TagBase implements Ent<Viewer> {
-  protected readonly data: TagDBData;
+  protected readonly data: TagData;
   readonly nodeType = NodeType.Tag;
   readonly id: ID;
   readonly createdAt: Date;
@@ -66,8 +66,10 @@ export class TagBase implements Ent<Viewer> {
     this.data = data;
   }
 
+  __setRawDBData<TagData>(data: TagData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): TagDBData {
+  ___getRawDBData(): TagData {
     return this.data;
   }
 
@@ -176,7 +178,7 @@ export class TagBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<TagDBData[]> {
+  ): Promise<TagData[]> {
     return (await loadCustomData(
       {
         ...TagBase.loaderOptions.apply(this),
@@ -184,7 +186,7 @@ export class TagBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as TagDBData[];
+    )) as TagData[];
   }
 
   static async loadCustomCount<T extends TagBase>(
@@ -211,12 +213,12 @@ export class TagBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TagDBData | null> {
+  ): Promise<TagData | null> {
     const row = await tagLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as TagDBData;
+    return row as TagData;
   }
 
   static async loadRawDataX<T extends TagBase>(
@@ -226,12 +228,12 @@ export class TagBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TagDBData> {
+  ): Promise<TagData> {
     const row = await tagLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as TagDBData;
+    return row as TagData;
   }
 
   static loaderOptions<T extends TagBase>(

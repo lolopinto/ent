@@ -30,7 +30,7 @@ import {
 import { Event, Guest } from "src/ent/internal";
 import schema from "src/schema/guest_data_schema";
 
-interface GuestDataDBData {
+interface GuestDataData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -41,7 +41,7 @@ interface GuestDataDBData {
 }
 
 export class GuestDataBase implements Ent<Viewer> {
-  protected readonly data: GuestDataDBData;
+  protected readonly data: GuestDataData;
   readonly nodeType = NodeType.GuestData;
   readonly id: ID;
   readonly createdAt: Date;
@@ -63,8 +63,10 @@ export class GuestDataBase implements Ent<Viewer> {
     this.data = data;
   }
 
+  __setRawDBData<GuestDataData>(data: GuestDataData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): GuestDataDBData {
+  ___getRawDBData(): GuestDataData {
     return this.data;
   }
 
@@ -142,7 +144,7 @@ export class GuestDataBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<GuestDataDBData[]> {
+  ): Promise<GuestDataData[]> {
     return (await loadCustomData(
       {
         ...GuestDataBase.loaderOptions.apply(this),
@@ -150,7 +152,7 @@ export class GuestDataBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as GuestDataDBData[];
+    )) as GuestDataData[];
   }
 
   static async loadCustomCount<T extends GuestDataBase>(
@@ -177,12 +179,12 @@ export class GuestDataBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestDataDBData | null> {
+  ): Promise<GuestDataData | null> {
     const row = await guestDataLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as GuestDataDBData;
+    return row as GuestDataData;
   }
 
   static async loadRawDataX<T extends GuestDataBase>(
@@ -192,12 +194,12 @@ export class GuestDataBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestDataDBData> {
+  ): Promise<GuestDataData> {
     const row = await guestDataLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as GuestDataDBData;
+    return row as GuestDataData;
   }
 
   static loaderOptions<T extends GuestDataBase>(

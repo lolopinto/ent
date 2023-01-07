@@ -33,7 +33,7 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/guest_schema";
 
-interface GuestDBData {
+interface GuestData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -49,7 +49,7 @@ export class GuestBase
   extends WithAddressMixin(class {})
   implements Ent<Viewer>, IWithAddress
 {
-  protected readonly data: GuestDBData;
+  protected readonly data: GuestData;
   readonly nodeType = NodeType.Guest;
   readonly id: ID;
   readonly createdAt: Date;
@@ -75,8 +75,10 @@ export class GuestBase
     this.data = data;
   }
 
+  __setRawDBData<GuestData>(data: GuestData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): GuestDBData {
+  ___getRawDBData(): GuestData {
     return this.data;
   }
 
@@ -154,7 +156,7 @@ export class GuestBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<GuestDBData[]> {
+  ): Promise<GuestData[]> {
     return (await loadCustomData(
       {
         ...GuestBase.loaderOptions.apply(this),
@@ -162,7 +164,7 @@ export class GuestBase
       },
       query,
       context,
-    )) as GuestDBData[];
+    )) as GuestData[];
   }
 
   static async loadCustomCount<T extends GuestBase>(
@@ -189,12 +191,12 @@ export class GuestBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestDBData | null> {
+  ): Promise<GuestData | null> {
     const row = await guestLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as GuestDBData;
+    return row as GuestData;
   }
 
   static async loadRawDataX<T extends GuestBase>(
@@ -204,12 +206,12 @@ export class GuestBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestDBData> {
+  ): Promise<GuestData> {
     const row = await guestLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as GuestDBData;
+    return row as GuestData;
   }
 
   static loaderOptions<T extends GuestBase>(

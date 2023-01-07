@@ -45,6 +45,8 @@ export class FakeTag implements Ent {
     this.ownerID = data.owner_id;
   }
 
+  __setRawDBData(data: Data) {}
+
   static getFields(): string[] {
     return [
       "id",

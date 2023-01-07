@@ -607,6 +607,11 @@ func (f *Field) TsBuilderType(cfg codegenapi.Config) string {
 	return fmt.Sprintf("%s | Builder<%s, %s>", typ, f.transformBuilderEnt(typeName, cfg), cfg.GetTemplatizedViewer().GetImport())
 }
 
+// return type with no shenanigans
+func (f *Field) TsActualType() string {
+	return f.tsRawUnderlyingType()
+}
+
 // this assumes it's ok to do relative. up to caller to confirm that it is before calling
 func (f *Field) TSBuilderWithRelativeType(cfg codegenapi.Config) string {
 	typ := f.TsBuilderType(cfg)
