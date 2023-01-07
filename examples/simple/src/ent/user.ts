@@ -33,7 +33,7 @@ class UserToCommentsAuthoredQuery extends CustomEdgeQueryBase<
     return User.load(this.viewer, id);
   }
 }
-// we're only writing this once except with --force and packageName provided
+
 export class User extends UserBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
@@ -76,7 +76,15 @@ export class User extends UserBase {
 
   private async queryContactInfos() {
     const contacts = await this.queryContacts().queryEnts();
-    return Promise.all(contacts.map((contact) => contact.queryPlusEmails()));
+    return Promise.all(
+      contacts.map(async (contact) => {
+        const contactInfo = await contact.queryPlusEmails();
+        return {
+          contactInfo,
+          contact,
+        };
+      }),
+    );
   }
 
   @gqlField({
@@ -95,15 +103,15 @@ export class User extends UserBase {
       this.queryContactInfos(),
     ]);
 
-    const ret = contactInfos.find((contactInfo) => {
-      if (selfContactEdge?.id2 === contactInfo.contact.id) {
-        return null;
+    for (const info of contactInfos) {
+      if (info.contact.id == selfContactEdge?.id2) {
+        continue;
       }
-      if (domain === this.getDomainFromEmail(contactInfo.firstEmail)) {
-        return contactInfo;
+      if (domain === this.getDomainFromEmail(info.contactInfo.firstEmail)) {
+        return info.contact;
       }
-    });
-    return ret?.contact || null;
+    }
+    return null;
   }
 
   @gqlField({ type: "[Contact]", name: "contactsSameDomain" })
@@ -114,10 +122,11 @@ export class User extends UserBase {
       return [];
     }
     const contactInfos = await this.queryContactInfos();
-    return contactInfos.filterMap((contactInfo) => {
+    return contactInfos.filterMap((info) => {
       return {
-        include: domain === this.getDomainFromEmail(contactInfo.firstEmail),
-        return: contactInfo.contact,
+        include:
+          domain === this.getDomainFromEmail(info.contactInfo.firstEmail),
+        return: info.contact,
       };
     });
   }
@@ -127,10 +136,11 @@ export class User extends UserBase {
     @gqlArg("domain", { type: GraphQLString }) domain: string,
   ): Promise<Contact[]> {
     const contactInfos = await this.queryContactInfos();
-    return contactInfos.filterMap((contactInfo) => {
+    return contactInfos.filterMap((info) => {
       return {
-        include: domain === this.getDomainFromEmail(contactInfo.firstEmail),
-        return: contactInfo.contact,
+        include:
+          domain === this.getDomainFromEmail(info.contactInfo.firstEmail),
+        return: info.contact,
       };
     });
   }
@@ -147,12 +157,12 @@ export class User extends UserBase {
       return null;
     }
     const contactInfos = await this.queryContactInfos();
-    const res = contactInfos.filterMap((contactInfo) => {
+    const res = contactInfos.filterMap((info) => {
       return {
         include:
-          this.id !== contactInfo.contact.userID &&
-          domain === this.getDomainFromEmail(contactInfo.firstEmail),
-        return: contactInfo.contact,
+          this.id !== info.contact.userID &&
+          domain === this.getDomainFromEmail(info.contactInfo.firstEmail),
+        return: info.contact,
       };
     });
 
@@ -175,10 +185,10 @@ export class User extends UserBase {
       return [];
     }
     let contactInfos = await this.queryContactInfos();
-    return contactInfos.map((contactInfo) => {
-      let contactDomain = this.getDomainFromEmail(contactInfo.firstEmail);
+    return contactInfos.map((info) => {
+      let contactDomain = this.getDomainFromEmail(info.contactInfo.firstEmail);
       if (contactDomain === domain) {
-        return contactInfo.contact;
+        return info.contact;
       }
       return null;
     });
@@ -198,10 +208,10 @@ export class User extends UserBase {
       return null;
     }
     const contactInfos = await this.queryContactInfos();
-    return contactInfos.map((contactInfo) => {
-      let contactDomain = this.getDomainFromEmail(contactInfo.firstEmail);
+    return contactInfos.map((info) => {
+      let contactDomain = this.getDomainFromEmail(info.contactInfo.firstEmail);
       if (contactDomain === domain) {
-        return contactInfo.contact;
+        return info.contact;
       }
       return null;
     });

@@ -149,7 +149,7 @@
         }
       ]
     },
-        {
+    {
       "name": "GQLViewer",
       "graphQLName": "Viewer",
       "fields":[
@@ -166,6 +166,23 @@
           "nullable": true
         }
       ]
+    },
+    {
+      "name": "EmailInfo",
+      "graphQLName": "EmailInfo",
+      "fields": [
+        {
+          "name": "emails",
+          "fieldType": "FIELD",
+          "resultType": "ContactEmail",
+          "list": true
+        },
+        {
+          "name": "firstEmail",
+          "fieldType": "FIELD",
+          "resultType": "String"
+        }
+      ]
     }
   ],
   "fields":{
@@ -174,6 +191,12 @@
         "name": "fullName",
         "resultType": "String",
         "fieldType": "ACCESSOR"
+      },
+      {
+        "name": "plusEmails",
+        "functionName": "queryPlusEmails",
+        "resultType": "EmailInfo",
+        "fieldType": "ASYNC_FUNCTION"
       }
     ],
     "User": [

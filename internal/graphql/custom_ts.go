@@ -503,9 +503,12 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		return nil, err
 	}
 
-	for _, result := range field.Results {
-		if err := addToArgImport(result.Type); err != nil {
-			return nil, err
+	// only add return type if we have a type hint
+	if builder.getReturnTypeHint() != "" {
+		for _, result := range field.Results {
+			if err := addToArgImport(result.Type); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -778,6 +781,27 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 				}
 			}
 			//			obj.Imports = append(obj.Imports, gqlField.FieldImports...)
+
+			// check if we have a new custom field to add
+			// because we're currently adding to current file, it can get lost
+			for _, result := range field.Results {
+
+				customObj := cd.Objects[result.Type]
+				if customObj == nil {
+					continue
+				}
+
+				if nodeInfo == nil {
+					return fmt.Errorf("custom objects not referenced in top level queries and mutations can only be referenced in ent nodes")
+				}
+
+				objType, err := buildObjectType(processor, cd, s, result, customObj, nodeInfo.FilePath, "GraphQLObjectType")
+				if err != nil {
+					return err
+				}
+
+				nodeInfo.ObjData.GQLNodes = append(nodeInfo.ObjData.GQLNodes, objType)
+			}
 		}
 	}
 	return nil

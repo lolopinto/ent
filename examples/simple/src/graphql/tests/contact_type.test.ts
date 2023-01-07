@@ -14,6 +14,8 @@ import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import { ContactEmailLabel } from "src/ent/generated/types";
+import EditContactAction from "src/ent/contact/actions/edit_contact_action";
+import CreateContactEmailAction from "src/ent/contact_email/actions/create_contact_email_action";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -164,5 +166,30 @@ test("likes", async () => {
         },
       ],
     ],
+  );
+});
+
+test("custom object added in contact", async () => {
+  let contact = await createContact();
+  let user = await contact.loadUserX();
+  let emails = await contact.loadEmails();
+  expect(emails.length).toBe(1);
+  const email1 = emails[0];
+  const email2 = await CreateContactEmailAction.create(contact.viewer, {
+    emailAddress: randomEmail(),
+    label: ContactEmailLabel.Home,
+    contactID: contact.id,
+  }).saveX();
+
+  await EditContactAction.create(contact.viewer, contact, {
+    emailIds: [email1.id, email2.id],
+  }).saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new ExampleViewer(user.id), contact),
+    ["id", encodeGQLID(contact)],
+    ["plusEmails.emails[0].id", encodeGQLID(email1)],
+    ["plusEmails.emails[1].id", encodeGQLID(email2)],
+    ["plusEmails.firstEmail", email1.emailAddress],
   );
 });

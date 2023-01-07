@@ -240,11 +240,26 @@ async function requireFiles(files: string[]) {
   });
 }
 
+// filePath is path-to-src
 async function parseImports(filePath: string) {
-  // only do graphql files...
-  return parseCustomImports(path.join(filePath, "graphql"), {
-    ignore: ["**/generated/**", "**/tests/**"],
-  });
+  return parseCustomImports(filePath, [
+    {
+      // graphql files
+      root: path.join(filePath, "graphql"),
+      opts: {
+        ignore: ["**/generated/**", "**/tests/**"],
+      },
+    },
+    {
+      // top level ent files
+      // src/ent/user.ts, src/ent/contact.ts etc...
+      root: path.join(filePath, "ent"),
+      opts: {
+        justCurrentDir: true,
+        ignore: ["**/generated/**", "**/tests/**"],
+      },
+    },
+  ]);
 }
 
 function findGraphQLPath(filePath: string): string | undefined {
@@ -261,6 +276,10 @@ function findGraphQLPath(filePath: string): string | undefined {
   return undefined;
 }
 
+// test as follows:
+// there should be an easier way to do this...
+// also, there should be a way to get the list of objects here that's not manual
+//echo "User\nContact\nContactEmail\nComment" | ts-node-script --log-error --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/custom_graphql.ts --path ~/code/ent/examples/simple/src/
 async function main() {
   // known custom types that are not required
   // if not in the schema, will be ignored
@@ -387,6 +406,10 @@ async function main() {
   };
   buildClasses(mutations);
   buildClasses(queries);
+  // call for every field in a node
+  for (const k in fields) {
+    buildClasses(fields[k]);
+  }
 
   console.log(
     JSON.stringify({
