@@ -251,12 +251,13 @@ async function parseImports(filePath: string) {
       },
     },
     {
-      // top level ent files
-      // src/ent/user.ts, src/ent/contact.ts etc...
+      // can't just use top level ent files but have to check for all (non-generated) files
+      // in src/ent/* because custom edges (or other things) could have @gqlField etc
+      // and then have to look for these imports etc
       root: path.join(filePath, "ent"),
       opts: {
-        justCurrentDir: true,
-        ignore: ["**/generated/**", "**/tests/**"],
+        // not in action files since we can't customize payloads (yet?)
+        ignore: ["**/generated/**", "**/tests/**", "**/actions/**"],
       },
     },
   ]);
