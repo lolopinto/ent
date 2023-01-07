@@ -20,6 +20,7 @@ type expected struct {
 	tsBuilderFieldName string
 	tsPublicAPIName    string
 	tsType             string
+	tsActualType       string
 	tsFieldType        string
 	tsBuilderType      string
 	// undefined added in builder.tmpl
@@ -57,6 +58,7 @@ func TestNonNullableField(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string",
+		tsActualType:       "string",
 		tsFieldType:        "string",
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
@@ -93,6 +95,7 @@ func TestNullableField(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
+		tsActualType:       "string | null",
 		tsFieldType:        "string | null",
 		tsBuilderType:      "string | null",
 		tsBuilderUnionType: "string | null",
@@ -107,6 +110,121 @@ func TestNullableField(t *testing.T) {
 		},
 		fieldTypeType:   &enttype.NullableStringType{},
 		tsFieldTypeType: &enttype.NullableStringType{},
+	})
+}
+
+func TestNonNullableIDField(t *testing.T) {
+	cfg := &codegenapi.DummyConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name: "name",
+		Type: &input.FieldType{
+			DBType: input.UUID,
+		},
+		ForeignKey: &input.ForeignKey{
+			Schema: "User",
+			Column: "ID",
+		},
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            false,
+		asyncAccessor:      false,
+		tsFieldName:        "name",
+		tsBuilderFieldName: "name",
+		tsPublicAPIName:    "name",
+		tsType:             "ID",
+		tsActualType:       "ID",
+		tsFieldType:        "ID",
+		tsBuilderType:      "ID | Builder<User, Viewer>",
+		tsBuilderUnionType: "ID | Builder<User, Viewer>",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLID"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLID"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLID"),
+		},
+		fieldTypeType:   &enttype.IDType{},
+		tsFieldTypeType: &enttype.IDType{},
+	})
+}
+
+func TestNonNullableIDFieldNoType(t *testing.T) {
+	cfg := &codegenapi.DummyConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name: "name",
+		Type: &input.FieldType{
+			DBType: input.UUID,
+		},
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            false,
+		asyncAccessor:      false,
+		tsFieldName:        "name",
+		tsBuilderFieldName: "name",
+		tsPublicAPIName:    "name",
+		tsType:             "ID",
+		tsActualType:       "ID",
+		tsFieldType:        "ID",
+		tsBuilderType:      "ID",
+		tsBuilderUnionType: "ID",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLID"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLID"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLID"),
+		},
+		fieldTypeType:   &enttype.IDType{},
+		tsFieldTypeType: &enttype.IDType{},
+	})
+}
+
+func TestNullableIDField(t *testing.T) {
+	cfg := &codegenapi.DummyConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name: "name",
+		Type: &input.FieldType{
+			DBType: input.UUID,
+		},
+		Nullable: true,
+		ForeignKey: &input.ForeignKey{
+			Schema: "User",
+			Column: "ID",
+		},
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            false,
+		asyncAccessor:      false,
+		tsFieldName:        "name",
+		tsBuilderFieldName: "name",
+		tsPublicAPIName:    "name",
+		tsType:             "ID | null",
+		tsActualType:       "ID | null",
+		tsFieldType:        "ID | null",
+		tsBuilderType:      "ID | null | Builder<User, Viewer>",
+		tsBuilderUnionType: "ID | null | Builder<User, Viewer>",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLID"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLID"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLID"),
+		},
+		fieldTypeType:   &enttype.NullableIDType{},
+		tsFieldTypeType: &enttype.NullableIDType{},
 	})
 }
 
@@ -126,6 +244,7 @@ func TestOptionalFieldInAction(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string",
+		tsActualType:       "string",
 		tsFieldType:        "string",
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
@@ -162,6 +281,7 @@ func TestRequiredFieldInAction(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
+		tsActualType:       "string | null",
 		tsFieldType:        "string | null",
 		tsBuilderType:      "string | null",
 		tsBuilderUnionType: "string | null",
@@ -200,6 +320,7 @@ func TestNonNullableListField(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string[]",
+		tsActualType:       "string[]",
 		tsFieldType:        "string[]",
 		tsBuilderType:      "string[]",
 		tsBuilderUnionType: "string[]",
@@ -262,6 +383,7 @@ func TestNonNullableFieldOnDemand(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
+		tsActualType:       "string",
 		tsFieldType:        "string",
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string | null",
@@ -297,6 +419,7 @@ func TestNonNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string",
+		tsActualType:       "string",
 		tsFieldType:        "string",
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
@@ -334,6 +457,7 @@ func TestNullableFieldOnDemand(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
+		tsActualType:       "string | null",
 		tsFieldType:        "string | null",
 		tsBuilderType:      "string | null",
 		tsBuilderUnionType: "string | null",
@@ -368,6 +492,7 @@ func TestNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
+		tsActualType:       "string | null",
 		tsFieldType:        "string | null",
 		tsBuilderType:      "string | null",
 		tsBuilderUnionType: "string | null",
@@ -402,6 +527,7 @@ func TestNonNullableFieldOnEntLoad(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
+		tsActualType:       "string",
 		tsFieldType:        "string | null",
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string | null",
@@ -437,6 +563,7 @@ func TestNonNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string",
+		tsActualType:       "string",
 		tsFieldType:        "string",
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
@@ -474,6 +601,7 @@ func TestNullableFieldOnEntLoad(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
+		tsActualType:       "string | null",
 		tsFieldType:        "string | null",
 		tsBuilderType:      "string | null",
 		tsBuilderUnionType: "string | null",
@@ -509,6 +637,7 @@ func TestNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
 		tsFieldType:        "string | null",
+		tsActualType:       "string | null",
 		tsBuilderType:      "string | null",
 		tsBuilderUnionType: "string | null",
 		graphqlImports: []*tsimport.ImportPath{
@@ -562,6 +691,7 @@ func TestNullableJSONBAsListFieldOnDemand(t *testing.T) {
 		tsBuilderFieldName: "foo",
 		tsPublicAPIName:    "foo",
 		tsType:             "Foo[] | null",
+		tsActualType:       "Foo[] | null",
 		tsFieldType:        "Foo[] | null",
 		tsBuilderType:      "Foo[] | null",
 		tsBuilderUnionType: "Foo[] | null",
@@ -652,6 +782,7 @@ func TestNonNullableFieldDelayedFetch(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
+		tsActualType:       "string",
 		tsFieldType:        "string | null | undefined",
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string | null",
@@ -688,6 +819,7 @@ func TestNullableFieldDelayedFetch(t *testing.T) {
 		tsBuilderFieldName: "name",
 		tsPublicAPIName:    "name",
 		tsType:             "string | null",
+		tsActualType:       "string | null",
 		tsFieldType:        "string | null | undefined",
 		tsBuilderType:      "string | null",
 		tsBuilderUnionType: "string | null",
@@ -725,6 +857,7 @@ func TestNonNullableListFieldDelayedFetch(t *testing.T) {
 		tsBuilderFieldName: "list",
 		tsPublicAPIName:    "list",
 		tsType:             "string[] | null",
+		tsActualType:       "string[]",
 		tsFieldType:        "string[] | null | undefined",
 		tsBuilderType:      "string[]",
 		tsBuilderUnionType: "string[] | null",
@@ -774,6 +907,7 @@ func TestNullableListFieldDelayedFetch(t *testing.T) {
 		tsBuilderFieldName: "list",
 		tsPublicAPIName:    "list",
 		tsType:             "string[] | null",
+		tsActualType:       "string[] | null",
 		tsFieldType:        "string[] | null | undefined",
 		tsBuilderType:      "string[] | null",
 		tsBuilderUnionType: "string[] | null",
@@ -808,6 +942,7 @@ func doTestField(t *testing.T, cfg codegenapi.Config, f *Field, exp *expected) {
 	assert.Equal(t, exp.tsBuilderFieldName, f.TsBuilderFieldName())
 	assert.Equal(t, exp.tsPublicAPIName, f.TSPublicAPIName())
 	assert.Equal(t, exp.tsType, f.TsType())
+	assert.Equal(t, exp.tsActualType, f.TsActualType())
 	assert.Equal(t, exp.tsFieldType, f.TsFieldType(cfg))
 	assert.Equal(t, exp.tsBuilderType, f.TsBuilderType(cfg))
 	assert.Equal(t, exp.tsBuilderUnionType, f.TsBuilderUnionType(cfg))

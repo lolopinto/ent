@@ -608,7 +608,6 @@ func (f *Field) TsBuilderType(cfg codegenapi.Config) string {
 }
 
 // return type with no shenanigans
-// TODO test in fields_type_test.go
 func (f *Field) TsActualType() string {
 	return f.tsRawUnderlyingType()
 }
