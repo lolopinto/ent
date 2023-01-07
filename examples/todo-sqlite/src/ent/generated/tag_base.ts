@@ -30,10 +30,6 @@ import { NodeType } from "src/ent/generated/types";
 import { Account, Tag, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag_schema";
 
-// there's 2 data types here
-// there's raw db data and there's ent data
-// they are different if we have on ent load field privacy and an ent with this...
-
 interface TagData {
   id: ID;
   created_at: Date;

@@ -26,7 +26,7 @@ import { DayOfWeekMixin, IDayOfWeek } from "../internal";
 import schema from "../../schema/hours_of_operation_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface HoursOfOperationDBData {
+interface HoursOfOperationData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -40,7 +40,7 @@ export class HoursOfOperationBase
   extends DayOfWeekMixin(class {})
   implements Ent<ExampleViewerAlias>, IDayOfWeek
 {
-  protected readonly data: HoursOfOperationDBData;
+  protected readonly data: HoursOfOperationData;
   readonly nodeType = NodeType.HoursOfOperation;
   readonly id: ID;
   readonly createdAt: Date;
@@ -60,8 +60,10 @@ export class HoursOfOperationBase
     this.data = data;
   }
 
+  __setRawDBData<HoursOfOperationData>(data: HoursOfOperationData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): HoursOfOperationDBData {
+  ___getRawDBData(): HoursOfOperationData {
     return this.data;
   }
 
@@ -139,7 +141,7 @@ export class HoursOfOperationBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<HoursOfOperationDBData[]> {
+  ): Promise<HoursOfOperationData[]> {
     return (await loadCustomData(
       {
         ...HoursOfOperationBase.loaderOptions.apply(this),
@@ -147,7 +149,7 @@ export class HoursOfOperationBase
       },
       query,
       context,
-    )) as HoursOfOperationDBData[];
+    )) as HoursOfOperationData[];
   }
 
   static async loadCustomCount<T extends HoursOfOperationBase>(
@@ -174,12 +176,12 @@ export class HoursOfOperationBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HoursOfOperationDBData | null> {
+  ): Promise<HoursOfOperationData | null> {
     const row = await hoursOfOperationLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as HoursOfOperationDBData;
+    return row as HoursOfOperationData;
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(
@@ -189,12 +191,12 @@ export class HoursOfOperationBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HoursOfOperationDBData> {
+  ): Promise<HoursOfOperationData> {
     const row = await hoursOfOperationLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as HoursOfOperationDBData;
+    return row as HoursOfOperationData;
   }
 
   static loaderOptions<T extends HoursOfOperationBase>(

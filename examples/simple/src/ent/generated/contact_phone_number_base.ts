@@ -34,7 +34,7 @@ import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface ContactPhoneNumberDBData {
+interface ContactPhoneNumberData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -48,7 +48,7 @@ export class ContactPhoneNumberBase
   extends ContactInfoMixin(class {})
   implements Ent<ExampleViewerAlias>, IContactInfo
 {
-  protected readonly data: ContactPhoneNumberDBData;
+  protected readonly data: ContactPhoneNumberData;
   readonly nodeType = NodeType.ContactPhoneNumber;
   readonly id: ID;
   readonly createdAt: Date;
@@ -70,8 +70,10 @@ export class ContactPhoneNumberBase
     this.data = data;
   }
 
+  __setRawDBData<ContactPhoneNumberData>(data: ContactPhoneNumberData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): ContactPhoneNumberDBData {
+  ___getRawDBData(): ContactPhoneNumberData {
     return this.data;
   }
 
@@ -149,7 +151,7 @@ export class ContactPhoneNumberBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<ContactPhoneNumberDBData[]> {
+  ): Promise<ContactPhoneNumberData[]> {
     return (await loadCustomData(
       {
         ...ContactPhoneNumberBase.loaderOptions.apply(this),
@@ -157,7 +159,7 @@ export class ContactPhoneNumberBase
       },
       query,
       context,
-    )) as ContactPhoneNumberDBData[];
+    )) as ContactPhoneNumberData[];
   }
 
   static async loadCustomCount<T extends ContactPhoneNumberBase>(
@@ -184,12 +186,12 @@ export class ContactPhoneNumberBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactPhoneNumberDBData | null> {
+  ): Promise<ContactPhoneNumberData | null> {
     const row = await contactPhoneNumberLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as ContactPhoneNumberDBData;
+    return row as ContactPhoneNumberData;
   }
 
   static async loadRawDataX<T extends ContactPhoneNumberBase>(
@@ -199,12 +201,12 @@ export class ContactPhoneNumberBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactPhoneNumberDBData> {
+  ): Promise<ContactPhoneNumberData> {
     const row = await contactPhoneNumberLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as ContactPhoneNumberDBData;
+    return row as ContactPhoneNumberData;
   }
 
   static loaderOptions<T extends ContactPhoneNumberBase>(

@@ -38,10 +38,6 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/workspace_schema";
 
-// there's 2 data types here
-// there's raw db data and there's ent data
-// they are different if we have on ent load field privacy and an ent with this...
-
 interface WorkspaceData {
   id: ID;
   created_at: Date;

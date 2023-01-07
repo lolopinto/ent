@@ -26,7 +26,7 @@ import { DayOfWeekMixin, IDayOfWeek } from "../internal";
 import schema from "../../schema/holiday_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface HolidayDBData {
+interface HolidayData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -40,7 +40,7 @@ export class HolidayBase
   extends DayOfWeekMixin(class {})
   implements Ent<ExampleViewerAlias>, IDayOfWeek
 {
-  protected readonly data: HolidayDBData;
+  protected readonly data: HolidayData;
   readonly nodeType = NodeType.Holiday;
   readonly id: ID;
   readonly createdAt: Date;
@@ -60,8 +60,10 @@ export class HolidayBase
     this.data = data;
   }
 
+  __setRawDBData<HolidayData>(data: HolidayData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): HolidayDBData {
+  ___getRawDBData(): HolidayData {
     return this.data;
   }
 
@@ -139,7 +141,7 @@ export class HolidayBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<HolidayDBData[]> {
+  ): Promise<HolidayData[]> {
     return (await loadCustomData(
       {
         ...HolidayBase.loaderOptions.apply(this),
@@ -147,7 +149,7 @@ export class HolidayBase
       },
       query,
       context,
-    )) as HolidayDBData[];
+    )) as HolidayData[];
   }
 
   static async loadCustomCount<T extends HolidayBase>(
@@ -174,12 +176,12 @@ export class HolidayBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HolidayDBData | null> {
+  ): Promise<HolidayData | null> {
     const row = await holidayLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as HolidayDBData;
+    return row as HolidayData;
   }
 
   static async loadRawDataX<T extends HolidayBase>(
@@ -189,12 +191,12 @@ export class HolidayBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HolidayDBData> {
+  ): Promise<HolidayData> {
     const row = await holidayLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as HolidayDBData;
+    return row as HolidayData;
   }
 
   static loaderOptions<T extends HolidayBase>(
