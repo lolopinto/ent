@@ -114,7 +114,7 @@ export interface Ent<TViewer extends Viewer = Viewer> {
   nodeType: string;
   // used to set raw data that's then used by ent internals
   // shouldn't be used...
-  __setRawDBData(data: Data);
+  __setRawDBData<T extends Data = Data>(data: T);
 }
 
 export declare type Data = {

@@ -35,7 +35,11 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/todo_schema";
 
-interface TodoDBData {
+// there's 2 data types here
+// there's raw db data and there's ent data
+// they are different if we have on ent load field privacy and an ent with this...
+
+interface TodoData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -51,7 +55,7 @@ interface TodoDBData {
 }
 
 export class TodoBase implements Ent<Viewer> {
-  protected readonly data: TodoDBData;
+  protected readonly data: TodoData;
   readonly nodeType = NodeType.Todo;
   readonly id: ID;
   readonly createdAt: Date;
@@ -83,8 +87,10 @@ export class TodoBase implements Ent<Viewer> {
     this.data = data;
   }
 
+  __setRawDBData<TodoData>(data: TodoData) {}
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): TodoDBData {
+  ___getRawDBData(): TodoData {
     return this.data;
   }
 
@@ -197,7 +203,7 @@ export class TodoBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<TodoDBData[]> {
+  ): Promise<TodoData[]> {
     return (await loadCustomData(
       {
         ...TodoBase.loaderOptions.apply(this),
@@ -205,7 +211,7 @@ export class TodoBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as TodoDBData[];
+    )) as TodoData[];
   }
 
   static async loadCustomCount<T extends TodoBase>(
@@ -232,12 +238,12 @@ export class TodoBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TodoDBData | null> {
+  ): Promise<TodoData | null> {
     const row = await todoLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as TodoDBData;
+    return row as TodoData;
   }
 
   static async loadRawDataX<T extends TodoBase>(
@@ -247,12 +253,12 @@ export class TodoBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TodoDBData> {
+  ): Promise<TodoData> {
     const row = await todoLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as TodoDBData;
+    return row as TodoData;
   }
 
   static loaderOptions<T extends TodoBase>(

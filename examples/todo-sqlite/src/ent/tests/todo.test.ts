@@ -1,7 +1,7 @@
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import RenameTodoStatusAction from "src/ent/todo/actions/rename_todo_status_action";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
-import { Todo } from "src/ent/";
+import { Account, Todo } from "src/ent/";
 import { AccountTodoStatus, EdgeType, NodeType } from "src/ent/generated/types";
 import {
   createAccount,
@@ -10,7 +10,7 @@ import {
   createTodoSelfInWorkspace,
   createWorkspace,
 } from "../testutils/util";
-import { query } from "@snowtop/ent";
+import { IDViewer, query } from "@snowtop/ent";
 import { advanceTo } from "jest-date-mock";
 import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
 import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
@@ -226,7 +226,10 @@ test("complete with bounty", async () => {
 
   await changeCompleted(todo, true);
 
-  const assignee = await todo.loadAssigneeX();
+  const assignee = await Account.loadX(
+    new IDViewer(todo.assigneeID),
+    todo.assigneeID,
+  );
   const creator = await todo.loadCreatorX();
   // completing successfully transfered credits
   expect(assignee.credits).toBe(1100);
@@ -252,9 +255,15 @@ test("complete with bounty, multiple in transaction", async () => {
   ]);
   await tx.run();
 
-  const assignee1 = await todo.loadAssigneeX();
+  const assignee1 = await Account.loadX(
+    new IDViewer(todo.assigneeID),
+    todo.assigneeID,
+  );
+  const assignee2 = await Account.loadX(
+    new IDViewer(todo2.assigneeID),
+    todo2.assigneeID,
+  );
   const creator = await todo.loadCreatorX();
-  const assignee2 = await todo2.loadAssigneeX();
   // completing successfully transfered credits
   expect(assignee1.credits).toBe(1100);
   expect(assignee2.credits).toBe(1100);

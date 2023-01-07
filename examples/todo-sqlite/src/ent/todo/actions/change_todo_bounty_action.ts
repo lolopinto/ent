@@ -11,7 +11,7 @@ import {
   ChangeTodoBountyInput,
 } from "src/ent/generated/todo/actions/change_todo_bounty_action_base";
 import { NodeType } from "src/ent/generated/types";
-import { Todo } from "src/ent/todo";
+import { Account } from "src/ent/internal";
 
 export { ChangeTodoBountyInput };
 
@@ -26,10 +26,13 @@ export default class ChangeTodoBountyAction extends ChangeTodoBountyActionBase {
           if (!input.bounty) {
             return;
           }
-          const creator = await builder.existingEnt.loadCreatorX();
+          const creatorData = await Account.loadRawDataX(
+            builder.existingEnt.creatorID,
+            builder.viewer.context,
+          );
           const bounty = input.bounty;
 
-          if (bounty > creator.credits) {
+          if (bounty > creatorData.credits) {
             throw new Error(
               `cannot create bounty when account doesn't have enough credits for it`,
             );

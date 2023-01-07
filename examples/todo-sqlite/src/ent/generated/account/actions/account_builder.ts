@@ -441,7 +441,7 @@ export class AccountBuilder<
   }
 
   // get value of credits. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreditsValue(): number {
+  getNewCreditsValue(): number | null {
     if (this.input.credits !== undefined) {
       return this.input.credits;
     }

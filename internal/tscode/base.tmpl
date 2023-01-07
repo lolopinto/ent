@@ -35,7 +35,12 @@
 
 {{$nodeData := .}}
 
-{{$dataType := printf "%sDBData" .Node -}}
+// there's 2 data types here
+// there's raw db data and there's ent data 
+// they are different if we have on ent load field privacy and an ent with this...
+
+{{$dataType := printf "%sData" .Node -}}
+{{$rawDBDataType := $dataType -}}
 
 interface {{$dataType}} {
   {{range $field := .FieldInfo.EntFields -}}
@@ -49,6 +54,18 @@ interface {{$dataType}} {
     {{$field.GetDbColName}}: {{$field.TsType}};
   {{ end -}}
 }
+
+{{if .OnEntLoadFieldPrivacy $cfg -}}
+  {{$rawDBDataType = printf "%sDBData" .Node -}}
+  interface {{$rawDBDataType}} extends {{$dataType}} {
+    {{range $field := .FieldInfo.EntFields -}}
+      {{ if ne $field.TsType $field.TsActualType -}}
+        {{$field.GetDbColName}}: {{$field.TsActualType}};
+      {{ end -}}
+    {{ end -}}
+  }
+{{ end -}}
+
 
 {{range $field := .FieldInfo.EntFields -}}
   {{ if $field.FetchOnDemand -}}
@@ -81,6 +98,9 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 {
 
   protected readonly data: {{$dataType}};
+  {{if .OnEntLoadFieldPrivacy $cfg -}}
+    private rawDBData: {{$rawDBDataType}} | undefined;
+  {{ end -}}
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.EntFields -}}
     {{ range $field.GetTsTypeImports -}}
@@ -117,9 +137,23 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     this.data = data
   }
 
+  __setRawDBData<{{$rawDBDataType}}>(data: {{$rawDBDataType}}) {
+  {{if .OnEntLoadFieldPrivacy $cfg -}}
+    // @ts-expect-error
+    this.rawDBData = data;
+  {{end }}
+  }
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): {{$dataType}} {
+  ___getRawDBData(): {{$rawDBDataType}} {
+  {{if .OnEntLoadFieldPrivacy $cfg -}}
+    if (this.rawDBData === undefined) {
+      throw new Error(`trying to get raw db data when it was never set`);
+    }
+    return this.rawDBData;
+  {{ else -}}
     return this.data;
+  {{ end -}}
   }
   
   getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<this, {{$viewerType}}> {
@@ -260,7 +294,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     this: {{$thisType}},
     query: {{useImport "CustomQuery"}},
     context?: {{useImport "Context"}}
-  ): Promise<{{$dataType}}[]> {
+  ): Promise<{{$rawDBDataType}}[]> {
     return  await {{useImport "loadCustomData"}}(
       {
         ...{{$baseClass}}.loaderOptions.apply(this),
@@ -268,7 +302,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       },
       query,
       context,
-    ) as {{$dataType}}[];
+    ) as {{$rawDBDataType}}[];
   }
 
   static async loadCustomCount<T extends {{$baseClass}}>(
@@ -289,24 +323,24 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     this: {{$thisType}},
     id: ID,
     context?: {{useImport "Context"}},
-  ): Promise<{{$dataType}} | null> {
+  ): Promise<{{$rawDBDataType}} | null> {
     const row = await {{useImport $loaderName}}.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as {{$dataType}};
+    return row as {{$rawDBDataType}};
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
     this: {{$thisType}},
     id: ID,
     context?: {{useImport "Context"}},
-  ): Promise<{{$dataType}}> {
+  ): Promise<{{$rawDBDataType}}> {
     const row = await {{useImport $loaderName}}.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as {{$dataType}};
+    return row as {{$rawDBDataType}};
   }
 
 
@@ -356,12 +390,12 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         this: {{$thisType}},
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
         context?: {{useImport "Context"}},
-      ): Promise<{{$dataType}} | null> {
+      ): Promise<{{$rawDBDataType}} | null> {
         const row = await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName $cfg}});
         if (!row) {
           return null;
         }
-        return row as {{$dataType}};
+        return row as {{$rawDBDataType}};
       }
     {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}

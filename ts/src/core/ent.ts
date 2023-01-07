@@ -779,6 +779,9 @@ async function doFieldPrivacy<
   }
   const promises: Promise<void>[] = [];
   let somethingChanged = false;
+  const origData = {
+    ...data,
+  };
   for (const [k, policy] of options.fieldPrivacy) {
     const curr = data[k];
     if (curr === null || curr === undefined) {
@@ -799,8 +802,11 @@ async function doFieldPrivacy<
   await Promise.all(promises);
   if (somethingChanged) {
     // have to create new instance
-    return new options.ent(viewer, data);
+    const ent = new options.ent(viewer, data);
+    ent.__setRawDBData(origData);
+    return ent;
   }
+  ent.__setRawDBData(origData);
   return ent;
 }
 

@@ -164,7 +164,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
     {{ if $hasInput -}}
       {{if $inputWithRelative -}}
           let expressions = new Map<string, {{useImport "Clause"}}>();
-          const data = {{$instance}}.___getData();
+          const data = {{$instance}}.___getRawDBData();
           this.input = {
             ...input,
         {{ range $field := $inputWithRelative.FieldsWithRelative -}}

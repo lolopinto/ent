@@ -84,7 +84,7 @@ export class AccountUpdateBalanceActionBase
   ) {
     this.viewer = viewer;
     let expressions = new Map<string, Clause>();
-    const data = account.___getData();
+    const data = account.___getRawDBData();
     this.input = {
       ...input,
       credits: maybeConvertRelativeInputPlusExpressions(

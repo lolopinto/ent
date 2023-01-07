@@ -83,7 +83,7 @@ export class ChangeTodoBountyActionBase
   ) {
     this.viewer = viewer;
     let expressions = new Map<string, Clause>();
-    const data = todo.___getData();
+    const data = todo.___getRawDBData();
     this.input = {
       ...input,
       bounty: maybeConvertRelativeInputPlusExpressions(

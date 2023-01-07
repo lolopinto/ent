@@ -80,7 +80,7 @@ export const AccountType = new GraphQLObjectType({
       },
     },
     credits: {
-      type: new GraphQLNonNull(GraphQLInt),
+      type: GraphQLInt,
     },
     closed_todos_dup: {
       type: new GraphQLNonNull(AccountToClosedTodosDupConnectionType()),

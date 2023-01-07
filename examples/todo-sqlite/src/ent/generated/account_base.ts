@@ -56,7 +56,11 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/account_schema";
 
-interface AccountDBData {
+// there's 2 data types here
+// there's raw db data and there's ent data
+// they are different if we have on ent load field privacy and an ent with this...
+
+interface AccountData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -66,6 +70,11 @@ interface AccountDBData {
   account_state: AccountState | null;
   account_prefs: AccountPrefs | null;
   account_prefs_list: AccountPrefs2[] | null;
+  credits: number | null;
+}
+
+interface AccountDBData extends AccountData {
+  phone_number: string;
   credits: number;
 }
 
@@ -73,7 +82,8 @@ export class AccountBase
   extends TodoContainerMixin(class {})
   implements Ent<Viewer>, ITodoContainer
 {
-  protected readonly data: AccountDBData;
+  protected readonly data: AccountData;
+  private rawDBData: AccountDBData | undefined;
   readonly nodeType = NodeType.Account;
   readonly id: ID;
   readonly createdAt: Date;
@@ -84,7 +94,7 @@ export class AccountBase
   readonly accountState: AccountState | null;
   readonly accountPrefs: AccountPrefs | null;
   readonly accountPrefsList: AccountPrefs2[] | null;
-  readonly credits: number;
+  readonly credits: number | null;
 
   constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
@@ -107,9 +117,17 @@ export class AccountBase
     this.data = data;
   }
 
+  __setRawDBData<AccountDBData>(data: AccountDBData) {
+    // @ts-expect-error
+    this.rawDBData = data;
+  }
+
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getData(): AccountDBData {
-    return this.data;
+  ___getRawDBData(): AccountDBData {
+    if (this.rawDBData === undefined) {
+      throw new Error(`trying to get raw db data when it was never set`);
+    }
+    return this.rawDBData;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
