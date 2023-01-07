@@ -194,7 +194,8 @@
         "functionName": "getFirstContactSameDomain",
         "resultType": "Contact",
         "nullable": true,
-        "fieldType": "ASYNC_FUNCTION"
+        "fieldType": "ASYNC_FUNCTION",
+        "description": "contacts same domain..."
       },
       {
         "name": "contactsSameDomain",

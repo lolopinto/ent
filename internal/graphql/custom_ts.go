@@ -802,6 +802,7 @@ func getCustomGQLField(cd *CustomData, field CustomField, s *gqlSchema, instance
 		Name:               field.GraphQLName,
 		HasResolveFunction: false,
 		FieldImports:       imports,
+		Description:        field.Description,
 	}
 
 	var args []string

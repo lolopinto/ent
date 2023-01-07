@@ -38,6 +38,7 @@ type CustomItem struct {
 	GraphQLOnlyArg bool                   `json:"graphQLOnlyArg,omitempty"`
 	TSType         string                 `json:"tsType,omitempty"`
 	imports        []*tsimport.ImportPath `json:"-"`
+	Description    string                 `json:"description,omitempty"`
 }
 
 type CustomScalarInfo struct {
@@ -179,6 +180,7 @@ type CustomField struct {
 	Results      []CustomItem    `json:"results"`
 	FieldType    CustomFieldType `json:"fieldType"`
 	Connection   bool            `json:"-"`
+	Description  string          `json:"description,omitempty"`
 }
 
 func (cf CustomField) getArg() string {
@@ -219,6 +221,7 @@ func (cf *CustomField) UnmarshalJSON(data []byte) error {
 	cf.GraphQLName = getStringFromMap(m, "gqlName")
 	cf.FunctionName = getStringFromMap(m, "functionName")
 	cf.FieldType = CustomFieldType(getStringFromMap(m, "fieldType"))
+	cf.Description = getStringFromMap(m, "description")
 	if err := getValFromMap(m, "args", &cf.Args); err != nil {
 		return err
 	}

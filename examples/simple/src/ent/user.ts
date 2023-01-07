@@ -83,6 +83,7 @@ export class User extends UserBase {
     type: "Contact",
     nullable: true,
     name: "contactSameDomain",
+    description: "contacts same domain...",
   })
   async getFirstContactSameDomain(): Promise<Contact | null> {
     let domain = this.getDomainFromEmail(this.emailAddress);

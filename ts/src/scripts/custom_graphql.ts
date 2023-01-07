@@ -112,6 +112,7 @@ function processTopLevel(l: any[], l2: CustomQuery[]) {
       fieldType: custom.fieldType,
       args: transformArgs(custom),
       results: transformResultType(custom),
+      description: custom.description,
     });
   }
 }
@@ -131,6 +132,7 @@ function processCustomFields(
       fieldType: f.fieldType,
       args: transformArgs(f),
       results: transformResultType(f),
+      description: f.description,
     });
   }
   m.set(nodeName, results);

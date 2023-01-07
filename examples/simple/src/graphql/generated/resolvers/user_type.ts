@@ -541,6 +541,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     contactSameDomain: {
+      description: "contacts same domain...",
       type: ContactType,
       resolve: async (
         user: User,

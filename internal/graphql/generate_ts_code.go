@@ -681,7 +681,7 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		cmdName = "ts-node-script"
 	}
 
-	// append LOCAL_SCRIPT_PATH so we know
+	// append LOCAL_SCRIPT_PATH so we know. in typescript...
 	if util.EnvIsTrue("LOCAL_SCRIPT_PATH") {
 		env = append(env, "LOCAL_SCRIPT_PATH=true")
 	}
