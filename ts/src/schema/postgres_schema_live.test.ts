@@ -20,6 +20,7 @@ import {
   getBuilderSchemaFromFields,
   getBuilderSchemaTZFromFields,
   BuilderSchema,
+  BaseEnt,
 } from "../testutils/builder";
 import {
   table,
@@ -286,17 +287,9 @@ test("timestamptz", async () => {
   expect(date.getTimezoneOffset()).toBe(updatedAt.getTimezoneOffset());
 });
 
-class Hours implements Ent {
-  id: ID;
+class Hours extends BaseEnt {
   accountID: string;
   nodeType = "Hours";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
 const HoursSchema = getBuilderSchemaFromFields(
@@ -428,16 +421,9 @@ describe("timetz", () => {
   });
 });
 
-class Holiday implements Ent {
-  id: ID;
+class Holiday extends BaseEnt {
   accountID: string;
   nodeType = "Holiday";
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
 const HolidaySchema = getBuilderSchemaFromFields(
@@ -576,17 +562,9 @@ each([
     ),
   );
 
-  class Table implements Ent {
-    id: ID;
+  class Table extends BaseEnt {
     accountID: string;
     nodeType = "Table";
-    getPrivacyPolicy(): PrivacyPolicy<this> {
-      return AlwaysAllowPrivacyPolicy;
-    }
-
-    constructor(public viewer: Viewer, public data: Data) {
-      this.id = data.id;
-    }
   }
 
   const TableSchema = getBuilderSchemaFromFields(

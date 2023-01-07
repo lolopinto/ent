@@ -37,12 +37,12 @@ import { clearLogLevels, setLogLevels } from "./logger";
 import DB, { Dialect } from "./db";
 import { ObjectLoaderFactory } from "./loaders";
 import { CustomEdgeQueryBase } from "./query";
+import { BaseEnt } from "../testutils/builder";
 
 let ctx: Context;
 const ml = new MockLogs();
 
-class User implements Ent {
-  id: ID;
+class User extends BaseEnt {
   accountID: string;
   nodeType = "User";
   getPrivacyPolicy(): PrivacyPolicy<this> {
@@ -64,9 +64,6 @@ class User implements Ent {
         AlwaysDenyRule,
       ],
     };
-  }
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data["id"];
   }
 }
 

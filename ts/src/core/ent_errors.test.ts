@@ -29,9 +29,9 @@ import {
 import DB, { Dialect } from "./db";
 import { ObjectLoaderFactory } from "./loaders";
 import { TestContext } from "../testutils/context/test_context";
+import { BaseEnt } from "../testutils/builder";
 
-class User implements Ent {
-  id: ID;
+class User extends BaseEnt {
   accountID: string;
   nodeType = "User";
   getPrivacyPolicy(): PrivacyPolicy<this> {
@@ -53,9 +53,6 @@ class User implements Ent {
         AlwaysDenyRule,
       ],
     };
-  }
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data["id"];
   }
 }
 

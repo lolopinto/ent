@@ -112,6 +112,9 @@ export interface Ent<TViewer extends Viewer = Viewer> {
   viewer: TViewer;
   getPrivacyPolicy(): PrivacyPolicy<this, TViewer>;
   nodeType: string;
+  // used to set raw data that's then used by ent internals
+  // shouldn't be used...
+  __setRawDBData(data: Data);
 }
 
 export declare type Data = {

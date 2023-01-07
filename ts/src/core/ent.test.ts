@@ -4,6 +4,7 @@ import {
   BuilderSchema,
   SimpleBuilder,
   SimpleAction,
+  BaseEnt,
 } from "../testutils/builder";
 import { IDViewer, LoggedOutViewer } from "./viewer";
 import { FieldMap, StringType, UUIDType } from "../schema";
@@ -98,17 +99,13 @@ async function createEdgeRows(edges: string[], table?: string) {
 
 const loggedOutViewer = new LoggedOutViewer();
 
-class DerivedUser implements Ent {
-  id: ID;
+class DerivedUser extends BaseEnt {
   accountID: string;
   nodeType = "User";
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
       rules: [AllowIfViewerRule, AlwaysDenyRule],
     };
-  }
-  constructor(public viewer: Viewer, data: Data) {
-    this.id = data["id"];
   }
 
   static async load(v: Viewer, data: Data): Promise<DerivedUser | null> {
@@ -401,18 +398,13 @@ function commonTests() {
       expect(ent).toBeInstanceOf(User);
     });
 
-    class User2 implements Ent {
-      id: ID;
+    class User2 extends BaseEnt {
       accountID: string;
       nodeType = "User2";
       getPrivacyPolicy() {
         return {
           rules: [AllowIfViewerRule, AlwaysDenyRule],
         };
-      }
-
-      constructor(public viewer: Viewer, public data: Data) {
-        this.id = data.id;
       }
     }
 

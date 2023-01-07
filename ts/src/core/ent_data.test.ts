@@ -36,6 +36,7 @@ import {
 } from "../testutils/db/temp_db";
 import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
+import { BaseEnt } from "../testutils/builder";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -52,8 +53,7 @@ const selectOptionsContacts: SelectDataOptions = {
 const loaderFactory = new ObjectLoaderFactory(selectOptions);
 const loaderFactoryContacts = new ObjectLoaderFactory(selectOptionsContacts);
 
-class User implements Ent {
-  id: ID;
+class User extends BaseEnt {
   baz: string | null;
   foo: string | null;
   accountID: string;
@@ -64,9 +64,13 @@ class User implements Ent {
     };
   }
   constructor(public viewer: Viewer, public data: Data) {
-    this.id = data["bar"];
+    super(viewer, data);
     this.baz = data["baz"];
     this.foo = data["foo"];
+  }
+
+  getKey(): string {
+    return "bar";
   }
 
   static async load(v: Viewer, id: ID): Promise<User | null> {
@@ -87,8 +91,7 @@ class User implements Ent {
 }
 
 // Contact has field privacy
-class Contact implements Ent {
-  id: ID;
+class Contact extends BaseEnt {
   baz: string | null;
   foo: string | null;
   accountID: string;
@@ -99,9 +102,13 @@ class Contact implements Ent {
     };
   }
   constructor(public viewer: Viewer, public data: Data) {
-    this.id = data["bar"];
+    super(viewer, data);
     this.baz = data["baz"];
     this.foo = data["foo"];
+  }
+
+  getKey(): string {
+    return "bar";
   }
 
   static async load(v: Viewer, id: ID): Promise<Contact | null> {
