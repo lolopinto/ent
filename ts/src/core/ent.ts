@@ -847,27 +847,20 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   logQuery(query, options.clause.logValues());
   const pool = DB.getInstance().getPool();
 
-  console.debug("hello");
-  try {
-    const res = await pool.query(query, options.clause.values());
-    console.debug(res);
-    if (res.rowCount != 1) {
-      if (res.rowCount > 1) {
-        log("error", "got more than one row for query " + query);
-      }
-      return null;
+  const res = await pool.query(query, options.clause.values());
+  if (res.rowCount != 1) {
+    if (res.rowCount > 1) {
+      log("error", "got more than one row for query " + query);
     }
-
-    // put the row in the cache...
-    if (cache) {
-      cache.primeCache(options, res.rows[0]);
-    }
-
-    return res.rows[0];
-  } catch (err) {
-    console.debug(err);
-    throw err;
+    return null;
   }
+
+  // put the row in the cache...
+  if (cache) {
+    cache.primeCache(options, res.rows[0]);
+  }
+
+  return res.rows[0];
 }
 
 var _logQueryWithError = false;
