@@ -847,20 +847,33 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   logQuery(query, options.clause.logValues());
   const pool = DB.getInstance().getPool();
 
-  const res = await pool.query(query, options.clause.values());
-  if (res.rowCount != 1) {
-    if (res.rowCount > 1) {
-      log("error", "got more than one row for query " + query);
+  console.debug("hello");
+  try {
+    const res = await pool.query(query, options.clause.values());
+    console.debug(res);
+    if (res.rowCount != 1) {
+      if (res.rowCount > 1) {
+        log("error", "got more than one row for query " + query);
+      }
+      return null;
     }
-    return null;
-  }
 
-  // put the row in the cache...
-  if (cache) {
-    cache.primeCache(options, res.rows[0]);
-  }
+    // put the row in the cache...
+    if (cache) {
+      cache.primeCache(options, res.rows[0]);
+    }
 
-  return res.rows[0];
+    return res.rows[0];
+  } catch (err) {
+    console.debug(err);
+    throw err;
+  }
+}
+
+var _logQueryWithError = false;
+
+export function ___setLogQueryErrorWithError(val: boolean | undefined) {
+  _logQueryWithError = val || false;
 }
 
 // this always goes to the db, no cache, nothing
@@ -872,8 +885,16 @@ export async function performRawQuery(
   const pool = DB.getInstance().getPool();
 
   logQuery(query, logValues || []);
-  const res = await pool.queryAll(query, values);
-  return res.rows;
+  try {
+    const res = await pool.queryAll(query, values);
+    return res.rows;
+  } catch (e) {
+    if (_logQueryWithError) {
+      const msg = (e as Error).message;
+      throw new Error(`error \`${msg}\` running query: \`${query}\``);
+    }
+    throw e;
+  }
 }
 
 // TODO this should throw, we can't be hiding errors here
@@ -1651,10 +1672,18 @@ async function mutateRow(
 
   let cache = options.context?.cache;
   let res: QueryResult<QueryResultRow>;
-  if (isSyncQueryer(queryer)) {
-    res = queryer.execSync(query, values);
-  } else {
-    res = await queryer.exec(query, values);
+  try {
+    if (isSyncQueryer(queryer)) {
+      res = queryer.execSync(query, values);
+    } else {
+      res = await queryer.exec(query, values);
+    }
+  } catch (e) {
+    if (_logQueryWithError) {
+      const msg = (e as Error).message;
+      throw new Error(`error \`${msg}\` running query: \`${query}\``);
+    }
+    throw e;
   }
   if (cache) {
     cache.clearCache();
@@ -1672,11 +1701,19 @@ function mutateRowSync(
   logQuery(query, logValues);
 
   let cache = options.context?.cache;
-  const res = queryer.execSync(query, values);
-  if (cache) {
-    cache.clearCache();
+  try {
+    const res = queryer.execSync(query, values);
+    if (cache) {
+      cache.clearCache();
+    }
+    return res;
+  } catch (e) {
+    if (_logQueryWithError) {
+      const msg = (e as Error).message;
+      throw new Error(`error \`${msg}\` running query: \`${query}\``);
+    }
+    throw e;
   }
-  return res;
 }
 
 export function buildInsertQuery(

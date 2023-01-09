@@ -3,6 +3,7 @@ import { load } from "js-yaml";
 import DB, { Database, DBDict } from "./db";
 import * as path from "path";
 import { setLogLevels } from "./logger";
+import { ___setLogQueryErrorWithError } from "./ent";
 
 type logType = "query" | "warn" | "info" | "error" | "debug";
 
@@ -35,6 +36,9 @@ export interface Config {
 
   // config for codegen
   codegen?: CodegenConfig;
+
+  // logQueryWithError
+  logQueryWithError?: boolean;
 
   // because of swc issues, we might not be able to
   // parse custom graphql via decorators so we put this
@@ -153,6 +157,8 @@ function setConfig(cfg: Config) {
       db: cfg.db,
     });
   }
+
+  ___setLogQueryErrorWithError(cfg.logQueryWithError);
 }
 
 function isBuffer(b: Buffer | Config): b is Buffer {
