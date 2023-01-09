@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/lolopinto/ent#readme",
   "devDependencies": {
-    "@snowtop/ent": "^0.1.0-alpha95",
+    "@snowtop/ent": "^0.1.0-alpha96",
     "@types/jest": "^29.2.4",
     "jest": "^29.3.1",
     "ts-jest": "^29.0.3"
