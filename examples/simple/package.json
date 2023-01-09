@@ -57,7 +57,7 @@
     "graphql-upload": "^13.0.0",
     "jsonwebtoken": "^9.0.0",
     "libphonenumber-js": "^1.7.56",
-    "luxon": "^1.27.0",
+    "luxon": "^2.5.2",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "passport-strategy": "^1.0.0",
