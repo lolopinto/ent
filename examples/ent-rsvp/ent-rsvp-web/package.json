@@ -14,7 +14,7 @@
     "email-addresses": "^4.0.0",
     "extract-files": "^9.0.0",
     "graphql": "^15.5.0",
-    "luxon": "^1.26.0",
+    "luxon": "^2.5.2",
     "next": "^12.1.0",
     "react": "^17.0.1",
     "react-bootstrap": "^1.5.2",
