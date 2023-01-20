@@ -947,6 +947,25 @@ class TestPostgresRunner(BaseTestRunner):
                 conftest.metadata_with_server_default_changed_enum_type,
                 'modify server_default value of column rainbow from None to violet',
             ),
+            (
+                conftest.metadata_with_uuid_col,
+                'accounts',
+                conftest.metadata_with_server_default_changed_uuid_type,
+                "modify server_default value of column other_id from None to %s" % str(conftest.FOLLOWERS_EDGE),
+            ),
+            (
+                conftest.metadata_with_uuid_col,
+                'accounts',
+                conftest.metadata_with_server_default_changed_uuid_type_in_practice,
+                "modify server_default value of column other_id from None to %s" % str(conftest.FOLLOWERS_EDGE),
+            ),
+            (
+                # comparing string
+                conftest.metdata_enum_table,
+                'request_statuses',
+                conftest.metadata_with_server_default_changed_string_type,
+                "modify server_default value of column status from None to %s" % 'hello',
+            ),
         ])
     def test_server_default_change(self, new_test_runner, new_metadata_func, table_name, change_metadata_func, expected_message):
         metadata = new_metadata_func()
