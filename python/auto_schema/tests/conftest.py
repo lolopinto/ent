@@ -1298,6 +1298,27 @@ def metadata_with_enum_col():
 def metadata_with_server_default_changed_enum_type(metadata):
     return _metadata_with_server_default_changed(metadata, 'rainbow', 'accounts', 'violet')
 
+def metadata_with_uuid_col():
+    metadata = sa.MetaData()
+
+    sa.Table('accounts', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('other_id', postgresql.UUID, nullable=False),
+             sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'),
+             )
+    return metadata
+
+def metadata_with_server_default_changed_uuid_type(metadata):
+    return _metadata_with_server_default_changed(metadata, 'other_id', 'accounts', FOLLOWERS_EDGE)
+
+def metadata_with_server_default_changed_uuid_type_in_practice(metadata):
+    # in practice, we never have UUID objects but strings as uuid
+    return _metadata_with_server_default_changed(metadata, 'other_id', 'accounts', str(FOLLOWERS_EDGE))
+
+
+def metadata_with_server_default_changed_string_type(metadata):
+    return _metadata_with_server_default_changed(metadata, 'status', 'request_statuses', 'hello')
+
 
 def _apply_func_on_enum(metadata, fn):
     return _apply_func_on_metadata(metadata, 'rainbow', 'accounts', fn)

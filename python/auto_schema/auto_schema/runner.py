@@ -3,6 +3,7 @@ import json
 import sys
 from collections.abc import Mapping
 from alembic.operations import Operations
+from uuid import UUID
 
 from .diff import Diff
 from .clause_text import get_clause_text
@@ -163,6 +164,10 @@ class Runner(object):
             # customize the rendering so that this is handled correctly and it adds the sa.text part
             if isinstance(item, TextClause):
                 return "sa.text('%s')" % (item.text)
+            if isinstance(item, UUID):
+                # quote as string so it's rendered correctly
+                return "'%s'" % str(item)
+
             return False
 
         def enum():
