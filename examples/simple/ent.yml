@@ -12,6 +12,8 @@
 #     path: '@snowtop/ent'
 #     policyName: 'AlwaysAllowPrivacyPolicy'
 customGraphQLJSONPath: "src/schema/custom_graphql.json"
+# TODO rename this into something with dynamic...
+customScriptGraphQLJSONPath: 'src/scripts/custom_queries.ts'
 codegen:
   relativeImports: true
   generatedHeader: "Copyright whaa whaa"

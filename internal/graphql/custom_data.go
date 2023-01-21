@@ -17,14 +17,46 @@ type CustomData struct {
 	Inputs  map[string]*CustomObject `json:"inputs,omitempty"`
 	Objects map[string]*CustomObject `json:"objects,omitempty"`
 	// map of class to fields in that class
-	Fields        map[string][]CustomField    `json:"fields,omitempty"`
-	Queries       []CustomField               `json:"queries,omitempty"`
-	Mutations     []CustomField               `json:"mutations,omitempty"`
+	Fields map[string][]CustomField `json:"fields,omitempty"`
+
+	// we want to only support queries and mutations for now
+	// everything else ignored...
+	Queries   []CustomField `json:"queries,omitempty"`
+	Mutations []CustomField `json:"mutations,omitempty"`
+
 	Classes       map[string]*CustomClassInfo `json:"classes,omitempty"`
 	Files         map[string]*CustomFile      `json:"files,omitempty"`
 	CustomTypes   map[string]*CustomType      `json:"customTypes,omitempty"`
 	Error         error                       `json:"-"`
 	compareResult *compareCustomData          `json:"-"`
+}
+
+func (cd *CustomData) mergeDynamic(cd2 *CustomData) error {
+	if len(cd2.Args) != 0 {
+		return fmt.Errorf("args isn't supported in dynamic custom data")
+	}
+	if len(cd2.Inputs) != 0 {
+		return fmt.Errorf("inputs isn't supported in dynamic custom data")
+	}
+	if len(cd2.Objects) != 0 {
+		return fmt.Errorf("objects isn't supported in dynamic custom data")
+	}
+	if len(cd2.Fields) != 0 {
+		return fmt.Errorf("fields isn't supported in dynamic custom data")
+	}
+
+	if len(cd2.Classes) != 0 {
+		return fmt.Errorf("fields isn't supported in dynamic custom data")
+	}
+
+	if len(cd2.Files) != 0 {
+		return fmt.Errorf("fields isn't supported in dynamic custom data")
+	}
+
+	cd.Queries = append(cd.Queries, cd2.Queries...)
+	cd.Mutations = append(cd.Mutations, cd2.Mutations...)
+
+	return nil
 }
 
 type CustomItem struct {
@@ -181,6 +213,10 @@ type CustomField struct {
 	FieldType    CustomFieldType `json:"fieldType"`
 	Connection   bool            `json:"-"`
 	Description  string          `json:"description,omitempty"`
+	// extra imports
+	ExtraImports []*tsimport.ImportPath `json:"extraImports,omitempty"`
+	// To be used instead of calling a function...
+	FunctionContents string `json:"functionContents,omitempty"`
 }
 
 func (cf CustomField) getArg() string {

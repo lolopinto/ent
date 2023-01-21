@@ -549,29 +549,34 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 	}
 	var conn *gqlConnection
 
-	functionCall := fmt.Sprintf("r.%s(%s)", field.FunctionName, strings.Join(argContents, ","))
-
-	functionContents := []string{
-		fmt.Sprintf("const r = new %s();", field.Node),
-	}
-
-	if field.Connection {
-		// nodeName is root or something...
-		customEdge := getRootGQLEdge(processor.Config, field)
-		// RootQuery?
-		conn = getGqlConnection("root", customEdge, processor)
-
-		functionContents = append(
-			functionContents,
-			fmt.Sprintf(
-				"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args);",
-				functionCall,
-			),
-		)
-
-		argImports = append(argImports, tsimport.NewEntGraphQLImportPath("GraphQLEdgeConnection"))
+	var functionContents []string
+	if field.FunctionContents != "" {
+		functionContents = []string{field.FunctionContents}
 	} else {
-		functionContents = append(functionContents, fmt.Sprintf("return %s;", functionCall))
+		functionCall := fmt.Sprintf("r.%s(%s)", field.FunctionName, strings.Join(argContents, ","))
+
+		functionContents = []string{
+			fmt.Sprintf("const r = new %s();", field.Node),
+		}
+
+		if field.Connection {
+			// nodeName is root or something...
+			customEdge := getRootGQLEdge(processor.Config, field)
+			// RootQuery?
+			conn = getGqlConnection("root", customEdge, processor)
+
+			functionContents = append(
+				functionContents,
+				fmt.Sprintf(
+					"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args);",
+					functionCall,
+				),
+			)
+
+			argImports = append(argImports, tsimport.NewEntGraphQLImportPath("GraphQLEdgeConnection"))
+		} else {
+			functionContents = append(functionContents, fmt.Sprintf("return %s;", functionCall))
+		}
 	}
 
 	// fieldConfig can have connection

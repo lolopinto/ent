@@ -627,94 +627,146 @@ func searchForFiles(processor *codegen.Processor) []string {
 	return result
 }
 
-func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, error) {
-	jsonPath := processor.Config.GetCustomGraphQLJSONPath()
+type rawCustomDataResult struct {
+	b   []byte
+	err error
+}
 
-	var customFiles []string
-	if jsonPath == "" {
-		customFiles = searchForFiles(processor)
-		// no custom files, nothing to do here. we're done
-		if len(customFiles) == 0 {
-			if processor.Config.DebugMode() {
-				fmt.Println("no custom graphql files")
+func getDynamicScriptJSONData(processor *codegen.Processor) chan *rawCustomDataResult {
+	var res = make(chan *rawCustomDataResult)
+	go func() {
+		path := processor.Config.GetCustomScriptGraphQLJSONPath()
+		if path == "" {
+			res <- &rawCustomDataResult{}
+			return
+		}
+
+		cmdArgs := cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot())
+
+		cmdName := "ts-node-script"
+
+		path = filepath.Join(processor.Config.GetAbsPathToRoot(), path)
+
+		cmdArgs = append(cmdArgs, path)
+
+		var out bytes.Buffer
+		cmd := exec.Command(cmdName, cmdArgs...)
+		cmd.Stdout = &out
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			err = errors.Wrap(err, "error getting custom script queries")
+			res <- &rawCustomDataResult{err: err}
+			return
+		}
+		res <- &rawCustomDataResult{b: out.Bytes()}
+	}()
+	return res
+}
+
+func getRawCustomData(processor *codegen.Processor, fromTest bool) chan *rawCustomDataResult {
+	var res = make(chan *rawCustomDataResult)
+	go func() {
+		jsonPath := processor.Config.GetCustomGraphQLJSONPath()
+
+		var customFiles []string
+		if jsonPath == "" {
+			customFiles = searchForFiles(processor)
+			// no custom files, nothing to do here. we're done
+			if len(customFiles) == 0 {
+				if processor.Config.DebugMode() {
+					fmt.Println("no custom graphql files")
+				}
+				res <- &rawCustomDataResult{}
+				return
 			}
-			return nil, nil
 		}
-	}
 
-	fmt.Println("checking for custom graphql definitions...")
+		fmt.Println("checking for custom graphql definitions...")
 
-	var buf bytes.Buffer
-	var out bytes.Buffer
-	for key := range processor.Schema.Nodes {
-		info := processor.Schema.Nodes[key]
-		nodeData := info.NodeData
+		var buf bytes.Buffer
+		var out bytes.Buffer
+		for key := range processor.Schema.Nodes {
+			info := processor.Schema.Nodes[key]
+			nodeData := info.NodeData
 
-		buf.WriteString(nodeData.Node)
-		buf.WriteString("\n")
-	}
-
-	// similar to writeTsFile in parse_ts.go
-	// unfortunately that this is being done
-
-	var cmdName string
-	var cmdArgs []string
-	var env []string
-
-	scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", fromTest)
-	if fromTest {
-		env = []string{
-			fmt.Sprintf(
-				"GRAPHQL_PATH=%s",
-				filepath.Join(input.GetAbsoluteRootPathForTest(), "graphql"),
-			),
+			buf.WriteString(nodeData.Node)
+			buf.WriteString("\n")
 		}
-		cmdName = "ts-node"
 
-		cmdArgs = []string{
-			"--compiler-options",
-			testingutils.DefaultCompilerOptions(),
+		// similar to writeTsFile in parse_ts.go
+		// unfortunately that this is being done
+
+		var cmdName string
+		var cmdArgs []string
+		var env []string
+
+		scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", fromTest)
+		if fromTest {
+			env = []string{
+				fmt.Sprintf(
+					"GRAPHQL_PATH=%s",
+					filepath.Join(input.GetAbsoluteRootPathForTest(), "graphql"),
+				),
+			}
+			cmdName = "ts-node"
+
+			cmdArgs = []string{
+				"--compiler-options",
+				testingutils.DefaultCompilerOptions(),
+			}
+		} else {
+			cmdArgs = cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot())
+
+			cmdName = "ts-node-script"
 		}
-	} else {
-		cmdArgs = cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot())
 
-		cmdName = "ts-node-script"
+		// append LOCAL_SCRIPT_PATH so we know. in typescript...
+		if util.EnvIsTrue("LOCAL_SCRIPT_PATH") {
+			env = append(env, "LOCAL_SCRIPT_PATH=true")
+		}
+
+		cmdArgs = append(cmdArgs,
+			// TODO https://github.com/lolopinto/ent/issues/792
+			//			"--swc",
+			scriptPath,
+			"--path",
+			// TODO this should be a configuration option to indicate where the code root is
+			filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
+			"--files",
+			strings.Join(customFiles, ","),
+		)
+		if jsonPath != "" {
+			cmdArgs = append(cmdArgs, "--json_path", jsonPath)
+		}
+
+		cmd := exec.Command(cmdName, cmdArgs...)
+		cmd.Stdin = &buf
+		cmd.Stdout = &out
+		cmd.Stderr = os.Stderr
+		if len(env) != 0 {
+			env2 := append(os.Environ(), env...)
+			cmd.Env = env2
+		}
+
+		if err := cmd.Run(); err != nil {
+			err = errors.Wrap(err, "error generating custom graphql")
+			res <- &rawCustomDataResult{err: err}
+			return
+		}
+
+		res <- &rawCustomDataResult{b: out.Bytes()}
+	}()
+	return res
+}
+
+func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, []byte, error) {
+	r1, r2 := <-getRawCustomData(processor, fromTest), <-getDynamicScriptJSONData(processor)
+
+	if r1.err != nil || r2.err != nil {
+		return nil, nil, util.CoalesceErr(r1.err, r2.err)
 	}
-
-	// append LOCAL_SCRIPT_PATH so we know. in typescript...
-	if util.EnvIsTrue("LOCAL_SCRIPT_PATH") {
-		env = append(env, "LOCAL_SCRIPT_PATH=true")
-	}
-
-	cmdArgs = append(cmdArgs,
-		// TODO https://github.com/lolopinto/ent/issues/792
-		//			"--swc",
-		scriptPath,
-		"--path",
-		// TODO this should be a configuration option to indicate where the code root is
-		filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
-		"--files",
-		strings.Join(customFiles, ","),
-	)
-	if jsonPath != "" {
-		cmdArgs = append(cmdArgs, "--json_path", jsonPath)
-	}
-
-	cmd := exec.Command(cmdName, cmdArgs...)
-	cmd.Stdin = &buf
-	cmd.Stdout = &out
-	cmd.Stderr = os.Stderr
-	if len(env) != 0 {
-		env2 := append(os.Environ(), env...)
-		cmd.Env = env2
-	}
-
-	if err := cmd.Run(); err != nil {
-		err = errors.Wrap(err, "error generating custom graphql")
-		return nil, err
-	}
-
-	return out.Bytes(), nil
+	return r1.b, r2.b, nil
 }
 
 func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomData {
@@ -726,7 +778,7 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 			return
 		}
 
-		b, err := ParseRawCustomData(processor, fromTest)
+		b, b2, err := ParseRawCustomData(processor, fromTest)
 		if err != nil || b == nil {
 			cd.Error = err
 			res <- &cd
@@ -738,6 +790,19 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 			err = errors.Wrap(err, "error unmarshalling custom processor")
 			cd.Error = err
 		}
+		if b2 != nil {
+			var cd2 CustomData
+			if err := json.Unmarshal(b, &cd2); err != nil {
+				err = errors.Wrap(err, "error unmarshalling extra custom data")
+				cd.Error = util.CoalesceErr(cd.Error, err)
+			}
+
+			if err := cd.mergeDynamic(&cd2); err != nil {
+				cd.Error = util.CoalesceErr(cd.Error, err)
+			}
+		}
+		// TODO parse extra and deal with it
+		// spew.Dump(b2)
 		if cd.Error == nil {
 			existing := loadOldCustomData(processor)
 			if existing != nil {
