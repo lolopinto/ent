@@ -12,7 +12,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext, query } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import { mustDecodeNullableIDFromGQLID } from "@snowtop/ent/graphql";
 import { Event } from "../../../ent";
 import { EventType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -50,8 +50,10 @@ export const EventQueryType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ) => {
     const whereQueries = [
-      args.id ? query.Eq("id", args.id) : undefined,
-      args.ids ? query.Eq("ids", args.ids) : undefined,
+      mustDecodeNullableIDFromGQLID(args.id)
+        ? query.Eq("id", mustDecodeNullableIDFromGQLID(args.id))
+        : undefined,
+      args.ids ? query.In("ids", ...args.ids) : undefined,
     ];
 
     if (whereQueries.filter((q) => q !== undefined).length === 0) {

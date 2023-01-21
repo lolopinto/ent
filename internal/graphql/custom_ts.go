@@ -3,6 +3,7 @@ package graphql
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -499,9 +500,11 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		}
 	}
 
+	inlineContents := field.FunctionContents != ""
+
 	// hack. don't do this for dynamic.
 	// TODO: figure out what all the right fields should be
-	if field.FunctionContents == "" {
+	if !inlineContents {
 		if err := addToArgImport(field.Node); err != nil {
 			return nil, err
 		}
@@ -516,47 +519,74 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		}
 	}
 
-	argMap := builder.getArgMap(cd)
-	var argContents []string
-	for _, arg := range field.Args {
-		if arg.GraphQLOnlyArg {
-			continue
-		}
-		if arg.IsContextArg {
-			argContents = append(argContents, "context")
-			continue
-		}
-		argType := argMap[arg.Type]
-		if argType == nil {
-			if arg.TSType == "ID" && processor.Config.Base64EncodeIDs() {
-				argImports = append(argImports, &tsimport.ImportPath{
-					Import:     "mustDecodeIDFromGQLID",
-					ImportPath: codepath.GraphQLPackage,
-				})
-				argContents = append(argContents, fmt.Sprintf("mustDecodeIDFromGQLID(args.%s)", arg.Name))
-			} else {
-				argContents = append(argContents, fmt.Sprintf("args.%s", arg.Name))
-			}
-		} else {
-			fields, ok := cd.Fields[arg.Type]
-			if !ok {
-				return nil, fmt.Errorf("type %s has no fields", arg.Type)
-			}
-			args := make([]string, len(fields))
-
-			for idx, f := range fields {
-				// input.foo
-				args[idx] = fmt.Sprintf("%s:%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
-			}
-			argContents = append(argContents, fmt.Sprintf("{%s},", strings.Join(args, ",")))
-		}
-	}
 	var conn *gqlConnection
 
 	var functionContents []string
-	if field.FunctionContents != "" {
-		functionContents = []string{field.FunctionContents}
+	argMap := builder.getArgMap(cd)
+
+	if inlineContents {
+		contents := field.FunctionContents
+		for _, arg := range field.Args {
+			argType := argMap[arg.Type]
+			if argType == nil {
+				// TODO we need to support lists here
+				// TODO use CustomGQLRender
+				if arg.TSType == "ID" && processor.Config.Base64EncodeIDs() && !arg.List {
+					method := "mustDecodeIDFromGQLID"
+					if arg.Nullable == NullableTrue {
+						method = "mustDecodeNullableIDFromGQLID"
+					}
+					argImports = append(argImports, &tsimport.ImportPath{
+						Import:     method,
+						ImportPath: codepath.GraphQLPackage,
+					})
+					r := regexp.MustCompile(fmt.Sprintf(`args\.%s\b`, arg.Name))
+					contents = r.ReplaceAllString(contents, fmt.Sprintf("%s(args.%s)", method, arg.Name))
+				}
+			}
+		}
+		functionContents = []string{contents}
 	} else {
+		var argContents []string
+		for _, arg := range field.Args {
+			if arg.GraphQLOnlyArg {
+				continue
+			}
+			if arg.IsContextArg {
+				argContents = append(argContents, "context")
+				continue
+			}
+			argType := argMap[arg.Type]
+			// TODO this should be using CustomGQLRenderer instead of doing this manually
+			// we don't have the enttype.Type here tho
+			if argType == nil {
+				if arg.TSType == "ID" && processor.Config.Base64EncodeIDs() {
+					method := "mustDecodeIDFromGQLID"
+					if arg.Nullable == NullableTrue {
+						method = "mustDecodeNullableIDFromGQLID"
+					}
+					argImports = append(argImports, &tsimport.ImportPath{
+						Import:     method,
+						ImportPath: codepath.GraphQLPackage,
+					})
+					argContents = append(argContents, fmt.Sprintf("%s(args.%s)", method, arg.Name))
+				} else {
+					argContents = append(argContents, fmt.Sprintf("args.%s", arg.Name))
+				}
+			} else {
+				fields, ok := cd.Fields[arg.Type]
+				if !ok {
+					return nil, fmt.Errorf("type %s has no fields", arg.Type)
+				}
+				args := make([]string, len(fields))
+
+				for idx, f := range fields {
+					// input.foo
+					args[idx] = fmt.Sprintf("%s:%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
+				}
+				argContents = append(argContents, fmt.Sprintf("{%s},", strings.Join(args, ",")))
+			}
+		}
 		functionCall := fmt.Sprintf("r.%s(%s)", field.FunctionName, strings.Join(argContents, ","))
 
 		functionContents = []string{
