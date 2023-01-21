@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import { camelCase } from "camel-case";
+import { Schema } from "@snowtop/ent";
 
 async function main() {
   const paths = fs.readdirSync("src/schema");
@@ -11,6 +12,12 @@ async function main() {
     const query = p.replace("_schema.ts", "");
     const temp = camelCase(query);
     const node = temp.charAt(0).toUpperCase() + temp.substring(1);
+
+    const schema: Schema = require("../schema/" +
+      p.substring(0, p.length - 3)).default;
+    if (schema.hideFromGraphQL) {
+      continue;
+    }
 
     const args = [
       {
@@ -39,6 +46,8 @@ async function main() {
     // RequestContext etc automatic?
     const imports: any = [
       {
+        // TODO we should get helpers for things like this
+        // e.g. entPath, graphqlPath etc
         importPath: "src/ent",
         import: node,
       },
@@ -50,19 +59,18 @@ async function main() {
 
     const content = `
     const whereQueries = [
-      args.id ? query.Eq('id',id):undefined,
-      args.ids ? query.Eq('ids',ids):undefined,
+      args.id ? query.Eq('id', args.id):undefined,
+      args.ids ? query.Eq('ids', args.ids):undefined,
     ];
 
     if (whereQueries.filter(q => q !==undefined).length === 0) {
       throw new Error('invalid query. must provid id or ids');
     }
 
-    return ${node}.loadCustom(args.context.getViewer(), query.AndOptional(...whereQueries));
+    return ${node}.loadCustom(context.getViewer(), query.AndOptional(...whereQueries));
     `;
 
     // TODO confirm we need all this???
-    // TODO how to transform the type and call parse.ts....
     queries.push({
       class: node,
       name: query,
@@ -76,9 +84,8 @@ async function main() {
       extraImports: imports,
       functionContents: content,
     });
-    // console.log(p);
   }
-  console.log(queries);
+  console.log(JSON.stringify({ queries }));
 }
 
 main();

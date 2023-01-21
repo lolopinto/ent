@@ -192,7 +192,7 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 		ident := item.getIdent()
 		existingImport := imps.importMap[ident]
 		if existingImport != nil && existingImport != imp {
-			return "", fmt.Errorf("%s is already imported from path %s. duplicate path: %s", ident, existingImport.path, imp.path)
+			return "", fmt.Errorf("%s is already imported from path %s. duplicate path: %s @ file %s", ident, existingImport.path, imp.path, getErrorPath(imps.cfg, imps.filePath))
 		}
 		imps.importMap[ident] = imp
 	}

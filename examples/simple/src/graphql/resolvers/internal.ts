@@ -60,6 +60,14 @@ export * from "../generated/resolvers/user/user_to_invited_events_connection_typ
 export * from "../generated/resolvers/user/user_to_likers_connection_type";
 export * from "../generated/resolvers/user/user_to_likes_connection_type";
 export * from "../generated/resolvers/user/user_to_maybe_events_connection_type";
+export * from "../generated/resolvers/comment_query_type";
+export * from "../generated/resolvers/contact_email_query_type";
+export * from "../generated/resolvers/contact_phone_number_query_type";
+export * from "../generated/resolvers/contact_query_type";
+export * from "../generated/resolvers/event_query_type";
+export * from "../generated/resolvers/holiday_query_type";
+export * from "../generated/resolvers/hours_of_operation_query_type";
 export * from "../generated/resolvers/time_diff_query_type";
+export * from "../generated/resolvers/user_query_type";
 export * from "../generated/resolvers/viewer_query_type";
 export * from "./node_query_type";

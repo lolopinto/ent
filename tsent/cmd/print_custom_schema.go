@@ -21,16 +21,11 @@ var printCustomSchemaCmd = &cobra.Command{
 			return err
 		}
 
-		b, b2, err := graphql.ParseRawCustomData(processor, false)
+		b, err := graphql.ParseRawCustomData(processor, false)
 		if err != nil {
 			return err
 		}
 		fmt.Println(string(b))
-		if b2 != nil {
-			fmt.Println()
-			fmt.Println("dynamic custom data")
-			fmt.Println(string(b2))
-		}
 		return nil
 	},
 }

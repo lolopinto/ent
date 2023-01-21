@@ -5,16 +5,32 @@
 
 import { GraphQLObjectType } from "graphql";
 import {
+  CommentQueryType,
+  ContactEmailQueryType,
+  ContactPhoneNumberQueryType,
+  ContactQueryType,
+  EventQueryType,
+  HolidayQueryType,
+  HoursOfOperationQueryType,
   NodeQueryType,
   TimeDiffQueryType,
+  UserQueryType,
   ViewerQueryType,
 } from "../../resolvers/internal";
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({
+    comment: CommentQueryType,
+    contact: ContactQueryType,
+    contact_email: ContactEmailQueryType,
+    contact_phone_number: ContactPhoneNumberQueryType,
+    event: EventQueryType,
+    holiday: HolidayQueryType,
+    hours_of_operation: HoursOfOperationQueryType,
     node: NodeQueryType,
     timeDiff: TimeDiffQueryType,
+    user: UserQueryType,
     viewer: ViewerQueryType,
   }),
 });

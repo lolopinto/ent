@@ -31,34 +31,6 @@ type CustomData struct {
 	compareResult *compareCustomData          `json:"-"`
 }
 
-func (cd *CustomData) mergeDynamic(cd2 *CustomData) error {
-	if len(cd2.Args) != 0 {
-		return fmt.Errorf("args isn't supported in dynamic custom data")
-	}
-	if len(cd2.Inputs) != 0 {
-		return fmt.Errorf("inputs isn't supported in dynamic custom data")
-	}
-	if len(cd2.Objects) != 0 {
-		return fmt.Errorf("objects isn't supported in dynamic custom data")
-	}
-	if len(cd2.Fields) != 0 {
-		return fmt.Errorf("fields isn't supported in dynamic custom data")
-	}
-
-	if len(cd2.Classes) != 0 {
-		return fmt.Errorf("fields isn't supported in dynamic custom data")
-	}
-
-	if len(cd2.Files) != 0 {
-		return fmt.Errorf("fields isn't supported in dynamic custom data")
-	}
-
-	cd.Queries = append(cd.Queries, cd2.Queries...)
-	cd.Mutations = append(cd.Mutations, cd2.Mutations...)
-
-	return nil
-}
-
 type CustomItem struct {
 	Name         string       `json:"name,omitempty"`
 	Type         string       `json:"type,omitempty"`
@@ -258,10 +230,14 @@ func (cf *CustomField) UnmarshalJSON(data []byte) error {
 	cf.FunctionName = getStringFromMap(m, "functionName")
 	cf.FieldType = CustomFieldType(getStringFromMap(m, "fieldType"))
 	cf.Description = getStringFromMap(m, "description")
+	cf.FunctionContents = getStringFromMap(m, "functionContents")
 	if err := getValFromMap(m, "args", &cf.Args); err != nil {
 		return err
 	}
 	if err := getValFromMap(m, "results", &cf.Results); err != nil {
+		return err
+	}
+	if err := getValFromMap(m, "extraImports", &cf.ExtraImports); err != nil {
 		return err
 	}
 

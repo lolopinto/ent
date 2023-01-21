@@ -499,8 +499,12 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		}
 	}
 
-	if err := addToArgImport(field.Node); err != nil {
-		return nil, err
+	// hack. don't do this for dynamic.
+	// TODO: figure out what all the right fields should be
+	if field.FunctionContents == "" {
+		if err := addToArgImport(field.Node); err != nil {
+			return nil, err
+		}
 	}
 
 	// only add return type if we have a type hint
@@ -587,10 +591,12 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		ResolveMethodArg: builder.getResolveMethodArg(),
 		TypeImports:      builder.getTypeImports(processor, s),
 		ArgImports:       argImports,
-		Args:             builder.getArgs(s),
-		ReturnTypeHint:   builder.getReturnTypeHint(),
-		connection:       conn,
-		FunctionContents: functionContents,
+		// reserve and use them. no questions asked
+		ReserveAndUseImports: field.ExtraImports,
+		Args:                 builder.getArgs(s),
+		ReturnTypeHint:       builder.getReturnTypeHint(),
+		connection:           conn,
+		FunctionContents:     functionContents,
 	}
 
 	return result, nil
