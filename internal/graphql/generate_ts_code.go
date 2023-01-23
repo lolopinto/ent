@@ -629,7 +629,7 @@ func searchForFiles(processor *codegen.Processor) []string {
 
 func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, error) {
 	jsonPath := processor.Config.GetCustomGraphQLJSONPath()
-	dynamicPath := processor.Config.GetCustomScriptGraphQLJSONPath()
+	dynamicPath := processor.Config.GetDynamicScriptCustomGraphQLJSONPath()
 
 	// TODO handle dynamic path but no json path...
 	var customFiles []string

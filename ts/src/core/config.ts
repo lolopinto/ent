@@ -49,7 +49,7 @@ export interface Config {
 
   // dynamically add things to be considered in addition to customGraphQLJSONPath
   // TODO need to document API here...
-  customScriptGraphQLJSONPath?: string;
+  dynamicScriptCustomGraphQLJSONPath?: string;
 
   // defaults to __global__schema.ts if not provided
   // relative to src/schema for now

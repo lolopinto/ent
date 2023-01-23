@@ -277,11 +277,11 @@ func (cfg *Config) GetCustomGraphQLJSONPath() string {
 	return cfg.config.CustomGraphQLJSONPath
 }
 
-func (cfg *Config) GetCustomScriptGraphQLJSONPath() string {
+func (cfg *Config) GetDynamicScriptCustomGraphQLJSONPath() string {
 	if cfg.config == nil {
 		return ""
 	}
-	return cfg.config.CustomScriptGraphQLJSONPath
+	return cfg.config.DynamicScriptCustomGraphQLJSONPath
 }
 
 func (cfg *Config) DummyWrite() bool {
@@ -559,18 +559,18 @@ func parseConfig() (*config, error) {
 }
 
 type config struct {
-	Codegen                     *CodegenConfig `yaml:"codegen"`
-	CustomGraphQLJSONPath       string         `yaml:"customGraphQLJSONPath"`
-	CustomScriptGraphQLJSONPath string         `yaml:"customScriptGraphQLJSONPath"`
-	GlobalSchemaPath            string         `yaml:"globalSchemaPath"`
+	Codegen                            *CodegenConfig `yaml:"codegen"`
+	CustomGraphQLJSONPath              string         `yaml:"customGraphQLJSONPath"`
+	DynamicScriptCustomGraphQLJSONPath string         `yaml:"dynamicScriptCustomGraphQLJSONPath"`
+	GlobalSchemaPath                   string         `yaml:"globalSchemaPath"`
 }
 
 func (cfg *config) Clone() *config {
 	return &config{
-		Codegen:                     cloneCodegen(cfg.Codegen),
-		CustomGraphQLJSONPath:       cfg.CustomGraphQLJSONPath,
-		CustomScriptGraphQLJSONPath: cfg.CustomScriptGraphQLJSONPath,
-		GlobalSchemaPath:            cfg.GlobalSchemaPath,
+		Codegen:                            cloneCodegen(cfg.Codegen),
+		CustomGraphQLJSONPath:              cfg.CustomGraphQLJSONPath,
+		DynamicScriptCustomGraphQLJSONPath: cfg.DynamicScriptCustomGraphQLJSONPath,
+		GlobalSchemaPath:                   cfg.GlobalSchemaPath,
 	}
 }
 

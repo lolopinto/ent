@@ -43,11 +43,8 @@ async function main() {
       },
     ];
 
-    // RequestContext etc automatic?
     const imports: any = [
       {
-        // TODO we should get helpers for things like this
-        // e.g. entPath, graphqlPath etc
         importPath: "src/ent",
         import: node,
       },
