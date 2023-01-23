@@ -472,6 +472,10 @@ func (qfcg *queryFieldConfigBuilder) getArgMap(cd *CustomData) map[string]*Custo
 func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Processor, s *gqlSchema, cd *CustomData, field CustomField) (*fieldConfig, error) {
 	var argImports []*tsimport.ImportPath
 
+	if field.Connection {
+		argImports = append(argImports, tsimport.NewEntGraphQLImportPath("GraphQLEdgeConnection"))
+	}
+
 	// args that "useImport" should be called on
 	// assumes they're reserved somewhere else...
 
@@ -522,6 +526,18 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 	var functionContents []string
 	argMap := builder.getArgMap(cd)
 
+	getConnection := func(s string) (*gqlConnection, string) {
+		// nodeName is root or something...
+		customEdge := getRootGQLEdge(processor.Config, field)
+		// RootQuery?
+		conn := getGqlConnection("root", customEdge, processor)
+
+		return conn, fmt.Sprintf(
+			"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args);",
+			s,
+		)
+	}
+
 	if inlineContents {
 		contents := field.FunctionContents
 		for _, arg := range field.Args {
@@ -539,7 +555,17 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 				argImports = append(argImports, imps...)
 			}
 		}
-		functionContents = append(functionContents, contents)
+		if field.Connection {
+			conn2, call := getConnection(fmt.Sprintf("{%s}", contents))
+			conn = conn2
+
+			functionContents = append(
+				functionContents,
+				call,
+			)
+		} else {
+			functionContents = append(functionContents, contents)
+		}
 	} else {
 		var argContents []string
 		for _, arg := range field.Args {
@@ -576,20 +602,13 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		}
 
 		if field.Connection {
-			// nodeName is root or something...
-			customEdge := getRootGQLEdge(processor.Config, field)
-			// RootQuery?
-			conn = getGqlConnection("root", customEdge, processor)
+			conn2, call := getConnection(functionCall)
+			conn = conn2
 
 			functionContents = append(
 				functionContents,
-				fmt.Sprintf(
-					"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args);",
-					functionCall,
-				),
+				call,
 			)
-
-			argImports = append(argImports, tsimport.NewEntGraphQLImportPath("GraphQLEdgeConnection"))
 		} else {
 			functionContents = append(functionContents, fmt.Sprintf("return %s;", functionCall))
 		}

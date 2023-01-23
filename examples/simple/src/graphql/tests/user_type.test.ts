@@ -39,6 +39,7 @@ import CreateCommentAction from "../../ent/comment/actions/create_comment_action
 import { buildInsertQuery } from "@snowtop/ent/core/ent";
 import { getSimpleInsertAction } from "@snowtop/ent/action/experimental_action";
 import { UserBuilder } from "src/ent/generated/user/actions/user_builder";
+import { DateTime } from "luxon";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -192,6 +193,76 @@ test("query multiple users", async () => {
     ["[2].firstName", user3.firstName],
     ["[2].lastName", user3.lastName],
     ["[2].emailAddress", user3.emailAddress],
+  );
+});
+
+test("query user list api no args", async () => {
+  let user1 = await create({
+    firstName: "ffirst",
+  });
+
+  await expectQueryFromRoot(
+    {
+      viewer: user1.viewer,
+      schema: schema,
+      root: "user",
+      args: {},
+      expectedError: /invalid query. must provid id or ids/,
+    },
+    ["[0].id", null],
+  );
+});
+
+test("query multiple users. connection", async () => {
+  const dt = DateTime.now();
+  let user1 = await create({
+    firstName: "ffirst",
+    // @ts-expect-error
+    timeCreated: dt.plus({ hour: 1 }),
+  });
+
+  let user2 = await create({
+    firstName: "ffirst",
+    // @ts-expect-error
+    timeCreated: dt.plus({ hour: 2 }),
+  });
+
+  let user3 = await create({
+    firstName: "ffirst",
+    // @ts-expect-error
+    timeCreated: dt.plus({ hour: 3 }),
+  });
+
+  const action = EditUserAction.create(user1.viewer, user1, {});
+  // for privacy
+  action.builder.addFriend(user2);
+  action.builder.addFriend(user3);
+  await action.saveX();
+
+  // sorted by created_at with most recent first
+  await expectQueryFromRoot(
+    {
+      viewer: user1.viewer,
+      schema: schema,
+      root: "user_connection",
+      args: {
+        ids: [encodeGQLID(user1), encodeGQLID(user2), encodeGQLID(user3)],
+      },
+    },
+    ["nodes[0].id", encodeGQLID(user3)],
+    ["nodes[0].firstName", user3.firstName],
+    ["nodes[0].lastName", user3.lastName],
+    ["nodes[0].emailAddress", user3.emailAddress],
+
+    ["nodes[1].id", encodeGQLID(user2)],
+    ["nodes[1].firstName", user2.firstName],
+    ["nodes[1].lastName", user2.lastName],
+    ["nodes[1].emailAddress", user2.emailAddress],
+
+    ["nodes[2].id", encodeGQLID(user1)],
+    ["nodes[2].firstName", user1.firstName],
+    ["nodes[2].lastName", user1.lastName],
+    ["nodes[2].emailAddress", user1.emailAddress],
   );
 });
 

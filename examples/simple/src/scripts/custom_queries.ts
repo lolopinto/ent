@@ -19,7 +19,7 @@ async function main() {
       continue;
     }
 
-    const args = [
+    const listArgs = [
       {
         name: "context",
         type: "Context",
@@ -42,8 +42,21 @@ async function main() {
         nullable: true,
       },
     ];
+    const connectionArgs = [
+      {
+        name: "context",
+        type: "Context",
+        isContextArg: true,
+      },
+      {
+        name: "ids",
+        type: "ID",
+        list: true,
+        nullable: true,
+      },
+    ];
 
-    const imports: any = [
+    const listImports: any = [
       {
         importPath: "src/ent",
         import: node,
@@ -53,8 +66,22 @@ async function main() {
         import: "query",
       },
     ];
+    const connectionImports: any = [
+      {
+        importPath: "src/ent",
+        import: node,
+      },
+      {
+        importPath: "@snowtop/ent",
+        import: "query",
+      },
+      {
+        importPath: "@snowtop/ent",
+        import: "CustomClauseQuery",
+      },
+    ];
 
-    const content = `
+    const listContent = `
     const whereQueries = [
       args.id ? query.Eq('id', args.id):undefined,
       args.ids ? query.In('id', ...args.ids):undefined,
@@ -67,6 +94,16 @@ async function main() {
     return ${node}.loadCustom(context.getViewer(), query.AndOptional(...whereQueries));
     `;
 
+    const connectionContent = `
+    return new CustomClauseQuery(context.getViewer(),{
+      loadEntOptions: ${node}.loaderOptions(),
+      clause: query.In('id', args.ids),
+      name: '${node}',
+      // not sorted but ok
+      sortColumn: 'created_at',
+    })
+    `;
+
     // TODO confirm we need all this???
     queries.push({
       class: node,
@@ -75,11 +112,24 @@ async function main() {
       list: true,
       fieldType: "ASYNC_FUNCTION",
       nullable: true,
-      args,
+      args: listArgs,
+      resultType: node,
+      description: `custom query for ${query}. list`,
+      extraImports: listImports,
+      functionContents: listContent,
+    });
+    queries.push({
+      class: node,
+      name: `${query}_connection`,
+      graphQLName: `${query}_connection`,
+      connection: true,
+      fieldType: "ASYNC_FUNCTION",
+      nullable: true,
+      args: connectionArgs,
       resultType: node,
       description: `custom query for ${query}`,
-      extraImports: imports,
-      functionContents: content,
+      extraImports: connectionImports,
+      functionContents: connectionContent,
     });
   }
   console.log(JSON.stringify({ queries }));
