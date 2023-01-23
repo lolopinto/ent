@@ -990,6 +990,28 @@ class TestPostgresRunner(BaseTestRunner):
         diff = r3.compute_changes()
 
         assert len(diff) == 0
+        
+    
+    def test_field_with_server_default_uuid_to_start(self,new_test_runner):
+        metadata = conftest.metadata_with_uuid_col()
+
+        metadata = conftest.metadata_with_server_default_changed_uuid_type_in_practice(metadata)
+        
+        r = new_test_runner(metadata)
+
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata, ['accounts'])
+        
+        r2 = new_test_runner(metadata, r)
+        diff = r2.compute_changes()
+
+        # alter_op =diff[0].ops[0]
+        # print(alter_op.modify_server_default)
+        
+        assert len(diff) == 0
+        testingutils.validate_metadata_after_change(r2, metadata)
+        r2.run()
+
 
     # only in postgres because "No support for ALTER of constraints in SQLite dialect"
 
