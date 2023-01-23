@@ -18,12 +18,9 @@ type CustomData struct {
 	Inputs  map[string]*CustomObject `json:"inputs,omitempty"`
 	Objects map[string]*CustomObject `json:"objects,omitempty"`
 	// map of class to fields in that class
-	Fields map[string][]CustomField `json:"fields,omitempty"`
-
-	// we want to only support queries and mutations for now
-	// everything else ignored...
-	Queries   []CustomField `json:"queries,omitempty"`
-	Mutations []CustomField `json:"mutations,omitempty"`
+	Fields    map[string][]CustomField `json:"fields,omitempty"`
+	Queries   []CustomField            `json:"queries,omitempty"`
+	Mutations []CustomField            `json:"mutations,omitempty"`
 
 	Classes       map[string]*CustomClassInfo `json:"classes,omitempty"`
 	Files         map[string]*CustomFile      `json:"files,omitempty"`
