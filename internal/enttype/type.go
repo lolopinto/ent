@@ -1398,6 +1398,28 @@ func (t *ArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
 	return t2.GetCustomTypeInfo()
 }
 
+func (t *ArrayListType) CustomGQLRender(cfg Config, v string) string {
+	t2, ok := t.ElemType.(CustomGQLRenderer)
+	if !ok {
+		return v
+	}
+
+	// nothing to do here.
+	if t2.CustomGQLRender(cfg, v) == v {
+		return v
+	}
+
+	return fmt.Sprintf("%s.map((i:any) => %s)", v, t2.CustomGQLRender(cfg, "i"))
+}
+
+func (t *ArrayListType) ArgImports(cfg Config) []*tsimport.ImportPath {
+	t2, ok := t.ElemType.(CustomGQLRenderer)
+	if !ok {
+		return []*tsimport.ImportPath{}
+	}
+	return t2.ArgImports(cfg)
+}
+
 type NullableArrayListType struct {
 	arrayListType
 	ElemType           TSType
@@ -1471,6 +1493,29 @@ func (t *NullableArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
 		return nil
 	}
 	return t2.GetCustomTypeInfo()
+}
+
+func (t *NullableArrayListType) CustomGQLRender(cfg Config, v string) string {
+	t2, ok := t.ElemType.(CustomGQLRenderer)
+	if !ok {
+		return v
+	}
+
+	// nothing to do here.
+	if t2.CustomGQLRender(cfg, v) == v {
+		return v
+	}
+
+	// TODO need an undefined vs null flag?
+	return fmt.Sprintf("%s ? %s.map((i:any) => %s) : undefined", v, v, t2.CustomGQLRender(cfg, "i"))
+}
+
+func (t *NullableArrayListType) ArgImports(cfg Config) []*tsimport.ImportPath {
+	t2, ok := t.ElemType.(CustomGQLRenderer)
+	if !ok {
+		return []*tsimport.ImportPath{}
+	}
+	return t2.ArgImports(cfg)
 }
 
 type CommonJSONType struct {

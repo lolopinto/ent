@@ -60,7 +60,7 @@ async function main() {
     const content = `
     const whereQueries = [
       args.id ? query.Eq('id', args.id):undefined,
-      args.ids ? query.In('ids', ...args.ids):undefined,
+      args.ids ? query.In('id', ...args.ids):undefined,
     ];
 
     if (whereQueries.filter(q => q !==undefined).length === 0) {

@@ -16,7 +16,10 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { transformUnionTypes } from "@snowtop/ent/graphql";
+import {
+  mustDecodeIDFromGQLID,
+  transformUnionTypes,
+} from "@snowtop/ent/graphql";
 import { User } from "../../../../ent";
 import CreateUserAction, {
   UserCreateInput,
@@ -131,7 +134,9 @@ export const UserCreateType: GraphQLFieldConfig<
       prefsDiff: input.prefsDiff,
       daysOff: input.daysOff,
       preferredShift: input.preferredShift,
-      funUuids: input.funUuids,
+      funUuids: input.funUuids
+        ? input.funUuids.map((i: any) => mustDecodeIDFromGQLID(i))
+        : undefined,
       prefsList: input.prefsList,
       superNestedObject: input.superNestedObject,
       nestedList: input.nestedList,

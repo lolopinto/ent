@@ -3,14 +3,12 @@ package graphql
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
-	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -529,23 +527,19 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		for _, arg := range field.Args {
 			argType := argMap[arg.Type]
 			if argType == nil {
-				// TODO we need to support lists here
-				// TODO use CustomGQLRender
-				if arg.TSType == "ID" && processor.Config.Base64EncodeIDs() && !arg.List {
-					method := "mustDecodeIDFromGQLID"
-					if arg.Nullable == NullableTrue {
-						method = "mustDecodeNullableIDFromGQLID"
-					}
-					argImports = append(argImports, &tsimport.ImportPath{
-						Import:     method,
-						ImportPath: codepath.GraphQLPackage,
-					})
-					r := regexp.MustCompile(fmt.Sprintf(`args\.%s\b`, arg.Name))
-					contents = r.ReplaceAllString(contents, fmt.Sprintf("%s(args.%s)", method, arg.Name))
+				contents, imps := arg.renderArg(processor.Config)
+				defaultArg := arg.defaultArg()
+				if contents != defaultArg {
+					// arg changed, so assign new value before inline contents
+					// so we don't have to change the generated code
+					functionContents = append(functionContents,
+						fmt.Sprintf("%s=%s;", defaultArg, contents),
+					)
 				}
+				argImports = append(argImports, imps...)
 			}
 		}
-		functionContents = []string{contents}
+		functionContents = append(functionContents, contents)
 	} else {
 		var argContents []string
 		for _, arg := range field.Args {
@@ -557,22 +551,10 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 				continue
 			}
 			argType := argMap[arg.Type]
-			// TODO this should be using CustomGQLRenderer instead of doing this manually
-			// we don't have the enttype.Type here tho
 			if argType == nil {
-				if arg.TSType == "ID" && processor.Config.Base64EncodeIDs() {
-					method := "mustDecodeIDFromGQLID"
-					if arg.Nullable == NullableTrue {
-						method = "mustDecodeNullableIDFromGQLID"
-					}
-					argImports = append(argImports, &tsimport.ImportPath{
-						Import:     method,
-						ImportPath: codepath.GraphQLPackage,
-					})
-					argContents = append(argContents, fmt.Sprintf("%s(args.%s)", method, arg.Name))
-				} else {
-					argContents = append(argContents, fmt.Sprintf("args.%s", arg.Name))
-				}
+				contents, imps := arg.renderArg(processor.Config)
+				argContents = append(argContents, contents)
+				argImports = append(argImports, imps...)
 			} else {
 				fields, ok := cd.Fields[arg.Type]
 				if !ok {

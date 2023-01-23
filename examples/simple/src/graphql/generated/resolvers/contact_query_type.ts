@@ -12,7 +12,10 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext, query } from "@snowtop/ent";
-import { mustDecodeNullableIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { Contact } from "../../../ent";
 import { ContactType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -49,11 +52,14 @@ export const ContactQueryType: GraphQLFieldConfig<
     context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ) => {
+    args.id = mustDecodeNullableIDFromGQLID(args.id);
+    args.ids = args.ids
+      ? args.ids.map((i: any) => mustDecodeIDFromGQLID(i))
+      : undefined;
+
     const whereQueries = [
-      mustDecodeNullableIDFromGQLID(args.id)
-        ? query.Eq("id", mustDecodeNullableIDFromGQLID(args.id))
-        : undefined,
-      args.ids ? query.In("ids", ...args.ids) : undefined,
+      args.id ? query.Eq("id", args.id) : undefined,
+      args.ids ? query.In("id", ...args.ids) : undefined,
     ];
 
     if (whereQueries.filter((q) => q !== undefined).length === 0) {

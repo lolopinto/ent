@@ -1,6 +1,7 @@
 import { advanceBy } from "jest-date-mock";
 import { Viewer } from "@snowtop/ent";
 import {
+  expectMutation,
   expectQueryFromRoot,
   queryRootConfig,
 } from "@snowtop/ent-graphql-tests";
@@ -13,9 +14,13 @@ import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
-import { ContactEmailLabel } from "src/ent/generated/types";
+import {
+  ContactEmailLabel,
+  ContactPhoneNumberLabel,
+} from "src/ent/generated/types";
 import EditContactAction from "src/ent/contact/actions/edit_contact_action";
 import CreateContactEmailAction from "src/ent/contact_email/actions/create_contact_email_action";
+import CreateContactPhoneNumberAction from "src/ent/contact_phone_number/actions/create_contact_phone_number_action";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -191,5 +196,65 @@ test("custom object added in contact", async () => {
     ["plusEmails.emails[0].id", encodeGQLID(email1)],
     ["plusEmails.emails[1].id", encodeGQLID(email2)],
     ["plusEmails.firstEmail", email1.emailAddress],
+  );
+});
+
+test("edit contact with new email ids", async () => {
+  let contact = await createContact();
+  let emails = await contact.loadEmails();
+  expect(emails.length).toBe(1);
+  const email1 = emails[0];
+  const email2 = await CreateContactEmailAction.create(contact.viewer, {
+    emailAddress: randomEmail(),
+    label: ContactEmailLabel.Home,
+    contactID: contact.id,
+  }).saveX();
+
+  await expectMutation(
+    {
+      mutation: "contactEdit",
+      viewer: contact.viewer,
+      schema,
+      args: {
+        id: encodeGQLID(contact),
+        emailIds: [encodeGQLID(email1), encodeGQLID(email2)],
+      },
+    },
+    ["contact.id", encodeGQLID(contact)],
+    ["contact.emails[0].id", encodeGQLID(email1)],
+    ["contact.emails[1].id", encodeGQLID(email2)],
+  );
+});
+
+test("edit contact with new phone number ids", async () => {
+  let contact = await createContact();
+  let phoneNumbers = await contact.loadPhoneNumbers();
+  expect(phoneNumbers.length).toBe(0);
+  const [phone1, phone2] = await Promise.all([
+    CreateContactPhoneNumberAction.create(contact.viewer, {
+      phoneNumber: randomPhoneNumber(),
+      label: ContactPhoneNumberLabel.Home,
+      contactID: contact.id,
+    }).saveX(),
+    CreateContactPhoneNumberAction.create(contact.viewer, {
+      phoneNumber: randomPhoneNumber(),
+      label: ContactPhoneNumberLabel.Home,
+      contactID: contact.id,
+    }).saveX(),
+  ]);
+
+  await expectMutation(
+    {
+      mutation: "contactEdit",
+      viewer: contact.viewer,
+      schema,
+      args: {
+        id: encodeGQLID(contact),
+        phoneNumberIds: [encodeGQLID(phone1), encodeGQLID(phone2)],
+      },
+    },
+    ["contact.id", encodeGQLID(contact)],
+    ["contact.phoneNumbers[0].id", encodeGQLID(phone1)],
+    ["contact.phoneNumbers[1].id", encodeGQLID(phone2)],
   );
 });

@@ -8,6 +8,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
@@ -43,6 +44,34 @@ type CustomItem struct {
 	TSType         string                 `json:"tsType,omitempty"`
 	imports        []*tsimport.ImportPath `json:"-"`
 	Description    string                 `json:"description,omitempty"`
+}
+
+func (arg CustomItem) defaultArg() string {
+	return fmt.Sprintf("args.%s", arg.Name)
+}
+
+func (arg CustomItem) renderArg(cfg *codegen.Config) (string, []*tsimport.ImportPath) {
+	if arg.TSType != "ID" || !cfg.Base64EncodeIDs() {
+		return arg.defaultArg(), nil
+	}
+	// we don't have the enttype.Type here so manually calling types for cases we're aware of
+
+	var typ enttype.CustomGQLRenderer
+	if arg.Nullable == NullableTrue && arg.List {
+		typ = &enttype.NullableArrayListType{
+			ElemType: &enttype.IDType{},
+		}
+	} else if arg.List {
+		typ = &enttype.ArrayListType{
+			ElemType: &enttype.IDType{},
+		}
+	} else if arg.Nullable == NullableTrue {
+		typ = &enttype.NullableIDType{}
+	} else {
+		typ = &enttype.IDType{}
+	}
+
+	return typ.CustomGQLRender(cfg, fmt.Sprintf("args.%s", arg.Name)), typ.ArgImports(cfg)
 }
 
 type CustomScalarInfo struct {
