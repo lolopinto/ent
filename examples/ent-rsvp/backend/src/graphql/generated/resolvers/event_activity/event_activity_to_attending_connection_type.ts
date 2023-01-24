@@ -12,7 +12,8 @@ import { GuestType } from "src/graphql/resolvers/internal";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,
-  EventActivityToAttendingEdge
+  EventActivityToAttendingEdge,
+  Viewer
 >;
 
 export const EventActivityToAttendingConnectionType = () => {

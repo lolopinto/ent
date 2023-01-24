@@ -9,8 +9,13 @@ import {
   GraphQLNodeInterface,
 } from "@snowtop/ent/graphql";
 import { CommentToPostEdge } from "../../../../ent";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
-var connType: GraphQLConnectionType<GraphQLObjectType, CommentToPostEdge>;
+var connType: GraphQLConnectionType<
+  GraphQLObjectType,
+  CommentToPostEdge,
+  ExampleViewerAlias
+>;
 
 export const CommentToPostConnectionType = () => {
   if (connType === undefined) {

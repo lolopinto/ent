@@ -7,8 +7,13 @@ import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
 import { EventToMaybeEdge } from "../../../../ent";
 import { UserType } from "../../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
-var connType: GraphQLConnectionType<GraphQLObjectType, EventToMaybeEdge>;
+var connType: GraphQLConnectionType<
+  GraphQLObjectType,
+  EventToMaybeEdge,
+  ExampleViewerAlias
+>;
 
 export const EventToMaybeConnectionType = () => {
   if (connType === undefined) {
