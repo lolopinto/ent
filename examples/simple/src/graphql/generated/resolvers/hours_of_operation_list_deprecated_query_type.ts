@@ -16,22 +16,22 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Holiday } from "../../../ent";
-import { HolidayType } from "../../resolvers/internal";
+import { HoursOfOperation } from "../../../ent";
+import { HoursOfOperationType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-interface HolidayArgs {
+interface HoursOfOperationListDeprecatedArgs {
   id: any;
   ids: any;
   extra: boolean | null;
 }
 
-export const HolidayQueryType: GraphQLFieldConfig<
+export const HoursOfOperationListDeprecatedQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<ExampleViewerAlias>,
-  HolidayArgs
+  HoursOfOperationListDeprecatedArgs
 > = {
-  type: new GraphQLList(new GraphQLNonNull(HolidayType)),
+  type: new GraphQLList(new GraphQLNonNull(HoursOfOperationType)),
   args: {
     id: {
       description: "",
@@ -66,7 +66,7 @@ export const HolidayQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return Holiday.loadCustom(
+    return HoursOfOperation.loadCustom(
       context.getViewer(),
       query.AndOptional(...whereQueries),
     );

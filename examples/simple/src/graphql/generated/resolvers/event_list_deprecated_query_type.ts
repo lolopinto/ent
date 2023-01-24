@@ -20,16 +20,16 @@ import { Event } from "../../../ent";
 import { EventType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-interface EventArgs {
+interface EventListDeprecatedArgs {
   id: any;
   ids: any;
   extra: boolean | null;
 }
 
-export const EventQueryType: GraphQLFieldConfig<
+export const EventListDeprecatedQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<ExampleViewerAlias>,
-  EventArgs
+  EventListDeprecatedArgs
 > = {
   type: new GraphQLList(new GraphQLNonNull(EventType)),
   args: {

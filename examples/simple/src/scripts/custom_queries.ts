@@ -83,8 +83,8 @@ async function main() {
 
     const listContent = `
     const whereQueries = [
-      args.id ? query.Eq('id', args.id):undefined,
-      args.ids ? query.In('id', ...args.ids):undefined,
+      args.id ? query.Eq('id', args.id) : undefined,
+      args.ids ? query.In('id', ...args.ids) : undefined,
     ];
 
     if (whereQueries.filter(q => q !==undefined).length === 0) {
@@ -107,8 +107,8 @@ async function main() {
     // TODO confirm we need all this???
     queries.push({
       class: node,
-      name: query,
-      graphQLName: query,
+      name: `${query}_list_deprecated`,
+      graphQLName: `${query}_list_deprecated`,
       list: true,
       fieldType: "ASYNC_FUNCTION",
       nullable: true,
@@ -127,7 +127,7 @@ async function main() {
       nullable: true,
       args: connectionArgs,
       resultType: node,
-      description: `custom query for ${query}`,
+      description: `custom query for ${query}. connection`,
       extraImports: connectionImports,
       functionContents: connectionContent,
     });

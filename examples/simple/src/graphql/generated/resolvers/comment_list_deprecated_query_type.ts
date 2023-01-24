@@ -16,22 +16,22 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { HoursOfOperation } from "../../../ent";
-import { HoursOfOperationType } from "../../resolvers/internal";
+import { Comment } from "../../../ent";
+import { CommentType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-interface HoursOfOperationArgs {
+interface CommentListDeprecatedArgs {
   id: any;
   ids: any;
   extra: boolean | null;
 }
 
-export const HoursOfOperationQueryType: GraphQLFieldConfig<
+export const CommentListDeprecatedQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<ExampleViewerAlias>,
-  HoursOfOperationArgs
+  CommentListDeprecatedArgs
 > = {
-  type: new GraphQLList(new GraphQLNonNull(HoursOfOperationType)),
+  type: new GraphQLList(new GraphQLNonNull(CommentType)),
   args: {
     id: {
       description: "",
@@ -66,7 +66,7 @@ export const HoursOfOperationQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return HoursOfOperation.loadCustom(
+    return Comment.loadCustom(
       context.getViewer(),
       query.AndOptional(...whereQueries),
     );

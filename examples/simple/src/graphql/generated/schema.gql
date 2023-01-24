@@ -1234,24 +1234,24 @@ input UserSuperNestedObjectInput {
 }
 
 type Query {
-  comment(id: ID, ids: [ID!], extra: Boolean): [Comment!]
   comment_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToCommentConnectionConnection!
-  contact(id: ID, ids: [ID!], extra: Boolean): [Contact!]
+  comment_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Comment!]
   contact_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToContactConnectionConnection!
-  contact_email(id: ID, ids: [ID!], extra: Boolean): [ContactEmail!]
   contact_email_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToContactEmailConnectionConnection!
-  contact_phone_number(id: ID, ids: [ID!], extra: Boolean): [ContactPhoneNumber!]
+  contact_email_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactEmail!]
+  contact_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Contact!]
   contact_phone_number_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToContactPhoneNumberConnectionConnection!
-  event(id: ID, ids: [ID!], extra: Boolean): [Event!]
+  contact_phone_number_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactPhoneNumber!]
   event_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToEventConnectionConnection!
-  holiday(id: ID, ids: [ID!], extra: Boolean): [Holiday!]
+  event_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Event!]
   holiday_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToHolidayConnectionConnection!
-  hours_of_operation(id: ID, ids: [ID!], extra: Boolean): [HoursOfOperation!]
+  holiday_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Holiday!]
   hours_of_operation_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToHoursOfOperationConnectionConnection!
+  hours_of_operation_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [HoursOfOperation!]
   node(id: ID!): Node
   timeDiff(time: Time!, log: JSON!): String!
-  user(id: ID, ids: [ID!], extra: Boolean): [User!]
   user_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToUserConnectionConnection!
+  user_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [User!]
   viewer: Viewer!
 }
 

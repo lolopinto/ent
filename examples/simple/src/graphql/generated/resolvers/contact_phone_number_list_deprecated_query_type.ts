@@ -20,16 +20,16 @@ import { ContactPhoneNumber } from "../../../ent";
 import { ContactPhoneNumberType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-interface ContactPhoneNumberArgs {
+interface ContactPhoneNumberListDeprecatedArgs {
   id: any;
   ids: any;
   extra: boolean | null;
 }
 
-export const ContactPhoneNumberQueryType: GraphQLFieldConfig<
+export const ContactPhoneNumberListDeprecatedQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<ExampleViewerAlias>,
-  ContactPhoneNumberArgs
+  ContactPhoneNumberListDeprecatedArgs
 > = {
   type: new GraphQLList(new GraphQLNonNull(ContactPhoneNumberType)),
   args: {

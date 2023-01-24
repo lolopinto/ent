@@ -84,7 +84,7 @@ function getUserConfig(
   return {
     viewer: viewer,
     schema: schema,
-    root: "user",
+    root: "user_list_deprecated",
     args: {
       id: encodeGQLID(user),
     },
@@ -174,7 +174,7 @@ test("query multiple users", async () => {
     {
       viewer: user1.viewer,
       schema: schema,
-      root: "user",
+      root: "user_list_deprecated",
       args: {
         ids: [encodeGQLID(user1), encodeGQLID(user2), encodeGQLID(user3)],
       },
@@ -205,7 +205,7 @@ test("query user list api no args", async () => {
     {
       viewer: user1.viewer,
       schema: schema,
-      root: "user",
+      root: "user_list_deprecated",
       args: {},
       expectedError: /invalid query. must provid id or ids/,
     },

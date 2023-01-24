@@ -16,22 +16,22 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Comment } from "../../../ent";
-import { CommentType } from "../../resolvers/internal";
+import { Contact } from "../../../ent";
+import { ContactType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-interface CommentArgs {
+interface ContactListDeprecatedArgs {
   id: any;
   ids: any;
   extra: boolean | null;
 }
 
-export const CommentQueryType: GraphQLFieldConfig<
+export const ContactListDeprecatedQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<ExampleViewerAlias>,
-  CommentArgs
+  ContactListDeprecatedArgs
 > = {
-  type: new GraphQLList(new GraphQLNonNull(CommentType)),
+  type: new GraphQLList(new GraphQLNonNull(ContactType)),
   args: {
     id: {
       description: "",
@@ -66,7 +66,7 @@ export const CommentQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return Comment.loadCustom(
+    return Contact.loadCustom(
       context.getViewer(),
       query.AndOptional(...whereQueries),
     );

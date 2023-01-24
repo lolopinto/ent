@@ -16,22 +16,22 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { User } from "../../../ent";
-import { UserType } from "../../resolvers/internal";
+import { ContactEmail } from "../../../ent";
+import { ContactEmailType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-interface UserArgs {
+interface ContactEmailListDeprecatedArgs {
   id: any;
   ids: any;
   extra: boolean | null;
 }
 
-export const UserQueryType: GraphQLFieldConfig<
+export const ContactEmailListDeprecatedQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext<ExampleViewerAlias>,
-  UserArgs
+  ContactEmailListDeprecatedArgs
 > = {
-  type: new GraphQLList(new GraphQLNonNull(UserType)),
+  type: new GraphQLList(new GraphQLNonNull(ContactEmailType)),
   args: {
     id: {
       description: "",
@@ -66,7 +66,7 @@ export const UserQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return User.loadCustom(
+    return ContactEmail.loadCustom(
       context.getViewer(),
       query.AndOptional(...whereQueries),
     );
