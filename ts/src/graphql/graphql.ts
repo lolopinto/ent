@@ -67,6 +67,8 @@ interface CustomFieldImpl {
 export interface CustomField extends CustomFieldImpl {
   args: Field[];
   results: Field[];
+  extraImports?: any[]; // defined on server
+  functionContents?: string; // used in dynamic
 }
 
 export interface CustomMutation extends CustomField {}

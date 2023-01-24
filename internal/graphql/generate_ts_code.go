@@ -629,7 +629,10 @@ func searchForFiles(processor *codegen.Processor) []string {
 
 func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, error) {
 	jsonPath := processor.Config.GetCustomGraphQLJSONPath()
+	dynamicPath := processor.Config.GetDynamicScriptCustomGraphQLJSONPath()
 
+	// TODO handle dynamic path but no json path...
+	// TODO https://github.com/lolopinto/ent/pull/1338
 	var customFiles []string
 	if jsonPath == "" {
 		customFiles = searchForFiles(processor)
@@ -698,6 +701,9 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	)
 	if jsonPath != "" {
 		cmdArgs = append(cmdArgs, "--json_path", jsonPath)
+	}
+	if dynamicPath != "" {
+		cmdArgs = append(cmdArgs, "--dynamic_path", dynamicPath)
 	}
 
 	cmd := exec.Command(cmdName, cmdArgs...)
@@ -1723,11 +1729,12 @@ type fieldConfig struct {
 	ResolveMethodArg string
 	TypeImports      []*tsimport.ImportPath
 	//	ArgImports       []string // incase it's { [argName: string]: any }, we need to know difference
-	ArgImports       []*tsimport.ImportPath
-	Args             []*fieldConfigArg
-	FunctionContents []string
-	ReturnTypeHint   string
-	connection       *gqlConnection
+	ReserveAndUseImports []*tsimport.ImportPath
+	ArgImports           []*tsimport.ImportPath
+	Args                 []*fieldConfigArg
+	FunctionContents     []string
+	ReturnTypeHint       string
+	connection           *gqlConnection
 }
 
 func (f fieldConfig) FieldType() string {

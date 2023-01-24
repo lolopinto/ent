@@ -47,6 +47,10 @@ export interface Config {
   // this is hopefully a temporary solution...
   customGraphQLJSONPath?: string;
 
+  // dynamically add things to be considered in addition to customGraphQLJSONPath
+  // see examples for how it's used
+  dynamicScriptCustomGraphQLJSONPath?: string;
+
   // defaults to __global__schema.ts if not provided
   // relative to src/schema for now
   globalSchemaPath?: string;

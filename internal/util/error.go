@@ -19,6 +19,9 @@ func CoalesceErr(errs ...error) error {
 	if len(errors) == 0 {
 		return nil
 	}
+	if len(errors) == 1 {
+		return errors[0]
+	}
 	return &ErrorList{errs: errors}
 }
 
