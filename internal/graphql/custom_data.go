@@ -203,6 +203,14 @@ const Function CustomFieldType = "FUNCTION"
 const AsyncFunction CustomFieldType = "ASYNC_FUNCTION"
 
 type CustomField struct {
+	// Node is not the best name.
+
+	// for custom queries/mutations
+	// It's the class in which the function is defined
+
+	// for custom fields on nodes e.g. User, it's that node
+
+	// for inline fields, it's empty since not defined anywhere
 	Node         string          `json:"nodeName"`
 	GraphQLName  string          `json:"gqlName"`
 	FunctionName string          `json:"functionName"`
@@ -515,7 +523,10 @@ func customFieldEqual(cf1, cf2 *CustomField) bool {
 		customItemsListEqual(cf1.Args, cf2.Args) &&
 		customItemsListEqual(cf1.Results, cf2.Results) &&
 		cf1.FieldType == cf2.FieldType &&
-		cf1.Connection == cf2.Connection
+		cf1.Connection == cf2.Connection &&
+		cf1.Description == cf2.Description &&
+		tsimport.ImportPathsEqual(cf1.ExtraImports, cf2.ExtraImports) &&
+		cf1.FunctionContents == cf2.FunctionContents
 }
 
 func customFieldListComparison(cfg codegenapi.Config, l1, l2 []CustomField) (bool, map[string]bool) {

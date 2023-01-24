@@ -109,13 +109,18 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 		field := fields[idx]
 		nodeName := field.Node
 
-		class := cd.Classes[nodeName]
-		if class == nil {
-			return nil, fmt.Errorf("mutation/query %s with class %s not found", field.GraphQLName, class.Name)
-		}
+		if field.Node != "" {
+			class := cd.Classes[nodeName]
+			if class == nil {
+				return nil, fmt.Errorf("mutation/query %s with class %s not found", field.GraphQLName, nodeName)
+			}
 
-		if !class.Exported {
-			return nil, fmt.Errorf("resolver class %s needs to be exported", class.Name)
+			if !class.Exported {
+				return nil, fmt.Errorf("resolver class %s needs to be exported", class.Name)
+			}
+		} else if field.FunctionContents == "" {
+			return nil, fmt.Errorf("cannot have a field %s with no NodeName and no inline function contents", field.GraphQLName)
+
 		}
 
 		var objTypes []*objectType

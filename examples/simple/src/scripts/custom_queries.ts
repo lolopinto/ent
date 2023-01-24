@@ -104,11 +104,8 @@ async function main() {
     })
     `;
 
-    // TODO confirm we need all this???
     queries.push({
-      class: node,
       name: `${query}_list_deprecated`,
-      graphQLName: `${query}_list_deprecated`,
       list: true,
       fieldType: "ASYNC_FUNCTION",
       nullable: true,
@@ -119,9 +116,7 @@ async function main() {
       functionContents: listContent,
     });
     queries.push({
-      class: node,
       name: `${query}_connection`,
-      graphQLName: `${query}_connection`,
       connection: true,
       fieldType: "ASYNC_FUNCTION",
       nullable: true,

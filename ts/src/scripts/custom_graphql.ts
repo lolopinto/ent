@@ -445,7 +445,7 @@ async function main() {
 
   const buildClasses = (fields: ProcessedCustomField[]) => {
     fields.forEach((field) => {
-      if (!nodesMap.has(field.nodeName)) {
+      if (field.nodeName && !nodesMap.has(field.nodeName)) {
         let info = imports.getInfoForClass(field.nodeName);
         classes[field.nodeName] = { ...info.class, path: info.file.path };
         buildFiles(info.file);
