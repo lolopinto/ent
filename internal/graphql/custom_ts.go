@@ -509,9 +509,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 
 	inlineContents := field.FunctionContents != ""
 
-	// hack. don't do this for dynamic.
-	// TODO: figure out what all the right fields should be
-	if !inlineContents {
+	if field.Node != "" {
 		if err := addToArgImport(field.Node); err != nil {
 			return nil, err
 		}

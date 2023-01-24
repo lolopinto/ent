@@ -632,6 +632,7 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	dynamicPath := processor.Config.GetDynamicScriptCustomGraphQLJSONPath()
 
 	// TODO handle dynamic path but no json path...
+	// TODO https://github.com/lolopinto/ent/pull/1338
 	var customFiles []string
 	if jsonPath == "" {
 		customFiles = searchForFiles(processor)
