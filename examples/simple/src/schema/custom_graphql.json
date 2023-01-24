@@ -271,6 +271,15 @@
         "connection": true,
         "fieldType": "ASYNC_FUNCTION"
       }
+    ],
+    "UserToLikesEdge": [
+      {
+        "name": "time",
+        "functionName": "time",
+        "resultType": "Date",
+        "fieldType": "ACCESSOR",
+        "nullable": false
+      }
     ]
   }
 }

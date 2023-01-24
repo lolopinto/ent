@@ -7,8 +7,13 @@ import { GraphQLObjectType } from "graphql";
 import { Data } from "@snowtop/ent";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
 import { UserType } from "../../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
-var connType: GraphQLConnectionType<GraphQLObjectType, Data>;
+var connType: GraphQLConnectionType<
+  GraphQLObjectType,
+  Data,
+  ExampleViewerAlias
+>;
 
 export const RootToUserConnectionConnectionType = () => {
   if (connType === undefined) {
