@@ -89,6 +89,8 @@ export class FakeUser implements Ent {
     this.password = data.password;
   }
 
+  __setRawDBData(data: Data) {}
+
   static getFields(): string[] {
     return [
       "id",

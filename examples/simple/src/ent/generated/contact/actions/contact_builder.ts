@@ -9,6 +9,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -75,6 +76,9 @@ export class ContactBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<Contact, TInput, ExampleViewerAlias, TExistingEnt>
+    >,
   ) {
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Contact`;
@@ -93,6 +97,7 @@ export class ContactBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: contactLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

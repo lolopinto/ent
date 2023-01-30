@@ -6,6 +6,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -56,6 +57,7 @@ export class GuestBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<OrchestratorOptions<Guest, TInput, Viewer, TExistingEnt>>,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Guest`;
     this.input = action.getInput();
@@ -73,6 +75,7 @@ export class GuestBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: guestLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

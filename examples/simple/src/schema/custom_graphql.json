@@ -149,7 +149,7 @@
         }
       ]
     },
-        {
+    {
       "name": "GQLViewer",
       "graphQLName": "Viewer",
       "fields":[
@@ -166,6 +166,23 @@
           "nullable": true
         }
       ]
+    },
+    {
+      "name": "EmailInfo",
+      "graphQLName": "EmailInfo",
+      "fields": [
+        {
+          "name": "emails",
+          "fieldType": "FIELD",
+          "resultType": "ContactEmail",
+          "list": true
+        },
+        {
+          "name": "firstEmail",
+          "fieldType": "FIELD",
+          "resultType": "String"
+        }
+      ]
     }
   ],
   "fields":{
@@ -174,6 +191,12 @@
         "name": "fullName",
         "resultType": "String",
         "fieldType": "ACCESSOR"
+      },
+      {
+        "name": "plusEmails",
+        "functionName": "queryPlusEmails",
+        "resultType": "EmailInfo",
+        "fieldType": "ASYNC_FUNCTION"
       }
     ],
     "User": [
@@ -194,7 +217,8 @@
         "functionName": "getFirstContactSameDomain",
         "resultType": "Contact",
         "nullable": true,
-        "fieldType": "ASYNC_FUNCTION"
+        "fieldType": "ASYNC_FUNCTION",
+        "description": "contacts same domain..."
       },
       {
         "name": "contactsSameDomain",
@@ -202,6 +226,19 @@
         "resultType": "Contact",
         "list": true,
         "fieldType": "ASYNC_FUNCTION"
+      },
+      {
+        "name": "contactsGivenDomain",
+        "functionName": "getContactsGivenDomain",
+        "resultType": "Contact",
+        "list": true,
+        "fieldType": "ASYNC_FUNCTION",
+        "args": [
+          {
+            "name": "domain",
+            "type": "String"
+          }
+        ]
       },
       {
         "name": "contactsSameDomainNullable",
@@ -233,6 +270,15 @@
         "resultType": "Comment",
         "connection": true,
         "fieldType": "ASYNC_FUNCTION"
+      }
+    ],
+    "UserToLikesEdge": [
+      {
+        "name": "time",
+        "functionName": "time",
+        "resultType": "Date",
+        "fieldType": "ACCESSOR",
+        "nullable": false
       }
     ]
   }

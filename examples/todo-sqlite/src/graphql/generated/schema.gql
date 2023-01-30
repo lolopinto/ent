@@ -49,6 +49,7 @@ type Account implements Node {
   phone_number: String
   account_prefs: AccountPrefs
   account_prefs_list: [AccountPrefs2!]
+  credits: Int
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
   created_workspaces(first: Int, after: String, last: Int, before: String): AccountToCreatedWorkspacesConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
@@ -78,6 +79,7 @@ type Todo implements Node {
   text: String!
   completed: Boolean!
   completed_date: Time
+  bounty: Int
   tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
   todo_scope(first: Int, after: String, last: Int, before: String): TodoToTodoScopeConnection!
 }
@@ -290,6 +292,27 @@ enum AccountTodoStatusInput {
   UNKNOWN
 }
 
+input AccountTransferCreditsInput {
+  """id of Account"""
+  id: ID!
+  to: ID!
+  amount: Int!
+}
+
+type AccountTransferCreditsPayload {
+  account: Account!
+}
+
+input AccountUpdateBalanceInput {
+  """id of Account"""
+  id: ID!
+  credits: Int!
+}
+
+type AccountUpdateBalancePayload {
+  account: Account!
+}
+
 input AddTodoTagInput {
   """id of Todo"""
   id: ID!
@@ -297,6 +320,16 @@ input AddTodoTagInput {
 }
 
 type AddTodoTagPayload {
+  todo: Todo!
+}
+
+input ChangeTodoBountyInput {
+  """id of Todo"""
+  id: ID!
+  bounty: Int
+}
+
+type ChangeTodoBountyPayload {
   todo: Todo!
 }
 
@@ -315,6 +348,7 @@ input CreateAccountInput {
   phone_number: String!
   account_prefs: AccountPrefsInput
   account_prefs_list: [AccountPrefs2Input!]
+  credits: Int
 }
 
 type CreateAccountPayload {
@@ -338,6 +372,7 @@ input CreateTodoInput {
   assignee_id: ID!
   scope_id: ID!
   scope_type: String!
+  bounty: Int
 }
 
 type CreateTodoPayload {
@@ -447,7 +482,10 @@ type Query {
 }
 
 type Mutation {
+  accountTransferCredits(input: AccountTransferCreditsInput!): AccountTransferCreditsPayload!
+  accountUpdateBalance(input: AccountUpdateBalanceInput!): AccountUpdateBalancePayload!
   addTodoTag(input: AddTodoTagInput!): AddTodoTagPayload!
+  changeTodoBounty(input: ChangeTodoBountyInput!): ChangeTodoBountyPayload!
   changeTodoStatus(input: ChangeTodoStatusInput!): ChangeTodoStatusPayload!
   createAccount(input: CreateAccountInput!): CreateAccountPayload!
   createTag(input: CreateTagInput!): CreateTagPayload!

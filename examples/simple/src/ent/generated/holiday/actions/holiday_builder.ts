@@ -9,6 +9,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -58,6 +59,9 @@ export class HolidayBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<Holiday, TInput, ExampleViewerAlias, TExistingEnt>
+    >,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Holiday`;
     this.input = action.getInput();
@@ -75,6 +79,7 @@ export class HolidayBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: holidayLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

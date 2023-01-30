@@ -26,7 +26,7 @@ import { AddressToHostedEventsQuery } from "../internal";
 import schema from "../../schema/address";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface AddressDBData {
+interface AddressData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -39,6 +39,7 @@ interface AddressDBData {
 }
 
 export class AddressBase implements Ent<ExampleViewerAlias> {
+  protected readonly data: AddressData;
   readonly nodeType = NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;
@@ -50,7 +51,7 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   readonly apartment: string | null;
   readonly country: string;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -60,6 +61,15 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
     this.zip = data.zip;
     this.apartment = data.apartment;
     this.country = data.country;
+    // @ts-expect-error
+    this.data = data;
+  }
+
+  __setRawDBData<AddressData>(data: AddressData) {}
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getRawDBData(): AddressData {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
@@ -136,7 +146,7 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<AddressDBData[]> {
+  ): Promise<AddressData[]> {
     return (await loadCustomData(
       {
         ...AddressBase.loaderOptions.apply(this),
@@ -144,7 +154,7 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
       },
       query,
       context,
-    )) as AddressDBData[];
+    )) as AddressData[];
   }
 
   static async loadCustomCount<T extends AddressBase>(
@@ -171,12 +181,12 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<AddressDBData | null> {
+  ): Promise<AddressData | null> {
     const row = await addressLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as AddressDBData;
+    return row as AddressData;
   }
 
   static async loadRawDataX<T extends AddressBase>(
@@ -186,12 +196,12 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<AddressDBData> {
+  ): Promise<AddressData> {
     const row = await addressLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as AddressDBData;
+    return row as AddressData;
   }
 
   static loaderOptions<T extends AddressBase>(

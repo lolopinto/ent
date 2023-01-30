@@ -4,7 +4,7 @@ import DB, { Sqlite, Dialect, Client, SyncClient } from "../../core/db";
 import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 import { loadConfig } from "../../core/config";
 import * as fs from "fs";
-import { DBType, Field, getFields } from "../../schema";
+import { ConstraintType, DBType, Field, getFields } from "../../schema";
 import { snakeCase } from "snake-case";
 import { BuilderSchema, getTableName } from "../builder";
 import { Ent } from "../../core/base";
@@ -76,6 +76,15 @@ export function foreignKey(
       return `CONSTRAINT ${name} FOREIGN KEY(${cols.join(",")}) REFERENCES ${
         fkey.table
       }(${fkey.cols.join(",")})`;
+    },
+  };
+}
+
+export function check(name: string, condition: string): Constraint {
+  return {
+    name,
+    generate() {
+      return `CONSTRAINT ${name} CHECK(${condition})`;
     },
   };
 }
@@ -709,11 +718,39 @@ export async function doSQLiteTestFromSchemas(
 export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
   const fields = getFields(schema);
 
-  const columns: Column[] = [];
+  const items: SchemaItem[] = [];
   for (const [fieldName, field] of fields) {
-    columns.push(getColumnFromField(fieldName, field, dialect));
+    items.push(getColumnFromField(fieldName, field, dialect));
   }
-  return table(getTableName(schema), ...columns);
+
+  if (schema.constraints) {
+    for (const constraint of schema.constraints) {
+      switch (constraint.type) {
+        case ConstraintType.PrimaryKey:
+          items.push(primaryKey(constraint.name, constraint.columns));
+          break;
+        case ConstraintType.ForeignKey:
+          if (!constraint.fkey) {
+            throw new Error(`need 'fkey' field for foreign key constraint`);
+          }
+          items.push(
+            foreignKey(constraint.name, constraint.columns, {
+              table: constraint.fkey.tableName,
+              cols: constraint.fkey.columns,
+            }),
+          );
+          break;
+
+        case ConstraintType.Check:
+          if (!constraint.condition) {
+            throw new Error(`need 'condition' field for check constraint`);
+          }
+          items.push(check(constraint.name, constraint.condition));
+          break;
+      }
+    }
+  }
+  return table(getTableName(schema), ...items);
 }
 
 function getColumnForDbType(

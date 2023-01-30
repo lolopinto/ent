@@ -6,6 +6,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -24,6 +25,7 @@ export interface TodoInput {
   assigneeID?: ID | Builder<Account, Viewer>;
   scopeID?: ID;
   scopeType?: string;
+  bounty?: number | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -58,6 +60,7 @@ export class TodoBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<OrchestratorOptions<Todo, TInput, Viewer, TExistingEnt>>,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Todo`;
     this.input = action.getInput();
@@ -75,6 +78,7 @@ export class TodoBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: todoLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 
@@ -252,6 +256,7 @@ export class TodoBuilder<
     addField("assigneeID", input.assigneeID);
     addField("scopeID", input.scopeID);
     addField("scopeType", input.scopeType);
+    addField("bounty", input.bounty);
     return result;
   }
 
@@ -357,5 +362,14 @@ export class TodoBuilder<
       );
     }
     return this.existingEnt.scopeType;
+  }
+
+  // get value of bounty. Retrieves it from the input if specified or takes it from existingEnt
+  getNewBountyValue(): number | null {
+    if (this.input.bounty !== undefined) {
+      return this.input.bounty;
+    }
+
+    return this.existingEnt?.bounty ?? null;
   }
 }

@@ -7,8 +7,13 @@ import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
 import { UserToLikersEdge } from "../../../../ent";
 import { UserType } from "../../../resolvers/internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
-var connType: GraphQLConnectionType<GraphQLObjectType, UserToLikersEdge>;
+var connType: GraphQLConnectionType<
+  GraphQLObjectType,
+  UserToLikersEdge,
+  ExampleViewerAlias
+>;
 
 export const UserToLikersConnectionType = () => {
   if (connType === undefined) {

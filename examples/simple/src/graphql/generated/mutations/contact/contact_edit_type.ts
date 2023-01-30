@@ -95,8 +95,12 @@ export const ContactEditType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
       {
-        emailIds: input.emailIds,
-        phoneNumberIds: input.phoneNumberIds,
+        emailIds: input.emailIds
+          ? input.emailIds.map((i: any) => mustDecodeIDFromGQLID(i))
+          : undefined,
+        phoneNumberIds: input.phoneNumberIds
+          ? input.phoneNumberIds.map((i: any) => mustDecodeIDFromGQLID(i))
+          : undefined,
         firstName: input.firstName,
         lastName: input.lastName,
         userID: mustDecodeNullableIDFromGQLID(input.userID),

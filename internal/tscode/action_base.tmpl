@@ -1,5 +1,5 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator"}}
-{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy"}}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions"}}
+{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause"}}
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
@@ -32,13 +32,34 @@
 {{ $node := useImport .NodeData.Node -}}
 
 {{$hasInput := hasInput $action -}}
+{{$inputWithRelative := inputWithRelative $action $cfg -}}
 {{$inputName := "" -}}
+{{$constructorInput := "" -}}
+
 {{ if $hasInput -}}
   {{$inputName = $action.GetActionInputName -}}
 
-  export interface {{$inputName}} {
+  {{$firstInput := $inputName}}
+  {{ if $inputWithRelative }}
+    {{$firstInput = $inputWithRelative.RelativeInputName}}
+  {{ end -}}
+  {{$constructorInput = $firstInput }}
+
+  {{ if $inputWithRelative }}
+    {{ range $imp := $inputWithRelative.Imports }} 
+      {{reserveImportPath $imp true }}
+      {{ $ignored := useImport $imp.Import -}}
+    {{ end }}
+  {{ end -}}
+
+  export interface {{$firstInput}} {
     {{ range $field := $action.GetFields -}}
       {{$type := $field.TsBuilderType $cfg -}}
+
+      {{ if and $inputWithRelative ($inputWithRelative.RelativeField $field.FieldName) -}} 
+        {{ $type = $field.TSBuilderWithRelativeType $cfg -}}
+      {{ end -}}
+
       {{range $field.TsBuilderImports $cfg -}}
         {{ reserveImportPath . true -}}
         {{ $ignore := useImport .Import -}}
@@ -63,6 +84,19 @@
       {{end -}}
     {{end -}}
   }
+
+  {{ if $inputWithRelative }}
+    export interface {{$inputName}} extends {{$firstInput}} {
+      {{ range $field := $inputWithRelative.FieldsWithRelative }}
+        {{$type := $field.TsBuilderType $cfg -}}
+        {{if isRequiredField $action $field -}}
+          {{$field.TsBuilderFieldName}}: {{$type}};
+        {{else -}}
+          {{$field.TsBuilderFieldName}}?: {{$type}};
+        {{end -}}
+      {{ end -}}
+    }
+  {{end }}
 {{end}}
 
 {{ $constructor := "" }}
@@ -77,7 +111,7 @@
 
 {{/* edit, whole shebang */ -}}
 {{ if and $action.MutatingExistingObject $hasInput -}}
-  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewerType $instance $node $inputName -}}
+  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewerType $instance $node $constructorInput -}}
   {{ $newArgs = printf "viewer, %s, input" $instance -}}
   {{ $hasSaveFromID = true}}
 {{/* create, no editing */ -}}
@@ -128,7 +162,19 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   constructor({{$constructor}}) {
     this.viewer = viewer;
     {{ if $hasInput -}}
-      this.input = input;
+      {{if $inputWithRelative -}}
+          let expressions = new Map<string, {{useImport "Clause"}}>();
+          const data = {{$instance}}.___getRawDBData();
+          this.input = {
+            ...input,
+        {{ range $field := $inputWithRelative.FieldsWithRelative -}}
+          {{/* TODO this is sadly not generic even though everything else here is generic... */ -}}
+          {{$field.TsBuilderFieldName}}: {{useImport "maybeConvertRelativeInputPlusExpressions"}}(input.{{$field.TsBuilderFieldName}}, '{{$field.GetDbColName}}', data.{{$field.GetDbColName}}, expressions),
+        {{ end -}}
+        };
+      {{ else -}}
+        this.input = input;
+      {{ end -}}
     {{end -}}
     this.builder = new {{$builderName}}(
       this.viewer,
@@ -138,6 +184,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
         {{$instance}},
       {{ else -}}
         null,
+      {{end -}}
+      {{ if $inputWithRelative -}}
+        {expressions},
       {{end -}}
     );
     {{if $action.MutatingExistingObject -}}

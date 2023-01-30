@@ -1,6 +1,7 @@
 import {
   ActionOperation,
   BooleanType,
+  IntegerType,
   StringType,
   TimestampType,
   UUIDType,
@@ -31,6 +32,11 @@ const TodoSchema = new TodoBaseEntSchema({
         // a todo can be created in a personal account or as part of a workspace/team situation
         types: ["Account", "Workspace"],
       },
+    }),
+    // bounty associated with a todo
+    // if done, creator_id transfers from their balance to assigneeID
+    bounty: IntegerType({
+      nullable: true,
     }),
   },
 
@@ -69,6 +75,13 @@ const TodoSchema = new TodoBaseEntSchema({
       actionName: "ChangeTodoStatusAction",
       graphQLName: "changeTodoStatus",
       inputName: "ChangeTodoStatusInput",
+    },
+    {
+      operation: ActionOperation.Edit,
+      fields: ["bounty"],
+      actionName: "ChangeTodoBountyAction",
+      graphQLName: "changeTodoBounty",
+      inputName: "ChangeTodoBountyInput",
     },
     {
       operation: ActionOperation.Edit,

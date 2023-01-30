@@ -35,7 +35,7 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/todo_schema";
 
-interface TodoDBData {
+interface TodoData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -47,9 +47,11 @@ interface TodoDBData {
   assignee_id: ID;
   scope_id: ID;
   scope_type: string;
+  bounty: number | null;
 }
 
 export class TodoBase implements Ent<Viewer> {
+  protected readonly data: TodoData;
   readonly nodeType = NodeType.Todo;
   readonly id: ID;
   readonly createdAt: Date;
@@ -62,8 +64,9 @@ export class TodoBase implements Ent<Viewer> {
   readonly assigneeID: ID;
   readonly scopeID: ID;
   readonly scopeType: string;
+  readonly bounty: number | null;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -75,6 +78,16 @@ export class TodoBase implements Ent<Viewer> {
     this.assigneeID = data.assignee_id;
     this.scopeID = data.scope_id;
     this.scopeType = data.scope_type;
+    this.bounty = data.bounty;
+    // @ts-expect-error
+    this.data = data;
+  }
+
+  __setRawDBData<TodoData>(data: TodoData) {}
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getRawDBData(): TodoData {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
@@ -186,7 +199,7 @@ export class TodoBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<TodoDBData[]> {
+  ): Promise<TodoData[]> {
     return (await loadCustomData(
       {
         ...TodoBase.loaderOptions.apply(this),
@@ -194,7 +207,7 @@ export class TodoBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as TodoDBData[];
+    )) as TodoData[];
   }
 
   static async loadCustomCount<T extends TodoBase>(
@@ -221,12 +234,12 @@ export class TodoBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TodoDBData | null> {
+  ): Promise<TodoData | null> {
     const row = await todoLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as TodoDBData;
+    return row as TodoData;
   }
 
   static async loadRawDataX<T extends TodoBase>(
@@ -236,12 +249,12 @@ export class TodoBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TodoDBData> {
+  ): Promise<TodoData> {
     const row = await todoLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as TodoDBData;
+    return row as TodoData;
   }
 
   static loaderOptions<T extends TodoBase>(

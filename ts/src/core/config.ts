@@ -3,6 +3,7 @@ import { load } from "js-yaml";
 import DB, { Database, DBDict } from "./db";
 import * as path from "path";
 import { setLogLevels } from "./logger";
+import { ___setLogQueryErrorWithError } from "./ent";
 
 type logType = "query" | "warn" | "info" | "error" | "debug";
 
@@ -36,12 +37,19 @@ export interface Config {
   // config for codegen
   codegen?: CodegenConfig;
 
+  // logQueryWithError
+  logQueryWithError?: boolean;
+
   // because of swc issues, we might not be able to
   // parse custom graphql via decorators so we put this
   // in a json file for now
   // the path should be relative to the root
   // this is hopefully a temporary solution...
   customGraphQLJSONPath?: string;
+
+  // dynamically add things to be considered in addition to customGraphQLJSONPath
+  // see examples for how it's used
+  dynamicScriptCustomGraphQLJSONPath?: string;
 
   // defaults to __global__schema.ts if not provided
   // relative to src/schema for now
@@ -153,6 +161,8 @@ function setConfig(cfg: Config) {
       db: cfg.db,
     });
   }
+
+  ___setLogQueryErrorWithError(cfg.logQueryWithError);
 }
 
 function isBuffer(b: Buffer | Config): b is Buffer {

@@ -67,6 +67,8 @@ interface CustomFieldImpl {
 export interface CustomField extends CustomFieldImpl {
   args: Field[];
   results: Field[];
+  extraImports?: any[]; // defined on server
+  functionContents?: string; // used in dynamic
 }
 
 export interface CustomMutation extends CustomField {}
@@ -78,7 +80,7 @@ export interface ProcessedCustomField extends CustomFieldImpl {
 }
 
 export type ProcessCustomFieldMap = {
-  [key: string]: ProcessedCustomField;
+  [key: string]: ProcessedCustomField[];
 };
 
 export interface CustomObject {
@@ -740,6 +742,7 @@ export class GQLCapture {
     baseArgs.set("Context", true);
     this.customTypes.forEach((_val, key) => baseArgs.set(key, true));
 
+    // TODO this should be aware of knownCustomTypes
     const resolveFields = (fields: CustomField[]) => {
       fields.forEach((field) => {
         // we have a check earlier that *should* make this path impossible

@@ -29,7 +29,7 @@ import { NodeType } from "src/ent/generated/types";
 import { UserToEventsQuery } from "src/ent/internal";
 import schema from "src/schema/user_schema";
 
-interface UserDBData {
+interface UserData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -40,6 +40,7 @@ interface UserDBData {
 }
 
 export class UserBase implements Ent<Viewer> {
+  protected readonly data: UserData;
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -49,7 +50,7 @@ export class UserBase implements Ent<Viewer> {
   readonly emailAddress: string;
   protected readonly password: string;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -57,6 +58,15 @@ export class UserBase implements Ent<Viewer> {
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
     this.password = data.password;
+    // @ts-expect-error
+    this.data = data;
+  }
+
+  __setRawDBData<UserData>(data: UserData) {}
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getRawDBData(): UserData {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
@@ -133,7 +143,7 @@ export class UserBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<UserDBData[]> {
+  ): Promise<UserData[]> {
     return (await loadCustomData(
       {
         ...UserBase.loaderOptions.apply(this),
@@ -141,7 +151,7 @@ export class UserBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as UserDBData[];
+    )) as UserData[];
   }
 
   static async loadCustomCount<T extends UserBase>(
@@ -168,12 +178,12 @@ export class UserBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<UserDBData | null> {
+  ): Promise<UserData | null> {
     const row = await userLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as UserDBData;
+    return row as UserData;
   }
 
   static async loadRawDataX<T extends UserBase>(
@@ -183,12 +193,12 @@ export class UserBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<UserDBData> {
+  ): Promise<UserData> {
     const row = await userLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as UserDBData;
+    return row as UserData;
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
@@ -240,14 +250,14 @@ export class UserBase implements Ent<Viewer> {
     ) => T,
     emailAddress: string,
     context?: Context,
-  ): Promise<UserDBData | null> {
+  ): Promise<UserData | null> {
     const row = await userEmailAddressLoader
       .createLoader(context)
       .load(emailAddress);
     if (!row) {
       return null;
     }
-    return row as UserDBData;
+    return row as UserData;
   }
 
   static loaderOptions<T extends UserBase>(

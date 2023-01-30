@@ -9,7 +9,6 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
-	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -110,13 +109,18 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 		field := fields[idx]
 		nodeName := field.Node
 
-		class := cd.Classes[nodeName]
-		if class == nil {
-			return nil, fmt.Errorf("mutation/query %s with class %s not found", field.GraphQLName, class.Name)
-		}
+		if field.Node != "" {
+			class := cd.Classes[nodeName]
+			if class == nil {
+				return nil, fmt.Errorf("mutation/query %s with class %s not found", field.GraphQLName, nodeName)
+			}
 
-		if !class.Exported {
-			return nil, fmt.Errorf("resolver class %s needs to be exported", class.Name)
+			if !class.Exported {
+				return nil, fmt.Errorf("resolver class %s needs to be exported", class.Name)
+			}
+		} else if field.FunctionContents == "" {
+			return nil, fmt.Errorf("cannot have a field %s with no NodeName and no inline function contents", field.GraphQLName)
+
 		}
 
 		var objTypes []*objectType
@@ -473,6 +477,10 @@ func (qfcg *queryFieldConfigBuilder) getArgMap(cd *CustomData) map[string]*Custo
 func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Processor, s *gqlSchema, cd *CustomData, field CustomField) (*fieldConfig, error) {
 	var argImports []*tsimport.ImportPath
 
+	if field.Connection {
+		argImports = append(argImports, tsimport.NewEntGraphQLImportPath("GraphQLEdgeConnection"))
+	}
+
 	// args that "useImport" should be called on
 	// assumes they're reserved somewhere else...
 
@@ -499,76 +507,114 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		}
 	}
 
-	if err := addToArgImport(field.Node); err != nil {
-		return nil, err
-	}
+	inlineContents := field.FunctionContents != ""
 
-	for _, result := range field.Results {
-		if err := addToArgImport(result.Type); err != nil {
+	if field.Node != "" {
+		if err := addToArgImport(field.Node); err != nil {
 			return nil, err
 		}
 	}
 
-	argMap := builder.getArgMap(cd)
-	var argContents []string
-	for _, arg := range field.Args {
-		if arg.GraphQLOnlyArg {
-			continue
-		}
-		if arg.IsContextArg {
-			argContents = append(argContents, "context")
-			continue
-		}
-		argType := argMap[arg.Type]
-		if argType == nil {
-			if arg.TSType == "ID" && processor.Config.Base64EncodeIDs() {
-				argImports = append(argImports, &tsimport.ImportPath{
-					Import:     "mustDecodeIDFromGQLID",
-					ImportPath: codepath.GraphQLPackage,
-				})
-				argContents = append(argContents, fmt.Sprintf("mustDecodeIDFromGQLID(args.%s)", arg.Name))
-			} else {
-				argContents = append(argContents, fmt.Sprintf("args.%s", arg.Name))
+	// only add return type if we have a type hint
+	if builder.getReturnTypeHint() != "" {
+		for _, result := range field.Results {
+			if err := addToArgImport(result.Type); err != nil {
+				return nil, err
 			}
-		} else {
-			fields, ok := cd.Fields[arg.Type]
-			if !ok {
-				return nil, fmt.Errorf("type %s has no fields", arg.Type)
-			}
-			args := make([]string, len(fields))
-
-			for idx, f := range fields {
-				// input.foo
-				args[idx] = fmt.Sprintf("%s:%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
-			}
-			argContents = append(argContents, fmt.Sprintf("{%s},", strings.Join(args, ",")))
 		}
 	}
+
 	var conn *gqlConnection
 
-	functionCall := fmt.Sprintf("r.%s(%s)", field.FunctionName, strings.Join(argContents, ","))
+	var functionContents []string
+	argMap := builder.getArgMap(cd)
 
-	functionContents := []string{
-		fmt.Sprintf("const r = new %s();", field.Node),
-	}
-
-	if field.Connection {
+	getConnection := func(s string) (*gqlConnection, string) {
 		// nodeName is root or something...
 		customEdge := getRootGQLEdge(processor.Config, field)
 		// RootQuery?
-		conn = getGqlConnection("root", customEdge, processor)
+		conn := getGqlConnection("root", customEdge, processor)
 
-		functionContents = append(
-			functionContents,
-			fmt.Sprintf(
-				"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args);",
-				functionCall,
-			),
+		return conn, fmt.Sprintf(
+			"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args);",
+			s,
 		)
+	}
 
-		argImports = append(argImports, tsimport.NewEntGraphQLImportPath("GraphQLEdgeConnection"))
+	if inlineContents {
+		contents := field.FunctionContents
+		for _, arg := range field.Args {
+			argType := argMap[arg.Type]
+			if argType == nil {
+				contents, imps := arg.renderArg(processor.Config)
+				defaultArg := arg.defaultArg()
+				if contents != defaultArg {
+					// arg changed, so assign new value before inline contents
+					// so we don't have to change the generated code
+					functionContents = append(functionContents,
+						fmt.Sprintf("%s=%s;", defaultArg, contents),
+					)
+				}
+				argImports = append(argImports, imps...)
+			}
+		}
+		if field.Connection {
+			conn2, call := getConnection(fmt.Sprintf("{%s}", contents))
+			conn = conn2
+
+			functionContents = append(
+				functionContents,
+				call,
+			)
+		} else {
+			functionContents = append(functionContents, contents)
+		}
 	} else {
-		functionContents = append(functionContents, fmt.Sprintf("return %s;", functionCall))
+		var argContents []string
+		for _, arg := range field.Args {
+			if arg.GraphQLOnlyArg {
+				continue
+			}
+			if arg.IsContextArg {
+				argContents = append(argContents, "context")
+				continue
+			}
+			argType := argMap[arg.Type]
+			if argType == nil {
+				contents, imps := arg.renderArg(processor.Config)
+				argContents = append(argContents, contents)
+				argImports = append(argImports, imps...)
+			} else {
+				fields, ok := cd.Fields[arg.Type]
+				if !ok {
+					return nil, fmt.Errorf("type %s has no fields", arg.Type)
+				}
+				args := make([]string, len(fields))
+
+				for idx, f := range fields {
+					// input.foo
+					args[idx] = fmt.Sprintf("%s:%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
+				}
+				argContents = append(argContents, fmt.Sprintf("{%s},", strings.Join(args, ",")))
+			}
+		}
+		functionCall := fmt.Sprintf("r.%s(%s)", field.FunctionName, strings.Join(argContents, ","))
+
+		functionContents = []string{
+			fmt.Sprintf("const r = new %s();", field.Node),
+		}
+
+		if field.Connection {
+			conn2, call := getConnection(functionCall)
+			conn = conn2
+
+			functionContents = append(
+				functionContents,
+				call,
+			)
+		} else {
+			functionContents = append(functionContents, fmt.Sprintf("return %s;", functionCall))
+		}
 	}
 
 	// fieldConfig can have connection
@@ -579,10 +625,12 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		ResolveMethodArg: builder.getResolveMethodArg(),
 		TypeImports:      builder.getTypeImports(processor, s),
 		ArgImports:       argImports,
-		Args:             builder.getArgs(s),
-		ReturnTypeHint:   builder.getReturnTypeHint(),
-		connection:       conn,
-		FunctionContents: functionContents,
+		// reserve and use them. no questions asked
+		ReserveAndUseImports: field.ExtraImports,
+		Args:                 builder.getArgs(s),
+		ReturnTypeHint:       builder.getReturnTypeHint(),
+		connection:           conn,
+		FunctionContents:     functionContents,
 	}
 
 	return result, nil
@@ -778,6 +826,27 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 				}
 			}
 			//			obj.Imports = append(obj.Imports, gqlField.FieldImports...)
+
+			// check if we have a new custom field to add
+			// because we're currently adding to current file, it can get lost
+			for _, result := range field.Results {
+
+				customObj := cd.Objects[result.Type]
+				if customObj == nil {
+					continue
+				}
+
+				if nodeInfo == nil {
+					return fmt.Errorf("custom objects not referenced in top level queries and mutations can only be referenced in ent nodes")
+				}
+
+				objType, err := buildObjectType(processor, cd, s, result, customObj, nodeInfo.FilePath, "GraphQLObjectType")
+				if err != nil {
+					return err
+				}
+
+				nodeInfo.ObjData.GQLNodes = append(nodeInfo.ObjData.GQLNodes, objType)
+			}
 		}
 	}
 	return nil
@@ -802,6 +871,7 @@ func getCustomGQLField(cd *CustomData, field CustomField, s *gqlSchema, instance
 		Name:               field.GraphQLName,
 		HasResolveFunction: false,
 		FieldImports:       imports,
+		Description:        field.Description,
 	}
 
 	var args []string
@@ -810,7 +880,7 @@ func getCustomGQLField(cd *CustomData, field CustomField, s *gqlSchema, instance
 			args = append(args, "context")
 			continue
 		}
-		args = append(args, arg.Name)
+		args = append(args, fmt.Sprintf("args.%s", arg.Name))
 
 		cfgArg := &fieldConfigArg{
 			Name: arg.Name,

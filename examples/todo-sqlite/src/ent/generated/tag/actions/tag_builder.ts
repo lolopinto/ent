@@ -6,6 +6,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -55,6 +56,7 @@ export class TagBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<OrchestratorOptions<Tag, TInput, Viewer, TExistingEnt>>,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Tag`;
     this.input = action.getInput();
@@ -72,6 +74,7 @@ export class TagBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: tagLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

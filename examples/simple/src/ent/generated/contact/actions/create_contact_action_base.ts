@@ -37,6 +37,7 @@ interface customPhoneNumberInput {
   phoneNumber: string;
   label: ContactPhoneNumberLabel;
 }
+
 export interface ContactCreateInput {
   firstName: string;
   lastName: string;

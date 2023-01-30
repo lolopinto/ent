@@ -9,6 +9,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -63,6 +64,9 @@ export class AuthCodeBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<AuthCode, TInput, ExampleViewerAlias, TExistingEnt>
+    >,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-AuthCode`;
     this.input = action.getInput();
@@ -80,6 +84,7 @@ export class AuthCodeBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: authCodeLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

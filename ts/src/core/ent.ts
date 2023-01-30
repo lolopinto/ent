@@ -779,6 +779,9 @@ async function doFieldPrivacy<
   }
   const promises: Promise<void>[] = [];
   let somethingChanged = false;
+  const origData = {
+    ...data,
+  };
   for (const [k, policy] of options.fieldPrivacy) {
     const curr = data[k];
     if (curr === null || curr === undefined) {
@@ -799,12 +802,15 @@ async function doFieldPrivacy<
   await Promise.all(promises);
   if (somethingChanged) {
     // have to create new instance
-    return new options.ent(viewer, data);
+    const ent = new options.ent(viewer, data);
+    ent.__setRawDBData(origData);
+    return ent;
   }
+  ent.__setRawDBData(origData);
   return ent;
 }
 
-function logQuery(query: string, logValues: any[]) {
+export function logQuery(query: string, logValues: any[]) {
   log("query", {
     query: query,
     values: logValues,
@@ -857,6 +863,12 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   return res.rows[0];
 }
 
+var _logQueryWithError = false;
+
+export function ___setLogQueryErrorWithError(val: boolean | undefined) {
+  _logQueryWithError = val || false;
+}
+
 // this always goes to the db, no cache, nothing
 export async function performRawQuery(
   query: string,
@@ -866,8 +878,16 @@ export async function performRawQuery(
   const pool = DB.getInstance().getPool();
 
   logQuery(query, logValues || []);
-  const res = await pool.queryAll(query, values);
-  return res.rows;
+  try {
+    const res = await pool.queryAll(query, values);
+    return res.rows;
+  } catch (e) {
+    if (_logQueryWithError) {
+      const msg = (e as Error).message;
+      throw new Error(`error \`${msg}\` running query: \`${query}\``);
+    }
+    throw e;
+  }
 }
 
 // TODO this should throw, we can't be hiding errors here
@@ -1645,10 +1665,18 @@ async function mutateRow(
 
   let cache = options.context?.cache;
   let res: QueryResult<QueryResultRow>;
-  if (isSyncQueryer(queryer)) {
-    res = queryer.execSync(query, values);
-  } else {
-    res = await queryer.exec(query, values);
+  try {
+    if (isSyncQueryer(queryer)) {
+      res = queryer.execSync(query, values);
+    } else {
+      res = await queryer.exec(query, values);
+    }
+  } catch (e) {
+    if (_logQueryWithError) {
+      const msg = (e as Error).message;
+      throw new Error(`error \`${msg}\` running query: \`${query}\``);
+    }
+    throw e;
   }
   if (cache) {
     cache.clearCache();
@@ -1666,11 +1694,19 @@ function mutateRowSync(
   logQuery(query, logValues);
 
   let cache = options.context?.cache;
-  const res = queryer.execSync(query, values);
-  if (cache) {
-    cache.clearCache();
+  try {
+    const res = queryer.execSync(query, values);
+    if (cache) {
+      cache.clearCache();
+    }
+    return res;
+  } catch (e) {
+    if (_logQueryWithError) {
+      const msg = (e as Error).message;
+      throw new Error(`error \`${msg}\` running query: \`${query}\``);
+    }
+    throw e;
   }
-  return res;
 }
 
 export function buildInsertQuery(
@@ -1751,21 +1787,31 @@ export function buildUpdateQuery(
 
   let idx = 1;
   for (const key in options.fields) {
-    const val = options.fields[key];
-    values.push(val);
-    if (options.fieldsToLog) {
-      logValues.push(options.fieldsToLog[key]);
-    }
-    // TODO would be nice to use clause here. need update version of the queries so that
-    // we don't have to handle dialect specifics here
-    // can't use clause because of IS NULL
-    // valsString.push(clause.Eq(key, val).clause(idx));
-    if (dialect === Dialect.Postgres) {
-      valsString.push(`${key} = $${idx}`);
+    if (options.expressions && options.expressions.has(key)) {
+      const cls = options.expressions.get(key)!;
+      valsString.push(`${key} = ${cls.clause(idx)}`);
+      // TODO need to test a clause with more than one value...
+      const newVals = cls.values();
+      idx += newVals.length;
+      values.push(...newVals);
+      logValues.push(...cls.logValues());
     } else {
-      valsString.push(`${key} = ?`);
+      const val = options.fields[key];
+      values.push(val);
+      if (options.fieldsToLog) {
+        logValues.push(options.fieldsToLog[key]);
+      }
+      // TODO would be nice to use clause here. need update version of the queries so that
+      // we don't have to handle dialect specifics here
+      // can't use clause because of IS NULL
+      // valsString.push(clause.Eq(key, val).clause(idx));
+      if (dialect === Dialect.Postgres) {
+        valsString.push(`${key} = $${idx}`);
+      } else {
+        valsString.push(`${key} = ?`);
+      }
+      idx++;
     }
-    idx++;
   }
 
   const vals = valsString.join(", ");

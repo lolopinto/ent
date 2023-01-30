@@ -29,9 +29,10 @@ import {
 import DB, { Dialect } from "./db";
 import { ObjectLoaderFactory } from "./loaders";
 import { TestContext } from "../testutils/context/test_context";
+import { BaseEnt } from "../testutils/builder";
+import { loadConfig } from "./config";
 
-class User implements Ent {
-  id: ID;
+class User extends BaseEnt {
   accountID: string;
   nodeType = "User";
   getPrivacyPolicy(): PrivacyPolicy<this> {
@@ -53,9 +54,6 @@ class User implements Ent {
         AlwaysDenyRule,
       ],
     };
-  }
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data["id"];
   }
 }
 
@@ -112,6 +110,12 @@ describe("sqlite", () => {
   });
 
   commonTests();
+});
+
+afterEach(() => {
+  loadConfig({
+    logQueryWithError: false,
+  });
 });
 
 async function createAllRows() {
@@ -189,12 +193,40 @@ function commonTests() {
     }
   });
 
+  test("query error throws for loadEnts. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await loadEnts(new IDViewer(1), invalidFieldOpts, 1);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnRead()}\` running query`,
+      );
+    }
+  });
+
   test("query error throws for loadEnts with context", async () => {
     try {
       await loadEnts(contextifyViewer(new IDViewer(1)), invalidFieldOpts, 1);
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
+  test("query error throws for loadEnts with context. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await loadEnts(contextifyViewer(new IDViewer(1)), invalidFieldOpts, 1);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnRead()}\` running query`,
+      );
     }
   });
 
@@ -218,6 +250,31 @@ function commonTests() {
     }
   });
 
+  test("query error throws for loadEnts with context with multiple ids. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await loadEnts(
+        contextifyViewer(new IDViewer(1)),
+        invalidFieldOpts,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+      );
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnRead()}\` running query`,
+      );
+    }
+  });
+
   test("query error throws for loadEnt", async () => {
     try {
       const r = await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
@@ -228,12 +285,41 @@ function commonTests() {
     }
   });
 
+  test("query error throws for loadEnt. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      const r = await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
+      console.log(r);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnRead()}\` running query`,
+      );
+    }
+  });
+
   test("query error throws for loadEnt with context", async () => {
     try {
       await loadEnt(contextifyViewer(new IDViewer(1)), 2, invalidFieldOpts);
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
+  test("query error throws for loadEnt with context. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await loadEnt(contextifyViewer(new IDViewer(1)), 2, invalidFieldOpts);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnRead()}\` running query`,
+      );
     }
   });
 
@@ -280,6 +366,20 @@ function commonTests() {
     }
   });
 
+  test("query error throws for loadEntX. log query with errro", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await loadEntX(new IDViewer(1), 2, invalidFieldOpts);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnRead()}\` running query`,
+      );
+    }
+  });
+
   test("query error throws for loadEntX with context", async () => {
     try {
       await loadEntX(contextifyViewer(new IDViewer(1)), 2, invalidFieldOpts);
@@ -289,12 +389,40 @@ function commonTests() {
     }
   });
 
+  test("query error throws for loadEntX with context. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await loadEntX(contextifyViewer(new IDViewer(1)), 2, invalidFieldOpts);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnRead()}\` running query`,
+      );
+    }
+  });
+
   test("query error throws for loadCustomEnts", async () => {
     try {
       await loadCustomEnts(new IDViewer(1), options, clause.Eq("hello", "bar"));
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
+  test("query error throws for loadCustomEnts. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await loadCustomEnts(new IDViewer(1), options, clause.Eq("hello", "bar"));
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnRead()}\` running query`,
+      );
     }
   });
 
@@ -308,6 +436,24 @@ function commonTests() {
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
+  test("query error throws for loadCustomEnts with context", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await loadCustomEnts(
+        contextifyViewer(new IDViewer(1)),
+        options,
+        clause.Eq("hello", "bar"),
+      );
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnRead()}\` running query`,
+      );
     }
   });
 
@@ -347,6 +493,29 @@ function commonTests() {
     }
   });
 
+  test("create with db errors. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await createRowForTest({
+        tableName: "users",
+        fields: {
+          id: 1,
+          baz: "baz",
+          bar: `bar1`,
+          foo: "foo",
+          hello: "whaa",
+        },
+      });
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnInsert()}\` running query`,
+      );
+    }
+  });
+
   test("create with db errors with context", async () => {
     try {
       await createRowForTest({
@@ -366,6 +535,30 @@ function commonTests() {
     }
   });
 
+  test("create with db errors with context. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await createRowForTest({
+        tableName: "users",
+        fields: {
+          id: 1,
+          baz: "baz",
+          bar: `bar1`,
+          foo: "foo",
+          hello: "whaa",
+        },
+        context: new TestContext(),
+      });
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnInsert()}\` running query`,
+      );
+    }
+  });
+
   test("edit with db errors", async () => {
     try {
       await editRowForTest({
@@ -378,6 +571,26 @@ function commonTests() {
       throw new Error("should have thrown");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnUpdate());
+    }
+  });
+
+  test("edit with db errors. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await editRowForTest({
+        tableName: "users",
+        fields: {
+          hello: "ss",
+        },
+        whereClause: clause.Eq("id", 1),
+      });
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnUpdate()}\` running query`,
+      );
     }
   });
 
@@ -397,6 +610,27 @@ function commonTests() {
     }
   });
 
+  test("edit with db errors with context", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await editRowForTest({
+        tableName: "users",
+        fields: {
+          hello: "ss",
+        },
+        whereClause: clause.Eq("id", 1),
+        context: new TestContext(),
+      });
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnUpdate()}\` running query`,
+      );
+    }
+  });
+
   test("delete with db errors", async () => {
     try {
       await deleteRowsForTest(
@@ -408,6 +642,25 @@ function commonTests() {
       throw new Error("should have thrown");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnDelete());
+    }
+  });
+
+  test("delete with db errors", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await deleteRowsForTest(
+        {
+          tableName: "hello",
+        },
+        clause.Eq("id", 1),
+      );
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnDelete()}\` running query`,
+      );
     }
   });
 
@@ -423,6 +676,26 @@ function commonTests() {
       throw new Error("should have thrown");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnDelete());
+    }
+  });
+
+  test("delete with db errors with context. log query with error", async () => {
+    loadConfig({
+      logQueryWithError: true,
+    });
+    try {
+      await deleteRowsForTest(
+        {
+          tableName: "hello",
+          context: new TestContext(),
+        },
+        clause.Eq("id", 1),
+      );
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        `error \`${getExpectedErrorMessageOnDelete()}\` running query`,
+      );
     }
   });
 

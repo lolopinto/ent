@@ -1,4 +1,6 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
+import { access } from "fs";
+import AccountTransferCreditsAction from "src/ent/account/actions/account_transfer_credits_action";
 import EditAccountTodoStatusAction from "src/ent/account/actions/edit_account_todo_status_action";
 import { AccountTodoStatusInput } from "src/ent/generated/account/actions/edit_account_todo_status_action_base";
 import {
@@ -35,6 +37,20 @@ export default class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {
           return EditAccountTodoStatusAction.create(builder.viewer, account, {
             todoStatus: status,
             todoID: builder.existingEnt.id,
+          }).changeset();
+        },
+      },
+      {
+        async changeset(builder, input) {
+          if (!builder.existingEnt.bounty) {
+            return;
+          }
+          const creator = await builder.existingEnt.loadCreatorX();
+
+          // transfer bounty amount from creator to assignee
+          return AccountTransferCreditsAction.create(builder.viewer, creator, {
+            to: builder.existingEnt.assigneeID,
+            amount: builder.existingEnt.bounty,
           }).changeset();
         },
       },

@@ -1,6 +1,6 @@
 import Graph from "graph-data-structure";
 import { ID, Ent, Viewer, Context, Data } from "../core/base";
-import { DataOperation } from "../core/ent";
+import { DataOperation, logQuery } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
 import { Builder } from "../action";
 import { OrchestratorOptions } from "./orchestrator";
@@ -327,6 +327,7 @@ export async function executeOperations(
         }
       });
     } else {
+      logQuery("BEGIN", []);
       await client.query("BEGIN");
       for (const operation of executor) {
         if (trackOps) {
@@ -339,6 +340,7 @@ export async function executeOperations(
 
         await operation.performWrite(client, context);
       }
+      logQuery("COMMIT", []);
       await client.query("COMMIT");
     }
 
@@ -351,6 +353,8 @@ export async function executeOperations(
     }
   } catch (e) {
     if (!isSyncClient(client)) {
+      // TODO these changes break tests
+      logQuery("ROLLBACK", []);
       await client.query("ROLLBACK");
     }
     log("error", e);

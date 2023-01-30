@@ -9,6 +9,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -63,6 +64,14 @@ export class HoursOfOperationBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<
+        HoursOfOperation,
+        TInput,
+        ExampleViewerAlias,
+        TExistingEnt
+      >
+    >,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-HoursOfOperation`;
     this.input = action.getInput();
@@ -81,6 +90,7 @@ export class HoursOfOperationBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: hoursOfOperationLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

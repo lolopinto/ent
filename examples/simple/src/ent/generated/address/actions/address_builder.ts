@@ -9,6 +9,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -60,6 +61,9 @@ export class AddressBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<Address, TInput, ExampleViewerAlias, TExistingEnt>
+    >,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Address`;
     this.input = action.getInput();
@@ -77,6 +81,7 @@ export class AddressBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: addressLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

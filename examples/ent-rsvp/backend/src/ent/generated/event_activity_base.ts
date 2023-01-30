@@ -40,7 +40,7 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/event_activity_schema";
 
-interface EventActivityDBData {
+interface EventActivityData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -58,6 +58,7 @@ export class EventActivityBase
   extends WithAddressMixin(class {})
   implements Ent<Viewer>, IWithAddress
 {
+  protected readonly data: EventActivityData;
   readonly nodeType = NodeType.EventActivity;
   readonly id: ID;
   readonly createdAt: Date;
@@ -70,7 +71,7 @@ export class EventActivityBase
   readonly description: string | null;
   readonly inviteAllGuests: boolean;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -83,6 +84,15 @@ export class EventActivityBase
     this.location = data.location;
     this.description = data.description;
     this.inviteAllGuests = data.invite_all_guests;
+    // @ts-expect-error
+    this.data = data;
+  }
+
+  __setRawDBData<EventActivityData>(data: EventActivityData) {}
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getRawDBData(): EventActivityData {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
@@ -159,7 +169,7 @@ export class EventActivityBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<EventActivityDBData[]> {
+  ): Promise<EventActivityData[]> {
     return (await loadCustomData(
       {
         ...EventActivityBase.loaderOptions.apply(this),
@@ -167,7 +177,7 @@ export class EventActivityBase
       },
       query,
       context,
-    )) as EventActivityDBData[];
+    )) as EventActivityData[];
   }
 
   static async loadCustomCount<T extends EventActivityBase>(
@@ -194,12 +204,12 @@ export class EventActivityBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventActivityDBData | null> {
+  ): Promise<EventActivityData | null> {
     const row = await eventActivityLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as EventActivityDBData;
+    return row as EventActivityData;
   }
 
   static async loadRawDataX<T extends EventActivityBase>(
@@ -209,12 +219,12 @@ export class EventActivityBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventActivityDBData> {
+  ): Promise<EventActivityData> {
     const row = await eventActivityLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as EventActivityDBData;
+    return row as EventActivityData;
   }
 
   static loaderOptions<T extends EventActivityBase>(

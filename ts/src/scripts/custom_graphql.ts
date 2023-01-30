@@ -21,6 +21,7 @@ import * as readline from "readline";
 import { parseCustomImports, file } from "../imports";
 import { exit } from "process";
 import { Data } from "../core/base";
+import { spawn } from "child_process";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
@@ -112,6 +113,9 @@ function processTopLevel(l: any[], l2: CustomQuery[]) {
       fieldType: custom.fieldType,
       args: transformArgs(custom),
       results: transformResultType(custom),
+      description: custom.description,
+      extraImports: custom.extraImports,
+      functionContents: custom.functionContents,
     });
   }
 }
@@ -131,9 +135,56 @@ function processCustomFields(
       fieldType: f.fieldType,
       args: transformArgs(f),
       results: transformResultType(f),
+      description: f.description,
     });
   }
   m.set(nodeName, results);
+}
+
+async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
+  if (!filePath) {
+    return;
+  }
+  return await new Promise((resolve, reject) => {
+    // do we eventually need tsconfig-paths here or do we get it by default because child process?
+    const r = spawn("ts-node", [filePath]);
+    const datas: string[] = [];
+    r.stdout.on("data", (data) => {
+      datas.push(data.toString());
+    });
+
+    r.stderr.on("data", (data) => {
+      reject(new Error(data.toString()));
+    });
+
+    r.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`error code ${code} on dynamic path`));
+        return;
+      }
+
+      let json = JSON5.parse(datas.join(""));
+      for (const k in json) {
+        const v = json[k];
+        switch (k) {
+          case "queries":
+            processTopLevel(v, gqlCapture.getCustomQueries());
+            break;
+
+          case "mutations":
+            processTopLevel(v, gqlCapture.getCustomMutations());
+            break;
+          default:
+            reject(
+              new Error(
+                `key ${k} is unsupported in dynamic custom graphql. only queries and mutations are supported`,
+              ),
+            );
+        }
+      }
+      resolve(undefined);
+    });
+  });
 }
 
 async function captureCustom(
@@ -238,11 +289,27 @@ async function requireFiles(files: string[]) {
   });
 }
 
+// filePath is path-to-src
 async function parseImports(filePath: string) {
-  // only do graphql files...
-  return parseCustomImports(path.join(filePath, "graphql"), {
-    ignore: ["**/generated/**", "**/tests/**"],
-  });
+  return parseCustomImports(filePath, [
+    {
+      // graphql files
+      root: path.join(filePath, "graphql"),
+      opts: {
+        ignore: ["**/generated/**", "**/tests/**"],
+      },
+    },
+    {
+      // can't just use top level ent files but have to check for all (non-generated) files
+      // in src/ent/* because custom edges (or other things) could have @gqlField etc
+      // and then have to look for these imports etc
+      root: path.join(filePath, "ent"),
+      opts: {
+        // not in action files since we can't customize payloads (yet?)
+        ignore: ["**/generated/**", "**/tests/**", "**/actions/**"],
+      },
+    },
+  ]);
 }
 
 function findGraphQLPath(filePath: string): string | undefined {
@@ -259,6 +326,10 @@ function findGraphQLPath(filePath: string): string | undefined {
   return undefined;
 }
 
+// test as follows:
+// there should be an easier way to do this...
+// also, there should be a way to get the list of objects here that's not manual
+//echo "User\nContact\nContactEmail\nComment" | ts-node-script --log-error --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/custom_graphql.ts --path ~/code/ent/examples/simple/src/
 async function main() {
   // known custom types that are not required
   // if not in the schema, will be ignored
@@ -307,9 +378,10 @@ async function main() {
     gqlCapture.enable(true);
   }
 
-  const [inputsRead, _, imports] = await Promise.all([
+  const [inputsRead, _, __, imports] = await Promise.all([
     readInputs(),
     captureCustom(options.path, options.files, options.json_path, gqlCapture),
+    captureDynamic(options.dynamic_path, gqlCapture),
     parseImports(options.path),
   ]);
   const { nodes, nodesMap } = inputsRead;
@@ -373,7 +445,7 @@ async function main() {
 
   const buildClasses = (fields: ProcessedCustomField[]) => {
     fields.forEach((field) => {
-      if (!nodesMap.has(field.nodeName)) {
+      if (field.nodeName && !nodesMap.has(field.nodeName)) {
         let info = imports.getInfoForClass(field.nodeName);
         classes[field.nodeName] = { ...info.class, path: info.file.path };
         buildFiles(info.file);
@@ -385,6 +457,10 @@ async function main() {
   };
   buildClasses(mutations);
   buildClasses(queries);
+  // call for every field in a node
+  for (const k in fields) {
+    buildClasses(fields[k]);
+  }
 
   console.log(
     JSON.stringify({

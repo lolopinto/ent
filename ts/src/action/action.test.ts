@@ -266,6 +266,22 @@ function augmentLogs(id: ID, expectedLogs: Data[], spliceIndex?: number) {
       expectedLogs.splice(spliceIndex, 0, selectQuery);
     }
   }
+  if (DB.getInstance().emitsExplicitTransactionStatements()) {
+    let begin = {
+      query: "BEGIN",
+      values: [],
+    };
+    let commit = {
+      query: "COMMIT",
+      values: [],
+    };
+    if (spliceIndex === undefined) {
+      expectedLogs.splice(0, 0, begin);
+    } else {
+      expectedLogs.splice(spliceIndex, 0, begin);
+    }
+    expectedLogs.push(commit);
+  }
 }
 
 function augmentAndVerifyLogs(
@@ -297,16 +313,26 @@ function commonTests() {
     let ent = await builder.editedEntX();
 
     let expLength = 3;
+    let insertIdx = 1;
     const selectQuery = getSelectQuery(ent.id);
-    let lastIdx = 2;
+    let lastInsertIdx = 2;
     if (selectQuery) {
-      expLength = 4;
-      lastIdx = 3;
+      expLength++;
+      lastInsertIdx++;
       expect(ml.logs[2]).toEqual(selectQuery);
     }
+    if (DB.getInstance().emitsExplicitTransactionStatements()) {
+      // BEGIN + COMMIT ADDED
+      expLength += 2;
+
+      // begin added before so move the indices for these 2
+      insertIdx++;
+      lastInsertIdx += 1;
+    }
+
     expect(ml.logs.length).toEqual(expLength);
     expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM assoc_edge_config/);
-    expect(ml.logs[1]).toEqual(getInsertQuery(ent.id));
+    expect(ml.logs[insertIdx]).toEqual(getInsertQuery(ent.id));
 
     // select for sqlite
 
@@ -333,7 +359,7 @@ function commonTests() {
         ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, deleted_at = EXCLUDED.deleted_at"
         : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
-    expect(ml.logs[lastIdx]).toEqual({
+    expect(ml.logs[lastInsertIdx]).toEqual({
       query: query,
       values: logValues,
     });
@@ -356,16 +382,25 @@ function commonTests() {
     let expLength = 3;
     // select for sqlite
     const selectQuery = getSelectQuery(ent.id);
-    let lastIdx = 2;
+    let updateIdx = 1;
+    let lastInsertIdx = 2;
     if (selectQuery) {
-      lastIdx = 3;
+      lastInsertIdx = 3;
       expect(ml.logs[2]).toEqual(selectQuery);
       expLength = 4;
+    }
+    if (DB.getInstance().emitsExplicitTransactionStatements()) {
+      // BEGIN + COMMIT ADDED
+      expLength += 2;
+
+      // begin added before so move the indices for these 2
+      updateIdx++;
+      lastInsertIdx += 1;
     }
 
     expect(ml.logs.length).toEqual(expLength);
     expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM assoc_edge_config/);
-    expect(ml.logs[1]).toEqual(getUpdateQuery(ent));
+    expect(ml.logs[updateIdx]).toEqual(getUpdateQuery(ent));
 
     const fields: Data = {
       id1: ent.id,
@@ -391,7 +426,7 @@ function commonTests() {
         ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, deleted_at = EXCLUDED.deleted_at"
         : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
-    expect(ml.logs[lastIdx]).toEqual({
+    expect(ml.logs[lastInsertIdx]).toEqual({
       query: query,
       values: logValues,
     });
@@ -411,15 +446,20 @@ function commonTests() {
 
     const data = await builder.orchestrator.getEditedData();
     const id = data.id;
-
-    expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM assoc_edge_config/);
-    expect(ml.logs[1]).toEqual(getInsertQuery(id));
+    let insertIdx = 1;
     const selectQuery = getSelectQuery(id);
     let expLength = 2;
     if (selectQuery) {
       expect(ml.logs[2]).toEqual(selectQuery);
       expLength = 3;
     }
+    if (DB.getInstance().emitsExplicitTransactionStatements()) {
+      insertIdx++;
+      expLength += 2;
+    }
+    expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM assoc_edge_config/);
+    expect(ml.logs[insertIdx]).toEqual(getInsertQuery(id));
+
     expect(ml.logs.length).toEqual(expLength);
   });
 

@@ -34,6 +34,7 @@ import { Express } from "express";
 import supertest from "supertest";
 import jwt from "jsonwebtoken";
 import { Dialect } from "@snowtop/ent/core/db";
+import { BaseEnt } from "@snowtop/ent/testutils/builder";
 
 let tdb: TempDB;
 beforeAll(async () => {
@@ -77,19 +78,16 @@ let userType = new GraphQLObjectType({
   },
 });
 
-class UserClass implements Ent {
+class UserClass extends BaseEnt {
   id: ID;
   nodeType = "User";
-  getPrivacyPolicy(): PrivacyPolicy<this, Viewer<Ent<any> | null, ID | null>> {
-    return AlwaysAllowPrivacyPolicy;
-  }
 
   firstName: string;
   lastName: string;
   emailAddress: string;
 
   constructor(public viewer: Viewer, options: Data) {
-    this.id = options.id;
+    super(viewer, options);
     this.firstName = options.first_name;
     this.lastName = options.last_name;
     this.emailAddress = options.email_address;

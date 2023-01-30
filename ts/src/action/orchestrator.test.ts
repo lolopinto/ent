@@ -25,6 +25,8 @@ import { Changeset } from "../action";
 import {
   EnumField,
   EnumOptions,
+  FloatType,
+  IntegerType,
   StringType,
   TimestampType,
   UUIDListType,
@@ -39,6 +41,7 @@ import {
   SimpleBuilder,
   SimpleAction,
   getBuilderSchemaFromFields,
+  BaseEnt,
 } from "../testutils/builder";
 import { FakeComms, Mode } from "../testutils/fake_comms";
 import {
@@ -65,9 +68,10 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/temp_db";
-import { Dialect } from "../core/db";
+import DB, { Dialect } from "../core/db";
 import { convertDate, convertList } from "../core/convert";
 import { v4 } from "uuid";
+import { NumberOps } from "./relative_value";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
@@ -180,6 +184,26 @@ const SchemaWithProcessors = getBuilderSchemaFromFields(
   UserWithProcessors,
 );
 
+class UserWithBalance extends User {}
+const UserWithBalanceSchema = getBuilderSchemaFromFields(
+  {
+    first_name: StringType(),
+    last_name: StringType(),
+    balance: FloatType(),
+  },
+  UserWithBalance,
+);
+
+class UserWithIntBalance extends User {}
+const UserWithIntBalanceSchema = getBuilderSchemaFromFields(
+  {
+    first_name: StringType(),
+    last_name: StringType(),
+    balance: IntegerType(),
+  },
+  UserWithIntBalance,
+);
+
 const AddressSchemaDerivedFields = getBuilderSchemaFromFields(
   {
     Street: StringType(),
@@ -266,17 +290,13 @@ const ContactEmailSchema = getBuilderSchemaFromFields(
   ContactEmail,
 );
 
-class CustomUser implements Ent {
-  id: ID;
+class CustomUser extends BaseEnt {
   accountID: string = "";
   nodeType = "User";
   getPrivacyPolicy() {
     return {
       rules: [AllowIfViewerRule, AlwaysDenyRule],
     };
-  }
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
   }
 }
 
@@ -323,6 +343,8 @@ const getTables = () => {
     UserSchemaDefaultValueOnCreate,
     UserSchemaDefaultValueOnCreateJSON,
     UserSchemaDefaultValueOnCreateInvalidJSON,
+    UserWithBalanceSchema,
+    UserWithIntBalanceSchema,
     SchemaWithProcessors,
     EventSchema,
     AddressSchemaDerivedFields,
@@ -1779,11 +1801,15 @@ function commonTests() {
       );
       await action.saveX();
       expect(mockLog.logs.length).toBeGreaterThanOrEqual(1);
-      const lastLog = mockLog.logAt(0);
-      expect(lastLog.query).toMatch(/INSERT INTO users/);
-      expect(lastLog.values.length).toBe(5);
+      let insertIdx = 0;
+      if (DB.getInstance().emitsExplicitTransactionStatements()) {
+        insertIdx++;
+      }
+      const insertStmt = mockLog.logAt(insertIdx);
+      expect(insertStmt.query).toMatch(/INSERT INTO users/);
+      expect(insertStmt.values.length).toBe(5);
       // get the last two
-      expect(lastLog.values.slice(3)).toStrictEqual(["Jon", "Snow"]);
+      expect(insertStmt.values.slice(3)).toStrictEqual(["Jon", "Snow"]);
     });
 
     test("sensitive", async () => {
@@ -1799,11 +1825,15 @@ function commonTests() {
       );
       await action.saveX();
       expect(mockLog.logs.length).toBeGreaterThanOrEqual(1);
-      const lastLog = mockLog.logAt(0);
-      expect(lastLog.query).toMatch(/INSERT INTO sensitive_users/);
-      expect(lastLog.values.length).toBe(5);
+      let insertIdx = 0;
+      if (DB.getInstance().emitsExplicitTransactionStatements()) {
+        insertIdx++;
+      }
+      const insertStmt = mockLog.logAt(insertIdx);
+      expect(insertStmt.query).toMatch(/INSERT INTO sensitive_users/);
+      expect(insertStmt.values.length).toBe(5);
       // get the last two. Snow replaced with **** since sensitive
-      expect(lastLog.values.slice(3)).toStrictEqual(["Jon", "****"]);
+      expect(insertStmt.values.slice(3)).toStrictEqual(["Jon", "****"]);
     });
   });
 
@@ -2022,6 +2052,207 @@ function commonTests() {
     const contact = await action.saveX();
     // explicit test that id gotten in trigger is still returned here
     expect(contact.id).toBe(idInTrigger);
+  });
+
+  describe("expressions", () => {
+    test("add expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 0],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(0);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 0]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          ["balance", NumberOps.addNumber(50).sqlExpression("balance")],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(50);
+    });
+
+    test("subtract expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 50]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          ["balance", NumberOps.subtractNumber(50).sqlExpression("balance")],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(50);
+    });
+
+    test("divide expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 50]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          ["balance", NumberOps.divideNumber(2).sqlExpression("balance")],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(50);
+    });
+
+    test("multiply expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 200]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          ["balance", NumberOps.multiplyNumber(2).sqlExpression("balance")],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(200);
+    });
+
+    test("modulo expression", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithIntBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithIntBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 1]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          ["balance", NumberOps.moduloNumber(3).sqlExpression("balance")],
+        ]),
+      );
+
+      user = await editAction.saveX();
+      expect(user.data.balance).toBe(1);
+    });
+
+    test("modulo expression float", async () => {
+      const action = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["balance", 100.5],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let user = await action.saveX();
+      expect(user.data.balance).toBe(100.5);
+
+      const editAction = new SimpleAction(
+        new LoggedOutViewer(),
+        UserWithBalanceSchema,
+        // this exists so that triggers, observers, validators can have the right values
+        // would be set more elegantly via codegen
+        new Map<string, any>([["balance", 1]]),
+        WriteOperation.Edit,
+        user,
+        new Map<string, clause.Clause>([
+          ["balance", NumberOps.moduloNumber(3).sqlExpression("balance")],
+        ]),
+      );
+
+      if (DB.getDialect() === Dialect.Postgres) {
+        try {
+          await editAction.saveX();
+          throw new Error(`should have thrown`);
+        } catch (err) {}
+      } else {
+        user = await editAction.saveX();
+        expect(user.data.balance).toBe(1);
+      }
+    });
   });
 }
 

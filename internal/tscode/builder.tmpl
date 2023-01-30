@@ -1,5 +1,5 @@
 {{reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
-{{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator"}}
+{{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator" "OrchestratorOptions"}}
 
 {{ $cfg := .CodePath -}}
 {{ $schema := .Schema -}}
@@ -130,6 +130,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     public readonly operation: {{useImport "WriteOperation"}},
     action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>, {{$viewerType}}, TInput, TExistingEnt>,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<{{useImport "OrchestratorOptions"}}<{{$node}},  TInput, {{$viewerType}}, TExistingEnt>>,
   ) {
     {{ if $hasBuilderMixin }}
       super();
@@ -150,6 +151,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: {{useImport $loaderInfo}}.fieldInfo,
+      ...opts,
     });
   }
 

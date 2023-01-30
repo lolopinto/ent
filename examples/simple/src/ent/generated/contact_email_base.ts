@@ -31,7 +31,7 @@ import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface ContactEmailDBData {
+interface ContactEmailData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -45,6 +45,7 @@ export class ContactEmailBase
   extends ContactInfoMixin(class {})
   implements Ent<ExampleViewerAlias>, IContactInfo
 {
+  protected readonly data: ContactEmailData;
   readonly nodeType = NodeType.ContactEmail;
   readonly id: ID;
   readonly createdAt: Date;
@@ -53,7 +54,7 @@ export class ContactEmailBase
   readonly label: ContactEmailLabel;
   readonly contactID: ID;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -62,6 +63,15 @@ export class ContactEmailBase
     this.emailAddress = data.email_address;
     this.label = convertContactEmailLabel(data.label);
     this.contactID = data.contact_id;
+    // @ts-expect-error
+    this.data = data;
+  }
+
+  __setRawDBData<ContactEmailData>(data: ContactEmailData) {}
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getRawDBData(): ContactEmailData {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
@@ -138,7 +148,7 @@ export class ContactEmailBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<ContactEmailDBData[]> {
+  ): Promise<ContactEmailData[]> {
     return (await loadCustomData(
       {
         ...ContactEmailBase.loaderOptions.apply(this),
@@ -146,7 +156,7 @@ export class ContactEmailBase
       },
       query,
       context,
-    )) as ContactEmailDBData[];
+    )) as ContactEmailData[];
   }
 
   static async loadCustomCount<T extends ContactEmailBase>(
@@ -173,12 +183,12 @@ export class ContactEmailBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactEmailDBData | null> {
+  ): Promise<ContactEmailData | null> {
     const row = await contactEmailLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as ContactEmailDBData;
+    return row as ContactEmailData;
   }
 
   static async loadRawDataX<T extends ContactEmailBase>(
@@ -188,12 +198,12 @@ export class ContactEmailBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactEmailDBData> {
+  ): Promise<ContactEmailData> {
     const row = await contactEmailLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as ContactEmailDBData;
+    return row as ContactEmailData;
   }
 
   static loaderOptions<T extends ContactEmailBase>(

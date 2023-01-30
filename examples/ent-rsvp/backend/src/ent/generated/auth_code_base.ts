@@ -29,7 +29,7 @@ import { NodeType } from "src/ent/generated/types";
 import { Guest } from "src/ent/internal";
 import schema from "src/schema/auth_code_schema";
 
-interface AuthCodeDBData {
+interface AuthCodeData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -40,6 +40,7 @@ interface AuthCodeDBData {
 }
 
 export class AuthCodeBase implements Ent<Viewer> {
+  protected readonly data: AuthCodeData;
   readonly nodeType = NodeType.AuthCode;
   readonly id: ID;
   readonly createdAt: Date;
@@ -49,7 +50,7 @@ export class AuthCodeBase implements Ent<Viewer> {
   readonly emailAddress: string;
   readonly sentCode: boolean;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -57,6 +58,15 @@ export class AuthCodeBase implements Ent<Viewer> {
     this.guestID = data.guest_id;
     this.emailAddress = data.email_address;
     this.sentCode = data.sent_code;
+    // @ts-expect-error
+    this.data = data;
+  }
+
+  __setRawDBData<AuthCodeData>(data: AuthCodeData) {}
+
+  /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
+  ___getRawDBData(): AuthCodeData {
+    return this.data;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
@@ -133,7 +143,7 @@ export class AuthCodeBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<AuthCodeDBData[]> {
+  ): Promise<AuthCodeData[]> {
     return (await loadCustomData(
       {
         ...AuthCodeBase.loaderOptions.apply(this),
@@ -141,7 +151,7 @@ export class AuthCodeBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as AuthCodeDBData[];
+    )) as AuthCodeData[];
   }
 
   static async loadCustomCount<T extends AuthCodeBase>(
@@ -168,12 +178,12 @@ export class AuthCodeBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<AuthCodeDBData | null> {
+  ): Promise<AuthCodeData | null> {
     const row = await authCodeLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as AuthCodeDBData;
+    return row as AuthCodeData;
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
@@ -183,12 +193,12 @@ export class AuthCodeBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<AuthCodeDBData> {
+  ): Promise<AuthCodeData> {
     const row = await authCodeLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as AuthCodeDBData;
+    return row as AuthCodeData;
   }
 
   static async loadFromGuestID<T extends AuthCodeBase>(
@@ -238,12 +248,12 @@ export class AuthCodeBase implements Ent<Viewer> {
     ) => T,
     guestID: ID,
     context?: Context,
-  ): Promise<AuthCodeDBData | null> {
+  ): Promise<AuthCodeData | null> {
     const row = await authCodeGuestIDLoader.createLoader(context).load(guestID);
     if (!row) {
       return null;
     }
-    return row as AuthCodeDBData;
+    return row as AuthCodeData;
   }
 
   static loaderOptions<T extends AuthCodeBase>(

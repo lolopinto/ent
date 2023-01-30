@@ -46,6 +46,8 @@ export class FakeEvent implements Ent {
     this.userID = data.user_id;
   }
 
+  __setRawDBData(data: Data) {}
+
   private static getFields(): string[] {
     return [
       "id",

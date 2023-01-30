@@ -21,6 +21,10 @@
     {{ $ignored := useImport $import.Import -}}
   {{ end -}}
 {{ end -}}
+{{ range $import := $fieldConfig.ReserveAndUseImports -}}
+  {{ reserveImportPath $import false }}
+  {{ $ignored := useImport $import.Import -}}
+{{ end -}}
 
 {{$prefix}}: {{useImport "GraphQLFieldConfig"}}<
   undefined,

@@ -25,6 +25,7 @@ interface customAddressInput {
   zipCode: string;
   apartment?: string | null;
 }
+
 export interface EventActivityCreateInput {
   addressId?: ID | null | Builder<Address, Viewer>;
   name: string;

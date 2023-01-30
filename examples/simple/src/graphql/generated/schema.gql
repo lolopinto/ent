@@ -264,6 +264,7 @@ type Contact implements Node {
   comments(first: Int, after: String, last: Int, before: String): ContactToCommentsConnection!
   likers(first: Int, after: String, last: Int, before: String): ContactToLikersConnection!
   fullName: String!
+  plusEmails: EmailInfo!
 }
 
 type DogType {
@@ -272,6 +273,11 @@ type DogType {
   breed: DogBreed!
   breedGroup: DogBreedGroup!
   puppy: Boolean!
+}
+
+type EmailInfo {
+  emails: [ContactEmail!]!
+  firstEmail: String!
 }
 
 type Event implements Node {
@@ -410,8 +416,10 @@ type User implements Node {
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   fullName: String!
   bar: String
+  """contacts same domain..."""
   contactSameDomain: Contact
   contactsSameDomain: [Contact!]!
+  contactsGivenDomain(domain: String!): [Contact!]!
   contactsSameDomainNullable: [Contact!]
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
@@ -521,6 +529,102 @@ type EventToMaybeEdge implements Edge {
 
 type EventToMaybeConnection implements Connection {
   edges: [EventToMaybeEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToCommentConnectionEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type RootToCommentConnectionConnection implements Connection {
+  edges: [RootToCommentConnectionEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToContactConnectionEdge implements Edge {
+  node: Contact!
+  cursor: String!
+}
+
+type RootToContactConnectionConnection implements Connection {
+  edges: [RootToContactConnectionEdge!]!
+  nodes: [Contact!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToContactEmailConnectionEdge implements Edge {
+  node: ContactEmail!
+  cursor: String!
+}
+
+type RootToContactEmailConnectionConnection implements Connection {
+  edges: [RootToContactEmailConnectionEdge!]!
+  nodes: [ContactEmail!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToContactPhoneNumberConnectionEdge implements Edge {
+  node: ContactPhoneNumber!
+  cursor: String!
+}
+
+type RootToContactPhoneNumberConnectionConnection implements Connection {
+  edges: [RootToContactPhoneNumberConnectionEdge!]!
+  nodes: [ContactPhoneNumber!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToEventConnectionEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type RootToEventConnectionConnection implements Connection {
+  edges: [RootToEventConnectionEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToHolidayConnectionEdge implements Edge {
+  node: Holiday!
+  cursor: String!
+}
+
+type RootToHolidayConnectionConnection implements Connection {
+  edges: [RootToHolidayConnectionEdge!]!
+  nodes: [Holiday!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToHoursOfOperationConnectionEdge implements Edge {
+  node: HoursOfOperation!
+  cursor: String!
+}
+
+type RootToHoursOfOperationConnectionConnection implements Connection {
+  edges: [RootToHoursOfOperationConnectionEdge!]!
+  nodes: [HoursOfOperation!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToUserConnectionEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type RootToUserConnectionConnection implements Connection {
+  edges: [RootToUserConnectionEdge!]!
   nodes: [User!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -649,6 +753,7 @@ type UserToLikersConnection implements Connection {
 type UserToLikesEdge implements Edge {
   node: Node!
   cursor: String!
+  time: Time
 }
 
 type UserToLikesConnection implements Connection {
@@ -1130,8 +1235,24 @@ input UserSuperNestedObjectInput {
 }
 
 type Query {
+  comment_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToCommentConnectionConnection!
+  comment_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Comment!]
+  contact_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToContactConnectionConnection!
+  contact_email_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToContactEmailConnectionConnection!
+  contact_email_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactEmail!]
+  contact_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Contact!]
+  contact_phone_number_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToContactPhoneNumberConnectionConnection!
+  contact_phone_number_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactPhoneNumber!]
+  event_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToEventConnectionConnection!
+  event_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Event!]
+  holiday_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToHolidayConnectionConnection!
+  holiday_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Holiday!]
+  hours_of_operation_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToHoursOfOperationConnectionConnection!
+  hours_of_operation_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [HoursOfOperation!]
   node(id: ID!): Node
   timeDiff(time: Time!, log: JSON!): String!
+  user_connection(ids: [ID!], first: Int, after: String, last: Int, before: String): RootToUserConnectionConnection!
+  user_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [User!]
   viewer: Viewer!
 }
 

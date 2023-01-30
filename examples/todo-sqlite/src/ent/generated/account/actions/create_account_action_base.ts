@@ -27,6 +27,7 @@ export interface AccountCreateInput {
   accountState?: AccountState | null;
   accountPrefs?: AccountPrefs | null;
   accountPrefsList?: AccountPrefs2[] | null;
+  credits?: number;
 }
 
 export type CreateAccountActionTriggers = (

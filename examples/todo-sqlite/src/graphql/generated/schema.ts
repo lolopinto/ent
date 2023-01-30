@@ -2,6 +2,14 @@
 
 import { GraphQLSchema } from "graphql";
 import {
+  AccountTransferCreditsInputType,
+  AccountTransferCreditsPayloadType,
+} from "src/graphql/generated/mutations/account/account_transfer_credits_type";
+import {
+  AccountUpdateBalanceInputType,
+  AccountUpdateBalancePayloadType,
+} from "src/graphql/generated/mutations/account/account_update_balance_type";
+import {
   CreateAccountInputType,
   CreateAccountPayloadType,
 } from "src/graphql/generated/mutations/account/create_account_type";
@@ -29,6 +37,10 @@ import {
   AddTodoTagInputType,
   AddTodoTagPayloadType,
 } from "src/graphql/generated/mutations/todo/add_todo_tag_type";
+import {
+  ChangeTodoBountyInputType,
+  ChangeTodoBountyPayloadType,
+} from "src/graphql/generated/mutations/todo/change_todo_bounty_type";
 import {
   ChangeTodoStatusInputType,
   ChangeTodoStatusPayloadType,
@@ -116,8 +128,14 @@ export default new GraphQLSchema({
     AccountPrefs2InputType,
     AccountPrefsInputType,
     AccountTodoStatusInputType,
+    AccountTransferCreditsInputType,
+    AccountTransferCreditsPayloadType,
+    AccountUpdateBalanceInputType,
+    AccountUpdateBalancePayloadType,
     AddTodoTagInputType,
     AddTodoTagPayloadType,
+    ChangeTodoBountyInputType,
+    ChangeTodoBountyPayloadType,
     ChangeTodoStatusInputType,
     ChangeTodoStatusPayloadType,
     CreateAccountInputType,

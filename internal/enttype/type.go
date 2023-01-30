@@ -328,7 +328,19 @@ func (t *NullableIDType) ArgImports(cfg Config) []*tsimport.ImportPath {
 	}
 }
 
-type intType struct{}
+type numberType struct {
+}
+
+func (n *numberType) GetRelativeMathInfo() *RelativeMathInfo {
+	return &RelativeMathInfo{
+		Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+		Type:   "RelativeNumberValue<number>",
+	}
+}
+
+type intType struct {
+	numberType
+}
 
 func (t *intType) GetDBType() string {
 	return "sa.Integer()"
@@ -398,6 +410,13 @@ func (t *BigIntegerType) GetImportType() Import {
 	return &BigIntImport{}
 }
 
+func (t *BigIntegerType) GetRelativeMathInfo() *RelativeMathInfo {
+	return &RelativeMathInfo{
+		Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+		Type:   "RelativeNumberValue<BigInt>",
+	}
+}
+
 type NullableIntegerType struct {
 	intType
 }
@@ -459,7 +478,16 @@ func (t *NullableBigIntegerType) GetDBType() string {
 	return "sa.BigInteger()"
 }
 
-type floatType struct{}
+func (t *NullableBigIntegerType) GetRelativeMathInfo() *RelativeMathInfo {
+	return &RelativeMathInfo{
+		Import: tsimport.NewEntActionImportPath("RelativeNumberValue"),
+		Type:   "RelativeNumberValue<BigInt>",
+	}
+}
+
+type floatType struct {
+	numberType
+}
 
 func (t *floatType) GetDBType() string {
 	return "sa.Float()"
@@ -1370,6 +1398,28 @@ func (t *ArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
 	return t2.GetCustomTypeInfo()
 }
 
+func (t *ArrayListType) CustomGQLRender(cfg Config, v string) string {
+	t2, ok := t.ElemType.(CustomGQLRenderer)
+	if !ok {
+		return v
+	}
+
+	// nothing to do here.
+	if t2.CustomGQLRender(cfg, v) == v {
+		return v
+	}
+
+	return fmt.Sprintf("%s.map((i:any) => %s)", v, t2.CustomGQLRender(cfg, "i"))
+}
+
+func (t *ArrayListType) ArgImports(cfg Config) []*tsimport.ImportPath {
+	t2, ok := t.ElemType.(CustomGQLRenderer)
+	if !ok {
+		return []*tsimport.ImportPath{}
+	}
+	return t2.ArgImports(cfg)
+}
+
 type NullableArrayListType struct {
 	arrayListType
 	ElemType           TSType
@@ -1443,6 +1493,29 @@ func (t *NullableArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
 		return nil
 	}
 	return t2.GetCustomTypeInfo()
+}
+
+func (t *NullableArrayListType) CustomGQLRender(cfg Config, v string) string {
+	t2, ok := t.ElemType.(CustomGQLRenderer)
+	if !ok {
+		return v
+	}
+
+	// nothing to do here.
+	if t2.CustomGQLRender(cfg, v) == v {
+		return v
+	}
+
+	// TODO need an undefined vs null flag?
+	return fmt.Sprintf("%s ? %s.map((i:any) => %s) : undefined", v, v, t2.CustomGQLRender(cfg, "i"))
+}
+
+func (t *NullableArrayListType) ArgImports(cfg Config) []*tsimport.ImportPath {
+	t2, ok := t.ElemType.(CustomGQLRenderer)
+	if !ok {
+		return []*tsimport.ImportPath{}
+	}
+	return t2.ArgImports(cfg)
 }
 
 type CommonJSONType struct {

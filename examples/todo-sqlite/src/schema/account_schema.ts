@@ -1,6 +1,8 @@
 import {
   BooleanType,
+  ConstraintType,
   EnumType,
+  IntegerType,
   StructType,
   StructTypeAsList,
 } from "@snowtop/ent";
@@ -55,13 +57,65 @@ const AccountSchema = new TodoBaseEntSchema({
         preferredLanguage: StringType(),
       },
     }),
+    // new credits. everyone starts with 1000
+    // only way to currently increase this value is to do a Todo
+    // with a bounty
+    credits: IntegerType({
+      serverDefault: 1000,
+      // only viewer can see their credits balance
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
+    }),
   },
 
   actions: [
     {
-      operation: ActionOperation.Mutations,
+      operation: ActionOperation.Create,
+    },
+    {
+      operation: ActionOperation.Edit,
+      excludedFields: ["credits"],
+    },
+    {
+      operation: ActionOperation.Edit,
+      actionName: "AccountUpdateBalanceAction",
+      inputName: "AccountUpdateBalanceInput",
+      graphQLName: "accountUpdateBalance",
+      fields: ["credits"],
+      requiredFields: ["credits"],
+    },
+    {
+      // it transfers from this account to given account
+      operation: ActionOperation.Edit,
+      actionName: "AccountTransferCreditsAction",
+      inputName: "AccountTransferCreditsInput",
+      graphQLName: "accountTransferCredits",
+      noFields: true,
+      actionOnlyFields: [
+        {
+          name: "to",
+          type: "ID",
+        },
+        {
+          name: "amount",
+          type: "Int",
+        },
+      ],
+    },
+    {
+      operation: ActionOperation.Delete,
     },
   ],
+
+  // TODO fix this with SQLite
+  // TODO addCheckConstraint check here doesn't always work? it's confusing...
+  // constraints: [
+  //   {
+  //     type: ConstraintType.Check,
+  //     columns: [],
+  //     name: "non_negative_credits_balance",
+  //     condition: "credits >=0",
+  //   },
+  // ],
 
   // duplicating account to todo information in edges so we can test
   // edge groups with no null states since the only state of a Todo is open/closed

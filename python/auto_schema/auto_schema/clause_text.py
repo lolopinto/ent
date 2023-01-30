@@ -23,6 +23,8 @@ valid_suffixes = {
     'json': True,
     # mostly used for lists
     'integer': True,
+    'character varying': True,
+    'uuid': True,
 }
 
 

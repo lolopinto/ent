@@ -32,9 +32,10 @@ func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: actionTemplate{
-			NodeData:      nodeData,
-			Action:        action,
-			BuilderPath:   getImportPathForBuilderFile(nodeData),
+			NodeData:    nodeData,
+			Action:      action,
+			BuilderPath: getImportPathForBuilderFile(nodeData),
+			// TODO rename to Config
 			CodePath:      processor.Config,
 			Package:       cfg.GetImportPackage(),
 			PrivacyConfig: cfg.GetDefaultActionPolicy(),
@@ -77,6 +78,7 @@ func writeActionFile(nodeData *schema.NodeData, processor *codegen.Processor, ac
 func getCustomFuncMap(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["hasInput"] = action.HasInput
+	m["inputWithRelative"] = action.InputWithRelative
 	m["hasOnlyActionOnlyFields"] = action.HasOnlyActionOnlyFields
 	m["isRequiredField"] = action.IsRequiredField
 	m["getWriteOperation"] = getWriteOperation

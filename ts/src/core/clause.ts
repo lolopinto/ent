@@ -829,3 +829,24 @@ export function PaginationMultipleColsSubQuery(
     val,
   );
 }
+
+// These 5 are used on the RHS of an expression
+export function Add(col: string, value: any): Clause {
+  return new simpleClause(col, value, "+", new isNullClause(col));
+}
+
+export function Subtract(col: string, value: any): Clause {
+  return new simpleClause(col, value, "-", new isNullClause(col));
+}
+
+export function Multiply(col: string, value: any): Clause {
+  return new simpleClause(col, value, "*", new isNullClause(col));
+}
+
+export function Divide(col: string, value: any): Clause {
+  return new simpleClause(col, value, "/", new isNullClause(col));
+}
+
+export function Modulo(col: string, value: any): Clause {
+  return new simpleClause(col, value, "%", new isNullClause(col));
+}

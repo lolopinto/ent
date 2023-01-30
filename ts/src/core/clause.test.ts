@@ -1022,6 +1022,58 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual("start_time-<-events-id-fooo");
     });
   });
+
+  describe("rhs", () => {
+    test("add", () => {
+      const cls = clause.Add("balance", 4);
+      expect(cls.clause(1)).toBe("balance + $1");
+      expect(cls.clause(2)).toBe("balance + $2");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance+4");
+    });
+
+    test("subtract", () => {
+      const cls = clause.Subtract("balance", 4);
+      expect(cls.clause(1)).toBe("balance - $1");
+      expect(cls.clause(2)).toBe("balance - $2");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance-4");
+    });
+
+    test("divide", () => {
+      const cls = clause.Divide("balance", 4);
+      expect(cls.clause(1)).toBe("balance / $1");
+      expect(cls.clause(2)).toBe("balance / $2");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance/4");
+    });
+
+    test("multiply", () => {
+      const cls = clause.Multiply("balance", 4);
+      expect(cls.clause(1)).toBe("balance * $1");
+      expect(cls.clause(2)).toBe("balance * $2");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance*4");
+    });
+
+    test("modulo", () => {
+      const cls = clause.Modulo("balance", 4);
+      expect(cls.clause(1)).toBe("balance % $1");
+      expect(cls.clause(2)).toBe("balance % $2");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance%4");
+    });
+  });
 });
 
 describe("sqlite", () => {
@@ -1497,6 +1549,58 @@ describe("sqlite", () => {
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.instanceKey()).toEqual("start_time-<-events-id-fooo");
+    });
+  });
+
+  describe("rhs", () => {
+    test("add", () => {
+      const cls = clause.Add("balance", 4);
+      expect(cls.clause(1)).toBe("balance + ?");
+      expect(cls.clause(2)).toBe("balance + ?");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance+4");
+    });
+
+    test("subtract", () => {
+      const cls = clause.Subtract("balance", 4);
+      expect(cls.clause(1)).toBe("balance - ?");
+      expect(cls.clause(2)).toBe("balance - ?");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance-4");
+    });
+
+    test("divide", () => {
+      const cls = clause.Divide("balance", 4);
+      expect(cls.clause(1)).toBe("balance / ?");
+      expect(cls.clause(2)).toBe("balance / ?");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance/4");
+    });
+
+    test("multiply", () => {
+      const cls = clause.Multiply("balance", 4);
+      expect(cls.clause(1)).toBe("balance * ?");
+      expect(cls.clause(2)).toBe("balance * ?");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance*4");
+    });
+
+    test("modulo", () => {
+      const cls = clause.Modulo("balance", 4);
+      expect(cls.clause(1)).toBe("balance % ?");
+      expect(cls.clause(2)).toBe("balance % ?");
+      expect(cls.columns()).toStrictEqual(["balance"]);
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("balance%4");
     });
   });
 });

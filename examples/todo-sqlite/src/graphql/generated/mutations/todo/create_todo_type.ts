@@ -6,6 +6,7 @@ import {
   GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -47,6 +48,9 @@ export const CreateTodoInputType = new GraphQLInputObjectType({
     scope_type: {
       type: new GraphQLNonNull(GraphQLString),
     },
+    bounty: {
+      type: GraphQLInt,
+    },
   }),
 });
 
@@ -86,6 +90,7 @@ export const CreateTodoType: GraphQLFieldConfig<
       assigneeID: input.assignee_id,
       scopeID: input.scope_id,
       scopeType: input.scope_type,
+      bounty: input.bounty,
     }).saveX();
     return { todo: todo };
   },

@@ -1,6 +1,5 @@
-import { ID, Ent, Data, Viewer } from "../../core/base";
-import { AlwaysAllowPrivacyPolicy } from "../../core/privacy";
 import {
+  BaseEnt,
   getBuilderSchemaFromFields,
   getSchemaName,
   getTableName,
@@ -8,17 +7,9 @@ import {
 import { getSchemaTable } from "./temp_db";
 import { Dialect } from "../../core/db";
 
-class Account implements Ent {
-  id: ID;
+class Account extends BaseEnt {
   accountID: string;
   nodeType = "Account";
-  getPrivacyPolicy() {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
-  constructor(public viewer: Viewer, public data: Data) {
-    this.id = data.id;
-  }
 }
 
 const AccountSchema = getBuilderSchemaFromFields({}, Account);

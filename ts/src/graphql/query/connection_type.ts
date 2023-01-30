@@ -12,23 +12,24 @@ import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
 import { GraphQLPageInfo } from "./page_info";
 import { GraphQLEdgeInterface } from "../builtins/edge";
 import { GraphQLConnectionInterface } from "../builtins/connection";
-import { Data, Ent } from "../../core/base";
+import { Data, Ent, Viewer } from "../../core/base";
 
 type nodeType = GraphQLObjectType | GraphQLInterfaceType;
 export class GraphQLEdgeType<
   TNode extends nodeType,
   TEdge extends Data,
+  TViewer extends Viewer,
 > extends GraphQLObjectType {
   constructor(
     name: string,
     nodeType: TNode,
     optionalFields?: () => GraphQLFieldConfigMap<
       GraphQLEdge<TEdge>,
-      RequestContext
+      RequestContext<TViewer>
     >,
   ) {
     let optional:
-      | GraphQLFieldConfigMap<GraphQLEdge<TEdge>, RequestContext>
+      | GraphQLFieldConfigMap<GraphQLEdge<TEdge>, RequestContext<TViewer>>
       | undefined;
     if (optionalFields) {
       optional = optionalFields();
@@ -37,7 +38,7 @@ export class GraphQLEdgeType<
       name: `${name}Edge`,
       fields: (): GraphQLFieldConfigMap<
         GraphQLEdge<TEdge>,
-        RequestContext
+        RequestContext<TViewer>
       > => ({
         node: {
           type: new GraphQLNonNull(nodeType),
@@ -52,33 +53,34 @@ export class GraphQLEdgeType<
   }
 }
 
-interface connectionOptions<T extends Data> {
-  fields?(): GraphQLFieldConfigMap<GraphQLEdge<T>, RequestContext>;
+interface connectionOptions<T extends Data, TViewer extends Viewer> {
+  fields?(): GraphQLFieldConfigMap<GraphQLEdge<T>, RequestContext<TViewer>>;
 }
 
 export class GraphQLConnectionType<
   TNode extends nodeType,
   TEdge extends Data,
+  TViewer extends Viewer,
 > extends GraphQLObjectType {
-  edgeType: GraphQLEdgeType<TNode, TEdge>;
+  edgeType: GraphQLEdgeType<TNode, TEdge, TViewer>;
   constructor(
     name: string,
     nodeType: TNode,
-    options?: connectionOptions<TEdge>,
+    options?: connectionOptions<TEdge, TViewer>,
   ) {
     const edgeType = new GraphQLEdgeType(name, nodeType, options?.fields);
 
     super({
       name: `${name}Connection`,
       fields: (): GraphQLFieldConfigMap<
-        GraphQLEdgeConnection<Ent, TEdge>,
-        RequestContext
+        GraphQLEdgeConnection<Ent, TEdge, TViewer>,
+        RequestContext<TViewer>
       > => ({
         edges: {
           type: new GraphQLNonNull(
             new GraphQLList(new GraphQLNonNull(edgeType)),
           ),
-          resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
+          resolve: (source: GraphQLEdgeConnection<Ent, TEdge, TViewer>) => {
             return source.queryEdges();
           },
         },
@@ -86,19 +88,19 @@ export class GraphQLConnectionType<
           type: new GraphQLNonNull(
             new GraphQLList(new GraphQLNonNull(nodeType)),
           ),
-          resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
+          resolve: (source: GraphQLEdgeConnection<Ent, TEdge, TViewer>) => {
             return source.queryNodes();
           },
         },
         pageInfo: {
           type: new GraphQLNonNull(GraphQLPageInfo),
-          resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
+          resolve: (source: GraphQLEdgeConnection<Ent, TEdge, TViewer>) => {
             return source.queryPageInfo();
           },
         },
         rawCount: {
           type: new GraphQLNonNull(GraphQLInt),
-          resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
+          resolve: (source: GraphQLEdgeConnection<Ent, TEdge, TViewer>) => {
             return source.queryTotalCount();
           },
         },

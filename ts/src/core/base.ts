@@ -112,6 +112,9 @@ export interface Ent<TViewer extends Viewer = Viewer> {
   viewer: TViewer;
   getPrivacyPolicy(): PrivacyPolicy<this, TViewer>;
   nodeType: string;
+  // used to set raw data that's then used by ent internals
+  // shouldn't be used...
+  __setRawDBData<T extends Data = Data>(data: T);
 }
 
 export declare type Data = {
@@ -175,6 +178,9 @@ export interface CreateRowOptions extends DataOptions {
 
 export interface EditRowOptions extends CreateRowOptions {
   whereClause: clause.Clause;
+  // if a column exists in here as opposed to in fields, we use the expression given
+  // instead of the value
+  expressions?: Map<string, clause.Clause>;
 }
 
 interface LoadableEntOptions<

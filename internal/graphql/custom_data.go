@@ -8,6 +8,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
@@ -17,9 +18,10 @@ type CustomData struct {
 	Inputs  map[string]*CustomObject `json:"inputs,omitempty"`
 	Objects map[string]*CustomObject `json:"objects,omitempty"`
 	// map of class to fields in that class
-	Fields        map[string][]CustomField    `json:"fields,omitempty"`
-	Queries       []CustomField               `json:"queries,omitempty"`
-	Mutations     []CustomField               `json:"mutations,omitempty"`
+	Fields    map[string][]CustomField `json:"fields,omitempty"`
+	Queries   []CustomField            `json:"queries,omitempty"`
+	Mutations []CustomField            `json:"mutations,omitempty"`
+
 	Classes       map[string]*CustomClassInfo `json:"classes,omitempty"`
 	Files         map[string]*CustomFile      `json:"files,omitempty"`
 	CustomTypes   map[string]*CustomType      `json:"customTypes,omitempty"`
@@ -38,6 +40,35 @@ type CustomItem struct {
 	GraphQLOnlyArg bool                   `json:"graphQLOnlyArg,omitempty"`
 	TSType         string                 `json:"tsType,omitempty"`
 	imports        []*tsimport.ImportPath `json:"-"`
+	Description    string                 `json:"description,omitempty"`
+}
+
+func (arg CustomItem) defaultArg() string {
+	return fmt.Sprintf("args.%s", arg.Name)
+}
+
+func (arg CustomItem) renderArg(cfg *codegen.Config) (string, []*tsimport.ImportPath) {
+	if arg.TSType != "ID" || !cfg.Base64EncodeIDs() {
+		return arg.defaultArg(), nil
+	}
+	// we don't have the enttype.Type here so manually calling types for cases we're aware of
+
+	var typ enttype.CustomGQLRenderer
+	if arg.Nullable == NullableTrue && arg.List {
+		typ = &enttype.NullableArrayListType{
+			ElemType: &enttype.IDType{},
+		}
+	} else if arg.List {
+		typ = &enttype.ArrayListType{
+			ElemType: &enttype.IDType{},
+		}
+	} else if arg.Nullable == NullableTrue {
+		typ = &enttype.NullableIDType{}
+	} else {
+		typ = &enttype.IDType{}
+	}
+
+	return typ.CustomGQLRender(cfg, fmt.Sprintf("args.%s", arg.Name)), typ.ArgImports(cfg)
 }
 
 type CustomScalarInfo struct {
@@ -172,6 +203,14 @@ const Function CustomFieldType = "FUNCTION"
 const AsyncFunction CustomFieldType = "ASYNC_FUNCTION"
 
 type CustomField struct {
+	// Node is not the best name.
+
+	// for custom queries/mutations
+	// It's the class in which the function is defined
+
+	// for custom fields on nodes e.g. User, it's that node
+
+	// for inline fields, it's empty since not defined anywhere
 	Node         string          `json:"nodeName"`
 	GraphQLName  string          `json:"gqlName"`
 	FunctionName string          `json:"functionName"`
@@ -179,6 +218,11 @@ type CustomField struct {
 	Results      []CustomItem    `json:"results"`
 	FieldType    CustomFieldType `json:"fieldType"`
 	Connection   bool            `json:"-"`
+	Description  string          `json:"description,omitempty"`
+	// extra imports
+	ExtraImports []*tsimport.ImportPath `json:"extraImports,omitempty"`
+	// To be used instead of calling a function...
+	FunctionContents string `json:"functionContents,omitempty"`
 }
 
 func (cf CustomField) getArg() string {
@@ -219,10 +263,15 @@ func (cf *CustomField) UnmarshalJSON(data []byte) error {
 	cf.GraphQLName = getStringFromMap(m, "gqlName")
 	cf.FunctionName = getStringFromMap(m, "functionName")
 	cf.FieldType = CustomFieldType(getStringFromMap(m, "fieldType"))
+	cf.Description = getStringFromMap(m, "description")
+	cf.FunctionContents = getStringFromMap(m, "functionContents")
 	if err := getValFromMap(m, "args", &cf.Args); err != nil {
 		return err
 	}
 	if err := getValFromMap(m, "results", &cf.Results); err != nil {
+		return err
+	}
+	if err := getValFromMap(m, "extraImports", &cf.ExtraImports); err != nil {
 		return err
 	}
 
@@ -474,7 +523,10 @@ func customFieldEqual(cf1, cf2 *CustomField) bool {
 		customItemsListEqual(cf1.Args, cf2.Args) &&
 		customItemsListEqual(cf1.Results, cf2.Results) &&
 		cf1.FieldType == cf2.FieldType &&
-		cf1.Connection == cf2.Connection
+		cf1.Connection == cf2.Connection &&
+		cf1.Description == cf2.Description &&
+		tsimport.ImportPathsEqual(cf1.ExtraImports, cf2.ExtraImports) &&
+		cf1.FunctionContents == cf2.FunctionContents
 }
 
 func customFieldListComparison(cfg codegenapi.Config, l1, l2 []CustomField) (bool, map[string]bool) {

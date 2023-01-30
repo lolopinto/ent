@@ -541,6 +541,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     contactSameDomain: {
+      description: "contacts same domain...",
       type: ContactType,
       resolve: async (
         user: User,
@@ -560,6 +561,24 @@ export const UserType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return user.getContactsSameDomain();
+      },
+    },
+    contactsGivenDomain: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ContactType)),
+      ),
+      args: {
+        domain: {
+          description: "",
+          type: new GraphQLNonNull(GraphQLString),
+        },
+      },
+      resolve: async (
+        user: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.getContactsGivenDomain(args.domain);
       },
     },
     contactsSameDomainNullable: {

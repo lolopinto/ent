@@ -9,6 +9,7 @@ import {
   Builder,
   Changeset,
   Orchestrator,
+  OrchestratorOptions,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
@@ -63,6 +64,14 @@ export class ContactPhoneNumberBuilder<
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
+    opts?: Partial<
+      OrchestratorOptions<
+        ContactPhoneNumber,
+        TInput,
+        ExampleViewerAlias,
+        TExistingEnt
+      >
+    >,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-ContactPhoneNumber`;
     this.input = action.getInput();
@@ -81,6 +90,7 @@ export class ContactPhoneNumberBuilder<
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
       fieldInfo: contactPhoneNumberLoaderInfo.fieldInfo,
+      ...opts,
     });
   }
 

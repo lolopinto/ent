@@ -947,6 +947,25 @@ class TestPostgresRunner(BaseTestRunner):
                 conftest.metadata_with_server_default_changed_enum_type,
                 'modify server_default value of column rainbow from None to violet',
             ),
+            (
+                conftest.metadata_with_uuid_col,
+                'accounts',
+                conftest.metadata_with_server_default_changed_uuid_type,
+                "modify server_default value of column other_id from None to %s" % str(conftest.FOLLOWERS_EDGE),
+            ),
+            (
+                conftest.metadata_with_uuid_col,
+                'accounts',
+                conftest.metadata_with_server_default_changed_uuid_type_in_practice,
+                "modify server_default value of column other_id from None to %s" % str(conftest.FOLLOWERS_EDGE),
+            ),
+            (
+                # comparing string
+                conftest.metdata_enum_table,
+                'request_statuses',
+                conftest.metadata_with_server_default_changed_string_type,
+                "modify server_default value of column status from None to %s" % 'hello',
+            ),
         ])
     def test_server_default_change(self, new_test_runner, new_metadata_func, table_name, change_metadata_func, expected_message):
         metadata = new_metadata_func()
@@ -971,6 +990,28 @@ class TestPostgresRunner(BaseTestRunner):
         diff = r3.compute_changes()
 
         assert len(diff) == 0
+        
+    
+    def test_field_with_server_default_uuid_to_start(self,new_test_runner):
+        metadata = conftest.metadata_with_uuid_col()
+
+        metadata = conftest.metadata_with_server_default_changed_uuid_type_in_practice(metadata)
+        
+        r = new_test_runner(metadata)
+
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata, ['accounts'])
+        
+        r2 = new_test_runner(metadata, r)
+        diff = r2.compute_changes()
+
+        # alter_op =diff[0].ops[0]
+        # print(alter_op.modify_server_default)
+        
+        assert len(diff) == 0
+        testingutils.validate_metadata_after_change(r2, metadata)
+        r2.run()
+
 
     # only in postgres because "No support for ALTER of constraints in SQLite dialect"
 

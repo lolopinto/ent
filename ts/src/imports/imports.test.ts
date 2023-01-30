@@ -4,7 +4,7 @@ import * as path from "path";
 let r: PathResult | undefined;
 function parse() {
   if (r === undefined) {
-    r = parseCustomImports(path.join(__dirname, "./dataz/example1"));
+    r = parseCustomImports(path.join(__dirname, "./dataz/example1"), []);
   }
   return r;
 }

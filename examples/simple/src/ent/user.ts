@@ -10,7 +10,7 @@ import {
 } from "@snowtop/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { GraphQLString } from "graphql";
-import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
+import { gqlArg, gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import * as bcrypt from "bcryptjs";
 import { CustomEdgeQueryBase } from "@snowtop/ent";
 import { ExampleViewer } from "src/viewer/viewer";
@@ -33,7 +33,7 @@ class UserToCommentsAuthoredQuery extends CustomEdgeQueryBase<
     return User.load(this.viewer, id);
   }
 }
-// we're only writing this once except with --force and packageName provided
+
 export class User extends UserBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
@@ -76,13 +76,22 @@ export class User extends UserBase {
 
   private async queryContactInfos() {
     const contacts = await this.queryContacts().queryEnts();
-    return Promise.all(contacts.map((contact) => contact.queryPlusEmails()));
+    return Promise.all(
+      contacts.map(async (contact) => {
+        const contactInfo = await contact.queryPlusEmails();
+        return {
+          contactInfo,
+          contact,
+        };
+      }),
+    );
   }
 
   @gqlField({
     type: "Contact",
     nullable: true,
     name: "contactSameDomain",
+    description: "contacts same domain...",
   })
   async getFirstContactSameDomain(): Promise<Contact | null> {
     let domain = this.getDomainFromEmail(this.emailAddress);
@@ -94,15 +103,15 @@ export class User extends UserBase {
       this.queryContactInfos(),
     ]);
 
-    const ret = contactInfos.find((contactInfo) => {
-      if (selfContactEdge?.id2 === contactInfo.contact.id) {
-        return null;
+    for (const info of contactInfos) {
+      if (info.contact.id == selfContactEdge?.id2) {
+        continue;
       }
-      if (domain === this.getDomainFromEmail(contactInfo.firstEmail)) {
-        return contactInfo;
+      if (domain === this.getDomainFromEmail(info.contactInfo.firstEmail)) {
+        return info.contact;
       }
-    });
-    return ret?.contact || null;
+    }
+    return null;
   }
 
   @gqlField({ type: "[Contact]", name: "contactsSameDomain" })
@@ -113,10 +122,25 @@ export class User extends UserBase {
       return [];
     }
     const contactInfos = await this.queryContactInfos();
-    return contactInfos.filterMap((contactInfo) => {
+    return contactInfos.filterMap((info) => {
       return {
-        include: domain === this.getDomainFromEmail(contactInfo.firstEmail),
-        return: contactInfo.contact,
+        include:
+          domain === this.getDomainFromEmail(info.contactInfo.firstEmail),
+        return: info.contact,
+      };
+    });
+  }
+
+  @gqlField({ type: "[Contact]", name: "contactsGivenDomain" })
+  async getContactsGivenDomain(
+    @gqlArg("domain", { type: GraphQLString }) domain: string,
+  ): Promise<Contact[]> {
+    const contactInfos = await this.queryContactInfos();
+    return contactInfos.filterMap((info) => {
+      return {
+        include:
+          domain === this.getDomainFromEmail(info.contactInfo.firstEmail),
+        return: info.contact,
       };
     });
   }
@@ -133,12 +157,12 @@ export class User extends UserBase {
       return null;
     }
     const contactInfos = await this.queryContactInfos();
-    const res = contactInfos.filterMap((contactInfo) => {
+    const res = contactInfos.filterMap((info) => {
       return {
         include:
-          this.id !== contactInfo.contact.userID &&
-          domain === this.getDomainFromEmail(contactInfo.firstEmail),
-        return: contactInfo.contact,
+          this.id !== info.contact.userID &&
+          domain === this.getDomainFromEmail(info.contactInfo.firstEmail),
+        return: info.contact,
       };
     });
 
@@ -161,10 +185,10 @@ export class User extends UserBase {
       return [];
     }
     let contactInfos = await this.queryContactInfos();
-    return contactInfos.map((contactInfo) => {
-      let contactDomain = this.getDomainFromEmail(contactInfo.firstEmail);
+    return contactInfos.map((info) => {
+      let contactDomain = this.getDomainFromEmail(info.contactInfo.firstEmail);
       if (contactDomain === domain) {
-        return contactInfo.contact;
+        return info.contact;
       }
       return null;
     });
@@ -184,10 +208,10 @@ export class User extends UserBase {
       return null;
     }
     const contactInfos = await this.queryContactInfos();
-    return contactInfos.map((contactInfo) => {
-      let contactDomain = this.getDomainFromEmail(contactInfo.firstEmail);
+    return contactInfos.map((info) => {
+      let contactDomain = this.getDomainFromEmail(info.contactInfo.firstEmail);
       if (contactDomain === domain) {
-        return contactInfo.contact;
+        return info.contact;
       }
       return null;
     });

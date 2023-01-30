@@ -140,27 +140,31 @@ export function UUIDType(options?: FieldOptions): UUIDField {
   return Object.assign(result, options);
 }
 
-export interface IntegerOptions extends FieldOptions {
-  min?: number;
-  max?: number;
+export interface IntegerOptions extends NumberOptions<number> {}
+
+export interface NumberOptions<T> extends FieldOptions {
+  min?: T;
+  max?: T;
 }
 
-export class IntegerField extends BaseField implements Field {
+export class NumberField<T> extends BaseField {
+  // to be overriden as needed
   type: Type = { dbType: DBType.Int };
-  private validators: { (str: number): boolean }[] = [];
-  private options: IntegerOptions = {};
 
-  constructor(options?: IntegerOptions) {
+  private validators: { (str: number): boolean }[] = [];
+  private options: NumberOptions<T> = {};
+
+  constructor(options?: NumberOptions<T>) {
     super();
     // for legacy callers
     this.handleOptions(options || this.options);
   }
 
-  getOptions(): IntegerOptions {
+  getOptions(): NumberOptions<T> {
     return this.options;
   }
 
-  private handleOptions(options: IntegerOptions) {
+  private handleOptions(options: NumberOptions<T>) {
     const params = {
       min: this.min,
       max: this.max,
@@ -175,11 +179,13 @@ export class IntegerField extends BaseField implements Field {
     this.options = options;
   }
 
-  min(l: number): this {
+  min(l: T): this {
+    // @ts-ignore Operator '>=' cannot be applied to types 'number' and 'T'.
     return this.validate((val) => val >= l);
   }
 
-  max(l: number): this {
+  max(l: T): this {
+    // @ts-ignore Operator '<=' cannot be applied to types 'number' and 'T'.
     return this.validate((val) => val <= l);
   }
 
@@ -198,26 +204,32 @@ export class IntegerField extends BaseField implements Field {
   }
 }
 
+export class IntegerField extends NumberField<number> implements Field {
+  type: Type = { dbType: DBType.Int };
+}
+
 export function IntegerType(options?: IntegerOptions): IntegerField {
   let result = new IntegerField(options);
   return Object.assign(result, options);
 }
 
-export class BigIntegerField extends BaseField implements Field {
+export class BigIntegerField extends NumberField<BigInt> implements Field {
   type: Type = { dbType: DBType.BigInt };
 }
 
-export function BigIntegerType(options?: FieldOptions): BigIntegerField {
-  let result = new BigIntegerField();
+export function BigIntegerType(
+  options?: NumberOptions<BigInt>,
+): BigIntegerField {
+  let result = new BigIntegerField(options);
   return Object.assign(result, options);
 }
 
-export class FloatField extends BaseField implements Field {
+export class FloatField extends NumberField<number> implements Field {
   type: Type = { dbType: DBType.Float };
 }
 
-export function FloatType(options?: FieldOptions): FloatField {
-  let result = new FloatField();
+export function FloatType(options?: NumberOptions<number>): FloatField {
+  let result = new FloatField(options);
   return Object.assign(result, options);
 }
 
