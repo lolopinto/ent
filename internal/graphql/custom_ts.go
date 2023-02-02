@@ -11,6 +11,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -54,9 +55,10 @@ func (cm *customMutationsProcesser) getFields(cd *CustomData) []CustomField {
 
 func (cm *customMutationsProcesser) buildFieldConfig(processor *codegen.Processor, cd *CustomData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
 	b := &mutationFieldConfigBuilder{
-		field:    field,
-		filePath: cm.getFilePath(processor, field.GraphQLName),
-		cd:       cd,
+		field:     field,
+		filePath:  cm.getFilePath(processor, field.GraphQLName),
+		cd:        cd,
+		processor: processor,
 	}
 
 	for _, arg := range field.Args {
@@ -96,6 +98,7 @@ func (cq *customQueriesProcesser) buildFieldConfig(processor *codegen.Processor,
 	b := &queryFieldConfigBuilder{
 		field,
 		cq.getFilePath(processor, field.GraphQLName),
+		processor,
 	}
 	return b.build(processor, cd, s, field)
 }
@@ -259,10 +262,11 @@ type fieldConfigBuilder interface {
 }
 
 type mutationFieldConfigBuilder struct {
-	field    CustomField
-	filePath string
-	cd       *CustomData
-	inputArg *CustomItem
+	field     CustomField
+	filePath  string
+	cd        *CustomData
+	inputArg  *CustomItem
+	processor *codegen.Processor
 }
 
 func (mfcg *mutationFieldConfigBuilder) getName() string {
@@ -307,7 +311,7 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Proces
 	}
 	var ret = r.imports[:]
 
-	imp := s.getImportFor(r.Type, true)
+	imp := s.getImportFor(processor, r.Type, true)
 	if imp != nil {
 		ret = append(ret, imp)
 	} else {
@@ -340,7 +344,7 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 			},
 		}
 	}
-	return getFieldConfigArgs(mfcg.field, s, true)
+	return getFieldConfigArgs(mfcg.processor, mfcg.field, s, true)
 }
 
 func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
@@ -356,8 +360,9 @@ func (mfcg *mutationFieldConfigBuilder) getArgMap(cd *CustomData) map[string]*Cu
 }
 
 type queryFieldConfigBuilder struct {
-	field    CustomField
-	filePath string
+	field     CustomField
+	filePath  string
+	processor *codegen.Processor
 }
 
 func (qfcg *queryFieldConfigBuilder) getName() string {
@@ -398,7 +403,7 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor
 	}
 	var ret = r.imports[:]
 
-	imp := s.getImportFor(r.Type, false)
+	imp := s.getImportFor(processor, r.Type, false)
 	if imp != nil {
 		ret = append(ret, imp)
 	} else {
@@ -412,13 +417,13 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor
 	return ret
 }
 
-func getFieldConfigArgs(field CustomField, s *gqlSchema, mutation bool) []*fieldConfigArg {
-	return getFieldConfigArgsFrom(field.Args, s, mutation)
+func getFieldConfigArgs(processor *codegen.Processor, field CustomField, s *gqlSchema, mutation bool) []*fieldConfigArg {
+	return getFieldConfigArgsFrom(processor, field.Args, s, mutation)
 }
 
 // if s is nil, we only check knownTypes to see if arg.Type
 // matches, otherwise, no type given for that...
-func getFieldConfigArgsFrom(args []CustomItem, s *gqlSchema, mutation bool) []*fieldConfigArg {
+func getFieldConfigArgsFrom(processor *codegen.Processor, args []CustomItem, s *gqlSchema, mutation bool) []*fieldConfigArg {
 	var ret []*fieldConfigArg
 	for _, arg := range args {
 		if arg.IsContextArg {
@@ -435,7 +440,7 @@ func getFieldConfigArgsFrom(args []CustomItem, s *gqlSchema, mutation bool) []*f
 		var imp *tsimport.ImportPath
 
 		if s != nil {
-			imp = s.getImportFor(arg.Type, mutation)
+			imp = s.getImportFor(processor, arg.Type, mutation)
 			if imp == nil {
 				// local
 				imp = &tsimport.ImportPath{
@@ -462,7 +467,7 @@ func getFieldConfigArgsFrom(args []CustomItem, s *gqlSchema, mutation bool) []*f
 }
 
 func (qfcg *queryFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg {
-	return getFieldConfigArgs(qfcg.field, s, false)
+	return getFieldConfigArgs(qfcg.processor, qfcg.field, s, false)
 }
 
 func (qfcg *queryFieldConfigBuilder) getReturnTypeHint() string {
@@ -546,7 +551,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		for _, arg := range field.Args {
 			argType := argMap[arg.Type]
 			if argType == nil {
-				contents, imps := arg.renderArg(processor.Config)
+				contents, imps := arg.renderArg(processor.Config, s)
 				defaultArg := arg.defaultArg()
 				if contents != defaultArg {
 					// arg changed, so assign new value before inline contents
@@ -581,7 +586,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 			}
 			argType := argMap[arg.Type]
 			if argType == nil {
-				contents, imps := arg.renderArg(processor.Config)
+				contents, imps := arg.renderArg(processor.Config, s)
 				argContents = append(argContents, contents)
 				argImports = append(argImports, imps...)
 			} else {
@@ -656,7 +661,7 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 
 	for _, f := range fields {
 		// maybe we'll care for input vs Payload here at some point
-		gqlField, err := getCustomGQLField(cd, f, s, "obj")
+		gqlField, err := getCustomGQLField(processor, cd, f, s, "obj")
 		if err != nil {
 			return nil, err
 		}
@@ -801,11 +806,11 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			if field.Connection {
 				customEdge := getGQLEdge(processor.Config, field, nodeName)
 				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
-				addConnection(nodeData, customEdge, &obj.Fields, nodeData.NodeInstance, &field)
+				addConnection(processor, nodeData, customEdge, &obj.Fields, nodeData.NodeInstance, &field)
 				continue
 			}
 
-			gqlField, err := getCustomGQLField(cd, field, s, instance)
+			gqlField, err := getCustomGQLField(processor, cd, field, s, instance)
 			if err != nil {
 				return err
 			}
@@ -859,11 +864,11 @@ func isConnection(field *CustomField) bool {
 	return field.Results[0].Connection
 }
 
-func getCustomGQLField(cd *CustomData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
+func getCustomGQLField(processor *codegen.Processor, cd *CustomData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
 	if field.Connection {
 		return nil, fmt.Errorf("field is a connection. this should be handled elsewhere")
 	}
-	imports, err := getGraphQLImportsForField(cd, field, s)
+	imports, err := getGraphQLImportsForField(processor, cd, field, s)
 	if err != nil {
 		return nil, err
 	}
@@ -886,7 +891,7 @@ func getCustomGQLField(cd *CustomData, field CustomField, s *gqlSchema, instance
 			Name: arg.Name,
 		}
 
-		imps, err := arg.getImports(s, cd)
+		imps, err := arg.getImports(processor, s, cd)
 		if err != nil {
 			return nil, err
 		}
@@ -926,12 +931,49 @@ func processCustomQueries(processor *codegen.Processor, cd *CustomData, s *gqlSc
 	return cq.process(processor, cd, s)
 }
 
-func getGraphQLImportsForField(cd *CustomData, f CustomField, s *gqlSchema) ([]*tsimport.ImportPath, error) {
+func processCusomTypes(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
+	for _, typ := range cd.CustomTypes {
+		if len(typ.EnumMap) == 0 {
+			continue
+		}
+
+		// todo type tstype empty
+		tsType := typ.TSType
+		if tsType == "" {
+			tsType = typ.Type
+		}
+
+		_, gql := enum.GetEnums(&enum.Input{
+			EnumMap:            typ.EnumMap,
+			TSName:             tsType,
+			GQLName:            typ.Type,
+			GQLType:            typ.Type + "Type",
+			DisableUnknownType: true,
+		})
+		if s.enums[gql.Type] != nil {
+			return fmt.Errorf("enum name %s already exists", gql.Type)
+		}
+
+		path := getFilePathForEnum(processor.Config, gql.Name)
+		if typ.InputType {
+			path = getFilePathForEnumInputFile(processor.Config, gql.Type)
+
+		}
+		s.enums[gql.Type] = &gqlEnum{
+			Type:     gql.Type,
+			Enum:     gql,
+			FilePath: path,
+		}
+	}
+	return nil
+}
+
+func getGraphQLImportsForField(processor *codegen.Processor, cd *CustomData, f CustomField, s *gqlSchema) ([]*tsimport.ImportPath, error) {
 	var imports []*tsimport.ImportPath
 
 	for _, result := range f.Results {
 
-		imps, err := result.getImports(s, cd)
+		imps, err := result.getImports(processor, s, cd)
 		if err != nil {
 			return nil, err
 		}

@@ -18,11 +18,13 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { User } from "../../../ent";
+import { UserSortColumnType } from "./user_sort_column_type";
 import { RootToUserConnectionConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface UserConnectionArgs {
   ids: any;
+  sortCol: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -39,6 +41,10 @@ export const UserConnectionQueryType: GraphQLFieldConfig<
     ids: {
       description: "",
       type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
+    },
+    sortCol: {
+      description: "",
+      type: UserSortColumnType,
     },
     first: {
       description: "",
@@ -73,8 +79,8 @@ export const UserConnectionQueryType: GraphQLFieldConfig<
           loadEntOptions: User.loaderOptions(),
           clause: query.In("id", args.ids),
           name: "User",
-          // not sorted but ok
-          sortColumn: "created_at",
+          // use sortCol value or created_at (not sorted)
+          sortColumn: args.sortCol ?? "created_at",
         });
       },
       args,

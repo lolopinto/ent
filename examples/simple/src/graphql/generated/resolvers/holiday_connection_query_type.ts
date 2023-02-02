@@ -18,11 +18,13 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Holiday } from "../../../ent";
+import { HolidaySortColumnType } from "./holiday_sort_column_type";
 import { RootToHolidayConnectionConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface HolidayConnectionArgs {
   ids: any;
+  sortCol: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -39,6 +41,10 @@ export const HolidayConnectionQueryType: GraphQLFieldConfig<
     ids: {
       description: "",
       type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
+    },
+    sortCol: {
+      description: "",
+      type: HolidaySortColumnType,
     },
     first: {
       description: "",
@@ -73,8 +79,8 @@ export const HolidayConnectionQueryType: GraphQLFieldConfig<
           loadEntOptions: Holiday.loaderOptions(),
           clause: query.In("id", args.ids),
           name: "Holiday",
-          // not sorted but ok
-          sortColumn: "created_at",
+          // use sortCol value or created_at (not sorted)
+          sortColumn: args.sortCol ?? "created_at",
         });
       },
       args,

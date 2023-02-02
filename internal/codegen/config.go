@@ -27,7 +27,7 @@ type Config struct {
 	importPathToRoot      string
 	absPathToRoot         string
 	absPathToConfigs      string
-	config                *config
+	config                *ConfigurableConfig
 	debugMode             bool
 	debugFilesMode        bool
 	// writeAll, even if changes are valid, still write all the files
@@ -64,7 +64,7 @@ func (cfg *Config) OverrideGraphQLMutationName(mutationName codegenapi.GraphQLMu
 		codegen.DefaultGraphQLMutationName = mutationName
 		return
 	}
-	cfg.config = &config{
+	cfg.config = &ConfigurableConfig{
 		Codegen: &CodegenConfig{
 			DefaultGraphQLMutationName: mutationName,
 		},
@@ -83,11 +83,11 @@ func NewConfig(configPath, modulePath string) (*Config, error) {
 		return nil, err
 	}
 
-	c, err := parseConfig()
+	absPathToRoot := filepath.Join(rootPath, "..", "..")
+	c, err := parseConfig(absPathToRoot)
 	if err != nil {
 		return nil, err
 	}
-	absPathToRoot := filepath.Join(rootPath, "..", "..")
 
 	return &Config{
 		relativePathToConfigs: configPath,
@@ -106,7 +106,7 @@ func NewTestConfig(configPath, modulePath string, codegenCfg *CodegenConfig) (*C
 	if err != nil {
 		return nil, err
 	}
-	cfg.config = &config{
+	cfg.config = &ConfigurableConfig{
 		Codegen: codegenCfg,
 	}
 	return cfg, nil
@@ -524,13 +524,14 @@ type ImportPackage struct {
 	TypesImportPath    string
 }
 
-func parseConfig() (*config, error) {
+func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 	paths := []string{
 		"ent.yml",
 		"src/ent.yml",
 		"src/graphql/ent.yml",
 	}
 	for _, p := range paths {
+		p = filepath.Join(absPathToRoot, p)
 		fi, err := os.Stat(p)
 		if os.IsNotExist(err) {
 			continue
@@ -549,7 +550,7 @@ func parseConfig() (*config, error) {
 		if err != nil {
 			return nil, err
 		}
-		var c config
+		var c ConfigurableConfig
 		if err := yaml.Unmarshal(b, &c); err != nil {
 			return nil, err
 		}
@@ -558,15 +559,15 @@ func parseConfig() (*config, error) {
 	return nil, nil
 }
 
-type config struct {
+type ConfigurableConfig struct {
 	Codegen                            *CodegenConfig `yaml:"codegen"`
 	CustomGraphQLJSONPath              string         `yaml:"customGraphQLJSONPath"`
 	DynamicScriptCustomGraphQLJSONPath string         `yaml:"dynamicScriptCustomGraphQLJSONPath"`
 	GlobalSchemaPath                   string         `yaml:"globalSchemaPath"`
 }
 
-func (cfg *config) Clone() *config {
-	return &config{
+func (cfg *ConfigurableConfig) Clone() *ConfigurableConfig {
+	return &ConfigurableConfig{
 		Codegen:                            cloneCodegen(cfg.Codegen),
 		CustomGraphQLJSONPath:              cfg.CustomGraphQLJSONPath,
 		DynamicScriptCustomGraphQLJSONPath: cfg.DynamicScriptCustomGraphQLJSONPath,
@@ -574,7 +575,7 @@ func (cfg *config) Clone() *config {
 	}
 }
 
-func cloneConfig(cfg *config) *config {
+func cloneConfig(cfg *ConfigurableConfig) *ConfigurableConfig {
 	if cfg == nil {
 		return nil
 	}

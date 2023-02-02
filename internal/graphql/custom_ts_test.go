@@ -8,16 +8,18 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func getCodePath(t *testing.T, dirPath string) *codegen.Config {
-	codepath, err := codegen.NewConfig(filepath.Join(dirPath, "src/schema"), "")
+func getConfig(t *testing.T, dirPath string) *codegen.Config {
+	cfg, err := codegen.NewConfig(filepath.Join(dirPath, "src/schema"), "")
 	require.Nil(t, err)
-	return codepath
+	return cfg
 }
 
 func validateDefaultCustomTypes(t *testing.T, customData *CustomData) {
@@ -62,9 +64,9 @@ func TestCustomMutation(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
-	data := &codegen.Processor{
+	processor := &codegen.Processor{
 		Schema: schema,
-		Config: getCodePath(t, dirPath),
+		Config: getConfig(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "mutations", "auth")
@@ -85,7 +87,7 @@ func TestCustomMutation(t *testing.T) {
 	path := filepath.Join(schemaDir, "auth.ts")
 	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
-	s, err := buildSchema(data, true)
+	s, err := buildSchema(processor, true)
 	require.NoError(t, err)
 
 	require.Len(t, s.customData.Args, 0)
@@ -194,9 +196,9 @@ func TestCustomQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
-	data := &codegen.Processor{
+	processor := &codegen.Processor{
 		Schema: schema,
-		Config: getCodePath(t, dirPath),
+		Config: getConfig(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "resolvers", "auth")
@@ -217,7 +219,7 @@ func TestCustomQuery(t *testing.T) {
 	path := filepath.Join(schemaDir, "auth.ts")
 	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
-	s, err := buildSchema(data, true)
+	s, err := buildSchema(processor, true)
 	require.NoError(t, err)
 
 	require.Len(t, s.customData.Args, 0)
@@ -314,9 +316,9 @@ func TestCustomListQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
-	data := &codegen.Processor{
+	processor := &codegen.Processor{
 		Schema: schema,
-		Config: getCodePath(t, dirPath),
+		Config: getConfig(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "resolvers", "auth")
@@ -338,7 +340,7 @@ func TestCustomListQuery(t *testing.T) {
 	path := filepath.Join(schemaDir, "auth.ts")
 	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
-	s, err := buildSchema(data, true)
+	s, err := buildSchema(processor, true)
 	require.NoError(t, err)
 
 	require.Len(t, s.customData.Args, 0)
@@ -466,9 +468,9 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
-	data := &codegen.Processor{
+	processor := &codegen.Processor{
 		Schema: schema,
-		Config: getCodePath(t, dirPath),
+		Config: getConfig(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "resolvers", "username")
@@ -490,7 +492,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	path := filepath.Join(schemaDir, "username.ts")
 	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
-	s, err := buildSchema(data, true)
+	s, err := buildSchema(processor, true)
 	require.NoError(t, err)
 
 	require.Len(t, s.customData.Args, 0)
@@ -589,9 +591,9 @@ func TestCustomUploadType(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
-	data := &codegen.Processor{
+	processor := &codegen.Processor{
 		Schema: schema,
-		Config: getCodePath(t, dirPath),
+		Config: getConfig(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "mutations", "file")
@@ -613,7 +615,7 @@ func TestCustomUploadType(t *testing.T) {
 	path := filepath.Join(schemaDir, "upload.ts")
 	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
 
-	s, err := buildSchema(data, true)
+	s, err := buildSchema(processor, true)
 	require.NoError(t, err)
 
 	require.Len(t, s.customData.Args, 0)
@@ -710,4 +712,197 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Equal(t, typ.Type, "GraphQLUpload")
 	assert.Equal(t, typ.TSType, "FileUpload")
 	assert.Equal(t, typ.TSImportPath, "graphql-upload")
+}
+
+func TestCustomInputEnumType(t *testing.T) {
+	m := map[string]string{
+		"contact_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType} from "{schema}";
+
+			const Contact = new EntSchema({
+				fields: {
+					firstName: StringType(),
+					lastName: StringType(),
+				},
+			});
+			export default Contact;
+		`),
+	}
+
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	dirPath, err := os.MkdirTemp(absPath, "project")
+	defer os.RemoveAll(dirPath)
+	require.NoError(t, err)
+
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
+	tmpCfg := getConfig(t, dirPath)
+
+	enumMap := map[string]string{
+		"C_PLUS_PLUS": "c++",
+		"TYPESCRIPT":  "ts",
+		"RUST":        "rust",
+		"GO":          "go",
+		"PYTHON":      "python",
+	}
+	cd := CustomData{
+		CustomTypes: map[string]*CustomType{
+			"LanguageInput": {
+				Type:      "LanguageInput",
+				EnumMap:   enumMap,
+				InputType: true,
+			},
+		},
+	}
+
+	require.Nil(t, file.Write(
+		&file.JSONFileWriter{
+			PathToFile: filepath.Join(dirPath, "src/schema/custom_graphql.json"),
+			Config:     tmpCfg,
+			Data:       cd,
+		},
+	))
+
+	require.Nil(t, file.Write(&file.YamlFileWriter{
+		PathToFile: filepath.Join(dirPath, "ent.yml"),
+		Config:     tmpCfg,
+		Data: &codegen.ConfigurableConfig{
+			CustomGraphQLJSONPath: "src/schema/custom_graphql.json",
+		},
+	}))
+
+	// load config now which should be aware of ent.yml
+	processor := &codegen.Processor{
+		Schema: schema,
+		Config: getConfig(t, dirPath),
+	}
+
+	s, err := buildSchema(processor, true)
+	require.NoError(t, err)
+
+	require.Len(t, s.customData.Args, 0)
+	require.Len(t, s.customData.Inputs, 0)
+	require.Len(t, s.customData.Objects, 0)
+	require.Len(t, s.customData.Fields, 0)
+	require.Len(t, s.customData.Queries, 0)
+	require.Len(t, s.customData.Mutations, 0)
+	require.Len(t, s.customData.Classes, 0)
+	require.Len(t, s.customData.Files, 0)
+	validateDefaultCustomTypes(t, s.customData)
+
+	enumTyp := s.customData.CustomTypes["LanguageInput"]
+	require.NotNil(t, enumTyp)
+	require.Equal(t, enumTyp.EnumMap, enumMap)
+	require.Equal(t, enumTyp.Type, "LanguageInput")
+	require.Equal(t, enumTyp.TSType, "")
+
+	require.Len(t, s.enums, 1)
+	gqlEnum := s.enums["LanguageInputType"]
+	require.NotNil(t, gqlEnum)
+	require.Equal(t, gqlEnum.Type, "LanguageInputType")
+	require.Equal(t, gqlEnum.Enum.Name, "LanguageInput")
+
+	_, exp := enum.GetEnums(&enum.Input{
+		EnumMap:            enumMap,
+		DisableUnknownType: true,
+	})
+	require.Equal(t, exp.Values, gqlEnum.Enum.Values)
+
+	require.True(t, strings.Contains(gqlEnum.FilePath, "src/graphql/generated/mutations/input"))
+}
+
+func TestCustomEnumType(t *testing.T) {
+	m := map[string]string{
+		"contact_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType} from "{schema}";
+
+			const Contact = new EntSchema({
+				fields: {
+					firstName: StringType(),
+					lastName: StringType(),
+				},
+			});
+			export default Contact;
+		`),
+	}
+
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	dirPath, err := os.MkdirTemp(absPath, "project")
+	defer os.RemoveAll(dirPath)
+	require.NoError(t, err)
+
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
+	tmpCfg := getConfig(t, dirPath)
+
+	enumMap := map[string]string{
+		"C_PLUS_PLUS": "c++",
+		"TYPESCRIPT":  "ts",
+		"RUST":        "rust",
+		"GO":          "go",
+		"PYTHON":      "python",
+	}
+	cd := CustomData{
+		CustomTypes: map[string]*CustomType{
+			"Language": {
+				Type:    "Language",
+				EnumMap: enumMap,
+			},
+		},
+	}
+
+	require.Nil(t, file.Write(
+		&file.JSONFileWriter{
+			PathToFile: filepath.Join(dirPath, "src/schema/custom_graphql.json"),
+			Config:     tmpCfg,
+			Data:       cd,
+		},
+	))
+
+	require.Nil(t, file.Write(&file.YamlFileWriter{
+		PathToFile: filepath.Join(dirPath, "ent.yml"),
+		Config:     tmpCfg,
+		Data: &codegen.ConfigurableConfig{
+			CustomGraphQLJSONPath: "src/schema/custom_graphql.json",
+		},
+	}))
+
+	// load config now which should be aware of ent.yml
+	processor := &codegen.Processor{
+		Schema: schema,
+		Config: getConfig(t, dirPath),
+	}
+
+	s, err := buildSchema(processor, true)
+	require.NoError(t, err)
+
+	require.Len(t, s.customData.Args, 0)
+	require.Len(t, s.customData.Inputs, 0)
+	require.Len(t, s.customData.Objects, 0)
+	require.Len(t, s.customData.Fields, 0)
+	require.Len(t, s.customData.Queries, 0)
+	require.Len(t, s.customData.Mutations, 0)
+	require.Len(t, s.customData.Classes, 0)
+	require.Len(t, s.customData.Files, 0)
+	validateDefaultCustomTypes(t, s.customData)
+
+	enumTyp := s.customData.CustomTypes["Language"]
+	require.NotNil(t, enumTyp)
+	require.Equal(t, enumTyp.EnumMap, enumMap)
+	require.Equal(t, enumTyp.Type, "Language")
+	require.Equal(t, enumTyp.TSType, "")
+
+	require.Len(t, s.enums, 1)
+	gqlEnum := s.enums["LanguageType"]
+	require.NotNil(t, gqlEnum)
+	require.Equal(t, gqlEnum.Type, "LanguageType")
+	require.Equal(t, gqlEnum.Enum.Name, "Language")
+
+	_, exp := enum.GetEnums(&enum.Input{
+		EnumMap:            enumMap,
+		DisableUnknownType: true,
+	})
+	require.Equal(t, exp.Values, gqlEnum.Enum.Values)
+
+	require.True(t, strings.Contains(gqlEnum.FilePath, "src/graphql/generated/resolvers/"))
 }

@@ -3,6 +3,8 @@ package graphql
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -47,8 +49,14 @@ func (arg CustomItem) defaultArg() string {
 	return fmt.Sprintf("args.%s", arg.Name)
 }
 
-func (arg CustomItem) renderArg(cfg *codegen.Config) (string, []*tsimport.ImportPath) {
+func (arg CustomItem) renderArg(cfg *codegen.Config, s *gqlSchema) (string, []*tsimport.ImportPath) {
 	if arg.TSType != "ID" || !cfg.Base64EncodeIDs() {
+		ct := s.customData.CustomTypes[arg.Type]
+		if ct != nil && ct.EnumMap != nil {
+			return arg.defaultArg(), []*tsimport.ImportPath{
+				ct.getGraphQLImportPath(cfg),
+			}
+		}
 		return arg.defaultArg(), nil
 	}
 	// we don't have the enttype.Type here so manually calling types for cases we're aware of
@@ -95,6 +103,35 @@ type CustomType struct {
 	// both of these are optional
 	TSType       string `json:"tsType,omitempty"`
 	TSImportPath string `json:"tsImportPath,omitempty"`
+
+	// if specified, graphql enum is generated for this...
+	EnumMap map[string]string `json:"enumMap,omitempty"`
+
+	// usually used with EnumMap to indicate if we're adding a new custom input enum where it should be placed
+	InputType bool `json:"inputType,omitempty"`
+}
+
+func (ct *CustomType) getGraphQLImportPath(cfg *codegen.Config) *tsimport.ImportPath {
+	if ct.EnumMap != nil {
+		absPath := getFilePathForEnum(cfg, ct.Type)
+		if ct.InputType {
+			absPath = getFilePathForEnumInputFile(cfg, ct.Type)
+		}
+		path, err := filepath.Rel(cfg.GetAbsPathToRoot(), absPath)
+		if err != nil {
+			// TODO handle better
+			panic(err)
+		}
+		path = strings.TrimSuffix(path, ".ts")
+		return &tsimport.ImportPath{
+			ImportPath: path,
+			Import:     ct.Type + "Type",
+		}
+	}
+	return &tsimport.ImportPath{
+		ImportPath: ct.ImportPath,
+		Import:     ct.Type,
+	}
 }
 
 func (item *CustomItem) initialize() error {
@@ -145,13 +182,13 @@ func (item *CustomItem) addImport(imp *tsimport.ImportPath) {
 	item.imports = append(item.imports, imp)
 }
 
-func (item *CustomItem) getImports(s *gqlSchema, cd *CustomData) ([]*tsimport.ImportPath, error) {
+func (item *CustomItem) getImports(processor *codegen.Processor, s *gqlSchema, cd *CustomData) ([]*tsimport.ImportPath, error) {
 	if err := item.initialize(); err != nil {
 		return nil, err
 	}
 
 	// TODO need to know if mutation or query...
-	imp := s.getImportFor(item.Type, false)
+	imp := s.getImportFor(processor, item.Type, false)
 	if imp != nil {
 		item.addImport(imp)
 	} else {
