@@ -18,11 +18,13 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { ContactPhoneNumber } from "../../../ent";
+import { ContactPhoneNumberSortColumnType } from "./contact_phone_number_sort_column_type";
 import { RootToContactPhoneNumberConnectionConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface ContactPhoneNumberConnectionArgs {
   ids: any;
+  sortCol: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -39,6 +41,10 @@ export const ContactPhoneNumberConnectionQueryType: GraphQLFieldConfig<
     ids: {
       description: "",
       type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
+    },
+    sortCol: {
+      description: "",
+      type: ContactPhoneNumberSortColumnType,
     },
     first: {
       description: "",
@@ -73,8 +79,8 @@ export const ContactPhoneNumberConnectionQueryType: GraphQLFieldConfig<
           loadEntOptions: ContactPhoneNumber.loaderOptions(),
           clause: query.In("id", args.ids),
           name: "ContactPhoneNumber",
-          // not sorted but ok
-          sortColumn: "created_at",
+          // use sortCol value or created_at (not sorted)
+          sortColumn: args.sortCol ?? "created_at",
         });
       },
       args,

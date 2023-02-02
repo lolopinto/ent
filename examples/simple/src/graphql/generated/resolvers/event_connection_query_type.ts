@@ -18,11 +18,13 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Event } from "../../../ent";
+import { EventSortColumnType } from "./event_sort_column_type";
 import { RootToEventConnectionConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface EventConnectionArgs {
   ids: any;
+  sortCol: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -39,6 +41,10 @@ export const EventConnectionQueryType: GraphQLFieldConfig<
     ids: {
       description: "",
       type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
+    },
+    sortCol: {
+      description: "",
+      type: EventSortColumnType,
     },
     first: {
       description: "",
@@ -73,8 +79,8 @@ export const EventConnectionQueryType: GraphQLFieldConfig<
           loadEntOptions: Event.loaderOptions(),
           clause: query.In("id", args.ids),
           name: "Event",
-          // not sorted but ok
-          sortColumn: "created_at",
+          // use sortCol value or created_at (not sorted)
+          sortColumn: args.sortCol ?? "created_at",
         });
       },
       args,

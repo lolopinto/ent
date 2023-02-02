@@ -124,6 +124,12 @@ function processTopLevel(
   }
 }
 
+function processCustomTypes(m: {}, gqlCapture: typeof GQLCapture) {
+  for (const k in m) {
+    addCustomType(m[k], gqlCapture);
+  }
+}
+
 function processCustomFields(
   fields: any[],
   gqlCapture: typeof GQLCapture,
@@ -178,6 +184,11 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
           case "mutations":
             processTopLevel(v, gqlCapture.getCustomMutations(), gqlCapture);
             break;
+
+          case "customTypes":
+            processCustomTypes(v, gqlCapture);
+            break;
+
           default:
             reject(
               new Error(
@@ -226,9 +237,7 @@ async function captureCustom(
     }
 
     if (json.customTypes) {
-      for (const k in json.customTypes) {
-        addCustomType(json.customTypes[k], gqlCapture);
-      }
+      processCustomTypes(json.customTypes, gqlCapture);
     }
 
     return;
