@@ -903,7 +903,8 @@ func getCustomGQLField(processor *codegen.Processor, cd *CustomData, field Custo
 	switch field.FieldType {
 	case Accessor, Field:
 		// for an accessor or field, we only add a resolve function if named differently
-		if field.GraphQLName != field.FunctionName {
+		// or if the instance is something like edge.edge
+		if field.GraphQLName != field.FunctionName || strings.Contains(instance, ".") {
 			gqlField.HasResolveFunction = true
 			gqlField.FunctionContents = []string{
 				fmt.Sprintf("return %s.%s;", instance, field.FunctionName),
