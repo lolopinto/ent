@@ -114,6 +114,7 @@ function processTopLevel(
       nodeName: custom.class,
       functionName: custom.functionName || custom.name,
       gqlName: custom.graphQLName || custom.name,
+      edgeName: custom.edgeName,
       fieldType: custom.fieldType,
       args: transformArgs(custom, gqlCapture),
       results: transformResultType(custom),

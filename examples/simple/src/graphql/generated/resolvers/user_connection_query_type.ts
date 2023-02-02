@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { User } from "../../../ent";
 import { UserSortColumnType } from "./user_sort_column_type";
-import { RootToUserConnectionConnectionType } from "../../resolvers/internal";
+import { RootToUserConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface UserConnectionArgs {
@@ -36,7 +36,7 @@ export const UserConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   UserConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToUserConnectionConnectionType()),
+  type: new GraphQLNonNull(RootToUserConnectionType()),
   args: {
     ids: {
       description: "",

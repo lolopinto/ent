@@ -1067,11 +1067,15 @@ var _ edge.Edge = &CustomEdge{}
 var _ edge.ConnectionEdge = &CustomEdge{}
 
 func getGQLEdge(cfg codegenapi.Config, field CustomField, nodeName string) *CustomEdge {
+	edgeName := field.GraphQLName
+	if field.EdgeName != "" {
+		edgeName = field.EdgeName
+	}
 	return &CustomEdge{
 		SourceNodeName: nodeName,
 		Type:           field.Results[0].Type,
 		graphqlName:    codegenapi.GraphQLName(cfg, field.GraphQLName),
-		EdgeName:       field.GraphQLName,
+		EdgeName:       edgeName,
 	}
 }
 

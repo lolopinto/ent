@@ -6,7 +6,7 @@
 import { GraphQLObjectType } from "graphql";
 import { Data } from "@snowtop/ent";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { UserType } from "../../../resolvers/internal";
+import { EventType } from "../../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 var connType: GraphQLConnectionType<
@@ -15,9 +15,9 @@ var connType: GraphQLConnectionType<
   ExampleViewerAlias
 >;
 
-export const RootToUserConnectionConnectionType = () => {
+export const RootToEventConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType("RootToUserConnection", UserType);
+    connType = new GraphQLConnectionType("RootToEvent", EventType);
   }
   return connType;
 };

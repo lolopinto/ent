@@ -75,6 +75,10 @@ export interface CustomField extends CustomFieldImpl {
   results: Field[];
   extraImports?: any[]; // defined on server
   functionContents?: string; // used in dynamic
+  // used by graphql connections e.g. if you a field `foo_connection`, you can specify the edge name here as `foo` so the generated
+  // connection is RootToFooConnectionType instead of RootToFooConnectionConnectionType
+  // mostly API bloat though but all of this can be changed eventually.
+  edgeName?: string;
 }
 
 export interface CustomMutation extends CustomField {}

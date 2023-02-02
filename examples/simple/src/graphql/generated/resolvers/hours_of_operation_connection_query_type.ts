@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { HoursOfOperation } from "../../../ent";
 import { HoursOfOperationSortColumnType } from "./hours_of_operation_sort_column_type";
-import { RootToHoursOfOperationConnectionConnectionType } from "../../resolvers/internal";
+import { RootToHoursOfOperationConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface HoursOfOperationConnectionArgs {
@@ -36,7 +36,7 @@ export const HoursOfOperationConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   HoursOfOperationConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToHoursOfOperationConnectionConnectionType()),
+  type: new GraphQLNonNull(RootToHoursOfOperationConnectionType()),
   args: {
     ids: {
       description: "",

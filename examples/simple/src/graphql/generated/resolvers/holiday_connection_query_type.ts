@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { Holiday } from "../../../ent";
 import { HolidaySortColumnType } from "./holiday_sort_column_type";
-import { RootToHolidayConnectionConnectionType } from "../../resolvers/internal";
+import { RootToHolidayConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface HolidayConnectionArgs {
@@ -36,7 +36,7 @@ export const HolidayConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   HolidayConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToHolidayConnectionConnectionType()),
+  type: new GraphQLNonNull(RootToHolidayConnectionType()),
   args: {
     ids: {
       description: "",
