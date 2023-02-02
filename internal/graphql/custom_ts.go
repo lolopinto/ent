@@ -11,6 +11,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -924,6 +925,42 @@ func processCustomMutations(processor *codegen.Processor, cd *CustomData, s *gql
 func processCustomQueries(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
 	cq := &customQueriesProcesser{}
 	return cq.process(processor, cd, s)
+}
+
+func processCusomTypes(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
+	for _, typ := range cd.CustomTypes {
+		if len(typ.EnumMap) == 0 {
+			continue
+		}
+
+		// todo type tstype empty
+		tsType := typ.TSType
+		if tsType == "" {
+			tsType = typ.Type
+		}
+
+		_, gql := enum.GetEnums(&enum.Input{
+			EnumMap: typ.EnumMap,
+			TSName:  tsType,
+			GQLName: typ.Type,
+			GQLType: typ.Type,
+		})
+		if s.enums[gql.Type] != nil {
+			return fmt.Errorf("enum name %s already exists", gql.Type)
+		}
+
+		path := getFilePathForEnum(processor.Config, gql.Type)
+		if typ.InputType {
+			path = getFilePathForEnumInputFile(processor.Config, gql.Type)
+
+		}
+		s.enums[gql.Type] = &gqlEnum{
+			Type:     gql.Type,
+			Enum:     gql,
+			FilePath: path,
+		}
+	}
+	return nil
 }
 
 func getGraphQLImportsForField(cd *CustomData, f CustomField, s *gqlSchema) ([]*tsimport.ImportPath, error) {

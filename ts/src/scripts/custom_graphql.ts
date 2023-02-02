@@ -73,7 +73,7 @@ function processCustomObjects(
   }
 }
 
-function transformArgs(f: any) {
+function transformArgs(f: any, gqlCapture: typeof GQLCapture) {
   return (f.args || []).map((v: any) => {
     const ret = {
       ...v,
@@ -81,7 +81,7 @@ function transformArgs(f: any) {
     // duplicated from getType in graphql.ts
     if (isCustomType(ret.type)) {
       ret.type = v.type.type;
-      addCustomType(v.type);
+      addCustomType(v.type, gqlCapture);
     }
     // scalar types not supported for now
     ret.tsType = knownAllowedNames.get(v.type);
@@ -104,14 +104,18 @@ function transformResultType(f: any) {
     : [];
 }
 
-function processTopLevel(l: any[], l2: CustomQuery[]) {
+function processTopLevel(
+  l: any[],
+  l2: CustomQuery[],
+  gqlCapture: typeof GQLCapture,
+) {
   for (const custom of l) {
     l2.push({
       nodeName: custom.class,
       functionName: custom.functionName || custom.name,
       gqlName: custom.graphQLName || custom.name,
       fieldType: custom.fieldType,
-      args: transformArgs(custom),
+      args: transformArgs(custom, gqlCapture),
       results: transformResultType(custom),
       description: custom.description,
       extraImports: custom.extraImports,
@@ -133,7 +137,7 @@ function processCustomFields(
       gqlName: f.graphQLName || f.name,
       functionName: f.functionName || f.name,
       fieldType: f.fieldType,
-      args: transformArgs(f),
+      args: transformArgs(f, gqlCapture),
       results: transformResultType(f),
       description: f.description,
     });
@@ -168,11 +172,11 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
         const v = json[k];
         switch (k) {
           case "queries":
-            processTopLevel(v, gqlCapture.getCustomQueries());
+            processTopLevel(v, gqlCapture.getCustomQueries(), gqlCapture);
             break;
 
           case "mutations":
-            processTopLevel(v, gqlCapture.getCustomMutations());
+            processTopLevel(v, gqlCapture.getCustomMutations(), gqlCapture);
             break;
           default:
             reject(
@@ -211,10 +215,20 @@ async function captureCustom(
       processCustomObjects(json.objects, gqlCapture);
     }
     if (json.queries) {
-      processTopLevel(json.queries, gqlCapture.getCustomQueries());
+      processTopLevel(json.queries, gqlCapture.getCustomQueries(), gqlCapture);
     }
     if (json.mutations) {
-      processTopLevel(json.mutations, gqlCapture.getCustomMutations());
+      processTopLevel(
+        json.mutations,
+        gqlCapture.getCustomMutations(),
+        gqlCapture,
+      );
+    }
+
+    if (json.customTypes) {
+      for (const k in json.customTypes) {
+        addCustomType(json.customTypes[k], gqlCapture);
+      }
     }
 
     return;
@@ -331,26 +345,6 @@ function findGraphQLPath(filePath: string): string | undefined {
 // also, there should be a way to get the list of objects here that's not manual
 //echo "User\nContact\nContactEmail\nComment" | ts-node-script --log-error --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/custom_graphql.ts --path ~/code/ent/examples/simple/src/
 async function main() {
-  // known custom types that are not required
-  // if not in the schema, will be ignored
-  // something like GraphQLUpload gotten via gqlArg({type: gqlFileUpload})
-  // these 2 need this because they're added by the schema
-  // if this list grows too long, need to build this into golang types and passed here
-
-  // TODO foreign non-scalars eventually
-  addCustomType({
-    importPath: MODULE_PATH,
-    // for go tests...
-    // TODO need a flag that only does this for go tests
-    // breaks when running locally sometimes...
-    secondaryImportPath: "../graphql/scalars/time",
-    type: "GraphQLTime",
-  });
-  addCustomType({
-    importPath: "graphql-type-json",
-    type: "GraphQLJSON",
-  });
-
   const options = minimist(process.argv.slice(2));
 
   if (!options.path) {
@@ -377,6 +371,32 @@ async function main() {
     gqlCapture = r.GQLCapture;
     gqlCapture.enable(true);
   }
+
+  // known custom types that are not required
+  // if not in the schema, will be ignored
+  // something like GraphQLUpload gotten via gqlArg({type: gqlFileUpload})
+  // these 2 need this because they're added by the schema
+  // if this list grows too long, need to build this into golang types and passed here
+
+  // TODO foreign non-scalars eventually
+  addCustomType(
+    {
+      importPath: MODULE_PATH,
+      // for go tests...
+      // TODO need a flag that only does this for go tests
+      // breaks when running locally sometimes...
+      secondaryImportPath: "../graphql/scalars/time",
+      type: "GraphQLTime",
+    },
+    gqlCapture,
+  );
+  addCustomType(
+    {
+      importPath: "graphql-type-json",
+      type: "GraphQLJSON",
+    },
+    gqlCapture,
+  );
 
   const [inputsRead, _, __, imports] = await Promise.all([
     readInputs(),

@@ -485,6 +485,10 @@ func getFilePathForEnum(cfg *codegen.Config, name string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", base.GetSnakeCaseName(name)))
 }
 
+func getFilePathForEnumInputFile(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", base.GetSnakeCaseName(name)))
+}
+
 func getFilePathForConnection(cfg *codegen.Config, packageName string, connectionType string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s/%s.ts", packageName, base.GetSnakeCaseName(connectionType)))
 }
@@ -707,6 +711,7 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	}
 
 	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd.Dir = processor.Config.GetAbsPathToRoot()
 	cmd.Stdin = &buf
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
@@ -788,6 +793,10 @@ func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 	}
 
 	if err := processCustomQueries(processor, cd, s); err != nil {
+		return err
+	}
+
+	if err := processCusomTypes(processor, cd, s); err != nil {
 		return err
 	}
 

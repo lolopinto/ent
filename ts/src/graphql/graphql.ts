@@ -6,11 +6,17 @@ interface ClassType<T = any> {
   new (...args: any[]): T;
 }
 
+declare type StringToStringMap = {
+  [key: string]: string;
+};
+
 export interface CustomType {
   type: string;
   importPath: string;
   tsType?: string;
   tsImportPath?: string;
+  enumMap?: StringToStringMap;
+  inputType?: boolean;
   [x: string]: any;
 }
 
@@ -193,12 +199,20 @@ const isGraphQLScalarType = (type: Type): type is GraphQLScalarType => {
   return (type as GraphQLScalarType).serialize !== undefined;
 };
 
-export const addCustomType = (type: CustomType) => {
+export const addCustomType = (
+  type: CustomType,
+  gqlCapture: typeof GQLCapture,
+) => {
   // TODO these should return ReadOnly objects...
-  const customTypes = GQLCapture.getCustomTypes();
+  const customTypes = gqlCapture.getCustomTypes();
   const customType = customTypes.get(type.type);
 
   if (customType && customType === type) {
+    return;
+  }
+
+  if (type.enumMap) {
+    customTypes.set(type.type, type);
     return;
   }
   try {
@@ -216,10 +230,13 @@ export const addCustomType = (type: CustomType) => {
     }
   } catch (e) {
     if (type.secondaryImportPath) {
-      addCustomType({
-        ...type,
-        importPath: type.secondaryImportPath,
-      });
+      addCustomType(
+        {
+          ...type,
+          importPath: type.secondaryImportPath,
+        },
+        gqlCapture,
+      );
     }
     return;
   }
@@ -265,7 +282,8 @@ const getType = (
   }
   if (isCustomType(typ)) {
     result.type = typ.type;
-    addCustomType(typ);
+    // TODO???
+    addCustomType(typ, GQLCapture);
     return;
   }
   // GraphQLScalarType or ClassType

@@ -95,6 +95,12 @@ type CustomType struct {
 	// both of these are optional
 	TSType       string `json:"tsType,omitempty"`
 	TSImportPath string `json:"tsImportPath,omitempty"`
+
+	// if specified, graphql enum is generated for this...
+	EnumMap map[string]string `json:"enumMap,omitempty"`
+
+	// usually used with EnumMap to indicate if we're adding a new custom input enum where it should be placed
+	InputType bool `json:"inputType,omitempty"`
 }
 
 func (item *CustomItem) initialize() error {
