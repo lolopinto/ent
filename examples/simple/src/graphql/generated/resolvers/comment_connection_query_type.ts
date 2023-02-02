@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { Comment } from "../../../ent";
 import { CommentSortColumnType } from "./comment_sort_column_type";
-import { RootToCommentConnectionConnectionType } from "../../resolvers/internal";
+import { RootToCommentConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface CommentConnectionArgs {
@@ -36,7 +36,7 @@ export const CommentConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   CommentConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToCommentConnectionConnectionType()),
+  type: new GraphQLNonNull(RootToCommentConnectionType()),
   args: {
     ids: {
       description: "",

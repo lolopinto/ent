@@ -144,6 +144,7 @@ async function main() {
     });
     queries.push({
       name: `${query}_connection`,
+      edgeName: query,
       connection: true,
       fieldType: "ASYNC_FUNCTION",
       nullable: true,

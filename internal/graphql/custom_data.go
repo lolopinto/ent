@@ -255,6 +255,7 @@ type CustomField struct {
 	Results      []CustomItem    `json:"results"`
 	FieldType    CustomFieldType `json:"fieldType"`
 	Connection   bool            `json:"-"`
+	EdgeName     string          `json:"edgeName"`
 	Description  string          `json:"description,omitempty"`
 	// extra imports
 	ExtraImports []*tsimport.ImportPath `json:"extraImports,omitempty"`
@@ -302,6 +303,7 @@ func (cf *CustomField) UnmarshalJSON(data []byte) error {
 	cf.FieldType = CustomFieldType(getStringFromMap(m, "fieldType"))
 	cf.Description = getStringFromMap(m, "description")
 	cf.FunctionContents = getStringFromMap(m, "functionContents")
+	cf.EdgeName = getStringFromMap(m, "edgeName")
 	if err := getValFromMap(m, "args", &cf.Args); err != nil {
 		return err
 	}
@@ -561,6 +563,7 @@ func customFieldEqual(cf1, cf2 *CustomField) bool {
 		customItemsListEqual(cf1.Results, cf2.Results) &&
 		cf1.FieldType == cf2.FieldType &&
 		cf1.Connection == cf2.Connection &&
+		cf1.EdgeName == cf2.EdgeName &&
 		cf1.Description == cf2.Description &&
 		tsimport.ImportPathsEqual(cf1.ExtraImports, cf2.ExtraImports) &&
 		cf1.FunctionContents == cf2.FunctionContents
