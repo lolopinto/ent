@@ -797,13 +797,14 @@ func TestCustomInputEnumType(t *testing.T) {
 	require.Equal(t, enumTyp.TSType, "")
 
 	require.Len(t, s.enums, 1)
-	gqlEnum := s.enums["LanguageInput"]
+	gqlEnum := s.enums["LanguageInputType"]
 	require.NotNil(t, gqlEnum)
-	require.Equal(t, gqlEnum.Type, "LanguageInput")
+	require.Equal(t, gqlEnum.Type, "LanguageInputType")
 	require.Equal(t, gqlEnum.Enum.Name, "LanguageInput")
 
 	_, exp := enum.GetEnums(&enum.Input{
-		EnumMap: enumMap,
+		EnumMap:            enumMap,
+		DisableUnknownType: true,
 	})
 	require.Equal(t, exp.Values, gqlEnum.Enum.Values)
 
@@ -843,8 +844,8 @@ func TestCustomEnumType(t *testing.T) {
 	}
 	cd := CustomData{
 		CustomTypes: map[string]*CustomType{
-			"LanguageInput": {
-				Type:    "LanguageInput",
+			"Language": {
+				Type:    "Language",
 				EnumMap: enumMap,
 			},
 		},
@@ -885,20 +886,21 @@ func TestCustomEnumType(t *testing.T) {
 	require.Len(t, s.customData.Files, 0)
 	validateDefaultCustomTypes(t, s.customData)
 
-	enumTyp := s.customData.CustomTypes["LanguageInput"]
+	enumTyp := s.customData.CustomTypes["Language"]
 	require.NotNil(t, enumTyp)
 	require.Equal(t, enumTyp.EnumMap, enumMap)
-	require.Equal(t, enumTyp.Type, "LanguageInput")
+	require.Equal(t, enumTyp.Type, "Language")
 	require.Equal(t, enumTyp.TSType, "")
 
 	require.Len(t, s.enums, 1)
-	gqlEnum := s.enums["LanguageInput"]
+	gqlEnum := s.enums["LanguageType"]
 	require.NotNil(t, gqlEnum)
-	require.Equal(t, gqlEnum.Type, "LanguageInput")
-	require.Equal(t, gqlEnum.Enum.Name, "LanguageInput")
+	require.Equal(t, gqlEnum.Type, "LanguageType")
+	require.Equal(t, gqlEnum.Enum.Name, "Language")
 
 	_, exp := enum.GetEnums(&enum.Input{
-		EnumMap: enumMap,
+		EnumMap:            enumMap,
+		DisableUnknownType: true,
 	})
 	require.Equal(t, exp.Values, gqlEnum.Enum.Values)
 
