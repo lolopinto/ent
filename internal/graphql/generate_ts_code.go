@@ -485,6 +485,10 @@ func getFilePathForEnum(cfg *codegen.Config, name string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", base.GetSnakeCaseName(name)))
 }
 
+func getFilePathForEnumInputFile(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", base.GetSnakeCaseName(name)))
+}
+
 func getFilePathForConnection(cfg *codegen.Config, packageName string, connectionType string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s/%s.ts", packageName, base.GetSnakeCaseName(connectionType)))
 }
@@ -707,6 +711,7 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	}
 
 	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd.Dir = processor.Config.GetAbsPathToRoot()
 	cmd.Stdin = &buf
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
@@ -788,6 +793,10 @@ func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 	}
 
 	if err := processCustomQueries(processor, cd, s); err != nil {
+		return err
+	}
+
+	if err := processCusomTypes(processor, cd, s); err != nil {
 		return err
 	}
 
@@ -899,16 +908,13 @@ type gqlSchema struct {
 	rootDatas []*gqlRootData
 }
 
-func (s *gqlSchema) getImportFor(typ string, mutation bool) *tsimport.ImportPath {
+func (s *gqlSchema) getImportFor(processor *codegen.Processor, typ string, mutation bool) *tsimport.ImportPath {
 	// handle Date super special
 	typ2, ok := knownCustomTypes[typ]
 	if ok {
 		customTyp, ok := s.customData.CustomTypes[typ2]
 		if ok {
-			return &tsimport.ImportPath{
-				ImportPath: customTyp.ImportPath,
-				Import:     customTyp.Type,
-			}
+			return customTyp.getGraphQLImportPath(processor.Config)
 		}
 
 	}
@@ -939,10 +945,7 @@ func (s *gqlSchema) getImportFor(typ string, mutation bool) *tsimport.ImportPath
 	// Custom type added
 	customTyp, ok := s.customData.CustomTypes[typ]
 	if ok {
-		return &tsimport.ImportPath{
-			ImportPath: customTyp.ImportPath,
-			Import:     customTyp.Type,
-		}
+		return customTyp.getGraphQLImportPath(processor.Config)
 	}
 
 	// don't know needs to be handled at each endpoint
@@ -1876,7 +1879,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		addConnection(nodeData, edge, &fields, instance, nil)
+		addConnection(processor, nodeData, edge, &fields, instance, nil)
 	}
 
 	for _, group := range nodeData.EdgeInfo.AssocGroups {
@@ -1940,7 +1943,7 @@ func addPluralEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 	*fields = append(*fields, gqlField)
 }
 
-func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *[]*fieldType, instance string, customField *CustomField) {
+func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *[]*fieldType, instance string, customField *CustomField) {
 	// import GraphQLEdgeConnection and EdgeQuery file
 	extraImports := []*tsimport.ImportPath{
 		{
@@ -1967,7 +1970,7 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		ExtraImports:       extraImports,
-		Args:               getFieldConfigArgsFrom(getConnectionArgs(), nil, false),
+		Args:               getFieldConfigArgsFrom(processor, getConnectionArgs(), nil, false),
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(

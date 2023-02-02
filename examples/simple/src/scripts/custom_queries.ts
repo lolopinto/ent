@@ -1,10 +1,13 @@
 import * as fs from "fs";
 import { camelCase } from "camel-case";
-import { Schema } from "@snowtop/ent";
+import { Schema, DBType, getStorageKey } from "@snowtop/ent";
 
 async function main() {
   const paths = fs.readdirSync("src/schema");
   const queries: any[] = [];
+  const customTypes: {
+    [key: string]: any;
+  } = {};
   for (const p of paths) {
     if (!p.endsWith("_schema.ts") || p.startsWith("__global")) {
       continue;
@@ -42,7 +45,7 @@ async function main() {
         nullable: true,
       },
     ];
-    const connectionArgs = [
+    const connectionArgs: any[] = [
       {
         name: "context",
         type: "Context",
@@ -81,6 +84,30 @@ async function main() {
       },
     ];
 
+    const sortKeys: {
+      [key: string]: string;
+    } = {
+      id: "id",
+    };
+    for (const k in schema.fields) {
+      const f = schema.fields[k];
+      // only uuid fields
+      if (f.index || (f.unique && f.type.dbType === DBType.UUID)) {
+        sortKeys[k] = getStorageKey(f, k);
+      }
+    }
+    const sortType = `${node}SortColumn`;
+    customTypes[sortType] = {
+      type: sortType,
+      enumMap: sortKeys,
+    };
+
+    connectionArgs.push({
+      name: "sortCol",
+      type: sortType,
+      nullable: true,
+    });
+
     const listContent = `
     const whereQueries = [
       args.id ? query.Eq('id', args.id) : undefined,
@@ -99,8 +126,8 @@ async function main() {
       loadEntOptions: ${node}.loaderOptions(),
       clause: query.In('id', args.ids),
       name: '${node}',
-      // not sorted but ok
-      sortColumn: 'created_at',
+      // use sortCol value or created_at (not sorted)
+      sortColumn: args.sortCol ?? 'created_at',
     })
     `;
 
@@ -127,7 +154,7 @@ async function main() {
       functionContents: connectionContent,
     });
   }
-  console.log(JSON.stringify({ queries }));
+  console.log(JSON.stringify({ queries, customTypes }));
 }
 
 main();
