@@ -4,7 +4,7 @@ ARG NODE_VERSION=17
 ARG DOCKER_TAG=v0.1.0-alpha.31
 
 # get and install tsent
-FROM --platform=$BUILDPLATFORM golang:1.19-buster As golang-image
+FROM --platform=$BUILDPLATFORM golang:1.20-buster As golang-image
 ARG GOLANG_VERSION
 ARG DOCKER_TAG
 ENV GOPATH=$HOME/go
