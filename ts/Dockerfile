@@ -1,7 +1,7 @@
-ARG GOLANG_VERSION=v0.1.0-alpha.43
-ARG AUTO_SCHEMA_VERSION=0.0.25
+ARG GOLANG_VERSION=v0.1.0-alpha.49
+ARG AUTO_SCHEMA_VERSION=0.0.26
 ARG NODE_VERSION=17
-ARG DOCKER_TAG=v0.1.0-alpha.31
+ARG DOCKER_TAG=v0.1.0-alpha.37
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.20-buster As golang-image
