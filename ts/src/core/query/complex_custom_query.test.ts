@@ -80,12 +80,13 @@ const getQuery = (viewer?: Viewer) => {
   return new UserToEventsInNextWeekQuery(viewer || user.viewer, user.id);
 };
 
-const getGlobalQuery = (viewer?: Viewer) => {
+const getGlobalQuery = (viewer?: Viewer, opts?: any) => {
   return new CustomClauseQuery(viewer || user.viewer, {
     clause: getNextWeekClause(),
     loadEntOptions: FakeEvent.loaderOptions(),
     name: "global_events_in_next_week",
     sortColumn: "start_time",
+    ...opts,
   });
 };
 
@@ -346,5 +347,104 @@ describe("global query", () => {
     await verify(8, true, true, q.getCursor(edges[7]));
     await verify(14, true, true, q.getCursor(edges[13]));
     await verify(19, true, true, q.getCursor(edges[18]));
+  });
+
+  test("first N. after each cursor. asc", async () => {
+    const q = getGlobalQuery(user.viewer, { orderByDirection: "asc" });
+
+    const edges = await q.queryEdges();
+    expect(edges.length).toBe(7 * infos.length);
+
+    ml.clear();
+    const PAGE = 5;
+
+    async function verify(
+      idx: number,
+      hasEdge: boolean,
+      hasNextPage: boolean,
+      cursor?: string,
+    ) {
+      const q2 = getGlobalQuery(user.viewer, { orderByDirection: "asc" }).first(
+        PAGE,
+        cursor,
+      );
+
+      const ents = await q2.queryEnts();
+      const newEdges = await q2.queryEdges();
+
+      const query = buildQuery({
+        ...FakeEvent.loaderOptions(),
+        orderby: "start_time ASC, id ASC",
+        limit: PAGE + 1,
+        clause: clause.AndOptional(
+          clause.GreaterEq("start_time", 1),
+          clause.LessEq("start_time", 2),
+          // the cursor check
+          cursor
+            ? clause.PaginationMultipleColsSubQuery(
+                "start_time",
+                ">",
+                FakeEvent.loaderOptions().tableName,
+                "id",
+                4,
+              )
+            : undefined,
+        ),
+      });
+      expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
+
+      // 1 is a hack...
+      const pagination = q2.paginationInfo().get(1);
+      if (hasEdge) {
+        expect(ents.length, idx.toString()).toBeGreaterThan(0);
+        expect(ents.length, idx.toString()).toBeLessThanOrEqual(PAGE);
+        // console.debug(page, ents[0].id, edges[PAGE * page]);
+        expect(ents[0].id, idx.toString()).toBe(edges[idx].id);
+      } else {
+        expect(ents.length, idx.toString()).toBe(0);
+        expect(newEdges.length, idx.toString()).toBe(0);
+      }
+
+      if (hasNextPage) {
+        // has exact if next page
+        expect(ents.length, idx.toString()).toBe(PAGE);
+
+        expect(pagination?.hasNextPage, idx.toString()).toBe(true);
+        expect(pagination?.hasPreviousPage, idx.toString()).toBe(false);
+      } else {
+        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
+        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
+      }
+    }
+
+    await verify(0, true, true); // 0-4
+    await verify(1 * PAGE, true, true, q.getCursor(edges[PAGE - 1])); // 5-9
+    await verify(2 * PAGE, true, true, q.getCursor(edges[2 * PAGE - 1])); // 10-14
+    await verify(3 * PAGE, true, true, q.getCursor(edges[3 * PAGE - 1])); //15-19
+    await verify(4 * PAGE, true, true, q.getCursor(edges[4 * PAGE - 1])); //20-24
+    await verify(5 * PAGE, true, false, q.getCursor(edges[5 * PAGE - 1])); //25-28
+
+    // do a few around transitions to make sure we handle it correctly
+    // 0-4, 5-8, 9-12, 13-16 etc have duplicate timestamps
+    await verify(1, true, true, q.getCursor(edges[0]));
+    await verify(2, true, true, q.getCursor(edges[1]));
+    await verify(3, true, true, q.getCursor(edges[2]));
+    await verify(4, true, true, q.getCursor(edges[3]));
+
+    await verify(8, true, true, q.getCursor(edges[7]));
+    await verify(14, true, true, q.getCursor(edges[13]));
+    await verify(19, true, true, q.getCursor(edges[18]));
+  });
+
+  test("first N. after each cursor. asc + desc compared", async () => {
+    const q = getGlobalQuery(user.viewer);
+    const q2 = getGlobalQuery(user.viewer, { orderByDirection: "asc" });
+
+    const edges = await q.queryEdges();
+    expect(edges.length).toBe(7 * infos.length);
+
+    const edges2 = await q2.queryEdges();
+    expect(edges2.length).toBe(edges.length);
+    expect(edges.reverse()).toStrictEqual(edges2);
   });
 });

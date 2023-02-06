@@ -17,6 +17,7 @@ export {
 } from "./graphql";
 
 export { GraphQLTime } from "./scalars/time";
+export { GraphQLOrderByDirection } from "./scalars/orderby_direction";
 export { GraphQLPageInfo } from "./query/page_info";
 export { GraphQLEdge, GraphQLEdgeConnection } from "./query/edge_connection";
 export {
