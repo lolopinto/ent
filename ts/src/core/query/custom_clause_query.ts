@@ -31,6 +31,7 @@ interface CustomClauseQueryOptions<
   // pass this if the sort column is unique and it'll be used for the cursor and used to
   // generate the query
   sortColumnUnique?: boolean;
+  orderByDirection?: "asc" | "desc";
 
   disableTransformations?: boolean;
 }
@@ -61,11 +62,17 @@ export class CustomClauseQuery<
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
   ) {
-    const sortCol = options.sortColumn || "id";
+    let sortCol = options.sortColumn || "id";
     let unique = options.sortColumnUnique
       ? sortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
-    super(viewer, options.sortColumn || sortCol, unique);
+
+    // pass direction to base class since it uses it
+    // this API needs to be cleaned up...
+    if (options.orderByDirection) {
+      sortCol = `${sortCol} ${options.orderByDirection}`;
+    }
+    super(viewer, sortCol, unique);
     this.clause = getClause(options);
   }
 
@@ -100,7 +107,8 @@ export class CustomClauseQuery<
     options: EdgeQueryableDataOptions,
   ) {
     if (!options.orderby) {
-      options.orderby = `${this.options.sortColumn} DESC`;
+      const direction = this.options.orderByDirection ?? "desc";
+      options.orderby = `${this.options.sortColumn} ${direction}`;
     }
     if (!options.limit) {
       options.limit = DefaultLimit;
