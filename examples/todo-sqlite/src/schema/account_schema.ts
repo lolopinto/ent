@@ -47,6 +47,21 @@ const AccountSchema = new TodoBaseEntSchema({
         preferredLanguage: StringType(),
       },
     }),
+    accountPrefs3: StructType({
+      tsType: "AccountPrefs3",
+      graphQLType: "AccountPrefs3",
+      fields: {
+        finishedNux: BooleanType(),
+        enableNotifs: BooleanType(),
+        preferredLanguage: StringType(),
+      },
+      serverDefault: {
+        finishedNux: false,
+        enableNotifs: false,
+        preferredLanguage: "en_US",
+      },
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
+    }),
     accountPrefsList: StructTypeAsList({
       nullable: true,
       tsType: "AccountPrefs2",

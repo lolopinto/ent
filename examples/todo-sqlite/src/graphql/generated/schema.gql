@@ -37,6 +37,12 @@ type AccountPrefs2 {
   preferred_language: String!
 }
 
+type AccountPrefs3 {
+  finished_nux: Boolean!
+  enable_notifs: Boolean!
+  preferred_language: String!
+}
+
 type AccountPrefs {
   finished_nux: Boolean!
   enable_notifs: Boolean!
@@ -48,6 +54,7 @@ type Account implements Node {
   name: String!
   phone_number: String
   account_prefs: AccountPrefs
+  account_prefs_3: AccountPrefs3
   account_prefs_list: [AccountPrefs2!]
   credits: Int
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
@@ -280,6 +287,12 @@ input AccountPrefs2Input {
   preferred_language: String!
 }
 
+input AccountPrefs3Input {
+  finished_nux: Boolean!
+  enable_notifs: Boolean!
+  preferred_language: String!
+}
+
 input AccountPrefsInput {
   finished_nux: Boolean!
   enable_notifs: Boolean!
@@ -347,6 +360,7 @@ input CreateAccountInput {
   name: String!
   phone_number: String!
   account_prefs: AccountPrefsInput
+  account_prefs_3: AccountPrefs3Input
   account_prefs_list: [AccountPrefs2Input!]
   credits: Int
 }
@@ -421,6 +435,7 @@ input EditAccountInput {
   name: String
   phone_number: String
   account_prefs: AccountPrefsInput
+  account_prefs_3: AccountPrefs3Input
   account_prefs_list: [AccountPrefs2Input!]
 }
 

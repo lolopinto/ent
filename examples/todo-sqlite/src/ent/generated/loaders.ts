@@ -18,6 +18,7 @@ const accountFields = [
   "phone_number",
   "account_state",
   "account_prefs",
+  "account_prefs_3",
   "account_prefs_list",
   "credits",
 ];
@@ -85,6 +86,10 @@ export const accountLoaderInfo = {
     accountPrefs: {
       dbCol: "account_prefs",
       inputKey: "accountPrefs",
+    },
+    accountPrefs3: {
+      dbCol: "account_prefs_3",
+      inputKey: "accountPrefs3",
     },
     accountPrefsList: {
       dbCol: "account_prefs_list",
