@@ -8,9 +8,6 @@ import { GraphQLEnumType } from "graphql";
 export const UserIntEnumType = new GraphQLEnumType({
   name: "UserIntEnum",
   values: {
-    UNKNOWN: {
-      value: -9007199254740991,
-    },
     VERIFIED: {
       value: 1,
     },
