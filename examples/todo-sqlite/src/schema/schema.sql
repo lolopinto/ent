@@ -26,6 +26,7 @@ CREATE TABLE accounts (
     phone_number TEXT NOT NULL, 
     account_state TEXT, 
     account_prefs TEXT, 
+    account_prefs_3 TEXT DEFAULT '{"finished_nux":false,"enable_notifs":false,"preferred_language":"en_US"}' NOT NULL, 
     account_prefs_list TEXT, 
     credits INTEGER DEFAULT '1000' NOT NULL, 
     CONSTRAINT accounts_id_pkey PRIMARY KEY (id), 

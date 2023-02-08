@@ -1893,3 +1893,8 @@ func IsIDType(t Type) bool {
 	_, ok2 := t.(*NullableIDType)
 	return ok || ok2
 }
+
+func IsNullable(t Type) bool {
+	_, ok := t.(NonNullableType)
+	return ok
+}
