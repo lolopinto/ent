@@ -308,6 +308,7 @@ const UserSchema = new EntSchema({
         DISABLED: 3,
         DEACTIVATED: 4,
       },
+      disableUnknownType: true,
       deprecated: {
         FOO: 5,
       },

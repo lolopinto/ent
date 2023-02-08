@@ -46,7 +46,6 @@ import {
   UserPrefsStruct2,
   UserSuperNestedObject,
   convertNullableUserAccountStatus,
-  convertNullableUserIntEnum,
   convertNullableUserNestedObjectListList,
   convertNullableUserPreferredShiftList,
   convertNullableUserPrefsStruct,
@@ -165,7 +164,7 @@ export class UserBase
     this.timeInMs = BigInt(data.time_in_ms);
     this.funUuids = data.fun_uuids;
     this.nestedList = convertNullableUserNestedObjectListList(data.nested_list);
-    this.intEnum = convertNullableUserIntEnum(data.int_enum);
+    this.intEnum = data.int_enum;
     // @ts-expect-error
     this.data = data;
   }
