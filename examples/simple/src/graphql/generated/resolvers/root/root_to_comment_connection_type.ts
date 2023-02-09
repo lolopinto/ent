@@ -6,7 +6,7 @@
 import { GraphQLObjectType } from "graphql";
 import { Data } from "@snowtop/ent";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { EventType } from "../../../resolvers/internal";
+import { CommentType } from "../../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 var connType: GraphQLConnectionType<
@@ -15,9 +15,9 @@ var connType: GraphQLConnectionType<
   ExampleViewerAlias
 >;
 
-export const RootToEventConnectionConnectionType = () => {
+export const RootToCommentConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType("RootToEventConnection", EventType);
+    connType = new GraphQLConnectionType("RootToComment", CommentType);
   }
   return connType;
 };

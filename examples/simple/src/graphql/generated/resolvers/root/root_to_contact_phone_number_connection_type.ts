@@ -6,7 +6,7 @@
 import { GraphQLObjectType } from "graphql";
 import { Data } from "@snowtop/ent";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { ContactEmailType } from "../../../resolvers/internal";
+import { ContactPhoneNumberType } from "../../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 var connType: GraphQLConnectionType<
@@ -15,11 +15,11 @@ var connType: GraphQLConnectionType<
   ExampleViewerAlias
 >;
 
-export const RootToContactEmailConnectionConnectionType = () => {
+export const RootToContactPhoneNumberConnectionType = () => {
   if (connType === undefined) {
     connType = new GraphQLConnectionType(
-      "RootToContactEmailConnection",
-      ContactEmailType,
+      "RootToContactPhoneNumber",
+      ContactPhoneNumberType,
     );
   }
   return connType;

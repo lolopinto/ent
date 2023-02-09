@@ -15,10 +15,10 @@ var connType: GraphQLConnectionType<
   ExampleViewerAlias
 >;
 
-export const RootToHoursOfOperationConnectionConnectionType = () => {
+export const RootToHoursOfOperationConnectionType = () => {
   if (connType === undefined) {
     connType = new GraphQLConnectionType(
-      "RootToHoursOfOperationConnection",
+      "RootToHoursOfOperation",
       HoursOfOperationType,
     );
   }

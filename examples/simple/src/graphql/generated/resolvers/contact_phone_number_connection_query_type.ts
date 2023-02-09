@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { ContactPhoneNumber } from "../../../ent";
 import { ContactPhoneNumberSortColumnType } from "./contact_phone_number_sort_column_type";
-import { RootToContactPhoneNumberConnectionConnectionType } from "../../resolvers/internal";
+import { RootToContactPhoneNumberConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface ContactPhoneNumberConnectionArgs {
@@ -36,7 +36,7 @@ export const ContactPhoneNumberConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   ContactPhoneNumberConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToContactPhoneNumberConnectionConnectionType()),
+  type: new GraphQLNonNull(RootToContactPhoneNumberConnectionType()),
   args: {
     ids: {
       description: "",

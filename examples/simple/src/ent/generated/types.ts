@@ -888,47 +888,11 @@ export enum UserDaysOff {
 }
 
 export enum UserIntEnum {
-  UNKNOWN = -9007199254740991,
   VERIFIED = 1,
   UNVERIFIED = 2,
   DISABLED = 3,
   DEACTIVATED = 4,
   // @deprecated FOO = 5,
-}
-
-export function convertUserIntEnum(val: number): UserIntEnum {
-  switch (val) {
-    case UserIntEnum.UNKNOWN:
-    case UserIntEnum.VERIFIED:
-    case UserIntEnum.UNVERIFIED:
-    case UserIntEnum.DISABLED:
-    case UserIntEnum.DEACTIVATED:
-      return val;
-    default:
-      return UserIntEnum.UNKNOWN;
-  }
-}
-
-export function convertNullableUserIntEnum(
-  val: number | null,
-): UserIntEnum | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertUserIntEnum(val);
-}
-
-export function convertUserIntEnumList(val: number[]): UserIntEnum[] {
-  return val.map((v) => convertUserIntEnum(v));
-}
-
-export function convertNullableUserIntEnumList(
-  val: number[] | null,
-): UserIntEnum[] | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertUserIntEnumList(val);
 }
 
 export enum UserPreferredShift {

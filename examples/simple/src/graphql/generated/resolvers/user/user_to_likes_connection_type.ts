@@ -29,6 +29,13 @@ export const UserToLikesConnectionType = () => {
       > => ({
         time: {
           type: GraphQLTime,
+          resolve: (
+            edge: GraphQLEdge<UserToLikesEdge>,
+            args: {},
+            context: RequestContext<ExampleViewerAlias>,
+          ) => {
+            return edge.edge.time;
+          },
         },
       }),
     });

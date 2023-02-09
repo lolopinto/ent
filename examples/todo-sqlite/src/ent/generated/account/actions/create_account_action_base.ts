@@ -18,6 +18,7 @@ import { AccountBuilder } from "src/ent/generated/account/actions/account_builde
 import {
   AccountPrefs,
   AccountPrefs2,
+  AccountPrefs3,
   AccountState,
 } from "src/ent/generated/types";
 
@@ -26,6 +27,7 @@ export interface AccountCreateInput {
   phoneNumber: string;
   accountState?: AccountState | null;
   accountPrefs?: AccountPrefs | null;
+  accountPrefs3?: AccountPrefs3;
   accountPrefsList?: AccountPrefs2[] | null;
   credits?: number;
 }

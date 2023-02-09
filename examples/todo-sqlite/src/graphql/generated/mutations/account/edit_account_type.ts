@@ -17,19 +17,25 @@ import { Account } from "src/ent/";
 import EditAccountAction, {
   AccountEditInput,
 } from "src/ent/account/actions/edit_account_action";
-import { AccountPrefs, AccountPrefs2 } from "src/ent/generated/types";
+import {
+  AccountPrefs,
+  AccountPrefs2,
+  AccountPrefs3,
+} from "src/ent/generated/types";
 import { AccountPrefs2InputType } from "src/graphql/generated/mutations/input/account_prefs_2_input_type";
+import { AccountPrefs3InputType } from "src/graphql/generated/mutations/input/account_prefs_3_input_type";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
 import { AccountType } from "src/graphql/resolvers/";
 
 interface customEditAccountInput
   extends Omit<
     AccountEditInput,
-    "phoneNumber" | "accountPrefs" | "accountPrefsList"
+    "phoneNumber" | "accountPrefs" | "accountPrefs3" | "accountPrefsList"
   > {
   id: string;
   phone_number?: string;
   account_prefs?: AccountPrefs | null;
+  account_prefs_3?: AccountPrefs3;
   account_prefs_list?: AccountPrefs2[] | null;
 }
 
@@ -52,6 +58,9 @@ export const EditAccountInputType = new GraphQLInputObjectType({
     },
     account_prefs: {
       type: AccountPrefsInputType,
+    },
+    account_prefs_3: {
+      type: AccountPrefs3InputType,
     },
     account_prefs_list: {
       type: new GraphQLList(new GraphQLNonNull(AccountPrefs2InputType)),
@@ -96,6 +105,7 @@ export const EditAccountType: GraphQLFieldConfig<
         name: input.name,
         phoneNumber: input.phone_number,
         accountPrefs: input.account_prefs,
+        accountPrefs3: input.account_prefs_3,
         accountPrefsList: input.account_prefs_list,
       },
     );

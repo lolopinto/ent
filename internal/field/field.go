@@ -842,7 +842,7 @@ func (f *Field) GetConvertMethod(cfg codegenapi.Config) string {
 	t := f.GetTSFieldType(cfg)
 
 	list := enttype.IsListType(t)
-	nullable := f.Nullable()
+	nullable := enttype.IsNullable(t)
 
 	t2 := t.(enttype.TSTypeWithCustomType)
 	typ := t2.GetCustomTypeInfo().TSInterface

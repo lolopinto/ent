@@ -170,3 +170,24 @@ export function convertNullableAccountPrefs2List(
   }
   return input.map((v) => convertAccountPrefs2(v));
 }
+
+export interface AccountPrefs3 {
+  finishedNux: boolean;
+  enableNotifs: boolean;
+  preferredLanguage: string;
+}
+
+export function convertAccountPrefs3(input: any): AccountPrefs3 {
+  return {
+    finishedNux: input.finished_nux,
+    enableNotifs: input.enable_notifs,
+    preferredLanguage: input.preferred_language,
+  };
+}
+
+export function convertNullableAccountPrefs3(input: any): AccountPrefs3 | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertAccountPrefs3(input);
+}

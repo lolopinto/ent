@@ -27,6 +27,7 @@ import {
 } from "src/ent/";
 import {
   AccountPrefs2Type,
+  AccountPrefs3Type,
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
   AccountToCreatedWorkspacesConnectionType,
@@ -67,6 +68,16 @@ export const AccountType = new GraphQLObjectType({
         context: RequestContext<Viewer>,
       ) => {
         return account.accountPrefs;
+      },
+    },
+    account_prefs_3: {
+      type: AccountPrefs3Type,
+      resolve: (
+        account: Account,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
+        return account.accountPrefs3;
       },
     },
     account_prefs_list: {

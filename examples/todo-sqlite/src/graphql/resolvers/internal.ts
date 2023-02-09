@@ -2,6 +2,7 @@
 
 export * from "src/graphql/generated/resolvers/account_todo_status_type";
 export * from "src/graphql/generated/resolvers/account_prefs_2_type";
+export * from "src/graphql/generated/resolvers/account_prefs_3_type";
 export * from "src/graphql/generated/resolvers/account_prefs_type";
 export * from "src/graphql/generated/resolvers/account_type";
 export * from "src/graphql/generated/resolvers/tag_type";

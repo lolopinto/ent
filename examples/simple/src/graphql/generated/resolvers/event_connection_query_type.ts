@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { Event } from "../../../ent";
 import { EventSortColumnType } from "./event_sort_column_type";
-import { RootToEventConnectionConnectionType } from "../../resolvers/internal";
+import { RootToEventConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface EventConnectionArgs {
@@ -36,7 +36,7 @@ export const EventConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   EventConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToEventConnectionConnectionType()),
+  type: new GraphQLNonNull(RootToEventConnectionType()),
   args: {
     ids: {
       description: "",

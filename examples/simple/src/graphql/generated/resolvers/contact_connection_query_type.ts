@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { Contact } from "../../../ent";
 import { ContactSortColumnType } from "./contact_sort_column_type";
-import { RootToContactConnectionConnectionType } from "../../resolvers/internal";
+import { RootToContactConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface ContactConnectionArgs {
@@ -36,7 +36,7 @@ export const ContactConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   ContactConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToContactConnectionConnectionType()),
+  type: new GraphQLNonNull(RootToContactConnectionType()),
   args: {
     ids: {
       description: "",

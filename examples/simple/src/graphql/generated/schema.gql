@@ -223,7 +223,6 @@ enum UserDaysOff {
 }
 
 enum UserIntEnum {
-  UNKNOWN
   VERIFIED
   UNVERIFIED
   DISABLED
@@ -570,97 +569,97 @@ type EventToMaybeConnection implements Connection {
   rawCount: Int!
 }
 
-type RootToCommentConnectionEdge implements Edge {
+type RootToCommentEdge implements Edge {
   node: Comment!
   cursor: String!
 }
 
-type RootToCommentConnectionConnection implements Connection {
-  edges: [RootToCommentConnectionEdge!]!
+type RootToCommentConnection implements Connection {
+  edges: [RootToCommentEdge!]!
   nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type RootToContactConnectionEdge implements Edge {
+type RootToContactEdge implements Edge {
   node: Contact!
   cursor: String!
 }
 
-type RootToContactConnectionConnection implements Connection {
-  edges: [RootToContactConnectionEdge!]!
+type RootToContactConnection implements Connection {
+  edges: [RootToContactEdge!]!
   nodes: [Contact!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type RootToContactEmailConnectionEdge implements Edge {
+type RootToContactEmailEdge implements Edge {
   node: ContactEmail!
   cursor: String!
 }
 
-type RootToContactEmailConnectionConnection implements Connection {
-  edges: [RootToContactEmailConnectionEdge!]!
+type RootToContactEmailConnection implements Connection {
+  edges: [RootToContactEmailEdge!]!
   nodes: [ContactEmail!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type RootToContactPhoneNumberConnectionEdge implements Edge {
+type RootToContactPhoneNumberEdge implements Edge {
   node: ContactPhoneNumber!
   cursor: String!
 }
 
-type RootToContactPhoneNumberConnectionConnection implements Connection {
-  edges: [RootToContactPhoneNumberConnectionEdge!]!
+type RootToContactPhoneNumberConnection implements Connection {
+  edges: [RootToContactPhoneNumberEdge!]!
   nodes: [ContactPhoneNumber!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type RootToEventConnectionEdge implements Edge {
+type RootToEventEdge implements Edge {
   node: Event!
   cursor: String!
 }
 
-type RootToEventConnectionConnection implements Connection {
-  edges: [RootToEventConnectionEdge!]!
+type RootToEventConnection implements Connection {
+  edges: [RootToEventEdge!]!
   nodes: [Event!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type RootToHolidayConnectionEdge implements Edge {
+type RootToHolidayEdge implements Edge {
   node: Holiday!
   cursor: String!
 }
 
-type RootToHolidayConnectionConnection implements Connection {
-  edges: [RootToHolidayConnectionEdge!]!
+type RootToHolidayConnection implements Connection {
+  edges: [RootToHolidayEdge!]!
   nodes: [Holiday!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type RootToHoursOfOperationConnectionEdge implements Edge {
+type RootToHoursOfOperationEdge implements Edge {
   node: HoursOfOperation!
   cursor: String!
 }
 
-type RootToHoursOfOperationConnectionConnection implements Connection {
-  edges: [RootToHoursOfOperationConnectionEdge!]!
+type RootToHoursOfOperationConnection implements Connection {
+  edges: [RootToHoursOfOperationEdge!]!
   nodes: [HoursOfOperation!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type RootToUserConnectionEdge implements Edge {
+type RootToUserEdge implements Edge {
   node: User!
   cursor: String!
 }
 
-type RootToUserConnectionConnection implements Connection {
-  edges: [RootToUserConnectionEdge!]!
+type RootToUserConnection implements Connection {
+  edges: [RootToUserEdge!]!
   nodes: [User!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -1271,23 +1270,23 @@ input UserSuperNestedObjectInput {
 }
 
 type Query {
-  comment_connection(ids: [ID!], sortCol: CommentSortColumn, first: Int, after: String, last: Int, before: String): RootToCommentConnectionConnection!
+  comment_connection(ids: [ID!], sortCol: CommentSortColumn, first: Int, after: String, last: Int, before: String): RootToCommentConnection!
   comment_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Comment!]
-  contact_connection(ids: [ID!], sortCol: ContactSortColumn, first: Int, after: String, last: Int, before: String): RootToContactConnectionConnection!
-  contact_email_connection(ids: [ID!], sortCol: ContactEmailSortColumn, first: Int, after: String, last: Int, before: String): RootToContactEmailConnectionConnection!
+  contact_connection(ids: [ID!], sortCol: ContactSortColumn, first: Int, after: String, last: Int, before: String): RootToContactConnection!
+  contact_email_connection(ids: [ID!], sortCol: ContactEmailSortColumn, first: Int, after: String, last: Int, before: String): RootToContactEmailConnection!
   contact_email_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactEmail!]
   contact_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Contact!]
-  contact_phone_number_connection(ids: [ID!], sortCol: ContactPhoneNumberSortColumn, first: Int, after: String, last: Int, before: String): RootToContactPhoneNumberConnectionConnection!
+  contact_phone_number_connection(ids: [ID!], sortCol: ContactPhoneNumberSortColumn, first: Int, after: String, last: Int, before: String): RootToContactPhoneNumberConnection!
   contact_phone_number_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactPhoneNumber!]
-  event_connection(ids: [ID!], sortCol: EventSortColumn, first: Int, after: String, last: Int, before: String): RootToEventConnectionConnection!
+  event_connection(ids: [ID!], sortCol: EventSortColumn, first: Int, after: String, last: Int, before: String): RootToEventConnection!
   event_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Event!]
-  holiday_connection(ids: [ID!], sortCol: HolidaySortColumn, first: Int, after: String, last: Int, before: String): RootToHolidayConnectionConnection!
+  holiday_connection(ids: [ID!], sortCol: HolidaySortColumn, first: Int, after: String, last: Int, before: String): RootToHolidayConnection!
   holiday_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Holiday!]
-  hours_of_operation_connection(ids: [ID!], sortCol: HoursOfOperationSortColumn, first: Int, after: String, last: Int, before: String): RootToHoursOfOperationConnectionConnection!
+  hours_of_operation_connection(ids: [ID!], sortCol: HoursOfOperationSortColumn, first: Int, after: String, last: Int, before: String): RootToHoursOfOperationConnection!
   hours_of_operation_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [HoursOfOperation!]
   node(id: ID!): Node
   timeDiff(time: Time!, log: JSON!): String!
-  user_connection(ids: [ID!], sortCol: UserSortColumn, first: Int, after: String, last: Int, before: String): RootToUserConnectionConnection!
+  user_connection(ids: [ID!], sortCol: UserSortColumn, first: Int, after: String, last: Int, before: String): RootToUserConnection!
   user_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [User!]
   viewer: Viewer!
 }

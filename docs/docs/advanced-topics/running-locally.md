@@ -14,7 +14,7 @@ There's 3 major runtimes we use:
 
 Here's the steps to install locally:
 
-* Install [golang](https://golang.org/doc/install#download) version of 1.19
+* Install [golang](https://golang.org/doc/install#download) version of 1.20
 * Get the latest version of the Ent CLI:
 
 ```shell
@@ -26,7 +26,7 @@ go install github.com/lolopinto/ent/tsent@v0.0.43
 * Install [auto-schema](https://pypi.org/project/auto-schema/):
 
 ```shell
-python3 -m pip install auto_schema==0.0.25
+python3 -m pip install auto_schema==0.0.26
 ```
 
 * Install the following TypeScript packages globally:

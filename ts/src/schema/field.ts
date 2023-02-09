@@ -746,6 +746,11 @@ export interface IntegerEnumOptions extends FieldOptions {
   // it's recommended to scope the enum names in scenarios where it makes sense
   tsType?: string;
   graphQLType?: string;
+
+  // if set to true, we don't add an `UNKNOWN` or `Unknown` type to deal with invalid|deprecated|old types
+  // coming from the db.
+  // GraphQL is strict about old values so we are adding this
+  disableUnknownType?: boolean;
 }
 
 export class IntegerEnumField extends BaseField implements Field {
@@ -760,6 +765,7 @@ export class IntegerEnumField extends BaseField implements Field {
       type: options.tsType,
       graphQLType: options.graphQLType,
       deprecatedIntEnumMap: options.deprecated,
+      disableUnknownType: options.disableUnknownType,
     };
 
     let count = 0;

@@ -15,12 +15,9 @@ var connType: GraphQLConnectionType<
   ExampleViewerAlias
 >;
 
-export const RootToContactConnectionConnectionType = () => {
+export const RootToContactConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType(
-      "RootToContactConnection",
-      ContactType,
-    );
+    connType = new GraphQLConnectionType("RootToContact", ContactType);
   }
   return connType;
 };
