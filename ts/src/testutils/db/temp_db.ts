@@ -530,6 +530,9 @@ export class TempDB {
   async afterAll() {
     if (this.dialect === Dialect.SQLite) {
       this.sqlite.close();
+      if (!this.sqlite.memory) {
+        fs.rmSync(this.getSqliteClient().name);
+      }
       return;
     }
 
@@ -661,7 +664,6 @@ export function setupSqlite(
   afterAll(async () => {
     await tdb.afterAll();
 
-    fs.rmSync(tdb.getSqliteClient().name);
     delete process.env.DB_CONNECTION_STRING;
   });
 

@@ -52,10 +52,6 @@ async function setupTempDB(dialect: Dialect, connString?: string) {
 
   afterAll(async () => {
     await tdb.afterAll();
-
-    if (Dialect.SQLite === dialect) {
-      fs.rmSync(tdb.getSqliteClient().name);
-    }
   });
 
   afterEach(async () => {
