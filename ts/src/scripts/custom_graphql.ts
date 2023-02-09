@@ -158,7 +158,11 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
   }
   return await new Promise((resolve, reject) => {
     // do we eventually need tsconfig-paths here or do we get it by default because child process?
-    const r = spawn("ts-node", [filePath]);
+    const args = ["--swc", filePath];
+    if (process.env.DISABLE_SWC) {
+      args.shift();
+    }
+    const r = spawn("ts-node", args);
     const datas: string[] = [];
     r.stdout.on("data", (data) => {
       datas.push(data.toString());
