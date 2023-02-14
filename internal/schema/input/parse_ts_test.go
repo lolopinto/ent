@@ -126,6 +126,7 @@ type testCase struct {
 	code             map[string]string
 	expectedNodes    map[string]node
 	expectedPatterns map[string]pattern
+	error            error
 	only             bool
 	skip             bool
 }
@@ -143,7 +144,16 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 			continue
 		}
 		t.Run(key, func(t *testing.T) {
-			schema := testhelper.ParseInputSchemaForTest(t, tt.code)
+			schema, err := testhelper.ParseInputSchemaForTestFull(t, tt.code)
+
+			if tt.error == nil {
+				require.Nil(t, err)
+				require.NotNil(t, schema)
+			} else {
+				require.Error(t, err)
+				require.Equal(t, tt.error.Error(), err.Error())
+				return
+			}
 
 			require.Len(t, schema.Nodes, len(tt.expectedNodes))
 

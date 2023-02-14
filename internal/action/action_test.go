@@ -858,6 +858,38 @@ func TestActionOnlyFieldsInvalidAction(t *testing.T) {
 	require.Equal(t, err.Error(), "invalid action only field emails. couldn't find action with name CreateEmailAction")
 }
 
+func TestActionOnlyFieldsInvalidAction2(t *testing.T) {
+	schema, err := testhelper.ParseSchemaForTestFull(
+		t,
+		map[string]string{
+			"contact.ts": testhelper.GetCodeWithSchema(
+				`
+				import {EntSchema, ActionOperation, StringType} from "{schema}";
+
+				const Contact = new EntSchema({
+					fields: {
+						name: StringType(),
+					},
+
+					actions: [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "emails",
+								type: "Object",
+							}],
+						},
+					],
+				});
+				export default Contact`),
+		},
+	)
+
+	require.Nil(t, schema)
+	require.NotNil(t, err)
+	require.Equal(t, err.Error(), "emails Object action only field requires an action name")
+}
+
 func TestEmbeddedActionOnlyFields(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(
 		t,

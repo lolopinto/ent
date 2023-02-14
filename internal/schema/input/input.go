@@ -762,6 +762,10 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(inflection.Singular(f.Name)))
 		gqlType := fmt.Sprintf("%s%s", strcase.ToCamel(inflection.Singular(f.Name)), strcase.ToCamel(inputName))
 
+		if f.ActionName == "" {
+			return nil, fmt.Errorf("%s Object action only field requires an action name", f.Name)
+		}
+
 		if nullable {
 			typ := &enttype.NullableObjectType{}
 			typ.TSType = tsType
