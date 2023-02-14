@@ -13,6 +13,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
+import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLTime } from "@snowtop/ent/graphql";
 import { Holiday } from "../../../../ent";
@@ -44,6 +45,9 @@ export const HolidayCreateInputType = new GraphQLInputObjectType({
     },
     date: {
       type: GraphQLTime,
+    },
+    log: {
+      type: GraphQLJSON,
     },
   }),
 });
@@ -83,6 +87,7 @@ export const HolidayCreateType: GraphQLFieldConfig<
       dayOfWeekAlt: input.dayOfWeekAlt,
       label: input.label,
       date: input.date,
+      log: input.log,
     }).saveX();
     return { holiday: holiday };
   },

@@ -20,6 +20,14 @@ const HolidaySchema = new EntSchemaWithTZ({
   actions: [
     {
       operation: ActionOperation.Create,
+      // this action exists just to test ID action only field
+      actionOnlyFields: [
+        {
+          type: "JSON",
+          name: "log",
+          nullable: true,
+        },
+      ],
     },
     {
       operation: ActionOperation.Create,

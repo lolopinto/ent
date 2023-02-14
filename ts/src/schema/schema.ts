@@ -744,6 +744,7 @@ type actionFieldType =
   | "Float"
   | "String"
   | "Time"
+  | "JSON"
   | "Object";
 // TODO...
 //  | Array<actionFieldType>;

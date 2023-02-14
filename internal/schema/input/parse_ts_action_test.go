@@ -198,15 +198,22 @@ func TestParseActions(t *testing.T) {
 					actions: Action[] = [
 						{
 							operation: ActionOperation.Create,
-							actionOnlyFields: [{
-								name: "addCreatorAsAdmin",
-								type: "Boolean",
-							},
-							{
-								name: "localTime",
-								type: "Time",
-								nullable: true,
-							}],
+							actionOnlyFields: [
+								{
+									name: "addCreatorAsAdmin",
+									type: "Boolean",
+								},
+								{
+									name: "localTime",
+									type: "Time",
+									nullable: true,
+								},
+								{
+									name: "json",
+									type: "JSON",
+									nullable: true,
+								},
+							],
 						},
 					];
 				};`),
@@ -234,6 +241,11 @@ func TestParseActions(t *testing.T) {
 								{
 									name:     "localTime",
 									typ:      input.ActionTypeTime,
+									nullable: true,
+								},
+								{
+									name:     "json",
+									typ:      input.ActionTypeJSON,
 									nullable: true,
 								},
 							},

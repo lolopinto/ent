@@ -20,6 +20,10 @@ test("create holiday", async () => {
         date: dt.toMillis(),
         dayOfWeek: "WEDNESDAY",
         dayOfWeekAlt: "WEDNESDAY",
+        log: {
+          what: "foo",
+          bar: "int",
+        },
       },
     },
     ["holiday.label", "Inauguration"],
