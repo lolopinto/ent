@@ -682,6 +682,10 @@ interface objectLoaderOptions {
   instanceKey?: string;
 }
 
+// would like to avoid calling this so that itwe don't run into circular dependencies
+// but the fact that it returns a clause makes it hard since we don't control the patterns...
+// we can make each clause return a format that can be extrapolated and used in codegen...
+
 export function getObjectLoaderProperties(
   value: SchemaInputType,
   tableName: string,

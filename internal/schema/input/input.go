@@ -675,14 +675,14 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 	switch af.Nullable {
 	case NullableContentsAndList:
 		if !af.List {
-			return fmt.Errorf("list required to use this option")
+			return fmt.Errorf("nullable contents and list for action field %s and not a list", f.Name)
 		}
 		f.Nullable = true
 		f.nullableContents = true
 
 	case NullableContents:
 		if !af.List {
-			return fmt.Errorf("list required to use this option")
+			return fmt.Errorf("nullable contents for action field %s and not a list", f.Name)
 		}
 		f.nullableContents = true
 
