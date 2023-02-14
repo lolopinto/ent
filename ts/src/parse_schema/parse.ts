@@ -291,8 +291,11 @@ function processAction(action: Action): OutputAction {
       } else {
         if (f.nullable === "contentsAndList") {
           f2.nullable = NullableResult.CONTENTS_AND_LIST;
-        } else {
+        } else if (f.nullable === "contents") {
           f2.nullable = NullableResult.CONTENTS;
+        } else if (f.nullable === "true") {
+          // shouldn't happen but ran into weirdness where it did...
+          f2.nullable = NullableResult.ITEM;
         }
       }
 
