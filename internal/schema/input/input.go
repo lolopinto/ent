@@ -777,7 +777,18 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 		typ.ActionName = f.ActionName
 		typ.ExcludedFields = f.ExcludedFields
 		return typ, nil
+
+	case ActionTypeJSON:
+		if nullable {
+			return &enttype.NullableJSONBType{
+				CommonJSONType: enttype.CommonJSONType{},
+			}, nil
+		}
+		return &enttype.JSONBType{
+			CommonJSONType: enttype.CommonJSONType{},
+		}, nil
 	}
+
 	return nil, fmt.Errorf("unsupported type %s", f.Type)
 }
 
@@ -792,6 +803,7 @@ const (
 	ActionTypeString  ActionType = "String"
 	ActionTypeTime    ActionType = "Time"
 	ActionTypeObject  ActionType = "Object"
+	ActionTypeJSON    ActionType = "JSON"
 )
 
 type Constraint struct {
