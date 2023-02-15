@@ -47,7 +47,7 @@
     "passport-jwt": "^4.0.0"
   },
   "devDependencies": {
-    "@snowtop/ent-graphql-tests": "^0.1.0-alpha3",
+    "@snowtop/ent-graphql-tests": "^0.1.0-alpha6",
     "@types/bcryptjs": "^2.4.2",
     "@types/cors": "^2.8.10",
     "@types/express": "^4.17.9",
