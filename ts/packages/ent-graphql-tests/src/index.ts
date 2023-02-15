@@ -230,51 +230,40 @@ function buildTreeFromQueryPaths(
             tree[key] = {};
           }
           if (typeof obj[key] === "object") {
-                    let parts2 = [...parts, key]
+            let parts2 = [...parts, key]
 
-            if (!isScalarField(key, parts2)) {
+            if (!scalarFieldAtLeaf(parts2)) {
               handleSubtree(obj[key], tree[key],parts2);
             }
           }
         }
       }
 
-      // TODO this needs to work for super complicated objects and have fields update as nesting applies...
-      function isScalarField(f: string, path: string[]) {
+      function scalarFieldAtLeaf(pathFromRoot: string[]) {
         let root = fields;
         if (!root) {
           return false
         }
-        // console.log('path', path,f)
         let subField: GraphQLField<any,any,any> | undefined;
-        for (const p of path) {
+        for (const p of pathFromRoot) {
           subField = root?.[p];
-          console.log(root,p, subField)
           if (subField) {
             [subField] = getInnerType(subField.type,false);
             if (subField instanceof GraphQLObjectType) {
-              console.log('has fields, root set again')
               root = subField.getFields()
             }
           }
         }
 
-        console.log('subField',subField)
 
         if (!subField) {
           return false;
         }
-        if (!isWrappingType(subField.type)) {
-          // return false;
-        }
-
-        // only spread out if an object
-        // const [typ, _] = getInnerType(subField.type, true);
         return isScalarType(subField) || isEnumType(subField);
       }
 
       if (i === parts.length - 1 && typeof option[1] === "object") {
-        if (!isScalarField(part, parts)) {
+        if (!scalarFieldAtLeaf(parts)) {
           handleSubtree(option[1], tree, parts);
         }
       }

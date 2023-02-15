@@ -792,7 +792,6 @@ test('mutation with nested objects', async()=>{
       firstName: "Aegon",
       lastName: "Targaryen",
     },
-    debugMode:true,
     mutation: "userEdit",
     disableInputWrapping: true,
   };
