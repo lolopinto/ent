@@ -13,6 +13,7 @@ type NonEntField struct {
 	graphqlName string
 	fieldType   enttype.TSType
 	nullable    bool // required default = true
+	optional    bool
 	// TODO these are both go things. ignore
 	// Flag enum or ID
 	Flag string
@@ -41,12 +42,20 @@ func (f *NonEntField) SetNodeType(nodeType string) *NonEntField {
 	return f
 }
 
+func (f *NonEntField) SetOptional(optional bool) *NonEntField {
+	f.optional = optional
+	return f
+}
+
 func (f *NonEntField) GetFieldName() string {
 	return f.fieldName
 }
 
 func (f *NonEntField) Required() bool {
-	return !f.nullable
+	if f.nullable || f.optional {
+		return false
+	}
+	return true
 }
 
 func (f *NonEntField) GetGraphQLName() string {
@@ -70,6 +79,14 @@ func (f *NonEntField) GetGraphQLFieldType() enttype.TSType {
 	return f.fieldType
 }
 
+func (f *NonEntField) GetGraphQLMutationFieldType(forceOptional bool) enttype.TSType {
+	t2, ok := f.fieldType.(enttype.NullableType)
+	if forceOptional && ok {
+		return t2.GetNullableType()
+	}
+	return f.fieldType
+}
+
 func (f *NonEntField) TsFieldName(cfg codegenapi.Config) string {
 	return strcase.ToLowerCamel(f.fieldName)
 }
@@ -83,11 +100,11 @@ func (f *NonEntField) TSPublicAPIName() string {
 }
 
 func (f *NonEntField) ForceRequiredInAction() bool {
-	return !f.nullable
+	return f.Required()
 }
 
 func (f *NonEntField) ForceOptionalInAction() bool {
-	return false
+	return f.optional
 }
 
 func (f *NonEntField) DefaultValue() *string {
@@ -96,6 +113,10 @@ func (f *NonEntField) DefaultValue() *string {
 
 func (f *NonEntField) Nullable() bool {
 	return f.nullable
+}
+
+func (f *NonEntField) Optional() bool {
+	return f.optional
 }
 
 func (f *NonEntField) ExposeToGraphQL() bool {

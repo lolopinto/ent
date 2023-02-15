@@ -248,6 +248,7 @@ func actionOnlyFieldEqual(existing, af *ActionField) bool {
 	return existing.Name == af.Name &&
 		existing.Type == af.Type &&
 		existing.Nullable == af.Nullable &&
+		existing.Optional == af.Optional &&
 		existing.list == af.list &&
 		existing.nullableContents == af.nullableContents &&
 		existing.ActionName == af.ActionName &&

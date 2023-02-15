@@ -640,6 +640,7 @@ type actionField struct {
 	Name            string       `json:"name"`
 	Type            ActionType   `json:"type"`
 	Nullable        NullableItem `json:"nullable"`
+	Optional        bool         `json:"optional"`
 	List            bool         `json:"list"`
 	ActionName      string       `json:"actionName"`
 	ExcludedFields  []string     `json:"excludedFields"`
@@ -651,6 +652,7 @@ type ActionField struct {
 	Name             string
 	Type             ActionType
 	Nullable         bool
+	Optional         bool
 	list             bool
 	nullableContents bool
 	ActionName       string
@@ -667,6 +669,7 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 
 	f.list = af.List
 	f.Name = af.Name
+	f.Optional = af.Optional
 	f.ActionName = af.ActionName
 	f.Type = af.Type
 	f.ExcludedFields = af.ExcludedFields
