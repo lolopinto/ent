@@ -1,6 +1,6 @@
-ARG GOLANG_VERSION=v0.1.0-alpha.49
+ARG GOLANG_VERSION=v0.1.0-alpha.51-test2
 ARG AUTO_SCHEMA_VERSION=0.0.26
-ARG NODE_VERSION=17
+ARG NODE_VERSION=18
 ARG DOCKER_TAG=v0.1.0-alpha.37
 
 # get and install tsent
@@ -60,12 +60,15 @@ RUN \
 
 # these next ones are not included in slim variants
 
-RUN apt update && apt --assume-yes install zsh && \
-  rm -rf /var/lib/apt/lists/*
-RUN npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @swc/cli@0.1.55 rome@10.0.1
+# RUN apt update && apt --assume-yes install zsh && \
+#   rm -rf /var/lib/apt/lists/*
+# TODO new typescript version
+RUN npm install -g typescript@4.4.2 ts-node@10.9.1 rome@11.0.0
+# prettier@2.3.2 
 
 WORKDIR /app
-RUN npm install --save-dev tsconfig-paths@3.11.0
+RUN npm install --save-dev tsconfig-paths@4.1.2 @swc/core@1.3.35 
+#@swc/cli@0.1.61
 
 COPY --from=golang-image /go/bin/tsent /go/bin/tsent
 # NOTE: if ever debugging in docker image, code is at 
