@@ -24,7 +24,7 @@ const HolidaySchema = new EntSchemaWithTZ({
         {
           type: "JSON",
           name: "log",
-          nullable: true,
+          optional: true,
         },
       ],
     },
