@@ -180,7 +180,6 @@ function buildTreeFromQueryPaths(
   if (typ instanceof GraphQLObjectType) {
     fields = typ.getFields();
   }
-  // console.log(typ)
   let topLevelTree = {};
   options.forEach((option) => {
     let path = option[0];
