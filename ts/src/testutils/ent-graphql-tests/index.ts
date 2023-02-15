@@ -175,9 +175,11 @@ function buildTreeFromQueryPaths(
   ...options: Option[]
 ) {
   let fields: GraphQLFieldMap<any, any>;
-  if (fieldType instanceof GraphQLObjectType) {
-    fields = fieldType.getFields();
+  const [typ] = getInnerType(fieldType, false);
+  if (typ instanceof GraphQLObjectType) {
+    fields = typ.getFields();
   }
+  console.log(typ);
   let topLevelTree = {};
   options.forEach((option) => {
     let path = option[0];
@@ -237,6 +239,7 @@ function buildTreeFromQueryPaths(
       // TODO this needs to work for super complicated objects and have fields update as nesting applies...
       function isScalarField(f: string) {
         const subField = fields?.[f];
+        console.log(fields, f, subField);
         if (!subField) {
           return false;
         }
