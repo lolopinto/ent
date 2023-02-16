@@ -59,16 +59,13 @@ RUN \
 
 {{ if .Development -}}
 
-# RUN apt update && apt --assume-yes install zsh && \
-#   rm -rf /var/lib/apt/lists/*
+RUN apt update && apt --assume-yes install zsh && \
+  rm -rf /var/lib/apt/lists/*
 
-# TODO new typescript version
-RUN npm install -g typescript@4.4.2 ts-node@10.9.1 rome@11.0.0
-# prettier@2.3.2 
+RUN npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @swc/cli@0.1.55 rome@10.0.1
 
 WORKDIR /app
-RUN npm install --save-dev tsconfig-paths@4.1.2 @swc/core@1.3.35 
-#@swc/cli@0.1.61
+RUN npm install --save-dev tsconfig-paths@3.11.0
 
 {{ end -}}
 
