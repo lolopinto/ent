@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.1.0-alpha.39-test2"
+const TAG = "0.1.0-alpha.39"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 18
@@ -33,11 +33,11 @@ var NODE_VERSIONS = []int{
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.26"
-const TSENT_VERSION = "v0.1.0-alpha.51-test2"
+const TSENT_VERSION = "v0.1.0-alpha.51"
 
 var SUFFIXES = []string{
 	"dev",
-	// "slim",
+	"slim",
 }
 
 // can change platforms here to test locally
