@@ -2036,7 +2036,7 @@ func buildCustomInputNode(c *customtype.CustomInterface) *objectType {
 	for _, f := range c.NonEntFields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetGraphQLFieldType().GetTSGraphQLImports(true), true),
+			FieldImports: getGQLFileImports(f.GetGraphQLMutationFieldType(f.ForceOptionalInAction()).GetTSGraphQLImports(true), true),
 		})
 	}
 	return result
@@ -2093,7 +2093,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	for _, f := range a.GetGraphQLNonEntFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetGraphQLFieldType().GetTSGraphQLImports(true), true),
+			FieldImports: getGQLFileImports(f.GetGraphQLMutationFieldType(f.ForceOptionalInAction()).GetTSGraphQLImports(true), true),
 		})
 	}
 
@@ -2673,7 +2673,7 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 	for _, f := range ci.NonEntFields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetGraphQLFieldType().GetTSGraphQLImports(true), ciInfo.input),
+			FieldImports: getGQLFileImports(f.GetGraphQLMutationFieldType(f.ForceOptionalInAction()).GetTSGraphQLImports(true), ciInfo.input),
 		})
 	}
 

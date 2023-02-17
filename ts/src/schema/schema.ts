@@ -682,6 +682,10 @@ interface objectLoaderOptions {
   instanceKey?: string;
 }
 
+// would like to avoid calling this so that itwe don't run into circular dependencies
+// but the fact that it returns a clause makes it hard since we don't control the patterns...
+// we can make each clause return a format that can be extrapolated and used in codegen...
+
 export function getObjectLoaderProperties(
   value: SchemaInputType,
   tableName: string,
@@ -744,6 +748,7 @@ type actionFieldType =
   | "Float"
   | "String"
   | "Time"
+  | "JSON"
   | "Object";
 // TODO...
 //  | Array<actionFieldType>;
@@ -757,6 +762,8 @@ export interface ActionField {
   type: actionFieldType;
   // TODO can support overriding later but for now, this is fine
   nullable?: boolean | NullableListOptions;
+  // optional field that can't be set to null
+  optional?: boolean;
   // list of something
   list?: boolean;
   actionName?: string; // take the fields of this action and add them as this. only works with type "Object"

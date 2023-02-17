@@ -18,6 +18,7 @@ import {
   GraphQLType,
   GraphQLFieldMap,
   isEnumType,
+  GraphQLField,
 } from "graphql";
 import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
 import supertest from "supertest";
@@ -174,8 +175,9 @@ function buildTreeFromQueryPaths(
   ...options: Option[]
 ) {
   let fields: GraphQLFieldMap<any, any>;
-  if (fieldType instanceof GraphQLObjectType) {
-    fields = fieldType.getFields();
+  const [typ] = getInnerType(fieldType, false);
+  if (typ instanceof GraphQLObjectType) {
+    fields = typ.getFields();
   }
   let topLevelTree = {};
   options.forEach((option) => {
@@ -214,10 +216,11 @@ function buildTreeFromQueryPaths(
       }
       // TODO this needs to be aware of paths etc so this part works for complicated
       // cases but inlineFragmentRoot is a workaround for now.
-      function handleSubtree(obj: {}, tree: {}) {
+      function handleSubtree(obj: {}, tree: {}, parts: string[]) {
+        let parts2 = [...parts]
         if (Array.isArray(obj)) {
           for (const obj2 of obj) {
-            handleSubtree(obj2, tree);
+            handleSubtree(obj2, tree, parts2);
           }
           return;
         }
@@ -226,31 +229,41 @@ function buildTreeFromQueryPaths(
             tree[key] = {};
           }
           if (typeof obj[key] === "object") {
-            if (!isScalarField(key)) {
-              handleSubtree(obj[key], tree[key]);
+            let parts2 = [...parts, key]
+
+            if (!scalarFieldAtLeaf(parts2)) {
+              handleSubtree(obj[key], tree[key],parts2);
             }
           }
         }
       }
 
-      // TODO this needs to work for super complicated objects and have fields update as nesting applies...
-      function isScalarField(f: string) {
-        const subField = fields?.[f];
+      function scalarFieldAtLeaf(pathFromRoot: string[]) {
+        let root = fields;
+        if (!root) {
+          return false
+        }
+        let subField: GraphQLField<any,any,any> | undefined;
+        for (const p of pathFromRoot) {
+          subField = root?.[p];
+          if (subField) {
+            [subField] = getInnerType(subField.type,false);
+            if (subField instanceof GraphQLObjectType) {
+              root = subField.getFields()
+            }
+          }
+        }
+
+
         if (!subField) {
           return false;
         }
-        if (!isWrappingType(subField.type)) {
-          return false;
-        }
-
-        // only spread out if an object
-        const [typ, _] = getInnerType(subField.type, true);
-        return isScalarType(typ) || isEnumType(typ);
+        return isScalarType(subField) || isEnumType(subField);
       }
 
       if (i === parts.length - 1 && typeof option[1] === "object") {
-        if (!isScalarField(part)) {
-          handleSubtree(option[1], tree);
+        if (!scalarFieldAtLeaf(parts)) {
+          handleSubtree(option[1], tree, parts);
         }
       }
     }

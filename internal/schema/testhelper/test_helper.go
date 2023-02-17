@@ -40,6 +40,14 @@ func TempDir(path string) func(*Options) {
 }
 
 func ParseInputSchemaForTest(t *testing.T, code map[string]string, opts ...func(*Options)) *input.Schema {
+	inputSchema, err := ParseInputSchemaForTestFull(t, code, opts...)
+	require.NoError(t, err)
+	require.NotNil(t, inputSchema)
+
+	return inputSchema
+}
+
+func ParseInputSchemaForTestFull(t *testing.T, code map[string]string, opts ...func(*Options)) (*input.Schema, error) {
 	opt := &Options{}
 	for _, o := range opts {
 		o(opt)
@@ -65,11 +73,7 @@ func ParseInputSchemaForTest(t *testing.T, code map[string]string, opts ...func(
 		require.NoError(t, os.WriteFile(path, []byte(contents), os.ModePerm))
 	}
 
-	inputSchema, err := input.ParseSchemaFromTSDir(dirPath, true)
-	require.NoError(t, err)
-	require.NotNil(t, inputSchema)
-
-	return inputSchema
+	return input.ParseSchemaFromTSDir(dirPath, true)
 }
 
 func ParseSchemaForTest(t *testing.T, code map[string]string, opts ...func(*Options)) *schema.Schema {

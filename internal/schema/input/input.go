@@ -640,6 +640,7 @@ type actionField struct {
 	Name            string       `json:"name"`
 	Type            ActionType   `json:"type"`
 	Nullable        NullableItem `json:"nullable"`
+	Optional        bool         `json:"optional"`
 	List            bool         `json:"list"`
 	ActionName      string       `json:"actionName"`
 	ExcludedFields  []string     `json:"excludedFields"`
@@ -651,6 +652,7 @@ type ActionField struct {
 	Name             string
 	Type             ActionType
 	Nullable         bool
+	Optional         bool
 	list             bool
 	nullableContents bool
 	ActionName       string
@@ -667,6 +669,7 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 
 	f.list = af.List
 	f.Name = af.Name
+	f.Optional = af.Optional
 	f.ActionName = af.ActionName
 	f.Type = af.Type
 	f.ExcludedFields = af.ExcludedFields
@@ -675,14 +678,14 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 	switch af.Nullable {
 	case NullableContentsAndList:
 		if !af.List {
-			return fmt.Errorf("list required to use this option")
+			return fmt.Errorf("nullable contents and list for action field %s and not a list", f.Name)
 		}
 		f.Nullable = true
 		f.nullableContents = true
 
 	case NullableContents:
 		if !af.List {
-			return fmt.Errorf("list required to use this option")
+			return fmt.Errorf("nullable contents for action field %s and not a list", f.Name)
 		}
 		f.nullableContents = true
 
@@ -762,6 +765,10 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(inflection.Singular(f.Name)))
 		gqlType := fmt.Sprintf("%s%s", strcase.ToCamel(inflection.Singular(f.Name)), strcase.ToCamel(inputName))
 
+		if f.ActionName == "" {
+			return nil, fmt.Errorf("%s Object action only field requires an action name", f.Name)
+		}
+
 		if nullable {
 			typ := &enttype.NullableObjectType{}
 			typ.TSType = tsType
@@ -777,7 +784,18 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 		typ.ActionName = f.ActionName
 		typ.ExcludedFields = f.ExcludedFields
 		return typ, nil
+
+	case ActionTypeJSON:
+		if nullable {
+			return &enttype.NullableJSONBType{
+				CommonJSONType: enttype.CommonJSONType{},
+			}, nil
+		}
+		return &enttype.JSONBType{
+			CommonJSONType: enttype.CommonJSONType{},
+		}, nil
 	}
+
 	return nil, fmt.Errorf("unsupported type %s", f.Type)
 }
 
@@ -792,6 +810,7 @@ const (
 	ActionTypeString  ActionType = "String"
 	ActionTypeTime    ActionType = "Time"
 	ActionTypeObject  ActionType = "Object"
+	ActionTypeJSON    ActionType = "JSON"
 )
 
 type Constraint struct {

@@ -146,7 +146,7 @@ func (item *CustomItem) initialize() error {
 
 	case NullableContents:
 		if !item.List {
-			return fmt.Errorf("list required to use this option")
+			return fmt.Errorf("nullable contents for %s and not a list", item.Name)
 		}
 		item.imports = []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
@@ -155,7 +155,7 @@ func (item *CustomItem) initialize() error {
 
 	case NullableContentsAndList:
 		if !item.List {
-			return fmt.Errorf("list required to use this option")
+			return fmt.Errorf("nullable contents and list for %s and not a list", item.Name)
 		}
 		item.imports = []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLList"),

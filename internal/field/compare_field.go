@@ -37,6 +37,7 @@ func NonEntFieldEqual(existing, field *NonEntField) bool {
 		existing.graphqlName == field.graphqlName &&
 		compareType(existing.GetGraphQLFieldType(), field.GetGraphQLFieldType()) &&
 		existing.nullable == field.nullable &&
+		existing.optional == field.optional &&
 		existing.Flag == field.Flag &&
 		existing.NodeType == field.NodeType
 }

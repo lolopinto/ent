@@ -30,7 +30,7 @@ import {
 } from "graphql-helix";
 
 test("simplest query", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: new GraphQLObjectType({
       name: "RootQueryType",
       fields: {
@@ -44,7 +44,7 @@ test("simplest query", async () => {
     }),
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {},
     root: "hello",
@@ -128,7 +128,7 @@ const weekends = [DayOfWeek.Saturday, DayOfWeek.Sunday];
 const weekendsGQL = weekends.map((v) => v.toUpperCase());
 
 function getUser(id: string): User {
-  let result = new User();
+  const result = new User();
   result.id = id;
   result.firstName = "Jon";
   result.lastName = "Snow";
@@ -191,14 +191,14 @@ function getUser(id: string): User {
 }
 
 function editUser(id: string, user: Partial<User>): User {
-  let result = getUser(id);
+  const result = getUser(id);
   for (const k in user) {
     result[k] = user[k];
   }
   return result;
 }
 
-let addressType = new GraphQLObjectType({
+const addressType = new GraphQLObjectType({
   name: "Address",
   fields: {
     id: {
@@ -223,7 +223,7 @@ let addressType = new GraphQLObjectType({
   interfaces: [GraphQLNodeInterface],
 });
 
-let contactType = new GraphQLObjectType({
+const contactType = new GraphQLObjectType({
   name: "ContactType",
   fields: {
     id: {
@@ -272,7 +272,7 @@ const dayOfWeekType = new GraphQLEnumType({
   },
 });
 
-let userType = new GraphQLObjectType({
+const userType = new GraphQLObjectType({
   name: "User",
   fields: {
     id: {
@@ -312,7 +312,16 @@ let userType = new GraphQLObjectType({
   },
 });
 
-let viewerType = new GraphQLObjectType({
+const userPayloadType = new GraphQLObjectType({
+  name: 'UserPayload',
+  fields: {
+    user: {
+      type: new GraphQLNonNull(userType)
+    }
+  }
+})
+
+const viewerType = new GraphQLObjectType({
   name: "Viewer",
   fields: {
     user: {
@@ -321,7 +330,7 @@ let viewerType = new GraphQLObjectType({
   },
 });
 
-let rootQuery = new GraphQLObjectType({
+const rootQuery = new GraphQLObjectType({
   name: "RootQueryType",
   fields: {
     user: {
@@ -349,7 +358,35 @@ let rootQuery = new GraphQLObjectType({
   },
 });
 
-let viewerRootQuery = new GraphQLObjectType({
+const rootQueryReturnList = new GraphQLObjectType({
+  name: "RootQueryType",
+  fields: {
+    user: {
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(userType))),
+      resolve(_source, { id }) {
+        return [getUser(id)];
+      },
+    },
+    node: {
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),
+        },
+      },
+      type: GraphQLNodeInterface,
+      resolve(_source, { id }) {
+        return getUser(id);
+      },
+    },
+  },
+});
+
+const viewerRootQuery = new GraphQLObjectType({
   name: "RootQueryType",
   fields: {
     viewer: {
@@ -364,12 +401,12 @@ let viewerRootQuery = new GraphQLObjectType({
 });
 
 describe("query with args", () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
   test("simple. no nulls", async () => {
-    let cfg: queryRootConfig = {
+    const cfg: queryRootConfig = {
       schema: schema,
       args: {
         id: "1",
@@ -386,7 +423,7 @@ describe("query with args", () => {
   });
 
   test("with nullable root paths", async () => {
-    let cfg: queryRootConfig = {
+    const cfg: queryRootConfig = {
       schema: schema,
       args: {
         id: "1",
@@ -399,7 +436,7 @@ describe("query with args", () => {
   });
 
   test("with nullable sub-parts", async () => {
-    let cfg: queryRootConfig = {
+    const cfg: queryRootConfig = {
       schema: schema,
       args: {
         id: "2",
@@ -421,7 +458,7 @@ describe("query with args", () => {
   });
 
   test("with object passed", async () => {
-    let cfg: queryRootConfig = {
+    const cfg: queryRootConfig = {
       schema: schema,
       args: {
         id: "2",
@@ -449,7 +486,7 @@ describe("query with args", () => {
 });
 
 test("mutation with args", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
     mutation: new GraphQLObjectType({
       name: "RootMutationType",
@@ -475,7 +512,7 @@ test("mutation with args", async () => {
     }),
   });
 
-  let cfg: mutationRootConfig = {
+  const cfg: mutationRootConfig = {
     schema: schema,
     args: {
       id: "1",
@@ -496,11 +533,11 @@ test("mutation with args", async () => {
 });
 
 test("with async callback", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {
       id: "1",
@@ -524,11 +561,11 @@ test("with async callback", async () => {
 });
 
 test("query with nested args", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {
       id: "10",
@@ -551,11 +588,11 @@ test("query with nested args", async () => {
 });
 
 test("query with args. extra variables", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {
       id: "10",
@@ -581,11 +618,11 @@ test("query with args. extra variables", async () => {
 });
 
 test("query with object values", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {
       id: "10",
@@ -649,12 +686,133 @@ test("query with object values", async () => {
   );
 });
 
+// top level returns list version of ^
+test('list type returned with nested objects', async()=>{
+  const schema = new GraphQLSchema({
+    query: rootQueryReturnList,
+  });
+
+  const cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "10",
+    },
+    root: "user",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["[0].id", "10"],
+    ["[0].firstName", "Jon"],
+    ["[0].lastName", "Snow"],
+    [
+      // this is better because we don't have to write complex things many times
+      "[0].contacts(first: 5)",
+      [
+        {
+          firstName: "Robb",
+          lastName: "Stark",
+          emailAddress: "Robb@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Sansa",
+          lastName: "Stark",
+          emailAddress: "Sansa@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Arya",
+          lastName: "Stark",
+          emailAddress: "Arya@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Bran",
+          lastName: "Stark",
+          emailAddress: "Bran@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Rickon",
+          lastName: "Stark",
+          emailAddress: "Rickon@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+      ],
+    ],
+    [
+      "[0].address",
+      {
+        id: "23",
+        street: "1 main street",
+        state: "CA",
+        zipCode: "94102",
+        apartment: null,
+      },
+    ],
+    ["[0].nicknames", null],
+    ["[0].daysOff", weekendsGQL],
+  );
+})
+
+test('mutation with nested objects', async()=>{
+  const schema = new GraphQLSchema({
+    query: rootQuery,
+    mutation: new GraphQLObjectType({
+      name: "RootMutationType",
+      fields: {
+        userEdit: {
+          args: {
+            id: {
+              type: new GraphQLNonNull(GraphQLID),
+            },
+            firstName: {
+              type: GraphQLString,
+            },
+            lastName: {
+              type: GraphQLString,
+            },
+          },
+          type: new GraphQLNonNull(userPayloadType),
+          resolve(_source, { id, ...args }) {
+            return {
+              user: editUser(id, args)
+            }
+          },
+        },
+      },
+    }),
+  });
+
+  const cfg: mutationRootConfig = {
+    schema: schema,
+    args: {
+      id: "1",
+      firstName: "Aegon",
+      lastName: "Targaryen",
+    },
+    mutation: "userEdit",
+    disableInputWrapping: true,
+  };
+
+    // mutation query
+  await expectMutation(
+    cfg,
+    ["user.id", "1"],
+    ["user.firstName", "Aegon"],
+    ["user.lastName", "Targaryen"],
+    ["user.daysOff", weekendsGQL],
+  );
+
+});
+
 test("query scalar list", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {
       id: "1001",
@@ -672,11 +830,11 @@ test("query scalar list", async () => {
 });
 
 test("query enum list", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {
       id: "1001",
@@ -694,11 +852,11 @@ test("query enum list", async () => {
 });
 
 test("nested query with object values", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: viewerRootQuery,
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {},
     root: "viewer",
@@ -757,7 +915,7 @@ test("nested query with object values", async () => {
 });
 
 test("nullQueryPaths with nullable list contents", async () => {
-  let rootQuery = new GraphQLObjectType({
+  const rootQuery = new GraphQLObjectType({
     name: "RootQueryType",
     fields: {
       users: {
@@ -784,7 +942,7 @@ test("nullQueryPaths with nullable list contents", async () => {
       },
     },
   });
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
@@ -830,11 +988,11 @@ test("nullQueryPaths with nullable list contents", async () => {
 });
 
 test("nullQueryPaths with nullable list", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {
       id: "1",
@@ -855,11 +1013,11 @@ test("nullQueryPaths with nullable list", async () => {
 });
 
 test("undefinedQueryPaths", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {
       id: "10",
@@ -878,7 +1036,7 @@ test("undefinedQueryPaths", async () => {
 });
 
 describe("inline fragments", () => {
-  let rootQuery = new GraphQLObjectType({
+  const rootQuery = new GraphQLObjectType({
     name: "RootQueryType",
     fields: {
       node: {
@@ -895,12 +1053,12 @@ describe("inline fragments", () => {
     },
   });
 
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
     types: [userType, contactType, addressType],
   });
 
-  let cfg: queryRootConfig = {
+  const cfg: queryRootConfig = {
     schema: schema,
     args: {
       id: "10",
@@ -938,7 +1096,7 @@ describe("inline fragments", () => {
   });
 
   test("enum list", async () => {
-    let cfg2 = {
+    const cfg2 = {
       ...cfg,
       args: {
         id: "1001",
@@ -956,7 +1114,7 @@ describe("inline fragments", () => {
   });
 
   test("inline fragment root", async () => {
-    let cfg: queryRootConfig = {
+    const cfg: queryRootConfig = {
       schema: schema,
       args: {
         id: "10",
@@ -974,7 +1132,7 @@ describe("inline fragments", () => {
   });
 
   test("inline fragment root with list", async () => {
-    let cfg: queryRootConfig = {
+    const cfg: queryRootConfig = {
       schema: schema,
       args: {
         id: "1001",
@@ -992,8 +1150,8 @@ describe("inline fragments", () => {
     );
   });
 
-  test("inline fragment root with enum list", async () => {
-    let cfg: queryRootConfig = {
+  test("inline fragment root with enum list", async () =>{
+    const cfg: queryRootConfig = {
       schema: schema,
       args: {
         id: "1001",
@@ -1014,7 +1172,7 @@ describe("inline fragments", () => {
 
 describe("file upload", () => {
   async function readStream(file): Promise<string> {
-    return await new Promise((resolve) => {
+    return new Promise((resolve) => {
       const stream = file.createReadStream();
       let data: string[] = [];
       stream.on("data", function (chunk) {
@@ -1190,7 +1348,7 @@ describe("file upload", () => {
 });
 
 test("false boolean", async () => {
-  let schema = new GraphQLSchema({
+  const schema = new GraphQLSchema({
     query: rootQuery,
     mutation: new GraphQLObjectType({
       name: "RootMutationType",
@@ -1219,7 +1377,7 @@ test("false boolean", async () => {
     }),
   });
 
-  let cfg: mutationRootConfig = {
+  const cfg: mutationRootConfig = {
     schema: schema,
     args: {
       id: "1",
@@ -1303,3 +1461,4 @@ test("custom server", async () => {
     ),
   ).rejects.toThrow('"Content-Type" matching /json/');
 });
+

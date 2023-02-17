@@ -25,6 +25,7 @@ export interface HolidayCreateInput {
   dayOfWeekAlt?: DayOfWeekAlt | null;
   label: string;
   date?: Date;
+  log?: any;
 }
 
 export type CreateHolidayActionTriggers = (
