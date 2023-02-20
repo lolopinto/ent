@@ -448,6 +448,8 @@ export interface FieldOptions {
   fieldEdge?: FieldEdge;
   primaryKey?: boolean; // can only have one in a schema. Node provides id as default primary key in a schema
 
+  immutable?: boolean;
+
   // indicates that this can't be edited by the user
   // must have a defaultValueOnCreate() field if set
   disableUserEditable?: boolean;

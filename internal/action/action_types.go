@@ -7,6 +7,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
 )
 
@@ -26,6 +27,7 @@ type concreteNodeActionType interface {
 	getDefaultGraphQLName(cfg codegenapi.Config, nodeName string) string
 	getDefaultActionInputName(cfg codegenapi.Config, nodeName string) string
 	getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string) string
+	getEditableFieldContext() field.EditableContext
 	supportsFieldsFromEnt() bool
 }
 
@@ -87,6 +89,10 @@ func (action *createActionType) getOperation() ent.ActionOperation {
 	return ent.CreateAction
 }
 
+func (action *createActionType) getEditableFieldContext() field.EditableContext {
+	return field.CreateEditableContext
+}
+
 var _ concreteNodeActionType = &createActionType{}
 
 type editActionType struct {
@@ -131,6 +137,10 @@ func (action *editActionType) getOperation() ent.ActionOperation {
 	return ent.EditAction
 }
 
+func (action *editActionType) getEditableFieldContext() field.EditableContext {
+	return field.EditEditableContext
+}
+
 var _ concreteNodeActionType = &editActionType{}
 
 type deleteActionType struct {
@@ -170,6 +180,10 @@ func (action *deleteActionType) getActionVerb() string {
 
 func (action *deleteActionType) getOperation() ent.ActionOperation {
 	return ent.DeleteAction
+}
+
+func (action *deleteActionType) getEditableFieldContext() field.EditableContext {
+	return field.DeleteEditableContext
 }
 
 var _ concreteNodeActionType = &deleteActionType{}

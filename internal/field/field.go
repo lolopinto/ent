@@ -68,6 +68,8 @@ type Field struct {
 	fetchOnDemand              bool
 	dbOnly                     bool
 
+	immutable bool
+
 	forceRequiredInAction bool
 	forceOptionalInAction bool
 
@@ -110,6 +112,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		hasFieldPrivacy:            f.HasFieldPrivacy,
 		fetchOnDemand:              f.FetchOnDemand,
 		dbOnly:                     f.DBOnly,
+		immutable:                  f.Immutable,
 		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
 		patternName:                f.PatternName,
 		userConvert:                f.UserConvert,
@@ -207,6 +210,10 @@ func (f *Field) GetDbColName() string {
 
 func (f *Field) GetQuotedDBColName() string {
 	return strconv.Quote(f.dbName)
+}
+
+func (f *Field) GetImmutableOverrideFieldNameInBuilder() string {
+	return fmt.Sprintf("override%s", strcase.ToCamel(f.TsBuilderFieldName()))
 }
 
 // We're going from field -> edge to be consistent and
@@ -342,8 +349,24 @@ func (f *Field) SingleFieldPrimaryKey() bool {
 	return f.singleFieldPrimaryKey
 }
 
-func (f *Field) EditableField() bool {
-	return !f.disableUserEditable
+type EditableContext string
+
+const CreateEditableContext = "create"
+const EditEditableContext = "edit"
+const DeleteEditableContext = "delete"
+const BuilderEditableContext = "builder"
+
+// create, delete, edit, builder
+// TODO change everything to use this..
+func (f *Field) EditableField(ctx EditableContext) bool {
+	if f.disableUserEditable {
+		return false
+	}
+	// immutable fields are only editable in create contexts
+	if f.immutable {
+		return ctx == CreateEditableContext || ctx == BuilderEditableContext
+	}
+	return true
 }
 
 func (f *Field) EditableGraphQLField() bool {
@@ -772,17 +795,11 @@ func (f *Field) GetTSMutationGraphQLTypeForFieldImports(forceOptional, input boo
 	return tsGQLType.GetTSGraphQLImports(input)
 }
 
-// note that this is different from PrimaryKeyIDField
-// which indicates id field
-func (f *Field) IsEditableIDField() bool {
-	if !f.EditableField() {
+func (f *Field) IsEditableIDField(ctx EditableContext) bool {
+	if !f.EditableField(ctx) {
 		return false
 	}
 	return enttype.IsIDType(f.fieldType)
-}
-
-func (f *Field) PrimaryKeyIDField() bool {
-	return f.IsEditableIDField() && f.singleFieldPrimaryKey
 }
 
 func (f *Field) EmbeddableInParentAction() bool {
@@ -901,6 +918,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		hasFieldPrivacy:            f.hasFieldPrivacy,
 		fetchOnDemand:              f.fetchOnDemand,
 		dbOnly:                     f.dbOnly,
+		immutable:                  f.immutable,
 		forceRequiredInAction:      f.forceRequiredInAction,
 		forceOptionalInAction:      f.forceOptionalInAction,
 		derivedWhenEmbedded:        f.derivedWhenEmbedded,

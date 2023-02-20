@@ -208,6 +208,8 @@ type Field struct {
 	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
 	DBOnly              bool                `json:"dbOnly,omitempty"`
 
+	Immutable bool `json:"immutable,omitempty"`
+
 	// set when parsed via tsent generate schema
 	Import enttype.Import `json:"-"`
 

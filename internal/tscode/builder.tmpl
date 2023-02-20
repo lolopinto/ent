@@ -60,7 +60,7 @@
 {{$input := printf "%sInput" .Node}}
 
 export interface {{$input}} {
-  {{range $field := .FieldInfo.GetEditableFields -}}
+  {{range $field := .FieldInfo.GetEditableFieldsInBuilder -}}
     {{$type := $field.TsBuilderType $cfg -}}
       {{range $field.TsBuilderImports $cfg -}}
         {{ reserveImportPath . true -}}
@@ -159,7 +159,14 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     return this.input;
   }
 
-  updateInput(input: {{$input}}) {
+  {{ $immutableFields := .FieldInfo.GetImmutableFields -}}
+  {{$updateInputType := $input }}
+  {{ if $immutableFields }}
+    {{/* TODO this really doesn't quite matter since input allows any key because of action only fields */}}
+    {{$updateInputType = excludedFieldsType $input $immutableFields }}
+  {{ end }}
+
+  updateInput(input: {{$updateInputType}}) {
     {{range $field := .FieldInfo.NotEditableInverseEdgeFieldsWithDefaults -}}
       {{$tsFieldName := $field.TsBuilderFieldName -}}
       {{ $inverseEdge := $field.GetInverseEdge -}}
@@ -172,6 +179,16 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
       ...input,
     };
   }
+
+  {{ if $immutableFields}} 
+    {{ range $f := $immutableFields }}
+      // override immutable field `{{$f.TsBuilderFieldName}}`
+      {{$f.GetImmutableOverrideFieldNameInBuilder}}(val: {{$f.TsBuilderType $cfg}}) {
+      this.input.{{$f.TsBuilderFieldName}} = val;
+      }
+    {{end }}
+  {{ end }} 
+
 
   deleteInputKey(key: keyof {{.Node}}Input) {
     delete this.input[key];
@@ -255,7 +272,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
         result.set(key, value);
       }
     };
-    {{range $field := .FieldInfo.GetEditableFields -}}
+    {{range $field := .FieldInfo.GetEditableFieldsInBuilder -}}
       {{$tsFieldName := $field.TsBuilderFieldName -}}
       addField("{{$field.FieldName}}", input.{{$tsFieldName}});
       {{ $inverseEdge := $field.GetInverseEdge -}}
@@ -270,7 +287,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     return (node as Builder<T, any>).placeholderID !== undefined;
   }
 
-  {{range $field := .FieldInfo.GetEditableFields}}
+  {{range $field := .FieldInfo.GetEditableFieldsInBuilder}}
     {{$tsFieldName := $field.TsBuilderFieldName -}}
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
     {{ if $field.Private $cfg -}}

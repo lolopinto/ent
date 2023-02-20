@@ -228,7 +228,7 @@ func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.
 	// no override of fields so we should get default fields
 	if len(fieldNames) == 0 {
 		for _, f := range fieldInfo.EntFields() {
-			if f.ExposeToActionsByDefault() && f.EditableField() && !excludedFields[f.FieldName] {
+			if f.ExposeToActionsByDefault() && f.EditableField(typ.getEditableFieldContext()) && !excludedFields[f.FieldName] {
 				f2, err := getField(f, f.FieldName)
 				if err != nil {
 					return nil, err
@@ -243,7 +243,7 @@ func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.
 			if err != nil {
 				return nil, err
 			}
-			if !f.EditableField() {
+			if !f.EditableField(typ.getEditableFieldContext()) {
 				return nil, fmt.Errorf("field %s is not editable and cannot be added to action", fieldName)
 			}
 			fields = append(fields, f)

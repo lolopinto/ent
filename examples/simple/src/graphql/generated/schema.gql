@@ -877,6 +877,20 @@ type CommentCreatePayload {
   comment: Comment!
 }
 
+input CommentEditInput {
+  """id of Comment"""
+  id: ID!
+  body: String
+  articleID: ID
+  articleType: String
+  stickerID: ID
+  stickerType: String
+}
+
+type CommentEditPayload {
+  comment: Comment!
+}
+
 input ConfirmEditEmailAddressInput {
   """id of User"""
   id: ID!
@@ -1296,6 +1310,7 @@ type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   bulkUploadContact(userID: ID!, file: Upload!): User!
   commentCreate(input: CommentCreateInput!): CommentCreatePayload!
+  commentEdit(input: CommentEditInput!): CommentEditPayload!
   confirmEmailAddressEdit(input: ConfirmEditEmailAddressInput!): ConfirmEditEmailAddressPayload!
   confirmPhoneNumberEdit(input: ConfirmEditPhoneNumberInput!): ConfirmEditPhoneNumberPayload!
   contactCreate(input: ContactCreateInput!): ContactCreatePayload!
