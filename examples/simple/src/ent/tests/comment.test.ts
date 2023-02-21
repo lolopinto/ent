@@ -50,9 +50,29 @@ test("edit", async () => {
 
   const author = await edited.loadAuthorX();
   expect(author.id).toBe(user2.id);
+});
 
-  action.builder.updateInput({
-    body: "ss",
-    authorID: "hello",
-  });
+test("edit authorID incorrectly", async () => {
+  const comment = await create();
+  const user2 = await createUser();
+
+  const user1 = await comment.loadAuthorX();
+  const userAction = EditUserAction.create(user1.viewer, user1, {});
+  // privacy
+  userAction.builder.addFriend(user2);
+  await userAction.saveX();
+
+  const action = EditCommentAction.create(comment.viewer, comment, {});
+
+  try {
+    action.builder.updateInput({
+      body: "ss",
+      authorID: "hello",
+    });
+    throw new Error(`should have thrown`);
+  } catch (err) {
+    expect((err as Error).message).toBe(
+      "authorID cannot be passed to updateInput. use overrideAuthorID instead",
+    );
+  }
 });

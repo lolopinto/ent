@@ -167,6 +167,11 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
   {{ end }}
 
   updateInput(input: {{$updateInputType}}) {
+    {{ range $f := $immutableFields }}
+      if (input.{{$f.TsBuilderFieldName}} !==undefined) {
+        throw new Error(`{{$f.TsBuilderFieldName}} cannot be passed to updateInput. use {{$f.GetImmutableOverrideFieldNameInBuilder}} instead`);
+      }
+    {{ end }}
     {{range $field := .FieldInfo.NotEditableInverseEdgeFieldsWithDefaults -}}
       {{$tsFieldName := $field.TsBuilderFieldName -}}
       {{ $inverseEdge := $field.GetInverseEdge -}}

@@ -90,6 +90,12 @@ export class CommentBuilder<
   }
 
   updateInput(input: Omit<CommentInput, "authorID">) {
+    if (input.authorID !== undefined) {
+      throw new Error(
+        `authorID cannot be passed to updateInput. use overrideAuthorID instead`,
+      );
+    }
+
     // override input
     this.input = {
       ...this.input,
