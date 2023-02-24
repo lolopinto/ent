@@ -15,10 +15,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import {
-  mustDecodeIDFromGQLID,
-  mustDecodeNullableIDFromGQLID,
-} from "@snowtop/ent/graphql";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { ContactPhoneNumber } from "../../../../ent";
 import EditContactPhoneNumberAction, {
   ContactPhoneNumberEditInput,
@@ -33,7 +30,6 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 interface customContactPhoneNumberEditInput
   extends ContactPhoneNumberEditInput {
   id: string;
-  contactID?: string;
 }
 
 interface ContactPhoneNumberEditPayload {
@@ -55,9 +51,6 @@ export const ContactPhoneNumberEditInputType = new GraphQLInputObjectType({
     },
     label: {
       type: ContactPhoneNumberLabelType,
-    },
-    contactID: {
-      type: GraphQLID,
     },
   }),
 });
@@ -99,7 +92,6 @@ export const ContactPhoneNumberEditType: GraphQLFieldConfig<
         extra: input.extra,
         phoneNumber: input.phoneNumber,
         label: input.label,
-        contactID: mustDecodeNullableIDFromGQLID(input.contactID),
       },
     );
     return { contactPhoneNumber: contactPhoneNumber };

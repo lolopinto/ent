@@ -15,10 +15,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import {
-  mustDecodeIDFromGQLID,
-  mustDecodeNullableIDFromGQLID,
-} from "@snowtop/ent/graphql";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { ContactEmail } from "../../../../ent";
 import EditContactEmailAction, {
   ContactEmailEditInput,
@@ -29,7 +26,6 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactEmailEditInput extends ContactEmailEditInput {
   id: string;
-  contactID?: string;
 }
 
 interface ContactEmailEditPayload {
@@ -51,9 +47,6 @@ export const ContactEmailEditInputType = new GraphQLInputObjectType({
     },
     label: {
       type: ContactEmailLabelType,
-    },
-    contactID: {
-      type: GraphQLID,
     },
   }),
 });
@@ -95,7 +88,6 @@ export const ContactEmailEditType: GraphQLFieldConfig<
         extra: input.extra,
         emailAddress: input.emailAddress,
         label: input.label,
-        contactID: mustDecodeNullableIDFromGQLID(input.contactID),
       },
     );
     return { contactEmail: contactEmail };

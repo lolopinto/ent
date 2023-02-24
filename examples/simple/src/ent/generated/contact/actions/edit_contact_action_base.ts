@@ -10,14 +10,13 @@ import {
 } from "@snowtop/ent";
 import {
   Action,
-  Builder,
   Changeset,
   Observer,
   Trigger,
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Contact, User } from "../../..";
+import { Contact } from "../../..";
 import { ContactBuilder } from "./contact_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -26,7 +25,6 @@ export interface ContactEditInput {
   phoneNumberIds?: ID[];
   firstName?: string;
   lastName?: string;
-  userID?: ID | Builder<User, ExampleViewerAlias>;
 }
 
 export type EditContactActionTriggers = (

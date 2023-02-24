@@ -105,12 +105,23 @@ export class ContactBuilder<
     return this.input;
   }
 
-  updateInput(input: ContactInput) {
+  updateInput(input: Omit<ContactInput, "userID">) {
+    if (input.userID !== undefined) {
+      throw new Error(
+        `userID cannot be passed to updateInput. use overrideUserID instead`,
+      );
+    }
+
     // override input
     this.input = {
       ...this.input,
       ...input,
     };
+  }
+
+  // override immutable field `userID`
+  overrideUserID(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.input.userID = val;
   }
 
   deleteInputKey(key: keyof ContactInput) {

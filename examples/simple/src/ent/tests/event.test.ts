@@ -96,13 +96,13 @@ test("change creator for some reason", async () => {
   expect(createdEventsEdges.length).toBe(1);
 
   let newCreator = await createUser();
-  let editedEvent = await EditEventAction.create(
+  let action = EditEventAction.create(
     new ExampleViewer(event.creatorID),
     event,
-    {
-      creatorID: newCreator.id,
-    },
-  ).saveX();
+    {},
+  );
+  action.builder.overrideCreatorID(newCreator.id);
+  const editedEvent = await action.saveX();
   expect(editedEvent.creatorID).toBe(newCreator.id);
 
   const oldCreator = creator;

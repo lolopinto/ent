@@ -89,12 +89,23 @@ export class EventBuilder<
     return this.input;
   }
 
-  updateInput(input: EventInput) {
+  updateInput(input: Omit<EventInput, "creatorID">) {
+    if (input.creatorID !== undefined) {
+      throw new Error(
+        `creatorID cannot be passed to updateInput. use overrideCreatorID instead`,
+      );
+    }
+
     // override input
     this.input = {
       ...this.input,
       ...input,
     };
+  }
+
+  // override immutable field `creatorID`
+  overrideCreatorID(val: ID) {
+    this.input.creatorID = val;
   }
 
   deleteInputKey(key: keyof EventInput) {

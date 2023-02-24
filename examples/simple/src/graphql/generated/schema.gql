@@ -941,7 +941,6 @@ input ContactEditInput {
   phoneNumberIds: [ID!]
   firstName: String
   lastName: String
-  userID: ID
 }
 
 type ContactEditPayload {
@@ -974,7 +973,6 @@ input ContactEmailEditInput {
   extra: ContactInfoInput
   emailAddress: String
   label: ContactEmailLabel
-  contactID: ID
 }
 
 type ContactEmailEditPayload {
@@ -1012,7 +1010,6 @@ input ContactPhoneNumberEditInput {
   extra: ContactInfoInput
   phoneNumber: String
   label: ContactPhoneNumberLabel
-  contactID: ID
 }
 
 type ContactPhoneNumberEditPayload {
@@ -1099,7 +1096,6 @@ input EventEditInput {
   """id of Event"""
   id: ID!
   name: String
-  creatorID: ID
   startTime: Time
   endTime: Time
   eventLocation: String

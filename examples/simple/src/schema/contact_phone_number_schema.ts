@@ -17,6 +17,7 @@ const ContactPhoneNumberSchema = new EntSchema({
       values: ["work", "home", "default", "unknown"],
     }),
     contactID: UUIDType({
+      immutable: true,
       fieldEdge: {
         schema: "Contact",
         enforceSchema: true,

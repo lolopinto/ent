@@ -17,6 +17,7 @@ const ContactEmailSchema = new EntSchema({
       values: ["work", "home", "default", "unknown", "self"],
     }),
     contactID: UUIDType({
+      immutable: true,
       fieldEdge: {
         schema: "Contact",
         enforceSchema: true,
