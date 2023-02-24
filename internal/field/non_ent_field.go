@@ -127,7 +127,7 @@ func (f *NonEntField) HasDefaultValueOnCreate() bool {
 	return false
 }
 
-func (f *NonEntField) IsEditableIDField() bool {
+func (f *NonEntField) IsEditableIDField(ctx EditableContext) bool {
 	return enttype.IsIDType(f.fieldType)
 }
 

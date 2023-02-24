@@ -2145,7 +2145,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		// these conditions duplicated in hasCustomInput
 		processField := func(f action.ActionField) {
 			fieldName := f.TSPublicAPIName()
-			if f.IsEditableIDField() {
+			if f.IsEditableIDField(a.GetEditableFieldContext()) {
 				// should probably also do this for id lists but not pressing
 				// ID[] -> string[]
 				intType.Fields = append(intType.Fields, &interfaceField{
@@ -2297,7 +2297,7 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 		// these conditions duplicated in hasInput in buildActionInputNode
 		// editable id field. needs custom input because we don't want to type as ID or Builder when we call base64encodeIDs
 		// mustDecodeIDFromGQLID
-		if f.IsEditableIDField() && processor.Config.Base64EncodeIDs() {
+		if f.IsEditableIDField(a.GetEditableFieldContext()) && processor.Config.Base64EncodeIDs() {
 			return true
 		}
 		// if graphql name is not equal to typescript name, we need to add the new field here

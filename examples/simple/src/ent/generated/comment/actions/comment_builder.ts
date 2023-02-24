@@ -89,12 +89,23 @@ export class CommentBuilder<
     return this.input;
   }
 
-  updateInput(input: CommentInput) {
+  updateInput(input: Omit<CommentInput, "authorID">) {
+    if (input.authorID !== undefined) {
+      throw new Error(
+        `authorID cannot be passed to updateInput. use overrideAuthorID instead`,
+      );
+    }
+
     // override input
     this.input = {
       ...this.input,
       ...input,
     };
+  }
+
+  // override immutable field `authorID`
+  overrideAuthorID(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.input.authorID = val;
   }
 
   deleteInputKey(key: keyof CommentInput) {

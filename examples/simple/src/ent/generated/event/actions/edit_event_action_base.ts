@@ -23,7 +23,6 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface EventEditInput {
   name?: string;
-  creatorID?: ID;
   startTime?: Date;
   endTime?: Date | null;
   location?: string;

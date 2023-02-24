@@ -61,6 +61,7 @@ func fieldEqual(existingField, field *Field) bool {
 		existingField.ServerDefault == field.ServerDefault &&
 
 		existingField.DisableUserEditable == field.DisableUserEditable &&
+		existingField.DisableUserGraphQLEditable == field.DisableUserGraphQLEditable &&
 		existingField.HasDefaultValueOnCreate == field.HasDefaultValueOnCreate &&
 		existingField.HasDefaultValueOnEdit == field.HasDefaultValueOnEdit &&
 		existingField.HasFieldPrivacy == field.HasFieldPrivacy &&
@@ -68,9 +69,12 @@ func fieldEqual(existingField, field *Field) bool {
 		PolymorphicOptionsEqual(existingField.Polymorphic, field.Polymorphic) &&
 		existingField.DerivedWhenEmbedded == field.DerivedWhenEmbedded &&
 		fieldsEqual(existingField.DerivedFields, field.DerivedFields) &&
-		existingField.PatternName == field.PatternName &&
+
 		UserConvertTypeEqual(existingField.UserConvert, field.UserConvert) &&
-		existingField.FetchOnDemand == field.FetchOnDemand
+		existingField.FetchOnDemand == field.FetchOnDemand &&
+		existingField.DBOnly == field.DBOnly &&
+		existingField.Immutable == field.Immutable &&
+		existingField.PatternName == field.PatternName
 }
 
 func UserConvertTypeEqual(existing, convert *UserConvertType) bool {

@@ -23,7 +23,10 @@ const ContactSchema = new EntSchema({
     }),
     firstName: StringType(),
     lastName: StringType(),
-    userID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
+    userID: UUIDType({
+      immutable: true,
+      foreignKey: { schema: "User", column: "ID" },
+    }),
   },
 
   fieldOverrides: {

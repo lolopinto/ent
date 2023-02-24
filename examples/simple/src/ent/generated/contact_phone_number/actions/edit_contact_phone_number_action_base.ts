@@ -10,14 +10,13 @@ import {
 } from "@snowtop/ent";
 import {
   Action,
-  Builder,
   Changeset,
   Observer,
   Trigger,
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Contact, ContactPhoneNumber } from "../../..";
+import { ContactPhoneNumber } from "../../..";
 import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
 import { ContactInfo, ContactPhoneNumberLabel } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
@@ -26,7 +25,6 @@ export interface ContactPhoneNumberEditInput {
   extra?: ContactInfo | null;
   phoneNumber?: string;
   label?: ContactPhoneNumberLabel;
-  contactID?: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
 export type EditContactPhoneNumberActionTriggers = (

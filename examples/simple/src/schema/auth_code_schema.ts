@@ -11,7 +11,10 @@ import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 const AuthCodeSchema = new EntSchema({
   fields: {
     code: StringType(),
-    userID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
+    userID: UUIDType({
+      immutable: true,
+      foreignKey: { schema: "User", column: "ID" },
+    }),
     emailAddress: EmailType({ nullable: true }),
     phoneNumber: PhoneNumberType({ nullable: true }),
   },

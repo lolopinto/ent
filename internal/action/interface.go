@@ -52,6 +52,7 @@ type Action interface {
 	GetCustomInterfaces() []*customtype.CustomInterface
 	GetTSEnums() []*enum.Enum
 	GetGQLEnums() []*enum.GQLEnum
+	GetEditableFieldContext() field.EditableContext
 	getCommonInfo() commonActionInfo
 	TransformsDelete() bool
 }
@@ -69,7 +70,7 @@ type ActionField interface {
 	Nullable() bool
 	HasDefaultValueOnCreate() bool
 	GetTsType() string
-	IsEditableIDField() bool
+	IsEditableIDField(ctx field.EditableContext) bool
 	GetTsTypeImports() []*tsimport.ImportPath
 }
 
@@ -315,6 +316,14 @@ type CreateAction struct {
 	commonActionInfo
 }
 
+func (action *CreateAction) MutatingExistingObject() bool {
+	return false
+}
+
+func (action *CreateAction) GetEditableFieldContext() field.EditableContext {
+	return field.CreateEditableContext
+}
+
 type mutationExistingObjAction struct {
 	commonActionInfo
 }
@@ -323,8 +332,8 @@ func (action *mutationExistingObjAction) MutatingExistingObject() bool {
 	return true
 }
 
-func (action *CreateAction) MutatingExistingObject() bool {
-	return false
+func (action *mutationExistingObjAction) GetEditableFieldContext() field.EditableContext {
+	return field.EditEditableContext
 }
 
 type EditAction struct {
@@ -335,6 +344,10 @@ type EditAction struct {
 type DeleteAction struct {
 	commonActionInfo
 	mutationExistingObjAction
+}
+
+func (action *DeleteAction) GetEditableFieldContext() field.EditableContext {
+	return field.DeleteEditableContext
 }
 
 type AddEdgeAction struct {
