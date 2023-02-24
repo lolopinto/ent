@@ -32,7 +32,10 @@ export class JSONField extends BaseField implements Field {
     }
   }
 
-  format(val: any) {
+  format(val: any, nested?: boolean) {
+    if (nested) {
+      return val;
+    }
     return JSON.stringify(val);
   }
 
