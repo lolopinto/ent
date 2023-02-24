@@ -1,6 +1,6 @@
 import { LoggedOutViewer } from "../core/viewer";
 
-import { Schema } from ".";
+import { IntegerType, Schema, StructType } from ".";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
 import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
@@ -192,5 +192,48 @@ function commonTests() {
     } catch (err) {
       expect(err.message).toMatch(/invalid field col/);
     }
+  });
+
+  test("jsonb nested in struct", async () => {
+    class UserPrefs extends User {}
+    class UserPrefsSchema implements Schema {
+      fields: FieldMap = {
+        struct: StructType({
+          fields: {
+            jsonb: JSONBType(),
+            int: IntegerType(),
+          },
+          tsType: "UserPrefs",
+        }),
+      };
+
+      ent = UserPrefs;
+    }
+
+    const action = getInsertAction(
+      new UserPrefsSchema(),
+      new Map<string, any>([
+        [
+          "struct",
+          {
+            jsonb: {
+              key: "val",
+              type: "2",
+            },
+            int: 2,
+          },
+        ],
+      ]),
+    );
+    await createTables(new UserPrefsSchema());
+
+    const ent = await action.saveX();
+    expect(convertJSON(ent.data.struct)).toStrictEqual({
+      jsonb: {
+        key: "val",
+        type: "2",
+      },
+      int: 2,
+    });
   });
 }
