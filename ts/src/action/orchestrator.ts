@@ -35,6 +35,7 @@ import { log } from "../core/logger";
 import { Trigger } from "./action";
 import memoize from "memoizee";
 import * as clause from "../core/clause";
+import { types } from "util";
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
@@ -468,15 +469,38 @@ export class Orchestrator<
     );
   }
 
-  private getEntForPrivacyPolicyImpl(editedData: Data): TEnt {
+  private async getEntForPrivacyPolicyImpl(
+    schemaFields: Map<string, Field>,
+    editedData: Data,
+  ): Promise<TEnt> {
     if (this.actualOperation !== WriteOperation.Insert) {
       return this.existingEnt!;
     }
+    // need to format fields if possible because ent constructors expect data that's
+    // in the format that's coming from the db
+    // required for object fields...
+
+    const formatted = { ...editedData };
+    for (const [fieldName, field] of schemaFields) {
+      if (!field.format) {
+        continue;
+      }
+
+      let dbKey = this.getStorageKey(fieldName);
+      let val = formatted[dbKey];
+      if (!val) {
+        continue;
+      }
+      // nested so it's not JSON stringified or anything like that
+      val = field.format(formatted[dbKey], true);
+      if (types.isPromise(val)) {
+        val = await val;
+      }
+
+      formatted[dbKey] = val;
+    }
     // we create an unsafe ent to be used for privacy policies
-    return new this.options.builder.ent(
-      this.options.builder.viewer,
-      editedData,
-    );
+    return new this.options.builder.ent(this.options.builder.viewer, formatted);
   }
 
   private getSQLStatementOperation(): SQLStatementOperation {
@@ -509,8 +533,8 @@ export class Orchestrator<
     if (this.actualOperation !== WriteOperation.Insert) {
       return this.existingEnt!;
     }
-    const { editedData } = await this.memoizedGetFields();
-    return this.getEntForPrivacyPolicyImpl(editedData);
+    const { schemaFields, editedData } = await this.memoizedGetFields();
+    return this.getEntForPrivacyPolicyImpl(schemaFields, editedData);
   }
 
   // this gets the fields that were explicitly set plus any default or transformed values
@@ -583,7 +607,7 @@ export class Orchestrator<
         await applyPrivacyPolicyX(
           this.options.viewer,
           privacyPolicy,
-          this.getEntForPrivacyPolicyImpl(editedData),
+          await this.getEntForPrivacyPolicyImpl(schemaFields, editedData),
           this.throwError.bind(this),
         );
       } catch (err: any) {
@@ -802,6 +826,9 @@ export class Orchestrator<
                 `defaultValueOnCreate() returned undefined for field ${fieldName}`,
               );
             }
+            if (types.isPromise(defaultValue)) {
+              defaultValue = await defaultValue;
+            }
           }
         }
 
@@ -810,6 +837,9 @@ export class Orchestrator<
           this.actualOperation === WriteOperation.Edit
         ) {
           defaultValue = field.defaultValueOnEdit(builder, input);
+          if (types.isPromise(defaultValue)) {
+            defaultValue = await defaultValue;
+          }
         }
       }
 
