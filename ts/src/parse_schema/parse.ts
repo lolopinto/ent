@@ -1,4 +1,5 @@
 import { cosmiconfigSync } from "cosmiconfig";
+import { PACKAGE } from "../core/const";
 import {
   Pattern,
   Schema,
@@ -7,7 +8,14 @@ import {
   AssocEdgeGroup,
   Action,
 } from "../schema";
-import { ActionField, Type, FieldMap, GlobalSchema } from "../schema/schema";
+import {
+  ActionField,
+  Type,
+  FieldMap,
+  GlobalSchema,
+  TransformReadBetaResult,
+  DeprecatedImportType,
+} from "../schema/schema";
 
 async function processFields(
   src: FieldMap | Field[],
@@ -192,6 +200,23 @@ async function processPattern(
   // flag transformsSelect
   if (pattern.transformRead) {
     ret.transformsSelect = true;
+
+    if (pattern.transformReadCodegen_BETA) {
+      const r = pattern.transformReadCodegen_BETA();
+      if (typeof r === "string") {
+        ret.transformsLoaderCodegen = {
+          code: r,
+          imports: [
+            {
+              importPath: PACKAGE,
+              import: "query",
+            },
+          ],
+        };
+      } else {
+        ret.transformsLoaderCodegen = r;
+      }
+    }
   }
 
   if (patterns[name] === undefined) {
@@ -239,6 +264,8 @@ interface TransformFlags {
   transformsSelect?: boolean;
   // meaning there needs to be a way to actually delete
   transformsDelete?: boolean;
+
+  transformsLoaderCodegen?: TransformReadBetaResult;
 
   transformsInsert?: boolean;
   transformsUpdate?: boolean;
@@ -417,6 +444,10 @@ export async function parseSchema(
             );
           }
           processedSchema.transformsSelect = true;
+          if (ret.transformsLoaderCodegen) {
+            processedSchema.transformsLoaderCodegen =
+              ret.transformsLoaderCodegen;
+          }
         }
 
         if (ret.transformsDelete) {

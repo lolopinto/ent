@@ -9,8 +9,9 @@ import {
   EdgeUpdateOperation,
   TransformedEdgeUpdateOperation,
   Viewer,
+  query,
+  Clause
 } from "@snowtop/ent";
-import * as clause from "@snowtop/ent/core/clause";
 
 export class DeletedAtPattern implements Pattern {
   name = "deleted_at";
@@ -27,8 +28,12 @@ export class DeletedAtPattern implements Pattern {
     }),
   };
 
-  transformRead(): clause.Clause {
-    return clause.Eq("deleted_at", null);
+  transformRead(): Clause {
+    return query.Eq("deleted_at", null);
+  }
+
+  transformReadCodegen_BETA(): string {
+    return `query.Eq('deleted_at', null)`;
   }
 
   transformWrite<T extends Ent<TViewer>, TViewer extends Viewer>(
@@ -57,8 +62,8 @@ export const GlobalDeletedEdge = {
     }),
   },
 
-  transformEdgeRead(): clause.Clause {
-    return clause.Eq("deleted_at", null);
+  transformEdgeRead(): Clause {
+    return query.Eq("deleted_at", null);
   },
 
   transformEdgeWrite(

@@ -72,8 +72,9 @@ type NodeData struct {
 
 	schemaPath string
 
-	TransformsSelect bool
-	TransformsDelete bool
+	TransformsSelect        bool
+	TransformsDelete        bool
+	TransformsLoaderCodegen *input.TransformsLoaderCodegen
 }
 
 func newNodeData(packageName string) *NodeData {
@@ -437,9 +438,10 @@ func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 }
 
 type loader struct {
-	Name                 string
-	Pkey                 string
-	AddTransformedClause bool
+	Name                    string
+	Pkey                    string
+	AddTransformedClause    bool
+	TransformsLoaderCodegen *input.TransformsLoaderCodegen
 }
 
 func (nodeData *NodeData) GetSchemaPath() string {
@@ -477,8 +479,9 @@ func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
 		{
 			Name: nodeData.GetLoaderName(),
 			// TODO https://github.com/lolopinto/ent/issues/1064 this shouldn't be hardcoded as id...
-			Pkey:                 strconv.Quote("id"),
-			AddTransformedClause: nodeData.TransformsSelect,
+			Pkey:                    strconv.Quote("id"),
+			AddTransformedClause:    nodeData.TransformsSelect,
+			TransformsLoaderCodegen: nodeData.TransformsLoaderCodegen,
 		},
 	}
 	// if transforms select. generate different loader
@@ -496,9 +499,10 @@ func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
 	for _, field := range nodeData.FieldInfo.EntFields() {
 		if field.Unique() {
 			group1 = append(group1, &loader{
-				Name:                 nodeData.GetFieldLoaderName(field),
-				Pkey:                 field.GetQuotedDBColName(),
-				AddTransformedClause: nodeData.TransformsSelect,
+				Name:                    nodeData.GetFieldLoaderName(field),
+				Pkey:                    field.GetQuotedDBColName(),
+				AddTransformedClause:    nodeData.TransformsSelect,
+				TransformsLoaderCodegen: nodeData.TransformsLoaderCodegen,
 			})
 			// if transforms select. generate different loader
 			// that skips it e.g. no deleted_at clause for said loader

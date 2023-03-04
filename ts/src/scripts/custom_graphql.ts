@@ -22,11 +22,12 @@ import { parseCustomImports, file } from "../imports";
 import { exit } from "process";
 import { Data } from "../core/base";
 import { spawn } from "child_process";
+import { GRAPHQL_PATH } from "../core/const";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
 // life is hard
-const MODULE_PATH = "@snowtop/ent/graphql";
+const MODULE_PATH = GRAPHQL_PATH;
 
 async function readInputs(): Promise<{
   nodes: string[];
