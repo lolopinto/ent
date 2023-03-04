@@ -491,6 +491,20 @@ export class Orchestrator<
       if (!val) {
         continue;
       }
+
+      if (field.valid) {
+        let valid = field.valid(val);
+        if (types.isPromise(valid)) {
+          valid = await valid;
+        }
+        // if not valid, don't format and don't pass to ent?
+        // or just early throw here
+        if (!valid) {
+          continue;
+          // throw new Error(`invalid field ${fieldName} with value ${val}`);
+        }
+      }
+
       // nested so it's not JSON stringified or anything like that
       val = field.format(formatted[dbKey], true);
       if (types.isPromise(val)) {
