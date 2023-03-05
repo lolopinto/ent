@@ -22,7 +22,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface HolidayInput {
   dayOfWeek?: DayOfWeek;
-  dayOfWeekAlt?: DayOfWeekAlt | null;
+  dayOfWeekAlt?: DayOfWeekAlt;
   label?: string;
   date?: Date;
   // allow other properties. useful for action-only fields
@@ -188,12 +188,17 @@ export class HolidayBuilder<
   }
 
   // get value of dayOfWeekAlt. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDayOfWeekAltValue(): DayOfWeekAlt | null {
+  getNewDayOfWeekAltValue(): DayOfWeekAlt {
     if (this.input.dayOfWeekAlt !== undefined) {
       return this.input.dayOfWeekAlt;
     }
 
-    return this.existingEnt?.dayOfWeekAlt ?? null;
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `dayOfWeekAlt` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.dayOfWeekAlt;
   }
 
   // get value of label. Retrieves it from the input if specified or takes it from existingEnt

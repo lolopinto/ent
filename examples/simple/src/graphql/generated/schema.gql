@@ -334,7 +334,7 @@ type Event implements Node {
 type Holiday implements Node {
   id: ID!
   dayOfWeek: DayOfWeek!
-  dayOfWeekAlt: DayOfWeekAlt
+  dayOfWeekAlt: DayOfWeekAlt!
   label: String!
   date: Time!
 }
@@ -1136,7 +1136,7 @@ enum EventRsvpStatusInput {
 
 input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
-  dayOfWeekAlt: DayOfWeekAlt
+  dayOfWeekAlt: DayOfWeekAlt!
   label: String!
   date: Time
   log: JSON

@@ -34,7 +34,7 @@ export const HolidayType = new GraphQLObjectType({
       type: new GraphQLNonNull(DayOfWeekType),
     },
     dayOfWeekAlt: {
-      type: DayOfWeekAltType,
+      type: new GraphQLNonNull(DayOfWeekAltType),
     },
     label: {
       type: new GraphQLNonNull(GraphQLString),
