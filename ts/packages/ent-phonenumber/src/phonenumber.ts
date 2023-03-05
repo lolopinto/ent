@@ -88,10 +88,11 @@ export class PhoneNumber extends BaseField implements Field {
     return true;
   }
 
+  // PS: need to call valid() before format()
   format(val: any) {
     const number = this._numbers.get(val);
     if (!number) {
-      throw new Error(`need a valid number to format it`);
+      throw new Error(`${val} does not seem to be a valid phone number so can't format`);
     }
     return number.format(this._format, this._formatOptions);
   }
