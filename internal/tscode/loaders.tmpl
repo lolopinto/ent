@@ -25,7 +25,15 @@
         tableName: {{$table}},
         fields: {{$fields}},
         key: {{.Pkey}},
-        {{ if .AddTransformedClause -}}
+        {{$transformsLoaderCodegen := .TransformsLoaderCodegen -}}
+        {{ if $transformsLoaderCodegen -}}
+          {{ range $transformsLoaderCodegen.Imports -}}
+            {{reserveImportPath . false -}}
+            {{ $ignore := useImport .Import -}}
+          {{ end -}}
+          clause: {{$transformsLoaderCodegen.Code}},
+          instanceKey: '{{printf "%s:transformedReadClause" $nodeData.TableName}}', 
+        {{ else if .AddTransformedClause -}}
           {{ reserveDefaultImport $nodeData.GetSchemaPath $nodeData.GetSchemaConst -}}
           ... {{useImport "getObjectLoaderProperties"}}({{useImport $nodeData.GetSchemaConst}}, {{$table}}),
         {{ end -}}

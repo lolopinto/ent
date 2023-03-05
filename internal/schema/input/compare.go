@@ -5,6 +5,16 @@ import (
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
+func transformsLoaderCodegenEqual(existing, node *TransformsLoaderCodegen) bool {
+	ret := change.CompareNilVals(existing == nil, node == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Code == node.Code &&
+		tsimport.ImportPathsEqual(existing.Imports, node.Imports)
+}
+
 func NodeEqual(existing, node *Node) bool {
 	return existing.TableName == node.TableName &&
 		fieldsEqual(existing.Fields, node.Fields) &&
@@ -19,6 +29,7 @@ func NodeEqual(existing, node *Node) bool {
 		existing.PatternName == node.PatternName &&
 		existing.TransformsSelect == node.TransformsSelect &&
 		existing.TransformsDelete == node.TransformsDelete &&
+		transformsLoaderCodegenEqual(existing.TransformsLoaderCodegen, node.TransformsLoaderCodegen) &&
 		existing.SchemaPath == node.SchemaPath &&
 		change.StringListEqual(existing.Patterns, node.Patterns)
 }

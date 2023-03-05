@@ -1,3 +1,4 @@
+import { PACKAGE } from "../core/const";
 import ts from "typescript";
 import { getClassInfo, getPreText } from "./ast";
 import { TransformFile } from "./transform";
@@ -57,7 +58,7 @@ export class TransformEnt implements TransformFile {
     return {
       rawString: classInfo.wrapClassContents(klassContents),
       traversed,
-      imports: new Map<string, string[]>([["@snowtop/ent", ["PrivacyPolicy"]]]),
+      imports: new Map<string, string[]>([[PACKAGE, ["PrivacyPolicy"]]]),
     };
   }
 

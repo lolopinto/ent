@@ -4,6 +4,7 @@ import * as path from "path";
 import { load } from "js-yaml";
 import { Config } from "../core/config";
 import * as fs from "fs";
+import { PACKAGE } from "../core/const";
 
 export function getPreText(
   fileContents: string,
@@ -341,7 +342,7 @@ export function getCustomInfo(): customInfo {
   } catch (e) {}
   return {
     viewerInfo: {
-      path: "@snowtop/ent",
+      path: PACKAGE,
       name: "Viewer",
     },
     relativeImports,

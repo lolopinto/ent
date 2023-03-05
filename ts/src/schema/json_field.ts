@@ -1,11 +1,17 @@
-import { FieldOptions, Type, Field, DBType, ImportType } from "./schema";
+import {
+  FieldOptions,
+  Type,
+  Field,
+  DBType,
+  DeprecatedImportType,
+} from "./schema";
 import { BaseField, ListField } from "./field";
 
 export interface JSONOptions extends FieldOptions {
   validator?: (val: any) => boolean;
   // instead of using a validator, can use a TypeScript type (preferably an interface)
   // to ensure that the types match
-  importType?: ImportType;
+  importType?: DeprecatedImportType;
 }
 
 interface allJSONOptions extends JSONOptions {

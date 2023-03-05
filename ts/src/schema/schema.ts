@@ -208,6 +208,19 @@ export interface AssocEdgeGroup {
 // TODO clean this up with 1-1, 1-many, many-many etc
 export type Edge = AssocEdge;
 
+// replaces DeprecatedImportType
+interface ImportPath {
+  importPath: string;
+  import: string;
+  defaultImport?: boolean;
+  originalImport?: string;
+}
+
+export interface TransformReadBetaResult {
+  code: string;
+  imports: ImportPath[];
+}
+
 // Pattern is reusable functionality that leads to code sharing
 // The most commonly used pattern in the ent framework is going to be the Node pattern
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
@@ -221,6 +234,12 @@ export interface Pattern {
   // transform to loader instead?
   // we can change generated loader to do this instead of what we're doing here
   transformRead?: () => Clause;
+
+  // to avoid circular dependencies in codegen, instead of generated loader code depending on the
+  // schema, we determine this at codegen time and generate the clause here in the code
+  // API is subject to change...
+  // called only if transformRead exists
+  transformReadCodegen_BETA?: () => string | TransformReadBetaResult;
 
   transformWrite?: <T extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
     stmt: UpdateOperation<T, TViewer>,
@@ -320,7 +339,7 @@ export enum DBType {
   List = "List",
 }
 
-export interface ImportType {
+export interface DeprecatedImportType {
   path: string; // path to import from. either absolute path e.g. from an npm package or relative path starting at root of code e.g. "src/foo/jsonType"
   type: string; // type being imported
   // for importPath, import conversion to go
@@ -360,7 +379,7 @@ export interface Type {
   disableUnknownType?: boolean;
 
   // @deprecated eventually kill this
-  importType?: ImportType;
+  importType?: DeprecatedImportType;
 
   // StructType fields
   subFields?: FieldMap;
