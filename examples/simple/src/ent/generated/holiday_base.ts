@@ -21,7 +21,12 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { holidayLoader, holidayLoaderInfo } from "./loaders";
-import { DayOfWeek, DayOfWeekAlt, NodeType } from "./types";
+import {
+  DayOfWeek,
+  DayOfWeekAlt,
+  NodeType,
+  convertDayOfWeekAlt,
+} from "./types";
 import { DayOfWeekMixin, IDayOfWeek } from "../internal";
 import schema from "../../schema/holiday_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
@@ -31,7 +36,7 @@ interface HolidayData {
   created_at: Date;
   updated_at: Date;
   day_of_week: DayOfWeek;
-  day_of_week_alt: DayOfWeekAlt | null;
+  day_of_week_alt: DayOfWeekAlt;
   label: string;
   date: Date;
 }
@@ -45,6 +50,7 @@ export class HolidayBase
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly dayOfWeekAlt: DayOfWeekAlt;
   readonly label: string;
   readonly date: Date;
 
@@ -54,6 +60,7 @@ export class HolidayBase
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
+    this.dayOfWeekAlt = convertDayOfWeekAlt(data.day_of_week_alt);
     this.label = data.label;
     this.date = data.date;
     // @ts-expect-error

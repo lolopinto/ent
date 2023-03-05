@@ -17,6 +17,12 @@ const HolidaySchema = new EntSchemaWithTZ({
     date: DateType({ serverDefault: new Date(2020, 1, 1) }),
   },
 
+  fieldOverrides: {
+    dayOfWeekAlt: {
+      nullable: false,
+    },
+  },
+
   actions: [
     {
       operation: ActionOperation.Create,

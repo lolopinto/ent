@@ -138,7 +138,7 @@ CREATE TABLE holidays (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL, 
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL, 
     day_of_week TEXT NOT NULL, 
-    day_of_week_alt TEXT, 
+    day_of_week_alt TEXT NOT NULL, 
     label TEXT NOT NULL, 
     date DATE DEFAULT '2020-02-01' NOT NULL, 
     CONSTRAINT holidays_id_pkey PRIMARY KEY (id)
