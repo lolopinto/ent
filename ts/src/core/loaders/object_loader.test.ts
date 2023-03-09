@@ -30,8 +30,13 @@ import { convertDate } from "../convert";
 
 const ml = new MockLogs();
 
+interface LoaderRow {
+  id: ID;
+  first_name: string;
+}
+
 const getNewLoader = (context: boolean | TestContext = true) => {
-  return new ObjectLoaderFactory({
+  return new ObjectLoaderFactory<LoaderRow>({
     tableName: "users",
     fields: ["id", "first_name"],
     key: "id",
@@ -44,10 +49,14 @@ const getNewLoader = (context: boolean | TestContext = true) => {
   );
 };
 
+interface LoaderRowWithCustomClause extends LoaderRow {
+  deleted_at: Date;
+}
+
 const getNewLoaderWithCustomClause = (
   context: boolean | TestContext = true,
 ) => {
-  return new ObjectLoaderFactory({
+  return new ObjectLoaderFactory<LoaderRowWithCustomClause>({
     tableName: "users",
     fields: ["id", "first_name", "deleted_at"],
     key: "id",
@@ -64,7 +73,7 @@ const getNewLoaderWithCustomClause = (
 const getNewLoaderWithCustomClauseFunc = (
   context: boolean | TestContext = true,
 ) => {
-  return new ObjectLoaderFactory({
+  return new ObjectLoaderFactory<LoaderRowWithCustomClause>({
     tableName: "users",
     fields: ["id", "first_name", "deleted_at"],
     key: "id",
@@ -82,7 +91,7 @@ const getNewLoaderWithCustomClauseFunc = (
 // deleted_at field but no custom_clause
 // behavior when we're ignoring deleted_at. exception...
 const getNewLoaderWithDeletedAtField = (context: boolean = true) => {
-  return new ObjectLoader(
+  return new ObjectLoader<LoaderRowWithCustomClause>(
     {
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
@@ -217,7 +226,9 @@ function commonTests() {
     expect(row).toBe(row2);
   });
 
-  async function testWithCustomClause(getLoader: () => ObjectLoader<unknown>) {
+  async function testWithCustomClause(
+    getLoader: () => ObjectLoader<LoaderRowWithCustomClause>,
+  ) {
     await createWithNullDeletedAt();
     const loader = getLoader();
 
@@ -240,7 +251,7 @@ function commonTests() {
   });
 
   async function testWithCustomClauseDeletedAt(
-    getLoader: () => ObjectLoader<unknown>,
+    getLoader: () => ObjectLoader<LoaderRowWithCustomClause>,
   ) {
     await createWithDeletedAt();
     const loader = getLoader();
@@ -302,7 +313,7 @@ function commonTests() {
   });
 
   async function testWithCustomClauseCacheMiss(
-    getLoader: () => ObjectLoader<unknown>,
+    getLoader: () => ObjectLoader<LoaderRowWithCustomClause>,
   ) {
     const loader = getLoader();
 
@@ -375,7 +386,7 @@ function commonTests() {
   });
 
   async function testWithoutContextCustomClauseCacheHit(
-    getLoader: (context?: boolean) => ObjectLoader<unknown>,
+    getLoader: (context?: boolean) => ObjectLoader<LoaderRowWithCustomClause>,
   ) {
     await createWithNullDeletedAt();
 
@@ -424,7 +435,7 @@ function commonTests() {
   });
 
   async function withoutContextDeletedAtCacheHit(
-    getLoader: (context?: boolean) => ObjectLoader<unknown>,
+    getLoader: (context?: boolean) => ObjectLoader<LoaderRowWithCustomClause>,
   ) {
     await createWithDeletedAt();
 
@@ -745,7 +756,7 @@ function commonTests() {
 
       ml.clear();
 
-      await userPhoneNumberLoader.createLoader(ctx).load(user.phoneNumber);
+      await userPhoneNumberLoader.createLoader(ctx).load(user.phoneNumber!);
       expect(ml.logs.length).toBeGreaterThan(1);
 
       const phoneQuery = buildQuery({
@@ -806,7 +817,7 @@ function commonTests() {
       ml.clear();
 
       const ctx = new TestContext();
-      await userPhoneNumberLoader.createLoader(ctx).load(user.phoneNumber);
+      await userPhoneNumberLoader.createLoader(ctx).load(user.phoneNumber!);
       expect(ml.logs.length).toBe(1);
 
       const phoneQuery = buildQuery({
@@ -911,7 +922,7 @@ function commonTests() {
 
     ml.clear();
 
-    await newUserPhoneLoader.createLoader(ctx).load(user.phoneNumber);
+    await newUserPhoneLoader.createLoader(ctx).load(user.phoneNumber!);
     expect(ml.logs.length).toBe(1);
 
     const phoneQuery = buildQuery({
@@ -979,7 +990,7 @@ function commonTests() {
 }
 
 async function verifyMultiIDsDataAvail(
-  loaderFn: () => ObjectLoader<ID>,
+  loaderFn: () => ObjectLoader<LoaderRow>,
   verifyPostFirstQuery: (ids: ID[]) => void,
   verifyPostSecondQuery: (ids: ID[]) => void,
   createFn?: (id?: ID) => Promise<void> | undefined,
@@ -1010,7 +1021,7 @@ async function verifyMultiIDsDataAvail(
 }
 
 async function verifyMultiIDsNoDataAvail(
-  loaderFn: () => ObjectLoader<ID>,
+  loaderFn: () => ObjectLoader<LoaderRow>,
   verifyPostFirstQuery: (ids: ID[]) => void,
   verifyPostSecondQuery: (ids: ID[]) => void,
 ) {

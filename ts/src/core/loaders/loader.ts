@@ -4,11 +4,11 @@ import { log } from "../logger";
 // this is like factory factory FML
 // helper function to handle context vs not
 // and to keep the API clean for clients who shouldn't have to worry about this
-export function getLoader<T, V>(
-  factory: LoaderFactory<T, V>,
-  create: () => Loader<T, V>,
+export function getLoader<K, V>(
+  factory: LoaderFactory<K, V>,
+  create: () => Loader<K, V>,
   context?: Context,
-): Loader<T, V> {
+): Loader<K, V> {
   // just create a new one every time if no context cache
   if (!context?.cache) {
     log("debug", `new loader created for ${factory.name}`);
@@ -19,11 +19,11 @@ export function getLoader<T, V>(
   return context.cache.getLoader(factory.name, create);
 }
 
-export function getCustomLoader<T, V>(
+export function getCustomLoader<K, V>(
   key: string,
-  create: () => Loader<T, V>,
+  create: () => Loader<K, V>,
   context?: Context,
-): Loader<T, V> {
+): Loader<K, V> {
   // just create a new one every time if no context cache
   if (!context?.cache) {
     log("debug", `new loader created for ${key}`);
