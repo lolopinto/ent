@@ -9,6 +9,20 @@
   {{$table := printf "%sTable" .NodeInstance -}}
   {{$fields := printf "%sFields" .NodeInstance -}}
 
+  {{$dataType := .GetRawDBDataName -}}
+  export interface {{$dataType}} {
+    {{range $field := .FieldInfo.EntFields -}}
+      {{ range $field.GetTsTypeImports -}}
+        {{ if ($nodeData.ForeignImport .Import) -}}
+          {{ reserveImportPath . false -}}
+        {{end -}}
+        {{$typ := useImportMaybe .Import -}}
+      {{end -}}
+
+      {{$field.GetDbColName}}: {{$field.TsActualType}};
+    {{ end -}}
+  }
+
   const {{$table}} = '{{.TableName}}';
   const {{$fields}} = [
     {{range $field := .FieldInfo.EntFields -}}
@@ -21,7 +35,7 @@
   {{ $groups := .GetNodeLoaders }}
   {{range $loaders := $groups}}
     {{ range $loaders }}
-      export const {{.Name}} = new {{useImport "ObjectLoaderFactory"}}({
+      export const {{.Name}} = new {{useImport "ObjectLoaderFactory"}}<{{$dataType}}>({
         tableName: {{$table}},
         fields: {{$fields}},
         key: {{.Pkey}},

@@ -22,6 +22,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  TagDBData,
   tagLoader,
   tagLoaderInfo,
   tagNoTransformLoader,
@@ -30,19 +31,8 @@ import { NodeType } from "src/ent/generated/types";
 import { Account, Tag, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag_schema";
 
-interface TagData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
-  display_name: string;
-  canonical_name: string;
-  owner_id: ID;
-  related_tag_ids: ID[] | null;
-}
-
 export class TagBase implements Ent<Viewer> {
-  protected readonly data: TagData;
+  protected readonly data: TagDBData;
   readonly nodeType = NodeType.Tag;
   readonly id: ID;
   readonly createdAt: Date;
@@ -66,10 +56,10 @@ export class TagBase implements Ent<Viewer> {
     this.data = data;
   }
 
-  __setRawDBData<TagData>(data: TagData) {}
+  __setRawDBData<TagDBData>(data: TagDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): TagData {
+  ___getRawDBData(): TagDBData {
     return this.data;
   }
 
@@ -178,7 +168,7 @@ export class TagBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<TagData[]> {
+  ): Promise<TagDBData[]> {
     return (await loadCustomData(
       {
         ...TagBase.loaderOptions.apply(this),
@@ -186,7 +176,7 @@ export class TagBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as TagData[];
+    )) as TagDBData[];
   }
 
   static async loadCustomCount<T extends TagBase>(
@@ -213,12 +203,12 @@ export class TagBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TagData | null> {
+  ): Promise<TagDBData | null> {
     const row = await tagLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as TagData;
+    return row;
   }
 
   static async loadRawDataX<T extends TagBase>(
@@ -228,12 +218,12 @@ export class TagBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TagData> {
+  ): Promise<TagDBData> {
     const row = await tagLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as TagData;
+    return row;
   }
 
   static loaderOptions<T extends TagBase>(

@@ -228,11 +228,11 @@ export interface LoadCustomEntOptions<
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }
 
-export interface LoaderInfo {
+export interface LoaderInfo<T = Data> {
   tableName: string;
   fields: string[];
   nodeType: string;
-  loaderFactory: LoaderFactory<any, Data | null>;
+  loaderFactory: LoaderFactory<ID, T | null>;
 }
 
 // information needed to edit an ent
