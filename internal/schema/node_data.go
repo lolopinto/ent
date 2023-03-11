@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/action"
@@ -533,7 +532,6 @@ type entLoadPrivacyInfo struct {
 }
 
 func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) (*entLoadPrivacyInfo, error) {
-	spew.Dump("hello")
 	if !nodeData.OnEntLoadFieldPrivacy(cfg) {
 		return nil, fmt.Errorf("cannot call GetOnEntLoadPrivacyInfo for node which doesn't use on ent load privacy")
 	}

@@ -21,6 +21,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  EventDBData,
   eventLoader,
   eventLoaderInfo,
   eventSlugLoader,
@@ -35,17 +36,8 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/event_schema";
 
-interface EventData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  name: string;
-  slug: string | null;
-  creator_id: ID;
-}
-
 export class EventBase implements Ent<Viewer> {
-  protected readonly data: EventData;
+  protected readonly data: EventDBData;
   readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;
@@ -65,10 +57,10 @@ export class EventBase implements Ent<Viewer> {
     this.data = data;
   }
 
-  __setRawDBData<EventData>(data: EventData) {}
+  __setRawDBData<EventDBData>(data: EventDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): EventData {
+  ___getRawDBData(): EventDBData {
     return this.data;
   }
 
@@ -146,7 +138,7 @@ export class EventBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<EventData[]> {
+  ): Promise<EventDBData[]> {
     return (await loadCustomData(
       {
         ...EventBase.loaderOptions.apply(this),
@@ -154,7 +146,7 @@ export class EventBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as EventData[];
+    )) as EventDBData[];
   }
 
   static async loadCustomCount<T extends EventBase>(
@@ -181,12 +173,12 @@ export class EventBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventData | null> {
+  ): Promise<EventDBData | null> {
     const row = await eventLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as EventData;
+    return row;
   }
 
   static async loadRawDataX<T extends EventBase>(
@@ -196,12 +188,12 @@ export class EventBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventData> {
+  ): Promise<EventDBData> {
     const row = await eventLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as EventData;
+    return row;
   }
 
   static async loadFromSlug<T extends EventBase>(
@@ -251,12 +243,12 @@ export class EventBase implements Ent<Viewer> {
     ) => T,
     slug: string,
     context?: Context,
-  ): Promise<EventData | null> {
+  ): Promise<EventDBData | null> {
     const row = await eventSlugLoader.createLoader(context).load(slug);
     if (!row) {
       return null;
     }
-    return row as EventData;
+    return row;
   }
 
   static loaderOptions<T extends EventBase>(

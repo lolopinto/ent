@@ -19,6 +19,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  GuestGroupDBData,
   guestGroupLoader,
   guestGroupLoaderInfo,
 } from "src/ent/generated/loaders";
@@ -30,16 +31,8 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/guest_group_schema";
 
-interface GuestGroupData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  invitation_name: string;
-  event_id: ID;
-}
-
 export class GuestGroupBase implements Ent<Viewer> {
-  protected readonly data: GuestGroupData;
+  protected readonly data: GuestGroupDBData;
   readonly nodeType = NodeType.GuestGroup;
   readonly id: ID;
   readonly createdAt: Date;
@@ -57,10 +50,10 @@ export class GuestGroupBase implements Ent<Viewer> {
     this.data = data;
   }
 
-  __setRawDBData<GuestGroupData>(data: GuestGroupData) {}
+  __setRawDBData<GuestGroupDBData>(data: GuestGroupDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): GuestGroupData {
+  ___getRawDBData(): GuestGroupDBData {
     return this.data;
   }
 
@@ -138,7 +131,7 @@ export class GuestGroupBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<GuestGroupData[]> {
+  ): Promise<GuestGroupDBData[]> {
     return (await loadCustomData(
       {
         ...GuestGroupBase.loaderOptions.apply(this),
@@ -146,7 +139,7 @@ export class GuestGroupBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as GuestGroupData[];
+    )) as GuestGroupDBData[];
   }
 
   static async loadCustomCount<T extends GuestGroupBase>(
@@ -173,12 +166,12 @@ export class GuestGroupBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestGroupData | null> {
+  ): Promise<GuestGroupDBData | null> {
     const row = await guestGroupLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as GuestGroupData;
+    return row;
   }
 
   static async loadRawDataX<T extends GuestGroupBase>(
@@ -188,12 +181,12 @@ export class GuestGroupBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestGroupData> {
+  ): Promise<GuestGroupDBData> {
     const row = await guestGroupLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as GuestGroupData;
+    return row;
   }
 
   static loaderOptions<T extends GuestGroupBase>(

@@ -21,11 +21,11 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  ContactPhoneNumberDBData,
   contactPhoneNumberLoader,
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
 import {
-  ContactInfo,
   ContactPhoneNumberLabel,
   NodeType,
   convertContactPhoneNumberLabel,
@@ -34,21 +34,11 @@ import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface ContactPhoneNumberData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  extra: ContactInfo | null;
-  phone_number: string;
-  label: ContactPhoneNumberLabel;
-  contact_id: ID;
-}
-
 export class ContactPhoneNumberBase
   extends ContactInfoMixin(class {})
   implements Ent<ExampleViewerAlias>, IContactInfo
 {
-  protected readonly data: ContactPhoneNumberData;
+  protected readonly data: ContactPhoneNumberDBData;
   readonly nodeType = NodeType.ContactPhoneNumber;
   readonly id: ID;
   readonly createdAt: Date;
@@ -70,10 +60,10 @@ export class ContactPhoneNumberBase
     this.data = data;
   }
 
-  __setRawDBData<ContactPhoneNumberData>(data: ContactPhoneNumberData) {}
+  __setRawDBData<ContactPhoneNumberDBData>(data: ContactPhoneNumberDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): ContactPhoneNumberData {
+  ___getRawDBData(): ContactPhoneNumberDBData {
     return this.data;
   }
 
@@ -151,7 +141,7 @@ export class ContactPhoneNumberBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<ContactPhoneNumberData[]> {
+  ): Promise<ContactPhoneNumberDBData[]> {
     return (await loadCustomData(
       {
         ...ContactPhoneNumberBase.loaderOptions.apply(this),
@@ -159,7 +149,7 @@ export class ContactPhoneNumberBase
       },
       query,
       context,
-    )) as ContactPhoneNumberData[];
+    )) as ContactPhoneNumberDBData[];
   }
 
   static async loadCustomCount<T extends ContactPhoneNumberBase>(
@@ -186,12 +176,12 @@ export class ContactPhoneNumberBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactPhoneNumberData | null> {
+  ): Promise<ContactPhoneNumberDBData | null> {
     const row = await contactPhoneNumberLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as ContactPhoneNumberData;
+    return row;
   }
 
   static async loadRawDataX<T extends ContactPhoneNumberBase>(
@@ -201,12 +191,12 @@ export class ContactPhoneNumberBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactPhoneNumberData> {
+  ): Promise<ContactPhoneNumberDBData> {
     const row = await contactPhoneNumberLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as ContactPhoneNumberData;
+    return row;
   }
 
   static loaderOptions<T extends ContactPhoneNumberBase>(

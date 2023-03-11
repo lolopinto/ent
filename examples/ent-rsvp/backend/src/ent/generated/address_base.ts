@@ -22,6 +22,7 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import { loadEntByType, loadEntXByType } from "src/ent/generated/loadAny";
 import {
+  AddressDBData,
   addressLoader,
   addressLoaderInfo,
   addressOwnerIDLoader,
@@ -30,21 +31,8 @@ import { NodeType } from "src/ent/generated/types";
 import { AddressToLocatedAtQuery } from "src/ent/internal";
 import schema from "src/schema/address_schema";
 
-interface AddressData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  street: string;
-  city: string;
-  state: string;
-  zip_code: string;
-  apartment: string | null;
-  owner_id: ID;
-  owner_type: string;
-}
-
 export class AddressBase implements Ent<Viewer> {
-  protected readonly data: AddressData;
+  protected readonly data: AddressDBData;
   readonly nodeType = NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;
@@ -72,10 +60,10 @@ export class AddressBase implements Ent<Viewer> {
     this.data = data;
   }
 
-  __setRawDBData<AddressData>(data: AddressData) {}
+  __setRawDBData<AddressDBData>(data: AddressDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): AddressData {
+  ___getRawDBData(): AddressDBData {
     return this.data;
   }
 
@@ -153,7 +141,7 @@ export class AddressBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<AddressData[]> {
+  ): Promise<AddressDBData[]> {
     return (await loadCustomData(
       {
         ...AddressBase.loaderOptions.apply(this),
@@ -161,7 +149,7 @@ export class AddressBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as AddressData[];
+    )) as AddressDBData[];
   }
 
   static async loadCustomCount<T extends AddressBase>(
@@ -188,12 +176,12 @@ export class AddressBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<AddressData | null> {
+  ): Promise<AddressDBData | null> {
     const row = await addressLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as AddressData;
+    return row;
   }
 
   static async loadRawDataX<T extends AddressBase>(
@@ -203,12 +191,12 @@ export class AddressBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<AddressData> {
+  ): Promise<AddressDBData> {
     const row = await addressLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as AddressData;
+    return row;
   }
 
   static async loadFromOwnerID<T extends AddressBase>(
@@ -258,12 +246,12 @@ export class AddressBase implements Ent<Viewer> {
     ) => T,
     ownerID: ID,
     context?: Context,
-  ): Promise<AddressData | null> {
+  ): Promise<AddressDBData | null> {
     const row = await addressOwnerIDLoader.createLoader(context).load(ownerID);
     if (!row) {
       return null;
     }
-    return row as AddressData;
+    return row;
   }
 
   static loaderOptions<T extends AddressBase>(
