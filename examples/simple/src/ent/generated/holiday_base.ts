@@ -20,32 +20,17 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { holidayLoader, holidayLoaderInfo } from "./loaders";
-import {
-  DayOfWeek,
-  DayOfWeekAlt,
-  NodeType,
-  convertDayOfWeekAlt,
-} from "./types";
+import { HolidayDBData, holidayLoader, holidayLoaderInfo } from "./loaders";
+import { DayOfWeekAlt, NodeType, convertDayOfWeekAlt } from "./types";
 import { DayOfWeekMixin, IDayOfWeek } from "../internal";
 import schema from "../../schema/holiday_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
-
-interface HolidayData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  day_of_week: DayOfWeek;
-  day_of_week_alt: DayOfWeekAlt;
-  label: string;
-  date: Date;
-}
 
 export class HolidayBase
   extends DayOfWeekMixin(class {})
   implements Ent<ExampleViewerAlias>, IDayOfWeek
 {
-  protected readonly data: HolidayData;
+  protected readonly data: HolidayDBData;
   readonly nodeType = NodeType.Holiday;
   readonly id: ID;
   readonly createdAt: Date;
@@ -67,10 +52,10 @@ export class HolidayBase
     this.data = data;
   }
 
-  __setRawDBData<HolidayData>(data: HolidayData) {}
+  __setRawDBData<HolidayDBData>(data: HolidayDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): HolidayData {
+  ___getRawDBData(): HolidayDBData {
     return this.data;
   }
 
@@ -148,7 +133,7 @@ export class HolidayBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<HolidayData[]> {
+  ): Promise<HolidayDBData[]> {
     return (await loadCustomData(
       {
         ...HolidayBase.loaderOptions.apply(this),
@@ -156,7 +141,7 @@ export class HolidayBase
       },
       query,
       context,
-    )) as HolidayData[];
+    )) as HolidayDBData[];
   }
 
   static async loadCustomCount<T extends HolidayBase>(
@@ -183,12 +168,12 @@ export class HolidayBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HolidayData | null> {
+  ): Promise<HolidayDBData | null> {
     const row = await holidayLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as HolidayData;
+    return row;
   }
 
   static async loadRawDataX<T extends HolidayBase>(
@@ -198,12 +183,12 @@ export class HolidayBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HolidayData> {
+  ): Promise<HolidayDBData> {
     const row = await holidayLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as HolidayData;
+    return row;
   }
 
   static loaderOptions<T extends HolidayBase>(

@@ -39,29 +39,16 @@
 // there's raw db data and there's ent data 
 // they are different if we have on ent load field privacy and an ent with this...
 */}}
-{{$dataType := printf "%sData" .Node -}}
-{{$rawDBDataType := $dataType -}}
-
-interface {{$dataType}} {
-  {{range $field := .FieldInfo.EntFields -}}
-    {{ range $field.GetTsTypeImports -}}
-      {{ if ($nodeData.ForeignImport .Import) -}}
-        {{ reserveImportPath . false -}}
-      {{end -}}
-      {{$typ := useImportMaybe .Import -}}
-    {{end -}}
-
-    {{$field.GetDbColName}}: {{$field.TsType}};
-  {{ end -}}
-}
+{{ reserveImport "src/ent/generated/loaders" .GetRawDBDataName -}}
+{{$rawDBDataType := useImport .GetRawDBDataName -}}
+{{$dataType := $rawDBDataType -}}
 
 {{if .OnEntLoadFieldPrivacy $cfg -}}
-  {{$rawDBDataType = printf "%sDBData" .Node -}}
-  interface {{$rawDBDataType}} extends {{$dataType}} {
-    {{range $field := .FieldInfo.EntFields -}}
-      {{ if ne $field.TsType $field.TsActualType -}}
-        {{$field.GetDbColName}}: {{$field.TsActualType}};
-      {{ end -}}
+  {{$info := .GetOnEntLoadPrivacyInfo $cfg -}}
+  {{$dataType = $info.Interface -}}
+  interface {{$info.Interface}} extends {{$info.Extends}} {
+    {{range $field := $info.Fields -}}
+      {{$field.GetDbColName}}: {{$field.TsType}};
     {{ end -}}
   }
 {{ end -}}
@@ -103,13 +90,13 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{ end -}}
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.EntFields -}}
-    {{ range $field.GetTsTypeImports -}}
-      {{ if ($nodeData.ForeignImport .Import) -}}
-        {{ reserveImportPath . false -}}
-      {{end -}}
-      {{$typ := useImportMaybe .Import -}}
-    {{end -}}
     {{ if not ($schema.PatternFieldWithMixin $field) -}}
+      {{ range $field.GetTsTypeImports -}}
+        {{ if ($nodeData.ForeignImport .Import) -}}
+          {{ reserveImportPath . false -}}
+        {{end -}}
+        {{$typ := useImportMaybe .Import -}}
+      {{end -}}
       {{ if $field.Private $cfg -}}
         {{ if $field.FetchOnDemand -}}
           protected {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
@@ -328,7 +315,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     if (!row) {
       return null;
     }
-    return row as {{$rawDBDataType}};
+    return row;
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
@@ -340,7 +327,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as {{$rawDBDataType}};
+    return row;
   }
 
 
@@ -395,7 +382,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         if (!row) {
           return null;
         }
-        return row as {{$rawDBDataType}};
+        return row;
       }
     {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}

@@ -23,7 +23,7 @@ export class IndexLoaderFactory implements LoaderFactory<ID, Data[]> {
     opts?: {
       extraClause?: clause.Clause;
       sortColumn?: string;
-      toPrime?: ObjectLoaderFactory<ID>[];
+      toPrime?: ObjectLoaderFactory<Data>[];
     },
   ) {
     this.factory = new QueryLoaderFactory({

@@ -20,6 +20,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  EventActivityDBData,
   eventActivityLoader,
   eventActivityLoaderInfo,
 } from "src/ent/generated/loaders";
@@ -40,25 +41,11 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/event_activity_schema";
 
-interface EventActivityData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  address_id: ID | null;
-  name: string;
-  event_id: ID;
-  start_time: Date;
-  end_time: Date | null;
-  location: string;
-  description: string | null;
-  invite_all_guests: boolean;
-}
-
 export class EventActivityBase
   extends WithAddressMixin(class {})
   implements Ent<Viewer>, IWithAddress
 {
-  protected readonly data: EventActivityData;
+  protected readonly data: EventActivityDBData;
   readonly nodeType = NodeType.EventActivity;
   readonly id: ID;
   readonly createdAt: Date;
@@ -88,10 +75,10 @@ export class EventActivityBase
     this.data = data;
   }
 
-  __setRawDBData<EventActivityData>(data: EventActivityData) {}
+  __setRawDBData<EventActivityDBData>(data: EventActivityDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): EventActivityData {
+  ___getRawDBData(): EventActivityDBData {
     return this.data;
   }
 
@@ -169,7 +156,7 @@ export class EventActivityBase
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<EventActivityData[]> {
+  ): Promise<EventActivityDBData[]> {
     return (await loadCustomData(
       {
         ...EventActivityBase.loaderOptions.apply(this),
@@ -177,7 +164,7 @@ export class EventActivityBase
       },
       query,
       context,
-    )) as EventActivityData[];
+    )) as EventActivityDBData[];
   }
 
   static async loadCustomCount<T extends EventActivityBase>(
@@ -204,12 +191,12 @@ export class EventActivityBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventActivityData | null> {
+  ): Promise<EventActivityDBData | null> {
     const row = await eventActivityLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as EventActivityData;
+    return row;
   }
 
   static async loadRawDataX<T extends EventActivityBase>(
@@ -219,12 +206,12 @@ export class EventActivityBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventActivityData> {
+  ): Promise<EventActivityDBData> {
     const row = await eventActivityLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as EventActivityData;
+    return row;
   }
 
   static loaderOptions<T extends EventActivityBase>(

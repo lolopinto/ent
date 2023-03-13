@@ -23,6 +23,7 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import { loadEntByType, loadEntXByType } from "src/ent/generated/loadAny";
 import {
+  TodoDBData,
   todoLoader,
   todoLoaderInfo,
   todoNoTransformLoader,
@@ -35,23 +36,8 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/todo_schema";
 
-interface TodoData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
-  text: string;
-  completed: boolean;
-  creator_id: ID;
-  completed_date: Date | null;
-  assignee_id: ID;
-  scope_id: ID;
-  scope_type: string;
-  bounty: number | null;
-}
-
 export class TodoBase implements Ent<Viewer> {
-  protected readonly data: TodoData;
+  protected readonly data: TodoDBData;
   readonly nodeType = NodeType.Todo;
   readonly id: ID;
   readonly createdAt: Date;
@@ -83,10 +69,10 @@ export class TodoBase implements Ent<Viewer> {
     this.data = data;
   }
 
-  __setRawDBData<TodoData>(data: TodoData) {}
+  __setRawDBData<TodoDBData>(data: TodoDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): TodoData {
+  ___getRawDBData(): TodoDBData {
     return this.data;
   }
 
@@ -199,7 +185,7 @@ export class TodoBase implements Ent<Viewer> {
     ) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<TodoData[]> {
+  ): Promise<TodoDBData[]> {
     return (await loadCustomData(
       {
         ...TodoBase.loaderOptions.apply(this),
@@ -207,7 +193,7 @@ export class TodoBase implements Ent<Viewer> {
       },
       query,
       context,
-    )) as TodoData[];
+    )) as TodoDBData[];
   }
 
   static async loadCustomCount<T extends TodoBase>(
@@ -234,12 +220,12 @@ export class TodoBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TodoData | null> {
+  ): Promise<TodoDBData | null> {
     const row = await todoLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as TodoData;
+    return row;
   }
 
   static async loadRawDataX<T extends TodoBase>(
@@ -249,12 +235,12 @@ export class TodoBase implements Ent<Viewer> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<TodoData> {
+  ): Promise<TodoDBData> {
     const row = await todoLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as TodoData;
+    return row;
   }
 
   static loaderOptions<T extends TodoBase>(

@@ -19,7 +19,7 @@ export class ContextCache {
   // we should eventually combine the two but better for typing to be separate for now
   loaderWithLoadMany: Map<string, LoaderWithLoadMany<any, any>> = new Map();
 
-  getLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V> {
+  getLoader<K, V>(name: string, create: () => Loader<K, V>): Loader<K, V> {
     let l = this.loaders.get(name);
     if (l) {
       return l;
@@ -30,10 +30,10 @@ export class ContextCache {
     return l;
   }
 
-  getLoaderWithLoadMany<T, V>(
+  getLoaderWithLoadMany<K, V>(
     name: string,
-    create: () => LoaderWithLoadMany<T, V>,
-  ): LoaderWithLoadMany<T, V> {
+    create: () => LoaderWithLoadMany<K, V>,
+  ): LoaderWithLoadMany<K, V> {
     let l = this.loaderWithLoadMany.get(name);
     if (l) {
       return l;

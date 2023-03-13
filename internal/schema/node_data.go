@@ -521,6 +521,40 @@ func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
 	return ret
 }
 
+func (nodeData *NodeData) GetRawDBDataName() string {
+	return fmt.Sprintf("%sDBData", nodeData.Node)
+}
+
+type entLoadPrivacyInfo struct {
+	Interface string
+	Extends   string
+	Fields    []*field.Field
+}
+
+func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) (*entLoadPrivacyInfo, error) {
+	if !nodeData.OnEntLoadFieldPrivacy(cfg) {
+		return nil, fmt.Errorf("cannot call GetOnEntLoadPrivacyInfo for node which doesn't use on ent load privacy")
+	}
+
+	var fields []*field.Field
+	var names []string
+
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.TsActualType() != f.TsType() {
+			fields = append(fields, f)
+			names = append(names, strconv.Quote(f.GetDbColName()))
+		}
+	}
+
+	ret := &entLoadPrivacyInfo{
+		Interface: fmt.Sprintf("%sData", nodeData.Node),
+		Extends:   fmt.Sprintf("Omit<%s, %s>", nodeData.GetRawDBDataName(), strings.Join(names, " | ")),
+		Fields:    fields,
+	}
+
+	return ret, nil
+}
+
 func (nodeData *NodeData) GetFieldLoaderName(field *field.Field) string {
 	return fmt.Sprintf("%s%sLoader", nodeData.NodeInstance, field.CamelCaseName())
 }

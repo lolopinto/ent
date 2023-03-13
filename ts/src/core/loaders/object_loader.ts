@@ -16,9 +16,9 @@ import { logEnabled } from "../logger";
 import { getLoader, cacheMap } from "./loader";
 import memoizee from "memoizee";
 
-async function loadRowsForLoader<T>(
+async function loadRowsForLoader<K, V = Data>(
   options: SelectDataOptions,
-  ids: T[],
+  ids: K[],
   context?: Context,
 ) {
   let col = options.key;
@@ -40,15 +40,15 @@ async function loadRowsForLoader<T>(
     context,
   };
 
-  let m = new Map<T, number>();
-  let result: (Data | null)[] = [];
+  let m = new Map<K, number>();
+  let result: (V | null)[] = [];
   for (let i = 0; i < ids.length; i++) {
     result.push(null);
     // store the index....
     m.set(ids[i], i);
   }
 
-  const rows = await loadRows(rowOptions);
+  const rows = (await loadRows(rowOptions)) as V[];
   for (const row of rows) {
     const id = row[col];
     if (id === undefined) {
@@ -88,17 +88,15 @@ function createDataLoader(options: SelectDataOptions) {
   }, loaderOptions);
 }
 
-export class ObjectLoader<T> implements Loader<T, Data | null> {
-  private loader: DataLoader<T, Data> | undefined;
-  private primedLoaders:
-    | Map<string, PrimableLoader<T, Data | null>>
-    | undefined;
+export class ObjectLoader<V = Data> implements Loader<ID, V | null> {
+  private loader: DataLoader<ID, V> | undefined;
+  private primedLoaders: Map<string, PrimableLoader<ID, V | null>> | undefined;
   private memoizedInitPrime: () => void;
 
   constructor(
     private options: SelectDataOptions,
     public context?: Context,
-    private toPrime?: ObjectLoaderFactory<T>[],
+    private toPrime?: ObjectLoaderFactory<V>[],
   ) {
     if (options.key === undefined) {
       console.trace();
@@ -120,7 +118,7 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
     let primedLoaders = new Map();
     this.toPrime.forEach((prime) => {
       const l2 = prime.createLoader(this.context);
-      if ((l2 as PrimableLoader<T, Data | null>).prime === undefined) {
+      if ((l2 as PrimableLoader<ID, V | null>).prime === undefined) {
         return;
       }
 
@@ -129,7 +127,7 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
     this.primedLoaders = primedLoaders;
   }
 
-  async load(key: T): Promise<Data | null> {
+  async load(key: ID): Promise<V | null> {
     // simple case. we get parallelization etc
     if (this.loader) {
       this.memoizedInitPrime();
@@ -164,22 +162,23 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       clause: cls,
       context: this.context,
     };
-    return loadRow(rowOptions);
+    return loadRow(rowOptions) as Promise<V | null>;
   }
 
   clearAll() {
     this.loader && this.loader.clearAll();
   }
 
-  async loadMany(keys: T[]): Promise<Array<Data | null>> {
+  async loadMany(keys: ID[]): Promise<Array<V | null>> {
     if (this.loader) {
-      return await this.loader.loadMany(keys);
+      // @ts-expect-error TODO?
+      return this.loader.loadMany(keys);
     }
 
     return loadRowsForLoader(this.options, keys, this.context);
   }
 
-  prime(data: Data) {
+  prime(data: V) {
     // we have this data from somewhere else, prime it in the c
     if (this.loader) {
       const col = this.options.key;
@@ -189,7 +188,7 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
   }
 
   // prime this loader and any other loaders it's aware of
-  primeAll(data: Data) {
+  primeAll(data: V) {
     this.prime(data);
     if (this.primedLoaders) {
       for (const [key, loader] of this.primedLoaders) {
@@ -210,9 +209,11 @@ interface ObjectLoaderOptions extends SelectDataOptions {
 // NOTE: if not querying for all columns
 // have to query for the id field as one of the fields
 // because it's used to maintain sort order of the queried ids
-export class ObjectLoaderFactory<T> implements LoaderFactory<T, Data | null> {
+export class ObjectLoaderFactory<V = Data>
+  implements LoaderFactory<ID, V | null>
+{
   name: string;
-  private toPrime: ObjectLoaderFactory<T>[] = [];
+  private toPrime: ObjectLoaderFactory<V>[] = [];
 
   constructor(public options: ObjectLoaderOptions) {
     let instanceKey = options.instanceKey || "";
@@ -228,19 +229,19 @@ export class ObjectLoaderFactory<T> implements LoaderFactory<T, Data | null> {
     this.name = `${options.tableName}:${options.key}:${instanceKey}`;
   }
 
-  createLoader(context?: Context): ObjectLoader<T> {
+  createLoader(context?: Context): ObjectLoader<V> {
     return getLoader(
       this,
       () => {
         return new ObjectLoader(this.options, context, this.toPrime);
       },
       context,
-    ) as ObjectLoader<T>;
+    ) as ObjectLoader<V>;
   }
 
   // keep track of loaders to prime. needs to be done not in the constructor
   // because there's usually self references here
-  addToPrime(factory: ObjectLoaderFactory<T>): this {
+  addToPrime(factory: ObjectLoaderFactory<V>): this {
     this.toPrime.push(factory);
     return this;
   }
