@@ -75,7 +75,11 @@ import {
   convertSuperNestedObject,
   userConvertAccountStatus,
 } from "../../util/convert_user_fields";
-import { ExampleViewer as ExampleViewerAlias,  } from "../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+
+interface UserCustomQueryData extends UserDBData {
+  name_idx: string;
+}
 
 const superNestedObjectLoader = new ObjectLoaderFactory({
   tableName: userLoaderInfo.tableName,
@@ -281,7 +285,7 @@ export class UserBase
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery<UserDBData>,
+    query: CustomQuery<UserCustomQueryData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -298,17 +302,17 @@ export class UserBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery<UserDBData>,
+    query: CustomQuery<UserCustomQueryData>,
     context?: Context,
   ): Promise<UserDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<UserCustomQueryData, UserDBData>(
       {
         ...UserBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as UserDBData[];
+    );
   }
 
   static async loadCustomCount<T extends UserBase>(
@@ -316,7 +320,7 @@ export class UserBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery<UserDBData>,
+    query: CustomQuery<UserCustomQueryData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

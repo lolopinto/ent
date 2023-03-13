@@ -136,7 +136,7 @@ export class HoursOfOperationBase
     query: CustomQuery<HoursOfOperationDBData>,
     context?: Context,
   ): Promise<HoursOfOperationDBData[]> {
-    return loadCustomData(
+    return loadCustomData<HoursOfOperationDBData, HoursOfOperationDBData>(
       {
         ...HoursOfOperationBase.loaderOptions.apply(this),
         prime: true,

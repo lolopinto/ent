@@ -35,13 +35,17 @@
 
 {{$nodeData := .}}
 
-{{/* there's 2 data types here
-// there's raw db data and there's ent data 
+{{/* there's 3 data types here
+// 1/ there's raw db data 
+// 2/ there's ent data 
 // they are different if we have on ent load field privacy and an ent with this...
+// 3/ there's potentially extra columns in the db that can be queried which aren't returned in the 
+// query e.g. generated column indices. we can have a third type for that
 */}}
 {{ reserveImport "src/ent/generated/loaders" .GetRawDBDataName -}}
 {{$rawDBDataType := useImport .GetRawDBDataName -}}
 {{$dataType := $rawDBDataType -}}
+{{$customQueryDataType := $rawDBDataType -}}
 
 {{if .OnEntLoadFieldPrivacy $cfg -}}
   {{$info := .GetOnEntLoadPrivacyInfo $cfg -}}
@@ -53,6 +57,15 @@
   }
 {{ end -}}
 
+{{ $customQuery := .GetExtraCustomQueryInfo -}} 
+{{ if $customQuery -}}
+  {{$customQueryDataType = $customQuery.Interface -}}
+  interface {{$customQueryDataType}} extends {{$customQuery.Extends}} {
+    {{range $col := $customQuery.Columns -}}
+      {{$col.Name}}: {{$col.Type}};
+    {{ end -}}
+  }
+{{ end}}
 
 {{range $field := .FieldInfo.EntFields -}}
   {{ if $field.FetchOnDemand -}}
@@ -265,9 +278,9 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   static async loadCustom<T extends {{$baseClass}}>(
     this: {{$thisType}},
     viewer: {{$viewerType}},
-    query: {{useImport "CustomQuery"}}<{{useImport $rawDBDataType}}>,
+    query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
   ): Promise<T[]> {
-    return await {{useImport "loadCustomEnts"}}(
+    return await {{useImport "loadCustomEnts"}}<{{$customQueryDataType}}, {{$rawDBDataType}}>(
       viewer,
       {
       ...{{$baseClass}}.loaderOptions.apply(this),
@@ -279,10 +292,10 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static async loadCustomData<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    query: {{useImport "CustomQuery"}}<{{useImport $rawDBDataType}}>,
+    query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
     context?: {{useImport "Context"}}
   ): Promise<{{$rawDBDataType}}[]> {
-    return {{useImport "loadCustomData"}}(
+    return {{useImport "loadCustomData"}}<{{$customQueryDataType}}, {{$rawDBDataType}}>(
       {
         ...{{$baseClass}}.loaderOptions.apply(this),
         prime: true,
@@ -294,7 +307,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static async loadCustomCount<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    query: {{useImport "CustomQuery"}}<{{useImport $rawDBDataType}}>,
+    query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
     context?: {{useImport "Context"}}
   ): Promise<number> {
     return {{useImport "loadCustomCount"}}(

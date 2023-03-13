@@ -146,7 +146,7 @@ export class ContactBase
     query: CustomQuery<ContactDBData>,
     context?: Context,
   ): Promise<ContactDBData[]> {
-    return loadCustomData(
+    return loadCustomData<ContactDBData, ContactDBData>(
       {
         ...ContactBase.loaderOptions.apply(this),
         prime: true,

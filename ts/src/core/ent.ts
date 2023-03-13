@@ -520,14 +520,15 @@ export async function loadEntsFromClause<
 export async function loadCustomEnts<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
-  TData extends Data = Data,
-  TKey = keyof TData,
+  TQueryData extends Data = Data,
+  TResultData extends Data = TQueryData,
+  TKey = keyof TQueryData,
 >(
   viewer: TViewer,
   options: LoadCustomEntOptions<TEnt, TViewer>,
-  query: CustomQuery<TData, TKey>,
+  query: CustomQuery<TQueryData, TKey>,
 ) {
-  const rows = await loadCustomData<TData, TKey>(
+  const rows = await loadCustomData<TQueryData, TResultData, TKey>(
     options,
     query,
     viewer.context,
@@ -589,12 +590,20 @@ function isParameterizedQuery(
  *   disableTransformations: false
  *  }) // doesn't change the query
  */
-export async function loadCustomData<T extends Data = Data, K = keyof T>(
+export async function loadCustomData<
+  TQueryData extends Data = Data,
+  TResultData extends Data = TQueryData,
+  K = keyof TQueryData,
+>(
   options: SelectCustomDataOptions,
-  query: CustomQuery<T, K>,
+  query: CustomQuery<TQueryData, K>,
   context: Context | undefined,
-): Promise<T[]> {
-  const rows = await loadCustomDataImpl(options, query, context);
+): Promise<TResultData[]> {
+  const rows = await loadCustomDataImpl<TQueryData, TResultData, K>(
+    options,
+    query,
+    context,
+  );
 
   // prime the data so that subsequent fetches of the row with this id are a cache hit.
   if (options.prime) {
@@ -643,12 +652,18 @@ interface SelectCustomDataOptionsImpl extends SelectBaseDataOptions {
   loaderFactory?: LoaderFactoryWithOptions;
 }
 
-async function loadCustomDataImpl<T extends Data = Data, K = keyof T>(
+async function loadCustomDataImpl<
+  TQueryData extends Data = Data,
+  TResultData extends Data = TQueryData,
+  K = keyof TQueryData,
+>(
   options: SelectCustomDataOptionsImpl,
-  query: CustomQuery<T, K>,
+  query: CustomQuery<TQueryData, K>,
   context: Context | undefined,
-): Promise<T[]> {
-  function getClause(cls: clause.Clause<T, K>): clause.Clause<T, K> {
+): Promise<TResultData[]> {
+  function getClause(
+    cls: clause.Clause<TQueryData, K>,
+  ): clause.Clause<TQueryData, K> {
     let optClause = options.loaderFactory?.options?.clause;
     if (typeof optClause === "function") {
       optClause = optClause();
@@ -663,7 +678,7 @@ async function loadCustomDataImpl<T extends Data = Data, K = keyof T>(
 
   if (typeof query === "string") {
     // no caching, perform raw query
-    return performRawQuery(query, [], []) as Promise<T[]>;
+    return performRawQuery(query, [], []) as Promise<TResultData[]>;
     // @ts-ignore
   } else if (isClause(query)) {
     // if a Clause is passed in and we have a default clause
@@ -676,14 +691,14 @@ async function loadCustomDataImpl<T extends Data = Data, K = keyof T>(
       // @ts-ignore
       clause: getClause(query),
       context: context,
-    }) as Promise<T[]>;
+    }) as Promise<TResultData[]>;
   } else if (isParameterizedQuery(query)) {
     // no caching, perform raw query
     return performRawQuery(
       query.query,
       query.values || [],
       query.logValues,
-    ) as Promise<T[]>;
+    ) as Promise<TResultData[]>;
   } else {
     let cls = query.clause;
     if (!query.disableTransformations) {
@@ -696,7 +711,7 @@ async function loadCustomDataImpl<T extends Data = Data, K = keyof T>(
       ...options,
       context: context,
       clause: cls,
-    }) as Promise<T[]>;
+    }) as Promise<TResultData[]>;
   }
 }
 

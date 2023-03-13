@@ -136,7 +136,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     query: CustomQuery<CommentDBData>,
     context?: Context,
   ): Promise<CommentDBData[]> {
-    return loadCustomData(
+    return loadCustomData<CommentDBData, CommentDBData>(
       {
         ...CommentBase.loaderOptions.apply(this),
         prime: true,

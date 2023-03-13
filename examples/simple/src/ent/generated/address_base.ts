@@ -135,7 +135,7 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
     query: CustomQuery<AddressDBData>,
     context?: Context,
   ): Promise<AddressDBData[]> {
-    return loadCustomData(
+    return loadCustomData<AddressDBData, AddressDBData>(
       {
         ...AddressBase.loaderOptions.apply(this),
         prime: true,

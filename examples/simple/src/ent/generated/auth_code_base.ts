@@ -131,7 +131,7 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
     query: CustomQuery<AuthCodeDBData>,
     context?: Context,
   ): Promise<AuthCodeDBData[]> {
-    return loadCustomData(
+    return loadCustomData<AuthCodeDBData, AuthCodeDBData>(
       {
         ...AuthCodeBase.loaderOptions.apply(this),
         prime: true,

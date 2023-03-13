@@ -134,7 +134,7 @@ export class HolidayBase
     query: CustomQuery<HolidayDBData>,
     context?: Context,
   ): Promise<HolidayDBData[]> {
-    return loadCustomData(
+    return loadCustomData<HolidayDBData, HolidayDBData>(
       {
         ...HolidayBase.loaderOptions.apply(this),
         prime: true,

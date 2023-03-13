@@ -142,7 +142,7 @@ export class ContactPhoneNumberBase
     query: CustomQuery<ContactPhoneNumberDBData>,
     context?: Context,
   ): Promise<ContactPhoneNumberDBData[]> {
-    return loadCustomData(
+    return loadCustomData<ContactPhoneNumberDBData, ContactPhoneNumberDBData>(
       {
         ...ContactPhoneNumberBase.loaderOptions.apply(this),
         prime: true,

@@ -138,7 +138,7 @@ export class ContactEmailBase
     query: CustomQuery<ContactEmailDBData>,
     context?: Context,
   ): Promise<ContactEmailDBData[]> {
-    return loadCustomData(
+    return loadCustomData<ContactEmailDBData, ContactEmailDBData>(
       {
         ...ContactEmailBase.loaderOptions.apply(this),
         prime: true,

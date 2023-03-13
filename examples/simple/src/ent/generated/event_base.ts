@@ -158,7 +158,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     query: CustomQuery<EventDBData>,
     context?: Context,
   ): Promise<EventDBData[]> {
-    return loadCustomData(
+    return loadCustomData<EventDBData, EventDBData>(
       {
         ...EventBase.loaderOptions.apply(this),
         prime: true,
