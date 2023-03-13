@@ -166,7 +166,7 @@ export class WorkspaceBase
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<WorkspaceDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -183,17 +183,17 @@ export class WorkspaceBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<WorkspaceDBData>,
     context?: Context,
   ): Promise<WorkspaceDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<WorkspaceDBData, WorkspaceDBData>(
       {
         ...WorkspaceBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as WorkspaceDBData[];
+    );
   }
 
   static async loadCustomCount<T extends WorkspaceBase>(
@@ -201,7 +201,7 @@ export class WorkspaceBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<WorkspaceDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

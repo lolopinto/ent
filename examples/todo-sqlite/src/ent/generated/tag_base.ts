@@ -149,7 +149,7 @@ export class TagBase implements Ent<Viewer> {
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<TagDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -166,17 +166,17 @@ export class TagBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<TagDBData>,
     context?: Context,
   ): Promise<TagDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<TagDBData, TagDBData>(
       {
         ...TagBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as TagDBData[];
+    );
   }
 
   static async loadCustomCount<T extends TagBase>(
@@ -184,7 +184,7 @@ export class TagBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<TagDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

@@ -137,7 +137,7 @@ export class EventActivityBase
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<EventActivityDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -154,17 +154,17 @@ export class EventActivityBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<EventActivityDBData>,
     context?: Context,
   ): Promise<EventActivityDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<EventActivityDBData, EventActivityDBData>(
       {
         ...EventActivityBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as EventActivityDBData[];
+    );
   }
 
   static async loadCustomCount<T extends EventActivityBase>(
@@ -172,7 +172,7 @@ export class EventActivityBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<EventActivityDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

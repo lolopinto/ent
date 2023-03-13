@@ -212,7 +212,7 @@ export class AccountBase
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<AccountDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -229,17 +229,17 @@ export class AccountBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AccountDBData>,
     context?: Context,
   ): Promise<AccountDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<AccountDBData, AccountDBData>(
       {
         ...AccountBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as AccountDBData[];
+    );
   }
 
   static async loadCustomCount<T extends AccountBase>(
@@ -247,7 +247,7 @@ export class AccountBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AccountDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

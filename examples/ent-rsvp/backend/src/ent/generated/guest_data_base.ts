@@ -116,7 +116,7 @@ export class GuestDataBase implements Ent<Viewer> {
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<GuestDataDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -133,17 +133,17 @@ export class GuestDataBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<GuestDataDBData>,
     context?: Context,
   ): Promise<GuestDataDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<GuestDataDBData, GuestDataDBData>(
       {
         ...GuestDataBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as GuestDataDBData[];
+    );
   }
 
   static async loadCustomCount<T extends GuestDataBase>(
@@ -151,7 +151,7 @@ export class GuestDataBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<GuestDataDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
