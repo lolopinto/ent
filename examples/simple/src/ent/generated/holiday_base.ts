@@ -114,7 +114,7 @@ export class HolidayBase
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<HolidayDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -131,17 +131,17 @@ export class HolidayBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<HolidayDBData>,
     context?: Context,
   ): Promise<HolidayDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData(
       {
         ...HolidayBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as HolidayDBData[];
+    );
   }
 
   static async loadCustomCount<T extends HolidayBase>(
@@ -149,7 +149,7 @@ export class HolidayBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<HolidayDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

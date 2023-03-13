@@ -265,7 +265,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   static async loadCustom<T extends {{$baseClass}}>(
     this: {{$thisType}},
     viewer: {{$viewerType}},
-    query: {{useImport "CustomQuery"}},
+    query: {{useImport "CustomQuery"}}<{{useImport $rawDBDataType}}>,
   ): Promise<T[]> {
     return await {{useImport "loadCustomEnts"}}(
       viewer,
@@ -279,22 +279,22 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static async loadCustomData<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    query: {{useImport "CustomQuery"}},
+    query: {{useImport "CustomQuery"}}<{{useImport $rawDBDataType}}>,
     context?: {{useImport "Context"}}
   ): Promise<{{$rawDBDataType}}[]> {
-    return  await {{useImport "loadCustomData"}}(
+    return {{useImport "loadCustomData"}}(
       {
         ...{{$baseClass}}.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    ) as {{$rawDBDataType}}[];
+    );
   }
 
   static async loadCustomCount<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    query: {{useImport "CustomQuery"}},
+    query: {{useImport "CustomQuery"}}<{{useImport $rawDBDataType}}>,
     context?: {{useImport "Context"}}
   ): Promise<number> {
     return {{useImport "loadCustomCount"}}(

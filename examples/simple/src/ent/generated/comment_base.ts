@@ -116,7 +116,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<CommentDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -133,17 +133,17 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<CommentDBData>,
     context?: Context,
   ): Promise<CommentDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData(
       {
         ...CommentBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as CommentDBData[];
+    );
   }
 
   static async loadCustomCount<T extends CommentBase>(
@@ -151,7 +151,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<CommentDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

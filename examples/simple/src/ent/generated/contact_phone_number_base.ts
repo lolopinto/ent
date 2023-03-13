@@ -122,7 +122,7 @@ export class ContactPhoneNumberBase
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<ContactPhoneNumberDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -139,17 +139,17 @@ export class ContactPhoneNumberBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<ContactPhoneNumberDBData>,
     context?: Context,
   ): Promise<ContactPhoneNumberDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData(
       {
         ...ContactPhoneNumberBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as ContactPhoneNumberDBData[];
+    );
   }
 
   static async loadCustomCount<T extends ContactPhoneNumberBase>(
@@ -157,7 +157,7 @@ export class ContactPhoneNumberBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<ContactPhoneNumberDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
