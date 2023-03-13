@@ -520,12 +520,18 @@ export async function loadEntsFromClause<
 export async function loadCustomEnts<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
+  TData extends Data = Data,
+  TKey = keyof TData,
 >(
   viewer: TViewer,
   options: LoadCustomEntOptions<TEnt, TViewer>,
-  query: CustomQuery,
+  query: CustomQuery<TData, TKey>,
 ) {
-  const rows = await loadCustomData(options, query, viewer.context);
+  const rows = await loadCustomData<TData, TKey>(
+    options,
+    query,
+    viewer.context,
+  );
 
   return applyPrivacyPolicyForRows(viewer, rows, options);
 }
