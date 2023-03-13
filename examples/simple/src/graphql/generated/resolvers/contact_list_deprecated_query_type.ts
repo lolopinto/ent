@@ -68,6 +68,7 @@ export const ContactListDeprecatedQueryType: GraphQLFieldConfig<
 
     return Contact.loadCustom(
       context.getViewer(),
+      // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
   },

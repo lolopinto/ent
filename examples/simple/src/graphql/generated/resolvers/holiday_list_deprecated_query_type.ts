@@ -68,6 +68,7 @@ export const HolidayListDeprecatedQueryType: GraphQLFieldConfig<
 
     return Holiday.loadCustom(
       context.getViewer(),
+      // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
   },

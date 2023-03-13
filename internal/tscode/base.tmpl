@@ -280,7 +280,8 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     viewer: {{$viewerType}},
     query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
   ): Promise<T[]> {
-    return await {{useImport "loadCustomEnts"}}<{{$customQueryDataType}}, {{$rawDBDataType}}>(
+    {{/* there's technically some mismatch in the raw db types passed/returned here but doesn't matter */}}
+    return await {{useImport "loadCustomEnts"}}(
       viewer,
       {
       ...{{$baseClass}}.loaderOptions.apply(this),

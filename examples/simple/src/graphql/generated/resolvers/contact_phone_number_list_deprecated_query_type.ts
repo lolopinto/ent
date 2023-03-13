@@ -68,6 +68,7 @@ export const ContactPhoneNumberListDeprecatedQueryType: GraphQLFieldConfig<
 
     return ContactPhoneNumber.loadCustom(
       context.getViewer(),
+      // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
   },
