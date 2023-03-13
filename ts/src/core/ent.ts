@@ -536,16 +536,19 @@ interface parameterizedQueryOptions {
   logValues?: any[];
 }
 
-export type CustomQuery =
+export type CustomQuery<T extends Data = Data, K = keyof T> =
   | string
   | parameterizedQueryOptions
-  | clause.Clause
+  | clause.Clause<T, K>
   | QueryDataOptions;
 
-function isClause(
-  opts: clause.Clause | QueryDataOptions | parameterizedQueryOptions,
-): opts is clause.Clause {
-  const cls = opts as clause.Clause;
+function isClause<T extends Data = Data, K = keyof T>(
+  opts:
+    | clause.Clause<T, K>
+    | QueryDataOptions<T, K>
+    | parameterizedQueryOptions,
+): opts is clause.Clause<T, K> {
+  const cls = opts as clause.Clause<T, K>;
 
   return cls.clause !== undefined && cls.values !== undefined;
 }
@@ -580,11 +583,11 @@ function isParameterizedQuery(
  *   disableTransformations: false
  *  }) // doesn't change the query
  */
-export async function loadCustomData(
+export async function loadCustomData<T extends Data = Data, K = keyof T>(
   options: SelectCustomDataOptions,
-  query: CustomQuery,
+  query: CustomQuery<T, K>,
   context: Context | undefined,
-): Promise<Data[]> {
+): Promise<T[]> {
   const rows = await loadCustomDataImpl(options, query, context);
 
   // prime the data so that subsequent fetches of the row with this id are a cache hit.
@@ -603,9 +606,9 @@ interface CustomCountOptions extends DataOptions {}
 
 // NOTE: if you use a raw query or paramterized query with this,
 // you should use `SELECT count(*) as count...`
-export async function loadCustomCount(
+export async function loadCustomCount<T extends Data = Data, K = keyof T>(
   options: CustomCountOptions,
-  query: CustomQuery,
+  query: CustomQuery<T, K>,
   context: Context | undefined,
 ): Promise<number> {
   // TODO also need to loaderify this in case we're querying for this a lot...
@@ -634,12 +637,12 @@ interface SelectCustomDataOptionsImpl extends SelectBaseDataOptions {
   loaderFactory?: LoaderFactoryWithOptions;
 }
 
-async function loadCustomDataImpl(
+async function loadCustomDataImpl<T extends Data = Data, K = keyof T>(
   options: SelectCustomDataOptionsImpl,
-  query: CustomQuery,
+  query: CustomQuery<T, K>,
   context: Context | undefined,
-): Promise<Data[]> {
-  function getClause(cls: clause.Clause) {
+): Promise<T[]> {
+  function getClause(cls: clause.Clause<T, K>): clause.Clause<T, K> {
     let optClause = options.loaderFactory?.options?.clause;
     if (typeof optClause === "function") {
       optClause = optClause();
@@ -648,12 +651,14 @@ async function loadCustomDataImpl(
       return cls;
     }
 
+    // @ts-expect-error string|ID mismatch
     return clause.And(cls, optClause);
   }
 
   if (typeof query === "string") {
     // no caching, perform raw query
-    return performRawQuery(query, [], []);
+    return performRawQuery(query, [], []) as Promise<T[]>;
+    // @ts-ignore
   } else if (isClause(query)) {
     // if a Clause is passed in and we have a default clause
     // associated with the query, pass that in
@@ -662,15 +667,21 @@ async function loadCustomDataImpl(
     // this will have rudimentary caching but nothing crazy
     return loadRows({
       ...options,
+      // @ts-ignore
       clause: getClause(query),
       context: context,
-    });
+    }) as Promise<T[]>;
   } else if (isParameterizedQuery(query)) {
     // no caching, perform raw query
-    return performRawQuery(query.query, query.values || [], query.logValues);
+    return performRawQuery(
+      query.query,
+      query.values || [],
+      query.logValues,
+    ) as Promise<T[]>;
   } else {
     let cls = query.clause;
     if (!query.disableTransformations) {
+      // @ts-ignore
       cls = getClause(cls);
     }
     // this will have rudimentary caching but nothing crazy
@@ -679,7 +690,7 @@ async function loadCustomDataImpl(
       ...options,
       context: context,
       clause: cls,
-    });
+    }) as Promise<T[]>;
   }
 }
 
@@ -931,27 +942,27 @@ export function buildQuery(options: QueryableDataOptions): string {
   return query;
 }
 
-interface GroupQueryOptions {
+interface GroupQueryOptions<T extends Data, K = keyof T> {
   tableName: string;
 
   // extra clause to join
-  clause?: clause.Clause;
-  groupColumn: string;
-  fields: string[];
+  clause?: clause.Clause<T, K>;
+  groupColumn: K;
+  fields: K[];
   values: any[];
   orderby?: string;
   limit: number;
 }
 
 // this is used for queries when we select multiple ids at once
-export function buildGroupQuery(
-  options: GroupQueryOptions,
-): [string, clause.Clause] {
+export function buildGroupQuery<T extends Data = Data, K = keyof T>(
+  options: GroupQueryOptions<T, K>,
+): [string, clause.Clause<T, K>] {
   const fields = [...options.fields, "row_number()"];
 
-  let cls = clause.In(options.groupColumn, ...options.values);
+  let cls = clause.In<T, K>(options.groupColumn, ...options.values);
   if (options.clause) {
-    cls = clause.And(cls, options.clause);
+    cls = clause.And<T, K>(cls, options.clause);
   }
   let orderby = "";
   if (options.orderby) {
@@ -1101,6 +1112,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         optionClause = opts.clause;
       }
       if (optionClause) {
+        // @ts-expect-error ID|string mismatch
         cls = clause.And(cls, optionClause);
       }
     }
@@ -2107,7 +2119,7 @@ export function getEdgeClauseAndFields(
     if (!options.disableTransformations) {
       cls = clause.And(cls, transformClause);
     }
-    fields = edgeFields.concat(transformClause.columns());
+    fields = edgeFields.concat(transformClause.columns() as string[]);
   }
   return {
     cls,

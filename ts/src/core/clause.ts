@@ -1,10 +1,11 @@
+import { Data } from "./base";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
 
-export interface Clause {
+export interface Clause<T extends Data = Data, K = keyof T> {
   clause(idx: number): string;
-  columns(): string[];
+  columns(): K[];
   values(): any[];
   instanceKey(): string;
   // values to log when querying
@@ -35,12 +36,12 @@ function rawValue(val: any) {
   return val;
 }
 
-class simpleClause implements Clause {
+class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(
-    protected col: string,
+    protected col: K,
     private value: any,
     private op: string,
-    private handleNull?: Clause,
+    private handleNull?: Clause<T, K>,
   ) {}
 
   clause(idx: number): string {
@@ -61,7 +62,7 @@ class simpleClause implements Clause {
     return this.handleNull;
   }
 
-  columns(): string[] {
+  columns(): K[] {
     return [this.col];
   }
 
@@ -96,14 +97,14 @@ class simpleClause implements Clause {
   }
 }
 
-class isNullClause implements Clause {
-  constructor(protected col: string) {}
+class isNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
+  constructor(protected col: K) {}
 
-  clause(idx: number): string {
+  clause(_idx: number): string {
     return `${this.col} IS NULL`;
   }
 
-  columns(): string[] {
+  columns(): K[] {
     return [];
   }
 
@@ -120,14 +121,14 @@ class isNullClause implements Clause {
   }
 }
 
-class isNotNullClause implements Clause {
-  constructor(protected col: string) {}
+class isNotNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
+  constructor(protected col: K) {}
 
   clause(idx: number): string {
     return `${this.col} IS NOT NULL`;
   }
 
-  columns(): string[] {
+  columns(): K[] {
     return [];
   }
 
@@ -144,8 +145,8 @@ class isNotNullClause implements Clause {
   }
 }
 
-class arraySimpleClause implements Clause {
-  constructor(protected col: string, private value: any, private op: string) {}
+class arraySimpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
+  constructor(protected col: K, private value: any, private op: string) {}
 
   clause(idx: number): string {
     if (DB.getDialect() === Dialect.Postgres) {
@@ -154,7 +155,7 @@ class arraySimpleClause implements Clause {
     return `${this.col} ${this.op} ?`;
   }
 
-  columns(): string[] {
+  columns(): K[] {
     return [this.col];
   }
 
@@ -177,9 +178,11 @@ class arraySimpleClause implements Clause {
   }
 }
 
-class postgresArrayOperator implements Clause {
+class postgresArrayOperator<T extends Data, K = keyof T>
+  implements Clause<T, K>
+{
   constructor(
-    protected col: string,
+    protected col: K,
     protected value: any,
     private op: string,
     private not?: boolean,
@@ -195,7 +198,7 @@ class postgresArrayOperator implements Clause {
     throw new Error(`not supported`);
   }
 
-  columns(): string[] {
+  columns(): K[] {
     return [this.col];
   }
 
@@ -221,8 +224,11 @@ class postgresArrayOperator implements Clause {
   }
 }
 
-class postgresArrayOperatorList extends postgresArrayOperator {
-  constructor(col: string, value: any[], op: string, not?: boolean) {
+class postgresArrayOperatorList<
+  T extends Data,
+  K = keyof T,
+> extends postgresArrayOperator<T, K> {
+  constructor(col: K, value: any[], op: string, not?: boolean) {
     super(col, value, op, not);
   }
 
@@ -253,16 +259,12 @@ class postgresArrayOperatorList extends postgresArrayOperator {
   }
 }
 
-export class inClause implements Clause {
+export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
   static getPostgresInClauseValuesThreshold() {
     return 70;
   }
 
-  constructor(
-    private col: string,
-    private value: any[],
-    private type = "uuid",
-  ) {}
+  constructor(private col: K, private value: any[], private type = "uuid") {}
 
   clause(idx: number): string {
     // do a simple = when only one item
@@ -309,7 +311,7 @@ export class inClause implements Clause {
     // here's what sqlx does: https://play.golang.org/p/vPzvYqeAcP0
   }
 
-  columns(): string[] {
+  columns(): K[] {
     return [this.col];
   }
 
@@ -334,10 +336,10 @@ export class inClause implements Clause {
   }
 }
 
-class compositeClause implements Clause {
+class compositeClause<T extends Data, K = keyof T> implements Clause<T, K> {
   compositeOp: string;
 
-  constructor(private clauses: Clause[], private sep: string) {
+  constructor(private clauses: Clause<T, K>[], private sep: string) {
     this.compositeOp = this.sep;
   }
 
@@ -355,8 +357,8 @@ class compositeClause implements Clause {
     return clauses.join(this.sep);
   }
 
-  columns(): string[] {
-    const ret: string[] = [];
+  columns(): K[] {
+    const ret: K[] = [];
     for (const cls of this.clauses) {
       ret.push(...cls.columns());
     }
@@ -392,9 +394,9 @@ class compositeClause implements Clause {
   }
 }
 
-class tsQueryClause implements Clause {
+class tsQueryClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(
-    protected col: string,
+    protected col: K,
     protected val: string | TsQuery,
     private tsVectorCol?: boolean,
   ) {}
@@ -427,7 +429,7 @@ class tsQueryClause implements Clause {
     return `${this.col} @@ ${this.getFunction()}('${language}', ?)`;
   }
 
-  columns(): string[] {
+  columns(): K[] {
     return [this.col];
   }
 
@@ -456,19 +458,28 @@ class tsQueryClause implements Clause {
   }
 }
 
-class plainToTsQueryClause extends tsQueryClause {
+class plainToTsQueryClause<T extends Data, K = keyof T> extends tsQueryClause<
+  T,
+  K
+> {
   protected getFunction(): string {
     return "plainto_tsquery";
   }
 }
 
-class phraseToTsQueryClause extends tsQueryClause {
+class phraseToTsQueryClause<T extends Data, K = keyof T> extends tsQueryClause<
+  T,
+  K
+> {
   protected getFunction(): string {
     return "phraseto_tsquery";
   }
 }
 
-class websearchTosQueryClause extends tsQueryClause {
+class websearchTosQueryClause<
+  T extends Data,
+  K = keyof T,
+> extends tsQueryClause<T, K> {
   protected getFunction(): string {
     return "websearch_to_tsquery";
   }
@@ -482,7 +493,10 @@ class websearchTosQueryClause extends tsQueryClause {
  * only works with postgres gin indexes
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
-export function PostgresArrayContainsValue(col: string, value: any): Clause {
+export function PostgresArrayContainsValue<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
   return new postgresArrayOperator(col, value, "@>");
 }
 
@@ -491,7 +505,10 @@ export function PostgresArrayContainsValue(col: string, value: any): Clause {
  * only works with postgres gin indexes
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
-export function PostgresArrayContains(col: string, value: any[]): Clause {
+export function PostgresArrayContains<T extends Data, K = keyof T>(
+  col: K,
+  value: any[],
+): Clause<T, K> {
   return new postgresArrayOperatorList(col, value, "@>");
 }
 
@@ -500,7 +517,10 @@ export function PostgresArrayContains(col: string, value: any[]): Clause {
  * only works with postgres gin indexes
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
-export function PostgresArrayNotContainsValue(col: string, value: any): Clause {
+export function PostgresArrayNotContainsValue<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
   return new postgresArrayOperator(col, value, "@>", true);
 }
 
@@ -509,7 +529,10 @@ export function PostgresArrayNotContainsValue(col: string, value: any): Clause {
  * only works with postgres gin indexes
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
-export function PostgresArrayNotContains(col: string, value: any[]): Clause {
+export function PostgresArrayNotContains<T extends Data, K = keyof T>(
+  col: K,
+  value: any[],
+): Clause<T, K> {
   return new postgresArrayOperatorList(col, value, "@>", true);
 }
 
@@ -518,7 +541,10 @@ export function PostgresArrayNotContains(col: string, value: any[]): Clause {
  * only works with postgres gin indexes
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
-export function PostgresArrayOverlaps(col: string, value: any[]): Clause {
+export function PostgresArrayOverlaps<T extends Data, K = keyof T>(
+  col: K,
+  value: any[],
+): Clause<T, K> {
   return new postgresArrayOperatorList(col, value, "&&");
 }
 
@@ -527,79 +553,121 @@ export function PostgresArrayOverlaps(col: string, value: any[]): Clause {
  * only works with postgres gin indexes
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
-export function PostgresArrayNotOverlaps(col: string, value: any[]): Clause {
+export function PostgresArrayNotOverlaps<T extends Data, K = keyof T>(
+  col: K,
+  value: any[],
+): Clause<T, K> {
   return new postgresArrayOperatorList(col, value, "&&", true);
 }
 
 /**
  * @deprecated use PostgresArrayContainsValue
  */
-export function ArrayEq(col: string, value: any): Clause {
+export function ArrayEq<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
   return new arraySimpleClause(col, value, "=");
 }
 
 /**
  * @deprecated use PostgresNotArrayContains
  */
-export function ArrayNotEq(col: string, value: any): Clause {
+export function ArrayNotEq<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
   return new arraySimpleClause(col, value, "!=");
 }
 
-export function Eq(col: string, value: any): Clause {
-  return new simpleClause(col, value, "=", new isNullClause(col));
+export function Eq<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, value, "=", new isNullClause(col));
 }
 
-export function NotEq(col: string, value: any): Clause {
-  return new simpleClause(col, value, "!=", new isNotNullClause(col));
+export function NotEq<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, value, "!=", new isNotNullClause(col));
 }
 
-export function Greater(col: string, value: any): simpleClause {
-  return new simpleClause(col, value, ">");
+export function Greater<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, value, ">");
 }
 
-export function Less(col: string, value: any): simpleClause {
-  return new simpleClause(col, value, "<");
+export function Less<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, value, "<");
 }
 
-export function GreaterEq(col: string, value: any): simpleClause {
-  return new simpleClause(col, value, ">=");
+export function GreaterEq<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, value, ">=");
 }
 
-export function LessEq(col: string, value: any): simpleClause {
-  return new simpleClause(col, value, "<=");
+export function LessEq<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, value, "<=");
 }
 
-export function And(...args: Clause[]): compositeClause {
+export function And<T extends Data, K = keyof T>(
+  ...args: Clause<T, K>[]
+): compositeClause<T, K> {
   return new compositeClause(args, " AND ");
 }
 
-export function AndOptional(...args: (Clause | undefined)[]): Clause {
+export function AndOptional<T extends Data, K = keyof T>(
+  ...args: (Clause<T, K> | undefined)[]
+): Clause<T, K> {
   // @ts-ignore
-  let filtered: Clause[] = args.filter((v) => v !== undefined);
+  let filtered: Clause<T, K>[] = args.filter((v) => v !== undefined);
   if (filtered.length === 1) {
     return filtered[0];
   }
   return And(...filtered);
 }
 
-export function Or(...args: Clause[]): compositeClause {
+export function Or<T extends Data, K = keyof T>(
+  ...args: Clause<T, K>[]
+): compositeClause<T, K> {
   return new compositeClause(args, " OR ");
 }
 
-export function OrOptional(...args: (Clause | undefined)[]): Clause {
+export function OrOptional<T extends Data, K = keyof T>(
+  ...args: (Clause<T, K> | undefined)[]
+): Clause<T, K> {
   // @ts-ignore
-  let filtered: Clause[] = args.filter((v) => v !== undefined);
+  let filtered: Clause<T, K>[] = args.filter((v) => v !== undefined);
   if (filtered.length === 1) {
     return filtered[0];
   }
   return Or(...filtered);
 }
 
-export function In(col: string, ...values: any): Clause;
+export function In<T extends Data, K = keyof T>(
+  col: K,
+  ...values: any
+): Clause<T, K>;
 
-export function In(col: string, values: any[], type?: string): Clause;
+export function In<T extends Data, K = keyof T>(
+  col: K,
+  values: any[],
+  type?: string,
+): Clause<T, K>;
 
-export function In(...args: any[]): Clause {
+export function In<T extends Data, K = keyof T>(...args: any[]): Clause<T, K> {
   if (args.length < 2) {
     throw new Error(`invalid args passed to In`);
   }
@@ -622,25 +690,40 @@ interface TsQuery {
 // plainto_tsquery
 // phraseto_tsquery;
 // websearch_to_tsquery
-export function TsQuery(col: string, val: string | TsQuery): Clause {
+export function TsQuery<T extends Data, K = keyof T>(
+  col: K,
+  val: string | TsQuery,
+): Clause<T, K> {
   return new tsQueryClause(col, val);
 }
 
-export function PlainToTsQuery(col: string, val: string | TsQuery): Clause {
+export function PlainToTsQuery<T extends Data, K = keyof T>(
+  col: K,
+  val: string | TsQuery,
+): Clause<T, K> {
   return new plainToTsQueryClause(col, val);
 }
 
-export function PhraseToTsQuery(col: string, val: string | TsQuery): Clause {
+export function PhraseToTsQuery<T extends Data, K = keyof T>(
+  col: K,
+  val: string | TsQuery,
+): Clause<T, K> {
   return new phraseToTsQueryClause(col, val);
 }
 
-export function WebsearchToTsQuery(col: string, val: string | TsQuery): Clause {
+export function WebsearchToTsQuery<T extends Data, K = keyof T>(
+  col: K,
+  val: string | TsQuery,
+): Clause<T, K> {
   return new websearchTosQueryClause(col, val);
 }
 
 // TsVectorColTsQuery is used when the column is not a tsvector field e.g.
 // when there's an index just on the field and is not a combination of multiple fields
-export function TsVectorColTsQuery(col: string, val: string | TsQuery): Clause {
+export function TsVectorColTsQuery<T extends Data, K = keyof T>(
+  col: K,
+  val: string | TsQuery,
+): Clause<T, K> {
   return new tsQueryClause(col, val, true);
 }
 
@@ -648,28 +731,28 @@ export function TsVectorColTsQuery(col: string, val: string | TsQuery): Clause {
 // when there's an index just on the field and is not a combination of multiple fields
 // TODO do these 4 need TsQuery because would be nice to have language?
 // it seems to default to the config of the column
-export function TsVectorPlainToTsQuery(
-  col: string,
+export function TsVectorPlainToTsQuery<T extends Data, K = keyof T>(
+  col: K,
   val: string | TsQuery,
-): Clause {
+): Clause<T, K> {
   return new plainToTsQueryClause(col, val, true);
 }
 
 // TsVectorPhraseToTsQuery is used when the column is not a tsvector field e.g.
 // when there's an index just on the field and is not a combination of multiple fields
-export function TsVectorPhraseToTsQuery(
-  col: string,
+export function TsVectorPhraseToTsQuery<T extends Data, K = keyof T>(
+  col: K,
   val: string | TsQuery,
-): Clause {
+): Clause<T, K> {
   return new phraseToTsQueryClause(col, val, true);
 }
 
 // TsVectorWebsearchToTsQuery is used when the column is not a tsvector field e.g.
 // when there's an index just on the field and is not a combination of multiple fields
-export function TsVectorWebsearchToTsQuery(
-  col: string,
+export function TsVectorWebsearchToTsQuery<T extends Data, K = keyof T>(
+  col: K,
   val: string | TsQuery,
-): Clause {
+): Clause<T, K> {
   return new websearchTosQueryClause(col, val, true);
 }
 
@@ -699,11 +782,17 @@ export function sensitiveValue(val: any): SensitiveValue {
 // https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
 // see test in db_clause.test.ts
 // unclear best time to use this...
-export function JSONObjectFieldKeyASJSON(col: string, field: string) {
+export function JSONObjectFieldKeyASJSON<T extends Data, K = keyof T>(
+  col: K,
+  field: string,
+) {
   return `${col}->'${field}'`;
 }
 
-export function JSONObjectFieldKeyAsText(col: string, field: string) {
+export function JSONObjectFieldKeyAsText<T extends Data, K = keyof T>(
+  col: K,
+  field: string,
+) {
   return `${col}->>'${field}'`;
 }
 
@@ -715,9 +804,11 @@ export function JSONObjectFieldKeyAsText(col: string, field: string) {
 
 type predicate = "==" | ">" | "<" | "!=" | ">=" | "<=";
 
-class jSONPathValuePredicateClause implements Clause {
+class jSONPathValuePredicateClause<T extends Data, K = keyof T>
+  implements Clause<T, K>
+{
   constructor(
-    protected col: string,
+    protected col: K,
     protected path: string,
     protected value: any,
     private pred: predicate,
@@ -730,7 +821,7 @@ class jSONPathValuePredicateClause implements Clause {
     return `${this.col} @@ $${idx}`;
   }
 
-  columns(): string[] {
+  columns(): K[] {
     return [this.col];
   }
 
@@ -759,27 +850,29 @@ class jSONPathValuePredicateClause implements Clause {
 }
 
 // https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
-export function JSONPathValuePredicate(
-  dbCol: string,
+export function JSONPathValuePredicate<T extends Data, K = keyof T>(
+  dbCol: K,
   path: string,
   val: any,
   pred: predicate,
-): Clause {
+): Clause<T, K> {
   return new jSONPathValuePredicateClause(dbCol, path, val, pred);
 }
 
 // TODO need a better name for this lol
 // this assumes we're doing the same direction twice which isn't necessarily accurate in the future...
-class paginationMultipleColumnsSubQueryClause implements Clause {
+class paginationMultipleColumnsSubQueryClause<T extends Data, K = keyof T>
+  implements Clause<T, K>
+{
   constructor(
-    private col: string,
+    private col: K,
     private op: string,
     private tableName: string,
-    private uniqueCol: string,
+    private uniqueCol: K,
     private val: any,
   ) {}
 
-  private buildSimpleQuery(clause: Clause, idx: number) {
+  private buildSimpleQuery(clause: Clause<T, K>, idx: number) {
     return `SELECT ${this.col} FROM ${this.tableName} WHERE ${clause.clause(
       idx,
     )}`;
@@ -796,7 +889,7 @@ class paginationMultipleColumnsSubQueryClause implements Clause {
     return `(${this.col} ${this.op} (${eq1}) OR (${this.col} = (${eq2}) AND ${op}))`;
   }
 
-  columns(): string[] {
+  columns(): K[] {
     return [this.col];
   }
 
@@ -814,11 +907,11 @@ class paginationMultipleColumnsSubQueryClause implements Clause {
   }
 }
 
-export function PaginationMultipleColsSubQuery(
-  col: string,
+export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
+  col: K,
   op: string,
   tableName: string,
-  uniqueCol: string,
+  uniqueCol: K,
   val: any,
 ) {
   return new paginationMultipleColumnsSubQueryClause(
@@ -831,22 +924,37 @@ export function PaginationMultipleColsSubQuery(
 }
 
 // These 5 are used on the RHS of an expression
-export function Add(col: string, value: any): Clause {
+export function Add<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
   return new simpleClause(col, value, "+", new isNullClause(col));
 }
 
-export function Subtract(col: string, value: any): Clause {
+export function Subtract<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
   return new simpleClause(col, value, "-", new isNullClause(col));
 }
 
-export function Multiply(col: string, value: any): Clause {
+export function Multiply<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
   return new simpleClause(col, value, "*", new isNullClause(col));
 }
 
-export function Divide(col: string, value: any): Clause {
+export function Divide<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
   return new simpleClause(col, value, "/", new isNullClause(col));
 }
 
-export function Modulo(col: string, value: any): Clause {
+export function Modulo<T extends Data, K = keyof T>(
+  col: K,
+  value: any,
+): Clause<T, K> {
   return new simpleClause(col, value, "%", new isNullClause(col));
 }
