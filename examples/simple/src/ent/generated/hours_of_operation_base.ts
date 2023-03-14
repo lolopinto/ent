@@ -116,7 +116,7 @@ export class HoursOfOperationBase
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<HoursOfOperationDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -133,17 +133,17 @@ export class HoursOfOperationBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<HoursOfOperationDBData>,
     context?: Context,
   ): Promise<HoursOfOperationDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<HoursOfOperationDBData, HoursOfOperationDBData>(
       {
         ...HoursOfOperationBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as HoursOfOperationDBData[];
+    );
   }
 
   static async loadCustomCount<T extends HoursOfOperationBase>(
@@ -151,7 +151,7 @@ export class HoursOfOperationBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<HoursOfOperationDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

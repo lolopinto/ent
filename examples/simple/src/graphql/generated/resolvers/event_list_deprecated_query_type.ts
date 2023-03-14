@@ -68,6 +68,7 @@ export const EventListDeprecatedQueryType: GraphQLFieldConfig<
 
     return Event.loadCustom(
       context.getViewer(),
+      // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
   },

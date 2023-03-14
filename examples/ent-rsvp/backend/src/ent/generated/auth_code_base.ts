@@ -115,7 +115,7 @@ export class AuthCodeBase implements Ent<Viewer> {
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<AuthCodeDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -132,17 +132,17 @@ export class AuthCodeBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AuthCodeDBData>,
     context?: Context,
   ): Promise<AuthCodeDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<AuthCodeDBData, AuthCodeDBData>(
       {
         ...AuthCodeBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as AuthCodeDBData[];
+    );
   }
 
   static async loadCustomCount<T extends AuthCodeBase>(
@@ -150,7 +150,7 @@ export class AuthCodeBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AuthCodeDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

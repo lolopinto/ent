@@ -119,7 +119,7 @@ export class EventBase implements Ent<Viewer> {
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<EventDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -136,17 +136,17 @@ export class EventBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<EventDBData>,
     context?: Context,
   ): Promise<EventDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<EventDBData, EventDBData>(
       {
         ...EventBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as EventDBData[];
+    );
   }
 
   static async loadCustomCount<T extends EventBase>(
@@ -154,7 +154,7 @@ export class EventBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<EventDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

@@ -115,7 +115,7 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<AddressDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -132,17 +132,17 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AddressDBData>,
     context?: Context,
   ): Promise<AddressDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<AddressDBData, AddressDBData>(
       {
         ...AddressBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as AddressDBData[];
+    );
   }
 
   static async loadCustomCount<T extends AddressBase>(
@@ -150,7 +150,7 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AddressDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

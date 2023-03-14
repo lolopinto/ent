@@ -156,11 +156,11 @@ export interface QueryableDataOptions
   extends SelectBaseDataOptions,
     QueryDataOptions {}
 
-export interface QueryDataOptions {
+export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   distinct?: boolean;
-  clause: clause.Clause;
+  clause: clause.Clause<T, K>;
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
-  groupby?: string;
+  groupby?: K;
   limit?: number;
   disableTransformations?: boolean;
 }

@@ -31,6 +31,7 @@ async function loadRowsForLoader<K, V = Data>(
       optionClause = options.clause;
     }
     if (optionClause) {
+      // @ts-expect-error id/string mismatch
       cls = clause.And(cls, optionClause);
     }
   }

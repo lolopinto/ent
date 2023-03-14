@@ -118,7 +118,7 @@ export class ContactEmailBase
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<ContactEmailDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -135,17 +135,17 @@ export class ContactEmailBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<ContactEmailDBData>,
     context?: Context,
   ): Promise<ContactEmailDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<ContactEmailDBData, ContactEmailDBData>(
       {
         ...ContactEmailBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as ContactEmailDBData[];
+    );
   }
 
   static async loadCustomCount<T extends ContactEmailBase>(
@@ -153,7 +153,7 @@ export class ContactEmailBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<ContactEmailDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

@@ -68,6 +68,7 @@ export const CommentListDeprecatedQueryType: GraphQLFieldConfig<
 
     return Comment.loadCustom(
       context.getViewer(),
+      // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
   },

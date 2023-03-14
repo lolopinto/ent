@@ -166,7 +166,7 @@ export class TodoBase implements Ent<Viewer> {
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<TodoDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -183,17 +183,17 @@ export class TodoBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<TodoDBData>,
     context?: Context,
   ): Promise<TodoDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<TodoDBData, TodoDBData>(
       {
         ...TodoBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as TodoDBData[];
+    );
   }
 
   static async loadCustomCount<T extends TodoBase>(
@@ -201,7 +201,7 @@ export class TodoBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<TodoDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(

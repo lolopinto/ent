@@ -555,6 +555,38 @@ func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) (*entLo
 	return ret, nil
 }
 
+type extraCustomQueryInfo struct {
+	Interface string
+	Extends   string
+	Columns   []struct {
+		Name string
+		Type string
+	}
+}
+
+func (nodeData *NodeData) GetExtraCustomQueryInfo() *extraCustomQueryInfo {
+	ret := &extraCustomQueryInfo{}
+	for _, idx := range nodeData.Indices {
+		if idx.FullText.GeneratedColumnName != "" {
+			ret.Columns = append(ret.Columns, struct {
+				Name string
+				Type string
+			}{
+				Name: idx.FullText.GeneratedColumnName,
+				// always string for now. doesn't actually matter at the moment
+				Type: "string",
+			})
+		}
+	}
+
+	if len(ret.Columns) != 0 {
+		ret.Interface = fmt.Sprintf("%sCustomQueryData", nodeData.Node)
+		ret.Extends = nodeData.GetRawDBDataName()
+		return ret
+	}
+	return nil
+}
+
 func (nodeData *NodeData) GetFieldLoaderName(field *field.Field) string {
 	return fmt.Sprintf("%s%sLoader", nodeData.NodeInstance, field.CamelCaseName())
 }
