@@ -70,7 +70,7 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16.x
-    - run: npm install -g ts-node prettier typescript @swc/core @swc/cli
+    - run: npm install -g ts-node prettier typescript @swc/core@1.2.155 @swc/cli@0.1.55
     - run: |
         cd ts 
         npm ci
