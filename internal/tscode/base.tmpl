@@ -57,7 +57,7 @@
   }
 {{ end -}}
 
-{{ $customQuery := $nodeData.GetExtraCustomQueryInfo -}} 
+{{ $customQuery := .GetExtraCustomQueryInfo -}} 
 {{ if $customQuery -}}
   {{$customQueryDataType = $customQuery.Interface -}}
   interface {{$customQueryDataType}} extends {{$customQuery.Extends}} {
