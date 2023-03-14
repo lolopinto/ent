@@ -567,7 +567,7 @@ type extraCustomQueryInfo struct {
 func (nodeData *NodeData) GetExtraCustomQueryInfo() *extraCustomQueryInfo {
 	ret := &extraCustomQueryInfo{}
 	for _, idx := range nodeData.Indices {
-		if idx.FullText.GeneratedColumnName != "" {
+		if idx.FullText != nil && idx.FullText.GeneratedColumnName != "" {
 			ret.Columns = append(ret.Columns, struct {
 				Name string
 				Type string
