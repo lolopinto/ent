@@ -13,6 +13,8 @@ import {
   Data,
   PrivacyPolicy,
   DenyWithReason,
+  Skip,
+  Allow,
 } from "../core/base";
 import {
   EditNodeOperation,
@@ -69,9 +71,10 @@ import {
   Table,
 } from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
-import { convertDate, convertList } from "../core/convert";
+import { convertDate, convertJSON, convertList } from "../core/convert";
 import { v4 } from "uuid";
 import { NumberOps } from "./relative_value";
+import { StructType, BooleanType } from "../schema";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
@@ -204,6 +207,63 @@ const UserWithIntBalanceSchema = getBuilderSchemaFromFields(
   UserWithIntBalance,
 );
 
+interface UserPrefs {
+  canHost: boolean;
+  notifsEnabled: boolean;
+  funFriends: ID[];
+}
+
+function convertPrefs(data: Data): UserPrefs {
+  if (
+    data.canHost !== undefined ||
+    data.notifsEnabled !== undefined ||
+    data.funFriends !== undefined
+  ) {
+    throw new Error(`data was not formatted before passing to constructor`);
+  }
+  return {
+    canHost: data.can_host,
+    notifsEnabled: data.notifs_enabled,
+    funFriends: data.fun_friends,
+  };
+}
+
+class UserWithPrefs extends User {
+  public prefs: UserPrefs;
+  constructor(viewer: Viewer, data: Data) {
+    super(viewer, data);
+    this.prefs = convertPrefs(convertJSON(data.prefs));
+  }
+}
+
+const UserWithPrefsSchema = getBuilderSchemaFromFields(
+  {
+    first_name: StringType(),
+    last_name: StringType(),
+    account_status: StringType(),
+    email_address: StringType({ nullable: true }),
+    prefs: StructType({
+      tsType: "UserPrefs",
+      graphQLType: "UserPrefs",
+      fields: {
+        can_host: BooleanType(),
+        notifs_enabled: BooleanType(),
+        fun_friends: UUIDListType(),
+      },
+      // defaultValueOnCreate returns an object in the generated format
+      // not the db format
+      defaultValueOnCreate() {
+        return {
+          canHost: true,
+          notifsEnabled: true,
+          funFriends: [1],
+        };
+      },
+    }),
+  },
+  UserWithPrefs,
+);
+
 const AddressSchemaDerivedFields = getBuilderSchemaFromFields(
   {
     Street: StringType(),
@@ -241,6 +301,8 @@ const ContactSchema = getBuilderSchemaFromFields(
   Contact,
 );
 
+class Contact2 extends Contact {}
+
 const ContactSchema2 = getBuilderSchemaFromFields(
   {
     FirstName: StringType(),
@@ -249,7 +311,21 @@ const ContactSchema2 = getBuilderSchemaFromFields(
       defaultToViewerOnCreate: true,
     }),
   },
-  Contact,
+  Contact2,
+);
+
+class Contact4 extends Contact {}
+const ContactSchema4 = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+    UserID: StringType({
+      async defaultValueOnCreate(builder, input): Promise<ID | null> {
+        return builder.viewer.viewerID;
+      },
+    }),
+  },
+  Contact4,
 );
 
 class DefaultEnumField extends EnumField {
@@ -343,13 +419,16 @@ const getTables = () => {
     UserSchemaDefaultValueOnCreate,
     UserSchemaDefaultValueOnCreateJSON,
     UserSchemaDefaultValueOnCreateInvalidJSON,
+    UserWithPrefsSchema,
     UserWithBalanceSchema,
     UserWithIntBalanceSchema,
     SchemaWithProcessors,
     EventSchema,
     AddressSchemaDerivedFields,
     ContactSchema,
+    ContactSchema2,
     ContactSchema3,
+    ContactSchema4,
     CustomUserSchema,
     ContactEmailSchema,
     SensitiveValuesSchema,
@@ -1885,6 +1964,89 @@ function commonTests() {
     }
   });
 
+  test("defaultValueOnCreate async", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      UserSchema,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+    await builder.saveX();
+    const user = await builder.editedEntX();
+
+    const builder2 = new SimpleBuilder(
+      new IDViewer(user.id),
+      ContactSchema4,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+
+    await builder2.saveX();
+    const contact = await builder2.editedEntX();
+    expect(contact.data.user_id).toEqual(user.id);
+
+    const builder3 = new SimpleBuilder(
+      new LoggedOutViewer(),
+      ContactSchema4,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+    // logged out viewer with null viewer throws since it's still required
+    try {
+      await builder3.saveX();
+      throw new Error("should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("field UserID set to null for non-nullable field");
+    }
+  });
+
+  test("defaultValueOnCreate struct", async () => {
+    let action = new SimpleAction(
+      new LoggedOutViewer(),
+      UserWithPrefsSchema,
+      new Map([
+        ["first_name", "Jon"],
+        ["last_name", "Snow"],
+        ["account_status", "validated"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+    action.getPrivacyPolicy = () => {
+      return {
+        rules: [
+          AllowIfViewerRule,
+          {
+            async apply(v, ent: UserWithPrefs) {
+              if (ent.prefs.funFriends.length) {
+                return Allow();
+              }
+              return Skip();
+            },
+          },
+        ],
+      };
+    };
+    const ent = await action.saveX();
+    expect(ent.prefs).toStrictEqual({
+      canHost: true,
+      notifsEnabled: true,
+      funFriends: [1],
+    });
+  });
+
   test("defaultToViewerOnCreate", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
@@ -2016,7 +2178,7 @@ function commonTests() {
     expect(unsafe).toBeDefined();
 
     const contact = await action.saveX();
-    // id gotte from getPossibleUnsafeEntForPrivacy is still returned here
+    // id gotten from getPossibleUnsafeEntForPrivacy is still returned here
     expect(contact.id).toBe(unsafe?.id);
   });
 

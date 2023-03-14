@@ -20,27 +20,21 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
-import { DayOfWeek, DayOfWeekAlt, NodeType } from "./types";
+import {
+  HoursOfOperationDBData,
+  hoursOfOperationLoader,
+  hoursOfOperationLoaderInfo,
+} from "./loaders";
+import { NodeType } from "./types";
 import { DayOfWeekMixin, IDayOfWeek } from "../internal";
 import schema from "../../schema/hours_of_operation_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
-
-interface HoursOfOperationData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  day_of_week: DayOfWeek;
-  day_of_week_alt: DayOfWeekAlt | null;
-  open: string;
-  close: string;
-}
 
 export class HoursOfOperationBase
   extends DayOfWeekMixin(class {})
   implements Ent<ExampleViewerAlias>, IDayOfWeek
 {
-  protected readonly data: HoursOfOperationData;
+  protected readonly data: HoursOfOperationDBData;
   readonly nodeType = NodeType.HoursOfOperation;
   readonly id: ID;
   readonly createdAt: Date;
@@ -60,10 +54,10 @@ export class HoursOfOperationBase
     this.data = data;
   }
 
-  __setRawDBData<HoursOfOperationData>(data: HoursOfOperationData) {}
+  __setRawDBData<HoursOfOperationDBData>(data: HoursOfOperationDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): HoursOfOperationData {
+  ___getRawDBData(): HoursOfOperationDBData {
     return this.data;
   }
 
@@ -122,7 +116,7 @@ export class HoursOfOperationBase
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<HoursOfOperationDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -139,17 +133,17 @@ export class HoursOfOperationBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<HoursOfOperationDBData>,
     context?: Context,
-  ): Promise<HoursOfOperationData[]> {
-    return (await loadCustomData(
+  ): Promise<HoursOfOperationDBData[]> {
+    return loadCustomData<HoursOfOperationDBData, HoursOfOperationDBData>(
       {
         ...HoursOfOperationBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as HoursOfOperationData[];
+    );
   }
 
   static async loadCustomCount<T extends HoursOfOperationBase>(
@@ -157,7 +151,7 @@ export class HoursOfOperationBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<HoursOfOperationDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
@@ -176,12 +170,12 @@ export class HoursOfOperationBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HoursOfOperationData | null> {
+  ): Promise<HoursOfOperationDBData | null> {
     const row = await hoursOfOperationLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as HoursOfOperationData;
+    return row;
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(
@@ -191,12 +185,12 @@ export class HoursOfOperationBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HoursOfOperationData> {
+  ): Promise<HoursOfOperationDBData> {
     const row = await hoursOfOperationLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as HoursOfOperationData;
+    return row;
   }
 
   static loaderOptions<T extends HoursOfOperationBase>(

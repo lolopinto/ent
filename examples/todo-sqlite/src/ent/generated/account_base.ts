@@ -26,6 +26,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
+  AccountDBData,
   accountLoader,
   accountLoaderInfo,
   accountNoTransformLoader,
@@ -58,24 +59,11 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/account_schema";
 
-interface AccountData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
-  name: string;
+interface AccountData
+  extends Omit<AccountDBData, "phone_number" | "account_prefs_3" | "credits"> {
   phone_number: string | null;
-  account_state: AccountState | null;
-  account_prefs: AccountPrefs | null;
   account_prefs_3: AccountPrefs3 | null;
-  account_prefs_list: AccountPrefs2[] | null;
   credits: number | null;
-}
-
-interface AccountDBData extends AccountData {
-  phone_number: string;
-  account_prefs_3: AccountPrefs3;
-  credits: number;
 }
 
 export class AccountBase
@@ -224,7 +212,7 @@ export class AccountBase
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<AccountDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -241,17 +229,17 @@ export class AccountBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AccountDBData>,
     context?: Context,
   ): Promise<AccountDBData[]> {
-    return (await loadCustomData(
+    return loadCustomData<AccountDBData, AccountDBData>(
       {
         ...AccountBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as AccountDBData[];
+    );
   }
 
   static async loadCustomCount<T extends AccountBase>(
@@ -259,7 +247,7 @@ export class AccountBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AccountDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
@@ -283,7 +271,7 @@ export class AccountBase
     if (!row) {
       return null;
     }
-    return row as AccountDBData;
+    return row;
   }
 
   static async loadRawDataX<T extends AccountBase>(
@@ -298,7 +286,7 @@ export class AccountBase
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as AccountDBData;
+    return row;
   }
 
   static async loadFromPhoneNumber<T extends AccountBase>(
@@ -357,7 +345,7 @@ export class AccountBase
     if (!row) {
       return null;
     }
-    return row as AccountDBData;
+    return row;
   }
 
   static loaderOptions<T extends AccountBase>(

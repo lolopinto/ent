@@ -7,12 +7,12 @@ import * as clause from "./clause";
 // of information.
 // Using Loader and LoaderFactory allows us to use the same instance of Loader across a
 // request and potentially batch data as needed when possible
-export interface Loader<T, V> {
+export interface Loader<K, V> {
   context?: Context;
-  load(key: T): Promise<V>;
+  load(key: K): Promise<V>;
   // TODO we need a loadMany() API similar to DataLoaer
   // what's the plural api to be?
-  loadMany?(keys: T[]): Promise<(V | null)[]>;
+  loadMany?(keys: K[]): Promise<(V | null)[]>;
   clearAll(): any;
 }
 
@@ -52,18 +52,18 @@ export type EdgeQueryableDataOptions = Partial<
 
 // PrimableLoader allows us to prime data in the cache that's retrieved from
 // other sources
-export interface PrimableLoader<T, V> extends Loader<T, V> {
-  prime(d: Data): void;
+export interface PrimableLoader<K, V> extends Loader<K, V> {
+  prime(d: V): void;
   // prime this loader and any other loader it's aware of
-  primeAll?(d: Data): void;
+  primeAll?(d: V): void;
 }
 
 interface cache {
-  getLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V>;
-  getLoaderWithLoadMany<T, V>(
+  getLoader<K, V>(name: string, create: () => Loader<K, V>): Loader<K, V>;
+  getLoaderWithLoadMany<K, V>(
     name: string,
-    create: () => LoaderWithLoadMany<T, V>,
-  ): LoaderWithLoadMany<T, V>;
+    create: () => LoaderWithLoadMany<K, V>,
+  ): LoaderWithLoadMany<K, V>;
   getCachedRows(options: queryOptions): Data[] | null;
   getCachedRow(options: queryOptions): Data | null;
   primeCache(options: queryOptions, rows: Data[]): void;
@@ -156,11 +156,11 @@ export interface QueryableDataOptions
   extends SelectBaseDataOptions,
     QueryDataOptions {}
 
-export interface QueryDataOptions {
+export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   distinct?: boolean;
-  clause: clause.Clause;
+  clause: clause.Clause<T, K>;
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
-  groupby?: string;
+  groupby?: K;
   limit?: number;
   disableTransformations?: boolean;
 }
@@ -228,11 +228,11 @@ export interface LoadCustomEntOptions<
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }
 
-export interface LoaderInfo {
+export interface LoaderInfo<T = Data> {
   tableName: string;
   fields: string[];
   nodeType: string;
-  loaderFactory: LoaderFactory<any, Data | null>;
+  loaderFactory: LoaderFactory<ID, T | null>;
 }
 
 // information needed to edit an ent

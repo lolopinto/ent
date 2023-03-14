@@ -20,32 +20,21 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders";
 import {
-  ContactEmailLabel,
-  ContactInfo,
-  NodeType,
-  convertContactEmailLabel,
-} from "./types";
+  ContactEmailDBData,
+  contactEmailLoader,
+  contactEmailLoaderInfo,
+} from "./loaders";
+import { ContactEmailLabel, NodeType, convertContactEmailLabel } from "./types";
 import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
-
-interface ContactEmailData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  extra: ContactInfo | null;
-  email_address: string;
-  label: ContactEmailLabel;
-  contact_id: ID;
-}
 
 export class ContactEmailBase
   extends ContactInfoMixin(class {})
   implements Ent<ExampleViewerAlias>, IContactInfo
 {
-  protected readonly data: ContactEmailData;
+  protected readonly data: ContactEmailDBData;
   readonly nodeType = NodeType.ContactEmail;
   readonly id: ID;
   readonly createdAt: Date;
@@ -67,10 +56,10 @@ export class ContactEmailBase
     this.data = data;
   }
 
-  __setRawDBData<ContactEmailData>(data: ContactEmailData) {}
+  __setRawDBData<ContactEmailDBData>(data: ContactEmailDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): ContactEmailData {
+  ___getRawDBData(): ContactEmailDBData {
     return this.data;
   }
 
@@ -129,7 +118,7 @@ export class ContactEmailBase
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<ContactEmailDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -146,17 +135,17 @@ export class ContactEmailBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<ContactEmailDBData>,
     context?: Context,
-  ): Promise<ContactEmailData[]> {
-    return (await loadCustomData(
+  ): Promise<ContactEmailDBData[]> {
+    return loadCustomData<ContactEmailDBData, ContactEmailDBData>(
       {
         ...ContactEmailBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as ContactEmailData[];
+    );
   }
 
   static async loadCustomCount<T extends ContactEmailBase>(
@@ -164,7 +153,7 @@ export class ContactEmailBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<ContactEmailDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
@@ -183,12 +172,12 @@ export class ContactEmailBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactEmailData | null> {
+  ): Promise<ContactEmailDBData | null> {
     const row = await contactEmailLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as ContactEmailData;
+    return row;
   }
 
   static async loadRawDataX<T extends ContactEmailBase>(
@@ -198,12 +187,12 @@ export class ContactEmailBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactEmailData> {
+  ): Promise<ContactEmailDBData> {
     const row = await contactEmailLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as ContactEmailData;
+    return row;
   }
 
   static loaderOptions<T extends ContactEmailBase>(

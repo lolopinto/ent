@@ -20,6 +20,7 @@ const EventSchema = new EntSchema({
     // we should warn when we see an "ID/id/Id" field as non-id type and ask if they wanna change it
     // name comment
     creatorID: UUIDType({
+      immutable: true,
       fieldEdge: {
         schema: "User",
         inverseEdge: "createdEvents",

@@ -29,7 +29,6 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEventEditInput extends Omit<EventEditInput, "location"> {
   id: string;
-  creatorID?: string;
   eventLocation?: string;
   addressID?: string;
 }
@@ -47,9 +46,6 @@ export const EventEditInputType = new GraphQLInputObjectType({
     },
     name: {
       type: GraphQLString,
-    },
-    creatorID: {
-      type: GraphQLID,
     },
     startTime: {
       type: GraphQLTime,
@@ -101,7 +97,6 @@ export const EventEditType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.id),
       {
         name: input.name,
-        creatorID: mustDecodeNullableIDFromGQLID(input.creatorID),
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.eventLocation,

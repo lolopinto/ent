@@ -20,31 +20,22 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { holidayLoader, holidayLoaderInfo } from "./loaders";
-import { DayOfWeek, DayOfWeekAlt, NodeType } from "./types";
+import { HolidayDBData, holidayLoader, holidayLoaderInfo } from "./loaders";
+import { DayOfWeekAlt, NodeType, convertDayOfWeekAlt } from "./types";
 import { DayOfWeekMixin, IDayOfWeek } from "../internal";
 import schema from "../../schema/holiday_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
-
-interface HolidayData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  day_of_week: DayOfWeek;
-  day_of_week_alt: DayOfWeekAlt | null;
-  label: string;
-  date: Date;
-}
 
 export class HolidayBase
   extends DayOfWeekMixin(class {})
   implements Ent<ExampleViewerAlias>, IDayOfWeek
 {
-  protected readonly data: HolidayData;
+  protected readonly data: HolidayDBData;
   readonly nodeType = NodeType.Holiday;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly dayOfWeekAlt: DayOfWeekAlt;
   readonly label: string;
   readonly date: Date;
 
@@ -54,16 +45,17 @@ export class HolidayBase
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
+    this.dayOfWeekAlt = convertDayOfWeekAlt(data.day_of_week_alt);
     this.label = data.label;
     this.date = data.date;
     // @ts-expect-error
     this.data = data;
   }
 
-  __setRawDBData<HolidayData>(data: HolidayData) {}
+  __setRawDBData<HolidayDBData>(data: HolidayDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): HolidayData {
+  ___getRawDBData(): HolidayDBData {
     return this.data;
   }
 
@@ -122,7 +114,7 @@ export class HolidayBase
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<HolidayDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -139,17 +131,17 @@ export class HolidayBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<HolidayDBData>,
     context?: Context,
-  ): Promise<HolidayData[]> {
-    return (await loadCustomData(
+  ): Promise<HolidayDBData[]> {
+    return loadCustomData<HolidayDBData, HolidayDBData>(
       {
         ...HolidayBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as HolidayData[];
+    );
   }
 
   static async loadCustomCount<T extends HolidayBase>(
@@ -157,7 +149,7 @@ export class HolidayBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<HolidayDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
@@ -176,12 +168,12 @@ export class HolidayBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HolidayData | null> {
+  ): Promise<HolidayDBData | null> {
     const row = await holidayLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as HolidayData;
+    return row;
   }
 
   static async loadRawDataX<T extends HolidayBase>(
@@ -191,12 +183,12 @@ export class HolidayBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<HolidayData> {
+  ): Promise<HolidayDBData> {
     const row = await holidayLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as HolidayData;
+    return row;
   }
 
   static loaderOptions<T extends HolidayBase>(

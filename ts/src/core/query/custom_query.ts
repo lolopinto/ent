@@ -104,7 +104,7 @@ function getQueryLoader<
   opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>,
   options: EdgeQueryableDataOptions,
 ) {
-  const loader = opts.loadEntOptions.loaderFactory as ObjectLoaderFactory<ID>;
+  const loader = opts.loadEntOptions.loaderFactory as ObjectLoaderFactory<Data>;
   const name = `custom_query_loader:${opts.name}`;
 
   return QueryLoaderFactory.createConfigurableLoader(

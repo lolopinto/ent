@@ -68,6 +68,7 @@ export const ContactEmailListDeprecatedQueryType: GraphQLFieldConfig<
 
     return ContactEmail.loadCustom(
       context.getViewer(),
+      // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
   },

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -1134,6 +1135,13 @@ func writeMixinBuilderFile(processor *codegen.Processor, pattern *schema.Pattern
 func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["edgeInfos"] = action.GetEdgesFromEdges
+	m["excludedFieldsType"] = func(inputName string, excludedFields []*field.Field) string {
+		var excluded []string
+		for _, f := range excludedFields {
+			excluded = append(excluded, strconv.Quote(f.TsBuilderFieldName()))
+		}
+		return fmt.Sprintf("Omit<%s, %s>", inputName, strings.Join(excluded, " | "))
+	}
 
 	return m
 }

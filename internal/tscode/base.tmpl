@@ -35,37 +35,37 @@
 
 {{$nodeData := .}}
 
-{{/* there's 2 data types here
-// there's raw db data and there's ent data 
+{{/* there's 3 data types here
+// 1/ there's raw db data 
+// 2/ there's ent data 
 // they are different if we have on ent load field privacy and an ent with this...
+// 3/ there's potentially extra columns in the db that can be queried which aren't returned in the 
+// query e.g. generated column indices. we can have a third type for that
 */}}
-{{$dataType := printf "%sData" .Node -}}
-{{$rawDBDataType := $dataType -}}
-
-interface {{$dataType}} {
-  {{range $field := .FieldInfo.EntFields -}}
-    {{ range $field.GetTsTypeImports -}}
-      {{ if ($nodeData.ForeignImport .Import) -}}
-        {{ reserveImportPath . false -}}
-      {{end -}}
-      {{$typ := useImportMaybe .Import -}}
-    {{end -}}
-
-    {{$field.GetDbColName}}: {{$field.TsType}};
-  {{ end -}}
-}
+{{ reserveImport "src/ent/generated/loaders" .GetRawDBDataName -}}
+{{$rawDBDataType := useImport .GetRawDBDataName -}}
+{{$dataType := $rawDBDataType -}}
+{{$customQueryDataType := $rawDBDataType -}}
 
 {{if .OnEntLoadFieldPrivacy $cfg -}}
-  {{$rawDBDataType = printf "%sDBData" .Node -}}
-  interface {{$rawDBDataType}} extends {{$dataType}} {
-    {{range $field := .FieldInfo.EntFields -}}
-      {{ if ne $field.TsType $field.TsActualType -}}
-        {{$field.GetDbColName}}: {{$field.TsActualType}};
-      {{ end -}}
+  {{$info := .GetOnEntLoadPrivacyInfo $cfg -}}
+  {{$dataType = $info.Interface -}}
+  interface {{$info.Interface}} extends {{$info.Extends}} {
+    {{range $field := $info.Fields -}}
+      {{$field.GetDbColName}}: {{$field.TsType}};
     {{ end -}}
   }
 {{ end -}}
 
+{{ $customQuery := .GetExtraCustomQueryInfo -}} 
+{{ if $customQuery -}}
+  {{$customQueryDataType = $customQuery.Interface -}}
+  interface {{$customQueryDataType}} extends {{$customQuery.Extends}} {
+    {{range $col := $customQuery.Columns -}}
+      {{$col.Name}}: {{$col.Type}};
+    {{ end -}}
+  }
+{{ end}}
 
 {{range $field := .FieldInfo.EntFields -}}
   {{ if $field.FetchOnDemand -}}
@@ -103,13 +103,13 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{ end -}}
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.EntFields -}}
-    {{ range $field.GetTsTypeImports -}}
-      {{ if ($nodeData.ForeignImport .Import) -}}
-        {{ reserveImportPath . false -}}
-      {{end -}}
-      {{$typ := useImportMaybe .Import -}}
-    {{end -}}
     {{ if not ($schema.PatternFieldWithMixin $field) -}}
+      {{ range $field.GetTsTypeImports -}}
+        {{ if ($nodeData.ForeignImport .Import) -}}
+          {{ reserveImportPath . false -}}
+        {{end -}}
+        {{$typ := useImportMaybe .Import -}}
+      {{end -}}
       {{ if $field.Private $cfg -}}
         {{ if $field.FetchOnDemand -}}
           protected {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
@@ -278,8 +278,9 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   static async loadCustom<T extends {{$baseClass}}>(
     this: {{$thisType}},
     viewer: {{$viewerType}},
-    query: {{useImport "CustomQuery"}},
+    query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
   ): Promise<T[]> {
+    {{/* there's technically some mismatch in the raw db types passed/returned here but doesn't matter */}}
     return await {{useImport "loadCustomEnts"}}(
       viewer,
       {
@@ -292,22 +293,22 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static async loadCustomData<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    query: {{useImport "CustomQuery"}},
+    query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
     context?: {{useImport "Context"}}
   ): Promise<{{$rawDBDataType}}[]> {
-    return  await {{useImport "loadCustomData"}}(
+    return {{useImport "loadCustomData"}}<{{$customQueryDataType}}, {{$rawDBDataType}}>(
       {
         ...{{$baseClass}}.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    ) as {{$rawDBDataType}}[];
+    );
   }
 
   static async loadCustomCount<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    query: {{useImport "CustomQuery"}},
+    query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
     context?: {{useImport "Context"}}
   ): Promise<number> {
     return {{useImport "loadCustomCount"}}(
@@ -328,7 +329,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     if (!row) {
       return null;
     }
-    return row as {{$rawDBDataType}};
+    return row;
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
@@ -340,7 +341,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as {{$rawDBDataType}};
+    return row;
   }
 
 
@@ -395,7 +396,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         if (!row) {
           return null;
         }
-        return row as {{$rawDBDataType}};
+        return row;
       }
     {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}

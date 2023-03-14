@@ -68,6 +68,7 @@ export const HoursOfOperationListDeprecatedQueryType: GraphQLFieldConfig<
 
     return HoursOfOperation.loadCustom(
       context.getViewer(),
+      // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
   },

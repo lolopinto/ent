@@ -10,14 +10,13 @@ import {
 } from "@snowtop/ent";
 import {
   Action,
-  Builder,
   Changeset,
   Observer,
   Trigger,
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Contact, ContactEmail } from "../../..";
+import { ContactEmail } from "../../..";
 import { ContactEmailBuilder } from "./contact_email_builder";
 import { ContactEmailLabel, ContactInfo } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
@@ -26,7 +25,6 @@ export interface ContactEmailEditInput {
   extra?: ContactInfo | null;
   emailAddress?: string;
   label?: ContactEmailLabel;
-  contactID?: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
 export type EditContactEmailActionTriggers = (

@@ -387,6 +387,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		nodeData.HideFromGraphQL = node.HideFromGraphQL
 		nodeData.TransformsSelect = node.TransformsSelect
 		nodeData.TransformsDelete = node.TransformsDelete
+		nodeData.TransformsLoaderCodegen = node.TransformsLoaderCodegen
 		for _, p := range node.Patterns {
 			pattern := schema.Patterns[p]
 			if pattern == nil || pattern.DisableMixin {
@@ -1712,7 +1713,14 @@ func (s *Schema) PatternFieldWithMixin(f *field.Field) bool {
 	if p == nil {
 		return false
 	}
-	return p.HasMixin()
+
+	if !p.HasMixin() {
+		return false
+	}
+
+	// if nullability in pattern is different, return false so we override nullable factor
+	patternField := p.FieldInfo.GetFieldByName(f.FieldName)
+	return patternField.Nullable() == f.Nullable()
 }
 
 func (s *Schema) GetCustomTypeByTSName(name string) field.CustomTypeWithHasConvertFunction {

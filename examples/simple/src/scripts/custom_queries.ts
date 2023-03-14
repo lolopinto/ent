@@ -118,7 +118,11 @@ async function main() {
       throw new Error('invalid query. must provid id or ids');
     }
 
-    return ${node}.loadCustom(context.getViewer(), query.AndOptional(...whereQueries));
+    return ${node}.loadCustom(
+      context.getViewer(), 
+      // @ts-expect-error Clause shenanigans
+      query.AndOptional(...whereQueries),
+    );
     `;
 
     const connectionContent = `

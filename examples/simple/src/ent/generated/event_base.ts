@@ -22,7 +22,7 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
-import { eventLoader, eventLoaderInfo } from "./loaders";
+import { EventDBData, eventLoader, eventLoaderInfo } from "./loaders";
 import { EdgeType, EventRsvpStatus, NodeType } from "./types";
 import {
   Address,
@@ -36,20 +36,8 @@ import {
 import schema from "../../schema/event_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface EventData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  name: string;
-  user_id: ID;
-  start_time: Date;
-  end_time: Date | null;
-  location: string;
-  address_id: ID | null;
-}
-
 export class EventBase implements Ent<ExampleViewerAlias> {
-  protected readonly data: EventData;
+  protected readonly data: EventDBData;
   readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;
@@ -75,10 +63,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     this.data = data;
   }
 
-  __setRawDBData<EventData>(data: EventData) {}
+  __setRawDBData<EventDBData>(data: EventDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): EventData {
+  ___getRawDBData(): EventDBData {
     return this.data;
   }
 
@@ -150,7 +138,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<EventDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -167,17 +155,17 @@ export class EventBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<EventDBData>,
     context?: Context,
-  ): Promise<EventData[]> {
-    return (await loadCustomData(
+  ): Promise<EventDBData[]> {
+    return loadCustomData<EventDBData, EventDBData>(
       {
         ...EventBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as EventData[];
+    );
   }
 
   static async loadCustomCount<T extends EventBase>(
@@ -185,7 +173,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<EventDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
@@ -204,12 +192,12 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventData | null> {
+  ): Promise<EventDBData | null> {
     const row = await eventLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as EventData;
+    return row;
   }
 
   static async loadRawDataX<T extends EventBase>(
@@ -219,12 +207,12 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventData> {
+  ): Promise<EventDBData> {
     const row = await eventLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as EventData;
+    return row;
   }
 
   static loaderOptions<T extends EventBase>(

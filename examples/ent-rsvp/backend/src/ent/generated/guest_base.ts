@@ -18,7 +18,11 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { guestLoader, guestLoaderInfo } from "src/ent/generated/loaders";
+import {
+  GuestDBData,
+  guestLoader,
+  guestLoaderInfo,
+} from "src/ent/generated/loaders";
 import { NodeType } from "src/ent/generated/types";
 import {
   Address,
@@ -33,23 +37,11 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/guest_schema";
 
-interface GuestData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  address_id: ID | null;
-  name: string;
-  event_id: ID;
-  email_address: string | null;
-  guest_group_id: ID;
-  title: string | null;
-}
-
 export class GuestBase
   extends WithAddressMixin(class {})
   implements Ent<Viewer>, IWithAddress
 {
-  protected readonly data: GuestData;
+  protected readonly data: GuestDBData;
   readonly nodeType = NodeType.Guest;
   readonly id: ID;
   readonly createdAt: Date;
@@ -75,10 +67,10 @@ export class GuestBase
     this.data = data;
   }
 
-  __setRawDBData<GuestData>(data: GuestData) {}
+  __setRawDBData<GuestDBData>(data: GuestDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): GuestData {
+  ___getRawDBData(): GuestDBData {
     return this.data;
   }
 
@@ -137,7 +129,7 @@ export class GuestBase
       data: Data,
     ) => T,
     viewer: Viewer,
-    query: CustomQuery,
+    query: CustomQuery<GuestDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -154,17 +146,17 @@ export class GuestBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<GuestDBData>,
     context?: Context,
-  ): Promise<GuestData[]> {
-    return (await loadCustomData(
+  ): Promise<GuestDBData[]> {
+    return loadCustomData<GuestDBData, GuestDBData>(
       {
         ...GuestBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as GuestData[];
+    );
   }
 
   static async loadCustomCount<T extends GuestBase>(
@@ -172,7 +164,7 @@ export class GuestBase
       viewer: Viewer,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<GuestDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
@@ -191,12 +183,12 @@ export class GuestBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestData | null> {
+  ): Promise<GuestDBData | null> {
     const row = await guestLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as GuestData;
+    return row;
   }
 
   static async loadRawDataX<T extends GuestBase>(
@@ -206,12 +198,12 @@ export class GuestBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestData> {
+  ): Promise<GuestDBData> {
     const row = await guestLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as GuestData;
+    return row;
   }
 
   static loaderOptions<T extends GuestBase>(

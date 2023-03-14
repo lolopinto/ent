@@ -23,7 +23,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface CustomCreateHolidayInput {
   dayOfWeek: DayOfWeek;
-  dayOfWeekAlt?: DayOfWeekAlt | null;
+  dayOfWeekAlt: DayOfWeekAlt;
   label: string;
   date?: Date;
   fakeId?: ID | null;

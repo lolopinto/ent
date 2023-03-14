@@ -334,7 +334,7 @@ type Event implements Node {
 type Holiday implements Node {
   id: ID!
   dayOfWeek: DayOfWeek!
-  dayOfWeekAlt: DayOfWeekAlt
+  dayOfWeekAlt: DayOfWeekAlt!
   label: String!
   date: Time!
 }
@@ -877,6 +877,20 @@ type CommentCreatePayload {
   comment: Comment!
 }
 
+input CommentEditInput {
+  """id of Comment"""
+  id: ID!
+  body: String
+  articleID: ID
+  articleType: String
+  stickerID: ID
+  stickerType: String
+}
+
+type CommentEditPayload {
+  comment: Comment!
+}
+
 input ConfirmEditEmailAddressInput {
   """id of User"""
   id: ID!
@@ -927,7 +941,6 @@ input ContactEditInput {
   phoneNumberIds: [ID!]
   firstName: String
   lastName: String
-  userID: ID
 }
 
 type ContactEditPayload {
@@ -960,7 +973,6 @@ input ContactEmailEditInput {
   extra: ContactInfoInput
   emailAddress: String
   label: ContactEmailLabel
-  contactID: ID
 }
 
 type ContactEmailEditPayload {
@@ -998,7 +1010,6 @@ input ContactPhoneNumberEditInput {
   extra: ContactInfoInput
   phoneNumber: String
   label: ContactPhoneNumberLabel
-  contactID: ID
 }
 
 type ContactPhoneNumberEditPayload {
@@ -1085,7 +1096,6 @@ input EventEditInput {
   """id of Event"""
   id: ID!
   name: String
-  creatorID: ID
   startTime: Time
   endTime: Time
   eventLocation: String
@@ -1126,7 +1136,7 @@ enum EventRsvpStatusInput {
 
 input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
-  dayOfWeekAlt: DayOfWeekAlt
+  dayOfWeekAlt: DayOfWeekAlt!
   label: String!
   date: Time
   log: JSON
@@ -1296,6 +1306,7 @@ type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   bulkUploadContact(userID: ID!, file: Upload!): User!
   commentCreate(input: CommentCreateInput!): CommentCreatePayload!
+  commentEdit(input: CommentEditInput!): CommentEditPayload!
   confirmEmailAddressEdit(input: ConfirmEditEmailAddressInput!): ConfirmEditEmailAddressPayload!
   confirmPhoneNumberEdit(input: ConfirmEditPhoneNumberInput!): ConfirmEditPhoneNumberPayload!
   contactCreate(input: ContactCreateInput!): ContactCreatePayload!

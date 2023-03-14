@@ -21,26 +21,14 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { loadEntByType, loadEntXByType } from "./loadAny";
-import { commentLoader, commentLoaderInfo } from "./loaders";
+import { CommentDBData, commentLoader, commentLoaderInfo } from "./loaders";
 import { NodeType } from "./types";
 import { ArticleToCommentsQuery, CommentToPostQuery, User } from "../internal";
 import schema from "../../schema/comment_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface CommentData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  author_id: ID;
-  body: string;
-  article_id: ID;
-  article_type: string;
-  sticker_id: ID | null;
-  sticker_type: string | null;
-}
-
 export class CommentBase implements Ent<ExampleViewerAlias> {
-  protected readonly data: CommentData;
+  protected readonly data: CommentDBData;
   readonly nodeType = NodeType.Comment;
   readonly id: ID;
   readonly createdAt: Date;
@@ -66,10 +54,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     this.data = data;
   }
 
-  __setRawDBData<CommentData>(data: CommentData) {}
+  __setRawDBData<CommentDBData>(data: CommentDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): CommentData {
+  ___getRawDBData(): CommentDBData {
     return this.data;
   }
 
@@ -128,7 +116,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<CommentDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -145,17 +133,17 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<CommentDBData>,
     context?: Context,
-  ): Promise<CommentData[]> {
-    return (await loadCustomData(
+  ): Promise<CommentDBData[]> {
+    return loadCustomData<CommentDBData, CommentDBData>(
       {
         ...CommentBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as CommentData[];
+    );
   }
 
   static async loadCustomCount<T extends CommentBase>(
@@ -163,7 +151,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<CommentDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
@@ -182,12 +170,12 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<CommentData | null> {
+  ): Promise<CommentDBData | null> {
     const row = await commentLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as CommentData;
+    return row;
   }
 
   static async loadRawDataX<T extends CommentBase>(
@@ -197,12 +185,12 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<CommentData> {
+  ): Promise<CommentDBData> {
     const row = await commentLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as CommentData;
+    return row;
   }
 
   static queryFromArticle<T extends CommentBase>(

@@ -20,7 +20,7 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { contactLoader, contactLoaderInfo } from "./loaders";
+import { ContactDBData, contactLoader, contactLoaderInfo } from "./loaders";
 import { NodeType } from "./types";
 import {
   ContactEmail,
@@ -34,22 +34,11 @@ import {
 import schema from "../../schema/contact_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface ContactData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  email_ids: ID[];
-  phone_number_ids: ID[];
-  first_name: string;
-  last_name: string;
-  user_id: ID;
-}
-
 export class ContactBase
   extends FeedbackMixin(class {})
   implements Ent<ExampleViewerAlias>, IFeedback
 {
-  protected readonly data: ContactData;
+  protected readonly data: ContactDBData;
   readonly nodeType = NodeType.Contact;
   readonly id: ID;
   readonly createdAt: Date;
@@ -75,10 +64,10 @@ export class ContactBase
     this.data = data;
   }
 
-  __setRawDBData<ContactData>(data: ContactData) {}
+  __setRawDBData<ContactDBData>(data: ContactDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): ContactData {
+  ___getRawDBData(): ContactDBData {
     return this.data;
   }
 
@@ -137,7 +126,7 @@ export class ContactBase
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<ContactDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -154,17 +143,17 @@ export class ContactBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<ContactDBData>,
     context?: Context,
-  ): Promise<ContactData[]> {
-    return (await loadCustomData(
+  ): Promise<ContactDBData[]> {
+    return loadCustomData<ContactDBData, ContactDBData>(
       {
         ...ContactBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as ContactData[];
+    );
   }
 
   static async loadCustomCount<T extends ContactBase>(
@@ -172,7 +161,7 @@ export class ContactBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<ContactDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
@@ -191,12 +180,12 @@ export class ContactBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactData | null> {
+  ): Promise<ContactDBData | null> {
     const row = await contactLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as ContactData;
+    return row;
   }
 
   static async loadRawDataX<T extends ContactBase>(
@@ -206,12 +195,12 @@ export class ContactBase
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactData> {
+  ): Promise<ContactDBData> {
     const row = await contactLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as ContactData;
+    return row;
   }
 
   static loaderOptions<T extends ContactBase>(

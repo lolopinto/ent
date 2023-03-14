@@ -2,6 +2,40 @@ import { v1 } from "uuid";
 import * as clause from "./clause";
 import { loadConfig } from "./config";
 
+interface ExampleData {
+  id: string;
+  bar: string;
+  ids: string;
+}
+
+interface EdgeData {
+  id1: string;
+  id2: string;
+  id3: string;
+  id4: string;
+  id5: string;
+  id6: string;
+  id7: string;
+  id8: string;
+}
+
+interface JSONData {
+  jsonb: string[];
+}
+
+interface FullTextData {
+  name_idx: string;
+}
+
+interface EventData {
+  id: string;
+  start_time: Date;
+}
+
+interface BalanceData {
+  balance: number;
+}
+
 describe("postgres", () => {
   beforeAll(() => {
     // specify dialect as postgres
@@ -11,7 +45,7 @@ describe("postgres", () => {
 
   describe("Eq", () => {
     test("normal", () => {
-      const cls = clause.Eq("id", 4);
+      const cls = clause.Eq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id = $1");
       expect(cls.clause(2)).toBe("id = $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -21,7 +55,7 @@ describe("postgres", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.Eq("id", clause.sensitiveValue(4));
+      const cls = clause.Eq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id = $1");
       expect(cls.clause(2)).toBe("id = $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -33,7 +67,7 @@ describe("postgres", () => {
 
   describe("NotEq", () => {
     test("normal", () => {
-      const cls = clause.NotEq("id", 4);
+      const cls = clause.NotEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id != $1");
       expect(cls.clause(2)).toBe("id != $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -43,7 +77,7 @@ describe("postgres", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.NotEq("id", clause.sensitiveValue(4));
+      const cls = clause.NotEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id != $1");
       expect(cls.clause(2)).toBe("id != $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -55,7 +89,7 @@ describe("postgres", () => {
 
   describe("Greater", () => {
     test("normal", () => {
-      const cls = clause.Greater("id", 4);
+      const cls = clause.Greater<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id > $1");
       expect(cls.clause(2)).toBe("id > $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -65,7 +99,7 @@ describe("postgres", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.Greater("id", clause.sensitiveValue(4));
+      const cls = clause.Greater<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id > $1");
       expect(cls.clause(2)).toBe("id > $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -77,7 +111,7 @@ describe("postgres", () => {
 
   describe("Less", () => {
     test("normal", () => {
-      const cls = clause.Less("id", 4);
+      const cls = clause.Less<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id < $1");
       expect(cls.clause(2)).toBe("id < $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -87,7 +121,7 @@ describe("postgres", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.Less("id", clause.sensitiveValue(4));
+      const cls = clause.Less<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id < $1");
       expect(cls.clause(2)).toBe("id < $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -99,7 +133,7 @@ describe("postgres", () => {
 
   describe("GreaterEq", () => {
     test("normal", () => {
-      const cls = clause.GreaterEq("id", 4);
+      const cls = clause.GreaterEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id >= $1");
       expect(cls.clause(2)).toBe("id >= $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -109,7 +143,7 @@ describe("postgres", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.GreaterEq("id", clause.sensitiveValue(4));
+      const cls = clause.GreaterEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id >= $1");
       expect(cls.clause(2)).toBe("id >= $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -121,7 +155,7 @@ describe("postgres", () => {
 
   describe("LessEq", () => {
     test("normal", () => {
-      const cls = clause.LessEq("id", 4);
+      const cls = clause.LessEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id <= $1");
       expect(cls.clause(2)).toBe("id <= $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -131,7 +165,7 @@ describe("postgres", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.LessEq("id", clause.sensitiveValue(4));
+      const cls = clause.LessEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id <= $1");
       expect(cls.clause(2)).toBe("id <= $2");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -143,7 +177,10 @@ describe("postgres", () => {
 
   describe("And", () => {
     test("2 items", () => {
-      const cls = clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo"));
+      const cls = clause.And<EdgeData>(
+        clause.Eq("id1", "iddd"),
+        clause.Eq("id2", "foo"),
+      );
       expect(cls.clause(1)).toBe("id1 = $1 AND id2 = $2");
       expect(cls.columns()).toStrictEqual(["id1", "id2"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo"]);
@@ -152,7 +189,7 @@ describe("postgres", () => {
     });
 
     test("3 items", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Eq("id2", "foo"),
         clause.Eq("id3", "baz"),
@@ -165,7 +202,7 @@ describe("postgres", () => {
     });
 
     test("3 items. one sensitive value", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Eq("id2", clause.sensitiveValue("foo")),
         clause.Eq("id3", "baz"),
@@ -178,7 +215,7 @@ describe("postgres", () => {
     });
 
     test("composite And with And first", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
         clause.Eq("id3", "baz"),
       );
@@ -190,7 +227,7 @@ describe("postgres", () => {
     });
 
     test("composite And with And after", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.And(clause.Eq("id2", "foo"), clause.Eq("id3", "baz")),
       );
@@ -202,7 +239,7 @@ describe("postgres", () => {
     });
 
     test("composite And with sensitive value in there", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.And(
           clause.Eq("id2", "foo"),
@@ -219,7 +256,10 @@ describe("postgres", () => {
 
   describe("Or", () => {
     test("2 items", () => {
-      const cls = clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo"));
+      const cls = clause.Or<EdgeData>(
+        clause.Eq("id1", "iddd"),
+        clause.Eq("id2", "foo"),
+      );
       expect(cls.clause(1)).toBe("id1 = $1 OR id2 = $2");
       expect(cls.columns()).toStrictEqual(["id1", "id2"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo"]);
@@ -228,7 +268,7 @@ describe("postgres", () => {
     });
 
     test("3 items", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Eq("id2", "foo"),
         clause.Eq("id3", "baz"),
@@ -241,7 +281,7 @@ describe("postgres", () => {
     });
 
     test("3 items. one sensitive value", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Eq("id2", clause.sensitiveValue("foo")),
         clause.Eq("id3", "baz"),
@@ -254,7 +294,7 @@ describe("postgres", () => {
     });
 
     test("composite Or with Or first", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
         clause.Eq("id3", "baz"),
       );
@@ -266,7 +306,7 @@ describe("postgres", () => {
     });
 
     test("composite Or with Or after", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Or(clause.Eq("id2", "foo"), clause.Eq("id3", "baz")),
       );
@@ -278,7 +318,7 @@ describe("postgres", () => {
     });
 
     test("composite or with sensitive value in there", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Or(
           clause.Eq("id2", "foo"),
@@ -295,7 +335,7 @@ describe("postgres", () => {
 
   describe("nested and/or", () => {
     test("OR nested in AND", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id3", "bar"),
         clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
       );
@@ -307,7 +347,7 @@ describe("postgres", () => {
     });
 
     test("AND nested in Or", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id3", "bar"),
         clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
       );
@@ -319,7 +359,7 @@ describe("postgres", () => {
     });
 
     test("Or nested in AND nested in OR", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id4", "baz"),
         clause.And(
           clause.Eq("id3", "bar"),
@@ -338,7 +378,7 @@ describe("postgres", () => {
     });
 
     test("And nested in OR nested in AND", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id4", "baz"),
         clause.Or(
           clause.Eq("id3", "bar"),
@@ -357,7 +397,7 @@ describe("postgres", () => {
     });
 
     test("complexx ", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id4", "baz"),
         clause.Or(
           clause.Eq("id3", "bar"),
@@ -402,7 +442,7 @@ describe("postgres", () => {
 
   describe("null on null", () => {
     test("OR nested in AND", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id3", null),
         clause.Or(clause.Eq("id1", null), clause.Eq("id2", "foo")),
       );
@@ -416,7 +456,7 @@ describe("postgres", () => {
     });
 
     test("AND nested in OR", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id3", null),
         clause.And(clause.Eq("id1", null), clause.Eq("id2", "foo")),
       );
@@ -430,7 +470,7 @@ describe("postgres", () => {
     });
 
     test("Or nested in AND nested in OR", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id4", "baz"),
         clause.And(
           clause.Eq("id3", null),
@@ -449,7 +489,7 @@ describe("postgres", () => {
     });
 
     test("complexx ", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id4", "baz"),
         clause.Or(
           clause.Eq("id3", null),
@@ -497,7 +537,7 @@ describe("postgres", () => {
 
   describe("In", () => {
     test("1 arg", () => {
-      const cls = clause.In("id", 1);
+      const cls = clause.In<ExampleData>("id", 1);
       expect(cls.clause(1)).toBe("id = $1");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1]);
@@ -506,7 +546,7 @@ describe("postgres", () => {
     });
 
     test("spread args", () => {
-      const cls = clause.In("id", 1, 2, 3);
+      const cls = clause.In<ExampleData>("id", 1, 2, 3);
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
@@ -515,7 +555,7 @@ describe("postgres", () => {
     });
 
     test("spread args with sensitive value", () => {
-      const cls = clause.In("id", 1, 2, clause.sensitiveValue(3));
+      const cls = clause.In<ExampleData>("id", 1, 2, clause.sensitiveValue(3));
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
@@ -524,7 +564,7 @@ describe("postgres", () => {
     });
 
     test("list", () => {
-      const cls = clause.In("id", ...[1, 2, 3]);
+      const cls = clause.In<ExampleData>("id", ...[1, 2, 3]);
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
@@ -533,7 +573,10 @@ describe("postgres", () => {
     });
 
     test("list with sensitive value", () => {
-      const cls = clause.In("id", ...[1, clause.sensitiveValue(2), 3]);
+      const cls = clause.In<ExampleData>(
+        "id",
+        ...[1, clause.sensitiveValue(2), 3],
+      );
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
@@ -553,7 +596,7 @@ describe("postgres", () => {
       test("uuid implicit", () => {
         const ids = [1, 2, 3, 4, 5].map((_) => v1());
 
-        const cls = clause.In("id", ids);
+        const cls = clause.In<ExampleData>("id", ids);
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
         );
@@ -566,7 +609,7 @@ describe("postgres", () => {
       test("int", () => {
         const ids = [1, 2, 3, 4, 5];
 
-        const cls = clause.In("id", ids, "int");
+        const cls = clause.In<ExampleData>("id", ids, "int");
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::int), ($2), ($3), ($4), ($5))",
         );
@@ -579,7 +622,7 @@ describe("postgres", () => {
       test("integer", () => {
         const ids = [1, 2, 3, 4, 5];
 
-        const cls = clause.In("id", ids, "integer");
+        const cls = clause.In<ExampleData>("id", ids, "integer");
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::integer), ($2), ($3), ($4), ($5))",
         );
@@ -592,7 +635,7 @@ describe("postgres", () => {
       test("uuid explicit", () => {
         const ids = [1, 2, 3, 4, 5].map((_) => v1());
 
-        const cls = clause.In("id", ids, "uuid");
+        const cls = clause.In<ExampleData>("id", ids, "uuid");
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
         );
@@ -606,7 +649,7 @@ describe("postgres", () => {
 
   describe("array", () => {
     test("eq", () => {
-      const cls = clause.ArrayEq("ids", 3);
+      const cls = clause.ArrayEq<ExampleData>("ids", 3);
       expect(cls.clause(1)).toBe("$1 = ANY(ids)");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([3]);
@@ -615,7 +658,7 @@ describe("postgres", () => {
     });
 
     test("ne", () => {
-      const cls = clause.ArrayNotEq("ids", 3);
+      const cls = clause.ArrayNotEq<ExampleData>("ids", 3);
       expect(cls.clause(1)).toBe("$1 != ANY(ids)");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([3]);
@@ -624,7 +667,7 @@ describe("postgres", () => {
     });
 
     test("contains val", () => {
-      const cls = clause.PostgresArrayContainsValue("ids", 3);
+      const cls = clause.PostgresArrayContainsValue<ExampleData>("ids", 3);
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3}`]);
@@ -633,7 +676,7 @@ describe("postgres", () => {
     });
 
     test("contains val:string", () => {
-      const cls = clause.PostgresArrayContainsValue("ids", "foo");
+      const cls = clause.PostgresArrayContainsValue<ExampleData>("ids", "foo");
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{foo}`]);
@@ -642,7 +685,7 @@ describe("postgres", () => {
     });
 
     test("contains list", () => {
-      const cls = clause.PostgresArrayContains("ids", [3, 4]);
+      const cls = clause.PostgresArrayContains<ExampleData>("ids", [3, 4]);
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
@@ -651,7 +694,10 @@ describe("postgres", () => {
     });
 
     test("contains list string", () => {
-      const cls = clause.PostgresArrayContains("ids", ["foo", "bar"]);
+      const cls = clause.PostgresArrayContains<ExampleData>("ids", [
+        "foo",
+        "bar",
+      ]);
       expect(cls.clause(1)).toBe("ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{foo, bar}`]);
@@ -660,7 +706,7 @@ describe("postgres", () => {
     });
 
     test("not contains val", () => {
-      const cls = clause.PostgresArrayNotContainsValue("ids", 3);
+      const cls = clause.PostgresArrayNotContainsValue<ExampleData>("ids", 3);
       expect(cls.clause(1)).toBe("NOT ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3}`]);
@@ -669,7 +715,7 @@ describe("postgres", () => {
     });
 
     test("not contains list", () => {
-      const cls = clause.PostgresArrayNotContains("ids", [3, 4]);
+      const cls = clause.PostgresArrayNotContains<ExampleData>("ids", [3, 4]);
       expect(cls.clause(1)).toBe("NOT ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
@@ -678,7 +724,7 @@ describe("postgres", () => {
     });
 
     test("overlaps", () => {
-      const cls = clause.PostgresArrayOverlaps("ids", [3, 4]);
+      const cls = clause.PostgresArrayOverlaps<ExampleData>("ids", [3, 4]);
       expect(cls.clause(1)).toBe("ids && $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
@@ -687,7 +733,7 @@ describe("postgres", () => {
     });
 
     test("not overlaps", () => {
-      const cls = clause.PostgresArrayNotOverlaps("ids", [3, 4]);
+      const cls = clause.PostgresArrayNotOverlaps<ExampleData>("ids", [3, 4]);
       expect(cls.clause(1)).toBe("NOT ids && $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
@@ -698,7 +744,12 @@ describe("postgres", () => {
 
   describe("jsonb", () => {
     test("eq", () => {
-      const cls = clause.JSONPathValuePredicate("jsonb", "$.*", 3, "==");
+      const cls = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.*",
+        3,
+        "==",
+      );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.* == 3"]);
@@ -707,7 +758,12 @@ describe("postgres", () => {
     });
 
     test("eq string", () => {
-      const cls = clause.JSONPathValuePredicate("jsonb", "$.*", "hello", "==");
+      const cls = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.*",
+        "hello",
+        "==",
+      );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(['$.* == "hello"']);
@@ -716,7 +772,12 @@ describe("postgres", () => {
     });
 
     test("ge", () => {
-      const cls = clause.JSONPathValuePredicate("jsonb", "$.*", 3, ">");
+      const cls = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.*",
+        3,
+        ">",
+      );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.* > 3"]);
@@ -725,7 +786,12 @@ describe("postgres", () => {
     });
 
     test("ne", () => {
-      const cls = clause.JSONPathValuePredicate("jsonb", "$.*", 3, "!=");
+      const cls = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.*",
+        3,
+        "!=",
+      );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.* != 3"]);
@@ -734,7 +800,12 @@ describe("postgres", () => {
     });
 
     test("specific path", () => {
-      const cls = clause.JSONPathValuePredicate("jsonb", "$.col", 3, "!=");
+      const cls = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.col",
+        3,
+        "!=",
+      );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.col != 3"]);
@@ -743,7 +814,12 @@ describe("postgres", () => {
     });
 
     test("specific path arr idx", () => {
-      const cls = clause.JSONPathValuePredicate("jsonb", "$.col[*]", 3, "!=");
+      const cls = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.col[*]",
+        3,
+        "!=",
+      );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.col[*] != 3"]);
@@ -754,7 +830,7 @@ describe("postgres", () => {
 
   describe("full text", () => {
     test("tsquery string", () => {
-      const cls = clause.TsQuery("name_idx", "value");
+      const cls = clause.TsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe("name_idx @@ to_tsquery('english', $1)");
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
@@ -763,7 +839,7 @@ describe("postgres", () => {
     });
 
     test("tsquery complex", () => {
-      const cls = clause.TsQuery("name_idx", {
+      const cls = clause.TsQuery<FullTextData>("name_idx", {
         language: "simple",
         value: "value",
       });
@@ -775,7 +851,7 @@ describe("postgres", () => {
     });
 
     test("plainto_tsquery string", () => {
-      const cls = clause.PlainToTsQuery("name_idx", "value");
+      const cls = clause.PlainToTsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe("name_idx @@ plainto_tsquery('english', $1)");
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
@@ -786,7 +862,7 @@ describe("postgres", () => {
     });
 
     test("plainto_tsquery complex", () => {
-      const cls = clause.PlainToTsQuery("name_idx", {
+      const cls = clause.PlainToTsQuery<FullTextData>("name_idx", {
         language: "simple",
         value: "value",
       });
@@ -800,7 +876,7 @@ describe("postgres", () => {
     });
 
     test("phraseto_tsquery string", () => {
-      const cls = clause.PhraseToTsQuery("name_idx", "value");
+      const cls = clause.PhraseToTsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe("name_idx @@ phraseto_tsquery('english', $1)");
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
@@ -811,7 +887,7 @@ describe("postgres", () => {
     });
 
     test("phraseto_tsquery complex", () => {
-      const cls = clause.PhraseToTsQuery("name_idx", {
+      const cls = clause.PhraseToTsQuery<FullTextData>("name_idx", {
         language: "simple",
         value: "value",
       });
@@ -825,7 +901,7 @@ describe("postgres", () => {
     });
 
     test("websearch_to_tsquery string", () => {
-      const cls = clause.WebsearchToTsQuery("name_idx", "value");
+      const cls = clause.WebsearchToTsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe(
         "name_idx @@ websearch_to_tsquery('english', $1)",
       );
@@ -838,7 +914,7 @@ describe("postgres", () => {
     });
 
     test("websearch_to_tsquery complex", () => {
-      const cls = clause.WebsearchToTsQuery("name_idx", {
+      const cls = clause.WebsearchToTsQuery<FullTextData>("name_idx", {
         language: "simple",
         value: "value",
       });
@@ -854,7 +930,7 @@ describe("postgres", () => {
     });
 
     test("tsvectorcol_tsquery string", () => {
-      const cls = clause.TsVectorColTsQuery("name_idx", "value");
+      const cls = clause.TsVectorColTsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ to_tsquery('english', $1)",
       );
@@ -867,7 +943,7 @@ describe("postgres", () => {
     });
 
     test("tsvectorcol_tsquery complex", () => {
-      const cls = clause.TsVectorColTsQuery("name_idx", {
+      const cls = clause.TsVectorColTsQuery<FullTextData>("name_idx", {
         language: "simple",
         value: "value",
       });
@@ -883,7 +959,10 @@ describe("postgres", () => {
     });
 
     test("tsvectorcol_plainto_tsquery string", () => {
-      const cls = clause.TsVectorPlainToTsQuery("name_idx", "value");
+      const cls = clause.TsVectorPlainToTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+      );
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ plainto_tsquery('english', $1)",
       );
@@ -896,7 +975,7 @@ describe("postgres", () => {
     });
 
     test("tsvectorcol_plainto_tsquery complex", () => {
-      const cls = clause.TsVectorPlainToTsQuery("name_idx", {
+      const cls = clause.TsVectorPlainToTsQuery<FullTextData>("name_idx", {
         language: "simple",
         value: "value",
       });
@@ -912,7 +991,10 @@ describe("postgres", () => {
     });
 
     test("tsvectorcol__phraseto_tsquery string", () => {
-      const cls = clause.TsVectorPhraseToTsQuery("name_idx", "value");
+      const cls = clause.TsVectorPhraseToTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+      );
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ phraseto_tsquery('english', $1)",
       );
@@ -941,7 +1023,10 @@ describe("postgres", () => {
     });
 
     test("tsvectorcol_websearch_to_tsquery string", () => {
-      const cls = clause.TsVectorWebsearchToTsQuery("name_idx", "value");
+      const cls = clause.TsVectorWebsearchToTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+      );
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ websearch_to_tsquery('english', $1)",
       );
@@ -954,7 +1039,7 @@ describe("postgres", () => {
     });
 
     test("websearch_to_tsquery complex", () => {
-      const cls = clause.TsVectorWebsearchToTsQuery("name_idx", {
+      const cls = clause.TsVectorWebsearchToTsQuery<FullTextData>("name_idx", {
         language: "simple",
         value: "value",
       });
@@ -972,7 +1057,7 @@ describe("postgres", () => {
 
   describe("pagination multiple cols query", () => {
     test(">", () => {
-      const cls = clause.PaginationMultipleColsSubQuery(
+      const cls = clause.PaginationMultipleColsSubQuery<EventData>(
         "start_time",
         ">",
         "events",
@@ -989,7 +1074,7 @@ describe("postgres", () => {
     });
 
     test("> clause 3", () => {
-      const cls = clause.PaginationMultipleColsSubQuery(
+      const cls = clause.PaginationMultipleColsSubQuery<EventData>(
         "start_time",
         ">",
         "events",
@@ -1006,7 +1091,7 @@ describe("postgres", () => {
     });
 
     test("<", () => {
-      const cls = clause.PaginationMultipleColsSubQuery(
+      const cls = clause.PaginationMultipleColsSubQuery<EventData>(
         "start_time",
         "<",
         "events",
@@ -1025,7 +1110,7 @@ describe("postgres", () => {
 
   describe("rhs", () => {
     test("add", () => {
-      const cls = clause.Add("balance", 4);
+      const cls = clause.Add<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance + $1");
       expect(cls.clause(2)).toBe("balance + $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
@@ -1035,7 +1120,7 @@ describe("postgres", () => {
     });
 
     test("subtract", () => {
-      const cls = clause.Subtract("balance", 4);
+      const cls = clause.Subtract<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance - $1");
       expect(cls.clause(2)).toBe("balance - $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
@@ -1045,7 +1130,7 @@ describe("postgres", () => {
     });
 
     test("divide", () => {
-      const cls = clause.Divide("balance", 4);
+      const cls = clause.Divide<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance / $1");
       expect(cls.clause(2)).toBe("balance / $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
@@ -1055,7 +1140,7 @@ describe("postgres", () => {
     });
 
     test("multiply", () => {
-      const cls = clause.Multiply("balance", 4);
+      const cls = clause.Multiply<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance * $1");
       expect(cls.clause(2)).toBe("balance * $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
@@ -1065,7 +1150,7 @@ describe("postgres", () => {
     });
 
     test("modulo", () => {
-      const cls = clause.Modulo("balance", 4);
+      const cls = clause.Modulo<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance % $1");
       expect(cls.clause(2)).toBe("balance % $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
@@ -1085,7 +1170,7 @@ describe("sqlite", () => {
 
   describe("Eq", () => {
     test("normal", () => {
-      const cls = clause.Eq("id", 4);
+      const cls = clause.Eq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id = ?");
       expect(cls.clause(2)).toBe("id = ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1095,7 +1180,7 @@ describe("sqlite", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.Eq("id", clause.sensitiveValue(4));
+      const cls = clause.Eq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id = ?");
       expect(cls.clause(2)).toBe("id = ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1107,7 +1192,7 @@ describe("sqlite", () => {
 
   describe("Greater", () => {
     test("normal", () => {
-      const cls = clause.Greater("id", 4);
+      const cls = clause.Greater<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id > ?");
       expect(cls.clause(2)).toBe("id > ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1117,7 +1202,7 @@ describe("sqlite", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.Greater("id", clause.sensitiveValue(4));
+      const cls = clause.Greater<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id > ?");
       expect(cls.clause(2)).toBe("id > ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1129,7 +1214,7 @@ describe("sqlite", () => {
 
   describe("Less", () => {
     test("normal", () => {
-      const cls = clause.Less("id", 4);
+      const cls = clause.Less<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id < ?");
       expect(cls.clause(2)).toBe("id < ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1139,7 +1224,7 @@ describe("sqlite", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.Less("id", clause.sensitiveValue(4));
+      const cls = clause.Less<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id < ?");
       expect(cls.clause(2)).toBe("id < ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1151,7 +1236,7 @@ describe("sqlite", () => {
 
   describe("GreaterEq", () => {
     test("normal", () => {
-      const cls = clause.GreaterEq("id", 4);
+      const cls = clause.GreaterEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id >= ?");
       expect(cls.clause(2)).toBe("id >= ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1161,7 +1246,7 @@ describe("sqlite", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.GreaterEq("id", clause.sensitiveValue(4));
+      const cls = clause.GreaterEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id >= ?");
       expect(cls.clause(2)).toBe("id >= ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1173,7 +1258,7 @@ describe("sqlite", () => {
 
   describe("LessEq", () => {
     test("normal", () => {
-      const cls = clause.LessEq("id", 4);
+      const cls = clause.LessEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id <= ?");
       expect(cls.clause(2)).toBe("id <= ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1183,7 +1268,7 @@ describe("sqlite", () => {
     });
 
     test("sensitive value", () => {
-      const cls = clause.LessEq("id", clause.sensitiveValue(4));
+      const cls = clause.LessEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id <= ?");
       expect(cls.clause(2)).toBe("id <= ?");
       expect(cls.columns()).toStrictEqual(["id"]);
@@ -1195,7 +1280,10 @@ describe("sqlite", () => {
 
   describe("And", () => {
     test("2 items", () => {
-      const cls = clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo"));
+      const cls = clause.And<EdgeData>(
+        clause.Eq("id1", "iddd"),
+        clause.Eq("id2", "foo"),
+      );
       expect(cls.clause(1)).toBe("id1 = ? AND id2 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo"]);
@@ -1204,7 +1292,7 @@ describe("sqlite", () => {
     });
 
     test("3 items", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Eq("id2", "foo"),
         clause.Eq("id3", "baz"),
@@ -1230,7 +1318,7 @@ describe("sqlite", () => {
     });
 
     test("composite And with And first", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
         clause.Eq("id3", "baz"),
       );
@@ -1242,7 +1330,7 @@ describe("sqlite", () => {
     });
 
     test("composite And with And after", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.And(clause.Eq("id2", "foo"), clause.Eq("id3", "baz")),
       );
@@ -1254,7 +1342,7 @@ describe("sqlite", () => {
     });
 
     test("composite And with sensitive value in there", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.And(
           clause.Eq("id2", "foo"),
@@ -1271,7 +1359,10 @@ describe("sqlite", () => {
 
   describe("Or", () => {
     test("2 items", () => {
-      const cls = clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo"));
+      const cls = clause.Or<EdgeData>(
+        clause.Eq("id1", "iddd"),
+        clause.Eq("id2", "foo"),
+      );
       expect(cls.clause(1)).toBe("id1 = ? OR id2 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo"]);
@@ -1280,7 +1371,7 @@ describe("sqlite", () => {
     });
 
     test("3 items", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Eq("id2", "foo"),
         clause.Eq("id3", "baz"),
@@ -1293,7 +1384,7 @@ describe("sqlite", () => {
     });
 
     test("3 items. one sensitive value", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Eq("id2", clause.sensitiveValue("foo")),
         clause.Eq("id3", "baz"),
@@ -1306,7 +1397,7 @@ describe("sqlite", () => {
     });
 
     test("composite Or with Or first", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
         clause.Eq("id3", "baz"),
       );
@@ -1318,7 +1409,7 @@ describe("sqlite", () => {
     });
 
     test("composite Or with Or after", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Or(clause.Eq("id2", "foo"), clause.Eq("id3", "baz")),
       );
@@ -1330,7 +1421,7 @@ describe("sqlite", () => {
     });
 
     test("composite or with sensitive value in there", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id1", "iddd"),
         clause.Or(
           clause.Eq("id2", "foo"),
@@ -1347,7 +1438,7 @@ describe("sqlite", () => {
 
   describe("nested and/or", () => {
     test("OR nested in AND", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id3", "bar"),
         clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
       );
@@ -1359,7 +1450,7 @@ describe("sqlite", () => {
     });
 
     test("AND nested in Or", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id3", "bar"),
         clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
       );
@@ -1371,7 +1462,7 @@ describe("sqlite", () => {
     });
 
     test("Or nested in AND nested in OR", () => {
-      const cls = clause.Or(
+      const cls = clause.Or<EdgeData>(
         clause.Eq("id4", "baz"),
         clause.And(
           clause.Eq("id3", "bar"),
@@ -1390,7 +1481,7 @@ describe("sqlite", () => {
     });
 
     test("And nested in OR nested in AND", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id4", "baz"),
         clause.Or(
           clause.Eq("id3", "bar"),
@@ -1409,7 +1500,7 @@ describe("sqlite", () => {
     });
 
     test("complexx ", () => {
-      const cls = clause.And(
+      const cls = clause.And<EdgeData>(
         clause.Eq("id4", "baz"),
         clause.Or(
           clause.Eq("id3", "bar"),
@@ -1454,7 +1545,7 @@ describe("sqlite", () => {
 
   describe("In", () => {
     test("1 arg", () => {
-      const cls = clause.In("id", 1);
+      const cls = clause.In<ExampleData>("id", 1);
       expect(cls.clause(1)).toBe("id = ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1]);
@@ -1463,7 +1554,7 @@ describe("sqlite", () => {
     });
 
     test("spread args", () => {
-      const cls = clause.In("id", 1, 2, 3);
+      const cls = clause.In<ExampleData>("id", 1, 2, 3);
       expect(cls.clause(1)).toBe("id IN (?, ?, ?)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
@@ -1472,7 +1563,7 @@ describe("sqlite", () => {
     });
 
     test("spread args with sensitive value", () => {
-      const cls = clause.In("id", 1, 2, clause.sensitiveValue(3));
+      const cls = clause.In<ExampleData>("id", 1, 2, clause.sensitiveValue(3));
       expect(cls.clause(1)).toBe("id IN (?, ?, ?)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
@@ -1481,7 +1572,7 @@ describe("sqlite", () => {
     });
 
     test("list", () => {
-      const cls = clause.In("id", ...[1, 2, 3]);
+      const cls = clause.In<ExampleData>("id", ...[1, 2, 3]);
       expect(cls.clause(1)).toBe("id IN (?, ?, ?)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
@@ -1490,7 +1581,10 @@ describe("sqlite", () => {
     });
 
     test("list with sensitive value", () => {
-      const cls = clause.In("id", ...[1, clause.sensitiveValue(2), 3]);
+      const cls = clause.In<ExampleData>(
+        "id",
+        ...[1, clause.sensitiveValue(2), 3],
+      );
       expect(cls.clause(1)).toBe("id IN (?, ?, ?)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
@@ -1501,7 +1595,7 @@ describe("sqlite", () => {
 
   describe("pagination multiple cols query", () => {
     test(">", () => {
-      const cls = clause.PaginationMultipleColsSubQuery(
+      const cls = clause.PaginationMultipleColsSubQuery<EventData>(
         "start_time",
         ">",
         "events",
@@ -1518,7 +1612,7 @@ describe("sqlite", () => {
     });
 
     test("> clause 3", () => {
-      const cls = clause.PaginationMultipleColsSubQuery(
+      const cls = clause.PaginationMultipleColsSubQuery<EventData>(
         "start_time",
         ">",
         "events",
@@ -1535,7 +1629,7 @@ describe("sqlite", () => {
     });
 
     test("<", () => {
-      const cls = clause.PaginationMultipleColsSubQuery(
+      const cls = clause.PaginationMultipleColsSubQuery<EventData>(
         "start_time",
         "<",
         "events",
@@ -1554,7 +1648,7 @@ describe("sqlite", () => {
 
   describe("rhs", () => {
     test("add", () => {
-      const cls = clause.Add("balance", 4);
+      const cls = clause.Add<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance + ?");
       expect(cls.clause(2)).toBe("balance + ?");
       expect(cls.columns()).toStrictEqual(["balance"]);
@@ -1564,7 +1658,7 @@ describe("sqlite", () => {
     });
 
     test("subtract", () => {
-      const cls = clause.Subtract("balance", 4);
+      const cls = clause.Subtract<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance - ?");
       expect(cls.clause(2)).toBe("balance - ?");
       expect(cls.columns()).toStrictEqual(["balance"]);
@@ -1574,7 +1668,7 @@ describe("sqlite", () => {
     });
 
     test("divide", () => {
-      const cls = clause.Divide("balance", 4);
+      const cls = clause.Divide<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance / ?");
       expect(cls.clause(2)).toBe("balance / ?");
       expect(cls.columns()).toStrictEqual(["balance"]);
@@ -1584,7 +1678,7 @@ describe("sqlite", () => {
     });
 
     test("multiply", () => {
-      const cls = clause.Multiply("balance", 4);
+      const cls = clause.Multiply<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance * ?");
       expect(cls.clause(2)).toBe("balance * ?");
       expect(cls.columns()).toStrictEqual(["balance"]);
@@ -1594,7 +1688,7 @@ describe("sqlite", () => {
     });
 
     test("modulo", () => {
-      const cls = clause.Modulo("balance", 4);
+      const cls = clause.Modulo<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance % ?");
       expect(cls.clause(2)).toBe("balance % ?");
       expect(cls.columns()).toStrictEqual(["balance"]);

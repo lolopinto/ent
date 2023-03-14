@@ -20,24 +20,14 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { authCodeLoader, authCodeLoaderInfo } from "./loaders";
+import { AuthCodeDBData, authCodeLoader, authCodeLoaderInfo } from "./loaders";
 import { NodeType } from "./types";
 import { User } from "../internal";
 import schema from "../../schema/auth_code_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-interface AuthCodeData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  code: string;
-  user_id: ID;
-  email_address: string | null;
-  phone_number: string | null;
-}
-
 export class AuthCodeBase implements Ent<ExampleViewerAlias> {
-  protected readonly data: AuthCodeData;
+  protected readonly data: AuthCodeDBData;
   readonly nodeType = NodeType.AuthCode;
   readonly id: ID;
   readonly createdAt: Date;
@@ -59,10 +49,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
     this.data = data;
   }
 
-  __setRawDBData<AuthCodeData>(data: AuthCodeData) {}
+  __setRawDBData<AuthCodeDBData>(data: AuthCodeDBData) {}
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
-  ___getRawDBData(): AuthCodeData {
+  ___getRawDBData(): AuthCodeDBData {
     return this.data;
   }
 
@@ -121,7 +111,7 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
       data: Data,
     ) => T,
     viewer: ExampleViewerAlias,
-    query: CustomQuery,
+    query: CustomQuery<AuthCodeDBData>,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
@@ -138,17 +128,17 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AuthCodeDBData>,
     context?: Context,
-  ): Promise<AuthCodeData[]> {
-    return (await loadCustomData(
+  ): Promise<AuthCodeDBData[]> {
+    return loadCustomData<AuthCodeDBData, AuthCodeDBData>(
       {
         ...AuthCodeBase.loaderOptions.apply(this),
         prime: true,
       },
       query,
       context,
-    )) as AuthCodeData[];
+    );
   }
 
   static async loadCustomCount<T extends AuthCodeBase>(
@@ -156,7 +146,7 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-    query: CustomQuery,
+    query: CustomQuery<AuthCodeDBData>,
     context?: Context,
   ): Promise<number> {
     return loadCustomCount(
@@ -175,12 +165,12 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<AuthCodeData | null> {
+  ): Promise<AuthCodeDBData | null> {
     const row = await authCodeLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as AuthCodeData;
+    return row;
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
@@ -190,12 +180,12 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
     ) => T,
     id: ID,
     context?: Context,
-  ): Promise<AuthCodeData> {
+  ): Promise<AuthCodeDBData> {
     const row = await authCodeLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as AuthCodeData;
+    return row;
   }
 
   static loaderOptions<T extends AuthCodeBase>(

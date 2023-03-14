@@ -76,25 +76,31 @@ type Pattern struct {
 	DisableMixin bool         `json:"disableMixin,omitempty"`
 }
 
+type TransformsLoaderCodegen struct {
+	Code    string                 `json:"code,omitempty"`
+	Imports []*tsimport.ImportPath `json:"imports,omitempty"`
+}
+
 type Node struct {
 	// Note that anytime anything changes here, have to update nodeEqual in compare.go
-	TableName        string                    `json:"tableName,omitempty"`
-	Fields           []*Field                  `json:"fields,omitempty"`
-	FieldOverrides   map[string]*FieldOverride `json:"fieldOverrides"`
-	AssocEdges       []*AssocEdge              `json:"assocEdges,omitempty"`
-	AssocEdgeGroups  []*AssocEdgeGroup         `json:"assocEdgeGroups,omitempty"`
-	Actions          []*Action                 `json:"actions,omitempty"`
-	EnumTable        bool                      `json:"enumTable,omitempty"`
-	DBRows           []map[string]interface{}  `json:"dbRows,omitempty"`
-	Constraints      []*Constraint             `json:"constraints,omitempty"`
-	Indices          []*Index                  `json:"indices,omitempty"`
-	HideFromGraphQL  bool                      `json:"hideFromGraphQL,omitempty"`
-	EdgeConstName    string                    `json:"edgeConstName,omitempty"`
-	PatternName      string                    `json:"patternName,omitempty"`
-	TransformsSelect bool                      `json:"transformsSelect,omitempty"`
-	TransformsDelete bool                      `json:"transformsDelete,omitempty"`
-	SchemaPath       string                    `json:"schemaPath,omitempty"`
-	Patterns         []string                  `json:"patternNames,omitempty"`
+	TableName               string                    `json:"tableName,omitempty"`
+	Fields                  []*Field                  `json:"fields,omitempty"`
+	FieldOverrides          map[string]*FieldOverride `json:"fieldOverrides"`
+	AssocEdges              []*AssocEdge              `json:"assocEdges,omitempty"`
+	AssocEdgeGroups         []*AssocEdgeGroup         `json:"assocEdgeGroups,omitempty"`
+	Actions                 []*Action                 `json:"actions,omitempty"`
+	EnumTable               bool                      `json:"enumTable,omitempty"`
+	DBRows                  []map[string]interface{}  `json:"dbRows,omitempty"`
+	Constraints             []*Constraint             `json:"constraints,omitempty"`
+	Indices                 []*Index                  `json:"indices,omitempty"`
+	HideFromGraphQL         bool                      `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName           string                    `json:"edgeConstName,omitempty"`
+	PatternName             string                    `json:"patternName,omitempty"`
+	TransformsSelect        bool                      `json:"transformsSelect,omitempty"`
+	TransformsDelete        bool                      `json:"transformsDelete,omitempty"`
+	TransformsLoaderCodegen *TransformsLoaderCodegen  `json:"transformsLoaderCodegen,omitempty"`
+	SchemaPath              string                    `json:"schemaPath,omitempty"`
+	Patterns                []string                  `json:"patternNames,omitempty"`
 	// these 2 not used yet so ignoring for now
 	// TransformsInsert bool `json:"transformsInsert,omitempty"`
 	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`
@@ -207,6 +213,8 @@ type Field struct {
 	UserConvert         *UserConvertType    `json:"convert,omitempty"`
 	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
 	DBOnly              bool                `json:"dbOnly,omitempty"`
+
+	Immutable bool `json:"immutable,omitempty"`
 
 	// set when parsed via tsent generate schema
 	Import enttype.Import `json:"-"`

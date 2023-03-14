@@ -72,8 +72,9 @@ type NodeData struct {
 
 	schemaPath string
 
-	TransformsSelect bool
-	TransformsDelete bool
+	TransformsSelect        bool
+	TransformsDelete        bool
+	TransformsLoaderCodegen *input.TransformsLoaderCodegen
 }
 
 func newNodeData(packageName string) *NodeData {
@@ -437,9 +438,10 @@ func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 }
 
 type loader struct {
-	Name                 string
-	Pkey                 string
-	AddTransformedClause bool
+	Name                    string
+	Pkey                    string
+	AddTransformedClause    bool
+	TransformsLoaderCodegen *input.TransformsLoaderCodegen
 }
 
 func (nodeData *NodeData) GetSchemaPath() string {
@@ -477,8 +479,9 @@ func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
 		{
 			Name: nodeData.GetLoaderName(),
 			// TODO https://github.com/lolopinto/ent/issues/1064 this shouldn't be hardcoded as id...
-			Pkey:                 strconv.Quote("id"),
-			AddTransformedClause: nodeData.TransformsSelect,
+			Pkey:                    strconv.Quote("id"),
+			AddTransformedClause:    nodeData.TransformsSelect,
+			TransformsLoaderCodegen: nodeData.TransformsLoaderCodegen,
 		},
 	}
 	// if transforms select. generate different loader
@@ -496,9 +499,10 @@ func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
 	for _, field := range nodeData.FieldInfo.EntFields() {
 		if field.Unique() {
 			group1 = append(group1, &loader{
-				Name:                 nodeData.GetFieldLoaderName(field),
-				Pkey:                 field.GetQuotedDBColName(),
-				AddTransformedClause: nodeData.TransformsSelect,
+				Name:                    nodeData.GetFieldLoaderName(field),
+				Pkey:                    field.GetQuotedDBColName(),
+				AddTransformedClause:    nodeData.TransformsSelect,
+				TransformsLoaderCodegen: nodeData.TransformsLoaderCodegen,
 			})
 			// if transforms select. generate different loader
 			// that skips it e.g. no deleted_at clause for said loader
@@ -515,6 +519,72 @@ func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
 		ret = append(ret, group2)
 	}
 	return ret
+}
+
+func (nodeData *NodeData) GetRawDBDataName() string {
+	return fmt.Sprintf("%sDBData", nodeData.Node)
+}
+
+type entLoadPrivacyInfo struct {
+	Interface string
+	Extends   string
+	Fields    []*field.Field
+}
+
+func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) (*entLoadPrivacyInfo, error) {
+	if !nodeData.OnEntLoadFieldPrivacy(cfg) {
+		return nil, fmt.Errorf("cannot call GetOnEntLoadPrivacyInfo for node which doesn't use on ent load privacy")
+	}
+
+	var fields []*field.Field
+	var names []string
+
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.TsActualType() != f.TsType() {
+			fields = append(fields, f)
+			names = append(names, strconv.Quote(f.GetDbColName()))
+		}
+	}
+
+	ret := &entLoadPrivacyInfo{
+		Interface: fmt.Sprintf("%sData", nodeData.Node),
+		Extends:   fmt.Sprintf("Omit<%s, %s>", nodeData.GetRawDBDataName(), strings.Join(names, " | ")),
+		Fields:    fields,
+	}
+
+	return ret, nil
+}
+
+type extraCustomQueryInfo struct {
+	Interface string
+	Extends   string
+	Columns   []struct {
+		Name string
+		Type string
+	}
+}
+
+func (nodeData *NodeData) GetExtraCustomQueryInfo() *extraCustomQueryInfo {
+	ret := &extraCustomQueryInfo{}
+	for _, idx := range nodeData.Indices {
+		if idx.FullText.GeneratedColumnName != "" {
+			ret.Columns = append(ret.Columns, struct {
+				Name string
+				Type string
+			}{
+				Name: idx.FullText.GeneratedColumnName,
+				// always string for now. doesn't actually matter at the moment
+				Type: "string",
+			})
+		}
+	}
+
+	if len(ret.Columns) != 0 {
+		ret.Interface = fmt.Sprintf("%sCustomQueryData", nodeData.Node)
+		ret.Extends = nodeData.GetRawDBDataName()
+		return ret
+	}
+	return nil
 }
 
 func (nodeData *NodeData) GetFieldLoaderName(field *field.Field) string {

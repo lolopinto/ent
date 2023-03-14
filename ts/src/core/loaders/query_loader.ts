@@ -252,7 +252,7 @@ interface QueryOptions {
   sortColumn?: string; // order by this column
 
   // if provided, will be used to prime data in this object...
-  toPrime?: ObjectLoaderFactory<ID>[];
+  toPrime?: ObjectLoaderFactory<Data>[];
 }
 
 export class QueryLoaderFactory<K extends any>

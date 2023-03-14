@@ -9,6 +9,7 @@ import {
 } from "../tsc/ast";
 import { TransformFile } from "./transform";
 import { Data } from "../core/base";
+import { PACKAGE, SCHEMA_PATH } from "../core/const";
 
 interface traverseInfo {
   rawString: string;
@@ -440,9 +441,9 @@ function parseFieldElement(
 // find which of these importPaths is being used and use that to replace
 function findSchemaImportPath(sourceFile: ts.SourceFile) {
   const paths: Data = {
-    "@snowtop/ent": true,
-    "@snowtop/ent/schema": true,
-    "@snowtop/ent/schema/": true,
+    [PACKAGE]: true,
+    [SCHEMA_PATH]: true,
+    [`${SCHEMA_PATH}/`]: true,
   };
 
   // @ts-ignore

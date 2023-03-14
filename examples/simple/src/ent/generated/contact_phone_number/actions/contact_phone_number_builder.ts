@@ -98,12 +98,23 @@ export class ContactPhoneNumberBuilder<
     return this.input;
   }
 
-  updateInput(input: ContactPhoneNumberInput) {
+  updateInput(input: Omit<ContactPhoneNumberInput, "contactID">) {
+    if (input.contactID !== undefined) {
+      throw new Error(
+        `contactID cannot be passed to updateInput. use overrideContactID instead`,
+      );
+    }
+
     // override input
     this.input = {
       ...this.input,
       ...input,
     };
+  }
+
+  // override immutable field `contactID`
+  overrideContactID(val: ID | Builder<Contact, ExampleViewerAlias>) {
+    this.input.contactID = val;
   }
 
   deleteInputKey(key: keyof ContactPhoneNumberInput) {

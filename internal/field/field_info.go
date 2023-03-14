@@ -187,20 +187,35 @@ func (fieldInfo *FieldInfo) EntFields() []*Field {
 	return fields
 }
 
-func (fieldInfo *FieldInfo) GetEditableFields() []*Field {
+// need a difference btw builder fields, create-only fields etc
+// basically need to special case create and add it in creation and then overrideFoo(val)
+// etc...
+func (fieldInfo *FieldInfo) GetEditableFieldsInBuilder() []*Field {
 	var fields []*Field
 	for _, f := range fieldInfo.fields {
-		if f.EditableField() && !f.dbOnly {
+		if f.EditableField(BuilderEditableContext) && !f.dbOnly {
 			fields = append(fields, f)
 		}
 	}
 	return fields
 }
 
+func (fieldInfo *FieldInfo) GetImmutableFields() []*Field {
+	var fields []*Field
+	for _, f := range fieldInfo.fields {
+		if f.immutable {
+			fields = append(fields, f)
+		}
+	}
+
+	return fields
+}
+
+// should be only used in builder
 func (fieldInfo *FieldInfo) NotEditableInverseEdgeFieldsWithDefaults() []*Field {
 	var fields []*Field
 	for _, f := range fieldInfo.fields {
-		if f.EditableField() || f.inverseEdge == nil {
+		if f.EditableField(BuilderEditableContext) || f.inverseEdge == nil {
 			continue
 		}
 		if f.hasDefaultValueOnCreate || f.hasDefaultValueOnEdit || f.defaultToViewerOnCreate {

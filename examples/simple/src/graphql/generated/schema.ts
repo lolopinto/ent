@@ -13,6 +13,10 @@ import {
   CommentCreatePayloadType,
 } from "./mutations/comment/comment_create_type";
 import {
+  CommentEditInputType,
+  CommentEditPayloadType,
+} from "./mutations/comment/comment_edit_type";
+import {
   ContactCreateInputType,
   ContactCreatePayloadType,
   EmailContactCreateInput,
@@ -302,6 +306,8 @@ export default new GraphQLSchema({
     ClearEventRsvpStatusPayloadType,
     CommentCreateInputType,
     CommentCreatePayloadType,
+    CommentEditInputType,
+    CommentEditPayloadType,
     ConfirmEditEmailAddressInputType,
     ConfirmEditEmailAddressPayloadType,
     ConfirmEditPhoneNumberInputType,
