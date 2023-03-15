@@ -140,5 +140,12 @@ const EventSchema = new EntSchema({
       ],
     },
   ],
+
+  indices: [
+    {
+      name: "event_time_indices",
+      columns: ["start_time", "end_time"],
+    },
+  ],
 });
 export default EventSchema;
