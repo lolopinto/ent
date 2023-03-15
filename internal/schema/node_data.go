@@ -531,9 +531,9 @@ type entLoadPrivacyInfo struct {
 	Fields    []*field.Field
 }
 
-func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) (*entLoadPrivacyInfo, error) {
+func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) *entLoadPrivacyInfo {
 	if !nodeData.OnEntLoadFieldPrivacy(cfg) {
-		return nil, fmt.Errorf("cannot call GetOnEntLoadPrivacyInfo for node which doesn't use on ent load privacy")
+		return nil
 	}
 
 	var fields []*field.Field
@@ -546,13 +546,16 @@ func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) (*entLo
 		}
 	}
 
-	ret := &entLoadPrivacyInfo{
-		Interface: fmt.Sprintf("%sData", nodeData.Node),
-		Extends:   fmt.Sprintf("Omit<%s, %s>", nodeData.GetRawDBDataName(), strings.Join(names, " | ")),
-		Fields:    fields,
+	if len(fields) != 0 {
+		ret := &entLoadPrivacyInfo{
+			Interface: fmt.Sprintf("%sData", nodeData.Node),
+			Extends:   fmt.Sprintf("Omit<%s, %s>", nodeData.GetRawDBDataName(), strings.Join(names, " | ")),
+			Fields:    fields,
+		}
+		return ret
 	}
 
-	return ret, nil
+	return nil
 }
 
 type extraCustomQueryInfo struct {

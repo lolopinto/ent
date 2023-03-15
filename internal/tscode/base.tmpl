@@ -47,15 +47,15 @@
 {{$dataType := $rawDBDataType -}}
 {{$customQueryDataType := $rawDBDataType -}}
 
-{{if .OnEntLoadFieldPrivacy $cfg -}}
-  {{$info := .GetOnEntLoadPrivacyInfo $cfg -}}
+{{$info := .GetOnEntLoadPrivacyInfo $cfg -}}
+{{ if $info -}}
   {{$dataType = $info.Interface -}}
   interface {{$info.Interface}} extends {{$info.Extends}} {
     {{range $field := $info.Fields -}}
       {{$field.GetDbColName}}: {{$field.TsType}};
     {{ end -}}
   }
-{{ end -}}
+{{end}}
 
 {{ $customQuery := .GetExtraCustomQueryInfo -}} 
 {{ if $customQuery -}}
