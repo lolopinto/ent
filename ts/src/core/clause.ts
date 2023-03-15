@@ -624,7 +624,7 @@ export function LessEq<T extends Data, K = keyof T>(
 
 export function And<T extends Data, K = keyof T>(
   ...args: Clause<T, K>[]
-): compositeClause<T, K> {
+): Clause<T, K> {
   return new compositeClause(args, " AND ");
 }
 
@@ -641,7 +641,7 @@ export function AndOptional<T extends Data, K = keyof T>(
 
 export function Or<T extends Data, K = keyof T>(
   ...args: Clause<T, K>[]
-): compositeClause<T, K> {
+): Clause<T, K> {
   return new compositeClause(args, " OR ");
 }
 
