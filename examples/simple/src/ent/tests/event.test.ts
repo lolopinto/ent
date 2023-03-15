@@ -1,11 +1,14 @@
 import { Event } from "../";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction from "../user/actions/create_user_action";
-import CreateEventAction from "../event/actions/create_event_action";
+import CreateEventAction, {
+  EventCreateInput,
+} from "../event/actions/create_event_action";
 import EditEventAction from "../event/actions/edit_event_action";
 import DeleteEventAction from "../event/actions/delete_event_action";
 import CreateAddressAction from "../address/actions/create_address_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+import { ID, query } from "@snowtop/ent";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -19,7 +22,10 @@ async function createUser() {
   }).saveX();
 }
 
-async function create(startTime: Date): Promise<Event> {
+async function create(
+  startTime: Date,
+  partial?: Partial<EventCreateInput>,
+): Promise<Event> {
   let user = await createUser();
 
   return await CreateEventAction.create(loggedOutViewer, {
@@ -27,6 +33,7 @@ async function create(startTime: Date): Promise<Event> {
     creatorID: user.id,
     startTime: startTime,
     location: "location",
+    ...partial,
   }).saveX();
 }
 
@@ -461,5 +468,45 @@ describe("validators", () => {
     });
     let valid = await action.valid();
     expect(valid).toBe(false);
+  });
+
+  test("query indices", async () => {
+    let startTime = new Date(Date.now() + 86400);
+    let endTime = new Date(startTime.getTime() + 2 * 60 * 60);
+    let event = await create(startTime, {
+      endTime,
+    });
+
+    const events = await Event.loadCustom(
+      event.viewer,
+      query.And(
+        query.GreaterEq("start_time", startTime.toISOString()),
+        query.LessEq("end_time", endTime.toISOString()),
+      ),
+    );
+    expect(events.length).toBeGreaterThanOrEqual(1);
+    expect(events.find((evt) => evt.id === event.id)).toBeDefined();
+  });
+
+  test("query in array", async () => {
+    const startTimes: string[] = [];
+    const expectedEventIds: ID[] = [];
+    for (let i = 1; i <= 5; i++) {
+      let startTime = new Date(Date.now() + 86400 * i);
+      let endTime = new Date(startTime.getTime() + 2 * 60 * 60);
+      const event = await create(startTime, {
+        endTime,
+      });
+      startTimes.push(startTime.toISOString());
+      expectedEventIds.push(event.id);
+    }
+
+    const events = await Event.loadCustom(
+      loggedOutViewer,
+      query.In("start_time", startTimes),
+    );
+    expect(events.map((evt) => evt.id).sort()).toStrictEqual(
+      expectedEventIds.sort(),
+    );
   });
 });
