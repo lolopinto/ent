@@ -785,14 +785,16 @@ export function sensitiveValue(val: any): SensitiveValue {
 export function JSONObjectFieldKeyASJSON<T extends Data, K = keyof T>(
   col: K,
   field: string,
-) {
+): keyof T {
+  // type as keyof T to make it easier to use in other queries
   return `${col}->'${field}'`;
 }
 
 export function JSONObjectFieldKeyAsText<T extends Data, K = keyof T>(
   col: K,
   field: string,
-) {
+): keyof T {
+  // type as keyof T to make it easier to use in other queries
   return `${col}->>'${field}'`;
 }
 
@@ -913,7 +915,7 @@ export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
   tableName: string,
   uniqueCol: K,
   val: any,
-) {
+): Clause<T, K> {
   return new paginationMultipleColumnsSubQueryClause(
     col,
     op,
