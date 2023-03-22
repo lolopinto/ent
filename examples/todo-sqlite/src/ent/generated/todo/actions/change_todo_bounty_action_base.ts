@@ -86,14 +86,13 @@ export class ChangeTodoBountyActionBase
     const data = todo.___getRawDBData();
     // @ts-expect-error converted below
     this.input = input;
-    const bounty = maybeConvertRelativeInputPlusExpressions(
-      input.bounty,
-      "bounty",
-      data.bounty,
-      expressions,
-    );
-    if (bounty !== undefined) {
-      input.bounty = bounty;
+    if (input.bounty !== undefined) {
+      input.bounty = maybeConvertRelativeInputPlusExpressions(
+        input.bounty,
+        "bounty",
+        data.bounty,
+        expressions,
+      );
     }
     this.builder = new TodoBuilder(
       this.viewer,

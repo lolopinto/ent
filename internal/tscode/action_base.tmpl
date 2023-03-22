@@ -169,9 +169,8 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
           this.input = input;
         {{ range $field := $inputWithRelative.FieldsWithRelative -}}
           {{/* TODO this is sadly not generic even though everything else here is generic... */ -}}
-          const {{$field.TsBuilderFieldName}}= {{useImport "maybeConvertRelativeInputPlusExpressions"}}(input.{{$field.TsBuilderFieldName}}, '{{$field.GetDbColName}}', data.{{$field.GetDbColName}}, expressions);
-          if ({{$field.TsBuilderFieldName}} !== undefined) {
-            input.{{$field.TsBuilderFieldName}} = {{$field.TsBuilderFieldName}};
+          if (input.{{$field.TsBuilderFieldName}} !== undefined) {
+            input.{{$field.TsBuilderFieldName}} = {{useImport "maybeConvertRelativeInputPlusExpressions"}}(input.{{$field.TsBuilderFieldName}}, '{{$field.GetDbColName}}', data.{{$field.GetDbColName}}, expressions);
           }
         {{ end -}}
       {{ else -}}
