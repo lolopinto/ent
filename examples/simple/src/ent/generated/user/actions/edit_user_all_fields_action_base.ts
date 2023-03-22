@@ -115,15 +115,17 @@ export class EditUserAllFieldsActionBase
     this.viewer = viewer;
     let expressions = new Map<string, Clause>();
     const data = user.___getRawDBData();
-    this.input = {
-      ...input,
-      timeInMs: maybeConvertRelativeInputPlusExpressions(
-        input.timeInMs,
-        "time_in_ms",
-        data.time_in_ms,
-        expressions,
-      ),
-    };
+    // @ts-expect-error converted below
+    this.input = input;
+    const timeInMs = maybeConvertRelativeInputPlusExpressions(
+      input.timeInMs,
+      "time_in_ms",
+      data.time_in_ms,
+      expressions,
+    );
+    if (timeInMs !== undefined) {
+      input.timeInMs = timeInMs;
+    }
     this.builder = new UserBuilder(
       this.viewer,
       WriteOperation.Edit,
