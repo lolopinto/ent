@@ -117,14 +117,13 @@ export class EditUserAllFieldsActionBase
     const data = user.___getRawDBData();
     // @ts-expect-error converted below
     this.input = input;
-    const timeInMs = maybeConvertRelativeInputPlusExpressions(
-      input.timeInMs,
-      "time_in_ms",
-      data.time_in_ms,
-      expressions,
-    );
-    if (timeInMs !== undefined) {
-      input.timeInMs = timeInMs;
+    if (input.timeInMs !== undefined) {
+      input.timeInMs = maybeConvertRelativeInputPlusExpressions(
+        input.timeInMs,
+        "time_in_ms",
+        data.time_in_ms,
+        expressions,
+      );
     }
     this.builder = new UserBuilder(
       this.viewer,
