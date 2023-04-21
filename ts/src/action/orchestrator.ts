@@ -823,6 +823,8 @@ export class Orchestrator<
       let defaultValue: any = undefined;
       let dbKey = this.getStorageKey(fieldName);
 
+      let updateOnlyIfOther = field.onlyUpdateIfOtherFieldsBeingSet_BETA;
+
       if (value === undefined) {
         if (this.actualOperation === WriteOperation.Insert) {
           if (field.defaultToViewerOnCreate && field.defaultValueOnCreate) {
@@ -863,7 +865,13 @@ export class Orchestrator<
 
       if (defaultValue !== undefined) {
         updateInput = true;
-        defaultData[dbKey] = defaultValue;
+
+        if (updateOnlyIfOther) {
+          defaultData[dbKey] = defaultValue;
+        } else {
+          data[dbKey] = defaultValue;
+        }
+
         this.defaultFieldsByFieldName[fieldName] = defaultValue;
         this.defaultFieldsByTSName[this.getInputKey(fieldName)] = defaultValue;
       }

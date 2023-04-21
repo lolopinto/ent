@@ -293,6 +293,7 @@ const ContactSchema = getBuilderSchemaFromFields(
     LastName: StringType(),
     UserID: StringType({
       defaultValueOnCreate: (builder) => builder.viewer.viewerID,
+      defaultValueOnEdit: (builder) => builder.viewer.viewerID,
     }),
     email_ids: UUIDListType({
       nullable: true,
@@ -1962,6 +1963,61 @@ function commonTests() {
     } catch (e) {
       expect(e.message).toBe("field UserID set to null for non-nullable field");
     }
+  });
+
+  test("defaultValueOnEdit only field changed", async () => {
+    const userBuilder1 = new SimpleBuilder(
+      new LoggedOutViewer(),
+      UserSchema,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+    await userBuilder1.saveX();
+    const user1 = await userBuilder1.editedEntX();
+
+    const userBuilder2 = new SimpleBuilder(
+      new LoggedOutViewer(),
+      UserSchema,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+    await userBuilder2.saveX();
+    const user2 = await userBuilder2.editedEntX();
+
+    const contactBuilder1 = new SimpleBuilder(
+      new IDViewer(user1.id),
+      ContactSchema,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+
+    await contactBuilder1.saveX();
+    const contact = await contactBuilder1.editedEntX();
+    expect(contact.data.user_id).toEqual(user1.id);
+
+    const contactBuilder2 = new SimpleBuilder(
+      new IDViewer(user2.id),
+      ContactSchema,
+      new Map(),
+      WriteOperation.Edit,
+      contact,
+    );
+
+    await contactBuilder2.saveX();
+    const contact2 = await contactBuilder2.editedEntX();
+    expect(contact2.data.user_id).toEqual(user2.id);
   });
 
   test("defaultValueOnCreate async", async () => {

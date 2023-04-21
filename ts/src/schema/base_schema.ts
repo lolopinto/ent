@@ -17,6 +17,7 @@ let tsFields: FieldMap = {
     defaultValueOnCreate: () => {
       return new Date();
     },
+    onlyUpdateIfOtherFieldsBeingSet_BETA: true,
     defaultValueOnEdit: () => {
       return new Date();
     },
