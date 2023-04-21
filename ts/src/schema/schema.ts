@@ -480,6 +480,11 @@ export interface FieldOptions {
   // shorthand for defaultValueOnCreate: (builder)=>builder.viewer.viewerID;
   // exists for common scenario to set a field to the logged in viewerID.
   defaultToViewerOnCreate?: boolean;
+
+  // goes along with defaultValueOnEdit
+  // flag that indicates that if this is the only field being updated,
+  // don't update the ent, only if other fields are being updated, should this be updated
+  onlyUpdateIfOtherFieldsBeingSet_BETA?: boolean;
   defaultValueOnEdit?(builder: Builder<Ent>, input: Data): any;
   // this is very specific.
   // maybe there's a better way to indicate this
