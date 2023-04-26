@@ -916,7 +916,9 @@ export async function performRawQuery(
   } catch (e) {
     if (_logQueryWithError) {
       const msg = (e as Error).message;
-      throw new Error(`error \`${msg}\` running query: \`${query}\``);
+      throw new Error(
+        `error \`${msg}\` running query: \`${query}\` with values: \`${logValues}\``,
+      );
     }
     throw e;
   }
