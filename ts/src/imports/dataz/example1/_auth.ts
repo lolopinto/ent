@@ -27,9 +27,8 @@ class UserAuthResponse {
 
 class AuthResolver {
   @gqlMutation({ name: "userAuth", type: UserAuthResponse })
-  async userAuth(
-    @gqlArg("input") input: UserAuthInput,
-  ): Promise<UserAuthResponse> {
+  async userAuth(): // @gqlArg("input") input: UserAuthInput,
+  Promise<UserAuthResponse> {
     throw new Error("not implemented");
   }
 }

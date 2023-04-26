@@ -452,55 +452,127 @@ export class GQLCapture {
     return result;
   }
 
+  // ToDO this doesn't work...
+  static gqlObjectWithFields() {
+    return function (val, ctx: ClassDecoratorContext) {
+      if (!GQLCapture.isEnabled() || ctx.kind !== "class") {
+        return;
+      }
+      console.log("gsfsf", val.prototype);
+
+      let typeMetadata: metadataIsh | null = Reflect.getMetadata(
+        "design:type",
+        val.prototype,
+        "username",
+        // "method",
+        // ctx.name,
+      );
+
+      let returnTypeMetadata: metadataIsh | null = Reflect.getMetadata(
+        "design:returntype",
+        val.prototype,
+        "username",
+        // "method",
+        // ctx.name,
+      );
+      console.log(val, val.prototype, typeMetadata, returnTypeMetadata);
+    };
+  }
   static gqlField(options?: gqlFieldOptions): any {
+    // hah, arguments change in 2.0
     return function (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor,
-    ): void {
-      if (!GQLCapture.isEnabled()) {
+      originalMethod: any,
+      ctx: ClassMemberDecoratorContext,
+      // propertyKey: string,
+      // descriptor: PropertyDescriptor,
+    ) {
+      if (
+        !GQLCapture.isEnabled()
+        // ctx.kind !== "method" ||
+        // ctx.static ||
+        // ctx.private
+      ) {
         return;
       }
+      console.log(originalMethod, ctx.access);
 
-      let customField = GQLCapture.getCustomField(
-        target,
-        propertyKey,
-        descriptor,
-        options,
-      );
-      if (!customField) {
-        return;
-      }
-      const connections = customField.results.filter(
-        (result) => result.connection,
-      );
-      if (connections.length > 1) {
-        throw new Error(`if using a connection, need to only return one item`);
-      }
-      if (connections.length === 1) {
-        const conn = connections[0];
-        if (conn.list) {
-          throw new Error("GraphQLConnection result cannot be a list");
-        }
-        if (conn.nullable) {
-          throw new Error("GraphQLConnection result cannot be nullable");
-        }
-        if (conn.isContextArg) {
-          throw new Error("GraphQLConnection result cannot be contextArg");
-        }
+      // console.log(
+      //   originalMethod,
+      //   "propertyKey",
+      //   propertyKey,
+      //   "descriptior",
+      //   descriptor,
+      // );
 
-        if (customField.fieldType === CustomFieldType.AsyncFunction) {
-          throw new Error(
-            `async function not currently supported for GraphQLConnection`,
-          );
-        }
-      }
-      let list = GQLCapture.customFields.get(customField.nodeName);
-      if (list === undefined) {
-        list = [];
-      }
-      list.push(customField);
-      GQLCapture.customFields.set(customField.nodeName, list);
+      // this isn't helpful because we don't have access to ars...
+      // return function (this: any, ...args: any[]) {
+      //   console.log("gqlField", originalMethod, ctx, args);
+      //   return originalMethod.call(this, args);
+      // };
+
+      // let typeMetadata: metadataIsh | null = Reflect.getMetadata(
+      //   "design:type",
+      //   originalMethod,
+      //   propertyKey,
+      //   // "method",
+      //   // ctx.name,
+      // );
+      // let returnTypeMetadata: metadataIsh | null = Reflect.getMetadata(
+      //   "design:returntype",
+      //   originalMethod,
+      //   propertyKey,
+      //   // "method",
+      //   // ctx.name,
+      // );
+
+      console.log(
+        "enabled",
+        // originalMethod.arguments,
+        // typeof originalMethod,
+        // ctx.name,
+        // ctx.kind,
+        // typeMetadata,
+        // returnTypeMetadata,
+      );
+      // let customField = GQLCapture.getCustomField(
+      //   target,
+      //   propertyKey,
+      //   descriptor,
+      //   options,
+      // );
+      // if (!customField) {
+      //   return;
+      // }
+      // const connections = customField.results.filter(
+      //   (result) => result.connection,
+      // );
+      // if (connections.length > 1) {
+      //   throw new Error(`if using a connection, need to only return one item`);
+      // }
+      // if (connections.length === 1) {
+      //   const conn = connections[0];
+      //   if (conn.list) {
+      //     throw new Error("GraphQLConnection result cannot be a list");
+      //   }
+      //   if (conn.nullable) {
+      //     throw new Error("GraphQLConnection result cannot be nullable");
+      //   }
+      //   if (conn.isContextArg) {
+      //     throw new Error("GraphQLConnection result cannot be contextArg");
+      //   }
+
+      //   if (customField.fieldType === CustomFieldType.AsyncFunction) {
+      //     throw new Error(
+      //       `async function not currently supported for GraphQLConnection`,
+      //     );
+      //   }
+      // }
+      // let list = GQLCapture.customFields.get(customField.nodeName);
+      // if (list === undefined) {
+      //   list = [];
+      // }
+      // list.push(customField);
+      // GQLCapture.customFields.set(customField.nodeName, list);
     };
   }
 
@@ -816,6 +888,7 @@ export const gqlQuery = GQLCapture.gqlQuery;
 export const gqlMutation = GQLCapture.gqlMutation;
 export const gqlContextType = GQLCapture.gqlContextType;
 export const gqlConnection = GQLCapture.gqlConnection;
+export const gqlObjectWithFields = GQLCapture.gqlObjectWithFields;
 
 // this requires the developer to npm-install "graphql-upload on their own"
 const gqlFileUpload: CustomType = {
