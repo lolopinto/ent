@@ -15,7 +15,7 @@ import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { ContactPhoneNumber } from "../../../ent";
 import {
   ContactInfoType,
-  ContactPhoneNumberLabelType,
+  ContactLabelType,
   ContactType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -47,7 +47,7 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: new GraphQLNonNull(ContactPhoneNumberLabelType),
+      type: new GraphQLNonNull(ContactLabelType),
     },
   }),
   interfaces: [GraphQLNodeInterface],

@@ -1,4 +1,4 @@
-import { GlobalSchema } from "@snowtop/ent/schema/";
+import { EnumType, GlobalSchema } from "@snowtop/ent/schema/";
 
 const glo: GlobalSchema = {
   edges: [
@@ -10,5 +10,14 @@ const glo: GlobalSchema = {
       schemaName: "User",
     },
   ],
+
+  fields: {
+    label: EnumType({
+      values: ["work", "home", "default", "unknown", "self"],
+      // TODO make these 2 required for global enum types
+      tsType: "ContactLabel",
+      graphQLType: "ContactLabel",
+    }),
+  },
 };
 export default glo;

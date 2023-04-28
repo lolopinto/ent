@@ -5,9 +5,8 @@
 
 import { ID, ObjectLoaderFactory } from "@snowtop/ent";
 import {
-  ContactEmailLabel,
   ContactInfo,
-  ContactPhoneNumberLabel,
+  ContactLabel,
   DayOfWeek,
   DayOfWeekAlt,
   UserAccountStatus,
@@ -314,7 +313,7 @@ export interface ContactEmailDBData {
   updated_at: Date;
   extra: ContactInfo | null;
   email_address: string;
-  label: ContactEmailLabel;
+  label: ContactLabel;
   contact_id: ID;
 }
 
@@ -378,7 +377,7 @@ export interface ContactPhoneNumberDBData {
   updated_at: Date;
   extra: ContactInfo | null;
   phone_number: string;
-  label: ContactPhoneNumberLabel;
+  label: ContactLabel;
   contact_id: ID;
 }
 

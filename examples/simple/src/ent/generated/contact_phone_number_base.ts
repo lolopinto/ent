@@ -25,11 +25,7 @@ import {
   contactPhoneNumberLoader,
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
-import {
-  ContactPhoneNumberLabel,
-  NodeType,
-  convertContactPhoneNumberLabel,
-} from "./types";
+import { ContactLabel, NodeType, convertContactLabel } from "./types";
 import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
@@ -44,7 +40,7 @@ export class ContactPhoneNumberBase
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly phoneNumber: string;
-  readonly label: ContactPhoneNumberLabel;
+  readonly label: ContactLabel;
   readonly contactID: ID;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
@@ -54,7 +50,7 @@ export class ContactPhoneNumberBase
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.phoneNumber = data.phone_number;
-    this.label = convertContactPhoneNumberLabel(data.label);
+    this.label = convertContactLabel(data.label);
     this.contactID = data.contact_id;
     // @ts-expect-error
     this.data = data;

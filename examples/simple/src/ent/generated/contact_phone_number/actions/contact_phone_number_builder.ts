@@ -16,14 +16,14 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { contactPhoneNumberLoaderInfo } from "../../loaders";
-import { ContactInfo, ContactPhoneNumberLabel, NodeType } from "../../types";
+import { ContactInfo, ContactLabel, NodeType } from "../../types";
 import schema from "../../../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberInput {
   extra?: ContactInfo | null;
   phoneNumber?: string;
-  label?: ContactPhoneNumberLabel;
+  label?: ContactLabel;
   contactID?: ID | Builder<Contact, ExampleViewerAlias>;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -219,7 +219,7 @@ export class ContactPhoneNumberBuilder<
   }
 
   // get value of label. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLabelValue(): ContactPhoneNumberLabel {
+  getNewLabelValue(): ContactLabel {
     if (this.input.label !== undefined) {
       return this.input.label;
     }
