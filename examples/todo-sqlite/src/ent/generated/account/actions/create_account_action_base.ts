@@ -15,20 +15,15 @@ import {
 } from "@snowtop/ent/action";
 import { Account } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
-import {
-  AccountPrefs,
-  AccountPrefs2,
-  AccountPrefs3,
-  AccountState,
-} from "src/ent/generated/types";
+import { AccountPrefs, AccountState } from "src/ent/generated/types";
 
 export interface AccountCreateInput {
   name: string;
   phoneNumber: string;
   accountState?: AccountState | null;
   accountPrefs?: AccountPrefs | null;
-  accountPrefs3?: AccountPrefs3;
-  accountPrefsList?: AccountPrefs2[] | null;
+  accountPrefs3?: AccountPrefs;
+  accountPrefsList?: AccountPrefs[] | null;
   credits?: number;
 }
 

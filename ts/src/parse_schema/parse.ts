@@ -16,6 +16,7 @@ import {
   TransformReadBetaResult,
   DeprecatedImportType,
 } from "../schema/schema";
+import { setGlobalSchema } from "../core/global_schema";
 
 async function processFields(
   src: FieldMap | Field[],
@@ -402,6 +403,9 @@ export async function parseSchema(
 
   if (globalSchema) {
     parsedGlobalSchema = await parseGlobalSchema(globalSchema);
+    // set this so that we can use it, if we're trying to process server default or anything
+    // that ends up parsing,validating and formatting fields
+    setGlobalSchema(globalSchema);
   }
   for (const key in potentialSchemas) {
     const value = potentialSchemas[key];

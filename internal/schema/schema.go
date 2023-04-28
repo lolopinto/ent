@@ -601,7 +601,7 @@ func (s *Schema) parseGlobalSchemaEarly(cfg codegenapi.Config, gs *input.GlobalS
 					}
 					continue
 				}
-				ci, err := s.checkCustomInterface(cfg, f, nil)
+				ci, err := s.checkCustomInterface(cfg, f, nil, true)
 				if err != nil {
 					errs = append(errs, err)
 				}
@@ -770,7 +770,7 @@ func (s *Schema) processFields(cfg codegenapi.Config, nodeName string, fields []
 		// only process custom interfaces if not in pattern or only from pattern
 		// if pattern field
 		if !f.PatternField() || (f.PatternField() && sourceIsPattern) {
-			_, err := s.checkCustomInterface(cfg, f, nil)
+			_, err := s.checkCustomInterface(cfg, f, nil, false)
 			if err != nil {
 				return nil, err
 			}
@@ -824,7 +824,7 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 	return nil
 }
 
-func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.CustomInterface, []*input.Field) {
+func (s *Schema) getCustomInterfaceFromField(f *field.Field, globalType bool) (*customtype.CustomInterface, []*input.Field) {
 	entType := f.GetFieldType()
 	subFieldsType, ok := entType.(enttype.TSWithSubFields)
 	if !ok {
@@ -840,15 +840,15 @@ func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.Custom
 		TSType:              cti.TSInterface,
 		GQLName:             cti.GraphQLInterface,
 		Exported:            true,
-		GenerateListConvert: enttype.IsListType(f.GetFieldType()),
+		GenerateListConvert: globalType || enttype.IsListType(f.GetFieldType()),
 	}
 	actualSubFields := subFields.([]*input.Field)
 
 	return ci, actualSubFields
 }
 
-func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, root *customtype.CustomInterface) (*customtype.CustomInterface, error) {
-	ci, subFields := s.getCustomInterfaceFromField(f)
+func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, root *customtype.CustomInterface, globalType bool) (*customtype.CustomInterface, error) {
+	ci, subFields := s.getCustomInterfaceFromField(f, globalType)
 	if ci == nil || subFields == nil {
 		return ci, nil
 	}
@@ -876,12 +876,12 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 	for _, f2 := range fi.EntFields() {
 		ci.Fields = append(ci.Fields, f2)
 		// add custom interface maybe
-		_, err := s.checkCustomInterface(cfg, f2, ci)
+		_, err := s.checkCustomInterface(cfg, f2, ci, globalType)
 		if err != nil {
 			return nil, err
 		}
 
-		cu, err := s.getCustomUnion(cfg, f2)
+		cu, err := s.getCustomUnion(cfg, f2, globalType)
 		if err != nil {
 			return ci, err
 		}
@@ -892,7 +892,7 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 	return ci, nil
 }
 
-func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customtype.CustomUnion, error) {
+func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field, globalType bool) (*customtype.CustomUnion, error) {
 	entType := f.GetFieldType()
 	unionFieldsType, ok := entType.(enttype.TSWithUnionFields)
 	if !ok {
@@ -923,7 +923,7 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customt
 		return nil, err
 	}
 	for _, f2 := range fi.EntFields() {
-		ci, subFields := s.getCustomInterfaceFromField(f2)
+		ci, subFields := s.getCustomInterfaceFromField(f2, globalType)
 		if ci == nil || subFields == nil {
 			return nil, fmt.Errorf("couldn't get custom interface from field %s", f.FieldName)
 		}

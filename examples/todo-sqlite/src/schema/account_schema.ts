@@ -1,5 +1,4 @@
 import {
-  BooleanType,
   ConstraintType,
   EnumType,
   IntegerType,
@@ -39,22 +38,10 @@ const AccountSchema = new TodoBaseEntSchema({
     }),
     accountPrefs: StructType({
       nullable: true,
-      tsType: "AccountPrefs",
-      graphQLType: "AccountPrefs",
-      fields: {
-        finishedNux: BooleanType(),
-        enableNotifs: BooleanType(),
-        preferredLanguage: StringType(),
-      },
+      globalType: "AccountPrefs",
     }),
     accountPrefs3: StructType({
-      tsType: "AccountPrefs3",
-      graphQLType: "AccountPrefs3",
-      fields: {
-        finishedNux: BooleanType(),
-        enableNotifs: BooleanType(),
-        preferredLanguage: StringType(),
-      },
+      globalType: "AccountPrefs",
       serverDefault: {
         finishedNux: false,
         enableNotifs: false,
@@ -64,13 +51,7 @@ const AccountSchema = new TodoBaseEntSchema({
     }),
     accountPrefsList: StructTypeAsList({
       nullable: true,
-      tsType: "AccountPrefs2",
-      graphQLType: "AccountPrefs2",
-      fields: {
-        finishedNux: BooleanType(),
-        enableNotifs: BooleanType(),
-        preferredLanguage: StringType(),
-      },
+      globalType: "AccountPrefs",
     }),
     // new credits. everyone starts with 1000
     // only way to currently increase this value is to do a Todo

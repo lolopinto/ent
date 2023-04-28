@@ -1525,6 +1525,7 @@ type CommonJSONType struct {
 	UnionFields            interface{}
 	CustomTsInterface      string
 	CustomGraphQLInterface string
+	GlobalType             string
 }
 
 func (t *CommonJSONType) getDBType(jsonb bool) string {
@@ -1586,7 +1587,7 @@ func (t *CommonJSONType) getTsTypeImports(impType *tsimport.ImportPath) []*tsimp
 }
 
 func (t *CommonJSONType) getJSONGraphQLType(gqlType string, input bool) *tsimport.ImportPath {
-	if t.SubFields == nil && t.UnionFields == nil {
+	if t.SubFields == nil && t.UnionFields == nil && t.GlobalType == "" {
 		// TODO https://github.com/taion/graphql-type-json
 		return tsimport.NewGraphQLJSONImportPath("GraphQLJSON")
 	}
@@ -1647,6 +1648,7 @@ func (t *JSONType) GetNullableType() TSType {
 	ret.UnionFields = t.UnionFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
+	ret.GlobalType = t.GlobalType
 	return ret
 }
 
@@ -1717,6 +1719,7 @@ func (t *NullableJSONType) GetNonNullableType() TSType {
 	ret.UnionFields = t.UnionFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
+	ret.GlobalType = t.GlobalType
 	return ret
 }
 
@@ -1743,6 +1746,7 @@ func (t *JSONBType) GetNullableType() TSType {
 	ret.UnionFields = t.UnionFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
+	ret.GlobalType = t.GlobalType
 	return ret
 }
 
@@ -1805,6 +1809,7 @@ func (t *NullableJSONBType) GetNonNullableType() TSType {
 	ret.UnionFields = t.UnionFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
+	ret.GlobalType = t.GlobalType
 	return ret
 }
 

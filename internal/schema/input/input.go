@@ -330,7 +330,14 @@ func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSType {
 	common.CustomGraphQLInterface = typ.GraphQLType
 	common.SubFields = subFields
 	common.UnionFields = unionFields
-
+	common.GlobalType = typ.GlobalType
+	// TODO this doesn't work if GraphQLType != TsType
+	if common.CustomGraphQLInterface == "" && common.GlobalType != "" {
+		common.CustomGraphQLInterface = common.GlobalType
+	}
+	if common.CustomTsInterface == "" && common.GlobalType != "" {
+		common.CustomTsInterface = common.GlobalType
+	}
 	if typ.DBType == JSON {
 		if nullable {
 			return &enttype.NullableJSONType{
