@@ -772,6 +772,9 @@ export interface IntegerEnumOptions extends FieldOptions {
   // GraphQL is strict about old values so we are adding this
   disableUnknownType?: boolean;
 
+  // TODO would be nice for typescript to make tsType and graphQLType required
+  // when globalType is set
+  // hard to do that because FieldOptions allows any field so disjoint `|` types don't work
   globalType?: string;
 }
 
