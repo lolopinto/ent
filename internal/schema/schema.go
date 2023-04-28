@@ -30,6 +30,7 @@ type Schema struct {
 	Nodes            NodeMapInfo
 	Patterns         map[string]*PatternInfo
 	globalEdges      []*edge.AssociationEdge
+	globalEnums      map[string]*EnumInfo
 	globalConsts     *objWithConsts
 	extraEdgeFields  []*field.Field
 	initForEdges     bool
@@ -65,6 +66,10 @@ func (s *Schema) ExtraEdgeFields() []*field.Field {
 
 func (s *Schema) GetGlobalConsts() WithConst {
 	return s.globalConsts
+}
+
+func (s *Schema) GetGlobalEnums() map[string]*EnumInfo {
+	return s.globalEnums
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData, fkeyInfo *field.ForeignKeyInfo, exposeToGraphQL bool) error {
@@ -234,6 +239,14 @@ func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern, exp
 	return info, nil
 }
 
+func (s *Schema) addGlobalEnum(enumType enttype.EnumeratedType, exposeToGraphQL bool) (*EnumInfo, error) {
+	input, err := enum.NewInputFromEnumType(enumType, false)
+	if err != nil {
+		return nil, err
+	}
+	return s.addEnumFromInput(input, nil, exposeToGraphQL)
+}
+
 func (s *Schema) addEnumShared(input *enum.Input, info *EnumInfo) error {
 	gqlName := input.GQLName
 	if input.HasValues() {
@@ -277,6 +290,7 @@ func (s *Schema) init() {
 	s.Patterns = map[string]*PatternInfo{}
 	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
 	s.allCustomTypes = make(map[string]field.CustomTypeWithHasConvertFunction)
+	s.globalEnums = map[string]*EnumInfo{}
 	s.gqlTypeMap = map[string]bool{
 		"QueryType":    true,
 		"MutationType": true,
@@ -365,6 +379,10 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 	var errs []error
 
+	if schema.GlobalSchema != nil {
+		errs = append(errs, s.parseGlobalSchemaEarly(cfg, schema.GlobalSchema)...)
+	}
+
 	patternMap := make(map[string][]*NodeData)
 
 	for nodeName, node := range schema.Nodes {
@@ -397,6 +415,15 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		}
 
 		addEnum := func(enumType enttype.EnumeratedType, f *field.Field, patternField bool) error {
+			// if global enum, just flag as imported
+			enumInfo := s.globalEnums[enumType.GetEnumData().TSName]
+			if enumInfo != nil {
+				clone := enumInfo.Enum.Clone()
+				clone.Imported = true
+				nodeData.addEnum(clone)
+				return nil
+			}
+
 			if patternField {
 				// keep track of NodeDatas that map to this enum...
 				patternName := f.GetPatternName()
@@ -497,7 +524,13 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			}
 		}
 
-		addEnum := func(enumType enttype.EnumeratedType, f *field.Field, patternField bool) error {
+		addEnum := func(enumType enttype.EnumeratedType, f *field.Field, _ bool) error {
+			// global enum. nothing to do here.
+			enumInfo := s.globalEnums[enumType.GetEnumData().TSName]
+			if enumInfo != nil {
+				return nil
+			}
+
 			info, err := s.addEnumFromPattern(enumType, pattern, f.ExposeToGraphQL())
 			if err != nil {
 				return err
@@ -544,6 +577,35 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 	}
 
 	return s.processDepgrah(edgeData)
+}
+
+func (s *Schema) parseGlobalSchemaEarly(cfg codegenapi.Config, gs *input.GlobalSchema) []error {
+	var errs []error
+
+	if len(gs.GlobalFields) > 0 {
+		fi, err := field.NewFieldInfoFromInputs(cfg, "global", gs.GlobalFields, &field.Options{
+			SortFields: true,
+		})
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			for _, f := range fi.AllFields() {
+				entType := f.GetFieldType()
+				enumType, ok := enttype.GetEnumType(entType)
+				if !ok {
+					errs = append(errs, fmt.Errorf("invalid field %s. only fields currently allowed in global schema are global enums", f.FieldName))
+				}
+				enumInfo, err := s.addGlobalEnum(enumType, f.ExposeToGraphQL())
+				if err != nil {
+					errs = append(errs, err)
+				} else {
+					s.globalEnums[enumInfo.Enum.Name] = enumInfo
+				}
+			}
+		}
+	}
+
+	return errs
 }
 
 func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema, edgeData *assocEdgeData) []error {

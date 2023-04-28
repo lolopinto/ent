@@ -534,6 +534,7 @@ interface ProcessedGlobalSchema {
   globalEdges: ProcessedAssocEdge[];
   extraEdgeFields: ProcessedField[];
   initForEdges?: boolean;
+  globalFields?: ProcessedField[];
 }
 
 async function parseGlobalSchema(
@@ -554,6 +555,10 @@ async function parseGlobalSchema(
 
   if (s.edges) {
     ret.globalEdges = processEdges(s.edges);
+  }
+
+  if (s.fields) {
+    ret.globalFields = await processFields(s.fields);
   }
 
   return ret;

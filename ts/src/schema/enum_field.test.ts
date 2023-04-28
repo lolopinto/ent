@@ -1,3 +1,4 @@
+import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
 import {
   EnumField,
   EnumType,
@@ -26,10 +27,10 @@ interface TestField extends Field {
   format(val: any): any;
 }
 
-function testEnum(e: TestField, val: testValue) {
-  expect(e.valid(val.value)).toBe(val.valid);
+async function testEnum(e: TestField, val: testValue) {
+  expect(await e.valid(val.value)).toBe(val.valid);
   if (val.valid) {
-    expect(e.format(val.value), val.value).toBe(val.formatted);
+    expect(await e.format(val.value), val.value).toBe(val.formatted);
   }
 }
 
@@ -47,42 +48,46 @@ describe("upper case enum", () => {
     UNVERIFIED: "unverified",
   });
 
-  test("valid", () => {
-    ["VERIFIED", "UNVERIFIED"].forEach((status) => {
-      testEnum(e, {
-        valid: true,
-        value: status,
-        formatted: status,
-      });
-    });
+  test("valid", async () => {
+    await Promise.all(
+      ["VERIFIED", "UNVERIFIED"].map(async (status) => {
+        await testEnum(e, {
+          valid: true,
+          value: status,
+          formatted: status,
+        });
+      }),
+    );
   });
 
-  test("valid with map", () => {
-    ["verified", "unverified"].forEach((status) => {
-      testEnum(e2, {
-        valid: true,
-        value: status,
-        formatted: status,
-      });
-    });
+  test("valid with map", async () => {
+    await Promise.all(
+      ["verified", "unverified"].map(async (status) => {
+        testEnum(e2, {
+          valid: true,
+          value: status,
+          formatted: status,
+        });
+      }),
+    );
   });
 
-  test("invalid", () => {
-    testEnum(e, {
+  test("invalid", async () => {
+    await testEnum(e, {
       valid: false,
       value: "HELLO",
     });
   });
 
-  test("invalid with map", () => {
-    testEnum(e2, {
+  test("invalid with map", async () => {
+    await testEnum(e2, {
       valid: false,
       value: "HELLO",
     });
   });
 
-  test("invalid different case", () => {
-    testEnum(e, {
+  test("invalid different case", async () => {
+    await testEnum(e, {
       valid: false,
       value: "verified",
     });
@@ -100,40 +105,128 @@ describe("mixed case enum", () => {
     "Violet",
   ]);
 
-  test("same case", () => {
-    ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"].forEach(
-      (color) => {
-        testEnum(rainbow, {
-          value: color,
-          valid: true,
-          formatted: color,
-        });
-      },
+  test("same case", async () => {
+    await Promise.all(
+      ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"].map(
+        async (color) => {
+          await testEnum(rainbow, {
+            value: color,
+            valid: true,
+            formatted: color,
+          });
+        },
+      ),
     );
   });
 
-  test("lower case", () => {
-    ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].forEach(
-      (color) => {
-        testEnum(rainbow, {
-          value: color,
-          valid: false,
-        });
-      },
+  test("lower case", async () => {
+    await Promise.all(
+      ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].map(
+        async (color) => {
+          testEnum(rainbow, {
+            value: color,
+            valid: false,
+          });
+        },
+      ),
     );
   });
 });
 
-test("fkey enum", () => {
+describe("global enum type values", () => {
+  beforeAll(() => {
+    setGlobalSchema({
+      fields: {
+        foo: EnumType({
+          values: ["VERIFIED", "UNVERIFIED"],
+          tsType: "Foo",
+        }),
+      },
+    });
+  });
+
+  afterAll(() => {
+    clearGlobalSchema();
+  });
+
+  const e = EnumType({
+    globalEnumType: "Foo",
+  });
+
+  test("valid", async () => {
+    await testEnum(e, {
+      valid: true,
+      value: "VERIFIED",
+      formatted: "VERIFIED",
+    });
+    await testEnum(e, {
+      valid: true,
+      value: "UNVERIFIED",
+      formatted: "UNVERIFIED",
+    });
+  });
+
+  test("invalid", async () => {
+    await testEnum(e, {
+      valid: false,
+      value: "sfsfsf",
+    });
+  });
+});
+
+describe("global enum type map", () => {
+  beforeAll(() => {
+    setGlobalSchema({
+      fields: {
+        foo: EnumType({
+          map: { VERIFIED: "verified", UNVERIFIED: "unverified" },
+          tsType: "Foo",
+        }),
+      },
+    });
+  });
+
+  afterAll(() => {
+    clearGlobalSchema();
+  });
+
+  const e = EnumType({
+    globalEnumType: "Foo",
+  });
+
+  test("valid", async () => {
+    await testEnum(e, {
+      valid: true,
+      value: "verified",
+      formatted: "verified",
+    });
+    await testEnum(e, {
+      valid: true,
+      value: "unverified",
+      formatted: "unverified",
+    });
+  });
+
+  test("invalid", async () => {
+    await testEnum(e, {
+      valid: false,
+      value: "blahdsds",
+    });
+  });
+});
+
+test("fkey enum", async () => {
   let e = EnumType({
     foreignKey: { schema: "Role", column: "role" },
   });
-  ["1", "2", "3", "HAPPY", "sad"].forEach((id) => {
-    // everything is valid since we don't currently support validating from source
-    // and depend on db foreign key validation to do it
-    expect(e.valid(id)).toBe(true);
-    expect(e.format(id)).toBe(id);
-  });
+  await Promise.all(
+    ["1", "2", "3", "HAPPY", "sad"].map(async (id) => {
+      // everything is valid since we don't currently support validating from source
+      // and depend on db foreign key validation to do it
+      expect(await e.valid(id)).toBe(true);
+      expect(e.format(id)).toBe(id);
+    }),
+  );
 });
 
 describe("weird maps", () => {
@@ -147,32 +240,38 @@ describe("weird maps", () => {
     Python: "python",
   });
 
-  test("valid", () => {
-    ["java", "c++", "c#", "js", "ts", "go", "python"].forEach((lang) => {
-      testEnum(langs, {
-        valid: true,
-        value: lang,
-        formatted: lang,
-      });
-    });
+  test("valid", async () => {
+    await Promise.all(
+      ["java", "c++", "c#", "js", "ts", "go", "python"].map(async (lang) => {
+        await testEnum(langs, {
+          valid: true,
+          value: lang,
+          formatted: lang,
+        });
+      }),
+    );
   });
 
-  test("invalid different case", () => {
-    ["Java", "Ts", "Go"].forEach((lang) => {
-      testEnum(langs, {
-        valid: false,
-        value: lang,
-      });
-    });
+  test("invalid different case", async () => {
+    await Promise.all(
+      ["Java", "Ts", "Go"].map(async (lang) => {
+        await testEnum(langs, {
+          valid: false,
+          value: lang,
+        });
+      }),
+    );
   });
 
-  test("invalid", () => {
-    ["apple", "banana", "rainbow"].forEach((lang) => {
-      testEnum(langs, {
-        valid: false,
-        value: lang,
-      });
-    });
+  test("invalid", async () => {
+    await Promise.all(
+      ["apple", "banana", "rainbow"].map(async (lang) => {
+        await testEnum(langs, {
+          valid: false,
+          value: lang,
+        });
+      }),
+    );
   });
 });
 
@@ -183,7 +282,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /^values or map required if not look up table enum/,
+        /^values, map or globalEnumType required if not look up table enum/,
       );
     }
   });
@@ -215,7 +314,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values or map and foreign key for lookup table enum type/,
+        /cannot specify values, map or globalEnumType and foreign key for lookup table enum type/,
       );
     }
   });
@@ -229,7 +328,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values or map and foreign key for lookup table enum type/,
+        /cannot specify values, map or globalEnumType and foreign key for lookup table enum type/,
       );
     }
   });
@@ -243,7 +342,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values or map and foreign key for lookup table enum type/,
+        /cannot specify values, map or globalEnumType and foreign key for lookup table enum type/,
       );
     }
   });
@@ -257,7 +356,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values or map and foreign key for lookup table enum type/,
+        /cannot specify values, map or globalEnumType and foreign key for lookup table enum type/,
       );
     }
   });
@@ -324,28 +423,32 @@ describe("int enum", () => {
     UNVERIFIED: 1,
   });
 
-  test("valid", () => {
-    [0, 1].forEach((val) => {
-      testEnum(e, {
-        valid: true,
-        value: val,
-        formatted: val,
-      });
-    });
+  test("valid", async () => {
+    await Promise.all(
+      [0, 1].map(async (val) => {
+        await testEnum(e, {
+          valid: true,
+          value: val,
+          formatted: val,
+        });
+      }),
+    );
   });
 
-  test("valid strings", () => {
-    ["0", "1"].forEach((val) => {
-      testEnum(e, {
-        valid: true,
-        value: val,
-        formatted: parseInt(val),
-      });
-    });
+  test("valid strings", async () => {
+    await Promise.all(
+      ["0", "1"].map(async (val) => {
+        await testEnum(e, {
+          valid: true,
+          value: val,
+          formatted: parseInt(val),
+        });
+      }),
+    );
   });
 
-  test("invalid", () => {
-    testEnum(e, {
+  test("invalid", async () => {
+    await testEnum(e, {
       valid: false,
       value: 2,
     });
@@ -379,6 +482,47 @@ describe("int enum", () => {
     await testListEnum(list, {
       valid: false,
       value: [2],
+    });
+  });
+});
+
+describe("int enum. global enum", () => {
+  beforeAll(() => {
+    setGlobalSchema({
+      fields: {
+        foo: IntegerEnumType({
+          map: { VERIFIED: 0, UNVERIFIED: 1 },
+          tsType: "Foo",
+        }),
+      },
+    });
+  });
+
+  afterAll(() => {
+    clearGlobalSchema();
+  });
+
+  const e = IntegerEnumType({
+    globalEnumType: "Foo",
+  });
+
+  test("valid", async () => {
+    await testEnum(e, {
+      valid: true,
+      value: 0,
+      formatted: 0,
+    });
+    await testEnum(e, {
+      valid: true,
+      value: 1,
+      formatted: 1,
+    });
+  });
+
+  test("invalid", async () => {
+    await testEnum(e, {
+      valid: false,
+      value: 2,
     });
   });
 });

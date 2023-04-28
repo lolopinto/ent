@@ -42,10 +42,10 @@ import DataLoader from "dataloader";
 import { ObjectLoader } from "./loaders";
 import {
   getStorageKey,
-  GlobalSchema,
   SQLStatementOperation,
   TransformedEdgeUpdateOperation,
-} from "../schema/";
+} from "../schema/schema";
+import { __getGlobalSchema } from "./global_schema";
 
 // TODO kill this and createDataLoader
 class cacheMap {
@@ -1195,20 +1195,6 @@ interface EdgeOperationOptions {
   dataPlaceholder?: boolean;
 }
 
-let globalSchema: GlobalSchema | undefined;
-export function setGlobalSchema(val: GlobalSchema) {
-  globalSchema = val;
-}
-
-export function clearGlobalSchema() {
-  globalSchema = undefined;
-}
-
-// used by tests. no guarantee will always exist
-export function __hasGlobalSchema() {
-  return globalSchema !== undefined;
-}
-
 export class EdgeOperation implements DataOperation {
   private edgeData: AssocEdgeData | undefined;
   private constructor(
@@ -1285,8 +1271,9 @@ export class EdgeOperation implements DataOperation {
     let updateData: Data | null = null;
 
     // TODO respect disableTransformations
-    if (globalSchema?.transformEdgeWrite) {
-      transformed = globalSchema.transformEdgeWrite({
+    const transformedEdgeWrite = __getGlobalSchema()?.transformEdgeWrite;
+    if (transformedEdgeWrite) {
+      transformed = transformedEdgeWrite({
         op: SQLStatementOperation.Delete,
         edge,
       });
@@ -1387,9 +1374,10 @@ export class EdgeOperation implements DataOperation {
 
     const onConflictFields = ["data"];
 
-    if (globalSchema?.extraEdgeFields) {
-      for (const name in globalSchema.extraEdgeFields) {
-        const f = globalSchema.extraEdgeFields[name];
+    const extraEdgeFields = __getGlobalSchema()?.extraEdgeFields;
+    if (extraEdgeFields) {
+      for (const name in extraEdgeFields) {
+        const f = extraEdgeFields[name];
         if (f.defaultValueOnCreate) {
           const storageKey = getStorageKey(f, name);
           fields[storageKey] = f.defaultValueOnCreate(this.builder, {});
@@ -1403,8 +1391,9 @@ export class EdgeOperation implements DataOperation {
     // TODO respect disableTransformations
 
     let transformed: TransformedEdgeUpdateOperation | null = null;
-    if (globalSchema?.transformEdgeWrite) {
-      transformed = globalSchema.transformEdgeWrite({
+    const transformEdgeWrite = __getGlobalSchema()?.transformEdgeWrite;
+    if (transformEdgeWrite) {
+      transformed = transformEdgeWrite({
         op: SQLStatementOperation.Insert,
         edge,
       });
@@ -2137,8 +2126,9 @@ export function getEdgeClauseAndFields(
 ) {
   let fields = edgeFields;
 
-  if (globalSchema?.transformEdgeRead) {
-    const transformClause = globalSchema.transformEdgeRead();
+  const transformEdgeRead = __getGlobalSchema()?.transformEdgeRead;
+  if (transformEdgeRead) {
+    const transformClause = transformEdgeRead();
     if (!options.disableTransformations) {
       cls = clause.And(cls, transformClause);
     }

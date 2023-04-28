@@ -1,5 +1,6 @@
 import { Data, ID, Viewer } from "../base";
-import { DefaultLimit, AssocEdge, getCursor, setGlobalSchema } from "../ent";
+import { DefaultLimit, AssocEdge, getCursor } from "../ent";
+import { setGlobalSchema } from "../global_schema";
 import { IDViewer, LoggedOutViewer } from "../viewer";
 import {
   FakeUser,

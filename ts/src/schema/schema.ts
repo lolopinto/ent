@@ -31,6 +31,9 @@ export interface GlobalSchema {
   transformEdgeWrite?: (
     stmt: EdgeUpdateOperation,
   ) => TransformedEdgeUpdateOperation | null;
+
+  // for enum and other fields
+  fields?: FieldMap;
 }
 
 // we may eventually support more properties but for now, minimal field properties
@@ -377,6 +380,7 @@ export interface Type {
   intEnumMap?: IntEnumMap;
   deprecatedIntEnumMap?: IntEnumMap;
   disableUnknownType?: boolean;
+  globalEnumType?: string;
 
   // @deprecated eventually kill this
   importType?: DeprecatedImportType;
