@@ -171,7 +171,7 @@ type FieldType struct {
 	CustomType         CustomType `json:"customType,omitempty"`
 	DisableUnknownType bool       `json:"disableUnknownType"`
 
-	GlobalEnumType string `json:"globalEnumType,omitempty"`
+	GlobalType string `json:"globalType,omitempty"`
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
@@ -453,15 +453,15 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		// if tsType and graphqlType not explicitly specified,add schema prefix to generated enums
 		// if globalenumtype, set it to that and we check for it...
 		if tsType == "" {
-			if typ.GlobalEnumType != "" {
-				tsType = typ.GlobalEnumType
+			if typ.GlobalType != "" {
+				tsType = typ.GlobalType
 			} else {
 				tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
 			}
 		}
 		if graphqlType == "" {
-			if typ.GlobalEnumType != "" {
-				graphqlType = typ.GlobalEnumType
+			if typ.GlobalType != "" {
+				graphqlType = typ.GlobalType
 			} else {
 				graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
 			}

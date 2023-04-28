@@ -380,7 +380,7 @@ export interface Type {
   intEnumMap?: IntEnumMap;
   deprecatedIntEnumMap?: IntEnumMap;
   disableUnknownType?: boolean;
-  globalEnumType?: string;
+  globalType?: string;
 
   // @deprecated eventually kill this
   importType?: DeprecatedImportType;

@@ -150,7 +150,7 @@ describe("global enum type values", () => {
   });
 
   const e = EnumType({
-    globalEnumType: "Foo",
+    globalType: "Foo",
   });
 
   test("valid", async () => {
@@ -191,7 +191,7 @@ describe("global enum type map", () => {
   });
 
   const e = EnumType({
-    globalEnumType: "Foo",
+    globalType: "Foo",
   });
 
   test("valid", async () => {
@@ -282,7 +282,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /^values, map or globalEnumType required if not look up table enum/,
+        /^values, map or globalType required if not look up table enum/,
       );
     }
   });
@@ -314,7 +314,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values, map or globalEnumType and foreign key for lookup table enum type/,
+        /cannot specify values, map or globalType and foreign key for lookup table enum type/,
       );
     }
   });
@@ -328,7 +328,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values, map or globalEnumType and foreign key for lookup table enum type/,
+        /cannot specify values, map or globalType and foreign key for lookup table enum type/,
       );
     }
   });
@@ -342,7 +342,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values, map or globalEnumType and foreign key for lookup table enum type/,
+        /cannot specify values, map or globalType and foreign key for lookup table enum type/,
       );
     }
   });
@@ -356,7 +356,7 @@ describe("errors", () => {
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values, map or globalEnumType and foreign key for lookup table enum type/,
+        /cannot specify values, map or globalType and foreign key for lookup table enum type/,
       );
     }
   });
@@ -503,7 +503,7 @@ describe("int enum. global enum", () => {
   });
 
   const e = IntegerEnumType({
-    globalEnumType: "Foo",
+    globalType: "Foo",
   });
 
   test("valid", async () => {

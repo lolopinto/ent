@@ -1,13 +1,15 @@
 import { DBType, Field, GlobalSchema } from "../schema/schema";
 
 let globalSchema: GlobalSchema | undefined;
-let globalEnumFields: Map<string, Field> = new Map();
+let globalSchemaFields: Map<string, Field> = new Map();
 
-function isEnumField(f: Field) {
+function isGlobalSchemaField(f: Field) {
   switch (f.type.dbType) {
     case DBType.Enum:
     case DBType.StringEnum:
     case DBType.IntEnum:
+    case DBType.JSON:
+    case DBType.JSONB:
       return true;
   }
   return false;
@@ -16,10 +18,8 @@ export function setGlobalSchema(val: GlobalSchema) {
   globalSchema = val;
   if (val.fields) {
     for (const [k, v] of Object.entries(val.fields)) {
-      // TODO need a better check here...
-
-      if (isEnumField(v) && v.type.type) {
-        globalEnumFields.set(v.type.type, v);
+      if (isGlobalSchemaField(v) && v.type.type) {
+        globalSchemaFields.set(v.type.type, v);
       }
     }
   }
@@ -27,7 +27,7 @@ export function setGlobalSchema(val: GlobalSchema) {
 
 export function clearGlobalSchema() {
   globalSchema = undefined;
-  globalEnumFields.clear();
+  globalSchemaFields.clear();
 }
 
 // used by tests. no guarantee will always exist
@@ -40,6 +40,10 @@ export function __getGlobalSchema(): GlobalSchema | undefined {
   return globalSchema;
 }
 
-export function __getGlobalEnumFields() {
-  return globalEnumFields;
+export function __getGlobalSchemaFields() {
+  return globalSchemaFields;
+}
+
+export function __getGlobalSchemaField(type: string) {
+  return globalSchemaFields.get(type);
 }

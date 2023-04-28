@@ -225,8 +225,8 @@ func TestGlobalEnumPlusNodes(t *testing.T) {
 					{
 						Name: "DayOfWeek",
 						Type: &input.FieldType{
-							DBType:         input.StringEnum,
-							GlobalEnumType: "DayOfWeek",
+							DBType:     input.StringEnum,
+							GlobalType: "DayOfWeek",
 						},
 					},
 				},
@@ -243,8 +243,8 @@ func TestGlobalEnumPlusNodes(t *testing.T) {
 					{
 						Name: "DayOfWeek",
 						Type: &input.FieldType{
-							DBType:         input.StringEnum,
-							GlobalEnumType: "DayOfWeek",
+							DBType:     input.StringEnum,
+							GlobalType: "DayOfWeek",
 						},
 					},
 				},
@@ -296,8 +296,8 @@ func TestGlobalEnumPlusPatternAndNodes(t *testing.T) {
 					{
 						Name: "DayOfWeek",
 						Type: &input.FieldType{
-							GlobalEnumType: "DayOfWeek",
-							DBType:         input.StringEnum,
+							GlobalType: "DayOfWeek",
+							DBType:     input.StringEnum,
 						},
 						PatternName: "days",
 					},
@@ -317,8 +317,8 @@ func TestGlobalEnumPlusPatternAndNodes(t *testing.T) {
 					{
 						Name: "DayOfWeek",
 						Type: &input.FieldType{
-							DBType:         input.StringEnum,
-							GlobalEnumType: "DayOfWeek",
+							DBType:     input.StringEnum,
+							GlobalType: "DayOfWeek",
 						},
 						PatternName: "days",
 					},
@@ -336,8 +336,8 @@ func TestGlobalEnumPlusPatternAndNodes(t *testing.T) {
 					{
 						Name: "DayOfWeek",
 						Type: &input.FieldType{
-							DBType:         input.StringEnum,
-							GlobalEnumType: "DayOfWeek",
+							DBType:     input.StringEnum,
+							GlobalType: "DayOfWeek",
 						},
 						PatternName: "days",
 					},
@@ -379,7 +379,6 @@ func TestGlobalEnumPlusPatternAndNodes(t *testing.T) {
 
 	tsEnums2 := schema.Nodes["Holiday"].NodeData.GetTSEnums()
 	require.Len(t, tsEnums2, 1)
-
 }
 
 func TestGlobalEnumUsedNoGlobalSchema(t *testing.T) {
@@ -397,8 +396,8 @@ func TestGlobalEnumUsedNoGlobalSchema(t *testing.T) {
 					{
 						Name: "DayOfWeek",
 						Type: &input.FieldType{
-							DBType:         input.StringEnum,
-							GlobalEnumType: "DayOfWeek",
+							DBType:     input.StringEnum,
+							GlobalType: "DayOfWeek",
 						},
 					},
 				},
@@ -415,8 +414,8 @@ func TestGlobalEnumUsedNoGlobalSchema(t *testing.T) {
 					{
 						Name: "DayOfWeek",
 						Type: &input.FieldType{
-							DBType:         input.StringEnum,
-							GlobalEnumType: "DayOfWeek",
+							DBType:     input.StringEnum,
+							GlobalType: "DayOfWeek",
 						},
 					},
 				},
@@ -428,4 +427,122 @@ func TestGlobalEnumUsedNoGlobalSchema(t *testing.T) {
 	// ideally, there's a better error but this is fine
 	require.Equal(t, err.Error(), "Enum DayOfWeek has no values")
 	require.Nil(t, schema)
+}
+
+func TestGlobalStructPlusPatternAndNodes(t *testing.T) {
+	inputSchema := &input.Schema{
+		Patterns: map[string]*input.Pattern{
+			"user_prefs": {
+				Name: "user_prefs",
+				Fields: []*input.Field{
+					{
+						Name: "userPrefs",
+						Type: &input.FieldType{
+							DBType:     input.JSONB,
+							GlobalType: "UserPrefs",
+						},
+					},
+				},
+			},
+		},
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserPrefs",
+						Type: &input.FieldType{
+							DBType:     input.JSONB,
+							GlobalType: "UserPrefs",
+						},
+						PatternName: "user_prefs",
+					},
+				},
+			},
+			"Account": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserPrefs",
+						Type: &input.FieldType{
+							DBType:     input.JSONB,
+							GlobalType: "UserPrefs",
+						},
+						PatternName: "user_prefs",
+					},
+				},
+			},
+		},
+		GlobalSchema: &input.GlobalSchema{
+			GlobalFields: []*input.Field{
+				{
+					Name: "userPrefs",
+					Type: &input.FieldType{
+						DBType:      input.JSONB,
+						Type:        "UserPrefs",
+						GraphQLType: "UserPrefs",
+						SubFields: []*input.Field{
+							{
+								Name: "finishedNux",
+								Type: &input.FieldType{
+									DBType: input.Boolean,
+								},
+								Nullable: true,
+							},
+							{
+								Name: "enableNotifs",
+								Type: &input.FieldType{
+									DBType: input.Boolean,
+								},
+								Nullable: true,
+							},
+							{
+								Name: "notifTypes",
+								Type: &input.FieldType{
+									DBType: input.List,
+									ListElemType: &input.FieldType{
+										Type:               "NotifType",
+										GraphQLType:        "NotifType",
+										DBType:             input.StringEnum,
+										Values:             []string{"MOBILE", "WEB", "EMAIL"},
+										DisableUnknownType: true,
+									},
+								},
+								Nullable: true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	require.Len(t, schema.CustomInterfaces, 1)
+
+	ci := schema.CustomInterfaces["UserPrefs"]
+	require.NotNil(t, ci)
+	require.Len(t, ci.Fields, 3)
+	require.Len(t, ci.NonEntFields, 0)
+	require.Len(t, ci.Children, 0)
+
+	require.Len(t, ci.GetTSEnums(), 1)
+
+	enum := ci.GetTSEnums()[0]
+	require.Equal(t, enum.Name, "NotifType")
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL"})
 }

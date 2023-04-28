@@ -14,6 +14,7 @@ import {
   TimestampType,
 } from "./field";
 import { StructType, StructTypeAsList } from "./struct_field";
+import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
 
 function structTypeF(fields: FieldMap) {
   return StructType({
@@ -372,5 +373,69 @@ describe("struct as list", () => {
 
     const data = [val, val2];
     expect(await f.valid(data)).toBe(false);
+  });
+});
+
+describe("global type", () => {
+  beforeAll(() => {
+    setGlobalSchema({
+      fields: {
+        foo: structTypeF({
+          uuid: UUIDType(),
+          int: IntegerType(),
+          string: StringType(),
+          bool: BooleanType(),
+          ts: TimestampType(),
+          float: FloatType(),
+          enum: EnumType({ values: ["yes", "no", "maybe"] }),
+        }),
+      },
+    });
+  });
+
+  afterAll(() => {
+    clearGlobalSchema();
+  });
+
+  test("valid", async () => {
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const d = new Date();
+    const val = {
+      uuid: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(true);
+    const formatted = {
+      ...val,
+      ts: d.toISOString(),
+    };
+    expect(f.format(val)).toBe(JSON.stringify(formatted));
+  });
+
+  test("invalid", async () => {
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const d = new Date();
+    const val = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      float: 2.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(false);
   });
 });

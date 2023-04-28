@@ -8,8 +8,12 @@ import {
   FieldMap,
   getStorageKey,
 } from "./schema";
+import {
+  __getGlobalSchemaField,
+  __getGlobalSchemaFields,
+} from "../core/global_schema";
 
-export interface StructOptions extends FieldOptions {
+interface structFieldOptions extends FieldOptions {
   // required.
   // how does that jive with https://github.com/lolopinto/ent/issues/609 though??
   tsType: string;
@@ -19,24 +23,27 @@ export interface StructOptions extends FieldOptions {
   jsonNotJSONB?: boolean;
 }
 
-interface allStructOptions extends StructOptions {
-  jsonAsList?: boolean;
+interface GlobalStructOptions extends FieldOptions {
+  globalType: string;
 }
+
+export type StructOptions = structFieldOptions | GlobalStructOptions;
 
 export class StructField extends BaseField implements Field {
   type: Type = {
     dbType: DBType.JSONB,
   };
 
-  constructor(private options: allStructOptions) {
+  constructor(private options: StructOptions, private jsonAsList?: boolean) {
     super();
     this.type.subFields = options.fields;
     this.type.type = options.tsType;
     this.type.graphQLType = options.graphQLType || options.tsType;
+    this.type.globalType = this.options.globalType;
     if (options.jsonNotJSONB) {
       this.type.dbType = DBType.JSON;
     }
-    if (options?.jsonAsList) {
+    if (jsonAsList) {
       this.type.listElemType = {
         dbType: DBType.JSONB,
       };
@@ -81,7 +88,13 @@ export class StructField extends BaseField implements Field {
   }
 
   format(obj: any, nested?: boolean) {
-    if (Array.isArray(obj) && this.options.jsonAsList) {
+    if (this.type.globalType) {
+      const f = __getGlobalSchemaField(this.type.globalType);
+      if (f && f.format) {
+        return f.format(obj);
+      }
+    }
+    if (Array.isArray(obj) && this.jsonAsList) {
       const ret = obj.map((v) => this.formatImpl(v, true));
       if (nested) {
         return ret;
@@ -131,7 +144,14 @@ export class StructField extends BaseField implements Field {
   }
 
   async valid(obj: any): Promise<boolean> {
-    if (this.options.jsonAsList) {
+    if (this.type.globalType) {
+      const f = __getGlobalSchemaField(this.type.globalType);
+      if (f && f.valid) {
+        return f.valid(obj);
+      }
+      return false;
+    }
+    if (this.jsonAsList) {
       if (!Array.isArray(obj)) {
         return false;
       }
@@ -158,10 +178,7 @@ export function StructListType(options: StructOptions) {
   return new ListField(StructType(options), options);
 }
 
-export function StructTypeAsList(options: allStructOptions) {
-  let result = new StructField({
-    ...options,
-    jsonAsList: true,
-  });
+export function StructTypeAsList(options: StructOptions) {
+  let result = new StructField(options, true);
   return Object.assign(result, options);
 }
