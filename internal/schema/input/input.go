@@ -117,7 +117,7 @@ func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
 type GlobalSchema struct {
 	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
 	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
-	InitForEdges    bool         `json:"initForEdges,omitempty"`
+	Init            bool         `json:"init,omitempty"`
 	GlobalFields    []*Field     `json:"globalFields,omitempty"`
 }
 

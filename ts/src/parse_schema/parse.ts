@@ -537,7 +537,7 @@ function translatePrettier(): RomeConfig | undefined {
 interface ProcessedGlobalSchema {
   globalEdges: ProcessedAssocEdge[];
   extraEdgeFields: ProcessedField[];
-  initForEdges?: boolean;
+  init?: boolean;
   globalFields?: ProcessedField[];
 }
 
@@ -547,10 +547,11 @@ async function parseGlobalSchema(
   const ret: ProcessedGlobalSchema = {
     globalEdges: [],
     extraEdgeFields: [],
-    initForEdges:
+    init:
       !!s.extraEdgeFields ||
       s.transformEdgeRead !== undefined ||
-      s.transformEdgeWrite !== undefined,
+      s.transformEdgeWrite !== undefined ||
+      s.fields !== undefined,
   };
 
   if (s.extraEdgeFields) {

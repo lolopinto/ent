@@ -59,9 +59,8 @@ export * from "./user/query/user_to_likers_query";
 export * from "./user/query/user_to_likes_query";
 export * from "./user/query/user_to_maybe_events_query";
 export * from "./user/query/user_to_self_contact_query";
-import "../global_augment";
 import { setGlobalSchema } from "@snowtop/ent";
-// TODO why isn't this set by default??
+import "../global_augment";
 import globalSchema from "../schema/__global__schema";
 
 setGlobalSchema(globalSchema);

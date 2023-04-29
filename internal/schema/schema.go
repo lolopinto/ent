@@ -33,7 +33,7 @@ type Schema struct {
 	globalEnums      map[string]*EnumInfo
 	globalConsts     *objWithConsts
 	extraEdgeFields  []*field.Field
-	initForEdges     bool
+	initGlobalSchema bool
 	tables           NodeMapInfo
 	edges            map[string]*ent.AssocEdgeData
 	newEdges         []*ent.AssocEdgeData
@@ -56,8 +56,8 @@ func (s *Schema) GetGlobalEdges() []*edge.AssociationEdge {
 	return s.globalEdges
 }
 
-func (s *Schema) InitForEdges() bool {
-	return s.initForEdges
+func (s *Schema) InitGlobalSchema() bool {
+	return s.initGlobalSchema
 }
 
 func (s *Schema) ExtraEdgeFields() []*field.Field {
@@ -647,7 +647,7 @@ func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema
 		s.extraEdgeFields = fi.AllFields()
 	}
 
-	s.initForEdges = gs.InitForEdges
+	s.initGlobalSchema = gs.Init
 
 	return errs
 }
