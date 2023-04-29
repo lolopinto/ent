@@ -91,6 +91,30 @@ export class StructField extends BaseField implements Field {
     if (this.type.globalType) {
       const f = __getGlobalSchemaField(this.type.globalType);
       if (f && f.format) {
+        if (
+          JSON.stringify(this.type.listElemType) !==
+          JSON.stringify(f?.type.listElemType)
+        ) {
+          if (this.jsonAsList) {
+            // handle as nested
+            // @ts-ignore
+            const formatted = obj.map((v: any) => f.format(v, true));
+            if (nested) {
+              return formatted;
+            } else {
+              return JSON.stringify(formatted);
+            }
+          } else {
+            const formatted = f.format([obj], true);
+            if (nested) {
+              return formatted[0];
+            } else {
+              return JSON.stringify(formatted[0]);
+            }
+          }
+        }
+
+        // TODO handle format code
         return f.format(obj);
       }
     }
@@ -146,7 +170,24 @@ export class StructField extends BaseField implements Field {
   async valid(obj: any): Promise<boolean> {
     if (this.type.globalType) {
       const f = __getGlobalSchemaField(this.type.globalType);
+      // list and global type is not valid. todo
       if (f && f.valid) {
+        if (
+          JSON.stringify(this.type.listElemType) !==
+          JSON.stringify(f?.type.listElemType)
+        ) {
+          if (this.jsonAsList) {
+            if (!Array.isArray(obj)) {
+              return false;
+            }
+            // @ts-ignore
+            const valid = await Promise.all(obj.map((v) => f.valid(v)));
+            return valid.every((b) => b);
+          } else {
+            // TODO handle test
+            return f.valid([obj]);
+          }
+        }
         return f.valid(obj);
       }
       return false;
