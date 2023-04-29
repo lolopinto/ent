@@ -30,9 +30,10 @@ type Schema struct {
 	Nodes            NodeMapInfo
 	Patterns         map[string]*PatternInfo
 	globalEdges      []*edge.AssociationEdge
+	globalEnums      map[string]*EnumInfo
 	globalConsts     *objWithConsts
 	extraEdgeFields  []*field.Field
-	initForEdges     bool
+	initGlobalSchema bool
 	tables           NodeMapInfo
 	edges            map[string]*ent.AssocEdgeData
 	newEdges         []*ent.AssocEdgeData
@@ -55,8 +56,8 @@ func (s *Schema) GetGlobalEdges() []*edge.AssociationEdge {
 	return s.globalEdges
 }
 
-func (s *Schema) InitForEdges() bool {
-	return s.initForEdges
+func (s *Schema) InitGlobalSchema() bool {
+	return s.initGlobalSchema
 }
 
 func (s *Schema) ExtraEdgeFields() []*field.Field {
@@ -65,6 +66,10 @@ func (s *Schema) ExtraEdgeFields() []*field.Field {
 
 func (s *Schema) GetGlobalConsts() WithConst {
 	return s.globalConsts
+}
+
+func (s *Schema) GetGlobalEnums() map[string]*EnumInfo {
+	return s.globalEnums
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData, fkeyInfo *field.ForeignKeyInfo, exposeToGraphQL bool) error {
@@ -234,6 +239,14 @@ func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern, exp
 	return info, nil
 }
 
+func (s *Schema) addGlobalEnum(enumType enttype.EnumeratedType, exposeToGraphQL bool) (*EnumInfo, error) {
+	input, err := enum.NewInputFromEnumType(enumType, false)
+	if err != nil {
+		return nil, err
+	}
+	return s.addEnumFromInput(input, nil, exposeToGraphQL)
+}
+
 func (s *Schema) addEnumShared(input *enum.Input, info *EnumInfo) error {
 	gqlName := input.GQLName
 	if input.HasValues() {
@@ -277,6 +290,7 @@ func (s *Schema) init() {
 	s.Patterns = map[string]*PatternInfo{}
 	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
 	s.allCustomTypes = make(map[string]field.CustomTypeWithHasConvertFunction)
+	s.globalEnums = map[string]*EnumInfo{}
 	s.gqlTypeMap = map[string]bool{
 		"QueryType":    true,
 		"MutationType": true,
@@ -365,6 +379,10 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 	var errs []error
 
+	if schema.GlobalSchema != nil {
+		errs = append(errs, s.parseGlobalSchemaEarly(cfg, schema.GlobalSchema)...)
+	}
+
 	patternMap := make(map[string][]*NodeData)
 
 	for nodeName, node := range schema.Nodes {
@@ -397,6 +415,15 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		}
 
 		addEnum := func(enumType enttype.EnumeratedType, f *field.Field, patternField bool) error {
+			// if global enum, just flag as imported
+			enumInfo := s.globalEnums[enumType.GetEnumData().TSName]
+			if enumInfo != nil {
+				clone := enumInfo.Enum.Clone()
+				clone.Imported = true
+				nodeData.addEnum(clone)
+				return nil
+			}
+
 			if patternField {
 				// keep track of NodeDatas that map to this enum...
 				patternName := f.GetPatternName()
@@ -497,7 +524,13 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			}
 		}
 
-		addEnum := func(enumType enttype.EnumeratedType, f *field.Field, patternField bool) error {
+		addEnum := func(enumType enttype.EnumeratedType, f *field.Field, _ bool) error {
+			// global enum. nothing to do here.
+			enumInfo := s.globalEnums[enumType.GetEnumData().TSName]
+			if enumInfo != nil {
+				return nil
+			}
+
 			info, err := s.addEnumFromPattern(enumType, pattern, f.ExposeToGraphQL())
 			if err != nil {
 				return err
@@ -546,6 +579,42 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 	return s.processDepgrah(edgeData)
 }
 
+func (s *Schema) parseGlobalSchemaEarly(cfg codegenapi.Config, gs *input.GlobalSchema) []error {
+	var errs []error
+
+	if len(gs.GlobalFields) > 0 {
+		fi, err := field.NewFieldInfoFromInputs(cfg, "global", gs.GlobalFields, &field.Options{
+			SortFields: true,
+		})
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			for _, f := range fi.AllFields() {
+				entType := f.GetFieldType()
+				enumType, ok := enttype.GetEnumType(entType)
+				if ok {
+					enumInfo, err := s.addGlobalEnum(enumType, f.ExposeToGraphQL())
+					if err != nil {
+						errs = append(errs, err)
+					} else {
+						s.globalEnums[enumInfo.Enum.Name] = enumInfo
+					}
+					continue
+				}
+				ci, err := s.checkCustomInterface(cfg, f, nil, true)
+				if err != nil {
+					errs = append(errs, err)
+				}
+				if ci == nil {
+					errs = append(errs, fmt.Errorf("invalid field %s. only fields currently allowed in global schema are global enums or struct fields", f.FieldName))
+				}
+			}
+		}
+	}
+
+	return errs
+}
+
 func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema, edgeData *assocEdgeData) []error {
 	var errs []error
 	for _, inputEdge := range gs.GlobalEdges {
@@ -578,7 +647,7 @@ func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema
 		s.extraEdgeFields = fi.AllFields()
 	}
 
-	s.initForEdges = gs.InitForEdges
+	s.initGlobalSchema = gs.Init
 
 	return errs
 }
@@ -691,6 +760,7 @@ func (s *Schema) processFields(cfg codegenapi.Config, nodeName string, fields []
 			if err := fn(enumType, f, f.PatternField()); err != nil {
 				return nil, err
 			}
+			continue
 		}
 		union, ok := entType.(enttype.TSWithUnionFields)
 		if ok && union.GetUnionFields() != nil {
@@ -700,7 +770,8 @@ func (s *Schema) processFields(cfg codegenapi.Config, nodeName string, fields []
 		// only process custom interfaces if not in pattern or only from pattern
 		// if pattern field
 		if !f.PatternField() || (f.PatternField() && sourceIsPattern) {
-			if err := s.checkCustomInterface(cfg, f, nil); err != nil {
+			_, err := s.checkCustomInterface(cfg, f, nil, false)
+			if err != nil {
 				return nil, err
 			}
 		}
@@ -753,7 +824,7 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 	return nil
 }
 
-func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.CustomInterface, []*input.Field) {
+func (s *Schema) getCustomInterfaceFromField(f *field.Field, globalType bool) (*customtype.CustomInterface, []*input.Field) {
 	entType := f.GetFieldType()
 	subFieldsType, ok := entType.(enttype.TSWithSubFields)
 	if !ok {
@@ -769,21 +840,25 @@ func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.Custom
 		TSType:              cti.TSInterface,
 		GQLName:             cti.GraphQLInterface,
 		Exported:            true,
-		GenerateListConvert: enttype.IsListType(f.GetFieldType()),
+		GenerateListConvert: globalType || enttype.IsListType(f.GetFieldType()),
 	}
 	actualSubFields := subFields.([]*input.Field)
 
 	return ci, actualSubFields
 }
 
-func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, root *customtype.CustomInterface) error {
-	ci, subFields := s.getCustomInterfaceFromField(f)
+func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, root *customtype.CustomInterface, globalType bool) (*customtype.CustomInterface, error) {
+	ci, subFields := s.getCustomInterfaceFromField(f, globalType)
 	if ci == nil || subFields == nil {
-		return nil
+		return ci, nil
 	}
 
 	if err := s.addGQLType(ci.GetGraphQLType()); err != nil {
-		return err
+		return nil, err
+	}
+
+	if s.CustomInterfaces[ci.TSType] != nil {
+		return nil, fmt.Errorf("already have custom interface with name %s", ci.TSType)
 	}
 
 	s.allCustomTypes[ci.TSType] = ci
@@ -796,27 +871,28 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 
 	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, subFields, &field.Options{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, f2 := range fi.EntFields() {
 		ci.Fields = append(ci.Fields, f2)
 		// add custom interface maybe
-		if err := s.checkCustomInterface(cfg, f2, root); err != nil {
-			return err
+		_, err := s.checkCustomInterface(cfg, f2, root, globalType)
+		if err != nil {
+			return nil, err
 		}
 
-		cu, err := s.getCustomUnion(cfg, f2)
+		cu, err := s.getCustomUnion(cfg, f2, globalType)
 		if err != nil {
-			return err
+			return ci, err
 		}
 		if cu != nil {
 			root.Children = append(root.Children, cu)
 		}
 	}
-	return nil
+	return ci, nil
 }
 
-func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customtype.CustomUnion, error) {
+func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field, globalType bool) (*customtype.CustomUnion, error) {
 	entType := f.GetFieldType()
 	unionFieldsType, ok := entType.(enttype.TSWithUnionFields)
 	if !ok {
@@ -847,7 +923,7 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customt
 		return nil, err
 	}
 	for _, f2 := range fi.EntFields() {
-		ci, subFields := s.getCustomInterfaceFromField(f2)
+		ci, subFields := s.getCustomInterfaceFromField(f2, globalType)
 		if ci == nil || subFields == nil {
 			return nil, fmt.Errorf("couldn't get custom interface from field %s", f.FieldName)
 		}

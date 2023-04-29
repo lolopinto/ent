@@ -1385,8 +1385,8 @@ func TestWithMultipleEnumsInPattern(t *testing.T) {
 
 	assert.Len(t, schema.Enums, 2)
 	for _, info := range schema.Enums {
-		assert.True(t, info.OwnEnumFile(), true)
 		assert.NotNil(t, info.GQLEnum)
+		assert.Regexp(t, info.GQLEnum.Name, "DayOfWeekAlt")
 	}
 }
 
@@ -1447,8 +1447,8 @@ func TestWithEnumInPatternHiddenFromGraphQL(t *testing.T) {
 
 	assert.Len(t, schema.Enums, 1)
 	for _, info := range schema.Enums {
-		assert.True(t, info.OwnEnumFile(), true)
 		assert.Nil(t, info.GQLEnum)
+		assert.Equal(t, info.Enum.Name, "DayOfWeek")
 	}
 }
 
@@ -1486,9 +1486,10 @@ func TestWithEnumFromField(t *testing.T) {
 
 	assert.Len(t, schema.Enums, 1)
 	for _, enum := range schema.Enums {
-		assert.False(t, enum.OwnEnumFile())
 		assert.NotNil(t, enum.Enum)
 		assert.NotNil(t, enum.GQLEnum)
+		assert.Equal(t, enum.Enum.Name, "DayOfWeek")
+		assert.Equal(t, enum.GQLEnum.Name, "DayOfWeek")
 	}
 	tsEnums := schema.Nodes["Event"].NodeData.GetTSEnums()
 	require.Len(t, tsEnums, 1)
@@ -1529,8 +1530,8 @@ func TestWithEnumFromFieldHiddenFromGraphQL(t *testing.T) {
 
 	assert.Len(t, schema.Enums, 1)
 	for _, enum := range schema.Enums {
-		assert.False(t, enum.OwnEnumFile())
 		assert.NotNil(t, enum.Enum)
+		assert.Equal(t, enum.Enum.Name, "DayOfWeek")
 		assert.Nil(t, enum.GQLEnum)
 	}
 	tsEnums := schema.Nodes["Event"].NodeData.GetTSEnums()

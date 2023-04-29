@@ -59,4 +59,8 @@ export * from "./user/query/user_to_likers_query";
 export * from "./user/query/user_to_likes_query";
 export * from "./user/query/user_to_maybe_events_query";
 export * from "./user/query/user_to_self_contact_query";
+import { setGlobalSchema } from "@snowtop/ent";
 import "../global_augment";
+import globalSchema from "../schema/__global__schema";
+
+setGlobalSchema(globalSchema);

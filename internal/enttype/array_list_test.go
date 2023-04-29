@@ -736,6 +736,81 @@ func TestArrayListType(t *testing.T) {
 				},
 			},
 		},
+		"jsonb with global type as list": {
+			&enttype.ArrayListType{
+				ElemType: &enttype.JSONBType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithSubFields",
+						CustomGraphQLInterface: "TypeWithSubFields",
+						GlobalType:             "TypeWithSubFields",
+					},
+				},
+				ElemDBTypeNotArray: true,
+			},
+			expType{
+				db:         "postgresql.JSONB",
+				graphql:    "[TypeWithSubFields!]!",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
+				},
+				tsType: "TypeWithSubFields[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType: &enttype.JSONBType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithSubFields",
+							CustomGraphQLInterface: "TypeWithSubFields",
+							GlobalType:             "TypeWithSubFields",
+						},
+					},
+					ElemDBTypeNotArray: true,
+				},
+				convertSqliteFns: []string{"convertJSONList"},
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
+				},
+			},
+		},
+		"nullable jsonb with global type as list": {
+			&enttype.NullableArrayListType{
+				ElemType: &enttype.JSONBType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithSubFields",
+						CustomGraphQLInterface: "TypeWithSubFields",
+						GlobalType:             "TypeWithSubFields",
+					},
+				},
+				ElemDBTypeNotArray: true,
+			},
+			expType{
+				db:         "postgresql.JSONB",
+				graphql:    "[TypeWithSubFields!]",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
+				},
+				tsType: "TypeWithSubFields[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType: &enttype.JSONBType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithSubFields",
+							CustomGraphQLInterface: "TypeWithSubFields",
+							GlobalType:             "TypeWithSubFields",
+						},
+					},
+					ElemDBTypeNotArray: true,
+				},
+				convertSqliteFns: []string{"convertNullableJSONList"},
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
+				},
+			},
+		},
 		"json with sub fields list": {
 			&enttype.ArrayListType{
 				ElemType: &enttype.JSONType{

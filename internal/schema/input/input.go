@@ -117,7 +117,8 @@ func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
 type GlobalSchema struct {
 	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
 	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
-	InitForEdges    bool         `json:"initForEdges,omitempty"`
+	Init            bool         `json:"init,omitempty"`
+	GlobalFields    []*Field     `json:"globalFields,omitempty"`
 }
 
 type DBType string
@@ -169,6 +170,8 @@ type FieldType struct {
 	// optional used by generator to specify different types e.g. email, phone, password
 	CustomType         CustomType `json:"customType,omitempty"`
 	DisableUnknownType bool       `json:"disableUnknownType"`
+
+	GlobalType string `json:"globalType,omitempty"`
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
@@ -327,7 +330,14 @@ func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSType {
 	common.CustomGraphQLInterface = typ.GraphQLType
 	common.SubFields = subFields
 	common.UnionFields = unionFields
-
+	common.GlobalType = typ.GlobalType
+	// TODO this doesn't work if GraphQLType != TsType
+	if common.CustomGraphQLInterface == "" && common.GlobalType != "" {
+		common.CustomGraphQLInterface = common.GlobalType
+	}
+	if common.CustomTsInterface == "" && common.GlobalType != "" {
+		common.CustomTsInterface = common.GlobalType
+	}
 	if typ.DBType == JSON {
 		if nullable {
 			return &enttype.NullableJSONType{
@@ -448,11 +458,20 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		tsType := strcase.ToCamel(typ.Type)
 		graphqlType := strcase.ToCamel(typ.GraphQLType)
 		// if tsType and graphqlType not explicitly specified,add schema prefix to generated enums
+		// if globalenumtype, set it to that and we check for it...
 		if tsType == "" {
-			tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+			if typ.GlobalType != "" {
+				tsType = typ.GlobalType
+			} else {
+				tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+			}
 		}
 		if graphqlType == "" {
-			graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+			if typ.GlobalType != "" {
+				graphqlType = typ.GlobalType
+			} else {
+				graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+			}
 		}
 		if foreignKey != nil {
 			tsType = foreignKey.Schema

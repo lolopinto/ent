@@ -26,8 +26,6 @@ import {
   Todo,
 } from "src/ent/";
 import {
-  AccountPrefs2Type,
-  AccountPrefs3Type,
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
   AccountToCreatedWorkspacesConnectionType,
@@ -71,7 +69,7 @@ export const AccountType = new GraphQLObjectType({
       },
     },
     account_prefs_3: {
-      type: AccountPrefs3Type,
+      type: AccountPrefsType,
       resolve: (
         account: Account,
         args: {},
@@ -81,7 +79,7 @@ export const AccountType = new GraphQLObjectType({
       },
     },
     account_prefs_list: {
-      type: new GraphQLList(new GraphQLNonNull(AccountPrefs2Type)),
+      type: new GraphQLList(new GraphQLNonNull(AccountPrefsType)),
       resolve: (
         account: Account,
         args: {},

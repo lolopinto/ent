@@ -43,14 +43,6 @@ enum CommentSortColumn {
   ID
 }
 
-enum ContactEmailLabel {
-  WORK
-  HOME
-  DEFAULT
-  UNKNOWN
-  SELF
-}
-
 enum ContactEmailSortColumn {
   ID
 }
@@ -62,11 +54,12 @@ enum ContactInfoSource {
   UNKNOWN
 }
 
-enum ContactPhoneNumberLabel {
+enum ContactLabel {
   WORK
   HOME
   DEFAULT
   UNKNOWN
+  SELF
 }
 
 enum ContactPhoneNumberSortColumn {
@@ -273,7 +266,7 @@ type ContactEmail implements Node {
   id: ID!
   extra: ContactInfo
   emailAddress: String!
-  label: ContactEmailLabel!
+  label: ContactLabel!
 }
 
 type ContactInfo {
@@ -286,7 +279,7 @@ type ContactPhoneNumber implements Node {
   id: ID!
   extra: ContactInfo
   phoneNumber: String!
-  label: ContactPhoneNumberLabel!
+  label: ContactLabel!
 }
 
 type Contact implements Node {
@@ -950,7 +943,7 @@ type ContactEditPayload {
 input ContactEmailCreateInput {
   extra: ContactInfoInput
   emailAddress: String!
-  label: ContactEmailLabel!
+  label: ContactLabel!
   contactID: ID!
 }
 
@@ -972,7 +965,7 @@ input ContactEmailEditInput {
   id: ID!
   extra: ContactInfoInput
   emailAddress: String
-  label: ContactEmailLabel
+  label: ContactLabel
 }
 
 type ContactEmailEditPayload {
@@ -987,7 +980,7 @@ input ContactInfoInput {
 input ContactPhoneNumberCreateInput {
   extra: ContactInfoInput
   phoneNumber: String!
-  label: ContactPhoneNumberLabel!
+  label: ContactLabel!
   contactID: ID!
 }
 
@@ -1009,7 +1002,7 @@ input ContactPhoneNumberEditInput {
   id: ID!
   extra: ContactInfoInput
   phoneNumber: String
-  label: ContactPhoneNumberLabel
+  label: ContactLabel
 }
 
 type ContactPhoneNumberEditPayload {
@@ -1057,7 +1050,7 @@ type EditPhoneNumberPayload {
 input EmailContactCreateInput {
   extra: ContactInfoInput
   emailAddress: String!
-  label: ContactEmailLabel!
+  label: ContactLabel!
 }
 
 input EventAddHostInput {
@@ -1166,7 +1159,7 @@ input PetUnionTypeInput {
 input PhoneNumberContactCreateInput {
   extra: ContactInfoInput
   phoneNumber: String!
-  label: ContactPhoneNumberLabel!
+  label: ContactLabel!
 }
 
 input RabbitTypeInput {

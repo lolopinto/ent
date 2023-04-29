@@ -34,15 +34,12 @@ import {
 } from "src/ent/generated/loaders";
 import {
   AccountPrefs,
-  AccountPrefs2,
-  AccountPrefs3,
   AccountState,
   AccountTodoStatus,
   EdgeType,
   NodeType,
   convertNullableAccountPrefs,
-  convertNullableAccountPrefs2List,
-  convertNullableAccountPrefs3,
+  convertNullableAccountPrefsList,
   convertNullableAccountState,
 } from "src/ent/generated/types";
 import {
@@ -62,7 +59,7 @@ import schema from "src/schema/account_schema";
 interface AccountData
   extends Omit<AccountDBData, "phone_number" | "account_prefs_3" | "credits"> {
   phone_number: string | null;
-  account_prefs_3: AccountPrefs3 | null;
+  account_prefs_3: AccountPrefs | null;
   credits: number | null;
 }
 
@@ -81,8 +78,8 @@ export class AccountBase
   readonly phoneNumber: string | null;
   readonly accountState: AccountState | null;
   readonly accountPrefs: AccountPrefs | null;
-  readonly accountPrefs3: AccountPrefs3 | null;
-  readonly accountPrefsList: AccountPrefs2[] | null;
+  readonly accountPrefs3: AccountPrefs | null;
+  readonly accountPrefsList: AccountPrefs[] | null;
   readonly credits: number | null;
 
   constructor(public viewer: Viewer, data: Data) {
@@ -98,10 +95,10 @@ export class AccountBase
     this.accountPrefs = convertNullableAccountPrefs(
       convertNullableJSON(data.account_prefs),
     );
-    this.accountPrefs3 = convertNullableAccountPrefs3(
+    this.accountPrefs3 = convertNullableAccountPrefs(
       convertNullableJSON(data.account_prefs_3),
     );
-    this.accountPrefsList = convertNullableAccountPrefs2List(
+    this.accountPrefsList = convertNullableAccountPrefsList(
       convertNullableJSONList(data.account_prefs_list),
     );
     this.credits = data.credits;

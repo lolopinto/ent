@@ -14,10 +14,7 @@ import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
-import {
-  ContactEmailLabel,
-  ContactPhoneNumberLabel,
-} from "src/ent/generated/types";
+import { ContactLabel } from "src/ent/generated/types";
 import EditContactAction from "src/ent/contact/actions/edit_contact_action";
 import CreateContactEmailAction from "src/ent/contact_email/actions/create_contact_email_action";
 import CreateContactPhoneNumberAction from "src/ent/contact_phone_number/actions/create_contact_phone_number_action";
@@ -79,7 +76,7 @@ async function createContact(user?: User): Promise<Contact> {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: ContactEmailLabel.Default,
+        label: ContactLabel.Default,
       },
     ],
     firstName: "Jon",
@@ -182,7 +179,7 @@ test("custom object added in contact", async () => {
   const email1 = emails[0];
   const email2 = await CreateContactEmailAction.create(contact.viewer, {
     emailAddress: randomEmail(),
-    label: ContactEmailLabel.Home,
+    label: ContactLabel.Home,
     contactID: contact.id,
   }).saveX();
 
@@ -206,7 +203,7 @@ test("edit contact with new email ids", async () => {
   const email1 = emails[0];
   const email2 = await CreateContactEmailAction.create(contact.viewer, {
     emailAddress: randomEmail(),
-    label: ContactEmailLabel.Home,
+    label: ContactLabel.Home,
     contactID: contact.id,
   }).saveX();
 
@@ -233,12 +230,12 @@ test("edit contact with new phone number ids", async () => {
   const [phone1, phone2] = await Promise.all([
     CreateContactPhoneNumberAction.create(contact.viewer, {
       phoneNumber: randomPhoneNumber(),
-      label: ContactPhoneNumberLabel.Home,
+      label: ContactLabel.Home,
       contactID: contact.id,
     }).saveX(),
     CreateContactPhoneNumberAction.create(contact.viewer, {
       phoneNumber: randomPhoneNumber(),
-      label: ContactPhoneNumberLabel.Home,
+      label: ContactLabel.Home,
       contactID: contact.id,
     }).saveX(),
   ]);

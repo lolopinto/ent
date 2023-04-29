@@ -4,12 +4,12 @@ import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { ID, WriteOperation } from "../base";
+import { buildQuery } from "../ent";
 import {
-  buildQuery,
   clearGlobalSchema,
   setGlobalSchema,
   __hasGlobalSchema,
-} from "../ent";
+} from "../global_schema";
 
 import * as clause from "../clause";
 

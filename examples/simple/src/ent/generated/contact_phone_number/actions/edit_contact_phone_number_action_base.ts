@@ -18,13 +18,13 @@ import {
 } from "@snowtop/ent/action";
 import { ContactPhoneNumber } from "../../..";
 import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
-import { ContactInfo, ContactPhoneNumberLabel } from "../../types";
+import { ContactInfo, ContactLabel } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberEditInput {
   extra?: ContactInfo | null;
   phoneNumber?: string;
-  label?: ContactPhoneNumberLabel;
+  label?: ContactLabel;
 }
 
 export type EditContactPhoneNumberActionTriggers = (

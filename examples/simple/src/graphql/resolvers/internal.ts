@@ -5,10 +5,9 @@
 
 export * from "../generated/resolvers/cat_breed_type";
 export * from "../generated/resolvers/comment_sort_column_type";
-export * from "../generated/resolvers/contact_email_label_type";
 export * from "../generated/resolvers/contact_email_sort_column_type";
 export * from "../generated/resolvers/contact_info_source_type";
-export * from "../generated/resolvers/contact_phone_number_label_type";
+export * from "../generated/resolvers/contact_label_type";
 export * from "../generated/resolvers/contact_phone_number_sort_column_type";
 export * from "../generated/resolvers/contact_sort_column_type";
 export * from "../generated/resolvers/day_of_week_alt_type";

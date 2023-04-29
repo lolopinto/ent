@@ -16,7 +16,7 @@ type Enum struct {
 	Name               string
 	Values             []*Data
 	DeprecatedValues   []*Data
-	Imported           bool // Imported enum that's not in this file
+	Imported           bool // Imported enum that's not in this file. TODO aren't all enums Imported now now??
 	convertFuncTSType  string
 	DisableUnknownType bool
 }

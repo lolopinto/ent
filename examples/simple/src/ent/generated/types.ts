@@ -118,51 +118,6 @@ export function convertNullableCatBreedList(
   return convertCatBreedList(val);
 }
 
-export enum ContactEmailLabel {
-  Work = "work",
-  Home = "home",
-  Default = "default",
-  Unknown = "unknown",
-  Self = "self",
-}
-
-export function convertContactEmailLabel(val: string): ContactEmailLabel {
-  switch (val) {
-    case ContactEmailLabel.Work:
-    case ContactEmailLabel.Home:
-    case ContactEmailLabel.Default:
-    case ContactEmailLabel.Unknown:
-    case ContactEmailLabel.Self:
-      return val;
-    default:
-      return ContactEmailLabel.Unknown;
-  }
-}
-
-export function convertNullableContactEmailLabel(
-  val: string | null,
-): ContactEmailLabel | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertContactEmailLabel(val);
-}
-
-export function convertContactEmailLabelList(
-  val: string[],
-): ContactEmailLabel[] {
-  return val.map((v) => convertContactEmailLabel(v));
-}
-
-export function convertNullableContactEmailLabelList(
-  val: string[] | null,
-): ContactEmailLabel[] | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertContactEmailLabelList(val);
-}
-
 export enum ContactInfoSource {
   Friend = "friend",
   Work = "work",
@@ -206,49 +161,47 @@ export function convertNullableContactInfoSourceList(
   return convertContactInfoSourceList(val);
 }
 
-export enum ContactPhoneNumberLabel {
+export enum ContactLabel {
   Work = "work",
   Home = "home",
   Default = "default",
   Unknown = "unknown",
+  Self = "self",
 }
 
-export function convertContactPhoneNumberLabel(
-  val: string,
-): ContactPhoneNumberLabel {
+export function convertContactLabel(val: string): ContactLabel {
   switch (val) {
-    case ContactPhoneNumberLabel.Work:
-    case ContactPhoneNumberLabel.Home:
-    case ContactPhoneNumberLabel.Default:
-    case ContactPhoneNumberLabel.Unknown:
+    case ContactLabel.Work:
+    case ContactLabel.Home:
+    case ContactLabel.Default:
+    case ContactLabel.Unknown:
+    case ContactLabel.Self:
       return val;
     default:
-      return ContactPhoneNumberLabel.Unknown;
+      return ContactLabel.Unknown;
   }
 }
 
-export function convertNullableContactPhoneNumberLabel(
+export function convertNullableContactLabel(
   val: string | null,
-): ContactPhoneNumberLabel | null {
+): ContactLabel | null {
   if (val === null || val === undefined) {
     return null;
   }
-  return convertContactPhoneNumberLabel(val);
+  return convertContactLabel(val);
 }
 
-export function convertContactPhoneNumberLabelList(
-  val: string[],
-): ContactPhoneNumberLabel[] {
-  return val.map((v) => convertContactPhoneNumberLabel(v));
+export function convertContactLabelList(val: string[]): ContactLabel[] {
+  return val.map((v) => convertContactLabel(v));
 }
 
-export function convertNullableContactPhoneNumberLabelList(
+export function convertNullableContactLabelList(
   val: string[] | null,
-): ContactPhoneNumberLabel[] | null {
+): ContactLabel[] | null {
   if (val === null || val === undefined) {
     return null;
   }
-  return convertContactPhoneNumberLabelList(val);
+  return convertContactLabelList(val);
 }
 
 export enum DayOfWeek {

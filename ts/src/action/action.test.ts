@@ -9,10 +9,12 @@ import {
   buildUpdateQuery,
   loadEdgeForID2,
   assocEdgeLoader,
+} from "../core/ent";
+import {
   setGlobalSchema,
   clearGlobalSchema,
   __hasGlobalSchema,
-} from "../core/ent";
+} from "../core/global_schema";
 import {
   clearEdgeTypeInGroup,
   setEdgeTypeInGroup,
