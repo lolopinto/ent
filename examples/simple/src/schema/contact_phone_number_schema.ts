@@ -14,7 +14,7 @@ const ContactPhoneNumberSchema = new EntSchema({
   fields: {
     phoneNumber: PhoneNumberType(),
     label: EnumType({
-      globalEnumType: "ContactLabel",
+      globalType: "ContactLabel",
     }),
     contactID: UUIDType({
       immutable: true,

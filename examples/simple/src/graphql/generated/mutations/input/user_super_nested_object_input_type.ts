@@ -25,6 +25,38 @@ import {
   SuperNestedObjectEnumType,
 } from "../../../resolvers";
 
+const UserNestedNestedObjectInputType = new GraphQLInputObjectType({
+  name: "UserNestedNestedObjectInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    nestedNestedUuid: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    nestedNestedInt: {
+      type: new GraphQLNonNull(GraphQLInt),
+    },
+    nestedNestedString: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    nestedNestedBool: {
+      type: GraphQLBoolean,
+    },
+    nestedNestedFloat: {
+      type: new GraphQLNonNull(GraphQLFloat),
+    },
+    nestedNestedEnum: {
+      type: new GraphQLNonNull(NestedObjNestedNestedEnumType),
+    },
+    nestedNestedStringList: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GraphQLString)),
+      ),
+    },
+    nestedNestedIntList: {
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLInt))),
+    },
+  }),
+});
+
 const UserNestedObjectInputType = new GraphQLInputObjectType({
   name: "UserNestedObjectInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -56,38 +88,6 @@ const UserNestedObjectInputType = new GraphQLInputObjectType({
     },
     nestedObj: {
       type: UserNestedNestedObjectInputType,
-    },
-  }),
-});
-
-const UserNestedNestedObjectInputType = new GraphQLInputObjectType({
-  name: "UserNestedNestedObjectInput",
-  fields: (): GraphQLInputFieldConfigMap => ({
-    nestedNestedUuid: {
-      type: new GraphQLNonNull(GraphQLID),
-    },
-    nestedNestedInt: {
-      type: new GraphQLNonNull(GraphQLInt),
-    },
-    nestedNestedString: {
-      type: new GraphQLNonNull(GraphQLString),
-    },
-    nestedNestedBool: {
-      type: GraphQLBoolean,
-    },
-    nestedNestedFloat: {
-      type: new GraphQLNonNull(GraphQLFloat),
-    },
-    nestedNestedEnum: {
-      type: new GraphQLNonNull(NestedObjNestedNestedEnumType),
-    },
-    nestedNestedStringList: {
-      type: new GraphQLNonNull(
-        new GraphQLList(new GraphQLNonNull(GraphQLString)),
-      ),
-    },
-    nestedNestedIntList: {
-      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLInt))),
     },
   }),
 });

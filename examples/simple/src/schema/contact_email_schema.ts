@@ -14,7 +14,7 @@ const ContactEmailSchema = new EntSchema({
   fields: {
     emailAddress: EmailType(),
     label: EnumType({
-      globalEnumType: "ContactLabel",
+      globalType: "ContactLabel",
     }),
     contactID: UUIDType({
       immutable: true,
