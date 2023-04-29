@@ -1,3 +1,4 @@
+import { clearLogLevels, setLogLevels } from "../core/logger";
 import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
 import {
   EnumField,
@@ -7,6 +8,7 @@ import {
   IntegerEnumType,
 } from "./field";
 import { Field } from "./schema";
+import { MockLogs } from "../testutils/mock_log";
 
 function enumF(values: string[]): EnumField {
   return EnumType({ values });
@@ -212,6 +214,42 @@ describe("global enum type map", () => {
       valid: false,
       value: "blahdsds",
     });
+  });
+});
+
+describe("no global. trying to reference global", () => {
+  const ml = new MockLogs();
+
+  beforeEach(() => {
+    ml.mock();
+  });
+
+  afterEach(() => {
+    clearLogLevels();
+    ml.clear();
+  });
+
+  const e = EnumType({
+    globalType: "Foo",
+  });
+
+  test("invalid", async () => {
+    await testEnum(e, {
+      valid: false,
+      value: "verified",
+    });
+    expect(ml.errors.length).toBe(0);
+  });
+
+  test("invalid but logged", async () => {
+    setLogLevels("error");
+    await testEnum(e, {
+      valid: false,
+      value: "verified",
+    });
+    expect(ml.errors).toStrictEqual([
+      "globalType Foo not found in global schema",
+    ]);
   });
 });
 
@@ -524,5 +562,41 @@ describe("int enum. global enum", () => {
       valid: false,
       value: 2,
     });
+  });
+});
+
+describe("int enum. no global. trying to reference global", () => {
+  const ml = new MockLogs();
+
+  beforeEach(() => {
+    ml.mock();
+  });
+
+  afterEach(() => {
+    clearLogLevels();
+    ml.clear();
+  });
+
+  const e = IntegerEnumType({
+    globalType: "Foo",
+  });
+
+  test("invalid", async () => {
+    await testEnum(e, {
+      valid: false,
+      value: 1,
+    });
+    expect(ml.errors.length).toBe(0);
+  });
+
+  test("invalid but logged", async () => {
+    setLogLevels("error");
+    await testEnum(e, {
+      valid: false,
+      value: 2,
+    });
+    expect(ml.errors).toStrictEqual([
+      "globalType Foo not found in global schema",
+    ]);
   });
 });

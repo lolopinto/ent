@@ -15,6 +15,8 @@ import {
 } from "./field";
 import { StructType, StructTypeAsList } from "./struct_field";
 import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
+import { MockLogs } from "../testutils/mock_log";
+import { clearLogLevels, setLogLevels } from "../core/logger";
 
 function structTypeF(fields: FieldMap) {
   return StructType({
@@ -474,6 +476,56 @@ describe("global type", () => {
     const format = [formatted1, formatted2];
     expect(await f.valid(data)).toBe(true);
     expect(f.format(data)).toBe(JSON.stringify(format));
+  });
+});
+
+describe("no. global. trying to reference global", () => {
+  const ml = new MockLogs();
+  beforeEach(() => {
+    ml.mock();
+  });
+  afterEach(() => {
+    clearLogLevels();
+    ml.clear();
+  });
+
+  test("invalid", async () => {
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const val = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      float: 2.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(false);
+    expect(ml.errors.length).toBe(0);
+  });
+
+  test("invalid but logged", async () => {
+    setLogLevels("error");
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const val = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      float: 2.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(false);
+    expect(ml.errors).toStrictEqual([
+      "globalType Foo not found in global schema",
+    ]);
   });
 });
 

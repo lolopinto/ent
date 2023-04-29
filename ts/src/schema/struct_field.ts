@@ -12,6 +12,7 @@ import {
   __getGlobalSchemaField,
   __getGlobalSchemaFields,
 } from "../core/global_schema";
+import { log } from "../core/logger";
 
 interface structFieldOptions extends FieldOptions {
   // required.
@@ -170,27 +171,35 @@ export class StructField extends BaseField implements Field {
   async valid(obj: any): Promise<boolean> {
     if (this.type.globalType) {
       const f = __getGlobalSchemaField(this.type.globalType);
-      // list and global type is not valid. todo
-      if (f && f.valid) {
-        if (
-          JSON.stringify(this.type.listElemType) !==
-          JSON.stringify(f?.type.listElemType)
-        ) {
-          if (this.jsonAsList) {
-            if (!Array.isArray(obj)) {
-              return false;
+      // list and global type is not valid.
+      if (f) {
+        if (f.valid) {
+          if (
+            JSON.stringify(this.type.listElemType) !==
+            JSON.stringify(f?.type.listElemType)
+          ) {
+            if (this.jsonAsList) {
+              if (!Array.isArray(obj)) {
+                return false;
+              }
+              // @ts-ignore
+              const valid = await Promise.all(obj.map((v) => f.valid(v)));
+              return valid.every((b) => b);
+            } else {
+              return f.valid([obj]);
             }
-            // @ts-ignore
-            const valid = await Promise.all(obj.map((v) => f.valid(v)));
-            return valid.every((b) => b);
-          } else {
-            // TODO handle test
-            return f.valid([obj]);
           }
+
+          return f.valid(obj);
         }
-        return f.valid(obj);
+        return true;
+      } else {
+        log(
+          "error",
+          `globalType ${this.type.globalType} not found in global schema`,
+        );
+        return false;
       }
-      return false;
     }
     if (this.jsonAsList) {
       if (!Array.isArray(obj)) {

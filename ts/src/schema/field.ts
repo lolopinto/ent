@@ -15,6 +15,7 @@ import {
   Type,
 } from "./schema";
 import { __getGlobalSchemaField } from "../core/global_schema";
+import { log } from "../core/logger";
 
 export abstract class BaseField {
   name: string;
@@ -702,10 +703,18 @@ export class EnumField extends BaseField implements Field {
   async valid(val: any): Promise<boolean> {
     if (this.type.globalType) {
       const f = __getGlobalSchemaField(this.type.globalType);
-      if (f && f.valid) {
-        return f.valid(val);
+      if (f) {
+        if (f.valid) {
+          return f.valid(val);
+        }
+        return true;
+      } else {
+        log(
+          "error",
+          `globalType ${this.type.globalType} not found in global schema`,
+        );
+        return false;
       }
-      return false;
     }
 
     // lookup table enum and indicated via presence of foreignKey
@@ -822,10 +831,18 @@ export class IntegerEnumField extends BaseField implements Field {
   async valid(val: any): Promise<boolean> {
     if (this.type?.globalType) {
       const f = __getGlobalSchemaField(this.type.globalType);
-      if (f && f.valid) {
-        return f.valid(val);
+      if (f) {
+        if (f.valid) {
+          return f.valid(val);
+        }
+        return true;
+      } else {
+        log(
+          "error",
+          `globalType ${this.type.globalType} not found in global schema`,
+        );
+        return false;
       }
-      return false;
     }
 
     // lookup table enum and indicated via presence of foreignKey
