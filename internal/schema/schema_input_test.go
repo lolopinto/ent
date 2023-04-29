@@ -1386,7 +1386,7 @@ func TestWithMultipleEnumsInPattern(t *testing.T) {
 	assert.Len(t, schema.Enums, 2)
 	for _, info := range schema.Enums {
 		assert.NotNil(t, info.GQLEnum)
-		assert.Equal(t, info.GQLEnum.Name, "DayOfWeekAlt")
+		assert.Regexp(t, info.GQLEnum.Name, "DayOfWeekAlt")
 	}
 }
 

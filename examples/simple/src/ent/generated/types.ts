@@ -4,7 +4,6 @@
  */
 
 import { ID } from "@snowtop/ent";
-// import { UserNestedNestedObject } from "./types";
 
 export enum NodeType {
   // Address is the node type for the Address object. Used to identify this node in edges and other places.
@@ -1006,41 +1005,6 @@ export function convertNullableUserPrefsStruct2List(
   return input.map((v) => convertUserPrefsStruct2(v));
 }
 
-export interface UserNestedNestedObject {
-  nestedNestedUuid: ID;
-  nestedNestedInt: number;
-  nestedNestedString: string;
-  nestedNestedBool?: boolean | null;
-  nestedNestedFloat: number;
-  nestedNestedEnum: NestedObjNestedNestedEnum;
-  nestedNestedStringList: string[];
-  nestedNestedIntList: number[];
-}
-
-export function convertUserNestedNestedObject(
-  input: any,
-): UserNestedNestedObject {
-  return {
-    nestedNestedUuid: input.nested_nested_uuid,
-    nestedNestedInt: input.nested_nested_int,
-    nestedNestedString: input.nested_nested_string,
-    nestedNestedBool: input.nested_nested_bool,
-    nestedNestedFloat: input.nested_nested_float,
-    nestedNestedEnum: input.nested_nested_enum,
-    nestedNestedStringList: input.nested_nested_string_list,
-    nestedNestedIntList: input.nested_nested_int_list,
-  };
-}
-
-export function convertNullableUserNestedNestedObject(
-  input: any,
-): UserNestedNestedObject | null {
-  if (input === undefined || input === null) {
-    return null;
-  }
-  return convertUserNestedNestedObject(input);
-}
-
 export interface UserNestedObject {
   nestedUuid: ID;
   nestedInt: number;
@@ -1074,6 +1038,41 @@ export function convertNullableUserNestedObject(
     return null;
   }
   return convertUserNestedObject(input);
+}
+
+export interface UserNestedNestedObject {
+  nestedNestedUuid: ID;
+  nestedNestedInt: number;
+  nestedNestedString: string;
+  nestedNestedBool?: boolean | null;
+  nestedNestedFloat: number;
+  nestedNestedEnum: NestedObjNestedNestedEnum;
+  nestedNestedStringList: string[];
+  nestedNestedIntList: number[];
+}
+
+export function convertUserNestedNestedObject(
+  input: any,
+): UserNestedNestedObject {
+  return {
+    nestedNestedUuid: input.nested_nested_uuid,
+    nestedNestedInt: input.nested_nested_int,
+    nestedNestedString: input.nested_nested_string,
+    nestedNestedBool: input.nested_nested_bool,
+    nestedNestedFloat: input.nested_nested_float,
+    nestedNestedEnum: input.nested_nested_enum,
+    nestedNestedStringList: input.nested_nested_string_list,
+    nestedNestedIntList: input.nested_nested_int_list,
+  };
+}
+
+export function convertNullableUserNestedNestedObject(
+  input: any,
+): UserNestedNestedObject | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserNestedNestedObject(input);
 }
 
 export interface CatType {

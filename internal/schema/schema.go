@@ -876,7 +876,7 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 	for _, f2 := range fi.EntFields() {
 		ci.Fields = append(ci.Fields, f2)
 		// add custom interface maybe
-		_, err := s.checkCustomInterface(cfg, f2, ci, globalType)
+		_, err := s.checkCustomInterface(cfg, f2, root, globalType)
 		if err != nil {
 			return nil, err
 		}
