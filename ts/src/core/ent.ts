@@ -601,7 +601,6 @@ export async function loadCustomData<
   TResultData extends Data = TQueryData,
   K = keyof TQueryData,
 >(
-  // TODO add a test for this. when we have TQUeryData with extra/different keys
   options: SelectCustomDataOptions<TResultData>,
   query: CustomQuery<TQueryData, K>,
   context: Context | undefined,

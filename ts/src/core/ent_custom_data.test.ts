@@ -2,7 +2,6 @@ import {
   PrivacyPolicy,
   ID,
   Ent,
-  Data,
   Viewer,
   Context,
   QueryDataOptions,
@@ -19,7 +18,6 @@ import {
   loadCustomEnts,
   loadEnt,
   loadEnts,
-  loadRows,
 } from "./ent";
 import { createRowForTest, editRowForTest } from "../testutils/write";
 import { ContextCache } from "./context";
@@ -39,7 +37,6 @@ import DB, { Dialect } from "./db";
 import { ObjectLoaderFactory } from "./loaders";
 import { CustomEdgeQueryBase } from "./query";
 import { BaseEnt } from "../testutils/builder";
-import DataLoader from "dataloader";
 
 let ctx: Context;
 const ml = new MockLogs();
@@ -69,7 +66,18 @@ class User extends BaseEnt {
   }
 }
 
-const options: LoadCustomEntOptions<User> = {
+interface DataRow {
+  id: number;
+  foo: string;
+  bar: string;
+  baz: string;
+}
+
+interface QueryDataRow extends DataRow {
+  created_at: Date;
+}
+
+const options: LoadCustomEntOptions<User, Viewer, DataRow> = {
   tableName: "users",
   fields: ["*"],
   ent: User,
@@ -80,7 +88,7 @@ const options: LoadCustomEntOptions<User> = {
   }),
 };
 
-const softDeleteOptions: LoadCustomEntOptions<User> = {
+const softDeleteOptions: LoadCustomEntOptions<User, Viewer, DataRow> = {
   tableName: "users",
   fields: ["*"],
   ent: User,
@@ -671,7 +679,7 @@ async function queryCountViaOptionsDisableTransformations(
   }
 }
 
-function commonTests(opts: LoadCustomEntOptions<User>) {
+function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
   describe("loadCustomData", () => {
     test("query via SQL with context", async () => {
       await queryViaSQLQuery(opts, getCtx(undefined));
@@ -703,6 +711,15 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
 
     test("query via parameterized query without context", async () => {
       await queryViaParameterizedQuery(opts, undefined);
+    });
+
+    test("different types", async () => {
+      // this exists just to test typing of different types
+      await loadCustomData<QueryDataRow, DataRow>(
+        opts,
+        clause.Greater("created_at", new Date().toISOString()),
+        ctx,
+      );
     });
   });
 
@@ -893,6 +910,15 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
       );
       expect(ml.logs[5].query).toMatch(/SELECT \* FROM users WHERE id IN/);
       expect(ml.logs[5].values).toStrictEqual([1, 3, 5, 7, 9]);
+    });
+
+    test("different types", async () => {
+      // this exists just to test typing of different types
+      await loadCustomEnts<User, Viewer, QueryDataRow, DataRow>(
+        loggedOutViewer,
+        opts,
+        clause.Greater("created_at", new Date().toISOString()),
+      );
     });
   });
 }
