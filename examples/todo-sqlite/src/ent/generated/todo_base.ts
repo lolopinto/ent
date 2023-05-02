@@ -248,7 +248,7 @@ export class TodoBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, TodoDBData> {
     return {
       tableName: todoLoaderInfo.tableName,
       fields: todoLoaderInfo.fields,
