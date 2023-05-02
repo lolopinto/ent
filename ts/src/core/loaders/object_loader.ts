@@ -59,17 +59,21 @@ async function loadRowsForIDLoader<K, V = Data>(
   return result;
 }
 
-async function loadRowsForClauseLoader<V extends Data = Data, K = keyof V>(
+async function loadRowsForClauseLoader<
+  TQueryData extends Data = Data,
+  TResultData extends Data = TQueryData,
+  K = keyof TQueryData,
+>(
   options: SelectDataOptions,
-  clause: clause.Clause<V, K>,
-): Promise<V[]> {
+  clause: clause.Clause<TQueryData, K>,
+): Promise<TResultData[]> {
   const rowOptions: LoadRowOptions = {
     ...options,
     // @ts-expect-error clause in LoadRowOptions doesn't take templatized version of Clause
     clause: getCombinedClause(options, clause),
   };
 
-  return (await loadRows(rowOptions)) as V[];
+  return (await loadRows(rowOptions)) as TResultData[];
 }
 
 async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
@@ -143,17 +147,22 @@ class clauseCacheMap {
   }
 }
 
-function createClauseDataLoder<V extends Data = Data, K = keyof V>(
-  options: SelectDataOptions,
-) {
+function createClauseDataLoder<
+  TQueryData extends Data = Data,
+  TResultData extends Data = TQueryData,
+  K = keyof TQueryData,
+>(options: SelectDataOptions) {
   return new DataLoader(
-    async (clauses: clause.Clause<V, K>[]) => {
+    async (clauses: clause.Clause<TQueryData, K>[]) => {
       if (!clauses.length) {
         return [];
       }
-      const ret: V[][] = [];
+      const ret: TResultData[][] = [];
       for await (const clause of clauses) {
-        const data = await loadRowsForClauseLoader(options, clause);
+        const data = await loadRowsForClauseLoader<TQueryData, TResultData, K>(
+          options,
+          clause,
+        );
         ret.push(data);
       }
       return ret;
@@ -185,19 +194,29 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
   );
 }
 
-export class ObjectLoader<V extends Data = Data, K = keyof V>
-  implements Loader<ID, V | null>, Loader<clause.Clause<V, K>, V[] | null>
+export class ObjectLoader<
+  TQueryData extends Data = Data,
+  TResultData extends Data = TQueryData,
+  K = keyof TQueryData,
+> implements
+    Loader<ID, TResultData | null>,
+    Loader<clause.Clause<TQueryData, K>, TResultData[] | null>
 {
-  private idLoader: DataLoader<ID, V> | undefined;
-  private clauseLoader: DataLoader<clause.Clause<V, K>, V[]> | null;
+  private idLoader: DataLoader<ID, TResultData> | undefined;
+  private clauseLoader: DataLoader<
+    clause.Clause<TQueryData, K>,
+    TResultData[]
+  > | null;
 
-  private primedLoaders: Map<string, PrimableLoader<ID, V | null>> | undefined;
+  private primedLoaders:
+    | Map<string, PrimableLoader<ID, TResultData | null>>
+    | undefined;
   private memoizedInitPrime: () => void;
 
   constructor(
     private options: SelectDataOptions,
     public context?: Context,
-    private toPrime?: ObjectLoaderFactory<V>[],
+    private toPrime?: ObjectLoaderFactory<TResultData>[],
   ) {
     if (options.key === undefined) {
       console.trace();
@@ -220,7 +239,7 @@ export class ObjectLoader<V extends Data = Data, K = keyof V>
     let primedLoaders = new Map();
     this.toPrime.forEach((prime) => {
       const l2 = prime.createLoader(this.context);
-      if ((l2 as PrimableLoader<ID, V | null>).prime === undefined) {
+      if ((l2 as PrimableLoader<ID, TResultData | null>).prime === undefined) {
         return;
       }
 
@@ -229,9 +248,11 @@ export class ObjectLoader<V extends Data = Data, K = keyof V>
     this.primedLoaders = primedLoaders;
   }
 
-  async load(key: ID): Promise<V | null>;
-  async load(key: clause.Clause<V, K>): Promise<V[] | null>;
-  async load(key: clause.Clause<V, K> | ID): Promise<V | V[] | null> {
+  async load(key: ID): Promise<TResultData | null>;
+  async load(key: clause.Clause<TQueryData, K>): Promise<TResultData[] | null>;
+  async load(
+    key: clause.Clause<TQueryData, K> | ID,
+  ): Promise<TResultData | TResultData[] | null> {
     if (typeof key === "string" || typeof key === "number") {
       return this.loadID(key);
     }
@@ -239,7 +260,7 @@ export class ObjectLoader<V extends Data = Data, K = keyof V>
     return this.loadClause(key);
   }
 
-  private async loadID(key: ID): Promise<V | null> {
+  private async loadID(key: ID): Promise<TResultData | null> {
     // simple case. we get parallelization etc
     if (this.idLoader) {
       this.memoizedInitPrime();
@@ -266,10 +287,12 @@ export class ObjectLoader<V extends Data = Data, K = keyof V>
       clause: cls,
       context: this.context,
     };
-    return loadRow(rowOptions) as Promise<V | null>;
+    return loadRow(rowOptions) as Promise<TResultData | null>;
   }
 
-  private async loadClause(key: clause.Clause<V, K>): Promise<V[] | null> {
+  private async loadClause(
+    key: clause.Clause<TQueryData, K>,
+  ): Promise<TResultData[] | null> {
     if (this.clauseLoader) {
       return this.clauseLoader.load(key);
     }
@@ -280,11 +303,13 @@ export class ObjectLoader<V extends Data = Data, K = keyof V>
     this.idLoader && this.idLoader.clearAll();
     this.clauseLoader && this.clauseLoader.clearAll();
   }
-  async loadMany(keys: ID[]): Promise<Array<V | null>>;
-  async loadMany(keys: clause.Clause<V, K>[]): Promise<Array<V[] | null>>;
+  async loadMany(keys: ID[]): Promise<Array<TResultData | null>>;
   async loadMany(
-    keys: ID[] | clause.Clause<V, K>[],
-  ): Promise<Array<V | V[] | null>> {
+    keys: clause.Clause<TQueryData, K>[],
+  ): Promise<Array<TResultData[] | null>>;
+  async loadMany(
+    keys: ID[] | clause.Clause<TQueryData, K>[],
+  ): Promise<Array<TResultData | TResultData[] | null>> {
     if (!keys.length) {
       return [];
     }
@@ -293,10 +318,10 @@ export class ObjectLoader<V extends Data = Data, K = keyof V>
       return this.loadIDMany(keys as ID[]);
     }
 
-    return this.loadClauseMany(keys as clause.Clause<V, K>[]);
+    return this.loadClauseMany(keys as clause.Clause<TQueryData, K>[]);
   }
 
-  private loadIDMany(keys: ID[]): Promise<Array<V | null>> {
+  private loadIDMany(keys: ID[]): Promise<Array<TResultData | null>> {
     if (this.idLoader) {
       // @ts-expect-error TODO?
       return this.idLoader.loadMany(keys);
@@ -306,23 +331,26 @@ export class ObjectLoader<V extends Data = Data, K = keyof V>
   }
 
   private async loadClauseMany(
-    keys: clause.Clause<V, K>[],
-  ): Promise<Array<V[] | null>> {
+    keys: clause.Clause<TQueryData, K>[],
+  ): Promise<Array<TResultData[] | null>> {
     if (this.clauseLoader) {
       // @ts-expect-error TODO?
       return this.clauseLoader.loadMany(keys);
     }
 
-    const res: V[][] = [];
+    const res: TResultData[][] = [];
     for await (const key of keys) {
-      const rows = await loadRowsForClauseLoader(this.options, key);
+      const rows = await loadRowsForClauseLoader<TQueryData, TResultData, K>(
+        this.options,
+        key,
+      );
       res.push(rows);
     }
 
     return res;
   }
 
-  prime(data: V) {
+  prime(data: TResultData) {
     // we have this data from somewhere else, prime it in the c
     if (this.idLoader) {
       const col = this.options.key;
@@ -332,7 +360,7 @@ export class ObjectLoader<V extends Data = Data, K = keyof V>
   }
 
   // prime this loader and any other loaders it's aware of
-  primeAll(data: V) {
+  primeAll(data: TResultData) {
     this.prime(data);
     if (this.primedLoaders) {
       for (const [key, loader] of this.primedLoaders) {
@@ -430,9 +458,13 @@ export class ObjectLoaderFactory<V extends Data = Data>
     ) as ObjectLoader<V>;
   }
 
-  createTypedLoader<K = keyof V>(context?: Context): ObjectLoader<V, K> {
+  createTypedLoader<
+    TQueryData extends Data = Data,
+    TResultData extends Data = Data,
+    K = keyof TQueryData,
+  >(context?: Context): ObjectLoader<TQueryData, TResultData, K> {
     const loader = this.createLoader(context);
-    return loader as unknown as ObjectLoader<V, K>;
+    return loader as unknown as ObjectLoader<TQueryData, TResultData, K>;
   }
 
   createCountLoader<K = keyof V>(context?: Context): ObjectCountLoader<V, K> {

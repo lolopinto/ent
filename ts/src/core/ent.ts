@@ -525,7 +525,7 @@ export async function loadCustomEnts<
   TKey = keyof TQueryData,
 >(
   viewer: TViewer,
-  options: LoadCustomEntOptions<TEnt, TViewer, TQueryData>,
+  options: LoadCustomEntOptions<TEnt, TViewer, TResultData>,
   query: CustomQuery<TQueryData, TKey>,
 ) {
   const rows = await loadCustomData<TQueryData, TResultData, TKey>(
@@ -602,7 +602,7 @@ export async function loadCustomData<
   K = keyof TQueryData,
 >(
   // TODO add a test for this. when we have TQUeryData with extra/different keys
-  options: SelectCustomDataOptions<TQueryData>,
+  options: SelectCustomDataOptions<TResultData>,
   query: CustomQuery<TQueryData, K>,
   context: Context | undefined,
 ): Promise<TResultData[]> {
@@ -662,7 +662,7 @@ async function loadCustomDataImpl<
   TResultData extends Data = TQueryData,
   K = keyof TQueryData,
 >(
-  options: SelectCustomDataOptions<TQueryData>,
+  options: SelectCustomDataOptions<TResultData>,
   query: CustomQuery<TQueryData, K>,
   context: Context | undefined,
 ): Promise<TResultData[]> {
@@ -671,7 +671,7 @@ async function loadCustomDataImpl<
     return performRawQuery(query, [], []) as Promise<TResultData[]>;
   } else if (isClause(query)) {
     const r = await options.loaderFactory
-      .createTypedLoader<K>(context)
+      .createTypedLoader<TQueryData, TResultData, K>(context)
       .load(query);
     return r as unknown as TResultData[];
   } else if (isParameterizedQuery(query)) {
