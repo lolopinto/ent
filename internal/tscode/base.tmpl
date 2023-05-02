@@ -413,7 +413,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static loaderOptions<T extends {{$baseClass}}>(
     this: new (viewer: {{$viewerType}}, data: Data) => T,
-  ): {{useImport "LoadEntOptions"}}<T, {{$viewerType}}> {
+  ): {{useImport "LoadEntOptions"}}<T, {{$viewerType}}, {{$rawDBDataType}}> {
     return {
       tableName: {{useImport $loaderInfo}}.tableName,
       fields: {{useImport $loaderInfo}}.fields,

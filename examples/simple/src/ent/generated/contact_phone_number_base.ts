@@ -200,7 +200,7 @@ export class ContactPhoneNumberBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+  ): LoadEntOptions<T, ExampleViewerAlias, ContactPhoneNumberDBData> {
     return {
       tableName: contactPhoneNumberLoaderInfo.tableName,
       fields: contactPhoneNumberLoaderInfo.fields,

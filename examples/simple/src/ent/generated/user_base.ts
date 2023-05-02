@@ -485,7 +485,7 @@ export class UserBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+  ): LoadEntOptions<T, ExampleViewerAlias, UserDBData> {
     return {
       tableName: userLoaderInfo.tableName,
       fields: userLoaderInfo.fields,

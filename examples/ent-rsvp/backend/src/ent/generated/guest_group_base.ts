@@ -194,7 +194,7 @@ export class GuestGroupBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, GuestGroupDBData> {
     return {
       tableName: guestGroupLoaderInfo.tableName,
       fields: guestGroupLoaderInfo.fields,

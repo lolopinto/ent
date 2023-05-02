@@ -2,7 +2,6 @@ import {
   PrivacyPolicy,
   ID,
   Ent,
-  Data,
   Viewer,
   Context,
   QueryDataOptions,
@@ -67,7 +66,18 @@ class User extends BaseEnt {
   }
 }
 
-const options: LoadCustomEntOptions<User> = {
+interface DataRow {
+  id: number;
+  foo: string;
+  bar: string;
+  baz: string;
+}
+
+interface QueryDataRow extends DataRow {
+  created_at: Date;
+}
+
+const options: LoadCustomEntOptions<User, Viewer, DataRow> = {
   tableName: "users",
   fields: ["*"],
   ent: User,
@@ -78,7 +88,7 @@ const options: LoadCustomEntOptions<User> = {
   }),
 };
 
-const softDeleteOptions: LoadCustomEntOptions<User> = {
+const softDeleteOptions: LoadCustomEntOptions<User, Viewer, DataRow> = {
   tableName: "users",
   fields: ["*"],
   ent: User,
@@ -502,7 +512,7 @@ async function queryViaClause(
 
   // if context, cache hit, otherwise, hits db
   if (ctx) {
-    expect(lastLog["cache-hit"]).toBeDefined();
+    expect(lastLog["dataloader-cache-hit"]).toBeDefined();
     expect(lastLog["query"]).toBeUndefined();
   } else {
     expect(lastLog["cache-hit"]).toBeUndefined();
@@ -527,10 +537,10 @@ async function queryCountViaClause(
 
   // if context, cache hit, otherwise, hits db
   if (ctx) {
-    expect(lastLog["cache-hit"]).toBeDefined();
+    expect(lastLog["dataloader-cache-hit"]).toBeDefined();
     expect(lastLog["query"]).toBeUndefined();
   } else {
-    expect(lastLog["cache-hit"]).toBeUndefined();
+    expect(lastLog["dataloader-cache-hit"]).toBeUndefined();
     expect(lastLog["query"]).toBeDefined();
   }
 }
@@ -573,7 +583,7 @@ async function queryViaOptionsImpl(
   const data = await loadCustomData(opts, opts2, ctx);
 
   expect(data.length).toBe(expIds.length);
-  expect(data.map((row) => row.id)).toEqual(expIds);
+  expect(data.map((row) => row.id).sort((a, b) => b - a)).toEqual(expIds);
   expect(ml.logs.length).toBe(1);
 
   // re-query. hits the db
@@ -669,7 +679,7 @@ async function queryCountViaOptionsDisableTransformations(
   }
 }
 
-function commonTests(opts: LoadCustomEntOptions<User>) {
+function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
   describe("loadCustomData", () => {
     test("query via SQL with context", async () => {
       await queryViaSQLQuery(opts, getCtx(undefined));
@@ -701,6 +711,15 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
 
     test("query via parameterized query without context", async () => {
       await queryViaParameterizedQuery(opts, undefined);
+    });
+
+    test("different types", async () => {
+      // this exists just to test typing of different types
+      await loadCustomData<QueryDataRow, DataRow>(
+        opts,
+        clause.Greater("created_at", new Date().toISOString()),
+        ctx,
+      );
     });
   });
 
@@ -739,6 +758,13 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
   });
 
   describe("loadCustomEnts", () => {
+    function sortedEntIds(ents: User[], ascending?: boolean) {
+      if (ascending) {
+        return ents.map((ent) => ent.id as number).sort((a, b) => a - b);
+      }
+      return ents.map((ent) => ent.id as number).sort((a, b) => b - a);
+    }
+
     test("raw query", async () => {
       const v = getIDViewer(1, getCtx());
 
@@ -748,7 +774,7 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
         "select * from users order by id desc",
       );
       expect(ents.length).toBe(5);
-      expect(ents.map((ent) => ent.id)).toEqual([9, 7, 5, 3, 1]);
+      expect(sortedEntIds(ents)).toEqual([9, 7, 5, 3, 1]);
     });
 
     test("clause", async () => {
@@ -763,7 +789,7 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
 
       const ents2 = await loadCustomEnts(v2, opts, clause.Eq("bar", "bar2"));
       expect(ents2.length).toBe(5);
-      expect(ents2.map((ent) => ent.id).sort()).toEqual(even.slice().sort());
+      expect(sortedEntIds(ents2, true)).toEqual(even.slice());
     });
 
     test("options", async () => {
@@ -777,7 +803,7 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
       expect(ents.length).toBe(3);
 
       // only even numbers visible
-      expect(ents.map((ent) => ent.id)).toEqual([5, 3, 1]);
+      expect(sortedEntIds(ents)).toEqual([5, 3, 1]);
     });
 
     test("with prime", async () => {
@@ -793,8 +819,7 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
         "select * from users order by id desc",
       );
       expect(ents.length).toBe(5);
-      // order not actually guaranteed so this may eventually break
-      expect(ents.map((ent) => ent.id)).toEqual([10, 8, 6, 4, 2]);
+      expect(sortedEntIds(ents)).toEqual([10, 8, 6, 4, 2]);
       // just a select *
       expect(ml.logs.length).toBe(1);
       expect(ml.logs).toStrictEqual([
@@ -829,7 +854,7 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
         orderby: "id desc",
       });
       expect(ents.length).toBe(5);
-      expect(ents.map((ent) => ent.id)).toEqual([10, 8, 6, 4, 2]);
+      expect(sortedEntIds(ents)).toEqual([10, 8, 6, 4, 2]);
       expect(ml.logs.length).toBe(1);
       expect(ml.logs[0].query).toMatch(
         /SELECT \* FROM users WHERE bar = .+ ORDER BY id desc/,
@@ -885,6 +910,15 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
       );
       expect(ml.logs[5].query).toMatch(/SELECT \* FROM users WHERE id IN/);
       expect(ml.logs[5].values).toStrictEqual([1, 3, 5, 7, 9]);
+    });
+
+    test("different types", async () => {
+      // this exists just to test typing of different types
+      await loadCustomEnts<User, Viewer, QueryDataRow, DataRow>(
+        loggedOutViewer,
+        opts,
+        clause.Greater("created_at", new Date().toISOString()),
+      );
     });
   });
 }

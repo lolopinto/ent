@@ -525,7 +525,7 @@ export async function loadCustomEnts<
   TKey = keyof TQueryData,
 >(
   viewer: TViewer,
-  options: LoadCustomEntOptions<TEnt, TViewer>,
+  options: LoadCustomEntOptions<TEnt, TViewer, TResultData>,
   query: CustomQuery<TQueryData, TKey>,
 ) {
   const rows = await loadCustomData<TQueryData, TResultData, TKey>(
@@ -547,7 +547,7 @@ export type CustomQuery<T extends Data = Data, K = keyof T> =
   | string
   | parameterizedQueryOptions
   | clause.Clause<T, K>
-  | QueryDataOptions;
+  | QueryDataOptions<T, K>;
 
 function isClause<T extends Data = Data, K = keyof T>(
   opts:
@@ -560,8 +560,8 @@ function isClause<T extends Data = Data, K = keyof T>(
   return cls.clause !== undefined && cls.values !== undefined;
 }
 
-function isParameterizedQuery(
-  opts: QueryDataOptions | parameterizedQueryOptions,
+function isParameterizedQuery<T extends Data = Data, K = keyof T>(
+  opts: QueryDataOptions<T, K> | parameterizedQueryOptions,
 ): opts is parameterizedQueryOptions {
   return (opts as parameterizedQueryOptions).query !== undefined;
 }
@@ -589,13 +589,19 @@ function isParameterizedQuery(
  *   orderby: 'time',
  *   disableTransformations: false
  *  }) // doesn't change the query
+ *
+ * For queries that pass in a clause, we batch them with an underlying dataloader so that multiple queries with the same clause
+ * or parallel queries with the same clause are batched together.
+ *
+ * If a raw or parameterized query is passed in, we don't attempt to batch them together and they're executed as is.
+ * If you end up with a scenario where you may need to coalesce or batch (non-clause) queries here, you should use some kind of memoization here.
  */
 export async function loadCustomData<
   TQueryData extends Data = Data,
   TResultData extends Data = TQueryData,
   K = keyof TQueryData,
 >(
-  options: SelectCustomDataOptions,
+  options: SelectCustomDataOptions<TResultData>,
   query: CustomQuery<TQueryData, K>,
   context: Context | undefined,
 ): Promise<TResultData[]> {
@@ -617,16 +623,18 @@ export async function loadCustomData<
   return rows;
 }
 
-interface CustomCountOptions extends DataOptions {}
-
 // NOTE: if you use a raw query or paramterized query with this,
 // you should use `SELECT count(*) as count...`
 export async function loadCustomCount<T extends Data = Data, K = keyof T>(
-  options: CustomCountOptions,
+  options: SelectCustomDataOptions<T>,
   query: CustomQuery<T, K>,
   context: Context | undefined,
 ): Promise<number> {
-  // TODO also need to loaderify this in case we're querying for this a lot...
+  // if clause, we'll use the loader and strong typing/coalescing it provides
+  if (typeof query !== "string" && isClause(query)) {
+    return options.loaderFactory.createCountLoader<K>(context).load(query);
+  }
+
   const rows = await loadCustomDataImpl(
     {
       ...options,
@@ -648,50 +656,23 @@ function isPrimableLoader(
   return (loader as PrimableLoader<any, Data>) != undefined;
 }
 
-interface SelectCustomDataOptionsImpl extends SelectBaseDataOptions {
-  loaderFactory?: LoaderFactoryWithOptions;
-}
-
 async function loadCustomDataImpl<
   TQueryData extends Data = Data,
   TResultData extends Data = TQueryData,
   K = keyof TQueryData,
 >(
-  options: SelectCustomDataOptionsImpl,
+  options: SelectCustomDataOptions<TResultData>,
   query: CustomQuery<TQueryData, K>,
   context: Context | undefined,
 ): Promise<TResultData[]> {
-  function getClause(
-    cls: clause.Clause<TQueryData, K>,
-  ): clause.Clause<TQueryData, K> {
-    let optClause = options.loaderFactory?.options?.clause;
-    if (typeof optClause === "function") {
-      optClause = optClause();
-    }
-    if (!optClause) {
-      return cls;
-    }
-
-    // @ts-expect-error string|ID mismatch
-    return clause.And(cls, optClause);
-  }
-
   if (typeof query === "string") {
     // no caching, perform raw query
     return performRawQuery(query, [], []) as Promise<TResultData[]>;
-    // @ts-ignore
   } else if (isClause(query)) {
-    // if a Clause is passed in and we have a default clause
-    // associated with the query, pass that in
-    // if we want to disableTransformations, need to indicate that with
-    // disableTransformations option
-    // this will have rudimentary caching but nothing crazy
-    return loadRows({
-      ...options,
-      // @ts-ignore
-      clause: getClause(query),
-      context: context,
-    }) as Promise<TResultData[]>;
+    const r = await options.loaderFactory
+      .createTypedLoader<TQueryData, TResultData, K>(context)
+      .load(query);
+    return r as unknown as TResultData[];
   } else if (isParameterizedQuery(query)) {
     // no caching, perform raw query
     return performRawQuery(
@@ -700,16 +681,19 @@ async function loadCustomDataImpl<
       query.logValues,
     ) as Promise<TResultData[]>;
   } else {
+    // this will have rudimentary caching but nothing crazy
     let cls = query.clause;
     if (!query.disableTransformations) {
-      // @ts-ignore
-      cls = getClause(cls);
+      cls = clause.getCombinedClause(
+        options.loaderFactory.options,
+        query.clause,
+      );
     }
-    // this will have rudimentary caching but nothing crazy
     return loadRows({
       ...query,
       ...options,
       context: context,
+      // @ts-expect-error
       clause: cls,
     }) as Promise<TResultData[]>;
   }

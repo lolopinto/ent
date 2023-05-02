@@ -350,7 +350,7 @@ export class AccountBase
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, AccountDBData> {
     return {
       tableName: accountLoaderInfo.tableName,
       fields: accountLoaderInfo.fields,
