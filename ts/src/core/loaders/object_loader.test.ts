@@ -1249,7 +1249,6 @@ function commonTests() {
     });
   });
 
-  // TODO do combinations to make sure they all work together
   describe("count clause", () => {
     test("cache hit", async () => {
       await Promise.all(
@@ -1498,6 +1497,66 @@ function commonTests() {
         });
       }
     });
+  });
+
+  test("combinations", async () => {
+    await Promise.all(Array.from({ length: 30 }, (_, idx) => create(idx + 1)));
+
+    const loader = getNewLoader(true);
+
+    const res = await loader.load(clause.Greater<LoaderRow>("id", 10));
+    expect(res?.length).toBe(20);
+
+    const expQuery = buildQuery({
+      tableName: "users",
+      fields: ["id", "first_name"],
+      clause: clause.Greater("id", 10),
+    });
+    expect(ml.logs).toStrictEqual([
+      {
+        query: expQuery,
+        values: [10],
+      },
+    ]);
+    ml.clear();
+
+    const countLoader = getNewCountLoader(true);
+    const count = await countLoader.load(clause.Greater<LoaderRow>("id", 10));
+    expect(count).toBe(20);
+
+    const expQuery2 = buildQuery({
+      tableName: "users",
+      fields: ["count(*) as count"],
+      clause: clause.Greater("id", 10),
+    });
+    expect(ml.logs).toStrictEqual([
+      {
+        query: expQuery2,
+        values: [10],
+      },
+    ]);
+
+    ml.clear();
+
+    const [res2, count2] = await Promise.all([
+      loader.load(clause.Greater<LoaderRow>("id", 10)),
+      countLoader.load(clause.Greater<LoaderRow>("id", 10)),
+    ]);
+    expect(res2).toBe(res);
+    expect(count2).toBe(20);
+
+    expect(ml.logs).toStrictEqual([
+      {
+        "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
+        "tableName": "users",
+      },
+      {
+        "dataloader-cache-hit": `${clause
+          .Greater("id", 10)
+          .instanceKey()}:count`,
+        "tableName": "users",
+      },
+    ]);
   });
 }
 
