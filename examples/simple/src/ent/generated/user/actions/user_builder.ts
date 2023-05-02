@@ -27,7 +27,6 @@ import {
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
-  UserPrefsStruct2,
   UserSuperNestedObject,
 } from "../../types";
 import schema from "../../../../schema/user_schema";
@@ -44,7 +43,7 @@ export interface UserInput {
   bio?: string | null;
   nicknames?: string[] | null;
   prefs?: UserPrefsStruct | null;
-  prefsList?: UserPrefsStruct2[] | null;
+  prefsList?: UserPrefsStruct[] | null;
   prefsDiff?: UserPrefsDiff | null;
   daysOff?: UserDaysOff[] | null;
   preferredShift?: UserPreferredShift[] | null;
@@ -706,7 +705,7 @@ export class UserBuilder<
   }
 
   // get value of prefsList. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPrefsListValue(): UserPrefsStruct2[] | null | undefined {
+  getNewPrefsListValue(): UserPrefsStruct[] | null | undefined {
     return this.input.prefsList;
   }
 

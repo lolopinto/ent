@@ -28,7 +28,6 @@ import {
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
-  UserPrefsStruct2,
   UserSuperNestedObject,
 } from "../../types";
 import { UserBuilder } from "./user_builder";
@@ -44,7 +43,7 @@ export interface EditUserAllFieldsRelativeInput {
   bio?: string | null;
   nicknames?: string[] | null;
   prefs?: UserPrefsStruct | null;
-  prefsList?: UserPrefsStruct2[] | null;
+  prefsList?: UserPrefsStruct[] | null;
   prefsDiff?: UserPrefsDiff | null;
   daysOff?: UserDaysOff[] | null;
   preferredShift?: UserPreferredShift[] | null;

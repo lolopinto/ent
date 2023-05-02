@@ -16,7 +16,6 @@ import {
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
-  UserPrefsStruct2,
   UserSuperNestedObject,
 } from "./types";
 import { NodeType } from "./types";
@@ -655,7 +654,7 @@ export interface UserDBData {
   bio: string | null;
   nicknames: string[] | null;
   prefs: UserPrefsStruct | null;
-  prefs_list: UserPrefsStruct2[] | null;
+  prefs_list: UserPrefsStruct[] | null;
   prefs_diff: UserPrefsDiff | null;
   days_off: UserDaysOff[] | null;
   preferred_shift: UserPreferredShift[] | null;

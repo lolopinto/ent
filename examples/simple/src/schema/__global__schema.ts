@@ -1,4 +1,10 @@
-import { EnumType, GlobalSchema } from "@snowtop/ent/schema/";
+import {
+  BooleanType,
+  EnumType,
+  GlobalSchema,
+  EnumListType,
+  StructType,
+} from "@snowtop/ent/schema/";
 
 const glo: GlobalSchema = {
   edges: [
@@ -17,6 +23,23 @@ const glo: GlobalSchema = {
       // TODO make these 2 required for global enum types
       tsType: "ContactLabel",
       graphQLType: "ContactLabel",
+    }),
+    user_prefs: StructType({
+      tsType: "UserPrefsStruct",
+      fields: {
+        finishedNux: BooleanType({ nullable: true }),
+        enableNotifs: BooleanType({ nullable: true }),
+        notifTypes: EnumListType({
+          values: ["MOBILE", "WEB", "EMAIL"],
+          tsType: "NotifType",
+          graphQLType: "NotifType",
+        }),
+      },
+    }),
+    responses: EnumType({
+      values: ["yes", "no", "maybe"],
+      tsType: "ResponseType",
+      graphQLType: "ResponseType",
     }),
   },
 };
