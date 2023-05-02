@@ -25,7 +25,6 @@ import {
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
-  UserPrefsStruct2,
   UserSuperNestedObject,
 } from "../../types";
 import { UserBuilder } from "./user_builder";
@@ -44,7 +43,7 @@ export interface UserCreateInput {
   daysOff?: UserDaysOff[] | null;
   preferredShift?: UserPreferredShift[] | null;
   funUuids?: ID[] | null;
-  prefsList?: UserPrefsStruct2[] | null;
+  prefsList?: UserPrefsStruct[] | null;
   superNestedObject?: UserSuperNestedObject | null;
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;

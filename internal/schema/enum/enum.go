@@ -158,6 +158,16 @@ type GQLEnum struct {
 	DeprecatedValues []*Data
 }
 
+func (c *GQLEnum) Clone() *GQLEnum {
+	ret := &GQLEnum{
+		Name:             c.Name,
+		Type:             c.Type,
+		Values:           c.Values,
+		DeprecatedValues: c.DeprecatedValues,
+	}
+	return ret
+}
+
 func (g GQLEnum) GetGraphQLNames() []string {
 	ret := make([]string, len(g.Values))
 	for i := range g.Values {

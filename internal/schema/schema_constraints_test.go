@@ -582,7 +582,7 @@ func TestEnumConstraints(t *testing.T) {
 					export default Request;
 					`),
 			},
-			expectedErr: fmt.Errorf("enum schema with gqlname RequestStatus already exists"),
+			expectedErr: fmt.Errorf("enum schema with graphql name RequestStatus already exists"),
 		},
 	}
 

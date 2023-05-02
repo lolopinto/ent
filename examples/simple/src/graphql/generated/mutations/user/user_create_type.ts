@@ -26,7 +26,6 @@ import CreateUserAction, {
 } from "../../../../ent/user/actions/create_user_action";
 import { UserNestedObjectListInputType } from "../input/user_nested_object_list_input_type";
 import { UserPrefsDiffInputType } from "../input/user_prefs_diff_input_type";
-import { UserPrefsStruct2InputType } from "../input/user_prefs_struct_2_input_type";
 import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type";
 import { UserSuperNestedObjectInputType } from "../input/user_super_nested_object_input_type";
 import {
@@ -78,7 +77,7 @@ export const UserCreateInputType = new GraphQLInputObjectType({
       type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
     },
     prefsList: {
-      type: new GraphQLList(new GraphQLNonNull(UserPrefsStruct2InputType)),
+      type: new GraphQLList(new GraphQLNonNull(UserPrefsStructInputType)),
     },
     superNestedObject: {
       type: UserSuperNestedObjectInputType,

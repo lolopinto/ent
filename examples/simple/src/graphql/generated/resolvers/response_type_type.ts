@@ -5,8 +5,8 @@
 
 import { GraphQLEnumType } from "graphql";
 
-export const ObjNestedEnumType = new GraphQLEnumType({
-  name: "ObjNestedEnum",
+export const ResponseTypeType = new GraphQLEnumType({
+  name: "ResponseType",
   values: {
     YES: {
       value: "yes",

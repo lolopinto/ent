@@ -116,13 +116,6 @@ enum DogBreed {
   UNKNOWN
 }
 
-enum EnumUsedInList {
-  YES
-  NO
-  MAYBE
-  UNKNOWN
-}
-
 enum EventRsvpStatus {
   ATTENDING
   DECLINED
@@ -150,31 +143,10 @@ enum IntEnumUsedInList {
   MAYBE
 }
 
-enum NestedObjNestedNestedEnum {
-  YES
-  NO
-  MAYBE
-  UNKNOWN
-}
-
-enum NotifType2 {
-  MOBILE
-  WEB
-  EMAIL
-  UNKNOWN
-}
-
 enum NotifType {
   MOBILE
   WEB
   EMAIL
-  UNKNOWN
-}
-
-enum ObjNestedEnum {
-  YES
-  NO
-  MAYBE
   UNKNOWN
 }
 
@@ -190,7 +162,7 @@ enum RabbitBreed {
   UNKNOWN
 }
 
-enum SuperNestedObjectEnum {
+enum ResponseType {
   YES
   NO
   MAYBE
@@ -358,14 +330,14 @@ type UserNestedNestedObject {
   nestedNestedString: String!
   nestedNestedBool: Boolean
   nestedNestedFloat: Float!
-  nestedNestedEnum: NestedObjNestedNestedEnum!
+  nestedNestedEnum: ResponseType!
   nestedNestedStringList: [String!]!
   nestedNestedIntList: [Int!]!
 }
 
 type UserNestedObjectList {
   type: String!
-  enum: EnumUsedInList!
+  enum: ResponseType!
   objects: [UserNestedNestedObjectList!]!
   enumList: [IntEnumUsedInList!]!
 }
@@ -376,7 +348,7 @@ type UserNestedObject {
   nestedString: String!
   nestedBool: Boolean!
   nestedFloat: Float
-  nestedEnum: ObjNestedEnum!
+  nestedEnum: ResponseType!
   nestedStringList: [String!]!
   nestedIntList: [Int!]!
   nestedObj: UserNestedNestedObject
@@ -384,12 +356,6 @@ type UserNestedObject {
 
 type UserPrefsDiff {
   type: String!
-}
-
-type UserPrefsStruct2 {
-  finishedNux: Boolean
-  enableNotifs: Boolean
-  notifTypes: [NotifType2!]!
 }
 
 type UserPrefsStruct {
@@ -404,7 +370,7 @@ type UserSuperNestedObject {
   string: String!
   bool: Boolean!
   float: Float!
-  enum: SuperNestedObjectEnum!
+  enum: ResponseType!
   stringList: [String!]
   intList: [Int!]!
   obj: UserNestedObject
@@ -421,7 +387,7 @@ type User implements Node {
   bio: String
   nicknames: [String!]
   prefs: UserPrefsStruct
-  prefsList: [UserPrefsStruct2!]
+  prefsList: [UserPrefsStruct!]
   prefsDiff: UserPrefsDiff
   daysOff: [UserDaysOff!]
   preferredShift: [UserPreferredShift!]
@@ -1180,7 +1146,7 @@ input UserCreateInput {
   daysOff: [UserDaysOff!]
   preferredShift: [UserPreferredShift!]
   funUuids: [ID!]
-  prefsList: [UserPrefsStruct2Input!]
+  prefsList: [UserPrefsStructInput!]
   superNestedObject: UserSuperNestedObjectInput
   nestedList: [UserNestedObjectListInput!]
   intEnum: UserIntEnum
@@ -1216,7 +1182,7 @@ input UserNestedNestedObjectInput {
   nestedNestedString: String!
   nestedNestedBool: Boolean
   nestedNestedFloat: Float!
-  nestedNestedEnum: NestedObjNestedNestedEnum!
+  nestedNestedEnum: ResponseType!
   nestedNestedStringList: [String!]!
   nestedNestedIntList: [Int!]!
 }
@@ -1231,7 +1197,7 @@ input UserNestedObjectInput {
   nestedString: String!
   nestedBool: Boolean!
   nestedFloat: Float
-  nestedEnum: ObjNestedEnum!
+  nestedEnum: ResponseType!
   nestedStringList: [String!]!
   nestedIntList: [Int!]!
   nestedObj: UserNestedNestedObjectInput
@@ -1239,19 +1205,13 @@ input UserNestedObjectInput {
 
 input UserNestedObjectListInput {
   type: String!
-  enum: EnumUsedInList!
+  enum: ResponseType!
   objects: [UserNestedNestedObjectListInput!]!
   enumList: [IntEnumUsedInList!]!
 }
 
 input UserPrefsDiffInput {
   type: String!
-}
-
-input UserPrefsStruct2Input {
-  finishedNux: Boolean
-  enableNotifs: Boolean
-  notifTypes: [NotifType2!]!
 }
 
 input UserPrefsStructInput {
@@ -1266,7 +1226,7 @@ input UserSuperNestedObjectInput {
   string: String!
   bool: Boolean!
   float: Float!
-  enum: SuperNestedObjectEnum!
+  enum: ResponseType!
   stringList: [String!]
   intList: [Int!]!
   obj: UserNestedObjectInput
