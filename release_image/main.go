@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.1.0-alpha.43"
+const TAG = "0.1.0-alpha.44-test"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 18
@@ -26,24 +26,24 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	14,
-	16,
-	17,
+	// 14,
+	// 16,
+	// 17,
 	18,
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.26"
-const TSENT_VERSION = "v0.1.0-alpha.55"
+const TSENT_VERSION = "v0.1.0-alpha.56-test"
 
 var SUFFIXES = []string{
 	"dev",
-	"slim",
+	// "slim",
 }
 
 // can change platforms here to test locally
 var PLATFORMS = []string{
 	"linux/amd64",
-	"linux/arm64",
+	// "linux/arm64",
 }
 
 func main() {
