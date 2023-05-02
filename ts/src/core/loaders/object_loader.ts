@@ -8,33 +8,24 @@ import {
   Loader,
   LoaderFactory,
   PrimableLoader,
+  DataOptions,
 } from "../base";
 import { loadRow, loadRows } from "../ent";
 import * as clause from "../clause";
-import { logEnabled } from "../logger";
+import { log, logEnabled } from "../logger";
+import { getCombinedClause } from "../clause";
 
-import { getLoader, cacheMap } from "./loader";
+import { getLoader, cacheMap, getCustomLoader } from "./loader";
 import memoizee from "memoizee";
 
-async function loadRowsForLoader<K, V = Data>(
+async function loadRowsForIDLoader<K, V = Data>(
   options: SelectDataOptions,
   ids: K[],
   context?: Context,
 ) {
   let col = options.key;
-  let cls = clause.In(col, ...ids);
-  if (options.clause) {
-    let optionClause: clause.Clause | undefined;
-    if (typeof options.clause === "function") {
-      optionClause = options.clause();
-    } else {
-      optionClause = options.clause;
-    }
-    if (optionClause) {
-      // @ts-expect-error id/string mismatch
-      cls = clause.And(cls, optionClause);
-    }
-  }
+  const cls = getCombinedClause(options, clause.In(col, ...ids));
+
   const rowOptions: LoadRowOptions = {
     ...options,
     clause: cls,
@@ -68,6 +59,39 @@ async function loadRowsForLoader<K, V = Data>(
   return result;
 }
 
+async function loadRowsForClauseLoader<V extends Data = Data, K = keyof V>(
+  options: SelectDataOptions,
+  clause: clause.Clause<V, K>,
+): Promise<V[]> {
+  const rowOptions: LoadRowOptions = {
+    ...options,
+    // @ts-expect-error clause in LoadRowOptions doesn't take templatized version of Clause
+    clause: getCombinedClause(options, clause),
+  };
+
+  return (await loadRows(rowOptions)) as V[];
+}
+
+async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
+  options: SelectDataOptions,
+  clause: clause.Clause<V, K>,
+): Promise<number> {
+  const rowOptions: LoadRowOptions = {
+    ...options,
+    // @ts-expect-error clause in LoadRowOptions doesn't take templatized version of Clause
+    clause: getCombinedClause(options, clause),
+  };
+
+  const row = await loadRow({
+    ...rowOptions,
+    fields: ["count(*) as count"],
+  });
+  if (!row) {
+    return 0;
+  }
+  return parseInt(row.count, 10);
+}
+
 // optional clause...
 // so ObjectLoaderFactory and createDataLoader need to take a new optional field which is a clause that's always added here
 // and we need a disableTransform which skips loader completely and uses loadRow...
@@ -85,12 +109,88 @@ function createDataLoader(options: SelectDataOptions) {
     }
 
     // context not needed because we're creating a loader which has its own cache which is being used here
-    return loadRowsForLoader(options, ids);
+    return loadRowsForIDLoader(options, ids);
   }, loaderOptions);
 }
 
-export class ObjectLoader<V = Data> implements Loader<ID, V | null> {
-  private loader: DataLoader<ID, V> | undefined;
+class clauseCacheMap {
+  private m = new Map();
+
+  constructor(private options: DataOptions) {}
+
+  get(key: clause.Clause) {
+    const key2 = key.instanceKey();
+    const ret = this.m.get(key2);
+    if (ret) {
+      log("cache", {
+        "dataloader-cache-hit": key2,
+        "tableName": this.options.tableName,
+      });
+    }
+    return ret;
+  }
+
+  set(key: clause.Clause, value: any) {
+    return this.m.set(key.instanceKey(), value);
+  }
+
+  delete(key: clause.Clause) {
+    return this.m.delete(key.instanceKey());
+  }
+
+  clear() {
+    return this.m.clear();
+  }
+}
+
+function createClauseDataLoder<V extends Data = Data, K = keyof V>(
+  options: SelectDataOptions,
+) {
+  return new DataLoader(
+    async (clauses: clause.Clause<V, K>[]) => {
+      if (!clauses.length) {
+        return [];
+      }
+      const ret: V[][] = [];
+      for await (const clause of clauses) {
+        const data = await loadRowsForClauseLoader(options, clause);
+        ret.push(data);
+      }
+      return ret;
+    },
+    {
+      cacheMap: new clauseCacheMap(options),
+    },
+  );
+}
+
+function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
+  options: SelectDataOptions,
+) {
+  return new DataLoader(
+    async (clauses: clause.Clause<V, K>[]) => {
+      if (!clauses.length) {
+        return [];
+      }
+      const ret: number[] = [];
+      for await (const clause of clauses) {
+        const data = await loadCountForClauseLoader(options, clause);
+        ret.push(data);
+      }
+      return ret;
+    },
+    {
+      cacheMap: new clauseCacheMap(options),
+    },
+  );
+}
+
+export class ObjectLoader<V extends Data = Data, K = keyof V>
+  implements Loader<ID, V | null>, Loader<clause.Clause<V, K>, V[] | null>
+{
+  private idLoader: DataLoader<ID, V> | undefined;
+  private clauseLoader: DataLoader<clause.Clause<V, K>, V[]> | null;
+
   private primedLoaders: Map<string, PrimableLoader<ID, V | null>> | undefined;
   private memoizedInitPrime: () => void;
 
@@ -103,7 +203,8 @@ export class ObjectLoader<V = Data> implements Loader<ID, V | null> {
       console.trace();
     }
     if (context) {
-      this.loader = createDataLoader(options);
+      this.idLoader = createDataLoader(options);
+      this.clauseLoader = createClauseDataLoder(options);
     }
     this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
   }
@@ -128,12 +229,22 @@ export class ObjectLoader<V = Data> implements Loader<ID, V | null> {
     this.primedLoaders = primedLoaders;
   }
 
-  async load(key: ID): Promise<V | null> {
+  async load(key: ID): Promise<V | null>;
+  async load(key: clause.Clause<V, K>): Promise<V[] | null>;
+  async load(key: clause.Clause<V, K> | ID): Promise<V | V[] | null> {
+    if (typeof key === "string" || typeof key === "number") {
+      return this.loadID(key);
+    }
+
+    return this.loadClause(key);
+  }
+
+  private async loadID(key: ID): Promise<V | null> {
     // simple case. we get parallelization etc
-    if (this.loader) {
+    if (this.idLoader) {
       this.memoizedInitPrime();
       // prime the result if we got primable loaders
-      const result = await this.loader.load(key);
+      const result = await this.idLoader.load(key);
       if (result && this.primedLoaders) {
         for (const [key, loader] of this.primedLoaders) {
           const value = result[key];
@@ -146,18 +257,10 @@ export class ObjectLoader<V = Data> implements Loader<ID, V | null> {
       return result;
     }
 
-    let cls: clause.Clause = clause.Eq(this.options.key, key);
-    if (this.options.clause) {
-      let optionClause: clause.Clause | undefined;
-      if (typeof this.options.clause === "function") {
-        optionClause = this.options.clause();
-      } else {
-        optionClause = this.options.clause;
-      }
-      if (optionClause) {
-        cls = clause.And(cls, optionClause);
-      }
-    }
+    const cls = getCombinedClause(
+      this.options,
+      clause.Eq(this.options.key, key),
+    );
     const rowOptions: LoadRowOptions = {
       ...this.options,
       clause: cls,
@@ -166,25 +269,65 @@ export class ObjectLoader<V = Data> implements Loader<ID, V | null> {
     return loadRow(rowOptions) as Promise<V | null>;
   }
 
-  clearAll() {
-    this.loader && this.loader.clearAll();
+  private async loadClause(key: clause.Clause<V, K>): Promise<V[] | null> {
+    if (this.clauseLoader) {
+      return this.clauseLoader.load(key);
+    }
+    return loadRowsForClauseLoader(this.options, key);
   }
 
-  async loadMany(keys: ID[]): Promise<Array<V | null>> {
-    if (this.loader) {
-      // @ts-expect-error TODO?
-      return this.loader.loadMany(keys);
+  clearAll() {
+    this.idLoader && this.idLoader.clearAll();
+    this.clauseLoader && this.clauseLoader.clearAll();
+  }
+  async loadMany(keys: ID[]): Promise<Array<V | null>>;
+  async loadMany(keys: clause.Clause<V, K>[]): Promise<Array<V[] | null>>;
+  async loadMany(
+    keys: ID[] | clause.Clause<V, K>[],
+  ): Promise<Array<V | V[] | null>> {
+    if (!keys.length) {
+      return [];
     }
 
-    return loadRowsForLoader(this.options, keys, this.context);
+    if (typeof keys[0] === "string" || typeof keys[0] === "number") {
+      return this.loadIDMany(keys as ID[]);
+    }
+
+    return this.loadClauseMany(keys as clause.Clause<V, K>[]);
+  }
+
+  private loadIDMany(keys: ID[]): Promise<Array<V | null>> {
+    if (this.idLoader) {
+      // @ts-expect-error TODO?
+      return this.idLoader.loadMany(keys);
+    }
+
+    return loadRowsForIDLoader(this.options, keys, this.context);
+  }
+
+  private async loadClauseMany(
+    keys: clause.Clause<V, K>[],
+  ): Promise<Array<V[] | null>> {
+    if (this.clauseLoader) {
+      // @ts-expect-error TODO?
+      return this.clauseLoader.loadMany(keys);
+    }
+
+    const res: V[][] = [];
+    for await (const key of keys) {
+      const rows = await loadRowsForClauseLoader(this.options, key);
+      res.push(rows);
+    }
+
+    return res;
   }
 
   prime(data: V) {
     // we have this data from somewhere else, prime it in the c
-    if (this.loader) {
+    if (this.idLoader) {
       const col = this.options.key;
       const key = data[col];
-      this.loader.prime(key, data);
+      this.idLoader.prime(key, data);
     }
   }
 
@@ -202,6 +345,51 @@ export class ObjectLoader<V = Data> implements Loader<ID, V | null> {
   }
 }
 
+export class ObjectCountLoader<V extends Data = Data, K = keyof V>
+  implements Loader<clause.Clause<V, K>, number>
+{
+  private loader: DataLoader<clause.Clause<V, K>, number> | null;
+
+  constructor(private options: SelectDataOptions, public context?: Context) {
+    if (context) {
+      this.loader = createClauseCountDataLoader(options);
+    }
+  }
+
+  getOptions(): SelectDataOptions {
+    return this.options;
+  }
+
+  async load(key: clause.Clause<V, K>): Promise<number> {
+    if (this.loader) {
+      return this.loader.load(key);
+    }
+    return loadCountForClauseLoader(this.options, key);
+  }
+
+  clearAll() {
+    this.loader && this.loader.clearAll();
+  }
+
+  async loadMany(keys: clause.Clause<V, K>[]): Promise<Array<number>> {
+    if (!keys.length) {
+      return [];
+    }
+    if (this.loader) {
+      // @ts-expect-error
+      return this.loader.loadMany(keys);
+    }
+
+    const res: number[] = [];
+    for await (const key of keys) {
+      const r = await loadCountForClauseLoader(this.options, key);
+      res.push(r);
+    }
+
+    return res;
+  }
+}
+
 interface ObjectLoaderOptions extends SelectDataOptions {
   // needed when clause is a function...
   instanceKey?: string;
@@ -210,8 +398,10 @@ interface ObjectLoaderOptions extends SelectDataOptions {
 // NOTE: if not querying for all columns
 // have to query for the id field as one of the fields
 // because it's used to maintain sort order of the queried ids
-export class ObjectLoaderFactory<V = Data>
-  implements LoaderFactory<ID, V | null>
+export class ObjectLoaderFactory<V extends Data = Data>
+  implements
+    LoaderFactory<ID, V | null>,
+    LoaderFactory<clause.Clause<V>, V[] | null>
 {
   name: string;
   private toPrime: ObjectLoaderFactory<V>[] = [];
@@ -238,6 +428,21 @@ export class ObjectLoaderFactory<V = Data>
       },
       context,
     ) as ObjectLoader<V>;
+  }
+
+  createTypedLoader<K = keyof V>(context?: Context): ObjectLoader<V, K> {
+    const loader = this.createLoader(context);
+    return loader as unknown as ObjectLoader<V, K>;
+  }
+
+  createCountLoader<K = keyof V>(context?: Context): ObjectCountLoader<V, K> {
+    return getCustomLoader(
+      `${this.name}:count_loader`,
+      () => {
+        return new ObjectCountLoader(this.options, context);
+      },
+      context,
+    ) as ObjectCountLoader<V, K>;
   }
 
   // keep track of loaders to prime. needs to be done not in the constructor

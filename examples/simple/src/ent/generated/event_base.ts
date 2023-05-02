@@ -220,7 +220,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+  ): LoadEntOptions<T, ExampleViewerAlias, EventDBData> {
     return {
       tableName: eventLoaderInfo.tableName,
       fields: eventLoaderInfo.fields,

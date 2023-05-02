@@ -208,7 +208,7 @@ export class ContactBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+  ): LoadEntOptions<T, ExampleViewerAlias, ContactDBData> {
     return {
       tableName: contactLoaderInfo.tableName,
       fields: contactLoaderInfo.fields,

@@ -1,4 +1,4 @@
-import { Data } from "./base";
+import { Data, SelectBaseDataOptions, SelectDataOptions } from "./base";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
@@ -959,4 +959,23 @@ export function Modulo<T extends Data, K = keyof T>(
   value: any,
 ): Clause<T, K> {
   return new simpleClause(col, value, "%", new isNullClause(col));
+}
+
+export function getCombinedClause<V extends Data = Data, K = keyof V>(
+  options: Omit<SelectDataOptions, "key">,
+  cls: Clause<V, K>,
+): Clause<V, K> {
+  if (options.clause) {
+    let optionClause: Clause | undefined;
+    if (typeof options.clause === "function") {
+      optionClause = options.clause();
+    } else {
+      optionClause = options.clause;
+    }
+    if (optionClause) {
+      // @ts-expect-error different types
+      cls = And(cls, optionClause);
+    }
+  }
+  return cls;
 }
