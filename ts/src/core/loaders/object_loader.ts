@@ -120,14 +120,14 @@ function createDataLoader(options: SelectDataOptions) {
 class clauseCacheMap {
   private m = new Map();
 
-  constructor(private options: DataOptions) {}
+  constructor(private options: DataOptions, private count?: boolean) {}
 
   get(key: clause.Clause) {
     const key2 = key.instanceKey();
     const ret = this.m.get(key2);
     if (ret) {
       log("cache", {
-        "dataloader-cache-hit": key2,
+        "dataloader-cache-hit": key2 + (this.count ? ":count" : ""),
         "tableName": this.options.tableName,
       });
     }
@@ -189,7 +189,7 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
       return ret;
     },
     {
-      cacheMap: new clauseCacheMap(options),
+      cacheMap: new clauseCacheMap(options, true),
     },
   );
 }
