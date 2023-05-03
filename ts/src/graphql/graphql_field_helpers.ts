@@ -39,6 +39,7 @@ function validateCustomFieldImpl(
   expect(customField.gqlName).toBe(expectedCustomField.gqlName);
   expect(customField.fieldType).toBe(expectedCustomField.fieldType);
 
+  console.log(customField.results, expectedCustomField.results);
   validateFields(customField.results, expectedCustomField.results);
 
   validateFields(customField.args, expectedCustomField.args);
