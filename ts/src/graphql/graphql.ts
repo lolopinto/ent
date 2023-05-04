@@ -58,7 +58,8 @@ type gqlMutationOptions = Omit<gqlFieldOptions, "nullable" | "type"> & {
   type?: gqlFieldOptionsBase["type"];
 };
 
-type gqlQueryOptions = Omit<gqlFieldOptions, "nullable">;
+// nullable allowed in query. why was it previously not allowed??
+type gqlQueryOptions = gqlFieldOptions;
 
 export enum CustomFieldType {
   Accessor = "ACCESSOR",
