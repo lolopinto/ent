@@ -493,7 +493,6 @@ export class GQLCapture {
       | ClassFieldDecoratorContext
       | ClassGetterDecoratorContext,
     options: gqlFieldOptions | gqlMutationOptions | gqlQueryOptions,
-    // TODO use this and throw if type-system is bypassed with no type
     allowNoReturnType?: boolean,
   ): CustomField {
     let fieldType: CustomFieldType;
@@ -518,6 +517,9 @@ export class GQLCapture {
         break;
     }
 
+    if (!allowNoReturnType && !options.type) {
+      throw new Error(`type is required for ${fieldType}`);
+    }
     if (options.type) {
       // override name property passed down so we return '' as name
       results.push(GQLCapture.getField({ ...options, name: "" }));
@@ -606,7 +608,6 @@ export class GQLCapture {
         return;
       }
 
-      // TODO allowFunctionType: true...
       GQLCapture.customMutations.push(
         GQLCapture.getCustomField(ctx, options, true),
       );
