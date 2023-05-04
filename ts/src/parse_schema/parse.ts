@@ -38,7 +38,7 @@ async function processFields(
   for (const name in m) {
     const field = m[name];
     //@ts-ignore type and other changed fields with different type in ProcessedField vs Field
-    let f: ProcessedField = { name, ...field };
+    let f: ProcessedField = { ...field, name };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
     f.hasFieldPrivacy = field.privacyPolicy !== undefined;
