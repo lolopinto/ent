@@ -126,6 +126,9 @@ func (fieldInfo *FieldInfo) SingleFieldPrimaryKey() string {
 
 func (fieldInfo *FieldInfo) addField(f *Field) error {
 	name := NormalizedField(f.FieldName)
+	if name == "" {
+		return fmt.Errorf("invalid db col `%s` for Field `%s`", name, f.FieldName)
+	}
 	if fieldInfo.cols[f.dbName] != nil {
 		return fmt.Errorf("field with column %s already exists", f.dbName)
 	}

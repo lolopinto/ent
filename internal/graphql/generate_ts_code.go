@@ -556,7 +556,6 @@ func getFilePathForCustomQuery(cfg *codegen.Config, name string) string {
 
 var searchFor = []string{
 	"@gqlField",
-	"@gqlArg",
 	"@gqlArgType",
 	"@gqlInputObjectType",
 	"@gqlObjectType",
