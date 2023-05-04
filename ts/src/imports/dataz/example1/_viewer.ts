@@ -22,10 +22,14 @@ class ViewerType {
   }
 }
 
-// export default class ViewerResolver {
-//   @gqlQuery({ name: "viewer", type: ViewerType })
-//   viewer(): // @gqlContextType() context: RequestContext
-//   ViewerType {
-//     return new ViewerType(context.getViewer());
-//   }
-// }
+export default class ViewerResolver {
+  @gqlQuery({
+    nodeName: "ViewerResolver",
+    name: "viewer",
+    type: ViewerType,
+    args: [gqlContextType()],
+  })
+  viewer(context: RequestContext): ViewerType {
+    return new ViewerType(context.getViewer());
+  }
+}
