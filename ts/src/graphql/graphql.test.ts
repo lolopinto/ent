@@ -20,6 +20,7 @@ import {
   validateCustomFields,
   validateNoCustom,
   validateCustomArgs,
+  validateCustomTypes,
 } from "./graphql_field_helpers";
 
 beforeEach(() => {
@@ -428,7 +429,7 @@ describe("property", () => {
     validateNoCustom(CustomObjectTypes.Field);
   });
 
-  test("enabled. custom scalar", () => {
+  describe("enabled. custom scalar", () => {
     class Point {
       constructor(private x: number, private y: number) {}
 
@@ -465,23 +466,64 @@ describe("property", () => {
       },
     });
 
-    try {
+    test("enabled. custom scalar used incorrectly", () => {
+      try {
+        class User {
+          @gqlField({
+            nodeName: "User",
+            type: GraphQLPoint,
+          })
+          point: Point;
+        }
+        throw new Error("should not get here");
+      } catch (e) {
+        expect(e.message).toMatch(
+          /custom scalar type Point is not supported this way. use CustomType syntax/,
+        );
+      }
+
+      validateNoCustom();
+    });
+
+    test("enabled. custom scalar used correctly", () => {
       class User {
         @gqlField({
           nodeName: "User",
-          type: GraphQLPoint,
+          type: {
+            type: "GraphQLPoint",
+            importPath: "",
+            tsType: "Point",
+            tsImportPath: "",
+          },
         })
         point: Point;
       }
-      throw new Error("should not get here");
-    } catch (e) {
-      // TODO have we confirmed it works with CustomType syntax?
-      expect(e.message).toMatch(
-        /custom scalar type Point is not supported this way. use CustomType syntax/,
-      );
-    }
 
-    validateNoCustom();
+      validateOneCustomField({
+        nodeName: "User",
+        functionName: "point",
+        gqlName: "point",
+        fieldType: CustomFieldType.Field,
+        results: [
+          {
+            type: "GraphQLPoint",
+            name: "",
+            tsType: "Point",
+            needsResolving: true,
+          },
+        ],
+        args: [],
+      });
+
+      validateCustomTypes([
+        {
+          type: "GraphQLPoint",
+          importPath: "",
+          tsType: "Point",
+          tsImportPath: "",
+        },
+      ]);
+    });
   });
 });
 
