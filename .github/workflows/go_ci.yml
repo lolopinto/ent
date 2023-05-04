@@ -86,3 +86,5 @@ jobs:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
           POSTGRES_PASSWORD: 'postgres'
           POSTGRES_USER: 'postgres'
+          # TODO https://github.com/lolopinto/ent/issues/1384
+          DISABLE_SWC: 'true'
