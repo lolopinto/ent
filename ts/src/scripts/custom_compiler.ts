@@ -270,7 +270,6 @@ class Compiler {
             // update the node...
             return ts.factory.updateImportDeclaration(
               importNode,
-              importNode.decorators,
               importNode.modifiers,
               importNode.importClause,
               ts.factory.createStringLiteral(relPath),
@@ -287,13 +286,13 @@ class Compiler {
             let relPath = checkPath(paths, text);
             if (relPath) {
               // update the node...
-              return ts.updateExportDeclaration(
+              return ts.factory.updateExportDeclaration(
                 exportNode,
-                exportNode.decorators,
                 exportNode.modifiers,
+                exportNode.isTypeOnly,
                 exportNode.exportClause,
                 ts.factory.createStringLiteral(relPath),
-                exportNode.isTypeOnly,
+                exportNode.assertClause,
               );
             }
           }
