@@ -252,7 +252,7 @@ export class AuthCodeBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, AuthCodeDBData> {
     return {
       tableName: authCodeLoaderInfo.tableName,
       fields: authCodeLoaderInfo.fields,

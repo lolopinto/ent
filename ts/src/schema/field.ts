@@ -14,6 +14,8 @@ import {
   PolymorphicOptions,
   Type,
 } from "./schema";
+import { __getGlobalSchemaField } from "../core/global_schema";
+import { log } from "../core/logger";
 
 export abstract class BaseField {
   name: string;
@@ -630,6 +632,9 @@ export interface EnumOptions extends FieldOptions {
   // coming from the db.
   // GraphQL is strict about old values so we are adding this
   disableUnknownType?: boolean;
+
+  // used to flag that this is referencing a global shared enum type.
+  globalType?: string;
 }
 
 /**
@@ -650,11 +655,12 @@ export class EnumField extends BaseField implements Field {
       type: options.tsType,
       graphQLType: options.graphQLType,
       disableUnknownType: options.disableUnknownType,
+      globalType: options.globalType,
     };
     if (!options.foreignKey) {
-      if (!options.values && !options.map) {
+      if (!options.values && !options.map && !options.globalType) {
         throw new Error(
-          "values or map required if not look up table enum. Look-up table enum indicated by foreignKey field",
+          "values, map or globalType required if not look up table enum. Look-up table enum indicated by foreignKey field",
         );
       }
       if (options.values) {
@@ -673,9 +679,9 @@ export class EnumField extends BaseField implements Field {
         }
       }
     } else {
-      if (options.values || options.map) {
+      if (options.values || options.map || options.globalType) {
         throw new Error(
-          "cannot specify values or map and foreign key for lookup table enum type",
+          "cannot specify values, map or globalType and foreign key for lookup table enum type",
         );
       }
       if (options.createEnumType) {
@@ -694,7 +700,23 @@ export class EnumField extends BaseField implements Field {
     this.map = options.map;
   }
 
-  valid(val: any): boolean {
+  async valid(val: any): Promise<boolean> {
+    if (this.type.globalType) {
+      const f = __getGlobalSchemaField(this.type.globalType);
+      if (f) {
+        if (f.valid) {
+          return f.valid(val);
+        }
+        return true;
+      } else {
+        log(
+          "error",
+          `globalType ${this.type.globalType} not found in global schema`,
+        );
+        return false;
+      }
+    }
+
     // lookup table enum and indicated via presence of foreignKey
     if (!this.values && !this.map) {
       return true;
@@ -714,6 +736,13 @@ export class EnumField extends BaseField implements Field {
   }
 
   format(val: any): any {
+    if (this.type.globalType) {
+      const f = __getGlobalSchemaField(this.type.globalType);
+      if (f && f.format) {
+        return f.format(val);
+      }
+      return val;
+    }
     return val;
   }
 }
@@ -739,7 +768,7 @@ export interface IntegerEnumOptions extends FieldOptions {
   // used when we're migrating from old -> new values and want to reuse the values but the values may not be the best keys so this is preferred
   // instead of values.
   // GRAPHQL will take the key and use it as the value here instead o
-  map: IntEnumMap;
+  map?: IntEnumMap;
   deprecated?: IntEnumMap;
 
   // by default the type is the name as the field
@@ -751,6 +780,11 @@ export interface IntegerEnumOptions extends FieldOptions {
   // coming from the db.
   // GraphQL is strict about old values so we are adding this
   disableUnknownType?: boolean;
+
+  // TODO would be nice for typescript to make tsType and graphQLType required
+  // when globalType is set
+  // hard to do that because FieldOptions allows any field so disjoint `|` types don't work
+  globalType?: string;
 }
 
 export class IntegerEnumField extends BaseField implements Field {
@@ -766,23 +800,51 @@ export class IntegerEnumField extends BaseField implements Field {
       graphQLType: options.graphQLType,
       deprecatedIntEnumMap: options.deprecated,
       disableUnknownType: options.disableUnknownType,
+      globalType: options.globalType,
     };
 
-    let count = 0;
-    for (const _ in options.map) {
-      count++;
-      break;
-    }
-    if (!count) {
-      throw new Error("need at least one entry in enum map");
-    }
     if (options.foreignKey) {
       throw new Error(`foreignKey on intEnum not supported`);
     }
-    this.map = options.map;
+
+    if (options.globalType) {
+      if (options.map) {
+        throw new Error(`cannot specify map and globalType`);
+      }
+      this.map = {};
+    } else {
+      let count = 0;
+      for (const _ in options.map) {
+        count++;
+        break;
+      }
+      if (!count) {
+        throw new Error("need at least one entry in enum map");
+      }
+      if (!options.map) {
+        throw new Error("map required if not globalType");
+      }
+      this.map = options.map!;
+    }
   }
 
-  valid(val: any): boolean {
+  async valid(val: any): Promise<boolean> {
+    if (this.type?.globalType) {
+      const f = __getGlobalSchemaField(this.type.globalType);
+      if (f) {
+        if (f.valid) {
+          return f.valid(val);
+        }
+        return true;
+      } else {
+        log(
+          "error",
+          `globalType ${this.type.globalType} not found in global schema`,
+        );
+        return false;
+      }
+    }
+
     // lookup table enum and indicated via presence of foreignKey
 
     for (const k in this.map) {
@@ -795,6 +857,13 @@ export class IntegerEnumField extends BaseField implements Field {
   }
 
   format(val: any): any {
+    if (this.type.globalType) {
+      const f = __getGlobalSchemaField(this.type.globalType);
+      if (f && f.format) {
+        return f.format(val);
+      }
+    }
+
     return parseInt(val);
   }
 }

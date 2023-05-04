@@ -1049,5 +1049,64 @@ func TestJSONType(t *testing.T) {
 				},
 			},
 		},
+		"jsonb with global type": {
+			&enttype.JSONBType{
+				CommonJSONType: enttype.CommonJSONType{
+					CustomTsInterface:      "TypeWithSubFields",
+					CustomGraphQLInterface: "TypeWithSubFields",
+					GlobalType:             "TypeWithSubFields",
+				},
+			},
+			expType{
+				db:      "postgresql.JSONB",
+				graphql: "TypeWithSubFields!",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
+				},
+				tsType: "TypeWithSubFields",
+				nullableType: &enttype.NullableJSONBType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithSubFields",
+						CustomGraphQLInterface: "TypeWithSubFields",
+						GlobalType:             "TypeWithSubFields",
+					},
+				},
+				convertSqliteFns: []string{"convertJSON"},
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
+				},
+				importType: &enttype.JSONBImport{},
+			},
+		},
+		"nullable jsonb with global type": {
+			&enttype.NullableJSONBType{
+				CommonJSONType: enttype.CommonJSONType{
+					CustomTsInterface:      "TypeWithSubFields",
+					CustomGraphQLInterface: "TypeWithSubFields",
+					GlobalType:             "TypeWithSubFields",
+				},
+			},
+			expType{
+				db:      "postgresql.JSONB",
+				graphql: "TypeWithSubFields",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
+				},
+				tsType: "TypeWithSubFields | null",
+				nonNullableType: &enttype.JSONBType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithSubFields",
+						CustomGraphQLInterface: "TypeWithSubFields",
+						GlobalType:             "TypeWithSubFields",
+					},
+				},
+				convertSqliteFns: []string{"convertNullableJSON"},
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewTypesEntImportPath("TypeWithSubFields"),
+				},
+				importType: &enttype.JSONBImport{},
+			},
+		},
 	})
 }

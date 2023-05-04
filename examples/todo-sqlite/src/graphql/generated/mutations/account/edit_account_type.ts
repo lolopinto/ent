@@ -17,13 +17,7 @@ import { Account } from "src/ent/";
 import EditAccountAction, {
   AccountEditInput,
 } from "src/ent/account/actions/edit_account_action";
-import {
-  AccountPrefs,
-  AccountPrefs2,
-  AccountPrefs3,
-} from "src/ent/generated/types";
-import { AccountPrefs2InputType } from "src/graphql/generated/mutations/input/account_prefs_2_input_type";
-import { AccountPrefs3InputType } from "src/graphql/generated/mutations/input/account_prefs_3_input_type";
+import { AccountPrefs } from "src/ent/generated/types";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
 import { AccountType } from "src/graphql/resolvers/";
 
@@ -35,8 +29,8 @@ interface customEditAccountInput
   id: string;
   phone_number?: string;
   account_prefs?: AccountPrefs | null;
-  account_prefs_3?: AccountPrefs3;
-  account_prefs_list?: AccountPrefs2[] | null;
+  account_prefs_3?: AccountPrefs;
+  account_prefs_list?: AccountPrefs[] | null;
 }
 
 interface EditAccountPayload {
@@ -60,10 +54,10 @@ export const EditAccountInputType = new GraphQLInputObjectType({
       type: AccountPrefsInputType,
     },
     account_prefs_3: {
-      type: AccountPrefs3InputType,
+      type: AccountPrefsInputType,
     },
     account_prefs_list: {
-      type: new GraphQLList(new GraphQLNonNull(AccountPrefs2InputType)),
+      type: new GraphQLList(new GraphQLNonNull(AccountPrefsInputType)),
     },
   }),
 });

@@ -303,7 +303,7 @@ export class WorkspaceBase
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, WorkspaceDBData> {
     return {
       tableName: workspaceLoaderInfo.tableName,
       fields: workspaceLoaderInfo.fields,

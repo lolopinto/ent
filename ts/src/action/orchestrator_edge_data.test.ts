@@ -21,16 +21,15 @@ import { createRowForTest } from "../testutils/write";
 import {
   AssocEdge,
   AssocEdgeConstructor,
-  clearGlobalSchema,
   loadCustomEdges,
   loadEdges,
   loadRawEdgeCountX,
-  setGlobalSchema,
 } from "../core/ent";
 import {
   EdgeWithDeletedAt,
   testEdgeGlobalSchema,
 } from "../testutils/test_edge_global_schema";
+import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
 
 const UserSchema = getBuilderSchemaFromFields(
   {

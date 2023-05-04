@@ -198,7 +198,7 @@ export class HoursOfOperationBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+  ): LoadEntOptions<T, ExampleViewerAlias, HoursOfOperationDBData> {
     return {
       tableName: hoursOfOperationLoaderInfo.tableName,
       fields: hoursOfOperationLoaderInfo.fields,

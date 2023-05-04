@@ -66,34 +66,13 @@ const UserSchema = new EntSchema({
     Bio: StringType({ nullable: true }),
     nicknames: StringListType({ nullable: true }),
     prefs: StructType({
-      tsType: "UserPrefsStruct",
+      globalType: "UserPrefsStruct",
       nullable: true,
-      fields: {
-        finishedNux: BooleanType({ nullable: true }),
-        enableNotifs: BooleanType({ nullable: true }),
-        notifTypes: EnumListType({
-          values: ["MOBILE", "WEB", "EMAIL"],
-          tsType: "NotifType",
-          graphQLType: "NotifType",
-        }),
-      },
       privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
-    // TODO there should be a way to share structs across types
-    // this is the same type across multiple fields
-    // more likely to be shared across types
     prefsList: StructTypeAsList({
-      tsType: "UserPrefsStruct2",
+      globalType: "UserPrefsStruct",
       nullable: true,
-      fields: {
-        finishedNux: BooleanType({ nullable: true }),
-        enableNotifs: BooleanType({ nullable: true }),
-        notifTypes: EnumListType({
-          values: ["MOBILE", "WEB", "EMAIL"],
-          tsType: "NotifType2",
-          graphQLType: "NotifType2",
-        }),
-      },
       privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
     prefs_diff: StructType({
@@ -148,8 +127,9 @@ const UserSchema = new EntSchema({
         string: StringType(),
         bool: BooleanType(),
         float: FloatType(),
-        // this should be UserSuperNestedObject + Enum
-        enum: EnumType({ values: ["yes", "no", "maybe"] }),
+        enum: EnumType({
+          globalType: "ResponseType",
+        }),
         string_list: StringListType({ nullable: true }),
         int_list: IntegerListType(),
         obj: StructType({
@@ -161,8 +141,9 @@ const UserSchema = new EntSchema({
             nested_string: StringType(),
             nested_bool: BooleanType(),
             nested_float: FloatType({ nullable: true }),
-            // UserNestedObjectNestedEnum
-            nested_enum: EnumType({ values: ["yes", "no", "maybe"] }),
+            nested_enum: EnumType({
+              globalType: "ResponseType",
+            }),
             nested_string_list: StringListType(),
             nested_int_list: IntegerListType(),
             nested_obj: StructType({
@@ -174,9 +155,8 @@ const UserSchema = new EntSchema({
                 nested_nested_string: StringType(),
                 nested_nested_bool: BooleanType({ nullable: true }),
                 nested_nested_float: FloatType(),
-                // UserNestedNestedObjectNestedNestedEnum
                 nested_nested_enum: EnumType({
-                  values: ["yes", "no", "maybe"],
+                  globalType: "ResponseType",
                 }),
                 nested_nested_string_list: StringListType(),
                 nested_nested_int_list: IntegerListType(),
@@ -279,9 +259,7 @@ const UserSchema = new EntSchema({
       fields: {
         type: StringType(),
         enum: EnumType({
-          values: ["yes", "no", "maybe"],
-          tsType: "EnumUsedInList",
-          graphQLType: "EnumUsedInList",
+          globalType: "ResponseType",
         }),
         objects: StructListType({
           tsType: "UserNestedNestedObjectList",

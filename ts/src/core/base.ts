@@ -1,4 +1,5 @@
 import * as clause from "./clause";
+import { ObjectLoaderFactory } from "./loaders";
 
 // Loader is the primitive data fetching abstraction in the framework
 // implementation details up to each instance
@@ -186,13 +187,14 @@ export interface EditRowOptions extends CreateRowOptions {
 interface LoadableEntOptions<
   TEnt extends Ent,
   TViewer extends Viewer = Viewer,
+  TData extends Data = Data,
 > {
-  loaderFactory: LoaderFactoryWithOptions;
+  loaderFactory: ObjectLoaderFactory<TData>;
   ent: EntConstructor<TEnt, TViewer>;
 }
 
-export interface LoaderFactoryWithOptions
-  extends LoaderFactoryWithLoaderMany<any, Data | null> {
+export interface LoaderFactoryWithOptions<T extends Data = Data>
+  extends LoaderFactoryWithLoaderMany<any, T | null> {
   options?: SelectDataOptions;
 }
 
@@ -200,7 +202,8 @@ export interface LoaderFactoryWithOptions
 export interface LoadEntOptions<
   TEnt extends Ent,
   TViewer extends Viewer = Viewer,
-> extends LoadableEntOptions<TEnt, TViewer>,
+  TData extends Data = Data,
+> extends LoadableEntOptions<TEnt, TViewer, TData>,
     // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
     SelectBaseDataOptions {
   // if passed in, it means there's field privacy on the ents *and* we want to apply it at ent load
@@ -208,9 +211,10 @@ export interface LoadEntOptions<
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }
 
-export interface SelectCustomDataOptions extends SelectBaseDataOptions {
+export interface SelectCustomDataOptions<T extends Data = Data>
+  extends SelectBaseDataOptions {
   // main loader factory for the ent, passed in for priming the data so subsequent fetches of this id don't reload
-  loaderFactory: LoaderFactoryWithOptions;
+  loaderFactory: ObjectLoaderFactory<T>;
 
   // should we prime the ent after loading. uses loaderFactory above
   // only pass prime if the fields is equivalent to the ids of the other loader factory
@@ -221,9 +225,10 @@ export interface SelectCustomDataOptions extends SelectBaseDataOptions {
 export interface LoadCustomEntOptions<
     TEnt extends Ent,
     TViewer extends Viewer = Viewer,
+    TData extends Data = Data,
   >
   // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
-  extends SelectCustomDataOptions {
+  extends SelectCustomDataOptions<TData> {
   ent: EntConstructor<TEnt, TViewer>;
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }

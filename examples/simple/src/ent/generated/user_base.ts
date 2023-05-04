@@ -44,13 +44,12 @@ import {
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
-  UserPrefsStruct2,
   UserSuperNestedObject,
   convertNullableUserAccountStatus,
   convertNullableUserNestedObjectListList,
   convertNullableUserPreferredShiftList,
   convertNullableUserPrefsStruct,
-  convertNullableUserPrefsStruct2List,
+  convertNullableUserPrefsStructList,
   convertNullableUserSuperNestedObject,
 } from "./types";
 import {
@@ -107,7 +106,7 @@ export class UserBase
   readonly bio: string | null;
   readonly nicknames: string[] | null;
   protected readonly _prefs: UserPrefsStruct | null;
-  protected readonly _prefsList: UserPrefsStruct2[] | null;
+  protected readonly _prefsList: UserPrefsStruct[] | null;
   protected readonly _prefsDiff: UserPrefsDiff | null;
   readonly daysOff: UserDaysOff[] | null;
   readonly preferredShift: UserPreferredShift[] | null;
@@ -135,7 +134,7 @@ export class UserBase
     this.bio = data.bio;
     this.nicknames = data.nicknames;
     this._prefs = convertNullableUserPrefsStruct(data.prefs);
-    this._prefsList = convertNullableUserPrefsStruct2List(data.prefs_list);
+    this._prefsList = convertNullableUserPrefsStructList(data.prefs_list);
     this._prefsDiff = data.prefs_diff;
     this.daysOff = data.days_off;
     this.preferredShift = convertNullableUserPreferredShiftList(
@@ -196,7 +195,7 @@ export class UserBase
     return v ? this._prefs : null;
   }
 
-  async prefsList(): Promise<UserPrefsStruct2[] | null> {
+  async prefsList(): Promise<UserPrefsStruct[] | null> {
     if (this._prefsList === null) {
       return null;
     }
@@ -485,7 +484,7 @@ export class UserBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+  ): LoadEntOptions<T, ExampleViewerAlias, UserDBData> {
     return {
       tableName: userLoaderInfo.tableName,
       fields: userLoaderInfo.fields,

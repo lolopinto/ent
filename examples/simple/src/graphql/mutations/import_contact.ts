@@ -15,7 +15,7 @@ import {
   UserInput,
 } from "../../ent/generated/user/actions/user_builder";
 import { ExampleViewer } from "../../viewer/viewer";
-import { ContactEmailLabel } from "src/ent/generated/types";
+import { ContactLabel } from "src/ent/generated/types";
 
 export class ImportContactResolver {
   @gqlMutation({
@@ -61,7 +61,7 @@ export class ImportContactResolver {
           emails: [
             {
               emailAddress: record.emailAddress,
-              label: ContactEmailLabel.Default,
+              label: ContactLabel.Default,
             },
           ],
           userID: user.id,

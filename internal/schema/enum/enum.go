@@ -16,7 +16,7 @@ type Enum struct {
 	Name               string
 	Values             []*Data
 	DeprecatedValues   []*Data
-	Imported           bool // Imported enum that's not in this file
+	Imported           bool // Imported enum that's not in this file. TODO aren't all enums Imported now now??
 	convertFuncTSType  string
 	DisableUnknownType bool
 }
@@ -156,6 +156,16 @@ type GQLEnum struct {
 	Type             string // type of the enum e.g. nullable or not
 	Values           []*Data
 	DeprecatedValues []*Data
+}
+
+func (c *GQLEnum) Clone() *GQLEnum {
+	ret := &GQLEnum{
+		Name:             c.Name,
+		Type:             c.Type,
+		Values:           c.Values,
+		DeprecatedValues: c.DeprecatedValues,
+	}
+	return ret
 }
 
 func (g GQLEnum) GetGraphQLNames() []string {

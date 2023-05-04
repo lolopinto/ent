@@ -231,7 +231,7 @@ export class TagBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, TagDBData> {
     return {
       tableName: tagLoaderInfo.tableName,
       fields: tagLoaderInfo.fields,

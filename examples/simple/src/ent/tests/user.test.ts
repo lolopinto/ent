@@ -8,21 +8,17 @@ import {
   IntEnumUsedInList,
   UserIntEnum,
   NotifType,
-  NotifType2,
-  EnumUsedInList,
   UserNestedObjectList,
   CatBreed,
   DogBreed,
   DogBreedGroup,
-  NestedObjNestedNestedEnum,
-  ObjNestedEnum,
   RabbitBreed,
-  SuperNestedObjectEnum,
   UserSuperNestedObject,
   NodeType,
   EdgeType,
   UserAccountStatus,
-  ContactEmailLabel,
+  ContactLabel,
+  ResponseType,
 } from "../generated/types";
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
 import { random, randomEmail, randomPhoneNumber } from "../../util/random";
@@ -686,7 +682,7 @@ test("uniqueEdge|Node", async () => {
     emails: [
       {
         emailAddress: sansa.emailAddress,
-        label: ContactEmailLabel.Default,
+        label: ContactLabel.Default,
       },
     ],
     firstName: sansa.firstName,
@@ -1077,11 +1073,11 @@ test("jsonb types", async () => {
     prefsList: [
       {
         finishedNux: true,
-        notifTypes: [NotifType2.EMAIL],
+        notifTypes: [NotifType.EMAIL],
       },
       {
         finishedNux: false,
-        notifTypes: [NotifType2.MOBILE],
+        notifTypes: [NotifType.MOBILE],
       },
     ],
   }).saveX();
@@ -1128,20 +1124,20 @@ describe("super nested complex", () => {
       string: "whaa",
       float: 2.3,
       bool: false,
-      enum: SuperNestedObjectEnum.Maybe,
+      enum: ResponseType.Maybe,
       intList: [7, 8, 9],
       obj: {
         nestedBool: false,
         nestedIntList: [1, 2, 3],
         nestedUuid: uuidv1(),
-        nestedEnum: ObjNestedEnum.No,
+        nestedEnum: ResponseType.No,
         nestedString: "stri",
         nestedInt: 24,
         nestedStringList: ["hello", "goodbye"],
         nestedObj: {
           nestedNestedUuid: uuidv1(),
           nestedNestedFloat: 4.2,
-          nestedNestedEnum: NestedObjNestedNestedEnum.Maybe,
+          nestedNestedEnum: ResponseType.Maybe,
           nestedNestedInt: 32,
           nestedNestedString: "whaa",
           nestedNestedIntList: [4, 5, 6],
@@ -1168,7 +1164,7 @@ describe("super nested complex", () => {
       string: "whaa",
       float: 2.3,
       bool: false,
-      enum: SuperNestedObjectEnum.Maybe,
+      enum: ResponseType.Maybe,
       intList: [7, 8, 9],
       union: {
         name: "tabby",
@@ -1203,7 +1199,7 @@ describe("super nested complex", () => {
       string: "whaa",
       float: 2.3,
       bool: false,
-      enum: SuperNestedObjectEnum.Maybe,
+      enum: ResponseType.Maybe,
       intList: [7, 8, 9],
       union: {
         name: "scout",
@@ -1239,7 +1235,7 @@ describe("super nested complex", () => {
       string: "whaa",
       float: 2.3,
       bool: false,
-      enum: SuperNestedObjectEnum.Maybe,
+      enum: ResponseType.Maybe,
       intList: [7, 8, 9],
       union: {
         name: "hallo",
@@ -1270,7 +1266,7 @@ describe("super nested complex", () => {
     const objs: UserNestedObjectList[] = [
       {
         type: "foo",
-        enum: EnumUsedInList.Maybe,
+        enum: ResponseType.Maybe,
         objects: [
           {
             int: 2,
@@ -1283,7 +1279,7 @@ describe("super nested complex", () => {
       },
       {
         type: "bar",
-        enum: EnumUsedInList.No,
+        enum: ResponseType.No,
         objects: [],
         enumList: [IntEnumUsedInList.Maybe],
       },
@@ -1306,7 +1302,7 @@ describe("super nested complex", () => {
       string: "whaa",
       float: 2.3,
       bool: false,
-      enum: SuperNestedObjectEnum.Maybe,
+      enum: ResponseType.Maybe,
       intList: [7, 8, 9],
       union: {
         name: "hallo",
@@ -1339,7 +1335,7 @@ describe("super nested complex", () => {
       string: "barrr",
       float: 2.233,
       bool: true,
-      enum: SuperNestedObjectEnum.Yes,
+      enum: ResponseType.Yes,
       intList: [13, 28, 42],
       union: {
         name: "bye",

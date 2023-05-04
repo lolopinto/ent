@@ -118,51 +118,6 @@ export function convertNullableCatBreedList(
   return convertCatBreedList(val);
 }
 
-export enum ContactEmailLabel {
-  Work = "work",
-  Home = "home",
-  Default = "default",
-  Unknown = "unknown",
-  Self = "self",
-}
-
-export function convertContactEmailLabel(val: string): ContactEmailLabel {
-  switch (val) {
-    case ContactEmailLabel.Work:
-    case ContactEmailLabel.Home:
-    case ContactEmailLabel.Default:
-    case ContactEmailLabel.Unknown:
-    case ContactEmailLabel.Self:
-      return val;
-    default:
-      return ContactEmailLabel.Unknown;
-  }
-}
-
-export function convertNullableContactEmailLabel(
-  val: string | null,
-): ContactEmailLabel | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertContactEmailLabel(val);
-}
-
-export function convertContactEmailLabelList(
-  val: string[],
-): ContactEmailLabel[] {
-  return val.map((v) => convertContactEmailLabel(v));
-}
-
-export function convertNullableContactEmailLabelList(
-  val: string[] | null,
-): ContactEmailLabel[] | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertContactEmailLabelList(val);
-}
-
 export enum ContactInfoSource {
   Friend = "friend",
   Work = "work",
@@ -206,49 +161,47 @@ export function convertNullableContactInfoSourceList(
   return convertContactInfoSourceList(val);
 }
 
-export enum ContactPhoneNumberLabel {
+export enum ContactLabel {
   Work = "work",
   Home = "home",
   Default = "default",
   Unknown = "unknown",
+  Self = "self",
 }
 
-export function convertContactPhoneNumberLabel(
-  val: string,
-): ContactPhoneNumberLabel {
+export function convertContactLabel(val: string): ContactLabel {
   switch (val) {
-    case ContactPhoneNumberLabel.Work:
-    case ContactPhoneNumberLabel.Home:
-    case ContactPhoneNumberLabel.Default:
-    case ContactPhoneNumberLabel.Unknown:
+    case ContactLabel.Work:
+    case ContactLabel.Home:
+    case ContactLabel.Default:
+    case ContactLabel.Unknown:
+    case ContactLabel.Self:
       return val;
     default:
-      return ContactPhoneNumberLabel.Unknown;
+      return ContactLabel.Unknown;
   }
 }
 
-export function convertNullableContactPhoneNumberLabel(
+export function convertNullableContactLabel(
   val: string | null,
-): ContactPhoneNumberLabel | null {
+): ContactLabel | null {
   if (val === null || val === undefined) {
     return null;
   }
-  return convertContactPhoneNumberLabel(val);
+  return convertContactLabel(val);
 }
 
-export function convertContactPhoneNumberLabelList(
-  val: string[],
-): ContactPhoneNumberLabel[] {
-  return val.map((v) => convertContactPhoneNumberLabel(v));
+export function convertContactLabelList(val: string[]): ContactLabel[] {
+  return val.map((v) => convertContactLabel(v));
 }
 
-export function convertNullableContactPhoneNumberLabelList(
+export function convertNullableContactLabelList(
   val: string[] | null,
-): ContactPhoneNumberLabel[] | null {
+): ContactLabel[] | null {
   if (val === null || val === undefined) {
     return null;
   }
-  return convertContactPhoneNumberLabelList(val);
+  return convertContactLabelList(val);
 }
 
 export enum DayOfWeek {
@@ -443,47 +396,6 @@ export function convertNullableDogBreedGroupList(
   return convertDogBreedGroupList(val);
 }
 
-export enum EnumUsedInList {
-  Yes = "yes",
-  No = "no",
-  Maybe = "maybe",
-  Unknown = "%unknown%",
-}
-
-export function convertEnumUsedInList(val: string): EnumUsedInList {
-  switch (val) {
-    case EnumUsedInList.Yes:
-    case EnumUsedInList.No:
-    case EnumUsedInList.Maybe:
-    case EnumUsedInList.Unknown:
-      return val;
-    default:
-      return EnumUsedInList.Unknown;
-  }
-}
-
-export function convertNullableEnumUsedInList(
-  val: string | null,
-): EnumUsedInList | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertEnumUsedInList(val);
-}
-
-export function convertEnumUsedInListList(val: string[]): EnumUsedInList[] {
-  return val.map((v) => convertEnumUsedInList(v));
-}
-
-export function convertNullableEnumUsedInListList(
-  val: string[] | null,
-): EnumUsedInList[] | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertEnumUsedInListList(val);
-}
-
 export enum EventRsvpStatus {
   Attending = "attending",
   Declined = "declined",
@@ -570,51 +482,6 @@ export function convertNullableIntEnumUsedInListList(
   return convertIntEnumUsedInListList(val);
 }
 
-export enum NestedObjNestedNestedEnum {
-  Yes = "yes",
-  No = "no",
-  Maybe = "maybe",
-  Unknown = "%unknown%",
-}
-
-export function convertNestedObjNestedNestedEnum(
-  val: string,
-): NestedObjNestedNestedEnum {
-  switch (val) {
-    case NestedObjNestedNestedEnum.Yes:
-    case NestedObjNestedNestedEnum.No:
-    case NestedObjNestedNestedEnum.Maybe:
-    case NestedObjNestedNestedEnum.Unknown:
-      return val;
-    default:
-      return NestedObjNestedNestedEnum.Unknown;
-  }
-}
-
-export function convertNullableNestedObjNestedNestedEnum(
-  val: string | null,
-): NestedObjNestedNestedEnum | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertNestedObjNestedNestedEnum(val);
-}
-
-export function convertNestedObjNestedNestedEnumList(
-  val: string[],
-): NestedObjNestedNestedEnum[] {
-  return val.map((v) => convertNestedObjNestedNestedEnum(v));
-}
-
-export function convertNullableNestedObjNestedNestedEnumList(
-  val: string[] | null,
-): NestedObjNestedNestedEnum[] | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertNestedObjNestedNestedEnumList(val);
-}
-
 export enum NotifType {
   MOBILE = "MOBILE",
   WEB = "WEB",
@@ -652,88 +519,6 @@ export function convertNullableNotifTypeList(
     return null;
   }
   return convertNotifTypeList(val);
-}
-
-export enum NotifType2 {
-  MOBILE = "MOBILE",
-  WEB = "WEB",
-  EMAIL = "EMAIL",
-  UNKNOWN = "%UNKNOWN%",
-}
-
-export function convertNotifType2(val: string): NotifType2 {
-  switch (val) {
-    case NotifType2.MOBILE:
-    case NotifType2.WEB:
-    case NotifType2.EMAIL:
-    case NotifType2.UNKNOWN:
-      return val;
-    default:
-      return NotifType2.UNKNOWN;
-  }
-}
-
-export function convertNullableNotifType2(
-  val: string | null,
-): NotifType2 | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertNotifType2(val);
-}
-
-export function convertNotifType2List(val: string[]): NotifType2[] {
-  return val.map((v) => convertNotifType2(v));
-}
-
-export function convertNullableNotifType2List(
-  val: string[] | null,
-): NotifType2[] | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertNotifType2List(val);
-}
-
-export enum ObjNestedEnum {
-  Yes = "yes",
-  No = "no",
-  Maybe = "maybe",
-  Unknown = "%unknown%",
-}
-
-export function convertObjNestedEnum(val: string): ObjNestedEnum {
-  switch (val) {
-    case ObjNestedEnum.Yes:
-    case ObjNestedEnum.No:
-    case ObjNestedEnum.Maybe:
-    case ObjNestedEnum.Unknown:
-      return val;
-    default:
-      return ObjNestedEnum.Unknown;
-  }
-}
-
-export function convertNullableObjNestedEnum(
-  val: string | null,
-): ObjNestedEnum | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertObjNestedEnum(val);
-}
-
-export function convertObjNestedEnumList(val: string[]): ObjNestedEnum[] {
-  return val.map((v) => convertObjNestedEnum(v));
-}
-
-export function convertNullableObjNestedEnumList(
-  val: string[] | null,
-): ObjNestedEnum[] | null {
-  if (val === null || val === undefined) {
-    return null;
-  }
-  return convertObjNestedEnumList(val);
 }
 
 export enum RabbitBreed {
@@ -787,49 +572,45 @@ export function convertNullableRabbitBreedList(
   return convertRabbitBreedList(val);
 }
 
-export enum SuperNestedObjectEnum {
+export enum ResponseType {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
   Unknown = "%unknown%",
 }
 
-export function convertSuperNestedObjectEnum(
-  val: string,
-): SuperNestedObjectEnum {
+export function convertResponseType(val: string): ResponseType {
   switch (val) {
-    case SuperNestedObjectEnum.Yes:
-    case SuperNestedObjectEnum.No:
-    case SuperNestedObjectEnum.Maybe:
-    case SuperNestedObjectEnum.Unknown:
+    case ResponseType.Yes:
+    case ResponseType.No:
+    case ResponseType.Maybe:
+    case ResponseType.Unknown:
       return val;
     default:
-      return SuperNestedObjectEnum.Unknown;
+      return ResponseType.Unknown;
   }
 }
 
-export function convertNullableSuperNestedObjectEnum(
+export function convertNullableResponseType(
   val: string | null,
-): SuperNestedObjectEnum | null {
+): ResponseType | null {
   if (val === null || val === undefined) {
     return null;
   }
-  return convertSuperNestedObjectEnum(val);
+  return convertResponseType(val);
 }
 
-export function convertSuperNestedObjectEnumList(
-  val: string[],
-): SuperNestedObjectEnum[] {
-  return val.map((v) => convertSuperNestedObjectEnum(v));
+export function convertResponseTypeList(val: string[]): ResponseType[] {
+  return val.map((v) => convertResponseType(v));
 }
 
-export function convertNullableSuperNestedObjectEnumList(
+export function convertNullableResponseTypeList(
   val: string[] | null,
-): SuperNestedObjectEnum[] | null {
+): ResponseType[] | null {
   if (val === null || val === undefined) {
     return null;
   }
-  return convertSuperNestedObjectEnumList(val);
+  return convertResponseTypeList(val);
 }
 
 export enum UserAccountStatus {
@@ -951,7 +732,7 @@ export interface UserNestedNestedObjectList {
 
 export interface UserNestedObjectList {
   type: string;
-  enum: EnumUsedInList;
+  enum: ResponseType;
   objects: UserNestedNestedObjectList[];
   enumList: IntEnumUsedInList[];
 }
@@ -1016,40 +797,17 @@ export function convertNullableUserPrefsStruct(
   return convertUserPrefsStruct(input);
 }
 
-export interface UserPrefsStruct2 {
-  finishedNux?: boolean | null;
-  enableNotifs?: boolean | null;
-  notifTypes: NotifType2[];
+export function convertUserPrefsStructList(input: any[]): UserPrefsStruct[] {
+  return input.map((v) => convertUserPrefsStruct(v));
 }
 
-export function convertUserPrefsStruct2(input: any): UserPrefsStruct2 {
-  return {
-    finishedNux: input.finished_nux,
-    enableNotifs: input.enable_notifs,
-    notifTypes: input.notif_types,
-  };
-}
-
-export function convertNullableUserPrefsStruct2(
-  input: any,
-): UserPrefsStruct2 | null {
-  if (input === undefined || input === null) {
-    return null;
-  }
-  return convertUserPrefsStruct2(input);
-}
-
-export function convertUserPrefsStruct2List(input: any[]): UserPrefsStruct2[] {
-  return input.map((v) => convertUserPrefsStruct2(v));
-}
-
-export function convertNullableUserPrefsStruct2List(
+export function convertNullableUserPrefsStructList(
   input: any[] | null,
-): UserPrefsStruct2[] | null {
+): UserPrefsStruct[] | null {
   if (input === null || input === undefined) {
     return null;
   }
-  return input.map((v) => convertUserPrefsStruct2(v));
+  return input.map((v) => convertUserPrefsStruct(v));
 }
 
 export interface UserNestedObject {
@@ -1058,7 +816,7 @@ export interface UserNestedObject {
   nestedString: string;
   nestedBool: boolean;
   nestedFloat?: number | null;
-  nestedEnum: ObjNestedEnum;
+  nestedEnum: ResponseType;
   nestedStringList: string[];
   nestedIntList: number[];
   nestedObj?: UserNestedNestedObject | null;
@@ -1093,7 +851,7 @@ export interface UserNestedNestedObject {
   nestedNestedString: string;
   nestedNestedBool?: boolean | null;
   nestedNestedFloat: number;
-  nestedNestedEnum: NestedObjNestedNestedEnum;
+  nestedNestedEnum: ResponseType;
   nestedNestedStringList: string[];
   nestedNestedIntList: number[];
 }
@@ -1182,7 +940,7 @@ export interface UserSuperNestedObject {
   string: string;
   bool: boolean;
   float: number;
-  enum: SuperNestedObjectEnum;
+  enum: ResponseType;
   stringList?: string[] | null;
   intList: number[];
   obj?: UserNestedObject | null;

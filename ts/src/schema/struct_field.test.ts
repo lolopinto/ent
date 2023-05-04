@@ -14,6 +14,9 @@ import {
   TimestampType,
 } from "./field";
 import { StructType, StructTypeAsList } from "./struct_field";
+import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
+import { MockLogs } from "../testutils/mock_log";
+import { clearLogLevels, setLogLevels } from "../core/logger";
 
 function structTypeF(fields: FieldMap) {
   return StructType({
@@ -372,5 +375,346 @@ describe("struct as list", () => {
 
     const data = [val, val2];
     expect(await f.valid(data)).toBe(false);
+  });
+});
+
+describe("global type", () => {
+  beforeAll(() => {
+    setGlobalSchema({
+      fields: {
+        foo: structTypeF({
+          uuid: UUIDType(),
+          int: IntegerType(),
+          string: StringType(),
+          bool: BooleanType(),
+          ts: TimestampType(),
+          float: FloatType(),
+          enum: EnumType({ values: ["yes", "no", "maybe"] }),
+        }),
+      },
+    });
+  });
+
+  afterAll(() => {
+    clearGlobalSchema();
+  });
+
+  test("valid", async () => {
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const d = new Date();
+    const val = {
+      uuid: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(true);
+    const formatted = {
+      ...val,
+      ts: d.toISOString(),
+    };
+    expect(f.format(val)).toBe(JSON.stringify(formatted));
+  });
+
+  test("invalid", async () => {
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const val = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      float: 2.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(false);
+  });
+
+  test("used in list", async () => {
+    const f = StructTypeAsList({
+      globalType: "Foo",
+    });
+
+    const d = new Date();
+    const val = {
+      uuid: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+    const val2 = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      ts: d,
+      float: 2.0,
+      enum: "yes",
+    };
+    const formatted1 = {
+      ...val,
+      ts: d.toISOString(),
+    };
+    const formatted2 = {
+      ...val2,
+      ts: d.toISOString(),
+    };
+    const data = [val, val2];
+    const format = [formatted1, formatted2];
+    expect(await f.valid(data)).toBe(true);
+    expect(f.format(data)).toBe(JSON.stringify(format));
+  });
+});
+
+describe("no. global. trying to reference global", () => {
+  const ml = new MockLogs();
+  beforeEach(() => {
+    ml.mock();
+  });
+  afterEach(() => {
+    clearLogLevels();
+    ml.clear();
+  });
+
+  test("invalid", async () => {
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const val = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      float: 2.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(false);
+    expect(ml.errors.length).toBe(0);
+  });
+
+  test("invalid but logged", async () => {
+    setLogLevels("error");
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const val = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      float: 2.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(false);
+    expect(ml.errors).toStrictEqual([
+      "globalType Foo not found in global schema",
+    ]);
+  });
+});
+
+// doesn't really make sense but let's test it
+describe("nullable global type", () => {
+  beforeAll(() => {
+    setGlobalSchema({
+      fields: {
+        foo: StructType({
+          fields: {
+            uuid: UUIDType(),
+            int: IntegerType(),
+            string: StringType(),
+            bool: BooleanType(),
+            ts: TimestampType(),
+            float: FloatType(),
+            enum: EnumType({ values: ["yes", "no", "maybe"] }),
+          },
+          nullable: true,
+          tsType: "Foo",
+        }),
+      },
+    });
+  });
+
+  afterAll(() => {
+    clearGlobalSchema();
+  });
+
+  test("valid", async () => {
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const d = new Date();
+    const val = {
+      uuid: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(true);
+    const formatted = {
+      ...val,
+      ts: d.toISOString(),
+    };
+    expect(f.format(val)).toBe(JSON.stringify(formatted));
+  });
+
+  test("invalid", async () => {
+    const f = StructType({
+      globalType: "Foo",
+    });
+
+    const val = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      float: 2.0,
+      enum: "yes",
+    };
+    const valid = await f.valid(val);
+    expect(valid).toBe(false);
+  });
+});
+
+describe("struct as list global type", () => {
+  beforeAll(() => {
+    setGlobalSchema({
+      fields: {
+        foo: structListTypeF({
+          uuid: UUIDType(),
+          int: IntegerType(),
+          string: StringType(),
+          bool: BooleanType(),
+          ts: TimestampType(),
+          float: FloatType(),
+          enum: EnumType({ values: ["yes", "no", "maybe"] }),
+        }),
+      },
+    });
+  });
+
+  afterAll(() => {
+    clearGlobalSchema();
+  });
+
+  const f = StructTypeAsList({
+    globalType: "Foo",
+  });
+
+  test("valid", async () => {
+    const d = new Date();
+    const d2 = new Date();
+    const val = {
+      uuid: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+    const val2 = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      ts: d2,
+      float: 2.0,
+      enum: "yes",
+    };
+    const formatted1 = {
+      ...val,
+      ts: d.toISOString(),
+    };
+    const formatted2 = {
+      ...val2,
+      ts: d2.toISOString(),
+    };
+    const data = [val, val2];
+    const format = [formatted1, formatted2];
+    expect(await f.valid(data)).toBe(true);
+    expect(f.format(data)).toBe(JSON.stringify(format));
+  });
+
+  test("invalid not list", async () => {
+    const d = new Date();
+    const val = {
+      uuid: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+
+    expect(await f.valid(val)).toBe(false);
+  });
+
+  test("invalid item in list", async () => {
+    const d = new Date();
+    const val = {
+      uuid: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+    const val2 = {
+      uuid: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      float: 2.0,
+      enum: "yes",
+    };
+
+    const data = [val, val2];
+    expect(await f.valid(data)).toBe(false);
+  });
+
+  test("used in struct", async () => {
+    const f = StructType({
+      globalType: "Foo",
+    });
+    const d = new Date();
+    const val = {
+      uuid: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+    const formatted = {
+      ...val,
+      ts: d.toISOString(),
+    };
+    expect(await f.valid(val)).toBe(true);
+    expect(f.format(val)).toBe(JSON.stringify(formatted));
   });
 });

@@ -12,6 +12,8 @@
 #     path: '@snowtop/ent'
 #     policyName: 'AlwaysAllowPrivacyPolicy'
 dynamicScriptCustomGraphQLJSONPath: 'src/scripts/custom_queries.ts'
+# we use default globalSchema FYI
+# globalSchemaPath: __global_schema.ts
 codegen:
   relativeImports: true
   generatedHeader: "Copyright whaa whaa"

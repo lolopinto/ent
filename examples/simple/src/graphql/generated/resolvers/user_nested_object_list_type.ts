@@ -17,8 +17,8 @@ import {
   UserNestedObjectList,
 } from "../../../ent/generated/types";
 import {
-  EnumUsedInListType,
   IntEnumUsedInListType,
+  ResponseTypeType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
@@ -44,7 +44,7 @@ export const UserNestedObjectListType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     enum: {
-      type: new GraphQLNonNull(EnumUsedInListType),
+      type: new GraphQLNonNull(ResponseTypeType),
     },
     objects: {
       type: new GraphQLNonNull(

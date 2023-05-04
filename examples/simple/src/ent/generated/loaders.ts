@@ -5,9 +5,8 @@
 
 import { ID, ObjectLoaderFactory } from "@snowtop/ent";
 import {
-  ContactEmailLabel,
   ContactInfo,
-  ContactPhoneNumberLabel,
+  ContactLabel,
   DayOfWeek,
   DayOfWeekAlt,
   UserAccountStatus,
@@ -17,7 +16,6 @@ import {
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
-  UserPrefsStruct2,
   UserSuperNestedObject,
 } from "./types";
 import { NodeType } from "./types";
@@ -314,7 +312,7 @@ export interface ContactEmailDBData {
   updated_at: Date;
   extra: ContactInfo | null;
   email_address: string;
-  label: ContactEmailLabel;
+  label: ContactLabel;
   contact_id: ID;
 }
 
@@ -378,7 +376,7 @@ export interface ContactPhoneNumberDBData {
   updated_at: Date;
   extra: ContactInfo | null;
   phone_number: string;
-  label: ContactPhoneNumberLabel;
+  label: ContactLabel;
   contact_id: ID;
 }
 
@@ -656,7 +654,7 @@ export interface UserDBData {
   bio: string | null;
   nicknames: string[] | null;
   prefs: UserPrefsStruct | null;
-  prefs_list: UserPrefsStruct2[] | null;
+  prefs_list: UserPrefsStruct[] | null;
   prefs_diff: UserPrefsDiff | null;
   days_off: UserDaysOff[] | null;
   preferred_shift: UserPreferredShift[] | null;
