@@ -28,39 +28,25 @@ type Type = GraphQLScalarType | ClassType | string | CustomType;
 // node in a connection
 export type GraphQLConnection<T> = { node: T };
 
-// TODO replace and deprecate
-export interface gqlFieldOptions {
+interface gqlFieldOptionsBase {
   name?: string;
   nullable?: boolean | NullableListOptions;
   description?: string;
   type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types
 }
 
-interface gqlFieldOptions2Basics {
-  name?: string;
-  nullable?: boolean | NullableListOptions;
-  description?: string;
-  type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types
-}
-
-interface gqlFieldArg extends gqlFieldOptions2Basics {
+interface gqlFieldArg extends gqlFieldOptionsBase {
   isContextArg?: boolean;
 }
 
-export interface gqlFieldOptions2 extends gqlFieldOptions2Basics {
+export interface gqlFieldOptions extends gqlFieldOptionsBase {
   nodeName: string;
 
-  args?: gqlFieldOptions2Basics[];
-  result?: Field;
+  args?: gqlFieldArg[];
   async?: boolean;
 
   // required for @gqlField
-  type: NonNullable<gqlFieldOptions2Basics["type"]>;
-}
-
-interface fieldOptions extends gqlFieldOptions {
-  // implies no return type...
-  allowFunctionType?: boolean;
+  type: NonNullable<gqlFieldOptionsBase["type"]>;
 }
 
 export interface gqlObjectOptions {
@@ -68,11 +54,11 @@ export interface gqlObjectOptions {
   description?: string;
 }
 
-type gqlMutationOptions = Omit<gqlFieldOptions2, "nullable" | "type"> & {
-  type?: gqlFieldOptions2Basics["type"];
+type gqlMutationOptions = Omit<gqlFieldOptions, "nullable" | "type"> & {
+  type?: gqlFieldOptionsBase["type"];
 };
 
-type gqlQueryOptions = Omit<gqlFieldOptions2, "nullable">;
+type gqlQueryOptions = Omit<gqlFieldOptions, "nullable">;
 
 export enum CustomFieldType {
   Accessor = "ACCESSOR",
@@ -120,16 +106,6 @@ export interface CustomObject {
   description?: string;
 }
 
-// export interface CustomArg {
-//   nodeName: string;
-//   className: string; // TODO both the same right now...
-// }
-
-// export interface CustomInputObject {
-//   nodeName: string;
-//   className: string; // TODO both the same right now
-// }
-
 type NullableListOptions = "contents" | "contentsAndList";
 
 interface FieldImpl {
@@ -160,19 +136,6 @@ enum NullableResult {
   CONTENTS = "contents",
   CONTENTS_AND_LIST = "contentsAndList",
   ITEM = "true", // nullable = true
-}
-
-interface arg {
-  name: string;
-  index: number;
-  options?: gqlFieldOptions;
-  isContextArg?: boolean;
-}
-
-interface metadataIsh {
-  name: string; // the type
-  paramName?: string;
-  isContextArg?: boolean;
 }
 
 export const knownAllowedNames: Map<string, string> = new Map([
@@ -421,7 +384,7 @@ export class GQLCapture {
     });
   }
 
-  private static getField(field: gqlFieldOptions2Basics | gqlFieldArg): Field {
+  private static getField(field: gqlFieldOptionsBase | gqlFieldArg): Field {
     let list: boolean | undefined;
     let scalarType = false;
     let connection: boolean | undefined;
@@ -468,7 +431,7 @@ export class GQLCapture {
     return result;
   }
 
-  static gqlField(options: gqlFieldOptions2): any {
+  static gqlField(options: gqlFieldOptions): any {
     return function (
       _target: any,
       ctx:
@@ -529,7 +492,7 @@ export class GQLCapture {
       | ClassMethodDecoratorContext
       | ClassFieldDecoratorContext
       | ClassGetterDecoratorContext,
-    options: gqlFieldOptions2 | gqlMutationOptions | gqlQueryOptions,
+    options: gqlFieldOptions | gqlMutationOptions | gqlQueryOptions,
     // TODO use this and throw if type-system is bypassed with no type
     allowNoReturnType?: boolean,
   ): CustomField {
@@ -560,7 +523,7 @@ export class GQLCapture {
       results.push(GQLCapture.getField({ ...options, name: "" }));
     }
 
-    if (options.args && options.args.length) {
+    if (options.args?.length) {
       options.args.forEach((arg) => {
         args.push(GQLCapture.getField(arg));
       });
@@ -626,7 +589,6 @@ export class GQLCapture {
     });
   }
 
-  // TODO query and mutation
   // we want to specify args if any, name, response if any
   static gqlQuery(options: gqlQueryOptions): any {
     return function (target: Function, ctx: ClassMethodDecoratorContext): void {
@@ -637,12 +599,7 @@ export class GQLCapture {
       GQLCapture.customQueries.push(GQLCapture.getCustomField(ctx, options));
     };
   }
-  // we want to specify inputs (required), name, response
-  // input is via gqlArg
-  // should it be gqlInputArg?
 
-  // type optional for this one
-  // but not gqlField...
   static gqlMutation(options: gqlMutationOptions): any {
     return function (target: Function, ctx: ClassMethodDecoratorContext): void {
       if (!GQLCapture.isEnabled()) {
