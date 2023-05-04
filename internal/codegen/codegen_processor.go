@@ -456,6 +456,10 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	}
 	// if changes == nil, don't use changes
 	useChanges := changes != nil
+	if !useChanges {
+		// now set changes to empty map
+		changes = make(change.ChangeMap)
+	}
 	writeAll := !useChanges
 	// this is different
 	if opt.writeAll {

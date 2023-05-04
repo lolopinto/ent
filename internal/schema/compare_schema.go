@@ -20,7 +20,7 @@ func CompareSchemas(s1, s2 *Schema) (change.ChangeMap, error) {
 
 	// if don't have either schema, just get out and we'll handle that elsewhere
 	if s1 == nil || s2 == nil {
-		return m, nil
+		return nil, nil
 	}
 
 	if err := comparePatterns(s1.Patterns, s2.Patterns, &m); err != nil {
