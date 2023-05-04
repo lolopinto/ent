@@ -59,6 +59,7 @@ var knownTypes = map[string]*tsimport.ImportPath{
 	"Connection": tsimport.NewEntGraphQLImportPath("GraphQLConnectionInterface"),
 }
 
+// this should be somewhat kept in touch with knownAllowedNams in src/graphql/graphql.ts
 var knownTsTypes = map[string]string{
 	"String":  "string",
 	"Date":    "Date",

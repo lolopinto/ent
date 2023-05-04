@@ -5,7 +5,7 @@ import {
   gqlQuery,
   encodeGQLID,
 } from "@snowtop/ent/graphql";
-import { GraphQLID } from "graphql";
+import { GraphQLID, GraphQLString } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 
 import { User } from "../../ent";
@@ -18,7 +18,12 @@ import { DateTime } from "luxon";
 export class GQLViewer {
   constructor(private viewer: ExampleViewer) {}
 
-  @gqlField({ type: GraphQLID, nullable: true })
+  @gqlField({
+    nodeName: "GQLViewer",
+    type: GraphQLID,
+    nullable: true,
+    async: true,
+  })
   async viewerID() {
     const user = await this.user();
     if (!user) {
@@ -27,7 +32,12 @@ export class GQLViewer {
     return encodeGQLID(user);
   }
 
-  @gqlField({ type: User, nullable: true })
+  @gqlField({
+    nodeName: "GQLViewer",
+    type: User,
+    nullable: true,
+    async: true,
+  })
   async user(): Promise<User | null> {
     const v = this.viewer.viewerID;
     if (!v) {
@@ -38,11 +48,31 @@ export class GQLViewer {
 }
 
 export class ViewerResolver {
-  @gqlQuery({ name: "viewer", type: GQLViewer })
-  viewer(@gqlContextType() context: RequestContext<ExampleViewer>): GQLViewer {
+  @gqlQuery({
+    nodeName: "ViewerResolver",
+    name: "viewer",
+    type: "GQLViewer",
+    args: [gqlContextType()],
+  })
+  viewer(context: RequestContext<ExampleViewer>): GQLViewer {
     return new GQLViewer(context.getViewer());
   }
 
+  @gqlQuery({
+    nodeName: "ViewerResolver",
+    name: "timeDiff",
+    type: GraphQLString,
+    args: [
+      {
+        name: "time",
+        type: "Date",
+      },
+      {
+        name: "log",
+        type: "JSON",
+      },
+    ],
+  })
   timeDiff(time: Date, _log: any) {
     const diff = DateTime.now().diff(DateTime.fromJSDate(time));
     return diff.toString();

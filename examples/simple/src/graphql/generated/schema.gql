@@ -788,7 +788,7 @@ type UserToLikersConnection implements Connection {
 type UserToLikesEdge implements Edge {
   node: Node!
   cursor: String!
-  time: Time
+  time: Time!
 }
 
 type UserToLikesConnection implements Connection {

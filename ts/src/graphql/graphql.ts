@@ -147,6 +147,7 @@ export const knownAllowedNames: Map<string, string> = new Map([
   ["Int", "number"],
   ["Float", "number"],
   ["ID", "ID"],
+  ["JSON", "any"],
 ]);
 
 export const knownDisAllowedNames: Map<string, boolean> = new Map([

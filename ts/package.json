@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.1.0-alpha119",
+  "version": "0.1.0-alpha126", 
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -24,7 +24,7 @@
     "prettier": "^2.8.1",
     "snake-case": "^3.0.4",
     "ts-node": "^10.9.1",
-    "tsconfig-paths": "^4.1.1",
+    "tsconfig-paths": "^4.2.0",
     "tslib": "^2.5.0",
     "typescript": "^5.0.4",
     "uuid": "^9.0.0"
