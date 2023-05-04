@@ -1,6 +1,5 @@
 import {
   gqlField,
-  gqlArg,
   GQLCapture,
   CustomFieldType,
   gqlMutation,
@@ -11,12 +10,7 @@ import {
   gqlFileUpload,
   gqlConnection,
 } from "./graphql";
-import {
-  GraphQLBoolean,
-  GraphQLID,
-  GraphQLScalarType,
-  GraphQLString,
-} from "graphql";
+import { GraphQLBoolean, GraphQLID, GraphQLString } from "graphql";
 import { ID, Viewer } from "../core/base";
 
 import {
@@ -581,8 +575,7 @@ test("query with args which returns connection", async () => {
   validateNoCustom(CustomObjectTypes.Query);
 });
 
-// TODO...
-test.only("custom type", () => {
+test("custom type", () => {
   class ProfilePictureUploadResolver {
     @gqlMutation({
       nodeName: "ProfilePictureUploadResolver",
@@ -608,7 +601,13 @@ test.only("custom type", () => {
       functionName: "profilePictureUpload",
       gqlName: "profilePictureUpload",
       fieldType: CustomFieldType.Function,
-      results: [],
+      results: [
+        {
+          type: "Boolean",
+          name: "",
+          tsType: "boolean",
+        },
+      ],
       args: [
         {
           type: "Context",

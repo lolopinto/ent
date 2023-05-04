@@ -1,5 +1,3 @@
-// TODO delete
-import "reflect-metadata";
 import { GraphQLScalarType } from "graphql";
 import { Data } from "../core/base";
 
@@ -42,7 +40,6 @@ interface gqlFieldOptions2Basics {
   name?: string;
   nullable?: boolean | NullableListOptions;
   description?: string;
-  // TODO this is probably required now...
   type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types
 }
 
@@ -55,9 +52,10 @@ export interface gqlFieldOptions2 extends gqlFieldOptions2Basics {
 
   args?: gqlFieldOptions2Basics[];
   result?: Field;
-  // defaults to Function if not provided
-  // fieldType?: CustomFieldType;
   async?: boolean;
+
+  // required for @gqlField
+  type: NonNullable<gqlFieldOptions2Basics["type"]>;
 }
 
 interface fieldOptions extends gqlFieldOptions {
@@ -70,15 +68,11 @@ export interface gqlObjectOptions {
   description?: string;
 }
 
-type gqlTopLevelOptions = Exclude<gqlFieldOptions2, "nullable" | "type"> & {
-  args?: gqlFieldArg[];
+type gqlMutationOptions = Omit<gqlFieldOptions2, "nullable" | "type"> & {
+  type?: gqlFieldOptions2Basics["type"];
 };
 
-// export interface gqlTopLevelOptions
-//   name?: string;
-//   type?: Type | Array<Type>;
-//   description?: string;
-// }
+type gqlQueryOptions = Omit<gqlFieldOptions2, "nullable">;
 
 export enum CustomFieldType {
   Accessor = "ACCESSOR",
@@ -351,7 +345,6 @@ export class GQLCapture {
     this.customInputObjects.clear();
     this.customObjects.clear();
     this.customTypes.clear();
-    this.argMap.clear();
   }
 
   static getCustomFields(): Map<string, CustomField[]> {
@@ -428,72 +421,7 @@ export class GQLCapture {
     });
   }
 
-  private static getResultFromMetadata(
-    metadata: metadataIsh,
-    options?: fieldOptions,
-  ): Field {
-    let type = metadata.name;
-    if ((type === "Number" || type === "Object") && !options?.type) {
-      throw new Error(
-        `type is required when accessor/function/property returns a ${type}`,
-      );
-    }
-
-    let list: boolean | undefined;
-    let scalarType = false;
-    let connection: boolean | undefined;
-
-    if (options?.type) {
-      let r: typeInfo = { type: "" };
-      getType(options.type, r);
-      list = r.list;
-      scalarType = r.scalarType || false;
-      connection = r.connection;
-      type = r.type;
-    }
-
-    if (knownDisAllowedNames.has(type)) {
-      throw new Error(
-        `${type} isn't a valid type for accessor/function/property`,
-      );
-    }
-
-    let result: Field = {
-      name: metadata.paramName || "",
-      type,
-      tsType: knownAllowedNames.get(type) || this.customTypes.get(type)?.tsType,
-      nullable: options?.nullable,
-      list: list,
-      connection: connection,
-      isContextArg: metadata.isContextArg,
-    };
-    // unknown type. we need to flag that this field needs to eventually be resolved
-    if (!knownAllowedNames.has(type)) {
-      if (scalarType) {
-        throw new Error(
-          `custom scalar type ${type} is not supported this way. use CustomType syntax. see \`gqlFileUpload\` as an example`,
-        );
-      }
-      result.needsResolving = true;
-    }
-    return result;
-  }
-
-  // TODO rename
-  private static getResultFromMetadata2(
-    // target: Function,
-    // metadata: metadataIsh,
-    // options?: gqlFieldOptions2,
-    // field?: Field,
-    field: gqlFieldOptions2Basics | gqlFieldArg,
-  ): Field {
-    // let type = metadata.name;
-    // if ((type === "Number" || type === "Object") && !options?.type) {
-    //   throw new Error(
-    //     `type is required when accessor/function/property returns a ${type}`,
-    //   );
-    // }
-
+  private static getField(field: gqlFieldOptions2Basics | gqlFieldArg): Field {
     let list: boolean | undefined;
     let scalarType = false;
     let connection: boolean | undefined;
@@ -540,45 +468,14 @@ export class GQLCapture {
     return result;
   }
 
-  // ToDO this doesn't work...
-  static gqlObjectWithFields() {
-    return function (val, ctx: ClassDecoratorContext) {
-      if (!GQLCapture.isEnabled() || ctx.kind !== "class") {
-        return;
-      }
-      ctx.addInitializer(function () {
-        // console.log("initializer");
-      });
-      // console.log("gsfsf", val.prototype, ctx);
-
-      // let typeMetadata: metadataIsh | null = Reflect.getMetadata(
-      //   "design:type",
-      //   val.prototype,
-      //   "username",
-      //   // "method",
-      //   // ctx.name,
-      // );
-
-      // let returnTypeMetadata: metadataIsh | null = Reflect.getMetadata(
-      //   "design:returntype",
-      //   val.prototype,
-      //   "username",
-      //   // "method",
-      //   // ctx.name,
-      // );
-      // console.log(val, val.prototype);
-    };
-  }
   static gqlField(options: gqlFieldOptions2): any {
-    // hah, arguments change in 2.0
     return function (
-      target: any,
+      _target: any,
       ctx:
         | ClassMethodDecoratorContext
         | ClassFieldDecoratorContext
         | ClassGetterDecoratorContext,
     ) {
-      // console.log(ctx.kind);
       if (
         !GQLCapture.isEnabled() ||
         (ctx.kind !== "method" &&
@@ -590,60 +487,7 @@ export class GQLCapture {
         return;
       }
 
-      // ok, have to specify the type info
-      // CANNOT get the name of the class without some magic or instantiating...
-
-      // console.log(target, ctx.access.get(target));
-      // for (const k in target) {
-      //   console.log("prop", k, target[k]);
-      // }
-
-      ctx.addInitializer(function () {
-        console.log("function initializer");
-        // @ts-ignore
-        if (!this.collectedMethodKeys) {
-          // @ts-ignore
-          this.collectedMethodKeys = new Set();
-        }
-        // @ts-ignore
-        this.collectedMethodKeys.add(ctx.name);
-
-        // this in here is the class instance
-        console.log(this);
-        console.log(target, ctx.access.get(this));
-      });
-
-      // console.log(
-      //   originalMethod,
-      //   "propertyKey",
-      //   propertyKey,
-      //   "descriptior",
-      //   descriptor,
-      // );
-
-      // this isn't helpful because we don't have access to ars...
-      // return function (this: any, ...args: any[]) {
-      //   console.log("gqlField", originalMethod, ctx, args);
-      //   return originalMethod.call(this, args);
-      // };
-
-      // console.log(
-      //   "enabled",
-      //   // originalMethod.arguments,
-      //   // typeof originalMethod,
-      //   // ctx.name,
-      //   // ctx.kind,
-      //   // typeMetadata,
-      //   // returnTypeMetadata,
-      // );
-      let customField = GQLCapture.getCustomField2(
-        ctx,
-        options,
-        // propertyKey,
-        // descriptor,
-        // options,
-      );
-      // console.log(customField);
+      let customField = GQLCapture.getCustomField(ctx, options);
       if (!customField) {
         return;
       }
@@ -681,132 +525,19 @@ export class GQLCapture {
   }
 
   private static getCustomField(
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor,
-    options?: fieldOptions,
-  ): CustomField {
-    let fieldType: CustomFieldType;
-    let nodeName = target.constructor.name as string;
-
-    let args: Field[] = [];
-    let results: Field[] = [];
-
-    let typeMetadata: metadataIsh | null = Reflect.getMetadata(
-      "design:type",
-      target,
-      propertyKey,
-    );
-    let returnTypeMetadata: metadataIsh | null = Reflect.getMetadata(
-      "design:returntype",
-      target,
-      propertyKey,
-    );
-
-    if (returnTypeMetadata) {
-      // function...
-      if (returnTypeMetadata.name === "Promise") {
-        fieldType = CustomFieldType.AsyncFunction;
-      } else {
-        fieldType = CustomFieldType.Function;
-      }
-
-      results.push(
-        GQLCapture.getResultFromMetadata(returnTypeMetadata, options),
-      );
-    } else if (typeMetadata) {
-      if (descriptor && descriptor.get) {
-        fieldType = CustomFieldType.Accessor;
-      } else if (descriptor && descriptor.value) {
-        // could be implicit async
-        fieldType = CustomFieldType.Function;
-      } else {
-        fieldType = CustomFieldType.Field;
-      }
-
-      if (
-        !(
-          options?.allowFunctionType &&
-          fieldType === CustomFieldType.Function &&
-          typeMetadata.name === "Function"
-        )
-      ) {
-        results.push(GQLCapture.getResultFromMetadata(typeMetadata, options));
-      }
-    }
-
-    let params: metadataIsh[] | null = Reflect.getMetadata(
-      "design:paramtypes",
-      target,
-      propertyKey,
-    );
-
-    if (params && params.length > 0) {
-      let parsedArgs = GQLCapture.argMap.get(nodeName)?.get(propertyKey) || [];
-      if (params.length !== parsedArgs.length) {
-        throw new Error(
-          `args were not captured correctly, ${params.length}, ${parsedArgs.length}`,
-        );
-      }
-      parsedArgs.forEach((arg) => {
-        let param = params![arg.index];
-        let paramName = arg.name;
-        let field = GQLCapture.getResultFromMetadata(
-          {
-            name: param.name,
-            paramName,
-            isContextArg: arg.isContextArg,
-          },
-          arg.options,
-        );
-
-        // TODO this may not be the right order...
-        args.push(field);
-      });
-      // TODO this is deterministically (so far) coming in reverse order so reverse (for now)
-      args = args.reverse();
-    }
-
-    return {
-      nodeName: nodeName,
-      gqlName: options?.name || propertyKey,
-      functionName: propertyKey,
-      args: args,
-      results: results,
-      fieldType: fieldType!,
-      description: options?.description,
-    };
-  }
-
-  private static getCustomField2(
     ctx:
       | ClassMethodDecoratorContext
       | ClassFieldDecoratorContext
       | ClassGetterDecoratorContext,
-    options: gqlFieldOptions2,
+    options: gqlFieldOptions2 | gqlMutationOptions | gqlQueryOptions,
+    // TODO use this and throw if type-system is bypassed with no type
     allowNoReturnType?: boolean,
-    // propertyKey: string,
-    // descriptor: PropertyDescriptor,
-    // options?: fieldOptions,
   ): CustomField {
     let fieldType: CustomFieldType;
-    // let nodeName = target.constructor.name as string;
 
     let args: Field[] = [];
     let results: Field[] = [];
 
-    // let typeMetadata: metadataIsh | null = Reflect.getMetadata(
-    //   "design:type",
-    //   target,
-    //   propertyKey,
-    // );
-    // let returnTypeMetadata: metadataIsh | null = Reflect.getMetadata(
-    //   "design:returntype",
-    //   target,
-    //   propertyKey,
-    // );
-
-    // TODO other types
     switch (ctx.kind) {
       case "method":
         fieldType = CustomFieldType.Function;
@@ -826,78 +557,14 @@ export class GQLCapture {
 
     if (options.type) {
       // override name property passed down so we return '' as name
-      results.push(GQLCapture.getResultFromMetadata2({ ...options, name: "" }));
+      results.push(GQLCapture.getField({ ...options, name: "" }));
     }
-
-    // if (returnTypeMetadata) {
-    //   // function...
-    //   if (returnTypeMetadata.name === "Promise") {
-    //     fieldType = CustomFieldType.AsyncFunction;
-    //   } else {
-    //     fieldType = CustomFieldType.Function;
-    //   }
-
-    //   results.push(
-    //     GQLCapture.getResultFromMetadata(returnTypeMetadata, options),
-    //   );
-    // } else if (typeMetadata) {
-    //   if (descriptor && descriptor.get) {
-    //     fieldType = CustomFieldType.Accessor;
-    //   } else if (descriptor && descriptor.value) {
-    //     // could be implicit async
-    //     fieldType = CustomFieldType.Function;
-    //   } else {
-    //     fieldType = CustomFieldType.Field;
-    //   }
-
-    //   if (
-    //     !(
-    //       options?.allowFunctionType &&
-    //       fieldType === CustomFieldType.Function &&
-    //       typeMetadata.name === "Function"
-    //     )
-    //   ) {
-    //     results.push(GQLCapture.getResultFromMetadata(typeMetadata, options));
-    //   }
-    // }
-
-    // let params: metadataIsh[] | null = Reflect.getMetadata(
-    //   "design:paramtypes",
-    //   target,
-    //   propertyKey,
-    // );
 
     if (options.args && options.args.length) {
       options.args.forEach((arg) => {
-        args.push(GQLCapture.getResultFromMetadata2(arg));
+        args.push(GQLCapture.getField(arg));
       });
     }
-    // no args for now
-    // if (params && params.length > 0) {
-    //   let parsedArgs = GQLCapture.argMap.get(nodeName)?.get(propertyKey) || [];
-    //   if (params.length !== parsedArgs.length) {
-    //     throw new Error(
-    //       `args were not captured correctly, ${params.length}, ${parsedArgs.length}`,
-    //     );
-    //   }
-    //   parsedArgs.forEach((arg) => {
-    //     let param = params![arg.index];
-    //     let paramName = arg.name;
-    //     let field = GQLCapture.getResultFromMetadata(
-    //       {
-    //         name: param.name,
-    //         paramName,
-    //         isContextArg: arg.isContextArg,
-    //       },
-    //       arg.options,
-    //     );
-
-    //     // TODO this may not be the right order...
-    //     args.push(field);
-    //   });
-    // TODO this is deterministically (so far) coming in reverse order so reverse (for now)
-    // args = args.reverse();
-    // }
 
     return {
       nodeName: options.nodeName,
@@ -908,50 +575,6 @@ export class GQLCapture {
       fieldType: fieldType!,
       description: options?.description,
     };
-  }
-
-  // User -> add -> [{name, options}, {}, {}]
-  private static argMap: Map<string, Map<string, arg[]>> = new Map();
-
-  private static argImpl(
-    name: string,
-    isContextArg?: boolean,
-    options?: gqlFieldOptions,
-  ): any {
-    return function (
-      target: any,
-      propertyKey: string,
-      index: number, // not PropertyKeyDescriptor?
-    ): void {
-      if (!GQLCapture.isEnabled()) {
-        return;
-      }
-
-      let nodeName = target.constructor.name as string;
-      let m = GQLCapture.argMap.get(nodeName);
-      if (!m) {
-        m = new Map();
-        GQLCapture.argMap.set(nodeName, m);
-      }
-      let propertyMap = m.get(propertyKey);
-      if (!propertyMap) {
-        propertyMap = [];
-        m.set(propertyKey, propertyMap);
-      }
-      propertyMap.push({
-        name: name,
-        index: index,
-        options: options,
-        isContextArg,
-      });
-
-      //      console.log("arg", name, target, propertyKey, index);
-    };
-  }
-
-  // TODO custom args because for example name doesn't make sense here.
-  static gqlArg(name: string, options?: gqlFieldOptions): any {
-    return GQLCapture.argImpl(name, undefined, options);
   }
 
   static gqlContextType(): gqlFieldArg {
@@ -1005,13 +628,13 @@ export class GQLCapture {
 
   // TODO query and mutation
   // we want to specify args if any, name, response if any
-  static gqlQuery(options: gqlTopLevelOptions): any {
+  static gqlQuery(options: gqlQueryOptions): any {
     return function (target: Function, ctx: ClassMethodDecoratorContext): void {
       if (!GQLCapture.isEnabled()) {
         return;
       }
 
-      GQLCapture.customQueries.push(GQLCapture.getCustomField2(ctx, options));
+      GQLCapture.customQueries.push(GQLCapture.getCustomField(ctx, options));
     };
   }
   // we want to specify inputs (required), name, response
@@ -1020,7 +643,7 @@ export class GQLCapture {
 
   // type optional for this one
   // but not gqlField...
-  static gqlMutation(options: gqlTopLevelOptions): any {
+  static gqlMutation(options: gqlMutationOptions): any {
     return function (target: Function, ctx: ClassMethodDecoratorContext): void {
       if (!GQLCapture.isEnabled()) {
         return;
@@ -1028,7 +651,7 @@ export class GQLCapture {
 
       // TODO allowFunctionType: true...
       GQLCapture.customMutations.push(
-        GQLCapture.getCustomField2(ctx, options, true),
+        GQLCapture.getCustomField(ctx, options, true),
       );
     };
   }
@@ -1095,9 +718,6 @@ export class GQLCapture {
 // TODO make all these just plain functions
 export const gqlField = GQLCapture.gqlField;
 
-// TODO kill
-export const gqlArg = GQLCapture.gqlArg;
-
 export const gqlArgType = GQLCapture.gqlArgType;
 export const gqlInputObjectType = GQLCapture.gqlInputObjectType;
 export const gqlObjectType = GQLCapture.gqlObjectType;
@@ -1105,7 +725,6 @@ export const gqlQuery = GQLCapture.gqlQuery;
 export const gqlMutation = GQLCapture.gqlMutation;
 export const gqlContextType = GQLCapture.gqlContextType;
 export const gqlConnection = GQLCapture.gqlConnection;
-export const gqlObjectWithFields = GQLCapture.gqlObjectWithFields;
 
 // this requires the developer to npm-install "graphql-upload on their own"
 const gqlFileUpload: CustomType = {

@@ -4,7 +4,6 @@ import {
   gqlArgType,
   CustomFieldType,
   gqlConnection,
-  gqlObjectWithFields,
 } from "./graphql";
 import {
   GraphQLInt,
@@ -34,6 +33,7 @@ describe("accessor", () => {
     class User {
       @gqlField({
         nodeName: "User",
+        type: GraphQLString,
       })
       get fullName(): string {
         return "fullName";
@@ -200,42 +200,6 @@ describe("accessor", () => {
       args: [],
     });
     validateNoCustom(CustomObjectTypes.Field);
-  });
-
-  test("enabled. throws with number and no type", () => {
-    // TODO more type required and this goes way
-    try {
-      class User {
-        @gqlField({
-          nodeName: "User",
-        })
-        get age(): number {
-          return 3.2;
-        }
-      }
-      throw new Error("should not get here");
-    } catch (e) {
-      expect(e.message).toMatch(/^type is required (.)+/);
-    }
-    validateNoCustom();
-  });
-
-  test("enabled. throws with implicit type and no passed in type", () => {
-    // TODO more type required and this goes way
-    try {
-      class User {
-        @gqlField({
-          nodeName: "User",
-        })
-        get age() {
-          return 3.2;
-        }
-      }
-      throw new Error("should not get here");
-    } catch (e) {
-      expect(e.message).toMatch(/^type is required (.)+/);
-    }
-    validateNoCustom();
   });
 
   test("enabled. list of strings", () => {
@@ -464,23 +428,6 @@ describe("property", () => {
     validateNoCustom(CustomObjectTypes.Field);
   });
 
-  test("enabled. with implicit type. no graphql type", () => {
-    // TODO may disappear once we have type required
-    try {
-      class User {
-        @gqlField({
-          nodeName: "User",
-        })
-        // lol but why?
-        age;
-      }
-      throw new Error("should not have gotten here");
-    } catch (e) {
-      expect(e.message).toMatch(/^type is required (.)+/);
-    }
-    validateNoCustom();
-  });
-
   test("enabled. custom scalar", () => {
     class Point {
       constructor(private x: number, private y: number) {}
@@ -544,6 +491,7 @@ describe("function", () => {
     class User {
       @gqlField({
         nodeName: "User",
+        type: GraphQLString,
       })
       username(): string {
         return "ola";
@@ -553,7 +501,6 @@ describe("function", () => {
   });
 
   test("enabled, returns string", () => {
-    @gqlObjectWithFields()
     class User {
       @gqlField({
         nodeName: "User",
@@ -563,9 +510,6 @@ describe("function", () => {
         return "ola";
       }
     }
-    // console.log("new User");
-    // const user = new User();
-    // const user2 = new User();
 
     validateOneCustomField({
       nodeName: "User",
@@ -659,23 +603,6 @@ describe("function", () => {
       args: [],
     });
     validateNoCustom(CustomObjectTypes.Field);
-  });
-
-  test("enabled, throws for implicit return type", () => {
-    // TODO there's probably no need for this if type becomes required
-    try {
-      class User {
-        @gqlField({
-          nodeName: "User",
-        })
-        pi() {
-          return 3.14;
-        }
-      }
-    } catch (err) {
-      expect(err.message).toMatch(/^type is required/);
-    }
-    validateNoCustom();
   });
 
   test("enabled, one param", () => {
@@ -984,24 +911,6 @@ describe("function", () => {
     } catch (error) {
       expect(error.message).toMatch(/^field selfContact references Contact/);
     }
-  });
-
-  test("enabled. async response", () => {
-    // TODO more type is required bye
-    try {
-      class User {
-        @gqlField({
-          nodeName: "User",
-        })
-        async load(): Promise<User> {
-          return new User();
-        }
-      }
-      throw new Error("shouldn't have gotten here");
-    } catch (e) {
-      expect(e.message).toMatch(/^type is required/);
-    }
-    validateNoCustom();
   });
 
   // these next two are 'User' because of circular dependencies
