@@ -2,33 +2,50 @@ import {
   gqlInputObjectType,
   gqlField,
   gqlMutation,
-  gqlArg,
   gqlObjectType,
 } from "../../../graphql/graphql";
 import { ID } from "../../../core/base";
-import { GraphQLID } from "graphql";
+import { GraphQLID, GraphQLString } from "graphql";
 
 @gqlInputObjectType()
 class UserAuthInput {
-  @gqlField()
+  @gqlField({
+    nodeName: "UserAuthInput",
+    type: GraphQLString,
+  })
   emailAddress: string;
-  @gqlField()
+  @gqlField({
+    nodeName: "UserAuthInput",
+    type: GraphQLString,
+  })
   password: string;
 }
 
 @gqlObjectType()
 class UserAuthResponse {
-  @gqlField()
+  @gqlField({
+    nodeName: "UserAuthResponse",
+    type: GraphQLString,
+  })
   token: string;
 
-  @gqlField({ type: GraphQLID })
+  @gqlField({ nodeName: "UserAuthResponses", type: GraphQLID })
   viewerID: ID;
 }
 
 class AuthResolver {
-  @gqlMutation({ name: "userAuth", type: UserAuthResponse })
-  async userAuth(): // @gqlArg("input") input: UserAuthInput,
-  Promise<UserAuthResponse> {
+  @gqlMutation({
+    nodeName: "AuthResolver",
+    name: "userAuth",
+    type: UserAuthResponse,
+    args: [
+      {
+        name: "input",
+        type: UserAuthInput,
+      },
+    ],
+  })
+  async userAuth(input: UserAuthInput): Promise<UserAuthResponse> {
     throw new Error("not implemented");
   }
 }

@@ -12,7 +12,11 @@ import { RequestContext } from "../../../core/context";
 class ViewerType {
   constructor(private viewer: Viewer) {}
 
-  @gqlField({ type: GraphQLID, nullable: true })
+  @gqlField({
+    nodeName: "ViewerType",
+    type: GraphQLID,
+    nullable: true,
+  })
   get viewerID() {
     return this.viewer.viewerID;
   }
