@@ -1,6 +1,5 @@
 import {
   gqlField,
-  gqlArg,
   GQLCapture,
   gqlArgType,
   CustomFieldType,
@@ -21,6 +20,7 @@ import {
   validateCustomFields,
   validateNoCustom,
   validateCustomArgs,
+  validateCustomTypes,
 } from "./graphql_field_helpers";
 
 beforeEach(() => {
@@ -32,7 +32,10 @@ describe("accessor", () => {
   test("disabled", () => {
     GQLCapture.enable(false);
     class User {
-      @gqlField()
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLString,
+      })
       get fullName(): string {
         return "fullName";
       }
@@ -42,7 +45,10 @@ describe("accessor", () => {
 
   test("enabled. string", () => {
     class User {
-      @gqlField()
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLString,
+      })
       get fullName(): string {
         return "fullName";
       }
@@ -68,11 +74,11 @@ describe("accessor", () => {
   test("enabled. nullable string", () => {
     class User {
       @gqlField({
+        nodeName: "User",
         type: GraphQLString,
         nullable: true,
         description: "first + last name",
       })
-      // boo when it's nullable, we need to indicate type and nullable: true
       get fullName(): string | null {
         return "fullName";
       }
@@ -98,7 +104,10 @@ describe("accessor", () => {
 
   test("enabled. int", () => {
     class User {
-      @gqlField({ type: GraphQLInt })
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLInt,
+      })
       get age(): number {
         return 3.2;
       }
@@ -121,7 +130,10 @@ describe("accessor", () => {
 
   test("enabled. float", () => {
     class User {
-      @gqlField({ type: GraphQLFloat })
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLFloat,
+      })
       get age(): number {
         return 3.2;
       }
@@ -144,7 +156,10 @@ describe("accessor", () => {
 
   test("enabled. returns float with implicit number", () => {
     class User {
-      @gqlField({ type: GraphQLFloat })
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLFloat,
+      })
       get age() {
         return 3.2;
       }
@@ -167,7 +182,7 @@ describe("accessor", () => {
 
   test("enabled. returns int with implicit number", () => {
     class User {
-      @gqlField({ type: GraphQLInt })
+      @gqlField({ nodeName: "User", type: GraphQLInt })
       get age() {
         return 3.2;
       }
@@ -188,63 +203,12 @@ describe("accessor", () => {
     validateNoCustom(CustomObjectTypes.Field);
   });
 
-  test("enabled. throws with number and no type", () => {
-    try {
-      class User {
-        @gqlField()
-        get age(): number {
-          return 3.2;
-        }
-      }
-      throw new Error("should not get here");
-    } catch (e) {
-      expect(e.message).toMatch(/^type is required (.)+/);
-    }
-    validateNoCustom();
-  });
-
-  test("enabled. throws with implicit type and no passed in type", () => {
-    try {
-      class User {
-        @gqlField()
-        get age() {
-          return 3.2;
-        }
-      }
-      throw new Error("should not get here");
-    } catch (e) {
-      expect(e.message).toMatch(/^type is required (.)+/);
-    }
-    validateNoCustom();
-  });
-
   test("enabled. list of strings", () => {
     class User {
-      @gqlField({ type: [String] })
-      get names(): string[] {
-        return ["firstName", "lastName", "fullName"];
-      }
-    }
-    validateOneCustomField({
-      nodeName: "User",
-      functionName: "names",
-      gqlName: "names",
-      fieldType: CustomFieldType.Accessor,
-      results: [
-        {
-          type: "String",
-          list: true,
-          name: "",
-        },
-      ],
-      args: [],
-    });
-    validateNoCustom(CustomObjectTypes.Field);
-  });
-
-  test("enabled. list of strings", () => {
-    class User {
-      @gqlField({ type: [String] })
+      @gqlField({
+        nodeName: "User",
+        type: [String],
+      })
       get names(): string[] {
         return ["firstName", "lastName", "fullName"];
       }
@@ -268,7 +232,11 @@ describe("accessor", () => {
 
   test("enabled. nullable list of strings", () => {
     class User {
-      @gqlField({ type: [String], nullable: true })
+      @gqlField({
+        nodeName: "User",
+        type: [String],
+        nullable: true,
+      })
       get names(): string[] | null {
         return null;
       }
@@ -293,7 +261,11 @@ describe("accessor", () => {
 
   test("enabled. nullable contents of strings", () => {
     class User {
-      @gqlField({ type: [String], nullable: "contents" })
+      @gqlField({
+        nodeName: "User",
+        type: [String],
+        nullable: "contents",
+      })
       get names(): (string | null)[] {
         return ["firstName", "lastName", "fullName", null];
       }
@@ -319,7 +291,11 @@ describe("accessor", () => {
   test("enabled. nullable contents and list of strings", () => {
     class User {
       // all nullable
-      @gqlField({ type: [String], nullable: "contentsAndList" })
+      @gqlField({
+        nodeName: "User",
+        type: [String],
+        nullable: "contentsAndList",
+      })
       get names(): (string | null)[] | null {
         return null;
       }
@@ -347,7 +323,10 @@ describe("property", () => {
   test("disabled", () => {
     GQLCapture.enable(false);
     class User {
-      @gqlField()
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLString,
+      })
       fullName: string;
     }
     validateNoCustom();
@@ -355,7 +334,10 @@ describe("property", () => {
 
   test("enabled. string", () => {
     class User {
-      @gqlField()
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLString,
+      })
       fullName: string;
     }
     validateOneCustomField({
@@ -376,7 +358,10 @@ describe("property", () => {
 
   test("enabled. int", () => {
     class User {
-      @gqlField({ type: GraphQLInt })
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLInt,
+      })
       age: number;
     }
     validateOneCustomField({
@@ -397,7 +382,10 @@ describe("property", () => {
 
   test("enabled. float", () => {
     class User {
-      @gqlField({ type: GraphQLFloat })
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLFloat,
+      })
       age: number;
     }
     validateOneCustomField({
@@ -418,7 +406,10 @@ describe("property", () => {
 
   test("enabled. with implicit type. explicit graphql type", () => {
     class User {
-      @gqlField({ type: GraphQLFloat })
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLFloat,
+      })
       // lol but why?
       age;
     }
@@ -438,21 +429,7 @@ describe("property", () => {
     validateNoCustom(CustomObjectTypes.Field);
   });
 
-  test("enabled. with implicit type. no graphql type", () => {
-    try {
-      class User {
-        @gqlField()
-        // lol but why?
-        age;
-      }
-      throw new Error("should not have gotten here");
-    } catch (e) {
-      expect(e.message).toMatch(/^type is required (.)+/);
-    }
-    validateNoCustom();
-  });
-
-  test("enabled. custom scalar", () => {
+  describe("enabled. custom scalar", () => {
     class Point {
       constructor(private x: number, private y: number) {}
 
@@ -489,19 +466,64 @@ describe("property", () => {
       },
     });
 
-    try {
+    test("enabled. custom scalar used incorrectly", () => {
+      try {
+        class User {
+          @gqlField({
+            nodeName: "User",
+            type: GraphQLPoint,
+          })
+          point: Point;
+        }
+        throw new Error("should not get here");
+      } catch (e) {
+        expect(e.message).toMatch(
+          /custom scalar type Point is not supported this way. use CustomType syntax/,
+        );
+      }
+
+      validateNoCustom();
+    });
+
+    test("enabled. custom scalar used correctly", () => {
       class User {
-        @gqlField({ type: GraphQLPoint })
+        @gqlField({
+          nodeName: "User",
+          type: {
+            type: "GraphQLPoint",
+            importPath: "",
+            tsType: "Point",
+            tsImportPath: "",
+          },
+        })
         point: Point;
       }
-      throw new Error("should not get here");
-    } catch (e) {
-      expect(e.message).toMatch(
-        /custom scalar type Point is not supported this way. use CustomType syntax/,
-      );
-    }
 
-    validateNoCustom();
+      validateOneCustomField({
+        nodeName: "User",
+        functionName: "point",
+        gqlName: "point",
+        fieldType: CustomFieldType.Field,
+        results: [
+          {
+            type: "GraphQLPoint",
+            name: "",
+            tsType: "Point",
+            needsResolving: true,
+          },
+        ],
+        args: [],
+      });
+
+      validateCustomTypes([
+        {
+          type: "GraphQLPoint",
+          importPath: "",
+          tsType: "Point",
+          tsImportPath: "",
+        },
+      ]);
+    });
   });
 });
 
@@ -509,7 +531,10 @@ describe("function", () => {
   test("disabled", () => {
     GQLCapture.enable(false);
     class User {
-      @gqlField()
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLString,
+      })
       username(): string {
         return "ola";
       }
@@ -519,7 +544,10 @@ describe("function", () => {
 
   test("enabled, returns string", () => {
     class User {
-      @gqlField()
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLString,
+      })
       username(): string {
         return "ola";
       }
@@ -543,7 +571,10 @@ describe("function", () => {
 
   test("enabled, returns int", () => {
     class User {
-      @gqlField({ type: GraphQLInt })
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLInt,
+      })
       age(): number {
         return 32;
       }
@@ -567,7 +598,7 @@ describe("function", () => {
 
   test("enabled, returns float", () => {
     class User {
-      @gqlField({ type: GraphQLFloat })
+      @gqlField({ nodeName: "User", type: GraphQLFloat })
       pi(): number {
         return 3.14;
       }
@@ -589,9 +620,12 @@ describe("function", () => {
     validateNoCustom(CustomObjectTypes.Field);
   });
 
-  test("enabled, returns float for implicit return type", () => {
+  test("enabled, returns float. implicit return type", () => {
     class User {
-      @gqlField({ type: GraphQLFloat })
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLFloat,
+      })
       pi() {
         return 3.14;
       }
@@ -613,24 +647,19 @@ describe("function", () => {
     validateNoCustom(CustomObjectTypes.Field);
   });
 
-  test("enabled, throws for implicit return type", () => {
-    try {
-      class User {
-        @gqlField()
-        pi() {
-          return 3.14;
-        }
-      }
-    } catch (err) {
-      expect(err.message).toMatch(/^Function isn't a valid type/);
-    }
-    validateNoCustom();
-  });
-
   test("enabled, one param", () => {
     class User {
-      @gqlField({ type: GraphQLInt })
-      add(@gqlArg("base", { type: GraphQLInt }) base: number): number {
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLInt,
+        args: [
+          {
+            name: "base",
+            type: GraphQLInt,
+          },
+        ],
+      })
+      add(base: number): number {
         return 1 + base;
       }
     }
@@ -658,11 +687,21 @@ describe("function", () => {
 
   test("enabled, multiple param", () => {
     class User {
-      @gqlField()
-      find(
-        @gqlArg("pos", { type: GraphQLInt }) pos: number,
-        @gqlArg("cursor") cursor: string,
-      ): string {
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLString,
+        args: [
+          {
+            name: "pos",
+            type: GraphQLInt,
+          },
+          {
+            name: "cursor",
+            type: GraphQLString,
+          },
+        ],
+      })
+      find(pos: number, cursor: string): string {
         return `${cursor}:${pos}`;
       }
     }
@@ -694,11 +733,19 @@ describe("function", () => {
 
   test("enabled, nullable arg", () => {
     class User {
-      @gqlField({ name: "find" })
-      findFromPos(
-        @gqlArg("pos", { type: GraphQLInt, nullable: true })
-        pos: number,
-      ): string {
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLString,
+        name: "find",
+        args: [
+          {
+            name: "pos",
+            type: GraphQLInt,
+            nullable: true,
+          },
+        ],
+      })
+      findFromPos(pos: number): string {
         return `${pos}`;
       }
     }
@@ -725,39 +772,43 @@ describe("function", () => {
     validateNoCustom(CustomObjectTypes.Field);
   });
 
-  test("enabled, no arg decorator", () => {
-    try {
-      class User {
-        @gqlField()
-        find(pos: number, @gqlArg("cursor") cursor: string): string {
-          return `${cursor}:${pos}`;
-        }
-      }
-      throw new Error("should not get here");
-    } catch (e) {
-      expect(e.message).toMatch(/^args were not captured correctly/);
-    }
-    validateNoCustom();
-  });
-
   test("enabled. arg class", () => {
     // TODO need to ensure no params for these since not valid graphql i believe
     @gqlArgType()
     class SearchArgs {
-      @gqlField()
+      @gqlField({
+        nodeName: "SearchArgs",
+        type: GraphQLString,
+      })
       startCursor: string;
 
-      @gqlField({ type: GraphQLInt })
+      @gqlField({
+        nodeName: "SearchArgs",
+        type: GraphQLInt,
+      })
       start: number;
 
-      @gqlField({ type: GraphQLInt, nullable: true })
+      @gqlField({
+        nodeName: "SearchArgs",
+        type: GraphQLInt,
+        nullable: true,
+      })
       end: number;
     }
     class User {
       // search to return count
       // TODO need
-      @gqlField({ type: GraphQLInt })
-      search(@gqlArg("searchArgs") arg: SearchArgs): number {
+      @gqlField({
+        nodeName: "User",
+        type: GraphQLInt,
+        args: [
+          {
+            name: "searchArgs",
+            type: SearchArgs,
+          },
+        ],
+      })
+      search(arg: SearchArgs): number {
         return 0;
       }
     }
@@ -844,8 +895,12 @@ describe("function", () => {
         end: number;
       }
       class User {
-        @gqlField({ type: GraphQLInt })
-        search(@gqlArg("searchArgs") arg: SearchArgs): number {
+        @gqlField({
+          nodeName: "User",
+          type: GraphQLInt,
+          args: [{ name: "searchArgs", type: SearchArgs }],
+        })
+        search(arg: SearchArgs): number {
           return 0;
         }
       }
@@ -865,7 +920,7 @@ describe("function", () => {
     class Contact {}
 
     class User {
-      @gqlField({ type: Contact })
+      @gqlField({ nodeName: "User", type: Contact })
       selfContact(): Contact {
         return new Contact();
       }
@@ -882,7 +937,10 @@ describe("function", () => {
     class Contact {}
 
     class User {
-      @gqlField({ type: Contact })
+      @gqlField({
+        nodeName: "User",
+        type: Contact,
+      })
       selfContact(): Contact {
         return new Contact();
       }
@@ -897,24 +955,15 @@ describe("function", () => {
     }
   });
 
-  test("enabled. async response", () => {
-    try {
-      class User {
-        @gqlField({})
-        async load(): Promise<User> {
-          return new User();
-        }
-      }
-      throw new Error("shouldn't have gotten here");
-    } catch (e) {
-      expect(e.message).toMatch(/^Promise isn't a valid type/);
-    }
-    validateNoCustom();
-  });
-
+  // these next two are 'User' because of circular dependencies
   test("enabled. async response with type hint", () => {
     class User {
-      @gqlField({ type: User, name: "self" })
+      @gqlField({
+        nodeName: "User",
+        type: "User",
+        name: "self",
+        async: true,
+      })
       async loadSelf(): Promise<User> {
         return new User();
       }
@@ -938,36 +987,11 @@ describe("function", () => {
 
   test("enabled. implied async response with type hint", () => {
     class User {
-      @gqlField({ type: User, name: "self" })
+      @gqlField({ nodeName: "User", type: "User", name: "self", async: true })
       async loadSelf() {
         return new User();
       }
     }
-    validateOneCustomField({
-      nodeName: "User",
-      functionName: "loadSelf",
-      gqlName: "self",
-      fieldType: CustomFieldType.AsyncFunction,
-      results: [
-        {
-          type: "User",
-          name: "",
-          needsResolving: true,
-        },
-      ],
-      args: [],
-    });
-    validateNoCustom(CustomObjectTypes.Field);
-  });
-
-  test("enabled. object type string because 'circular dependencies'", () => {
-    class User {
-      @gqlField({ type: "User", name: "self" })
-      async loadSelf() {
-        return new User();
-      }
-    }
-
     validateOneCustomField({
       nodeName: "User",
       functionName: "loadSelf",
@@ -987,7 +1011,12 @@ describe("function", () => {
 
   test("enabled. object type string list because 'circular dependencies'", () => {
     class User {
-      @gqlField({ type: "[User]", name: "self" })
+      @gqlField({
+        nodeName: "User",
+        type: "[User]",
+        name: "self",
+        async: true,
+      })
       async loadSelf() {
         return [new User()];
       }
@@ -1014,6 +1043,7 @@ describe("function", () => {
   test("connection", async () => {
     class User {
       @gqlField({
+        nodeName: "User",
         type: gqlConnection("User"),
         name: "userToSelves",
       })
@@ -1048,8 +1078,10 @@ describe("function", () => {
     try {
       class User {
         @gqlField({
+          nodeName: "User",
           type: gqlConnection("User"),
           name: "userToSelves",
+          async: true,
         })
         async loadSelves() {
           // ignore
@@ -1059,6 +1091,7 @@ describe("function", () => {
       throw new Error("should have thrown");
     } catch (e) {
       expect(e.message).toBe(
+        // TODO is this still true...
         "async function not currently supported for GraphQLConnection",
       );
     }

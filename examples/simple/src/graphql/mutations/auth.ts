@@ -3,12 +3,11 @@ import {
   gqlField,
   gqlMutation,
   gqlContextType,
-  gqlArg,
   gqlObjectType,
   encodeGQLID,
 } from "@snowtop/ent/graphql";
 import { ID, RequestContext } from "@snowtop/ent";
-import { GraphQLID } from "graphql";
+import { GraphQLID, GraphQLString } from "graphql";
 import { useAndVerifyAuth, useAndVerifyAuthJWT } from "@snowtop/ent-passport";
 import { User } from "../../ent";
 
@@ -16,23 +15,38 @@ import { User } from "../../ent";
 // we're going to test exporting UserAuthInput types
 // and not exporting JWT versions
 export class UserAuthInput {
-  @gqlField()
+  @gqlField({
+    nodeName: "UserAuthInput",
+    type: GraphQLString,
+  })
   emailAddress: string = "";
-  @gqlField()
+  @gqlField({
+    nodeName: "UserAuthInput",
+    type: GraphQLString,
+  })
   password: string = "";
 }
 
 @gqlInputObjectType()
 class UserAuthJWTInput {
-  @gqlField()
+  @gqlField({
+    nodeName: "UserAuthJWTInput",
+    type: GraphQLString,
+  })
   emailAddress: string = "";
-  @gqlField()
+  @gqlField({
+    nodeName: "UserAuthJWTInput",
+    type: GraphQLString,
+  })
   password: string = "";
 }
 
 @gqlObjectType()
 export class UserAuthPayload {
-  @gqlField({ type: GraphQLID })
+  @gqlField({
+    nodeName: "UserAuthPayload",
+    type: GraphQLID,
+  })
   viewerID: ID = "";
 }
 
@@ -40,18 +54,36 @@ export class UserAuthPayload {
 
 @gqlObjectType()
 class UserAuthJWTPayload {
-  @gqlField()
+  @gqlField({
+    nodeName: "UserAuthJWTPayload",
+    type: GraphQLString,
+  })
   token: string = "";
 
-  @gqlField({ type: GraphQLID })
+  @gqlField({
+    nodeName: "UserAuthJWTPayload",
+    type: GraphQLID,
+  })
   viewerID: ID = "";
 }
 
 export class AuthResolver {
-  @gqlMutation({ name: "userAuth", type: UserAuthPayload })
+  @gqlMutation({
+    nodeName: "AuthResolver",
+    name: "userAuth",
+    type: "UserAuthPayload",
+    async: true,
+    args: [
+      gqlContextType(),
+      {
+        name: "input",
+        type: "UserAuthInput",
+      },
+    ],
+  })
   async userAuth(
-    @gqlContextType() context: RequestContext,
-    @gqlArg("input") input: UserAuthInput,
+    context: RequestContext,
+    input: UserAuthInput,
   ): Promise<UserAuthPayload> {
     const viewer = await useAndVerifyAuth(
       context,
@@ -77,10 +109,22 @@ export class AuthResolver {
     };
   }
 
-  @gqlMutation({ name: "userAuthJWT", type: UserAuthJWTPayload })
+  @gqlMutation({
+    nodeName: "AuthResolver",
+    name: "userAuthJWT",
+    type: "UserAuthJWTPayload",
+    async: true,
+    args: [
+      gqlContextType(),
+      {
+        name: "input",
+        type: "UserAuthJWTInput",
+      },
+    ],
+  })
   async userAuthJWT(
-    @gqlContextType() context: RequestContext,
-    @gqlArg("input") input: UserAuthJWTInput,
+    context: RequestContext,
+    input: UserAuthJWTInput,
   ): Promise<UserAuthJWTPayload> {
     const [viewer, token] = await useAndVerifyAuthJWT(
       context,

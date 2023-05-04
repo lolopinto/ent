@@ -12,15 +12,24 @@ import { RequestContext } from "../../../core/context";
 class ViewerType {
   constructor(private viewer: Viewer) {}
 
-  @gqlField({ type: GraphQLID, nullable: true })
+  @gqlField({
+    nodeName: "ViewerType",
+    type: GraphQLID,
+    nullable: true,
+  })
   get viewerID() {
     return this.viewer.viewerID;
   }
 }
 
 export default class ViewerResolver {
-  @gqlQuery({ name: "viewer", type: ViewerType })
-  viewer(@gqlContextType() context: RequestContext): ViewerType {
+  @gqlQuery({
+    nodeName: "ViewerResolver",
+    name: "viewer",
+    type: ViewerType,
+    args: [gqlContextType()],
+  })
+  viewer(context: RequestContext): ViewerType {
     return new ViewerType(context.getViewer());
   }
 }

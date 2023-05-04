@@ -1,6 +1,5 @@
 import {
   gqlField,
-  gqlArg,
   GQLCapture,
   CustomFieldType,
   gqlMutation,
@@ -11,7 +10,7 @@ import {
   gqlFileUpload,
   gqlConnection,
 } from "./graphql";
-import { GraphQLBoolean, GraphQLID } from "graphql";
+import { GraphQLBoolean, GraphQLID, GraphQLString } from "graphql";
 import { ID, Viewer } from "../core/base";
 
 import {
@@ -38,10 +37,16 @@ test("mutation with input type", async () => {
     name: "UserAuthInput",
   })
   class UserAuthInput {
-    @gqlField()
+    @gqlField({
+      nodeName: "UserAuthInput",
+      type: GraphQLString,
+    })
     emailAddress: string;
 
-    @gqlField()
+    @gqlField({
+      nodeName: "UserAuthInput",
+      type: GraphQLString,
+    })
     password: string;
   }
 
@@ -49,19 +54,34 @@ test("mutation with input type", async () => {
     name: "UserAuthResponse",
   })
   class UserAuthResponse {
-    @gqlField()
+    @gqlField({
+      nodeName: "UserAuthResponse",
+      type: GraphQLString,
+    })
     token: string;
 
-    @gqlField({ type: GraphQLID })
+    @gqlField({
+      nodeName: "UserAuthResponse",
+      type: GraphQLID,
+    })
     viewerID: ID;
   }
 
   class UserAuth {
     // can't have decorator on a top-level function :(
-    @gqlMutation({ name: "userAuth", type: UserAuthResponse })
-    async userAuth(
-      @gqlArg("input") input: UserAuthInput,
-    ): Promise<UserAuthResponse> {
+    @gqlMutation({
+      nodeName: "UserAuth",
+      name: "userAuth",
+      type: UserAuthResponse,
+      async: true,
+      args: [
+        {
+          name: "input",
+          type: UserAuthInput,
+        },
+      ],
+    })
+    async userAuth(input: UserAuthInput): Promise<UserAuthResponse> {
       console.log(input.emailAddress);
       console.log(input.password);
       return new UserAuthResponse();
@@ -169,21 +189,42 @@ test("mutation with different types", async () => {
     name: "UserAuthResponse",
   })
   class UserAuthResponse {
-    @gqlField()
+    @gqlField({
+      nodeName: "UserAuthResponse",
+      type: GraphQLString,
+    })
     token: string;
 
-    @gqlField({ type: GraphQLID })
+    @gqlField({
+      nodeName: "UserAuthResponse",
+      type: GraphQLID,
+    })
     viewerID: ID;
   }
 
   // wow this needs to be a different class name
   class UserAuth {
     // can't have decorator on a top-level function :(
-    @gqlMutation({ name: "userAuth", type: UserAuthResponse })
+    @gqlMutation({
+      nodeName: "UserAuth",
+      name: "userAuth",
+      type: UserAuthResponse,
+      async: true,
+      args: [
+        {
+          name: "emailAddress",
+          type: GraphQLString,
+        },
+        {
+          name: "password",
+          type: GraphQLString,
+        },
+      ],
+    })
     // This needs to be named differently because metadata :(
     async userAuthDiff(
-      @gqlArg("emailAddress") emailAddress: string,
-      @gqlArg("password") password: string,
+      emailAddress: string,
+      password: string,
     ): Promise<UserAuthResponse> {
       console.log(emailAddress);
       console.log(password);
@@ -263,7 +304,9 @@ test("mutation with different types", async () => {
 
 test("mutation with no args", () => {
   class Logger {
-    @gqlMutation()
+    @gqlMutation({
+      nodeName: "Logger",
+    })
     logActiveUser() {}
   }
 
@@ -285,15 +328,23 @@ test("query with return type", () => {
   @gqlObjectType({ name: "Viewer" })
   class ViewerType {
     constructor(private viewer: Viewer) {}
-    @gqlField({ type: GraphQLID, nullable: true })
+    @gqlField({
+      nodeName: "ViewerType",
+      type: GraphQLID,
+      nullable: true,
+    })
     get viewerID() {
       return this.viewer.viewerID;
     }
   }
 
   class ViewerResolver {
-    @gqlQuery({ type: ViewerType })
-    viewer(@gqlContextType() context: RequestContext): ViewerType {
+    @gqlQuery({
+      nodeName: "ViewerResolver",
+      type: ViewerType,
+      args: [gqlContextType()],
+    })
+    viewer(context: RequestContext): ViewerType {
       return new ViewerType(context.getViewer());
     }
   }
@@ -359,15 +410,23 @@ test("query with list return type", () => {
   @gqlObjectType({ name: "Viewer" })
   class ViewerType {
     constructor(private viewer: Viewer) {}
-    @gqlField({ type: GraphQLID, nullable: true })
+    @gqlField({
+      nodeName: "ViewerType",
+      type: GraphQLID,
+      nullable: true,
+    })
     get viewerID() {
       return this.viewer.viewerID;
     }
   }
 
   class ViewerResolver {
-    @gqlQuery({ type: "[ViewerType]" })
-    viewer(@gqlContextType() context: RequestContext): [ViewerType] {
+    @gqlQuery({
+      nodeName: "ViewerResolver",
+      type: "[ViewerType]",
+      args: [gqlContextType()],
+    })
+    viewer(context: RequestContext): [ViewerType] {
       return [new ViewerType(context.getViewer())];
     }
   }
@@ -433,6 +492,7 @@ test("query with list return type", () => {
 test("query which returns connection", async () => {
   class ViewerResolver {
     @gqlQuery({
+      nodeName: "ViewerResolver",
       type: gqlConnection("User"),
       name: "peopleYouMayKnow",
     })
@@ -466,13 +526,18 @@ test("query which returns connection", async () => {
 test("query with args which returns connection", async () => {
   class ViewerResolver {
     @gqlQuery({
+      nodeName: "ViewerResolver",
       type: gqlConnection("User"),
       name: "peopleYouMayKnow",
+      args: [
+        gqlContextType(),
+        {
+          name: "id",
+          type: GraphQLID,
+        },
+      ],
     })
-    pymk(
-      @gqlContextType() context: RequestContext,
-      @gqlArg("id", { type: GraphQLID }) id: ID,
-    ) {
+    pymk(context: RequestContext, id: ID) {
       return 1;
     }
   }
@@ -512,11 +577,19 @@ test("query with args which returns connection", async () => {
 
 test("custom type", () => {
   class ProfilePictureUploadResolver {
-    @gqlMutation({ name: "profilePictureUpload", type: GraphQLBoolean })
-    profilePictureUpload(
-      @gqlContextType() context: RequestContext,
-      @gqlArg("file", { type: gqlFileUpload }) file,
-    ) {
+    @gqlMutation({
+      nodeName: "ProfilePictureUploadResolver",
+      name: "profilePictureUpload",
+      type: GraphQLBoolean,
+      args: [
+        gqlContextType(),
+        {
+          name: "file",
+          type: gqlFileUpload,
+        },
+      ],
+    })
+    profilePictureUpload(context: RequestContext, file) {
       // yay successful upload
       return true;
     }
@@ -528,7 +601,13 @@ test("custom type", () => {
       functionName: "profilePictureUpload",
       gqlName: "profilePictureUpload",
       fieldType: CustomFieldType.Function,
-      results: [],
+      results: [
+        {
+          type: "Boolean",
+          name: "",
+          tsType: "boolean",
+        },
+      ],
       args: [
         {
           type: "Context",

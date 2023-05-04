@@ -17,7 +17,11 @@ class GatherExportsInGeneratedTypes implements TransformFile {
     file: string,
     node: ts.Node,
   ) {
-    const exported = node.modifiers?.filter(
+    const modifiers = ts.canHaveModifiers(node)
+      ? ts.getModifiers(node)
+      : undefined;
+
+    const exported = modifiers?.filter(
       (mod) => mod.getText(sourceFile) === "export",
     );
 

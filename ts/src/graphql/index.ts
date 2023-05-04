@@ -2,7 +2,6 @@ export {
   gqlFieldOptions,
   gqlObjectOptions,
   gqlField,
-  gqlArg,
   gqlArgType,
   gqlInputObjectType,
   gqlObjectType,

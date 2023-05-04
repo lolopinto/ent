@@ -10,10 +10,13 @@ import { ContactEmail } from ".";
 
 @gqlObjectType()
 export class EmailInfo {
-  @gqlField({ type: "[ContactEmail]" })
+  @gqlField({
+    nodeName: "EmailInfo",
+    type: "[ContactEmail]",
+  })
   emails: ContactEmail[];
 
-  @gqlField({ type: GraphQLString })
+  @gqlField({ nodeName: "EmailInfo", type: GraphQLString })
   firstEmail: string;
 
   constructor(emails: ContactEmail[], firstEmail: string) {
@@ -30,6 +33,7 @@ export class Contact extends ContactBase {
   }
 
   @gqlField({
+    nodeName: "Contact",
     type: GraphQLString,
     name: "fullName",
   })
@@ -38,8 +42,10 @@ export class Contact extends ContactBase {
   }
 
   @gqlField({
-    type: EmailInfo,
+    nodeName: "Contact",
+    type: "EmailInfo",
     name: "plusEmails",
+    async: true,
   })
   async queryPlusEmails(): Promise<EmailInfo> {
     const emails = await this.loadEmails();
