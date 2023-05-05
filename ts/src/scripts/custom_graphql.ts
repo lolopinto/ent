@@ -163,7 +163,13 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
     if (process.env.DISABLE_SWC) {
       args.shift();
     }
-    const r = spawn("ts-node", args);
+    // TODO support disable_swc flag
+    const r = spawn("node", ["-r", "@swc-node/register", filePath], {
+      env: {
+        ...process.env,
+        SWCRC: "true",
+      },
+    });
     const datas: string[] = [];
     r.stdout.on("data", (data) => {
       datas.push(data.toString());

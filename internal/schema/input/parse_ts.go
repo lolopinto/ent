@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/internal/cmd"
-	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
@@ -35,34 +34,23 @@ func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 		return nil, fmt.Errorf("expected schema to be a directory")
 	}
 
-	var cmdArgs []string
-	cmdName := "ts-node"
-	if fromTest {
-		cmdArgs = []string{
-			"--compiler-options",
-			testingutils.DefaultCompilerOptions(),
-		}
-	} else {
-		cmdName = "ts-node-script"
-		cmdArgs = cmd.GetArgsForScript(dirPath)
-	}
+	cmdInfo := cmd.GetCommandInfo(dirPath, fromTest)
 
-	if !util.EnvIsTrue("DISABLE_SWC") {
-		cmdArgs = append(cmdArgs, "--swc")
-	}
-
-	cmdArgs = append(
-		cmdArgs,
+	cmdArgs := append(
+		cmdInfo.Args,
 		util.GetPathToScript("scripts/read_schema.ts", fromTest),
 		"--path",
 		schemaPath,
 	)
-	execCmd := exec.Command(cmdName, cmdArgs...)
+	execCmd := exec.Command(cmdInfo.Name, cmdArgs...)
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	execCmd.Stdout = &out
 	execCmd.Stderr = &stderr
+	if cmdInfo.Env != nil {
+		execCmd.Env = cmdInfo.Env
+	}
 	if err := execCmd.Run(); err != nil {
 		str := stderr.String()
 		err = errors.Wrap(err, str)

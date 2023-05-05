@@ -33,7 +33,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
-	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
@@ -661,41 +660,46 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		buf.WriteString("\n")
 	}
 
-	// similar to writeTsFile in parse_ts.go
-	// unfortunately that this is being done
-
-	var cmdName string
-	var cmdArgs []string
-	var env []string
-
 	scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", fromTest)
+
+	cmdInfo := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), fromTest)
+
+	if cmdInfo.UseSwc {
+		_, err := os.Stat(".swcrc")
+		if err != nil && os.IsNotExist(err) {
+			// temp .swcrc file to be used
+			// probably need this for parse_ts too
+			err = os.WriteFile(".swcrc", []byte(`{
+    "jsc": {
+        "parser": {
+            "syntax": "typescript",
+            "decorators": true
+        },
+        "target": "es2020",
+        "keepClassNames":true,
+        "transform": {
+            "decoratorVersion": "2022-03"
+        }
+    }
+}
+				`), os.ModePerm)
+
+			if err == nil {
+				defer os.Remove(".swcrc")
+			}
+		}
+	}
+
 	if fromTest {
-		env = []string{
+		cmdInfo.Env = append(cmdInfo.Env,
 			fmt.Sprintf(
 				"GRAPHQL_PATH=%s",
 				filepath.Join(input.GetAbsoluteRootPathForTest(), "graphql"),
 			),
-		}
-		cmdName = "ts-node"
-
-		cmdArgs = []string{
-			"--compiler-options",
-			testingutils.DefaultCompilerOptions(),
-		}
-	} else {
-		cmdArgs = cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot())
-
-		cmdName = "ts-node-script"
+		)
 	}
 
-	// append LOCAL_SCRIPT_PATH so we know. in typescript...
-	if util.EnvIsTrue("LOCAL_SCRIPT_PATH") {
-		env = append(env, "LOCAL_SCRIPT_PATH=true")
-	}
-
-	cmdArgs = append(cmdArgs,
-		// TODO https://github.com/lolopinto/ent/issues/792
-		//			"--swc",
+	cmdArgs := append(cmdInfo.Args,
 		scriptPath,
 		"--path",
 		// TODO this should be a configuration option to indicate where the code root is
@@ -710,13 +714,13 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		cmdArgs = append(cmdArgs, "--dynamic_path", dynamicPath)
 	}
 
-	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd := exec.Command(cmdInfo.Name, cmdArgs...)
 	cmd.Dir = processor.Config.GetAbsPathToRoot()
 	cmd.Stdin = &buf
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
-	if len(env) != 0 {
-		env2 := append(os.Environ(), env...)
+	if len(cmdInfo.Env) != 0 {
+		env2 := append(os.Environ(), cmdInfo.Env...)
 		cmd.Env = env2
 	}
 
