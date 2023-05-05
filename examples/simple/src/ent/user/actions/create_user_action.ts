@@ -17,7 +17,7 @@ import { User } from "../../";
 
 export { UserCreateInput };
 import { ExampleViewer } from "../../../viewer/viewer";
-import { ContactLabel } from "src/ent/generated/types";
+import { ContactLabel } from "../../../ent/generated/types";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateUserAction extends CreateUserActionBase {

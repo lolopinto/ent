@@ -15,7 +15,7 @@ import {
   UserInput,
 } from "../../ent/generated/user/actions/user_builder";
 import { ExampleViewer } from "../../viewer/viewer";
-import { ContactLabel } from "src/ent/generated/types";
+import { ContactLabel } from "../../ent/generated/types";
 
 export class ImportContactResolver {
   @gqlMutation({
