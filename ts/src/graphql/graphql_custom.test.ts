@@ -902,6 +902,148 @@ test("custom interface", async () => {
   );
 });
 
+test("referencing known interface e.g. Node", async () => {
+  @gqlObjectType({
+    name: "Guest",
+    interfaces: ["Node"],
+  })
+  class Guest {
+    @gqlField({
+      nodeName: "Guest",
+      type: GraphQLID,
+    })
+    id: ID;
+  }
+
+  class Auth {
+    @gqlMutation({
+      nodeName: "Auth",
+      name: "guestAuth",
+      type: Guest,
+      async: true,
+      args: [
+        {
+          name: "emailAddress",
+          type: GraphQLString,
+        },
+        {
+          name: "password",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async guestAuth(emailAddress: string, password: string): Promise<Guest> {
+      console.log(emailAddress);
+      console.log(password);
+      return new Guest();
+    }
+  }
+
+  GQLCapture.resolve(["Guest"]);
+
+  validateCustomFields([
+    {
+      nodeName: "Guest",
+      functionName: "id",
+      gqlName: "id",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "ID",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+  ]);
+
+  validateCustomObjects([
+    {
+      nodeName: "Guest",
+      className: "Guest",
+      interfaces: ["Node"],
+    },
+  ]);
+
+  validateCustomMutations([
+    {
+      nodeName: "Auth",
+      functionName: "guestAuth",
+      gqlName: "guestAuth",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "Guest",
+          name: "",
+          needsResolving: false,
+        },
+      ],
+      args: [
+        {
+          type: "String",
+          name: "emailAddress",
+        },
+        {
+          type: "String",
+          name: "password",
+        },
+      ],
+    },
+  ]);
+
+  validateNoCustom(
+    CustomObjectTypes.Field,
+    CustomObjectTypes.Mutation,
+    CustomObjectTypes.Object,
+  );
+});
+
+test("referencing unknown interface", async () => {
+  @gqlObjectType({
+    name: "Guest",
+    interfaces: ["Interface"],
+  })
+  class Guest {
+    @gqlField({
+      nodeName: "Guest",
+      type: GraphQLID,
+    })
+    id: ID;
+  }
+
+  class Auth {
+    @gqlMutation({
+      nodeName: "Auth",
+      name: "guestAuth",
+      type: Guest,
+      async: true,
+      args: [
+        {
+          name: "emailAddress",
+          type: GraphQLString,
+        },
+        {
+          name: "password",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async guestAuth(emailAddress: string, password: string): Promise<Guest> {
+      console.log(emailAddress);
+      console.log(password);
+      return new Guest();
+    }
+  }
+
+  try {
+    GQLCapture.resolve(["Guest"]);
+  } catch (err) {
+    expect((err as Error).message).toMatch(
+      /object Guest references unknown interface Interface/,
+    );
+  }
+});
+
 test("custom union unknown types", async () => {
   @gqlUnionType({
     name: "SearchResult",

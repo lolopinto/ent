@@ -169,6 +169,12 @@ export const knownDisAllowedNames: Map<string, boolean> = new Map([
   ["Promise", true],
 ]);
 
+export const knownInterfaces: Map<string, boolean> = new Map([
+  ["Node", true],
+  ["Edge", true],
+  ["Connection", true],
+]);
+
 const isArray = (type: Type | Array<Type>): type is Array<Type> => {
   if (typeof type === "function") {
     return false;
@@ -689,6 +695,10 @@ export class GQLCapture {
             }
             this.customFields.set(obj.nodeName, objFields);
           }
+        } else if (!knownInterfaces.has(interfaceName)) {
+          throw new Error(
+            `object ${key} references unknown interface ${interfaceName}`,
+          );
         }
       });
     });
