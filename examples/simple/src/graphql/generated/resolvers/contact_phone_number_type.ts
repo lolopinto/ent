@@ -15,6 +15,7 @@ import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { ContactPhoneNumber } from "../../../ent";
 import {
   ContactInfoType,
+  ContactItemType,
   ContactLabelType,
   ContactType,
 } from "../../resolvers/internal";
@@ -50,7 +51,7 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
       type: new GraphQLNonNull(ContactLabelType),
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: [GraphQLNodeInterface, ContactItemType],
   isTypeOf(obj) {
     return obj instanceof ContactPhoneNumber;
   },

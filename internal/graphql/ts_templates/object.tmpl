@@ -1,4 +1,4 @@
-{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" "GraphQLUnionType" }}
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" "GraphQLUnionType" "GraphQLInterfaceType" }}
 {{ $cfg := .Config -}}
 {{$baseObj := .Data -}}
 
@@ -56,10 +56,15 @@
         fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
       {{ else -}}
         {{ $tsType := $gqlNode.TSType -}}
-        {{ if $baseObj.ForeignImport $tsType -}}
-          {{$tsType = useImport $tsType -}}
+        {{ if $tsType -}}
+          {{ if $baseObj.ForeignImport $tsType -}}
+            {{$tsType = useImport $tsType -}}
+          {{ end -}}
+          fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}<{{useImport $viewerType}}>> => ({
+        {{ else -}}
+        {{/* for interfaces, we just ignore the type */ -}}
+          fields: () => ({
         {{ end -}}
-        fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}<{{useImport $viewerType}}>> => ({
       {{ end -}}
         {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance "ViewerType" $viewerType) -}}
         }),

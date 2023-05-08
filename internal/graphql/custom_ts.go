@@ -772,7 +772,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			continue
 		}
 
-		if cd.Objects[nodeName] != nil {
+		if cd.Objects[nodeName] != nil || cd.Interfaces[nodeName] != nil {
 			continue
 		}
 
@@ -1010,13 +1010,25 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 	for _, inter := range cd.Interfaces {
 		obj := &objectType{
 			// TODO have to make sure this is unique
-			Type:    fmt.Sprintf("%sType", inter.NodeName),
-			Node:    inter.NodeName,
-			TSType:  inter.ClassName,
-			GQLType: "GraphQLInterfaceType",
+			Type:     fmt.Sprintf("%sType", inter.NodeName),
+			Node:     inter.NodeName,
+			GQLType:  "GraphQLInterfaceType",
+			Exported: true,
 		}
-		// TODO this probably needs to change
-		obj.GQLInterfaces = inter.Interfaces
+
+		fields, ok := cd.Fields[inter.NodeName]
+		if !ok {
+			return fmt.Errorf("type %s has no fields", inter.NodeName)
+		}
+
+		for _, f := range fields {
+			gqlField, err := getCustomGQLField(processor, cd, f, s, "obj")
+			if err != nil {
+				return err
+			}
+			obj.Fields = append(obj.Fields, gqlField)
+			obj.Imports = append(obj.Imports, gqlField.FieldImports...)
+		}
 
 		node := &gqlNode{
 			ObjData: &gqlobjectData{

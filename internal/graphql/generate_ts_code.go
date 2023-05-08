@@ -391,10 +391,10 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 
 	for idx := range s.interfaces {
 		opts := &writeOptions{}
-		if writeAll || cmp == nil || cmp.customInterfacesChanged[s.unions[idx].ObjData.Node] {
+		if writeAll || cmp == nil || cmp.customInterfacesChanged[s.interfaces[idx].ObjData.Node] {
 			opts.writeNode = true
 		}
-		funcs = append(funcs, p.buildNodeWithOpts(processor, s, s.unions[idx], opts)...)
+		funcs = append(funcs, p.buildNodeWithOpts(processor, s, s.interfaces[idx], opts)...)
 	}
 
 	// delete custom queries|mutations|unions|interfaces
@@ -690,6 +690,21 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		buf.WriteString("\n")
 	}
 
+	// send custom enums too
+	for _, info := range processor.Schema.Enums {
+
+		if info.GQLEnum == nil {
+			continue
+		}
+		buf.WriteString(info.GQLEnum.Name)
+		buf.WriteString("\n")
+	}
+
+	for _, ci := range processor.Schema.CustomInterfaces {
+		buf.WriteString(ci.GQLName)
+		buf.WriteString("\n")
+	}
+
 	// similar to writeTsFile in parse_ts.go
 	// unfortunately that this is being done
 
@@ -966,8 +981,12 @@ func (s *gqlSchema) getImportFor(processor *codegen.Processor, typ string, mutat
 
 	// custom nodes in the schema.
 	// e.g. User object, Event
+	// custom enums, interfaces, unions
 	_, ok = s.nodes[typ]
-	if ok {
+	_, ok2 := s.enums[typ]
+	_, ok3 := s.interfaces[typ]
+	_, ok4 := s.unions[typ]
+	if ok || ok2 || ok3 || ok4 {
 		if mutation {
 			return &tsimport.ImportPath{
 				Import: fmt.Sprintf("%sType", typ),
@@ -1857,6 +1876,11 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		IsTypeOfMethod: []string{
 			fmt.Sprintf("return obj instanceof %s", nodeData.Node),
 		},
+	}
+	// add any custom interfaces
+	for _, inter := range nodeData.CustomGraphQLInterfaces {
+		result.GQLInterfaces = append(result.GQLInterfaces, inter+"Type")
+		result.Imports = append(result.Imports, tsimport.NewLocalGraphQLEntImportPath(inter))
 	}
 
 	for _, node := range nodeData.GetUniqueNodes() {
@@ -2809,12 +2833,13 @@ func (obj *objectType) getRenderer(s *gqlSchema) renderer {
 	}
 
 	return &elemRenderer{
-		input:      obj.GQLType == "GraphQLInputObjectType",
-		union:      obj.GQLType == "GraphQLUnionType",
-		name:       obj.Node,
-		interfaces: interfaces,
-		fields:     obj.Fields,
-		unionTypes: unions,
+		input:       obj.GQLType == "GraphQLInputObjectType",
+		union:       obj.GQLType == "GraphQLUnionType",
+		isInterface: obj.GQLType == "GraphQLInterfaceType",
+		name:        obj.Node,
+		interfaces:  interfaces,
+		fields:      obj.Fields,
+		unionTypes:  unions,
 	}
 }
 

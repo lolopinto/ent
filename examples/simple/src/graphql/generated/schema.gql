@@ -233,7 +233,7 @@ type Comment implements Node {
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
 }
 
-type ContactEmail implements Node {
+type ContactEmail implements Node & ContactItemType {
   contact: Contact
   id: ID!
   extra: ContactInfo
@@ -248,7 +248,12 @@ type ContactInfo {
 
 union ContactItemResult = ContactEmail | ContactPhoneNumber
 
-type ContactPhoneNumber implements Node {
+interface ContactItem {
+  label: ContactLabel!
+  contact: Contact
+}
+
+type ContactPhoneNumber implements Node & ContactItemType {
   contact: Contact
   id: ID!
   extra: ContactInfo
