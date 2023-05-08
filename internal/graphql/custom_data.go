@@ -195,7 +195,8 @@ func (item *CustomItem) getImports(processor *codegen.Processor, s *gqlSchema, c
 		item.addImport(imp)
 	} else {
 		_, ok := s.customData.Objects[item.Type]
-		if !ok {
+		_, ok2 := s.customData.Unions[item.Type]
+		if !ok && !ok2 {
 			return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
 		}
 		item.addImport(

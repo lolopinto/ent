@@ -975,16 +975,20 @@ func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSch
 	for _, union := range cd.Unions {
 		obj := &objectType{
 			// TODO have to make sure this is unique
-			Type:    fmt.Sprintf("%sType", union.NodeName),
-			Node:    union.NodeName,
-			TSType:  union.ClassName,
-			GQLType: "GraphQLUnionType",
+			Type:     fmt.Sprintf("%sType", union.NodeName),
+			Node:     union.NodeName,
+			TSType:   union.ClassName,
+			GQLType:  "GraphQLUnionType",
+			Exported: true,
 		}
 		unionTypes := make([]string, len(union.UnionTypes))
+		imports := make([]*tsimport.ImportPath, len(union.UnionTypes))
 		for i, unionType := range union.UnionTypes {
 			unionTypes[i] = fmt.Sprintf("%sType", unionType)
+			imports[i] = tsimport.NewLocalGraphQLEntImportPath(unionType)
 		}
 		obj.UnionTypes = unionTypes
+		obj.Imports = imports
 
 		node := &gqlNode{
 			ObjData: &gqlobjectData{

@@ -1079,4 +1079,10 @@ test("custom union known types", async () => {
   ]);
 
   validateNoCustom(CustomObjectTypes.Union);
+
+  // TODO test for returning a union
 });
+
+// TODO throw if a union has fields
+
+// TODO test if you can return a union and do an example in example/simple

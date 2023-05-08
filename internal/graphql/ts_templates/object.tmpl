@@ -32,11 +32,15 @@
 
 {{ range $gqlNode := $baseObj.GQLNodes -}}
   {{if eq $gqlNode.GQLType "GraphQLUnionType" -}}
-    const {{$gqlNode.Type}} = new {{useImport "GraphQLUnionType"}}({
+    {{ if $gqlNode.Exported -}}
+    export const {{$gqlNode.Type}} = new {{useImport "GraphQLUnionType"}}({
+    {{ else -}}
+      const {{$gqlNode.Type}} = new {{useImport "GraphQLUnionType"}}({
+    {{ end -}}
       name: "{{$gqlNode.Node}}",
       types: [
-        {{ range .UnionTypes}}
-          {{.}},
+        {{ range .UnionTypes -}}
+          {{ useImportMaybe .}},
         {{ end -}}
       ],
     });

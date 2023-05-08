@@ -25,6 +25,7 @@ import {
 } from "../../../ent";
 import {
   ContactEmailType,
+  ContactItemResultType,
   ContactPhoneNumberType,
   ContactToCommentsConnectionType,
   ContactToLikersConnectionType,
@@ -160,6 +161,18 @@ export const ContactType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return contact.queryPlusEmails();
+      },
+    },
+    contactItems: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ContactItemResultType)),
+      ),
+      resolve: async (
+        contact: Contact,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return contact.queryContactItems();
       },
     },
   }),

@@ -383,7 +383,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 
 	for idx := range s.unions {
 		opts := &writeOptions{}
-		if cmp == nil || cmp.customUnionsChanged[s.unions[idx].ObjData.Node] {
+		if writeAll || cmp == nil || cmp.customUnionsChanged[s.unions[idx].ObjData.Node] {
 			opts.writeNode = true
 		}
 		funcs = append(funcs, p.buildNodeWithOpts(processor, s, s.unions[idx], opts)...)
@@ -391,7 +391,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 
 	for idx := range s.interfaces {
 		opts := &writeOptions{}
-		if cmp == nil || cmp.customInterfacesChanged[s.unions[idx].ObjData.Node] {
+		if writeAll || cmp == nil || cmp.customInterfacesChanged[s.unions[idx].ObjData.Node] {
 			opts.writeNode = true
 		}
 		funcs = append(funcs, p.buildNodeWithOpts(processor, s, s.unions[idx], opts)...)

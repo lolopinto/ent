@@ -741,7 +741,10 @@ export class GQLCapture {
         // but i don't think it applies
         field.results.forEach((result) => {
           if (result.needsResolving) {
-            if (baseObjects.has(result.type)) {
+            if (
+              baseObjects.has(result.type) ||
+              this.customUnions.has(result.type)
+            ) {
               result.needsResolving = false;
             } else {
               throw new Error(
