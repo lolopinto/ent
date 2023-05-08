@@ -7,6 +7,7 @@ import {
 } from "@snowtop/ent";
 import { gqlField, gqlObjectType } from "@snowtop/ent/graphql";
 import { ContactEmail } from ".";
+import { gqlUnionType } from "@snowtop/ent/graphql/graphql";
 
 @gqlObjectType()
 export class EmailInfo {
@@ -24,6 +25,12 @@ export class EmailInfo {
     this.firstEmail = firstEmail;
   }
 }
+
+// TODO interface of these two items
+@gqlUnionType({
+  unionTypes: ["ContactEmail", "ContactPhoneNumber"],
+})
+export class ContactItemResult {}
 
 export class Contact extends ContactBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
@@ -53,5 +60,20 @@ export class Contact extends ContactBase {
       emails,
       firstEmail: emails[0].emailAddress,
     };
+  }
+
+  @gqlField({
+    nodeName: "Contact",
+    type: "[ContactItemResult]",
+    name: "contactItems",
+    async: true,
+  })
+  async queryContactItems() {
+    console.log("sss");
+    const [emails, phoneNumbers] = await Promise.all([
+      this.loadEmails(),
+      this.loadPhoneNumbers(),
+    ]);
+    return [...emails, ...phoneNumbers];
   }
 }

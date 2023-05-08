@@ -380,7 +380,24 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	}
 
 	cmp := s.customData.compareResult
-	// delete custom queries|mutations
+
+	for idx := range s.unions {
+		opts := &writeOptions{}
+		if writeAll || cmp == nil || cmp.customUnionsChanged[s.unions[idx].ObjData.Node] {
+			opts.writeNode = true
+		}
+		funcs = append(funcs, p.buildNodeWithOpts(processor, s, s.unions[idx], opts)...)
+	}
+
+	for idx := range s.interfaces {
+		opts := &writeOptions{}
+		if writeAll || cmp == nil || cmp.customInterfacesChanged[s.unions[idx].ObjData.Node] {
+			opts.writeNode = true
+		}
+		funcs = append(funcs, p.buildNodeWithOpts(processor, s, s.unions[idx], opts)...)
+	}
+
+	// delete custom queries|mutations|unions|interfaces
 	if cmp != nil {
 		for k := range cmp.customQueriesRemoved {
 			funcs = append(
@@ -406,6 +423,14 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 					),
 				),
 			)
+		}
+
+		for k := range cmp.customInterfacesRemoved {
+			funcs = append(funcs, file.GetDeleteFileFunction(processor.Config, getFilePathForUnionInterfaceFile(processor.Config, k)))
+		}
+
+		for k := range cmp.customUnionsRemoved {
+			funcs = append(funcs, file.GetDeleteFileFunction(processor.Config, getFilePathForUnionInterfaceFile(processor.Config, k)))
 		}
 	}
 
@@ -475,6 +500,10 @@ func getFilePathForNode(cfg *codegen.Config, nodeData *schema.NodeData) string {
 }
 
 func getFilePathForCustomInterfaceFile(cfg *codegen.Config, gqlType string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", strcase.ToSnake(gqlType)))
+}
+
+func getFilePathForUnionInterfaceFile(cfg *codegen.Config, gqlType string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", strcase.ToSnake(gqlType)))
 }
 
@@ -800,6 +829,14 @@ func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 		return err
 	}
 
+	if err := processCustomUnions(processor, cd, s); err != nil {
+		return err
+	}
+
+	if err := processCustomInterfaces(processor, cd, s); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -892,12 +929,15 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 }
 
 type gqlSchema struct {
-	hasConnections  bool
-	hasMutations    bool
-	nodes           map[string]*gqlNode
-	enums           map[string]*gqlEnum
+	hasConnections bool
+	hasMutations   bool
+	nodes          map[string]*gqlNode
+	enums          map[string]*gqlEnum
+	// interfaces map[string]*gql
 	customQueries   []*gqlNode
 	customMutations []*gqlNode
+	unions          map[string]*gqlNode
+	interfaces      map[string]*gqlNode
 	customData      *CustomData
 	edgeNames       map[string]bool
 	customEdges     map[string]*objectType
@@ -1387,6 +1427,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 			hasConnections: hasConnections,
 			customEdges:    make(map[string]*objectType),
 			otherObjects:   otherNodes,
+			unions:         map[string]*gqlNode{},
 		}
 		result <- &buildGQLSchemaResult{
 			schema: schema,
@@ -1518,6 +1559,15 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 			processNode(node, "CustomObject")
 		}
 	}
+
+	for _, node := range s.interfaces {
+		processNode(node, "Interface")
+	}
+
+	for _, node := range s.unions {
+		processNode(node, "Union")
+	}
+
 	var enums []typeInfo
 	for _, enum := range s.enums {
 		enums = append(enums, typeInfo{
@@ -1621,6 +1671,12 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 		for _, conn := range node.connections {
 			conns = append(conns, trimPath(cfg, conn.FilePath))
 		}
+	}
+	for _, node := range s.unions {
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
+	}
+	for _, node := range s.interfaces {
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
 	}
 	var enums []string
 	for _, enum := range s.enums {

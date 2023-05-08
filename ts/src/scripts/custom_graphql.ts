@@ -436,6 +436,8 @@ async function main() {
   let queries = gqlCapture.getProcessedCustomQueries();
   let mutations = gqlCapture.getProcessedCustomMutations();
   let objects = fromMap(gqlCapture.getCustomObjects());
+  let interfaces = fromMap(gqlCapture.getCustomInterfaces());
+  let unions = fromMap(gqlCapture.getCustomUnions());
   let customTypes = fromMap(gqlCapture.getCustomTypes());
 
   let classes: Data = {};
@@ -506,6 +508,8 @@ async function main() {
       mutations,
       classes,
       objects,
+      interfaces,
+      unions,
       files: allFiles,
       customTypes,
     }),

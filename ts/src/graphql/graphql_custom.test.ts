@@ -9,6 +9,8 @@ import {
   gqlContextType,
   gqlFileUpload,
   gqlConnection,
+  gqlInterfaceType,
+  gqlUnionType,
 } from "./graphql";
 import { GraphQLBoolean, GraphQLID, GraphQLString } from "graphql";
 import { ID, Viewer } from "../core/base";
@@ -24,6 +26,8 @@ import {
   CustomObjectTypes,
   validateNoCustomQueries,
   validateCustomTypes,
+  validateCustomInterfaces,
+  validateCustomUnions,
 } from "./graphql_field_helpers";
 import { RequestContext } from "../core/context";
 
@@ -630,3 +634,594 @@ test("custom type", () => {
   validateNoCustom(CustomObjectTypes.Mutation, CustomObjectTypes.CustomTypes);
   GQLCapture.resolve([]);
 });
+
+test("custom interface", async () => {
+  @gqlInterfaceType({
+    name: "AuthResponse",
+  })
+  // decorators not valid on interfaces so have to add them to a class
+  // doesn't have to be abstract, but it can be
+  abstract class AuthResponse {
+    @gqlField({
+      nodeName: "AuthResponse",
+      type: GraphQLString,
+    })
+    token: string;
+
+    @gqlField({
+      nodeName: "AuthResponse",
+      type: GraphQLID,
+    })
+    viewerID: ID;
+  }
+
+  @gqlObjectType({
+    name: "UserAuthResponse",
+    interfaces: ["AuthResponse"],
+  })
+  class UserAuthResponse extends AuthResponse {}
+
+  @gqlObjectType({
+    name: "GuestAuthResponse",
+    interfaces: ["AuthResponse"],
+  })
+  class GuestAuthResponse extends AuthResponse {
+    @gqlField({
+      nodeName: "GuestAuthResponse",
+      type: GraphQLBoolean,
+    })
+    guest: Boolean;
+  }
+
+  class Auth {
+    // can't have decorator on a top-level function :(
+    @gqlMutation({
+      nodeName: "Auth",
+      name: "userAuth",
+      type: UserAuthResponse,
+      async: true,
+      args: [
+        {
+          name: "emailAddress",
+          type: GraphQLString,
+        },
+        {
+          name: "password",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async userAuth(
+      emailAddress: string,
+      password: string,
+    ): Promise<UserAuthResponse> {
+      console.log(emailAddress);
+      console.log(password);
+      return new UserAuthResponse();
+    }
+
+    @gqlMutation({
+      nodeName: "Auth",
+      name: "guestAuth",
+      type: GuestAuthResponse,
+      async: true,
+      args: [
+        {
+          name: "emailAddress",
+          type: GraphQLString,
+        },
+        {
+          name: "password",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async guestAuth(
+      emailAddress: string,
+      password: string,
+    ): Promise<UserAuthResponse> {
+      console.log(emailAddress);
+      console.log(password);
+      return new GuestAuthResponse();
+    }
+  }
+
+  // resolve first
+  // because we need fields copied over from interface to custom object
+  GQLCapture.resolve([]);
+
+  validateCustomFields([
+    {
+      nodeName: "UserAuthResponse",
+      functionName: "token",
+      gqlName: "token",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "String",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+    {
+      nodeName: "UserAuthResponse",
+      functionName: "viewerID",
+      gqlName: "viewerID",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "ID",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+    {
+      nodeName: "GuestAuthResponse",
+      functionName: "guest",
+      gqlName: "guest",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "Boolean",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+    {
+      nodeName: "GuestAuthResponse",
+      functionName: "token",
+      gqlName: "token",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "String",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+    {
+      nodeName: "GuestAuthResponse",
+      functionName: "viewerID",
+      gqlName: "viewerID",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "ID",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+
+    {
+      nodeName: "AuthResponse",
+      functionName: "token",
+      gqlName: "token",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "String",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+    {
+      nodeName: "AuthResponse",
+      functionName: "viewerID",
+      gqlName: "viewerID",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "ID",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+  ]);
+
+  validateCustomObjects([
+    {
+      nodeName: "UserAuthResponse",
+      className: "UserAuthResponse",
+      interfaces: ["AuthResponse"],
+    },
+    {
+      nodeName: "GuestAuthResponse",
+      className: "GuestAuthResponse",
+      interfaces: ["AuthResponse"],
+    },
+  ]);
+
+  validateCustomInterfaces([
+    {
+      nodeName: "AuthResponse",
+      className: "AuthResponse",
+    },
+  ]);
+
+  validateCustomMutations([
+    {
+      nodeName: "Auth",
+      functionName: "userAuth",
+      gqlName: "userAuth",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "UserAuthResponse",
+          name: "",
+          needsResolving: false,
+        },
+      ],
+      args: [
+        {
+          type: "String",
+          name: "emailAddress",
+        },
+        {
+          type: "String",
+          name: "password",
+        },
+      ],
+    },
+    {
+      nodeName: "Auth",
+      functionName: "guestAuth",
+      gqlName: "guestAuth",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "GuestAuthResponse",
+          name: "",
+          needsResolving: false,
+        },
+      ],
+      args: [
+        {
+          type: "String",
+          name: "emailAddress",
+        },
+        {
+          type: "String",
+          name: "password",
+        },
+      ],
+    },
+  ]);
+
+  validateNoCustom(
+    CustomObjectTypes.Field,
+    CustomObjectTypes.Mutation,
+    CustomObjectTypes.Object,
+    CustomObjectTypes.Interface,
+  );
+});
+
+test("referencing known interface e.g. Node", async () => {
+  @gqlObjectType({
+    name: "Guest",
+    interfaces: ["Node"],
+  })
+  class Guest {
+    @gqlField({
+      nodeName: "Guest",
+      type: GraphQLID,
+    })
+    id: ID;
+  }
+
+  class Auth {
+    @gqlMutation({
+      nodeName: "Auth",
+      name: "guestAuth",
+      type: Guest,
+      async: true,
+      args: [
+        {
+          name: "emailAddress",
+          type: GraphQLString,
+        },
+        {
+          name: "password",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async guestAuth(emailAddress: string, password: string): Promise<Guest> {
+      console.log(emailAddress);
+      console.log(password);
+      return new Guest();
+    }
+  }
+
+  GQLCapture.resolve(["Guest"]);
+
+  validateCustomFields([
+    {
+      nodeName: "Guest",
+      functionName: "id",
+      gqlName: "id",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "ID",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+  ]);
+
+  validateCustomObjects([
+    {
+      nodeName: "Guest",
+      className: "Guest",
+      interfaces: ["Node"],
+    },
+  ]);
+
+  validateCustomMutations([
+    {
+      nodeName: "Auth",
+      functionName: "guestAuth",
+      gqlName: "guestAuth",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "Guest",
+          name: "",
+          needsResolving: false,
+        },
+      ],
+      args: [
+        {
+          type: "String",
+          name: "emailAddress",
+        },
+        {
+          type: "String",
+          name: "password",
+        },
+      ],
+    },
+  ]);
+
+  validateNoCustom(
+    CustomObjectTypes.Field,
+    CustomObjectTypes.Mutation,
+    CustomObjectTypes.Object,
+  );
+});
+
+test("referencing unknown interface", async () => {
+  @gqlObjectType({
+    name: "Guest",
+    interfaces: ["Interface"],
+  })
+  class Guest {
+    @gqlField({
+      nodeName: "Guest",
+      type: GraphQLID,
+    })
+    id: ID;
+  }
+
+  class Auth {
+    @gqlMutation({
+      nodeName: "Auth",
+      name: "guestAuth",
+      type: Guest,
+      async: true,
+      args: [
+        {
+          name: "emailAddress",
+          type: GraphQLString,
+        },
+        {
+          name: "password",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async guestAuth(emailAddress: string, password: string): Promise<Guest> {
+      console.log(emailAddress);
+      console.log(password);
+      return new Guest();
+    }
+  }
+
+  try {
+    GQLCapture.resolve(["Guest"]);
+  } catch (err) {
+    expect((err as Error).message).toMatch(
+      /object Guest references unknown interface Interface/,
+    );
+  }
+});
+
+test("custom union unknown types", async () => {
+  @gqlUnionType({
+    name: "SearchResult",
+    unionTypes: ["User", "Post"],
+  })
+  class SearchResult {}
+
+  try {
+    GQLCapture.resolve([]);
+    throw new Error("should throw");
+  } catch (err) {
+    expect(err.message).toMatch(
+      /union SearchResult references User which isn't a graphql object/,
+    );
+  }
+});
+
+test("custom union known types", async () => {
+  @gqlUnionType({
+    name: "SearchResult",
+    unionTypes: ["User", "Post"],
+  })
+  class SearchResult {}
+
+  GQLCapture.resolve(["User", "Post"]);
+
+  validateCustomUnions([
+    {
+      nodeName: "SearchResult",
+      className: "SearchResult",
+      unionTypes: ["User", "Post"],
+    },
+  ]);
+
+  validateNoCustom(CustomObjectTypes.Union);
+});
+
+test("custom union with fields", async () => {
+  @gqlUnionType({
+    name: "SearchResult",
+    unionTypes: ["User", "Post"],
+  })
+  class SearchResult {
+    @gqlField({
+      nodeName: "SearchResult",
+      type: GraphQLString,
+    })
+    search: string;
+  }
+
+  try {
+    GQLCapture.resolve(["User", "Post"]);
+    throw new Error("should throw");
+  } catch (err) {
+    expect(err.message).toMatch(
+      /union SearchResult has custom fields which is not allowed/,
+    );
+  }
+});
+
+test("returning a union. custom union known types", async () => {
+  @gqlUnionType({
+    name: "SearchResult",
+    unionTypes: ["User", "Post"],
+  })
+  class SearchResult {}
+
+  class SearchResolver {
+    @gqlQuery({
+      nodeName: "SearchResolver",
+      name: "userSearch",
+      type: SearchResult,
+      async: true,
+      args: [
+        {
+          name: "term",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async search(term: string): Promise<SearchResult> {
+      console.log(term);
+      return new SearchResult();
+    }
+  }
+
+  GQLCapture.resolve(["User", "Post"]);
+
+  validateCustomUnions([
+    {
+      nodeName: "SearchResult",
+      className: "SearchResult",
+      unionTypes: ["User", "Post"],
+    },
+  ]);
+
+  validateCustomQueries([
+    {
+      nodeName: "SearchResolver",
+      functionName: "search",
+      gqlName: "userSearch",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "SearchResult",
+          name: "",
+          needsResolving: false,
+        },
+      ],
+      args: [
+        {
+          type: "String",
+          name: "term",
+        },
+      ],
+    },
+  ]);
+
+  validateNoCustom(CustomObjectTypes.Union, CustomObjectTypes.Query);
+});
+
+test("returning an interface. custom interface", async () => {
+  @gqlInterfaceType({
+    name: "SearchResult",
+  })
+  class SearchResult {}
+
+  class SearchResolver {
+    @gqlQuery({
+      nodeName: "SearchResolver",
+      name: "userSearch",
+      type: SearchResult,
+      async: true,
+      args: [
+        {
+          name: "term",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async search(term: string): Promise<SearchResult> {
+      console.log(term);
+      return new SearchResult();
+    }
+  }
+
+  GQLCapture.resolve(["User", "Post"]);
+
+  validateCustomInterfaces([
+    {
+      nodeName: "SearchResult",
+      className: "SearchResult",
+    },
+  ]);
+
+  validateCustomQueries([
+    {
+      nodeName: "SearchResolver",
+      functionName: "search",
+      gqlName: "userSearch",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "SearchResult",
+          name: "",
+          needsResolving: false,
+        },
+      ],
+      args: [
+        {
+          type: "String",
+          name: "term",
+        },
+      ],
+    },
+  ]);
+
+  validateNoCustom(CustomObjectTypes.Interface, CustomObjectTypes.Query);
+});
+
+// TODO throw if a union has fields

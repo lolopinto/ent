@@ -54,6 +54,14 @@ export interface gqlObjectOptions {
   description?: string;
 }
 
+export interface gqlObjectWithInterfaceOptions extends gqlObjectOptions {
+  interfaces?: string[];
+}
+
+export interface gqlObjectWithUnionOptions extends gqlObjectOptions {
+  unionTypes: string[];
+}
+
 type gqlMutationOptions = Omit<gqlFieldOptions, "nullable" | "type"> & {
   type?: gqlFieldOptionsBase["type"];
 };
@@ -105,6 +113,8 @@ export interface CustomObject {
   nodeName: string;
   className: string; // TODO both of these 2 the same right now
   description?: string;
+  interfaces?: string[];
+  unionTypes?: string[];
 }
 
 type NullableListOptions = "contents" | "contentsAndList";
@@ -157,6 +167,12 @@ export const knownDisAllowedNames: Map<string, boolean> = new Map([
   ["Object", true],
   ["Array", true],
   ["Promise", true],
+]);
+
+export const knownInterfaces: Map<string, boolean> = new Map([
+  ["Node", true],
+  ["Edge", true],
+  ["Connection", true],
 ]);
 
 const isArray = (type: Type | Array<Type>): type is Array<Type> => {
@@ -301,6 +317,8 @@ export class GQLCapture {
   private static customArgs: Map<string, CustomObject> = new Map();
   private static customInputObjects: Map<string, CustomObject> = new Map();
   private static customObjects: Map<string, CustomObject> = new Map();
+  private static customInterfaces: Map<string, CustomObject> = new Map();
+  private static customUnions: Map<string, CustomObject> = new Map();
   private static customTypes: Map<string, CustomType> = new Map();
 
   static clear(): void {
@@ -310,6 +328,8 @@ export class GQLCapture {
     this.customArgs.clear();
     this.customInputObjects.clear();
     this.customObjects.clear();
+    this.customInterfaces.clear();
+    this.customUnions.clear();
     this.customTypes.clear();
   }
 
@@ -335,6 +355,14 @@ export class GQLCapture {
 
   static getCustomObjects(): Map<string, CustomObject> {
     return this.customObjects;
+  }
+
+  static getCustomInterfaces(): Map<string, CustomObject> {
+    return this.customInterfaces;
+  }
+
+  static getCustomUnions(): Map<string, CustomObject> {
+    return this.customUnions;
   }
 
   static getCustomTypes(): Map<string, CustomType> {
@@ -569,16 +597,32 @@ export class GQLCapture {
     };
   }
 
-  static gqlObjectType(options?: gqlObjectOptions): any {
+  static gqlObjectType(options?: gqlObjectWithInterfaceOptions): any {
     return function (target: any, ctx: ClassDecoratorContext): void {
       return GQLCapture.customGQLObject(ctx, GQLCapture.customObjects, options);
+    };
+  }
+
+  static gqlUnionType(options: gqlObjectWithUnionOptions): any {
+    return function (target: any, ctx: ClassDecoratorContext): void {
+      return GQLCapture.customGQLObject(ctx, GQLCapture.customUnions, options);
+    };
+  }
+
+  static gqlInterfaceType(options?: gqlObjectOptions): any {
+    return function (target: any, ctx: ClassDecoratorContext): void {
+      return GQLCapture.customGQLObject(
+        ctx,
+        GQLCapture.customInterfaces,
+        options,
+      );
     };
   }
 
   private static customGQLObject(
     ctx: ClassDecoratorContext,
     map: Map<string, CustomObject>,
-    options?: gqlObjectOptions,
+    options?: gqlObjectWithInterfaceOptions | gqlObjectWithUnionOptions,
   ) {
     if (!GQLCapture.isEnabled() || ctx.kind !== "class" || !ctx.name) {
       return;
@@ -591,6 +635,10 @@ export class GQLCapture {
       className,
       nodeName,
       description: options?.description,
+      // @ts-ignore
+      interfaces: options?.interfaces,
+      // @ts-ignore
+      unionTypes: options?.unionTypes,
     });
   }
 
@@ -625,14 +673,55 @@ export class GQLCapture {
 
   static resolve(objects: string[]): void {
     let baseObjects = new Map<string, boolean>();
-    objects.map((object) => baseObjects.set(object, true));
-    this.customObjects.forEach((_val, key) => baseObjects.set(key, true));
+    objects.forEach((object) => baseObjects.set(object, true));
+
+    this.customObjects.forEach((obj, key) => {
+      baseObjects.set(key, true);
+
+      obj.interfaces?.forEach((interfaceName) => {
+        const inter = this.customInterfaces.get(interfaceName);
+        if (inter) {
+          const fields = this.customFields.get(inter.nodeName);
+          if (fields) {
+            let objFields = this.customFields.get(obj.nodeName);
+            if (!objFields) {
+              objFields = [];
+            }
+            for (const field of fields) {
+              objFields.push({
+                ...field,
+                nodeName: obj.nodeName,
+              });
+            }
+            this.customFields.set(obj.nodeName, objFields);
+          }
+        } else if (!knownInterfaces.has(interfaceName)) {
+          throw new Error(
+            `object ${key} references unknown interface ${interfaceName}`,
+          );
+        }
+      });
+    });
 
     let baseArgs = new Map<string, boolean>();
     this.customArgs.forEach((_val, key) => baseArgs.set(key, true));
     this.customInputObjects.forEach((_val, key) => baseArgs.set(key, true));
     baseArgs.set("Context", true);
     this.customTypes.forEach((_val, key) => baseArgs.set(key, true));
+
+    this.customUnions.forEach((val, key) => {
+      if (this.customFields.has(key)) {
+        throw new Error(`union ${key} has custom fields which is not allowed`);
+      }
+
+      val.unionTypes?.forEach((typ) => {
+        if (!baseObjects.has(typ)) {
+          throw new Error(
+            `union ${key} references ${typ} which isn't a graphql object`,
+          );
+        }
+      });
+    });
 
     // TODO this should be aware of knownCustomTypes
     const resolveFields = (fields: CustomField[]) => {
@@ -656,7 +745,11 @@ export class GQLCapture {
         // but i don't think it applies
         field.results.forEach((result) => {
           if (result.needsResolving) {
-            if (baseObjects.has(result.type)) {
+            if (
+              baseObjects.has(result.type) ||
+              this.customUnions.has(result.type) ||
+              this.customInterfaces.has(result.type)
+            ) {
               result.needsResolving = false;
             } else {
               throw new Error(
@@ -682,6 +775,8 @@ export const gqlField = GQLCapture.gqlField;
 export const gqlArgType = GQLCapture.gqlArgType;
 export const gqlInputObjectType = GQLCapture.gqlInputObjectType;
 export const gqlObjectType = GQLCapture.gqlObjectType;
+export const gqlInterfaceType = GQLCapture.gqlInterfaceType;
+export const gqlUnionType = GQLCapture.gqlUnionType;
 export const gqlQuery = GQLCapture.gqlQuery;
 export const gqlMutation = GQLCapture.gqlMutation;
 export const gqlContextType = GQLCapture.gqlContextType;

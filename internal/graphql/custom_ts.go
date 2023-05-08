@@ -230,6 +230,7 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 		if createInterface {
 			interfaces = append(interfaces, intType)
 		}
+		// here...
 		result = append(result, &gqlNode{
 			ObjData: &gqlobjectData{
 				interfaces: interfaces,
@@ -966,6 +967,69 @@ func processCusomTypes(processor *codegen.Processor, cd *CustomData, s *gqlSchem
 			FilePath: path,
 		}
 	}
+	return nil
+}
+
+func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
+	unions := make(map[string]*gqlNode)
+	for _, union := range cd.Unions {
+		obj := &objectType{
+			// TODO have to make sure this is unique
+			Type:     fmt.Sprintf("%sType", union.NodeName),
+			Node:     union.NodeName,
+			TSType:   union.ClassName,
+			GQLType:  "GraphQLUnionType",
+			Exported: true,
+		}
+		unionTypes := make([]string, len(union.UnionTypes))
+		imports := make([]*tsimport.ImportPath, len(union.UnionTypes))
+		for i, unionType := range union.UnionTypes {
+			unionTypes[i] = fmt.Sprintf("%sType", unionType)
+			imports[i] = tsimport.NewLocalGraphQLEntImportPath(unionType)
+		}
+		obj.UnionTypes = unionTypes
+		obj.Imports = imports
+
+		node := &gqlNode{
+			ObjData: &gqlobjectData{
+				Node:         union.NodeName,
+				NodeInstance: strcase.ToLowerCamel(union.NodeName),
+				GQLNodes:     []*objectType{obj},
+				Package:      processor.Config.GetImportPackage(),
+			},
+			FilePath: getFilePathForUnionInterfaceFile(processor.Config, union.NodeName),
+		}
+		unions[union.NodeName] = node
+	}
+	s.unions = unions
+	return nil
+}
+
+func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
+	interfaces := make(map[string]*gqlNode)
+	for _, inter := range cd.Interfaces {
+		obj := &objectType{
+			// TODO have to make sure this is unique
+			Type:    fmt.Sprintf("%sType", inter.NodeName),
+			Node:    inter.NodeName,
+			TSType:  inter.ClassName,
+			GQLType: "GraphQLInterfaceType",
+		}
+		// TODO this probably needs to change
+		obj.GQLInterfaces = inter.Interfaces
+
+		node := &gqlNode{
+			ObjData: &gqlobjectData{
+				Node:         inter.NodeName,
+				NodeInstance: strcase.ToLowerCamel(inter.NodeName),
+				GQLNodes:     []*objectType{obj},
+				Package:      processor.Config.GetImportPackage(),
+			},
+			FilePath: getFilePathForUnionInterfaceFile(processor.Config, inter.NodeName),
+		}
+		interfaces[inter.NodeName] = node
+	}
+	s.interfaces = interfaces
 	return nil
 }
 
