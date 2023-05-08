@@ -5,7 +5,7 @@ import { gqlField } from "@snowtop/ent/graphql";
 
 export class User extends UserBase {
   @gqlField({
-    nodeName: 'User',
+    class: 'User',
     type: GraphQLInt,
   })
   howLong() {

@@ -16,12 +16,12 @@ import { User } from "../../ent";
 // and not exporting JWT versions
 export class UserAuthInput {
   @gqlField({
-    nodeName: "UserAuthInput",
+    class: "UserAuthInput",
     type: GraphQLString,
   })
   emailAddress: string = "";
   @gqlField({
-    nodeName: "UserAuthInput",
+    class: "UserAuthInput",
     type: GraphQLString,
   })
   password: string = "";
@@ -30,12 +30,12 @@ export class UserAuthInput {
 @gqlInputObjectType()
 class UserAuthJWTInput {
   @gqlField({
-    nodeName: "UserAuthJWTInput",
+    class: "UserAuthJWTInput",
     type: GraphQLString,
   })
   emailAddress: string = "";
   @gqlField({
-    nodeName: "UserAuthJWTInput",
+    class: "UserAuthJWTInput",
     type: GraphQLString,
   })
   password: string = "";
@@ -44,7 +44,7 @@ class UserAuthJWTInput {
 @gqlObjectType()
 export class UserAuthPayload {
   @gqlField({
-    nodeName: "UserAuthPayload",
+    class: "UserAuthPayload",
     type: GraphQLID,
   })
   viewerID: ID = "";
@@ -55,13 +55,13 @@ export class UserAuthPayload {
 @gqlObjectType()
 class UserAuthJWTPayload {
   @gqlField({
-    nodeName: "UserAuthJWTPayload",
+    class: "UserAuthJWTPayload",
     type: GraphQLString,
   })
   token: string = "";
 
   @gqlField({
-    nodeName: "UserAuthJWTPayload",
+    class: "UserAuthJWTPayload",
     type: GraphQLID,
   })
   viewerID: ID = "";
@@ -69,7 +69,7 @@ class UserAuthJWTPayload {
 
 export class AuthResolver {
   @gqlMutation({
-    nodeName: "AuthResolver",
+    class: "AuthResolver",
     name: "userAuth",
     type: "UserAuthPayload",
     async: true,
@@ -110,7 +110,7 @@ export class AuthResolver {
   }
 
   @gqlMutation({
-    nodeName: "AuthResolver",
+    class: "AuthResolver",
     name: "userAuthJWT",
     type: "UserAuthJWTPayload",
     async: true,

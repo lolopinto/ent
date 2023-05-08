@@ -11,7 +11,7 @@ export class GQLViewer {
   constructor(private viewer: ExampleViewer) {}
 
   @gqlField({
-    nodeName: "GQLViewer",
+    class: "GQLViewer",
     type: GraphQLID,
     nullable: true,
     async: true,
@@ -25,7 +25,7 @@ export class GQLViewer {
   }
 
   @gqlField({
-    nodeName: "GQLViewer",
+    class: "GQLViewer",
     type: User,
     nullable: true,
     async: true,

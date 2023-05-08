@@ -10,12 +10,12 @@ import { GraphQLID, GraphQLString } from "graphql";
 @gqlInputObjectType()
 class UserAuthInput {
   @gqlField({
-    nodeName: "UserAuthInput",
+    class: "UserAuthInput",
     type: GraphQLString,
   })
   emailAddress: string;
   @gqlField({
-    nodeName: "UserAuthInput",
+    class: "UserAuthInput",
     type: GraphQLString,
   })
   password: string;
@@ -24,18 +24,18 @@ class UserAuthInput {
 @gqlObjectType()
 class UserAuthResponse {
   @gqlField({
-    nodeName: "UserAuthResponse",
+    class: "UserAuthResponse",
     type: GraphQLString,
   })
   token: string;
 
-  @gqlField({ nodeName: "UserAuthResponses", type: GraphQLID })
+  @gqlField({ class: "UserAuthResponses", type: GraphQLID })
   viewerID: ID;
 }
 
 class AuthResolver {
   @gqlMutation({
-    nodeName: "AuthResolver",
+    class: "AuthResolver",
     name: "userAuth",
     type: UserAuthResponse,
     args: [

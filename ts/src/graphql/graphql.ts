@@ -40,7 +40,7 @@ interface gqlFieldArg extends gqlFieldOptionsBase {
 }
 
 export interface gqlFieldOptions extends gqlFieldOptionsBase {
-  nodeName: string;
+  class: string;
 
   args?: gqlFieldArg[];
   async?: boolean;
@@ -563,7 +563,7 @@ export class GQLCapture {
     }
 
     return {
-      nodeName: options.nodeName,
+      nodeName: options.class,
       gqlName: options?.name || ctx.name.toString(),
       functionName: ctx.name.toString(),
       args: args,

@@ -33,7 +33,7 @@ describe("accessor", () => {
     GQLCapture.enable(false);
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLString,
       })
       get fullName(): string {
@@ -46,7 +46,7 @@ describe("accessor", () => {
   test("enabled. string", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLString,
       })
       get fullName(): string {
@@ -74,7 +74,7 @@ describe("accessor", () => {
   test("enabled. nullable string", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLString,
         nullable: true,
         description: "first + last name",
@@ -105,7 +105,7 @@ describe("accessor", () => {
   test("enabled. int", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLInt,
       })
       get age(): number {
@@ -131,7 +131,7 @@ describe("accessor", () => {
   test("enabled. float", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLFloat,
       })
       get age(): number {
@@ -157,7 +157,7 @@ describe("accessor", () => {
   test("enabled. returns float with implicit number", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLFloat,
       })
       get age() {
@@ -182,7 +182,7 @@ describe("accessor", () => {
 
   test("enabled. returns int with implicit number", () => {
     class User {
-      @gqlField({ nodeName: "User", type: GraphQLInt })
+      @gqlField({ class: "User", type: GraphQLInt })
       get age() {
         return 3.2;
       }
@@ -206,7 +206,7 @@ describe("accessor", () => {
   test("enabled. list of strings", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: [String],
       })
       get names(): string[] {
@@ -233,7 +233,7 @@ describe("accessor", () => {
   test("enabled. nullable list of strings", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: [String],
         nullable: true,
       })
@@ -262,7 +262,7 @@ describe("accessor", () => {
   test("enabled. nullable contents of strings", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: [String],
         nullable: "contents",
       })
@@ -292,7 +292,7 @@ describe("accessor", () => {
     class User {
       // all nullable
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: [String],
         nullable: "contentsAndList",
       })
@@ -324,7 +324,7 @@ describe("property", () => {
     GQLCapture.enable(false);
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLString,
       })
       fullName: string;
@@ -335,7 +335,7 @@ describe("property", () => {
   test("enabled. string", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLString,
       })
       fullName: string;
@@ -359,7 +359,7 @@ describe("property", () => {
   test("enabled. int", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLInt,
       })
       age: number;
@@ -383,7 +383,7 @@ describe("property", () => {
   test("enabled. float", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLFloat,
       })
       age: number;
@@ -407,7 +407,7 @@ describe("property", () => {
   test("enabled. with implicit type. explicit graphql type", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLFloat,
       })
       // lol but why?
@@ -470,7 +470,7 @@ describe("property", () => {
       try {
         class User {
           @gqlField({
-            nodeName: "User",
+            class: "User",
             type: GraphQLPoint,
           })
           point: Point;
@@ -488,7 +488,7 @@ describe("property", () => {
     test("enabled. custom scalar used correctly", () => {
       class User {
         @gqlField({
-          nodeName: "User",
+          class: "User",
           type: {
             type: "GraphQLPoint",
             importPath: "",
@@ -532,7 +532,7 @@ describe("function", () => {
     GQLCapture.enable(false);
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLString,
       })
       username(): string {
@@ -545,7 +545,7 @@ describe("function", () => {
   test("enabled, returns string", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLString,
       })
       username(): string {
@@ -572,7 +572,7 @@ describe("function", () => {
   test("enabled, returns int", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLInt,
       })
       age(): number {
@@ -598,7 +598,7 @@ describe("function", () => {
 
   test("enabled, returns float", () => {
     class User {
-      @gqlField({ nodeName: "User", type: GraphQLFloat })
+      @gqlField({ class: "User", type: GraphQLFloat })
       pi(): number {
         return 3.14;
       }
@@ -623,7 +623,7 @@ describe("function", () => {
   test("enabled, returns float. implicit return type", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLFloat,
       })
       pi() {
@@ -650,7 +650,7 @@ describe("function", () => {
   test("enabled, one param", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLInt,
         args: [
           {
@@ -688,7 +688,7 @@ describe("function", () => {
   test("enabled, multiple param", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLString,
         args: [
           {
@@ -734,7 +734,7 @@ describe("function", () => {
   test("enabled, nullable arg", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLString,
         name: "find",
         args: [
@@ -777,19 +777,19 @@ describe("function", () => {
     @gqlArgType()
     class SearchArgs {
       @gqlField({
-        nodeName: "SearchArgs",
+        class: "SearchArgs",
         type: GraphQLString,
       })
       startCursor: string;
 
       @gqlField({
-        nodeName: "SearchArgs",
+        class: "SearchArgs",
         type: GraphQLInt,
       })
       start: number;
 
       @gqlField({
-        nodeName: "SearchArgs",
+        class: "SearchArgs",
         type: GraphQLInt,
         nullable: true,
       })
@@ -799,7 +799,7 @@ describe("function", () => {
       // search to return count
       // TODO need
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: GraphQLInt,
         args: [
           {
@@ -896,7 +896,7 @@ describe("function", () => {
       }
       class User {
         @gqlField({
-          nodeName: "User",
+          class: "User",
           type: GraphQLInt,
           args: [{ name: "searchArgs", type: SearchArgs }],
         })
@@ -920,7 +920,7 @@ describe("function", () => {
     class Contact {}
 
     class User {
-      @gqlField({ nodeName: "User", type: Contact })
+      @gqlField({ class: "User", type: Contact })
       selfContact(): Contact {
         return new Contact();
       }
@@ -938,7 +938,7 @@ describe("function", () => {
 
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: Contact,
       })
       selfContact(): Contact {
@@ -959,7 +959,7 @@ describe("function", () => {
   test("enabled. async response with type hint", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: "User",
         name: "self",
         async: true,
@@ -987,7 +987,7 @@ describe("function", () => {
 
   test("enabled. implied async response with type hint", () => {
     class User {
-      @gqlField({ nodeName: "User", type: "User", name: "self", async: true })
+      @gqlField({ class: "User", type: "User", name: "self", async: true })
       async loadSelf() {
         return new User();
       }
@@ -1012,7 +1012,7 @@ describe("function", () => {
   test("enabled. object type string list because 'circular dependencies'", () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: "[User]",
         name: "self",
         async: true,
@@ -1043,7 +1043,7 @@ describe("function", () => {
   test("connection", async () => {
     class User {
       @gqlField({
-        nodeName: "User",
+        class: "User",
         type: gqlConnection("User"),
         name: "userToSelves",
       })
@@ -1078,7 +1078,7 @@ describe("function", () => {
     try {
       class User {
         @gqlField({
-          nodeName: "User",
+          class: "User",
           type: gqlConnection("User"),
           name: "userToSelves",
           async: true,

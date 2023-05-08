@@ -42,13 +42,13 @@ test("mutation with input type", async () => {
   })
   class UserAuthInput {
     @gqlField({
-      nodeName: "UserAuthInput",
+      class: "UserAuthInput",
       type: GraphQLString,
     })
     emailAddress: string;
 
     @gqlField({
-      nodeName: "UserAuthInput",
+      class: "UserAuthInput",
       type: GraphQLString,
     })
     password: string;
@@ -59,13 +59,13 @@ test("mutation with input type", async () => {
   })
   class UserAuthResponse {
     @gqlField({
-      nodeName: "UserAuthResponse",
+      class: "UserAuthResponse",
       type: GraphQLString,
     })
     token: string;
 
     @gqlField({
-      nodeName: "UserAuthResponse",
+      class: "UserAuthResponse",
       type: GraphQLID,
     })
     viewerID: ID;
@@ -74,7 +74,7 @@ test("mutation with input type", async () => {
   class UserAuth {
     // can't have decorator on a top-level function :(
     @gqlMutation({
-      nodeName: "UserAuth",
+      class: "UserAuth",
       name: "userAuth",
       type: UserAuthResponse,
       async: true,
@@ -194,13 +194,13 @@ test("mutation with different types", async () => {
   })
   class UserAuthResponse {
     @gqlField({
-      nodeName: "UserAuthResponse",
+      class: "UserAuthResponse",
       type: GraphQLString,
     })
     token: string;
 
     @gqlField({
-      nodeName: "UserAuthResponse",
+      class: "UserAuthResponse",
       type: GraphQLID,
     })
     viewerID: ID;
@@ -210,7 +210,7 @@ test("mutation with different types", async () => {
   class UserAuth {
     // can't have decorator on a top-level function :(
     @gqlMutation({
-      nodeName: "UserAuth",
+      class: "UserAuth",
       name: "userAuth",
       type: UserAuthResponse,
       async: true,
@@ -309,7 +309,7 @@ test("mutation with different types", async () => {
 test("mutation with no args", () => {
   class Logger {
     @gqlMutation({
-      nodeName: "Logger",
+      class: "Logger",
     })
     logActiveUser() {}
   }
@@ -333,7 +333,7 @@ test("query with return type", () => {
   class ViewerType {
     constructor(private viewer: Viewer) {}
     @gqlField({
-      nodeName: "ViewerType",
+      class: "ViewerType",
       type: GraphQLID,
       nullable: true,
     })
@@ -344,7 +344,7 @@ test("query with return type", () => {
 
   class ViewerResolver {
     @gqlQuery({
-      nodeName: "ViewerResolver",
+      class: "ViewerResolver",
       type: ViewerType,
       args: [gqlContextType()],
     })
@@ -415,7 +415,7 @@ test("query with list return type", () => {
   class ViewerType {
     constructor(private viewer: Viewer) {}
     @gqlField({
-      nodeName: "ViewerType",
+      class: "ViewerType",
       type: GraphQLID,
       nullable: true,
     })
@@ -426,7 +426,7 @@ test("query with list return type", () => {
 
   class ViewerResolver {
     @gqlQuery({
-      nodeName: "ViewerResolver",
+      class: "ViewerResolver",
       type: "[ViewerType]",
       args: [gqlContextType()],
     })
@@ -496,7 +496,7 @@ test("query with list return type", () => {
 test("query which returns connection", async () => {
   class ViewerResolver {
     @gqlQuery({
-      nodeName: "ViewerResolver",
+      class: "ViewerResolver",
       type: gqlConnection("User"),
       name: "peopleYouMayKnow",
     })
@@ -530,7 +530,7 @@ test("query which returns connection", async () => {
 test("query with args which returns connection", async () => {
   class ViewerResolver {
     @gqlQuery({
-      nodeName: "ViewerResolver",
+      class: "ViewerResolver",
       type: gqlConnection("User"),
       name: "peopleYouMayKnow",
       args: [
@@ -582,7 +582,7 @@ test("query with args which returns connection", async () => {
 test("custom type", () => {
   class ProfilePictureUploadResolver {
     @gqlMutation({
-      nodeName: "ProfilePictureUploadResolver",
+      class: "ProfilePictureUploadResolver",
       name: "profilePictureUpload",
       type: GraphQLBoolean,
       args: [
@@ -643,13 +643,13 @@ test("custom interface", async () => {
   // doesn't have to be abstract, but it can be
   abstract class AuthResponse {
     @gqlField({
-      nodeName: "AuthResponse",
+      class: "AuthResponse",
       type: GraphQLString,
     })
     token: string;
 
     @gqlField({
-      nodeName: "AuthResponse",
+      class: "AuthResponse",
       type: GraphQLID,
     })
     viewerID: ID;
@@ -667,7 +667,7 @@ test("custom interface", async () => {
   })
   class GuestAuthResponse extends AuthResponse {
     @gqlField({
-      nodeName: "GuestAuthResponse",
+      class: "GuestAuthResponse",
       type: GraphQLBoolean,
     })
     guest: Boolean;
@@ -676,7 +676,7 @@ test("custom interface", async () => {
   class Auth {
     // can't have decorator on a top-level function :(
     @gqlMutation({
-      nodeName: "Auth",
+      class: "Auth",
       name: "userAuth",
       type: UserAuthResponse,
       async: true,
@@ -701,7 +701,7 @@ test("custom interface", async () => {
     }
 
     @gqlMutation({
-      nodeName: "Auth",
+      class: "Auth",
       name: "guestAuth",
       type: GuestAuthResponse,
       async: true,
@@ -909,7 +909,7 @@ test("referencing known interface e.g. Node", async () => {
   })
   class Guest {
     @gqlField({
-      nodeName: "Guest",
+      class: "Guest",
       type: GraphQLID,
     })
     id: ID;
@@ -917,7 +917,7 @@ test("referencing known interface e.g. Node", async () => {
 
   class Auth {
     @gqlMutation({
-      nodeName: "Auth",
+      class: "Auth",
       name: "guestAuth",
       type: Guest,
       async: true,
@@ -1005,7 +1005,7 @@ test("referencing unknown interface", async () => {
   })
   class Guest {
     @gqlField({
-      nodeName: "Guest",
+      class: "Guest",
       type: GraphQLID,
     })
     id: ID;
@@ -1013,7 +1013,7 @@ test("referencing unknown interface", async () => {
 
   class Auth {
     @gqlMutation({
-      nodeName: "Auth",
+      class: "Auth",
       name: "guestAuth",
       type: Guest,
       async: true,
@@ -1088,7 +1088,7 @@ test("custom union with fields", async () => {
   })
   class SearchResult {
     @gqlField({
-      nodeName: "SearchResult",
+      class: "SearchResult",
       type: GraphQLString,
     })
     search: string;
@@ -1113,7 +1113,7 @@ test("returning a union. custom union known types", async () => {
 
   class SearchResolver {
     @gqlQuery({
-      nodeName: "SearchResolver",
+      class: "SearchResolver",
       name: "userSearch",
       type: SearchResult,
       async: true,
@@ -1173,7 +1173,7 @@ test("returning an interface. custom interface", async () => {
 
   class SearchResolver {
     @gqlQuery({
-      nodeName: "SearchResolver",
+      class: "SearchResolver",
       name: "userSearch",
       type: SearchResult,
       async: true,

@@ -12,12 +12,12 @@ import { gqlUnionType } from "@snowtop/ent/graphql/graphql";
 @gqlObjectType()
 export class EmailInfo {
   @gqlField({
-    nodeName: "EmailInfo",
+    class: "EmailInfo",
     type: "[ContactEmail]",
   })
   emails: ContactEmail[];
 
-  @gqlField({ nodeName: "EmailInfo", type: GraphQLString })
+  @gqlField({ class: "EmailInfo", type: GraphQLString })
   firstEmail: string;
 
   constructor(emails: ContactEmail[], firstEmail: string) {
@@ -40,7 +40,7 @@ export class Contact extends ContactBase {
   }
 
   @gqlField({
-    nodeName: "Contact",
+    class: "Contact",
     type: GraphQLString,
     name: "fullName",
   })
@@ -49,7 +49,7 @@ export class Contact extends ContactBase {
   }
 
   @gqlField({
-    nodeName: "Contact",
+    class: "Contact",
     type: "EmailInfo",
     name: "plusEmails",
     async: true,
@@ -63,7 +63,7 @@ export class Contact extends ContactBase {
   }
 
   @gqlField({
-    nodeName: "Contact",
+    class: "Contact",
     type: "[ContactItemResult]",
     name: "contactItems",
     async: true,

@@ -78,7 +78,7 @@ func TestCustomMutation(t *testing.T) {
 
 			export class AuthResolver {
 			  @gqlMutation({ 
-					nodeName: "AuthResolver", 
+					class: "AuthResolver", 
 					name: "emailAvailable", 
 					type: Boolean, 
 					async: true, 
@@ -221,7 +221,7 @@ func TestCustomQuery(t *testing.T) {
 
 			export class AuthResolver {
 			  @gqlQuery({ 
-					nodeName: "AuthResolver",
+					class: "AuthResolver",
 					name: "emailAvailable", 
 					type: Boolean, 
 					async: true,
@@ -352,7 +352,7 @@ func TestCustomListQuery(t *testing.T) {
 
 			export class AuthResolver {
 			  @gqlQuery({ 
-					nodeName: 'AuthResolver',
+					class: 'AuthResolver',
 					name: "emailsAvailable", 
 					type: [Boolean],
 					async: true, 
@@ -515,7 +515,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 
 			export class UsernameResolver {
 			  @gqlQuery({ 
-					nodeName: 'UsernameResolver',
+					class: 'UsernameResolver',
 					name: "username", 
 					type: "User", 
 					nullable:true,
@@ -650,7 +650,7 @@ func TestCustomUploadType(t *testing.T) {
 
 			export class ProfilePicResolver {
 			  @gqlMutation({ 
-					nodeName: 'ProfilePicResolver',
+					class: 'ProfilePicResolver',
 					name: "profilePicUpload", 
 					type: Boolean,
 					async: true,

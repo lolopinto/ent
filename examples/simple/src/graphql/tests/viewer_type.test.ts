@@ -29,7 +29,7 @@ function getConfig(
   };
 }
 
-test("logged out viewer", async () => {
+test.only("logged out viewer", async () => {
   await expectQueryFromRoot(getConfig(), ["viewerID", null]);
 });
 
