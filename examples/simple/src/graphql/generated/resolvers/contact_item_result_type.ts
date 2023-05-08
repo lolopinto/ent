@@ -11,5 +11,5 @@ import {
 
 export const ContactItemResultType = new GraphQLUnionType({
   name: "ContactItemResult",
-  types: [ContactEmailType, ContactPhoneNumberType],
+  types: () => [ContactEmailType, ContactPhoneNumberType],
 });

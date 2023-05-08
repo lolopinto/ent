@@ -38,7 +38,7 @@
       const {{$gqlNode.Type}} = new {{useImport "GraphQLUnionType"}}({
     {{ end -}}
       name: "{{$gqlNode.Node}}",
-      types: [
+      types: () => [
         {{ range .UnionTypes -}}
           {{ useImportMaybe .}},
         {{ end -}}
