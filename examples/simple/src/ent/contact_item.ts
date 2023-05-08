@@ -7,7 +7,6 @@ import { Contact } from "./internal";
 export class ContactItem {
   @gqlField({
     nodeName: "ContactItem",
-    // TODO custom enum|graphql objects should be passed
     type: "ContactLabel",
   })
   label: ContactLabel;
