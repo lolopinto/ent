@@ -1673,10 +1673,10 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 		}
 	}
 	for _, node := range s.unions {
-		otherObjs = append(nodes, trimPath(cfg, node.FilePath))
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
 	}
 	for _, node := range s.interfaces {
-		otherObjs = append(nodes, trimPath(cfg, node.FilePath))
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
 	}
 	var enums []string
 	for _, enum := range s.enums {

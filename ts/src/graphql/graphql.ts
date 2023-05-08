@@ -710,6 +710,10 @@ export class GQLCapture {
     this.customTypes.forEach((_val, key) => baseArgs.set(key, true));
 
     this.customUnions.forEach((val, key) => {
+      if (this.customFields.has(key)) {
+        throw new Error(`union ${key} has custom fields which is not allowed`);
+      }
+
       val.unionTypes?.forEach((typ) => {
         if (!baseObjects.has(typ)) {
           throw new Error(
@@ -743,7 +747,8 @@ export class GQLCapture {
           if (result.needsResolving) {
             if (
               baseObjects.has(result.type) ||
-              this.customUnions.has(result.type)
+              this.customUnions.has(result.type) ||
+              this.customInterfaces.has(result.type)
             ) {
               result.needsResolving = false;
             } else {

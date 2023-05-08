@@ -1079,10 +1079,149 @@ test("custom union known types", async () => {
   ]);
 
   validateNoCustom(CustomObjectTypes.Union);
+});
 
-  // TODO test for returning a union
+test("custom union with fields", async () => {
+  @gqlUnionType({
+    name: "SearchResult",
+    unionTypes: ["User", "Post"],
+  })
+  class SearchResult {
+    @gqlField({
+      nodeName: "SearchResult",
+      type: GraphQLString,
+    })
+    search: string;
+  }
+
+  try {
+    GQLCapture.resolve(["User", "Post"]);
+    throw new Error("should throw");
+  } catch (err) {
+    expect(err.message).toMatch(
+      /union SearchResult has custom fields which is not allowed/,
+    );
+  }
+});
+
+test("returning a union. custom union known types", async () => {
+  @gqlUnionType({
+    name: "SearchResult",
+    unionTypes: ["User", "Post"],
+  })
+  class SearchResult {}
+
+  class SearchResolver {
+    @gqlQuery({
+      nodeName: "SearchResolver",
+      name: "userSearch",
+      type: SearchResult,
+      async: true,
+      args: [
+        {
+          name: "term",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async search(term: string): Promise<SearchResult> {
+      console.log(term);
+      return new SearchResult();
+    }
+  }
+
+  GQLCapture.resolve(["User", "Post"]);
+
+  validateCustomUnions([
+    {
+      nodeName: "SearchResult",
+      className: "SearchResult",
+      unionTypes: ["User", "Post"],
+    },
+  ]);
+
+  validateCustomQueries([
+    {
+      nodeName: "SearchResolver",
+      functionName: "search",
+      gqlName: "userSearch",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "SearchResult",
+          name: "",
+          needsResolving: false,
+        },
+      ],
+      args: [
+        {
+          type: "String",
+          name: "term",
+        },
+      ],
+    },
+  ]);
+
+  validateNoCustom(CustomObjectTypes.Union, CustomObjectTypes.Query);
+});
+
+test("returning an interface. custom interface", async () => {
+  @gqlInterfaceType({
+    name: "SearchResult",
+  })
+  class SearchResult {}
+
+  class SearchResolver {
+    @gqlQuery({
+      nodeName: "SearchResolver",
+      name: "userSearch",
+      type: SearchResult,
+      async: true,
+      args: [
+        {
+          name: "term",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async search(term: string): Promise<SearchResult> {
+      console.log(term);
+      return new SearchResult();
+    }
+  }
+
+  GQLCapture.resolve(["User", "Post"]);
+
+  validateCustomInterfaces([
+    {
+      nodeName: "SearchResult",
+      className: "SearchResult",
+    },
+  ]);
+
+  validateCustomQueries([
+    {
+      nodeName: "SearchResolver",
+      functionName: "search",
+      gqlName: "userSearch",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "SearchResult",
+          name: "",
+          needsResolving: false,
+        },
+      ],
+      args: [
+        {
+          type: "String",
+          name: "term",
+        },
+      ],
+    },
+  ]);
+
+  validateNoCustom(CustomObjectTypes.Interface, CustomObjectTypes.Query);
 });
 
 // TODO throw if a union has fields
-
-// TODO test if you can return a union and do an example in example/simple

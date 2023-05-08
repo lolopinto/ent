@@ -69,6 +69,7 @@ export class Contact extends ContactBase {
     async: true,
   })
   async queryContactItems() {
+    console.log("sss");
     const [emails, phoneNumbers] = await Promise.all([
       this.loadEmails(),
       this.loadPhoneNumbers(),
