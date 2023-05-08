@@ -46,6 +46,7 @@ export const NodeQueryType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
+    console.log(context.getViewer(), args.id);
     return resolveID(context.getViewer(), args.id);
   },
 };

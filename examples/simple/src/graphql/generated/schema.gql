@@ -248,6 +248,11 @@ type ContactInfo {
 
 union ContactItemResult = ContactEmail | ContactPhoneNumber
 
+type ContactItem {
+  label: ContactLabel!
+  contact: Contact!
+}
+
 type ContactPhoneNumber implements Node {
   contact: Contact
   id: ID!

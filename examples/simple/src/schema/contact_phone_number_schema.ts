@@ -26,6 +26,8 @@ const ContactPhoneNumberSchema = new EntSchema({
     }),
   },
 
+  customGraphQLInterfaces: ["ContactItem"],
+
   actions: [
     {
       operation: ActionOperation.Mutations,

@@ -26,6 +26,8 @@ const ContactEmailSchema = new EntSchema({
     }),
   },
 
+  customGraphQLInterfaces: ["ContactItem"],
+
   actions: [
     {
       operation: ActionOperation.Mutations,

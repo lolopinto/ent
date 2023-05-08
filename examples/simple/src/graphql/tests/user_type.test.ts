@@ -62,6 +62,7 @@ function getNodeConfig(
   partialConfig?: Partial<queryRootConfig>,
 ): queryRootConfig {
   return {
+    debugMode: true,
     viewer: viewer,
     schema: schema,
     root: "node",
@@ -79,6 +80,7 @@ function getUserConfig(
   partialConfig?: Partial<queryRootConfig>,
 ): queryRootConfig {
   return {
+    debugMode: true,
     viewer: viewer,
     schema: schema,
     root: "user_list_deprecated",
@@ -89,7 +91,7 @@ function getUserConfig(
   };
 }
 
-test("query user", async () => {
+test.only("query user", async () => {
   let user = await create({
     firstName: "ffirst",
   });

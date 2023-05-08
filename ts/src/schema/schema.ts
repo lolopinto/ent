@@ -90,6 +90,9 @@ export default interface Schema {
   // this automatically hides all related actions to it from graphql
   // AND hides all edges pointing to it since we can't return this object
   hideFromGraphQL?: boolean;
+
+  // indicates that this ent should implement these custom interfaces
+  customGraphQLInterfaces?: string[];
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format
