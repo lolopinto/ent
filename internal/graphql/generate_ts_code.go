@@ -1879,7 +1879,10 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		},
 	}
 	// add any custom interfaces
-	result.GQLInterfaces = append(result.GQLInterfaces, nodeData.CustomGraphQLInterfaces...)
+	for _, inter := range nodeData.CustomGraphQLInterfaces {
+		result.GQLInterfaces = append(result.GQLInterfaces, inter+"Type")
+		result.Imports = append(result.Imports, tsimport.NewLocalGraphQLEntImportPath(inter))
+	}
 
 	for _, node := range nodeData.GetUniqueNodes() {
 		// no need to import yourself
@@ -2831,12 +2834,13 @@ func (obj *objectType) getRenderer(s *gqlSchema) renderer {
 	}
 
 	return &elemRenderer{
-		input:      obj.GQLType == "GraphQLInputObjectType",
-		union:      obj.GQLType == "GraphQLUnionType",
-		name:       obj.Node,
-		interfaces: interfaces,
-		fields:     obj.Fields,
-		unionTypes: unions,
+		input:       obj.GQLType == "GraphQLInputObjectType",
+		union:       obj.GQLType == "GraphQLUnionType",
+		isInterface: obj.GQLType == "GraphQLInterfaceType",
+		name:        obj.Node,
+		interfaces:  interfaces,
+		fields:      obj.Fields,
+		unionTypes:  unions,
 	}
 }
 

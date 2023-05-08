@@ -104,6 +104,8 @@ export class EntSchema implements Schema {
 
   hideFromGraphQL?: boolean;
 
+  customGraphQLInterfaces?: string[] | undefined;
+
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.fieldOverrides = cfg.fieldOverrides;
@@ -119,6 +121,8 @@ export class EntSchema implements Schema {
     this.constraints = cfg.constraints;
     this.indices = cfg.indices;
     this.hideFromGraphQL = cfg.hideFromGraphQL;
+    // TODO annoying that have to list these...
+    this.customGraphQLInterfaces = cfg.customGraphQLInterfaces;
   }
 }
 
@@ -154,6 +158,8 @@ export class EntSchemaWithTZ implements Schema {
 
   hideFromGraphQL?: boolean;
 
+  customGraphQLInterfaces?: string[] | undefined;
+
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.fieldOverrides = cfg.fieldOverrides;
@@ -169,6 +175,8 @@ export class EntSchemaWithTZ implements Schema {
     this.constraints = cfg.constraints;
     this.indices = cfg.indices;
     this.hideFromGraphQL = cfg.hideFromGraphQL;
+    // TODO annoying that have to list these...
+    this.customGraphQLInterfaces = cfg.customGraphQLInterfaces;
   }
 }
 
