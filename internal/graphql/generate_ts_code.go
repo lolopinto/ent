@@ -700,11 +700,10 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		buf.WriteString("\n")
 	}
 
-	// TODO
-	// for _, ci := range processor.Schema.CustomInterfaces {
-	// 	// ci.
-
-	// }
+	for _, ci := range processor.Schema.CustomInterfaces {
+		buf.WriteString(ci.GQLName)
+		buf.WriteString("\n")
+	}
 
 	// similar to writeTsFile in parse_ts.go
 	// unfortunately that this is being done
