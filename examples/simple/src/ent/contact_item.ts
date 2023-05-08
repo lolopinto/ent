@@ -14,11 +14,11 @@ export class ContactItem {
   @gqlField({
     nodeName: "ContactItem",
     type: "Contact",
+    nullable: true,
   })
-  contact: Contact;
+  contact: Contact | null = null;
 
-  constructor(label: ContactLabel, contact: Contact) {
+  constructor(label: ContactLabel) {
     this.label = label;
-    this.contact = contact;
   }
 }

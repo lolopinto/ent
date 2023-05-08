@@ -13,7 +13,7 @@ export const ContactItemType = new GraphQLInterfaceType({
       type: new GraphQLNonNull(ContactLabelType),
     },
     contact: {
-      type: new GraphQLNonNull(ContactType),
+      type: ContactType,
     },
   }),
 });

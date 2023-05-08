@@ -250,7 +250,7 @@ union ContactItemResult = ContactEmail | ContactPhoneNumber
 
 interface ContactItem {
   label: ContactLabel!
-  contact: Contact!
+  contact: Contact
 }
 
 type ContactPhoneNumber implements Node & ContactItemType {
