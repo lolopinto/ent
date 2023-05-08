@@ -6,13 +6,13 @@ import { Contact } from "./internal";
 @gqlInterfaceType({})
 export class ContactItem {
   @gqlField({
-    nodeName: "ContactItem",
+    class: "ContactItem",
     type: "ContactLabel",
   })
   label: ContactLabel;
 
   @gqlField({
-    nodeName: "ContactItem",
+    class: "ContactItem",
     type: "Contact",
     nullable: true,
   })

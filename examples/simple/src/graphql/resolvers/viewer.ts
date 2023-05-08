@@ -8,7 +8,7 @@ import { GQLViewer } from "./gql_viewer";
 
 export class ViewerResolver {
   @gqlQuery({
-    nodeName: "ViewerResolver",
+    class: "ViewerResolver",
     name: "viewer",
     type: "GQLViewer",
     args: [gqlContextType()],
@@ -18,7 +18,7 @@ export class ViewerResolver {
   }
 
   @gqlQuery({
-    nodeName: "ViewerResolver",
+    class: "ViewerResolver",
     name: "timeDiff",
     type: GraphQLString,
     args: [

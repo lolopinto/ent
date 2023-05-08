@@ -7,7 +7,7 @@ import { UserToLikesQueryBase } from "../../internal";
 import { gqlField } from "@snowtop/ent/graphql";
 
 export class UserToLikesEdge extends AssocEdge {
-  @gqlField({ nodeName: "UserToLikesEdge", type: "Date", name: "time" })
+  @gqlField({ class: "UserToLikesEdge", type: "Date", name: "time" })
   getTime(): Date {
     return this.time;
   }
