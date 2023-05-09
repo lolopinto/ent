@@ -355,7 +355,6 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	hasCustomChanges := (customChanges != nil && customChanges.hasAnyChanges())
 	funcs = append(funcs, p.processEnums(processor, s)...)
 
-	// the issue for the one is itbecause it's not referenced as a child
 	for idx := range s.nodes {
 		node := s.nodes[idx]
 		funcs = append(funcs, p.processNode(processor, s, node)...)

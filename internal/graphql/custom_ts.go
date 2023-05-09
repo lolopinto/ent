@@ -1047,6 +1047,11 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 	return nil
 }
 
+// clean this up eventually. most custom objects are referenced as part of a mutation or query and are then
+// generated in the same file as the mutation or query.
+// this is for the custom objects that are not referenced in a mutation or query e.g. not an argument or result
+// we go through and create them in their own file
+// eventually, we should put all of them in their own file or all in one big file
 func processDanglingCustomObject(processor *codegen.Processor, cd *CustomData, s *gqlSchema, obj *CustomObject) error {
 	// technically not a CI but whatever
 	filePath := getFilePathForCustomInterfaceFile(processor.Config, obj.NodeName)

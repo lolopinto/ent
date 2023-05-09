@@ -683,8 +683,8 @@ export class GQLCapture {
         if (inter) {
           const fields = this.customFields.get(inter.nodeName);
           if (fields) {
-            // TODO check for duplicate fields
-            // e.g. if field is already defined no need to add it
+            // check for duplicate fields
+            // if field is already defined no need to add it
             let objFields = this.customFields.get(obj.nodeName);
             if (!objFields) {
               objFields = [];
