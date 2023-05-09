@@ -72,7 +72,6 @@ test("mutation with input type", async () => {
   }
 
   class UserAuth {
-    // can't have decorator on a top-level function :(
     @gqlMutation({
       class: "UserAuth",
       name: "userAuth",
@@ -208,7 +207,6 @@ test("mutation with different types", async () => {
 
   // wow this needs to be a different class name
   class UserAuth {
-    // can't have decorator on a top-level function :(
     @gqlMutation({
       class: "UserAuth",
       name: "userAuth",
@@ -674,7 +672,6 @@ test("custom interface", async () => {
   }
 
   class Auth {
-    // can't have decorator on a top-level function :(
     @gqlMutation({
       class: "Auth",
       name: "userAuth",
@@ -900,6 +897,244 @@ test("custom interface", async () => {
     CustomObjectTypes.Object,
     CustomObjectTypes.Interface,
   );
+});
+
+test("custom interface with fields also defined in class", async () => {
+  @gqlInterfaceType({
+    name: "AuthResponse",
+  })
+  // decorators not valid on interfaces so have to add them to a class
+  // doesn't have to be abstract, but it can be
+  abstract class AuthResponse {
+    @gqlField({
+      class: "AuthResponse",
+      type: GraphQLString,
+    })
+    token: string;
+
+    @gqlField({
+      class: "AuthResponse",
+      type: GraphQLID,
+    })
+    viewerID: ID;
+  }
+
+  @gqlObjectType({
+    name: "UserAuthResponse",
+    interfaces: ["AuthResponse"],
+  })
+  class UserAuthResponse extends AuthResponse {
+    @gqlField({
+      class: "UserAuthResponse",
+      type: GraphQLID,
+    })
+    viewerID: ID;
+  }
+
+  class Auth {
+    @gqlMutation({
+      class: "Auth",
+      name: "userAuth",
+      type: UserAuthResponse,
+      async: true,
+      args: [
+        {
+          name: "emailAddress",
+          type: GraphQLString,
+        },
+        {
+          name: "password",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async userAuth(
+      emailAddress: string,
+      password: string,
+    ): Promise<UserAuthResponse> {
+      console.log(emailAddress);
+      console.log(password);
+      return new UserAuthResponse();
+    }
+  }
+
+  // resolve first
+  // because we need fields copied over from interface to custom object
+  GQLCapture.resolve([]);
+
+  validateCustomFields([
+    {
+      nodeName: "UserAuthResponse",
+      functionName: "viewerID",
+      gqlName: "viewerID",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "ID",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+    {
+      nodeName: "UserAuthResponse",
+      functionName: "token",
+      gqlName: "token",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "String",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+
+    {
+      nodeName: "AuthResponse",
+      functionName: "token",
+      gqlName: "token",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "String",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+    {
+      nodeName: "AuthResponse",
+      functionName: "viewerID",
+      gqlName: "viewerID",
+      fieldType: CustomFieldType.Field,
+      results: [
+        {
+          type: "ID",
+          name: "",
+        },
+      ],
+      args: [],
+    },
+  ]);
+
+  validateCustomObjects([
+    {
+      nodeName: "UserAuthResponse",
+      className: "UserAuthResponse",
+      interfaces: ["AuthResponse"],
+    },
+  ]);
+
+  validateCustomInterfaces([
+    {
+      nodeName: "AuthResponse",
+      className: "AuthResponse",
+    },
+  ]);
+
+  validateCustomMutations([
+    {
+      nodeName: "Auth",
+      functionName: "userAuth",
+      gqlName: "userAuth",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "UserAuthResponse",
+          name: "",
+          needsResolving: false,
+        },
+      ],
+      args: [
+        {
+          type: "String",
+          name: "emailAddress",
+        },
+        {
+          type: "String",
+          name: "password",
+        },
+      ],
+    },
+  ]);
+
+  validateNoCustom(
+    CustomObjectTypes.Field,
+    CustomObjectTypes.Mutation,
+    CustomObjectTypes.Object,
+    CustomObjectTypes.Interface,
+  );
+});
+
+test("custom interface with fields also defined in class. different definition", async () => {
+  @gqlInterfaceType({
+    name: "AuthResponse",
+  })
+  abstract class AuthResponse {
+    @gqlField({
+      class: "AuthResponse",
+      type: GraphQLString,
+    })
+    token: string;
+
+    @gqlField({
+      class: "AuthResponse",
+      type: GraphQLID,
+    })
+    viewerID: ID;
+  }
+
+  @gqlObjectType({
+    name: "UserAuthResponse",
+    interfaces: ["AuthResponse"],
+  })
+  class UserAuthResponse extends AuthResponse {
+    @gqlField({
+      class: "UserAuthResponse",
+      type: GraphQLID,
+      nullable: true,
+    })
+    viewerID: ID;
+  }
+
+  class Auth {
+    @gqlMutation({
+      class: "Auth",
+      name: "userAuth",
+      type: UserAuthResponse,
+      async: true,
+      args: [
+        {
+          name: "emailAddress",
+          type: GraphQLString,
+        },
+        {
+          name: "password",
+          type: GraphQLString,
+        },
+      ],
+    })
+    async userAuth(
+      emailAddress: string,
+      password: string,
+    ): Promise<UserAuthResponse> {
+      console.log(emailAddress);
+      console.log(password);
+      return new UserAuthResponse();
+    }
+  }
+
+  try {
+    // resolve first
+    // because we need fields copied over from interface to custom object
+    GQLCapture.resolve([]);
+    throw new Error("should not get here");
+  } catch (e) {
+    expect(e.message).toBe(
+      "object UserAuthResponse has duplicate field viewerID with different definition",
+    );
+  }
 });
 
 test("referencing known interface e.g. Node", async () => {

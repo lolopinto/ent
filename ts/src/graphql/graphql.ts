@@ -683,15 +683,31 @@ export class GQLCapture {
         if (inter) {
           const fields = this.customFields.get(inter.nodeName);
           if (fields) {
+            // TODO check for duplicate fields
+            // e.g. if field is already defined no need to add it
             let objFields = this.customFields.get(obj.nodeName);
             if (!objFields) {
               objFields = [];
             }
+            let map = new Map();
+            for (const f of objFields) {
+              map.set(f.gqlName, f);
+            }
             for (const field of fields) {
-              objFields.push({
+              const newField = {
                 ...field,
                 nodeName: obj.nodeName,
-              });
+              };
+              if (map.has(field.gqlName)) {
+                const existing = map.get(field.gqlName)!;
+                if (JSON.stringify(existing) !== JSON.stringify(newField)) {
+                  throw new Error(
+                    `object ${obj.nodeName} has duplicate field ${field.gqlName} with different definition`,
+                  );
+                }
+                continue;
+              }
+              objFields.push(newField);
             }
             this.customFields.set(obj.nodeName, objFields);
           }

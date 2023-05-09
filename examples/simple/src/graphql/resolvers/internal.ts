@@ -27,6 +27,7 @@ export * from "../generated/resolvers/user_days_off_type";
 export * from "../generated/resolvers/user_int_enum_type";
 export * from "../generated/resolvers/user_preferred_shift_type";
 export * from "../generated/resolvers/user_sort_column_type";
+export * from "../generated/resolvers/contact_date_type";
 export * from "../generated/resolvers/contact_info_type";
 export * from "../generated/resolvers/contact_item_result_type";
 export * from "../generated/resolvers/contact_item_type";

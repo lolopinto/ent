@@ -355,6 +355,10 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	hasCustomChanges := (customChanges != nil && customChanges.hasAnyChanges())
 	funcs = append(funcs, p.processEnums(processor, s)...)
 
+	// EmailInfo where are you???
+	// UserAuthJWTPayload, UserAuthJWTPayload etc
+
+	// the issue for the one is itbecause it's not referenced as a child
 	for idx := range s.nodes {
 		node := s.nodes[idx]
 		funcs = append(funcs, p.processNode(processor, s, node)...)
@@ -370,6 +374,9 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		funcs = append(funcs, p.processCustomNode(processor, s, node, false)...)
 	}
 
+	// dangling gqlObject which is not referenced in a query or mutation should have its own file
+	// and stored in here...
+	// so change ContactItemResultType to reference a custom item
 	for idx := range s.otherObjects {
 		// TODO need to make this smarter and not always write files
 		// except when something changes
@@ -852,6 +859,16 @@ func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 		return err
 	}
 
+	for k := range cd.Objects {
+		if s.seenCustomObjects[k] {
+			continue
+		}
+		obj := cd.Objects[k]
+		if err := processDanglingCustomObject(processor, cd, s, obj); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -949,16 +966,17 @@ type gqlSchema struct {
 	nodes          map[string]*gqlNode
 	enums          map[string]*gqlEnum
 	// interfaces map[string]*gql
-	customQueries   []*gqlNode
-	customMutations []*gqlNode
-	unions          map[string]*gqlNode
-	interfaces      map[string]*gqlNode
-	customData      *CustomData
-	edgeNames       map[string]bool
-	customEdges     map[string]*objectType
-	rootQueries     []*rootQuery
-	allTypes        []typeInfo
-	otherObjects    []*gqlNode
+	customQueries     []*gqlNode
+	customMutations   []*gqlNode
+	unions            map[string]*gqlNode
+	interfaces        map[string]*gqlNode
+	customData        *CustomData
+	edgeNames         map[string]bool
+	customEdges       map[string]*objectType
+	rootQueries       []*rootQuery
+	allTypes          []typeInfo
+	otherObjects      []*gqlNode
+	seenCustomObjects map[string]bool
 	// Query|Mutation|Subscription
 	rootDatas []*gqlRootData
 }
@@ -1438,15 +1456,16 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 		wg.Wait()
 		schema := &gqlSchema{
-			nodes:          nodes,
-			rootQueries:    rootQueries,
-			enums:          enums,
-			edgeNames:      edgeNames,
-			hasMutations:   hasMutations,
-			hasConnections: hasConnections,
-			customEdges:    make(map[string]*objectType),
-			otherObjects:   otherNodes,
-			unions:         map[string]*gqlNode{},
+			nodes:             nodes,
+			rootQueries:       rootQueries,
+			enums:             enums,
+			edgeNames:         edgeNames,
+			hasMutations:      hasMutations,
+			hasConnections:    hasConnections,
+			customEdges:       make(map[string]*objectType),
+			otherObjects:      otherNodes,
+			unions:            map[string]*gqlNode{},
+			seenCustomObjects: map[string]bool{},
 		}
 		result <- &buildGQLSchemaResult{
 			schema: schema,

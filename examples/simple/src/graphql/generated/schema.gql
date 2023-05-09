@@ -233,6 +233,15 @@ type Comment implements Node {
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
 }
 
+type ContactDate {
+  label: ContactLabel!
+  contact: Contact
+  date: Time!
+  description: String!
+  label: ContactLabel!
+  contact: Contact
+}
+
 type ContactEmail implements Node & ContactItemType {
   contact: Contact
   id: ID!
@@ -246,7 +255,7 @@ type ContactInfo {
   source: ContactInfoSource!
 }
 
-union ContactItemResult = ContactEmail | ContactPhoneNumber
+union ContactItemResult = ContactEmail | ContactPhoneNumber | ContactDate
 
 interface ContactItem {
   label: ContactLabel!
