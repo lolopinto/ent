@@ -67,8 +67,9 @@ type NodeData struct {
 	// fine to just reuse input constraints for now
 	Constraints []*input.Constraint
 	// same as above. fine to just reuse
-	Indices            []*input.Index
-	PatternsWithMixins []string
+	Indices                 []*input.Index
+	PatternsWithMixins      []string
+	CustomGraphQLInterfaces []string
 
 	schemaPath string
 

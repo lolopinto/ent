@@ -47,7 +47,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
-    nodeName: "User",
+    class: "User",
     type: GraphQLString,
     name: "fullName",
   })
@@ -56,7 +56,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
-    nodeName: "User",
+    class: "User",
     type: GraphQLString,
     nullable: true,
     name: "bar",
@@ -90,7 +90,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
-    nodeName: "User",
+    class: "User",
     type: "Contact",
     nullable: true,
     name: "contactSameDomain",
@@ -119,7 +119,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
-    nodeName: "User",
+    class: "User",
     type: "[Contact]",
     name: "contactsSameDomain",
     async: true,
@@ -141,7 +141,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
-    nodeName: "User",
+    class: "User",
     type: "[Contact]",
     name: "contactsGivenDomain",
     args: [
@@ -164,7 +164,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
-    nodeName: "User",
+    class: "User",
     type: "[Contact]",
     name: "contactsSameDomainNullable",
     nullable: true,
@@ -194,7 +194,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
-    nodeName: "User",
+    class: "User",
     type: "[Contact]",
     name: "contactsSameDomainNullableContents",
     nullable: "contents",
@@ -217,7 +217,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
-    nodeName: "User",
+    class: "User",
     type: "[Contact]",
     name: "contactsSameDomainNullableContentsAndList",
     nullable: "contentsAndList",
@@ -242,7 +242,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
-    nodeName: "User",
+    class: "User",
     name: "commentsAuthored",
     type: gqlConnection("Comment"),
   })

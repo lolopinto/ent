@@ -19,7 +19,7 @@ import { ContactLabel } from "../../ent/generated/types";
 
 export class ImportContactResolver {
   @gqlMutation({
-    nodeName: "ImportContactResolver",
+    class: "ImportContactResolver",
     type: User,
     args: [
       gqlContextType(),

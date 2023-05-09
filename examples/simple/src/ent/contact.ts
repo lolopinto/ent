@@ -7,16 +7,18 @@ import {
 } from "@snowtop/ent";
 import { gqlField, gqlObjectType } from "@snowtop/ent/graphql";
 import { ContactEmail } from ".";
+import { gqlUnionType } from "@snowtop/ent/graphql/graphql";
+import { ContactLabel } from "./generated/types";
 
 @gqlObjectType()
 export class EmailInfo {
   @gqlField({
-    nodeName: "EmailInfo",
+    class: "EmailInfo",
     type: "[ContactEmail]",
   })
   emails: ContactEmail[];
 
-  @gqlField({ nodeName: "EmailInfo", type: GraphQLString })
+  @gqlField({ class: "EmailInfo", type: GraphQLString })
   firstEmail: string;
 
   constructor(emails: ContactEmail[], firstEmail: string) {
@@ -24,6 +26,53 @@ export class EmailInfo {
     this.firstEmail = firstEmail;
   }
 }
+
+@gqlObjectType({
+  interfaces: ["ContactItem"],
+})
+export class ContactDate {
+  @gqlField({
+    class: "ContactDate",
+    type: "ContactLabel",
+  })
+  label: ContactLabel;
+
+  @gqlField({
+    class: "ContactDate",
+    type: "Contact",
+    nullable: true,
+  })
+  contact: Contact | null = null;
+
+  @gqlField({
+    class: "ContactDate",
+    type: "Date",
+  })
+  date: Date;
+
+  @gqlField({
+    class: "ContactDate",
+    type: GraphQLString,
+  })
+  description: string;
+
+  constructor(
+    label: ContactLabel,
+    contact: Contact | null = null,
+    date: Date,
+    description: string,
+  ) {
+    this.label = label;
+    this.contact = contact;
+    this.date = date;
+    this.description = description;
+  }
+}
+
+@gqlUnionType({
+  unionTypes: ["ContactEmail", "ContactPhoneNumber", "ContactDate"],
+})
+export class ContactItemResult {}
 
 export class Contact extends ContactBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
@@ -33,7 +82,7 @@ export class Contact extends ContactBase {
   }
 
   @gqlField({
-    nodeName: "Contact",
+    class: "Contact",
     type: GraphQLString,
     name: "fullName",
   })
@@ -42,7 +91,7 @@ export class Contact extends ContactBase {
   }
 
   @gqlField({
-    nodeName: "Contact",
+    class: "Contact",
     type: "EmailInfo",
     name: "plusEmails",
     async: true,
@@ -53,5 +102,23 @@ export class Contact extends ContactBase {
       emails,
       firstEmail: emails[0].emailAddress,
     };
+  }
+
+  @gqlField({
+    class: "Contact",
+    type: "[ContactItemResult]",
+    name: "contactItems",
+    async: true,
+  })
+  async queryContactItems() {
+    const [emails, phoneNumbers] = await Promise.all([
+      this.loadEmails(),
+      this.loadPhoneNumbers(),
+    ]);
+    return [
+      ...emails,
+      ...phoneNumbers,
+      new ContactDate(ContactLabel.Self, this, this.createdAt, "created_at"),
+    ];
   }
 }

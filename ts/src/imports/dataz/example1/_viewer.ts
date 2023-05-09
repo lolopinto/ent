@@ -13,7 +13,7 @@ class ViewerType {
   constructor(private viewer: Viewer) {}
 
   @gqlField({
-    nodeName: "ViewerType",
+    class: "ViewerType",
     type: GraphQLID,
     nullable: true,
   })
@@ -24,7 +24,7 @@ class ViewerType {
 
 export default class ViewerResolver {
   @gqlQuery({
-    nodeName: "ViewerResolver",
+    class: "ViewerResolver",
     name: "viewer",
     type: ViewerType,
     args: [gqlContextType()],

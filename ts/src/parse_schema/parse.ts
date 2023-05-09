@@ -433,6 +433,7 @@ export async function parseSchema(
       actions: schema.actions?.map((action) => processAction(action)) || [],
       assocEdges: [],
       assocEdgeGroups: [],
+      customGraphQLInterfaces: schema.customGraphQLInterfaces,
     };
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯
