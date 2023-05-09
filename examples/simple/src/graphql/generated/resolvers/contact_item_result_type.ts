@@ -5,11 +5,12 @@
 
 import { GraphQLUnionType } from "graphql";
 import {
+  ContactDateType,
   ContactEmailType,
   ContactPhoneNumberType,
 } from "../../resolvers/internal";
 
 export const ContactItemResultType = new GraphQLUnionType({
   name: "ContactItemResult",
-  types: () => [ContactEmailType, ContactPhoneNumberType],
+  types: () => [ContactEmailType, ContactPhoneNumberType, ContactDateType],
 });

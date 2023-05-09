@@ -852,6 +852,16 @@ func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 		return err
 	}
 
+	for k := range cd.Objects {
+		if s.seenCustomObjects[k] {
+			continue
+		}
+		obj := cd.Objects[k]
+		if err := processDanglingCustomObject(processor, cd, s, obj); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -949,16 +959,17 @@ type gqlSchema struct {
 	nodes          map[string]*gqlNode
 	enums          map[string]*gqlEnum
 	// interfaces map[string]*gql
-	customQueries   []*gqlNode
-	customMutations []*gqlNode
-	unions          map[string]*gqlNode
-	interfaces      map[string]*gqlNode
-	customData      *CustomData
-	edgeNames       map[string]bool
-	customEdges     map[string]*objectType
-	rootQueries     []*rootQuery
-	allTypes        []typeInfo
-	otherObjects    []*gqlNode
+	customQueries     []*gqlNode
+	customMutations   []*gqlNode
+	unions            map[string]*gqlNode
+	interfaces        map[string]*gqlNode
+	customData        *CustomData
+	edgeNames         map[string]bool
+	customEdges       map[string]*objectType
+	rootQueries       []*rootQuery
+	allTypes          []typeInfo
+	otherObjects      []*gqlNode
+	seenCustomObjects map[string]bool
 	// Query|Mutation|Subscription
 	rootDatas []*gqlRootData
 }
@@ -1438,15 +1449,16 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 		wg.Wait()
 		schema := &gqlSchema{
-			nodes:          nodes,
-			rootQueries:    rootQueries,
-			enums:          enums,
-			edgeNames:      edgeNames,
-			hasMutations:   hasMutations,
-			hasConnections: hasConnections,
-			customEdges:    make(map[string]*objectType),
-			otherObjects:   otherNodes,
-			unions:         map[string]*gqlNode{},
+			nodes:             nodes,
+			rootQueries:       rootQueries,
+			enums:             enums,
+			edgeNames:         edgeNames,
+			hasMutations:      hasMutations,
+			hasConnections:    hasConnections,
+			customEdges:       make(map[string]*objectType),
+			otherObjects:      otherNodes,
+			unions:            map[string]*gqlNode{},
+			seenCustomObjects: map[string]bool{},
 		}
 		result <- &buildGQLSchemaResult{
 			schema: schema,

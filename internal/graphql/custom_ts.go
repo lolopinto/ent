@@ -655,6 +655,8 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 		GQLType: gqlType,
 	}
 
+	s.seenCustomObjects[item.Type] = true
+
 	fields, ok := cd.Fields[item.Type]
 	if !ok {
 		return nil, fmt.Errorf("type %s has no fields", item.Type)
@@ -1042,6 +1044,36 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 		interfaces[inter.NodeName] = node
 	}
 	s.interfaces = interfaces
+	return nil
+}
+
+// clean this up eventually. most custom objects are referenced as part of a mutation or query and are then
+// generated in the same file as the mutation or query.
+// this is for the custom objects that are not referenced in a mutation or query e.g. not an argument or result
+// we go through and create them in their own file
+// eventually, we should put all of them in their own file or all in one big file
+func processDanglingCustomObject(processor *codegen.Processor, cd *CustomData, s *gqlSchema, obj *CustomObject) error {
+	// technically not a CI but whatever
+	filePath := getFilePathForCustomInterfaceFile(processor.Config, obj.NodeName)
+
+	item := CustomItem{
+		Type: obj.NodeName,
+	}
+	objType, err := buildObjectType(processor, cd, s, item, obj, filePath, "GraphQLObjectType")
+	if err != nil {
+		return err
+	}
+
+	gqlNode := &gqlNode{
+		ObjData: &gqlobjectData{
+			Node:         obj.NodeName,
+			NodeInstance: "obj",
+			GQLNodes:     []*objectType{objType},
+			Package:      processor.Config.GetImportPackage(),
+		},
+		FilePath: filePath,
+	}
+	s.otherObjects = append(s.otherObjects, gqlNode)
 	return nil
 }
 
