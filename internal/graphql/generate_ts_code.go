@@ -355,9 +355,6 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	hasCustomChanges := (customChanges != nil && customChanges.hasAnyChanges())
 	funcs = append(funcs, p.processEnums(processor, s)...)
 
-	// EmailInfo where are you???
-	// UserAuthJWTPayload, UserAuthJWTPayload etc
-
 	// the issue for the one is itbecause it's not referenced as a child
 	for idx := range s.nodes {
 		node := s.nodes[idx]
@@ -374,9 +371,6 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		funcs = append(funcs, p.processCustomNode(processor, s, node, false)...)
 	}
 
-	// dangling gqlObject which is not referenced in a query or mutation should have its own file
-	// and stored in here...
-	// so change ContactItemResultType to reference a custom item
 	for idx := range s.otherObjects {
 		// TODO need to make this smarter and not always write files
 		// except when something changes

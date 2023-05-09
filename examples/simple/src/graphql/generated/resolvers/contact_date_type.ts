@@ -33,11 +33,5 @@ export const ContactDateType = new GraphQLObjectType({
     description: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    label: {
-      type: new GraphQLNonNull(ContactLabelType),
-    },
-    contact: {
-      type: ContactType,
-    },
   }),
 });

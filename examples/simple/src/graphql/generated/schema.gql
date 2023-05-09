@@ -238,8 +238,6 @@ type ContactDate {
   contact: Contact
   date: Time!
   description: String!
-  label: ContactLabel!
-  contact: Contact
 }
 
 type ContactEmail implements Node & ContactItemType {
