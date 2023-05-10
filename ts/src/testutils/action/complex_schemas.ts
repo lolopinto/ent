@@ -208,11 +208,14 @@ export const ChangelogSchema = getBuilderSchemaFromFields(
 export const MessageSchema = getBuilderSchemaFromFields(
   {
     // TODO both id fields
-    sender: StringType(), // can't use from
+    sender: StringType({
+      index: true,
+    }), // can't use from
     recipient: StringType(), // can't use to in sqlite
     message: StringType(),
     transient: BooleanType({ nullable: true }),
     expiresAt: TimestampType({ nullable: true }),
+    delivered: BooleanType({ defaultValueOnCreate: () => false }),
   },
   Message,
 );
@@ -288,17 +291,20 @@ export class MessageAction extends SimpleAction<Message> {
         changeset: (builder, _input): void => {
           let sender = builder.fields.get("sender");
           let recipient = builder.fields.get("recipient");
-
-          builder.orchestrator.addInboundEdge(
-            sender,
-            "senderToMessage",
-            "user",
-          );
-          builder.orchestrator.addInboundEdge(
-            recipient,
-            "recipientToMessage",
-            "user",
-          );
+          if (sender) {
+            builder.orchestrator.addInboundEdge(
+              sender,
+              "senderToMessage",
+              "user",
+            );
+          }
+          if (recipient) {
+            builder.orchestrator.addInboundEdge(
+              recipient,
+              "recipientToMessage",
+              "user",
+            );
+          }
         },
       },
     ];

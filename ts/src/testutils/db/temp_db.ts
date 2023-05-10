@@ -465,6 +465,10 @@ export class TempDB {
         }
         DB.initDB({
           connectionString: connStr,
+          cfg: {
+            max: 100,
+            idleTimeoutMillis: 100,
+          },
         });
       } else {
         // will probably be setup via loadConfig

@@ -347,20 +347,22 @@ export async function executeOperations(
     if (executor.postFetch) {
       await executor.postFetch(client, context);
     }
-
-    if (executor.executeObservers) {
-      await executor.executeObservers();
-    }
+    client.release();
   } catch (e) {
     if (!isSyncClient(client)) {
       // TODO these changes break tests
       logQuery("ROLLBACK", []);
       await client.query("ROLLBACK");
     }
+    client.release(e);
     log("error", e);
     throw e;
-  } finally {
-    client.release();
+  }
+
+  if (executor.executeObservers) {
+    try {
+      await executor.executeObservers();
+    } catch (e) {}
   }
   return operations;
 }
