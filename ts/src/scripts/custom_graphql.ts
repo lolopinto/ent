@@ -168,7 +168,6 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
       env.SWCRC = "true";
     }
     args.push(filePath);
-    console.error("running ts-node", args, env);
     const r = spawn("ts-node", args, {
       env,
     });
