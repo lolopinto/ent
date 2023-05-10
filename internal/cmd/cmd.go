@@ -18,14 +18,6 @@ func GetArgsForScript(rootPath string) []string {
 	return append(
 		getArgsForScriptBoth(rootPath),
 		"-r",
-		"@swc-node/register",
-	)
-}
-
-func GetArgsForScriptSwc(rootPath string) []string {
-	return append(
-		getArgsForScriptBoth(rootPath),
-		"-r",
 		GetTsconfigPaths(),
 	)
 }
@@ -38,16 +30,13 @@ func getArgsForScriptBoth(rootPath string) []string {
 		// TODO this should find the tsconfig.json and not assume there's one at the root but fine for now
 		// same in generate_ts_code.go
 		filepath.Join(rootPath, "tsconfig.json"),
-		// "-r",
-		// GetTsconfigPaths(),
+		"--transpileOnly",
 	}
 }
 
 func UseSwc() bool {
 	return !util.EnvIsTrue("DISABLE_SWC")
 }
-
-// func GetCommand()
 
 type CommandInfo struct {
 	Name   string
@@ -60,27 +49,55 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 	var env []string
 	cmdName := "ts-node"
 	var cmdArgs []string
-	useSwc := false
+	useSwc := UseSwc()
 
-	if UseSwc() {
-		cmdArgs = append(
-			getArgsForScriptBoth(dirPath),
-			"-r", "@swc-node/register",
-		)
-
-		env = append(os.Environ(), "SWCRC=true")
-
-		useSwc = true
-	} else if fromTest {
-		// TODO if in swc do we need this?
+	// no swc with tests right now because we need
+	if fromTest {
 		cmdArgs = []string{
 			"--compiler-options",
 			testingutils.DefaultCompilerOptions(),
+			"--transpileOnly",
 		}
 	} else {
 		cmdName = "ts-node-script"
 
-		cmdArgs = GetArgsForScript(dirPath)
+		cmdArgs = getArgsForScriptBoth(dirPath)
+	}
+
+	if !useSwc {
+		env = append(os.Environ(), "DISABLE_SWC=true")
+	}
+
+	if !fromTest {
+		// 	// cmdArgs = append(
+		// 	// 	cmdArgs,
+		// 	// )
+
+		// 	if useSwc {
+		// 		cmdArgs = append(
+		// 			cmdArgs,
+		// 			"--swc",
+		// 		)
+		// 	}
+		// 	// "--transpileOnly",
+		// 	// "--swc",
+		// 	// "@swc-node/register",
+		// 	// )
+		// } else
+		if useSwc {
+			cmdArgs = append(
+				cmdArgs,
+				"--transpileOnly",
+				"-r",
+				"@swc-node/register",
+			)
+
+			env = append(os.Environ(), "SWCRC=true")
+
+		} else {
+
+			cmdArgs = append(cmdArgs, "-r", GetTsconfigPaths())
+		}
 	}
 
 	// append LOCAL_SCRIPT_PATH so we know. in typescript...

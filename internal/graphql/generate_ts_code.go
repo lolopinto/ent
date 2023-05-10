@@ -759,13 +759,13 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	}
 
 	cmd := exec.Command(cmdInfo.Name, cmdArgs...)
+	spew.Dump(cmdInfo.Name, cmdArgs)
 	cmd.Dir = processor.Config.GetAbsPathToRoot()
 	cmd.Stdin = &buf
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
 	if len(cmdInfo.Env) != 0 {
-		env2 := append(os.Environ(), cmdInfo.Env...)
-		cmd.Env = env2
+		cmd.Env = cmdInfo.Env
 	}
 
 	if err := cmd.Run(); err != nil {
