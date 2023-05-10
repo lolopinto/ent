@@ -62,13 +62,7 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 		cmdName = "ts-node-script"
 
 		cmdArgs = getArgsForScriptBoth(dirPath)
-	}
 
-	if !useSwc {
-		env = append(env, "DISABLE_SWC=true")
-	}
-
-	if !fromTest {
 		if useSwc {
 			cmdArgs = append(
 				cmdArgs,
@@ -77,11 +71,14 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 			)
 
 			env = append(env, "SWCRC=true")
-
-		} else {
-
-			cmdArgs = append(cmdArgs, "-r", GetTsconfigPaths())
 		}
+
+		// for paths like src/ent/generated/types.ts
+		cmdArgs = append(cmdArgs, "-r", GetTsconfigPaths())
+	}
+
+	if !useSwc {
+		env = append(env, "DISABLE_SWC=true")
 	}
 
 	// append LOCAL_SCRIPT_PATH so we know. in typescript...
