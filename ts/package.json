@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.1.0-alpha133", 
+  "version": "0.1.0-alpha135",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -8,6 +8,7 @@
     "example": "examples"
   },
   "dependencies": {
+    "@swc-node/register": "^1.6.5",
     "@types/node": "^18.11.18",
     "camel-case": "^4.1.2",
     "cosmiconfig": "^8.0.0",
