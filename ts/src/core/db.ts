@@ -46,9 +46,7 @@ function parseConnectionString(
       dialect: Dialect.SQLite,
       config: {
         connectionString: str,
-        // TODO would like to do this for other args e.g. max being set but would have to update tests
-        // e.g. src/core/config.test.ts which tests this
-        // ...args?.db,
+        ...args?.cfg,
       },
       filePath,
     };
@@ -57,10 +55,8 @@ function parseConnectionString(
   return {
     dialect: Dialect.Postgres,
     config: {
+      ...args?.cfg,
       connectionString: str,
-      // TODO would like to do this for other args e.g. max being set but would have to update tests
-      // e.g. src/core/config.test.ts which tests this
-      // ...args?.db,
     },
   };
 }
@@ -76,6 +72,7 @@ interface clientConfigArgs {
   connectionString?: string;
   dbFile?: string;
   db?: Database | DBDict;
+  cfg?: PoolConfig;
 }
 // order
 // env variable
