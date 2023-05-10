@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// next tag
+// next tag to use
 const TAG = "0.1.0-alpha.46-test1"
 
 // current node gets latest tag...
