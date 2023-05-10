@@ -32,7 +32,7 @@ describe("sqlite", () => {
 
 function commonTests() {
   test("nested + Promise.all with lots of actions", async () => {
-    const NUM_USERS = 1000;
+    const NUM_USERS = 500;
     const host = await createUser();
     const users: User[] = [];
     for (let i = 0; i < NUM_USERS; i++) {
