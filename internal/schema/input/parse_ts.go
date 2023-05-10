@@ -48,9 +48,7 @@ func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 	var out bytes.Buffer
 	execCmd.Stdout = &out
 	execCmd.Stderr = os.Stderr
-	if cmdInfo.Env != nil {
-		execCmd.Env = cmdInfo.Env
-	}
+	execCmd.Env = cmdInfo.Env
 
 	// flags not showing up in command but my guess is it's function of what's passed to process.argv
 	if err := execCmd.Run(); err != nil {

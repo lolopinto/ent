@@ -9,6 +9,8 @@ import (
 func DefaultCompilerOptions() string {
 	opts, err := json.Marshal(map[string]interface{}{
 		"lib":                []string{"esnext"},
+		"module":             "commonjs",
+		"target":             "es2020",
 		"moduleResolution":   "node",
 		"downlevelIteration": true,
 		"esModuleInterop":    true,

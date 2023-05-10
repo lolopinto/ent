@@ -46,12 +46,12 @@ type CommandInfo struct {
 }
 
 func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
-	var env []string
+	env := os.Environ()
 	cmdName := "ts-node"
 	var cmdArgs []string
 	useSwc := UseSwc()
 
-	// no swc with tests right now because we need
+	// no swc with tests right now because we need -r configured locally
 	if fromTest {
 		cmdArgs = []string{
 			"--compiler-options",
@@ -65,34 +65,18 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 	}
 
 	if !useSwc {
-		env = append(os.Environ(), "DISABLE_SWC=true")
+		env = append(env, "DISABLE_SWC=true")
 	}
 
 	if !fromTest {
-		// 	// cmdArgs = append(
-		// 	// 	cmdArgs,
-		// 	// )
-
-		// 	if useSwc {
-		// 		cmdArgs = append(
-		// 			cmdArgs,
-		// 			"--swc",
-		// 		)
-		// 	}
-		// 	// "--transpileOnly",
-		// 	// "--swc",
-		// 	// "@swc-node/register",
-		// 	// )
-		// } else
 		if useSwc {
 			cmdArgs = append(
 				cmdArgs,
-				"--transpileOnly",
 				"-r",
 				"@swc-node/register",
 			)
 
-			env = append(os.Environ(), "SWCRC=true")
+			env = append(env, "SWCRC=true")
 
 		} else {
 

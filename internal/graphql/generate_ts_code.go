@@ -759,14 +759,11 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	}
 
 	cmd := exec.Command(cmdInfo.Name, cmdArgs...)
-	spew.Dump(cmdInfo.Name, cmdArgs)
 	cmd.Dir = processor.Config.GetAbsPathToRoot()
 	cmd.Stdin = &buf
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
-	if len(cmdInfo.Env) != 0 {
-		cmd.Env = cmdInfo.Env
-	}
+	cmd.Env = cmdInfo.Env
 
 	if err := cmd.Run(); err != nil {
 		err = errors.Wrap(err, "error generating custom graphql")
