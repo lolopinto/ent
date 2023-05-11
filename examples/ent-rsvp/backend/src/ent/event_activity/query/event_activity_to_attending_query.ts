@@ -1,11 +1,17 @@
 import { EventActivityToAttendingQueryBase } from "src/ent/internal";
 import { AssocEdge, Context, EdgeQuerySource, Viewer } from "@snowtop/ent";
 import { gqlContextType, gqlField } from "@snowtop/ent/graphql";
-import { EventActivity, GuestData } from "src/ent";
+import { GuestData } from "src/ent";
 
 export class EventActivityToAttendingEdge extends AssocEdge {
-  @gqlField({ type: "String", nullable: true })
-  async dietaryRestrictions(@gqlContextType() context: Context) {
+  @gqlField({
+    class: "EventActivityToAttendingEdge",
+    type: "String",
+    nullable: true,
+    async: true,
+    args: [gqlContextType()],
+  })
+  async dietaryRestrictions(context: Context) {
     if (this.data) {
       const guestData = await GuestData.load(context.getViewer(), this.data);
       return guestData?.dietaryRestrictions;

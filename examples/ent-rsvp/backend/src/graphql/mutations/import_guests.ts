@@ -1,6 +1,5 @@
 import { ID, RequestContext, Data, Ent } from "@snowtop/ent";
 import {
-  gqlArg,
   gqlContextType,
   gqlFileUpload,
   gqlMutation,
@@ -16,11 +15,26 @@ import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { EventBuilder } from "src/ent/generated/event/actions/event_builder";
 
 export class ImportGuestResolver {
-  @gqlMutation({ type: Event })
+  @gqlMutation({
+    class: "ImportGuestResolver",
+    type: Event,
+    args: [
+      gqlContextType(),
+      {
+        name: "eventID",
+        type: GraphQLID,
+      },
+      {
+        name: "file",
+        type: gqlFileUpload,
+      },
+    ],
+    async: true,
+  })
   async importGuests(
-    @gqlContextType() context: RequestContext,
-    @gqlArg("eventID", { type: GraphQLID }) eventID: ID,
-    @gqlArg("file", { type: gqlFileUpload }) file: Promise<FileUpload>,
+    context: RequestContext,
+    eventID: ID,
+    file: Promise<FileUpload>,
   ) {
     const file2 = await file;
 
