@@ -35,8 +35,9 @@ interface gqlFieldOptionsBase {
   type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types
 }
 
-interface gqlFieldArg extends gqlFieldOptionsBase {
+interface gqlFieldArg extends Omit<gqlFieldOptionsBase, "name"> {
   isContextArg?: boolean;
+  name: string;
 }
 
 export interface gqlFieldOptions extends gqlFieldOptionsBase {
