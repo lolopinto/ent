@@ -131,7 +131,7 @@ func fullCodegen(s *schema.Schema) error {
 func runNodeJSMigrateStep(p *codegen.Processor, step string) error {
 	scriptPath := util.GetPathToScript("scripts/migrate_v0.1.ts", false)
 	cmdArgs := append(
-		cmd2.GetArgsForScript(p.Config.GetAbsPathToRoot()),
+		cmd2.GetArgsForTsNodeScript(p.Config.GetAbsPathToRoot()),
 		"--swc",
 		scriptPath,
 		step,
