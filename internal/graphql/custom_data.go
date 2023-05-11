@@ -16,9 +16,11 @@ import (
 )
 
 type CustomData struct {
-	Args    map[string]*CustomObject `json:"args,omitempty"`
-	Inputs  map[string]*CustomObject `json:"inputs,omitempty"`
-	Objects map[string]*CustomObject `json:"objects,omitempty"`
+	Args       map[string]*CustomObject `json:"args,omitempty"`
+	Inputs     map[string]*CustomObject `json:"inputs,omitempty"`
+	Objects    map[string]*CustomObject `json:"objects,omitempty"`
+	Interfaces map[string]*CustomObject `json:"interfaces,omitempty"`
+	Unions     map[string]*CustomObject `json:"unions,omitempty"`
 	// map of class to fields in that class
 	Fields    map[string][]CustomField `json:"fields,omitempty"`
 	Queries   []CustomField            `json:"queries,omitempty"`
@@ -193,7 +195,9 @@ func (item *CustomItem) getImports(processor *codegen.Processor, s *gqlSchema, c
 		item.addImport(imp)
 	} else {
 		_, ok := s.customData.Objects[item.Type]
-		if !ok {
+		_, ok2 := s.customData.Unions[item.Type]
+		_, ok3 := s.customData.Interfaces[item.Type]
+		if !ok && !ok2 && !ok3 {
 			return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
 		}
 		item.addImport(
@@ -225,9 +229,11 @@ type CustomImportInfo struct {
 }
 
 type CustomObject struct {
-	// TODOO
-	NodeName  string `json:"nodeName"`
-	ClassName string `json:"className"`
+	NodeName    string   `json:"nodeName"`
+	ClassName   string   `json:"className"`
+	Description string   `json:"description,omitempty"`
+	Interfaces  []string `json:"interfaces,omitempty"`
+	UnionTypes  []string `json:"unionTypes,omitempty"`
 }
 
 // CustomFieldType for a TypeScript class
@@ -392,6 +398,10 @@ type compareCustomData struct {
 	customMutationsRemoved map[string]bool
 	// NB: this seems to only affect custom connections in nodes e.g. User.custom connection but not root connections
 	customConnectionsChanged map[string]bool
+	customInterfacesChanged  map[string]bool
+	customInterfacesRemoved  map[string]bool
+	customUnionsChanged      map[string]bool
+	customUnionsRemoved      map[string]bool
 }
 
 func (c *compareCustomData) hasAnyChanges() bool {
@@ -399,7 +409,11 @@ func (c *compareCustomData) hasAnyChanges() bool {
 		len(c.customMutationsChanged) > 0 ||
 		len(c.customQueriesRemoved) > 0 ||
 		len(c.customMutationsRemoved) > 0 ||
-		len(c.customConnectionsChanged) > 0
+		len(c.customConnectionsChanged) > 0 ||
+		len(c.customInterfacesChanged) > 0 ||
+		len(c.customUnionsChanged) > 0 ||
+		len(c.customInterfacesRemoved) > 0 ||
+		len(c.customUnionsRemoved) > 0
 }
 
 func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, existingChangeMap change.ChangeMap) *compareCustomData {
@@ -409,18 +423,32 @@ func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, exist
 		customMutationsRemoved:   map[string]bool{},
 		customQueriesRemoved:     map[string]bool{},
 		customQueriesChanged:     map[string]bool{},
+		customInterfacesChanged:  map[string]bool{},
+		customInterfacesRemoved:  map[string]bool{},
+		customUnionsChanged:      map[string]bool{},
+		customUnionsRemoved:      map[string]bool{},
 	}
 
 	queryReferences := map[string]map[string]bool{}
 	mutationReferences := map[string]map[string]bool{}
 	// compare queries and mutations
-	q := compareCustomQueries(cd1.Queries, cd2.Queries, queryReferences)
+	q := compareCustomFields(cd1.Queries, cd2.Queries, queryReferences)
 	ret.customQueriesChanged = q.changed
 	ret.customQueriesRemoved = q.removed
 
-	m := compareCustomMutations(cd1.Mutations, cd2.Mutations, mutationReferences)
+	m := compareCustomFields(cd1.Mutations, cd2.Mutations, mutationReferences)
 	ret.customMutationsChanged = m.changed
 	ret.customMutationsRemoved = m.removed
+
+	// compare interfaces
+	interfaceReferences := compareCustomMaps(cd1.Interfaces, cd2.Interfaces)
+	ret.customInterfacesChanged = interfaceReferences.changed
+	ret.customInterfacesRemoved = interfaceReferences.removed
+
+	// compare unions
+	unionReferences := compareCustomMaps(cd1.Unions, cd2.Unions)
+	ret.customUnionsChanged = unionReferences.changed
+	ret.customUnionsRemoved = unionReferences.removed
 
 	for k, c2 := range cd2.Classes {
 		c1, ok := cd1.Classes[k]
@@ -476,7 +504,7 @@ func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, exist
 	return ret
 }
 
-func compareCustomQueries(l1, l2 []CustomField, references map[string]map[string]bool) *compareListOptions {
+func compareCustomFields(l1, l2 []CustomField, references map[string]map[string]bool) *compareListOptions {
 	opts := &compareListOptions{
 		changed: map[string]bool{},
 		removed: map[string]bool{},
@@ -485,12 +513,31 @@ func compareCustomQueries(l1, l2 []CustomField, references map[string]map[string
 	return opts
 }
 
-func compareCustomMutations(l1, l2 []CustomField, references map[string]map[string]bool) *compareListOptions {
+func compareCustomMaps(m1, m2 map[string]*CustomObject) *compareListOptions {
 	opts := &compareListOptions{
 		changed: map[string]bool{},
 		removed: map[string]bool{},
 	}
-	compareCustomList(l1, l2, opts, references)
+
+	for k, c1 := range m1 {
+		c2, ok := m2[k]
+		if !ok {
+			// in 1 but not 2 removed
+			opts.removed[c1.NodeName] = true
+		} else {
+			if !customObjectEqual(c1, c2) {
+				opts.changed[c1.NodeName] = true
+			}
+		}
+	}
+
+	for k, cf2 := range m2 {
+		_, ok := m1[k]
+		// in 2 but not 1. addeded
+		if !ok {
+			opts.changed[cf2.NodeName] = true
+		}
+	}
 	return opts
 }
 
@@ -549,6 +596,19 @@ func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map
 		}
 	}
 	return m
+}
+
+func customObjectEqual(c1, c2 *CustomObject) bool {
+	ret := change.CompareNilVals(c1 == nil, c2 == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return c1.ClassName == c2.ClassName &&
+		c1.NodeName == c2.NodeName &&
+		c1.Description == c2.Description &&
+		change.StringListEqual(c1.Interfaces, c2.Interfaces) &&
+		change.StringListEqual(c1.UnionTypes, c2.UnionTypes)
 }
 
 func customFieldEqual(cf1, cf2 *CustomField) bool {

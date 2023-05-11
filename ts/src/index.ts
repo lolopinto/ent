@@ -35,8 +35,8 @@ export {
   loadEdgeForID2,
   loadNodesByEdge,
   getEdgeTypeInGroup,
-  setGlobalSchema,
 } from "./core/ent";
+export { setGlobalSchema } from "./core/global_schema";
 import DB from "./core/db";
 export * from "./core/loaders";
 export { DB };

@@ -1,6 +1,5 @@
 import { ID, RequestContext } from "@snowtop/ent";
 import {
-  gqlArg,
   gqlContextType,
   gqlMutation,
   gqlFileUpload,
@@ -16,14 +15,29 @@ import {
   UserInput,
 } from "../../ent/generated/user/actions/user_builder";
 import { ExampleViewer } from "../../viewer/viewer";
-import { ContactEmailLabel } from "src/ent/generated/types";
+import { ContactLabel } from "../../ent/generated/types";
 
 export class ImportContactResolver {
-  @gqlMutation({ type: User })
+  @gqlMutation({
+    class: "ImportContactResolver",
+    type: User,
+    args: [
+      gqlContextType(),
+      {
+        name: "userID",
+        type: GraphQLID,
+      },
+      {
+        name: "file",
+        type: gqlFileUpload,
+      },
+    ],
+    async: true,
+  })
   async bulkUploadContact(
-    @gqlContextType() context: RequestContext<ExampleViewer>,
-    @gqlArg("userID", { type: GraphQLID }) userID: ID,
-    @gqlArg("file", { type: gqlFileUpload }) file: Promise<FileUpload>,
+    context: RequestContext<ExampleViewer>,
+    userID: ID,
+    file: Promise<FileUpload>,
   ) {
     const file2 = await file;
 
@@ -47,7 +61,7 @@ export class ImportContactResolver {
           emails: [
             {
               emailAddress: record.emailAddress,
-              label: ContactEmailLabel.Default,
+              label: ContactLabel.Default,
             },
           ],
           userID: user.id,

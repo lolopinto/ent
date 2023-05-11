@@ -21,18 +21,15 @@ import { GraphQLObjectType } from "graphql";
 import { v1 } from "uuid";
 import {
   NotifType,
-  NotifType2,
   UserDaysOff,
   UserPreferredShift,
   UserIntEnum,
   CatBreed,
   DogBreed,
   DogBreedGroup,
-  NestedObjNestedNestedEnum,
-  ObjNestedEnum,
   RabbitBreed,
-  SuperNestedObjectEnum,
-  ContactEmailLabel,
+  ContactLabel,
+  ResponseType,
 } from "../../ent/generated/types";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import CreateCommentAction from "../../ent/comment/actions/create_comment_action";
@@ -347,7 +344,7 @@ test("query custom async function", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: ContactEmailLabel.Unknown,
+        label: ContactLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -367,7 +364,7 @@ test("query custom async function", async () => {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: ContactEmailLabel.Unknown,
+        label: ContactLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -395,7 +392,7 @@ test("query custom async function list", async () => {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: ContactEmailLabel.Unknown,
+        label: ContactLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -424,7 +421,7 @@ test("query custom async function list with domain passed in", async () => {
     emails: [
       {
         emailAddress: randomEmail(),
-        label: ContactEmailLabel.Unknown,
+        label: ContactLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -472,7 +469,7 @@ test("query custom async function nullable contents", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: ContactEmailLabel.Unknown,
+        label: ContactLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -506,7 +503,7 @@ test("query custom async function nullable list contents", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: ContactEmailLabel.Unknown,
+        label: ContactLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -545,7 +542,7 @@ test("query custom async function nullable list and contents", async () => {
     emails: [
       {
         emailAddress: randomEmail("foo.com"),
-        label: ContactEmailLabel.Unknown,
+        label: ContactLabel.Unknown,
       },
     ],
     firstName: "Jon",
@@ -788,7 +785,7 @@ async function createMany(
       emails: [
         {
           emailAddress: randomEmail(),
-          label: ContactEmailLabel.Unknown,
+          label: ContactLabel.Unknown,
         },
       ],
       firstName: name.firstName,
@@ -921,11 +918,11 @@ test("create with prefs+prefsList", async () => {
         prefsList: [
           {
             finishedNux: true,
-            notifTypes: [NotifType2.EMAIL],
+            notifTypes: [NotifType.EMAIL],
           },
           {
             finishedNux: false,
-            notifTypes: [NotifType2.MOBILE],
+            notifTypes: [NotifType.MOBILE],
           },
         ],
       },
@@ -1115,13 +1112,13 @@ describe("super nested complex", () => {
     // graphql vs typescript
     const transformedObj = {
       ...obj,
-      enum: SuperNestedObjectEnum.Maybe,
+      enum: ResponseType.Maybe,
       obj: {
         ...obj.obj,
-        nestedEnum: ObjNestedEnum.No,
+        nestedEnum: ResponseType.No,
         nestedObj: {
           ...obj.obj.nestedObj,
-          nestedNestedEnum: NestedObjNestedNestedEnum.Yes,
+          nestedNestedEnum: ResponseType.Yes,
         },
       },
     };
@@ -1174,7 +1171,7 @@ describe("super nested complex", () => {
     // union type is separate
     const transformedObj = {
       ...obj,
-      enum: SuperNestedObjectEnum.Maybe,
+      enum: ResponseType.Maybe,
       union: {
         ...obj.union.cat,
         breed: CatBreed.Bengal,
@@ -1231,7 +1228,7 @@ describe("super nested complex", () => {
     // union type is separate
     const transformedObj = {
       ...obj,
-      enum: SuperNestedObjectEnum.Maybe,
+      enum: ResponseType.Maybe,
       union: {
         ...obj.union.dog,
         breed: DogBreed.GermanShepherd,
@@ -1287,7 +1284,7 @@ describe("super nested complex", () => {
     // union type is separate
     const transformedObj = {
       ...obj,
-      enum: SuperNestedObjectEnum.Maybe,
+      enum: ResponseType.Maybe,
       union: {
         ...obj.union.rabbit,
         breed: RabbitBreed.AmericanChincilla,

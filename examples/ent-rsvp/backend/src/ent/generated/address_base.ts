@@ -259,7 +259,7 @@ export class AddressBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, AddressDBData> {
     return {
       tableName: addressLoaderInfo.tableName,
       fields: addressLoaderInfo.fields,

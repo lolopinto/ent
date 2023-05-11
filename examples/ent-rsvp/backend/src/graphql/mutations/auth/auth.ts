@@ -1,56 +1,33 @@
-import { RequestContext, loadRow, query, LoggedOutViewer } from "@snowtop/ent";
-import {
-  gqlContextType,
-  gqlArg,
-  gqlMutation,
-  gqlInputObjectType,
-  gqlField,
-  gqlObjectType,
-  gqlQuery,
-} from "@snowtop/ent/graphql";
+import { RequestContext, loadRow, query } from "@snowtop/ent";
+import { gqlContextType, gqlMutation, gqlQuery } from "@snowtop/ent/graphql";
 import { useAndVerifyAuthJWT } from "@snowtop/ent-passport";
 import { Guest, User } from "src/ent";
-import { ViewerType } from "../../resolvers/viewer";
-
-@gqlInputObjectType()
-class AuthGuestInput {
-  @gqlField()
-  emailAddress: string = "";
-  @gqlField()
-  code: string = "";
-}
-
-@gqlObjectType()
-export class AuthGuestPayload {
-  @gqlField()
-  token: string = "";
-
-  @gqlField({ type: ViewerType })
-  viewer: ViewerType = new ViewerType(new LoggedOutViewer());
-}
-
-@gqlInputObjectType()
-class AuthUserInput {
-  @gqlField()
-  emailAddress: string = "";
-  @gqlField()
-  password: string = "";
-}
-
-@gqlObjectType()
-export class AuthUserPayload {
-  @gqlField()
-  token: string = "";
-
-  @gqlField({ type: ViewerType })
-  viewer: ViewerType = new ViewerType(new LoggedOutViewer());
-}
+import { ViewerType } from "../../resolvers/viewer_type";
+import { GraphQLString } from "graphql";
+import {
+  AuthGuestInput,
+  AuthGuestPayload,
+  AuthUserInput,
+  AuthUserPayload,
+} from "./auth_types";
 
 export class AuthResolver {
-  @gqlMutation({ name: "authGuest", type: AuthGuestPayload })
+  @gqlMutation({
+    class: "AuthResolver",
+    name: "authGuest",
+    type: AuthGuestPayload,
+    args: [
+      gqlContextType(),
+      {
+        name: "input",
+        type: AuthGuestInput,
+      },
+    ],
+    async: true,
+  })
   async authGuest(
-    @gqlContextType() context: RequestContext,
-    @gqlArg("input") input: AuthGuestInput,
+    context: RequestContext,
+    input: AuthGuestInput,
   ): Promise<AuthGuestPayload> {
     const [viewer, token] = await useAndVerifyAuthJWT(
       context,
@@ -87,8 +64,19 @@ export class AuthResolver {
     };
   }
 
-  @gqlQuery({ name: "emailAvailable", type: Boolean })
-  async emailAvailable(@gqlArg("email") email: string) {
+  @gqlQuery({
+    class: "AuthResolver",
+    name: "emailAvailable",
+    type: Boolean,
+    args: [
+      {
+        name: "email",
+        type: GraphQLString,
+      },
+    ],
+    async: true,
+  })
+  async emailAvailable(email: string) {
     const f = User.getField("EmailAddress");
     if (!f || !f.format) {
       throw new Error("could not find field EmailAddress for User");
@@ -98,15 +86,38 @@ export class AuthResolver {
     return id === undefined;
   }
 
-  @gqlMutation({ name: "emailAvailable", type: Boolean })
-  async emailAvailableMutation(@gqlArg("email") email: string) {
+  @gqlMutation({
+    class: "AuthResolver",
+    name: "emailAvailable",
+    type: Boolean,
+    args: [
+      {
+        name: "email",
+        type: GraphQLString,
+      },
+    ],
+    async: true,
+  })
+  async emailAvailableMutation(email: string) {
     return this.emailAvailable(email);
   }
 
-  @gqlMutation({ name: "authUser", type: AuthUserPayload })
+  @gqlMutation({
+    class: "AuthResolver",
+    name: "authUser",
+    type: AuthUserPayload,
+    args: [
+      gqlContextType(),
+      {
+        name: "input",
+        type: AuthUserInput,
+      },
+    ],
+    async: true,
+  })
   async authUser(
-    @gqlContextType() context: RequestContext,
-    @gqlArg("input") input: AuthUserInput,
+    context: RequestContext,
+    input: AuthUserInput,
   ): Promise<AuthUserPayload> {
     const [viewer, token] = await useAndVerifyAuthJWT(
       context,

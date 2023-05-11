@@ -120,6 +120,8 @@ CREATE TABLE events (
     CONSTRAINT events_id_pkey PRIMARY KEY (id)
 );
 
+CREATE INDEX event_time_indices ON events (start_time, end_time);
+
 CREATE TABLE global_login_auth_edges (
     id1 UUID NOT NULL, 
     id1_type TEXT NOT NULL, 

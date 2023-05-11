@@ -40,7 +40,6 @@ import {
   UserNestedObjectListType,
   UserPreferredShiftType,
   UserPrefsDiffType,
-  UserPrefsStruct2Type,
   UserPrefsStructType,
   UserSuperNestedObjectType,
   UserToCommentsAuthoredConnectionType,
@@ -107,7 +106,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     prefsList: {
-      type: new GraphQLList(new GraphQLNonNull(UserPrefsStruct2Type)),
+      type: new GraphQLList(new GraphQLNonNull(UserPrefsStructType)),
       resolve: async (
         user: User,
         args: {},

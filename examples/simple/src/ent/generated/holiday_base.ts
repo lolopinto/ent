@@ -196,7 +196,7 @@ export class HolidayBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+  ): LoadEntOptions<T, ExampleViewerAlias, HolidayDBData> {
     return {
       tableName: holidayLoaderInfo.tableName,
       fields: holidayLoaderInfo.fields,

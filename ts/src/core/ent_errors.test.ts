@@ -8,6 +8,7 @@ import {
   Allow,
   Skip,
   LoadEntOptions,
+  LoadCustomEntOptions,
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule, EntPrivacyError } from "./privacy";
@@ -65,7 +66,7 @@ const tbl = table(
   text("foo"),
 );
 
-const options: LoadEntOptions<User> = {
+const options: LoadCustomEntOptions<User> = {
   tableName: "users",
   fields: ["*"],
   ent: User,

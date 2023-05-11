@@ -74,11 +74,22 @@ func TestCustomMutation(t *testing.T) {
 
 	code := testhelper.GetCodeWithSchema(`
 			import {RequestContext} from "{root}";
-			import {gqlMutation, gqlArg} from "{graphql}";
+			import {gqlMutation} from "{graphql}";
 
 			export class AuthResolver {
-			  @gqlMutation({ name: "emailAvailable", type: Boolean })
-			  async emailAvailableMutation(@gqlArg("email") email: string) {
+			  @gqlMutation({ 
+					class: "AuthResolver", 
+					name: "emailAvailable", 
+					type: Boolean, 
+					async: true, 
+					args: [
+						{
+							name: "email",
+							type:	'String',		
+						},
+					],
+				})
+			  async emailAvailableMutation(email: string) {
 					return false;
 				}
 		  }
@@ -206,11 +217,22 @@ func TestCustomQuery(t *testing.T) {
 
 	code := testhelper.GetCodeWithSchema(`
 			import {RequestContext} from "{root}";
-			import {gqlQuery, gqlArg} from "{graphql}";
+			import {gqlQuery} from "{graphql}";
 
 			export class AuthResolver {
-			  @gqlQuery({ name: "emailAvailable", type: Boolean })
-			  async emailAvailable(@gqlArg("email") email: string) {
+			  @gqlQuery({ 
+					class: "AuthResolver",
+					name: "emailAvailable", 
+					type: Boolean, 
+					async: true,
+					args: [
+						{
+							name: "email",
+							type:	'String',		
+						},
+					],
+				})
+			  async emailAvailable(email: string) {
 					return false;
 				}
 		  }
@@ -326,11 +348,22 @@ func TestCustomListQuery(t *testing.T) {
 
 	code := testhelper.GetCodeWithSchema(`
 			import {RequestContext} from "{root}";
-			import {gqlQuery, gqlArg} from "{graphql}";
+			import {gqlQuery} from "{graphql}";
 
 			export class AuthResolver {
-			  @gqlQuery({ name: "emailsAvailable", type: [Boolean] })
-			  async emailsAvailable(@gqlArg("emails", {type: [String]}) emails: string[]) {
+			  @gqlQuery({ 
+					class: 'AuthResolver',
+					name: "emailsAvailable", 
+					type: [Boolean],
+					async: true, 
+					args: [
+						{
+							name: 'emails',
+							type: [String],
+						},
+					],
+				})
+			  async emailsAvailable(emails: string[]) {
 					const arr = new Array(emails.length);
 					return arr.fill(false);
 				}
@@ -478,11 +511,23 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 
 	code := testhelper.GetCodeWithSchema(`
 			import {RequestContext} from "{root}";
-			import {gqlQuery, gqlArg} from "{graphql}";
+			import {gqlQuery} from "{graphql}";
 
 			export class UsernameResolver {
-			  @gqlQuery({ name: "username", type: "User", nullable:true })
-			  async username(@gqlArg("username") username: string) {
+			  @gqlQuery({ 
+					class: 'UsernameResolver',
+					name: "username", 
+					type: "User", 
+					nullable:true,
+					args: [
+						{
+							name: "username",
+							type:	'String',
+						}
+					],
+					async: true
+				})
+			  async username(username: string) {
 					// not actually typed here so fine
 					return null;
 				}
@@ -601,12 +646,23 @@ func TestCustomUploadType(t *testing.T) {
 
 	code := testhelper.GetCodeWithSchema(`
 			import {RequestContext} from "{root}";
-			import {gqlMutation, gqlArg, gqlFileUpload} from "{graphql}";
+			import {gqlMutation, gqlFileUpload} from "{graphql}";
 
 			export class ProfilePicResolver {
-			  @gqlMutation({ name: "profilePicUpload", type: Boolean })
+			  @gqlMutation({ 
+					class: 'ProfilePicResolver',
+					name: "profilePicUpload", 
+					type: Boolean,
+					async: true,
+					args: [
+						{
+							name: "file",
+							type:	gqlFileUpload,
+						},
+					],
+				})
 				// TODO TS type
-			  async profilePicUpload(@gqlArg("file", {type: gqlFileUpload}) file) {
+			  async profilePicUpload(file) {
 					return true;
 				}
 		  }

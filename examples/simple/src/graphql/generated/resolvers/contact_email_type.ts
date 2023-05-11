@@ -14,8 +14,9 @@ import { RequestContext } from "@snowtop/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { ContactEmail } from "../../../ent";
 import {
-  ContactEmailLabelType,
   ContactInfoType,
+  ContactItemType,
+  ContactLabelType,
   ContactType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -47,10 +48,10 @@ export const ContactEmailType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: new GraphQLNonNull(ContactEmailLabelType),
+      type: new GraphQLNonNull(ContactLabelType),
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: [GraphQLNodeInterface, ContactItemType],
   isTypeOf(obj) {
     return obj instanceof ContactEmail;
   },

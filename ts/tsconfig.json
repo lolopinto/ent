@@ -11,8 +11,6 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "esModuleInterop": true,
-    "experimentalDecorators":true,
-    "emitDecoratorMetadata": true,
     "declaration": true,
     "skipLibCheck": true
   },

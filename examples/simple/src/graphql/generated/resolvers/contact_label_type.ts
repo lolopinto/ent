@@ -5,8 +5,8 @@
 
 import { GraphQLEnumType } from "graphql";
 
-export const ContactEmailLabelType = new GraphQLEnumType({
-  name: "ContactEmailLabel",
+export const ContactLabelType = new GraphQLEnumType({
+  name: "ContactLabel",
   values: {
     WORK: {
       value: "work",

@@ -7,7 +7,7 @@
   },
   "go.useLanguageServer": true,
   "go.testEnvVars": {
-    "DB_CONNECTION_STRING": "postgres://ola:@localhost/ent_test?sslmode=disable"
+    "DB_CONNECTION_STRING": "postgres://ola:@localhost/ent_test?sslmode=disable",
   },
   "go.testTimeout": "90s",
   "prettier.configPath": "ts/.prettierrc",

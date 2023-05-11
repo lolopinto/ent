@@ -14,7 +14,8 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { UserType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { GQLViewer, ViewerResolver } from "../../resolvers/viewer";
+import { GQLViewer } from "../../resolvers/gql_viewer";
+import { ViewerResolver } from "../../resolvers/viewer";
 
 export const GQLViewerType = new GraphQLObjectType({
   name: "Viewer",

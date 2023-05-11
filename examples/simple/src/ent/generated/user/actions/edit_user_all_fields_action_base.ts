@@ -28,7 +28,6 @@ import {
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
-  UserPrefsStruct2,
   UserSuperNestedObject,
 } from "../../types";
 import { UserBuilder } from "./user_builder";
@@ -44,7 +43,7 @@ export interface EditUserAllFieldsRelativeInput {
   bio?: string | null;
   nicknames?: string[] | null;
   prefs?: UserPrefsStruct | null;
-  prefsList?: UserPrefsStruct2[] | null;
+  prefsList?: UserPrefsStruct[] | null;
   prefsDiff?: UserPrefsDiff | null;
   daysOff?: UserDaysOff[] | null;
   preferredShift?: UserPreferredShift[] | null;
@@ -115,15 +114,16 @@ export class EditUserAllFieldsActionBase
     this.viewer = viewer;
     let expressions = new Map<string, Clause>();
     const data = user.___getRawDBData();
-    this.input = {
-      ...input,
-      timeInMs: maybeConvertRelativeInputPlusExpressions(
+    // @ts-expect-error converted below
+    this.input = input;
+    if (input.timeInMs !== undefined) {
+      input.timeInMs = maybeConvertRelativeInputPlusExpressions(
         input.timeInMs,
         "time_in_ms",
         data.time_in_ms,
         expressions,
-      ),
-    };
+      );
+    }
     this.builder = new UserBuilder(
       this.viewer,
       WriteOperation.Edit,

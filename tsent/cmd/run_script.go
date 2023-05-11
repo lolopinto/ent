@@ -25,7 +25,7 @@ var runScriptCmd = &cobra.Command{
 		scriptPath := util.GetPathToScript(script, false)
 
 		cmdArgs := append(
-			cmd2.GetArgsForScript(cfg.GetAbsPathToRoot()),
+			cmd2.GetArgsForTsNodeScript(cfg.GetAbsPathToRoot()),
 			// "--swc",
 			scriptPath,
 		)

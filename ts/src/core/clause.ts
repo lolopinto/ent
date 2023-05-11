@@ -1,4 +1,4 @@
-import { Data } from "./base";
+import { Data, SelectBaseDataOptions, SelectDataOptions } from "./base";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
@@ -624,7 +624,7 @@ export function LessEq<T extends Data, K = keyof T>(
 
 export function And<T extends Data, K = keyof T>(
   ...args: Clause<T, K>[]
-): compositeClause<T, K> {
+): Clause<T, K> {
   return new compositeClause(args, " AND ");
 }
 
@@ -641,7 +641,7 @@ export function AndOptional<T extends Data, K = keyof T>(
 
 export function Or<T extends Data, K = keyof T>(
   ...args: Clause<T, K>[]
-): compositeClause<T, K> {
+): Clause<T, K> {
   return new compositeClause(args, " OR ");
 }
 
@@ -785,14 +785,16 @@ export function sensitiveValue(val: any): SensitiveValue {
 export function JSONObjectFieldKeyASJSON<T extends Data, K = keyof T>(
   col: K,
   field: string,
-) {
+): keyof T {
+  // type as keyof T to make it easier to use in other queries
   return `${col}->'${field}'`;
 }
 
 export function JSONObjectFieldKeyAsText<T extends Data, K = keyof T>(
   col: K,
   field: string,
-) {
+): keyof T {
+  // type as keyof T to make it easier to use in other queries
   return `${col}->>'${field}'`;
 }
 
@@ -913,7 +915,7 @@ export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
   tableName: string,
   uniqueCol: K,
   val: any,
-) {
+): Clause<T, K> {
   return new paginationMultipleColumnsSubQueryClause(
     col,
     op,
@@ -957,4 +959,23 @@ export function Modulo<T extends Data, K = keyof T>(
   value: any,
 ): Clause<T, K> {
   return new simpleClause(col, value, "%", new isNullClause(col));
+}
+
+export function getCombinedClause<V extends Data = Data, K = keyof V>(
+  options: Omit<SelectDataOptions, "key">,
+  cls: Clause<V, K>,
+): Clause<V, K> {
+  if (options.clause) {
+    let optionClause: Clause | undefined;
+    if (typeof options.clause === "function") {
+      optionClause = options.clause();
+    } else {
+      optionClause = options.clause;
+    }
+    if (optionClause) {
+      // @ts-expect-error different types
+      cls = And(cls, optionClause);
+    }
+  }
+  return cls;
 }

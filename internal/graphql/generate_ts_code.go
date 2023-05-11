@@ -33,7 +33,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
-	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
@@ -59,6 +58,7 @@ var knownTypes = map[string]*tsimport.ImportPath{
 	"Connection": tsimport.NewEntGraphQLImportPath("GraphQLConnectionInterface"),
 }
 
+// this should be somewhat kept in touch with knownAllowedNams in src/graphql/graphql.ts
 var knownTsTypes = map[string]string{
 	"String":  "string",
 	"Date":    "Date",
@@ -379,7 +379,24 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	}
 
 	cmp := s.customData.compareResult
-	// delete custom queries|mutations
+
+	for idx := range s.unions {
+		opts := &writeOptions{}
+		if writeAll || cmp == nil || cmp.customUnionsChanged[s.unions[idx].ObjData.Node] {
+			opts.writeNode = true
+		}
+		funcs = append(funcs, p.buildNodeWithOpts(processor, s, s.unions[idx], opts)...)
+	}
+
+	for idx := range s.interfaces {
+		opts := &writeOptions{}
+		if writeAll || cmp == nil || cmp.customInterfacesChanged[s.interfaces[idx].ObjData.Node] {
+			opts.writeNode = true
+		}
+		funcs = append(funcs, p.buildNodeWithOpts(processor, s, s.interfaces[idx], opts)...)
+	}
+
+	// delete custom queries|mutations|unions|interfaces
 	if cmp != nil {
 		for k := range cmp.customQueriesRemoved {
 			funcs = append(
@@ -405,6 +422,14 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 					),
 				),
 			)
+		}
+
+		for k := range cmp.customInterfacesRemoved {
+			funcs = append(funcs, file.GetDeleteFileFunction(processor.Config, getFilePathForUnionInterfaceFile(processor.Config, k)))
+		}
+
+		for k := range cmp.customUnionsRemoved {
+			funcs = append(funcs, file.GetDeleteFileFunction(processor.Config, getFilePathForUnionInterfaceFile(processor.Config, k)))
 		}
 	}
 
@@ -474,6 +499,10 @@ func getFilePathForNode(cfg *codegen.Config, nodeData *schema.NodeData) string {
 }
 
 func getFilePathForCustomInterfaceFile(cfg *codegen.Config, gqlType string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", strcase.ToSnake(gqlType)))
+}
+
+func getFilePathForUnionInterfaceFile(cfg *codegen.Config, gqlType string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", strcase.ToSnake(gqlType)))
 }
 
@@ -555,7 +584,6 @@ func getFilePathForCustomQuery(cfg *codegen.Config, name string) string {
 
 var searchFor = []string{
 	"@gqlField",
-	"@gqlArg",
 	"@gqlArgType",
 	"@gqlInputObjectType",
 	"@gqlObjectType",
@@ -661,41 +689,61 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		buf.WriteString("\n")
 	}
 
-	// similar to writeTsFile in parse_ts.go
-	// unfortunately that this is being done
+	// send custom enums too
+	for _, info := range processor.Schema.Enums {
 
-	var cmdName string
-	var cmdArgs []string
-	var env []string
+		if info.GQLEnum == nil {
+			continue
+		}
+		buf.WriteString(info.GQLEnum.Name)
+		buf.WriteString("\n")
+	}
+
+	for _, ci := range processor.Schema.CustomInterfaces {
+		buf.WriteString(ci.GQLName)
+		buf.WriteString("\n")
+	}
 
 	scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", fromTest)
+
+	cmdInfo := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), fromTest)
+
+	if cmdInfo.UseSwc {
+		_, err := os.Stat(".swcrc")
+		if err != nil && os.IsNotExist(err) {
+			// temp .swcrc file to be used
+			// probably need this for parse_ts too
+			err = os.WriteFile(".swcrc", []byte(`{
+    "jsc": {
+        "parser": {
+            "syntax": "typescript",
+            "decorators": true
+        },
+        "target": "es2020",
+        "keepClassNames":true,
+        "transform": {
+            "decoratorVersion": "2022-03"
+        }
+    }
+}
+				`), os.ModePerm)
+
+			if err == nil {
+				defer os.Remove(".swcrc")
+			}
+		}
+	}
+
 	if fromTest {
-		env = []string{
+		cmdInfo.Env = append(cmdInfo.Env,
 			fmt.Sprintf(
 				"GRAPHQL_PATH=%s",
 				filepath.Join(input.GetAbsoluteRootPathForTest(), "graphql"),
 			),
-		}
-		cmdName = "ts-node"
-
-		cmdArgs = []string{
-			"--compiler-options",
-			testingutils.DefaultCompilerOptions(),
-		}
-	} else {
-		cmdArgs = cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot())
-
-		cmdName = "ts-node-script"
+		)
 	}
 
-	// append LOCAL_SCRIPT_PATH so we know. in typescript...
-	if util.EnvIsTrue("LOCAL_SCRIPT_PATH") {
-		env = append(env, "LOCAL_SCRIPT_PATH=true")
-	}
-
-	cmdArgs = append(cmdArgs,
-		// TODO https://github.com/lolopinto/ent/issues/792
-		//			"--swc",
+	cmdArgs := append(cmdInfo.Args,
 		scriptPath,
 		"--path",
 		// TODO this should be a configuration option to indicate where the code root is
@@ -710,15 +758,12 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		cmdArgs = append(cmdArgs, "--dynamic_path", dynamicPath)
 	}
 
-	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd := exec.Command(cmdInfo.Name, cmdArgs...)
 	cmd.Dir = processor.Config.GetAbsPathToRoot()
 	cmd.Stdin = &buf
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
-	if len(env) != 0 {
-		env2 := append(os.Environ(), env...)
-		cmd.Env = env2
-	}
+	cmd.Env = cmdInfo.Env
 
 	if err := cmd.Run(); err != nil {
 		err = errors.Wrap(err, "error generating custom graphql")
@@ -798,6 +843,24 @@ func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 
 	if err := processCusomTypes(processor, cd, s); err != nil {
 		return err
+	}
+
+	if err := processCustomUnions(processor, cd, s); err != nil {
+		return err
+	}
+
+	if err := processCustomInterfaces(processor, cd, s); err != nil {
+		return err
+	}
+
+	for k := range cd.Objects {
+		if s.seenCustomObjects[k] {
+			continue
+		}
+		obj := cd.Objects[k]
+		if err := processDanglingCustomObject(processor, cd, s, obj); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -892,18 +955,22 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 }
 
 type gqlSchema struct {
-	hasConnections  bool
-	hasMutations    bool
-	nodes           map[string]*gqlNode
-	enums           map[string]*gqlEnum
-	customQueries   []*gqlNode
-	customMutations []*gqlNode
-	customData      *CustomData
-	edgeNames       map[string]bool
-	customEdges     map[string]*objectType
-	rootQueries     []*rootQuery
-	allTypes        []typeInfo
-	otherObjects    []*gqlNode
+	hasConnections bool
+	hasMutations   bool
+	nodes          map[string]*gqlNode
+	enums          map[string]*gqlEnum
+	// interfaces map[string]*gql
+	customQueries     []*gqlNode
+	customMutations   []*gqlNode
+	unions            map[string]*gqlNode
+	interfaces        map[string]*gqlNode
+	customData        *CustomData
+	edgeNames         map[string]bool
+	customEdges       map[string]*objectType
+	rootQueries       []*rootQuery
+	allTypes          []typeInfo
+	otherObjects      []*gqlNode
+	seenCustomObjects map[string]bool
 	// Query|Mutation|Subscription
 	rootDatas []*gqlRootData
 }
@@ -926,8 +993,12 @@ func (s *gqlSchema) getImportFor(processor *codegen.Processor, typ string, mutat
 
 	// custom nodes in the schema.
 	// e.g. User object, Event
+	// custom enums, interfaces, unions
 	_, ok = s.nodes[typ]
-	if ok {
+	_, ok2 := s.enums[typ]
+	_, ok3 := s.interfaces[typ]
+	_, ok4 := s.unions[typ]
+	if ok || ok2 || ok3 || ok4 {
 		if mutation {
 			return &tsimport.ImportPath{
 				Import: fmt.Sprintf("%sType", typ),
@@ -1379,14 +1450,16 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 		wg.Wait()
 		schema := &gqlSchema{
-			nodes:          nodes,
-			rootQueries:    rootQueries,
-			enums:          enums,
-			edgeNames:      edgeNames,
-			hasMutations:   hasMutations,
-			hasConnections: hasConnections,
-			customEdges:    make(map[string]*objectType),
-			otherObjects:   otherNodes,
+			nodes:             nodes,
+			rootQueries:       rootQueries,
+			enums:             enums,
+			edgeNames:         edgeNames,
+			hasMutations:      hasMutations,
+			hasConnections:    hasConnections,
+			customEdges:       make(map[string]*objectType),
+			otherObjects:      otherNodes,
+			unions:            map[string]*gqlNode{},
+			seenCustomObjects: map[string]bool{},
 		}
 		result <- &buildGQLSchemaResult{
 			schema: schema,
@@ -1518,6 +1591,15 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 			processNode(node, "CustomObject")
 		}
 	}
+
+	for _, node := range s.interfaces {
+		processNode(node, "Interface")
+	}
+
+	for _, node := range s.unions {
+		processNode(node, "Union")
+	}
+
 	var enums []typeInfo
 	for _, enum := range s.enums {
 		enums = append(enums, typeInfo{
@@ -1621,6 +1703,12 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 		for _, conn := range node.connections {
 			conns = append(conns, trimPath(cfg, conn.FilePath))
 		}
+	}
+	for _, node := range s.unions {
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
+	}
+	for _, node := range s.interfaces {
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
 	}
 	var enums []string
 	for _, enum := range s.enums {
@@ -1801,6 +1889,11 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		IsTypeOfMethod: []string{
 			fmt.Sprintf("return obj instanceof %s", nodeData.Node),
 		},
+	}
+	// add any custom interfaces
+	for _, inter := range nodeData.CustomGraphQLInterfaces {
+		result.GQLInterfaces = append(result.GQLInterfaces, inter+"Type")
+		result.Imports = append(result.Imports, tsimport.NewLocalGraphQLEntImportPath(inter))
 	}
 
 	for _, node := range nodeData.GetUniqueNodes() {
@@ -2753,12 +2846,13 @@ func (obj *objectType) getRenderer(s *gqlSchema) renderer {
 	}
 
 	return &elemRenderer{
-		input:      obj.GQLType == "GraphQLInputObjectType",
-		union:      obj.GQLType == "GraphQLUnionType",
-		name:       obj.Node,
-		interfaces: interfaces,
-		fields:     obj.Fields,
-		unionTypes: unions,
+		input:       obj.GQLType == "GraphQLInputObjectType",
+		union:       obj.GQLType == "GraphQLUnionType",
+		isInterface: obj.GQLType == "GraphQLInterfaceType",
+		name:        obj.Node,
+		interfaces:  interfaces,
+		fields:      obj.Fields,
+		unionTypes:  unions,
 	}
 }
 

@@ -230,6 +230,7 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 		if createInterface {
 			interfaces = append(interfaces, intType)
 		}
+		// here...
 		result = append(result, &gqlNode{
 			ObjData: &gqlobjectData{
 				interfaces: interfaces,
@@ -654,6 +655,8 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 		GQLType: gqlType,
 	}
 
+	s.seenCustomObjects[item.Type] = true
+
 	fields, ok := cd.Fields[item.Type]
 	if !ok {
 		return nil, fmt.Errorf("type %s has no fields", item.Type)
@@ -771,7 +774,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			continue
 		}
 
-		if cd.Objects[nodeName] != nil {
+		if cd.Objects[nodeName] != nil || cd.Interfaces[nodeName] != nil {
 			continue
 		}
 
@@ -966,6 +969,111 @@ func processCusomTypes(processor *codegen.Processor, cd *CustomData, s *gqlSchem
 			FilePath: path,
 		}
 	}
+	return nil
+}
+
+func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
+	unions := make(map[string]*gqlNode)
+	for _, union := range cd.Unions {
+		obj := &objectType{
+			// TODO have to make sure this is unique
+			Type:     fmt.Sprintf("%sType", union.NodeName),
+			Node:     union.NodeName,
+			TSType:   union.ClassName,
+			GQLType:  "GraphQLUnionType",
+			Exported: true,
+		}
+		unionTypes := make([]string, len(union.UnionTypes))
+		imports := make([]*tsimport.ImportPath, len(union.UnionTypes))
+		for i, unionType := range union.UnionTypes {
+			unionTypes[i] = fmt.Sprintf("%sType", unionType)
+			imports[i] = tsimport.NewLocalGraphQLEntImportPath(unionType)
+		}
+		obj.UnionTypes = unionTypes
+		obj.Imports = imports
+
+		node := &gqlNode{
+			ObjData: &gqlobjectData{
+				Node:         union.NodeName,
+				NodeInstance: strcase.ToLowerCamel(union.NodeName),
+				GQLNodes:     []*objectType{obj},
+				Package:      processor.Config.GetImportPackage(),
+			},
+			FilePath: getFilePathForUnionInterfaceFile(processor.Config, union.NodeName),
+		}
+		unions[union.NodeName] = node
+	}
+	s.unions = unions
+	return nil
+}
+
+func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
+	interfaces := make(map[string]*gqlNode)
+	for _, inter := range cd.Interfaces {
+		obj := &objectType{
+			// TODO have to make sure this is unique
+			Type:     fmt.Sprintf("%sType", inter.NodeName),
+			Node:     inter.NodeName,
+			GQLType:  "GraphQLInterfaceType",
+			Exported: true,
+		}
+
+		fields, ok := cd.Fields[inter.NodeName]
+		if !ok {
+			return fmt.Errorf("type %s has no fields", inter.NodeName)
+		}
+
+		for _, f := range fields {
+			gqlField, err := getCustomGQLField(processor, cd, f, s, "obj")
+			if err != nil {
+				return err
+			}
+			obj.Fields = append(obj.Fields, gqlField)
+			obj.Imports = append(obj.Imports, gqlField.FieldImports...)
+		}
+
+		node := &gqlNode{
+			ObjData: &gqlobjectData{
+				Node:         inter.NodeName,
+				NodeInstance: strcase.ToLowerCamel(inter.NodeName),
+				GQLNodes:     []*objectType{obj},
+				Package:      processor.Config.GetImportPackage(),
+			},
+			FilePath: getFilePathForUnionInterfaceFile(processor.Config, inter.NodeName),
+		}
+		interfaces[inter.NodeName] = node
+	}
+	s.interfaces = interfaces
+	return nil
+}
+
+// clean this up eventually. most custom objects are referenced as part of a mutation or query and are then
+// generated in the same file as the mutation or query.
+// this is for the custom objects that are not referenced in a mutation or query e.g. not an argument or result
+// we go through and create them in their own file
+// eventually, we should put all of them in their own file or all in one big file
+func processDanglingCustomObject(processor *codegen.Processor, cd *CustomData, s *gqlSchema, obj *CustomObject) error {
+	// technically not a CI but whatever
+	filePath := getFilePathForCustomInterfaceFile(processor.Config, obj.NodeName)
+
+	item := CustomItem{
+		Type: obj.NodeName,
+	}
+	objType, err := buildObjectType(processor, cd, s, item, obj, filePath, "GraphQLObjectType")
+	if err != nil {
+		return err
+	}
+
+	gqlNode := &gqlNode{
+		ObjData: &gqlobjectData{
+			Node:         obj.NodeName,
+			NodeInstance: "obj",
+			GQLNodes:     []*objectType{objType},
+			Package:      processor.Config.GetImportPackage(),
+		},
+		FilePath: filePath,
+	}
+	s.otherObjects = append(s.otherObjects, gqlNode)
 	return nil
 }
 

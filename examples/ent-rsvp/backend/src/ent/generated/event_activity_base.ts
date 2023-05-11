@@ -219,7 +219,7 @@ export class EventActivityBase
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, EventActivityDBData> {
     return {
       tableName: eventActivityLoaderInfo.tableName,
       fields: eventActivityLoaderInfo.fields,

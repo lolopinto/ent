@@ -211,7 +211,7 @@ export class GuestBase
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, GuestDBData> {
     return {
       tableName: guestLoaderInfo.tableName,
       fields: guestLoaderInfo.fields,

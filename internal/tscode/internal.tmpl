@@ -6,7 +6,7 @@
   {{exportAll .}}
 {{end -}}
 
-{{ if .Schema.InitForEdges -}}
+{{ if .Schema.InitGlobalSchema -}}
   {{reserveImport .Package.PackagePath "setGlobalSchema"}}
   {{ reserveDefaultImport .Config.GetGlobalSchemaImportPath "globalSchema"}}
   {{ useImport "setGlobalSchema"}}({{useImport "globalSchema"}});

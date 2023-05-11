@@ -49,6 +49,20 @@ const getNewLoader = (context: boolean | TestContext = true) => {
   );
 };
 
+const getNewCountLoader = (context: boolean | TestContext = true) => {
+  return new ObjectLoaderFactory<LoaderRow>({
+    tableName: "users",
+    fields: ["id", "first_name"],
+    key: "id",
+  }).createCountLoader(
+    context
+      ? typeof context === "boolean"
+        ? new TestContext()
+        : context
+      : undefined,
+  );
+};
+
 interface LoaderRowWithCustomClause extends LoaderRow {
   deleted_at: Date;
 }
@@ -70,6 +84,23 @@ const getNewLoaderWithCustomClause = (
   );
 };
 
+const getNewCountLoaderWithCustomClause = (
+  context: boolean | TestContext = true,
+) => {
+  return new ObjectLoaderFactory<LoaderRowWithCustomClause>({
+    tableName: "users",
+    fields: ["id", "first_name", "deleted_at"],
+    key: "id",
+    clause: clause.Eq("deleted_at", null),
+  }).createCountLoader(
+    context
+      ? typeof context === "boolean"
+        ? new TestContext()
+        : context
+      : undefined,
+  );
+};
+
 const getNewLoaderWithCustomClauseFunc = (
   context: boolean | TestContext = true,
 ) => {
@@ -80,6 +111,24 @@ const getNewLoaderWithCustomClauseFunc = (
     clause: () => clause.Eq("deleted_at", null),
     instanceKey: "users:transformedReadClause",
   }).createLoader(
+    context
+      ? typeof context === "boolean"
+        ? new TestContext()
+        : context
+      : undefined,
+  );
+};
+
+const getNewCountLoaderWithCustomClauseFunc = (
+  context: boolean | TestContext = true,
+) => {
+  return new ObjectLoaderFactory<LoaderRowWithCustomClause>({
+    tableName: "users",
+    fields: ["id", "first_name", "deleted_at"],
+    key: "id",
+    clause: () => clause.Eq("deleted_at", null),
+    instanceKey: "users:transformedReadClause",
+  }).createCountLoader(
     context
       ? typeof context === "boolean"
         ? new TestContext()
@@ -547,7 +596,7 @@ function commonTests() {
   });
 
   async function testWithoutContextCustomClauseCacheMiss(
-    getLoader: (context?: boolean) => ObjectLoader<unknown>,
+    getLoader: (context?: boolean) => ObjectLoader<Data>,
   ) {
     const loader = getLoader(false);
 
@@ -986,6 +1035,528 @@ function commonTests() {
       .createLoader(undefined)
       .load(user.id);
     expect(row?.first_name).toBe(user.firstName);
+  });
+
+  describe("clause", () => {
+    test("cache hit", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) => create(idx + 1)),
+      );
+
+      const loader = getNewLoader(true);
+
+      const res = await loader.load(clause.Greater<LoaderRow>("id", 10));
+      expect(res?.length).toBe(20);
+      const expQuery = buildQuery({
+        tableName: "users",
+        fields: ["id", "first_name"],
+        clause: clause.Greater("id", 10),
+      });
+      expect(ml.logs).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+      ]);
+
+      const res2 = await loader.load(clause.Greater<LoaderRow>("id", 10));
+      expect(res).toBe(res2);
+
+      expect(ml.logs).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+        {
+          "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
+          "tableName": "users",
+        },
+      ]);
+    });
+
+    test("query at the same time", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) => create(idx + 1)),
+      );
+
+      ml.clear();
+
+      const loader = getNewLoader(true);
+
+      await Promise.all(
+        Array.from({ length: 100 }, (_) =>
+          loader.load(clause.Greater<LoaderRow>("id", 10)),
+        ),
+      );
+
+      // only 1 query is sent even though we're doing a bunch at the same time
+
+      const expQuery = buildQuery({
+        tableName: "users",
+        fields: ["id", "first_name"],
+        clause: clause.Greater("id", 10),
+      });
+
+      // filter non queries out
+      expect(ml.logs.filter((log) => log.query !== undefined)).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+      ]);
+    });
+
+    test("loadMany", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) => create(idx + 1)),
+      );
+
+      ml.clear();
+
+      const loader = getNewLoader(true);
+
+      const clauses: clause.Clause<LoaderRow>[] = [
+        clause.Greater("id", 10),
+        clause.Greater("id", 20),
+        clause.LessEq("id", 25),
+      ];
+      await loader.loadMany(clauses);
+
+      expect(ml.logs.length).toBe(3);
+
+      for (const clause of clauses) {
+        const expQuery = buildQuery({
+          tableName: "users",
+          fields: ["id", "first_name"],
+          clause: clause,
+        });
+        expect(ml.logs).toContainEqual({
+          query: expQuery,
+          values: clause.values(),
+        });
+      }
+    });
+
+    test("cache hit with custom clause", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) =>
+          createWithNullDeletedAt(idx + 1),
+        ),
+      );
+
+      const loader = getNewLoaderWithCustomClause(true);
+
+      const res = await loader.load(clause.Greater<LoaderRow>("id", 10));
+      expect(res?.length).toBe(20);
+      const expQuery = buildQuery({
+        tableName: "users",
+        fields: ["id", "first_name", "deleted_at"],
+        clause: clause.And(
+          clause.Greater("id", 10),
+          clause.Eq("deleted_at", null),
+        ),
+      });
+      expect(ml.logs).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+      ]);
+
+      const res2 = await loader.load(clause.Greater<LoaderRow>("id", 10));
+      expect(res).toBe(res2);
+
+      expect(ml.logs).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+        {
+          "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
+          "tableName": "users",
+        },
+      ]);
+    });
+
+    test("query at the same time with custom clause", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) =>
+          createWithNullDeletedAt(idx + 1),
+        ),
+      );
+
+      ml.clear();
+
+      const loader = getNewLoaderWithCustomClause(true);
+
+      await Promise.all(
+        Array.from({ length: 100 }, (_) =>
+          loader.load(clause.Greater<LoaderRow>("id", 10)),
+        ),
+      );
+
+      // only 1 query is sent even though we're doing a bunch at the same time
+
+      const expQuery = buildQuery({
+        tableName: "users",
+        fields: ["id", "first_name", "deleted_at"],
+        clause: clause.And(
+          clause.Greater("id", 10),
+          clause.Eq("deleted_at", null),
+        ),
+      });
+
+      // filter non queries out
+      expect(ml.logs.filter((log) => log.query !== undefined)).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+      ]);
+    });
+
+    test("loadMany with custom clause", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) =>
+          createWithNullDeletedAt(idx + 1),
+        ),
+      );
+
+      ml.clear();
+
+      const loader = getNewLoaderWithCustomClause(true);
+
+      const clauses: clause.Clause<LoaderRow>[] = [
+        clause.Greater("id", 10),
+        clause.Greater("id", 20),
+        clause.LessEq("id", 25),
+      ];
+      await loader.loadMany(clauses);
+
+      expect(ml.logs.length).toBe(3);
+
+      for (const cls of clauses) {
+        const expQuery = buildQuery({
+          tableName: "users",
+          fields: ["id", "first_name", "deleted_at"],
+          clause: clause.And(cls, clause.Eq("deleted_at", null)),
+        });
+        expect(ml.logs).toContainEqual({
+          query: expQuery,
+          values: cls.values(),
+        });
+      }
+    });
+  });
+
+  describe("count clause", () => {
+    test("cache hit", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) => create(idx + 1)),
+      );
+
+      const loader = getNewCountLoader(true);
+
+      const res = await loader.load(clause.Greater<LoaderRow>("id", 10));
+      expect(res).toBe(20);
+      const expQuery = buildQuery({
+        tableName: "users",
+        fields: ["count(*) as count"],
+        clause: clause.Greater("id", 10),
+      });
+      expect(ml.logs).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+      ]);
+
+      const res2 = await loader.load(clause.Greater<LoaderRow>("id", 10));
+      expect(res).toBe(res2);
+
+      expect(ml.logs).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+        {
+          "dataloader-cache-hit": `${clause
+            .Greater("id", 10)
+            .instanceKey()}:count`,
+          "tableName": "users",
+        },
+      ]);
+    });
+
+    test("query at the same time", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) => create(idx + 1)),
+      );
+
+      ml.clear();
+
+      const loader = getNewCountLoader(true);
+
+      await Promise.all(
+        Array.from({ length: 100 }, (_) =>
+          loader.load(clause.Greater<LoaderRow>("id", 10)),
+        ),
+      );
+
+      // only 1 query is sent even though we're doing a bunch at the same time
+
+      const expQuery = buildQuery({
+        tableName: "users",
+        fields: ["count(*) as count"],
+        clause: clause.Greater("id", 10),
+      });
+
+      // filter non queries out
+      expect(ml.logs.filter((log) => log.query !== undefined)).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+      ]);
+    });
+
+    test("loadMany", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) => create(idx + 1)),
+      );
+
+      ml.clear();
+
+      const loader = getNewCountLoader(true);
+
+      const clauses: clause.Clause<LoaderRow>[] = [
+        clause.Greater("id", 10),
+        clause.Greater("id", 20),
+        clause.LessEq("id", 25),
+      ];
+      await loader.loadMany(clauses);
+
+      expect(ml.logs.length).toBe(3);
+
+      for (const clause of clauses) {
+        const expQuery = buildQuery({
+          tableName: "users",
+          fields: ["count(*) as count"],
+          clause: clause,
+        });
+        expect(ml.logs).toContainEqual({
+          query: expQuery,
+          values: clause.values(),
+        });
+      }
+    });
+
+    test("cache hit with custom clause", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) =>
+          createWithNullDeletedAt(idx + 1),
+        ),
+      );
+
+      const loader = getNewCountLoaderWithCustomClause(true);
+
+      const res = await loader.load(clause.Greater<LoaderRow>("id", 10));
+      expect(res).toBe(20);
+      const expQuery = buildQuery({
+        tableName: "users",
+        fields: ["count(*) as count"],
+        clause: clause.And(
+          clause.Greater("id", 10),
+          clause.Eq("deleted_at", null),
+        ),
+      });
+      expect(ml.logs).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+      ]);
+
+      const res2 = await loader.load(clause.Greater<LoaderRow>("id", 10));
+      expect(res).toBe(res2);
+
+      expect(ml.logs).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+        {
+          "dataloader-cache-hit": `${clause
+            .Greater("id", 10)
+            .instanceKey()}:count`,
+          "tableName": "users",
+        },
+      ]);
+    });
+
+    test("query at the same time with custom clause", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) =>
+          createWithNullDeletedAt(idx + 1),
+        ),
+      );
+
+      ml.clear();
+
+      const loader = getNewCountLoaderWithCustomClause(true);
+
+      await Promise.all(
+        Array.from({ length: 100 }, (_) =>
+          loader.load(clause.Greater<LoaderRow>("id", 10)),
+        ),
+      );
+
+      // only 1 query is sent even though we're doing a bunch at the same time
+
+      const expQuery = buildQuery({
+        tableName: "users",
+        fields: ["count(*) as count"],
+        clause: clause.And(
+          clause.Greater("id", 10),
+          clause.Eq("deleted_at", null),
+        ),
+      });
+
+      // filter non queries out
+      expect(ml.logs.filter((log) => log.query !== undefined)).toStrictEqual([
+        {
+          query: expQuery,
+          values: [10],
+        },
+      ]);
+    });
+
+    test("loadMany with custom clause", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) =>
+          createWithNullDeletedAt(idx + 1),
+        ),
+      );
+
+      ml.clear();
+
+      const loader = getNewCountLoaderWithCustomClause(true);
+
+      const clauses: clause.Clause<LoaderRow>[] = [
+        clause.Greater("id", 10),
+        clause.Greater("id", 20),
+        clause.LessEq("id", 25),
+      ];
+      await loader.loadMany(clauses);
+
+      expect(ml.logs.length).toBe(3);
+
+      for (const cls of clauses) {
+        const expQuery = buildQuery({
+          tableName: "users",
+          fields: ["count(*) as count"],
+          clause: clause.And(cls, clause.Eq("deleted_at", null)),
+        });
+        expect(ml.logs).toContainEqual({
+          query: expQuery,
+          values: cls.values(),
+        });
+      }
+    });
+
+    test("loadMany with custom clause func", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) =>
+          createWithNullDeletedAt(idx + 1),
+        ),
+      );
+
+      ml.clear();
+
+      const loader = getNewCountLoaderWithCustomClauseFunc(true);
+
+      const clauses: clause.Clause<LoaderRow>[] = [
+        clause.Greater("id", 10),
+        clause.Greater("id", 20),
+        clause.LessEq("id", 25),
+      ];
+      const res = await loader.loadMany(clauses);
+      expect(res).toStrictEqual([20, 10, 25]);
+
+      expect(ml.logs.length).toBe(3);
+
+      for (const cls of clauses) {
+        const expQuery = buildQuery({
+          tableName: "users",
+          fields: ["count(*) as count"],
+          clause: clause.And(cls, clause.Eq("deleted_at", null)),
+        });
+        expect(ml.logs).toContainEqual({
+          query: expQuery,
+          values: cls.values(),
+        });
+      }
+    });
+  });
+
+  test("combinations", async () => {
+    await Promise.all(Array.from({ length: 30 }, (_, idx) => create(idx + 1)));
+
+    const loader = getNewLoader(true);
+
+    const res = await loader.load(clause.Greater<LoaderRow>("id", 10));
+    expect(res?.length).toBe(20);
+
+    const expQuery = buildQuery({
+      tableName: "users",
+      fields: ["id", "first_name"],
+      clause: clause.Greater("id", 10),
+    });
+    expect(ml.logs).toStrictEqual([
+      {
+        query: expQuery,
+        values: [10],
+      },
+    ]);
+    ml.clear();
+
+    const countLoader = getNewCountLoader(true);
+    const count = await countLoader.load(clause.Greater<LoaderRow>("id", 10));
+    expect(count).toBe(20);
+
+    const expQuery2 = buildQuery({
+      tableName: "users",
+      fields: ["count(*) as count"],
+      clause: clause.Greater("id", 10),
+    });
+    expect(ml.logs).toStrictEqual([
+      {
+        query: expQuery2,
+        values: [10],
+      },
+    ]);
+
+    ml.clear();
+
+    const [res2, count2] = await Promise.all([
+      loader.load(clause.Greater<LoaderRow>("id", 10)),
+      countLoader.load(clause.Greater<LoaderRow>("id", 10)),
+    ]);
+    expect(res2).toBe(res);
+    expect(count2).toBe(20);
+
+    expect(ml.logs).toStrictEqual([
+      {
+        "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
+        "tableName": "users",
+      },
+      {
+        "dataloader-cache-hit": `${clause
+          .Greater("id", 10)
+          .instanceKey()}:count`,
+        "tableName": "users",
+      },
+    ]);
   });
 }
 

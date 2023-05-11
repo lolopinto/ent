@@ -165,13 +165,14 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
       {{if $inputWithRelative -}}
           let expressions = new Map<string, {{useImport "Clause"}}>();
           const data = {{$instance}}.___getRawDBData();
-          this.input = {
-            ...input,
+          // @ts-expect-error converted below
+          this.input = input;
         {{ range $field := $inputWithRelative.FieldsWithRelative -}}
           {{/* TODO this is sadly not generic even though everything else here is generic... */ -}}
-          {{$field.TsBuilderFieldName}}: {{useImport "maybeConvertRelativeInputPlusExpressions"}}(input.{{$field.TsBuilderFieldName}}, '{{$field.GetDbColName}}', data.{{$field.GetDbColName}}, expressions),
+          if (input.{{$field.TsBuilderFieldName}} !== undefined) {
+            input.{{$field.TsBuilderFieldName}} = {{useImport "maybeConvertRelativeInputPlusExpressions"}}(input.{{$field.TsBuilderFieldName}}, '{{$field.GetDbColName}}', data.{{$field.GetDbColName}}, expressions);
+          }
         {{ end -}}
-        };
       {{ else -}}
         this.input = input;
       {{ end -}}

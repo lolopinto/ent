@@ -31,6 +31,9 @@ export interface GlobalSchema {
   transformEdgeWrite?: (
     stmt: EdgeUpdateOperation,
   ) => TransformedEdgeUpdateOperation | null;
+
+  // for enum and other fields
+  fields?: FieldMap;
 }
 
 // we may eventually support more properties but for now, minimal field properties
@@ -87,6 +90,9 @@ export default interface Schema {
   // this automatically hides all related actions to it from graphql
   // AND hides all edges pointing to it since we can't return this object
   hideFromGraphQL?: boolean;
+
+  // indicates that this ent should implement these custom interfaces
+  customGraphQLInterfaces?: string[];
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format
@@ -377,6 +383,7 @@ export interface Type {
   intEnumMap?: IntEnumMap;
   deprecatedIntEnumMap?: IntEnumMap;
   disableUnknownType?: boolean;
+  globalType?: string;
 
   // @deprecated eventually kill this
   importType?: DeprecatedImportType;
@@ -480,6 +487,11 @@ export interface FieldOptions {
   // shorthand for defaultValueOnCreate: (builder)=>builder.viewer.viewerID;
   // exists for common scenario to set a field to the logged in viewerID.
   defaultToViewerOnCreate?: boolean;
+
+  // goes along with defaultValueOnEdit
+  // flag that indicates that if this is the only field being updated,
+  // don't update the ent, only if other fields are being updated, should this be updated
+  onlyUpdateIfOtherFieldsBeingSet_BETA?: boolean;
   defaultValueOnEdit?(builder: Builder<Ent>, input: Data): any;
   // this is very specific.
   // maybe there's a better way to indicate this

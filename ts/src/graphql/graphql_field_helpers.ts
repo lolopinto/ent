@@ -131,6 +131,14 @@ export function validateCustomObjects(expected: CustomObject[]) {
   validateCustom(expected, GQLCapture.getCustomObjects());
 }
 
+export function validateCustomInterfaces(expected: CustomObject[]) {
+  validateCustom(expected, GQLCapture.getCustomInterfaces());
+}
+
+export function validateCustomUnions(expected: CustomObject[]) {
+  validateCustom(expected, GQLCapture.getCustomUnions());
+}
+
 export function validateNoCustomArgs() {
   expect(GQLCapture.getCustomArgs().size).toBe(0);
 }
@@ -155,6 +163,14 @@ export function validateNoCustomTypes() {
   expect(GQLCapture.getCustomTypes().size).toBe(0);
 }
 
+export function validateNoCustomInterfaces() {
+  expect(GQLCapture.getCustomInterfaces().size).toBe(0);
+}
+
+export function validateNoCustomUnions() {
+  expect(GQLCapture.getCustomUnions().size).toBe(0);
+}
+
 export enum CustomObjectTypes {
   Field = 0x1,
   Arg = 0x2,
@@ -163,6 +179,8 @@ export enum CustomObjectTypes {
   Query = 0x10,
   Mutation = 0x20,
   CustomTypes = 0x40,
+  Interface = 0x80,
+  Union = 0x100,
 }
 
 // TODO what's a good name for this instead
@@ -181,6 +199,8 @@ export function validateNoCustom(...exceptions: number[]) {
   validate(CustomObjectTypes.Mutation, validateNoCustomMutations);
   validate(CustomObjectTypes.InputObject, validateNoCustomInputObjects);
   validate(CustomObjectTypes.CustomTypes, validateNoCustomTypes);
+  validate(CustomObjectTypes.Interface, validateNoCustomInterfaces);
+  validate(CustomObjectTypes.Union, validateNoCustomUnions);
 }
 
 export function validateCustomTypes(expected: CustomType[]) {

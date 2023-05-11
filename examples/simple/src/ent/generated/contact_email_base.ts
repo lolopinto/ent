@@ -25,7 +25,7 @@ import {
   contactEmailLoader,
   contactEmailLoaderInfo,
 } from "./loaders";
-import { ContactEmailLabel, NodeType, convertContactEmailLabel } from "./types";
+import { ContactLabel, NodeType, convertContactLabel } from "./types";
 import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
 import schema from "../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
@@ -40,7 +40,7 @@ export class ContactEmailBase
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly emailAddress: string;
-  readonly label: ContactEmailLabel;
+  readonly label: ContactLabel;
   readonly contactID: ID;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
@@ -50,7 +50,7 @@ export class ContactEmailBase
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.emailAddress = data.email_address;
-    this.label = convertContactEmailLabel(data.label);
+    this.label = convertContactLabel(data.label);
     this.contactID = data.contact_id;
     // @ts-expect-error
     this.data = data;
@@ -200,7 +200,7 @@ export class ContactEmailBase
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+  ): LoadEntOptions<T, ExampleViewerAlias, ContactEmailDBData> {
     return {
       tableName: contactEmailLoaderInfo.tableName,
       fields: contactEmailLoaderInfo.fields,

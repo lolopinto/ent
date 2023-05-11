@@ -8,12 +8,12 @@ import (
 
 func DefaultCompilerOptions() string {
 	opts, err := json.Marshal(map[string]interface{}{
-		"lib":                    []string{"esnext", "dom"},
-		"moduleResolution":       "node",
-		"experimentalDecorators": true,
-		"emitDecoratorMetadata":  true,
-		"downlevelIteration":     true,
-		"esModuleInterop":        true,
+		"lib":                []string{"esnext"},
+		"module":             "commonjs",
+		"target":             "es2020",
+		"moduleResolution":   "node",
+		"downlevelIteration": true,
+		"esModuleInterop":    true,
 	})
 	if err != nil {
 		panic(errors.Wrap(err, "error creating json compiler options"))

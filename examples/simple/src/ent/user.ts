@@ -10,7 +10,7 @@ import {
 } from "@snowtop/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { GraphQLString } from "graphql";
-import { gqlArg, gqlConnection, gqlField } from "@snowtop/ent/graphql";
+import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import * as bcrypt from "bcryptjs";
 import { CustomEdgeQueryBase } from "@snowtop/ent";
 import { ExampleViewer } from "src/viewer/viewer";
@@ -47,6 +47,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
+    class: "User",
     type: GraphQLString,
     name: "fullName",
   })
@@ -55,6 +56,7 @@ export class User extends UserBase {
   }
 
   @gqlField({
+    class: "User",
     type: GraphQLString,
     nullable: true,
     name: "bar",
@@ -88,10 +90,12 @@ export class User extends UserBase {
   }
 
   @gqlField({
+    class: "User",
     type: "Contact",
     nullable: true,
     name: "contactSameDomain",
     description: "contacts same domain...",
+    async: true,
   })
   async getFirstContactSameDomain(): Promise<Contact | null> {
     let domain = this.getDomainFromEmail(this.emailAddress);
@@ -114,7 +118,12 @@ export class User extends UserBase {
     return null;
   }
 
-  @gqlField({ type: "[Contact]", name: "contactsSameDomain" })
+  @gqlField({
+    class: "User",
+    type: "[Contact]",
+    name: "contactsSameDomain",
+    async: true,
+  })
   async getContactsSameDomain(): Promise<Contact[]> {
     // the behavior here is inconsistent but meh
     let domain = this.getDomainFromEmail(this.emailAddress);
@@ -131,10 +140,19 @@ export class User extends UserBase {
     });
   }
 
-  @gqlField({ type: "[Contact]", name: "contactsGivenDomain" })
-  async getContactsGivenDomain(
-    @gqlArg("domain", { type: GraphQLString }) domain: string,
-  ): Promise<Contact[]> {
+  @gqlField({
+    class: "User",
+    type: "[Contact]",
+    name: "contactsGivenDomain",
+    args: [
+      {
+        name: "domain",
+        type: GraphQLString,
+      },
+    ],
+    async: true,
+  })
+  async getContactsGivenDomain(domain: string): Promise<Contact[]> {
     const contactInfos = await this.queryContactInfos();
     return contactInfos.filterMap((info) => {
       return {
@@ -146,9 +164,11 @@ export class User extends UserBase {
   }
 
   @gqlField({
+    class: "User",
     type: "[Contact]",
     name: "contactsSameDomainNullable",
     nullable: true,
+    async: true,
   })
   async getContactsSameDomainNullable(): Promise<Contact[] | null> {
     // the behavior here is inconsistent but meh
@@ -174,9 +194,11 @@ export class User extends UserBase {
   }
 
   @gqlField({
+    class: "User",
     type: "[Contact]",
     name: "contactsSameDomainNullableContents",
     nullable: "contents",
+    async: true,
   })
   async getContactsSameDomainNullableContents(): Promise<(Contact | null)[]> {
     // the behavior here is inconsistent but meh
@@ -195,9 +217,11 @@ export class User extends UserBase {
   }
 
   @gqlField({
+    class: "User",
     type: "[Contact]",
     name: "contactsSameDomainNullableContentsAndList",
     nullable: "contentsAndList",
+    async: true,
   })
   async getContactsSameDomainNullableContentsAndList(): Promise<
     (Contact | null)[] | null
@@ -217,7 +241,11 @@ export class User extends UserBase {
     });
   }
 
-  @gqlField({ name: "commentsAuthored", type: gqlConnection("Comment") })
+  @gqlField({
+    class: "User",
+    name: "commentsAuthored",
+    type: gqlConnection("Comment"),
+  })
   getCommentsAuthored(): UserToCommentsAuthoredQuery {
     return new UserToCommentsAuthoredQuery(this.viewer, this);
   }

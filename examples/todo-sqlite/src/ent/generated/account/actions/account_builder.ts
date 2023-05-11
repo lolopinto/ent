@@ -16,8 +16,6 @@ import { accountLoaderInfo } from "src/ent/generated/loaders";
 import { TodoContainerBuilder } from "src/ent/generated/mixins/todo_container/actions/todo_container_builder";
 import {
   AccountPrefs,
-  AccountPrefs2,
-  AccountPrefs3,
   AccountState,
   EdgeType,
   NodeType,
@@ -30,8 +28,8 @@ export interface AccountInput {
   phoneNumber?: string;
   accountState?: AccountState | null;
   accountPrefs?: AccountPrefs | null;
-  accountPrefs3?: AccountPrefs3;
-  accountPrefsList?: AccountPrefs2[] | null;
+  accountPrefs3?: AccountPrefs;
+  accountPrefsList?: AccountPrefs[] | null;
   credits?: number;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -435,7 +433,7 @@ export class AccountBuilder<
   }
 
   // get value of accountPrefs3. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAccountPrefs3Value(): AccountPrefs3 | null {
+  getNewAccountPrefs3Value(): AccountPrefs | null {
     if (this.input.accountPrefs3 !== undefined) {
       return this.input.accountPrefs3;
     }
@@ -449,7 +447,7 @@ export class AccountBuilder<
   }
 
   // get value of accountPrefsList. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAccountPrefsListValue(): AccountPrefs2[] | null {
+  getNewAccountPrefsListValue(): AccountPrefs[] | null {
     if (this.input.accountPrefsList !== undefined) {
       return this.input.accountPrefsList;
     }

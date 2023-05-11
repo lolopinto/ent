@@ -209,7 +209,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
       viewer: ExampleViewerAlias,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+  ): LoadEntOptions<T, ExampleViewerAlias, CommentDBData> {
     return {
       tableName: commentLoaderInfo.tableName,
       fields: commentLoaderInfo.fields,

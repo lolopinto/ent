@@ -158,12 +158,26 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
     return;
   }
   return await new Promise((resolve, reject) => {
-    // do we eventually need tsconfig-paths here or do we get it by default because child process?
-    const args = ["--swc", filePath];
+    let cmd = "";
+    const args: string[] = [];
+    const env = {
+      ...process.env,
+    };
+    // really only exists if there's a bug with swc or something. we should almost always be using swc
     if (process.env.DISABLE_SWC) {
-      args.shift();
+      cmd = "ts-node";
+      args.push("--transpileOnly");
+    } else {
+      cmd = "node";
+      // we seem to get tsconfig-paths by default because child process but not 100% sure...
+      args.push("-r", "@swc-node/register");
+      env.SWCRC = "true";
     }
-    const r = spawn("ts-node", args);
+    args.push(filePath);
+    const r = spawn(cmd, args, {
+      env,
+    });
+
     const datas: string[] = [];
     r.stdout.on("data", (data) => {
       datas.push(data.toString());
@@ -436,6 +450,8 @@ async function main() {
   let queries = gqlCapture.getProcessedCustomQueries();
   let mutations = gqlCapture.getProcessedCustomMutations();
   let objects = fromMap(gqlCapture.getCustomObjects());
+  let interfaces = fromMap(gqlCapture.getCustomInterfaces());
+  let unions = fromMap(gqlCapture.getCustomUnions());
   let customTypes = fromMap(gqlCapture.getCustomTypes());
 
   let classes: Data = {};
@@ -506,6 +522,8 @@ async function main() {
       mutations,
       classes,
       objects,
+      interfaces,
+      unions,
       files: allFiles,
       customTypes,
     }),

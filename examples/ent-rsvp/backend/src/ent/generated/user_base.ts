@@ -256,7 +256,7 @@ export class UserBase implements Ent<Viewer> {
       viewer: Viewer,
       data: Data,
     ) => T,
-  ): LoadEntOptions<T, Viewer> {
+  ): LoadEntOptions<T, Viewer, UserDBData> {
     return {
       tableName: userLoaderInfo.tableName,
       fields: userLoaderInfo.fields,

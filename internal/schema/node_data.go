@@ -67,8 +67,9 @@ type NodeData struct {
 	// fine to just reuse input constraints for now
 	Constraints []*input.Constraint
 	// same as above. fine to just reuse
-	Indices            []*input.Index
-	PatternsWithMixins []string
+	Indices                 []*input.Index
+	PatternsWithMixins      []string
+	CustomGraphQLInterfaces []string
 
 	schemaPath string
 
@@ -531,9 +532,9 @@ type entLoadPrivacyInfo struct {
 	Fields    []*field.Field
 }
 
-func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) (*entLoadPrivacyInfo, error) {
+func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) *entLoadPrivacyInfo {
 	if !nodeData.OnEntLoadFieldPrivacy(cfg) {
-		return nil, fmt.Errorf("cannot call GetOnEntLoadPrivacyInfo for node which doesn't use on ent load privacy")
+		return nil
 	}
 
 	var fields []*field.Field
@@ -546,13 +547,16 @@ func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) (*entLo
 		}
 	}
 
-	ret := &entLoadPrivacyInfo{
-		Interface: fmt.Sprintf("%sData", nodeData.Node),
-		Extends:   fmt.Sprintf("Omit<%s, %s>", nodeData.GetRawDBDataName(), strings.Join(names, " | ")),
-		Fields:    fields,
+	if len(fields) != 0 {
+		ret := &entLoadPrivacyInfo{
+			Interface: fmt.Sprintf("%sData", nodeData.Node),
+			Extends:   fmt.Sprintf("Omit<%s, %s>", nodeData.GetRawDBDataName(), strings.Join(names, " | ")),
+			Fields:    fields,
+		}
+		return ret
 	}
 
-	return ret, nil
+	return nil
 }
 
 type extraCustomQueryInfo struct {
@@ -567,7 +571,7 @@ type extraCustomQueryInfo struct {
 func (nodeData *NodeData) GetExtraCustomQueryInfo() *extraCustomQueryInfo {
 	ret := &extraCustomQueryInfo{}
 	for _, idx := range nodeData.Indices {
-		if idx.FullText.GeneratedColumnName != "" {
+		if idx.FullText != nil && idx.FullText.GeneratedColumnName != "" {
 			ret.Columns = append(ret.Columns, struct {
 				Name string
 				Type string

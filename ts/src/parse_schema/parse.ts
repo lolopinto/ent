@@ -16,6 +16,7 @@ import {
   TransformReadBetaResult,
   DeprecatedImportType,
 } from "../schema/schema";
+import { setGlobalSchema } from "../core/global_schema";
 
 async function processFields(
   src: FieldMap | Field[],
@@ -37,7 +38,7 @@ async function processFields(
   for (const name in m) {
     const field = m[name];
     //@ts-ignore type and other changed fields with different type in ProcessedField vs Field
-    let f: ProcessedField = { name, ...field };
+    let f: ProcessedField = { ...field, name };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
     f.hasFieldPrivacy = field.privacyPolicy !== undefined;
@@ -402,6 +403,9 @@ export async function parseSchema(
 
   if (globalSchema) {
     parsedGlobalSchema = await parseGlobalSchema(globalSchema);
+    // set this so that we can use it, if we're trying to process server default or anything
+    // that ends up parsing,validating and formatting fields
+    setGlobalSchema(globalSchema);
   }
   for (const key in potentialSchemas) {
     const value = potentialSchemas[key];
@@ -429,6 +433,7 @@ export async function parseSchema(
       actions: schema.actions?.map((action) => processAction(action)) || [],
       assocEdges: [],
       assocEdgeGroups: [],
+      customGraphQLInterfaces: schema.customGraphQLInterfaces,
     };
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯
@@ -533,7 +538,8 @@ function translatePrettier(): RomeConfig | undefined {
 interface ProcessedGlobalSchema {
   globalEdges: ProcessedAssocEdge[];
   extraEdgeFields: ProcessedField[];
-  initForEdges?: boolean;
+  init?: boolean;
+  globalFields?: ProcessedField[];
 }
 
 async function parseGlobalSchema(
@@ -542,10 +548,11 @@ async function parseGlobalSchema(
   const ret: ProcessedGlobalSchema = {
     globalEdges: [],
     extraEdgeFields: [],
-    initForEdges:
+    init:
       !!s.extraEdgeFields ||
       s.transformEdgeRead !== undefined ||
-      s.transformEdgeWrite !== undefined,
+      s.transformEdgeWrite !== undefined ||
+      s.fields !== undefined,
   };
 
   if (s.extraEdgeFields) {
@@ -554,6 +561,10 @@ async function parseGlobalSchema(
 
   if (s.edges) {
     ret.globalEdges = processEdges(s.edges);
+  }
+
+  if (s.fields) {
+    ret.globalFields = await processFields(s.fields);
   }
 
   return ret;

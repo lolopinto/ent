@@ -149,6 +149,7 @@ sa.Table("events", metadata,
     sa.Column("location", sa.Text(), nullable=False),
     sa.Column("address_id", postgresql.UUID(), nullable=True),
     sa.PrimaryKeyConstraint("id", name="events_id_pkey"),
+    sa.Index("event_time_indices", "start_time", "end_time"),
 )
    
 sa.Table("global_login_auth_edges", metadata,

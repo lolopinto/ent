@@ -3,14 +3,12 @@ import { v4 as uuidv4 } from "uuid";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
+import { AssocEdge, buildQuery, DefaultLimit } from "../ent";
 import {
-  AssocEdge,
-  buildQuery,
   clearGlobalSchema,
-  DefaultLimit,
   setGlobalSchema,
   __hasGlobalSchema,
-} from "../ent";
+} from "../global_schema";
 import * as clause from "../clause";
 
 import { EdgeQueryableDataOptions, ID, Loader, WriteOperation } from "../base";

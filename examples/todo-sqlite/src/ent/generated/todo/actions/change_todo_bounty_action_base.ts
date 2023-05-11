@@ -84,15 +84,16 @@ export class ChangeTodoBountyActionBase
     this.viewer = viewer;
     let expressions = new Map<string, Clause>();
     const data = todo.___getRawDBData();
-    this.input = {
-      ...input,
-      bounty: maybeConvertRelativeInputPlusExpressions(
+    // @ts-expect-error converted below
+    this.input = input;
+    if (input.bounty !== undefined) {
+      input.bounty = maybeConvertRelativeInputPlusExpressions(
         input.bounty,
         "bounty",
         data.bounty,
         expressions,
-      ),
-    };
+      );
+    }
     this.builder = new TodoBuilder(
       this.viewer,
       WriteOperation.Edit,

@@ -450,11 +450,16 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 
 	existingSchema := parseExistingSchema(cfg, opt.buildInfo)
 	changes, err := schema.CompareSchemas(existingSchema, currentSchema)
+
 	if err != nil {
 		return nil, err
 	}
 	// if changes == nil, don't use changes
 	useChanges := changes != nil
+	if !useChanges {
+		// now set changes to empty map
+		changes = make(change.ChangeMap)
+	}
 	writeAll := !useChanges
 	// this is different
 	if opt.writeAll {
@@ -500,15 +505,17 @@ func NewTestCodegenProcessor(configPath string, s *schema.Schema, codegenCfg *Co
 		return nil, err
 	}
 	return &Processor{
-		Config: cfg,
-		Schema: s,
-		opt:    &option{},
+		Config:    cfg,
+		Schema:    s,
+		opt:       &option{},
+		ChangeMap: make(change.ChangeMap),
 	}, nil
 }
 
 func FormatTS(cfg *Config) error {
 	p := &Processor{
-		Config: cfg,
+		Config:    cfg,
+		ChangeMap: make(change.ChangeMap),
 	}
 	return p.FormatTS()
 }

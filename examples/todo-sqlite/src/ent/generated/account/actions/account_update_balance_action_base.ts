@@ -85,15 +85,16 @@ export class AccountUpdateBalanceActionBase
     this.viewer = viewer;
     let expressions = new Map<string, Clause>();
     const data = account.___getRawDBData();
-    this.input = {
-      ...input,
-      credits: maybeConvertRelativeInputPlusExpressions(
+    // @ts-expect-error converted below
+    this.input = input;
+    if (input.credits !== undefined) {
+      input.credits = maybeConvertRelativeInputPlusExpressions(
         input.credits,
         "credits",
         data.credits,
         expressions,
-      ),
-    };
+      );
+    }
     this.builder = new AccountBuilder(
       this.viewer,
       WriteOperation.Edit,

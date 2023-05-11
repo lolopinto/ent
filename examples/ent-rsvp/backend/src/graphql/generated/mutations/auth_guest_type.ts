@@ -12,12 +12,11 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { ViewerTypeType } from "src/graphql/resolvers/internal";
-import { AuthGuestPayload, AuthResolver } from "../../mutations/auth/auth";
-
-interface AuthGuestInput {
-  emailAddress: string;
-  code: string;
-}
+import { AuthResolver } from "../../mutations/auth/auth";
+import {
+  AuthGuestInput,
+  AuthGuestPayload,
+} from "../../mutations/auth/auth_types";
 
 export const AuthGuestInputType = new GraphQLInputObjectType({
   name: "AuthGuestInput",
