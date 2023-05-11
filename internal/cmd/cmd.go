@@ -14,15 +14,7 @@ func GetTsconfigPaths() string {
 
 // initial args for ts-node-script
 // we need tsconfig.json referenced because of relative paths like src/ent/generated/types.ts
-func GetArgsForScript(rootPath string) []string {
-	return append(
-		getArgsForScriptBoth(rootPath),
-		"-r",
-		GetTsconfigPaths(),
-	)
-}
-
-func getArgsForScriptBoth(rootPath string) []string {
+func GetArgsForTsNodeScript(rootPath string) []string {
 	return []string{
 		// this seems to let the errors pass through as opposed to giving compile error
 		"--log-error", // TODO spend more time figuring this out
@@ -31,6 +23,8 @@ func getArgsForScriptBoth(rootPath string) []string {
 		// same in generate_ts_code.go
 		filepath.Join(rootPath, "tsconfig.json"),
 		"--transpileOnly",
+		"-r",
+		GetTsconfigPaths(),
 	}
 }
 
@@ -52,6 +46,7 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 	useSwc := UseSwc()
 
 	// no swc with tests right now because we need -r configured locally
+	// we'll always use ts-node
 	if fromTest {
 		cmdArgs = []string{
 			"--compiler-options",
@@ -61,9 +56,10 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 	} else {
 		cmdName = "ts-node-script"
 
-		cmdArgs = getArgsForScriptBoth(dirPath)
-
 		if useSwc {
+			// if using swc, skip ts-node and use node directly
+			// we're going to do: node -r @swc-node/register -r tsconfig-paths/register
+			cmdName = "node"
 			cmdArgs = append(
 				cmdArgs,
 				"-r",
@@ -71,6 +67,8 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 			)
 
 			env = append(env, "SWCRC=true")
+		} else {
+			cmdArgs = append(cmdArgs, GetArgsForTsNodeScript(dirPath)...)
 		}
 
 		// for paths like src/ent/generated/types.ts
