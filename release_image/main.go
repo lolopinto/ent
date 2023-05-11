@@ -16,8 +16,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// next tag
-const TAG = "0.1.0-alpha.45"
+// next tag to use
+const TAG = "0.1.0-alpha.46"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 18
@@ -33,7 +33,7 @@ var NODE_VERSIONS = []int{
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.26"
-const TSENT_VERSION = "v0.1.0-alpha.57"
+const TSENT_VERSION = "v0.1.0-alpha.58"
 
 var SUFFIXES = []string{
 	"dev",
