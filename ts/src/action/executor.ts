@@ -60,7 +60,12 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     const builder = this.options.builder;
     await Promise.all(
       action.getObservers().map(async (observer) => {
-        await observer.observe(builder, action.getInput());
+        try {
+          await observer.observe(builder, action.getInput());
+        } catch (err) {
+          // TODO we eventually want a global observer error handler so that this can be logged or whatever...
+          // TODO https://github.com/lolopinto/ent/issues/1429
+        }
       }),
     );
   }
