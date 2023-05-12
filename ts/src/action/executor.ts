@@ -64,6 +64,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
           await observer.observe(builder, action.getInput());
         } catch (err) {
           // TODO we eventually want a global observer error handler so that this can be logged or whatever...
+          // TODO https://github.com/lolopinto/ent/issues/1429
         }
       }),
     );
