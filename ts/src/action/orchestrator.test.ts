@@ -1602,6 +1602,54 @@ function commonTests() {
         body: "Hi Jon, thanks for joining fun app!",
       });
     });
+
+    test("one observer which throws, another succeeds", async () => {
+      advanceTo(now);
+      const viewer = new IDViewer("11");
+      const action = new SimpleAction(
+        viewer,
+        UserSchemaExtended,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["EmailAddress", "foo@email.com"],
+          ["account_status", "UNVERIFIED"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      let observerCalled = false;
+      action.getObservers = () => [
+        {
+          observe(builder, input) {
+            observerCalled = true;
+            throw new Error("oops");
+          },
+        },
+        sendEmailObserverAsync,
+      ];
+
+      const user = await action.saveX();
+      if (!user) {
+        throw new Error("couldn't save user");
+      }
+
+      expect(user.data).toEqual({
+        id: user.id,
+        created_at: now,
+        updated_at: now,
+        first_name: "Jon",
+        last_name: "Snow",
+        email_address: "foo@email.com",
+        account_status: "UNVERIFIED",
+      });
+
+      FakeComms.verifySent("foo@email.com", Mode.EMAIL, {
+        subject: "Welcome, Jon!",
+        body: "Hi Jon, thanks for joining fun app!",
+      });
+      expect(observerCalled).toBe(true);
+    });
   });
 
   describe("combo", () => {
