@@ -171,13 +171,21 @@ export interface LoadRowOptions extends QueryableDataOptions {}
 
 export interface LoadRowsOptions extends QueryableDataOptions {}
 
+interface OnConflictOptions {
+  onConflictCols: string[];
+  // update values based on fields
+  // if not provided, we do nothing
+  updateCols?: string[];
+}
+
 export interface CreateRowOptions extends DataOptions {
   // fields to be edited
   fields: Data;
   fieldsToLog?: Data;
+  onConflict?: OnConflictOptions;
 }
 
-export interface EditRowOptions extends CreateRowOptions {
+export interface EditRowOptions extends Omit<CreateRowOptions, "onConflict"> {
   whereClause: clause.Clause;
   // if a column exists in here as opposed to in fields, we use the expression given
   // instead of the value

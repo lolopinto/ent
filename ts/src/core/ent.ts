@@ -1012,6 +1012,7 @@ export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
   loadEntOptions: LoadEntOptions<T>;
   placeholderID?: ID;
   key: string;
+  onConflict?: CreateRowOptions["onConflict"];
 }
 
 export class RawQueryOperation implements DataOperation {
@@ -1339,7 +1340,7 @@ export class EdgeOperation implements DataOperation {
     edgeData: AssocEdgeData,
     edge: AssocEdgeInput,
     context?: Context,
-  ): [CreateRowOptions, string] {
+  ): CreateRowOptions {
     const fields: Data = {
       id1: edge.id1,
       id2: edge.id2,
@@ -1386,17 +1387,16 @@ export class EdgeOperation implements DataOperation {
       }
     }
 
-    return [
-      {
-        tableName: edgeData.edgeTable,
-        fields: fields,
-        fieldsToLog: fields,
-        context,
+    return {
+      tableName: edgeData.edgeTable,
+      fields: fields,
+      fieldsToLog: fields,
+      context,
+      onConflict: {
+        onConflictCols: ["id1", "edge_type", "id2"],
+        updateCols: onConflictFields,
       },
-      `ON CONFLICT(id1, edge_type, id2) DO UPDATE SET ${onConflictFields
-        .map((f) => `${f} = EXCLUDED.${f}`)
-        .join(", ")}`,
-    ];
+    };
   }
 
   private async performInsertWrite(
@@ -1405,9 +1405,9 @@ export class EdgeOperation implements DataOperation {
     edge: AssocEdgeInput,
     context?: Context,
   ): Promise<void> {
-    const [options, suffix] = this.getInsertRowParams(edgeData, edge, context);
+    const options = this.getInsertRowParams(edgeData, edge, context);
 
-    await createRow(q, options, suffix);
+    await createRow(q, options, "");
   }
 
   private performInsertWriteSync(
@@ -1416,9 +1416,9 @@ export class EdgeOperation implements DataOperation {
     edge: AssocEdgeInput,
     context?: Context,
   ): void {
-    const [options, suffix] = this.getInsertRowParams(edgeData, edge, context);
+    const options = this.getInsertRowParams(edgeData, edge, context);
 
-    createRowSync(q, options, suffix);
+    createRowSync(q, options, "");
   }
 
   private resolveImpl(
@@ -1745,6 +1745,21 @@ export function buildInsertQuery(
   const vals = valsString.join(", ");
 
   let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals})`;
+
+  if (options.onConflict) {
+    let onConflict = `ON CONFLICT(${options.onConflict.onConflictCols.join(
+      ", ",
+    )})`;
+    if (options.onConflict.updateCols?.length) {
+      onConflict += ` DO UPDATE SET ${options.onConflict.updateCols
+        .map((f) => `${f} = EXCLUDED.${f}`)
+        .join(", ")}`;
+    } else {
+      onConflict += " DO NOTHING";
+    }
+    query = query + " " + onConflict;
+  }
+
   if (suffix) {
     query = query + " " + suffix;
   }
