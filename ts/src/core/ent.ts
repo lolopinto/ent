@@ -28,8 +28,6 @@ import {
   PrimableLoader,
   Loader,
   LoaderWithLoadMany,
-  SelectBaseDataOptions,
-  LoaderFactoryWithOptions,
 } from "./base";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
@@ -1085,6 +1083,23 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     return false;
   }
 
+  private onConflictDoNothing() {
+    return (
+      this.options.onConflict && !this.options.onConflict.updateCols?.length
+    );
+  }
+
+  private buildOnConflictQuery(options: EditNodeOptions<T>) {
+    // assumes onConflict has been checked already...
+    const clauses: clause.Clause[] = [];
+    for (const col of this.options.onConflict!.onConflictCols) {
+      clauses.push(clause.Eq(col, options.fields[col]));
+    }
+    const cls = clause.AndOptional(...clauses);
+    const query = this.buildReloadQuery(options, cls);
+    return { cls, query };
+  }
+
   async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     let options = {
       ...this.options,
@@ -1101,17 +1116,29 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       }
     } else {
       this.row = await createRow(queryer, options, "RETURNING *");
+      if (
+        this.row === null &&
+        this.options.onConflict &&
+        !this.options.onConflict.updateCols?.length
+      ) {
+        // no row returned and on conflict, do nothing, have to fetch the conflict row back...
+        const { cls, query } = this.buildOnConflictQuery(options);
+
+        logQuery(query, cls.logValues());
+        const res = await queryer.query(query, cls.values());
+        this.row = res.rows[0];
+      }
     }
   }
 
-  private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<T>) {
+  private buildReloadQuery(options: EditNodeOptions<T>, cls: clause.Clause) {
     // TODO this isn't always an ObjectLoader. should throw or figure out a way to get query
     // and run this on its own...
     const loader = this.options.loadEntOptions.loaderFactory.createLoader(
       options.context,
     ) as ObjectLoader<T>;
     const opts = loader.getOptions();
-    let cls = clause.Eq(options.key, id);
+    // let cls = clause.Eq(options.key, id);
     if (opts.clause) {
       let optionClause: clause.Clause | undefined;
       if (typeof opts.clause === "function") {
@@ -1120,7 +1147,6 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         optionClause = opts.clause;
       }
       if (optionClause) {
-        // @ts-expect-error ID|string mismatch
         cls = clause.And(cls, optionClause);
       }
     }
@@ -1130,6 +1156,12 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       tableName: options.tableName,
       clause: cls,
     });
+    return query;
+  }
+
+  private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<T>) {
+    const query = this.buildReloadQuery(options, clause.Eq(options.key, id));
+
     // special case log here because we're not going through any of the normal
     // methods here because those are async and this is sync
     // this is the only place we're doing this so only handling here
@@ -1158,6 +1190,27 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       createRowSync(queryer, options, "RETURNING *");
       const id = options.fields[options.key];
       this.reloadRow(queryer, id, options);
+
+      // if we can't find the id, try and load the on conflict row
+      // no returning * with sqlite and have to assume the row was created more often than not
+
+      // there's a world in which we combine into one query if on-conflict
+      // seems like it's safer not to and sqlite (only sync client we currently have) is fast enough
+      // (single-process) that it's fine to do two queries
+
+      // we wanna do this in both on conflict do nothing or on conflict update
+      if (this.row === null && this.options.onConflict) {
+        const { cls, query } = this.buildOnConflictQuery(options);
+
+        // special case log here because we're not going through any of the normal
+        // methods here because those are async and this is sync
+        // this is the only place we're doing this so only handling here
+        logQuery(query, cls.logValues());
+        const r = queryer.querySync(query, cls.values());
+        if (r.rows.length === 1) {
+          this.row = r.rows[0];
+        }
+      }
     }
   }
 

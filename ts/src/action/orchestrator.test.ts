@@ -21,6 +21,7 @@ import {
   DeleteNodeOperation,
   DataOperation,
   loadRows,
+  buildQuery,
 } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
@@ -74,7 +75,8 @@ import DB, { Dialect } from "../core/db";
 import { convertDate, convertJSON, convertList } from "../core/convert";
 import { v4 } from "uuid";
 import { NumberOps } from "./relative_value";
-import { StructType, BooleanType } from "../schema";
+import { StructType, BooleanType, ConstraintType } from "../schema";
+import { randomEmail } from "../testutils/db/value";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
@@ -125,9 +127,30 @@ const UserSchemaExtended = getBuilderSchemaFromFields(
     FirstName: StringType(),
     LastName: StringType(),
     account_status: StringType(),
-    EmailAddress: StringType({ nullable: true }),
+    EmailAddress: StringType({ nullable: true, unique: true }),
   },
   UserExtended,
+);
+
+class UserMultipleUnique extends User {}
+
+const UserSchemaMultipleUnique = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+    account_status: StringType(),
+    EmailAddress: StringType(),
+  },
+  UserMultipleUnique,
+  {
+    constraints: [
+      {
+        name: "email_status_unique",
+        columns: ["email_address", "account_status"],
+        type: ConstraintType.Unique,
+      },
+    ],
+  },
 );
 
 class UserServerDefault extends User {}
@@ -416,6 +439,7 @@ const getTables = () => {
     UserSchema,
     UserSchemaWithStatus,
     UserSchemaExtended,
+    UserSchemaMultipleUnique,
     UserSchemaServerDefault,
     UserSchemaDefaultValueOnCreate,
     UserSchemaDefaultValueOnCreateJSON,
@@ -1785,6 +1809,294 @@ function commonTests() {
       let ent = await action.save();
       expect(ent).toBe(null);
       FakeComms.verifyNoEmailSent();
+    });
+  });
+
+  describe("upsert", () => {
+    let ml = new MockLogs();
+
+    beforeAll(() => {
+      ml.mock();
+      setLogLevels(["query", "cache"]);
+    });
+
+    afterAll(() => {
+      ml.restore();
+      clearLogLevels();
+    });
+
+    beforeEach(() => {
+      ml.clear();
+    });
+    test("upsert. no upsert. error ", async () => {
+      const viewer = new IDViewer("11");
+
+      const email = randomEmail();
+
+      const action1 = new SimpleAction(
+        viewer,
+        UserSchemaExtended,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      const action2 = new SimpleAction(
+        viewer,
+        UserSchemaExtended,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+
+      try {
+        await Promise.all([action1.saveX(), action2.saveX()]);
+        throw new Error("should have thrown");
+      } catch (err) {
+        expect((err as Error).message).toMatch(/unique|UNIQUE/);
+      }
+    });
+
+    test("upsert. do nothing", async () => {
+      const viewer = new IDViewer("11");
+
+      const email = randomEmail();
+
+      const action1 = new SimpleAction(
+        viewer,
+        UserSchemaExtended,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+      const action2 = new SimpleAction(
+        viewer,
+        UserSchemaExtended,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      expect(u1.data).toStrictEqual(u2.data);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+
+      // for sqlite, we're not testing the regular select * from user_extendeds where id = ? query
+      expect(select).toContainEqual({
+        query: buildQuery({
+          tableName: "user_extendeds",
+          fields: ["*"],
+          clause: clause.Eq("email_address", email),
+        }),
+        values: [email],
+      });
+    });
+
+    test("upsert. update", async () => {
+      const viewer = new IDViewer("11");
+
+      const email = randomEmail();
+
+      const action1 = new SimpleAction(
+        viewer,
+        UserSchemaExtended,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+        updateCols: ["updated_at"],
+      });
+      const action2 = new SimpleAction(
+        viewer,
+        UserSchemaExtended,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+        updateCols: ["updated_at"],
+      });
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      // updated time should be different since there was a conflict and it updated
+      expect(u1.data.updated_at).not.toBe(u2.data.updated_at);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+
+      if (DB.getDialect() === Dialect.Postgres) {
+        expect(select.length).toBe(0);
+      } else {
+        // for sqlite, we still do this query
+        expect(select).toContainEqual({
+          query: buildQuery({
+            tableName: "user_extendeds",
+            fields: ["*"],
+            clause: clause.Eq("email_address", email),
+          }),
+          values: [email],
+        });
+      }
+    });
+
+    test("upsert. do nothing multiple cols", async () => {
+      const viewer = new IDViewer("11");
+
+      const email = randomEmail();
+
+      const action1 = new SimpleAction(
+        viewer,
+        UserSchemaMultipleUnique,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address", "account_status"],
+      });
+      const action2 = new SimpleAction(
+        viewer,
+        UserSchemaMultipleUnique,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address", "account_status"],
+      });
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      expect(u1.data).toStrictEqual(u2.data);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+      expect(select).toContainEqual({
+        query: buildQuery({
+          tableName: "user_multiple_uniques",
+          fields: ["*"],
+          clause: clause.And(
+            clause.Eq("email_address", email),
+            clause.Eq("account_status", "UNVERIFIED"),
+          ),
+        }),
+        values: [email, "UNVERIFIED"],
+      });
+    });
+
+    test("upsert. multiple cols. update", async () => {
+      const viewer = new IDViewer("11");
+
+      const email = randomEmail();
+
+      const action1 = new SimpleAction(
+        viewer,
+        UserSchemaMultipleUnique,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address", "account_status"],
+        updateCols: ["updated_at"],
+      });
+      const action2 = new SimpleAction(
+        viewer,
+        UserSchemaMultipleUnique,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address", "account_status"],
+        updateCols: ["updated_at"],
+      });
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      expect(u1.data.updated_at).not.toBe(u2.data.updated_at);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+
+      if (DB.getDialect() === Dialect.Postgres) {
+        expect(select.length).toBe(0);
+      } else {
+        // for sqlite, we still do this query
+        expect(select).toContainEqual({
+          query: buildQuery({
+            tableName: "user_multiple_uniques",
+            fields: ["*"],
+            clause: clause.And(
+              clause.Eq("email_address", email),
+              clause.Eq("account_status", "UNVERIFIED"),
+            ),
+          }),
+          values: [email, "UNVERIFIED"],
+        });
+      }
     });
   });
 

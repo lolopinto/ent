@@ -7,6 +7,7 @@ import {
   LoadEntOptions,
   PrivacyError,
   PrivacyPolicy,
+  CreateRowOptions,
 } from "../core/base";
 import {
   AssocEdgeInputOptions,
@@ -203,6 +204,7 @@ export class Orchestrator<
   // same with existingEnt. can transform so we wanna know what we started with and now where we are.
   private existingEnt: TExistingEnt;
   private disableTransformations: boolean;
+  private onConflict: CreateRowOptions["onConflict"] | undefined;
   private memoizedGetFields: () => Promise<fieldsInfo>;
 
   constructor(
@@ -239,6 +241,10 @@ export class Orchestrator<
 
   setDisableTransformations(val: boolean) {
     this.disableTransformations = val;
+  }
+
+  setOnConflictOptions(onConflict?: CreateRowOptions["onConflict"]) {
+    this.onConflict = onConflict;
   }
 
   addInboundEdge<T2 extends Ent>(
@@ -352,6 +358,7 @@ export class Orchestrator<
           placeholderID: this.options.builder.placeholderID,
           whereClause: clause.Eq(this.options.key, this.existingEnt?.id),
           expressions: this.options.expressions,
+          onConflict: this.onConflict,
         };
         if (this.logValues) {
           opts.fieldsToLog = this.logValues;

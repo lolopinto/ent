@@ -89,6 +89,15 @@ export function check(name: string, condition: string): Constraint {
   };
 }
 
+export function unique(name: string, cols: string[]): Constraint {
+  return {
+    name,
+    generate() {
+      return `UNIQUE (${cols.join(",")})`;
+    },
+  };
+}
+
 interface indexOptions {
   type?: string;
   unique?: boolean;
@@ -753,6 +762,13 @@ export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
           }
           items.push(check(constraint.name, constraint.condition));
           break;
+
+        case ConstraintType.Unique:
+          items.push(unique(constraint.name, constraint.columns));
+          break;
+
+        default:
+          throw new Error(`unknown constraint type ${constraint.type}`);
       }
     }
   }
@@ -847,6 +863,10 @@ function buildOpts(f: Field): options {
   }
   if (f.serverDefault) {
     ret.default = f.serverDefault;
+  }
+
+  if (f.unique) {
+    ret.unique = true;
   }
   return ret;
 }

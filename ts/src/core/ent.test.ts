@@ -9,7 +9,7 @@ import {
 import { IDViewer, LoggedOutViewer } from "./viewer";
 import { FieldMap, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
-import { ID, Ent, Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
+import { Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
 import {
   AssocEdge,
   getEdgeTypeInGroup,
