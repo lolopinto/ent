@@ -5,6 +5,7 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  CreateRowOptions,
   ID,
   PrivacyPolicy,
 } from "@snowtop/ent";
@@ -167,14 +168,38 @@ export class CreateUserActionBase
   async upsert_BETA(
     options: CreateUserActionUpsertOptions,
   ): Promise<User | null> {
-    
+    const opts: CreateRowOptions["onConflict"] = {
+      onConflictCols: [],
+      updateCols: options.update_cols,
+    };
+
+    if (options.column) {
+      opts.onConflictCols = [options.column];
+    }
+
+    if (options.constraint) {
+      opts.onConflictConstraint = options.constraint;
+    }
+    this.builder.orchestrator.setOnConflictOptions(opts);
     return this.save();
   }
 
   async upsert_BETAX(options: CreateUserActionUpsertOptions): Promise<User> {
+    const opts: CreateRowOptions["onConflict"] = {
+      onConflictCols: [],
+      updateCols: options.update_cols,
+    };
+
+    if (options.column) {
+      opts.onConflictCols = [options.column];
+    }
+
+    if (options.constraint) {
+      opts.onConflictConstraint = options.constraint;
+    }
+    this.builder.orchestrator.setOnConflictOptions(opts);
     return this.saveX();
   }
-  // TODO upsert...
 
   static create<T extends CreateUserActionBase>(
     this: new (

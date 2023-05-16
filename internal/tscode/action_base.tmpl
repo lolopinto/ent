@@ -1,5 +1,5 @@
 {{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions"}}
-{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause"}}
+{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause" "CreateRowOptions"}}
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
@@ -317,12 +317,40 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
 
   {{ if $upsert }}
   async upsert_BETA(options: {{$upsertInfo.Name}}): Promise<{{$node}} | null> {
-
+    const opts: {{useImport "CreateRowOptions"}}['onConflict'] ={
+      onConflictCols: [],
+      updateCols: options.update_cols,
+    };
+    {{ if $upsertInfo.HasColumn}}
+      if (options.column) {
+        opts.onConflictCols = [options.column];
+      }
+    {{end -}}
+    {{if $upsertInfo.HasConstraint }}
+      if (options.constraint) {
+        opts.onConflictConstraint = options.constraint;
+      }
+    {{end -}}
+    this.builder.orchestrator.setOnConflictOptions(opts);
     return this.save();
   }
 
   async upsert_BETAX(options: {{$upsertInfo.Name}}): Promise<{{$node}}> {
-
+    const opts: {{useImport "CreateRowOptions"}}['onConflict'] ={
+      onConflictCols: [],
+      updateCols: options.update_cols,
+    };
+    {{ if $upsertInfo.HasColumn}}
+      if (options.column) {
+        opts.onConflictCols = [options.column];
+      }
+    {{end -}}
+    {{if $upsertInfo.HasConstraint }}
+      if (options.constraint) {
+        opts.onConflictConstraint = options.constraint;
+      }
+    {{end -}}
+    this.builder.orchestrator.setOnConflictOptions(opts);
     return this.saveX();
   }
   {{ end -}} 

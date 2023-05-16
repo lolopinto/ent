@@ -191,30 +191,22 @@ func (nodeData *NodeData) OnEntLoadFieldPrivacy(cfg codegenapi.Config) bool {
 }
 
 type UpsertInfo struct {
-	Name       string
-	types      []*TypeInfo
-	oneOfTypes map[string]*TypeInfo
+	Name          string
+	HasColumn     bool
+	HasConstraint bool
+	types         []*TypeInfo
+	oneOfTypes    map[string]*TypeInfo
 }
 
 func (ui *UpsertInfo) Types() string {
 	var sb strings.Builder
 
-	// l := make([]string, len(ui.types))
 	for _, t := range ui.types {
 		sb.WriteString(t.Type())
 		sb.WriteString("\n")
-		// l[i] = t.Name
 	}
 	sb.WriteString("\n")
 	sb.WriteString("\n")
-
-	// sb.WriteString("type UpsertColsOrConstraints")
-	// // sb.WriteString(ui.Name)
-	// sb.WriteString(" = ")
-	// sb.WriteString(strings.Join(l, " | "))
-	// sb.WriteString(";")
-	// sb.WriteString("\n")
-	// sb.WriteString("\n")
 
 	return sb.String()
 }
@@ -271,11 +263,13 @@ func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
 		typ := getType(fields, "UpsertCols")
 		ret.types = append(ret.types, typ)
 		ret.oneOfTypes["column"] = typ
+		ret.HasColumn = true
 	}
 	if len(constraints) > 0 {
 		typ := getType(constraints, "UpsertConstraints")
 		ret.types = append(ret.types, typ)
 		ret.oneOfTypes["constraint"] = typ
+		ret.HasConstraint = true
 	}
 
 	buildExpression := func(left, right string) string {
@@ -290,7 +284,7 @@ func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
 		Export: true,
 	}
 
-	if len(ret.oneOfTypes) > 1 {
+	if ret.HasColumn && ret.HasConstraint {
 		// add Oneof Types
 		// gotten from https://www.typescriptlang.org/play?#code/LAKALgngDgpgBAVQHYEsD2SDSMIGcA8AKgHxwC8chcMAHmDEgCa6VwD8cA1jmgGasAuOEhgA3GACcA3KFAB6OXACSAWygS04uCiT0ANnpS4Gx0JFhwAojSgBDJkVIUqtekxZUOAbzgBtTNpIXDz8hAC6QoT+YXAAvnBCIuLSsuDQ8ADyIhm8RNR0DMxwXrG+YU7FoHB+ATrBEHyUEVY29oxE0XAAZHAACrYSYCi2evgASjAAxmgS7daTegCujDD4yOhYOARRSIsqAEaS5QA09Y1RmCfCYpLEdzIgpbsHRw+gOvQSvLaT8ADCtjAlRA1WqRgBYCEYAkixgD1iqQ+km+vzgABE0ABzYGg7S4DGYqEwuGgBEgd66ZE-eAAIRQsxxoKMdNmRNh8NS5ngAEFUCoRuQ4FkYDl8L4IacCacWYxyg8FKCAHpsVLTJC4IGTQFCXkofl6QU+cHauDQ2FxB5qjVwRhYnV8gUUI34u2m4kW+SKK2awEE+16x3FPEQtkwU5GP1u82xKRwBWSDQSVK8RZISZDDA2tAAdRmnAAFLZ-fqAJReVJk0C23MSAtasAlh7VvP522YxtVnMt50hqNhvGRs3wWIloA
 		// linked to from https://stackoverflow.com/questions/42123407/does-typescript-support-mutually-exclusive-types#comment123255834_53229567
@@ -320,9 +314,12 @@ func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
 			fmt.Sprintf("OneOf<[%s]>", strings.Join(types, ", ")),
 		)
 	} else {
+
 		var key string
-		for k := range ret.oneOfTypes {
-			key = k
+		if ret.HasColumn {
+			key = "column"
+		} else if ret.HasConstraint {
+			key = "constraint"
 		}
 		lastType.Expression = buildType([]string{
 			buildExpression("update_cols?", "string[]"),
