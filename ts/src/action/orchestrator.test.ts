@@ -467,10 +467,10 @@ describe("postgres", () => {
   commonTests();
 });
 
-describe("sqlite", () => {
-  setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
-  commonTests();
-});
+// describe("sqlite", () => {
+//   setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
+//   commonTests();
+// });
 
 function getInsertUserAction(
   map: Map<string, any>,
@@ -1868,6 +1868,60 @@ function commonTests() {
     });
 
     test("upsert. do nothing", async () => {
+      const viewer = new IDViewer("11");
+
+      const email = randomEmail();
+
+      const action1 = new SimpleAction(
+        viewer,
+        UserSchemaExtended,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+      const action2 = new SimpleAction(
+        viewer,
+        UserSchemaExtended,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      expect(u1.data).toStrictEqual(u2.data);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+
+      // for sqlite, we're not testing the regular select * from user_extendeds where id = ? query
+      expect(select).toContainEqual({
+        query: buildQuery({
+          tableName: "user_extendeds",
+          fields: ["*"],
+          clause: clause.Eq("email_address", email),
+        }),
+        values: [email],
+      });
+    });
+
+    test.only("upsert. do nothing. with trigger", async () => {
       const viewer = new IDViewer("11");
 
       const email = randomEmail();

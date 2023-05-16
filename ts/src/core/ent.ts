@@ -1110,12 +1110,20 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         this.row = this.existingEnt["data"];
       }
     } else {
+      // TODO: eventually, when we officially support auto-increment ids. need to make sure/test that this works
+      // https://github.com/lolopinto/ent/issues/1431
+
+      // how to tell if we updated cols
       this.row = await createRow(queryer, options, "RETURNING *");
+      if (this.row && this.row.id !== options.fields.id) {
+        console.debug("id changed...");
+      }
       if (
         this.row === null &&
         this.options.onConflict &&
         !this.options.onConflict.updateCols?.length
       ) {
+        console.debug("id changed since we have to reload");
         // no row returned and on conflict, do nothing, have to fetch the conflict row back...
         const { cls, query } = this.buildOnConflictQuery(options);
 

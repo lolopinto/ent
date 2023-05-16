@@ -772,6 +772,8 @@ export class Orchestrator<
     let transformed: TransformedUpdateOperation<TEnt, TViewer> | null = null;
 
     const sqlOp = this.getSQLStatementOperation();
+    // why is transform write technically different from upsert?
+    // it's create -> update just at the db level...
     if (action?.transformWrite) {
       transformed = await action.transformWrite({
         builder,
@@ -814,8 +816,8 @@ export class Orchestrator<
         }
       }
       if (transformed.changeset) {
-        const ct = await transformed.changeset();
-        this.changesets.push(ct);
+        const changeset = await transformed.changeset();
+        this.changesets.push(changeset);
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
@@ -1088,6 +1090,10 @@ export class Orchestrator<
   }
 
   async build(): Promise<EntChangeset<TEnt>> {
+    if (this.onConflict) {
+      console.debug("on conflict. change how triggers work...");
+      // validate without triggers...
+    }
     // validate everything first
     await this.validX();
 
@@ -1096,6 +1102,29 @@ export class Orchestrator<
     await this.buildEdgeOps(ops);
 
     // TODO throw if we try and create a new changeset after previously creating one
+
+    // need to be able to invalidate this changeset and all its dependencies
+    // if main op is invalidated, invalidate everything in a changeset...
+    // problem is if we have shared triggers that work on create|update, we can't invalidate all of them
+
+    // if it's an upsert, change how everything works,
+    // start transaction, perform main operation
+    // and then run triggers after within the same transaction so
+    // that the triggers can see the updated operation and decide if they still
+    // want to run or  not
+
+    // e.g. perform these actions if creating
+    // if editing, do nothing...
+    // the reads in the trigger will be done in the same transaction as the write
+    // first place that does this separately...
+
+    // if we have triggers that update fields, it won't work...
+
+    // we want triggers that conditionally add edges or conditional changesets!
+    // so if we have that, if the operation changes, they're invalidated...
+
+    // observers is fine since they're run after and we have the actualOperation value...
+
     return new EntChangeset(
       this.options.viewer,
       this.options.builder.placeholderID,

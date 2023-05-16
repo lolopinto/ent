@@ -47,6 +47,9 @@ export default class CreateUserAction extends CreateUserActionBase {
           builder: UserBuilder,
           input: UserCreateInput,
         ): Promise<Changeset> => {
+          // need a way to invalidate changesets
+          // so if we are upserting and this changeset no longer makes sense,
+          // we need to remove it...
           let action = CreateContactAction.create(this.builder.viewer, {
             firstName: input.firstName,
             lastName: input.lastName,
@@ -75,6 +78,8 @@ export default class CreateUserAction extends CreateUserActionBase {
   >[] {
     return [
       {
+        // same for observers...
+        // e.g. when it's an upsert, don't send welcome email twice!
         observe: (_builder: UserBuilder, input: UserCreateInput): void => {
           let email = input.emailAddress;
           let firstName = input.firstName;

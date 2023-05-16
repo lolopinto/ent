@@ -1456,6 +1456,8 @@ test.only("same email address. no upsert", async () => {
 
 test.only("upsert email address", async () => {
   const email = randomEmail();
+  console.log(email);
+  setLogLevels("query");
   const [u1, u2] = await Promise.all([
     CreateUserAction.create(loggedOutViewer, {
       firstName: "Jane",
@@ -1476,11 +1478,12 @@ test.only("upsert email address", async () => {
       column: "email_address",
     }),
   ]);
+  console.debug(u1, u2);
   expect(u1.id).toBe(u2.id);
   expect(u1.emailAddress).toBe(u2.emailAddress);
 });
 
-test.only("upsert phone number", async () => {
+test("upsert phone number", async () => {
   const phone = randomPhoneNumber();
   const [u1, u2] = await Promise.all([
     CreateUserAction.create(loggedOutViewer, {
