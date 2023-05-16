@@ -1717,7 +1717,6 @@ async function mutateRow(
   logValues: any[],
   options: DataOptions,
 ) {
-  console.debug("callled, ", query);
   logQuery(query, logValues);
 
   let cache = options.context?.cache;
@@ -1729,7 +1728,6 @@ async function mutateRow(
       res = await queryer.exec(query, values);
     }
   } catch (e) {
-    console.debug(e);
     if (_logQueryWithError) {
       const msg = (e as Error).message;
       throw new Error(`error \`${msg}\` running query: \`${query}\``);
@@ -1810,13 +1808,13 @@ export function buildInsertQuery(
         .map((f) => `${f} = EXCLUDED.${f}`)
         .join(", ")}`;
     } else {
-      onConflict += " DO NOTHING";
+      onConflict += ` DO NOTHING`;
     }
     query = query + " " + onConflict;
   }
 
   if (suffix) {
-    query = query + " " + suffix;
+    query += " " + suffix;
   }
 
   return [query, values, logValues];
@@ -1831,17 +1829,12 @@ export async function createRow(
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
 
-  try {
-    const res = await mutateRow(queryer, query, values, logValues, options);
+  const res = await mutateRow(queryer, query, values, logValues, options);
 
-    if (res?.rowCount === 1) {
-      return res.rows[0];
-    }
-    return null;
-  } catch (e) {
-    console.debug(e);
-    return null;
+  if (res?.rowCount === 1) {
+    return res.rows[0];
   }
+  return null;
 }
 
 export function createRowSync(

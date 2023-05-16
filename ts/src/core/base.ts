@@ -174,6 +174,10 @@ export interface LoadRowsOptions extends QueryableDataOptions {}
 interface OnConflictOptions {
   // TODO these should change to fields instead of columns
   onConflictCols: string[];
+
+  // onConflictConstraint doesn't work with do nothing since ent always reloads the
+  // row after insert and if there's no conflict columns provided, we have no way of querying
+  // the db for the original/conflicting row
   onConflictConstraint?: string;
   // update values based on fields
   // if not provided, we do nothing

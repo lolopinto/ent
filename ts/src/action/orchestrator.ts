@@ -243,7 +243,10 @@ export class Orchestrator<
     this.disableTransformations = val;
   }
 
-  setOnConflictOptions(onConflict?: CreateRowOptions["onConflict"]) {
+  setOnConflictOptions(onConflict: CreateRowOptions["onConflict"]) {
+    if (onConflict?.onConflictConstraint && !onConflict.updateCols) {
+      throw new Error(`cannot set onConflictConstraint without updateCols`);
+    }
     this.onConflict = onConflict;
   }
 
