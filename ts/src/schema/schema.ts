@@ -2,7 +2,7 @@ import { snakeCase } from "snake-case";
 import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
 import { Builder, Changeset } from "../action/action";
 import { Clause } from "../core/clause";
-import { AssocEdgeInput } from "../core/ent";
+import { AssocEdgeInput } from "../action/operations";
 
 export declare type FieldMap = {
   [key: string]: Field;
