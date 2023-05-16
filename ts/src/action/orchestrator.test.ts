@@ -16,12 +16,12 @@ import {
   Skip,
   Allow,
 } from "../core/base";
+import { loadRows } from "../core/ent";
 import {
   EditNodeOperation,
   DeleteNodeOperation,
   DataOperation,
-  loadRows,
-} from "../core/ent";
+} from "./operations";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
 import {

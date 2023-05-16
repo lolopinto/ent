@@ -1,5 +1,6 @@
-import { Ent, ID, Viewer, Data, PrivacyPolicy } from "../../core/base";
-import { DataOperation, loadEdges, loadEnts } from "../../core/ent";
+import { Ent, ID, Viewer, Data } from "../../core/base";
+import { loadEdges, loadEnts } from "../../core/ent";
+import { DataOperation } from "../../action/operations";
 import { ObjectLoaderFactory } from "../../core/loaders/object_loader";
 import {
   Action,

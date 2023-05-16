@@ -16,15 +16,7 @@ export {
   loadRowX,
   loadRow,
   loadRows,
-  DataOperation,
-  EditNodeOptions,
-  EditNodeOperation,
-  RawQueryOperation,
-  EdgeOperation,
-  DeleteNodeOperation,
   AssocEdge,
-  AssocEdgeInputOptions,
-  AssocEdgeInput,
   AssocEdgeData,
   loadEdgeData,
   loadEdgeDatas,
@@ -36,6 +28,17 @@ export {
   loadNodesByEdge,
   getEdgeTypeInGroup,
 } from "./core/ent";
+// TODO should these even be exported from the root?
+export {
+  DataOperation,
+  EditNodeOptions,
+  EditNodeOperation,
+  RawQueryOperation,
+  EdgeOperation,
+  DeleteNodeOperation,
+  AssocEdgeInputOptions,
+  AssocEdgeInput,
+} from "./action/operations";
 export { setGlobalSchema } from "./core/global_schema";
 import DB from "./core/db";
 export * from "./core/loaders";
