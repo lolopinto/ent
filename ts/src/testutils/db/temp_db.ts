@@ -26,6 +26,7 @@ interface Column extends SchemaItem {
 
 interface Constraint extends SchemaItem {
   generate(): string;
+  postCreate?(): boolean;
 }
 
 interface Index extends SchemaItem {
@@ -89,11 +90,19 @@ export function check(name: string, condition: string): Constraint {
   };
 }
 
-export function unique(name: string, cols: string[]): Constraint {
+function unique(name: string, cols: string[], tableName: string): Constraint {
   return {
     name,
     generate() {
-      return `UNIQUE (${cols.join(",")})`;
+      if (Dialect.SQLite === DB.getDialect()) {
+        return `UNIQUE (${cols.join(",")})`;
+      }
+      return `ALTER TABLE ${tableName} ADD CONSTRAINT ${name} UNIQUE (${cols.join(
+        ", ",
+      )});`;
+    },
+    postCreate() {
+      return Dialect.Postgres === DB.getDialect();
     },
   };
 }
@@ -360,6 +369,7 @@ export function table(name: string, ...items: SchemaItem[]): Table {
       }
     }
   }
+
   return {
     name,
     columns: cols,
@@ -738,6 +748,8 @@ export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
     items.push(getColumnFromField(fieldName, field, dialect));
   }
 
+  const tableName = getTableName(schema);
+
   if (schema.constraints) {
     for (const constraint of schema.constraints) {
       switch (constraint.type) {
@@ -764,7 +776,7 @@ export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
           break;
 
         case ConstraintType.Unique:
-          items.push(unique(constraint.name, constraint.columns));
+          items.push(unique(constraint.name, constraint.columns, tableName));
           break;
 
         default:
@@ -772,7 +784,7 @@ export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
       }
     }
   }
-  return table(getTableName(schema), ...items);
+  return table(tableName, ...items);
 }
 
 function getColumnForDbType(

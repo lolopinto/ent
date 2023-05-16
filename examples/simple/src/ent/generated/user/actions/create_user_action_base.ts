@@ -82,6 +82,21 @@ export type CreateUserActionValidators = Validator<
   User | null
 >[];
 
+type UpsertCols = "email_address" | "phone_number";
+type UpsertConstraints =
+  | "users_unique_email_address"
+  | "users_unique_phone_number";
+type UnionKeys<T> = T extends T ? keyof T : never;
+type Expand<T> = T extends T ? { [K in keyof T]: T[K] } : never;
+type OneOf<T extends {}[]> = {
+  [K in keyof T]: Expand<
+    T[K] & Partial<Record<Exclude<UnionKeys<T[number]>, keyof T[K]>, never>>
+  >;
+}[number];
+export type CreateUserActionUpsertOptions = { update_cols?: string[] } & OneOf<
+  [{ column: UpsertCols }, { constraint: UpsertConstraints }]
+>;
+
 export class CreateUserActionBase
   implements
     Action<
@@ -148,6 +163,18 @@ export class CreateUserActionBase
     await this.builder.saveX();
     return this.builder.editedEntX();
   }
+
+  async upsert_BETA(
+    options: CreateUserActionUpsertOptions,
+  ): Promise<User | null> {
+    
+    return this.save();
+  }
+
+  async upsert_BETAX(options: CreateUserActionUpsertOptions): Promise<User> {
+    return this.saveX();
+  }
+  // TODO upsert...
 
   static create<T extends CreateUserActionBase>(
     this: new (

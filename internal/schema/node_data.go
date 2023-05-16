@@ -190,6 +190,151 @@ func (nodeData *NodeData) OnEntLoadFieldPrivacy(cfg codegenapi.Config) bool {
 	return cfg.FieldPrivacyEvaluated() == codegenapi.AtEntLoad
 }
 
+type UpsertInfo struct {
+	Name       string
+	types      []*TypeInfo
+	oneOfTypes map[string]*TypeInfo
+}
+
+func (ui *UpsertInfo) Types() string {
+	var sb strings.Builder
+
+	// l := make([]string, len(ui.types))
+	for _, t := range ui.types {
+		sb.WriteString(t.Type())
+		sb.WriteString("\n")
+		// l[i] = t.Name
+	}
+	sb.WriteString("\n")
+	sb.WriteString("\n")
+
+	// sb.WriteString("type UpsertColsOrConstraints")
+	// // sb.WriteString(ui.Name)
+	// sb.WriteString(" = ")
+	// sb.WriteString(strings.Join(l, " | "))
+	// sb.WriteString(";")
+	// sb.WriteString("\n")
+	// sb.WriteString("\n")
+
+	return sb.String()
+}
+
+type TypeInfo struct {
+	Export     bool
+	Name       string
+	Expression string
+}
+
+func (ti *TypeInfo) Type() string {
+	var export string
+	if ti.Export {
+		export = "export "
+	}
+	return fmt.Sprintf("%stype %s = %s;", export, ti.Name, ti.Expression)
+}
+
+func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
+	var fields []string
+	var constraints []string
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.Unique() {
+			fields = append(fields, f.GetDbColName())
+		}
+	}
+
+	for _, c := range nodeData.Constraints {
+		if c.Type == input.UniqueConstraint {
+			constraints = append(constraints, c.Name)
+		}
+	}
+
+	if len(fields) == 0 && len(constraints) == 0 {
+		return nil
+	}
+
+	getType := func(list []string, name string) *TypeInfo {
+		temp := make([]string, len(list))
+		for i, s := range list {
+			temp[i] = fmt.Sprintf(`'%s'`, s)
+		}
+		return &TypeInfo{
+			Name:       name,
+			Expression: strings.Join(temp, " | "),
+		}
+	}
+
+	ret := UpsertInfo{
+		Name:       actionName + "UpsertOptions",
+		oneOfTypes: map[string]*TypeInfo{},
+	}
+	if len(fields) > 0 {
+		typ := getType(fields, "UpsertCols")
+		ret.types = append(ret.types, typ)
+		ret.oneOfTypes["column"] = typ
+	}
+	if len(constraints) > 0 {
+		typ := getType(constraints, "UpsertConstraints")
+		ret.types = append(ret.types, typ)
+		ret.oneOfTypes["constraint"] = typ
+	}
+
+	buildExpression := func(left, right string) string {
+		return fmt.Sprintf("%s: %s", left, right)
+	}
+	buildType := func(expressions []string) string {
+		return fmt.Sprintf("{ %s }", strings.Join(expressions, "; "))
+	}
+
+	lastType := &TypeInfo{
+		Name:   ret.Name,
+		Export: true,
+	}
+
+	if len(ret.oneOfTypes) > 1 {
+		// add Oneof Types
+		// gotten from https://www.typescriptlang.org/play?#code/LAKALgngDgpgBAVQHYEsD2SDSMIGcA8AKgHxwC8chcMAHmDEgCa6VwD8cA1jmgGasAuOEhgA3GACcA3KFAB6OXACSAWygS04uCiT0ANnpS4Gx0JFhwAojSgBDJkVIUqtekxZUOAbzgBtTNpIXDz8hAC6QoT+YXAAvnBCIuLSsuDQ8ADyIhm8RNR0DMxwXrG+YU7FoHB+ATrBEHyUEVY29oxE0XAAZHAACrYSYCi2evgASjAAxmgS7daTegCujDD4yOhYOARRSIsqAEaS5QA09Y1RmCfCYpLEdzIgpbsHRw+gOvQSvLaT8ADCtjAlRA1WqRgBYCEYAkixgD1iqQ+km+vzgABE0ABzYGg7S4DGYqEwuGgBEgd66ZE-eAAIRQsxxoKMdNmRNh8NS5ngAEFUCoRuQ4FkYDl8L4IacCacWYxyg8FKCAHpsVLTJC4IGTQFCXkofl6QU+cHauDQ2FxB5qjVwRhYnV8gUUI34u2m4kW+SKK2awEE+16x3FPEQtkwU5GP1u82xKRwBWSDQSVK8RZISZDDA2tAAdRmnAAFLZ-fqAJReVJk0C23MSAtasAlh7VvP522YxtVnMt50hqNhvGRs3wWIloA
+		// linked to from https://stackoverflow.com/questions/42123407/does-typescript-support-mutually-exclusive-types#comment123255834_53229567
+
+		ret.types = append(
+			ret.types, &TypeInfo{
+				Name:       "UnionKeys<T>",
+				Expression: "T extends T ? keyof T : never",
+			},
+			&TypeInfo{
+				Name:       "Expand<T>",
+				Expression: "T extends T ? { [K in keyof T]: T[K] } : never",
+			},
+			&TypeInfo{
+				Name:       "OneOf<T extends {}[]>",
+				Expression: "{[K in keyof T]: Expand<T[K] & Partial<Record<Exclude<UnionKeys<T[number]>, keyof T[K]>, never>>>;}[number]",
+			},
+		)
+
+		var types []string
+		for k, v := range ret.oneOfTypes {
+			types = append(types, buildType([]string{buildExpression(k, v.Name)}))
+		}
+
+		lastType.Expression = fmt.Sprintf(" %s & %s",
+			buildType([]string{buildExpression("update_cols?", "string[]")}),
+			fmt.Sprintf("OneOf<[%s]>", strings.Join(types, ", ")),
+		)
+	} else {
+		var key string
+		for k := range ret.oneOfTypes {
+			key = k
+		}
+		lastType.Expression = buildType([]string{
+			buildExpression("update_cols?", "string[]"),
+			buildExpression(key, ret.types[0].Name),
+		})
+	}
+
+	ret.types = append(ret.types, lastType)
+
+	return &ret
+}
+
 // return the list of unique nodes at the end of an association
 // needed to import what's needed in generated code
 type uniqueNodeInfo struct {

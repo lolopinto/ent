@@ -44,6 +44,7 @@ import {
   TransformedEdgeUpdateOperation,
 } from "../schema/schema";
 import { __getGlobalSchema } from "./global_schema";
+import { on } from "events";
 
 // TODO kill this and createDataLoader
 class cacheMap {
@@ -1083,12 +1084,6 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     return false;
   }
 
-  private onConflictDoNothing() {
-    return (
-      this.options.onConflict && !this.options.onConflict.updateCols?.length
-    );
-  }
-
   private buildOnConflictQuery(options: EditNodeOptions<T>) {
     // assumes onConflict has been checked already...
     const clauses: clause.Clause[] = [];
@@ -1722,6 +1717,7 @@ async function mutateRow(
   logValues: any[],
   options: DataOptions,
 ) {
+  console.debug("callled, ", query);
   logQuery(query, logValues);
 
   let cache = options.context?.cache;
@@ -1733,6 +1729,7 @@ async function mutateRow(
       res = await queryer.exec(query, values);
     }
   } catch (e) {
+    console.debug(e);
     if (_logQueryWithError) {
       const msg = (e as Error).message;
       throw new Error(`error \`${msg}\` running query: \`${query}\``);
@@ -1800,9 +1797,14 @@ export function buildInsertQuery(
   let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals})`;
 
   if (options.onConflict) {
-    let onConflict = `ON CONFLICT(${options.onConflict.onConflictCols.join(
-      ", ",
-    )})`;
+    let onConflict = "";
+    if (options.onConflict.onConflictConstraint) {
+      onConflict = `ON CONFLICT ON CONSTRAINT ${options.onConflict.onConflictConstraint}`;
+    } else {
+      onConflict = `ON CONFLICT(${options.onConflict.onConflictCols.join(
+        ", ",
+      )})`;
+    }
     if (options.onConflict.updateCols?.length) {
       onConflict += ` DO UPDATE SET ${options.onConflict.updateCols
         .map((f) => `${f} = EXCLUDED.${f}`)
@@ -1829,12 +1831,17 @@ export async function createRow(
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
 
-  const res = await mutateRow(queryer, query, values, logValues, options);
+  try {
+    const res = await mutateRow(queryer, query, values, logValues, options);
 
-  if (res?.rowCount === 1) {
-    return res.rows[0];
+    if (res?.rowCount === 1) {
+      return res.rows[0];
+    }
+    return null;
+  } catch (e) {
+    console.debug(e);
+    return null;
   }
-  return null;
 }
 
 export function createRowSync(

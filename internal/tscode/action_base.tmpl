@@ -103,6 +103,8 @@
 {{ $newArgs := ""}}
 {{ $instance := .NodeData.NodeInstance}}
 {{ $hasSaveFromID := false }}
+{{ $creating := false }}
+{{ $upsertInfo := .NodeData.GetUpsertInfo $action.GetActionName}} 
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
 {{ reserveImportPath $viewerInfo.GetImportPath false -}}
@@ -118,6 +120,7 @@
 {{ else if $hasInput -}} 
   {{ $constructor = printf "viewer: %s, input: %s"  $viewerType $inputName -}}
   {{ $newArgs = "viewer, input" }}
+  {{ $creating = true }} 
 {{/* delete, no input */ -}}
 {{ else -}}
   {{ $constructor = printf "viewer: %s, %s: %s" $viewerType $instance $node -}}
@@ -147,6 +150,12 @@ export type {{$observersType }} = {{useImport "Observer"}}<{{$node}}, {{$builder
 
 {{$validatorsType := printf "%sValidators" $action.GetActionName}}
 export type {{$validatorsType }} = {{useImport "Validator"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
+
+{{$upsert := and $creating $upsertInfo}}
+{{ if $upsert }}
+  {{$upsertInfo.Types -}}
+{{ end -}}
+
 
 
 export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> {
@@ -306,6 +315,18 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   {{ end -}}
   }
 
+  {{ if $upsert }}
+  async upsert_BETA(options: {{$upsertInfo.Name}}): Promise<{{$node}} | null> {
+
+    return this.save();
+  }
+
+  async upsert_BETAX(options: {{$upsertInfo.Name}}): Promise<{{$node}}> {
+
+    return this.saveX();
+  }
+  {{ end -}} 
+
   {{ if and $action.IsDeletingNode $action.TransformsDelete -}}
   async saveWithoutTransform(): Promise<void> {
     this.builder.orchestrator.setDisableTransformations(true);
@@ -324,6 +345,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   ): T {
     return new this({{$newArgs}});
   }
+
 
   {{if $hasSaveFromID -}}
     static async saveXFromID<T extends {{$actionName}}>(

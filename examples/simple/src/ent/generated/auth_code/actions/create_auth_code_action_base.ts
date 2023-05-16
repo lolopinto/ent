@@ -61,6 +61,12 @@ export type CreateAuthCodeActionValidators = Validator<
   AuthCode | null
 >[];
 
+type UpsertConstraints = "uniqueCode" | "uniquePhoneCode";
+export type CreateAuthCodeActionUpsertOptions = {
+  update_cols?: string[];
+  constraint: UpsertConstraints;
+};
+
 export class CreateAuthCodeActionBase
   implements
     Action<
@@ -130,6 +136,19 @@ export class CreateAuthCodeActionBase
     await this.builder.saveX();
     return this.builder.editedEntX();
   }
+
+  async upsert_BETA(
+    options: CreateAuthCodeActionUpsertOptions,
+  ): Promise<AuthCode | null> {
+    return this.save();
+  }
+
+  async upsert_BETAX(
+    options: CreateAuthCodeActionUpsertOptions,
+  ): Promise<AuthCode> {
+    return this.saveX();
+  }
+  // TODO upsert...
 
   static create<T extends CreateAuthCodeActionBase>(
     this: new (

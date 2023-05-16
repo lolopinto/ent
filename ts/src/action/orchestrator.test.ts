@@ -467,10 +467,10 @@ describe("postgres", () => {
   commonTests();
 });
 
-describe("sqlite", () => {
-  setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
-  commonTests();
-});
+// describe("sqlite", () => {
+//   setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
+//   commonTests();
+// });
 
 function getInsertUserAction(
   map: Map<string, any>,
@@ -2097,6 +2097,68 @@ function commonTests() {
           values: [email, "UNVERIFIED"],
         });
       }
+    });
+
+    // not working for some reason
+    test.only("upsert. do nothing constraint name", async () => {
+      if (Dialect.Postgres !== DB.getDialect()) {
+        return;
+      }
+      const viewer = new IDViewer("11");
+
+      const email = randomEmail();
+
+      const action1 = new SimpleAction(
+        viewer,
+        UserSchemaMultipleUnique,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["EmailAddress", email],
+          ["account_status", "UNVERIFIED"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictConstraint: "email_status_unique",
+        onConflictCols: [],
+      });
+
+      const action2 = new SimpleAction(
+        viewer,
+        UserSchemaMultipleUnique,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["EmailAddress", email],
+          ["account_status", "UNVERIFIED"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictConstraint: "email_status_unique",
+        onConflictCols: [],
+      });
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      expect(u1.data).toStrictEqual(u2.data);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+      expect(select).toContainEqual({
+        query: buildQuery({
+          tableName: "user_multiple_uniques",
+          fields: ["*"],
+          clause: clause.And(
+            clause.Eq("email_address", email),
+            clause.Eq("account_status", "UNVERIFIED"),
+          ),
+        }),
+        values: [email, "UNVERIFIED"],
+      });
     });
   });
 

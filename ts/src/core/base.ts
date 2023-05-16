@@ -172,7 +172,9 @@ export interface LoadRowOptions extends QueryableDataOptions {}
 export interface LoadRowsOptions extends QueryableDataOptions {}
 
 interface OnConflictOptions {
+  // TODO these should change to fields instead of columns
   onConflictCols: string[];
+  onConflictConstraint?: string;
   // update values based on fields
   // if not provided, we do nothing
   updateCols?: string[];
