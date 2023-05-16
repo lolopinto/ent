@@ -8,16 +8,7 @@ import {
   PrivacyError,
   PrivacyPolicy,
 } from "../core/base";
-import {
-  AssocEdgeInputOptions,
-  DataOperation,
-  EdgeOperation,
-  EditNodeOperation,
-  DeleteNodeOperation,
-  loadEdgeDatas,
-  applyPrivacyPolicyForRow,
-  EditNodeOptions,
-} from "../core/ent";
+import { loadEdgeDatas, applyPrivacyPolicyForRow } from "../core/ent";
 import {
   getFields,
   SchemaInputType,
@@ -28,6 +19,14 @@ import {
   FieldInfoMap,
 } from "../schema/schema";
 import { Changeset, Executor, Validator } from "../action/action";
+import {
+  AssocEdgeInputOptions,
+  DataOperation,
+  EdgeOperation,
+  EditNodeOperation,
+  DeleteNodeOperation,
+  EditNodeOptions,
+} from "./operations";
 import { WriteOperation, Builder, Action } from "../action";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";

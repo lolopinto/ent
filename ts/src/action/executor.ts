@@ -1,11 +1,12 @@
 import Graph from "graph-data-structure";
 import { ID, Ent, Viewer, Context, Data } from "../core/base";
-import { DataOperation, logQuery } from "../core/ent";
+import { logQuery } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
 import { Builder } from "../action";
 import { OrchestratorOptions } from "./orchestrator";
 import DB, { Client, Queryer, SyncClient } from "../core/db";
 import { log } from "../core/logger";
+import { DataOperation } from "./operations";
 
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor {

@@ -1,6 +1,6 @@
 import { Builder, WriteOperation } from "../action";
 import { Ent, Viewer } from "../core/base";
-import { DataOperation, EdgeOperation, loadEdges, loadRow } from "../core/ent";
+import { loadEdges, loadRow } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
 import { StringType } from "../schema/field";
@@ -24,6 +24,7 @@ import {
   Table,
 } from "../testutils/db/temp_db";
 import { Dialect } from "../core/db";
+import { DataOperation, EdgeOperation } from "./operations";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
