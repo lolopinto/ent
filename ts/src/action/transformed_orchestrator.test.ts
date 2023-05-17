@@ -32,7 +32,8 @@ import {
 } from "../testutils/db/temp_db";
 import { convertDate } from "../core/convert";
 import { FieldMap } from "../schema";
-import { loadRawEdgeCountX, RawQueryOperation } from "../core/ent";
+import { loadRawEdgeCountX } from "../core/ent";
+import { RawQueryOperation } from "./operations";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 async function createEdges() {

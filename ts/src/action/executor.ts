@@ -1,11 +1,12 @@
 import Graph from "graph-data-structure";
 import { ID, Ent, Viewer, Context, Data } from "../core/base";
-import { DataOperation, logQuery } from "../core/ent";
+import { logQuery } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
 import { Builder } from "../action";
 import { OrchestratorOptions } from "./orchestrator";
 import DB, { Client, Queryer, SyncClient } from "../core/db";
 import { log } from "../core/logger";
+import { DataOperation } from "./operations";
 
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor {
@@ -60,7 +61,12 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     const builder = this.options.builder;
     await Promise.all(
       action.getObservers().map(async (observer) => {
-        await observer.observe(builder, action.getInput());
+        try {
+          await observer.observe(builder, action.getInput());
+        } catch (err) {
+          // TODO we eventually want a global observer error handler so that this can be logged or whatever...
+          // TODO https://github.com/lolopinto/ent/issues/1429
+        }
       }),
     );
   }

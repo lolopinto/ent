@@ -8,12 +8,8 @@ import {
   Context,
   WriteOperation,
 } from "../core/base";
-import {
-  DataOperation,
-  loadEdgeForID2,
-  AssocEdge,
-  AssocEdgeInputOptions,
-} from "../core/ent";
+import { loadEdgeForID2, AssocEdge } from "../core/ent";
+import { DataOperation, AssocEdgeInputOptions } from "./operations";
 import { Queryer } from "../core/db";
 import { log } from "../core/logger";
 import { TransformedUpdateOperation, UpdateOperation } from "../schema";
