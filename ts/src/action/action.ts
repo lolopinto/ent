@@ -45,13 +45,15 @@ export interface Builder<
   orchestrator: BuilderOrchestrator;
 }
 
-// NB: this is a private API subject to change
+// PS: this is a private API subject to change
 export interface Executor
   extends Iterable<DataOperation>,
     Iterator<DataOperation> {
   placeholderID: ID;
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
+  builderOpChanged(builder: Builder<any>): boolean;
+
   execute(): Promise<void>;
 
   // TODO add this so we can differentiate btw when ops are being executed?

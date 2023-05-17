@@ -34,24 +34,35 @@ import {
   parameterizedQueryOptions,
 } from "../core/ent";
 
+export interface UpdatedOperation {
+  operation: WriteOperation;
+  builder: Builder<any>;
+}
+
+// PS: anytime this is updated, need to update ConditionalOperation
 export interface DataOperation<T extends Ent = Ent> {
   // any data that needs to be fetched before the write should be fetched here
   // because of how SQLite works, we can't use asynchronous fetches during the write
-  // so we batch up fetching to be done beforehand here
+  // so we b\]tch up fetching to be done beforehand here
   preFetch?(queryer: Queryer, context?: Context): Promise<void>;
 
   // performWriteSync is called for SQLITE and APIs that don't support asynchronous writes
   performWriteSync(queryer: SyncQueryer, context?: Context): void;
+  // or can return extra information e.g. create|edit
   performWrite(queryer: Queryer, context?: Context): Promise<void>;
 
   placeholderID?: ID;
   returnedRow?(): Data | null; // optional to get the raw row
   createdEnt?(viewer: Viewer): T | null; // optional to indicate the ent that was created
+
+  shortCircuit?(executor: Executor): boolean; // optional to indicate that the operation should not be performed
+  updatedOperation?(): UpdatedOperation | null;
   resolve?(executor: Executor): void; //throws?
 
   // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
 }
+
 export class DeleteNodeOperation implements DataOperation {
   constructor(private id: ID, private options: DataOptions) {}
 
@@ -70,14 +81,6 @@ export class DeleteNodeOperation implements DataOperation {
     };
     return deleteRowsSync(queryer, options, clause.Eq("id", this.id));
   }
-}
-
-export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
-  fieldsToResolve: string[];
-  loadEntOptions: LoadEntOptions<T>;
-  placeholderID?: ID;
-  key: string;
-  onConflict?: CreateRowOptions["onConflict"];
 }
 
 export class RawQueryOperation implements DataOperation {
@@ -108,15 +111,24 @@ export class RawQueryOperation implements DataOperation {
   }
 }
 
+export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
+  fieldsToResolve: string[];
+  loadEntOptions: LoadEntOptions<T>;
+  key: string;
+  onConflict?: CreateRowOptions["onConflict"];
+  builder: Builder<T>;
+}
+
 export class EditNodeOperation<T extends Ent> implements DataOperation {
-  row: Data | null = null;
+  private row: Data | null = null;
   placeholderID?: ID | undefined;
+  private updatedOp: UpdatedOperation | null = null;
 
   constructor(
     public options: EditNodeOptions<T>,
     private existingEnt: Ent | null = null,
   ) {
-    this.placeholderID = options.placeholderID;
+    this.placeholderID = options.builder.placeholderID;
   }
 
   resolve<T extends Ent>(executor: Executor): void {
@@ -161,7 +173,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     return { cls, query };
   }
 
-  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
+  async performWrite(queryer: Queryer, context?: Context) {
     let options = {
       ...this.options,
       context,
@@ -181,21 +193,28 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
 
       // how to tell if we updated cols
       this.row = await createRow(queryer, options, "RETURNING *");
-      if (this.row && this.row.id !== options.fields.id) {
-        console.debug("id changed...");
+      const key = this.options.key;
+      if (this.row && this.row[key] !== options.fields[key]) {
+        this.updatedOp = {
+          builder: this.options.builder,
+          operation: WriteOperation.Edit,
+        };
       }
       if (
         this.row === null &&
         this.options.onConflict &&
         !this.options.onConflict.updateCols?.length
       ) {
-        console.debug("id changed since we have to reload");
         // no row returned and on conflict, do nothing, have to fetch the conflict row back...
         const { cls, query } = this.buildOnConflictQuery(options);
 
         logQuery(query, cls.logValues());
         const res = await queryer.query(query, cls.values());
         this.row = res.rows[0];
+        this.updatedOp = {
+          builder: this.options.builder,
+          operation: WriteOperation.Edit,
+        };
       }
     }
   }
@@ -293,8 +312,11 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     }
     return new this.options.loadEntOptions.ent(viewer, this.row);
   }
-}
 
+  updatedOperation(): UpdatedOperation | null {
+    return this.updatedOp;
+  }
+}
 interface EdgeOperationOptions {
   operation: WriteOperation;
   id1Placeholder?: boolean;
@@ -302,9 +324,16 @@ interface EdgeOperationOptions {
   dataPlaceholder?: boolean;
 }
 
-export interface AssocEdgeInputOptions {
+export interface AssocEdgeInputOptions extends AssocEdgeOptions {
   time?: Date;
   data?: string | Builder<Ent>;
+}
+
+export interface AssocEdgeOptions {
+  // if passed. indicates that it's conditional on the current builder's operator not changing
+  // e.g. if an upsert is being done, and the builder changes from insert to update,
+  // then the edge write should not be done if this is true
+  conditional?: boolean;
 }
 
 export interface AssocEdgeInput extends AssocEdgeInputOptions {
@@ -791,5 +820,68 @@ export class EdgeOperation implements DataOperation {
     return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,
     });
+  }
+}
+
+export class ConditionalOperation implements DataOperation {
+  placeholderID?: ID | undefined;
+  constructor(private op: DataOperation, private builder: Builder<any>) {
+    this.placeholderID = op.placeholderID;
+  }
+
+  shortCircuit(executor: Executor): boolean {
+    return executor.builderOpChanged(this.builder);
+  }
+
+  async preFetch(
+    queryer: Queryer,
+    context?: Context<Viewer<Ent<any> | null, ID | null>> | undefined,
+  ): Promise<void> {
+    if (this.op.preFetch) {
+      return this.op.preFetch(queryer, context);
+    }
+  }
+
+  performWriteSync(
+    queryer: SyncQueryer,
+    context?: Context<Viewer<Ent<any> | null, ID | null>> | undefined,
+  ): void {
+    this.op.performWriteSync(queryer, context);
+  }
+
+  performWrite(
+    queryer: Queryer,
+    context?: Context<Viewer<Ent<any> | null, ID | null>> | undefined,
+  ): Promise<void> {
+    return this.op.performWrite(queryer, context);
+  }
+
+  returnedRow(): Data | null {
+    if (this.op.returnedRow) {
+      return this.op.returnedRow();
+    }
+    return null;
+  }
+
+  updatedOperation(): UpdatedOperation | null {
+    if (this.op.updatedOperation) {
+      return this.op.updatedOperation();
+    }
+    return null;
+  }
+
+  resolve(executor: Executor): void {
+    if (this.op.resolve) {
+      return this.op.resolve(executor);
+    }
+  }
+
+  async postFetch(
+    queryer: Queryer,
+    context?: Context<Viewer<Ent<any> | null, ID | null>> | undefined,
+  ): Promise<void> {
+    if (this.op.postFetch) {
+      return this.op.postFetch(queryer, context);
+    }
   }
 }

@@ -566,6 +566,7 @@ export class TempDB {
 
     // drop db
     await this.client.query(`DROP DATABASE ${this.db}`);
+    // console.log(this.db);
 
     await this.client.end();
   }
@@ -622,9 +623,12 @@ export function assoc_edge_config_table() {
 
 // if global flag is true, add any column from testEdgeGlobalSchema
 // up to caller to set/clear that as needed
-export function assoc_edge_table(name: string, global?: boolean) {
-  const t = table(
-    name,
+export function assoc_edge_table(
+  name: string,
+  global?: boolean,
+  unique_edge?: boolean,
+) {
+  const items: SchemaItem[] = [
     uuid("id1"),
     text("id1_type"),
     // same as in assoc_edge_config_table
@@ -634,7 +638,13 @@ export function assoc_edge_table(name: string, global?: boolean) {
     timestamptz("time"),
     text("data", { nullable: true }),
     primaryKey(`${name}_pkey`, ["id1", "id2", "edge_type"]),
-  );
+  ];
+  if (unique_edge) {
+    items.push(
+      unique(`${name}_unique_id1_edge_type`, ["id1", "edge_type"], name),
+    );
+  }
+  const t = table(name, ...items);
 
   if (global) {
     for (const k in testEdgeGlobalSchema.extraEdgeFields) {

@@ -16,7 +16,7 @@ import {
   Skip,
   Allow,
 } from "../core/base";
-import { loadRows, buildQuery } from "../core/ent";
+import { loadRows, buildQuery, loadEdges } from "../core/ent";
 import {
   EditNodeOperation,
   DeleteNodeOperation,
@@ -72,12 +72,12 @@ import {
 } from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
 import { convertDate, convertJSON, convertList } from "../core/convert";
-import { v4 } from "uuid";
+import { v1, v4 } from "uuid";
 import { NumberOps } from "./relative_value";
 import { StructType, BooleanType, ConstraintType } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 
-const edges = ["edge", "inverseEdge", "symmetricEdge"];
+const edges = ["edge", "inverseEdge", "symmetricEdge", "uniqueEdge"];
 beforeEach(async () => {
   // does assoc_edge_config loader need to be cleared?
   for (const edge of edges) {
@@ -431,7 +431,13 @@ const SchemaWithNullFields = getBuilderSchemaFromFields(
 const getTables = () => {
   const tables: Table[] = [assoc_edge_config_table()];
   edges.map((edge) =>
-    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+    tables.push(
+      assoc_edge_table(
+        `${snakeCase(edge)}_table`,
+        false,
+        edge === "uniqueEdge",
+      ),
+    ),
   );
 
   [
@@ -1811,7 +1817,7 @@ function commonTests() {
     });
   });
 
-  describe("upsert", () => {
+  describe.only("upsert", () => {
     let ml = new MockLogs();
 
     beforeAll(() => {
@@ -1828,35 +1834,25 @@ function commonTests() {
       ml.clear();
     });
 
-    test("upsert. no upsert. error ", async () => {
-      const viewer = new IDViewer("11");
+    const createUserAction = (email, schema = UserSchemaExtended) =>
+      new SimpleAction(
+        new LoggedOutViewer(),
+        schema,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["account_status", "UNVERIFIED"],
+          ["EmailAddress", email],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
 
+    test("upsert. no upsert. error ", async () => {
       const email = randomEmail();
 
-      const action1 = new SimpleAction(
-        viewer,
-        UserSchemaExtended,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
-      const action2 = new SimpleAction(
-        viewer,
-        UserSchemaExtended,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+      const action1 = createUserAction(email);
+      const action2 = createUserAction(email);
 
       try {
         await Promise.all([action1.saveX(), action2.saveX()]);
@@ -1867,37 +1863,14 @@ function commonTests() {
     });
 
     test("upsert. do nothing", async () => {
-      const viewer = new IDViewer("11");
-
       const email = randomEmail();
 
-      const action1 = new SimpleAction(
-        viewer,
-        UserSchemaExtended,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+      const action1 = createUserAction(email);
       action1.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address"],
       });
-      const action2 = new SimpleAction(
-        viewer,
-        UserSchemaExtended,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+
+      const action2 = createUserAction(email);
       action2.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address"],
       });
@@ -1920,38 +1893,66 @@ function commonTests() {
       });
     });
 
-    test.only("upsert. do nothing. with trigger", async () => {
-      const viewer = new IDViewer("11");
+    const addEdgeTrigger = {
+      async changeset(builder: SimpleBuilder<any>, input) {
+        const dep = createUserAction(randomEmail());
 
+        builder.orchestrator.addOutboundEdge(dep.builder, "uniqueEdge", "User");
+        return dep.changeset();
+      },
+    };
+
+    const addConditionalEdgeTrigger = {
+      async changeset(builder: SimpleBuilder<any>, input) {
+        const dep = createUserAction(randomEmail());
+
+        // conditional!
+        builder.orchestrator.addOutboundEdge(
+          dep.builder,
+          "uniqueEdge",
+          "User",
+          {
+            conditional: true,
+          },
+        );
+        // next: how to make this conditional too
+        return dep.changeset();
+      },
+    };
+
+    test("upsert. do nothing. with trigger with conflicting edge", async () => {
       const email = randomEmail();
 
-      const action1 = new SimpleAction(
-        viewer,
-        UserSchemaExtended,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+      const action1 = createUserAction(email);
+      action1.getTriggers = () => [addEdgeTrigger];
+
       action1.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address"],
       });
-      const action2 = new SimpleAction(
-        viewer,
-        UserSchemaExtended,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+
+      const action2 = createUserAction(email);
+      action2.getTriggers = () => [addEdgeTrigger];
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      await expect(
+        Promise.all([action1.saveX(), action2.saveX()]),
+      ).rejects.toThrowError(/unique_edge_table_unique_id1_edge_type/);
+    });
+
+    test("upsert. do nothing. with trigger with conditional conflicting edge", async () => {
+      const email = randomEmail();
+
+      const action1 = createUserAction(email);
+      action1.getTriggers = () => [addConditionalEdgeTrigger];
+
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      const action2 = createUserAction(email);
+      action2.getTriggers = () => [addConditionalEdgeTrigger];
       action2.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address"],
       });
@@ -1972,41 +1973,24 @@ function commonTests() {
         }),
         values: [email],
       });
+
+      const edges = await loadEdges({
+        id1: u1.id,
+        edgeType: "uniqueEdge",
+      });
+      expect(edges.length).toBe(1);
     });
 
     test("upsert. update", async () => {
-      const viewer = new IDViewer("11");
-
       const email = randomEmail();
 
-      const action1 = new SimpleAction(
-        viewer,
-        UserSchemaExtended,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+      const action1 = createUserAction(email);
       action1.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address"],
         updateCols: ["updated_at"],
       });
-      const action2 = new SimpleAction(
-        viewer,
-        UserSchemaExtended,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+
+      const action2 = createUserAction(email);
       action2.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address"],
         updateCols: ["updated_at"],
@@ -2036,37 +2020,14 @@ function commonTests() {
     });
 
     test("upsert. do nothing multiple cols", async () => {
-      const viewer = new IDViewer("11");
-
       const email = randomEmail();
 
-      const action1 = new SimpleAction(
-        viewer,
-        UserSchemaMultipleUnique,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+      const action1 = createUserAction(email, UserSchemaMultipleUnique);
       action1.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address", "account_status"],
       });
-      const action2 = new SimpleAction(
-        viewer,
-        UserSchemaMultipleUnique,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+
+      const action2 = createUserAction(email, UserSchemaMultipleUnique);
       action2.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address", "account_status"],
       });
@@ -2095,34 +2056,13 @@ function commonTests() {
 
       const email = randomEmail();
 
-      const action1 = new SimpleAction(
-        viewer,
-        UserSchemaMultipleUnique,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+      const action1 = createUserAction(email, UserSchemaMultipleUnique);
       action1.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address", "account_status"],
         updateCols: ["updated_at"],
       });
-      const action2 = new SimpleAction(
-        viewer,
-        UserSchemaMultipleUnique,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["account_status", "UNVERIFIED"],
-          ["EmailAddress", email],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+
+      const action2 = createUserAction(email, UserSchemaMultipleUnique);
       action2.builder.orchestrator.setOnConflictOptions({
         onConflictCols: ["email_address", "account_status"],
         updateCols: ["updated_at"],
@@ -2157,22 +2097,11 @@ function commonTests() {
       if (Dialect.Postgres !== DB.getDialect()) {
         return;
       }
-      const viewer = new IDViewer("11");
 
       const email = randomEmail();
 
-      const action1 = new SimpleAction(
-        viewer,
-        UserSchemaMultipleUnique,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["EmailAddress", email],
-          ["account_status", "UNVERIFIED"],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+      const action1 = createUserAction(email, UserSchemaMultipleUnique);
+
       try {
         action1.builder.orchestrator.setOnConflictOptions({
           onConflictConstraint: "email_address_account_status_unique",
@@ -2190,40 +2119,17 @@ function commonTests() {
       if (Dialect.Postgres !== DB.getDialect()) {
         return;
       }
-      const viewer = new IDViewer("11");
 
       const email = randomEmail();
 
-      const action1 = new SimpleAction(
-        viewer,
-        UserSchemaMultipleUnique,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["EmailAddress", email],
-          ["account_status", "UNVERIFIED"],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+      const action1 = createUserAction(email, UserSchemaMultipleUnique);
       action1.builder.orchestrator.setOnConflictOptions({
         onConflictConstraint: "email_address_account_status_unique",
         onConflictCols: [],
         updateCols: ["updated_at"],
       });
 
-      const action2 = new SimpleAction(
-        viewer,
-        UserSchemaMultipleUnique,
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-          ["EmailAddress", email],
-          ["account_status", "UNVERIFIED"],
-        ]),
-        WriteOperation.Insert,
-        null,
-      );
+      const action2 = createUserAction(email, UserSchemaMultipleUnique);
       action2.builder.orchestrator.setOnConflictOptions({
         onConflictConstraint: "email_address_account_status_unique",
         onConflictCols: [],
