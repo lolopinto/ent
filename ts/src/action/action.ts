@@ -36,6 +36,7 @@ export interface Builder<
   placeholderID: ID;
   readonly viewer: TViewer;
   build(): Promise<Changeset>;
+  buildWithOptions_BETA?(options: ChangesetOptions): Promise<Changeset>;
   operation: WriteOperation;
   editedEnt?(): Promise<TEnt | null>;
   nodeType: string;
@@ -126,6 +127,12 @@ export interface Validator<
   ): Promise<void | undefined | Error> | void | Error | undefined;
 }
 
+export interface ChangesetOptions {
+  // conditional on builder operation remaining the same
+  // TODO I don't really like this
+  conditionalBuilder: Builder<any>;
+}
+
 export interface Action<
   TEnt extends Ent<TViewer>,
   TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
@@ -135,6 +142,7 @@ export interface Action<
 > {
   readonly viewer: Viewer;
   changeset(): Promise<Changeset>;
+  changesetWithOptions_BETA?(options: ChangesetOptions): Promise<Changeset>;
   builder: TBuilder;
   getPrivacyPolicy(): PrivacyPolicy<TEnt>;
 

@@ -194,7 +194,19 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       // how to tell if we updated cols
       this.row = await createRow(queryer, options, "RETURNING *");
       const key = this.options.key;
-      if (this.row && this.row[key] !== options.fields[key]) {
+      // const a = this.row![key];
+      // const b = this.options.fields[key];
+      // console.debug(
+      //   "created",
+      //   //        this.options.builder,
+      //   this.row,
+      //   key,
+      //   a,
+      //   b,
+      //   a == b,
+      // );
+      if (this.row && this.row[key] !== this.options.fields[key]) {
+        console.debug("should update ops");
         this.updatedOp = {
           builder: this.options.builder,
           operation: WriteOperation.Edit,
@@ -205,6 +217,8 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         this.options.onConflict &&
         !this.options.onConflict.updateCols?.length
       ) {
+        console.debug("should update ops");
+
         // no row returned and on conflict, do nothing, have to fetch the conflict row back...
         const { cls, query } = this.buildOnConflictQuery(options);
 
@@ -883,5 +897,20 @@ export class ConditionalOperation implements DataOperation {
     if (this.op.postFetch) {
       return this.op.postFetch(queryer, context);
     }
+  }
+}
+
+// separate because we need to implement createdEnt and we manually run those before edge/other operations in executors
+export class ConditionalNodeOperation<
+  T extends Ent,
+> extends ConditionalOperation {
+  constructor(private ourOp: DataOperation<T>, builder: Builder<any>) {
+    super(ourOp, builder);
+  }
+  createdEnt(viewer: Viewer): T | null {
+    if (this.ourOp.createdEnt) {
+      return this.ourOp.createdEnt(viewer);
+    }
+    return null;
   }
 }

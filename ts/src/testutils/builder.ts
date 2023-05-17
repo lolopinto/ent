@@ -33,6 +33,7 @@ import {
 } from "../schema/base_schema";
 import { FieldInfoMap, getStorageKey } from "../schema/schema";
 import { Clause } from "src/core/clause";
+import { ChangesetOptions } from "../action/action";
 
 export class BaseEnt {
   readonly id: ID;
@@ -292,6 +293,10 @@ export class SimpleBuilder<
     return this.orchestrator.build();
   }
 
+  buildWithOptions_BETA(options: ChangesetOptions): Promise<Changeset> {
+    return this.orchestrator.buildWithOptions_BETA(options);
+  }
+
   async editedEnt(): Promise<T | null> {
     return await this.orchestrator.editedEnt();
   }
@@ -376,6 +381,10 @@ export class SimpleAction<
 
   changeset(): Promise<Changeset> {
     return this.builder.build();
+  }
+
+  changesetWithOptions_BETA(options: ChangesetOptions): Promise<Changeset> {
+    return this.builder.buildWithOptions_BETA(options);
   }
 
   valid(): Promise<boolean> {

@@ -1101,6 +1101,7 @@ export async function createRow(
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
 
+  // console.debug("query", query, values, logValues);
   const res = await mutateRow(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {

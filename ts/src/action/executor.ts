@@ -153,6 +153,10 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     const impl = (c: Changeset) => {
       changesetMap.set(c.placeholderID.toString(), c);
 
+      // if conditional, we should flip the order of the dependencies
+      // however, leads to issues if there's a dependency in a field being set
+      // and there's a conditional.
+
       graph.addNode(c.placeholderID.toString());
       if (c.dependencies) {
         for (let [_, builder] of c.dependencies) {
@@ -289,6 +293,8 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   }
 
   builderOpChanged(builder: Builder<any>): boolean {
+    console.debug("updatedOps", this.updatedOps);
+
     const v = this.updatedOps.get(builder.placeholderID);
     return v !== undefined && v !== builder.operation;
   }
@@ -352,6 +358,7 @@ export async function executeOperations(
       client.runInTransaction(() => {
         for (const operation of executor) {
           if (operation.shortCircuit && operation.shortCircuit(executor)) {
+            console.debug("short circuitting");
             continue;
           }
           if (trackOps) {
@@ -368,6 +375,7 @@ export async function executeOperations(
       await client.query("BEGIN");
       for (const operation of executor) {
         if (operation.shortCircuit && operation.shortCircuit(executor)) {
+          console.debug("short circuitting", operation);
           continue;
         }
 

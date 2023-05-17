@@ -19,7 +19,12 @@ import {
   TransformedUpdateOperation,
   FieldInfoMap,
 } from "../schema/schema";
-import { Changeset, Executor, Validator } from "../action/action";
+import {
+  Changeset,
+  ChangesetOptions,
+  Executor,
+  Validator,
+} from "../action/action";
 import {
   AssocEdgeInputOptions,
   DataOperation,
@@ -29,6 +34,7 @@ import {
   EditNodeOptions,
   AssocEdgeOptions,
   ConditionalOperation,
+  ConditionalNodeOperation,
 } from "./operations";
 import { WriteOperation, Builder, Action } from "../action";
 import { applyPrivacyPolicyX } from "../core/privacy";
@@ -345,7 +351,7 @@ export class Orchestrator<
     }
   }
 
-  private buildMainOp(): DataOperation {
+  private buildMainOp(conditionalBuilder?: Builder<any>): DataOperation {
     // this assumes we have validated fields
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -381,6 +387,13 @@ export class Orchestrator<
           opts.fieldsToLog = this.logValues;
         }
         this.mainOp = new EditNodeOperation(opts, this.existingEnt);
+        if (conditionalBuilder) {
+          console.debug("conditional main op");
+          this.mainOp = new ConditionalNodeOperation(
+            this.mainOp,
+            conditionalBuilder,
+          );
+        }
         return this.mainOp;
     }
   }
@@ -446,7 +459,11 @@ export class Orchestrator<
     );
   }
 
-  private async buildEdgeOps(ops: DataOperation[]): Promise<void> {
+  private async buildEdgeOps(
+    ops: DataOperation[],
+    conditionalBuilder: Builder<any>,
+    conditionalOverride: boolean,
+  ): Promise<void> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
     const edges: [EdgeMap, boolean][] = [
       [this.edges, false],
@@ -455,13 +472,24 @@ export class Orchestrator<
     // conditional should only apply if onconflict...
     // if no upsert and just create, nothing to do here
     for (const edgeInfo of edges) {
-      const [edges, conditional] = edgeInfo;
+      const [edges, conditionalEdge] = edgeInfo;
+      const conditional = conditionalOverride || conditionalEdge;
+      // const builderForConditional = conditionalBuilder ?? this.options.builder;
+      console.debug(
+        "conditional",
+        conditional,
+
+        // "conditionalBuilder",
+        // conditionalBuilder,
+        // "builderForConditional",
+        // builderForConditional,
+      );
       for (const [edgeType, m] of edges) {
         for (const [op, m2] of m) {
           for (const [_, edge] of m2) {
             let edgeOp = this.getEdgeOperation(edgeType, op, edge);
             if (conditional) {
-              ops.push(new ConditionalOperation(edgeOp, this.options.builder));
+              ops.push(new ConditionalOperation(edgeOp, conditionalBuilder));
             } else {
               ops.push(edgeOp);
             }
@@ -471,29 +499,22 @@ export class Orchestrator<
             }
 
             if (edgeData.symmetricEdge) {
+              let symmetric: DataOperation = edgeOp.symmetricEdge();
               if (conditional) {
-                ops.push(
-                  new ConditionalOperation(
-                    edgeOp.symmetricEdge(),
-                    this.options.builder,
-                  ),
+                symmetric = new ConditionalOperation(
+                  symmetric,
+                  conditionalBuilder,
                 );
-              } else {
-                ops.push(edgeOp.symmetricEdge());
               }
+              ops.push(symmetric);
             }
 
             if (edgeData.inverseEdgeType) {
+              let inverse: DataOperation = edgeOp.inverseEdge(edgeData);
               if (conditional) {
-                ops.push(
-                  new ConditionalOperation(
-                    edgeOp.inverseEdge(edgeData),
-                    this.options.builder,
-                  ),
-                );
-              } else {
-                ops.push(edgeOp.inverseEdge(edgeData));
+                inverse = new ConditionalOperation(inverse, conditionalBuilder);
               }
+              ops.push(inverse);
             }
           }
         }
@@ -1134,19 +1155,23 @@ export class Orchestrator<
     return this.validate();
   }
 
-  async build(): Promise<EntChangeset<TEnt>> {
+  private async buildPlusChangeset(
+    conditionalBuilder: Builder<any>,
+    conditionalOverride: boolean,
+  ): Promise<EntChangeset<TEnt>> {
     // validate everything first
     await this.validX();
 
-    let ops: DataOperation[] = [this.buildMainOp()];
+    let ops: DataOperation[] = [
+      this.buildMainOp(conditionalOverride ? conditionalBuilder : undefined),
+    ];
 
-    await this.buildEdgeOps(ops);
+    await this.buildEdgeOps(ops, conditionalBuilder, conditionalOverride);
+    console.debug(ops);
 
     // TODO throw if we try and create a new changeset after previously creating one
 
-    // we want triggers that conditionally add edges or conditional changesets!
-    // so if we have that, if the operation changes, they're invalidated...
-
+    // TODO test actualOperation value
     // observers is fine since they're run after and we have the actualOperation value...
 
     return new EntChangeset(
@@ -1158,6 +1183,16 @@ export class Orchestrator<
       this.changesets,
       this.options,
     );
+  }
+
+  async build(): Promise<EntChangeset<TEnt>> {
+    return this.buildPlusChangeset(this.options.builder, false);
+  }
+
+  async buildWithOptions_BETA(
+    options: ChangesetOptions,
+  ): Promise<EntChangeset<TEnt>> {
+    return this.buildPlusChangeset(options.conditionalBuilder, true);
   }
 
   private async viewerForEntLoad(data: Data) {

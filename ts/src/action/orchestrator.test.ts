@@ -1834,7 +1834,7 @@ function commonTests() {
       ml.clear();
     });
 
-    const createUserAction = (email, schema = UserSchemaExtended) =>
+    const createUserAction = (email: string, schema = UserSchemaExtended) =>
       new SimpleAction(
         new LoggedOutViewer(),
         schema,
@@ -1915,8 +1915,28 @@ function commonTests() {
             conditional: true,
           },
         );
-        // next: how to make this conditional too
         return dep.changeset();
+      },
+    };
+
+    const addConditionalEdgePlusChangesetTrigger = {
+      async changeset(builder: SimpleBuilder<any>, input) {
+        const dep = createUserAction(randomEmail());
+
+        // conditional edge!
+        builder.orchestrator.addOutboundEdge(
+          dep.builder,
+          "uniqueEdge",
+          "User",
+          {
+            conditional: true,
+          },
+        );
+        // conditional changeset on builder
+        // return dep.changeset();
+        return dep.changesetWithOptions_BETA({
+          conditionalBuilder: builder,
+        });
       },
     };
 
@@ -1939,6 +1959,12 @@ function commonTests() {
       await expect(
         Promise.all([action1.saveX(), action2.saveX()]),
       ).rejects.toThrowError(/unique_edge_table_unique_id1_edge_type/);
+
+      const r = await DB.getInstance()
+        .getPool()
+        // the 1 upsert and the 1 user created in the successful trigger which committed
+        .query("select count(*) as count from user_extendeds");
+      expect(r.rows[0]["count"]).toBe("2");
     });
 
     test("upsert. do nothing. with trigger with conditional conflicting edge", async () => {
@@ -1979,6 +2005,61 @@ function commonTests() {
         edgeType: "uniqueEdge",
       });
       expect(edges.length).toBe(1);
+
+      const r = await DB.getInstance()
+        .getPool()
+        // the 1 upsert and the 2 users created in each trigger
+        .query("select count(*) as count from user_extendeds");
+      expect(r.rows[0]["count"]).toBe("3");
+    });
+
+    // TODO come back not working.
+    test.only("upsert. do nothing. with trigger with conditional conflicting edge + conditional changeset", async () => {
+      // const email = randomEmail();
+      const email = "test@foo.com";
+
+      const action1 = createUserAction(email);
+      action1.getTriggers = () => [addConditionalEdgePlusChangesetTrigger];
+
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      const action2 = createUserAction(email);
+      action2.getTriggers = () => [addConditionalEdgePlusChangesetTrigger];
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      expect(u1.data).toStrictEqual(u2.data);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+
+      // for sqlite, we're not testing the regular select * from user_extendeds where id = ? query
+      expect(select).toContainEqual({
+        query: buildQuery({
+          tableName: "user_extendeds",
+          fields: ["*"],
+          clause: clause.Eq("email_address", email),
+        }),
+        values: [email],
+      });
+
+      const edges = await loadEdges({
+        id1: u1.id,
+        edgeType: "uniqueEdge",
+      });
+      expect(edges.length).toBe(1);
+
+      const r = await DB.getInstance()
+        .getPool()
+        // the 1 upsert and the 1 users created in the successful trigger.
+        // conditional changeset doesn't create user again
+        .query("select count(*) as count from user_extendeds");
+      expect(r.rows[0]["count"]).toBe("2");
     });
 
     test("upsert. update", async () => {
