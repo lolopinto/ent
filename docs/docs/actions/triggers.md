@@ -57,7 +57,7 @@ export default class CreateEventAction extends CreateEventActionBase {
   getTriggers() {
     return [
       {
-        changeset(builder: EventBuilder<EventCreateInput, Viewer>, input: EventCreateInput) {
+        changeset(builder: EventBuilder<EventCreateInput, Event>, input: EventCreateInput) {
           builder.addHostID(input.creatorID);
         },
       },
