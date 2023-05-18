@@ -1848,51 +1848,6 @@ function commonTests() {
         null,
       );
 
-    test("upsert. no upsert. error ", async () => {
-      const email = randomEmail();
-
-      const action1 = createUserAction(email);
-      const action2 = createUserAction(email);
-
-      try {
-        await Promise.all([action1.saveX(), action2.saveX()]);
-        throw new Error("should have thrown");
-      } catch (err) {
-        expect((err as Error).message).toMatch(/unique|UNIQUE/);
-      }
-    });
-
-    test("upsert. do nothing", async () => {
-      const email = randomEmail();
-
-      const action1 = createUserAction(email);
-      action1.builder.orchestrator.setOnConflictOptions({
-        onConflictCols: ["email_address"],
-      });
-
-      const action2 = createUserAction(email);
-      action2.builder.orchestrator.setOnConflictOptions({
-        onConflictCols: ["email_address"],
-      });
-
-      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
-      expect(u1.id).toBe(u2.id);
-      expect(u1.data.email_address).toBe(u2.data.email_address);
-      expect(u1.data).toStrictEqual(u2.data);
-
-      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
-
-      // for sqlite, we're not testing the regular select * from user_extendeds where id = ? query
-      expect(select).toContainEqual({
-        query: buildQuery({
-          tableName: "user_extendeds",
-          fields: ["*"],
-          clause: clause.Eq("email_address", email),
-        }),
-        values: [email],
-      });
-    });
-
     const addEdgeTrigger = {
       async changeset(builder: SimpleBuilder<any>, input) {
         const dep = createUserAction(randomEmail());
@@ -1939,6 +1894,51 @@ function commonTests() {
         });
       },
     };
+
+    test("upsert. no upsert. error ", async () => {
+      const email = randomEmail();
+
+      const action1 = createUserAction(email);
+      const action2 = createUserAction(email);
+
+      try {
+        await Promise.all([action1.saveX(), action2.saveX()]);
+        throw new Error("should have thrown");
+      } catch (err) {
+        expect((err as Error).message).toMatch(/unique|UNIQUE/);
+      }
+    });
+
+    test("upsert. do nothing", async () => {
+      const email = randomEmail();
+
+      const action1 = createUserAction(email);
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      const action2 = createUserAction(email);
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      expect(u1.data).toStrictEqual(u2.data);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+
+      // for sqlite, we're not testing the regular select * from user_extendeds where id = ? query
+      expect(select).toContainEqual({
+        query: buildQuery({
+          tableName: "user_extendeds",
+          fields: ["*"],
+          clause: clause.Eq("email_address", email),
+        }),
+        values: [email],
+      });
+    });
 
     test("upsert. do nothing. with trigger with conflicting edge", async () => {
       const email = randomEmail();
@@ -2013,8 +2013,7 @@ function commonTests() {
       expect(r.rows[0]["count"]).toBe("3");
     });
 
-    // TODO come back not working.
-    test.only("upsert. do nothing. with trigger with conditional conflicting edge + conditional changeset", async () => {
+    test("upsert. do nothing. with trigger with conditional conflicting edge + conditional changeset", async () => {
       // const email = randomEmail();
       const email = "test@foo.com";
 
@@ -2056,7 +2055,7 @@ function commonTests() {
 
       const r = await DB.getInstance()
         .getPool()
-        // the 1 upsert and the 1 users created in the successful trigger.
+        // the 1 upsert and the 1 user created in the successful trigger.
         // conditional changeset doesn't create user again
         .query("select count(*) as count from user_extendeds");
       expect(r.rows[0]["count"]).toBe("2");
@@ -2098,6 +2097,138 @@ function commonTests() {
           values: [email],
         });
       }
+    });
+
+    test("upsert. update. with trigger with conflicting edge", async () => {
+      const email = randomEmail();
+
+      const action1 = createUserAction(email);
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+        updateCols: ["updated_at"],
+      });
+      action1.getTriggers = () => [addEdgeTrigger];
+
+      const action2 = createUserAction(email);
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+        updateCols: ["updated_at"],
+      });
+      action2.getTriggers = () => [addEdgeTrigger];
+
+      await expect(
+        Promise.all([action1.saveX(), action2.saveX()]),
+      ).rejects.toThrowError(/unique_edge_table_unique_id1_edge_type/);
+
+      const r = await DB.getInstance()
+        .getPool()
+        // the 1 upsert and the 1 user created in the successful trigger which committed
+        .query("select count(*) as count from user_extendeds");
+      expect(r.rows[0]["count"]).toBe("2");
+    });
+
+    test("upsert. update. with trigger with conditional conflicting edge", async () => {
+      const email = randomEmail();
+
+      const action1 = createUserAction(email);
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+        updateCols: ["updated_at"],
+      });
+      action1.getTriggers = () => [addConditionalEdgeTrigger];
+
+      const action2 = createUserAction(email);
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+        updateCols: ["updated_at"],
+      });
+      action2.getTriggers = () => [addConditionalEdgeTrigger];
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      // updated time should be different since there was a conflict and it updated
+      expect(u1.data.updated_at).not.toBe(u2.data.updated_at);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+
+      if (DB.getDialect() === Dialect.Postgres) {
+        expect(select.length).toBe(0);
+      } else {
+        // for sqlite, we still do this query
+        expect(select).toContainEqual({
+          query: buildQuery({
+            tableName: "user_extendeds",
+            fields: ["*"],
+            clause: clause.Eq("email_address", email),
+          }),
+          values: [email],
+        });
+      }
+
+      const edges = await loadEdges({
+        id1: u1.id,
+        edgeType: "uniqueEdge",
+      });
+      expect(edges.length).toBe(1);
+
+      const r = await DB.getInstance()
+        .getPool()
+        // the 1 upsert and the 2 users created in each trigger
+        .query("select count(*) as count from user_extendeds");
+      expect(r.rows[0]["count"]).toBe("3");
+    });
+
+    test("upsert. update. with trigger with conditional conflicting edge + conditional changeset", async () => {
+      const email = randomEmail();
+
+      const action1 = createUserAction(email);
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+        updateCols: ["updated_at"],
+      });
+      action1.getTriggers = () => [addConditionalEdgePlusChangesetTrigger];
+
+      const action2 = createUserAction(email);
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+        updateCols: ["updated_at"],
+      });
+      action2.getTriggers = () => [addConditionalEdgePlusChangesetTrigger];
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      // updated time should be different since there was a conflict and it updated
+      expect(u1.data.updated_at).not.toBe(u2.data.updated_at);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+
+      // in both, we load edge data.
+      if (DB.getDialect() !== Dialect.Postgres) {
+        // for sqlite, we still do this query
+        expect(select).toContainEqual({
+          query: buildQuery({
+            tableName: "user_extendeds",
+            fields: ["*"],
+            clause: clause.Eq("email_address", email),
+          }),
+          values: [email],
+        });
+      }
+
+      const edges = await loadEdges({
+        id1: u1.id,
+        edgeType: "uniqueEdge",
+      });
+      expect(edges.length).toBe(1);
+
+      const r = await DB.getInstance()
+        .getPool()
+        // the 1 upsert and the 1 user created in the successful trigger.
+        // conditional changeset doesn't create user again
+        .query("select count(*) as count from user_extendeds");
+      expect(r.rows[0]["count"]).toBe("2");
     });
 
     test("upsert. do nothing multiple cols", async () => {

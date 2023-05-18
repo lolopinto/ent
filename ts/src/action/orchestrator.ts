@@ -1192,6 +1192,11 @@ export class Orchestrator<
   async buildWithOptions_BETA(
     options: ChangesetOptions,
   ): Promise<EntChangeset<TEnt>> {
+    // set as dependency so that we do the right order of operations
+    this.dependencies.set(
+      options.conditionalBuilder.placeholderID,
+      options.conditionalBuilder,
+    );
     return this.buildPlusChangeset(options.conditionalBuilder, true);
   }
 
