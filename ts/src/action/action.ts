@@ -130,7 +130,7 @@ export interface Validator<
 export interface ChangesetOptions {
   // conditional on builder operation remaining the same
   // TODO I don't really like this
-  conditionalBuilder: Builder<any>;
+  conditionalBuilder: Builder<any, any>;
 }
 
 export interface Action<
