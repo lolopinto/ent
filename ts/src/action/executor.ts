@@ -293,8 +293,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   }
 
   builderOpChanged(builder: Builder<any>): boolean {
-    console.debug("updatedOps", this.updatedOps);
-
     const v = this.updatedOps.get(builder.placeholderID);
     return v !== undefined && v !== builder.operation;
   }
@@ -358,7 +356,6 @@ export async function executeOperations(
       client.runInTransaction(() => {
         for (const operation of executor) {
           if (operation.shortCircuit && operation.shortCircuit(executor)) {
-            console.debug("short circuitting");
             continue;
           }
           if (trackOps) {
@@ -375,7 +372,6 @@ export async function executeOperations(
       await client.query("BEGIN");
       for (const operation of executor) {
         if (operation.shortCircuit && operation.shortCircuit(executor)) {
-          console.debug("short circuitting", operation);
           continue;
         }
 

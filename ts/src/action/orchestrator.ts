@@ -388,7 +388,6 @@ export class Orchestrator<
         }
         this.mainOp = new EditNodeOperation(opts, this.existingEnt);
         if (conditionalBuilder) {
-          console.debug("conditional main op");
           this.mainOp = new ConditionalNodeOperation(
             this.mainOp,
             conditionalBuilder,
@@ -474,16 +473,6 @@ export class Orchestrator<
     for (const edgeInfo of edges) {
       const [edges, conditionalEdge] = edgeInfo;
       const conditional = conditionalOverride || conditionalEdge;
-      // const builderForConditional = conditionalBuilder ?? this.options.builder;
-      console.debug(
-        "conditional",
-        conditional,
-
-        // "conditionalBuilder",
-        // conditionalBuilder,
-        // "builderForConditional",
-        // builderForConditional,
-      );
       for (const [edgeType, m] of edges) {
         for (const [op, m2] of m) {
           for (const [_, edge] of m2) {
@@ -1167,7 +1156,7 @@ export class Orchestrator<
     ];
 
     await this.buildEdgeOps(ops, conditionalBuilder, conditionalOverride);
-    console.debug(ops);
+    // console.debug(ops);
 
     // TODO throw if we try and create a new changeset after previously creating one
 

@@ -191,22 +191,10 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       // TODO: eventually, when we officially support auto-increment ids. need to make sure/test that this works
       // https://github.com/lolopinto/ent/issues/1431
 
-      // how to tell if we updated cols
       this.row = await createRow(queryer, options, "RETURNING *");
       const key = this.options.key;
-      // const a = this.row![key];
-      // const b = this.options.fields[key];
-      // console.debug(
-      //   "created",
-      //   //        this.options.builder,
-      //   this.row,
-      //   key,
-      //   a,
-      //   b,
-      //   a == b,
-      // );
+
       if (this.row && this.row[key] !== this.options.fields[key]) {
-        console.debug("should update ops");
         this.updatedOp = {
           builder: this.options.builder,
           operation: WriteOperation.Edit,
@@ -217,8 +205,6 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         this.options.onConflict &&
         !this.options.onConflict.updateCols?.length
       ) {
-        console.debug("should update ops");
-
         // no row returned and on conflict, do nothing, have to fetch the conflict row back...
         const { cls, query } = this.buildOnConflictQuery(options);
 

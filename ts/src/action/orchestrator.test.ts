@@ -1888,12 +1888,64 @@ function commonTests() {
           },
         );
         // conditional changeset on builder
-        // return dep.changeset();
         return dep.changesetWithOptions_BETA({
           conditionalBuilder: builder,
         });
       },
     };
+
+    const addConditionalEdgeWithExplicitDependencyPlusChangesetTrigger = {
+      async changeset(builder: SimpleBuilder<any>, input) {
+        const dep = new SimpleAction(
+          new LoggedOutViewer(),
+          AddressSchemaDerivedFields,
+          new Map<string, any>([
+            ["Street", "1600 Pennsylvania Avenue NW"],
+            ["City", "Washington DC"],
+            ["State", "DC"],
+            ["ZipCode", "20500"],
+            ["OwnerID", builder],
+            ["OwnerType", "User"],
+          ]),
+          WriteOperation.Insert,
+          null,
+        );
+
+        // conditional edge!
+        builder.orchestrator.addOutboundEdge(
+          dep.builder,
+          "uniqueEdge",
+          "Address",
+          {
+            conditional: true,
+          },
+        );
+        // conditional changeset on builder
+        return dep.changesetWithOptions_BETA({
+          conditionalBuilder: builder,
+        });
+      },
+    };
+
+    const addConditionalChangesetwithCircularDependency = {
+      async changeset(builder: SimpleBuilder<any>, input) {
+        const action = createUserAction(randomEmail());
+
+        builder.updateInput({
+          // this should lead to an error because we're creating a circular dependency
+          // since conditional change creates a dependency
+          OwnerID: action.builder,
+          OwnerType: "User",
+        });
+
+        // conditional changeset on builder
+        return action.changesetWithOptions_BETA({
+          conditionalBuilder: builder,
+        });
+      },
+    };
+
+    // TODO flip this with another example where the current ent depends on the dependent schema
 
     test("upsert. no upsert. error ", async () => {
       const email = randomEmail();
@@ -2014,8 +2066,7 @@ function commonTests() {
     });
 
     test("upsert. do nothing. with trigger with conditional conflicting edge + conditional changeset", async () => {
-      // const email = randomEmail();
-      const email = "test@foo.com";
+      const email = randomEmail();
 
       const action1 = createUserAction(email);
       action1.getTriggers = () => [addConditionalEdgePlusChangesetTrigger];
@@ -2368,6 +2419,113 @@ function commonTests() {
           }),
           values: [email, "UNVERIFIED"],
         });
+      }
+    });
+
+    test("upsert. do nothing. with trigger with conditional conflicting edge + conditional changeset with explicit dependencies", async () => {
+      const email = randomEmail();
+
+      const action1 = createUserAction(email);
+      action1.getTriggers = () => [
+        addConditionalEdgeWithExplicitDependencyPlusChangesetTrigger,
+      ];
+
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      const action2 = createUserAction(email);
+      action2.getTriggers = () => [
+        addConditionalEdgeWithExplicitDependencyPlusChangesetTrigger,
+      ];
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["email_address"],
+      });
+
+      const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+      expect(u1.id).toBe(u2.id);
+      expect(u1.data.email_address).toBe(u2.data.email_address);
+      expect(u1.data).toStrictEqual(u2.data);
+
+      const select = ml.logs.filter((ml) => ml.query.startsWith("SELECT"));
+
+      // for sqlite, we're not testing the regular select * from user_extendeds where id = ? query
+      expect(select).toContainEqual({
+        query: buildQuery({
+          tableName: "user_extendeds",
+          fields: ["*"],
+          clause: clause.Eq("email_address", email),
+        }),
+        values: [email],
+      });
+
+      const edges = await loadEdges({
+        id1: u1.id,
+        edgeType: "uniqueEdge",
+      });
+      expect(edges.length).toBe(1);
+
+      const r = await DB.getInstance()
+        .getPool()
+        // the 1 upsert and the 1 user created in the successful trigger.
+        // conditional changeset doesn't create user again
+        .query("select count(*) as count from user_extendeds");
+      expect(r.rows[0]["count"]).toBe("1");
+
+      const r2 = await DB.getInstance()
+        .getPool()
+        // the 1 upsert and the 1 user created in the successful trigger.
+        // conditional changeset doesn't create user again
+        .query("select count(*) as count from addresses");
+      expect(r2.rows[0]["count"]).toBe("1");
+    });
+
+    test("upsert. do nothing. with trigger with conditional conditional changeset with circular dependencies", async () => {
+      const action1 = new SimpleAction(
+        new LoggedOutViewer(),
+        AddressSchemaDerivedFields,
+        new Map<string, any>([
+          ["Street", "1600 Pennsylvania Avenue NW"],
+          ["City", "Washington DC"],
+          ["State", "DC"],
+          ["ZipCode", "20500"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action1.getTriggers = () => [
+        addConditionalChangesetwithCircularDependency,
+      ];
+
+      action1.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["state"],
+      });
+
+      const action2 = new SimpleAction(
+        new LoggedOutViewer(),
+        AddressSchemaDerivedFields,
+        new Map<string, any>([
+          ["Street", "1600 Pennsylvania Avenue NW"],
+          ["City", "Washington DC"],
+          ["State", "DC"],
+          ["ZipCode", "20500"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+      action2.getTriggers = () => [
+        addConditionalChangesetwithCircularDependency,
+      ];
+      action2.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["state"],
+      });
+
+      try {
+        await Promise.all([action1.saveX(), action2.saveX()]);
+        fail("should have thrown");
+      } catch (err) {
+        // should eventually have a better error message here...
+        expect((err as Error).message).toBe("Cycle found");
       }
     });
   });
