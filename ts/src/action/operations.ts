@@ -278,7 +278,14 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       createRowSync(queryer, options, "RETURNING *");
       const id = options.fields[options.key];
       this.reloadRow(queryer, id, options);
+      const key = this.options.key;
 
+      if (this.row && this.row[key] !== this.options.fields[key]) {
+        this.updatedOp = {
+          builder: this.options.builder,
+          operation: WriteOperation.Edit,
+        };
+      }
       // if we can't find the id, try and load the on conflict row
       // no returning * with sqlite and have to assume the row was created more often than not
 
@@ -298,6 +305,10 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         if (r.rows.length === 1) {
           this.row = r.rows[0];
         }
+        this.updatedOp = {
+          builder: this.options.builder,
+          operation: WriteOperation.Edit,
+        };
       }
     }
   }

@@ -472,10 +472,10 @@ describe("postgres", () => {
   commonTests();
 });
 
-// describe("sqlite", () => {
-//   setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
-//   commonTests();
-// });
+describe("sqlite", () => {
+  setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
+  commonTests();
+});
 
 function getInsertUserAction(
   map: Map<string, any>,
@@ -1817,7 +1817,7 @@ function commonTests() {
     });
   });
 
-  describe.only("upsert", () => {
+  describe("upsert", () => {
     let ml = new MockLogs();
 
     beforeAll(() => {
@@ -2010,13 +2010,13 @@ function commonTests() {
 
       await expect(
         Promise.all([action1.saveX(), action2.saveX()]),
-      ).rejects.toThrowError(/unique_edge_table_unique_id1_edge_type/);
+      ).rejects.toThrowError(/unique_edge_table/);
 
       const r = await DB.getInstance()
         .getPool()
         // the 1 upsert and the 1 user created in the successful trigger which committed
-        .query("select count(*) as count from user_extendeds");
-      expect(r.rows[0]["count"]).toBe("2");
+        .queryAll("select count(*) as count from user_extendeds");
+      expect(parseInt(r.rows[0]["count"])).toBe(2);
     });
 
     test("upsert. do nothing. with trigger with conditional conflicting edge", async () => {
@@ -2061,8 +2061,8 @@ function commonTests() {
       const r = await DB.getInstance()
         .getPool()
         // the 1 upsert and the 2 users created in each trigger
-        .query("select count(*) as count from user_extendeds");
-      expect(r.rows[0]["count"]).toBe("3");
+        .queryAll("select count(*) as count from user_extendeds");
+      expect(parseInt(r.rows[0]["count"])).toBe(3);
     });
 
     test("upsert. do nothing. with trigger with conditional conflicting edge + conditional changeset", async () => {
@@ -2108,8 +2108,8 @@ function commonTests() {
         .getPool()
         // the 1 upsert and the 1 user created in the successful trigger.
         // conditional changeset doesn't create user again
-        .query("select count(*) as count from user_extendeds");
-      expect(r.rows[0]["count"]).toBe("2");
+        .queryAll("select count(*) as count from user_extendeds");
+      expect(parseInt(r.rows[0]["count"])).toBe(2);
     });
 
     test("upsert. update", async () => {
@@ -2169,13 +2169,13 @@ function commonTests() {
 
       await expect(
         Promise.all([action1.saveX(), action2.saveX()]),
-      ).rejects.toThrowError(/unique_edge_table_unique_id1_edge_type/);
+      ).rejects.toThrowError(/unique_edge_table/);
 
       const r = await DB.getInstance()
         .getPool()
         // the 1 upsert and the 1 user created in the successful trigger which committed
-        .query("select count(*) as count from user_extendeds");
-      expect(r.rows[0]["count"]).toBe("2");
+        .queryAll("select count(*) as count from user_extendeds");
+      expect(parseInt(r.rows[0]["count"])).toBe(2);
     });
 
     test("upsert. update. with trigger with conditional conflicting edge", async () => {
@@ -2226,8 +2226,8 @@ function commonTests() {
       const r = await DB.getInstance()
         .getPool()
         // the 1 upsert and the 2 users created in each trigger
-        .query("select count(*) as count from user_extendeds");
-      expect(r.rows[0]["count"]).toBe("3");
+        .queryAll("select count(*) as count from user_extendeds");
+      expect(parseInt(r.rows[0]["count"])).toBe(3);
     });
 
     test("upsert. update. with trigger with conditional conflicting edge + conditional changeset", async () => {
@@ -2278,8 +2278,8 @@ function commonTests() {
         .getPool()
         // the 1 upsert and the 1 user created in the successful trigger.
         // conditional changeset doesn't create user again
-        .query("select count(*) as count from user_extendeds");
-      expect(r.rows[0]["count"]).toBe("2");
+        .queryAll("select count(*) as count from user_extendeds");
+      expect(parseInt(r.rows[0]["count"])).toBe(2);
     });
 
     test("upsert. do nothing multiple cols", async () => {
@@ -2469,15 +2469,15 @@ function commonTests() {
         .getPool()
         // the 1 upsert and the 1 user created in the successful trigger.
         // conditional changeset doesn't create user again
-        .query("select count(*) as count from user_extendeds");
-      expect(r.rows[0]["count"]).toBe("1");
+        .queryAll("select count(*) as count from user_extendeds");
+      expect(parseInt(r.rows[0]["count"])).toBe(1);
 
       const r2 = await DB.getInstance()
         .getPool()
         // the 1 upsert and the 1 user created in the successful trigger.
         // conditional changeset doesn't create user again
-        .query("select count(*) as count from addresses");
-      expect(r2.rows[0]["count"]).toBe("1");
+        .queryAll("select count(*) as count from addresses");
+      expect(parseInt(r2.rows[0]["count"])).toBe(1);
     });
 
     test("upsert. do nothing. with trigger with conditional conditional changeset with circular dependencies", async () => {

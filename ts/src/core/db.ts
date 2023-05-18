@@ -348,12 +348,15 @@ export class Sqlite implements Connection, SyncClient {
     }
     return values;
   }
+
   querySync(query: string, values?: any[]): QueryResult<QueryResultRow> {
     let r: SqliteRunResult;
 
     if (values) {
       r = this.db.prepare(query).get(this.convertValues(values));
     } else {
+      // TODO querySync() with no values seems to do the wrong thing...
+      // e.g. querySync('select count(*) as count from table') returns nonsense
       r = this.db.prepare(query).run();
     }
     return {
