@@ -128,6 +128,7 @@ function maybeUpdateOperationForOp<T extends Ent>(
   }
 
   updatedOps.set(r.builder.placeholderID, r.operation);
+  // console.debug(updatedOps);
 }
 
 export class ComplexExecutor<T extends Ent> implements Executor {

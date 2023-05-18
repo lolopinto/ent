@@ -298,7 +298,10 @@ function commonTests() {
   // this is the join a slack workspace and autojoin channels flow
   // this also creates a contact for the user
   // combines the slack + social contact management app flows into one just for complicated-ness
-  test("list-with-complex-layers", async () => {
+
+  // this test...
+  // don't join a channel if we're trying to uspsert or something...
+  test.only("list-with-complex-layers", async () => {
     async function fetchUserName() {
       return {
         firstName: "Sansa",
@@ -361,7 +364,7 @@ function commonTests() {
             null,
           );
 
-          for (let channel of autoJoinChannels) {
+          for (const channel of autoJoinChannels) {
             // user -> channel edge (channel Member)
             userAction.builder.orchestrator.addOutboundEdge(
               channel.id,
@@ -391,7 +394,7 @@ function commonTests() {
             null,
           );
 
-          return await Promise.all([
+          return Promise.all([
             userAction.changeset(),
             messageAction.changeset(),
           ]);

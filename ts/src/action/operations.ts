@@ -836,12 +836,14 @@ export class EdgeOperation implements DataOperation {
 
 export class ConditionalOperation implements DataOperation {
   placeholderID?: ID | undefined;
+  protected shortCircuited = false;
   constructor(private op: DataOperation, private builder: Builder<any>) {
     this.placeholderID = op.placeholderID;
   }
 
   shortCircuit(executor: Executor): boolean {
-    return executor.builderOpChanged(this.builder);
+    this.shortCircuited = executor.builderOpChanged(this.builder);
+    return this.shortCircuited;
   }
 
   async preFetch(
@@ -901,13 +903,37 @@ export class ConditionalOperation implements DataOperation {
 export class ConditionalNodeOperation<
   T extends Ent,
 > extends ConditionalOperation {
-  constructor(private ourOp: DataOperation<T>, builder: Builder<any>) {
-    super(ourOp, builder);
+  // need current builder and then also need
+  constructor(
+    private ourOp: DataOperation<T>,
+    private currentBuilder: Builder<T>,
+    conditionalBuilder: Builder<any>,
+  ) {
+    super(ourOp, conditionalBuilder);
   }
   createdEnt(viewer: Viewer): T | null {
     if (this.ourOp.createdEnt) {
       return this.ourOp.createdEnt(viewer);
     }
     return null;
+  }
+
+  updatedOperation(): UpdatedOperation | null {
+    if (!this.ourOp.updatedOperation) {
+      return null;
+    }
+    const ret = this.ourOp.updatedOperation();
+    if (ret !== null) {
+      return ret;
+    }
+    if (!this.shortCircuited) {
+      return null;
+    }
+    // hack. if this short circuited, claim that this updated as an edit and it should invalidate other builders
+    // this API needs to change or EditNodeOperation needs to be used instead of this...
+    return {
+      operation: WriteOperation.Edit,
+      builder: this.currentBuilder,
+    };
   }
 }

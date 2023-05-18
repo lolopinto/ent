@@ -390,6 +390,7 @@ export class Orchestrator<
         if (conditionalBuilder) {
           this.mainOp = new ConditionalNodeOperation(
             this.mainOp,
+            this.options.builder,
             conditionalBuilder,
           );
         }
