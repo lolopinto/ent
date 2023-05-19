@@ -76,7 +76,7 @@ import { v4 } from "uuid";
 import { NumberOps } from "./relative_value";
 import { StructType, BooleanType } from "../schema";
 
-const edges = ["edge", "inverseEdge", "symmetricEdge", "uniqueEdge"];
+const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
   // does assoc_edge_config loader need to be cleared?
   for (const edge of edges) {
@@ -125,7 +125,7 @@ const UserSchemaExtended = getBuilderSchemaFromFields(
     FirstName: StringType(),
     LastName: StringType(),
     account_status: StringType(),
-    EmailAddress: StringType({ nullable: true, unique: true }),
+    EmailAddress: StringType({ nullable: true }),
   },
   UserExtended,
 );
@@ -409,13 +409,7 @@ const SchemaWithNullFields = getBuilderSchemaFromFields(
 const getTables = () => {
   const tables: Table[] = [assoc_edge_config_table()];
   edges.map((edge) =>
-    tables.push(
-      assoc_edge_table(
-        `${snakeCase(edge)}_table`,
-        false,
-        edge === "uniqueEdge",
-      ),
-    ),
+    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`, false)),
   );
 
   [

@@ -144,8 +144,6 @@ describe("sqlite", () => {
 });
 
 function commonTests() {
-  // TODO more
-  // need nested changeset e.g. foo -> bar -> bad -> baz
   let ml = new MockLogs();
 
   beforeAll(() => {
@@ -290,8 +288,6 @@ function commonTests() {
       });
     },
   };
-
-  // TODO flip this with another example where the current ent depends on the dependent schema
 
   test("no upsert. error ", async () => {
     const email = randomEmail();

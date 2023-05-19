@@ -50,14 +50,14 @@ export interface DataOperation<T extends Ent = Ent> {
 
   // performWriteSync is called for SQLITE and APIs that don't support asynchronous writes
   performWriteSync(queryer: SyncQueryer, context?: Context): void;
-  // or can return extra information e.g. create|edit
   performWrite(queryer: Queryer, context?: Context): Promise<void>;
 
   placeholderID?: ID;
   returnedRow?(): Data | null; // optional to get the raw row
   createdEnt?(viewer: Viewer): T | null; // optional to indicate the ent that was created
 
-  shortCircuit?(executor: Executor): boolean; // optional to indicate that the operation should not be performed
+  // optional to indicate that the operation should not be performed. used for conditional changesets/operations
+  shortCircuit?(executor: Executor): boolean;
   updatedOperation?(): UpdatedOperation | null;
   resolve?(executor: Executor): void; //throws?
 

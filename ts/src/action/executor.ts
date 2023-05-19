@@ -45,7 +45,6 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
 
   // returns true and null|undefined when done
   next(): IteratorResult<DataOperation<T>> {
-    // console.debug(this.operations);
     let createdEnt = getCreatedEnt(this.viewer, this.lastOp);
     if (createdEnt) {
       this.createdEnt = createdEnt;
@@ -59,7 +58,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     this.lastOp = op;
     // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
-      // TODO need to figue this out
+      // TODO need to figure this out
       // this.idx = 0;
     }
     return {
@@ -169,10 +168,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     const impl = (c: Changeset) => {
       changesetMap.set(c.placeholderID.toString(), c);
 
-      // if conditional, we should flip the order of the dependencies
-      // however, leads to issues if there's a dependency in a field being set
-      // and there's a conditional.
-
       graph.addNode(c.placeholderID.toString());
       if (c.dependencies) {
         for (let [_, builder] of c.dependencies) {
@@ -236,6 +231,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       for (let op of executor) {
         if (!op) {
           // TODO what is happening...
+          // change in behavior in next() leading to needing to do this
           break;
         }
         if (op.createdEnt) {

@@ -1277,8 +1277,6 @@ export class EntChangeset<T extends Ent> implements Changeset {
       return this._executor;
     }
 
-    // if conditional override is true, invalidate this.changesets below...
-
     if (!this.changesets?.length) {
       // if we have dependencies but no changesets, we just need a simple
       // executor and depend on something else in the stack to handle this correctly
