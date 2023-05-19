@@ -47,9 +47,6 @@ export default class CreateUserAction extends CreateUserActionBase {
           builder: UserBuilder,
           input: UserCreateInput,
         ): Promise<Changeset> => {
-          // need a way to invalidate changesets
-          // so if we are upserting and this changeset no longer makes sense,
-          // we need to remove it...
           let action = CreateContactAction.create(this.builder.viewer, {
             firstName: input.firstName,
             lastName: input.lastName,
@@ -65,8 +62,7 @@ export default class CreateUserAction extends CreateUserActionBase {
           builder.addSelfContactID(action.builder, {
             conditional: true,
           });
-          // TODO need an API for changesetWithOptions generated
-          return action.builder.orchestrator.buildWithOptions_BETA({
+          return action.changesetWithOptions_BETA({
             conditionalBuilder: builder,
           });
         },
