@@ -418,6 +418,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		nodeData.TransformsDelete = node.TransformsDelete
 		nodeData.TransformsLoaderCodegen = node.TransformsLoaderCodegen
 		nodeData.CustomGraphQLInterfaces = node.CustomGraphQLInterfaces
+		nodeData.SupportUpsert = node.SupportUpsert
 		for _, p := range node.Patterns {
 			pattern := schema.Patterns[p]
 			if pattern == nil || pattern.DisableMixin {

@@ -106,6 +106,8 @@ export class EntSchema implements Schema {
 
   customGraphQLInterfaces?: string[] | undefined;
 
+  supportUpsert?: boolean | undefined;
+
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.fieldOverrides = cfg.fieldOverrides;
@@ -123,6 +125,7 @@ export class EntSchema implements Schema {
     this.hideFromGraphQL = cfg.hideFromGraphQL;
     // TODO annoying that have to list these...
     this.customGraphQLInterfaces = cfg.customGraphQLInterfaces;
+    this.supportUpsert = cfg.supportUpsert;
   }
 }
 
@@ -160,6 +163,8 @@ export class EntSchemaWithTZ implements Schema {
 
   customGraphQLInterfaces?: string[] | undefined;
 
+  supportUpsert?: boolean | undefined;
+
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.fieldOverrides = cfg.fieldOverrides;
@@ -177,6 +182,7 @@ export class EntSchemaWithTZ implements Schema {
     this.hideFromGraphQL = cfg.hideFromGraphQL;
     // TODO annoying that have to list these...
     this.customGraphQLInterfaces = cfg.customGraphQLInterfaces;
+    this.supportUpsert = cfg.supportUpsert;
   }
 }
 

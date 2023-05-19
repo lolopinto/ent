@@ -1,4 +1,4 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions"}}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions" "ChangesetOptions"}}
 {{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause" "CreateRowOptions"}}
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
@@ -259,6 +259,13 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
       await this.setEdgeType();
     {{ end -}}
     return this.builder.build();
+  }
+
+  async changesetWithOptions_BETA(options: {{useImport "ChangesetOptions"}}): Promise<{{useImport "Changeset"}}> {
+    {{if edgeGroupAction $action }}
+      await this.setEdgeType();
+    {{ end -}}
+    return this.builder.buildWithOptions_BETA(options);
   }
 
   {{ if edgeGroupAction $action -}}

@@ -5,7 +5,6 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
-  CreateRowOptions,
   ID,
   PrivacyPolicy,
 } from "@snowtop/ent";
@@ -13,6 +12,7 @@ import {
   Action,
   Builder,
   Changeset,
+  ChangesetOptions,
   Observer,
   Trigger,
   Validator,
@@ -61,12 +61,6 @@ export type CreateAuthCodeActionValidators = Validator<
   AuthCodeCreateInput,
   AuthCode | null
 >[];
-
-type UpsertConstraints = "uniqueCode" | "uniquePhoneCode";
-export type CreateAuthCodeActionUpsertOptions = {
-  update_cols?: string[];
-  constraint: UpsertConstraints;
-};
 
 export class CreateAuthCodeActionBase
   implements
@@ -120,6 +114,12 @@ export class CreateAuthCodeActionBase
     return this.builder.build();
   }
 
+  async changesetWithOptions_BETA(
+    options: ChangesetOptions,
+  ): Promise<Changeset> {
+    return this.builder.buildWithOptions_BETA(options);
+  }
+
   async valid(): Promise<boolean> {
     return this.builder.valid();
   }
@@ -136,36 +136,6 @@ export class CreateAuthCodeActionBase
   async saveX(): Promise<AuthCode> {
     await this.builder.saveX();
     return this.builder.editedEntX();
-  }
-
-  async upsert_BETA(
-    options: CreateAuthCodeActionUpsertOptions,
-  ): Promise<AuthCode | null> {
-    const opts: CreateRowOptions["onConflict"] = {
-      onConflictCols: [],
-      updateCols: options.update_cols,
-    };
-
-    if (options.constraint) {
-      opts.onConflictConstraint = options.constraint;
-    }
-    this.builder.orchestrator.setOnConflictOptions(opts);
-    return this.save();
-  }
-
-  async upsert_BETAX(
-    options: CreateAuthCodeActionUpsertOptions,
-  ): Promise<AuthCode> {
-    const opts: CreateRowOptions["onConflict"] = {
-      onConflictCols: [],
-      updateCols: options.update_cols,
-    };
-
-    if (options.constraint) {
-      opts.onConflictConstraint = options.constraint;
-    }
-    this.builder.orchestrator.setOnConflictOptions(opts);
-    return this.saveX();
   }
 
   static create<T extends CreateAuthCodeActionBase>(

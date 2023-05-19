@@ -93,6 +93,9 @@ export default interface Schema {
 
   // indicates that this ent should implement these custom interfaces
   customGraphQLInterfaces?: string[];
+
+  // beta feature!
+  supportUpsert?: boolean;
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format

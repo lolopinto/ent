@@ -14,7 +14,6 @@ import {
   FieldMap,
   GlobalSchema,
   TransformReadBetaResult,
-  DeprecatedImportType,
 } from "../schema/schema";
 import { setGlobalSchema } from "../core/global_schema";
 
@@ -434,6 +433,7 @@ export async function parseSchema(
       assocEdges: [],
       assocEdgeGroups: [],
       customGraphQLInterfaces: schema.customGraphQLInterfaces,
+      supportUpsert: schema.supportUpsert,
     };
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯

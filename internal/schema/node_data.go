@@ -70,6 +70,7 @@ type NodeData struct {
 	Indices                 []*input.Index
 	PatternsWithMixins      []string
 	CustomGraphQLInterfaces []string
+	SupportUpsert           bool
 
 	schemaPath string
 
@@ -226,6 +227,10 @@ func (ti *TypeInfo) Type() string {
 }
 
 func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
+	if !nodeData.SupportUpsert {
+		return nil
+	}
+
 	var fields []string
 	var constraints []string
 	for _, f := range nodeData.FieldInfo.EntFields() {
