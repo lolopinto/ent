@@ -6,7 +6,12 @@ import { Builder, WriteOperation } from "../action";
 import { OrchestratorOptions } from "./orchestrator";
 import DB, { Client, Queryer, SyncClient } from "../core/db";
 import { log } from "../core/logger";
-import { DataOperation, UpdatedOperation } from "./operations";
+import {
+  ConditionalNodeOperation,
+  ConditionalOperation,
+  DataOperation,
+  UpdatedOperation,
+} from "./operations";
 
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor {
@@ -16,6 +21,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     public placeholderID: ID,
     private operations: DataOperation<T>[],
     private options?: OrchestratorOptions<T, Data, Viewer>,
+    private complexOptions?: ComplexExecutorOptions,
   ) {}
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
@@ -47,12 +53,14 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     maybeUpdateOperationForOp(this.lastOp, this.updatedOps);
 
     const done = this.idx === this.operations.length;
-    const op = this.operations[this.idx];
+    // const op = this.operations[this.idx];
+    const op = changeOp(this.operations[this.idx], this.complexOptions);
+
     this.idx++;
     this.lastOp = op;
     // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
-      this.idx = 0;
+      // this.idx = 0;
     }
     return {
       value: op,
@@ -131,6 +139,12 @@ function maybeUpdateOperationForOp<T extends Ent>(
   // console.debug(updatedOps);
 }
 
+// TODO rename this?
+interface ComplexExecutorOptions {
+  conditionalOverride: boolean;
+  builder: Builder<any, any>;
+}
+
 export class ComplexExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
   private mapper: Map<ID, Ent> = new Map();
@@ -146,6 +160,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset[],
     options?: OrchestratorOptions<T, Data, Viewer>,
+    private complexOptions?: ComplexExecutorOptions,
   ) {
     let graph = Graph();
 
@@ -219,6 +234,10 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       // get ordered list of ops
       let executor = c.executor();
       for (let op of executor) {
+        if (!op) {
+          // TODO what is happening...
+          break;
+        }
         if (op.createdEnt) {
           nodeOps.add(op);
         } else {
@@ -237,6 +256,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     });
     // get all the operations and put node operations first
     this.allOperations = [...nodeOps, ...remainOps];
+    // console.debug(this.allOperations);
   }
 
   [Symbol.iterator]() {
@@ -261,22 +281,90 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     this.mapper.set(placeholderID, createdEnt);
   }
 
-  next(): IteratorResult<DataOperation<Ent>> {
+  nextInternal() {
     this.handleCreatedEnt();
     maybeUpdateOperationForOp(this.lastOp, this.updatedOps);
 
     const done = this.idx === this.allOperations.length;
-    const op = this.allOperations[this.idx];
+    const op = changeOp(this.allOperations[this.idx], this.complexOptions);
     this.idx++;
+
+    // if (
+    //   op &&
+    //   this.complexOptions?.conditionalOverride &&
+    //   !(op instanceof ConditionalOperation)
+    // ) {
+    //   // check if conditional
+    //   if (op.createdEnt) {
+    //     op = new ConditionalNodeOperation(
+    //       op,
+    //       op.builder,
+    //       this.complexOptions.builder,
+    //     );
+    //   } else {
+    //     op = new ConditionalOperation(
+    //       op,
+    //       op.builder,
+    //       this.complexOptions.builder,
+    //     );
+    //   }
+    // }
+
     this.lastOp = op;
+
+    // console.debug(op);
     // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
-      this.idx = 0;
+      // this.idx = 0;
     }
-    return {
-      value: op,
-      done: done,
-    };
+
+    return { op, done };
+  }
+
+  next(): IteratorResult<DataOperation<Ent>> {
+    if (true || !this.complexOptions?.conditionalOverride) {
+      const { op, done } = this.nextInternal();
+
+      return {
+        value: op,
+        done,
+      };
+    }
+
+    // TODO come back may not need any of this...
+
+    // let op: DataOperation<Ent> | null = null;
+    // let done = false;
+    // while (true) {
+    //   const { op: op2, done: done2 } = this.nextInternal();
+    //   op = op2;
+    //   done = done2;
+
+    //   // do i want builder or parent builder???
+    //   if (op && this.builderOpChanged(this.complexOptions.builder)) {
+    //     console.debug("need to handle this case");
+    //   }
+    //   // console.debug(op, done);
+    //   if (!op || done) {
+    //     break;
+    //   }
+
+    //   console.debug(op.builder.placeholderID);
+    //   if (!this.builderOpChanged(op.builder)) {
+    //     break;
+    //   }
+    //   console.debug("looping...");
+    //   // not short circuiting, we're done...
+    //   // if (!op.shortCircuit || !op.shortCircuit(this)) {
+    //   //   break;
+    //   // }
+
+    //   // short circuiting, continue...
+    // }
+    // return {
+    //   value: op,
+    //   done,
+    // };
   }
 
   resolveValue(val: ID): Ent | null {
@@ -411,4 +499,22 @@ export async function executeOperations(
     } catch (e) {}
   }
   return operations;
+}
+
+function changeOp<T extends Ent = Ent>(
+  op: DataOperation<T>,
+  complexOptions?: ComplexExecutorOptions,
+): DataOperation<T> {
+  if (
+    !op ||
+    !complexOptions?.conditionalOverride ||
+    op instanceof ConditionalNodeOperation
+  ) {
+    return op;
+  }
+  if (op.createdEnt) {
+    return new ConditionalNodeOperation(op, op.builder, complexOptions.builder);
+  } else {
+    return new ConditionalOperation(op, op.builder, complexOptions.builder);
+  }
 }

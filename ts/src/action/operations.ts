@@ -41,6 +41,8 @@ export interface UpdatedOperation {
 
 // PS: anytime this is updated, need to update ConditionalOperation
 export interface DataOperation<T extends Ent = Ent> {
+  // builder associated with the operation
+  builder: Builder<T>;
   // any data that needs to be fetched before the write should be fetched here
   // because of how SQLite works, we can't use asynchronous fetches during the write
   // so we b\]tch up fetching to be done beforehand here
@@ -64,7 +66,11 @@ export interface DataOperation<T extends Ent = Ent> {
 }
 
 export class DeleteNodeOperation implements DataOperation {
-  constructor(private id: ID, private options: DataOptions) {}
+  constructor(
+    private id: ID,
+    public readonly builder: Builder<Ent>,
+    private options: DataOptions,
+  ) {}
 
   async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     let options = {
@@ -84,7 +90,10 @@ export class DeleteNodeOperation implements DataOperation {
 }
 
 export class RawQueryOperation implements DataOperation {
-  constructor(private queries: (string | parameterizedQueryOptions)[]) {}
+  constructor(
+    public builder: Builder<Ent>,
+    private queries: (string | parameterizedQueryOptions)[],
+  ) {}
 
   async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     for (const q of this.queries) {
@@ -123,17 +132,26 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
   private row: Data | null = null;
   placeholderID?: ID | undefined;
   private updatedOp: UpdatedOperation | null = null;
+  public builder: Builder<T>;
+  private resolved = false;
 
   constructor(
     public options: EditNodeOptions<T>,
     private existingEnt: Ent | null = null,
   ) {
+    this.builder = options.builder;
     this.placeholderID = options.builder.placeholderID;
   }
 
   resolve<T extends Ent>(executor: Executor): void {
     if (!this.options.fieldsToResolve.length) {
       return;
+    }
+
+    // console.debug("resolving", this.options.fields, this.placeholderID);
+    if (this.resolved) {
+      // console.debug(this);
+      throw new Error(`already resolved ${this.placeholderID}`);
     }
 
     let fields = this.options.fields;
@@ -146,6 +164,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       }
       let ent = executor.resolveValue(value.placeholderID);
       if (!ent) {
+        // console.debug("current", this, value);
         throw new Error(
           `couldn't resolve field \`${fieldName}\` with value ${value.placeholderID}`,
         );
@@ -153,6 +172,8 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       fields[fieldName] = ent.id;
     });
     this.options.fields = fields;
+    // TODO come back. this is being resolved multiple times?
+    this.resolved = true;
   }
 
   private hasData(data: Data) {
@@ -328,6 +349,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     return this.updatedOp;
   }
 }
+
 interface EdgeOperationOptions {
   operation: WriteOperation;
   id1Placeholder?: boolean;
@@ -358,7 +380,7 @@ export interface AssocEdgeInput extends AssocEdgeInputOptions {
 export class EdgeOperation implements DataOperation {
   private edgeData: AssocEdgeData | undefined;
   private constructor(
-    private builder: Builder<any>,
+    public builder: Builder<any>,
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
   ) {}
@@ -834,15 +856,23 @@ export class EdgeOperation implements DataOperation {
   }
 }
 
-export class ConditionalOperation implements DataOperation {
+export class ConditionalOperation<T extends Ent = Ent>
+  implements DataOperation<T>
+{
   placeholderID?: ID | undefined;
   protected shortCircuited = false;
-  constructor(private op: DataOperation, private builder: Builder<any>) {
+  // public readonly builder: Builder<T>,
+  constructor(
+    protected op: DataOperation<T>,
+    // TODO eventually simplify and don't take builder since may be able to get it from op
+    public readonly builder: Builder<T>,
+    private conditionalBuilder: Builder<any>,
+  ) {
     this.placeholderID = op.placeholderID;
   }
 
   shortCircuit(executor: Executor): boolean {
-    this.shortCircuited = executor.builderOpChanged(this.builder);
+    this.shortCircuited = executor.builderOpChanged(this.conditionalBuilder);
     return this.shortCircuited;
   }
 
@@ -902,27 +932,28 @@ export class ConditionalOperation implements DataOperation {
 // separate because we need to implement createdEnt and we manually run those before edge/other operations in executors
 export class ConditionalNodeOperation<
   T extends Ent,
-> extends ConditionalOperation {
+> extends ConditionalOperation<T> {
   // need current builder and then also need
-  constructor(
-    private ourOp: DataOperation<T>,
-    private currentBuilder: Builder<T>,
-    conditionalBuilder: Builder<any>,
-  ) {
-    super(ourOp, conditionalBuilder);
-  }
+
+  // constructor(
+  //   private ourOp: DataOperation<T>,
+  //   builder: Builder<T>,
+  //   conditionalBuilder: Builder<any>,
+  // ) {
+  //   super(ourOp, builder, conditionalBuilder);
+  // }
   createdEnt(viewer: Viewer): T | null {
-    if (this.ourOp.createdEnt) {
-      return this.ourOp.createdEnt(viewer);
+    if (this.op.createdEnt) {
+      return this.op.createdEnt(viewer);
     }
     return null;
   }
 
   updatedOperation(): UpdatedOperation | null {
-    if (!this.ourOp.updatedOperation) {
+    if (!this.op.updatedOperation) {
       return null;
     }
-    const ret = this.ourOp.updatedOperation();
+    const ret = this.op.updatedOperation();
     if (ret !== null) {
       return ret;
     }
@@ -933,7 +964,7 @@ export class ConditionalNodeOperation<
     // this API needs to change or EditNodeOperation needs to be used instead of this...
     return {
       operation: WriteOperation.Edit,
-      builder: this.currentBuilder,
+      builder: this.builder,
     };
   }
 }

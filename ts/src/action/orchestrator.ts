@@ -355,9 +355,13 @@ export class Orchestrator<
     // this assumes we have validated fields
     switch (this.actualOperation) {
       case WriteOperation.Delete:
-        return new DeleteNodeOperation(this.existingEnt!.id, {
-          tableName: this.options.tableName,
-        });
+        return new DeleteNodeOperation(
+          this.existingEnt!.id,
+          this.options.builder,
+          {
+            tableName: this.options.tableName,
+          },
+        );
       default:
         if (this.actualOperation === WriteOperation.Edit && !this.existingEnt) {
           throw new Error(
@@ -479,7 +483,13 @@ export class Orchestrator<
           for (const [_, edge] of m2) {
             let edgeOp = this.getEdgeOperation(edgeType, op, edge);
             if (conditional) {
-              ops.push(new ConditionalOperation(edgeOp, conditionalBuilder));
+              ops.push(
+                new ConditionalOperation(
+                  edgeOp,
+                  this.options.builder,
+                  conditionalBuilder,
+                ),
+              );
             } else {
               ops.push(edgeOp);
             }
@@ -493,6 +503,7 @@ export class Orchestrator<
               if (conditional) {
                 symmetric = new ConditionalOperation(
                   symmetric,
+                  this.options.builder,
                   conditionalBuilder,
                 );
               }
@@ -502,7 +513,11 @@ export class Orchestrator<
             if (edgeData.inverseEdgeType) {
               let inverse: DataOperation = edgeOp.inverseEdge(edgeData);
               if (conditional) {
-                inverse = new ConditionalOperation(inverse, conditionalBuilder);
+                inverse = new ConditionalOperation(
+                  inverse,
+                  this.options.builder,
+                  conditionalBuilder,
+                );
               }
               ops.push(inverse);
             }
@@ -1166,8 +1181,8 @@ export class Orchestrator<
 
     return new EntChangeset(
       this.options.viewer,
-      this.options.builder.placeholderID,
-      this.options.loaderOptions.ent,
+      this.options.builder,
+      conditionalOverride,
       ops,
       this.dependencies,
       this.changesets,
@@ -1237,21 +1252,20 @@ export class Orchestrator<
   }
 }
 
-function randomNum(): string {
-  return Math.random().toString(10).substring(2);
-}
-
 export class EntChangeset<T extends Ent> implements Changeset {
   private _executor: Executor | null;
+  public readonly placeholderID: ID;
   constructor(
     public viewer: Viewer,
-    public readonly placeholderID: ID,
-    ent: EntConstructor<T>,
+    private builder: Builder<T>,
+    private conditionalOverride: boolean,
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset[],
     private options?: OrchestratorOptions<T, Data, Viewer>,
-  ) {}
+  ) {
+    this.placeholderID = builder.placeholderID;
+  }
 
   // need mainOp && initial operation
   // if operation can change (e.g. insert -> edit), it then determines if conditional
@@ -1260,8 +1274,9 @@ export class EntChangeset<T extends Ent> implements Changeset {
   static changesetFrom(builder: Builder<any, any, any>, ops: DataOperation[]) {
     return new EntChangeset(
       builder.viewer,
-      `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
-      builder.ent,
+      builder,
+      // `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
+      false,
       ops,
     );
   }
@@ -1270,6 +1285,8 @@ export class EntChangeset<T extends Ent> implements Changeset {
     if (this._executor) {
       return this._executor;
     }
+
+    // if conditional override is true, invalidate this.changesets below...
 
     if (!this.changesets?.length) {
       // if we have dependencies but no changesets, we just need a simple
@@ -1281,6 +1298,10 @@ export class EntChangeset<T extends Ent> implements Changeset {
         this.placeholderID,
         this.operations,
         this.options,
+        {
+          conditionalOverride: this.conditionalOverride,
+          builder: this.builder,
+        },
       ));
     }
 
@@ -1291,6 +1312,10 @@ export class EntChangeset<T extends Ent> implements Changeset {
       this.dependencies || new Map(),
       this.changesets || [],
       this.options,
+      {
+        conditionalOverride: this.conditionalOverride,
+        builder: this.builder,
+      },
     ));
   }
 }

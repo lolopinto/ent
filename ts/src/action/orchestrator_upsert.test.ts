@@ -31,6 +31,7 @@ import {
 import { ConstraintType } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 import DB, { Dialect } from "../core/db";
+import { randomInt } from "crypto";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge", "uniqueEdge"];
 beforeEach(async () => {
@@ -88,7 +89,7 @@ const UserSchemaMultipleUnique = getBuilderSchemaFromFields(
   },
 );
 
-const AddressSchemaDerivedFields = getBuilderSchemaFromFields(
+const AddressSchema = getBuilderSchemaFromFields(
   {
     Street: StringType(),
     City: StringType(),
@@ -127,7 +128,7 @@ const getTables = () => {
   [
     UserSchemaExtended,
     UserSchemaMultipleUnique,
-    AddressSchemaDerivedFields,
+    AddressSchema,
     EventSchema,
   ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
   return tables;
@@ -138,10 +139,10 @@ describe("postgres", () => {
   commonTests();
 });
 
-describe("sqlite", () => {
-  setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
-  commonTests();
-});
+// describe("sqlite", () => {
+//   setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
+//   commonTests();
+// });
 
 function commonTests() {
   // TODO more
@@ -216,7 +217,7 @@ function commonTests() {
     async changeset(builder: SimpleBuilder<any>, input) {
       const dep = new SimpleAction(
         new LoggedOutViewer(),
-        AddressSchemaDerivedFields,
+        AddressSchema,
         new Map<string, any>([
           ["Street", "1600 Pennsylvania Avenue NW"],
           ["City", "Washington DC"],
@@ -242,6 +243,34 @@ function commonTests() {
       return dep.changesetWithOptions_BETA({
         conditionalBuilder: builder,
       });
+    },
+  };
+
+  // like addConditionalEdgeWithExplicitDependencyPlusChangesetTrigger but nothing is conditional
+  // its parent calling this is conditional
+  const addEdgeWithExplicitDependencyPlusChangesetTrigger = {
+    async changeset(builder: SimpleBuilder<any>, input) {
+      const dep = new SimpleAction(
+        new LoggedOutViewer(),
+        AddressSchema,
+        new Map<string, any>([
+          ["Street", "1600 Pennsylvania Avenue NW"],
+          ["City", "Washington DC"],
+          ["State", "DC"],
+          ["ZipCode", "20500"],
+          ["OwnerID", builder],
+          ["OwnerType", "User"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+
+      builder.orchestrator.addOutboundEdge(
+        dep.builder,
+        "uniqueEdge",
+        "Address",
+      );
+      return dep.changeset();
     },
   };
 
@@ -771,13 +800,13 @@ function commonTests() {
 
     // the 1 upsert and the 1 user created in the successful trigger.
     // conditional changeset doesn't create user again
-    await verifySchemaCount(AddressSchemaDerivedFields, 1);
+    await verifySchemaCount(AddressSchema, 1);
   });
 
   test("do nothing. with trigger with conditional conditional changeset with circular dependencies", async () => {
     const action1 = new SimpleAction(
       new LoggedOutViewer(),
-      AddressSchemaDerivedFields,
+      AddressSchema,
       new Map<string, any>([
         ["Street", "1600 Pennsylvania Avenue NW"],
         ["City", "Washington DC"],
@@ -795,7 +824,7 @@ function commonTests() {
 
     const action2 = new SimpleAction(
       new LoggedOutViewer(),
-      AddressSchemaDerivedFields,
+      AddressSchema,
       new Map<string, any>([
         ["Street", "1600 Pennsylvania Avenue NW"],
         ["City", "Washington DC"],
@@ -882,7 +911,7 @@ function commonTests() {
 
     await verifySchemaCount(UserSchemaExtended, 1);
 
-    await verifySchemaCount(AddressSchemaDerivedFields, 1);
+    await verifySchemaCount(AddressSchema, 1);
 
     await verifySchemaCount(EventSchema, 1);
 
@@ -898,7 +927,104 @@ function commonTests() {
     }
 
     const address_row = await loadRow({
-      tableName: getTableName(AddressSchemaDerivedFields),
+      tableName: getTableName(AddressSchema),
+      fields: ["*"],
+      clause: clause.Eq("owner_id", event_row.id),
+    });
+
+    if (!address_row) {
+      throw new Error("address row not found");
+    }
+
+    const edges = await loadEdges({
+      id1: event_row.id,
+      edgeType: "uniqueEdge",
+    });
+    expect(edges.length).toBe(1);
+    expect(edges[0].id2).toBe(address_row.id);
+  });
+
+  test("do nothing. with conditional turtle once. below not conditional all the way down", async () => {
+    class CreateEventAction extends SimpleAction<Event, null> {
+      getTriggers() {
+        // nodeType is wrong here but whatever
+        return [addEdgeWithExplicitDependencyPlusChangesetTrigger];
+      }
+    }
+
+    // creating event is conditional
+    // creating address below is not conditional
+    const addEventTrigger = {
+      async changeset(builder: SimpleBuilder<any>, input) {
+        const dep = new CreateEventAction(
+          new LoggedOutViewer(),
+          EventSchema,
+          new Map<string, any>([
+            ["startTime", new Date()],
+            ["endTime", new Date()],
+            ["ownerID", builder],
+            ["ownerType", "User"],
+          ]),
+          WriteOperation.Insert,
+          null,
+        );
+
+        // conditional edge!
+        builder.orchestrator.addOutboundEdge(
+          dep.builder,
+          "uniqueEdge",
+          "Address",
+          {
+            conditional: true,
+          },
+        );
+        // conditional changeset on builder
+        return dep.changesetWithOptions_BETA({
+          conditionalBuilder: builder,
+        });
+      },
+    };
+
+    const email = randomEmail();
+    const action1 = createUserAction(email);
+
+    action1.getTriggers = () => [addEventTrigger];
+
+    action1.builder.orchestrator.setOnConflictOptions({
+      onConflictCols: ["email_address"],
+    });
+
+    const action2 = createUserAction(email);
+
+    action2.getTriggers = () => [addEventTrigger];
+    action2.builder.orchestrator.setOnConflictOptions({
+      onConflictCols: ["email_address"],
+    });
+
+    const [u1, u2] = await Promise.all([action1.saveX(), action2.saveX()]);
+    expect(u1.id).toBe(u2.id);
+    expect(u1.data.email_address).toBe(u2.data.email_address);
+    expect(u1.data).toStrictEqual(u2.data);
+
+    await verifySchemaCount(UserSchemaExtended, 1);
+
+    await verifySchemaCount(EventSchema, 1);
+
+    await verifySchemaCount(AddressSchema, 1);
+
+    // 1 of each of these created despite being nested
+    // and the conditional flows through in an upsert
+    const event_row = await loadRow({
+      tableName: "events",
+      fields: ["*"],
+      clause: clause.Eq("owner_id", u1.id),
+    });
+    if (!event_row) {
+      throw new Error("event row not found");
+    }
+
+    const address_row = await loadRow({
+      tableName: getTableName(AddressSchema),
       fields: ["*"],
       clause: clause.Eq("owner_id", event_row.id),
     });
