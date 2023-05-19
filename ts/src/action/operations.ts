@@ -856,13 +856,13 @@ export class ConditionalOperation<T extends Ent = Ent>
 {
   placeholderID?: ID | undefined;
   protected shortCircuited = false;
-  // public readonly builder: Builder<T>,
+  public readonly builder: Builder<T>;
+
   constructor(
     protected op: DataOperation<T>,
-    // TODO eventually simplify and don't take builder since may be able to get it from op
-    public readonly builder: Builder<T>,
     private conditionalBuilder: Builder<any>,
   ) {
+    this.builder = op.builder;
     this.placeholderID = op.placeholderID;
   }
 
@@ -928,8 +928,6 @@ export class ConditionalOperation<T extends Ent = Ent>
 export class ConditionalNodeOperation<
   T extends Ent,
 > extends ConditionalOperation<T> {
-  // need current builder and then also need
-
   createdEnt(viewer: Viewer): T | null {
     if (this.op.createdEnt) {
       return this.op.createdEnt(viewer);

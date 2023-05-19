@@ -445,8 +445,8 @@ function changeOp<T extends Ent = Ent>(
     return op;
   }
   if (op.createdEnt) {
-    return new ConditionalNodeOperation(op, op.builder, complexOptions.builder);
+    return new ConditionalNodeOperation(op, complexOptions.builder);
   } else {
-    return new ConditionalOperation(op, op.builder, complexOptions.builder);
+    return new ConditionalOperation(op, complexOptions.builder);
   }
 }

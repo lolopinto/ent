@@ -394,7 +394,6 @@ export class Orchestrator<
         if (conditionalBuilder) {
           this.mainOp = new ConditionalNodeOperation(
             this.mainOp,
-            this.options.builder,
             conditionalBuilder,
           );
         }
@@ -483,13 +482,7 @@ export class Orchestrator<
           for (const [_, edge] of m2) {
             let edgeOp = this.getEdgeOperation(edgeType, op, edge);
             if (conditional) {
-              ops.push(
-                new ConditionalOperation(
-                  edgeOp,
-                  this.options.builder,
-                  conditionalBuilder,
-                ),
-              );
+              ops.push(new ConditionalOperation(edgeOp, conditionalBuilder));
             } else {
               ops.push(edgeOp);
             }
@@ -503,7 +496,6 @@ export class Orchestrator<
               if (conditional) {
                 symmetric = new ConditionalOperation(
                   symmetric,
-                  this.options.builder,
                   conditionalBuilder,
                 );
               }
@@ -513,11 +505,7 @@ export class Orchestrator<
             if (edgeData.inverseEdgeType) {
               let inverse: DataOperation = edgeOp.inverseEdge(edgeData);
               if (conditional) {
-                inverse = new ConditionalOperation(
-                  inverse,
-                  this.options.builder,
-                  conditionalBuilder,
-                );
+                inverse = new ConditionalOperation(inverse, conditionalBuilder);
               }
               ops.push(inverse);
             }
