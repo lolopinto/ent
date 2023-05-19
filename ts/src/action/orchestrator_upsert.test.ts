@@ -139,10 +139,10 @@ describe("postgres", () => {
   commonTests();
 });
 
-// describe("sqlite", () => {
-//   setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
-//   commonTests();
-// });
+describe("sqlite", () => {
+  setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
+  commonTests();
+});
 
 function commonTests() {
   // TODO more

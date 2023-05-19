@@ -148,9 +148,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       return;
     }
 
-    // console.debug("resolving", this.options.fields, this.placeholderID);
     if (this.resolved) {
-      // console.debug(this);
       throw new Error(`already resolved ${this.placeholderID}`);
     }
 
@@ -164,7 +162,6 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       }
       let ent = executor.resolveValue(value.placeholderID);
       if (!ent) {
-        // console.debug("current", this, value);
         throw new Error(
           `couldn't resolve field \`${fieldName}\` with value ${value.placeholderID}`,
         );
@@ -172,7 +169,6 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       fields[fieldName] = ent.id;
     });
     this.options.fields = fields;
-    // TODO come back. this is being resolved multiple times?
     this.resolved = true;
   }
 
@@ -935,13 +931,6 @@ export class ConditionalNodeOperation<
 > extends ConditionalOperation<T> {
   // need current builder and then also need
 
-  // constructor(
-  //   private ourOp: DataOperation<T>,
-  //   builder: Builder<T>,
-  //   conditionalBuilder: Builder<any>,
-  // ) {
-  //   super(ourOp, builder, conditionalBuilder);
-  // }
   createdEnt(viewer: Viewer): T | null {
     if (this.op.createdEnt) {
       return this.op.createdEnt(viewer);
