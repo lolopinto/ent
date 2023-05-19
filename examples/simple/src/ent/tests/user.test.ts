@@ -1432,7 +1432,7 @@ test("misc", async () => {
   expect(user.funUuids?.every((v) => validate(v.toString()))).toBe(true);
 });
 
-test.only("same email address. no upsert", async () => {
+test("same email address. no upsert", async () => {
   const email = randomEmail();
   await expect(
     Promise.all([
@@ -1454,10 +1454,8 @@ test.only("same email address. no upsert", async () => {
   ).rejects.toThrow("unique");
 });
 
-test.only("upsert email address", async () => {
+test("upsert email address", async () => {
   const email = randomEmail();
-  console.log(email);
-  setLogLevels("query");
   const [u1, u2] = await Promise.all([
     CreateUserAction.create(loggedOutViewer, {
       firstName: "Jane",
@@ -1478,9 +1476,13 @@ test.only("upsert email address", async () => {
       column: "email_address",
     }),
   ]);
-  console.debug(u1, u2);
   expect(u1.id).toBe(u2.id);
   expect(u1.emailAddress).toBe(u2.emailAddress);
+  // even though different phone numbers passed, same phone number returned
+  expect(u1.phoneNumber).toBe(u2.phoneNumber);
+  const contact = await u1.loadSelfContact();
+  expect(contact).not.toBe(null);
+  expect(contact!.userID).toBe(u1.id);
 });
 
 test("upsert phone number", async () => {
@@ -1506,11 +1508,10 @@ test("upsert phone number", async () => {
     }),
   ]);
   expect(u1.id).toBe(u2.id);
+  expect(u1.phoneNumber).toBe(u2.phoneNumber);
+  // even though different email passed, same email returned
   expect(u1.emailAddress).toBe(u2.emailAddress);
+  const contact = await u1.loadSelfContact();
+  expect(contact).not.toBe(null);
+  expect(contact!.userID).toBe(u1.id);
 });
-
-// TODO need to handle things in trigger that do other things...
-
-// so check updated input...
-// or flag in builder|input about upsert
-// so that things like trigger can know to do the right thing

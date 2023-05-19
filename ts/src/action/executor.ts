@@ -10,7 +10,6 @@ import {
   ConditionalNodeOperation,
   ConditionalOperation,
   DataOperation,
-  UpdatedOperation,
 } from "./operations";
 
 // private to ent
@@ -60,6 +59,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     this.lastOp = op;
     // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
+      // TODO need to figue this out
       // this.idx = 0;
     }
     return {
@@ -281,7 +281,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     this.mapper.set(placeholderID, createdEnt);
   }
 
-  nextInternal() {
+  next(): IteratorResult<DataOperation<Ent>> {
     this.handleCreatedEnt();
     maybeUpdateOperationForOp(this.lastOp, this.updatedOps);
 
@@ -289,82 +289,16 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     const op = changeOp(this.allOperations[this.idx], this.complexOptions);
     this.idx++;
 
-    // if (
-    //   op &&
-    //   this.complexOptions?.conditionalOverride &&
-    //   !(op instanceof ConditionalOperation)
-    // ) {
-    //   // check if conditional
-    //   if (op.createdEnt) {
-    //     op = new ConditionalNodeOperation(
-    //       op,
-    //       op.builder,
-    //       this.complexOptions.builder,
-    //     );
-    //   } else {
-    //     op = new ConditionalOperation(
-    //       op,
-    //       op.builder,
-    //       this.complexOptions.builder,
-    //     );
-    //   }
-    // }
-
     this.lastOp = op;
 
     // console.debug(op);
     // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
+      // TODO need to figure this out
       // this.idx = 0;
     }
 
-    return { op, done };
-  }
-
-  next(): IteratorResult<DataOperation<Ent>> {
-    if (true || !this.complexOptions?.conditionalOverride) {
-      const { op, done } = this.nextInternal();
-
-      return {
-        value: op,
-        done,
-      };
-    }
-
-    // TODO come back may not need any of this...
-
-    // let op: DataOperation<Ent> | null = null;
-    // let done = false;
-    // while (true) {
-    //   const { op: op2, done: done2 } = this.nextInternal();
-    //   op = op2;
-    //   done = done2;
-
-    //   // do i want builder or parent builder???
-    //   if (op && this.builderOpChanged(this.complexOptions.builder)) {
-    //     console.debug("need to handle this case");
-    //   }
-    //   // console.debug(op, done);
-    //   if (!op || done) {
-    //     break;
-    //   }
-
-    //   console.debug(op.builder.placeholderID);
-    //   if (!this.builderOpChanged(op.builder)) {
-    //     break;
-    //   }
-    //   console.debug("looping...");
-    //   // not short circuiting, we're done...
-    //   // if (!op.shortCircuit || !op.shortCircuit(this)) {
-    //   //   break;
-    //   // }
-
-    //   // short circuiting, continue...
-    // }
-    // return {
-    //   value: op,
-    //   done,
-    // };
+    return { value: op, done };
   }
 
   resolveValue(val: ID): Ent | null {

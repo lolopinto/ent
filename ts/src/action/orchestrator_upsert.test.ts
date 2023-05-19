@@ -31,7 +31,6 @@ import {
 import { ConstraintType } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 import DB, { Dialect } from "../core/db";
-import { randomInt } from "crypto";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge", "uniqueEdge"];
 beforeEach(async () => {

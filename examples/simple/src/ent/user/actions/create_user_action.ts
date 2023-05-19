@@ -62,8 +62,13 @@ export default class CreateUserAction extends CreateUserActionBase {
             userID: builder,
           });
 
-          builder.addSelfContact(action.builder);
-          return action.changeset();
+          builder.addSelfContactID(action.builder, {
+            conditional: true,
+          });
+          // TODO need an API for changesetWithOptions generated
+          return action.builder.orchestrator.buildWithOptions_BETA({
+            conditionalBuilder: builder,
+          });
         },
       },
     ];
