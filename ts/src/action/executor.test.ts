@@ -299,9 +299,7 @@ function commonTests() {
   // this also creates a contact for the user
   // combines the slack + social contact management app flows into one just for complicated-ness
 
-  // this test...
-  // don't join a channel if we're trying to uspsert or something...
-  test.only("list-with-complex-layers", async () => {
+  test("list-with-complex-layers", async () => {
     async function fetchUserName() {
       return {
         firstName: "Sansa",

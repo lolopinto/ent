@@ -45,7 +45,7 @@ export interface DataOperation<T extends Ent = Ent> {
   builder: Builder<T>;
   // any data that needs to be fetched before the write should be fetched here
   // because of how SQLite works, we can't use asynchronous fetches during the write
-  // so we b\]tch up fetching to be done beforehand here
+  // so we batch up fetching to be done beforehand here
   preFetch?(queryer: Queryer, context?: Context): Promise<void>;
 
   // performWriteSync is called for SQLITE and APIs that don't support asynchronous writes
@@ -243,7 +243,6 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       options.context,
     ) as ObjectLoader<T>;
     const opts = loader.getOptions();
-    // let cls = clause.Eq(options.key, id);
     if (opts.clause) {
       let optionClause: clause.Clause | undefined;
       if (typeof opts.clause === "function") {

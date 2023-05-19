@@ -1172,7 +1172,6 @@ export class Orchestrator<
     ];
 
     await this.buildEdgeOps(ops, conditionalBuilder, conditionalOverride);
-    // console.debug(ops);
 
     // TODO throw if we try and create a new changeset after previously creating one
 
@@ -1182,6 +1181,7 @@ export class Orchestrator<
     return new EntChangeset(
       this.options.viewer,
       this.options.builder,
+      this.options.builder.placeholderID,
       conditionalOverride,
       ops,
       this.dependencies,
@@ -1252,27 +1252,36 @@ export class Orchestrator<
   }
 }
 
+function randomNum(): string {
+  return Math.random().toString(10).substring(2);
+}
+
+// each changeset is required to have a unique placeholderID
+// used in executor. if we end up creating multiple changesets from a builder, we need
+// different placeholders
+// in practice, only applies to Entchangeset::changesetFrom()
 export class EntChangeset<T extends Ent> implements Changeset {
   private _executor: Executor | null;
-  public readonly placeholderID: ID;
   constructor(
     public viewer: Viewer,
     private builder: Builder<T>,
+    public readonly placeholderID: ID,
     private conditionalOverride: boolean,
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset[],
     private options?: OrchestratorOptions<T, Data, Viewer>,
-  ) {
-    this.placeholderID = builder.placeholderID;
-  }
-
-  // need mainOp && initial operation
-  // if operation can change (e.g. insert -> edit), it then determines if conditional
-  // ops are done
+  ) {}
 
   static changesetFrom(builder: Builder<any, any, any>, ops: DataOperation[]) {
-    return new EntChangeset(builder.viewer, builder, false, ops);
+    return new EntChangeset(
+      builder.viewer,
+      builder,
+      // need unique placeholderID different from the builder. see comment above EntChangeset
+      `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
+      false,
+      ops,
+    );
   }
 
   executor(): Executor {

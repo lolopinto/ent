@@ -45,6 +45,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
 
   // returns true and null|undefined when done
   next(): IteratorResult<DataOperation<T>> {
+    // console.debug(this.operations);
     let createdEnt = getCreatedEnt(this.viewer, this.lastOp);
     if (createdEnt) {
       this.createdEnt = createdEnt;
@@ -52,7 +53,6 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     maybeUpdateOperationForOp(this.lastOp, this.updatedOps);
 
     const done = this.idx === this.operations.length;
-    // const op = this.operations[this.idx];
     const op = changeOp(this.operations[this.idx], this.complexOptions);
 
     this.idx++;
@@ -256,7 +256,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     });
     // get all the operations and put node operations first
     this.allOperations = [...nodeOps, ...remainOps];
-    // console.debug(this.allOperations);
   }
 
   [Symbol.iterator]() {
@@ -291,7 +290,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
 
     this.lastOp = op;
 
-    // console.debug(op);
     // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
       // TODO need to figure this out
