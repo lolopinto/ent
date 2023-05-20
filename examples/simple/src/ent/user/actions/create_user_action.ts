@@ -79,21 +79,9 @@ export default class CreateUserAction extends CreateUserActionBase {
   >[] {
     return [
       {
-        // same for observers...
-        // e.g. when it's an upsert, don't send welcome email twice!
         observe: async (_builder: UserBuilder, input: UserCreateInput) => {
-          console.debug("called");
           let email = input.emailAddress;
           let firstName = input.firstName;
-
-          // input is wrong in an upsert...
-          // if we somehow have upsert with different input, random one wins and nothing i can do
-          const created = await this.builder.editedEntX();
-          console.debug(
-            input.emailAddress,
-            created.emailAddress,
-            input.emailAddress === created.emailAddress,
-          );
 
           FakeComms.send({
             from: "noreply@foo.com",
