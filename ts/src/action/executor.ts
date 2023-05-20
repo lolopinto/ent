@@ -70,34 +70,12 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     };
   }
 
-  conditionalBuilderChamged() {
-    const conditionalBuilder = this.options?.builder;
-    if (conditionalBuilder) {
-      // console.debug("conditional builder", conditionalBuilder);
-      // console.debug(this.updatedOps);
-    }
-    return conditionalBuilder && this.builderOpChanged(conditionalBuilder);
-    //   return;
-    // }
-  }
-
-  getConditionalBuilder() {
-    return this.complexOptions?.builder;
-  }
-
-  getBuilder() {
-    return this.options?.builder;
-  }
-
   async executeObservers() {
     const action = this.options?.action;
     if (!this.options || !action || !action.getObservers) {
       return;
     }
-    // do this here and it's better everywhere?
-    if (this.conditionalBuilderChamged()) {
-      // return;
-    }
+
     const builder = this.options.builder;
     await Promise.all(
       action.getObservers().map(async (observer) => {
@@ -347,28 +325,8 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   async executeObservers() {
     await Promise.all(
       this.executors.map((executor) => {
-        // console.debug(executor);
-
         if (executor.builder && this.builderOpChanged(executor.builder)) {
           return null;
-        }
-        // TODO delete all this logic and fix anything else.
-        // the executor.builder check should be enough
-        // TODO need this to not only be for ListBasedExecutor...
-        if (executor instanceof ListBasedExecutor) {
-          const builder = executor.getBuilder();
-          const cBuilder = executor.getConditionalBuilder();
-          if (builder && this.builderOpChanged(builder)) {
-            // console.debug("skipping observer for conditional builder");
-            // stopppp
-            return null;
-          }
-          // has to be in complex
-          if (cBuilder && this.builderOpChanged(cBuilder)) {
-            // console.debug("skipping observer for conditional builder");
-            // stopppp
-            return null;
-          }
         }
         if (!executor.executeObservers) {
           return null;

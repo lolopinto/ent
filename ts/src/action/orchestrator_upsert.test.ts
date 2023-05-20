@@ -138,10 +138,10 @@ describe("postgres", () => {
   commonTests();
 });
 
-// describe("sqlite", () => {
-//   setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
-//   commonTests();
-// });
+describe("sqlite", () => {
+  setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
+  commonTests();
+});
 
 function commonTests() {
   let ml = new MockLogs();
@@ -917,7 +917,7 @@ function commonTests() {
     }
   });
 
-  test.only("do nothing. with conditional turtles all the way down", async () => {
+  test("do nothing. with conditional turtles all the way down", async () => {
     class CreateEventAction extends SimpleAction<Event, null> {
       getTriggers() {
         // nodeType is wrong here but whatever
