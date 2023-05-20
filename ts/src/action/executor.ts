@@ -15,13 +15,16 @@ import {
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
+  public builder?: Builder<Ent> | undefined;
   constructor(
     private viewer: Viewer,
     public placeholderID: ID,
     private operations: DataOperation<T>[],
     private options?: OrchestratorOptions<T, Data, Viewer>,
     private complexOptions?: ComplexExecutorOptions,
-  ) {}
+  ) {
+    this.builder = options?.builder;
+  }
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
   private updatedOps: Map<ID, WriteOperation> = new Map();
@@ -67,10 +70,33 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     };
   }
 
+  conditionalBuilderChamged() {
+    const conditionalBuilder = this.options?.builder;
+    if (conditionalBuilder) {
+      // console.debug("conditional builder", conditionalBuilder);
+      // console.debug(this.updatedOps);
+    }
+    return conditionalBuilder && this.builderOpChanged(conditionalBuilder);
+    //   return;
+    // }
+  }
+
+  getConditionalBuilder() {
+    return this.complexOptions?.builder;
+  }
+
+  getBuilder() {
+    return this.options?.builder;
+  }
+
   async executeObservers() {
     const action = this.options?.action;
     if (!this.options || !action || !action.getObservers) {
       return;
+    }
+    // do this here and it's better everywhere?
+    if (this.conditionalBuilderChamged()) {
+      // return;
     }
     const builder = this.options.builder;
     await Promise.all(
@@ -151,6 +177,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   private allOperations: DataOperation<Ent>[] = [];
   private executors: Executor[] = [];
   private updatedOps: Map<ID, WriteOperation> = new Map();
+  public builder?: Builder<Ent> | undefined;
 
   constructor(
     private viewer: Viewer,
@@ -161,6 +188,8 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     options?: OrchestratorOptions<T, Data, Viewer>,
     private complexOptions?: ComplexExecutorOptions,
   ) {
+    this.builder = options?.builder;
+
     let graph = Graph();
 
     const changesetMap: Map<string, Changeset> = new Map();
@@ -311,12 +340,36 @@ export class ComplexExecutor<T extends Ent> implements Executor {
 
   builderOpChanged(builder: Builder<any>): boolean {
     const v = this.updatedOps.get(builder.placeholderID);
+    // console.debug(this.updatedOps, builder.placeholderID, v, builder.operation);
     return v !== undefined && v !== builder.operation;
   }
 
   async executeObservers() {
     await Promise.all(
       this.executors.map((executor) => {
+        // console.debug(executor);
+
+        if (executor.builder && this.builderOpChanged(executor.builder)) {
+          return null;
+        }
+        // TODO delete all this logic and fix anything else.
+        // the executor.builder check should be enough
+        // TODO need this to not only be for ListBasedExecutor...
+        if (executor instanceof ListBasedExecutor) {
+          const builder = executor.getBuilder();
+          const cBuilder = executor.getConditionalBuilder();
+          if (builder && this.builderOpChanged(builder)) {
+            // console.debug("skipping observer for conditional builder");
+            // stopppp
+            return null;
+          }
+          // has to be in complex
+          if (cBuilder && this.builderOpChanged(cBuilder)) {
+            // console.debug("skipping observer for conditional builder");
+            // stopppp
+            return null;
+          }
+        }
         if (!executor.executeObservers) {
           return null;
         }

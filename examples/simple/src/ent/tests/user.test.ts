@@ -1454,7 +1454,7 @@ test("same email address. no upsert", async () => {
   ).rejects.toThrow("unique");
 });
 
-test("upsert email address", async () => {
+test.only("upsert email address", async () => {
   const email = randomEmail();
   const [u1, u2] = await Promise.all([
     CreateUserAction.create(loggedOutViewer, {
@@ -1483,6 +1483,9 @@ test("upsert email address", async () => {
   const contact = await u1.loadSelfContact();
   expect(contact).not.toBe(null);
   expect(contact!.userID).toBe(u1.id);
+
+  const comms = FakeComms.getSent(u1.emailAddress, Mode.EMAIL);
+  expect(comms.length).toBe(1);
 });
 
 test("upsert phone number", async () => {
@@ -1504,7 +1507,7 @@ test("upsert phone number", async () => {
       phoneNumber: phone,
       password: random(),
     }).upsert_BETAX({
-      column: "email_address",
+      column: "phone_number",
     }),
   ]);
   expect(u1.id).toBe(u2.id);

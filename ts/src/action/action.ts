@@ -54,6 +54,7 @@ export interface Executor
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
   builderOpChanged(builder: Builder<any>): boolean;
+  builder?: Builder<Ent>;
 
   execute(): Promise<void>;
 

@@ -2578,7 +2578,7 @@ async function getFieldsFromBuilder<T extends Ent>(
   );
 }
 
-let sendEmailObserver: Observer<User, SimpleBuilder<User>> = {
+const sendEmailObserver: Observer<User, SimpleBuilder<User>> = {
   observe: (builder): void => {
     let email = builder.fields.get("EmailAddress");
     if (!email) {
@@ -2595,7 +2595,7 @@ let sendEmailObserver: Observer<User, SimpleBuilder<User>> = {
   },
 };
 
-let sendEmailObserverAsync: Observer<User, SimpleBuilder<User>> = {
+const sendEmailObserverAsync: Observer<User, SimpleBuilder<User>> = {
   observe: async (builder) => {
     let email = builder.fields.get("EmailAddress");
     if (!email) {
