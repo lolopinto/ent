@@ -15,6 +15,7 @@ type FieldEdgeInfo struct {
 	Schema      string                  `json:"schema,omitempty"`
 	InverseEdge *input.InverseFieldEdge `json:"inverseEdge,omitempty"`
 	Polymorphic *PolymorphicOptions     `json:"polymorphic,omitempty"`
+	IndexEdge   *input.IndexEdgeOptions `json:"indexEdge,omitempty"`
 }
 
 func (f *FieldEdgeInfo) EdgeName() string {

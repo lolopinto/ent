@@ -23,6 +23,7 @@ import {
   AccountToTagsQuery,
   AccountToTodosQuery,
   AccountToWorkspacesQuery,
+  AssigneeToTodosQuery,
   Todo,
 } from "src/ent/";
 import {
@@ -36,6 +37,7 @@ import {
   AccountToTodosConnectionType,
   AccountToWorkspacesConnectionType,
   AccountTodoStatusType,
+  AssigneeToTodosConnectionType,
   TodoType,
 } from "src/graphql/resolvers/internal";
 
@@ -320,6 +322,39 @@ export const AccountType = new GraphQLObjectType({
           account.viewer,
           account,
           (v, account: Account) => AccountToTodosQuery.query(v, account),
+          args,
+        );
+      },
+    },
+    todos_assigned: {
+      type: new GraphQLNonNull(AssigneeToTodosConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        account: Account,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) => AssigneeToTodosQuery.query(v, account),
           args,
         );
       },

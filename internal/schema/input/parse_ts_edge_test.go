@@ -433,6 +433,84 @@ func TestParseEdges(t *testing.T) {
 				},
 			},
 		},
+		"indexed edge no field edge": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import {Schema} from "{schema}";
+
+				export default class User implements Schema {
+					fields = {};
+				};
+				`),
+				"event.ts": getCodeWithSchema(
+					`
+				import {Schema, UUIDType} from "{schema}";
+
+				export default class Event implements Schema {
+					fields = {
+						user_id: UUIDType({
+							index: true,
+						}),
+					};
+				};`),
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: []field{},
+				},
+				"Event": {
+					fields: []field{
+						{
+							name:  "user_id",
+							index: true,
+							typ:   &input.FieldType{DBType: input.UUID},
+						},
+					},
+				},
+			},
+		},
+		"indexed edge with field edge": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import {Schema} from "{schema}";
+
+				export default class User implements Schema {
+					fields = {};
+				};
+				`),
+				"event.ts": getCodeWithSchema(
+					`
+				import {Schema, UUIDType} from "{schema}";
+
+				export default class Event implements Schema {
+					fields = {
+						user_id: UUIDType({
+							index: true,
+							fieldEdge: {
+								schema: "User",
+							}
+						}),
+					};
+				};`),
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: []field{},
+				},
+				"Event": {
+					fields: []field{
+						{
+							name:  "user_id",
+							index: true,
+							typ:   &input.FieldType{DBType: input.UUID},
+							fieldEdge: &input.FieldEdge{
+								Schema: "User",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases)

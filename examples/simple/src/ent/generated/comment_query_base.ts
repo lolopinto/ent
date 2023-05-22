@@ -14,7 +14,7 @@ import {
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
 import { EdgeType, NodeType } from "./types";
-import { Comment, CommentToPostEdge } from "../internal";
+import { Comment, CommentToPostEdge, User } from "../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
@@ -92,6 +92,37 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
 
   async sourceEnt(_id: ID) {
     return this.srcEnt;
+  }
+}
+
+export class AuthorToCommentsQueryBase extends CustomEdgeQueryBase<
+  User,
+  Comment,
+  ExampleViewerAlias
+> {
+  constructor(viewer: ExampleViewerAlias, src: User | ID, sortColumn?: string) {
+    super(viewer, {
+      src: src,
+      groupCol: "author_id",
+      loadEntOptions: Comment.loaderOptions(),
+      name: "AuthorToCommentsQuery",
+      sortColumn,
+    });
+  }
+
+  static query<T extends AuthorToCommentsQueryBase>(
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: User | ID,
+    ) => T,
+    viewer: ExampleViewerAlias,
+    src: User | ID,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  async sourceEnt(id: ID) {
+    return User.load(this.viewer, id);
   }
 }
 

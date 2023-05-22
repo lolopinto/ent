@@ -53,6 +53,7 @@ import {
   convertNullableUserSuperNestedObject,
 } from "./types";
 import {
+  AuthorToCommentsQuery,
   Contact,
   FeedbackMixin,
   IFeedback,
@@ -569,5 +570,9 @@ export class UserBase
 
   queryContacts(): UserToContactsQuery {
     return UserToContactsQuery.query(this.viewer, this.id);
+  }
+
+  queryCommentsFromUser(): AuthorToCommentsQuery {
+    return AuthorToCommentsQuery.query(this.viewer, this.id);
   }
 }

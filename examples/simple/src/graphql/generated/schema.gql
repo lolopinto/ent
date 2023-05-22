@@ -423,6 +423,7 @@ type User implements Node {
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
+  commentsFromUser(first: Int, after: String, last: Int, before: String): AuthorToCommentsConnection!
   fullName: String!
   bar: String
   """contacts same domain..."""
@@ -443,6 +444,18 @@ type AddressToHostedEventsEdge implements Edge {
 type AddressToHostedEventsConnection implements Connection {
   edges: [AddressToHostedEventsEdge!]!
   nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToCommentsFromUserEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type AuthorToCommentsConnection implements Connection {
+  edges: [UserToCommentsFromUserEdge!]!
+  nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

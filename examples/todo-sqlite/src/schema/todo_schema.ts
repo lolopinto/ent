@@ -25,7 +25,16 @@ const TodoSchema = new TodoBaseEntSchema({
     }),
     completedDate: TimestampType({ index: true, nullable: true }),
     // moving away from creatorID to assigneeID to indicate who the todo is assigned to
-    assigneeID: UUIDType({ index: true, fieldEdge: { schema: "Account" } }),
+
+    assigneeID: UUIDType({
+      index: true,
+      fieldEdge: {
+        schema: "Account",
+        indexEdge: {
+          name: "todos_assigned",
+        },
+      },
+    }),
     scopeID: UUIDType({
       polymorphic: {
         disableBuilderType: true,

@@ -9,7 +9,14 @@ const CommentSchema = new EntSchema({
   fields: {
     // don't want a foreign key but want to type the User
     AuthorID: UUIDType({
-      fieldEdge: { schema: "User" },
+      // need a name for this...
+      fieldEdge: {
+        schema: "User",
+        indexEdge: {
+          // we want a different one because we have a different name for "comments" based on pattern
+          name: "comments_from_user",
+        },
+      },
       index: true,
       immutable: true,
     }),

@@ -13,6 +13,7 @@ import {
 import { getLoaderOptions } from "src/ent/generated/loadAny";
 import { EdgeType, NodeType } from "src/ent/generated/types";
 import {
+  Account,
   Tag,
   TagToTodosQuery,
   Todo,
@@ -100,6 +101,37 @@ export abstract class TodoToTodoScopeQueryBase extends AssocEdgeQueryBase<
 
   sourceEnt(id: ID) {
     return Todo.load(this.viewer, id);
+  }
+}
+
+export class AssigneeToTodosQueryBase extends CustomEdgeQueryBase<
+  Account,
+  Todo,
+  Viewer
+> {
+  constructor(viewer: Viewer, src: Account | ID, sortColumn?: string) {
+    super(viewer, {
+      src: src,
+      groupCol: "assignee_id",
+      loadEntOptions: Todo.loaderOptions(),
+      name: "AssigneeToTodosQuery",
+      sortColumn,
+    });
+  }
+
+  static query<T extends AssigneeToTodosQueryBase>(
+    this: new (
+      viewer: Viewer,
+      src: Account | ID,
+    ) => T,
+    viewer: Viewer,
+    src: Account | ID,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  async sourceEnt(id: ID) {
+    return Account.load(this.viewer, id);
   }
 }
 

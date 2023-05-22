@@ -275,6 +275,7 @@ type FieldEdge struct {
 	Schema             string            `json:"schema,omitempty"`
 	InverseEdge        *InverseFieldEdge `json:"inverseEdge,omitempty"`
 	DisableBuilderType bool              `json:"disableBuilderType,omitempty"`
+	IndexEdge          *IndexEdgeOptions `json:"indexEdge,omitempty"`
 }
 
 func (f *FieldEdge) InverseEdgeName() string {
@@ -290,6 +291,10 @@ type InverseFieldEdge struct {
 	TableName       string `json:"tableName,omitempty"`
 	HideFromGraphQL bool   `json:"hideFromGraphQL,omitempty"`
 	EdgeConstName   string `json:"edgeConstName,omitempty"`
+}
+
+type IndexEdgeOptions struct {
+	Name string `json:"name,omitempty"`
 }
 
 type PolymorphicOptions struct {

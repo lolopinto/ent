@@ -316,6 +316,12 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 		!validSchema(edge.commonEdgeInfo.NodeInfo.Node) {
 		return fmt.Errorf("invalid schema %s", edge.commonEdgeInfo.NodeInfo.Node)
 	}
+
+	if fieldEdgeInfo.IndexEdge != nil {
+		// set the name based on this...
+		edge.UserGivenEdgeName = fieldEdgeInfo.IndexEdge.Name
+	}
+
 	return e.addEdge(edge)
 }
 
@@ -343,6 +349,14 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(cfg codegenapi.Config, dbColName, 
 }
 
 func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) error {
+	return e.addIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, polymorphic, "")
+}
+
+func (e *EdgeInfo) AddIndexedEdgeFromNonPolymorphicSource(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName, foreignNode string) error {
+	return e.addIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, nil, foreignNode)
+}
+
+func (e *EdgeInfo) addIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
@@ -360,12 +374,15 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 				GetEntConfigFromName(nodeName),
 			),
 			quotedDbColName: quotedDBColName,
-			unique:          polymorphic.Unique,
 		},
+		// foreignNode:    foreignNode,
+		sourceNodeName: foreignNode,
 	}
-	if polymorphic.HideFromInverseGraphQL {
-		edge._HideFromGraphQL = true
+	if polymorphic != nil {
+		edge.destinationEdge.unique = polymorphic.Unique
+		edge._HideFromGraphQL = polymorphic.HideFromInverseGraphQL
 	}
+
 	edgeName := edge.GetEdgeName()
 	// TODO this is being called twice  with different edge infos...
 	e.indexedEdgeQueriesMap[edgeName] = edge
@@ -373,9 +390,29 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 	return e.addEdge(edge)
 }
 
-func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
+type IndexEdgeOptions struct {
+	DefaultEdgeName string
+}
+
+type IndexEdgeOpts func(*IndexEdgeOptions)
+
+func WithDefaultEdgeName(name string) IndexEdgeOpts {
+	return func(o *IndexEdgeOptions) {
+		o.DefaultEdgeName = name
+	}
+}
+
+func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string, opts ...IndexEdgeOpts) *IndexedEdge {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
-	edgeName := inflection.Plural(nodeName)
+
+	o := IndexEdgeOptions{}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	edgeName := o.DefaultEdgeName
+	if edgeName == "" {
+		edgeName = inflection.Plural(nodeName)
+	}
 	if polymorphic != nil && polymorphic.Name != "" {
 		edgeName = polymorphic.Name
 	}
@@ -389,8 +426,10 @@ func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeNam
 			),
 			quotedDbColName: quotedDBColName,
 		},
+		polymorphic: polymorphic,
 		foreignNode: foreignNode,
 	}
+
 	if polymorphic != nil {
 		edge._HideFromGraphQL = polymorphic.HideFromInverseGraphQL
 		edge.unique = polymorphic.Unique
@@ -400,6 +439,17 @@ func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeNam
 
 func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
 	edge := GetIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, polymorphic, foreignNode)
+	edgeName := edge.GetEdgeName()
+	e.destinationEdgesMap[edgeName] = edge
+	e.DestinationEdges = append(e.DestinationEdges, edge)
+	return e.addEdge(edge)
+}
+
+func (e *EdgeInfo) AddDestinationEdgeFromNonPolymorphicOptions(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, foreignNode, userGivenEdgeName string) error {
+	opts := []IndexEdgeOpts{
+		WithDefaultEdgeName(userGivenEdgeName),
+	}
+	edge := GetIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, nil, foreignNode, opts...)
 	edgeName := edge.GetEdgeName()
 	e.destinationEdgesMap[edgeName] = edge
 	e.DestinationEdges = append(e.DestinationEdges, edge)
@@ -501,6 +551,8 @@ type FieldEdge struct {
 
 	InverseEdge *input.InverseFieldEdge
 	Polymorphic *base.PolymorphicOptions
+	// user given edge name is the name provided by the user
+	UserGivenEdgeName string
 }
 
 func (edge *FieldEdge) PolymorphicEdge() bool {
@@ -665,7 +717,11 @@ type IndexedEdge struct {
 	// note that if anything is changed here, need to update indexedEdgeEqual() in compare_edge.go
 	SourceNodeName string
 	tsEdgeName     string
-	foreignNode    string
+	sourceNodeName string
+
+	// TODO kill...
+	foreignNode string
+	polymorphic *base.PolymorphicOptions
 	destinationEdge
 }
 
@@ -689,26 +745,28 @@ func (e *IndexedEdge) TsEdgeQueryName() string {
 }
 
 func (e *IndexedEdge) GetSourceNodeName() string {
-	// hmm. what generates this? why is it always ent?
+	if e.sourceNodeName != "" {
+		return e.sourceNodeName
+	}
 	return "Ent"
 }
 
 func (e *IndexedEdge) SourceIsPolymorphic() bool {
-	return true
+
+	return e.GetSourceNodeName() == "Ent" ||
+		e.polymorphic != nil && e.sourceNodeName != ""
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
 	if e.foreignNode == "" {
-		return ""
-		//		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
+		return fmt.Sprintf("%sTo%sConnection", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 	}
 	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionType() string {
 	if e.foreignNode == "" {
-		return ""
-		//		panic("cannot call GetGraphQLConnectionType when foreignNode is empty")
+		return fmt.Sprintf("%sTo%sConnectionType", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 	}
 	return fmt.Sprintf("%sTo%sConnectionType", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
