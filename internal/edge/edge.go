@@ -375,7 +375,6 @@ func (e *EdgeInfo) addIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBCo
 			),
 			quotedDbColName: quotedDBColName,
 		},
-		// foreignNode:    foreignNode,
 		sourceNodeName: foreignNode,
 	}
 	if polymorphic != nil {
@@ -402,6 +401,7 @@ func WithDefaultEdgeName(name string) IndexEdgeOpts {
 	}
 }
 
+// TODO kill this arg
 func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string, opts ...IndexEdgeOpts) *IndexedEdge {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 
@@ -427,7 +427,6 @@ func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeNam
 			quotedDbColName: quotedDBColName,
 		},
 		polymorphic: polymorphic,
-		foreignNode: foreignNode,
 	}
 
 	if polymorphic != nil {
@@ -719,8 +718,6 @@ type IndexedEdge struct {
 	tsEdgeName     string
 	sourceNodeName string
 
-	// TODO kill...
-	foreignNode string
 	polymorphic *base.PolymorphicOptions
 	destinationEdge
 }
@@ -752,23 +749,16 @@ func (e *IndexedEdge) GetSourceNodeName() string {
 }
 
 func (e *IndexedEdge) SourceIsPolymorphic() bool {
-
 	return e.GetSourceNodeName() == "Ent" ||
 		e.polymorphic != nil && e.sourceNodeName != ""
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
-	if e.foreignNode == "" {
-		return fmt.Sprintf("%sTo%sConnection", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
-	}
-	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	return fmt.Sprintf("%sTo%sConnection", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionType() string {
-	if e.foreignNode == "" {
-		return fmt.Sprintf("%sTo%sConnectionType", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
-	}
-	return fmt.Sprintf("%sTo%sConnectionType", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	return fmt.Sprintf("%sTo%sConnectionType", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
@@ -777,11 +767,7 @@ func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
-	if e.foreignNode == "" {
-		return ""
-		//		panic("cannot call GetGraphQLEdgePrefix when foreignNode is empty")
-	}
-	return fmt.Sprintf("%sTo%s", e.foreignNode, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {

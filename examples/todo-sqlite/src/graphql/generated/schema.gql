@@ -186,13 +186,13 @@ type AccountToWorkspacesConnection implements Connection {
   rawCount: Int!
 }
 
-type AccountToTodosAssignedEdge implements Edge {
+type AssigneeToTodosAssignedEdge implements Edge {
   node: Todo!
   cursor: String!
 }
 
 type AssigneeToTodosConnection implements Connection {
-  edges: [AccountToTodosAssignedEdge!]!
+  edges: [AssigneeToTodosAssignedEdge!]!
   nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!

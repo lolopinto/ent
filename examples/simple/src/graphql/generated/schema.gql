@@ -448,13 +448,13 @@ type AddressToHostedEventsConnection implements Connection {
   rawCount: Int!
 }
 
-type UserToCommentsFromUserEdge implements Edge {
+type AuthorToCommentsFromUserEdge implements Edge {
   node: Comment!
   cursor: String!
 }
 
 type AuthorToCommentsConnection implements Connection {
-  edges: [UserToCommentsFromUserEdge!]!
+  edges: [AuthorToCommentsFromUserEdge!]!
   nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!

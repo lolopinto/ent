@@ -17,7 +17,10 @@ var connType: GraphQLConnectionType<
 
 export const AuthorToCommentsConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType("UserToCommentsFromUser", CommentType);
+    connType = new GraphQLConnectionType(
+      "AuthorToCommentsFromUser",
+      CommentType,
+    );
   }
   return connType;
 };
