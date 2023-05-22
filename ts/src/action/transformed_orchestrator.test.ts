@@ -149,7 +149,7 @@ class DeletedAtPatternWithExtraWrites implements Pattern {
           },
           changeset: () =>
             EntChangeset.changesetFrom(stmt.builder, [
-              new RawQueryOperation([
+              new RawQueryOperation(stmt.builder, [
                 `DELETE FROM edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
                 `DELETE FROM inverse_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
                 `DELETE FROM symmetric_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,

@@ -26,6 +26,7 @@ interface Column extends SchemaItem {
 
 interface Constraint extends SchemaItem {
   generate(): string;
+  postCreate?(): boolean;
 }
 
 interface Index extends SchemaItem {
@@ -85,6 +86,23 @@ export function check(name: string, condition: string): Constraint {
     name,
     generate() {
       return `CONSTRAINT ${name} CHECK(${condition})`;
+    },
+  };
+}
+
+function unique(name: string, cols: string[], tableName: string): Constraint {
+  return {
+    name,
+    generate() {
+      if (Dialect.SQLite === DB.getDialect()) {
+        return `UNIQUE (${cols.join(",")})`;
+      }
+      return `ALTER TABLE ${tableName} ADD CONSTRAINT ${name} UNIQUE (${cols.join(
+        ", ",
+      )});`;
+    },
+    postCreate() {
+      return Dialect.Postgres === DB.getDialect();
     },
   };
 }
@@ -351,6 +369,7 @@ export function table(name: string, ...items: SchemaItem[]): Table {
       }
     }
   }
+
   return {
     name,
     columns: cols,
@@ -547,6 +566,7 @@ export class TempDB {
 
     // drop db
     await this.client.query(`DROP DATABASE ${this.db}`);
+    // console.log(this.db);
 
     await this.client.end();
   }
@@ -603,9 +623,12 @@ export function assoc_edge_config_table() {
 
 // if global flag is true, add any column from testEdgeGlobalSchema
 // up to caller to set/clear that as needed
-export function assoc_edge_table(name: string, global?: boolean) {
-  const t = table(
-    name,
+export function assoc_edge_table(
+  name: string,
+  global?: boolean,
+  unique_edge?: boolean,
+) {
+  const items: SchemaItem[] = [
     uuid("id1"),
     text("id1_type"),
     // same as in assoc_edge_config_table
@@ -615,7 +638,13 @@ export function assoc_edge_table(name: string, global?: boolean) {
     timestamptz("time"),
     text("data", { nullable: true }),
     primaryKey(`${name}_pkey`, ["id1", "id2", "edge_type"]),
-  );
+  ];
+  if (unique_edge) {
+    items.push(
+      unique(`${name}_unique_id1_edge_type`, ["id1", "edge_type"], name),
+    );
+  }
+  const t = table(name, ...items);
 
   if (global) {
     for (const k in testEdgeGlobalSchema.extraEdgeFields) {
@@ -729,6 +758,8 @@ export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
     items.push(getColumnFromField(fieldName, field, dialect));
   }
 
+  const tableName = getTableName(schema);
+
   if (schema.constraints) {
     for (const constraint of schema.constraints) {
       switch (constraint.type) {
@@ -753,10 +784,17 @@ export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
           }
           items.push(check(constraint.name, constraint.condition));
           break;
+
+        case ConstraintType.Unique:
+          items.push(unique(constraint.name, constraint.columns, tableName));
+          break;
+
+        default:
+          throw new Error(`unknown constraint type ${constraint.type}`);
       }
     }
   }
-  return table(getTableName(schema), ...items);
+  return table(tableName, ...items);
 }
 
 function getColumnForDbType(
@@ -847,6 +885,10 @@ function buildOpts(f: Field): options {
   }
   if (f.serverDefault) {
     ret.default = f.serverDefault;
+  }
+
+  if (f.unique) {
+    ret.unique = true;
   }
   return ret;
 }

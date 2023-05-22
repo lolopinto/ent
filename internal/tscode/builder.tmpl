@@ -1,5 +1,5 @@
 {{reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
-{{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator" "OrchestratorOptions"}}
+{{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator" "OrchestratorOptions" "ChangesetOptions"}}
 
 {{ $cfg := .CodePath -}}
 {{ $schema := .Schema -}}
@@ -239,6 +239,10 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
 
   async build(): Promise<{{useImport "Changeset"}}> {
     return this.orchestrator.build();
+  }
+
+  async buildWithOptions_BETA(options: {{useImport "ChangesetOptions"}}): Promise<{{useImport "Changeset"}}> {
+    return this.orchestrator.buildWithOptions_BETA(options);
   }
 
   async valid(): Promise<boolean> {

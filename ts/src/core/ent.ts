@@ -1065,8 +1065,28 @@ export function buildInsertQuery(
   const vals = valsString.join(", ");
 
   let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals})`;
+
+  if (options.onConflict) {
+    let onConflict = "";
+    if (options.onConflict.onConflictConstraint) {
+      onConflict = `ON CONFLICT ON CONSTRAINT ${options.onConflict.onConflictConstraint}`;
+    } else {
+      onConflict = `ON CONFLICT(${options.onConflict.onConflictCols.join(
+        ", ",
+      )})`;
+    }
+    if (options.onConflict.updateCols?.length) {
+      onConflict += ` DO UPDATE SET ${options.onConflict.updateCols
+        .map((f) => `${f} = EXCLUDED.${f}`)
+        .join(", ")}`;
+    } else {
+      onConflict += ` DO NOTHING`;
+    }
+    query = query + " " + onConflict;
+  }
+
   if (suffix) {
-    query = query + " " + suffix;
+    query += " " + suffix;
   }
 
   return [query, values, logValues];

@@ -8,6 +8,7 @@ import {
   Action,
   Builder,
   Changeset,
+  ChangesetOptions,
   Orchestrator,
   OrchestratorOptions,
   WriteOperation,
@@ -140,6 +141,10 @@ export class AuthCodeBuilder<
   }
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
+  }
+
+  async buildWithOptions_BETA(options: ChangesetOptions): Promise<Changeset> {
+    return this.orchestrator.buildWithOptions_BETA(options);
   }
 
   async valid(): Promise<boolean> {

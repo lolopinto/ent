@@ -2,23 +2,32 @@ import Graph from "graph-data-structure";
 import { ID, Ent, Viewer, Context, Data } from "../core/base";
 import { logQuery } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
-import { Builder } from "../action";
+import { Builder, WriteOperation } from "../action";
 import { OrchestratorOptions } from "./orchestrator";
 import DB, { Client, Queryer, SyncClient } from "../core/db";
 import { log } from "../core/logger";
-import { DataOperation } from "./operations";
+import {
+  ConditionalNodeOperation,
+  ConditionalOperation,
+  DataOperation,
+} from "./operations";
 
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
+  public builder?: Builder<Ent> | undefined;
   constructor(
     private viewer: Viewer,
     public placeholderID: ID,
     private operations: DataOperation<T>[],
     private options?: OrchestratorOptions<T, Data, Viewer>,
-  ) {}
+    private complexOptions?: ComplexExecutorOptions,
+  ) {
+    this.builder = options?.builder;
+  }
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
+  private updatedOps: Map<ID, WriteOperation> = new Map();
 
   resolveValue(val: ID): Ent | null {
     if (val === this.placeholderID && val !== undefined) {
@@ -26,6 +35,11 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     }
 
     return null;
+  }
+
+  builderOpChanged(builder: Builder<any>): boolean {
+    const v = this.updatedOps.get(builder.placeholderID);
+    return v !== undefined && v !== builder.operation;
   }
 
   [Symbol.iterator]() {
@@ -38,14 +52,17 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     if (createdEnt) {
       this.createdEnt = createdEnt;
     }
+    maybeUpdateOperationForOp(this.lastOp, this.updatedOps);
 
     const done = this.idx === this.operations.length;
-    const op = this.operations[this.idx];
+    const op = changeOp(this.operations[this.idx], this.complexOptions);
+
     this.idx++;
     this.lastOp = op;
     // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
-      this.idx = 0;
+      // TODO need to figure this out
+      // this.idx = 0;
     }
     return {
       value: op,
@@ -58,6 +75,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     if (!this.options || !action || !action.getObservers) {
       return;
     }
+
     const builder = this.options.builder;
     await Promise.all(
       action.getObservers().map(async (observer) => {
@@ -108,12 +126,36 @@ function getCreatedEnt<T extends Ent>(
   return null;
 }
 
+function maybeUpdateOperationForOp<T extends Ent>(
+  op: DataOperation<T> | undefined,
+  updatedOps: Map<ID, WriteOperation>,
+) {
+  if (!op || !op.updatedOperation) {
+    return;
+  }
+  const r = op.updatedOperation();
+  if (!r || r.builder.operation === r.operation) {
+    return;
+  }
+
+  updatedOps.set(r.builder.placeholderID, r.operation);
+  // console.debug(updatedOps);
+}
+
+// TODO rename this?
+interface ComplexExecutorOptions {
+  conditionalOverride: boolean;
+  builder: Builder<any, any>;
+}
+
 export class ComplexExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
   private mapper: Map<ID, Ent> = new Map();
   private lastOp: DataOperation<Ent> | undefined;
   private allOperations: DataOperation<Ent>[] = [];
   private executors: Executor[] = [];
+  private updatedOps: Map<ID, WriteOperation> = new Map();
+  public builder?: Builder<Ent> | undefined;
 
   constructor(
     private viewer: Viewer,
@@ -122,7 +164,10 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset[],
     options?: OrchestratorOptions<T, Data, Viewer>,
+    private complexOptions?: ComplexExecutorOptions,
   ) {
+    this.builder = options?.builder;
+
     let graph = Graph();
 
     const changesetMap: Map<string, Changeset> = new Map();
@@ -191,6 +236,11 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       // get ordered list of ops
       let executor = c.executor();
       for (let op of executor) {
+        if (!op) {
+          // TODO what is happening...
+          // change in behavior in next() leading to needing to do this
+          break;
+        }
         if (op.createdEnt) {
           nodeOps.add(op);
         } else {
@@ -225,10 +275,9 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     }
     const placeholderID = this.lastOp.placeholderID;
     if (!placeholderID) {
-      console.error(
+      throw new Error(
         `op ${this.lastOp} which implements getCreatedEnt doesn't have a placeholderID`,
       );
-      return;
     }
 
     this.mapper.set(placeholderID, createdEnt);
@@ -236,19 +285,21 @@ export class ComplexExecutor<T extends Ent> implements Executor {
 
   next(): IteratorResult<DataOperation<Ent>> {
     this.handleCreatedEnt();
+    maybeUpdateOperationForOp(this.lastOp, this.updatedOps);
 
     const done = this.idx === this.allOperations.length;
-    const op = this.allOperations[this.idx];
+    const op = changeOp(this.allOperations[this.idx], this.complexOptions);
     this.idx++;
+
     this.lastOp = op;
+
     // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
-      this.idx = 0;
+      // TODO need to figure this out
+      // this.idx = 0;
     }
-    return {
-      value: op,
-      done: done,
-    };
+
+    return { value: op, done };
   }
 
   resolveValue(val: ID): Ent | null {
@@ -265,9 +316,18 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     return null;
   }
 
+  builderOpChanged(builder: Builder<any>): boolean {
+    const v = this.updatedOps.get(builder.placeholderID);
+    // console.debug(this.updatedOps, builder.placeholderID, v, builder.operation);
+    return v !== undefined && v !== builder.operation;
+  }
+
   async executeObservers() {
     await Promise.all(
       this.executors.map((executor) => {
+        if (executor.builder && this.builderOpChanged(executor.builder)) {
+          return null;
+        }
         if (!executor.executeObservers) {
           return null;
         }
@@ -323,6 +383,9 @@ export async function executeOperations(
     if (isSyncClient(client)) {
       client.runInTransaction(() => {
         for (const operation of executor) {
+          if (operation.shortCircuit && operation.shortCircuit(executor)) {
+            continue;
+          }
           if (trackOps) {
             operations.push(operation);
           }
@@ -336,6 +399,10 @@ export async function executeOperations(
       logQuery("BEGIN", []);
       await client.query("BEGIN");
       for (const operation of executor) {
+        if (operation.shortCircuit && operation.shortCircuit(executor)) {
+          continue;
+        }
+
         if (trackOps) {
           operations.push(operation);
         }
@@ -371,4 +438,22 @@ export async function executeOperations(
     } catch (e) {}
   }
   return operations;
+}
+
+function changeOp<T extends Ent = Ent>(
+  op: DataOperation<T>,
+  complexOptions?: ComplexExecutorOptions,
+): DataOperation<T> {
+  if (
+    !op ||
+    !complexOptions?.conditionalOverride ||
+    op instanceof ConditionalNodeOperation
+  ) {
+    return op;
+  }
+  if (op.createdEnt) {
+    return new ConditionalNodeOperation(op, complexOptions.builder);
+  } else {
+    return new ConditionalOperation(op, complexOptions.builder);
+  }
 }

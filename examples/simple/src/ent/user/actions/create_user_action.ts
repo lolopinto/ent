@@ -59,8 +59,12 @@ export default class CreateUserAction extends CreateUserActionBase {
             userID: builder,
           });
 
-          builder.addSelfContact(action.builder);
-          return action.changeset();
+          builder.addSelfContactID(action.builder, {
+            conditional: true,
+          });
+          return action.changesetWithOptions_BETA({
+            conditionalBuilder: builder,
+          });
         },
       },
     ];
@@ -75,9 +79,10 @@ export default class CreateUserAction extends CreateUserActionBase {
   >[] {
     return [
       {
-        observe: (_builder: UserBuilder, input: UserCreateInput): void => {
+        observe: async (_builder: UserBuilder, input: UserCreateInput) => {
           let email = input.emailAddress;
           let firstName = input.firstName;
+
           FakeComms.send({
             from: "noreply@foo.com",
             to: email,

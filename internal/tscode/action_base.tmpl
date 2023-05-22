@@ -1,5 +1,5 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions"}}
-{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause"}}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions" "ChangesetOptions"}}
+{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause" "CreateRowOptions"}}
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
@@ -103,6 +103,8 @@
 {{ $newArgs := ""}}
 {{ $instance := .NodeData.NodeInstance}}
 {{ $hasSaveFromID := false }}
+{{ $creating := false }}
+{{ $upsertInfo := .NodeData.GetUpsertInfo $action.GetActionName}} 
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
 {{ reserveImportPath $viewerInfo.GetImportPath false -}}
@@ -118,6 +120,7 @@
 {{ else if $hasInput -}} 
   {{ $constructor = printf "viewer: %s, input: %s"  $viewerType $inputName -}}
   {{ $newArgs = "viewer, input" }}
+  {{ $creating = true }} 
 {{/* delete, no input */ -}}
 {{ else -}}
   {{ $constructor = printf "viewer: %s, %s: %s" $viewerType $instance $node -}}
@@ -147,6 +150,12 @@ export type {{$observersType }} = {{useImport "Observer"}}<{{$node}}, {{$builder
 
 {{$validatorsType := printf "%sValidators" $action.GetActionName}}
 export type {{$validatorsType }} = {{useImport "Validator"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
+
+{{$upsert := and $creating $upsertInfo}}
+{{ if $upsert }}
+  {{$upsertInfo.Types -}}
+{{ end -}}
+
 
 
 export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> {
@@ -252,6 +261,13 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
     return this.builder.build();
   }
 
+  async changesetWithOptions_BETA(options: {{useImport "ChangesetOptions"}}): Promise<{{useImport "Changeset"}}> {
+    {{if edgeGroupAction $action }}
+      await this.setEdgeType();
+    {{ end -}}
+    return this.builder.buildWithOptions_BETA(options);
+  }
+
   {{ if edgeGroupAction $action -}}
     {{$edgeGroup := $action.GetEdgeGroup -}}
     private async setEdgeType() {
@@ -306,6 +322,46 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   {{ end -}}
   }
 
+  {{ if $upsert }}
+  async upsert_BETA(options: {{$upsertInfo.Name}}): Promise<{{$node}} | null> {
+    const opts: {{useImport "CreateRowOptions"}}['onConflict'] ={
+      onConflictCols: [],
+      updateCols: options.update_cols,
+    };
+    {{ if $upsertInfo.HasColumn}}
+      if (options.column) {
+        opts.onConflictCols = [options.column];
+      }
+    {{end -}}
+    {{if $upsertInfo.HasConstraint }}
+      if (options.constraint) {
+        opts.onConflictConstraint = options.constraint;
+      }
+    {{end -}}
+    this.builder.orchestrator.setOnConflictOptions(opts);
+    return this.save();
+  }
+
+  async upsert_BETAX(options: {{$upsertInfo.Name}}): Promise<{{$node}}> {
+    const opts: {{useImport "CreateRowOptions"}}['onConflict'] ={
+      onConflictCols: [],
+      updateCols: options.update_cols,
+    };
+    {{ if $upsertInfo.HasColumn}}
+      if (options.column) {
+        opts.onConflictCols = [options.column];
+      }
+    {{end -}}
+    {{if $upsertInfo.HasConstraint }}
+      if (options.constraint) {
+        opts.onConflictConstraint = options.constraint;
+      }
+    {{end -}}
+    this.builder.orchestrator.setOnConflictOptions(opts);
+    return this.saveX();
+  }
+  {{ end -}} 
+
   {{ if and $action.IsDeletingNode $action.TransformsDelete -}}
   async saveWithoutTransform(): Promise<void> {
     this.builder.orchestrator.setDisableTransformations(true);
@@ -324,6 +380,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   ): T {
     return new this({{$newArgs}});
   }
+
 
   {{if $hasSaveFromID -}}
     static async saveXFromID<T extends {{$actionName}}>(

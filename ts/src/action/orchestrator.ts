@@ -7,6 +7,7 @@ import {
   LoadEntOptions,
   PrivacyError,
   PrivacyPolicy,
+  CreateRowOptions,
 } from "../core/base";
 import { loadEdgeDatas, applyPrivacyPolicyForRow } from "../core/ent";
 import {
@@ -18,7 +19,12 @@ import {
   TransformedUpdateOperation,
   FieldInfoMap,
 } from "../schema/schema";
-import { Changeset, Executor, Validator } from "../action/action";
+import {
+  Changeset,
+  ChangesetOptions,
+  Executor,
+  Validator,
+} from "../action/action";
 import {
   AssocEdgeInputOptions,
   DataOperation,
@@ -26,6 +32,9 @@ import {
   EditNodeOperation,
   DeleteNodeOperation,
   EditNodeOptions,
+  AssocEdgeOptions,
+  ConditionalOperation,
+  ConditionalNodeOperation,
 } from "./operations";
 import { WriteOperation, Builder, Action } from "../action";
 import { applyPrivacyPolicyX } from "../core/privacy";
@@ -187,6 +196,7 @@ export class Orchestrator<
 > {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap = new Map();
+  private conditionalEdges: EdgeMap = new Map();
   private validatedFields: Data | null;
   private logValues: Data | null;
   private changesets: Changeset[] = [];
@@ -202,6 +212,7 @@ export class Orchestrator<
   // same with existingEnt. can transform so we wanna know what we started with and now where we are.
   private existingEnt: TExistingEnt;
   private disableTransformations: boolean;
+  private onConflict: CreateRowOptions["onConflict"] | undefined;
   private memoizedGetFields: () => Promise<fieldsInfo>;
 
   constructor(
@@ -218,7 +229,11 @@ export class Orchestrator<
     return this.options;
   }
 
-  private addEdge(edge: edgeInputData, op: WriteOperation) {
+  private addEdge(
+    edge: edgeInputData,
+    op: WriteOperation,
+    conditional?: boolean,
+  ) {
     this.edgeSet.add(edge.edgeType);
 
     let m1: OperationMap = this.edges.get(edge.edgeType) || new Map();
@@ -233,11 +248,22 @@ export class Orchestrator<
     // set or overwrite the new edge data for said id
     m2.set(id, edge);
     m1.set(op, m2);
-    this.edges.set(edge.edgeType, m1);
+    if (conditional && this.onConflict) {
+      this.conditionalEdges.set(edge.edgeType, m1);
+    } else {
+      this.edges.set(edge.edgeType, m1);
+    }
   }
 
   setDisableTransformations(val: boolean) {
     this.disableTransformations = val;
+  }
+
+  setOnConflictOptions(onConflict: CreateRowOptions["onConflict"]) {
+    if (onConflict?.onConflictConstraint && !onConflict.updateCols) {
+      throw new Error(`cannot set onConflictConstraint without updateCols`);
+    }
+    this.onConflict = onConflict;
   }
 
   addInboundEdge<T2 extends Ent>(
@@ -255,6 +281,7 @@ export class Orchestrator<
         direction: edgeDirection.inboundEdge,
       }),
       WriteOperation.Insert,
+      options?.conditional,
     );
   }
 
@@ -273,10 +300,11 @@ export class Orchestrator<
         direction: edgeDirection.outboundEdge,
       }),
       WriteOperation.Insert,
+      options?.conditional,
     );
   }
 
-  removeInboundEdge(id1: ID, edgeType: string) {
+  removeInboundEdge(id1: ID, edgeType: string, options?: AssocEdgeOptions) {
     this.addEdge(
       new edgeInputData({
         id: id1,
@@ -284,10 +312,11 @@ export class Orchestrator<
         direction: edgeDirection.inboundEdge,
       }),
       WriteOperation.Delete,
+      options?.conditional,
     );
   }
 
-  removeOutboundEdge(id2: ID, edgeType: string) {
+  removeOutboundEdge(id2: ID, edgeType: string, options?: AssocEdgeOptions) {
     this.addEdge(
       new edgeInputData({
         id: id2,
@@ -295,6 +324,7 @@ export class Orchestrator<
         direction: edgeDirection.outboundEdge,
       }),
       WriteOperation.Delete,
+      options?.conditional,
     );
   }
 
@@ -321,13 +351,17 @@ export class Orchestrator<
     }
   }
 
-  private buildMainOp(): DataOperation {
+  private buildMainOp(conditionalBuilder?: Builder<any>): DataOperation {
     // this assumes we have validated fields
     switch (this.actualOperation) {
       case WriteOperation.Delete:
-        return new DeleteNodeOperation(this.existingEnt!.id, {
-          tableName: this.options.tableName,
-        });
+        return new DeleteNodeOperation(
+          this.existingEnt!.id,
+          this.options.builder,
+          {
+            tableName: this.options.tableName,
+          },
+        );
       default:
         if (this.actualOperation === WriteOperation.Edit && !this.existingEnt) {
           throw new Error(
@@ -348,14 +382,21 @@ export class Orchestrator<
           fieldsToResolve: this.fieldsToResolve,
           key: this.options.key,
           loadEntOptions: this.options.loaderOptions,
-          placeholderID: this.options.builder.placeholderID,
           whereClause: clause.Eq(this.options.key, this.existingEnt?.id),
           expressions: this.options.expressions,
+          onConflict: this.onConflict,
+          builder: this.options.builder,
         };
         if (this.logValues) {
           opts.fieldsToLog = this.logValues;
         }
         this.mainOp = new EditNodeOperation(opts, this.existingEnt);
+        if (conditionalBuilder) {
+          this.mainOp = new ConditionalNodeOperation(
+            this.mainOp,
+            conditionalBuilder,
+          );
+        }
         return this.mainOp;
     }
   }
@@ -421,24 +462,53 @@ export class Orchestrator<
     );
   }
 
-  private async buildEdgeOps(ops: DataOperation[]): Promise<void> {
+  private async buildEdgeOps(
+    ops: DataOperation[],
+    conditionalBuilder: Builder<any>,
+    conditionalOverride: boolean,
+  ): Promise<void> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
-    for (const [edgeType, m] of this.edges) {
-      for (const [op, m2] of m) {
-        for (const [_, edge] of m2) {
-          let edgeOp = this.getEdgeOperation(edgeType, op, edge);
-          ops.push(edgeOp);
-          const edgeData = edgeDatas.get(edgeType);
-          if (!edgeData) {
-            throw new Error(`could not load edge data for '${edgeType}'`);
-          }
+    const edges: [EdgeMap, boolean][] = [
+      [this.edges, false],
+      [this.conditionalEdges, true],
+    ];
+    // conditional should only apply if onconflict...
+    // if no upsert and just create, nothing to do here
+    for (const edgeInfo of edges) {
+      const [edges, conditionalEdge] = edgeInfo;
+      const conditional = conditionalOverride || conditionalEdge;
+      for (const [edgeType, m] of edges) {
+        for (const [op, m2] of m) {
+          for (const [_, edge] of m2) {
+            let edgeOp = this.getEdgeOperation(edgeType, op, edge);
+            if (conditional) {
+              ops.push(new ConditionalOperation(edgeOp, conditionalBuilder));
+            } else {
+              ops.push(edgeOp);
+            }
+            const edgeData = edgeDatas.get(edgeType);
+            if (!edgeData) {
+              throw new Error(`could not load edge data for '${edgeType}'`);
+            }
 
-          if (edgeData.symmetricEdge) {
-            ops.push(edgeOp.symmetricEdge());
-          }
+            if (edgeData.symmetricEdge) {
+              let symmetric: DataOperation = edgeOp.symmetricEdge();
+              if (conditional) {
+                symmetric = new ConditionalOperation(
+                  symmetric,
+                  conditionalBuilder,
+                );
+              }
+              ops.push(symmetric);
+            }
 
-          if (edgeData.inverseEdgeType) {
-            ops.push(edgeOp.inverseEdge(edgeData));
+            if (edgeData.inverseEdgeType) {
+              let inverse: DataOperation = edgeOp.inverseEdge(edgeData);
+              if (conditional) {
+                inverse = new ConditionalOperation(inverse, conditionalBuilder);
+              }
+              ops.push(inverse);
+            }
           }
         }
       }
@@ -761,6 +831,8 @@ export class Orchestrator<
     let transformed: TransformedUpdateOperation<TEnt, TViewer> | null = null;
 
     const sqlOp = this.getSQLStatementOperation();
+    // why is transform write technically different from upsert?
+    // it's create -> update just at the db level...
     if (action?.transformWrite) {
       transformed = await action.transformWrite({
         builder,
@@ -803,8 +875,8 @@ export class Orchestrator<
         }
       }
       if (transformed.changeset) {
-        const ct = await transformed.changeset();
-        this.changesets.push(ct);
+        const changeset = await transformed.changeset();
+        this.changesets.push(changeset);
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
@@ -1076,24 +1148,49 @@ export class Orchestrator<
     return this.validate();
   }
 
-  async build(): Promise<EntChangeset<TEnt>> {
+  private async buildPlusChangeset(
+    conditionalBuilder: Builder<any>,
+    conditionalOverride: boolean,
+  ): Promise<EntChangeset<TEnt>> {
     // validate everything first
     await this.validX();
 
-    let ops: DataOperation[] = [this.buildMainOp()];
+    let ops: DataOperation[] = [
+      this.buildMainOp(conditionalOverride ? conditionalBuilder : undefined),
+    ];
 
-    await this.buildEdgeOps(ops);
+    await this.buildEdgeOps(ops, conditionalBuilder, conditionalOverride);
 
     // TODO throw if we try and create a new changeset after previously creating one
+
+    // TODO test actualOperation value
+    // observers is fine since they're run after and we have the actualOperation value...
+
     return new EntChangeset(
       this.options.viewer,
+      this.options.builder,
       this.options.builder.placeholderID,
-      this.options.loaderOptions.ent,
+      conditionalOverride,
       ops,
       this.dependencies,
       this.changesets,
       this.options,
     );
+  }
+
+  async build(): Promise<EntChangeset<TEnt>> {
+    return this.buildPlusChangeset(this.options.builder, false);
+  }
+
+  async buildWithOptions_BETA(
+    options: ChangesetOptions,
+  ): Promise<EntChangeset<TEnt>> {
+    // set as dependency so that we do the right order of operations
+    this.dependencies.set(
+      options.conditionalBuilder.placeholderID,
+      options.conditionalBuilder,
+    );
+    return this.buildPlusChangeset(options.conditionalBuilder, true);
   }
 
   private async viewerForEntLoad(data: Data) {
@@ -1147,12 +1244,17 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+// each changeset is required to have a unique placeholderID
+// used in executor. if we end up creating multiple changesets from a builder, we need
+// different placeholders
+// in practice, only applies to Entchangeset::changesetFrom()
 export class EntChangeset<T extends Ent> implements Changeset {
   private _executor: Executor | null;
   constructor(
     public viewer: Viewer,
+    private builder: Builder<T>,
     public readonly placeholderID: ID,
-    public readonly ent: EntConstructor<T>,
+    private conditionalOverride: boolean,
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset[],
@@ -1162,8 +1264,10 @@ export class EntChangeset<T extends Ent> implements Changeset {
   static changesetFrom(builder: Builder<any, any, any>, ops: DataOperation[]) {
     return new EntChangeset(
       builder.viewer,
+      builder,
+      // need unique placeholderID different from the builder. see comment above EntChangeset
       `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
-      builder.ent,
+      false,
       ops,
     );
   }
@@ -1183,6 +1287,10 @@ export class EntChangeset<T extends Ent> implements Changeset {
         this.placeholderID,
         this.operations,
         this.options,
+        {
+          conditionalOverride: this.conditionalOverride,
+          builder: this.builder,
+        },
       ));
     }
 
@@ -1193,6 +1301,10 @@ export class EntChangeset<T extends Ent> implements Changeset {
       this.dependencies || new Map(),
       this.changesets || [],
       this.options,
+      {
+        conditionalOverride: this.conditionalOverride,
+        builder: this.builder,
+      },
     ));
   }
 }

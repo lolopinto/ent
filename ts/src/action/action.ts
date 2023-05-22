@@ -36,6 +36,7 @@ export interface Builder<
   placeholderID: ID;
   readonly viewer: TViewer;
   build(): Promise<Changeset>;
+  buildWithOptions_BETA?(options: ChangesetOptions): Promise<Changeset>;
   operation: WriteOperation;
   editedEnt?(): Promise<TEnt | null>;
   nodeType: string;
@@ -45,13 +46,16 @@ export interface Builder<
   orchestrator: BuilderOrchestrator;
 }
 
-// NB: this is a private API subject to change
+// PS: this is a private API subject to change
 export interface Executor
   extends Iterable<DataOperation>,
     Iterator<DataOperation> {
   placeholderID: ID;
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
+  builderOpChanged(builder: Builder<any>): boolean;
+  builder?: Builder<Ent>;
+
   execute(): Promise<void>;
 
   // TODO add this so we can differentiate btw when ops are being executed?
@@ -124,6 +128,12 @@ export interface Validator<
   ): Promise<void | undefined | Error> | void | Error | undefined;
 }
 
+export interface ChangesetOptions {
+  // conditional on builder operation remaining the same
+  // TODO I don't really like this
+  conditionalBuilder: Builder<any, any>;
+}
+
 export interface Action<
   TEnt extends Ent<TViewer>,
   TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
@@ -133,6 +143,7 @@ export interface Action<
 > {
   readonly viewer: Viewer;
   changeset(): Promise<Changeset>;
+  changesetWithOptions_BETA?(options: ChangesetOptions): Promise<Changeset>;
   builder: TBuilder;
   getPrivacyPolicy(): PrivacyPolicy<TEnt>;
 

@@ -31,6 +31,8 @@ import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 const UserSchema = new EntSchema({
   patterns: [new Feedback()],
 
+  supportUpsert: true,
+
   fields: {
     FirstName: StringType(),
     LastName: StringType(),

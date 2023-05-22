@@ -1431,3 +1431,93 @@ test("misc", async () => {
   expect(user.funUuids?.length).toBe(2);
   expect(user.funUuids?.every((v) => validate(v.toString()))).toBe(true);
 });
+
+test("same email address. no upsert", async () => {
+  const email = randomEmail();
+  await expect(
+    Promise.all([
+      CreateUserAction.create(loggedOutViewer, {
+        firstName: "Jane",
+        lastName: "Doe",
+        emailAddress: email,
+        phoneNumber: randomPhoneNumber(),
+        password: random(),
+      }).saveX(),
+      CreateUserAction.create(loggedOutViewer, {
+        firstName: "Jane",
+        lastName: "Doe",
+        emailAddress: email,
+        phoneNumber: randomPhoneNumber(),
+        password: random(),
+      }).saveX(),
+    ]),
+  ).rejects.toThrow("unique");
+});
+
+test("upsert email address", async () => {
+  const email = randomEmail();
+  const [u1, u2] = await Promise.all([
+    CreateUserAction.create(loggedOutViewer, {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: email,
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+    }).upsert_BETAX({
+      column: "email_address",
+    }),
+    CreateUserAction.create(loggedOutViewer, {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: email,
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+    }).upsert_BETAX({
+      column: "email_address",
+    }),
+  ]);
+  expect(u1.id).toBe(u2.id);
+  expect(u1.emailAddress).toBe(u2.emailAddress);
+  // even though different phone numbers passed, same phone number returned
+  expect(u1.phoneNumber).toBe(u2.phoneNumber);
+  const contact = await u1.loadSelfContact();
+  expect(contact).not.toBe(null);
+  expect(contact!.userID).toBe(u1.id);
+
+  const comms = FakeComms.getSent(u1.emailAddress, Mode.EMAIL);
+  expect(comms.length).toBe(1);
+});
+
+test("upsert phone number", async () => {
+  const phone = randomPhoneNumber();
+  const [u1, u2] = await Promise.all([
+    CreateUserAction.create(loggedOutViewer, {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: phone,
+      password: random(),
+    }).upsert_BETAX({
+      column: "phone_number",
+    }),
+    CreateUserAction.create(loggedOutViewer, {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: phone,
+      password: random(),
+    }).upsert_BETAX({
+      column: "phone_number",
+    }),
+  ]);
+  expect(u1.id).toBe(u2.id);
+  expect(u1.phoneNumber).toBe(u2.phoneNumber);
+  // even though different email passed, same email returned
+  expect(u1.emailAddress).toBe(u2.emailAddress);
+  const contact = await u1.loadSelfContact();
+  expect(contact).not.toBe(null);
+  expect(contact!.userID).toBe(u1.id);
+
+  const comms = FakeComms.getSent(u1.emailAddress, Mode.EMAIL);
+  expect(comms.length).toBe(1);
+});

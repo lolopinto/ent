@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.1.0-alpha138",
+  "version": "0.1.0-alpha139",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -21,7 +21,7 @@
     "memoizee": "^0.4.15",
     "minimist": "^1.2.7",
     "pascal-case": "^3.1.2",
-    "pg": "^8.8.0",
+    "pg": "^8.11.0",
     "prettier": "^2.8.1",
     "snake-case": "^3.0.4",
     "ts-node": "^10.9.1",

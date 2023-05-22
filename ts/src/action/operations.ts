@@ -34,7 +34,15 @@ import {
   parameterizedQueryOptions,
 } from "../core/ent";
 
+export interface UpdatedOperation {
+  operation: WriteOperation;
+  builder: Builder<any>;
+}
+
+// PS: anytime this is updated, need to update ConditionalOperation
 export interface DataOperation<T extends Ent = Ent> {
+  // builder associated with the operation
+  builder: Builder<T>;
   // any data that needs to be fetched before the write should be fetched here
   // because of how SQLite works, we can't use asynchronous fetches during the write
   // so we batch up fetching to be done beforehand here
@@ -47,13 +55,22 @@ export interface DataOperation<T extends Ent = Ent> {
   placeholderID?: ID;
   returnedRow?(): Data | null; // optional to get the raw row
   createdEnt?(viewer: Viewer): T | null; // optional to indicate the ent that was created
+
+  // optional to indicate that the operation should not be performed. used for conditional changesets/operations
+  shortCircuit?(executor: Executor): boolean;
+  updatedOperation?(): UpdatedOperation | null;
   resolve?(executor: Executor): void; //throws?
 
   // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
 }
+
 export class DeleteNodeOperation implements DataOperation {
-  constructor(private id: ID, private options: DataOptions) {}
+  constructor(
+    private id: ID,
+    public readonly builder: Builder<Ent>,
+    private options: DataOptions,
+  ) {}
 
   async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     let options = {
@@ -72,15 +89,11 @@ export class DeleteNodeOperation implements DataOperation {
   }
 }
 
-export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
-  fieldsToResolve: string[];
-  loadEntOptions: LoadEntOptions<T>;
-  placeholderID?: ID;
-  key: string;
-}
-
 export class RawQueryOperation implements DataOperation {
-  constructor(private queries: (string | parameterizedQueryOptions)[]) {}
+  constructor(
+    public builder: Builder<Ent>,
+    private queries: (string | parameterizedQueryOptions)[],
+  ) {}
 
   async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     for (const q of this.queries) {
@@ -107,20 +120,36 @@ export class RawQueryOperation implements DataOperation {
   }
 }
 
+export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
+  fieldsToResolve: string[];
+  loadEntOptions: LoadEntOptions<T>;
+  key: string;
+  onConflict?: CreateRowOptions["onConflict"];
+  builder: Builder<T>;
+}
+
 export class EditNodeOperation<T extends Ent> implements DataOperation {
-  row: Data | null = null;
+  private row: Data | null = null;
   placeholderID?: ID | undefined;
+  private updatedOp: UpdatedOperation | null = null;
+  public builder: Builder<T>;
+  private resolved = false;
 
   constructor(
     public options: EditNodeOptions<T>,
     private existingEnt: Ent | null = null,
   ) {
-    this.placeholderID = options.placeholderID;
+    this.builder = options.builder;
+    this.placeholderID = options.builder.placeholderID;
   }
 
   resolve<T extends Ent>(executor: Executor): void {
     if (!this.options.fieldsToResolve.length) {
       return;
+    }
+
+    if (this.resolved) {
+      throw new Error(`already resolved ${this.placeholderID}`);
     }
 
     let fields = this.options.fields;
@@ -140,6 +169,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       fields[fieldName] = ent.id;
     });
     this.options.fields = fields;
+    this.resolved = true;
   }
 
   private hasData(data: Data) {
@@ -149,7 +179,18 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     return false;
   }
 
-  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
+  private buildOnConflictQuery(options: EditNodeOptions<T>) {
+    // assumes onConflict has been checked already...
+    const clauses: clause.Clause[] = [];
+    for (const col of this.options.onConflict!.onConflictCols) {
+      clauses.push(clause.Eq(col, options.fields[col]));
+    }
+    const cls = clause.AndOptional(...clauses);
+    const query = this.buildReloadQuery(options, cls);
+    return { cls, query };
+  }
+
+  async performWrite(queryer: Queryer, context?: Context) {
     let options = {
       ...this.options,
       context,
@@ -164,18 +205,44 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         this.row = this.existingEnt["data"];
       }
     } else {
+      // TODO: eventually, when we officially support auto-increment ids. need to make sure/test that this works
+      // https://github.com/lolopinto/ent/issues/1431
+
       this.row = await createRow(queryer, options, "RETURNING *");
+      const key = this.options.key;
+
+      if (this.row && this.row[key] !== this.options.fields[key]) {
+        this.updatedOp = {
+          builder: this.options.builder,
+          operation: WriteOperation.Edit,
+        };
+      }
+      if (
+        this.row === null &&
+        this.options.onConflict &&
+        !this.options.onConflict.updateCols?.length
+      ) {
+        // no row returned and on conflict, do nothing, have to fetch the conflict row back...
+        const { cls, query } = this.buildOnConflictQuery(options);
+
+        logQuery(query, cls.logValues());
+        const res = await queryer.query(query, cls.values());
+        this.row = res.rows[0];
+        this.updatedOp = {
+          builder: this.options.builder,
+          operation: WriteOperation.Edit,
+        };
+      }
     }
   }
 
-  private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<T>) {
+  private buildReloadQuery(options: EditNodeOptions<T>, cls: clause.Clause) {
     // TODO this isn't always an ObjectLoader. should throw or figure out a way to get query
     // and run this on its own...
     const loader = this.options.loadEntOptions.loaderFactory.createLoader(
       options.context,
     ) as ObjectLoader<T>;
     const opts = loader.getOptions();
-    let cls = clause.Eq(options.key, id);
     if (opts.clause) {
       let optionClause: clause.Clause | undefined;
       if (typeof opts.clause === "function") {
@@ -184,7 +251,6 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         optionClause = opts.clause;
       }
       if (optionClause) {
-        // @ts-expect-error ID|string mismatch
         cls = clause.And(cls, optionClause);
       }
     }
@@ -194,6 +260,12 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       tableName: options.tableName,
       clause: cls,
     });
+    return query;
+  }
+
+  private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<T>) {
+    const query = this.buildReloadQuery(options, clause.Eq(options.key, id));
+
     // special case log here because we're not going through any of the normal
     // methods here because those are async and this is sync
     // this is the only place we're doing this so only handling here
@@ -222,6 +294,38 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       createRowSync(queryer, options, "RETURNING *");
       const id = options.fields[options.key];
       this.reloadRow(queryer, id, options);
+      const key = this.options.key;
+
+      if (this.row && this.row[key] !== this.options.fields[key]) {
+        this.updatedOp = {
+          builder: this.options.builder,
+          operation: WriteOperation.Edit,
+        };
+      }
+      // if we can't find the id, try and load the on conflict row
+      // no returning * with sqlite and have to assume the row was created more often than not
+
+      // there's a world in which we combine into one query if on-conflict
+      // seems like it's safer not to and sqlite (only sync client we currently have) is fast enough
+      // (single-process) that it's fine to do two queries
+
+      // we wanna do this in both on conflict do nothing or on conflict update
+      if (this.row === null && this.options.onConflict) {
+        const { cls, query } = this.buildOnConflictQuery(options);
+
+        // special case log here because we're not going through any of the normal
+        // methods here because those are async and this is sync
+        // this is the only place we're doing this so only handling here
+        logQuery(query, cls.logValues());
+        const r = queryer.querySync(query, cls.values());
+        if (r.rows.length === 1) {
+          this.row = r.rows[0];
+        }
+        this.updatedOp = {
+          builder: this.options.builder,
+          operation: WriteOperation.Edit,
+        };
+      }
     }
   }
 
@@ -235,6 +339,10 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     }
     return new this.options.loadEntOptions.ent(viewer, this.row);
   }
+
+  updatedOperation(): UpdatedOperation | null {
+    return this.updatedOp;
+  }
 }
 
 interface EdgeOperationOptions {
@@ -244,9 +352,16 @@ interface EdgeOperationOptions {
   dataPlaceholder?: boolean;
 }
 
-export interface AssocEdgeInputOptions {
+export interface AssocEdgeInputOptions extends AssocEdgeOptions {
   time?: Date;
   data?: string | Builder<Ent>;
+}
+
+export interface AssocEdgeOptions {
+  // if passed. indicates that it's conditional on the current builder's operator not changing
+  // e.g. if an upsert is being done, and the builder changes from insert to update,
+  // then the edge write should not be done if this is true
+  conditional?: boolean;
 }
 
 export interface AssocEdgeInput extends AssocEdgeInputOptions {
@@ -260,7 +375,7 @@ export interface AssocEdgeInput extends AssocEdgeInputOptions {
 export class EdgeOperation implements DataOperation {
   private edgeData: AssocEdgeData | undefined;
   private constructor(
-    private builder: Builder<any>,
+    public builder: Builder<any>,
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
   ) {}
@@ -733,5 +848,109 @@ export class EdgeOperation implements DataOperation {
     return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,
     });
+  }
+}
+
+export class ConditionalOperation<T extends Ent = Ent>
+  implements DataOperation<T>
+{
+  placeholderID?: ID | undefined;
+  protected shortCircuited = false;
+  public readonly builder: Builder<T>;
+
+  constructor(
+    protected op: DataOperation<T>,
+    private conditionalBuilder: Builder<any>,
+  ) {
+    this.builder = op.builder;
+    this.placeholderID = op.placeholderID;
+  }
+
+  shortCircuit(executor: Executor): boolean {
+    this.shortCircuited = executor.builderOpChanged(this.conditionalBuilder);
+    return this.shortCircuited;
+  }
+
+  async preFetch(
+    queryer: Queryer,
+    context?: Context<Viewer<Ent<any> | null, ID | null>> | undefined,
+  ): Promise<void> {
+    if (this.op.preFetch) {
+      return this.op.preFetch(queryer, context);
+    }
+  }
+
+  performWriteSync(
+    queryer: SyncQueryer,
+    context?: Context<Viewer<Ent<any> | null, ID | null>> | undefined,
+  ): void {
+    this.op.performWriteSync(queryer, context);
+  }
+
+  performWrite(
+    queryer: Queryer,
+    context?: Context<Viewer<Ent<any> | null, ID | null>> | undefined,
+  ): Promise<void> {
+    return this.op.performWrite(queryer, context);
+  }
+
+  returnedRow(): Data | null {
+    if (this.op.returnedRow) {
+      return this.op.returnedRow();
+    }
+    return null;
+  }
+
+  updatedOperation(): UpdatedOperation | null {
+    if (this.op.updatedOperation) {
+      return this.op.updatedOperation();
+    }
+    return null;
+  }
+
+  resolve(executor: Executor): void {
+    if (this.op.resolve) {
+      return this.op.resolve(executor);
+    }
+  }
+
+  async postFetch(
+    queryer: Queryer,
+    context?: Context<Viewer<Ent<any> | null, ID | null>> | undefined,
+  ): Promise<void> {
+    if (this.op.postFetch) {
+      return this.op.postFetch(queryer, context);
+    }
+  }
+}
+
+// separate because we need to implement createdEnt and we manually run those before edge/other operations in executors
+export class ConditionalNodeOperation<
+  T extends Ent,
+> extends ConditionalOperation<T> {
+  createdEnt(viewer: Viewer): T | null {
+    if (this.op.createdEnt) {
+      return this.op.createdEnt(viewer);
+    }
+    return null;
+  }
+
+  updatedOperation(): UpdatedOperation | null {
+    if (!this.op.updatedOperation) {
+      return null;
+    }
+    const ret = this.op.updatedOperation();
+    if (ret !== null) {
+      return ret;
+    }
+    if (!this.shortCircuited) {
+      return null;
+    }
+    // hack. if this short circuited, claim that this updated as an edit and it should invalidate other builders
+    // this API needs to change or EditNodeOperation needs to be used instead of this...
+    return {
+      operation: WriteOperation.Edit,
+      builder: this.builder,
+    };
   }
 }
