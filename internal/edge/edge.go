@@ -390,6 +390,7 @@ func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeNam
 			quotedDbColName: quotedDBColName,
 		},
 		foreignNode: foreignNode,
+		polymorphic: polymorphic,
 	}
 	if polymorphic != nil {
 		edge._HideFromGraphQL = polymorphic.HideFromInverseGraphQL
@@ -666,6 +667,7 @@ type IndexedEdge struct {
 	SourceNodeName string
 	tsEdgeName     string
 	foreignNode    string
+	polymorphic    *base.PolymorphicOptions
 	destinationEdge
 }
 
@@ -695,6 +697,7 @@ func (e *IndexedEdge) GetSourceNodeName() string {
 
 func (e *IndexedEdge) SourceIsPolymorphic() bool {
 	return true
+	// return e.polymorphic != nil
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {

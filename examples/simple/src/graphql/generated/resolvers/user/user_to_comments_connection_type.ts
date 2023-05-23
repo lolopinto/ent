@@ -4,20 +4,20 @@
  */
 
 import { GraphQLObjectType } from "graphql";
+import { Data } from "@snowtop/ent";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { UserToCommentsEdge } from "../../../../ent";
 import { CommentType } from "../../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,
-  UserToCommentsEdge,
+  Data,
   ExampleViewerAlias
 >;
 
 export const UserToCommentsConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType("UserToComments", CommentType);
+    connType = new GraphQLConnectionType("UserToComment", CommentType);
   }
   return connType;
 };

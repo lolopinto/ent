@@ -573,6 +573,6 @@ export class UserBase
   }
 
   queryArticles(): ArticleToCommentsQuery {
-    return ArticleToCommentsQuery.query(this.viewer, this.id);
+    return ArticleToCommentsQuery.query(this.viewer, this);
   }
 }

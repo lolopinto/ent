@@ -449,13 +449,13 @@ type AddressToHostedEventsConnection implements Connection {
   rawCount: Int!
 }
 
-type CommentToArticlesEdge implements Edge {
+type CommentToCommentEdge implements Edge {
   node: Comment!
   cursor: String!
 }
 
 type CommentToCommentsConnection implements Connection {
-  edges: [CommentToArticlesEdge!]!
+  edges: [CommentToCommentEdge!]!
   nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -665,18 +665,6 @@ type UserToCommentsAuthoredConnection implements Connection {
   rawCount: Int!
 }
 
-type UserToArticlesEdge implements Edge {
-  node: Comment!
-  cursor: String!
-}
-
-type UserToCommentsConnection implements Connection {
-  edges: [UserToArticlesEdge!]!
-  nodes: [Comment!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
 type UserToCommentsEdge implements Edge {
   node: Comment!
   cursor: String!
@@ -684,6 +672,18 @@ type UserToCommentsEdge implements Edge {
 
 type UserToCommentsConnection implements Connection {
   edges: [UserToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToCommentEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type UserToCommentsConnection implements Connection {
+  edges: [UserToCommentEdge!]!
   nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
