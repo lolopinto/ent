@@ -3,3 +3,6 @@
 {{ reserveImport .Package.InternalImportPath $base -}}
 
 export class {{$name}} extends {{useImport $base}} {}
+
+// TODO different base class ala what we do for patterns with assoc edges
+// and make it work correctly
