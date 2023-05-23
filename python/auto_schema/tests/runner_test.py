@@ -1486,6 +1486,75 @@ class TestPostgresRunner(BaseTestRunner):
         )
 
     @pytest.mark.usefixtures("metadata_with_table")
+    @pytest.mark.parametrize(
+        'metadata_func, metadata_func_extra_col' ,
+        [
+            (conftest.metadata_with_generated_col_fulltext_search_index_gist,
+             conftest.metadata_with_generated_col_extra_col_fulltext_search_index_gist),
+            (conftest.metadata_with_generated_col_fulltext_search_index,
+             conftest.metadata_with_generated_col_extra_col_fulltext_search_index)
+        ]
+    )
+    def test_full_text_index_with_generated_column_and_col_added(self, new_test_runner, metadata_with_table,metadata_func, metadata_func_extra_col):
+        r = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+        r, metadata_with_table)
+
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, metadata_func)
+
+        r2.run()
+        
+        testingutils.assert_num_files(r2, 2)
+        testingutils.assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
+
+        r3 = testingutils.recreate_with_new_metadata(
+            r2, 
+            new_test_runner,
+            metadata_with_table,
+            metadata_func_extra_col
+        )
+        
+        message = r3.revision_message()
+        assert message == 'drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts\nadd column full_name to table accounts\nadd index accounts_full_text_idx to accounts'
+        # readding index again missing
+
+        r3.run()
+        
+        testingutils.assert_num_files(r3, 3)
+        testingutils.assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
+
+        # run again, no changes
+        r3.run()
+        
+        testingutils.assert_num_files(r3, 3)
+        testingutils.assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
+
+        # back to 2 columns. same thing
+        r4 = testingutils.recreate_with_new_metadata(
+            r3, 
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index
+        )
+        
+        message = r4.revision_message()
+        assert message == 'drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts\nadd column full_name to table accounts\nadd index accounts_full_text_idx to accounts'
+
+
+        r4.run()
+
+        testingutils.assert_num_files(r4, 4)
+        testingutils.assert_num_tables(r4, 2, ['accounts', 'alembic_version'])
+
+        # run again, no changes
+        r4.run()
+
+        testingutils.assert_num_files(r4, 4)
+        testingutils.assert_num_tables(r4, 2, ['accounts', 'alembic_version'])
+        
+
+    @pytest.mark.usefixtures("metadata_with_table")
     def test_full_text_index_with_generated_column_gist(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,

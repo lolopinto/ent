@@ -10,7 +10,6 @@ from auto_schema.schema_item import FullTextIndex
 from .change_type import ChangeType
 from .change import Change
 
-
 class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_revision_message(self) -> String:
@@ -448,6 +447,7 @@ class CreateFullTextIndexOp(MigrateOpInterface):
         table: Optional[sa.Table] = None,
         **kw
     ) -> None:
+
         self.index_name = index_name
         self.table_name = table_name
         self.schema = schema
