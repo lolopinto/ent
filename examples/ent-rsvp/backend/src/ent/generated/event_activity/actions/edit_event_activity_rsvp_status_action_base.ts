@@ -9,6 +9,7 @@ import {
 import {
   Action,
   Changeset,
+  ChangesetOptions,
   Observer,
   Trigger,
   Validator,
@@ -158,6 +159,13 @@ export class EditEventActivityRsvpStatusActionBase
   async changeset(): Promise<Changeset> {
     await this.setEdgeType();
     return this.builder.build();
+  }
+
+  async changesetWithOptions_BETA(
+    options: ChangesetOptions,
+  ): Promise<Changeset> {
+    await this.setEdgeType();
+    return this.builder.buildWithOptions_BETA(options);
   }
 
   private async setEdgeType() {
