@@ -793,9 +793,6 @@ def metadata_with_generated_col_fulltext_search_index_gist(metadata_with_table):
     return metadata_with_table
 
 
-# TODO use this format in go going forward...
-# does it break things if i change all the existing generated code?
-# yes...
 def metadata_with_generated_col_extra_col_fulltext_search_index_gist(metadata_with_table):
     sa.Table('accounts', metadata_with_table,
              sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(

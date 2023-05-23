@@ -1522,13 +1522,12 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
 
         # run again, no changes
-        # TODO...
-        # r3.run()
+        r3.run()
         
         testingutils.assert_num_files(r3, 3)
         testingutils.assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
 
-# back to 2 columns. same thing
+        # back to 2 columns. same thing
         r4 = testingutils.recreate_with_new_metadata(
             r3, 
             new_test_runner,
@@ -1546,11 +1545,11 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r4, 4)
         testingutils.assert_num_tables(r4, 2, ['accounts', 'alembic_version'])
 
+        # run again, no changes
+        r4.run()
 
-        # r4.run()
-
-        # testingutils.assert_num_files(r4, 4)
-        # testingutils.assert_num_tables(r4, 2, ['accounts', 'alembic_version'])
+        testingutils.assert_num_files(r4, 4)
+        testingutils.assert_num_tables(r4, 2, ['accounts', 'alembic_version'])
         
 
     @pytest.mark.usefixtures("metadata_with_table")
