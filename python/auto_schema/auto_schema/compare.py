@@ -436,7 +436,7 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
                 )
 
 
-# @comparators.dispatch_for("table")
+@comparators.dispatch_for("table")
 def _compare_indexes(autogen_context: AutogenContext,
                      modify_table_ops: alembicops.ModifyTableOps,
                      schema,
@@ -445,7 +445,6 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
-    print('compare indexes')
     raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
     missing_conn_indexes = raw_db_indexes.get('missing')
@@ -519,7 +518,6 @@ def _compare_indexes(autogen_context: AutogenContext,
                 if to_remove:
                     modify_table_ops.ops.pop(idx)
                 else:
-                    print("adding index")
                     modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
                         index.name,
                         index.table.name,
@@ -532,44 +530,60 @@ def _compare_indexes(autogen_context: AutogenContext,
 
 index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
 
+# this handles computed columns changing and so drops and re-creates the column.
 @comparators.dispatch_for("table")
 def _compare_generated_column(autogen_context: AutogenContext,
                      modify_table_ops: alembicops.ModifyTableOps,
                      schema,
                      tname: str,
                      conn_table: Optional[sa.Table],
-                     metadata_table: sa.Table,
+                     metadata_table: Optional[sa.Table],
                      ) -> None:
-    if conn_table is None:
+    
+    if conn_table is None or metadata_table is None:
         return
     
     col_to_index = {}
-    for idx in conn_table.indexes:
+    
+    for idx in metadata_table.indexes:
         if len(idx.columns) == 1:
             col_to_index[idx.columns[0].name] = idx
-            
 
 
     for conn_col in conn_table.columns:
         if not conn_col.computed:
-            pass
+            continue
         
         index = col_to_index.get(conn_col.name, None) 
         if index is None:
-            pass
+            continue
+
+        index_type = index.kwargs.get('postgresql_using')
         
         for meta_col in metadata_table.columns:
             if meta_col.name == conn_col.name and meta_col.computed is not None:
         
-                conn_info = _parse_postgres_using_internals(str(conn_col.computed.sqltext), 'gin')
-                meta_info =_parse_postgres_using_internals(str(meta_col.computed.sqltext), 'gin')
+                conn_info = _parse_postgres_using_internals(str(conn_col.computed.sqltext), index_type)
+                meta_info =_parse_postgres_using_internals(str(meta_col.computed.sqltext), index_type)
                 
                 # this is using underlying columns so we use drop and create directly
-                print(conn_info['columns'],meta_info['columns'])
                 if conn_info['columns'] != meta_info['columns']:
                     # we'll have to change the entire beh
+                    create_index = alembicops.CreateIndexOp(index.name, index.table.name, index.columns, postgresql_using=index_type)
+
                     modify_table_ops.ops.append(
-                        alembicops.DropIndexOp.from_index(index)
+                        alembicops.DropIndexOp(
+                            index.name, 
+                            conn_table.name,
+                            schema=schema,
+                            info={
+                                'postgresql_using': index_type,
+                            },
+                            _reverse=create_index,
+                            # also pass this here so that downgrade does the right thing
+                            # TODO need to make sure we test upgrade/downgrade paths are the same.
+                            postgresql_using=index_type,
+                            )
                     )
                     modify_table_ops.ops.append(
                         alembicops.DropColumnOp.from_column_and_tablename(
@@ -583,7 +597,8 @@ def _compare_generated_column(autogen_context: AutogenContext,
                     )
                     
                     modify_table_ops.ops.append(
-                    alembicops.CreateIndexOp(index.name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
+                        create_index
+                    )
 
 
 
@@ -638,10 +653,9 @@ def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
     return res
 
 
-
+# these 2 ported and updated from https://github.com/lolopinto/ent/pull/1223/files
 def _parse_cols_from(curr: str):
     cols = []
-    print(curr)
     for s in curr.strip().split('||'):
         if not s:
             continue
@@ -653,7 +667,7 @@ def _parse_cols_from(curr: str):
 
         for s2 in s.split(','):
             s2 = s2.strip().strip('(').strip(')')
-            if s2 == ' ' or s2 == "''":
+            if s2 == ' ' or s2 == "''" or s2 == "' '":
                 continue
 
             cols.append(s2)

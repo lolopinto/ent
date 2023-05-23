@@ -792,6 +792,16 @@ def metadata_with_generated_col_fulltext_search_index_gist(metadata_with_table):
 
     return metadata_with_table
 
+def metadata_with_generated_col_extra_col_fulltext_search_index(metadata_with_table):
+    sa.Table('accounts', metadata_with_table,
+             sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
+                 "to_tsvector('english', first_name || ' ' || last_name || ' ' || email_address)")),
+             sa.Index('accounts_full_text_idx',
+                      'full_name', postgresql_using='gin'),
+
+             extend_existing=True)
+
+    return metadata_with_table
 
 def metadata_with_generated_col_extra_col_fulltext_search_index_gist(metadata_with_table):
     sa.Table('accounts', metadata_with_table,
@@ -803,6 +813,8 @@ def metadata_with_generated_col_extra_col_fulltext_search_index_gist(metadata_wi
              extend_existing=True)
 
     return metadata_with_table
+
+
 
 @ pytest.fixture
 def metadata_with_multi_column_pkey_constraint(request):

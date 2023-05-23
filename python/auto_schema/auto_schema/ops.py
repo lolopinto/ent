@@ -480,8 +480,6 @@ class CreateFullTextIndexOp(MigrateOpInterface):
 
     @classmethod
     def from_index(cls, index: FullTextIndex):
-        print("from_index")
-
         assert index.table is not None
         return cls(
             index.name,
