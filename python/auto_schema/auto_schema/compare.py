@@ -11,8 +11,9 @@ import pprint
 import re
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
-from typing import Optional
+from typing import Optional, Union, Any
 import functools
+from auto_schema.clause_text import normalize_clause_text
 
 
 @comparators.dispatch_for("schema")
@@ -435,7 +436,7 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
                 )
 
 
-@comparators.dispatch_for("table")
+# @comparators.dispatch_for("table")
 def _compare_indexes(autogen_context: AutogenContext,
                      modify_table_ops: alembicops.ModifyTableOps,
                      schema,
@@ -444,6 +445,7 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
+    print('compare indexes')
     raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
     missing_conn_indexes = raw_db_indexes.get('missing')
@@ -496,6 +498,7 @@ def _compare_indexes(autogen_context: AutogenContext,
 
                 modify_table_ops.ops.append(
                     alembicops.DropIndexOp.from_index(conn_index))
+
                 modify_table_ops.ops.append(
                     alembicops.CreateIndexOp(name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
 
@@ -516,6 +519,7 @@ def _compare_indexes(autogen_context: AutogenContext,
                 if to_remove:
                     modify_table_ops.ops.pop(idx)
                 else:
+                    print("adding index")
                     modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
                         index.name,
                         index.table.name,
@@ -527,6 +531,100 @@ def _compare_indexes(autogen_context: AutogenContext,
 
 
 index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
+
+@comparators.dispatch_for("table")
+def _compare_generated_column(autogen_context: AutogenContext,
+                     modify_table_ops: alembicops.ModifyTableOps,
+                     schema,
+                     tname: str,
+                     conn_table: Optional[sa.Table],
+                     metadata_table: sa.Table,
+                     ) -> None:
+    print('compare generated col')
+    if conn_table is None:
+        return
+    
+
+    # conn_indexes = {
+    #     index.name: index for index in conn_table.indexes
+    # }
+
+    # meta_indexes = {
+    #     index.name: index for index in metadata_table.indexes
+    # }
+
+    col_to_index = {}
+    for idx in conn_table.indexes:
+        if len(idx.columns) == 1:
+            col_to_index[idx.columns[0].name] = idx
+            
+
+
+    for conn_col in conn_table.columns:
+        if not conn_col.computed:
+            pass
+        
+        index = col_to_index.get(conn_col.name, None) 
+        if index is None:
+            pass
+        
+        for meta_col in metadata_table.columns:
+            if meta_col.name == conn_col.name and meta_col.computed is not None:
+                # print('jackpot', conn_col.computed.sqltext, meta_col.computed.sqltext)
+        
+                conn_info = _parse_postgres_using_internals(str(conn_col.computed.sqltext), 'gin')
+                meta_info =_parse_postgres_using_internals(str(meta_col.computed.sqltext), 'gin')
+                # print(conn_info,meta_info)
+                
+                # this is using underlying columns so we use drop and create directly
+                if conn_info['columns'] != meta_info['columns']:
+                    # we'll have to change the entire beh
+                    modify_table_ops.ops.append(
+                        alembicops.DropIndexOp.from_index(index)
+                        # ops.DropFullTextIndexOp(
+                        #     # TODO
+                        # "accounts_full_text_idx",
+                        # conn_table.name,
+                        # table=conn_table,
+                        # info={
+                        #     'postgresql_using_internals': 'gist',
+                        #     'columns': ['full_name'],
+                        # }
+                        # # TODO
+                        #     # info=v,
+                        # )
+                    )
+                    modify_table_ops.ops.append(
+                        alembicops.DropColumnOp.from_column_and_tablename(
+                            schema, tname, conn_col
+                        )
+                    )
+                    modify_table_ops.ops.append(
+                        alembicops.AddColumnOp.from_column_and_tablename(
+                            schema, tname, meta_col
+                        )
+                    )
+                    
+                    modify_table_ops.ops.append(
+                    alembicops.CreateIndexOp(index.name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
+
+                    # modify_table_ops.ops.append(
+                    #     ops.CreateFullTextIndexOp(
+                    #         # TODO
+                    #     "accounts_full_text_idx",
+                    #     metadata_table.name,
+                    #     schema=schema,
+                    #     table=metadata_table,
+                    #     unique=False,
+                    #     info={
+                    #         'postgresql_using_internals': 'gist',
+                    #         'columns': ['full_name'],
+                    #     }
+                    #     # TODO
+                    #         # info=v,
+                    #     )
+                    # )
+
 
 
 # sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
@@ -577,3 +675,179 @@ def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
     res = connection.execute(
         "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname)
     return res
+
+
+
+
+
+# @comparators.dispatch_for("column")
+# def _compare_generated_column(
+#     autogen_context: AutogenContext,
+#     alter_column_op: alembicops.AlterColumnOp,
+#     schema: Optional[str],
+#     tname: Any, #Union[quoted_name, str],
+#     cname: Any, #Union[quoted_name, str],
+#     conn_col: sa.Column[Any],
+#     metadata_col: sa.Column[Any],
+# ) -> None:
+    # both computed columns. we do things. if not both computed, something weird, ignore
+    # if conn_col.computed is None or metadata_col.computed is None:
+    #     return
+    
+
+    # conn_info = _parse_postgres_using_internals(str(conn_col.computed.sqltext), 'gin')
+    # meta_info =_parse_postgres_using_internals(str(metadata_col.computed.sqltext), 'gin')
+    # if conn_info['columns'] == meta_info['columns']:
+    #     return
+
+
+    # modify_table_ops.ops.append(
+    #     ops.DropColumnOp.from_column_and_tablename(
+    #         schema, tname, conn_table.c[cname]
+    #     )
+    # )
+
+    # conn_text = normalize_clause_text(conn_col.computed.sqltext, conn_col.type)
+    # meta_text = normalize_clause_text(metadata_col.computed.sqltext, metadata_col.type)
+    # print('changing....')
+    # print(conn_text, meta_text)
+
+
+
+
+def _parse_cols_from(curr: str):
+    cols = []
+    for s in curr.strip().split('||'):
+        if not s:
+            continue
+        s = s.strip().strip('(').strip(')')
+        if s.startswith('COALESCE'):
+            s = s[8:]
+
+        for s2 in s.split(','):
+            s2 = s2.strip().strip('(').strip(')')
+            if s2 == "''::text" or s2 == "' '::text" or s2 == "' '":
+                continue
+
+            cols.append(s2)
+
+    return cols
+    
+# def _parse_generated_columns(table: sa.Table, col_names: set):
+#     generated = {}
+#     for col in table.columns:
+#         def unsupported_col(sqltext):
+#             raise Exception("unsupported sqltext %s for col %s in table %s" % (
+#                 sqltext, col.name, table.name))
+
+#         if not col.computed:
+#             continue
+
+#         if not isinstance(col.type, postgresql.TSVECTOR):
+#             raise Exception(
+#                 "unsupported computed type %s which isn't a tsvector" % str(col.type))
+
+#         sqltext = str(col.computed.sqltext)
+#         # wrap in () if not wrapped. needed for parsing logic to be consistent
+#         if not sqltext.startswith("("):
+#             sqltext = "(%s)" % sqltext
+
+#         # all this logic with no coalesce is what we want i think...
+#         # print('sqltext - m', sqltext, m)
+#         res = self._parse_str_into_parts(sqltext)
+#         if len(res) != 1:
+#             raise Exception('parsed incorrect')
+
+#         cols = []
+#         lang = ''
+#         weights = {}
+
+#         for child in res[0].children:
+#             text = sqltext[child.beg_cursor:child.end].strip().strip(
+#                 '||').lstrip('(').strip()
+
+#             weight = None
+#             if text.startswith('setweight'):
+#                 idx = text.rfind(',')
+#                 weight = text[idx +
+#                                 1:].rstrip(')').rstrip('::"char').replace("'", "").strip()
+
+#                 text = child.str[1:idx]
+
+#             m = sqltext_regex.match(text)
+
+#             if not m:
+#                 unsupported_col(text)
+
+#             groups = m.groups()
+#             lang = groups[0].rstrip("::regconfig").strip("'")
+#             # TODO ensure lang is consistent?
+
+#             val = groups[1]
+#             starts = [m.start()
+#                         for m in re.finditer('COALESCE', val)]
+
+#             # no coalesce...
+#             if len(starts) == 0:
+#                 starts = [0]
+
+#             for i in range(len(starts)):
+#                 if i + 1 == len(starts):
+#                     curr = val[starts[i]: len(val)]
+#                 else:
+#                     curr = val[starts[i]: starts[i+1]-1]
+
+#                 cols2 = _parse_cols_from(
+#                     curr, sqltext, col_names, unsupported_col)
+#                 cols = cols + cols2
+#                 # This exists for tests
+#                 cols.sort()
+
+#                 if weight is not None:
+#                     l = weights.get(weight, [])
+#                     l = l + cols2
+#                     # l.append(coll)
+#                     weights[weight] = list(set(l))
+#                     # this exists for tests
+#                     weights[weight].sort()
+
+#         ret = {
+#             "language": lang,
+#             "columns": cols,
+#         }
+#         if weights:
+#             ret['weights'] = weights
+
+#         generated[col.name] = ret
+
+#     return generated
+
+sqltext_regex = re.compile(r"to_tsvector\((.+?), (.+)\)")
+
+def _parse_postgres_using_internals(internals: str, index_type: str):
+        # single-col to_tsvector('english'::regconfig, first_name)
+        # multi-col to_tsvector('english'::regconfig, ((first_name || ' '::text) || last_name))
+        m = sqltext_regex.match(internals)
+        if m:
+            groups = m.groups()
+            lang = groups[0].rstrip("::regconfig").strip("'")
+
+            cols = _parse_cols_from(groups[1])
+
+            if len(cols) > 0:
+                return {
+                    'columns': cols,
+                    'fulltext': {
+                        'language': lang,
+                        'indexType': index_type,
+                    }
+                }
+
+        cols = [col.strip() for col in internals.split(',')]
+        # multi-column index
+        if len(cols) > 1:
+            return {
+                'columns': cols,
+            }
+
+        return {}

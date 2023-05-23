@@ -120,8 +120,8 @@ def new_test_runner(request):
             path = r.get_schema_path()
 
             # delete temp directory which was created
-            if os.path.isdir(path):
-                shutil.rmtree(path)
+            # if os.path.isdir(path):
+            #     shutil.rmtree(path)
 
         request.addfinalizer(delete_path)
 
@@ -770,6 +770,7 @@ def metadata_with_multicolumn_fulltext_search_index_btree(metadata_with_table):
 
 def metadata_with_generated_col_fulltext_search_index(metadata_with_table):
     sa.Table('accounts', metadata_with_table,
+             # it's specifed here, so need to detect change colum internals
              sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
                  "to_tsvector('english', first_name || ' ' || last_name)")),
              sa.Index('accounts_full_text_idx',
@@ -791,6 +792,20 @@ def metadata_with_generated_col_fulltext_search_index_gist(metadata_with_table):
 
     return metadata_with_table
 
+
+# TODO use this format in go going forward...
+# does it break things if i change all the existing generated code?
+# yes...
+def metadata_with_generated_col_extra_col_fulltext_search_index_gist(metadata_with_table):
+    sa.Table('accounts', metadata_with_table,
+             sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
+                 "to_tsvector('english', first_name || ' ' || last_name || ' ' || email_address)")),
+             sa.Index('accounts_full_text_idx',
+                      'full_name', postgresql_using='gist'),
+
+             extend_existing=True)
+
+    return metadata_with_table
 
 @ pytest.fixture
 def metadata_with_multi_column_pkey_constraint(request):
