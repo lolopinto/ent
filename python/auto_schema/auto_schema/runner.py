@@ -110,11 +110,6 @@ class Runner(object):
 
         if type == "table" and name in exclude_tables:
             return False
-        # elif type == "index":
-        #     # print(object, dir(object))
-        #     # return name != "accounts_full_text_idx"
-        #     # to do this, have to change the index...
-        #     return True
         else:
             return True
 

@@ -13,7 +13,6 @@ from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
 from typing import Optional, Union, Any
 import functools
-from auto_schema.clause_text import normalize_clause_text
 
 
 @comparators.dispatch_for("schema")

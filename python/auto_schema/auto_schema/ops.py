@@ -9,7 +9,6 @@ from sqlalchemy.sql.sqltypes import String
 from auto_schema.schema_item import FullTextIndex
 from .change_type import ChangeType
 from .change import Change
-import traceback
 
 class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -448,7 +447,6 @@ class CreateFullTextIndexOp(MigrateOpInterface):
         table: Optional[sa.Table] = None,
         **kw
     ) -> None:
-        # traceback.print_stack(limit=5)
 
         self.index_name = index_name
         self.table_name = table_name
@@ -511,7 +509,6 @@ class CreateFullTextIndexOp(MigrateOpInterface):
         unique: bool = False,
         **kw
     ):
-        # traceback.print_stack(limit=5)
         # table_name here so can't make it table?
         op = cls(
             index_name, table_name, schema=schema, unique=unique, **kw

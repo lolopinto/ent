@@ -5,7 +5,6 @@ from sqlalchemy.dialects import postgresql
 from . import ops
 from . import util
 import sqlalchemy as sa
-import traceback
 # no need to put timestamps when rendering
 _IGNORED_KEYS = ['created_at', 'updated_at']
 
