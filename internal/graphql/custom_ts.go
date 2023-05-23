@@ -136,9 +136,9 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 
 		// should we build an interface for this custom object?
 		createInterface := false
-		intType := &interfaceType{
+		intType := newInterfaceType(&interfaceType{
 			Name: strcase.ToCamel(field.GraphQLName) + "Args",
-		}
+		})
 		for _, arg := range field.Args {
 			// nothing to do with context args yet
 			if arg.IsContextArg {
@@ -166,13 +166,15 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 			}
 			if argObj == nil {
 				createInterface = true
-				intType.Fields = append(intType.Fields, &interfaceField{
+				if err := intType.addField(&interfaceField{
 					Name: arg.Name,
 					Type: typ,
 					//
 					// arg.TSType + add to import so we can useImport
 					//					UseImport: true,
-				})
+				}); err != nil {
+					return nil, err
+				}
 				continue
 			}
 			// not always going to be GraphQLInputObjectType (for queries)
@@ -646,14 +648,14 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 	// TODO right now it depends on custom inputs and outputs being FooInput and FooPayload to work
 	// we shouldn't do that and we should be smarter
 	// maybe add PayloadType if no Payload suffix otherwise Payload. Same for InputType and Input
-	typ := &objectType{
+	typ := newObjectType(&objectType{
 		Type:     fmt.Sprintf("%sType", item.Type),
 		Node:     obj.NodeName,
 		TSType:   item.Type,
 		Exported: true,
 		// input or object type
 		GQLType: gqlType,
-	}
+	})
 
 	s.seenCustomObjects[item.Type] = true
 
@@ -668,7 +670,9 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 		if err != nil {
 			return nil, err
 		}
-		typ.Fields = append(typ.Fields, gqlField)
+		if err := typ.addField(gqlField); err != nil {
+			return nil, err
+		}
 		typ.Imports = append(typ.Imports, gqlField.FieldImports...)
 	}
 
@@ -698,10 +702,10 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 
 	if createInterface {
 		// need to create an interface for it
-		customInt := &interfaceType{
+		customInt := newInterfaceType(&interfaceType{
 			Exported: false,
 			Name:     item.Type,
-		}
+		})
 		fields, ok := cd.Fields[item.Type]
 		if !ok {
 			return nil, fmt.Errorf("type %s has no fields", item.Type)
@@ -747,7 +751,9 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 				}
 			}
 
-			customInt.Fields = append(customInt.Fields, newInt)
+			if err := customInt.addField(newInt); err != nil {
+				return nil, err
+			}
 		}
 		typ.TSInterfaces = []*interfaceType{customInt}
 	}
@@ -792,12 +798,12 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			instance = nodeData.NodeInstance
 		} else if customEdge {
 			// create new obj
-			obj = &objectType{
+			obj = newObjectType(&objectType{
 				GQLType: "GraphQLObjectType",
 				// needed to reference the edge
 				TSType: fmt.Sprintf("GraphQLEdge<%s>", nodeName),
 				Node:   nodeName,
-			}
+			})
 			s.customEdges[nodeName] = obj
 			// the edge property of GraphQLEdge is where the processor is
 			instance = "edge.edge"
@@ -809,7 +815,9 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			if field.Connection {
 				customEdge := getGQLEdge(processor.Config, field, nodeName)
 				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
-				addConnection(processor, nodeData, customEdge, &obj.Fields, nodeData.NodeInstance, &field)
+				if err := addConnection(processor, nodeData, customEdge, obj, nodeData.NodeInstance, &field); err != nil {
+					return err
+				}
 				continue
 			}
 
@@ -818,7 +826,9 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 				return err
 			}
 			// append the field
-			obj.Fields = append(obj.Fields, gqlField)
+			if err := obj.addField(gqlField); err != nil {
+				return err
+			}
 			for _, imp := range gqlField.FieldImports {
 				imported := false
 				// TODO change this to allow multiple imports and the reserveImport system handles this
@@ -975,14 +985,15 @@ func processCusomTypes(processor *codegen.Processor, cd *CustomData, s *gqlSchem
 func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
 	unions := make(map[string]*gqlNode)
 	for _, union := range cd.Unions {
-		obj := &objectType{
+		obj := newObjectType(&objectType{
 			// TODO have to make sure this is unique
 			Type:     fmt.Sprintf("%sType", union.NodeName),
 			Node:     union.NodeName,
 			TSType:   union.ClassName,
 			GQLType:  "GraphQLUnionType",
 			Exported: true,
-		}
+		})
+
 		unionTypes := make([]string, len(union.UnionTypes))
 		imports := make([]*tsimport.ImportPath, len(union.UnionTypes))
 		for i, unionType := range union.UnionTypes {
@@ -1010,13 +1021,13 @@ func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSch
 func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
 	interfaces := make(map[string]*gqlNode)
 	for _, inter := range cd.Interfaces {
-		obj := &objectType{
+		obj := newObjectType(&objectType{
 			// TODO have to make sure this is unique
 			Type:     fmt.Sprintf("%sType", inter.NodeName),
 			Node:     inter.NodeName,
 			GQLType:  "GraphQLInterfaceType",
 			Exported: true,
-		}
+		})
 
 		fields, ok := cd.Fields[inter.NodeName]
 		if !ok {
@@ -1028,7 +1039,9 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 			if err != nil {
 				return err
 			}
-			obj.Fields = append(obj.Fields, gqlField)
+			if err := obj.addField(gqlField); err != nil {
+				return err
+			}
 			obj.Imports = append(obj.Imports, gqlField.FieldImports...)
 		}
 
