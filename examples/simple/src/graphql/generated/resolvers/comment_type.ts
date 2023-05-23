@@ -17,8 +17,13 @@ import {
   GraphQLNodeInterface,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
-import { Comment, CommentToPostQuery } from "../../../ent";
 import {
+  ArticleToCommentsQuery,
+  Comment,
+  CommentToPostQuery,
+} from "../../../ent";
+import {
+  CommentToCommentsConnectionType,
   CommentToPostConnectionType,
   UserType,
 } from "../../resolvers/internal";
@@ -96,6 +101,39 @@ export const CommentType = new GraphQLObjectType({
           comment.viewer,
           comment,
           (v, comment: Comment) => CommentToPostQuery.query(v, comment),
+          args,
+        );
+      },
+    },
+    articles: {
+      type: new GraphQLNonNull(CommentToCommentsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        comment: Comment,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          comment.viewer,
+          comment,
+          (v, comment: Comment) => ArticleToCommentsQuery.query(v, comment),
           args,
         );
       },

@@ -235,6 +235,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     return CommentToPostQuery.query(this.viewer, this.id);
   }
 
+  queryArticles(): ArticleToCommentsQuery {
+    return ArticleToCommentsQuery.query(this.viewer, this.id);
+  }
+
   async loadArticle(): Promise<Ent | null> {
     return loadEntByType(
       this.viewer,
