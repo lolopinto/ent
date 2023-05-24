@@ -1316,15 +1316,17 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 				return fmt.Errorf("couldn't find config for typ %s", e.NodeInfo.Node)
 			}
 
-			if err := fNode.NodeData.EdgeInfo.AddDestinationEdgeFromNonPolymorphicOptions(
-				cfg,
-				f.TsFieldName(cfg),
-				f.GetQuotedDBColName(),
-				nodeData.Node,
-				fNode.NodeData.Node,
-				e.UserGivenEdgeName,
-			); err != nil {
-				return err
+			if e.UserGivenEdgeName != "" {
+				if err := fNode.NodeData.EdgeInfo.AddDestinationEdgeFromNonPolymorphicOptions(
+					cfg,
+					f.TsFieldName(cfg),
+					f.GetQuotedDBColName(),
+					nodeData.Node,
+					fNode.NodeData.Node,
+					e.UserGivenEdgeName,
+				); err != nil {
+					return err
+				}
 			}
 			continue
 		}

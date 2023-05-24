@@ -430,8 +430,6 @@ export interface InverseFieldEdge {
 }
 
 export interface IndexEdgeOptions {
-  // same philosophy as PolymorphicOptions.name
-  // defaults to pluralize(schema) if not provided
   name: string;
 }
 
@@ -442,10 +440,11 @@ export interface FieldEdge {
   // this makes it so that we can define and write the edge from this schema
   inverseEdge?: string | InverseFieldEdge;
 
-  // if an indexed edge, we generate an inverse
-  // TODO this might make more sense to be {
-  // index: { name: "name" }
-  // }
+  // this *intentionally* breaks the mold from what we do for polymorphic edges
+  // TODO: *also* make that opt-in.
+  // if provided, we generate a query|connection for this edge.
+  // name given is used for the name of the query|connection e.g. 'todos_assigned' gives
+  // queryTodosAssigned() and a 'todos_assigned' field which points to a generated connection.
   indexEdge?: IndexEdgeOptions;
 
   // if enforceSchema. implement the valid type.
