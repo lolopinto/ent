@@ -682,6 +682,13 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 			continue
 		}
 
+		for _, col := range index.Columns {
+			f := nodeData.FieldInfo.GetFieldByName(col)
+			if !enttype.IsStringDBType(f.GetFieldType()) {
+				return fmt.Errorf("only string db types are supported for full text indexes. invalid field %s passed as col for index %s", col, index.Name)
+			}
+		}
+
 		if index.IndexType != "" {
 			return fmt.Errorf("if you want to specify the full text index type, specify it in FullText object")
 		}

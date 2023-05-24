@@ -40,7 +40,8 @@ log_config = {
             'qualname': 'sqlalchemy.engine'
         },
         'alembic': {
-            'level': 'INFO',
+            # TODO change this by default and then provide a way to make this INFO
+            'level': 'WARN',
             'handlers': '',
             'qualname': 'alembic'
         }
