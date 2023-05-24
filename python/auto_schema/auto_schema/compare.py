@@ -659,7 +659,8 @@ def _parse_cols_from(curr: str):
         if not s:
             continue
         s = s.strip().strip('(').strip(')')
-        if s.startswith('COALESCE'):
+        # TODO we should test against different db versions. this is too brittle
+        if s.startswith('COALESCE') or s.startswith('coalesce'):
             s = s[8:]
         if s.endswith('::text'):
             s = s[:-6]
