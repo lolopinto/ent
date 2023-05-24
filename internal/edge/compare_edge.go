@@ -414,7 +414,8 @@ func compareConnectionEdge(e1, e2 ConnectionEdge) bool {
 func compareIndexedConnectionEdge(e1, e2 IndexedConnectionEdge) bool {
 	return compareConnectionEdge(e1, e2) &&
 		e1.SourceIsPolymorphic() == e2.SourceIsPolymorphic() &&
-		e1.QuotedDBColName() == e2.QuotedDBColName()
+		e1.QuotedDBColName() == e2.QuotedDBColName() &&
+		e1.GenerateBaseClass() == e2.GenerateBaseClass()
 }
 
 // Compares edges, assoc edge groups, field edge, connection edge

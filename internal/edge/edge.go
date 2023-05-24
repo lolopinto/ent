@@ -29,6 +29,7 @@ type EdgeInfo struct {
 	// new concepts: IndexedEdgeQueries
 	// EdgeQueries that will be in _query_base.tmpl file
 
+	// TODO clean this up. unclear what the difference is at this point...
 	// note: look at CompareEdgeInfo in compare_edge.go as this changes
 	// indexedEdgeQueriesMap has both foreign key and index edges so only comparing
 	// that. not comparing destinationEdgesMap as that only includes foreignKey edges
@@ -405,6 +406,8 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(cfg codegenapi.Confi
 	edgeName := edge.GetEdgeName()
 	e.destinationEdgesMap[edgeName] = edge
 	e.DestinationEdges = append(e.DestinationEdges, edge)
+	e.indexedEdgeQueriesMap[edgeName] = edge
+	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
 	return e.addEdge(edge)
 }
 
@@ -450,6 +453,8 @@ type IndexedConnectionEdge interface {
 	ConnectionEdge
 	SourceIsPolymorphic() bool
 	QuotedDBColName() string
+	GenerateBaseClass() bool
+	EdgeQueryBase() string
 }
 
 // marker interface
@@ -620,7 +625,15 @@ func (e *ForeignKeyEdge) ErrorMessage(edgeInfo *EdgeInfo) error {
 	if fkey == nil {
 		return nil
 	}
-	return fmt.Errorf("To have multiple ForeignKey Edges pointing to %s, set the name on `foreignKey`", e.NodeInfo.Node)
+	return fmt.Errorf("to have multiple ForeignKey Edges pointing to %s, set the name on `foreignKey`", e.NodeInfo.Node)
+}
+
+func (e *ForeignKeyEdge) GenerateBaseClass() bool {
+	return true
+}
+
+func (e *ForeignKeyEdge) EdgeQueryBase() string {
+	return e.TsEdgeQueryName() + "Base"
 }
 
 var _ Edge = &ForeignKeyEdge{}
@@ -753,6 +766,14 @@ func (e *IndexedEdge) EdgeQueryBase() string {
 	}
 	// otherwise add base
 	return e.TsEdgeQueryName() + "Base"
+}
+
+func (e *IndexedEdge) GenerateBaseClass() bool {
+	// only generate base class for non-foreign nodes
+	// if there's a foreign node. we don't need to generate a base class
+	// we will subclass from the non-foreign node's base class
+	// see EdgeQueryBase
+	return e.foreignNode == ""
 }
 
 var _ Edge = &IndexedEdge{}
