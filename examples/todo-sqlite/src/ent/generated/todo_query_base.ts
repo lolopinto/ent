@@ -13,7 +13,7 @@ import {
 import { getLoaderOptions } from "src/ent/generated/loadAny";
 import { EdgeType, NodeType } from "src/ent/generated/types";
 import {
-  Account,
+  AccountBase,
   Tag,
   TagToTodosQuery,
   Todo,
@@ -53,7 +53,10 @@ export abstract class TodoToTagsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends TodoToTagsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Todo, Tag>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Todo, Tag>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Todo, Tag>,
   ): T {
@@ -86,7 +89,10 @@ export abstract class TodoToTodoScopeQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends TodoToTodoScopeQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Todo, Ent<Viewer>>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Todo, Ent<Viewer>>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Todo, Ent<Viewer>>,
   ): T {
@@ -98,14 +104,12 @@ export abstract class TodoToTodoScopeQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class AssigneeToTodosQueryBase extends CustomEdgeQueryBase<
-  Account,
-  Todo,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Account | ID, sortColumn?: string) {
+export class AssigneeToTodosQueryBase<
+  TEnt extends AccountBase = AccountBase,
+> extends CustomEdgeQueryBase<TEnt, Todo, Viewer> {
+  constructor(viewer: Viewer, private srcEnt: TEnt, sortColumn?: string) {
     super(viewer, {
-      src: src,
+      src: srcEnt,
       groupCol: "assignee_id",
       loadEntOptions: Todo.loaderOptions(),
       name: "AssigneeToTodosQuery",
@@ -113,29 +117,22 @@ export class AssigneeToTodosQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends AssigneeToTodosQueryBase>(
-    this: new (viewer: Viewer, src: Account | ID) => T,
-    viewer: Viewer,
-    src: Account | ID,
-  ): T {
+  static query<
+    T extends AssigneeToTodosQueryBase,
+    TEnt extends AccountBase = AccountBase,
+  >(this: new (viewer: Viewer, src: TEnt) => T, viewer: Viewer, src: TEnt): T {
     return new this(viewer, src);
   }
 
-  async sourceEnt(id: ID) {
-    return Account.load(this.viewer, id);
+  async sourceEnt(_id: ID) {
+    return this.srcEnt;
   }
 }
 
-export class ScopeToTodosQueryBase extends CustomEdgeQueryBase<
-  Ent<Viewer>,
-  Todo,
-  Viewer
-> {
-  constructor(
-    viewer: Viewer,
-    private srcEnt: Ent<Viewer>,
-    sortColumn?: string,
-  ) {
+export class ScopeToTodosQueryBase<
+  TEnt extends Ent<Viewer> = Ent<Viewer>,
+> extends CustomEdgeQueryBase<TEnt, Todo, Viewer> {
+  constructor(viewer: Viewer, private srcEnt: TEnt, sortColumn?: string) {
     super(viewer, {
       src: srcEnt,
       groupCol: "scope_id",

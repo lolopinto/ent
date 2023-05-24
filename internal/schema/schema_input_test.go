@@ -1109,11 +1109,9 @@ func TestParseInputWithMultiplePolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	indexedEdge2 := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("FooAddresses")
 	assert.NotNil(t, indexedEdge2)
 
-	// ToDO fix this is still shared when it shouldn't be...
-	// assert.Equal(t, indexedEdge2.TsEdgeQueryName(), "FooToAddressesQuery")
+	assert.Equal(t, indexedEdge2.TsEdgeQueryName(), "FoosFromUserToAddressesQuery")
 
-	// assert.Equal(t, indexedEdge2.GetGraphQLConnectionName(), "FooToAddressesConnection")
-
+	assert.Equal(t, indexedEdge2.GetGraphQLConnectionName(), "FoosFromUserToAddressesConnection")
 }
 
 func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
@@ -2081,7 +2079,7 @@ func TestParseInputWithIndexedEdgeType(t *testing.T) {
 
 	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
 
-	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "UserToAddressesConnection")
+	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "OwnerToAddressesConnection")
 }
 
 func TestParseInputWithMultipleIndexedEdgeType(t *testing.T) {
@@ -2164,7 +2162,7 @@ func TestParseInputWithMultipleIndexedEdgeType(t *testing.T) {
 
 	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
 
-	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "UserToAddressesConnection")
+	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "OwnerToAddressesConnection")
 
 	fooEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("fooIDS")
 	require.NotNil(t, fooEdge)
@@ -2175,11 +2173,9 @@ func TestParseInputWithMultipleIndexedEdgeType(t *testing.T) {
 	indexedEdge2 := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("FooAddresses")
 	assert.NotNil(t, indexedEdge2)
 
-	// ToDO fix this is still shared when it shouldn't be...
-	// assert.Equal(t, indexedEdge2.TsEdgeQueryName(), "FooToAddressesQuery")
+	assert.Equal(t, indexedEdge2.TsEdgeQueryName(), "FooToAddressesQuery")
 
-	// assert.Equal(t, indexedEdge2.GetGraphQLConnectionName(), "FooToAddressesConnection")
-
+	assert.Equal(t, indexedEdge2.GetGraphQLConnectionName(), "FooToAddressesConnection")
 }
 
 func TestParseInputWithMultipleIndexedEdgeTypeCollision(t *testing.T) {

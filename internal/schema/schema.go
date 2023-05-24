@@ -1301,7 +1301,6 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 		}
 
 		if f.Index() && !e.IsList() && f.ForeignKeyInfo() == nil {
-
 			if err := edgeInfo.AddIndexedEdgeFromNonPolymorphicSource(
 				cfg,
 				f.TsFieldName(cfg),

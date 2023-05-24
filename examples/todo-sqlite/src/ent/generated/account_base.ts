@@ -421,6 +421,6 @@ export class AccountBase
   }
 
   queryTodosAssigned(): AssigneeToTodosQuery {
-    return AssigneeToTodosQuery.query(this.viewer, this.id);
+    return AssigneeToTodosQuery.query(this.viewer, this);
   }
 }

@@ -14,7 +14,7 @@ import {
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
 import { EdgeType, NodeType } from "./types";
-import { Comment, CommentToPostEdge, User } from "../internal";
+import { Comment, CommentToPostEdge, UserBase } from "../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
@@ -96,14 +96,16 @@ export class ArticleToCommentsQueryBase<
   }
 }
 
-export class AuthorToCommentsQueryBase extends CustomEdgeQueryBase<
-  User,
-  Comment,
-  ExampleViewerAlias
-> {
-  constructor(viewer: ExampleViewerAlias, src: User | ID, sortColumn?: string) {
+export class AuthorToCommentsQueryBase<
+  TEnt extends UserBase = UserBase,
+> extends CustomEdgeQueryBase<TEnt, Comment, ExampleViewerAlias> {
+  constructor(
+    viewer: ExampleViewerAlias,
+    private srcEnt: TEnt,
+    sortColumn?: string,
+  ) {
     super(viewer, {
-      src: src,
+      src: srcEnt,
       groupCol: "author_id",
       loadEntOptions: Comment.loaderOptions(),
       name: "AuthorToCommentsQuery",
@@ -111,22 +113,24 @@ export class AuthorToCommentsQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends AuthorToCommentsQueryBase>(
+  static query<
+    T extends AuthorToCommentsQueryBase,
+    TEnt extends UserBase = UserBase,
+  >(
     this: new (
       viewer: ExampleViewerAlias,
-      src: User | ID,
+      src: TEnt,
     ) => T,
     viewer: ExampleViewerAlias,
-    src: User | ID,
+    src: TEnt,
   ): T {
     return new this(viewer, src);
   }
 
-  async sourceEnt(id: ID) {
-    return User.load(this.viewer, id);
+  async sourceEnt(_id: ID) {
+    return this.srcEnt;
   }
 }
-
 
 export class StickerToCommentsQueryBase<
   TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
