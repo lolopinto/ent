@@ -9,7 +9,7 @@ var connType: GraphQLConnectionType<GraphQLObjectType, Data, Viewer>;
 
 export const AssigneeToTodosConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType("AssigneeToTodosAssigned", TodoType);
+    connType = new GraphQLConnectionType("AssigneeToTodos", TodoType);
   }
   return connType;
 };
