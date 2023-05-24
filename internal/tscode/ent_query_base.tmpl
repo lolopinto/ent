@@ -105,7 +105,7 @@
       {{$srcNode := useImport $edge.GetSourceNodeName -}}
       {{$node := useImport $edge.GetNodeInfo.Node -}}
       {{$srcPoly := $edge.SourceIsPolymorphic -}}
-      {{$srcType := printf "%s | %s " $srcNode (useImport "ID") }}
+      {{$srcType := printf "%s | %s " "TEnt" (useImport "ID") }}
       {{ if eq $srcNode "Ent" -}}
         {{$srcNode = printf "%s<%s>" $srcNode $viewerType -}}
       {{ end -}}
@@ -113,12 +113,12 @@
         {{$node = printf "%s<%s>" $node  $viewerType -}}
       {{ end -}}
       {{ if $srcPoly -}}
-        {{$srcType = $srcNode }}
+        {{$srcType = "TEnt" }}
       {{ end -}}
 
       {{$thisType := printf "new (viewer: %s, src: %s  ) => T" $viewerType $srcType }}
 
-      export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$srcNode}}, {{$node}}, {{$viewerType}}> {
+      export class {{$name}}<TEnt extends {{$srcNode}} = {{$srcNode}}> extends {{useImport "CustomEdgeQueryBase"}}<TEnt, {{$node}}, {{$viewerType}}> {
       {{ if $srcPoly -}}
         constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string) {
           super(viewer, {
@@ -135,7 +135,7 @@
           });
         }
 
-        static query<T extends {{$name}}>(
+        static query<T extends {{$name}}, TEnt extends {{$srcNode}} = {{$srcNode}}>(
           this: {{$thisType}},
           viewer: {{$viewerType}},
           src: {{$srcType}},

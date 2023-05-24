@@ -794,13 +794,17 @@ func writeCustomEdgeQueryFile(processor *codegen.Processor, nodeData *schema.Nod
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			Package         *codegen.ImportPackage
-			TsEdgeQueryName string
-			EdgeQueryBase   string
+			Config               *codegen.Config
+			Package              *codegen.ImportPackage
+			TsEdgeQueryName      string
+			EdgeQueryBase        string
+			OverwriteConstructor *edge.OverwriteConstructorInfo
 		}{
-			Package:         cfg.GetImportPackage(),
-			TsEdgeQueryName: e.TsEdgeQueryName(),
-			EdgeQueryBase:   e.EdgeQueryBase(),
+			Config:               cfg,
+			Package:              cfg.GetImportPackage(),
+			TsEdgeQueryName:      e.TsEdgeQueryName(),
+			EdgeQueryBase:        e.EdgeQueryBase(),
+			OverwriteConstructor: e.GetOverwriteConstructorInfo(),
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("custom_ent_query.tmpl"),
 		TemplateName:      "custom_ent_query.tmpl",

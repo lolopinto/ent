@@ -448,6 +448,10 @@ type ConnectionEdge interface {
 	UniqueEdge() bool
 }
 
+type OverwriteConstructorInfo struct {
+	Import *tsimport.ImportPath
+}
+
 type IndexedConnectionEdge interface {
 	// NOTE: update compareIndexedConnectionEdge if anything changes here
 	ConnectionEdge
@@ -455,6 +459,8 @@ type IndexedConnectionEdge interface {
 	QuotedDBColName() string
 	GenerateBaseClass() bool
 	EdgeQueryBase() string
+	// OverwriteConstructor so that we can have strong types for class
+	GetOverwriteConstructorInfo() *OverwriteConstructorInfo
 }
 
 // marker interface
@@ -636,6 +642,10 @@ func (e *ForeignKeyEdge) EdgeQueryBase() string {
 	return e.TsEdgeQueryName() + "Base"
 }
 
+func (e *ForeignKeyEdge) GetOverwriteConstructorInfo() *OverwriteConstructorInfo {
+	return nil
+}
+
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
 var _ ConnectionEdge = &ForeignKeyEdge{}
@@ -708,7 +718,9 @@ func (e *IndexedEdge) TsEdgeQueryName() string {
 }
 
 func (e *IndexedEdge) GetSourceNodeName() string {
-	// hmm. what generates this? why is it always ent?
+	if e.foreignNode != "" {
+		return e.foreignNode
+	}
 	return "Ent"
 }
 
@@ -747,7 +759,6 @@ func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {
-	// TODO??
 	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
@@ -774,6 +785,18 @@ func (e *IndexedEdge) GenerateBaseClass() bool {
 	// we will subclass from the non-foreign node's base class
 	// see EdgeQueryBase
 	return e.foreignNode == ""
+}
+
+func (e *IndexedEdge) GetOverwriteConstructorInfo() *OverwriteConstructorInfo {
+	if e.foreignNode != "" {
+		return &OverwriteConstructorInfo{
+			// base class so as to make types work without ts-ignore or ts-expect-error.
+			// we should do this in more places so as to not have to use ts-ignore
+			// e.g. https://github.com/lolopinto/ent/issues/1449
+			Import: tsimport.NewLocalEntImportPath(e.foreignNode + "Base"),
+		}
+	}
+	return nil
 }
 
 var _ Edge = &IndexedEdge{}

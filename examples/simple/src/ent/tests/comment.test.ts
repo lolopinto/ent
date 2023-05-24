@@ -134,14 +134,13 @@ test("create comment and query different ways", async () => {
     [commentOnUser1.id, commentOnUser2.id, commentOnUser3.id].sort(),
   );
 
-  // TODO change base class here to have User type in constructor
-
   // fetching from user only. it's basically same as ArticleToCommentsQuery
-  // just can have different privacy policy
+  // just can have different privacy policy and is typed to User
   const comments2 = await ArticlesFromUserToCommentsQuery.query(
     user.viewer,
     user,
   ).queryEnts();
+
   expect(comments2.length).toBe(3);
   expect(comments2.map((c) => c.id).sort()).toStrictEqual(
     [commentOnUser1.id, commentOnUser2.id, commentOnUser3.id].sort(),
@@ -156,10 +155,8 @@ test("create comment and query different ways", async () => {
     [commentOnComment1.id, commentOnComment2.id, commentOnComment3.id].sort(),
   );
 
-  // TODO change base class here to have Comment in constructor
-
   // fetching from comment only. it's basically same as ArticleToCommentsQuery
-  // just can have different privacy policy
+  // just can have different privacy policy and is typed to Comment
   const comments4 = await ArticlesFromCommentToCommentsQuery.query(
     user.viewer,
     commentOnUser1,

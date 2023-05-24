@@ -602,12 +602,10 @@ export abstract class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
-  User,
-  AuthCode,
-  ExampleViewerAlias
-> {
-  constructor(viewer: ExampleViewerAlias, src: User | ID, sortColumn?: string) {
+export class UserToAuthCodesQueryBase<
+  TEnt extends User = User,
+> extends CustomEdgeQueryBase<TEnt, AuthCode, ExampleViewerAlias> {
+  constructor(viewer: ExampleViewerAlias, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "user_id",
@@ -617,13 +615,13 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends UserToAuthCodesQueryBase>(
+  static query<T extends UserToAuthCodesQueryBase, TEnt extends User = User>(
     this: new (
       viewer: ExampleViewerAlias,
-      src: User | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: ExampleViewerAlias,
-    src: User | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }
@@ -633,12 +631,10 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
   }
 }
 
-export class UserToContactsQueryBase extends CustomEdgeQueryBase<
-  User,
-  Contact,
-  ExampleViewerAlias
-> {
-  constructor(viewer: ExampleViewerAlias, src: User | ID, sortColumn?: string) {
+export class UserToContactsQueryBase<
+  TEnt extends User = User,
+> extends CustomEdgeQueryBase<TEnt, Contact, ExampleViewerAlias> {
+  constructor(viewer: ExampleViewerAlias, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "user_id",
@@ -648,13 +644,13 @@ export class UserToContactsQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends UserToContactsQueryBase>(
+  static query<T extends UserToContactsQueryBase, TEnt extends User = User>(
     this: new (
       viewer: ExampleViewerAlias,
-      src: User | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: ExampleViewerAlias,
-    src: User | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }
