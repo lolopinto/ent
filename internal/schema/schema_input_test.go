@@ -2020,6 +2020,73 @@ func TestMultipleActionsHiddenFromGraphQL(t *testing.T) {
 	assert.Len(t, note.NodeData.ActionInfo.Actions, 1)
 }
 
+func TestParseInputWithIndexedEdgeTypeNoOptIn(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"Address": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "ownerID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						FieldEdge: &input.FieldEdge{
+							Schema: "User",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	addressInfo := schema.Nodes["Address"]
+	require.NotNil(t, addressInfo)
+
+	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	require.NotNil(t, ownerEdge)
+	addressesEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	require.NotNil(t, addressesEdge)
+	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
+	assert.Equal(t, "OwnerToAddressesConnection", addressesEdge.GetGraphQLConnectionName())
+	assert.Equal(t, "OwnerToAddresses", addressesEdge.GetGraphQLEdgePrefix())
+
+	userCfg := schema.Nodes["User"]
+	assert.NotNil(t, userCfg)
+
+	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	assert.Nil(t, indexedEdge)
+}
+
 func TestParseInputWithIndexedEdgeType(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
@@ -2057,6 +2124,9 @@ func TestParseInputWithIndexedEdgeType(t *testing.T) {
 						Index: true,
 						FieldEdge: &input.FieldEdge{
 							Schema: "User",
+							IndexEdge: &input.IndexEdgeOptions{
+								Name: "Addresses",
+							},
 						},
 					},
 				},
@@ -2129,6 +2199,9 @@ func TestParseInputWithMultipleIndexedEdgeType(t *testing.T) {
 						Index: true,
 						FieldEdge: &input.FieldEdge{
 							Schema: "User",
+							IndexEdge: &input.IndexEdgeOptions{
+								Name: "Addresses",
+							},
 						},
 					},
 					{
@@ -2192,7 +2265,7 @@ func TestParseInputWithMultipleIndexedEdgeType(t *testing.T) {
 	assert.Equal(t, "FooToAddresses", indexedEdge2.GetGraphQLEdgePrefix())
 }
 
-func TestParseInputWithMultipleIndexedEdgeTypeCollision(t *testing.T) {
+func TestParseInputWithMultipleIndexedEdgeNoOptIn(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
 			"User": {
@@ -2239,6 +2312,89 @@ func TestParseInputWithMultipleIndexedEdgeTypeCollision(t *testing.T) {
 						Index: true,
 						FieldEdge: &input.FieldEdge{
 							Schema: "User",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	addressInfo := schema.Nodes["Address"]
+	require.NotNil(t, addressInfo)
+
+	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	require.NotNil(t, ownerEdge)
+	addressesEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	require.NotNil(t, addressesEdge)
+	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
+	assert.Equal(t, "OwnerToAddressesConnection", addressesEdge.GetGraphQLConnectionName())
+	assert.Equal(t, "OwnerToAddresses", addressesEdge.GetGraphQLEdgePrefix())
+
+	userCfg := schema.Nodes["User"]
+	assert.NotNil(t, userCfg)
+
+	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	assert.Nil(t, indexedEdge)
+}
+
+func TestParseInputWithMultipleIndexedEdgeTypeCollision(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"Address": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "ownerID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						FieldEdge: &input.FieldEdge{
+							Schema: "User",
+							IndexEdge: &input.IndexEdgeOptions{
+								Name: "Addresses",
+							},
+						},
+					},
+					{
+						Name: "fooID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						FieldEdge: &input.FieldEdge{
+							Schema: "User",
+							IndexEdge: &input.IndexEdgeOptions{
+								Name: "Addresses",
+							},
 						},
 					},
 				},

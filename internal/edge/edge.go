@@ -320,6 +320,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 
 	if fieldEdgeInfo.IndexEdge != nil {
 		// set the name based on this...
+		// and generate the edge based on this
 		edge.UserGivenEdgeName = fieldEdgeInfo.IndexEdge.Name
 	}
 
