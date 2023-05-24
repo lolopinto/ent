@@ -56,16 +56,10 @@ export abstract class AddressToLocatedAtQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
-  Ent<Viewer>,
-  Address,
-  Viewer
-> {
-  constructor(
-    viewer: Viewer,
-    private srcEnt: Ent<Viewer>,
-    sortColumn?: string,
-  ) {
+export class OwnerToAddressesQueryBase<
+  TEnt extends Ent<Viewer> = Ent<Viewer>,
+> extends CustomEdgeQueryBase<TEnt, Address, Viewer> {
+  constructor(viewer: Viewer, private srcEnt: TEnt, sortColumn?: string) {
     super(viewer, {
       src: srcEnt,
       groupCol: "owner_id",
@@ -75,14 +69,10 @@ export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends OwnerToAddressesQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: Ent<Viewer>,
-    ) => T,
-    viewer: Viewer,
-    src: Ent<Viewer>,
-  ): T {
+  static query<
+    T extends OwnerToAddressesQueryBase,
+    TEnt extends Ent<Viewer> = Ent<Viewer>,
+  >(this: new (viewer: Viewer, src: TEnt) => T, viewer: Viewer, src: TEnt): T {
     return new this(viewer, src);
   }
 
