@@ -359,7 +359,9 @@ func (e *EdgeInfo) AddIndexedEdgeFromNonPolymorphicSource(cfg codegenapi.Config,
 }
 
 func (e *EdgeInfo) addIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
-	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
+	tsEdgeName, _ := base.TranslateIDSuffix(tsFieldName)
+	tsEdgeName = strcase.ToCamel(tsEdgeName)
+
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
@@ -405,7 +407,8 @@ func WithDefaultEdgeName(name string) IndexEdgeOpts {
 }
 
 func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string, opts ...IndexEdgeOpts) *IndexedEdge {
-	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
+	tsEdgeName, _ := base.TranslateIDSuffix(tsFieldName)
+	tsEdgeName = strcase.ToCamel(tsEdgeName)
 
 	o := IndexEdgeOptions{}
 	for _, opt := range opts {
