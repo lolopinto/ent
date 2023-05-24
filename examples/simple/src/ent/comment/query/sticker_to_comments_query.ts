@@ -3,4 +3,5 @@
  */
 
 import { StickerToCommentsQueryBase } from "../../internal";
+
 export class StickerToCommentsQuery extends StickerToCommentsQueryBase {}

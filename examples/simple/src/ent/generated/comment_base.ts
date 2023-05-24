@@ -23,7 +23,12 @@ import { Field, getFields } from "@snowtop/ent/schema";
 import { loadEntByType, loadEntXByType } from "./loadAny";
 import { CommentDBData, commentLoader, commentLoaderInfo } from "./loaders";
 import { NodeType } from "./types";
-import { ArticleToCommentsQuery, CommentToPostQuery, User } from "../internal";
+import {
+  ArticleToCommentsQuery,
+  ArticlesFromCommentToCommentsQuery,
+  CommentToPostQuery,
+  User,
+} from "../internal";
 import schema from "../../schema/comment_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
@@ -233,6 +238,10 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
 
   queryPost(): CommentToPostQuery {
     return CommentToPostQuery.query(this.viewer, this.id);
+  }
+
+  queryArticles(): ArticlesFromCommentToCommentsQuery {
+    return ArticlesFromCommentToCommentsQuery.query(this.viewer, this);
   }
 
   async loadArticle(): Promise<Ent | null> {

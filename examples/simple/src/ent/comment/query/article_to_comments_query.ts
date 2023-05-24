@@ -3,4 +3,5 @@
  */
 
 import { ArticleToCommentsQueryBase } from "../../internal";
+
 export class ArticleToCommentsQuery extends ArticleToCommentsQueryBase {}

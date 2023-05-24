@@ -231,6 +231,7 @@ type Comment implements Node {
   id: ID!
   body: String!
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
+  articles(first: Int, after: String, last: Int, before: String): ArticlesFromCommentToCommentsConnection!
 }
 
 type ContactDate {
@@ -423,6 +424,7 @@ type User implements Node {
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
+  articles(first: Int, after: String, last: Int, before: String): ArticlesFromUserToCommentsConnection!
   fullName: String!
   bar: String
   """contacts same domain..."""
@@ -443,6 +445,30 @@ type AddressToHostedEventsEdge implements Edge {
 type AddressToHostedEventsConnection implements Connection {
   edges: [AddressToHostedEventsEdge!]!
   nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ArticlesFromCommentToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ArticlesFromCommentToCommentsConnection implements Connection {
+  edges: [ArticlesFromCommentToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ArticlesFromUserToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ArticlesFromUserToCommentsConnection implements Connection {
+  edges: [ArticlesFromUserToCommentsEdge!]!
+  nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

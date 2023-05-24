@@ -1279,7 +1279,6 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 				typ = strcase.ToCamel(typ)
 				foreign, ok := s.Nodes[typ]
 				if ok {
-
 					// only add polymorphic accessors on foreign if index or unique
 					if f.Index() || f.Unique() {
 						fEdgeInfo := foreign.NodeData.EdgeInfo

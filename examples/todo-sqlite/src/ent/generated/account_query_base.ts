@@ -222,12 +222,10 @@ export abstract class AccountToWorkspacesQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class AccountToTagsQueryBase extends CustomEdgeQueryBase<
-  Account,
-  Tag,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Account | ID, sortColumn?: string) {
+export class AccountToTagsQueryBase<
+  TEnt extends Account = Account,
+> extends CustomEdgeQueryBase<TEnt, Tag, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "owner_id",
@@ -237,13 +235,16 @@ export class AccountToTagsQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends AccountToTagsQueryBase>(
+  static query<
+    T extends AccountToTagsQueryBase,
+    TEnt extends Account = Account,
+  >(
     this: new (
       viewer: Viewer,
-      src: Account | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Account | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }
@@ -253,12 +254,10 @@ export class AccountToTagsQueryBase extends CustomEdgeQueryBase<
   }
 }
 
-export class AccountToTodosQueryBase extends CustomEdgeQueryBase<
-  Account,
-  Todo,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Account | ID, sortColumn?: string) {
+export class AccountToTodosQueryBase<
+  TEnt extends Account = Account,
+> extends CustomEdgeQueryBase<TEnt, Todo, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "creator_id",
@@ -268,13 +267,16 @@ export class AccountToTodosQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends AccountToTodosQueryBase>(
+  static query<
+    T extends AccountToTodosQueryBase,
+    TEnt extends Account = Account,
+  >(
     this: new (
       viewer: Viewer,
-      src: Account | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Account | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }

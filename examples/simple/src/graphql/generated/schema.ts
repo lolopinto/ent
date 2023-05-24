@@ -141,6 +141,8 @@ import { QueryType } from "./resolvers/query_type";
 import {
   AddressToHostedEventsConnectionType,
   AddressType,
+  ArticlesFromCommentToCommentsConnectionType,
+  ArticlesFromUserToCommentsConnectionType,
   CatBreedType,
   CommentSortColumnType,
   CommentToPostConnectionType,
@@ -260,6 +262,8 @@ export default new GraphQLSchema({
     UserSuperNestedObjectType,
     UserType,
     AddressToHostedEventsConnectionType(),
+    ArticlesFromCommentToCommentsConnectionType(),
+    ArticlesFromUserToCommentsConnectionType(),
     CommentToPostConnectionType(),
     ContactToCommentsConnectionType(),
     ContactToLikersConnectionType(),
