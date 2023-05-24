@@ -24,7 +24,7 @@ const CommentSchema = new EntSchema({
       },
       index: true,
     }),
-    StickerID: UUIDType({ polymorphic: {}, nullable: true }),
+    StickerID: UUIDType({ polymorphic: true, nullable: true }),
   },
 
   actions: [

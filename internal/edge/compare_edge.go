@@ -415,7 +415,20 @@ func compareIndexedConnectionEdge(e1, e2 IndexedConnectionEdge) bool {
 	return compareConnectionEdge(e1, e2) &&
 		e1.SourceIsPolymorphic() == e2.SourceIsPolymorphic() &&
 		e1.QuotedDBColName() == e2.QuotedDBColName() &&
-		e1.GenerateBaseClass() == e2.GenerateBaseClass()
+		e1.GenerateBaseClass() == e2.GenerateBaseClass() &&
+		e1.EdgeQueryBase() == e2.EdgeQueryBase() &&
+		compareOverwriteConstructionInfo(e1.GetOverwriteConstructorInfo(), e2.GetOverwriteConstructorInfo())
+
+}
+
+func compareOverwriteConstructionInfo(i1, i2 *OverwriteConstructorInfo) bool {
+	ret := change.CompareNilVals(i1 == nil, i2 == nil)
+
+	if ret != nil {
+		return *ret
+	}
+
+	return tsimport.ImportPathEqual(i1.Import, i2.Import)
 }
 
 // Compares edges, assoc edge groups, field edge, connection edge

@@ -725,8 +725,8 @@ func (e *IndexedEdge) GetSourceNodeName() string {
 }
 
 func (e *IndexedEdge) SourceIsPolymorphic() bool {
+	// TODO this still needs to be defined well and used correctly
 	return true
-	// return e.polymorphic != nil
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
