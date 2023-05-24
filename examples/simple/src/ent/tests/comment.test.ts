@@ -8,6 +8,7 @@ import {
   ArticleToCommentsQuery,
   ArticlesFromCommentToCommentsQuery,
   ArticlesFromUserToCommentsQuery,
+  AuthorToCommentsQuery,
 } from "..";
 
 const createUser = async () => {
@@ -164,5 +165,21 @@ test("create comment and query different ways", async () => {
   expect(comments4.length).toBe(3);
   expect(comments4.map((c) => c.id).sort()).toStrictEqual(
     [commentOnComment1.id, commentOnComment2.id, commentOnComment3.id].sort(),
+  );
+
+  // fetching authors
+
+  const comments5 = await AuthorToCommentsQuery.query(
+    user.viewer,
+    user,
+  ).queryEnts();
+  expect(comments5.length).toBe(4);
+  expect(comments5.map((c) => c.id).sort()).toStrictEqual(
+    [
+      commentOnUser1.id,
+      commentOnUser2.id,
+      commentOnUser3.id,
+      commentOnComment1.id,
+    ].sort(),
   );
 });

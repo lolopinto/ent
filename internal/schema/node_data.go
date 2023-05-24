@@ -513,6 +513,10 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.Imp
 			Import:     unique.Node,
 			ImportPath: codepath.GetInternalImportPath(),
 		})
+		ret = append(ret, &tsimport.ImportPath{
+			Import:     unique.Node + "Base",
+			ImportPath: codepath.GetInternalImportPath(),
+		})
 	}
 
 	// for each edge, find the node, and then find the downstream edges for those

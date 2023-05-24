@@ -63,6 +63,7 @@ export * from "../generated/resolvers/root/root_to_holiday_connection_type";
 export * from "../generated/resolvers/root/root_to_hours_of_operation_connection_type";
 export * from "../generated/resolvers/root/root_to_user_connection_type";
 export * from "../generated/resolvers/user/articles_from_user_to_comments_connection_type";
+export * from "../generated/resolvers/user/author_to_comments_connection_type";
 export * from "../generated/resolvers/user/user_to_comments_authored_connection_type";
 export * from "../generated/resolvers/user/user_to_comments_connection_type";
 export * from "../generated/resolvers/user/user_to_contacts_connection_type";

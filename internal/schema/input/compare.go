@@ -126,7 +126,18 @@ func fieldEdgeEqual(existing, fieldEdge *FieldEdge) bool {
 
 	return existing.Schema == fieldEdge.Schema &&
 		existing.DisableBuilderType == fieldEdge.DisableBuilderType &&
-		InverseFieldEdgeEqual(existing.InverseEdge, fieldEdge.InverseEdge)
+		InverseFieldEdgeEqual(existing.InverseEdge, fieldEdge.InverseEdge) &&
+		IndexEdgeOptionsEqual(existing.IndexEdge, fieldEdge.IndexEdge)
+}
+
+func IndexEdgeOptionsEqual(existing, i *IndexEdgeOptions) bool {
+	ret := change.CompareNilVals(existing == nil, i == nil)
+
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Name == i.Name
 }
 
 func InverseFieldEdgeEqual(existing, inverseFieldEdge *InverseFieldEdge) bool {

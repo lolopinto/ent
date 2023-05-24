@@ -11,6 +11,10 @@ const CommentSchema = new EntSchema({
     AuthorID: UUIDType({
       fieldEdge: {
         schema: "User",
+        indexEdge: {
+          // we want a different one because we have a different name for "comments" based on pattern
+          name: "comments_from_user",
+        },
       },
       index: true,
       immutable: true,

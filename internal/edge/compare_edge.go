@@ -316,7 +316,7 @@ func CompareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
 func indexedEdgeEqual(existingEdge, edge *IndexedEdge) bool {
 	return existingEdge.SourceNodeName == edge.SourceNodeName &&
 		existingEdge.tsEdgeName == edge.tsEdgeName &&
-		existingEdge.foreignNode == edge.foreignNode &&
+		existingEdge.sourceNodeName == edge.sourceNodeName &&
 		destinationEdgeEqual(existingEdge.destinationEdge, edge.destinationEdge)
 }
 

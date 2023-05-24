@@ -20,6 +20,7 @@ import {
 } from "@snowtop/ent/graphql";
 import {
   ArticlesFromUserToCommentsQuery,
+  AuthorToCommentsQuery,
   User,
   UserToCommentsQuery,
   UserToContactsQuery,
@@ -35,6 +36,7 @@ import {
 } from "../../../ent";
 import {
   ArticlesFromUserToCommentsConnectionType,
+  AuthorToCommentsConnectionType,
   ContactType,
   UserAccountStatusType,
   UserDaysOffType,
@@ -557,6 +559,39 @@ export const UserType = new GraphQLObjectType({
           user.viewer,
           user,
           (v, user: User) => ArticlesFromUserToCommentsQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    commentsFromUser: {
+      type: new GraphQLNonNull(AuthorToCommentsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        user: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => AuthorToCommentsQuery.query(v, user),
           args,
         );
       },

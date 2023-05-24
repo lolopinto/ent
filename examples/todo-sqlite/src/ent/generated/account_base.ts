@@ -50,6 +50,7 @@ import {
   AccountToTagsQuery,
   AccountToTodosQuery,
   AccountToWorkspacesQuery,
+  AssigneeToTodosQuery,
   ITodoContainer,
   Todo,
   TodoContainerMixin,
@@ -417,5 +418,9 @@ export class AccountBase
 
   queryTodos(): AccountToTodosQuery {
     return AccountToTodosQuery.query(this.viewer, this.id);
+  }
+
+  queryTodosAssigned(): AssigneeToTodosQuery {
+    return AssigneeToTodosQuery.query(this.viewer, this);
   }
 }

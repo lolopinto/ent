@@ -54,6 +54,7 @@ import {
 } from "./types";
 import {
   ArticlesFromUserToCommentsQuery,
+  AuthorToCommentsQuery,
   Contact,
   FeedbackMixin,
   IFeedback,
@@ -574,5 +575,9 @@ export class UserBase
 
   queryArticles(): ArticlesFromUserToCommentsQuery {
     return ArticlesFromUserToCommentsQuery.query(this.viewer, this);
+  }
+
+  queryCommentsFromUser(): AuthorToCommentsQuery {
+    return AuthorToCommentsQuery.query(this.viewer, this);
   }
 }

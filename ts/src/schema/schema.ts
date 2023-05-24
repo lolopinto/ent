@@ -429,12 +429,24 @@ export interface InverseFieldEdge {
   hideFromGraphQL?: boolean;
 }
 
+export interface IndexEdgeOptions {
+  // same philosophy as PolymorphicOptions.name
+  // defaults to pluralize(schema) if not provided
+  name: string;
+}
+
 export interface FieldEdge {
   schema: string;
   // inverseEdge is optional. if present, indicates it maps to an edge in the other schema
   // it creates the edge in the other schema if not provided.
   // this makes it so that we can define and write the edge from this schema
   inverseEdge?: string | InverseFieldEdge;
+
+  // if an indexed edge, we generate an inverse
+  // TODO this might make more sense to be {
+  // index: { name: "name" }
+  // }
+  indexEdge?: IndexEdgeOptions;
 
   // if enforceSchema. implement the valid type.
   // we use getLoaderOptions to do it

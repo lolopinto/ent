@@ -14,6 +14,7 @@ export * from "src/graphql/generated/resolvers/account/account_to_scoped_todos_c
 export * from "src/graphql/generated/resolvers/account/account_to_tags_connection_type";
 export * from "src/graphql/generated/resolvers/account/account_to_todos_connection_type";
 export * from "src/graphql/generated/resolvers/account/account_to_workspaces_connection_type";
+export * from "src/graphql/generated/resolvers/account/assignee_to_todos_connection_type";
 export * from "src/graphql/generated/resolvers/root/root_to_closed_todos_last_day_connection_type";
 export * from "src/graphql/generated/resolvers/root/root_to_open_todos_connection_type";
 export * from "src/graphql/generated/resolvers/tag/tag_to_todos_connection_type";

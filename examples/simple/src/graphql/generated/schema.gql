@@ -425,6 +425,7 @@ type User implements Node {
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   articles(first: Int, after: String, last: Int, before: String): ArticlesFromUserToCommentsConnection!
+  commentsFromUser(first: Int, after: String, last: Int, before: String): AuthorToCommentsConnection!
   fullName: String!
   bar: String
   """contacts same domain..."""
@@ -468,6 +469,18 @@ type ArticlesFromUserToCommentsEdge implements Edge {
 
 type ArticlesFromUserToCommentsConnection implements Connection {
   edges: [ArticlesFromUserToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AuthorToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type AuthorToCommentsConnection implements Connection {
+  edges: [AuthorToCommentsEdge!]!
   nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!

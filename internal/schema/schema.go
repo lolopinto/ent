@@ -1251,7 +1251,7 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 	return edgeData, nil
 }
 
-// this adds the linked assoc edge to the field
+// this adds the linked (assoc + index) edges to the field
 func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error {
 	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
@@ -1299,6 +1299,36 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 			}
 			continue
 		}
+
+		if f.Index() && !e.IsList() && f.ForeignKeyInfo() == nil {
+			if err := edgeInfo.AddIndexedEdgeFromNonPolymorphicSource(
+				cfg,
+				f.TsFieldName(cfg),
+				f.GetQuotedDBColName(),
+				nodeData.Node,
+				e.NodeInfo.Node,
+			); err != nil {
+				return err
+			}
+
+			fNode, ok := s.Nodes[e.NodeInfo.Node]
+			if !ok {
+				return fmt.Errorf("couldn't find config for typ %s", e.NodeInfo.Node)
+			}
+
+			if err := fNode.NodeData.EdgeInfo.AddDestinationEdgeFromNonPolymorphicOptions(
+				cfg,
+				f.TsFieldName(cfg),
+				f.GetQuotedDBColName(),
+				nodeData.Node,
+				fNode.NodeData.Node,
+				e.UserGivenEdgeName,
+			); err != nil {
+				return err
+			}
+			continue
+		}
+
 		// no inverse edge or name, nothing to do here
 		if e.InverseEdge == nil || e.InverseEdge.Name == "" {
 			continue
