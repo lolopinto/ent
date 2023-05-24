@@ -3,12 +3,10 @@
 import { CustomEdgeQueryBase, ID, Viewer } from "@snowtop/ent";
 import { Event, User } from "src/ent/internal";
 
-export class UserToEventsQueryBase extends CustomEdgeQueryBase<
-  User,
-  Event,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: User | ID, sortColumn?: string) {
+export class UserToEventsQueryBase<
+  TEnt extends User = User,
+> extends CustomEdgeQueryBase<TEnt, Event, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "creator_id",
@@ -18,13 +16,13 @@ export class UserToEventsQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends UserToEventsQueryBase>(
+  static query<T extends UserToEventsQueryBase, TEnt extends User = User>(
     this: new (
       viewer: Viewer,
-      src: User | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: User | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }

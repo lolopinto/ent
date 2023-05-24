@@ -9,12 +9,10 @@ import {
   GuestGroup,
 } from "src/ent/internal";
 
-export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
-  Event,
-  EventActivity,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Event | ID, sortColumn?: string) {
+export class EventToEventActivitiesQueryBase<
+  TEnt extends Event = Event,
+> extends CustomEdgeQueryBase<TEnt, EventActivity, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "event_id",
@@ -24,13 +22,16 @@ export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends EventToEventActivitiesQueryBase>(
+  static query<
+    T extends EventToEventActivitiesQueryBase,
+    TEnt extends Event = Event,
+  >(
     this: new (
       viewer: Viewer,
-      src: Event | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Event | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }
@@ -40,12 +41,10 @@ export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
   }
 }
 
-export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<
-  Event,
-  GuestData,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Event | ID, sortColumn?: string) {
+export class EventToGuestDataQueryBase<
+  TEnt extends Event = Event,
+> extends CustomEdgeQueryBase<TEnt, GuestData, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "event_id",
@@ -55,13 +54,13 @@ export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends EventToGuestDataQueryBase>(
+  static query<T extends EventToGuestDataQueryBase, TEnt extends Event = Event>(
     this: new (
       viewer: Viewer,
-      src: Event | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Event | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }
@@ -71,12 +70,10 @@ export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<
   }
 }
 
-export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
-  Event,
-  GuestGroup,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Event | ID, sortColumn?: string) {
+export class EventToGuestGroupsQueryBase<
+  TEnt extends Event = Event,
+> extends CustomEdgeQueryBase<TEnt, GuestGroup, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "event_id",
@@ -86,13 +83,16 @@ export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends EventToGuestGroupsQueryBase>(
+  static query<
+    T extends EventToGuestGroupsQueryBase,
+    TEnt extends Event = Event,
+  >(
     this: new (
       viewer: Viewer,
-      src: Event | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Event | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }
@@ -102,12 +102,10 @@ export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
   }
 }
 
-export class EventToGuestsQueryBase extends CustomEdgeQueryBase<
-  Event,
-  Guest,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Event | ID, sortColumn?: string) {
+export class EventToGuestsQueryBase<
+  TEnt extends Event = Event,
+> extends CustomEdgeQueryBase<TEnt, Guest, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "event_id",
@@ -117,13 +115,13 @@ export class EventToGuestsQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends EventToGuestsQueryBase>(
+  static query<T extends EventToGuestsQueryBase, TEnt extends Event = Event>(
     this: new (
       viewer: Viewer,
-      src: Event | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Event | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }

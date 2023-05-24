@@ -53,10 +53,7 @@ export abstract class TodoToTagsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends TodoToTagsQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: EdgeQuerySource<Todo, Tag>,
-    ) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Todo, Tag>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Todo, Tag>,
   ): T {
@@ -89,10 +86,7 @@ export abstract class TodoToTodoScopeQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends TodoToTodoScopeQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: EdgeQuerySource<Todo, Ent<Viewer>>,
-    ) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Todo, Ent<Viewer>>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Todo, Ent<Viewer>>,
   ): T {
@@ -120,10 +114,7 @@ export class AssigneeToTodosQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends AssigneeToTodosQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: Account | ID,
-    ) => T,
+    this: new (viewer: Viewer, src: Account | ID) => T,
     viewer: Viewer,
     src: Account | ID,
   ): T {
@@ -154,14 +145,10 @@ export class ScopeToTodosQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends ScopeToTodosQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: Ent<Viewer>,
-    ) => T,
-    viewer: Viewer,
-    src: Ent<Viewer>,
-  ): T {
+  static query<
+    T extends ScopeToTodosQueryBase,
+    TEnt extends Ent<Viewer> = Ent<Viewer>,
+  >(this: new (viewer: Viewer, src: TEnt) => T, viewer: Viewer, src: TEnt): T {
     return new this(viewer, src);
   }
 

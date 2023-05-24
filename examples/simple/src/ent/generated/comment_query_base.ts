@@ -60,14 +60,12 @@ export abstract class CommentToPostQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
-  Ent<ExampleViewerAlias>,
-  Comment,
-  ExampleViewerAlias
-> {
+export class ArticleToCommentsQueryBase<
+  TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+> extends CustomEdgeQueryBase<TEnt, Comment, ExampleViewerAlias> {
   constructor(
     viewer: ExampleViewerAlias,
-    private srcEnt: Ent<ExampleViewerAlias>,
+    private srcEnt: TEnt,
     sortColumn?: string,
   ) {
     super(viewer, {
@@ -79,13 +77,16 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends ArticleToCommentsQueryBase>(
+  static query<
+    T extends ArticleToCommentsQueryBase,
+    TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+  >(
     this: new (
       viewer: ExampleViewerAlias,
-      src: Ent<ExampleViewerAlias>,
+      src: TEnt,
     ) => T,
     viewer: ExampleViewerAlias,
-    src: Ent<ExampleViewerAlias>,
+    src: TEnt,
   ): T {
     return new this(viewer, src);
   }
@@ -126,14 +127,13 @@ export class AuthorToCommentsQueryBase extends CustomEdgeQueryBase<
   }
 }
 
-export class StickerToCommentsQueryBase extends CustomEdgeQueryBase<
-  Ent<ExampleViewerAlias>,
-  Comment,
-  ExampleViewerAlias
-> {
+
+export class StickerToCommentsQueryBase<
+  TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+> extends CustomEdgeQueryBase<TEnt, Comment, ExampleViewerAlias> {
   constructor(
     viewer: ExampleViewerAlias,
-    private srcEnt: Ent<ExampleViewerAlias>,
+    private srcEnt: TEnt,
     sortColumn?: string,
   ) {
     super(viewer, {
@@ -145,13 +145,16 @@ export class StickerToCommentsQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends StickerToCommentsQueryBase>(
+  static query<
+    T extends StickerToCommentsQueryBase,
+    TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+  >(
     this: new (
       viewer: ExampleViewerAlias,
-      src: Ent<ExampleViewerAlias>,
+      src: TEnt,
     ) => T,
     viewer: ExampleViewerAlias,
-    src: Ent<ExampleViewerAlias>,
+    src: TEnt,
   ): T {
     return new this(viewer, src);
   }

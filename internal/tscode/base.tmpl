@@ -540,7 +540,11 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{ if not .UniqueEdge -}}
       {{$queryName := useImport .TsEdgeQueryName -}}
       query{{$edgeName}}(): {{useImport $queryName}} {
+      {{ if $edge.SourceIsPolymorphic -}}
+        return {{$queryName}}.query(this.viewer, this);
+      {{ else }}
         return {{$queryName}}.query(this.viewer, this.id);
+      {{ end }}
       }
 
     {{end -}}

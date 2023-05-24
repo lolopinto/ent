@@ -75,12 +75,10 @@ export abstract class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryB
   }
 }
 
-export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<
-  GuestGroup,
-  Guest,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: GuestGroup | ID, sortColumn?: string) {
+export class GuestGroupToGuestsQueryBase<
+  TEnt extends GuestGroup = GuestGroup,
+> extends CustomEdgeQueryBase<TEnt, Guest, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
     super(viewer, {
       src: src,
       groupCol: "guest_group_id",
@@ -90,13 +88,16 @@ export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<
     });
   }
 
-  static query<T extends GuestGroupToGuestsQueryBase>(
+  static query<
+    T extends GuestGroupToGuestsQueryBase,
+    TEnt extends GuestGroup = GuestGroup,
+  >(
     this: new (
       viewer: Viewer,
-      src: GuestGroup | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: GuestGroup | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }
