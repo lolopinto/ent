@@ -474,13 +474,13 @@ type ArticlesFromUserToCommentsConnection implements Connection {
   rawCount: Int!
 }
 
-type AuthorToCommentsFromUserEdge implements Edge {
+type AuthorToCommentsEdge implements Edge {
   node: Comment!
   cursor: String!
 }
 
 type AuthorToCommentsConnection implements Connection {
-  edges: [AuthorToCommentsFromUserEdge!]!
+  edges: [AuthorToCommentsEdge!]!
   nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!

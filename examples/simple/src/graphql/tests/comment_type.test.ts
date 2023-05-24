@@ -111,6 +111,23 @@ test("query and fetch all accessors", async () => {
         );
       },
     ],
+    [
+      "commentsFromUser(first: 100) { edges { node { id } } }",
+      function (data: any) {
+        expect(data.edges.length).toBe(4);
+        const ids = data.edges.map((edge: any) =>
+          mustDecodeIDFromGQLID(edge.node.id),
+        );
+        expect(ids.sort()).toStrictEqual(
+          [
+            commentOnUser1.id,
+            commentOnUser2.id,
+            commentOnUser3.id,
+            commentOnComment1.id,
+          ].sort(),
+        );
+      },
+    ],
   );
 
   await expectQueryFromRoot(
