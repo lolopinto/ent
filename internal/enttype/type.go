@@ -1903,3 +1903,11 @@ func IsNullable(t Type) bool {
 	_, ok := t.(NonNullableType)
 	return ok
 }
+
+func IsStringDBType(t Type) bool {
+	_, ok := t.(*StringType)
+	_, ok2 := t.(*NullableStringType)
+	_, ok3 := t.(*StringEnumType)
+	_, ok4 := t.(*NullableStringEnumType)
+	return ok || ok2 || ok3 || ok4
+}

@@ -806,6 +806,47 @@ func TestFullTextIndex(t *testing.T) {
 				},
 			},
 		},
+		"multi-column with nullable": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Field, StringType, Index, EntSchema} from "{schema}";
+
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType({
+								nullable: true,
+							}),
+						},
+
+						indices: [
+							{
+								name: "users_name_idx",
+								columns: ["firstName", "lastName"],
+								fullText: {
+									language: 'english',
+								},
+							},
+						],
+					});
+					export default User;`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								Language: "english",
+							},
+						},
+					},
+				},
+			},
+		},
 		"multi-column-gist": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
@@ -887,6 +928,60 @@ func TestFullTextIndex(t *testing.T) {
 					},
 				},
 			},
+		},
+		"non-string column passed in": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Field, StringType, IntegerType, Index, EntSchema} from "{schema}";
+
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType(),
+							balance: IntegerType(),
+						},
+
+						indices: [
+							{
+								name: "users_name_idx",
+								columns: ["firstName", "lastName", "balance"],
+								fullText: {
+									language: 'english',
+								},
+							},
+						],
+					});
+					export default User;`,
+				),
+			},
+			expectedErr: fmt.Errorf("only string db types are supported for full text indexes. invalid field %s passed as col for index %s", "balance", "users_name_idx"),
+		},
+		"string list column passed in": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Field, StringType, StringListType, Index, EntSchema} from "{schema}";
+
+					const User = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType(),
+							emails: StringListType(),
+						},
+
+						indices: [
+							{
+								name: "users_name_idx",
+								columns: ["firstName", "lastName", "emails"],
+								fullText: {
+									language: 'english',
+								},
+							},
+						],
+					});
+					export default User;`,
+				),
+			},
+			expectedErr: fmt.Errorf("only string db types are supported for full text indexes. invalid field %s passed as col for index %s", "emails", "users_name_idx"),
 		},
 		"generated-column": {
 			code: map[string]string{
