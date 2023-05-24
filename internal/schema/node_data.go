@@ -15,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -755,7 +756,8 @@ func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) 
 		return "", fmt.Errorf("cannot call GetFieldQueryName on field %s since it's not an indexed field", field.FieldName)
 	}
 
-	fieldName := strcase.ToCamel(strings.TrimSuffix(field.FieldName, "ID"))
+	fieldName, _ := base.TranslateIDSuffix(field.FieldName)
+	fieldName = strcase.ToCamel(fieldName)
 	return fmt.Sprintf("%sTo%sQuery", fieldName, strcase.ToCamel(inflection.Plural(nodeData.Node))), nil
 }
 

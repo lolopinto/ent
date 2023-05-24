@@ -436,8 +436,7 @@ func (f *Field) QueryFromEntName() string {
 	if !f.QueryFromEnt() {
 		return ""
 	}
-	ret := strings.TrimSuffix(f.CamelCaseName(), "ID")
-	ret = strings.TrimSuffix(ret, "_id")
+	ret, _ := base.TranslateIDSuffix(f.CamelCaseName())
 	return ret
 }
 

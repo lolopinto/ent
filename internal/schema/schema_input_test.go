@@ -2605,3 +2605,77 @@ func TestParseInputWithIndexedFieldEdgeAndIndexEdge(t *testing.T) {
 	assert.Equal(t, "UserToEventsConnection", eventsEdge2.GetGraphQLConnectionName())
 	assert.Equal(t, "UserToEvents", eventsEdge2.GetGraphQLEdgePrefix())
 }
+
+func TestParseInputWithSnakeCaseIndexedFieldEdgeAndIndexEdge(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "user_id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						FieldEdge: &input.FieldEdge{
+							Schema: "User",
+							// no reason to do this twice lol...
+							InverseEdge: &input.InverseFieldEdge{Name: "CreatedEvents"},
+							IndexEdge: &input.IndexEdgeOptions{
+								Name: "createdEvents2",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	eventInfo := schema.Nodes["Event"]
+	assert.NotNil(t, eventInfo)
+
+	userEdge := eventInfo.NodeData.EdgeInfo.GetFieldEdgeByName("user")
+	assert.NotNil(t, userEdge)
+	assert.Equal(t, userEdge.NodeInfo.Node, "User")
+	assert.Equal(t, userEdge.InverseEdge.Name, "CreatedEvents")
+
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
+
+	eventsEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
+	assert.NotNil(t, eventsEdge)
+	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
+
+	// 2 nodes, 1 edge
+	testConsts(t, eventInfo.NodeData.ConstantGroups, 1, 0)
+	testConsts(t, userInfo.NodeData.ConstantGroups, 1, 1)
+
+	eventsEdge2 := userInfo.NodeData.EdgeInfo.GetIndexedEdgeByName("createdEvents2")
+	require.NotNil(t, eventsEdge2)
+	assert.Equal(t, eventsEdge2.TsEdgeQueryName(), "UserToEventsQuery")
+	assert.Equal(t, "UserToEventsConnection", eventsEdge2.GetGraphQLConnectionName())
+	assert.Equal(t, "UserToEvents", eventsEdge2.GetGraphQLEdgePrefix())
+}

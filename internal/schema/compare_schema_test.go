@@ -2266,8 +2266,8 @@ func TestIndexedEdgeModified(t *testing.T) {
 	verifyChange(t, change.Change{
 		Change:      change.ModifyEdge,
 		Name:        "owner_ids",
-		GraphQLName: "OwnerIdToUsersConnection",
-		ExtraInfo:   "OwnerIdToUsersQuery",
+		GraphQLName: "OwnerToUsersConnection",
+		ExtraInfo:   "OwnerToUsersQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
