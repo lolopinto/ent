@@ -1328,7 +1328,6 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 					return err
 				}
 			}
-			continue
 		}
 
 		// no inverse edge or name, nothing to do here
