@@ -18,12 +18,12 @@ import {
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import {
-  ArticleToCommentsQuery,
+  ArticlesFromCommentToCommentsQuery,
   Comment,
   CommentToPostQuery,
 } from "../../../ent";
 import {
-  CommentToCommentsConnectionType,
+  ArticlesFromCommentToCommentsConnectionType,
   CommentToPostConnectionType,
   UserType,
 } from "../../resolvers/internal";
@@ -106,7 +106,7 @@ export const CommentType = new GraphQLObjectType({
       },
     },
     articles: {
-      type: new GraphQLNonNull(CommentToCommentsConnectionType()),
+      type: new GraphQLNonNull(ArticlesFromCommentToCommentsConnectionType()),
       args: {
         first: {
           description: "",
@@ -133,7 +133,8 @@ export const CommentType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           comment.viewer,
           comment,
-          (v, comment: Comment) => ArticleToCommentsQuery.query(v, comment),
+          (v, comment: Comment) =>
+            ArticlesFromCommentToCommentsQuery.query(v, comment),
           args,
         );
       },

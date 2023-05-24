@@ -370,6 +370,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, 
 	// TODO this is being called twice  with different edge infos...
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
+
 	return e.addEdge(edge)
 }
 
@@ -687,6 +688,9 @@ func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 }
 
 func (e *IndexedEdge) TsEdgeQueryName() string {
+	if e.foreignNode != "" {
+		return fmt.Sprintf("%sFrom%sTo%sQuery", inflection.Plural(e.tsEdgeName), e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	}
 	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
@@ -701,19 +705,19 @@ func (e *IndexedEdge) SourceIsPolymorphic() bool {
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
-	if e.foreignNode == "" {
-		return ""
-		//		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
+	if e.foreignNode != "" {
+		return fmt.Sprintf("%sFrom%sTo%sConnection", inflection.Plural(e.tsEdgeName), e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 	}
-	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+
+	return fmt.Sprintf("%sTo%sConnection", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionType() string {
-	if e.foreignNode == "" {
-		return ""
-		//		panic("cannot call GetGraphQLConnectionType when foreignNode is empty")
+	if e.foreignNode != "" {
+		return fmt.Sprintf("%sFrom%sTo%sConnectionType", inflection.Plural(e.tsEdgeName), e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 	}
-	return fmt.Sprintf("%sTo%sConnectionType", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+
+	return fmt.Sprintf("%sTo%sConnectionType", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
@@ -722,14 +726,15 @@ func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
-	if e.foreignNode == "" {
-		return ""
-		//		panic("cannot call GetGraphQLEdgePrefix when foreignNode is empty")
+	if e.foreignNode != "" {
+		return fmt.Sprintf("%sFrom%sTo%s", inflection.Plural(e.tsEdgeName), e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 	}
-	return fmt.Sprintf("%sTo%s", e.foreignNode, strcase.ToCamel(e.EdgeName))
+
+	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {
+	// TODO??
 	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
@@ -739,6 +744,15 @@ func (e *IndexedEdge) GetCountFactoryName() string {
 
 func (e *IndexedEdge) GetDataFactoryName() string {
 	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
+}
+
+func (e *IndexedEdge) EdgeQueryBase() string {
+	// if it's a foreign node, it references the non-foreign node base class variety
+	if e.foreignNode != "" {
+		return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	}
+	// otherwise add base
+	return e.TsEdgeQueryName() + "Base"
 }
 
 var _ Edge = &IndexedEdge{}
