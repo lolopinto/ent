@@ -359,7 +359,7 @@ export const AccountType = new GraphQLObjectType({
         );
       },
     },
-    todoStatusFor: {
+    todo_status_for: {
       type: AccountTodoStatusType,
       args: {
         id: {

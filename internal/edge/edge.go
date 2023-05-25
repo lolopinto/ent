@@ -1203,6 +1203,10 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
 	return strcase.ToLowerCamel(edgeGroup.GroupStatusName) + "For"
 }
 
+func (edgeGroup *AssociationEdgeGroup) GetGraphQLNameForStatusMethod(cfg codegenapi.Config) string {
+	return codegenapi.GraphQLName(cfg, edgeGroup.GetStatusMethod())
+}
+
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
 	return fmt.Sprintf("get%sMap", strcase.ToCamel(edgeGroup.ConstType))
 }

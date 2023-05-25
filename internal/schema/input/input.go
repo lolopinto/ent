@@ -599,7 +599,7 @@ type AssocEdgeGroup struct {
 	TableName       string        `json:"tableName,omitempty"`
 	AssocEdges      []*AssocEdge  `json:"assocEdges,omitempty"`
 	EdgeActions     []*EdgeAction `json:"edgeActions,omitempty"`
-	ViewerBased     bool          `json:"viewerBased"`
+	ViewerBased     bool          `json:"viewerBased,omitempty"`
 	StatusEnums     []string      `json:"statusEnums,omitempty"`
 	NullStateFn     string        `json:"nullStateFn,omitempty"`
 	NullStates      []string      `json:"nullStates,omitempty"`

@@ -53,7 +53,7 @@ type Account implements Node {
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
   todos_assigned(first: Int, after: String, last: Int, before: String): AssigneeToTodosConnection!
-  todoStatusFor(id: ID!): AccountTodoStatus
+  todo_status_for(id: ID!): AccountTodoStatus
   open_todos_plural: [Todo!]!
   open_todos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
 }
