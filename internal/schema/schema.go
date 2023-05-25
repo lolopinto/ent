@@ -1264,7 +1264,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 		}
 
 		if e.Polymorphic != nil {
-			if !f.Index() {
+			if !f.Index() && !f.Unique() {
 				continue
 			}
 			// so we want to add it to edges for
