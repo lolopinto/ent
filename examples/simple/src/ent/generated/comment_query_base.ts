@@ -96,6 +96,42 @@ export class ArticleToCommentsQueryBase<
   }
 }
 
+export class CommentsFromAttachmentQueryBase<
+  TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+> extends CustomEdgeQueryBase<TEnt, Comment, ExampleViewerAlias> {
+  constructor(
+    viewer: ExampleViewerAlias,
+    private srcEnt: TEnt,
+    sortColumn?: string,
+  ) {
+    super(viewer, {
+      src: srcEnt,
+      groupCol: "attachment_id",
+      loadEntOptions: Comment.loaderOptions(),
+      name: "CommentsFromAttachmentQuery",
+      sortColumn,
+    });
+  }
+
+  static query<
+    T extends CommentsFromAttachmentQueryBase,
+    TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+  >(
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: TEnt,
+    ) => T,
+    viewer: ExampleViewerAlias,
+    src: TEnt,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  async sourceEnt(_id: ID) {
+    return this.srcEnt;
+  }
+}
+
 export class AuthorToCommentsQueryBase<
   TEnt extends UserBase = UserBase,
 > extends CustomEdgeQueryBase<TEnt, Comment, ExampleViewerAlias> {

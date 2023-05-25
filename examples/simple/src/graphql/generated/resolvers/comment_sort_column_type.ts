@@ -11,6 +11,9 @@ export const CommentSortColumnType = new GraphQLEnumType({
     ARTICLE_ID: {
       value: "article_id",
     },
+    ATTACHMENT_ID: {
+      value: "attachment_id",
+    },
     AUTHOR_ID: {
       value: "author_id",
     },

@@ -6,8 +6,8 @@ import CreateUserAction from "../user/actions/create_user_action";
 import EditUserAction from "../user/actions/edit_user_action";
 import {
   ArticleToCommentsQuery,
-  ArticlesFromCommentToCommentsQuery,
-  ArticlesFromUserToCommentsQuery,
+  CommentArticleToCommentsQuery,
+  UserArticleToCommentsQuery,
   AuthorToCommentsQuery,
 } from "..";
 
@@ -137,7 +137,7 @@ test("create comment and query different ways", async () => {
 
   // fetching from user only. it's basically same as ArticleToCommentsQuery
   // just can have different privacy policy and is typed to User
-  const comments2 = await ArticlesFromUserToCommentsQuery.query(
+  const comments2 = await UserArticleToCommentsQuery.query(
     user.viewer,
     user,
   ).queryEnts();
@@ -158,7 +158,7 @@ test("create comment and query different ways", async () => {
 
   // fetching from comment only. it's basically same as ArticleToCommentsQuery
   // just can have different privacy policy and is typed to Comment
-  const comments4 = await ArticlesFromCommentToCommentsQuery.query(
+  const comments4 = await CommentArticleToCommentsQuery.query(
     user.viewer,
     commentOnUser1,
   ).queryEnts();

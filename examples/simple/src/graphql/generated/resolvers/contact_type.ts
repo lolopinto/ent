@@ -20,10 +20,12 @@ import {
 } from "@snowtop/ent/graphql";
 import {
   Contact,
+  ContactCommentsFromAttachmentQuery,
   ContactToCommentsQuery,
   ContactToLikersQuery,
 } from "../../../ent";
 import {
+  ContactCommentsFromAttachmentConnectionType,
   ContactEmailType,
   ContactItemResultType,
   ContactPhoneNumberType,
@@ -146,6 +148,40 @@ export const ContactType = new GraphQLObjectType({
           contact.viewer,
           contact,
           (v, contact: Contact) => ContactToLikersQuery.query(v, contact),
+          args,
+        );
+      },
+    },
+    attachedComments: {
+      type: new GraphQLNonNull(ContactCommentsFromAttachmentConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        contact: Contact,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          contact.viewer,
+          contact,
+          (v, contact: Contact) =>
+            ContactCommentsFromAttachmentQuery.query(v, contact),
           args,
         );
       },

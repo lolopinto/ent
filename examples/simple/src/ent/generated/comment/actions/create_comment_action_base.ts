@@ -28,6 +28,11 @@ export interface CommentCreateInput {
   body: string;
   articleID: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   articleType: string;
+  attachmentID?:
+    | ID
+    | null
+    | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
+  attachmentType?: string | null;
   stickerID?: ID | null | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   stickerType?: string | null;
 }

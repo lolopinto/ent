@@ -168,6 +168,8 @@ export interface CommentDBData {
   body: string;
   article_id: ID;
   article_type: string;
+  attachment_id: ID | null;
+  attachment_type: string | null;
   sticker_id: ID | null;
   sticker_type: string | null;
 }
@@ -181,6 +183,8 @@ const commentFields = [
   "body",
   "article_id",
   "article_type",
+  "attachment_id",
+  "attachment_type",
   "sticker_id",
   "sticker_type",
 ];
@@ -224,6 +228,14 @@ export const commentLoaderInfo = {
     ArticleType: {
       dbCol: "article_type",
       inputKey: "articleType",
+    },
+    AttachmentID: {
+      dbCol: "attachment_id",
+      inputKey: "attachmentID",
+    },
+    AttachmentType: {
+      dbCol: "attachment_type",
+      inputKey: "attachmentType",
     },
     StickerID: {
       dbCol: "sticker_id",

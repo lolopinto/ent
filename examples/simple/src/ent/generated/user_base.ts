@@ -53,11 +53,13 @@ import {
   convertNullableUserSuperNestedObject,
 } from "./types";
 import {
-  ArticlesFromUserToCommentsQuery,
   AuthorToCommentsQuery,
   Contact,
+  CreatorToEventsQuery,
   FeedbackMixin,
   IFeedback,
+  UserArticleToCommentsQuery,
+  UserCommentsFromAttachmentQuery,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
   UserToContactsQuery,
@@ -573,11 +575,19 @@ export class UserBase
     return UserToContactsQuery.query(this.viewer, this.id);
   }
 
-  queryArticles(): ArticlesFromUserToCommentsQuery {
-    return ArticlesFromUserToCommentsQuery.query(this.viewer, this);
+  queryArticles(): UserArticleToCommentsQuery {
+    return UserArticleToCommentsQuery.query(this.viewer, this);
+  }
+
+  queryAttachedComments(): UserCommentsFromAttachmentQuery {
+    return UserCommentsFromAttachmentQuery.query(this.viewer, this);
   }
 
   queryCommentsFromUser(): AuthorToCommentsQuery {
     return AuthorToCommentsQuery.query(this.viewer, this);
+  }
+
+  queryEventsCreated(): CreatorToEventsQuery {
+    return CreatorToEventsQuery.query(this.viewer, this);
   }
 }

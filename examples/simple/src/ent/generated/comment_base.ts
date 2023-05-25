@@ -25,8 +25,9 @@ import { CommentDBData, commentLoader, commentLoaderInfo } from "./loaders";
 import { NodeType } from "./types";
 import {
   ArticleToCommentsQuery,
-  ArticlesFromCommentToCommentsQuery,
+  CommentArticleToCommentsQuery,
   CommentToPostQuery,
+  CommentsFromAttachmentQuery,
   User,
 } from "../internal";
 import schema from "../../schema/comment_schema";
@@ -42,6 +43,8 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   readonly body: string;
   readonly articleID: ID;
   readonly articleType: string;
+  readonly attachmentID: ID | null;
+  readonly attachmentType: string | null;
   readonly stickerID: ID | null;
   readonly stickerType: string | null;
 
@@ -53,6 +56,8 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     this.body = data.body;
     this.articleID = data.article_id;
     this.articleType = data.article_type;
+    this.attachmentID = data.attachment_id;
+    this.attachmentType = data.attachment_type;
     this.stickerID = data.sticker_id;
     this.stickerType = data.sticker_type;
     // @ts-expect-error
@@ -209,6 +214,17 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     return ArticleToCommentsQuery.query(viewer, ent);
   }
 
+  static queryFromAttachment<T extends CommentBase>(
+    this: new (
+      viewer: ExampleViewerAlias,
+      data: Data,
+    ) => T,
+    viewer: ExampleViewerAlias,
+    ent: Ent<ExampleViewerAlias>,
+  ): CommentsFromAttachmentQuery {
+    return CommentsFromAttachmentQuery.query(viewer, ent);
+  }
+
   static loaderOptions<T extends CommentBase>(
     this: new (
       viewer: ExampleViewerAlias,
@@ -240,8 +256,8 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     return CommentToPostQuery.query(this.viewer, this.id);
   }
 
-  queryArticles(): ArticlesFromCommentToCommentsQuery {
-    return ArticlesFromCommentToCommentsQuery.query(this.viewer, this);
+  queryArticles(): CommentArticleToCommentsQuery {
+    return CommentArticleToCommentsQuery.query(this.viewer, this);
   }
 
   async loadArticle(): Promise<Ent | null> {
@@ -257,6 +273,17 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
       this.viewer,
       this.articleType as unknown as NodeType,
       this.articleID,
+    );
+  }
+
+  async loadAttachment(): Promise<Ent | null> {
+    if (!this.attachmentID) {
+      return null;
+    }
+    return loadEntByType(
+      this.viewer,
+      this.attachmentType as unknown as NodeType,
+      this.attachmentID,
     );
   }
 

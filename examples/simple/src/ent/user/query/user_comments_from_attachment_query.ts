@@ -2,10 +2,10 @@
  * Copyright whaa whaa
  */
 
-import { ArticleToCommentsQuery, UserBase } from "../../internal";
+import { CommentsFromAttachmentQuery, UserBase } from "../../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-export class ArticlesFromUserToCommentsQuery extends ArticleToCommentsQuery {
+export class UserCommentsFromAttachmentQuery extends CommentsFromAttachmentQuery {
   constructor(
     viewer: ExampleViewerAlias,
     srcEnt: UserBase,

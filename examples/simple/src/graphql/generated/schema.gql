@@ -39,6 +39,7 @@ enum CatBreed {
 
 enum CommentSortColumn {
   ARTICLE_ID
+  ATTACHMENT_ID
   AUTHOR_ID
   ID
 }
@@ -125,6 +126,7 @@ enum EventRsvpStatus {
 }
 
 enum EventSortColumn {
+  CREATOR_ID
   ID
 }
 
@@ -226,12 +228,13 @@ type CatType {
 
 type Comment implements Node {
   article: Node
+  attachment: Node
   author: User
   sticker: Node
   id: ID!
   body: String!
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
-  articles(first: Int, after: String, last: Int, before: String): ArticlesFromCommentToCommentsConnection!
+  articles(first: Int, after: String, last: Int, before: String): CommentArticleToCommentsConnection!
 }
 
 type ContactDate {
@@ -278,6 +281,7 @@ type Contact implements Node {
   lastName: String!
   comments(first: Int, after: String, last: Int, before: String): ContactToCommentsConnection!
   likers(first: Int, after: String, last: Int, before: String): ContactToLikersConnection!
+  attachedComments(first: Int, after: String, last: Int, before: String): ContactCommentsFromAttachmentConnection!
   fullName: String!
   plusEmails: EmailInfo!
   contactItems: [ContactItemResult!]!
@@ -424,8 +428,10 @@ type User implements Node {
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
-  articles(first: Int, after: String, last: Int, before: String): ArticlesFromUserToCommentsConnection!
+  articles(first: Int, after: String, last: Int, before: String): UserArticleToCommentsConnection!
+  attachedComments(first: Int, after: String, last: Int, before: String): UserCommentsFromAttachmentConnection!
   commentsFromUser(first: Int, after: String, last: Int, before: String): AuthorToCommentsConnection!
+  eventsCreated(first: Int, after: String, last: Int, before: String): CreatorToEventsConnection!
   fullName: String!
   bar: String
   """contacts same domain..."""
@@ -450,30 +456,6 @@ type AddressToHostedEventsConnection implements Connection {
   rawCount: Int!
 }
 
-type ArticlesFromCommentToCommentsEdge implements Edge {
-  node: Comment!
-  cursor: String!
-}
-
-type ArticlesFromCommentToCommentsConnection implements Connection {
-  edges: [ArticlesFromCommentToCommentsEdge!]!
-  nodes: [Comment!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type ArticlesFromUserToCommentsEdge implements Edge {
-  node: Comment!
-  cursor: String!
-}
-
-type ArticlesFromUserToCommentsConnection implements Connection {
-  edges: [ArticlesFromUserToCommentsEdge!]!
-  nodes: [Comment!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
 type AuthorToCommentsEdge implements Edge {
   node: Comment!
   cursor: String!
@@ -481,6 +463,18 @@ type AuthorToCommentsEdge implements Edge {
 
 type AuthorToCommentsConnection implements Connection {
   edges: [AuthorToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type CommentArticleToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type CommentArticleToCommentsConnection implements Connection {
+  edges: [CommentArticleToCommentsEdge!]!
   nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -494,6 +488,18 @@ type CommentToPostEdge implements Edge {
 type CommentToPostConnection implements Connection {
   edges: [CommentToPostEdge!]!
   nodes: [Node!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactCommentsFromAttachmentEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ContactCommentsFromAttachmentConnection implements Connection {
+  edges: [ContactCommentsFromAttachmentEdge!]!
+  nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -518,6 +524,18 @@ type ContactToLikersEdge implements Edge {
 type ContactToLikersConnection implements Connection {
   edges: [ContactToLikersEdge!]!
   nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type CreatorToEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type CreatorToEventsConnection implements Connection {
+  edges: [CreatorToEventsEdge!]!
+  nodes: [Event!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -674,6 +692,30 @@ type RootToUserEdge implements Edge {
 type RootToUserConnection implements Connection {
   edges: [RootToUserEdge!]!
   nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserArticleToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type UserArticleToCommentsConnection implements Connection {
+  edges: [UserArticleToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserCommentsFromAttachmentEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type UserCommentsFromAttachmentConnection implements Connection {
+  edges: [UserCommentsFromAttachmentEdge!]!
+  nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -882,6 +924,8 @@ input CommentCreateInput {
   body: String!
   articleID: ID!
   articleType: String!
+  attachmentID: ID
+  attachmentType: String
   stickerID: ID
   stickerType: String
 }
@@ -896,6 +940,8 @@ input CommentEditInput {
   body: String
   articleID: ID
   articleType: String
+  attachmentID: ID
+  attachmentType: String
   stickerID: ID
   stickerType: String
 }

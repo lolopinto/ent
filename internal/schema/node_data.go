@@ -756,6 +756,16 @@ func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) 
 		return "", fmt.Errorf("cannot call GetFieldQueryName on field %s since it's not an indexed field", field.FieldName)
 	}
 
+	// TODO this is a hack and we should get a better version of this
+	// by matching column names. or something better
+	fieldEdge := field.FieldEdgeInfo()
+	if fieldEdge != nil {
+		edgeConstName := fieldEdge.GetEdgeConstName()
+		if edgeConstName != "" {
+			return fmt.Sprintf("%sQuery", edgeConstName), nil
+		}
+	}
+
 	fieldName, _ := base.TranslateIDSuffix(field.FieldName)
 	fieldName = strcase.ToCamel(fieldName)
 	return fmt.Sprintf("%sTo%sQuery", fieldName, strcase.ToCamel(inflection.Plural(nodeData.Node))), nil

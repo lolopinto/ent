@@ -19,9 +19,11 @@ import {
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import {
-  ArticlesFromUserToCommentsQuery,
   AuthorToCommentsQuery,
+  CreatorToEventsQuery,
   User,
+  UserArticleToCommentsQuery,
+  UserCommentsFromAttachmentQuery,
   UserToCommentsQuery,
   UserToContactsQuery,
   UserToCreatedEventsQuery,
@@ -35,10 +37,12 @@ import {
   UserToMaybeEventsQuery,
 } from "../../../ent";
 import {
-  ArticlesFromUserToCommentsConnectionType,
   AuthorToCommentsConnectionType,
   ContactType,
+  CreatorToEventsConnectionType,
   UserAccountStatusType,
+  UserArticleToCommentsConnectionType,
+  UserCommentsFromAttachmentConnectionType,
   UserDaysOffType,
   UserIntEnumType,
   UserNestedObjectListType,
@@ -531,7 +535,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     articles: {
-      type: new GraphQLNonNull(ArticlesFromUserToCommentsConnectionType()),
+      type: new GraphQLNonNull(UserArticleToCommentsConnectionType()),
       args: {
         first: {
           description: "",
@@ -558,7 +562,40 @@ export const UserType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
-          (v, user: User) => ArticlesFromUserToCommentsQuery.query(v, user),
+          (v, user: User) => UserArticleToCommentsQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    attachedComments: {
+      type: new GraphQLNonNull(UserCommentsFromAttachmentConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        user: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserCommentsFromAttachmentQuery.query(v, user),
           args,
         );
       },
@@ -592,6 +629,39 @@ export const UserType = new GraphQLObjectType({
           user.viewer,
           user,
           (v, user: User) => AuthorToCommentsQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    eventsCreated: {
+      type: new GraphQLNonNull(CreatorToEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        user: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => CreatorToEventsQuery.query(v, user),
           args,
         );
       },

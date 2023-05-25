@@ -1307,6 +1307,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 				f.GetQuotedDBColName(),
 				nodeData.Node,
 				e.NodeInfo.Node,
+				e.EdgeConstName,
 			); err != nil {
 				return err
 			}
@@ -1323,6 +1324,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 					f.GetQuotedDBColName(),
 					nodeData.Node,
 					fNode.NodeData.Node,
+					e.EdgeConstName,
 					e.UserGivenEdgeName,
 				); err != nil {
 					return err

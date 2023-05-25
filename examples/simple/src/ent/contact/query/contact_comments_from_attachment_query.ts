@@ -2,13 +2,13 @@
  * Copyright whaa whaa
  */
 
-import { ArticleToCommentsQuery, CommentBase } from "../../internal";
+import { CommentsFromAttachmentQuery, ContactBase } from "../../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-export class ArticlesFromCommentToCommentsQuery extends ArticleToCommentsQuery {
+export class ContactCommentsFromAttachmentQuery extends CommentsFromAttachmentQuery {
   constructor(
     viewer: ExampleViewerAlias,
-    srcEnt: CommentBase,
+    srcEnt: ContactBase,
     sortColumn?: string,
   ) {
     super(viewer, srcEnt, sortColumn);

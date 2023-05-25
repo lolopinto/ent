@@ -991,10 +991,10 @@ func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
 	assert.NotNil(t, indexedEdge)
 
-	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "OwnersFromUserToAddressesQuery")
+	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "UserOwnerToAddressesQuery")
 
-	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "OwnersFromUserToAddressesConnection")
-	assert.Equal(t, indexedEdge.GetGraphQLEdgePrefix(), "OwnersFromUserToAddresses")
+	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "UserOwnerToAddressesConnection")
+	assert.Equal(t, indexedEdge.GetGraphQLEdgePrefix(), "UserOwnerToAddresses")
 
 	eventCfg := schema.Nodes["Event"]
 	assert.NotNil(t, eventCfg)
@@ -1002,10 +1002,119 @@ func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	indexedEdge2 := eventCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
 	assert.NotNil(t, indexedEdge2)
 
-	assert.Equal(t, indexedEdge2.TsEdgeQueryName(), "OwnersFromEventToAddressesQuery")
+	assert.Equal(t, indexedEdge2.TsEdgeQueryName(), "EventOwnerToAddressesQuery")
 
-	assert.Equal(t, indexedEdge2.GetGraphQLConnectionName(), "OwnersFromEventToAddressesConnection")
-	assert.Equal(t, indexedEdge2.GetGraphQLEdgePrefix(), "OwnersFromEventToAddresses")
+	assert.Equal(t, indexedEdge2.GetGraphQLConnectionName(), "EventOwnerToAddressesConnection")
+	assert.Equal(t, indexedEdge2.GetGraphQLEdgePrefix(), "EventOwnerToAddresses")
+}
+
+func TestParseInputWithPolymorphicFieldEdgeInverseTypesWithEdgeConst(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "location",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"Address": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "ownerID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						DerivedFields: []*input.Field{
+							{
+								Name: "ownerType",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+						Polymorphic: &input.PolymorphicOptions{
+							Types:         []string{"user", "event"},
+							EdgeConstName: "AddressesFromOwner",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 3)
+
+	addressInfo := schema.Nodes["Address"]
+	require.NotNil(t, addressInfo)
+
+	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	require.NotNil(t, ownerEdge)
+	addressesEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	require.NotNil(t, addressesEdge)
+	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "AddressesFromOwnerQuery")
+	assert.Equal(t, "AddressesFromOwnerConnection", addressesEdge.GetGraphQLConnectionName())
+	assert.Equal(t, "AddressesFromOwner", addressesEdge.GetGraphQLEdgePrefix())
+
+	userCfg := schema.Nodes["User"]
+	assert.NotNil(t, userCfg)
+
+	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	assert.NotNil(t, indexedEdge)
+
+	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "UserAddressesFromOwnerQuery")
+
+	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "UserAddressesFromOwnerConnection")
+	assert.Equal(t, indexedEdge.GetGraphQLEdgePrefix(), "UserAddressesFromOwner")
+
+	eventCfg := schema.Nodes["Event"]
+	assert.NotNil(t, eventCfg)
+
+	indexedEdge2 := eventCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	assert.NotNil(t, indexedEdge2)
+
+	assert.Equal(t, indexedEdge2.TsEdgeQueryName(), "EventAddressesFromOwnerQuery")
+
+	assert.Equal(t, indexedEdge2.GetGraphQLConnectionName(), "EventAddressesFromOwnerConnection")
+	assert.Equal(t, indexedEdge2.GetGraphQLEdgePrefix(), "EventAddressesFromOwner")
 }
 
 func TestParseInputWithMultiplePolymorphicFieldEdgeInverseTypes(t *testing.T) {
@@ -1102,10 +1211,10 @@ func TestParseInputWithMultiplePolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
 	assert.NotNil(t, indexedEdge)
 
-	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "OwnersFromUserToAddressesQuery")
+	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "UserOwnerToAddressesQuery")
 
-	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "OwnersFromUserToAddressesConnection")
-	assert.Equal(t, indexedEdge.GetGraphQLEdgePrefix(), "OwnersFromUserToAddresses")
+	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "UserOwnerToAddressesConnection")
+	assert.Equal(t, indexedEdge.GetGraphQLEdgePrefix(), "UserOwnerToAddresses")
 
 	fooEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("fooIDS")
 	require.NotNil(t, fooEdge)
@@ -1116,10 +1225,10 @@ func TestParseInputWithMultiplePolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	indexedEdge2 := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("FooAddresses")
 	assert.NotNil(t, indexedEdge2)
 
-	assert.Equal(t, indexedEdge2.TsEdgeQueryName(), "FoosFromUserToAddressesQuery")
+	assert.Equal(t, indexedEdge2.TsEdgeQueryName(), "UserFooToAddressesQuery")
 
-	assert.Equal(t, indexedEdge2.GetGraphQLConnectionName(), "FoosFromUserToAddressesConnection")
-	assert.Equal(t, indexedEdge2.GetGraphQLEdgePrefix(), "FoosFromUserToAddresses")
+	assert.Equal(t, indexedEdge2.GetGraphQLConnectionName(), "UserFooToAddressesConnection")
+	assert.Equal(t, indexedEdge2.GetGraphQLEdgePrefix(), "UserFooToAddresses")
 }
 
 func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
@@ -2087,6 +2196,74 @@ func TestParseInputWithIndexedEdgeTypeNoOptIn(t *testing.T) {
 	assert.Nil(t, indexedEdge)
 }
 
+func TestParseInputWithIndexedEdgeTypeNoOptInWithEdgeConst(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"Address": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "ownerID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						FieldEdge: &input.FieldEdge{
+							Schema:        "User",
+							EdgeConstName: "UserToAddresses",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	addressInfo := schema.Nodes["Address"]
+	require.NotNil(t, addressInfo)
+
+	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	require.NotNil(t, ownerEdge)
+	addressesEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	require.NotNil(t, addressesEdge)
+	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "UserToAddressesQuery")
+	assert.Equal(t, "UserToAddressesConnection", addressesEdge.GetGraphQLConnectionName())
+	assert.Equal(t, "UserToAddresses", addressesEdge.GetGraphQLEdgePrefix())
+
+	userCfg := schema.Nodes["User"]
+	assert.NotNil(t, userCfg)
+
+	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	assert.Nil(t, indexedEdge)
+}
+
 func TestParseInputWithIndexedEdgeType(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
@@ -2160,6 +2337,82 @@ func TestParseInputWithIndexedEdgeType(t *testing.T) {
 
 	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "OwnerToAddressesConnection")
 	assert.Equal(t, "OwnerToAddresses", indexedEdge.GetGraphQLEdgePrefix())
+}
+
+func TestParseInputWithIndexedEdgeTypeWithEdgeConst(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"Address": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "ownerID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						FieldEdge: &input.FieldEdge{
+							Schema: "User",
+							IndexEdge: &input.IndexEdgeOptions{
+								Name: "Addresses",
+							},
+							EdgeConstName: "UserToAddresses",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	addressInfo := schema.Nodes["Address"]
+	require.NotNil(t, addressInfo)
+
+	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	require.NotNil(t, ownerEdge)
+	addressesEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	require.NotNil(t, addressesEdge)
+	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "UserToAddressesQuery")
+	assert.Equal(t, "UserToAddressesConnection", addressesEdge.GetGraphQLConnectionName())
+	assert.Equal(t, "UserToAddresses", addressesEdge.GetGraphQLEdgePrefix())
+
+	userCfg := schema.Nodes["User"]
+	assert.NotNil(t, userCfg)
+
+	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	assert.NotNil(t, indexedEdge)
+
+	assert.Equal(t, indexedEdge.TsEdgeQueryName(), "UserToAddressesQuery")
+
+	assert.Equal(t, indexedEdge.GetGraphQLConnectionName(), "UserToAddressesConnection")
+	assert.Equal(t, "UserToAddresses", indexedEdge.GetGraphQLEdgePrefix())
 }
 
 func TestParseInputWithMultipleIndexedEdgeType(t *testing.T) {
@@ -2533,6 +2786,9 @@ func TestParseInputWithIndexedFieldEdge(t *testing.T) {
 }
 
 func TestParseInputWithIndexedFieldEdgeAndIndexEdge(t *testing.T) {
+	// TODO this should fail
+	// related to https://github.com/lolopinto/ent/issues/1451
+	// we should have global list of typescript types generated and there should be no conflicts
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
 			"User": {
@@ -2563,8 +2819,9 @@ func TestParseInputWithIndexedFieldEdgeAndIndexEdge(t *testing.T) {
 						Index: true,
 						FieldEdge: &input.FieldEdge{
 							Schema: "User",
-							// no reason to do this twice lol...
-							InverseEdge: &input.InverseFieldEdge{Name: "CreatedEvents"},
+							// when the name is the plural, we have a problem and have conflicts.
+							// createdEvents here is fine. events is not...
+							InverseEdge: &input.InverseFieldEdge{Name: "events"},
 							IndexEdge: &input.IndexEdgeOptions{
 								Name: "createdEvents2",
 							},
@@ -2586,14 +2843,16 @@ func TestParseInputWithIndexedFieldEdgeAndIndexEdge(t *testing.T) {
 	userEdge := eventInfo.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.NotNil(t, userEdge)
 	assert.Equal(t, userEdge.NodeInfo.Node, "User")
-	assert.Equal(t, userEdge.InverseEdge.Name, "CreatedEvents")
+	assert.Equal(t, userEdge.InverseEdge.Name, "events")
 
 	userInfo := schema.Nodes["User"]
 	assert.NotNil(t, userInfo)
 
-	eventsEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
+	eventsEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("events")
 	assert.NotNil(t, eventsEdge)
 	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
+	assert.Equal(t, "UserToEventsQuery", eventsEdge.TsEdgeQueryName())
+	assert.Equal(t, "UserToEventsQuery", eventsEdge.TsEdgeQueryName())
 
 	// 2 nodes, 1 edge
 	testConsts(t, eventInfo.NodeData.ConstantGroups, 1, 0)
@@ -2601,9 +2860,19 @@ func TestParseInputWithIndexedFieldEdgeAndIndexEdge(t *testing.T) {
 
 	eventsEdge2 := userInfo.NodeData.EdgeInfo.GetIndexedEdgeByName("createdEvents2")
 	require.NotNil(t, eventsEdge2)
+	// considering we have a name, we should use it here.
+	// UserToCreatedEvents2Query
 	assert.Equal(t, eventsEdge2.TsEdgeQueryName(), "UserToEventsQuery")
 	assert.Equal(t, "UserToEventsConnection", eventsEdge2.GetGraphQLConnectionName())
+	assert.Equal(t, "UserToEventsQuery", eventsEdge2.TsEdgeQueryName())
 	assert.Equal(t, "UserToEvents", eventsEdge2.GetGraphQLEdgePrefix())
+
+	// so many duplicates here...
+	usersEdge := eventInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("userIDS")
+	assert.NotNil(t, usersEdge)
+	assert.Equal(t, "UserToEventsQuery", usersEdge.TsEdgeQueryName())
+	assert.Equal(t, "UserToEventsConnection", usersEdge.GetGraphQLConnectionName())
+	assert.Equal(t, "UserToEvents", usersEdge.GetGraphQLEdgePrefix())
 }
 
 func TestParseInputWithSnakeCaseIndexedFieldEdgeAndIndexEdge(t *testing.T) {
