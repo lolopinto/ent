@@ -43,6 +43,7 @@ export * from "./comment/query/comment_to_post_query";
 export * from "./comment/query/sticker_to_comments_query";
 export * from "./contact/query/contact_to_comments_query";
 export * from "./contact/query/contact_to_likers_query";
+export * from "./event/query/creator_to_events_query";
 export * from "./event/query/event_to_attending_query";
 export * from "./event/query/event_to_declined_query";
 export * from "./event/query/event_to_hosts_query";

@@ -122,6 +122,8 @@ CREATE TABLE events (
 
 CREATE INDEX event_time_indices ON events (start_time, end_time);
 
+CREATE INDEX events_user_id_idx ON events (user_id);
+
 CREATE TABLE global_login_auth_edges (
     id1 UUID NOT NULL, 
     id1_type TEXT NOT NULL, 

@@ -148,6 +148,7 @@ sa.Table("events", metadata,
     sa.Column("end_time", sa.TIMESTAMP(), nullable=True),
     sa.Column("location", sa.Text(), nullable=False),
     sa.Column("address_id", postgresql.UUID(), nullable=True),
+    sa.Index("events_user_id_idx", "user_id"),
     sa.PrimaryKeyConstraint("id", name="events_id_pkey"),
     sa.Index("event_time_indices", "start_time", "end_time"),
 )

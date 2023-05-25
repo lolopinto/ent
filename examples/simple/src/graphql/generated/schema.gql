@@ -125,6 +125,7 @@ enum EventRsvpStatus {
 }
 
 enum EventSortColumn {
+  CREATOR_ID
   ID
 }
 
@@ -426,6 +427,7 @@ type User implements Node {
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   articles(first: Int, after: String, last: Int, before: String): UserArticleToCommentsConnection!
   commentsFromUser(first: Int, after: String, last: Int, before: String): AuthorToCommentsConnection!
+  eventsCreated(first: Int, after: String, last: Int, before: String): CreatorToEventsConnection!
   fullName: String!
   bar: String
   """contacts same domain..."""
@@ -506,6 +508,18 @@ type ContactToLikersEdge implements Edge {
 type ContactToLikersConnection implements Connection {
   edges: [ContactToLikersEdge!]!
   nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type CreatorToEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type CreatorToEventsConnection implements Connection {
+  edges: [CreatorToEventsEdge!]!
+  nodes: [Event!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

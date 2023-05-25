@@ -55,6 +55,7 @@ import {
 import {
   AuthorToCommentsQuery,
   Contact,
+  CreatorToEventsQuery,
   FeedbackMixin,
   IFeedback,
   UserArticleToCommentsQuery,
@@ -579,5 +580,9 @@ export class UserBase
 
   queryCommentsFromUser(): AuthorToCommentsQuery {
     return AuthorToCommentsQuery.query(this.viewer, this);
+  }
+
+  queryEventsCreated(): CreatorToEventsQuery {
+    return CreatorToEventsQuery.query(this.viewer, this);
   }
 }

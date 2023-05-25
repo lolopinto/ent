@@ -21,11 +21,20 @@ const EventSchema = new EntSchema({
     // name comment
     creatorID: UUIDType({
       immutable: true,
+      index: true,
       fieldEdge: {
         schema: "User",
         inverseEdge: "createdEvents",
         // even more nested comment...
         disableBuilderType: true,
+        // this should create a CreatorToEventsQuery and connection instead of the default
+        // UserToEventsQuery and connection
+        edgeConstName: "CreatorToEvents",
+        indexEdge: {
+          // create edge eventsCreated (ent) and events_created graphql
+          // which point to CreatorToEventsQuery
+          name: "events_created",
+        },
       },
       // storage_key chosen blah blah blah
       storageKey: "user_id",
