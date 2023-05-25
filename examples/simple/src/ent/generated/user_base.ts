@@ -59,6 +59,7 @@ import {
   FeedbackMixin,
   IFeedback,
   UserArticleToCommentsQuery,
+  UserCommentsFromAttachmentQuery,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
   UserToContactsQuery,
@@ -576,6 +577,10 @@ export class UserBase
 
   queryArticles(): UserArticleToCommentsQuery {
     return UserArticleToCommentsQuery.query(this.viewer, this);
+  }
+
+  queryAttachedComments(): UserCommentsFromAttachmentQuery {
+    return UserCommentsFromAttachmentQuery.query(this.viewer, this);
   }
 
   queryCommentsFromUser(): AuthorToCommentsQuery {

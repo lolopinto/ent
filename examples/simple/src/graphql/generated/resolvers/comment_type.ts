@@ -45,6 +45,16 @@ export const CommentType = new GraphQLObjectType({
         return comment.loadArticle();
       },
     },
+    attachment: {
+      type: GraphQLNodeInterface,
+      resolve: (
+        comment: Comment,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return comment.loadAttachment();
+      },
+    },
     author: {
       type: UserType,
       resolve: (

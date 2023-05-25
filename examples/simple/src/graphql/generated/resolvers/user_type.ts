@@ -23,6 +23,7 @@ import {
   CreatorToEventsQuery,
   User,
   UserArticleToCommentsQuery,
+  UserCommentsFromAttachmentQuery,
   UserToCommentsQuery,
   UserToContactsQuery,
   UserToCreatedEventsQuery,
@@ -41,6 +42,7 @@ import {
   CreatorToEventsConnectionType,
   UserAccountStatusType,
   UserArticleToCommentsConnectionType,
+  UserCommentsFromAttachmentConnectionType,
   UserDaysOffType,
   UserIntEnumType,
   UserNestedObjectListType,
@@ -561,6 +563,39 @@ export const UserType = new GraphQLObjectType({
           user.viewer,
           user,
           (v, user: User) => UserArticleToCommentsQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    attachedComments: {
+      type: new GraphQLNonNull(UserCommentsFromAttachmentConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        user: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserCommentsFromAttachmentQuery.query(v, user),
           args,
         );
       },

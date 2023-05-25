@@ -29,6 +29,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 interface customCommentEditInput extends CommentEditInput {
   id: string;
   articleID?: string;
+  attachmentID?: string;
   stickerID?: string;
 }
 
@@ -50,6 +51,12 @@ export const CommentEditInputType = new GraphQLInputObjectType({
       type: GraphQLID,
     },
     articleType: {
+      type: GraphQLString,
+    },
+    attachmentID: {
+      type: GraphQLID,
+    },
+    attachmentType: {
       type: GraphQLString,
     },
     stickerID: {
@@ -98,6 +105,8 @@ export const CommentEditType: GraphQLFieldConfig<
         body: input.body,
         articleID: mustDecodeNullableIDFromGQLID(input.articleID),
         articleType: input.articleType,
+        attachmentID: mustDecodeNullableIDFromGQLID(input.attachmentID),
+        attachmentType: input.attachmentType,
         stickerID: mustDecodeNullableIDFromGQLID(input.stickerID),
         stickerType: input.stickerType,
       },

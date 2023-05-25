@@ -28,6 +28,17 @@ const CommentSchema = new EntSchema({
       },
       index: true,
     }),
+    AttachmentID: UUIDType({
+      index: true,
+      polymorphic: {
+        // should be photo and video but we don't have those yet
+        // types: ["Photo", "Video"],
+        types: ["User", "Contact"],
+        edgeConstName: "CommentsFromAttachment",
+        name: "attachedComments",
+      },
+      nullable: true,
+    }),
     StickerID: UUIDType({ polymorphic: true, nullable: true }),
   },
 
