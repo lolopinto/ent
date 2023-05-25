@@ -212,8 +212,10 @@ func (e *EdgeInfo) GetEdgesForIndexLoader() []IndexedConnectionEdge {
 }
 
 func (e *EdgeInfo) CreateEdgeBaseFile() bool {
-	if len(e.indexedEdgeQueriesMap) > 0 {
-		return true
+	for _, edge := range e.indexedEdgeQueriesMap {
+		if edge.GenerateBaseClass() {
+			return true
+		}
 	}
 
 	for _, edge := range e.Associations {

@@ -26,6 +26,17 @@ func (f *FieldEdgeInfo) EdgeName() string {
 	return f.InverseEdge.Name
 }
 
+func (f *FieldEdgeInfo) GetEdgeConstName() string {
+	if f.EdgeConstName != "" {
+		return f.EdgeConstName
+	}
+	poly := f.Polymorphic
+	if poly != nil {
+		return poly.EdgeConstName
+	}
+	return ""
+}
+
 func FieldEdgeInfoEqual(existing, edge *FieldEdgeInfo) bool {
 	ret := change.CompareNilVals(existing == nil, edge == nil)
 	if ret != nil {

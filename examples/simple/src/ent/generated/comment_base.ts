@@ -25,9 +25,9 @@ import { CommentDBData, commentLoader, commentLoaderInfo } from "./loaders";
 import { NodeType } from "./types";
 import {
   ArticleToCommentsQuery,
-  AttachmentToCommentsQuery,
   CommentArticleToCommentsQuery,
   CommentToPostQuery,
+  CommentsFromAttachmentQuery,
   User,
 } from "../internal";
 import schema from "../../schema/comment_schema";
@@ -221,8 +221,8 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     ) => T,
     viewer: ExampleViewerAlias,
     ent: Ent<ExampleViewerAlias>,
-  ): AttachmentToCommentsQuery {
-    return AttachmentToCommentsQuery.query(viewer, ent);
+  ): CommentsFromAttachmentQuery {
+    return CommentsFromAttachmentQuery.query(viewer, ent);
   }
 
   static loaderOptions<T extends CommentBase>(

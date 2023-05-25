@@ -33,7 +33,6 @@ export * from "./hours_of_operation";
 export * from "./user";
 export * from "./generated/address_query_base";
 export * from "./generated/comment_query_base";
-export * from "./generated/contact_query_base";
 export * from "./generated/event_query_base";
 export * from "./generated/user_query_base";
 export * from "./address/query/address_to_hosted_events_query";
