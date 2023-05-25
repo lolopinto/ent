@@ -128,28 +128,3 @@ export class AssigneeToTodosQueryBase<
     return this.srcEnt;
   }
 }
-
-export class ScopeToTodosQueryBase<
-  TEnt extends Ent<Viewer> = Ent<Viewer>,
-> extends CustomEdgeQueryBase<TEnt, Todo, Viewer> {
-  constructor(viewer: Viewer, private srcEnt: TEnt, sortColumn?: string) {
-    super(viewer, {
-      src: srcEnt,
-      groupCol: "scope_id",
-      loadEntOptions: Todo.loaderOptions(),
-      name: "ScopeToTodosQuery",
-      sortColumn,
-    });
-  }
-
-  static query<
-    T extends ScopeToTodosQueryBase,
-    TEnt extends Ent<Viewer> = Ent<Viewer>,
-  >(this: new (viewer: Viewer, src: TEnt) => T, viewer: Viewer, src: TEnt): T {
-    return new this(viewer, src);
-  }
-
-  async sourceEnt(_id: ID) {
-    return this.srcEnt;
-  }
-}
