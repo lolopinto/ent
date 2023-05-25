@@ -89,9 +89,13 @@ export class DeleteNodeOperation implements DataOperation {
   }
 }
 
-export class RawQueryOperation implements DataOperation {
+export class RawQueryOperation<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> implements DataOperation<TEnt>
+{
   constructor(
-    public builder: Builder<Ent>,
+    public builder: Builder<TEnt, TViewer>,
     private queries: (string | parameterizedQueryOptions)[],
   ) {}
 
