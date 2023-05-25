@@ -3,13 +3,16 @@ import {
   Data,
   Ent,
   Viewer,
-  EntConstructor,
   LoadEntOptions,
   PrivacyError,
   PrivacyPolicy,
   CreateRowOptions,
 } from "../core/base";
-import { loadEdgeDatas, applyPrivacyPolicyForRow } from "../core/ent";
+import {
+  loadEdgeDatas,
+  applyPrivacyPolicyForRow,
+  parameterizedQueryOptions,
+} from "../core/ent";
 import {
   getFields,
   SchemaInputType,
@@ -44,6 +47,7 @@ import { Trigger } from "./action";
 import memoize from "memoizee";
 import * as clause from "../core/clause";
 import { types } from "util";
+import { RawQueryOperation } from "./operations";
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
@@ -1269,6 +1273,20 @@ export class EntChangeset<T extends Ent> implements Changeset {
       `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
       false,
       ops,
+    );
+  }
+
+  static changesetFromQueries(
+    builder: Builder<any, any, any>,
+    queries: Array<string | parameterizedQueryOptions>,
+  ) {
+    return new EntChangeset(
+      builder.viewer,
+      builder,
+      // need unique placeholderID different from the builder. see comment above EntChangeset
+      `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
+      false,
+      [new RawQueryOperation(builder, queries)],
     );
   }
 
