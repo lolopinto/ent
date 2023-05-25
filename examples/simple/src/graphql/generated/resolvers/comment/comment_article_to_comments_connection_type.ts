@@ -15,10 +15,10 @@ var connType: GraphQLConnectionType<
   ExampleViewerAlias
 >;
 
-export const ArticlesFromCommentToCommentsConnectionType = () => {
+export const CommentArticleToCommentsConnectionType = () => {
   if (connType === undefined) {
     connType = new GraphQLConnectionType(
-      "ArticlesFromCommentToComments",
+      "CommentArticleToComments",
       CommentType,
     );
   }

@@ -231,7 +231,7 @@ type Comment implements Node {
   id: ID!
   body: String!
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
-  articles(first: Int, after: String, last: Int, before: String): ArticlesFromCommentToCommentsConnection!
+  articles(first: Int, after: String, last: Int, before: String): CommentArticleToCommentsConnection!
 }
 
 type ContactDate {
@@ -424,7 +424,7 @@ type User implements Node {
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
-  articles(first: Int, after: String, last: Int, before: String): ArticlesFromUserToCommentsConnection!
+  articles(first: Int, after: String, last: Int, before: String): UserArticleToCommentsConnection!
   commentsFromUser(first: Int, after: String, last: Int, before: String): AuthorToCommentsConnection!
   fullName: String!
   bar: String
@@ -450,30 +450,6 @@ type AddressToHostedEventsConnection implements Connection {
   rawCount: Int!
 }
 
-type ArticlesFromCommentToCommentsEdge implements Edge {
-  node: Comment!
-  cursor: String!
-}
-
-type ArticlesFromCommentToCommentsConnection implements Connection {
-  edges: [ArticlesFromCommentToCommentsEdge!]!
-  nodes: [Comment!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type ArticlesFromUserToCommentsEdge implements Edge {
-  node: Comment!
-  cursor: String!
-}
-
-type ArticlesFromUserToCommentsConnection implements Connection {
-  edges: [ArticlesFromUserToCommentsEdge!]!
-  nodes: [Comment!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
 type AuthorToCommentsEdge implements Edge {
   node: Comment!
   cursor: String!
@@ -481,6 +457,18 @@ type AuthorToCommentsEdge implements Edge {
 
 type AuthorToCommentsConnection implements Connection {
   edges: [AuthorToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type CommentArticleToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type CommentArticleToCommentsConnection implements Connection {
+  edges: [CommentArticleToCommentsEdge!]!
   nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -674,6 +662,18 @@ type RootToUserEdge implements Edge {
 type RootToUserConnection implements Connection {
   edges: [RootToUserEdge!]!
   nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserArticleToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type UserArticleToCommentsConnection implements Connection {
+  edges: [UserArticleToCommentsEdge!]!
+  nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

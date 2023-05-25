@@ -53,11 +53,11 @@ import {
   convertNullableUserSuperNestedObject,
 } from "./types";
 import {
-  ArticlesFromUserToCommentsQuery,
   AuthorToCommentsQuery,
   Contact,
   FeedbackMixin,
   IFeedback,
+  UserArticleToCommentsQuery,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
   UserToContactsQuery,
@@ -573,8 +573,8 @@ export class UserBase
     return UserToContactsQuery.query(this.viewer, this.id);
   }
 
-  queryArticles(): ArticlesFromUserToCommentsQuery {
-    return ArticlesFromUserToCommentsQuery.query(this.viewer, this);
+  queryArticles(): UserArticleToCommentsQuery {
+    return UserArticleToCommentsQuery.query(this.viewer, this);
   }
 
   queryCommentsFromUser(): AuthorToCommentsQuery {

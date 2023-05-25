@@ -12,10 +12,11 @@ import (
 // common things needed across edges/fields etc
 // only allowed to import input
 type FieldEdgeInfo struct {
-	Schema      string                  `json:"schema,omitempty"`
-	InverseEdge *input.InverseFieldEdge `json:"inverseEdge,omitempty"`
-	Polymorphic *PolymorphicOptions     `json:"polymorphic,omitempty"`
-	IndexEdge   *input.IndexEdgeOptions `json:"indexEdge,omitempty"`
+	Schema        string                  `json:"schema,omitempty"`
+	InverseEdge   *input.InverseFieldEdge `json:"inverseEdge,omitempty"`
+	Polymorphic   *PolymorphicOptions     `json:"polymorphic,omitempty"`
+	IndexEdge     *input.IndexEdgeOptions `json:"indexEdge,omitempty"`
+	EdgeConstName string                  `json:"edgeConstName,omitempty"`
 }
 
 func (f *FieldEdgeInfo) EdgeName() string {

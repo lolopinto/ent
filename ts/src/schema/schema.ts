@@ -456,6 +456,26 @@ export interface FieldEdge {
   // to simplify the code when it's known that the object here
   // would always have been previously created. simplifies validation
   disableBuilderType?: boolean;
+
+  // similar to polymorphic options && assoc edge, if provided and an index query, used to generate the query
+  // e.g.
+  //
+  // author_id: UUIDType({
+  //   index: true,
+  //   fieldEdge: {
+  //     schema: "User",
+  //     edgeConstName: 'AuthorToCommentsMade';
+  //   },
+  // })
+  // will generate the following query:
+  // AuthorToCommentsMadeQuery
+  //
+  // instead of the default:
+  // AuthorToCommentsQuery
+  //
+  // The graphql connection and edge will be AuthorToCommentsMadeConnection and AuthorToCommentsMadeEdge
+  //
+  edgeConstName?: string;
 }
 
 interface PrivateOptions {
@@ -561,6 +581,29 @@ export interface PolymorphicOptions {
   // serverDefault for derived polymorphic field
   // TODO rename this. it's not clear...
   serverDefault?: any;
+
+  // similar to assoc edge, if provided and an index query, used to generate the query
+  // e.g.
+  //
+  // author_id: UUIDType({
+  //   index: true,
+  //   polymorphic: {
+  //     types: ['User', 'Account'],
+  //     edgeConstName: 'AuthorToCommentsMade';
+  //   },
+  // })
+  // will generate the following 3 queries:
+  // AuthorToCommentsMadeQuery
+  // UserAuthorToCommentsMadeQuery
+  // AccountAuthorToCommentsMadeQuery
+  //
+  // instead of the default:
+  // AuthorToCommentsQuery
+  // UserAuthorToCommentsQuery
+  // AccountAuthorToCommentsQuery
+  //
+  // The graphql connection and edge will be AuthorToCommentsMadeConnection and AuthorToCommentsMadeEdge
+  edgeConstName?: string;
 }
 
 // Field interface that each Field needs to support

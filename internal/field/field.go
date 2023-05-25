@@ -163,9 +163,10 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 
 	if f.FieldEdge != nil {
 		ret.fieldEdge = &base.FieldEdgeInfo{
-			Schema:      f.FieldEdge.Schema,
-			InverseEdge: f.FieldEdge.InverseEdge,
-			IndexEdge:   f.FieldEdge.IndexEdge,
+			Schema:        f.FieldEdge.Schema,
+			InverseEdge:   f.FieldEdge.InverseEdge,
+			IndexEdge:     f.FieldEdge.IndexEdge,
+			EdgeConstName: f.FieldEdge.EdgeConstName,
 		}
 		ret.disableBuilderType = f.FieldEdge.DisableBuilderType
 	}

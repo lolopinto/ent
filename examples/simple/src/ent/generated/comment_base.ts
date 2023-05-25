@@ -25,7 +25,7 @@ import { CommentDBData, commentLoader, commentLoaderInfo } from "./loaders";
 import { NodeType } from "./types";
 import {
   ArticleToCommentsQuery,
-  ArticlesFromCommentToCommentsQuery,
+  CommentArticleToCommentsQuery,
   CommentToPostQuery,
   User,
 } from "../internal";
@@ -240,8 +240,8 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     return CommentToPostQuery.query(this.viewer, this.id);
   }
 
-  queryArticles(): ArticlesFromCommentToCommentsQuery {
-    return ArticlesFromCommentToCommentsQuery.query(this.viewer, this);
+  queryArticles(): CommentArticleToCommentsQuery {
+    return CommentArticleToCommentsQuery.query(this.viewer, this);
   }
 
   async loadArticle(): Promise<Ent | null> {

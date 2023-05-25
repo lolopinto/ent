@@ -96,7 +96,7 @@ type OneOf<T extends {}[]> = {
   >;
 }[number];
 export type CreateUserActionUpsertOptions = { update_cols?: string[] } & OneOf<
-  [{ constraint: UpsertConstraints }, { column: UpsertCols }]
+  [{ column: UpsertCols }, { constraint: UpsertConstraints }]
 >;
 
 export class CreateUserActionBase

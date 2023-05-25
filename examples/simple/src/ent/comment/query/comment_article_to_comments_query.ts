@@ -5,7 +5,7 @@
 import { ArticleToCommentsQuery, CommentBase } from "../../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-export class ArticlesFromCommentToCommentsQuery extends ArticleToCommentsQuery {
+export class CommentArticleToCommentsQuery extends ArticleToCommentsQuery {
   constructor(
     viewer: ExampleViewerAlias,
     srcEnt: CommentBase,
