@@ -1264,6 +1264,9 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 		}
 
 		if e.Polymorphic != nil {
+			if !f.Index() {
+				continue
+			}
 			// so we want to add it to edges for
 			if err := edgeInfo.AddIndexedEdgeFromSource(
 				cfg,

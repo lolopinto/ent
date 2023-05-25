@@ -1293,6 +1293,9 @@ func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
 	ownerEdge := addressInfo.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
 	assert.NotNil(t, ownerEdge)
 
+	addressesEdge := addressInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("ownerIDS")
+	require.Nil(t, addressesEdge)
+
 	userCfg := schema.Nodes["User"]
 	assert.NotNil(t, userCfg)
 
