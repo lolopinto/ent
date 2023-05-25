@@ -2000,6 +2000,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 
 	for _, group := range nodeData.EdgeInfo.AssocGroups {
 		method := group.GetStatusMethod()
+		gqlName := group.GetGraphQLNameForStatusMethod(processor.Config)
 		var imps []*tsimport.ImportPath
 		if !group.IsNullable() {
 			imps = append(imps, tsimport.NewGQLClassImportPath("GraphQLNonNull"))
@@ -2008,15 +2009,26 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		imps = getGQLFileImports(imps, false)
 
 		if group.ViewerBased {
+			hasResolve := method != gqlName
+			var contents []string
+			if hasResolve {
+				contents = []string{
+					fmt.Sprintf("return %s.%s();", instance, method),
+				}
+			}
+
 			if err := result.addField(&fieldType{
-				Name:         method,
-				FieldImports: imps,
+				Name:               gqlName,
+				FieldImports:       imps,
+				HasResolveFunction: hasResolve,
+				HasAsyncModifier:   true,
+				FunctionContents:   contents,
 			}); err != nil {
 				return nil, err
 			}
 		} else {
 			if err := result.addField(&fieldType{
-				Name:         method,
+				Name:         gqlName,
 				FieldImports: imps,
 				ExtraImports: []*tsimport.ImportPath{
 					tsimport.NewLocalEntImportPath(group.DestNodeInfo.Node),
