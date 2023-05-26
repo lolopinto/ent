@@ -441,14 +441,6 @@ func (f *Field) QueryFromEntName() string {
 	return ret
 }
 
-// TODO probably gonna collapse into above
-func (f *Field) QueryFrom() bool {
-	if !f.index || f.polymorphic != nil {
-		return false
-	}
-	return !strings.HasSuffix(f.FieldName, "ID")
-}
-
 func (f *Field) Nullable() bool {
 	return f.nullable
 }

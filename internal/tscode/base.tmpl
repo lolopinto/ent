@@ -407,7 +407,6 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       ): {{$queryName}} {
         return {{$queryName}}.query(viewer, ent);
       }
-    {{ else if $field.QueryFrom -}}
     {{end}}
   {{end -}}
 
