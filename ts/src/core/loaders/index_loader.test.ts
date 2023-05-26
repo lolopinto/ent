@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { buildQuery, DefaultLimit } from "../ent";
+import { buildQuery, getDefaultLimit } from "../ent";
 import * as clause from "../clause";
 
 import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
@@ -515,7 +515,7 @@ function verifyMultiCountQueryCacheMiss(ids: ID[], slice?: number) {
       fields: FakeContact.loaderOptions().fields,
       clause: clause.Eq("user_id", ids[idx]),
       orderby: "created_at DESC",
-      limit: slice || DefaultLimit,
+      limit: slice || getDefaultLimit(),
     });
     expect(log).toStrictEqual({
       query: expQuery,

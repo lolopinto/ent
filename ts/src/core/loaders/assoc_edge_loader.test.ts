@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { AssocEdge, buildQuery, DefaultLimit } from "../ent";
+import { AssocEdge, buildQuery, getDefaultLimit } from "../ent";
 import {
   clearGlobalSchema,
   setGlobalSchema,
@@ -681,7 +681,7 @@ function verifyMultiCountQueryCacheMiss(ids: ID[], slice?: number) {
         __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
       ),
       orderby: "time DESC",
-      limit: slice || DefaultLimit,
+      limit: slice || getDefaultLimit(),
     });
     expect(log).toStrictEqual({
       query: expQuery,

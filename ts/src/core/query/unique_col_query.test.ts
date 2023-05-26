@@ -13,7 +13,7 @@ import {
   UserToTagsFkeyQueryAsc,
 } from "../../testutils/fake_data";
 import { Viewer } from "../base";
-import { buildQuery, DefaultLimit } from "../ent";
+import { buildQuery, getDefaultLimit } from "../ent";
 import { AndOptional, Eq, Greater, Less } from "../clause";
 import { EdgeQuery } from "./query";
 
@@ -83,7 +83,7 @@ function tests(
     canonicalName?: string;
     last?: boolean;
   }) {
-    const limit = opts?.limit || DefaultLimit;
+    const limit = opts?.limit || getDefaultLimit();
     const canonicalName = opts?.canonicalName;
     let orderby = dir;
     let fn = dir === "DESC" ? Less : Greater;

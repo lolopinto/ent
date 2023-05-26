@@ -1,5 +1,5 @@
 import { ID, Ent, Viewer } from "../base";
-import { AssocEdge, DefaultLimit } from "../ent";
+import { AssocEdge, getDefaultLimit } from "../ent";
 import { EdgeQuery } from "./query";
 import { EdgeQueryCtr } from "./assoc_query";
 import { IDViewer, LoggedOutViewer } from "../viewer";
@@ -107,7 +107,7 @@ export function assocTests(ml: MockLogs, global = false) {
   function verifyQuery({
     length = 1,
     numQueries = 1,
-    limit = DefaultLimit,
+    limit = getDefaultLimit(),
     disablePaginationBump = false,
   }) {
     expect(ml.logs.length).toBe(length);
@@ -204,7 +204,7 @@ export function assocTests(ml: MockLogs, global = false) {
       verifyQuery({
         length: this.dataz.length,
         numQueries: this.dataz.length,
-        limit: this.limit || DefaultLimit,
+        limit: this.limit || getDefaultLimit(),
       });
     }
 
@@ -235,7 +235,7 @@ export function assocTests(ml: MockLogs, global = false) {
       verifyQuery({
         length: this.dataz.length,
         numQueries: this.dataz.length,
-        limit: this.limit || DefaultLimit,
+        limit: this.limit || getDefaultLimit(),
       });
     }
 
@@ -256,7 +256,7 @@ export function assocTests(ml: MockLogs, global = false) {
       verifyQuery({
         length: this.dataz.length,
         numQueries: this.dataz.length,
-        limit: this.limit || DefaultLimit,
+        limit: this.limit || getDefaultLimit(),
       });
     }
 
@@ -288,7 +288,7 @@ export function assocTests(ml: MockLogs, global = false) {
         // and then twice to fetch all the nodes for the contacts
         length: this.dataz.length + this.dataz.length + this.dataz.length * 2,
         numQueries: this.dataz.length,
-        limit: this.limit || DefaultLimit,
+        limit: this.limit || getDefaultLimit(),
       });
     }
   }
@@ -712,7 +712,7 @@ export function assocTests(ml: MockLogs, global = false) {
       verifyQuery({
         length: 1,
         numQueries: 1,
-        limit: this.limit || DefaultLimit,
+        limit: this.limit || getDefaultLimit(),
       });
     }
 
@@ -733,7 +733,7 @@ export function assocTests(ml: MockLogs, global = false) {
       verifyQuery({
         length: 1,
         numQueries: 1,
-        limit: this.limit || DefaultLimit,
+        limit: this.limit || getDefaultLimit(),
       });
     }
 
@@ -757,7 +757,7 @@ export function assocTests(ml: MockLogs, global = false) {
       verifyQuery({
         length: 1,
         numQueries: 1,
-        limit: this.limit || DefaultLimit,
+        limit: this.limit || getDefaultLimit(),
       });
     }
 
@@ -784,7 +784,7 @@ export function assocTests(ml: MockLogs, global = false) {
       //   // 1 for edges, 1 for users, 1 for events
       //   length: 3,
       //   numQueries: 3,
-      //   limit: this.limit || DefaultLimit,
+      //   limit: this.limit || getDefaultLimit(),
       // });
     }
   }

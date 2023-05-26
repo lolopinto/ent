@@ -1,5 +1,5 @@
 import { Data, ID, Viewer } from "../base";
-import { DefaultLimit, AssocEdge, getCursor } from "../ent";
+import { getDefaultLimit, AssocEdge, getCursor, setDefaultLimit } from "../ent";
 import { setGlobalSchema } from "../global_schema";
 import { IDViewer, LoggedOutViewer } from "../viewer";
 import {
@@ -242,7 +242,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     {
       length = 1,
       numQueries = 1,
-      limit = DefaultLimit,
+      limit = getDefaultLimit(),
       disablePaginationBump = false,
       orderby = opts.orderby,
     },
@@ -529,6 +529,86 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     test("ents", async () => {
       await filter.testEnts();
       verifyQuery(filter, { length: opts.entsLength });
+    });
+
+    test("all", async () => {
+      await filter.testAll();
+    });
+
+    test("ents cache", async () => {
+      await filter.testEntsCache();
+    });
+
+    test("data cache", async () => {
+      await filter.testDataCache();
+    });
+  });
+
+  describe("override default limit", () => {
+    const filter = new TestQueryFilter(
+      (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
+        // no filters
+        return q;
+      },
+      opts.newQuery,
+      (contacts: FakeContact[]) => {
+        // nothing to do here
+        // reverse because edges are most recent first
+        if (opts.orderby === "DESC") {
+          return contacts.reverse();
+        }
+        return contacts;
+      },
+      getViewer(),
+    );
+
+    const OUR_DEFAULT_LIMIT = 10;
+
+    beforeAll(async () => {
+      setDefaultLimit(OUR_DEFAULT_LIMIT);
+    });
+
+    afterAll(async () => {
+      //set it back to real default
+      setDefaultLimit(1000);
+    });
+
+    beforeEach(async () => {
+      await filter.createData();
+    });
+
+    test("ids", async () => {
+      await filter.testIDs();
+      verifyQuery(filter, {
+        limit: OUR_DEFAULT_LIMIT,
+      });
+    });
+
+    test("rawCount", async () => {
+      await filter.testRawCount();
+      verifyCountQuery({});
+    });
+
+    test("count", async () => {
+      await filter.testCount();
+      verifyQuery(filter, {
+        limit: OUR_DEFAULT_LIMIT,
+      });
+    });
+
+    test("edges", async () => {
+      await filter.testEdges();
+      verifyQuery(filter, {
+        limit: OUR_DEFAULT_LIMIT,
+      });
+    });
+
+    test("ents", async () => {
+      await filter.testEnts();
+      verifyQuery(filter, {
+        length: opts.entsLength,
+        limit: OUR_DEFAULT_LIMIT,
+      });
     });
 
     test("all", async () => {

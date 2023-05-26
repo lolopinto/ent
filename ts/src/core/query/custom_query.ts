@@ -9,7 +9,7 @@ import {
   ConfigurableLoaderFactory,
 } from "../base";
 import { AndOptional, Clause } from "../clause";
-import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
+import { applyPrivacyPolicyForRows, getDefaultLimit } from "../ent";
 import {
   ObjectLoaderFactory,
   QueryLoaderFactory,
@@ -249,7 +249,7 @@ export abstract class CustomEdgeQueryBase<
       options.orderby = `${this.getSortCol()} DESC`;
     }
     if (!options.limit) {
-      options.limit = DefaultLimit;
+      options.limit = getDefaultLimit();
     }
     const loader = this.getQueryLoader(options);
     const info = infos[0];
