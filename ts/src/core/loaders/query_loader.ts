@@ -9,7 +9,7 @@ import {
   PrimableLoader,
 } from "../base";
 import {
-  DefaultLimit,
+  getDefaultLimit,
   performRawQuery,
   buildGroupQuery,
   loadRows,
@@ -58,7 +58,7 @@ async function simpleCase<K extends any>(
     ...options,
     clause: cls,
     orderby: getOrderBy(sortCol, queryOptions?.orderby),
-    limit: queryOptions?.limit || DefaultLimit,
+    limit: queryOptions?.limit || getDefaultLimit(),
   });
 }
 
@@ -110,7 +110,7 @@ function createLoader<K extends any>(
       fields: options.fields,
       values: keys,
       orderby: getOrderBy(sortCol, queryOptions?.orderby),
-      limit: queryOptions?.limit || DefaultLimit,
+      limit: queryOptions?.limit || getDefaultLimit(),
       groupColumn: col,
       clause: extraClause,
     });

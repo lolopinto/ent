@@ -11,7 +11,7 @@ import {
   loadCustomEdges,
   AssocEdgeConstructor,
   loadEdgeData,
-  DefaultLimit,
+  getDefaultLimit,
   performRawQuery,
   loadEdgeForID2,
   buildGroupQuery,
@@ -60,7 +60,7 @@ function createLoader<T extends AssocEdge>(
 
     options.orderby = options.orderby || "time DESC";
     // TODO defaultEdgeQueryOptions
-    options.limit = options.limit || DefaultLimit;
+    options.limit = options.limit || getDefaultLimit();
 
     const tableName = edgeData.edgeTable;
     const { cls: cls1, fields } = getEdgeClauseAndFields(
@@ -72,7 +72,7 @@ function createLoader<T extends AssocEdge>(
       fields,
       values: keys,
       orderby: options.orderby,
-      limit: options.limit || DefaultLimit,
+      limit: options.limit || getDefaultLimit(),
       groupColumn: "id1",
       clause: cls1,
     });

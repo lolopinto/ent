@@ -6,7 +6,7 @@ import {
   Data,
   PrivacyPolicy,
 } from "../base";
-import { DefaultLimit, getCursor } from "../ent";
+import { getDefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
@@ -540,7 +540,7 @@ export abstract class BaseEdgeQuery<
 
     if (!this.filters.length) {
       // if no filter, we add the firstN filter to ensure we get pagination info
-      this.first(DefaultLimit);
+      this.first(getDefaultLimit());
     }
 
     let options: EdgeQueryableDataOptions = {};

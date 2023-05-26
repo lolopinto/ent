@@ -1386,9 +1386,16 @@ interface loadCustomEdgesOptions<T extends AssocEdge> extends loadEdgesOptions {
   ctr: AssocEdgeConstructor<T>;
 }
 
-export const DefaultLimit = 1000;
+let defaultLimit = 1000;
 
-// TODO default limit from somewhere
+export function setDefaultLimit(limit: number) {
+  defaultLimit = limit;
+}
+
+export function getDefaultLimit() {
+  return defaultLimit;
+}
+
 function defaultEdgeQueryOptions(
   id1: ID,
   edgeType: string,
@@ -1401,7 +1408,7 @@ function defaultEdgeQueryOptions(
   return {
     clause: cls,
     orderby: "time DESC",
-    limit: DefaultLimit,
+    limit: defaultLimit,
   };
 }
 

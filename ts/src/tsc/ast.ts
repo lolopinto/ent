@@ -2,7 +2,7 @@ import { Data } from "../core/base";
 import ts from "typescript";
 import * as path from "path";
 import { load } from "js-yaml";
-import { Config } from "../core/config";
+import { ConfigWithCodegen } from "../core/config";
 import * as fs from "fs";
 import { PACKAGE } from "../core/const";
 
@@ -320,7 +320,7 @@ export interface customInfo {
 
 // also used in parse schema logic
 export function getCustomInfo(): customInfo {
-  let yaml: Config | undefined = {};
+  let yaml: ConfigWithCodegen | undefined = {};
 
   let relativeImports = false;
   try {
@@ -328,7 +328,7 @@ export function getCustomInfo(): customInfo {
       fs.readFileSync(path.join(process.cwd(), "ent.yml"), {
         encoding: "utf8",
       }),
-    ) as Config;
+    ) as ConfigWithCodegen;
 
     relativeImports = yaml?.codegen?.relativeImports || false;
 

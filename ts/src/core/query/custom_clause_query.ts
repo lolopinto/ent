@@ -9,7 +9,7 @@ import {
 import { AndOptional, Clause } from "../clause";
 import {
   applyPrivacyPolicyForRows,
-  DefaultLimit,
+  getDefaultLimit,
   loadRow,
   loadRows,
 } from "../ent";
@@ -111,7 +111,7 @@ export class CustomClauseQuery<
       options.orderby = `${this.options.sortColumn} ${direction}`;
     }
     if (!options.limit) {
-      options.limit = DefaultLimit;
+      options.limit = getDefaultLimit();
     }
 
     const rows = await loadRows({
@@ -119,7 +119,7 @@ export class CustomClauseQuery<
       fields: this.options.loadEntOptions.fields,
       clause: AndOptional(this.clause, options.clause),
       orderby: getOrderBy(this.getSortCol(), options?.orderby),
-      limit: options?.limit || DefaultLimit,
+      limit: options?.limit || getDefaultLimit(),
       context: this.viewer.context,
     });
 

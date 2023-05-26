@@ -1,7 +1,7 @@
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { buildQuery, DefaultLimit } from "../ent";
+import { buildQuery, getDefaultLimit } from "../ent";
 import * as clause from "../clause";
 import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
@@ -411,7 +411,7 @@ function commonTests() {
         fields: FakeEvent.loaderOptions().fields,
         clause: getCompleteClause(ids[idx]),
         orderby: "start_time asc",
-        limit: slice || DefaultLimit,
+        limit: slice || getDefaultLimit(),
       });
       // not testing actual values for timestamp here because time has probably advanced since test ran
       expect(log.query).toEqual(expQuery);
