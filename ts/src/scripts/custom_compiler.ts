@@ -2,7 +2,7 @@
 
 import ts from "typescript";
 import * as path from "path";
-import glob from "glob";
+import * as glob from "glob";
 import { readCompilerOptions } from "../tsc/compilerOptions";
 
 // TODO this should probably be its own package but for now it's here
