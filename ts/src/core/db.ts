@@ -162,7 +162,9 @@ export default class DB {
       });
     } else {
       let sqlite = require("better-sqlite3");
-      this.q = new Sqlite(sqlite(db.filePath || ""));
+      const dbb = sqlite(db.filePath || "");
+      dbb.pragma("journal_mode = WAL");
+      this.q = new Sqlite(dbb);
     }
   }
 
@@ -378,6 +380,9 @@ export class Sqlite implements Connection, SyncClient {
       r = this.db.prepare(query).all(this.convertValues(values));
     } else {
       r = this.db.prepare(query).all();
+    }
+    if (query.includes("hello")) {
+      console.debug("queryAllSync", query, values, r);
     }
     return {
       rowCount: r.length,

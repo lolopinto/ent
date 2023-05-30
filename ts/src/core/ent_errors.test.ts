@@ -1,8 +1,6 @@
 import {
   PrivacyPolicy,
-  ID,
   Ent,
-  Data,
   Viewer,
   PrivacyResult,
   Allow,
@@ -32,7 +30,6 @@ import { ObjectLoaderFactory } from "./loaders";
 import { TestContext } from "../testutils/context/test_context";
 import { BaseEnt } from "../testutils/builder";
 import { loadConfig } from "./config";
-import { setLogLevels } from "./logger";
 
 class User extends BaseEnt {
   accountID: string;
@@ -89,22 +86,22 @@ const invalidFieldOpts: LoadEntOptions<User> = {
   }),
 };
 
-// describe("postgres", () => {
-//   const tdb = new TempDB(Dialect.Postgres, [tbl]);
+describe("postgres", () => {
+  const tdb = new TempDB(Dialect.Postgres, [tbl]);
 
-//   beforeAll(async () => {
-//     await tdb.beforeAll();
-//     await createAllRows();
-//   });
+  beforeAll(async () => {
+    await tdb.beforeAll();
+    await createAllRows();
+  });
 
-//   afterAll(async () => {
-//     await tdb.afterAll();
-//   });
+  afterAll(async () => {
+    await tdb.afterAll();
+  });
 
-//   commonTests();
-// });
+  commonTests();
+});
 
-describe.only("sqlite", () => {
+describe("sqlite", () => {
   setupSqlite(`sqlite:///ent_db_errors_test.db`, () => [tbl]);
 
   beforeEach(async () => {
@@ -292,7 +289,6 @@ function commonTests() {
     });
     try {
       const r = await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
-      console.log(r);
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toMatch(
