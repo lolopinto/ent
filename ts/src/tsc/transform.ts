@@ -1,4 +1,4 @@
-import { glob, IOptions } from "glob";
+import * as glob from "glob";
 import ts from "typescript";
 import { execSync } from "child_process";
 import * as fs from "fs";
@@ -31,7 +31,7 @@ interface NodeInfo {
 export interface TransformFile {
   glob: string;
 
-  globOptions?: IOptions;
+  globOptions?: glob.GlobOptions;
 
   preprocessFile?: (
     contents: string,
@@ -63,10 +63,11 @@ function normalizePath(p: string) {
 }
 
 export function transform(transform: TransformFile) {
-  let files = glob.sync(transform.glob, transform.globOptions);
+  let files = glob.sync(transform.glob, transform.globOptions ?? {});
   const target = getTargetFromCurrentDir();
   if (transform.filter) {
-    files = transform.filter(files);
+    const f2 = files.map((f) => (typeof f === "string" ? f : f.path));
+    files = transform.filter(f2);
   }
 
   files.forEach((file) => {

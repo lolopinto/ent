@@ -1,4 +1,4 @@
-import Graph from "graph-data-structure";
+import { Graph } from "graph-data-structure";
 import { ID, Ent, Viewer, Context, Data } from "../core/base";
 import { logQuery } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
