@@ -278,7 +278,7 @@ function commonTests() {
     }
   });
 
-  test.only("query error throws for loadEnt", async () => {
+  test("query error throws for loadEnt", async () => {
     try {
       const r = await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
       throw new Error("should throw");
