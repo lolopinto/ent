@@ -211,7 +211,7 @@ class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
   }
 }
 
-function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
+export function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
 ): EntLoader<TViewer, TEnt> {

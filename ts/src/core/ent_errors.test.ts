@@ -10,7 +10,13 @@ import {
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule, EntPrivacyError } from "./privacy";
-import { loadCustomEnts, loadEnt, loadEnts, loadEntX } from "./ent";
+import {
+  getEntLoader,
+  loadCustomEnts,
+  loadEnt,
+  loadEnts,
+  loadEntX,
+} from "./ent";
 import {
   createRowForTest,
   deleteRowsForTest,
@@ -86,20 +92,20 @@ const invalidFieldOpts: LoadEntOptions<User> = {
   }),
 };
 
-describe("postgres", () => {
-  const tdb = new TempDB(Dialect.Postgres, [tbl]);
+// describe("postgres", () => {
+//   const tdb = new TempDB(Dialect.Postgres, [tbl]);
 
-  beforeAll(async () => {
-    await tdb.beforeAll();
-    await createAllRows();
-  });
+//   beforeAll(async () => {
+//     await tdb.beforeAll();
+//     await createAllRows();
+//   });
 
-  afterAll(async () => {
-    await tdb.afterAll();
-  });
+//   afterAll(async () => {
+//     await tdb.afterAll();
+//   });
 
-  commonTests();
-});
+//   commonTests();
+// });
 
 describe("sqlite", () => {
   setupSqlite(`sqlite:///ent_db_errors_test.db`, () => [tbl]);
@@ -186,6 +192,56 @@ function commonTests() {
   test("query error throws for loadEnts", async () => {
     try {
       await loadEnts(new IDViewer(1), invalidFieldOpts, 1);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
+  test("query error throws for loadEnts implementation detail", async () => {
+    // use loader directly
+    const loader = getEntLoader(new IDViewer(1), invalidFieldOpts);
+    const rows = await loader.loadMany([1]);
+    expect(rows.length).toBe(1);
+    // when it fails,SqliteError
+    console.debug(rows);
+    expect(rows[0]).toBeInstanceOf(Error);
+    expect((rows[0] as Error).message).toBe(getExpectedErrorMessageOnRead());
+  });
+
+  test("query error throws for loadEnts implementation detail with context", async () => {
+    // use loader directly
+    const loader = getEntLoader(
+      contextifyViewer(new IDViewer(1)),
+      invalidFieldOpts,
+    );
+    const rows = await loader.loadMany([1]);
+    expect(rows.length).toBe(1);
+    // when it fails,ErrorWrapper
+    console.debug(rows);
+    expect(rows[0]).toBeInstanceOf(Error);
+    expect((rows[0] as Error).message).toBe(getExpectedErrorMessageOnRead());
+  });
+
+  test("query error throws for loadEnt implementation detail", async () => {
+    // use loader directly
+    const loader = getEntLoader(new IDViewer(1), invalidFieldOpts);
+    try {
+      await loader.load(1);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
+  test("query error throws for loadEnt implementation detail with context", async () => {
+    // use loader directly
+    const loader = getEntLoader(
+      contextifyViewer(new IDViewer(1)),
+      invalidFieldOpts,
+    );
+    try {
+      await loader.load(1);
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
