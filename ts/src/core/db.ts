@@ -379,7 +379,6 @@ export class Sqlite implements Connection, SyncClient {
     } else {
       r = this.db.prepare(query).all();
     }
-    console.log(query, values, r);
     return {
       rowCount: r.length,
       rows: r,
