@@ -32,6 +32,7 @@ import { ObjectLoaderFactory } from "./loaders";
 import { TestContext } from "../testutils/context/test_context";
 import { BaseEnt } from "../testutils/builder";
 import { loadConfig } from "./config";
+import { setLogLevels } from "./logger";
 
 class User extends BaseEnt {
   accountID: string;
@@ -103,8 +104,9 @@ const invalidFieldOpts: LoadEntOptions<User> = {
 //   commonTests();
 // });
 
-describe("sqlite", () => {
+describe.only("sqlite", () => {
   setupSqlite(`sqlite:///ent_db_errors_test.db`, () => [tbl]);
+  // setLogLevels("query");
 
   beforeEach(async () => {
     await createAllRows();
@@ -185,15 +187,13 @@ function commonTests() {
     expect(ents.get(1)?.viewer.context).toBeDefined();
   });
 
-  test.only("query error throws for loadEnts", async () => {
-    // try {
-    //   console.debug(invalidFieldOpts);
-    await loadEnts(new IDViewer(1), invalidFieldOpts, 1);
-    //   throw new Error("should throw");
-    // } catch (err) {
-    //   console.debug(err);
-    //   expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
-    // }
+  test("query error throws for loadEnts", async () => {
+    try {
+      await loadEnts(new IDViewer(1), invalidFieldOpts, 1);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
   });
 
   test("query error throws for loadEnts. log query with error", async () => {
@@ -278,10 +278,9 @@ function commonTests() {
     }
   });
 
-  test("query error throws for loadEnt", async () => {
+  test.only("query error throws for loadEnt", async () => {
     try {
       const r = await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
-      console.log(r);
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
