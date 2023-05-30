@@ -381,9 +381,6 @@ export class Sqlite implements Connection, SyncClient {
     } else {
       r = this.db.prepare(query).all();
     }
-    if (query.includes("hello")) {
-      console.debug("queryAllSync", query, values, r);
-    }
     return {
       rowCount: r.length,
       rows: r,
