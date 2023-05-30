@@ -374,21 +374,16 @@ export class Sqlite implements Connection, SyncClient {
 
   queryAllSync(query: string, values?: any[]): QueryResult<QueryResultRow> {
     let r: any[];
-    try {
-      if (values) {
-        r = this.db.prepare(query).all(this.convertValues(values));
-      } else {
-        r = this.db.prepare(query).all();
-      }
-      console.log(query, values, r);
-      return {
-        rowCount: r.length,
-        rows: r,
-      };
-    } catch (err) {
-      console.error(query, values, err);
-      throw err;
+    if (values) {
+      r = this.db.prepare(query).all(this.convertValues(values));
+    } else {
+      r = this.db.prepare(query).all();
     }
+    console.log(query, values, r);
+    return {
+      rowCount: r.length,
+      rows: r,
+    };
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {
