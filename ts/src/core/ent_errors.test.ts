@@ -106,7 +106,6 @@ const invalidFieldOpts: LoadEntOptions<User> = {
 
 describe.only("sqlite", () => {
   setupSqlite(`sqlite:///ent_db_errors_test.db`, () => [tbl]);
-  // setLogLevels("query");
 
   beforeEach(async () => {
     await createAllRows();

@@ -68,7 +68,7 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
     - run: npm run build --if-present 
-    - run: npx jest src/core/ent_errors.test.ts
+    - run: npx jest 
       env:
         POSTGRES_PASSWORD: 'postgres'
         POSTGRES_USER: 'postgres'    
