@@ -68,9 +68,9 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
     - run: npm run build --if-present 
-    - run: jest --testPathIgnorePatterns="ent_errors|orchestrator_upsert" 
-    - run: jest src/core/ent_errors.test.ts
-    - run: jest src/action/orchestrator_upsert.test.ts 
+    - run: npx jest --testPathIgnorePatterns="ent_errors|orchestrator_upsert" 
+    - run: npx jest src/core/ent_errors.test.ts
+    - run: npx jest src/action/orchestrator_upsert.test.ts 
       env:
         POSTGRES_PASSWORD: 'postgres'
         POSTGRES_USER: 'postgres'    
