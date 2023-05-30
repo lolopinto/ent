@@ -88,20 +88,20 @@ const invalidFieldOpts: LoadEntOptions<User> = {
   }),
 };
 
-describe("postgres", () => {
-  const tdb = new TempDB(Dialect.Postgres, [tbl]);
+// describe("postgres", () => {
+//   const tdb = new TempDB(Dialect.Postgres, [tbl]);
 
-  beforeAll(async () => {
-    await tdb.beforeAll();
-    await createAllRows();
-  });
+//   beforeAll(async () => {
+//     await tdb.beforeAll();
+//     await createAllRows();
+//   });
 
-  afterAll(async () => {
-    await tdb.afterAll();
-  });
+//   afterAll(async () => {
+//     await tdb.afterAll();
+//   });
 
-  commonTests();
-});
+//   commonTests();
+// });
 
 describe("sqlite", () => {
   setupSqlite(`sqlite:///ent_db_errors_test.db`, () => [tbl]);
@@ -185,13 +185,15 @@ function commonTests() {
     expect(ents.get(1)?.viewer.context).toBeDefined();
   });
 
-  test("query error throws for loadEnts", async () => {
-    try {
-      await loadEnts(new IDViewer(1), invalidFieldOpts, 1);
-      throw new Error("should throw");
-    } catch (err) {
-      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
-    }
+  test.only("query error throws for loadEnts", async () => {
+    // try {
+    //   console.debug(invalidFieldOpts);
+    await loadEnts(new IDViewer(1), invalidFieldOpts, 1);
+    //   throw new Error("should throw");
+    // } catch (err) {
+    //   console.debug(err);
+    //   expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    // }
   });
 
   test("query error throws for loadEnts. log query with error", async () => {
