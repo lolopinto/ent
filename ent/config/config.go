@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -102,10 +103,10 @@ func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool) string {
 	format := "{driver}://{user}:{password}@{host}/{dbname}"
 	parts := []string{
 		"{driver}", driver,
-		"{user}", dbData.User,
-		"{password}", dbData.Password,
-		"{host}", dbData.Host,
-		"{dbname}", dbData.Database,
+		"{user}", url.QueryEscape(dbData.User),
+		"{password}", url.QueryEscape(dbData.Password),
+		"{host}", url.QueryEscape(dbData.Host),
+		"{dbname}", url.QueryEscape(dbData.Database),
 	}
 	if dbData.Port != 0 {
 		format = "{driver}://{user}:{password}@{host}:{port}/{dbname}"
