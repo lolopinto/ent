@@ -197,7 +197,6 @@ type UpsertInfo struct {
 	HasColumn     bool
 	HasConstraint bool
 	types         []*TypeInfo
-	oneOfTypes    map[string]*TypeInfo
 }
 
 func (ui *UpsertInfo) Types() string {
@@ -214,6 +213,7 @@ func (ui *UpsertInfo) Types() string {
 }
 
 type TypeInfo struct {
+	key        string
 	Export     bool
 	Name       string
 	Expression string
@@ -250,31 +250,29 @@ func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
 		return nil
 	}
 
-	getType := func(list []string, name string) *TypeInfo {
+	getType := func(list []string, name, key string) *TypeInfo {
 		temp := make([]string, len(list))
 		for i, s := range list {
 			temp[i] = fmt.Sprintf(`'%s'`, s)
 		}
 		return &TypeInfo{
+			key:        key,
 			Name:       name,
 			Expression: strings.Join(temp, " | "),
 		}
 	}
 
 	ret := UpsertInfo{
-		Name:       actionName + "UpsertOptions",
-		oneOfTypes: map[string]*TypeInfo{},
+		Name: actionName + "UpsertOptions",
 	}
 	if len(fields) > 0 {
-		typ := getType(fields, "UpsertCols")
+		typ := getType(fields, "UpsertCols", "column")
 		ret.types = append(ret.types, typ)
-		ret.oneOfTypes["column"] = typ
 		ret.HasColumn = true
 	}
 	if len(constraints) > 0 {
-		typ := getType(constraints, "UpsertConstraints")
+		typ := getType(constraints, "UpsertConstraints", "constraint")
 		ret.types = append(ret.types, typ)
-		ret.oneOfTypes["constraint"] = typ
 		ret.HasConstraint = true
 	}
 
@@ -290,7 +288,13 @@ func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
 		Export: true,
 	}
 
-	if ret.HasColumn && ret.HasConstraint {
+	if len(ret.types) > 1 {
+		// we're reusing ret.types here to generate lastType so do this before adding more types...
+		var types []string
+		for _, v := range ret.types {
+			types = append(types, buildType([]string{buildExpression(v.key, v.Name)}))
+		}
+
 		// add Oneof Types
 		// gotten from https://www.typescriptlang.org/play?#code/LAKALgngDgpgBAVQHYEsD2SDSMIGcA8AKgHxwC8chcMAHmDEgCa6VwD8cA1jmgGasAuOEhgA3GACcA3KFAB6OXACSAWygS04uCiT0ANnpS4Gx0JFhwAojSgBDJkVIUqtekxZUOAbzgBtTNpIXDz8hAC6QoT+YXAAvnBCIuLSsuDQ8ADyIhm8RNR0DMxwXrG+YU7FoHB+ATrBEHyUEVY29oxE0XAAZHAACrYSYCi2evgASjAAxmgS7daTegCujDD4yOhYOARRSIsqAEaS5QA09Y1RmCfCYpLEdzIgpbsHRw+gOvQSvLaT8ADCtjAlRA1WqRgBYCEYAkixgD1iqQ+km+vzgABE0ABzYGg7S4DGYqEwuGgBEgd66ZE-eAAIRQsxxoKMdNmRNh8NS5ngAEFUCoRuQ4FkYDl8L4IacCacWYxyg8FKCAHpsVLTJC4IGTQFCXkofl6QU+cHauDQ2FxB5qjVwRhYnV8gUUI34u2m4kW+SKK2awEE+16x3FPEQtkwU5GP1u82xKRwBWSDQSVK8RZISZDDA2tAAdRmnAAFLZ-fqAJReVJk0C23MSAtasAlh7VvP522YxtVnMt50hqNhvGRs3wWIloA
 		// linked to from https://stackoverflow.com/questions/42123407/does-typescript-support-mutually-exclusive-types#comment123255834_53229567
@@ -310,26 +314,18 @@ func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
 			},
 		)
 
-		var types []string
-		for k, v := range ret.oneOfTypes {
-			types = append(types, buildType([]string{buildExpression(k, v.Name)}))
-		}
-
 		lastType.Expression = fmt.Sprintf(" %s & %s",
 			buildType([]string{buildExpression("update_cols?", "string[]")}),
 			fmt.Sprintf("OneOf<[%s]>", strings.Join(types, ", ")),
 		)
 	} else {
 
-		var key string
-		if ret.HasColumn {
-			key = "column"
-		} else if ret.HasConstraint {
-			key = "constraint"
-		}
+		typ := ret.types[0]
+		key := typ.key
+
 		lastType.Expression = buildType([]string{
 			buildExpression("update_cols?", "string[]"),
-			buildExpression(key, ret.types[0].Name),
+			buildExpression(key, ret.Name),
 		})
 	}
 
