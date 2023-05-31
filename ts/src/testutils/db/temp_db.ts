@@ -701,7 +701,6 @@ export function setupSqlite(
     loadConfig({
       dbConnectionString: connString,
     });
-    // console.debug(DB.getInstance());
     await tdb.beforeAll();
 
     const conn = DB.getInstance().getConnection();
