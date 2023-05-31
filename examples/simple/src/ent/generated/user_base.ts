@@ -80,6 +80,14 @@ import {
 } from "../../util/convert_user_fields";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
+export interface UserCanViewerSee {
+  accountStatus: () => Promise<boolean>;
+  emailVerified: () => Promise<boolean>;
+  prefs: () => Promise<boolean>;
+  prefsList: () => Promise<boolean>;
+  prefsDiff: () => Promise<boolean>;
+}
+
 interface UserCustomQueryData extends UserDBData {
   name_idx: string;
 }
@@ -589,5 +597,29 @@ export class UserBase
 
   queryEventsCreated(): CreatorToEventsQuery {
     return CreatorToEventsQuery.query(this.viewer, this);
+  }
+
+  canViewerSeeInfo(): UserCanViewerSee {
+    const fieldPrivacy = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
+    return {
+      accountStatus: () =>
+        applyPrivacyPolicy(
+          this.viewer,
+          fieldPrivacy.get("account_status")!,
+          this,
+        ),
+      emailVerified: () =>
+        applyPrivacyPolicy(
+          this.viewer,
+          fieldPrivacy.get("email_verified")!,
+          this,
+        ),
+      prefs: () =>
+        applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs")!, this),
+      prefsList: () =>
+        applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs_list")!, this),
+      prefsDiff: () =>
+        applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs_diff")!, this),
+    };
   }
 }

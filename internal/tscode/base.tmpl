@@ -57,6 +57,15 @@
   }
 {{end}}
 
+{{ $canViewerSeeInfo := .GetCanViewerSeeInfo }}
+{{if $canViewerSeeInfo -}}
+  export interface {{$canViewerSeeInfo.Name}} {
+    {{ range $field := $canViewerSeeInfo.Fields -}}
+      {{$field.TSPublicAPIName}}: () => Promise<boolean>;
+    {{ end -}}
+  }
+{{ end}}
+
 {{ $customQuery := .GetExtraCustomQueryInfo -}} 
 {{ if $customQuery -}}
   {{$customQueryDataType = $customQuery.Interface -}}
@@ -641,6 +650,18 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       {{end}}
     {{end}}
   {{end}}
+
+  {{ $canViewerSeeInfo := .GetCanViewerSeeInfo }}
+  {{if $canViewerSeeInfo }}
+  canViewerSeeInfo(): {{$canViewerSeeInfo.Name}} {
+    const fieldPrivacy = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}}, {{useImport $loaderInfo}}.fieldInfo);
+    return {
+      {{ range $canViewerSeeInfo.Fields -}}
+        {{.TSPublicAPIName}}: () => {{useImport "applyPrivacyPolicy"}}(this.viewer, fieldPrivacy.get("{{.GetDbColName}}")!, this),
+      {{ end -}}
+    };
+  }
+  {{ end -}}
 }
 
 {{end -}}

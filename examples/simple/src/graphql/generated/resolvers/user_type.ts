@@ -4,6 +4,7 @@
  */
 
 import {
+  GraphQLBoolean,
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLInt,
@@ -23,6 +24,7 @@ import {
   CreatorToEventsQuery,
   User,
   UserArticleToCommentsQuery,
+  UserCanViewerSee,
   UserCommentsFromAttachmentQuery,
   UserToCommentsQuery,
   UserToContactsQuery,
@@ -666,6 +668,16 @@ export const UserType = new GraphQLObjectType({
         );
       },
     },
+    canViewerSeeInfo: {
+      type: new GraphQLNonNull(UserCanViewerSeeType),
+      resolve: (
+        user: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.canViewerSeeInfo();
+      },
+    },
     fullName: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -788,4 +800,63 @@ export const UserType = new GraphQLObjectType({
   isTypeOf(obj) {
     return obj instanceof User;
   },
+});
+
+export const UserCanViewerSeeType = new GraphQLObjectType({
+  name: "UserCanViewerSee",
+  fields: (): GraphQLFieldConfigMap<
+    UserCanViewerSee,
+    RequestContext<ExampleViewerAlias>
+  > => ({
+    accountStatus: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.accountStatus();
+      },
+    },
+    emailVerified: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.emailVerified();
+      },
+    },
+    prefs: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.prefs();
+      },
+    },
+    prefsList: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.prefsList();
+      },
+    },
+    prefsDiff: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.prefsDiff();
+      },
+    },
+  }),
 });
