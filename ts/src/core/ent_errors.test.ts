@@ -203,8 +203,6 @@ function commonTests() {
     const loader = getEntLoader(new IDViewer(1), invalidFieldOpts);
     const rows = await loader.loadMany([1]);
     expect(rows.length).toBe(1);
-    // when it fails,SqliteError
-    console.debug(rows);
     expect(rows[0]).toBeInstanceOf(Error);
     expect((rows[0] as Error).message).toBe(getExpectedErrorMessageOnRead());
   });
@@ -217,8 +215,6 @@ function commonTests() {
     );
     const rows = await loader.loadMany([1]);
     expect(rows.length).toBe(1);
-    // when it fails,ErrorWrapper
-    console.debug(rows);
     expect(rows[0]).toBeInstanceOf(Error);
     expect((rows[0] as Error).message).toBe(getExpectedErrorMessageOnRead());
   });
