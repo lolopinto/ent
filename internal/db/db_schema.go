@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -38,6 +39,9 @@ func (s *Step) PreProcessData(processor *codegen.Processor) error {
 	// generate python schema file and then make changes to underlying db
 	db := newDBSchema(processor.Schema, processor.Config)
 	s.db = db
+
+	// need to do this before schema.py is written so it's being done in pre-process
+	db.before = checkDBFilesInfo(processor.Config)
 
 	return db.processSchema(processor.Config)
 }
@@ -395,6 +399,7 @@ type dbSchema struct {
 	configTableMap map[string]*dbTable
 	tableMap       map[string]*dbTable
 	cfg            codegenapi.Config
+	before         *dbFileInfo
 }
 
 func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
@@ -586,6 +591,102 @@ func (s *dbSchema) generateShemaTables() error {
 	return nil
 }
 
+type fileInfo struct {
+	exists bool
+	// changed time.Time
+	contents []byte
+}
+
+func checkFileExistsInfo(cfg *codegen.Config, path string) *fileInfo {
+	path = filepath.Join(cfg.GetAbsPathToRoot(), path)
+	contents, err := os.ReadFile(path)
+	if err != nil && os.IsNotExist(err) {
+		return &fileInfo{
+			exists: false,
+		}
+	}
+
+	if contents != nil {
+		return &fileInfo{
+			contents: contents,
+			exists:   true,
+		}
+	}
+
+	return nil
+}
+
+func checkVersionsDirectory(cfg *codegen.Config) (int, bool) {
+	versionsPath := filepath.Join(cfg.GetAbsPathToRoot(), "src/schema/versions")
+	fi, err := os.Stat(versionsPath)
+	if err != nil {
+		return 0, false
+	}
+	if !fi.IsDir() {
+		return 0, false
+	}
+
+	entries, err := os.ReadDir(versionsPath)
+	if err != nil {
+		return 0, false
+	}
+	count := 0
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(entry.Name(), ".py") {
+			count++
+		}
+	}
+	return count, true
+}
+
+type dbFileInfo struct {
+	schemaPy        *fileInfo
+	schemaSql       *fileInfo
+	versionsCount   int
+	useVersionsInfo bool
+}
+
+func checkDBFilesInfo(cfg *codegen.Config) *dbFileInfo {
+	schemaPy := checkFileExistsInfo(cfg, "src/schema/schema.py")
+	schemaSql := checkFileExistsInfo(cfg, "src/schema/schema.sql")
+	versions, versionsDirExists := checkVersionsDirectory(cfg)
+
+	return &dbFileInfo{
+		schemaPy:        schemaPy,
+		schemaSql:       schemaSql,
+		versionsCount:   versions,
+		useVersionsInfo: versionsDirExists,
+	}
+}
+
+func compareDbFilesInfo(before, after *dbFileInfo) error {
+	// nothing to do here
+	if !before.useVersionsInfo || !after.useVersionsInfo {
+		return nil
+	}
+	// nothing to do here
+	if after.versionsCount > before.versionsCount {
+		return nil
+	}
+
+	// TODO does this account for future formatting differences???
+
+	// time is not enough. we need to check the contents of the files
+	if after.schemaPy.exists && before.schemaPy.exists &&
+		string(before.schemaPy.contents) != string(after.schemaPy.contents) {
+		return fmt.Errorf("schema.py changed when no version files changed. there's an ent db error. you should file a bug report about what you were trying to do. it's probably unsupported")
+	}
+
+	if after.schemaSql.exists && before.schemaSql.exists && string(before.schemaSql.contents) != string(after.schemaSql.contents) {
+		return fmt.Errorf("schema.sql changed when no version files changed. there's an ent db error. you should file a bug report about what you were trying to do. it's probably unsupported")
+	}
+
+	return nil
+}
+
 func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
 	var extraArgs []string
 	if file := cfg.SchemaSQLFilePath(); file != "" {
@@ -598,7 +699,15 @@ func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
 			extraArgs = append(extraArgs, "--empty_database", db)
 		}
 	}
-	return auto_schema.RunPythonCommand(s.cfg, extraArgs...)
+	err := auto_schema.RunPythonCommand(s.cfg, extraArgs...)
+
+	if err != nil {
+		return err
+	}
+
+	after := checkDBFilesInfo(cfg)
+
+	return compareDbFilesInfo(s.before, after)
 }
 
 func UpgradeDB(cfg *codegen.Config, revision string, sql bool) error {
