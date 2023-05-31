@@ -1,55 +1,96 @@
-package config_test
+package config
 
 import (
 	"os"
 	"testing"
 
-	"github.com/lolopinto/ent/ent/config"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSQLite(t *testing.T) {
-	connStr := "sqlite:///foo.db"
-	os.Setenv("DB_CONNECTION_STRING", connStr)
-
-	assert.Equal(t, config.GetConnectionStr(), connStr)
-	db := config.Get().DB
-	assert.Equal(t, "sqlite", db.Dialect)
-	assert.Equal(t, "foo.db", db.FilePath)
-	assert.Equal(t, "", db.Database)
-	assert.Equal(t, "", db.User)
-	assert.Equal(t, "", db.Password)
-	assert.Equal(t, "", db.Host)
-	assert.Equal(t, 0, db.Pool)
-	assert.Equal(t, 0, db.Port)
-	assert.Equal(t, "", db.SslMode)
-	assert.Equal(t, connStr, db.GetConnectionStr())
-	assert.Equal(t, connStr, db.GetSQLAlchemyDatabaseURIgo())
-
-	os.Unsetenv("DB_CONNECTION_STRING")
+type testData struct {
+	DBConfig
+	connStringEnv string
+	expConnStr    string
+	sqlAlchemyURI string
+	only          bool
+	skip          bool
 }
 
-func TestPostgres(t *testing.T) {
-	// skipping because of env variable clashing
-	t.Skip()
-	connStr := "postgres://ola:@localhost/tsent_test"
-	os.Setenv("DB_CONNECTION_STRING", connStr)
+func TestConfig(t *testing.T) {
+	tests := map[string]testData{
+		"sqlite": {
+			connStringEnv: "sqlite:///foo.db",
+			DBConfig: DBConfig{
+				Dialect:  "sqlite",
+				FilePath: "foo.db",
+			},
+			expConnStr:    "sqlite:///foo.db",
+			sqlAlchemyURI: "sqlite:///foo.db",
+		},
+		"postgres": {
+			connStringEnv: "postgres://ola:@localhost/tsent_test",
+			DBConfig: DBConfig{
+				Dialect:  "postgres",
+				Database: "tsent_test",
+				User:     "ola",
+				Host:     "localhost",
+				SslMode:  "disable",
+			},
+			expConnStr:    "postgres://ola:@localhost/tsent_test?sslmode=disable",
+			sqlAlchemyURI: "postgresql+psycopg2://ola:@localhost/tsent_test",
+		},
+		"postgres with escaped password": {
+			connStringEnv: "postgres://ola:kx%40jj5%2Fg@localhost/tsent_test",
+			DBConfig: DBConfig{
+				Dialect:  "postgres",
+				Database: "tsent_test",
+				User:     "ola",
+				Host:     "localhost",
+				SslMode:  "disable",
+				Password: "kx@jj5/g",
+			},
+			expConnStr:    "postgres://ola:kx%40jj5%2Fg@localhost/tsent_test?sslmode=disable",
+			sqlAlchemyURI: "postgresql+psycopg2://ola:kx%40jj5%2Fg@localhost/tsent_test",
+		},
+	}
 
-	expConnStr := connStr + "?sslmode=disable"
-	assert.Equal(t, expConnStr, config.GetConnectionStr())
+	hasOnly := false
+	hasSkip := false
+	for _, test := range tests {
+		if test.only {
+			hasOnly = true
+		}
+		if test.skip {
+			hasSkip = true
+		}
+	}
 
-	db := config.Get().DB
-	assert.Equal(t, "postgres", db.Dialect)
-	assert.Equal(t, "", db.FilePath)
-	assert.Equal(t, "tsent_test", db.Database)
-	assert.Equal(t, "ola", db.User)
-	assert.Equal(t, "", db.Password)
-	assert.Equal(t, "localhost", db.Host)
-	assert.Equal(t, 0, db.Pool)
-	assert.Equal(t, 0, db.Port)
-	assert.Equal(t, "disable", db.SslMode)
-	assert.Equal(t, expConnStr, db.GetConnectionStr())
-	assert.Equal(t, "postgresql+psycopg2://ola:@localhost/tsent_test", db.GetSQLAlchemyDatabaseURIgo())
+	for name, test := range tests {
+		if hasOnly && !test.only {
+			continue
+		}
+		if hasSkip && test.skip {
+			continue
+		}
+		t.Run(name, func(t *testing.T) {
+			cfg = nil
+			os.Setenv("DB_CONNECTION_STRING", test.connStringEnv)
 
-	os.Unsetenv("DB_CONNECTION_STRING")
+			assert.Equal(t, GetConnectionStr(), test.expConnStr)
+			db := Get().DB
+			assert.Equal(t, test.Dialect, db.Dialect)
+			assert.Equal(t, test.FilePath, db.FilePath)
+			assert.Equal(t, test.Database, db.Database)
+			assert.Equal(t, test.User, db.User)
+			assert.Equal(t, test.Password, db.Password)
+			assert.Equal(t, test.Host, db.Host)
+			assert.Equal(t, test.Pool, db.Pool)
+			assert.Equal(t, test.Port, db.Port)
+			assert.Equal(t, test.SslMode, db.SslMode)
+			assert.Equal(t, test.expConnStr, db.GetConnectionStr())
+			assert.Equal(t, test.sqlAlchemyURI, db.GetSQLAlchemyDatabaseURIgo())
+
+			os.Unsetenv("DB_CONNECTION_STRING")
+		})
+	}
 }
