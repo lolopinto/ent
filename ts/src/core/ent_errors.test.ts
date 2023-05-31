@@ -92,20 +92,20 @@ const invalidFieldOpts: LoadEntOptions<User> = {
   }),
 };
 
-// describe("postgres", () => {
-//   const tdb = new TempDB(Dialect.Postgres, [tbl]);
+describe("postgres", () => {
+  const tdb = new TempDB(Dialect.Postgres, [tbl]);
 
-//   beforeAll(async () => {
-//     await tdb.beforeAll();
-//     await createAllRows();
-//   });
+  beforeAll(async () => {
+    await tdb.beforeAll();
+    await createAllRows();
+  });
 
-//   afterAll(async () => {
-//     await tdb.afterAll();
-//   });
+  afterAll(async () => {
+    await tdb.afterAll();
+  });
 
-//   commonTests();
-// });
+  commonTests();
+});
 
 describe("sqlite", () => {
   setupSqlite(`sqlite:///ent_db_errors_test.db`, () => [tbl]);
