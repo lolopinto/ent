@@ -349,6 +349,3 @@ export class QueryRecorder {
     });
   }
 }
-
-// TODO
-process.env.DB_CONNECTION_STRING = "INVALID DATABASE";

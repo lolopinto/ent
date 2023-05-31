@@ -12,6 +12,7 @@ jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
 beforeAll(() => {
+  process.env.DB_CONNECTION_STRING = "INVALID DATABASE";
   setLogLevels("error");
 });
 

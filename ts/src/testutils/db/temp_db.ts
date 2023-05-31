@@ -431,6 +431,12 @@ function randomDB(): string {
   return "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)] + str;
 }
 
+interface TempDBOptions {
+  dialect: Dialect;
+  sqliteConnString?: string;
+  tables?: CoreConcept[] | (() => CoreConcept[]);
+}
+
 export class TempDB {
   private db: string;
   private client: PGClient;
@@ -439,13 +445,22 @@ export class TempDB {
   private dialect: Dialect;
   private sqlite: SqliteDatabase;
   private setTables: CoreConcept[] | (() => CoreConcept[]) | undefined;
+  private sqliteConnString: string | undefined;
 
+  constructor(dialect: Dialect, tables?: CoreConcept[] | (() => CoreConcept[]));
+  constructor(opts: TempDBOptions);
   constructor(
-    dialect: Dialect,
+    dialect: Dialect | TempDBOptions,
     tables?: CoreConcept[] | (() => CoreConcept[]),
   ) {
-    this.dialect = dialect;
-    this.setTables = tables;
+    if (typeof dialect === "string") {
+      this.dialect = dialect;
+      this.setTables = tables;
+    } else {
+      this.dialect = dialect.dialect;
+      this.setTables = dialect.tables;
+      this.sqliteConnString = dialect.sqliteConnString;
+    }
   }
 
   getDialect() {
@@ -502,10 +517,18 @@ export class TempDB {
       });
       await this.dbClient.connect();
     } else {
-      if (process.env.DB_CONNECTION_STRING === undefined) {
-        throw new Error(`DB_CONNECTION_STRING required for sqlite `);
+      let connString: string;
+      if (this.sqliteConnString) {
+        connString = this.sqliteConnString;
+      } else {
+        if (process.env.DB_CONNECTION_STRING === undefined) {
+          throw new Error(
+            `DB_CONNECTION_STRING required for sqlite if sqliteConnString is not set`,
+          );
+        }
+        connString = process.env.DB_CONNECTION_STRING;
       }
-      const filePath = process.env.DB_CONNECTION_STRING.substr(10);
+      const filePath = connString.substr(10);
       this.sqlite = sqlite(filePath);
     }
 
@@ -668,11 +691,17 @@ export function setupSqlite(
   tables: () => Table[],
   opts?: setupOptions,
 ) {
-  let tdb: TempDB = new TempDB(Dialect.SQLite, tables);
+  let tdb: TempDB = new TempDB({
+    dialect: Dialect.SQLite,
+    tables,
+    sqliteConnString: connString,
+  });
 
   beforeAll(async () => {
-    process.env.DB_CONNECTION_STRING = connString;
-    loadConfig();
+    loadConfig({
+      dbConnectionString: connString,
+    });
+    // console.debug(DB.getInstance());
     await tdb.beforeAll();
 
     const conn = DB.getInstance().getConnection();
