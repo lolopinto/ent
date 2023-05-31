@@ -41,7 +41,6 @@ export * from "./comment/query/author_to_comments_query";
 export * from "./comment/query/comment_article_to_comments_query";
 export * from "./comment/query/comment_to_post_query";
 export * from "./comment/query/comments_from_attachment_query";
-export * from "./comment/query/sticker_to_comments_query";
 export * from "./contact/query/contact_comments_from_attachment_query";
 export * from "./contact/query/contact_to_comments_query";
 export * from "./contact/query/contact_to_likers_query";
