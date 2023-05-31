@@ -672,7 +672,7 @@ func compareDbFilesInfo(before, after *dbFileInfo) error {
 		return nil
 	}
 
-	// TODO does this account for future formatting differenc	es???
+	// TODO does this account for future formatting differences???
 
 	// time is not enough. we need to check the contents of the files
 	if after.schemaPy.exists && before.schemaPy.exists &&
