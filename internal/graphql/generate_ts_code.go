@@ -2066,8 +2066,15 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 			},
 		})
 		for _, field := range canSeeViewerInfo.Fields {
+			name := field.GetGraphQLName()
+			if !field.ExposeToGraphQL() {
+				if !field.ExposeFieldOrFieldEdgeToGraphQL() {
+					continue
+				}
+				name, _ = base.TranslateIDSuffix(name)
+			}
 			gqlField := &fieldType{
-				Name: field.GetGraphQLName(),
+				Name: name,
 				FieldImports: []*tsimport.ImportPath{
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLBoolean"),
@@ -2086,8 +2093,6 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		// add field to node
 		if err := result.addField(&fieldType{
 			Name: codegenapi.GraphQLName(processor.Config, "canViewerSeeInfo"),
-			// HasAsyncModifier:   true,
-			// HasResolveFunction: true,
 			FieldImports: []*tsimport.ImportPath{
 				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewLocalGraphQLEntImportPath(canSeeViewerInfo.Name),

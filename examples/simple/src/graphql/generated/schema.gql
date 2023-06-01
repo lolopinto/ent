@@ -301,7 +301,7 @@ type EmailInfo {
 }
 
 type EventCanViewerSee {
-  addressID: Boolean!
+  address: Boolean!
 }
 
 type Event implements Node {
@@ -347,7 +347,6 @@ type RabbitType {
 
 type UserCanViewerSee {
   accountStatus: Boolean!
-  emailVerified: Boolean!
   prefs: Boolean!
   prefsList: Boolean!
   prefsDiff: Boolean!

@@ -818,16 +818,6 @@ export const UserCanViewerSeeType = new GraphQLObjectType({
         return user.accountStatus();
       },
     },
-    emailVerified: {
-      type: new GraphQLNonNull(GraphQLBoolean),
-      resolve: async (
-        user: UserCanViewerSee,
-        args: {},
-        context: RequestContext<ExampleViewerAlias>,
-      ) => {
-        return user.emailVerified();
-      },
-    },
     prefs: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (

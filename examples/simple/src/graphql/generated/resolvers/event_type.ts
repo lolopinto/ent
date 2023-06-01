@@ -280,7 +280,7 @@ export const EventCanViewerSeeType = new GraphQLObjectType({
     EventCanViewerSee,
     RequestContext<ExampleViewerAlias>
   > => ({
-    addressID: {
+    address: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
         event: EventCanViewerSee,

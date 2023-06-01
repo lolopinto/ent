@@ -293,7 +293,7 @@ test("can_viewer_see", async () => {
   await expectQueryFromRoot(
     getConfig(new ExampleViewer(user.id), event),
     ["id", encodeGQLID(event)],
-    ["canViewerSeeInfo.addressID", true],
+    ["canViewerSeeInfo.address", true],
     ["address.id", encodeGQLID(address)],
   );
 
@@ -302,7 +302,7 @@ test("can_viewer_see", async () => {
       nullQueryPaths: ["address"],
     }),
     ["id", encodeGQLID(event)],
-    ["canViewerSeeInfo.addressID", false],
+    ["canViewerSeeInfo.address", false],
     ["address.id", null],
   );
 });

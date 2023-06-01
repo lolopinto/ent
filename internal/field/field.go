@@ -26,10 +26,11 @@ type Field struct {
 	graphqlFieldType enttype.TSType
 	tsFieldType      enttype.TSType
 
-	dbColumn        bool
-	hideFromGraphQL bool
-	private         bool
-	polymorphic     *input.PolymorphicOptions
+	dbColumn                   bool
+	hideFromGraphQL            bool
+	hideFromGraphQLBecauseEdge bool
+	private                    bool
+	polymorphic                *input.PolymorphicOptions
 	// optional (in action)
 	// need to break this into optional (not required in typescript actions)
 	// ts nullable
@@ -291,6 +292,13 @@ func (f *Field) ExposeToGraphQL() bool {
 	// note this only applies to if the field should be exposed as readable
 	// if the field is part of an action, it's exposed since either it's a create action or
 	// has been explicitly specified by user
+	return !f.hideFromGraphQL
+}
+
+func (f *Field) ExposeFieldOrFieldEdgeToGraphQL() bool {
+	if f.hideFromGraphQLBecauseEdge {
+		return true
+	}
 	return !f.hideFromGraphQL
 }
 

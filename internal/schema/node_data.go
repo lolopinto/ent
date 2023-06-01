@@ -720,9 +720,13 @@ func (nodeData *NodeData) GetCanViewerSeeInfo() *canViewerSeeInfo {
 
 	var fields []*field.Field
 	for _, f := range nodeData.FieldInfo.EntFields() {
-		if f.HasFieldPrivacy() {
+		if f.HasFieldPrivacy() && f.ExposeFieldOrFieldEdgeToGraphQL() {
 			fields = append(fields, f)
 		}
+	}
+
+	if len(fields) == 0 {
+		return nil
 	}
 
 	return &canViewerSeeInfo{

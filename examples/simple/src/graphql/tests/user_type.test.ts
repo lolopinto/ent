@@ -1458,13 +1458,13 @@ test("can_viewer_see", async () => {
     getNodeConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["canViewerSeeInfo.accountStatus", true],
-    ["canViewerSeeInfo.emailVerified", true],
+    ["canViewerSeeInfo.prefs", true],
   );
 
   await expectQueryFromRoot(
     getNodeConfig(new ExampleViewer(user.id), user2),
     ["id", encodeGQLID(user2)],
     ["canViewerSeeInfo.accountStatus", false],
-    ["canViewerSeeInfo.emailVerified", false],
+    ["canViewerSeeInfo.prefs", false],
   );
 });

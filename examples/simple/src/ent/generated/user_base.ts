@@ -82,7 +82,6 @@ import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export interface UserCanViewerSee {
   accountStatus: () => Promise<boolean>;
-  emailVerified: () => Promise<boolean>;
   prefs: () => Promise<boolean>;
   prefsList: () => Promise<boolean>;
   prefsDiff: () => Promise<boolean>;
@@ -606,12 +605,6 @@ export class UserBase
         applyPrivacyPolicy(
           this.viewer,
           fieldPrivacy.get("account_status")!,
-          this,
-        ),
-      emailVerified: () =>
-        applyPrivacyPolicy(
-          this.viewer,
-          fieldPrivacy.get("email_verified")!,
           this,
         ),
       prefs: () =>
