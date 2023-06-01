@@ -1,7 +1,10 @@
 import { IDViewer } from "@snowtop/ent";
-import { expectMutation } from "@snowtop/ent-graphql-tests";
+import {
+  expectMutation,
+  expectQueryFromRoot,
+} from "@snowtop/ent-graphql-tests";
 import { Account } from "src/ent";
-import { randomPhoneNumber } from "src/ent/testutils/util";
+import { createAccount, randomPhoneNumber } from "src/ent/testutils/util";
 import schema from "src/graphql/generated/schema";
 
 test("create", async () => {
@@ -86,5 +89,38 @@ test("create with prefs", async () => {
         },
       ],
     ],
+  );
+});
+
+test("viewer_can_see", async () => {
+  const account = await createAccount();
+  const account2 = await createAccount();
+
+  await expectQueryFromRoot(
+    {
+      schema,
+      viewer: account.viewer,
+      args: {
+        id: account.id,
+      },
+      root: "account",
+    },
+
+    ["id", account.id],
+    ["can_viewer_see_info.phone_number", true],
+  );
+
+  await expectQueryFromRoot(
+    {
+      schema,
+      viewer: account.viewer,
+      args: {
+        id: account2.id,
+      },
+      root: "account",
+    },
+
+    ["id", account2.id],
+    ["can_viewer_see_info.phone_number", false],
   );
 });

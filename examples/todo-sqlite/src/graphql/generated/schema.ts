@@ -74,6 +74,7 @@ import {
 } from "src/graphql/generated/mutations/workspace/edit_workspace_type";
 import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
+  AccountCanViewerSeeType,
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
   AccountToCreatedWorkspacesConnectionType,
@@ -103,6 +104,7 @@ export default new GraphQLSchema({
   mutation: MutationType,
   types: [
     AccountTodoStatusType,
+    AccountCanViewerSeeType,
     AccountPrefsType,
     AccountType,
     TagType,
