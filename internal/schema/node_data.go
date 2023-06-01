@@ -72,6 +72,7 @@ type NodeData struct {
 	PatternsWithMixins      []string
 	CustomGraphQLInterfaces []string
 	SupportUpsert           bool
+	SupportCanViewerSee     bool
 
 	schemaPath string
 
@@ -713,7 +714,7 @@ type canViewerSeeInfo struct {
 }
 
 func (nodeData *NodeData) GetCanViewerSeeInfo() *canViewerSeeInfo {
-	if !nodeData.FieldsWithFieldPrivacy() {
+	if !nodeData.SupportCanViewerSee || !nodeData.FieldsWithFieldPrivacy() {
 		return nil
 	}
 

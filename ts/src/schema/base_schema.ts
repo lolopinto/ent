@@ -108,6 +108,8 @@ export class EntSchema implements Schema {
 
   supportUpsert?: boolean | undefined;
 
+  supportCanViewerSee?: boolean | undefined;
+
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.fieldOverrides = cfg.fieldOverrides;
@@ -126,6 +128,7 @@ export class EntSchema implements Schema {
     // TODO annoying that have to list these...
     this.customGraphQLInterfaces = cfg.customGraphQLInterfaces;
     this.supportUpsert = cfg.supportUpsert;
+    this.supportCanViewerSee = cfg.supportCanViewerSee;
   }
 }
 
@@ -165,6 +168,8 @@ export class EntSchemaWithTZ implements Schema {
 
   supportUpsert?: boolean | undefined;
 
+  supportCanViewerSee?: boolean | undefined;
+
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.fieldOverrides = cfg.fieldOverrides;
@@ -183,6 +188,7 @@ export class EntSchemaWithTZ implements Schema {
     // TODO annoying that have to list these...
     this.customGraphQLInterfaces = cfg.customGraphQLInterfaces;
     this.supportUpsert = cfg.supportUpsert;
+    this.supportCanViewerSee = cfg.supportCanViewerSee;
   }
 }
 
