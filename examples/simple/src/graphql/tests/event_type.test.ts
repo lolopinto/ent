@@ -280,3 +280,29 @@ test("event rsvp status edit", async () => {
     "CAN_RSVP",
   ]);
 });
+
+test("can_viewer_see", async () => {
+  const address = await createAddress();
+  const event = await createEvent({
+    endTime: new Date(Date.now() + 86400),
+    addressID: address.id,
+  });
+  const user = await event.loadCreatorX();
+  const user2 = await createUser();
+
+  await expectQueryFromRoot(
+    getConfig(new ExampleViewer(user.id), event),
+    ["id", encodeGQLID(event)],
+    ["canViewerSeeInfo.address", true],
+    ["address.id", encodeGQLID(address)],
+  );
+
+  await expectQueryFromRoot(
+    getConfig(new ExampleViewer(user2.id), event, {
+      nullQueryPaths: ["address"],
+    }),
+    ["id", encodeGQLID(event)],
+    ["canViewerSeeInfo.address", false],
+    ["address.id", null],
+  );
+});

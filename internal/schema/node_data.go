@@ -72,6 +72,7 @@ type NodeData struct {
 	PatternsWithMixins      []string
 	CustomGraphQLInterfaces []string
 	SupportUpsert           bool
+	SupportCanViewerSee     bool
 
 	schemaPath string
 
@@ -705,6 +706,33 @@ func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) *entLoa
 	}
 
 	return nil
+}
+
+type canViewerSeeInfo struct {
+	Name   string
+	Fields []*field.Field
+}
+
+func (nodeData *NodeData) GetCanViewerSeeInfo() *canViewerSeeInfo {
+	if !nodeData.SupportCanViewerSee || !nodeData.FieldsWithFieldPrivacy() {
+		return nil
+	}
+
+	var fields []*field.Field
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.HasFieldPrivacy() && f.ExposeFieldOrFieldEdgeToGraphQL() {
+			fields = append(fields, f)
+		}
+	}
+
+	if len(fields) == 0 {
+		return nil
+	}
+
+	return &canViewerSeeInfo{
+		Name:   fmt.Sprintf("%sCanViewerSee", nodeData.Node),
+		Fields: fields,
+	}
 }
 
 type extraCustomQueryInfo struct {

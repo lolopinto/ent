@@ -96,6 +96,11 @@ export default interface Schema {
 
   // beta feature!
   supportUpsert?: boolean;
+
+  // if ent has fields which have privacy policies and this is true, we generate a
+  // canViewerSeeInfo() function + a graphql field for each field to indicate if it's
+  // visible to the viewer
+  supportCanViewerSee?: boolean;
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format

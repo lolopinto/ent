@@ -1439,3 +1439,32 @@ test("create user with invalid days off value", async () => {
     },
   ]);
 });
+
+test("can_viewer_see", async () => {
+  const [user, user2] = await Promise.all([
+    create({
+      firstName: "user1",
+    }),
+    create({
+      firstName: "user2",
+    }),
+  ]);
+
+  let action = EditUserAction.create(user.viewer, user, {});
+  action.builder.addFriend(user2);
+  await action.saveX();
+
+  await expectQueryFromRoot(
+    getNodeConfig(new ExampleViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    ["canViewerSeeInfo.accountStatus", true],
+    ["canViewerSeeInfo.prefs", true],
+  );
+
+  await expectQueryFromRoot(
+    getNodeConfig(new ExampleViewer(user.id), user2),
+    ["id", encodeGQLID(user2)],
+    ["canViewerSeeInfo.accountStatus", false],
+    ["canViewerSeeInfo.prefs", false],
+  );
+});

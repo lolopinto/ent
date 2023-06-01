@@ -33,6 +33,8 @@ const UserSchema = new EntSchema({
 
   supportUpsert: true,
 
+  supportCanViewerSee: true,
+
   fields: {
     FirstName: StringType(),
     LastName: StringType(),

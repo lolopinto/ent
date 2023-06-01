@@ -434,6 +434,7 @@ export async function parseSchema(
       assocEdgeGroups: [],
       customGraphQLInterfaces: schema.customGraphQLInterfaces,
       supportUpsert: schema.supportUpsert,
+      supportCanViewerSee: schema.supportCanViewerSee,
     };
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯

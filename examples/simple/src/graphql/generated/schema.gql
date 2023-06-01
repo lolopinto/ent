@@ -300,6 +300,10 @@ type EmailInfo {
   firstEmail: String!
 }
 
+type EventCanViewerSee {
+  address: Boolean!
+}
+
 type Event implements Node {
   address: Address
   creator: User
@@ -314,6 +318,7 @@ type Event implements Node {
   invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
   viewerRsvpStatus: EventRsvpStatus!
+  canViewerSeeInfo: EventCanViewerSee!
 }
 
 type Holiday implements Node {
@@ -338,6 +343,13 @@ type RabbitType {
   name: String!
   birthday: Time!
   breed: RabbitBreed!
+}
+
+type UserCanViewerSee {
+  accountStatus: Boolean!
+  prefs: Boolean!
+  prefsList: Boolean!
+  prefsDiff: Boolean!
 }
 
 type UserNestedNestedObjectList {
@@ -432,6 +444,7 @@ type User implements Node {
   attachedComments(first: Int, after: String, last: Int, before: String): UserCommentsFromAttachmentConnection!
   commentsFromUser(first: Int, after: String, last: Int, before: String): AuthorToCommentsConnection!
   eventsCreated(first: Int, after: String, last: Int, before: String): CreatorToEventsConnection!
+  canViewerSeeInfo: UserCanViewerSee!
   fullName: String!
   bar: String
   """contacts same domain..."""

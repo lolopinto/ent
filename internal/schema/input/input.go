@@ -103,6 +103,7 @@ type Node struct {
 	Patterns                []string                  `json:"patternNames,omitempty"`
 	CustomGraphQLInterfaces []string                  `json:"customGraphQLInterfaces,omitempty"`
 	SupportUpsert           bool                      `json:"supportUpsert,omitempty"`
+	SupportCanViewerSee     bool                      `json:"supportCanViewerSee,omitempty"`
 	// these 2 not used yet so ignoring for now
 	// TransformsInsert bool `json:"transformsInsert,omitempty"`
 	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`

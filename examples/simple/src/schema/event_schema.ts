@@ -14,6 +14,8 @@ import { EdgeType } from "../ent/generated/types";
 
 /// explicit schema
 const EventSchema = new EntSchema({
+  supportCanViewerSee: true,
+
   // pre-fields comment. intentionally doesn't parse decorators since we don't need it
   fields: {
     name: StringType(),

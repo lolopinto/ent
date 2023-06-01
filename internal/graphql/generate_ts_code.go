@@ -1299,7 +1299,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 					return
 				}
 
-				node, err := buildNodeForObject(processor, nodeMap, nodeData)
+				objectTypes, err := buildNodeForObject(processor, nodeMap, nodeData)
 				if err != nil {
 					serr.Append(err)
 				}
@@ -1308,7 +1308,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 						NodeData:     nodeData,
 						Node:         nodeData.Node,
 						NodeInstance: nodeData.NodeInstance,
-						GQLNodes:     []*objectType{node},
+						GQLNodes:     objectTypes,
 						Package:      processor.Config.GetImportPackage(),
 					},
 					FilePath: getFilePathForNode(processor.Config, nodeData),
@@ -1881,7 +1881,7 @@ func getGQLFileImports(imps []*tsimport.ImportPath, mutation bool) []*tsimport.I
 	return ret
 }
 
-func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) (*objectType, error) {
+func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) ([]*objectType, error) {
 	result := newObjectType(&objectType{
 		Type:     fmt.Sprintf("%sType", nodeData.Node),
 		Node:     nodeData.Node,
@@ -2050,8 +2050,65 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 			}
 		}
 	}
+	ret := []*objectType{result}
 
-	return result, nil
+	canSeeViewerInfo := nodeData.GetCanViewerSeeInfo()
+	if canSeeViewerInfo != nil {
+		// add can viewer see object
+		canViewerSee := newObjectType(&objectType{
+			Type:     fmt.Sprintf("%sType", canSeeViewerInfo.Name),
+			GQLType:  "GraphQLObjectType",
+			Node:     canSeeViewerInfo.Name,
+			Exported: true,
+			TSType:   canSeeViewerInfo.Name,
+			Imports: []*tsimport.ImportPath{
+				tsimport.NewLocalEntImportPath(canSeeViewerInfo.Name),
+			},
+		})
+		for _, field := range canSeeViewerInfo.Fields {
+			name := field.GetGraphQLName()
+			if !field.ExposeToGraphQL() {
+				if !field.ExposeFieldOrFieldEdgeToGraphQL() {
+					continue
+				}
+				name, _ = base.TranslateIDSuffix(name)
+			}
+			gqlField := &fieldType{
+				Name: name,
+				FieldImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLBoolean"),
+				},
+				HasAsyncModifier:   true,
+				HasResolveFunction: true,
+				FunctionContents: []string{
+					fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, field.GetGraphQLName()),
+				},
+			}
+			if err := canViewerSee.addField(gqlField); err != nil {
+				return nil, err
+			}
+		}
+
+		// add field to node
+		if err := result.addField(&fieldType{
+			Name: codegenapi.GraphQLName(processor.Config, "canViewerSeeInfo"),
+			FieldImports: []*tsimport.ImportPath{
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				tsimport.NewLocalGraphQLEntImportPath(canSeeViewerInfo.Name),
+			},
+			HasResolveFunction: true,
+			FunctionContents: []string{
+				fmt.Sprintf("return %s.canViewerSeeInfo();", nodeData.NodeInstance),
+			},
+		}); err != nil {
+			return nil, err
+		}
+
+		ret = append(ret, canViewerSee)
+	}
+
+	return ret, nil
 }
 
 func addSingularEdge(edge edge.Edge, obj *objectType, instance string) error {
