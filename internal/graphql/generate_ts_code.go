@@ -2082,7 +2082,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 				HasAsyncModifier:   true,
 				HasResolveFunction: true,
 				FunctionContents: []string{
-					fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, field.GetGraphQLName()),
+					fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, field.TSPublicAPIName()),
 				},
 			}
 			if err := canViewerSee.addField(gqlField); err != nil {
