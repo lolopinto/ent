@@ -1,12 +1,4 @@
-import {
-  Allow,
-  Ent,
-  ID,
-  PrivacyPolicyRule,
-  Skip,
-  Data,
-  Viewer,
-} from "@snowtop/ent";
+import { Allow, Ent, ID, PrivacyPolicyRule, Skip, Viewer } from "@snowtop/ent";
 import { EdgeInputData } from "@snowtop/ent/action";
 import { GuestGroup } from "src/ent/";
 import { GuestGroupBuilder } from "src/ent/generated/guest_group/actions/guest_group_builder";
