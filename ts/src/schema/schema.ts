@@ -693,35 +693,10 @@ export function getStorageKey(field: Field, fieldName: string): string {
 // returns a mapping of storage key to field privacy
 export function getFieldsWithPrivacy(
   value: SchemaInputType,
-  fieldMap: FieldInfoMap,
+  fieldInfoMap: FieldInfoMap,
 ): Map<string, PrivacyPolicy> {
   const schema = getSchema(value);
-  function addFields(fields: FieldMap | Field[]) {
-    if (Array.isArray(fields)) {
-      for (const field of fields) {
-        const name = field.name;
-        if (!field.name) {
-          throw new Error(`name required`);
-        }
-        if (field.getDerivedFields !== undefined) {
-          addFields(field.getDerivedFields(name));
-        }
-        if (field.privacyPolicy) {
-          let privacyPolicy: PrivacyPolicy;
-          if (typeof field.privacyPolicy === "function") {
-            privacyPolicy = field.privacyPolicy();
-          } else {
-            privacyPolicy = field.privacyPolicy;
-          }
-          const info = fieldMap[name];
-          if (!info) {
-            throw new Error(`field with name ${name} not passed in fieldMap`);
-          }
-          m.set(info.dbCol, privacyPolicy);
-        }
-      }
-      return;
-    }
+  function addFields(fields: FieldMap) {
     for (const name in fields) {
       const field = fields[name];
       if (field.getDerivedFields !== undefined) {
@@ -734,7 +709,7 @@ export function getFieldsWithPrivacy(
         } else {
           privacyPolicy = field.privacyPolicy;
         }
-        const info = fieldMap[name];
+        const info = fieldInfoMap[name];
         if (!info) {
           throw new Error(`field with name ${name} not passed in fieldMap`);
         }
