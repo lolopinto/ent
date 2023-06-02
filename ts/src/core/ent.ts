@@ -785,11 +785,12 @@ async function doFieldPrivacy<
   }
   const promises: Promise<void>[] = [];
   let somethingChanged = false;
+  const clone = { ...data };
   const origData = {
     ...data,
   };
   for (const [k, policy] of options.fieldPrivacy) {
-    const curr = data[k];
+    const curr = clone[k];
     if (curr === null || curr === undefined) {
       continue;
     }
@@ -799,7 +800,7 @@ async function doFieldPrivacy<
         // don't do anything if key is null or for some reason missing
         const r = await applyPrivacyPolicy(viewer, policy, ent);
         if (!r) {
-          data[k] = null;
+          clone[k] = null;
           somethingChanged = true;
         }
       })(),
@@ -808,7 +809,7 @@ async function doFieldPrivacy<
   await Promise.all(promises);
   if (somethingChanged) {
     // have to create new instance
-    const ent = new options.ent(viewer, data);
+    const ent = new options.ent(viewer, clone);
     ent.__setRawDBData(origData);
     return ent;
   }

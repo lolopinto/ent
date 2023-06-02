@@ -9,6 +9,8 @@ import {
   LoadEntOptions,
   LoadRowOptions,
   EditRowOptions,
+  Allow,
+  Deny,
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import {
@@ -16,6 +18,8 @@ import {
   AllowIfViewerRule,
   AlwaysDenyPrivacyPolicy,
   AlwaysAllowPrivacyPolicy,
+  AllowIfViewerPrivacyPolicy,
+  AllowIfViewerHasIdentityPrivacyPolicy,
 } from "./privacy";
 import { buildInsertQuery, buildUpdateQuery } from "./ent";
 import { queryOptions } from "../testutils/db_mock";
@@ -50,8 +54,16 @@ const selectOptionsContacts: SelectDataOptions = {
   fields: ["bar", "baz", "foo"],
   key: "bar",
 };
+const selectOptionsEvenContactsVisible: SelectDataOptions = {
+  tableName: "accounts",
+  fields: ["bar", "baz", "foo"],
+  key: "bar",
+};
 const loaderFactory = new ObjectLoaderFactory(selectOptions);
 const loaderFactoryContacts = new ObjectLoaderFactory(selectOptionsContacts);
+const loaderFactoryEvenContactsVisible = new ObjectLoaderFactory(
+  selectOptionsEvenContactsVisible,
+);
 
 class User extends BaseEnt {
   baz: string | null;
@@ -96,11 +108,11 @@ class Contact extends BaseEnt {
   foo: string | null;
   accountID: string;
   nodeType = "Contact";
+
   getPrivacyPolicy(): PrivacyPolicy<this> {
-    return {
-      rules: [AllowIfViewerRule, AlwaysDenyRule],
-    };
+    return AllowIfViewerPrivacyPolicy;
   }
+
   constructor(public viewer: Viewer, public data: Data) {
     super(viewer, data);
     this.baz = data["baz"];
@@ -134,6 +146,69 @@ class Contact extends BaseEnt {
     };
   }
 }
+
+class Account extends Contact {
+  baz: string | null;
+  foo: string | null;
+  accountID: string;
+  nodeType = "Account";
+
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  static async load(v: Viewer, id: ID): Promise<Account | null> {
+    return ent.loadEnt(v, id, Account.loaderOptions());
+  }
+
+  static async loadX(v: Viewer, id: ID): Promise<Account> {
+    return ent.loadEntX(v, id, Account.loaderOptions());
+  }
+
+  static loaderOptions(): LoadEntOptions<Account> {
+    return {
+      ...selectOptions,
+      tableName: "accounts",
+      ent: this,
+      loaderFactory: loaderFactoryEvenContactsVisible,
+      fieldPrivacy: new Map<string, PrivacyPolicy>([
+        // foo visible if id is divisible by 3
+        [
+          "foo",
+          {
+            rules: [
+              {
+                async apply(v: Viewer, ent?: Ent) {
+                  return typeof v.viewerID === "number" && v.viewerID % 3 === 0
+                    ? Allow()
+                    : Deny();
+                },
+              },
+              AlwaysDenyRule,
+            ],
+          },
+        ],
+        // baz visible if id is even
+        [
+          "baz",
+          {
+            rules: [
+              {
+                async apply(v: Viewer, ent?: Ent) {
+                  return typeof v.viewerID === "number" && v.viewerID % 2 === 0
+                    ? Allow()
+                    : Deny();
+                },
+              },
+              AlwaysDenyRule,
+            ],
+          },
+        ],
+      ]),
+    };
+  }
+}
+
 let ctx: Context;
 const ml = new MockLogs();
 
@@ -472,7 +547,7 @@ function commonTests() {
       };
 
       const testEnt = async (vc: Viewer) => {
-        return await loadTestEnt(
+        return loadTestEnt(
           () => ent.loadEnt(vc, 1, User.loaderOptions()),
           () => {
             const queryOption = {
@@ -572,7 +647,6 @@ function commonTests() {
   });
 
   describe("loadEnt with field privacy", () => {
-    // TODO come back...
     test("with context", async () => {
       // write it once before all the checks since
       // repeated calls to loadTestEnt
@@ -598,7 +672,7 @@ function commonTests() {
       };
 
       const testEnt = async (vc: Viewer) => {
-        return await loadTestEnt(
+        return loadTestEnt(
           () => ent.loadEnt(vc, 1, Contact.loaderOptions()),
           () => {
             const queryOption = {
@@ -668,6 +742,164 @@ function commonTests() {
       });
       expect(ent4?.baz).toBe("baz");
       expect(ent4?.foo).toBeNull();
+    });
+
+    test("with context. ent visible. field with different policies", async () => {
+      // write it once before all the checks since
+      // repeated calls to loadTestEnt
+      await createRows(
+        [
+          {
+            bar: 1,
+            baz: "baz",
+            foo: "foo",
+          },
+        ],
+        "accounts",
+      );
+
+      let ctx = getCtx();
+      const vc = getIDViewer(1, ctx);
+      ctx.setViewer(vc);
+
+      const options = {
+        ...Account.loaderOptions(),
+        // gonna end up being a data loader...
+        clause: clause.In("bar", 1),
+      };
+
+      const testEnt = async (vc: Viewer) => {
+        return loadTestEnt(
+          () => ent.loadEnt(vc, 1, Account.loaderOptions()),
+          () => {
+            const queryOption = {
+              query: ent.buildQuery(options),
+              values: options.clause.values(),
+            };
+            // when there's a context cache, we only run the query once so should be the same result
+            const expQueries1: Data[] = [queryOption];
+            const cacheHit: Data = {
+              "dataloader-cache-hit": 1,
+              "tableName": options.tableName,
+            };
+            const entCacheHit1: Data = {
+              "ent-cache-hit": ent.getEntKey(
+                getIDViewer(1, ctx),
+                1,
+                Account.loaderOptions(),
+              ),
+            };
+            const entCacheHit2: Data = {
+              "ent-cache-hit": ent.getEntKey(
+                getIDViewer(2, ctx),
+                1,
+                Account.loaderOptions(),
+              ),
+            };
+            const entCacheHit3: Data = {
+              "ent-cache-hit": ent.getEntKey(
+                getIDViewer(3, ctx),
+                1,
+                Account.loaderOptions(),
+              ),
+            };
+            const expQueries2: Data[] = [queryOption, entCacheHit1];
+
+            // 2nd time. with different viewer. more hits
+            if (vc.viewerID === 2 || vc.viewerID === 3) {
+              expQueries1.push(entCacheHit1, cacheHit);
+              expQueries2.push(cacheHit, entCacheHit2);
+            }
+            // 3rd time. with different viewer. more hits
+            if (vc.viewerID === 3) {
+              expQueries1.push(entCacheHit2, cacheHit);
+              expQueries2.push(cacheHit, entCacheHit3);
+            }
+            return [expQueries1, expQueries2];
+          },
+          true,
+          true,
+        );
+      };
+
+      const [ent1, ent2] = await testEnt(vc);
+
+      // // same context, change viewer
+      const vc2 = getIDViewer(2, ctx);
+
+      // // we still reuse the same raw-data query since it's viewer agnostic
+      // // context cache works as viewer is changed
+      const [ent3, ent4] = await testEnt(vc2);
+
+      // // same context, change viewer
+      const vc3 = getIDViewer(3, ctx);
+
+      // // we still reuse the same raw-data query since it's viewer agnostic
+      // // context cache works as viewer is changed
+      const [ent5, ent6] = await testEnt(vc3);
+
+      expect(ent1).not.toBe(null);
+      expect(ent1?.id).toBe(1);
+      expect(ent1?.baz).toBe(null);
+      expect(ent1?.foo).toBeNull();
+      expect(ent1?.data).toEqual({
+        bar: 1,
+        baz: null,
+        foo: null,
+      });
+      expect(ent1?.baz).toBe(null);
+
+      expect(ent2).not.toBe(null);
+      expect(ent2?.id).toBe(1);
+      expect(ent2?.baz).toBe(null);
+      expect(ent2?.foo).toBeNull();
+      expect(ent2?.data).toEqual({
+        bar: 1,
+        baz: null,
+        foo: null,
+      });
+
+      // baz visible...
+      expect(ent3).not.toBe(null);
+      expect(ent3?.id).toBe(1);
+      expect(ent3?.baz).toBe("baz");
+      expect(ent3?.foo).toBeNull();
+      expect(ent3?.data).toEqual({
+        bar: 1,
+        baz: "baz",
+        foo: null,
+      });
+
+      expect(ent4).not.toBe(null);
+      expect(ent4?.id).toBe(1);
+      expect(ent4?.data).toEqual({
+        bar: 1,
+        baz: "baz",
+        foo: null,
+      });
+      expect(ent4?.baz).toBe("baz");
+      expect(ent4?.foo).toBeNull();
+
+      // baz not visible...foo visible
+      expect(ent5).not.toBe(null);
+      expect(ent5?.id).toBe(1);
+      expect(ent5?.baz).toBeNull();
+      expect(ent5?.foo).toBe("foo");
+      expect(ent5?.data).toEqual({
+        bar: 1,
+        baz: null,
+        foo: "foo",
+      });
+
+      expect(ent6).not.toBe(null);
+      expect(ent6?.id).toBe(1);
+      expect(ent6?.data).toEqual({
+        bar: 1,
+        baz: null,
+        foo: "foo",
+      });
+      expect(ent6?.baz).toBeNull();
+      expect(ent6?.foo).toBe("foo");
     });
   });
 
@@ -803,7 +1035,7 @@ function commonTests() {
       };
 
       const testEnt = async (vc: Viewer) => {
-        return await loadTestEnt(
+        return loadTestEnt(
           () => ent.loadEntX(vc, 1, User.loaderOptions()),
           () => {
             const qOption = {
@@ -1515,7 +1747,7 @@ function commonTests() {
         async () => {
           // this needs to be delayed apparently
           const pool = DB.getInstance().getPool();
-          return await ent.deleteRows(pool, options, clause.Eq("bar", 1));
+          return ent.deleteRows(pool, options, clause.Eq("bar", 1));
         },
         () => {
           return {
@@ -1614,6 +1846,12 @@ const tables = [
   ),
   table(
     "contacts",
+    integer("bar", { primaryKey: true }),
+    text("baz"),
+    text("foo"),
+  ),
+  table(
+    "accounts",
     integer("bar", { primaryKey: true }),
     text("baz"),
     text("foo"),
