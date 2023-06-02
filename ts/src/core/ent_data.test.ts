@@ -589,11 +589,11 @@ function commonTests() {
 
       const [ent1, ent2] = await testEnt(vc);
 
-      // // same context, change viewer
+      // same context, change viewer
       const vc2 = getIDViewer(1, ctx);
 
-      // // we still reuse the same raw-data query since it's viewer agnostic
-      // // context cache works as viewer is changed
+      // we still reuse the same raw-data query since it's viewer agnostic
+      // context cache works as viewer is changed
       const [ent3, ent4] = await testEnt(vc2);
 
       // no viewer, nothing loaded
