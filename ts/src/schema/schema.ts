@@ -550,6 +550,12 @@ export interface FieldOptions {
   // the privacy will be evaluated on demand when needed
   privacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
 
+  // like privacyPolicy, applies to permissions of fields when writing
+  // if this is set, the check is done in addition to the action's privacy policy
+  // the action's privacy policy is still used to determine if the action can be run and then this will be an additional
+  // check on each field in the action that has this property set
+  editPrivacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
+
   // takes the name of the field and returns any fields which are derived from current field
   getDerivedFields?(name: string): FieldMap;
 
@@ -695,19 +701,35 @@ export function getFieldsWithPrivacy(
   value: SchemaInputType,
   fieldInfoMap: FieldInfoMap,
 ): Map<string, PrivacyPolicy> {
+  return getFieldsWithPrivacyImpl(value, fieldInfoMap, "privacyPolicy");
+}
+
+export function getFieldsWithEditPrivacy(
+  value: SchemaInputType,
+  fieldInfoMap: FieldInfoMap,
+): Map<string, PrivacyPolicy> {
+  return getFieldsWithPrivacyImpl(value, fieldInfoMap, "editPrivacyPolicy");
+}
+
+function getFieldsWithPrivacyImpl(
+  value: SchemaInputType,
+  fieldInfoMap: FieldInfoMap,
+  key: "privacyPolicy" | "editPrivacyPolicy",
+): Map<string, PrivacyPolicy> {
   const schema = getSchema(value);
   function addFields(fields: FieldMap) {
     for (const name in fields) {
       const field = fields[name];
+      if (field.dbOnly) {
+        continue;
+      }
       if (field.getDerivedFields !== undefined) {
         addFields(field.getDerivedFields(name));
       }
-      if (field.privacyPolicy) {
-        let privacyPolicy: PrivacyPolicy;
-        if (typeof field.privacyPolicy === "function") {
-          privacyPolicy = field.privacyPolicy();
-        } else {
-          privacyPolicy = field.privacyPolicy;
+      let privacyPolicy = field[key];
+      if (privacyPolicy) {
+        if (typeof privacyPolicy === "function") {
+          privacyPolicy = privacyPolicy();
         }
         const info = fieldInfoMap[name];
         if (!info) {
@@ -718,7 +740,7 @@ export function getFieldsWithPrivacy(
     }
   }
 
-  let m = new Map();
+  let m = new Map<string, PrivacyPolicy>();
   if (schema.patterns) {
     for (const pattern of schema.patterns) {
       addFields(pattern.fields);
