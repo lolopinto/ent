@@ -21,6 +21,7 @@ import {
   SQLStatementOperation,
   TransformedUpdateOperation,
   FieldInfoMap,
+  getFieldsWithEditPrivacy,
 } from "../schema/schema";
 import {
   Changeset,
@@ -40,7 +41,7 @@ import {
   ConditionalNodeOperation,
 } from "./operations";
 import { WriteOperation, Builder, Action } from "../action";
-import { applyPrivacyPolicyX } from "../core/privacy";
+import { applyPrivacyPolicy, applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
@@ -58,7 +59,7 @@ export interface OrchestratorOptions<
   TViewer extends Viewer,
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
-  viewer: Viewer;
+  viewer: TViewer;
   operation: WriteOperation;
   tableName: string;
   // should we make it nullable for delete?
@@ -137,18 +138,18 @@ type OperationMap = Map<WriteOperation, IDMap>;
 // }
 type EdgeMap = Map<string, OperationMap>;
 
-function getViewer(action: Action<Ent, Builder<Ent>>) {
-  if (!action.viewer.viewerID) {
+function getViewer(viewer: Viewer) {
+  if (!viewer.viewerID) {
     return "Logged out Viewer";
   } else {
-    return `Viewer with ID ${action.viewer.viewerID}`;
+    return `Viewer with ID ${viewer.viewerID}`;
   }
 }
 
 class EntCannotCreateEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
   constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent, Builder<Ent>>) {
-    let msg = `${getViewer(action)} does not have permission to create ${
+    let msg = `${getViewer(action.viewer)} does not have permission to create ${
       action.builder.ent.name
     }`;
     super(msg);
@@ -163,9 +164,25 @@ class EntCannotEditEntError extends Error implements PrivacyError {
     action: Action<Ent, Builder<Ent>>,
     ent: Ent,
   ) {
-    let msg = `${getViewer(action)} does not have permission to edit ${
+    let msg = `${getViewer(action.viewer)} does not have permission to edit ${
       ent.constructor.name
     }`;
+    super(msg);
+    this.privacyPolicy = privacyPolicy;
+  }
+}
+
+class EntCannotEditEntFieldError extends Error implements PrivacyError {
+  privacyPolicy: PrivacyPolicy;
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    viewer: Viewer,
+    field: string,
+    ent: Ent,
+  ) {
+    let msg = `${getViewer(
+      viewer,
+    )} does not have permission to edit field ${field} ${ent.constructor.name}`;
     super(msg);
     this.privacyPolicy = privacyPolicy;
   }
@@ -178,7 +195,7 @@ class EntCannotDeleteEntError extends Error implements PrivacyError {
     action: Action<Ent, Builder<Ent>>,
     ent: Ent,
   ) {
-    let msg = `${getViewer(action)} does not have permission to delete ${
+    let msg = `${getViewer(action.viewer)} does not have permission to delete ${
       ent.constructor.name
     }`;
     super(msg);
@@ -190,6 +207,8 @@ interface fieldsInfo {
   editedData: Data;
   editedFields: Map<string, any>;
   schemaFields: Map<string, Field>;
+  userDefinedKeys: Set<string>;
+  editPrivacyFields: Map<string, PrivacyPolicy>;
 }
 
 export class Orchestrator<
@@ -542,13 +561,10 @@ export class Orchestrator<
     );
   }
 
-  private async getEntForPrivacyPolicyImpl(
+  private async getRowForPrivacyPolicyImpl(
     schemaFields: Map<string, Field>,
     editedData: Data,
-  ): Promise<TEnt> {
-    if (this.actualOperation !== WriteOperation.Insert) {
-      return this.existingEnt!;
-    }
+  ): Promise<Data> {
     // need to format fields if possible because ent constructors expect data that's
     // in the format that's coming from the db
     // required for object fields...
@@ -586,8 +602,28 @@ export class Orchestrator<
 
       formatted[dbKey] = val;
     }
+    return formatted;
+  }
+
+  private async getEntForPrivacyPolicyImpl(
+    schemaFields: Map<string, Field>,
+    editedData: Data,
+    viewerToUse: TViewer,
+    rowToUse?: Data,
+  ): Promise<TEnt> {
+    if (this.actualOperation !== WriteOperation.Insert) {
+      return this.existingEnt!;
+    }
+
+    if (!rowToUse) {
+      rowToUse = await this.getRowForPrivacyPolicyImpl(
+        schemaFields,
+        editedData,
+      );
+    }
+
     // we create an unsafe ent to be used for privacy policies
-    return new this.options.builder.ent(this.options.builder.viewer, formatted);
+    return new this.options.builder.ent(viewerToUse, rowToUse);
   }
 
   private getSQLStatementOperation(): SQLStatementOperation {
@@ -621,7 +657,11 @@ export class Orchestrator<
       return this.existingEnt!;
     }
     const { schemaFields, editedData } = await this.memoizedGetFields();
-    return this.getEntForPrivacyPolicyImpl(schemaFields, editedData);
+    return this.getEntForPrivacyPolicyImpl(
+      schemaFields,
+      editedData,
+      this.options.viewer,
+    );
   }
 
   // this gets the fields that were explicitly set plus any default or transformed values
@@ -647,23 +687,35 @@ export class Orchestrator<
   }
 
   // Note: this is memoized. call memoizedGetFields instead
-  private async getFieldsInfo() {
+  private async getFieldsInfo(): Promise<fieldsInfo> {
     const action = this.options.action;
     const builder = this.options.builder;
 
     // future optimization: can get schemaFields to memoize based on different values
     const schemaFields = getFields(this.options.schema);
+    // also future optimization, no need to go through the list of fields multiple times
+    const editPrivacyFields = getFieldsWithEditPrivacy(
+      this.options.schema,
+      this.options.fieldInfo,
+    );
 
     const editedFields = await this.options.editedFields();
 
-    let editedData = await this.getFieldsWithDefaultValues(
-      builder,
-      schemaFields,
-      editedFields,
-      action,
-    );
+    let { data: editedData, userDefinedKeys } =
+      await this.getFieldsWithDefaultValues(
+        builder,
+        schemaFields,
+        editedFields,
+        action,
+      );
 
-    return { editedData, editedFields, schemaFields };
+    return {
+      editedData,
+      editedFields,
+      schemaFields,
+      userDefinedKeys,
+      editPrivacyFields,
+    };
   }
 
   private async validate(): Promise<Error[]> {
@@ -678,7 +730,8 @@ export class Orchestrator<
         }
     }
 
-    const { schemaFields, editedData } = await this.memoizedGetFields();
+    const { schemaFields, editedData, userDefinedKeys, editPrivacyFields } =
+      await this.memoizedGetFields();
     const action = this.options.action;
     const builder = this.options.builder;
 
@@ -688,22 +741,64 @@ export class Orchestrator<
     // * triggers
     // * validators
     let privacyPolicy = action?.getPrivacyPolicy();
-    let privacyError: Error | null = null;
+
+    const errors: Error[] = [];
+
     if (privacyPolicy) {
+      const ent = await this.getEntForPrivacyPolicyImpl(
+        schemaFields,
+        editedData,
+        this.options.viewer,
+      );
+
       try {
-        await applyPrivacyPolicyX(
-          this.options.viewer,
-          privacyPolicy,
-          await this.getEntForPrivacyPolicyImpl(schemaFields, editedData),
-          this.throwError.bind(this),
+        await applyPrivacyPolicyX(this.options.viewer, privacyPolicy, ent, () =>
+          this.throwError(),
         );
-      } catch (err: any) {
-        privacyError = err as Error;
+      } catch (err) {
+        errors.push(err);
       }
     }
-    // privacyError should return first since it's less confusing
-    if (privacyError !== null) {
-      return [privacyError];
+
+    // we have edit privacy fields, so we need to apply privacy policy on those
+    const promises: Promise<void>[] = [];
+    if (editPrivacyFields.size) {
+      // get row based on edited data
+      const row = await this.getRowForPrivacyPolicyImpl(
+        schemaFields,
+        editedData,
+      );
+      // get viewer for ent load based on formatted row
+      const viewer = await this.viewerForEntLoad(row);
+
+      const ent = await this.getEntForPrivacyPolicyImpl(
+        schemaFields,
+        editedData,
+        viewer,
+        row,
+      );
+
+      for (const [k, policy] of editPrivacyFields) {
+        if (editedData[k] === undefined || !userDefinedKeys.has(k)) {
+          continue;
+        }
+        promises.push(
+          (async () => {
+            const r = await applyPrivacyPolicy(viewer, policy, ent);
+            if (!r) {
+              errors.push(
+                new EntCannotEditEntFieldError(policy, viewer, k, ent!),
+              );
+            }
+          })(),
+        );
+      }
+      await Promise.all(promises);
+    }
+
+    // privacy or field errors should return first so it's less confusing
+    if (errors.length) {
+      return errors;
     }
 
     // have to run triggers which update fields first before field and other validators
@@ -721,11 +816,12 @@ export class Orchestrator<
     // not ideal we're calling this twice. fix...
     // needed for now. may need to rewrite some of this?
     const editedFields2 = await this.options.editedFields();
-    const [errors, errs2] = await Promise.all([
+    const [errs2, errs3] = await Promise.all([
       this.formatAndValidateFields(schemaFields, editedFields2),
       this.validators(validators, action!, builder),
     ]);
     errors.push(...errs2);
+    errors.push(...errs3);
     return errors;
   }
 
@@ -893,12 +989,17 @@ export class Orchestrator<
     // transforming before doing default fields so that we don't create a new id
     // and anything that depends on the type of operations knows what it is
 
+    const userDefinedKeys = new Set<string>();
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let defaultValue: any = undefined;
       let dbKey = this.getStorageKey(fieldName);
 
       let updateOnlyIfOther = field.onlyUpdateIfOtherFieldsBeingSet_BETA;
+
+      if (value !== undefined) {
+        userDefinedKeys.add(dbKey);
+      }
 
       if (value === undefined) {
         if (this.actualOperation === WriteOperation.Insert) {
@@ -964,7 +1065,7 @@ export class Orchestrator<
       }
     }
 
-    return data;
+    return { data, userDefinedKeys };
   }
 
   private hasData(data: Data) {
