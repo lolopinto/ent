@@ -1263,6 +1263,7 @@ input UserCreateInput {
   superNestedObject: UserSuperNestedObjectInput
   nestedList: [UserNestedObjectListInput!]
   intEnum: UserIntEnum
+  accountStatusOverride: String
 }
 
 type UserCreatePayload {

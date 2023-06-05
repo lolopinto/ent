@@ -26,12 +26,7 @@ import {
   loadUniqueEdge,
   loadUniqueNode,
 } from "@snowtop/ent";
-import {
-  Field,
-  getFields,
-  getFieldsWithEditPrivacy,
-  getFieldsWithPrivacy,
-} from "@snowtop/ent/schema";
+import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
   UserDBData,
   userEmailAddressLoader,
@@ -90,10 +85,6 @@ export interface UserCanViewerSee {
   prefs: () => Promise<boolean>;
   prefsList: () => Promise<boolean>;
   prefsDiff: () => Promise<boolean>;
-}
-
-export interface UserCanViewerEdit {
-  accountStatus: () => Promise<boolean>;
 }
 
 interface UserCustomQueryData extends UserDBData {
@@ -622,21 +613,6 @@ export class UserBase
         applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs_list")!, this),
       prefsDiff: () =>
         applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs_diff")!, this),
-    };
-  }
-
-  canViewerEditInfo(): UserCanViewerEdit {
-    const fieldPrivacy = getFieldsWithEditPrivacy(
-      schema,
-      userLoaderInfo.fieldInfo,
-    );
-    return {
-      accountStatus: () =>
-        applyPrivacyPolicy(
-          this.viewer,
-          fieldPrivacy.get("account_status")!,
-          this,
-        ),
     };
   }
 }
