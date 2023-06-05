@@ -17,7 +17,7 @@ import { User } from "../../";
 
 export { UserCreateInput };
 import { ExampleViewer } from "../../../viewer/viewer";
-import { ContactLabel } from "../../../ent/generated/types";
+import { ContactLabel, UserAccountStatus } from "../../../ent/generated/types";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateUserAction extends CreateUserActionBase {
@@ -65,6 +65,24 @@ export default class CreateUserAction extends CreateUserActionBase {
           return action.changesetWithOptions_BETA({
             conditionalBuilder: builder,
           });
+        },
+      },
+      {
+        changeset(builder, input) {
+          if (
+            input.accountStatusOverride !== undefined &&
+            input.accountStatus !== undefined
+          ) {
+            throw new Error(
+              `cannot set both accountStatus and accountStatusOverride`,
+            );
+          }
+          if (input.accountStatusOverride !== undefined) {
+            builder.updateInput({
+              accountStatus:
+                input.accountStatusOverride as unknown as UserAccountStatus,
+            });
+          }
         },
       },
     ];

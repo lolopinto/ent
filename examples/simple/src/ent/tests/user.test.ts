@@ -113,7 +113,7 @@ test("create user with accountstatus", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    accountStatus: UserAccountStatus.VERIFIED,
+    accountStatusOverride: UserAccountStatus.VERIFIED,
   });
 
   expect(user.firstName).toBe("Jon");
@@ -125,12 +125,22 @@ test("create user with accountstatus explicitly null", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    accountStatus: null,
+    accountStatusOverride: null,
   });
 
   expect(user.firstName).toBe("Jon");
   expect(user.lastName).toBe("Snow");
   expect(await user.accountStatus()).toBe("UNVERIFIED");
+});
+
+test("create user with accountStatus directly", async () => {
+  await expect(
+    create({
+      firstName: "Jon",
+      lastName: "Snow",
+      accountStatus: UserAccountStatus.VERIFIED,
+    }),
+  ).rejects.toThrowError(/account_status/);
 });
 
 test("create user with deprecated account_status", async () => {

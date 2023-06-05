@@ -49,6 +49,7 @@ export interface UserCreateInput {
   superNestedObject?: UserSuperNestedObject | null;
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;
+  accountStatusOverride?: string | null;
 }
 
 export type CreateUserActionTriggers = (
