@@ -26,7 +26,10 @@ import { PasswordType } from "@snowtop/ent-password";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import { StringListType } from "@snowtop/ent/schema/field";
 import Feedback from "./patterns/feedback";
-import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
+import {
+  AllowIfViewerPrivacyPolicy,
+  AlwaysDenyPrivacyPolicy,
+} from "@snowtop/ent";
 
 const UserSchema = new EntSchema({
   patterns: [new Feedback()],
@@ -59,6 +62,7 @@ const UserSchema = new EntSchema({
         path: "src/util/convert_user_fields",
         function: "userConvertAccountStatus",
       },
+      editPrivacyPolicy: AlwaysDenyPrivacyPolicy,
     }),
     emailVerified: BooleanType({
       hideFromGraphQL: true,
@@ -66,6 +70,7 @@ const UserSchema = new EntSchema({
       // not needed because we have serverDefault but can also set it here.
       defaultValueOnCreate: () => false,
       privacyPolicy: AllowIfViewerPrivacyPolicy,
+      editPrivacyPolicy: AlwaysDenyPrivacyPolicy,
     }),
     Bio: StringType({ nullable: true }),
     nicknames: StringListType({ nullable: true }),
@@ -345,6 +350,13 @@ const UserSchema = new EntSchema({
         "superNestedObject",
         "nestedList",
         "int_enum",
+      ],
+      actionOnlyFields: [
+        {
+          name: "accountStatusOverride",
+          type: "String",
+          nullable: true,
+        },
       ],
     },
 

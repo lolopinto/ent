@@ -88,6 +88,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     intEnum: {
       type: UserIntEnumType,
     },
+    accountStatusOverride: {
+      type: GraphQLString,
+    },
   }),
 });
 
@@ -140,6 +143,7 @@ export const UserCreateType: GraphQLFieldConfig<
       superNestedObject: input.superNestedObject,
       nestedList: input.nestedList,
       intEnum: input.intEnum,
+      accountStatusOverride: input.accountStatusOverride,
     }).saveX();
     return { user: user };
   },
