@@ -41,6 +41,7 @@ async function processFields(
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
     f.hasFieldPrivacy = field.privacyPolicy !== undefined;
+    f.hasEditFieldPrivacy = field.editPrivacyPolicy !== undefined;
     if (field.polymorphic) {
       // convert boolean into object
       // we keep boolean as an option to keep API simple
@@ -366,6 +367,7 @@ type ProcessedField = Omit<
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
   hasFieldPrivacy?: boolean;
+  hasEditFieldPrivacy?: boolean;
   derivedFields?: ProcessedField[];
   type: ProcessedType;
   serverDefault?: string;

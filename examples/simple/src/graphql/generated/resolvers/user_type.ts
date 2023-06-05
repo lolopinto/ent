@@ -24,6 +24,7 @@ import {
   CreatorToEventsQuery,
   User,
   UserArticleToCommentsQuery,
+  UserCanViewerEdit,
   UserCanViewerSee,
   UserCommentsFromAttachmentQuery,
   UserToCommentsQuery,
@@ -678,6 +679,16 @@ export const UserType = new GraphQLObjectType({
         return user.canViewerSeeInfo();
       },
     },
+    canViewerEditInfo: {
+      type: new GraphQLNonNull(UserCanViewerEditType),
+      resolve: (
+        user: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.canViewerEditInfo();
+      },
+    },
     fullName: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -846,6 +857,25 @@ export const UserCanViewerSeeType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return user.prefsDiff();
+      },
+    },
+  }),
+});
+
+export const UserCanViewerEditType = new GraphQLObjectType({
+  name: "UserCanViewerEdit",
+  fields: (): GraphQLFieldConfigMap<
+    UserCanViewerEdit,
+    RequestContext<ExampleViewerAlias>
+  > => ({
+    accountStatus: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerEdit,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.accountStatus();
       },
     },
   }),

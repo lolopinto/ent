@@ -2054,61 +2054,79 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 
 	canSeeViewerInfo := nodeData.GetCanViewerSeeInfo()
 	if canSeeViewerInfo != nil {
-		// add can viewer see object
-		canViewerSee := newObjectType(&objectType{
-			Type:     fmt.Sprintf("%sType", canSeeViewerInfo.Name),
-			GQLType:  "GraphQLObjectType",
-			Node:     canSeeViewerInfo.Name,
-			Exported: true,
-			TSType:   canSeeViewerInfo.Name,
-			Imports: []*tsimport.ImportPath{
-				tsimport.NewLocalEntImportPath(canSeeViewerInfo.Name),
-			},
-		})
-		for _, field := range canSeeViewerInfo.Fields {
-			name := field.GetGraphQLName()
-			if !field.ExposeToGraphQL() {
-				if !field.ExposeFieldOrFieldEdgeToGraphQL() {
-					continue
-				}
-				name, _ = base.TranslateIDSuffix(name)
-			}
-			gqlField := &fieldType{
-				Name: name,
-				FieldImports: []*tsimport.ImportPath{
-					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLBoolean"),
-				},
-				HasAsyncModifier:   true,
-				HasResolveFunction: true,
-				FunctionContents: []string{
-					fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, field.TSPublicAPIName()),
-				},
-			}
-			if err := canViewerSee.addField(gqlField); err != nil {
-				return nil, err
-			}
-		}
-
-		// add field to node
-		if err := result.addField(&fieldType{
-			Name: codegenapi.GraphQLName(processor.Config, "canViewerSeeInfo"),
-			FieldImports: []*tsimport.ImportPath{
-				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-				tsimport.NewLocalGraphQLEntImportPath(canSeeViewerInfo.Name),
-			},
-			HasResolveFunction: true,
-			FunctionContents: []string{
-				fmt.Sprintf("return %s.canViewerSeeInfo();", nodeData.NodeInstance),
-			},
-		}); err != nil {
+		canViewerSee, err := getCanViewerSeeInfoObject(processor, result, nodeData, canSeeViewerInfo, "canViewerSeeInfo")
+		if err != nil {
 			return nil, err
 		}
 
 		ret = append(ret, canViewerSee)
 	}
 
+	canViewerEditInfo := nodeData.GetCanViewerEditInfo()
+	if canViewerEditInfo != nil {
+		canViewerEdit, err := getCanViewerSeeInfoObject(processor, result, nodeData, canViewerEditInfo, "canViewerEditInfo")
+		if err != nil {
+			return nil, err
+		}
+
+		ret = append(ret, canViewerEdit)
+	}
+
 	return ret, nil
+}
+
+func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canSeeViewerInfo *schema.CanViewerSeeInfo, method string) (*objectType, error) {
+	// add can viewer see|edit object
+	canViewerSee := newObjectType(&objectType{
+		Type:     fmt.Sprintf("%sType", canSeeViewerInfo.Name),
+		GQLType:  "GraphQLObjectType",
+		Node:     canSeeViewerInfo.Name,
+		Exported: true,
+		TSType:   canSeeViewerInfo.Name,
+		Imports: []*tsimport.ImportPath{
+			tsimport.NewLocalEntImportPath(canSeeViewerInfo.Name),
+		},
+	})
+	for _, field := range canSeeViewerInfo.Fields {
+		name := field.GetGraphQLName()
+		if !field.ExposeToGraphQL() {
+			if !field.ExposeFieldOrFieldEdgeToGraphQL() {
+				continue
+			}
+			name, _ = base.TranslateIDSuffix(name)
+		}
+		gqlField := &fieldType{
+			Name: name,
+			FieldImports: []*tsimport.ImportPath{
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				tsimport.NewGQLImportPath("GraphQLBoolean"),
+			},
+			HasAsyncModifier:   true,
+			HasResolveFunction: true,
+			FunctionContents: []string{
+				fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, field.TSPublicAPIName()),
+			},
+		}
+		if err := canViewerSee.addField(gqlField); err != nil {
+			return nil, err
+		}
+	}
+
+	// add field to node
+	if err := result.addField(&fieldType{
+		Name: codegenapi.GraphQLName(processor.Config, method),
+		FieldImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewLocalGraphQLEntImportPath(canSeeViewerInfo.Name),
+		},
+		HasResolveFunction: true,
+		FunctionContents: []string{
+			fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, method),
+		},
+	}); err != nil {
+		return nil, err
+	}
+	return canViewerSee, nil
 }
 
 func addSingularEdge(edge edge.Edge, obj *objectType, instance string) error {
