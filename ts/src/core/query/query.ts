@@ -12,8 +12,8 @@ import * as clause from "../clause";
 import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
 import { validate } from "uuid";
-import { types } from "util";
 import { OrderBy, reverseOrderBy } from "../query_impl";
+import { isPromise } from "util/types";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -189,7 +189,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
       if (this.offset) {
         const res = this.edgeQuery.getTableName();
-        const tableName = types.isPromise(res) ? await res : res;
+        const tableName = isPromise(res) ? await res : res;
         // inner col time
         options.clause = clause.PaginationMultipleColsSubQuery(
           this.sortCol,
@@ -272,7 +272,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     if (this.options.cursorCol !== this.sortCol) {
       const res = this.edgeQuery.getTableName();
-      const tableName = types.isPromise(res) ? await res : res;
+      const tableName = isPromise(res) ? await res : res;
 
       if (this.offset) {
         // inner col time
@@ -594,7 +594,7 @@ export abstract class BaseEdgeQuery<
     for (const filter of this.filters) {
       if (filter.query) {
         let res = filter.query(options);
-        options = types.isPromise(res) ? await res : res;
+        options = isPromise(res) ? await res : res;
       }
     }
 
