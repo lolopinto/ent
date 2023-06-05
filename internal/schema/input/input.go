@@ -212,6 +212,7 @@ type Field struct {
 	HasDefaultValueOnCreate    bool `json:"hasDefaultValueOnCreate,omitempty"`
 	HasDefaultValueOnEdit      bool `json:"hasDefaultValueOnEdit,omitempty"`
 	HasFieldPrivacy            bool `json:"hasFieldPrivacy,omitempty"`
+	HasEditFieldPrivacy        bool `json:"hasEditFieldPrivacy,omitempty"`
 
 	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`

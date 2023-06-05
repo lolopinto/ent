@@ -1,5 +1,5 @@
 {{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "loadCustomCount" "applyPrivacyPolicy" "Ent"}}
-{{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy"}}
+{{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy" "getFieldsWithEditPrivacy"}}
 {{ reserveImport .Package.TypesImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/generated/loadAny" "loadEntByType" "loadEntXByType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
@@ -61,6 +61,15 @@
 {{if $canViewerSeeInfo -}}
   export interface {{$canViewerSeeInfo.Name}} {
     {{ range $field := $canViewerSeeInfo.Fields -}}
+      {{$field.TSPublicAPIName}}: () => Promise<boolean>;
+    {{ end -}}
+  }
+{{ end}}
+
+{{ $canViewerEditInfo := .GetCanViewerEditInfo }}
+{{if $canViewerEditInfo -}}
+  export interface {{$canViewerEditInfo.Name}} {
+    {{ range $field := $canViewerEditInfo.Fields -}}
       {{$field.TSPublicAPIName}}: () => Promise<boolean>;
     {{ end -}}
   }
@@ -651,12 +660,22 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{end}}
   {{end}}
 
-  {{ $canViewerSeeInfo := .GetCanViewerSeeInfo }}
   {{if $canViewerSeeInfo }}
   canViewerSeeInfo(): {{$canViewerSeeInfo.Name}} {
     const fieldPrivacy = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}}, {{useImport $loaderInfo}}.fieldInfo);
     return {
       {{ range $canViewerSeeInfo.Fields -}}
+        {{.TSPublicAPIName}}: () => {{useImport "applyPrivacyPolicy"}}(this.viewer, fieldPrivacy.get("{{.GetDbColName}}")!, this),
+      {{ end -}}
+    };
+  }
+  {{ end -}}
+
+  {{if $canViewerEditInfo }}
+  canViewerEditInfo(): {{$canViewerEditInfo.Name}} {
+    const fieldPrivacy = {{useImport "getFieldsWithEditPrivacy"}}({{useImport "schema"}}, {{useImport $loaderInfo}}.fieldInfo);
+    return {
+      {{ range $canViewerEditInfo.Fields -}}
         {{.TSPublicAPIName}}: () => {{useImport "applyPrivacyPolicy"}}(this.viewer, fieldPrivacy.get("{{.GetDbColName}}")!, this),
       {{ end -}}
     };

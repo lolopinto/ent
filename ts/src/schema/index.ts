@@ -14,6 +14,7 @@ export {
   SchemaInputType,
   getFields,
   getFieldsWithPrivacy,
+  getFieldsWithEditPrivacy,
   getStorageKey,
   ActionOperation,
   Action,

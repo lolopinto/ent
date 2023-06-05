@@ -66,6 +66,7 @@ type Field struct {
 	hasDefaultValueOnEdit      bool
 	defaultToViewerOnCreate    bool
 	hasFieldPrivacy            bool
+	hasEditFieldPrivacy        bool
 	fetchOnDemand              bool
 	dbOnly                     bool
 
@@ -111,6 +112,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		hasDefaultValueOnEdit:      f.HasDefaultValueOnEdit,
 		defaultToViewerOnCreate:    f.DefaultToViewerOnCreate,
 		hasFieldPrivacy:            f.HasFieldPrivacy,
+		hasEditFieldPrivacy:        f.HasEditFieldPrivacy,
 		fetchOnDemand:              f.FetchOnDemand,
 		dbOnly:                     f.DBOnly,
 		immutable:                  f.Immutable,
@@ -399,6 +401,10 @@ func (f *Field) DefaultToViewerOnCreate() bool {
 
 func (f *Field) HasFieldPrivacy() bool {
 	return f.hasFieldPrivacy
+}
+
+func (f *Field) HasEditFieldPrivacy() bool {
+	return f.hasEditFieldPrivacy
 }
 
 func (f *Field) FetchOnDemand() bool {
@@ -917,6 +923,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		hasDefaultValueOnEdit:      f.hasDefaultValueOnEdit,
 		defaultToViewerOnCreate:    f.defaultToViewerOnCreate,
 		hasFieldPrivacy:            f.hasFieldPrivacy,
+		hasEditFieldPrivacy:        f.hasEditFieldPrivacy,
 		fetchOnDemand:              f.fetchOnDemand,
 		dbOnly:                     f.dbOnly,
 		immutable:                  f.immutable,

@@ -186,6 +186,15 @@ func (nodeData *NodeData) FieldsWithFieldPrivacy() bool {
 	return false
 }
 
+func (nodeData *NodeData) FieldsWithEditFieldPrivacy() bool {
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.HasEditFieldPrivacy() {
+			return true
+		}
+	}
+	return false
+}
+
 func (nodeData *NodeData) OnEntLoadFieldPrivacy(cfg codegenapi.Config) bool {
 	if !nodeData.FieldsWithFieldPrivacy() {
 		return false
@@ -708,12 +717,12 @@ func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) *entLoa
 	return nil
 }
 
-type canViewerSeeInfo struct {
+type CanViewerSeeInfo struct {
 	Name   string
 	Fields []*field.Field
 }
 
-func (nodeData *NodeData) GetCanViewerSeeInfo() *canViewerSeeInfo {
+func (nodeData *NodeData) GetCanViewerSeeInfo() *CanViewerSeeInfo {
 	if !nodeData.SupportCanViewerSee || !nodeData.FieldsWithFieldPrivacy() {
 		return nil
 	}
@@ -729,8 +738,30 @@ func (nodeData *NodeData) GetCanViewerSeeInfo() *canViewerSeeInfo {
 		return nil
 	}
 
-	return &canViewerSeeInfo{
+	return &CanViewerSeeInfo{
 		Name:   fmt.Sprintf("%sCanViewerSee", nodeData.Node),
+		Fields: fields,
+	}
+}
+
+func (nodeData *NodeData) GetCanViewerEditInfo() *CanViewerSeeInfo {
+	if !nodeData.SupportCanViewerSee || !nodeData.FieldsWithEditFieldPrivacy() {
+		return nil
+	}
+
+	var fields []*field.Field
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.HasEditFieldPrivacy() && f.ExposeFieldOrFieldEdgeToGraphQL() {
+			fields = append(fields, f)
+		}
+	}
+
+	if len(fields) == 0 {
+		return nil
+	}
+
+	return &CanViewerSeeInfo{
+		Name:   fmt.Sprintf("%sCanViewerEdit", nodeData.Node),
 		Fields: fields,
 	}
 }
