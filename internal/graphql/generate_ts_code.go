@@ -340,13 +340,13 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		funcs = append(funcs, p.processEnums(processor, s)...)
 
 		funcs = append(funcs, func() error {
-			return writeEnumsFile(processor, s.enums, getFilePathForEnum(processor.Config, ""))
+			return writeEnumsFile(processor, s.enums, getFilePathForEnums(processor.Config))
 		})
 	}
 
 	if len(s.actionEnums) > 0 {
 		funcs = append(funcs, func() error {
-			return writeEnumsFile(processor, s.actionEnums, getFilePathForEnumInput(processor.Config, ""))
+			return writeEnumsFile(processor, s.actionEnums, getFilePathForEnumInput(processor.Config))
 		})
 	}
 
@@ -506,7 +506,7 @@ func getFilePathForCustomInterfaceInputFile(cfg *codegen.Config, gqlType string)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", strcase.ToSnake(gqlType)))
 }
 
-func getFilePathForEnum(cfg *codegen.Config, _name string) string {
+func getFilePathForEnums(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/resolvers/enums_type.ts")
 }
 
@@ -514,13 +514,8 @@ func getFilePathForOldEnum(cfg *codegen.Config, name string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", base.GetSnakeCaseName(name)))
 }
 
-func getFilePathForEnumInput(cfg *codegen.Config, _name string) string {
+func getFilePathForEnumInput(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/mutations/input_enums_type.ts")
-}
-
-// TODO kill this and combine
-func getFilePathForEnumInputFile(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", base.GetSnakeCaseName(name)))
 }
 
 func getFilePathForConnection(cfg *codegen.Config, packageName string, connectionType string) string {
@@ -1290,7 +1285,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				enums[enumType.Name] = &gqlEnum{
 					Type:     enumType.GetGraphQLType(),
 					Enum:     enumType,
-					FilePath: getFilePathForEnum(processor.Config, enumType.Name),
+					FilePath: getFilePathForEnums(processor.Config),
 				}
 			}(key)
 		}
@@ -1610,24 +1605,13 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 					Exported:   depObj.Exported,
 				})
 			}
-
-			for _, depEnum := range dep.ObjData.Enums {
-				actionTypes = append(actionTypes, typeInfo{
-					Type: depEnum.Type,
-					// they're embedded in the action's file
-					ImportPath: trimPath(cfg, dep.FilePath),
-					NodeType:   "Enum",
-					Obj:        depEnum,
-					Exported:   true,
-				})
-			}
 		}
 	}
 	for _, enum := range s.actionEnums {
 		actionTypes = append(actionTypes, typeInfo{
 			Type: enum.Type,
 			// moved to top level input file
-			ImportPath: trimPath(cfg, getFilePathForEnumInput(cfg, enum.Type)),
+			ImportPath: trimPath(cfg, getFilePathForEnumInput(cfg)),
 			NodeType:   "Enum",
 			Obj:        enum,
 			Exported:   true,
@@ -1775,7 +1759,7 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 	var enums []string
 	if len(s.enums) > 0 {
 		// enums in one file
-		enums = append(enums, trimPath(cfg, getFilePathForEnum(cfg, "")))
+		enums = append(enums, trimPath(cfg, getFilePathForEnums(cfg)))
 	}
 
 	var customQueries []string

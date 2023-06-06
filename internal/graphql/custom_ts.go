@@ -968,9 +968,9 @@ func processCusomTypes(processor *codegen.Processor, cd *CustomData, s *gqlSchem
 			return fmt.Errorf("enum name %s already exists", gql.Type)
 		}
 
-		path := getFilePathForEnum(processor.Config, gql.Name)
+		path := getFilePathForEnums(processor.Config)
 		if typ.InputType {
-			path = getFilePathForEnumInputFile(processor.Config, gql.Type)
+			path = getFilePathForEnumInput(processor.Config)
 
 		}
 		s.enums[gql.Type] = &gqlEnum{
