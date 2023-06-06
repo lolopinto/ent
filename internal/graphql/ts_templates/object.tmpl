@@ -24,6 +24,15 @@
 
 {{ template "interfaces.tmpl" (dict "Base" $baseObj "Interfaces" $baseObj.TSInterfaces) -}}
 
+{{ range $baseObj.UnconditionalImports }}
+  {{reserveImportPath . true}}
+  {{ $ignore := useImport .Import }}
+{{ end -}}
+
+{{ range $baseObj.Classes -}}
+  {{.Contents}}
+{{ end -}}
+
 {{ range $baseObj.Enums -}}
   {{ template "enum.tmpl" . -}}
 {{ end -}}

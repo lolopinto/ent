@@ -906,6 +906,16 @@ func (obj *gqlobjectData) Imports() []*tsimport.ImportPath {
 	return result
 }
 
+func (obj *gqlobjectData) UnconditionalImports() []*tsimport.ImportPath {
+	var result []*tsimport.ImportPath
+	for _, node := range obj.GQLNodes {
+		for _, class := range node.Classes {
+			result = append(result, class.UnconditionalImports...)
+		}
+	}
+	return result
+}
+
 func (obj *gqlobjectData) TSInterfaces() []*interfaceType {
 	result := obj.interfaces[:]
 	for _, node := range obj.GQLNodes {
@@ -2119,7 +2129,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 
 	if nodeData.HasCanViewerDo() {
 		// spew.Dump("TODO", nodeData.Node)
-		// canViewerDoInfo := nodeData.GetCanViewerDoInfo()
+		canViewerDoInfo := nodeData.GetCanViewerDoInfo()
 		// for _, action := range canViewerDoInfo {
 		// 	spew.Dump(action.GetGraphQLName())
 		// }
@@ -2223,7 +2233,7 @@ func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, no
 	}
 	`,
 		fmt.Sprintf("%sCanViewerDo", nodeData.Node),
-		viewerInfo.Name,
+		viewerInfo.GetImport(),
 		nodeData.NodeInstance,
 		nodeData.Node,
 		strings.Join(methods, "\n\n"),
@@ -2262,7 +2272,7 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 			HasAsyncModifier:   true,
 			HasResolveFunction: true,
 			FunctionContents: []string{
-				fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, name),
+				fmt.Sprintf("return %s.%s(args);", nodeData.NodeInstance, name),
 			},
 		}
 		if err := canViewerDo.addField(gqlField); err != nil {
@@ -2275,10 +2285,7 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 		Name: codegenapi.GraphQLName(processor.Config, "canViewerDo"),
 		FieldImports: []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			// local import since class is going to be defined here
-			{
-				Import: canViewerDoName,
-			},
+			tsimport.NewLocalGraphQLEntImportPath(canViewerDoName),
 		},
 		HasResolveFunction: true,
 		FunctionContents: []string{

@@ -345,6 +345,10 @@ type RabbitType {
   breed: RabbitBreed!
 }
 
+type UserCanViewerDo {
+  userEdit: Boolean!
+}
+
 type UserCanViewerEdit {
   accountStatus: Boolean!
 }
@@ -450,6 +454,7 @@ type User implements Node {
   eventsCreated(first: Int, after: String, last: Int, before: String): CreatorToEventsConnection!
   canViewerSeeInfo: UserCanViewerSee!
   canViewerEditInfo: UserCanViewerEdit!
+  canViewerDo: UserCanViewerDo!
   fullName: String!
   bar: String
   """contacts same domain..."""
