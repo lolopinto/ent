@@ -926,6 +926,10 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 			for _, in := range node.TSInterfaces {
 				obj.m[in.Name] = true
 			}
+
+			for _, class := range node.Classes {
+				obj.m[class.Name] = true
+			}
 		}
 		for _, enum := range obj.Enums {
 			obj.m[enum.Type] = true
@@ -952,6 +956,14 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 		obj.initMap = true
 	}
 	return !obj.m[name]
+}
+
+func (obj *gqlobjectData) Classes() []*classType {
+	var result []*classType
+	for _, node := range obj.GQLNodes {
+		result = append(result, node.Classes...)
+	}
+	return result
 }
 
 type gqlSchema struct {
@@ -2105,6 +2117,22 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		ret = append(ret, canViewerEdit)
 	}
 
+	if nodeData.HasCanViewerDo() {
+		// spew.Dump("TODO", nodeData.Node)
+		// canViewerDoInfo := nodeData.GetCanViewerDoInfo()
+		// for _, action := range canViewerDoInfo {
+		// 	spew.Dump(action.GetGraphQLName())
+		// }
+
+		// not creating a thin layer in ent because of circular dependencies of calling actions from ent
+		// so doing it all in graphql...
+		canViewerDo, err := getCanViewerDoObject(processor, result, nodeData, canViewerDoInfo)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, canViewerDo)
+	}
+
 	return ret, nil
 }
 
@@ -2160,6 +2188,115 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 		return nil, err
 	}
 	return canViewerSee, nil
+}
+
+func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canViewerDoInfo map[string]action.Action) (*classType, error) {
+	viewerInfo := processor.Config.GetTemplatizedViewer()
+	imports := []*tsimport.ImportPath{
+		tsimport.NewEntImportPath("RequestContext"),
+		viewerInfo.GetImportPath(),
+		tsimport.NewLocalEntImportPath(nodeData.Node),
+		tsimport.NewEntImportPath("applyPrivacyPolicy"),
+	}
+
+	var methods []string
+	for _, action := range canViewerDoInfo {
+		imports = append(imports, &tsimport.ImportPath{
+			DefaultImport: true,
+			ImportPath:    getActionPath(nodeData, action),
+			Import:        action.GetActionName(),
+		})
+
+		methods = append(methods, fmt.Sprintf(`
+		async %s(args: any): Promise<boolean> {
+			const action = %s.create(this.context.getViewer(), this.%s, args);
+			return applyPrivacyPolicy(this.context.getViewer(), action.getPrivacyPolicy(), this.%s);
+		}
+		`, action.GetGraphQLName(), action.GetActionName(), nodeData.NodeInstance, nodeData.NodeInstance))
+	}
+
+	classContents := fmt.Sprintf(`
+	class %s {
+		constructor(private context: RequestContext<%s>, private %s: %s) {}
+
+		%s
+	}
+	`,
+		fmt.Sprintf("%sCanViewerDo", nodeData.Node),
+		viewerInfo.Name,
+		nodeData.NodeInstance,
+		nodeData.Node,
+		strings.Join(methods, "\n\n"),
+	)
+
+	return &classType{
+		Name:                 fmt.Sprintf("%sCanViewerDo", nodeData.Node),
+		Contents:             classContents,
+		UnconditionalImports: imports,
+	}, nil
+}
+
+func getCanViewerDoObject(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canViewerDoInfo map[string]action.Action) (*objectType, error) {
+	canViewerDoName := fmt.Sprintf("%sCanViewerDo", nodeData.Node)
+	// add can viewer do objct
+	canViewerDo := newObjectType(&objectType{
+		Type:     fmt.Sprintf("%sType", canViewerDoName),
+		GQLType:  "GraphQLObjectType",
+		Node:     canViewerDoName,
+		Exported: true,
+		TSType:   canViewerDoName,
+	})
+	for name, action := range canViewerDoInfo {
+		// TODO extra args based on action
+		actionCanViewerDo := action.GetCanViewerDo()
+		if actionCanViewerDo == nil {
+			return nil, fmt.Errorf("action canViewerDo returned nil when it shouldn't be possible to")
+		}
+
+		gqlField := &fieldType{
+			Name: name,
+			FieldImports: []*tsimport.ImportPath{
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				tsimport.NewGQLImportPath("GraphQLBoolean"),
+			},
+			HasAsyncModifier:   true,
+			HasResolveFunction: true,
+			FunctionContents: []string{
+				fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, name),
+			},
+		}
+		if err := canViewerDo.addField(gqlField); err != nil {
+			return nil, err
+		}
+	}
+
+	// add field to node
+	if err := result.addField(&fieldType{
+		Name: codegenapi.GraphQLName(processor.Config, "canViewerDo"),
+		FieldImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			// local import since class is going to be defined here
+			{
+				Import: canViewerDoName,
+			},
+		},
+		HasResolveFunction: true,
+		FunctionContents: []string{
+			fmt.Sprintf("return new %s(context, %s);", canViewerDoName, nodeData.NodeInstance),
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	class, err := getNewCanViewerDoClass(processor, result, nodeData, canViewerDoInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	// add inline class in graphql that will call the actions
+	canViewerDo.Classes = []*classType{class}
+
+	return canViewerDo, nil
 }
 
 func addSingularEdge(edge edge.Edge, obj *objectType, instance string) error {
@@ -3018,6 +3155,7 @@ type objectType struct {
 	DefaultImports []*tsimport.ImportPath
 	Imports        []*tsimport.ImportPath
 	TSInterfaces   []*interfaceType
+	Classes        []*classType
 
 	// make this a string for now since we're only doing built-in interfaces
 	GQLInterfaces  []string
@@ -3231,6 +3369,14 @@ type interfaceField struct {
 	Type       string
 	UseImport  bool
 	UseImports []string
+}
+
+type classType struct {
+	Name     string
+	Exported bool
+	Contents string
+	//any imports here are reserved and used and assumed they're added because they're needed...
+	UnconditionalImports []*tsimport.ImportPath
 }
 
 // TODO inline this in fieldTypeFromImports

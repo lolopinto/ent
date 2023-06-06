@@ -493,6 +493,14 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			return nil, err
 		}
 
+		// do canViewerDo things
+		for _, action := range nodeData.ActionInfo.Actions {
+			canViewerDo := action.GetCanViewerDo()
+			if canViewerDo != nil {
+				nodeData.canViewerDo[action.GetGraphQLName()] = action
+			}
+		}
+
 		// not in schema.Nodes...
 		if node.EnumTable {
 			if err := s.addEnumFromInputNode(nodeName, node, nodeData); err != nil {

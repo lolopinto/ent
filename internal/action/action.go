@@ -53,6 +53,10 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 			opt,
 		)
 
+		if action.CanViewerDo != nil {
+			commonInfo.canViewerDo = action.CanViewerDo
+		}
+
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
 
