@@ -2128,11 +2128,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 	}
 
 	if nodeData.HasCanViewerDo() {
-		// spew.Dump("TODO", nodeData.Node)
 		canViewerDoInfo := nodeData.GetCanViewerDoInfo()
-		// for _, action := range canViewerDoInfo {
-		// 	spew.Dump(action.GetGraphQLName())
-		// }
 
 		// not creating a thin layer in ent because of circular dependencies of calling actions from ent
 		// so doing it all in graphql...
@@ -2217,12 +2213,48 @@ func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, no
 			Import:        action.GetActionName(),
 		})
 
+		args := "args"
+		fields := getActionCanViewerDoFields(action, action.GetCanViewerDo())
+		if len(fields) > 0 {
+			var changedFields []string
+			for _, field := range fields {
+
+				inputFieldLine, imps := processActionField(processor, action, field, "args")
+
+				changedFields = append(changedFields, inputFieldLine)
+				imports = append(imports, imps...)
+			}
+
+			// ...args is so we don't need @ts-ignore
+			// we can be a little smarter here and only spell it out for a few fields
+			// but this is fine for now
+			args = fmt.Sprintf(`
+			{
+				...args,
+				%s
+			}
+			`, strings.Join(changedFields, "\n"),
+			)
+		}
+
+		var actionLine string
+		if action.MutatingExistingObject() {
+			actionLine =
+				fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.%s, %s);`,
+					action.GetActionName(), nodeData.NodeInstance, args)
+
+		} else {
+			actionLine =
+				fmt.Sprintf(`const action = %s.create(this.context.getViewer(), %s);`,
+					action.GetActionName(), args)
+		}
+
 		methods = append(methods, fmt.Sprintf(`
 		async %s(args: any): Promise<boolean> {
-			const action = %s.create(this.context.getViewer(), this.%s, args);
+			%s
 			return applyPrivacyPolicy(this.context.getViewer(), action.getPrivacyPolicy(), this.%s);
 		}
-		`, action.GetGraphQLName(), action.GetActionName(), nodeData.NodeInstance, nodeData.NodeInstance))
+		`, action.GetGraphQLName(), actionLine, nodeData.NodeInstance))
 	}
 
 	classContents := fmt.Sprintf(`
@@ -2244,6 +2276,23 @@ func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, no
 		Contents:             classContents,
 		UnconditionalImports: imports,
 	}, nil
+}
+
+func getActionCanViewerDoFields(action action.Action, actionCanViewerDo *input.CanViewerDo) []*field.Field {
+	var fields []*field.Field
+	if actionCanViewerDo.AddAllFields || len(actionCanViewerDo.InputFields) > 0 {
+		m := map[string]bool{}
+		for _, name := range actionCanViewerDo.InputFields {
+			m[name] = true
+		}
+
+		for _, field := range action.GetGraphQLFields() {
+			if actionCanViewerDo.AddAllFields || m[field.FieldName] {
+				fields = append(fields, field)
+			}
+		}
+	}
+	return fields
 }
 
 func getCanViewerDoObject(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canViewerDoInfo map[string]action.Action) (*objectType, error) {
@@ -2275,6 +2324,34 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 				fmt.Sprintf("return %s.%s(args);", nodeData.NodeInstance, name),
 			},
 		}
+
+		// addField := func(f *field.Field) error {
+		// 	// CustomGQLRender
+		// 	return nil
+		// }
+
+		// var fields []*field.Field
+
+		for _, field := range getActionCanViewerDoFields(action, actionCanViewerDo) {
+			// m := map[string]bool{}
+			// for _, name := range actionCanViewerDo.InputFields {
+			// 	m[name] = true
+			// }
+
+			// for _, field := range action.GetGraphQLFields() {
+			// 	if actionCanViewerDo.AddAllFields || m[field.FieldName] {
+
+			arg := &fieldConfigArg{
+				Name:    field.GetGraphQLName(),
+				Imports: field.GetTSGraphQLTypeForFieldImports(true),
+			}
+
+			gqlField.Args = append(gqlField.Args, arg)
+			// fields = append(fields, field)
+			// }
+
+		}
+
 		if err := canViewerDo.addField(gqlField); err != nil {
 			return nil, err
 		}
@@ -2785,6 +2862,35 @@ func checkUnionType(cfg codegenapi.Config, nodeName string, f *field.Field, curr
 	return nil, false, nil
 }
 
+// prefix:input or args
+// returns (`foo: input.foo`, imports)
+func processActionField(processor *codegen.Processor, a action.Action, f action.ActionField, prefix string) (string, []*tsimport.ImportPath) {
+	typ := f.GetFieldType()
+	// get nullable version
+	if !action.IsRequiredField(a, f) {
+		nullable, ok := typ.(enttype.NullableType)
+		if ok {
+			typ = nullable.GetNullableType()
+		}
+	}
+
+	inputField := fmt.Sprintf("%s.%s", prefix, f.GetGraphQLName())
+
+	customRenderer, ok := typ.(enttype.CustomGQLRenderer)
+
+	var argImports []*tsimport.ImportPath
+	if ok {
+		inputField = customRenderer.CustomGQLRender(processor.Config, inputField)
+		argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(processor.Config), true)...)
+	}
+
+	return fmt.Sprintf(
+		"%s: %s,",
+		f.TSPublicAPIName(),
+		inputField,
+	), argImports
+}
+
 func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) (*fieldConfig, error) {
 	// TODO this is so not obvious at all
 	// these are things that are automatically useImported....
@@ -2836,29 +2942,13 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 	base64EncodeIDs := processor.Config.Base64EncodeIDs()
 
 	addField := func(f action.ActionField) {
-		typ := f.GetFieldType()
-		// get nullable version
-		if !action.IsRequiredField(a, f) {
-			nullable, ok := typ.(enttype.NullableType)
-			if ok {
-				typ = nullable.GetNullableType()
-			}
-		}
+		inputFieldLine, imports := processActionField(processor, a, f, "input")
 
-		inputField := fmt.Sprintf("input.%s", f.GetGraphQLName())
-
-		customRenderer, ok := typ.(enttype.CustomGQLRenderer)
-		if ok {
-			inputField = customRenderer.CustomGQLRender(processor.Config, inputField)
-			argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(processor.Config), true)...)
-		}
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf(
-				"%s: %s,",
-				f.TSPublicAPIName(),
-				inputField,
-			))
+			inputFieldLine,
+		)
+		argImports = append(argImports, imports...)
 	}
 
 	lists := [][]string{}

@@ -244,12 +244,17 @@ type ContactDate {
   description: String!
 }
 
+type ContactEmailCanViewerDo {
+  contactEmailEdit: Boolean!
+}
+
 type ContactEmail implements Node & ContactItemType {
   contact: Contact
   id: ID!
   extra: ContactInfo
   emailAddress: String!
   label: ContactLabel!
+  canViewerDo: ContactEmailCanViewerDo!
 }
 
 type ContactInfo {

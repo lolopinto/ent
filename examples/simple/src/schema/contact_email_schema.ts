@@ -30,7 +30,18 @@ const ContactEmailSchema = new EntSchema({
 
   actions: [
     {
-      operation: ActionOperation.Mutations,
+      operation: ActionOperation.Create,
+      // makes no sense...
+      // canViewerDo: {
+      //   addAllFields: true,
+      // },
+    },
+    {
+      operation: ActionOperation.Edit,
+      canViewerDo: {},
+    },
+    {
+      operation: ActionOperation.Delete,
     },
   ],
 });
