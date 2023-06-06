@@ -955,11 +955,10 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 }
 
 type gqlSchema struct {
-	hasConnections bool
-	hasMutations   bool
-	nodes          map[string]*gqlNode
-	enums          map[string]*gqlEnum
-	// interfaces map[string]*gql
+	hasConnections    bool
+	hasMutations      bool
+	nodes             map[string]*gqlNode
+	enums             map[string]*gqlEnum
 	customQueries     []*gqlNode
 	customMutations   []*gqlNode
 	unions            map[string]*gqlNode
@@ -969,7 +968,7 @@ type gqlSchema struct {
 	customEdges       map[string]*objectType
 	rootQueries       []*rootQuery
 	allTypes          []typeInfo
-	otherObjects      []*gqlNode
+	otherObjects      map[string]*gqlNode
 	seenCustomObjects map[string]bool
 	// Query|Mutation|Subscription
 	rootDatas []*gqlRootData
@@ -998,7 +997,9 @@ func (s *gqlSchema) getImportFor(processor *codegen.Processor, typ string, mutat
 	_, ok2 := s.enums[typ]
 	_, ok3 := s.interfaces[typ]
 	_, ok4 := s.unions[typ]
-	if ok || ok2 || ok3 || ok4 {
+	// custom objects or StructType
+	_, ok5 := s.otherObjects[typ]
+	if ok || ok2 || ok3 || ok4 || ok5 {
 		if mutation {
 			return &tsimport.ImportPath{
 				Import: fmt.Sprintf("%sType", typ),
@@ -1253,7 +1254,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 		edgeNames := make(map[string]bool)
 		var wg sync.WaitGroup
 		var m sync.Mutex
-		var otherNodes []*gqlNode
+		otherNodes := make(map[string]*gqlNode)
 		var serr syncerr.Error
 		wg.Add(len(processor.Schema.Nodes))
 		wg.Add(len(processor.Schema.Enums))
@@ -1457,7 +1458,8 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 				m.Lock()
 				defer m.Unlock()
-				otherNodes = append(otherNodes, obj, inputObj)
+				otherNodes[obj.ObjData.Node] = obj
+				otherNodes[inputObj.ObjData.Node] = inputObj
 
 			}(key)
 		}

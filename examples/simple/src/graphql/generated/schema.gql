@@ -886,6 +886,7 @@ type UserToMaybeEventsConnection implements Connection {
 type Viewer {
   viewerID: ID
   user: User
+  defaultUserPrefs: UserPrefsStruct!
 }
 
 input UserAuthInput {

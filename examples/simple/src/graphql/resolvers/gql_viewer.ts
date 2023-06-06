@@ -3,6 +3,7 @@ import { GraphQLID } from "graphql";
 
 import { User } from "../../ent";
 import { ExampleViewer } from "../../viewer/viewer";
+import { UserPrefsStruct, NotifType } from "src/ent/generated/types";
 
 @gqlObjectType({ name: "Viewer" })
 // TODO when this wasn't exported, it didn't work...
@@ -36,5 +37,17 @@ export class GQLViewer {
       return null;
     }
     return User.loadX(this.viewer, v);
+  }
+
+  @gqlField({
+    class: "GQLViewer",
+    type: "UserPrefsStruct",
+  })
+  defaultUserPrefs(): UserPrefsStruct {
+    return {
+      enableNotifs: true,
+      notifTypes: [NotifType.MOBILE],
+      finishedNux: false,
+    };
   }
 }

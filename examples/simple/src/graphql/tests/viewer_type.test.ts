@@ -29,7 +29,7 @@ function getConfig(
   };
 }
 
-test.only("logged out viewer", async () => {
+test("logged out viewer", async () => {
   await expectQueryFromRoot(getConfig(), ["viewerID", null]);
 });
 
@@ -47,5 +47,13 @@ test("viewer", async () => {
     ["viewerID", encodeGQLID(user)],
     ["user.id", encodeGQLID(user)],
     ["user.firstName", user.firstName],
+    [
+      "defaultUserPrefs",
+      {
+        enableNotifs: true,
+        notifTypes: ["MOBILE"],
+        finishedNux: false,
+      },
+    ],
   );
 });
