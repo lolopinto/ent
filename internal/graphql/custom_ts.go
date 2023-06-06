@@ -1086,7 +1086,7 @@ func processDanglingCustomObject(processor *codegen.Processor, cd *CustomData, s
 		},
 		FilePath: filePath,
 	}
-	s.otherObjects = append(s.otherObjects, gqlNode)
+	s.otherObjects[obj.NodeName] = gqlNode
 	return nil
 }
 
