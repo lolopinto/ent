@@ -29,10 +29,13 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
         DenyIfLoggedOutRule,
         // group guest is a part of needs to be invited
         new DelayedResultRule(async (_v, _ent) => {
-          const guest = await Guest.loadX(
+          const guest = await Guest.load(
             this.builder.viewer,
             this.input.guestID,
           );
+          if (!guest) {
+            return null;
+          }
           return new DenyIfEdgeDoesNotExistRule(
             this.builder.existingEnt!.id,
             guest.guestGroupID,
