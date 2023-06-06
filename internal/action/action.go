@@ -52,10 +52,7 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 			nonEntFields,
 			opt,
 		)
-
-		if action.CanViewerDo != nil {
-			commonInfo.canViewerDo = action.CanViewerDo
-		}
+		commonInfo.canViewerDo = action.CanViewerDo
 
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
@@ -323,16 +320,18 @@ func processEdgeActions(cfg codegenapi.Config, nodeName string, assocEdge *edge.
 			return nil, err
 		}
 
-		actions[idx] = typ.getAction(
-			getCommonInfoForEdgeAction(
-				cfg,
-				nodeName,
-				assocEdge,
-				typ,
-				edgeAction,
-				lang,
-			),
+		commonInfo := getCommonInfoForEdgeAction(
+			cfg,
+			nodeName,
+			assocEdge,
+			typ,
+			edgeAction,
+			lang,
 		)
+		commonInfo.canViewerDo = edgeAction.CanViewerDo
+
+		actions[idx] = typ.getAction(commonInfo)
+
 	}
 	return actions, nil
 }
@@ -427,6 +426,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 			lang,
 			fields,
 		)
+		commonInfo.canViewerDo = edgeAction.CanViewerDo
 		commonInfo.tsEnums = tsEnums
 		commonInfo.gqlEnums = gqlEnums
 		commonInfo.EdgeGroup = assocGroup

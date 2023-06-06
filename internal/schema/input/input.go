@@ -621,6 +621,7 @@ type EdgeAction struct {
 	CustomInputName   string              `json:"inputName,omitempty"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
+	CanViewerDo       *CanViewerDo        `json:"canViewerDo,omitempty"`
 }
 
 func getTSStringOperation(op ent.ActionOperation) string {

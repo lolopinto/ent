@@ -153,6 +153,9 @@ export interface EdgeAction {
   hideFromGraphQL?: boolean;
   graphQLName?: string;
   actionOnlyFields?: ActionField[];
+  // if true, adds under a canViewerDo field on the source Object mapping to graphql name
+  // of this...
+  canViewerDo?: boolean | CanViewerDo;
 }
 
 // Information about the inverse edge of an assoc edge
@@ -174,6 +177,9 @@ export interface EdgeGroupAction {
   hideFromGraphQL?: boolean;
   graphQLName?: string;
   actionOnlyFields?: ActionField[];
+  // if true, adds under a canViewerDo field on the source Object mapping to graphql name
+  // of this...
+  canViewerDo?: boolean | CanViewerDo;
 }
 
 // interface AssocEdgeNullState {

@@ -73,6 +73,7 @@ type ActionField interface {
 	GetTsType() string
 	IsEditableIDField(ctx field.EditableContext) bool
 	GetTsTypeImports() []*tsimport.ImportPath
+	GetTSGraphQLTypeForFieldImports(input bool) []*tsimport.ImportPath
 }
 
 type ActionInfo struct {

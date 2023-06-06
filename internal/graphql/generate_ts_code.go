@@ -2206,20 +2206,20 @@ func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, no
 	}
 
 	var methods []string
-	for _, action := range canViewerDoInfo {
+	for _, a := range canViewerDoInfo {
 		imports = append(imports, &tsimport.ImportPath{
 			DefaultImport: true,
-			ImportPath:    getActionPath(nodeData, action),
-			Import:        action.GetActionName(),
+			ImportPath:    getActionPath(nodeData, a),
+			Import:        a.GetActionName(),
 		})
 
 		args := "args"
-		fields := getActionCanViewerDoFields(action, action.GetCanViewerDo())
+		fields := getActionCanViewerDoFields(a, a.GetCanViewerDo())
 		if len(fields) > 0 {
 			var changedFields []string
 			for _, field := range fields {
 
-				inputFieldLine, imps := processActionField(processor, action, field, "args")
+				inputFieldLine, imps := processActionField(processor, a, field, "args")
 
 				changedFields = append(changedFields, inputFieldLine)
 				imports = append(imports, imps...)
@@ -2238,15 +2238,21 @@ func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, no
 		}
 
 		var actionLine string
-		if action.MutatingExistingObject() {
-			actionLine =
-				fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.%s, %s);`,
-					action.GetActionName(), nodeData.NodeInstance, args)
+		if a.MutatingExistingObject() {
+			if action.HasInput(a) {
+				actionLine =
+					fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.%s, %s);`,
+						a.GetActionName(), nodeData.NodeInstance, args)
+			} else {
+				actionLine =
+					fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.%s);`,
+						a.GetActionName(), nodeData.NodeInstance)
+			}
 
 		} else {
 			actionLine =
 				fmt.Sprintf(`const action = %s.create(this.context.getViewer(), %s);`,
-					action.GetActionName(), args)
+					a.GetActionName(), args)
 		}
 
 		methods = append(methods, fmt.Sprintf(`
@@ -2254,7 +2260,7 @@ func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, no
 			%s
 			return applyPrivacyPolicy(this.context.getViewer(), action.getPrivacyPolicy(), this.%s);
 		}
-		`, action.GetGraphQLName(), actionLine, nodeData.NodeInstance))
+		`, a.GetGraphQLName(), actionLine, nodeData.NodeInstance))
 	}
 
 	classContents := fmt.Sprintf(`
@@ -2278,16 +2284,22 @@ func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, no
 	}, nil
 }
 
-func getActionCanViewerDoFields(action action.Action, actionCanViewerDo *input.CanViewerDo) []*field.Field {
-	var fields []*field.Field
+func getActionCanViewerDoFields(a action.Action, actionCanViewerDo *input.CanViewerDo) []action.ActionField {
+	var fields []action.ActionField
 	if actionCanViewerDo.AddAllFields || len(actionCanViewerDo.InputFields) > 0 {
 		m := map[string]bool{}
 		for _, name := range actionCanViewerDo.InputFields {
 			m[name] = true
 		}
 
-		for _, field := range action.GetGraphQLFields() {
+		for _, field := range a.GetGraphQLFields() {
 			if actionCanViewerDo.AddAllFields || m[field.FieldName] {
+				fields = append(fields, field)
+			}
+		}
+
+		for _, field := range a.GetGraphQLNonEntFields() {
+			if actionCanViewerDo.AddAllFields || m[field.GetFieldName()] {
 				fields = append(fields, field)
 			}
 		}

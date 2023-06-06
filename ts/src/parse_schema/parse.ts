@@ -7,6 +7,7 @@ import {
   AssocEdge,
   AssocEdgeGroup,
   Action,
+  EdgeAction,
 } from "../schema";
 import {
   ActionField,
@@ -15,6 +16,7 @@ import {
   GlobalSchema,
   TransformReadBetaResult,
   CanViewerDo,
+  EdgeGroupAction,
 } from "../schema/schema";
 import { setGlobalSchema } from "../core/global_schema";
 
@@ -299,7 +301,9 @@ type OutputAction = Omit<Action, "actionOnlyFields" | "canViewerDo"> & {
   canViewerDo?: CanViewerDo;
 };
 
-function processAction(action: Action): OutputAction {
+function processAction(
+  action: Action | EdgeAction | EdgeGroupAction,
+): OutputAction {
   const ret = { ...action } as OutputAction;
   if (action.actionOnlyFields !== undefined) {
     let actionOnlyFields: ProcessedActionField[] = action.actionOnlyFields.map(
