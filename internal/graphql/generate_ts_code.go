@@ -2325,21 +2325,7 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 			},
 		}
 
-		// addField := func(f *field.Field) error {
-		// 	// CustomGQLRender
-		// 	return nil
-		// }
-
-		// var fields []*field.Field
-
 		for _, field := range getActionCanViewerDoFields(action, actionCanViewerDo) {
-			// m := map[string]bool{}
-			// for _, name := range actionCanViewerDo.InputFields {
-			// 	m[name] = true
-			// }
-
-			// for _, field := range action.GetGraphQLFields() {
-			// 	if actionCanViewerDo.AddAllFields || m[field.FieldName] {
 
 			arg := &fieldConfigArg{
 				Name:    field.GetGraphQLName(),
@@ -2347,9 +2333,6 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 			}
 
 			gqlField.Args = append(gqlField.Args, arg)
-			// fields = append(fields, field)
-			// }
-
 		}
 
 		if err := canViewerDo.addField(gqlField); err != nil {
