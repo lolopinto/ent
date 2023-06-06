@@ -18,7 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { ContactPhoneNumber } from "../../../ent";
-import { ContactPhoneNumberSortColumnType } from "./contact_phone_number_sort_column_type";
+import { ContactPhoneNumberSortColumnType } from "./enums_type";
 import { RootToContactPhoneNumberConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 

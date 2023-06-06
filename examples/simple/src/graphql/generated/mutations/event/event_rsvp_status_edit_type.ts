@@ -4,7 +4,6 @@
  */
 
 import {
-  GraphQLEnumType,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLID,
@@ -20,6 +19,7 @@ import { Event } from "../../../../ent";
 import EditEventRsvpStatusAction, {
   EditEventRsvpStatusInput,
 } from "../../../../ent/event/actions/edit_event_rsvp_status_action";
+import { EventRsvpStatusInputType } from "../input_enums_type";
 import { EventType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -31,24 +31,6 @@ interface customEventRsvpStatusEditInput extends EditEventRsvpStatusInput {
 interface EventRsvpStatusEditPayload {
   event: Event;
 }
-
-export const EventRsvpStatusInputType = new GraphQLEnumType({
-  name: "EventRsvpStatusInput",
-  values: {
-    ATTENDING: {
-      value: "attending",
-    },
-    DECLINED: {
-      value: "declined",
-    },
-    MAYBE: {
-      value: "maybe",
-    },
-    UNKNOWN: {
-      value: "%unknown%",
-    },
-  },
-});
 
 export const EventRsvpStatusEditInputType = new GraphQLInputObjectType({
   name: "EventRsvpStatusEditInput",

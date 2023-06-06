@@ -18,7 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { HoursOfOperation } from "../../../ent";
-import { HoursOfOperationSortColumnType } from "./hours_of_operation_sort_column_type";
+import { HoursOfOperationSortColumnType } from "./enums_type";
 import { RootToHoursOfOperationConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 

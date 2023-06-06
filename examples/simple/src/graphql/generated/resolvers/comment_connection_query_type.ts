@@ -18,7 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Comment } from "../../../ent";
-import { CommentSortColumnType } from "./comment_sort_column_type";
+import { CommentSortColumnType } from "./enums_type";
 import { RootToCommentConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 

@@ -18,7 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Holiday } from "../../../ent";
-import { HolidaySortColumnType } from "./holiday_sort_column_type";
+import { HolidaySortColumnType } from "./enums_type";
 import { RootToHolidayConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 

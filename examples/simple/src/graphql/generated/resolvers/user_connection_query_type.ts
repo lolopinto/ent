@@ -18,7 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { User } from "../../../ent";
-import { UserSortColumnType } from "./user_sort_column_type";
+import { UserSortColumnType } from "./enums_type";
 import { RootToUserConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
