@@ -18,7 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Event } from "../../../ent";
-import { EventSortColumnType } from "./event_sort_column_type";
+import { EventSortColumnType } from "./enums_type";
 import { RootToEventConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 

@@ -18,7 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { ContactEmail } from "../../../ent";
-import { ContactEmailSortColumnType } from "./contact_email_sort_column_type";
+import { ContactEmailSortColumnType } from "./enums_type";
 import { RootToContactEmailConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 

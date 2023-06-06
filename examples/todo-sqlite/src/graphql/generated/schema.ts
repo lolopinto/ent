@@ -22,11 +22,11 @@ import {
   EditAccountPayloadType,
 } from "src/graphql/generated/mutations/account/edit_account_type";
 import {
-  AccountTodoStatusInputType,
   TodoStatusAccountEditInputType,
   TodoStatusAccountEditPayloadType,
 } from "src/graphql/generated/mutations/account/todo_status_account_edit_type";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
+import { AccountTodoStatusInputType } from "src/graphql/generated/mutations/input_enums_type";
 import { MutationType } from "src/graphql/generated/mutations/mutation_type";
 import {
   CreateTagInputType,

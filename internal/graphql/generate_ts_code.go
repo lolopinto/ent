@@ -152,27 +152,9 @@ func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
 func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema) fns.FunctionList {
 	var ret fns.FunctionList
 
-	writeAll := processor.Config.WriteAllFiles()
-	for idx := range s.enums {
-		enum := s.enums[idx]
-		if writeAll ||
-			processor.ChangeMap.ChangesExist(enum.Enum.Name, change.AddEnum, change.ModifyEnum) {
-			ret = append(ret, func() error {
-				return writeEnumFile(processor, enum)
-			})
-		}
-	}
-
-	// enum doesn't exist so won't be in s.enums anymore so have to go through all changes
-	// to delete the file
-	// TODO this isn't ideal. we should process this once and flag deleted ish separately
-	for k := range processor.ChangeMap {
-		if s.nodes[k] != nil || s.enums[k] != nil {
-			continue
-		}
-		if processor.ChangeMap.ChangesExist(k, change.RemoveEnum) {
-			ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForEnum(processor.Config, k)))
-		}
+	// TODO we should remove this eventually...
+	for _, enum := range s.enums {
+		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForOldEnum(processor.Config, enum.Enum.Name)))
 	}
 	return ret
 }
@@ -352,7 +334,21 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	updateBecauseChanges := writeAll || len(changes) > 0
 	customChanges := s.customData.compareResult
 	hasCustomChanges := (customChanges != nil && customChanges.hasAnyChanges())
-	funcs = append(funcs, p.processEnums(processor, s)...)
+
+	if len(s.enums) > 0 {
+		// TODO eventually stop deleting this
+		funcs = append(funcs, p.processEnums(processor, s)...)
+
+		funcs = append(funcs, func() error {
+			return writeEnumsFile(processor, s.enums, getFilePathForEnums(processor.Config))
+		})
+	}
+
+	if len(s.actionEnums) > 0 {
+		funcs = append(funcs, func() error {
+			return writeEnumsFile(processor, s.actionEnums, getFilePathForEnumInput(processor.Config))
+		})
+	}
 
 	for idx := range s.nodes {
 		node := s.nodes[idx]
@@ -510,12 +506,16 @@ func getFilePathForCustomInterfaceInputFile(cfg *codegen.Config, gqlType string)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", strcase.ToSnake(gqlType)))
 }
 
-func getFilePathForEnum(cfg *codegen.Config, name string) string {
+func getFilePathForEnums(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/resolvers/enums_type.ts")
+}
+
+func getFilePathForOldEnum(cfg *codegen.Config, name string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", base.GetSnakeCaseName(name)))
 }
 
-func getFilePathForEnumInputFile(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", base.GetSnakeCaseName(name)))
+func getFilePathForEnumInput(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/mutations/input_enums_type.ts")
 }
 
 func getFilePathForConnection(cfg *codegen.Config, packageName string, connectionType string) string {
@@ -959,6 +959,7 @@ type gqlSchema struct {
 	hasMutations      bool
 	nodes             map[string]*gqlNode
 	enums             map[string]*gqlEnum
+	actionEnums       map[string]*gqlEnum
 	customQueries     []*gqlNode
 	customMutations   []*gqlNode
 	unions            map[string]*gqlNode
@@ -1250,6 +1251,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 		var hasConnections bool
 		nodes := make(map[string]*gqlNode)
 		enums := make(map[string]*gqlEnum)
+		actionEnums := make(map[string]*gqlEnum)
 		var rootQueries []*rootQuery
 		edgeNames := make(map[string]bool)
 		var wg sync.WaitGroup
@@ -1283,7 +1285,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				enums[enumType.Name] = &gqlEnum{
 					Type:     enumType.GetGraphQLType(),
 					Enum:     enumType,
-					FilePath: getFilePathForEnum(processor.Config, enumType.Name),
+					FilePath: getFilePathForEnums(processor.Config),
 				}
 			}(key)
 		}
@@ -1316,6 +1318,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				}
 
 				actionInfo := nodeData.ActionInfo
+				var localActionEnums []*gqlEnum
 				if actionInfo != nil {
 					for _, action := range actionInfo.Actions {
 						if !action.ExposedToGraphQL() {
@@ -1336,14 +1339,16 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 								Node:         nodeData.Node,
 								NodeInstance: nodeData.NodeInstance,
 								GQLNodes:     nodes,
-								Enums:        buildActionEnums(nodeData, action),
-								FieldConfig:  fieldCfg,
-								Package:      processor.Config.GetImportPackage(),
+								// Enums:        buildActionEnums(nodeData, action),
+								FieldConfig: fieldCfg,
+								Package:     processor.Config.GetImportPackage(),
 							},
 							FilePath: getFilePathForAction(processor.Config, nodeData, action.GetGraphQLName()),
 							Data:     action,
 						}
 						obj.ActionDependents = append(obj.ActionDependents, &actionObj)
+
+						localActionEnums = append(localActionEnums, buildActionEnums(action)...)
 					}
 				}
 
@@ -1367,6 +1372,10 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				}
 				if processor.Config.GenerateRootResolvers() {
 					rootQueries = append(rootQueries, buildRootQuery(processor, nodeData))
+				}
+
+				for _, enum := range localActionEnums {
+					actionEnums[enum.Type] = enum
 				}
 			}(key)
 		}
@@ -1469,6 +1478,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 			nodes:             nodes,
 			rootQueries:       rootQueries,
 			enums:             enums,
+			actionEnums:       actionEnums,
 			edgeNames:         edgeNames,
 			hasMutations:      hasMutations,
 			hasConnections:    hasConnections,
@@ -1525,6 +1535,26 @@ func writeEnumFile(processor *codegen.Processor, enum *gqlEnum) error {
 	}))
 }
 
+func writeEnumsFile(processor *codegen.Processor, enums map[string]*gqlEnum, path string) error {
+	imps := tsimport.NewImports(processor.Config, path)
+	return file.Write((&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
+		Data: struct {
+			Enums map[string]*gqlEnum
+		}{
+			Enums: enums,
+		},
+		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/enums.tmpl"),
+		TemplateName:      "enums.tmpl",
+		OtherTemplateFiles: []string{
+			util.GetAbsolutePath("ts_templates/enum.tmpl"),
+		},
+		PathToFile: path,
+		TsImports:  imps,
+		FuncMap:    imps.FuncMap(),
+	}))
+}
+
 type typeInfo struct {
 	Type       string
 	Function   bool
@@ -1575,19 +1605,19 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 					Exported:   depObj.Exported,
 				})
 			}
-
-			for _, depEnum := range dep.ObjData.Enums {
-				actionTypes = append(actionTypes, typeInfo{
-					Type: depEnum.Type,
-					// they're embedded in the action's file
-					ImportPath: trimPath(cfg, dep.FilePath),
-					NodeType:   "Enum",
-					Obj:        depEnum,
-					Exported:   true,
-				})
-			}
 		}
 	}
+	for _, enum := range s.actionEnums {
+		actionTypes = append(actionTypes, typeInfo{
+			Type: enum.Type,
+			// moved to top level input file
+			ImportPath: trimPath(cfg, getFilePathForEnumInput(cfg)),
+			NodeType:   "Enum",
+			Obj:        enum,
+			Exported:   true,
+		})
+	}
+
 	for _, node := range s.nodes {
 		processNode(node, "Node")
 	}
@@ -1727,8 +1757,9 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
 	}
 	var enums []string
-	for _, enum := range s.enums {
-		enums = append(enums, trimPath(cfg, enum.FilePath))
+	if len(s.enums) > 0 {
+		// enums in one file
+		enums = append(enums, trimPath(cfg, getFilePathForEnums(cfg)))
 	}
 
 	var customQueries []string
@@ -2220,7 +2251,7 @@ func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a
 	return ret, nil
 }
 
-func buildActionEnums(nodeData *schema.NodeData, action action.Action) []*gqlEnum {
+func buildActionEnums(action action.Action) []*gqlEnum {
 	var ret []*gqlEnum
 	for _, enumType := range action.GetGQLEnums() {
 		ret = append(ret, &gqlEnum{
@@ -2303,6 +2334,10 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	}
 
 	for _, f := range a.GetGraphQLFields() {
+		if a.GetActionName() == "EditEventActivityRsvpStatusAction" {
+			// if f.GetGraphQLName() == "rsvpStatus" {
+			spew.Dump(f)
+		}
 		if err := result.addField(&fieldType{
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetTSMutationGraphQLTypeForFieldImports(!action.IsRequiredField(a, f), true), true),

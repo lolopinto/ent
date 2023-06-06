@@ -337,6 +337,10 @@ func getImportPathForActionBaseFile(nodeName, actionName string) string {
 	return path.Join(fmt.Sprintf("src/ent/generated/%s/actions/%s_base", strcase.ToSnake(nodeName), strcase.ToSnake(actionName)))
 }
 
+func getFilePathForEnumInputFile() string {
+	return "src/graphql/generated/mutations/input_enums_type"
+}
+
 func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup *edge.AssociationEdgeGroup, lang base.Language) ([]Action, error) {
 	edgeActions := assocGroup.EdgeActions
 	if len(edgeActions) == 0 {
@@ -381,7 +385,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 							ImportPath: getImportPathForActionBaseFile(nodeName, actionName),
 							Import:     typ,
 						}).SetGraphQLImportPath(&tsimport.ImportPath{
-						ImportPath: getImportPathForActionBaseFile(nodeName, actionName),
+						ImportPath: getFilePathForEnumInputFile(),
 						// have to add type manually
 						Import: typ + "Type",
 					}),

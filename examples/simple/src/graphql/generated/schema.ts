@@ -81,7 +81,6 @@ import {
 import {
   EventRsvpStatusEditInputType,
   EventRsvpStatusEditPayloadType,
-  EventRsvpStatusInputType,
 } from "./mutations/event/event_rsvp_status_edit_type";
 import {
   HolidayCreateInputType,
@@ -96,6 +95,7 @@ import { UserNestedObjectListInputType } from "./mutations/input/user_nested_obj
 import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type";
 import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_input_type";
 import { UserSuperNestedObjectInputType } from "./mutations/input/user_super_nested_object_input_type";
+import { EventRsvpStatusInputType } from "./mutations/input_enums_type";
 import { MutationType } from "./mutations/mutation_type";
 import {
   ConfirmEditEmailAddressInputType,
