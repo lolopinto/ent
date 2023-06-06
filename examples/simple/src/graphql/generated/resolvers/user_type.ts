@@ -13,7 +13,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, applyPrivacyPolicy } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
@@ -67,6 +67,7 @@ import {
   UserToMaybeEventsConnectionType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import EditUserAction from "src/ent/user/actions/edit_user_action";
 
 export const UserType = new GraphQLObjectType({
   name: "User",
@@ -689,6 +690,16 @@ export const UserType = new GraphQLObjectType({
         return user.canViewerEditInfo();
       },
     },
+    canViewerDo:{
+      type: new GraphQLNonNull(UserCanViewerDoType),
+      resolve: (
+        user: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new UserCanViewerDo(context,user);
+      },
+    },
     fullName: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -879,4 +890,34 @@ export const UserCanViewerEditType = new GraphQLObjectType({
       },
     },
   }),
+});
+
+// need this concept...
+class UserCanViewerDo {
+  constructor(private context: RequestContext<ExampleViewerAlias>, private user: User) {}
+
+  async userEdit(args: any): Promise<boolean> {
+    const action = EditUserAction.create(this.context.getViewer(),this.user, args);
+    return applyPrivacyPolicy(this.context.getViewer(),action.getPrivacyPolicy(), this.user);
+  }
+}
+
+// this is doable 
+export const UserCanViewerDoType = new GraphQLObjectType({
+  name: "UserCanViewerDo",
+  fields: (): GraphQLFieldConfigMap<
+  UserCanViewerDo,
+  RequestContext<ExampleViewerAlias>
+> => ({
+  'userEdit':{
+    type: new GraphQLNonNull(GraphQLBoolean),
+    resolve: async (
+      user: UserCanViewerDo,
+      args: {},
+      context: RequestContext<ExampleViewerAlias>,
+    ) => {
+      return user.userEdit(args);
+    },
+  }
+}),
 });
