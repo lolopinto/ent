@@ -217,7 +217,7 @@ function buildTreeFromQueryPaths(
       // TODO this needs to be aware of paths etc so this part works for complicated
       // cases but inlineFragmentRoot is a workaround for now.
       function handleSubtree(obj: {}, tree: {}, parts: string[]) {
-        let parts2 = [...parts]
+        let parts2 = [...parts];
         if (Array.isArray(obj)) {
           for (const obj2 of obj) {
             handleSubtree(obj2, tree, parts2);
@@ -229,10 +229,10 @@ function buildTreeFromQueryPaths(
             tree[key] = {};
           }
           if (typeof obj[key] === "object") {
-            let parts2 = [...parts, key]
+            let parts2 = [...parts, key];
 
             if (!scalarFieldAtLeaf(parts2)) {
-              handleSubtree(obj[key], tree[key],parts2);
+              handleSubtree(obj[key], tree[key], parts2);
             }
           }
         }
@@ -241,19 +241,18 @@ function buildTreeFromQueryPaths(
       function scalarFieldAtLeaf(pathFromRoot: string[]) {
         let root = fields;
         if (!root) {
-          return false
+          return false;
         }
-        let subField: GraphQLField<any,any,any> | undefined;
+        let subField: GraphQLField<any, any, any> | undefined;
         for (const p of pathFromRoot) {
           subField = root?.[p];
           if (subField) {
-            [subField] = getInnerType(subField.type,false);
+            [subField] = getInnerType(subField.type, false);
             if (subField instanceof GraphQLObjectType) {
-              root = subField.getFields()
+              root = subField.getFields();
             }
           }
         }
-
 
         if (!subField) {
           return false;
@@ -300,7 +299,7 @@ function expectQueryResult(
   return query;
 }
 
-export type Option = [string, any];
+export type Option = [string, any] | [string, any, string];
 
 interface queryConfig {
   // if neither viewer nor init is passed, we end with a logged out viewer
@@ -537,8 +536,9 @@ async function expectFromRoot(
 
   await Promise.all(
     options.map(async (option) => {
-      let path = option[0];
-      let expected = option[1];
+      const path = option[0];
+      const expected = option[1];
+      const alias = option[2];
 
       let nullPath: string | undefined;
       let nullParts: string[] = [];
@@ -563,7 +563,7 @@ async function expectFromRoot(
         }
       }
 
-      let parts = splitPath(path);
+      let parts = splitPath(alias ?? path);
       let current = result;
 
       // possible to make this smarter and better
