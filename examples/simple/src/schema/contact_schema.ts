@@ -58,10 +58,6 @@ const ContactSchema = new EntSchema({
           excludedFields: ["contactID"],
         },
       ],
-      // ugh this makes no sense lol...
-      // canViewerDo: {
-      //   inputFields: ["userID"],
-      // },
     },
     {
       operation: ActionOperation.Edit,
