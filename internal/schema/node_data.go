@@ -9,7 +9,6 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/action"
-	"github.com/lolopinto/ent/internal/algos"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/codepath"
@@ -80,7 +79,7 @@ type NodeData struct {
 	TransformsSelect        bool
 	TransformsDelete        bool
 	TransformsLoaderCodegen *input.TransformsLoaderCodegen
-	canViewerDo             *algos.SortedMap[string, action.Action]
+	canViewerDo             map[string]action.Action
 }
 
 func newNodeData(packageName string) *NodeData {
@@ -89,7 +88,7 @@ func newNodeData(packageName string) *NodeData {
 		NodeInfo:    nodeinfo.GetNodeInfo(packageName),
 		EdgeInfo:    edge.NewEdgeInfo(packageName),
 		ActionInfo:  action.NewActionInfo(),
-		canViewerDo: algos.NewSortedMap[string, action.Action](),
+		canViewerDo: make(map[string]action.Action),
 	}
 	nodeData.ConstantGroups = make(map[string]*ConstGroupInfo)
 	return nodeData
@@ -770,10 +769,10 @@ func (nodeData *NodeData) GetCanViewerEditInfo() *CanViewerSeeInfo {
 }
 
 func (nodeData *NodeData) HasCanViewerDo() bool {
-	return nodeData.canViewerDo.Len() > 0
+	return len(nodeData.canViewerDo) > 0
 }
 
-func (nodeData *NodeData) GetCanViewerDoInfo() *algos.SortedMap[string, action.Action] {
+func (nodeData *NodeData) GetCanViewerDoInfo() map[string]action.Action {
 	return nodeData.canViewerDo
 }
 

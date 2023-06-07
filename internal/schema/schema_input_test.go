@@ -2183,7 +2183,7 @@ func TestCanViewerDo(t *testing.T) {
 	require.NotNil(t, action2.GetCanViewerDo())
 
 	assert.True(t, user.NodeData.HasCanViewerDo(), true)
-	assert.Equal(t, user.NodeData.GetCanViewerDoInfo().Len(), 2)
+	assert.Len(t, user.NodeData.GetCanViewerDoInfo(), 2)
 }
 
 func TestCanViewerDoCreateAction(t *testing.T) {
