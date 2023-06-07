@@ -300,7 +300,7 @@ function expectQueryResult(
   return query;
 }
 
-export type Option = [string, any];
+export type Option = [string, any] | [string, any, string];
 
 interface queryConfig {
   // if neither viewer nor init is passed, we end with a logged out viewer
@@ -537,8 +537,9 @@ async function expectFromRoot(
 
   await Promise.all(
     options.map(async (option) => {
-      let path = option[0];
-      let expected = option[1];
+      const path = option[0];
+      const expected = option[1];
+      const alias = option[2];
 
       let nullPath: string | undefined;
       let nullParts: string[] = [];
@@ -563,7 +564,7 @@ async function expectFromRoot(
         }
       }
 
-      let parts = splitPath(path);
+      let parts = splitPath(alias ?? path);
       let current = result;
 
       // possible to make this smarter and better

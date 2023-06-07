@@ -83,7 +83,11 @@ class User implements Node {
   firstName: string;
   lastName: string;
   address?: Address | null;
-  contacts?(arg: { first?: number; domain?: string }): Contact[];
+  contacts?(arg: {
+    first?: number;
+    domain?: string;
+    lastName?: string;
+  }): Contact[];
   nicknames?: string[] | null;
   daysOff: DayOfWeek[];
 }
@@ -145,16 +149,13 @@ function getUser(id: string): User {
     };
   }
   if (num % 10 == 0) {
-    result.contacts = ({ first, domain }) => {
+    result.contacts = ({ first, domain, lastName }) => {
       let ret: Contact[] = [];
-      if (domain) {
-        const parts = domain.split(".");
-        if (parts.length != 2) {
-          return [];
-        }
+      if (domain || lastName) {
         for (let i = 0; i < names.length; i++) {
+          const parts = domain ? domain.split(".") : [];
           const name = names[i];
-          if (name.lastName === parts[0]) {
+          if (name.lastName === lastName || name.lastName === parts[0]) {
             ret.push({
               firstName: name.firstName!,
               lastName: name.lastName!,
@@ -296,6 +297,9 @@ const userType = new GraphQLObjectType({
         domain: {
           type: GraphQLString,
         },
+        lastName: {
+          type: GraphQLString,
+        },
       },
     },
     nicknames: {
@@ -313,13 +317,13 @@ const userType = new GraphQLObjectType({
 });
 
 const userPayloadType = new GraphQLObjectType({
-  name: 'UserPayload',
+  name: "UserPayload",
   fields: {
     user: {
-      type: new GraphQLNonNull(userType)
-    }
-  }
-})
+      type: new GraphQLNonNull(userType),
+    },
+  },
+});
 
 const viewerType = new GraphQLObjectType({
   name: "Viewer",
@@ -617,6 +621,41 @@ test("query with args. extra variables", async () => {
   );
 });
 
+test("query with alias", async () => {
+  const schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  const cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "10",
+    },
+    root: "user",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "10"],
+    ["firstName", "Jon"],
+    ["lastName", "Snow"],
+    [
+      `contacts_stark:contacts(lastName: "Stark"){ firstName,lastName,emailAddress}`,
+      function (val) {
+        expect(val.length).toBe(5);
+      },
+      "contacts_stark",
+    ],
+    [
+      `contacts_snow:contacts(lastName: "Snow"){ firstName,lastName,emailAddress}`,
+      function (val) {
+        expect(val.length).toBe(1);
+      },
+      "contacts_snow",
+    ],
+  );
+});
+
 test("query with object values", async () => {
   const schema = new GraphQLSchema({
     query: rootQuery,
@@ -687,7 +726,7 @@ test("query with object values", async () => {
 });
 
 // top level returns list version of ^
-test('list type returned with nested objects', async()=>{
+test("list type returned with nested objects", async () => {
   const schema = new GraphQLSchema({
     query: rootQueryReturnList,
   });
@@ -754,9 +793,9 @@ test('list type returned with nested objects', async()=>{
     ["[0].nicknames", null],
     ["[0].daysOff", weekendsGQL],
   );
-})
+});
 
-test('mutation with nested objects', async()=>{
+test("mutation with nested objects", async () => {
   const schema = new GraphQLSchema({
     query: rootQuery,
     mutation: new GraphQLObjectType({
@@ -777,8 +816,8 @@ test('mutation with nested objects', async()=>{
           type: new GraphQLNonNull(userPayloadType),
           resolve(_source, { id, ...args }) {
             return {
-              user: editUser(id, args)
-            }
+              user: editUser(id, args),
+            };
           },
         },
       },
@@ -796,7 +835,7 @@ test('mutation with nested objects', async()=>{
     disableInputWrapping: true,
   };
 
-    // mutation query
+  // mutation query
   await expectMutation(
     cfg,
     ["user.id", "1"],
@@ -804,7 +843,6 @@ test('mutation with nested objects', async()=>{
     ["user.lastName", "Targaryen"],
     ["user.daysOff", weekendsGQL],
   );
-
 });
 
 test("query scalar list", async () => {
@@ -1150,7 +1188,7 @@ describe("inline fragments", () => {
     );
   });
 
-  test("inline fragment root with enum list", async () =>{
+  test("inline fragment root with enum list", async () => {
     const cfg: queryRootConfig = {
       schema: schema,
       args: {
@@ -1461,4 +1499,3 @@ test("custom server", async () => {
     ),
   ).rejects.toThrow('"Content-Type" matching /json/');
 });
-
