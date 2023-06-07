@@ -500,7 +500,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 				if action.GetOperation() == ent.CreateAction {
 					return nil, fmt.Errorf("canViewerDo not currently supported on create actions")
 				}
-				nodeData.canViewerDo[action.GetGraphQLName()] = action
+				nodeData.canViewerDo.Set(action.GetGraphQLName(), action)
 			}
 		}
 

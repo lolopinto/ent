@@ -17,6 +17,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/algos"
 	"github.com/lolopinto/ent/internal/cmd"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -2196,7 +2197,7 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 	return canViewerSee, nil
 }
 
-func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canViewerDoInfo map[string]action.Action) (*classType, error) {
+func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canViewerDoInfo *algos.SortedMap[string, action.Action]) (*classType, error) {
 	viewerInfo := processor.Config.GetTemplatizedViewer()
 	imports := []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("RequestContext"),
@@ -2206,7 +2207,7 @@ func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, no
 	}
 
 	var methods []string
-	for _, a := range canViewerDoInfo {
+	canViewerDoInfo.ForEach(func(key string, a action.Action) {
 		imports = append(imports, &tsimport.ImportPath{
 			DefaultImport: true,
 			ImportPath:    getActionPath(nodeData, a),
@@ -2261,7 +2262,7 @@ func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, no
 			return applyPrivacyPolicy(this.context.getViewer(), action.getPrivacyPolicy(), this.%s);
 		}
 		`, a.GetGraphQLName(), actionLine, nodeData.NodeInstance))
-	}
+	})
 
 	classContents := fmt.Sprintf(`
 	class %s {
@@ -2307,7 +2308,7 @@ func getActionCanViewerDoFields(a action.Action, actionCanViewerDo *input.CanVie
 	return fields
 }
 
-func getCanViewerDoObject(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canViewerDoInfo map[string]action.Action) (*objectType, error) {
+func getCanViewerDoObject(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canViewerDoInfo *algos.SortedMap[string, action.Action]) (*objectType, error) {
 	canViewerDoName := fmt.Sprintf("%sCanViewerDo", nodeData.Node)
 	// add can viewer do objct
 	canViewerDo := newObjectType(&objectType{
@@ -2317,11 +2318,12 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 		Exported: true,
 		TSType:   canViewerDoName,
 	})
-	for name, action := range canViewerDoInfo {
+
+	err := canViewerDoInfo.ForEachE(func(name string, action action.Action) error {
 		// TODO extra args based on action
 		actionCanViewerDo := action.GetCanViewerDo()
 		if actionCanViewerDo == nil {
-			return nil, fmt.Errorf("action canViewerDo returned nil when it shouldn't be possible to")
+			return fmt.Errorf("action canViewerDo returned nil when it shouldn't be possible to")
 		}
 
 		gqlField := &fieldType{
@@ -2348,8 +2350,12 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 		}
 
 		if err := canViewerDo.addField(gqlField); err != nil {
-			return nil, err
+			return err
 		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	// add field to node
