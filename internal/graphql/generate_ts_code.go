@@ -36,8 +36,6 @@ import (
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 type TSStep struct {
@@ -530,6 +528,10 @@ func getQueryFilePath(cfg *codegen.Config) string {
 
 func getNodeQueryTypeFilePath(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/resolvers/node_query_type.ts")
+}
+
+func getCanViewerDoQueryTypeFilePath(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/resolvers/can_viewer_do_query_type.ts")
 }
 
 func getRootQueryFilePath(cfg *codegen.Config, nodeData *schema.NodeData) string {
@@ -1497,6 +1499,50 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 			}(key)
 		}
 
+		globalCanViewerDo := processor.Schema.GetGlobalCanViewerDo()
+		if len(globalCanViewerDo) > 0 {
+			wg.Add(1)
+
+			go func() {
+				defer wg.Done()
+				obj, err := getGlobalCanViewerDoObject(processor, globalCanViewerDo)
+				if err != nil {
+					serr.Append(err)
+					return
+				}
+				m.Lock()
+				defer m.Unlock()
+
+				// success
+				// add to root query and we're good interms of query
+				fieldCfg := &fieldConfig{
+					Exported: true,
+					Name:     "CanViewerDoQueryType",
+					Arg:      "{}",
+					TypeImports: []*tsimport.ImportPath{
+						{
+							Import: "GlobalCanViewerDoType",
+						},
+					},
+					FunctionContents: []string{
+						"return new GlobalCanViewerDo(context);",
+					},
+				}
+				gqlNode := &gqlNode{
+					ObjData: &gqlobjectData{
+						Node:         obj.Node,
+						NodeInstance: "global",
+						GQLNodes:     []*objectType{obj},
+						FieldConfig:  fieldCfg,
+						Package:      processor.Config.GetImportPackage(),
+					},
+					FilePath: getCanViewerDoQueryTypeFilePath(processor.Config),
+				}
+				// put it in other nodes to render
+				otherNodes[gqlNode.ObjData.Node] = gqlNode
+			}()
+		}
+
 		wg.Wait()
 		schema := &gqlSchema{
 			nodes:             nodes,
@@ -2198,195 +2244,6 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 	return canViewerSee, nil
 }
 
-func getNewCanViewerDoClass(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canViewerDoInfo map[string]action.Action) (*classType, error) {
-	viewerInfo := processor.Config.GetTemplatizedViewer()
-	imports := []*tsimport.ImportPath{
-		tsimport.NewEntImportPath("RequestContext"),
-		viewerInfo.GetImportPath(),
-		tsimport.NewLocalEntImportPath(nodeData.Node),
-		tsimport.NewEntImportPath("applyPrivacyPolicy"),
-	}
-
-	var methods []string
-	keys := maps.Keys(canViewerDoInfo)
-	slices.Sort(keys)
-	for _, key := range keys {
-		a := canViewerDoInfo[key]
-		imports = append(imports, &tsimport.ImportPath{
-			DefaultImport: true,
-			ImportPath:    getActionPath(nodeData, a),
-			Import:        a.GetActionName(),
-		})
-
-		args := "args"
-		fields := getActionCanViewerDoFields(a, a.GetCanViewerDo())
-		if len(fields) > 0 {
-			var changedFields []string
-			for _, field := range fields {
-
-				inputFieldLine, imps := processActionField(processor, a, field, "args")
-
-				changedFields = append(changedFields, inputFieldLine)
-				imports = append(imports, imps...)
-			}
-
-			// ...args is so we don't need @ts-ignore
-			// we can be a little smarter here and only spell it out for a few fields
-			// but this is fine for now
-			args = fmt.Sprintf(`
-			{
-				...args,
-				%s
-			}
-			`, strings.Join(changedFields, "\n"),
-			)
-		}
-
-		var actionLine string
-		if a.MutatingExistingObject() {
-			if action.HasInput(a) {
-				actionLine =
-					fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.%s, %s);`,
-						a.GetActionName(), nodeData.NodeInstance, args)
-			} else {
-				actionLine =
-					fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.%s);`,
-						a.GetActionName(), nodeData.NodeInstance)
-			}
-
-		} else {
-			actionLine =
-				fmt.Sprintf(`const action = %s.create(this.context.getViewer(), %s);`,
-					a.GetActionName(), args)
-		}
-
-		methods = append(methods, fmt.Sprintf(`
-		async %s(args: any): Promise<boolean> {
-			%s
-			return applyPrivacyPolicy(this.context.getViewer(), action.getPrivacyPolicy(), this.%s);
-		}
-		`, a.GetGraphQLName(), actionLine, nodeData.NodeInstance))
-	}
-
-	classContents := fmt.Sprintf(`
-	class %s {
-		constructor(private context: RequestContext<%s>, private %s: %s) {}
-
-		%s
-	}
-	`,
-		fmt.Sprintf("%sCanViewerDo", nodeData.Node),
-		viewerInfo.GetImport(),
-		nodeData.NodeInstance,
-		nodeData.Node,
-		strings.Join(methods, "\n\n"),
-	)
-
-	return &classType{
-		Name:                 fmt.Sprintf("%sCanViewerDo", nodeData.Node),
-		Contents:             classContents,
-		UnconditionalImports: imports,
-	}, nil
-}
-
-func getActionCanViewerDoFields(a action.Action, actionCanViewerDo *input.CanViewerDo) []action.ActionField {
-	var fields []action.ActionField
-	if actionCanViewerDo.AddAllFields || len(actionCanViewerDo.InputFields) > 0 {
-		m := map[string]bool{}
-		for _, name := range actionCanViewerDo.InputFields {
-			m[name] = true
-		}
-
-		for _, field := range a.GetGraphQLFields() {
-			if actionCanViewerDo.AddAllFields || m[field.FieldName] {
-				fields = append(fields, field)
-			}
-		}
-
-		for _, field := range a.GetGraphQLNonEntFields() {
-			if actionCanViewerDo.AddAllFields || m[field.GetFieldName()] {
-				fields = append(fields, field)
-			}
-		}
-	}
-	return fields
-}
-
-func getCanViewerDoObject(processor *codegen.Processor, result *objectType, nodeData *schema.NodeData, canViewerDoInfo map[string]action.Action) (*objectType, error) {
-	canViewerDoName := fmt.Sprintf("%sCanViewerDo", nodeData.Node)
-	// add can viewer do objct
-	canViewerDo := newObjectType(&objectType{
-		Type:     fmt.Sprintf("%sType", canViewerDoName),
-		GQLType:  "GraphQLObjectType",
-		Node:     canViewerDoName,
-		Exported: true,
-		TSType:   canViewerDoName,
-	})
-	keys := maps.Keys(canViewerDoInfo)
-	slices.Sort(keys)
-
-	for _, name := range keys {
-		action := canViewerDoInfo[name]
-		// TODO extra args based on action
-		actionCanViewerDo := action.GetCanViewerDo()
-		if actionCanViewerDo == nil {
-			return nil, fmt.Errorf("action canViewerDo returned nil when it shouldn't be possible to")
-		}
-
-		gqlField := &fieldType{
-			Name: name,
-			FieldImports: []*tsimport.ImportPath{
-				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-				tsimport.NewGQLImportPath("GraphQLBoolean"),
-			},
-			HasAsyncModifier:   true,
-			HasResolveFunction: true,
-			FunctionContents: []string{
-				fmt.Sprintf("return %s.%s(args);", nodeData.NodeInstance, name),
-			},
-		}
-
-		for _, field := range getActionCanViewerDoFields(action, actionCanViewerDo) {
-
-			arg := &fieldConfigArg{
-				Name:    field.GetGraphQLName(),
-				Imports: field.GetTSGraphQLTypeForFieldImports(true),
-			}
-
-			gqlField.Args = append(gqlField.Args, arg)
-		}
-
-		if err := canViewerDo.addField(gqlField); err != nil {
-			return nil, err
-		}
-	}
-
-	// add field to node
-	if err := result.addField(&fieldType{
-		Name: codegenapi.GraphQLName(processor.Config, "canViewerDo"),
-		FieldImports: []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewLocalGraphQLEntImportPath(canViewerDoName),
-		},
-		HasResolveFunction: true,
-		FunctionContents: []string{
-			fmt.Sprintf("return new %s(context, %s);", canViewerDoName, nodeData.NodeInstance),
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	class, err := getNewCanViewerDoClass(processor, result, nodeData, canViewerDoInfo)
-	if err != nil {
-		return nil, err
-	}
-
-	// add inline class in graphql that will call the actions
-	canViewerDo.Classes = []*classType{class}
-
-	return canViewerDo, nil
-}
-
 func addSingularEdge(edge edge.Edge, obj *objectType, instance string) error {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
@@ -2826,6 +2683,10 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 
 func getActionPath(nodeData *schema.NodeData, a action.Action) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
+}
+
+func getActionPathFromAction(a action.Action) string {
+	return fmt.Sprintf("src/ent/%s/actions/%s", a.GetNodeInfo().PackageName, strcase.ToSnake(a.GetActionName()))
 }
 
 func checkUnionType(cfg codegenapi.Config, nodeName string, f *field.Field, curr []string) ([]string, bool, error) {
@@ -3535,6 +3396,7 @@ type gqlRootData struct {
 	Type       string
 	Node       string
 	FilePath   string
+	// this seems to be used in schema.gql
 	fieldTypes []*fieldType
 }
 
@@ -3577,6 +3439,21 @@ func getQueryData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
 			Name:         query.GraphQLName,
 			Args:         node.ObjData.FieldConfig.Args,
 			FieldImports: node.ObjData.FieldConfig.TypeImports,
+		})
+	}
+
+	canViewerDo := s.otherObjects["GlobalCanViewerDo"]
+	if canViewerDo != nil {
+		rootFields = append(rootFields, rootField{
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
+			Name:       "can_viewer_do",
+			Type:       canViewerDo.ObjData.FieldConfig.Name,
+		})
+
+		fieldTypes = append(fieldTypes, &fieldType{
+			Name:         "can_viewer_do",
+			Args:         canViewerDo.ObjData.FieldConfig.Args,
+			FieldImports: canViewerDo.ObjData.FieldConfig.TypeImports,
 		})
 	}
 

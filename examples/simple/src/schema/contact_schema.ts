@@ -58,6 +58,9 @@ const ContactSchema = new EntSchema({
           excludedFields: ["contactID"],
         },
       ],
+      canViewerDo: {
+        inputFields: ["userID"],
+      },
     },
     {
       operation: ActionOperation.Edit,

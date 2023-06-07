@@ -5,6 +5,7 @@
 
 import { GraphQLObjectType } from "graphql";
 import {
+  CanViewerDoQueryType,
   CommentConnectionQueryType,
   CommentListDeprecatedQueryType,
   ContactConnectionQueryType,
@@ -29,6 +30,7 @@ import {
 export const QueryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({
+    can_viewer_do: CanViewerDoQueryType,
     comment_connection: CommentConnectionQueryType,
     comment_list_deprecated: CommentListDeprecatedQueryType,
     contact_connection: ContactConnectionQueryType,

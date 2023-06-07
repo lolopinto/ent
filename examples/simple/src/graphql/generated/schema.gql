@@ -326,6 +326,11 @@ type Event implements Node {
   canViewerSeeInfo: EventCanViewerSee!
 }
 
+type GlobalCanViewerDo {
+  contactCreate(userID: ID!): Boolean!
+  contactEmailCreate(extra: ContactInfoInput, emailAddress: String!, label: ContactLabel!, contactID: ID!): Boolean!
+}
+
 type Holiday implements Node {
   id: ID!
   dayOfWeek: DayOfWeek!
@@ -1364,6 +1369,7 @@ input UserSuperNestedObjectInput {
 }
 
 type Query {
+  can_viewer_do: GlobalCanViewerDo
   comment_connection(ids: [ID!], sortCol: CommentSortColumn, first: Int, after: String, last: Int, before: String): RootToCommentConnection!
   comment_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Comment!]
   contact_connection(ids: [ID!], sortCol: ContactSortColumn, first: Int, after: String, last: Int, before: String): RootToContactConnection!
