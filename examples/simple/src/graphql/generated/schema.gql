@@ -244,12 +244,17 @@ type ContactDate {
   description: String!
 }
 
+type ContactEmailCanViewerDo {
+  contactEmailEdit: Boolean!
+}
+
 type ContactEmail implements Node & ContactItemType {
   contact: Contact
   id: ID!
   extra: ContactInfo
   emailAddress: String!
   label: ContactLabel!
+  canViewerDo: ContactEmailCanViewerDo!
 }
 
 type ContactInfo {
@@ -343,6 +348,10 @@ type RabbitType {
   name: String!
   birthday: Time!
   breed: RabbitBreed!
+}
+
+type UserCanViewerDo {
+  userEdit: Boolean!
 }
 
 type UserCanViewerEdit {
@@ -450,6 +459,7 @@ type User implements Node {
   eventsCreated(first: Int, after: String, last: Int, before: String): CreatorToEventsConnection!
   canViewerSeeInfo: UserCanViewerSee!
   canViewerEditInfo: UserCanViewerEdit!
+  canViewerDo: UserCanViewerDo!
   fullName: String!
   bar: String
   """contacts same domain..."""

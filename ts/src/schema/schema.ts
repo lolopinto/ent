@@ -153,6 +153,9 @@ export interface EdgeAction {
   hideFromGraphQL?: boolean;
   graphQLName?: string;
   actionOnlyFields?: ActionField[];
+  // if true, adds under a canViewerDo field on the source Object mapping to graphql name
+  // of this...
+  canViewerDo?: boolean | CanViewerDo;
 }
 
 // Information about the inverse edge of an assoc edge
@@ -174,6 +177,9 @@ export interface EdgeGroupAction {
   hideFromGraphQL?: boolean;
   graphQLName?: string;
   actionOnlyFields?: ActionField[];
+  // if true, adds under a canViewerDo field on the source Object mapping to graphql name
+  // of this...
+  canViewerDo?: boolean | CanViewerDo;
 }
 
 // interface AssocEdgeNullState {
@@ -895,8 +901,17 @@ export interface Action {
   requiredFields?: string[];
   noFields?: boolean;
 
+  // if true, adds under a canViewerDo field on the source Object mapping to graphql name
+  // of this...
+  canViewerDo?: boolean | CanViewerDo;
+
   // allow other keys
   [x: string]: any;
+}
+
+export interface CanViewerDo {
+  addAllFields?: boolean;
+  inputFields?: string[]; // need x fields for can ViewerDo
 }
 
 // sentinel that indicates an action has no fields

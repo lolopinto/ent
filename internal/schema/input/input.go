@@ -621,6 +621,7 @@ type EdgeAction struct {
 	CustomInputName   string              `json:"inputName,omitempty"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
+	CanViewerDo       *CanViewerDo        `json:"canViewerDo,omitempty"`
 }
 
 func getTSStringOperation(op ent.ActionOperation) string {
@@ -649,6 +650,11 @@ func (e *EdgeAction) GetTSStringOperation() string {
 	return getTSStringOperation(e.Operation)
 }
 
+type CanViewerDo struct {
+	AddAllFields bool     `json:"addAllFields,omitempty"`
+	InputFields  []string `json:"inputFields,omitempty"`
+}
+
 type Action struct {
 	// Note that anytime anything changes here, have to update actionEqual in compare.go
 	Operation         ent.ActionOperation `json:"operation,omitempty"`
@@ -662,6 +668,7 @@ type Action struct {
 	CustomInputName   string              `json:"inputName,omitempty"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
+	CanViewerDo       *CanViewerDo        `json:"canViewerDo,omitempty"`
 }
 
 func (a *Action) GetTSStringOperation() string {

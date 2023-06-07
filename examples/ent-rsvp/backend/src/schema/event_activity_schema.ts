@@ -63,6 +63,10 @@ const EventActivitySchema = new EntSchema({
             nullable: true,
           },
         ],
+        canViewerDo: {
+          // really only need guestID but doing this to get all types...
+          addAllFields: true,
+        },
       },
       assocEdges: [
         {
@@ -74,6 +78,9 @@ const EventActivitySchema = new EntSchema({
           edgeActions: [
             {
               operation: ActionOperation.AddEdge,
+              canViewerDo: {
+                addAllFields: true,
+              },
             },
             {
               operation: ActionOperation.RemoveEdge,

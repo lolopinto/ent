@@ -2132,6 +2132,99 @@ func TestMultipleActionsHiddenFromGraphQL(t *testing.T) {
 	assert.Len(t, note.NodeData.ActionInfo.Actions, 1)
 }
 
+func TestCanViewerDo(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+				Actions: []*input.Action{
+					{
+						Operation: ent.CreateAction,
+					},
+					{
+						Operation:   ent.EditAction,
+						CanViewerDo: &input.CanViewerDo{},
+					},
+					{
+						Operation:   ent.DeleteAction,
+						CanViewerDo: &input.CanViewerDo{},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	user := schema.Nodes["User"]
+	require.NotNil(t, user)
+
+	action := user.NodeData.ActionInfo.GetByGraphQLName("userEdit")
+	require.NotNil(t, action.GetCanViewerDo())
+
+	action2 := user.NodeData.ActionInfo.GetByGraphQLName("userDelete")
+	require.NotNil(t, action2.GetCanViewerDo())
+
+	assert.True(t, user.NodeData.HasCanViewerDo(), true)
+	assert.Len(t, user.NodeData.GetCanViewerDoInfo(), 2)
+}
+
+func TestCanViewerDoCreateAction(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+				Actions: []*input.Action{
+					{
+						Operation:   ent.CreateAction,
+						CanViewerDo: &input.CanViewerDo{},
+					},
+					{
+						Operation: ent.EditAction,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, schema)
+	require.NotNil(t, err)
+	require.Regexp(t, "canViewerDo (.+) supported on create action", err.Error())
+}
+
 func TestParseInputWithIndexedEdgeTypeNoOptIn(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{

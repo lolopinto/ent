@@ -8,10 +8,12 @@ import {
   createAndInvitePlusGuests,
   createEvent,
   createGuestPlus,
+  createGuests,
 } from "src/testutils";
 // this needs to be the last line becasue of load order or at least after src/testutils
 import schema from "src/graphql/generated/schema";
 import { DateTime } from "luxon";
+import CreateGuestGroupAction from "src/ent/guest_group/actions/create_guest_group_action";
 
 test("create activity", async () => {
   const event = await createEvent();
@@ -209,5 +211,98 @@ test("rsvp for other", async () => {
     },
     ["id", encodeGQLID(activity)],
     [`rsvpStatusFor(id: ${JSON.stringify(self.id)})`, "CAN_RSVP"],
+  );
+});
+
+test("canViewerDo", async () => {
+  const [activity, guests] = await createAndInvitePlusGuests(2);
+  const self = guests[0];
+  const other = guests[1];
+
+  const group2 = await CreateGuestGroupAction.create(activity.viewer, {
+    invitationName: "people",
+    eventID: activity.eventID,
+  }).saveX();
+
+  const guests2 = await createGuests(group2, 2);
+
+  await expectQueryFromRoot(
+    {
+      viewer: new IDViewer(self.id),
+      root: "node",
+      inlineFragmentRoot: "EventActivity",
+      schema,
+      args: {
+        id: encodeGQLID(activity),
+      },
+    },
+    ["id", encodeGQLID(activity)],
+    // can't invite anyone
+    ["canViewerDo.eventActivityAddInvite", false],
+    // can change rsvp status for self
+    [
+      `canViewerDo {self: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+        self,
+      )}") }`,
+      true,
+      "canViewerDo.self",
+    ],
+    // can change rsvp status for other
+    [
+      `canViewerDo {other: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+        other,
+      )}") }`,
+      true,
+      "canViewerDo.other",
+    ],
+
+    // can't change rsvp status for other group
+    [
+      `canViewerDo {other_guest: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+        guests2[0],
+      )}") }`,
+      false,
+      "canViewerDo.other_guest",
+    ],
+  );
+
+  await expectQueryFromRoot(
+    {
+      viewer: activity.viewer,
+      root: "node",
+      inlineFragmentRoot: "EventActivity",
+      schema,
+      args: {
+        id: encodeGQLID(activity),
+      },
+    },
+    ["id", encodeGQLID(activity)],
+    // creator can invite
+    ["canViewerDo.eventActivityAddInvite", true],
+    // can't change rsvp for anyone. in actual fact, should be able to do so if this was a real events system but we don't support that
+
+    [
+      `canViewerDo {self: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+        self,
+      )}") }`,
+      false,
+      "canViewerDo.self",
+    ],
+
+    [
+      `canViewerDo {other: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+        other,
+      )}") }`,
+      false,
+      "canViewerDo.other",
+    ],
+
+    [
+      `canViewerDo {other_guest: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+        guests2[0],
+      )}") }`,
+      false,
+      "canViewerDo.other_guest",
+    ],
   );
 });

@@ -366,6 +366,7 @@ const UserSchema = new EntSchema({
       // everything is optional by default in edits
 
       fields: ["FirstName", "LastName"],
+      canViewerDo: true,
     },
     {
       operation: ActionOperation.Edit,

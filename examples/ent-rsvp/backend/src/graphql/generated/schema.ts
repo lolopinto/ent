@@ -86,6 +86,7 @@ import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
   AddressToLocatedAtConnectionType,
   AddressType,
+  EventActivityCanViewerDoType,
   EventActivityRsvpStatusType,
   EventActivityToAttendingConnectionType,
   EventActivityToDeclinedConnectionType,
@@ -112,6 +113,7 @@ export default new GraphQLSchema({
   types: [
     EventActivityRsvpStatusType,
     AddressType,
+    EventActivityCanViewerDoType,
     EventActivityType,
     EventType,
     GuestGroupType,

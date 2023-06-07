@@ -255,3 +255,22 @@ test("edit contact with new phone number ids", async () => {
     ["contact.phoneNumbers[1].id", encodeGQLID(phone2)],
   );
 });
+
+test("canViewerDo", async () => {
+  let contact = await createContact();
+  let emails = await contact.loadEmails();
+  expect(emails.length).toBe(1);
+
+  await expectQueryFromRoot(
+    {
+      viewer: contact.viewer,
+      schema: schema,
+      root: "node",
+      args: {
+        id: encodeGQLID(emails[0]),
+      },
+      inlineFragmentRoot: "ContactEmail",
+    },
+    ["canViewerDo.contactEmailEdit", true],
+  );
+});

@@ -79,6 +79,7 @@ type NodeData struct {
 	TransformsSelect        bool
 	TransformsDelete        bool
 	TransformsLoaderCodegen *input.TransformsLoaderCodegen
+	canViewerDo             map[string]action.Action
 }
 
 func newNodeData(packageName string) *NodeData {
@@ -87,6 +88,7 @@ func newNodeData(packageName string) *NodeData {
 		NodeInfo:    nodeinfo.GetNodeInfo(packageName),
 		EdgeInfo:    edge.NewEdgeInfo(packageName),
 		ActionInfo:  action.NewActionInfo(),
+		canViewerDo: make(map[string]action.Action),
 	}
 	nodeData.ConstantGroups = make(map[string]*ConstGroupInfo)
 	return nodeData
@@ -764,6 +766,14 @@ func (nodeData *NodeData) GetCanViewerEditInfo() *CanViewerSeeInfo {
 		Name:   fmt.Sprintf("%sCanViewerEdit", nodeData.Node),
 		Fields: fields,
 	}
+}
+
+func (nodeData *NodeData) HasCanViewerDo() bool {
+	return len(nodeData.canViewerDo) > 0
+}
+
+func (nodeData *NodeData) GetCanViewerDoInfo() map[string]action.Action {
+	return nodeData.canViewerDo
 }
 
 type extraCustomQueryInfo struct {

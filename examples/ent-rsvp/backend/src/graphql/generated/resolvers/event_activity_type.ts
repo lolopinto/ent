@@ -9,11 +9,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext, Viewer } from "@snowtop/ent";
+import { RequestContext, Viewer, applyPrivacyPolicy } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
   GraphQLTime,
+  mustDecodeIDFromGQLID,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import {
@@ -23,6 +24,9 @@ import {
   EventActivityToInvitesQuery,
   Guest,
 } from "src/ent/";
+import EditEventActivityRsvpStatusAction from "src/ent/event_activity/actions/edit_event_activity_rsvp_status_action";
+import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
+import { EventActivityRsvpStatusInputType } from "src/graphql/generated/mutations/input_enums_type";
 import {
   AddressType,
   EventActivityRsvpStatusType,
@@ -31,6 +35,43 @@ import {
   EventActivityToInvitesConnectionType,
   EventType,
 } from "src/graphql/resolvers/internal";
+
+class EventActivityCanViewerDo {
+  constructor(
+    private context: RequestContext<Viewer>,
+    private eventActivity: EventActivity,
+  ) {}
+
+  async eventActivityAddInvite(args: any): Promise<boolean> {
+    const action = EventActivityAddInviteAction.create(
+      this.context.getViewer(),
+      this.eventActivity,
+    );
+    return applyPrivacyPolicy(
+      this.context.getViewer(),
+      action.getPrivacyPolicy(),
+      this.eventActivity,
+    );
+  }
+
+  async eventActivityRsvpStatusEdit(args: any): Promise<boolean> {
+    const action = EditEventActivityRsvpStatusAction.create(
+      this.context.getViewer(),
+      this.eventActivity,
+      {
+        ...args,
+        rsvpStatus: args.rsvpStatus,
+        guestID: mustDecodeIDFromGQLID(args.guestID),
+        dietaryRestrictions: args.dietaryRestrictions,
+      },
+    );
+    return applyPrivacyPolicy(
+      this.context.getViewer(),
+      action.getPrivacyPolicy(),
+      this.eventActivity,
+    );
+  }
+}
 
 export const EventActivityType = new GraphQLObjectType({
   name: "EventActivity",
@@ -196,6 +237,16 @@ export const EventActivityType = new GraphQLObjectType({
         return eventActivity.rsvpStatusFor(ent);
       },
     },
+    canViewerDo: {
+      type: new GraphQLNonNull(EventActivityCanViewerDoType),
+      resolve: (
+        eventActivity: EventActivity,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
+        return new EventActivityCanViewerDo(context, eventActivity);
+      },
+    },
     addressFromOwner: {
       type: AddressType,
       resolve: async (
@@ -211,4 +262,47 @@ export const EventActivityType = new GraphQLObjectType({
   isTypeOf(obj) {
     return obj instanceof EventActivity;
   },
+});
+
+export const EventActivityCanViewerDoType = new GraphQLObjectType({
+  name: "EventActivityCanViewerDo",
+  fields: (): GraphQLFieldConfigMap<
+    EventActivityCanViewerDo,
+    RequestContext<Viewer>
+  > => ({
+    eventActivityAddInvite: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        eventActivity: EventActivityCanViewerDo,
+        args: {},
+        context: RequestContext<Viewer>,
+      ) => {
+        return eventActivity.eventActivityAddInvite(args);
+      },
+    },
+    eventActivityRsvpStatusEdit: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      args: {
+        rsvpStatus: {
+          description: "",
+          type: new GraphQLNonNull(EventActivityRsvpStatusInputType),
+        },
+        guestID: {
+          description: "",
+          type: new GraphQLNonNull(GraphQLID),
+        },
+        dietaryRestrictions: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: async (
+        eventActivity: EventActivityCanViewerDo,
+        args: any,
+        context: RequestContext<Viewer>,
+      ) => {
+        return eventActivity.eventActivityRsvpStatusEdit(args);
+      },
+    },
+  }),
 });

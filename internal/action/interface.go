@@ -55,6 +55,7 @@ type Action interface {
 	GetEditableFieldContext() field.EditableContext
 	getCommonInfo() commonActionInfo
 	TransformsDelete() bool
+	GetCanViewerDo() *input.CanViewerDo
 }
 
 type ActionField interface {
@@ -72,6 +73,7 @@ type ActionField interface {
 	GetTsType() string
 	IsEditableIDField(ctx field.EditableContext) bool
 	GetTsTypeImports() []*tsimport.ImportPath
+	GetTSGraphQLTypeForFieldImports(input bool) []*tsimport.ImportPath
 }
 
 type ActionInfo struct {
@@ -136,6 +138,7 @@ type commonActionInfo struct {
 	gqlEnums         []*enum.GQLEnum
 	nodeinfo.NodeInfo
 	tranformsDelete bool
+	canViewerDo     *input.CanViewerDo
 }
 
 func (action *commonActionInfo) GetActionName() string {
@@ -229,6 +232,10 @@ func (action *commonActionInfo) TransformsDelete() bool {
 
 func (action *commonActionInfo) getCommonInfo() commonActionInfo {
 	return *action
+}
+
+func (action *commonActionInfo) GetCanViewerDo() *input.CanViewerDo {
+	return action.canViewerDo
 }
 
 func getTypes(typ enttype.TSTypeWithCustomType) (string, string) {
