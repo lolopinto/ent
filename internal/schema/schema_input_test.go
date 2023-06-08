@@ -2190,6 +2190,43 @@ func TestCanViewerDo(t *testing.T) {
 	assert.Len(t, schema.GetGlobalCanViewerDo(), 1)
 }
 
+func TestCanViewerDoHiddenGraphQL(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+				Actions: []*input.Action{
+					{
+						Operation:       ent.CreateAction,
+						CanViewerDo:     &input.CanViewerDo{},
+						HideFromGraphQL: true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Error(t, err)
+	require.Regexp(t, "cannot set canViewerDo on action CreateUserAction", err.Error())
+	require.Nil(t, schema)
+}
+
 func TestParseInputWithIndexedEdgeTypeNoOptIn(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
