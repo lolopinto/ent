@@ -31,6 +31,9 @@ const ContactEmailSchema = new EntSchema({
   actions: [
     {
       operation: ActionOperation.Create,
+      canViewerDo: {
+        addAllFields: true,
+      },
     },
     {
       operation: ActionOperation.Edit,

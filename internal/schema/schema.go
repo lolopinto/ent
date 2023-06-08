@@ -27,22 +27,23 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes            NodeMapInfo
-	Patterns         map[string]*PatternInfo
-	globalEdges      []*edge.AssociationEdge
-	globalEnums      map[string]*EnumInfo
-	globalConsts     *objWithConsts
-	extraEdgeFields  []*field.Field
-	initGlobalSchema bool
-	tables           NodeMapInfo
-	edges            map[string]*ent.AssocEdgeData
-	newEdges         []*ent.AssocEdgeData
-	edgesToUpdate    []*ent.AssocEdgeData
-	Enums            map[string]*EnumInfo
-	enumTables       map[string]*EnumInfo
-	CustomInterfaces map[string]*customtype.CustomInterface
-	allCustomTypes   map[string]field.CustomTypeWithHasConvertFunction
-	gqlTypeMap       map[string]bool
+	Nodes             NodeMapInfo
+	Patterns          map[string]*PatternInfo
+	globalEdges       []*edge.AssociationEdge
+	globalEnums       map[string]*EnumInfo
+	globalConsts      *objWithConsts
+	extraEdgeFields   []*field.Field
+	initGlobalSchema  bool
+	tables            NodeMapInfo
+	edges             map[string]*ent.AssocEdgeData
+	newEdges          []*ent.AssocEdgeData
+	edgesToUpdate     []*ent.AssocEdgeData
+	Enums             map[string]*EnumInfo
+	enumTables        map[string]*EnumInfo
+	CustomInterfaces  map[string]*customtype.CustomInterface
+	allCustomTypes    map[string]field.CustomTypeWithHasConvertFunction
+	gqlTypeMap        map[string]bool
+	globalCanViewerDo map[string]action.Action
 
 	// used to keep track of schema-state
 	inputSchema *input.Schema
@@ -70,6 +71,10 @@ func (s *Schema) GetGlobalConsts() WithConst {
 
 func (s *Schema) GetGlobalEnums() map[string]*EnumInfo {
 	return s.globalEnums
+}
+
+func (s *Schema) GetGlobalCanViewerDo() map[string]action.Action {
+	return s.globalCanViewerDo
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData, fkeyInfo *field.ForeignKeyInfo, exposeToGraphQL bool) error {
@@ -308,6 +313,7 @@ func (s *Schema) init() {
 		// just claim this for now...
 		"SubscriptionType": true,
 	}
+	s.globalCanViewerDo = map[string]action.Action{}
 	s.globalConsts = &objWithConsts{}
 }
 
@@ -498,9 +504,11 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			canViewerDo := action.GetCanViewerDo()
 			if canViewerDo != nil {
 				if action.GetOperation() == ent.CreateAction {
-					return nil, fmt.Errorf("canViewerDo not currently supported on create actions")
+					// create canViewerdo is global
+					s.globalCanViewerDo[action.GetGraphQLName()] = action
+				} else {
+					nodeData.canViewerDo[action.GetGraphQLName()] = action
 				}
-				nodeData.canViewerDo[action.GetGraphQLName()] = action
 			}
 		}
 

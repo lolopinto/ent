@@ -2153,7 +2153,8 @@ func TestCanViewerDo(t *testing.T) {
 				},
 				Actions: []*input.Action{
 					{
-						Operation: ent.CreateAction,
+						Operation:   ent.CreateAction,
+						CanViewerDo: &input.CanViewerDo{},
 					},
 					{
 						Operation:   ent.EditAction,
@@ -2184,45 +2185,9 @@ func TestCanViewerDo(t *testing.T) {
 
 	assert.True(t, user.NodeData.HasCanViewerDo(), true)
 	assert.Len(t, user.NodeData.GetCanViewerDoInfo(), 2)
-}
 
-func TestCanViewerDoCreateAction(t *testing.T) {
-	inputSchema := &input.Schema{
-		Nodes: map[string]*input.Node{
-			"User": {
-				Fields: []*input.Field{
-					{
-						Name: "id",
-						Type: &input.FieldType{
-							DBType: input.UUID,
-						},
-						PrimaryKey: true,
-					},
-					{
-						Name: "firstName",
-						Type: &input.FieldType{
-							DBType: input.String,
-						},
-					},
-				},
-				Actions: []*input.Action{
-					{
-						Operation:   ent.CreateAction,
-						CanViewerDo: &input.CanViewerDo{},
-					},
-					{
-						Operation: ent.EditAction,
-					},
-				},
-			},
-		},
-	}
-
-	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
-
-	require.Nil(t, schema)
-	require.NotNil(t, err)
-	require.Regexp(t, "canViewerDo (.+) supported on create action", err.Error())
+	// create is global
+	assert.Len(t, schema.GetGlobalCanViewerDo(), 1)
 }
 
 func TestParseInputWithIndexedEdgeTypeNoOptIn(t *testing.T) {
