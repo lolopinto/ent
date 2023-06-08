@@ -14,19 +14,13 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { ID, RequestContext } from "@snowtop/ent";
+import { RequestContext } from "@snowtop/ent";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { AuthResolver } from "../../mutations/auth";
-
-interface UserAuthJWTInput {
-  emailAddress: string;
-  password: string;
-}
-
-interface UserAuthJWTPayload {
-  token: string;
-  viewerID: ID;
-}
+import {
+  AuthResolver,
+  UserAuthJWTInput,
+  UserAuthJWTPayload,
+} from "../../mutations/auth";
 
 export const UserAuthJWTInputType = new GraphQLInputObjectType({
   name: "UserAuthJWTInput",

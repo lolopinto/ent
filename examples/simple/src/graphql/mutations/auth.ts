@@ -28,7 +28,7 @@ export class UserAuthInput {
 }
 
 @gqlInputObjectType()
-class UserAuthJWTInput {
+export class UserAuthJWTInput {
   @gqlField({
     class: "UserAuthJWTInput",
     type: GraphQLString,
@@ -53,7 +53,7 @@ export class UserAuthPayload {
 // TODO abstract classes..
 
 @gqlObjectType()
-class UserAuthJWTPayload {
+export class UserAuthJWTPayload {
   @gqlField({
     class: "UserAuthJWTPayload",
     type: GraphQLString,

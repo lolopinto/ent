@@ -677,7 +677,6 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 	}
 
 	cls := cd.Classes[item.Type]
-	createInterface := true
 	if cls != nil {
 		importPath, err := getRelativeImportPath(processor, destPath, cls.Path)
 		if err != nil {
@@ -690,73 +689,16 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 				ImportPath: importPath,
 				Import:     item.Type,
 			})
-			createInterface = false
 		} else if cls.Exported {
 			typ.Imports = append(typ.Imports, &tsimport.ImportPath{
 				ImportPath: importPath,
 				Import:     item.Type,
 			})
-			createInterface = false
+		} else {
+			return nil, fmt.Errorf("class %s is not exported and objects referenced need to be exported", item.Type)
 		}
 	}
 
-	if createInterface {
-		// need to create an interface for it
-		customInt := newInterfaceType(&interfaceType{
-			Exported: false,
-			Name:     item.Type,
-		})
-		fields, ok := cd.Fields[item.Type]
-		if !ok {
-			return nil, fmt.Errorf("type %s has no fields", item.Type)
-
-		}
-		for _, field := range fields {
-			newInt := &interfaceField{
-				Name: field.GraphQLName,
-				Type: field.Results[0].Type,
-				// TODO getGraphQLImportsForField???
-				// here we grab import from classessss
-				// but then later we need class
-				UseImport: false,
-				// TODO need to convert to number etc...
-				// need to convert from graphql type to TS type :(
-			}
-
-			if len(field.Results) == 1 {
-				result := field.Results[0]
-				// check for imported paths that are being used
-				if result.TSType != "" {
-					newInt.Type = result.TSType
-					if cls != nil {
-						file := cd.Files[cls.Path]
-						if file != nil {
-							imp := file.Imports[newInt.Type]
-							if imp != nil {
-								fImp := &tsimport.ImportPath{
-									Import: newInt.Type,
-									// TODO this needs to be resolved to be relative...
-									// for now assuming tsconfig.json paths being used
-									ImportPath: imp.Path,
-								}
-								if imp.DefaultImport {
-									typ.DefaultImports = append(typ.DefaultImports, fImp)
-								} else {
-									typ.Imports = append(typ.Imports, fImp)
-								}
-								newInt.UseImport = true
-							}
-						}
-					}
-				}
-			}
-
-			if err := customInt.addField(newInt); err != nil {
-				return nil, err
-			}
-		}
-		typ.TSInterfaces = []*interfaceType{customInt}
-	}
 	return typ, nil
 }
 
