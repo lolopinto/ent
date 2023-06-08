@@ -1513,8 +1513,6 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				m.Lock()
 				defer m.Unlock()
 
-				// success
-				// add to root query and we're good interms of query
 				fieldCfg := &fieldConfig{
 					Exported: true,
 					Name:     "CanViewerDoQueryType",

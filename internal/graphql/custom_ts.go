@@ -233,8 +233,6 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 			interfaces = append(interfaces, intType)
 		}
 		// here...
-
-		// here iswhat i;m thinking
 		result = append(result, &gqlNode{
 			ObjData: &gqlobjectData{
 				interfaces: interfaces,
