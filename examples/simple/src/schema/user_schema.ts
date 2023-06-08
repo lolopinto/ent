@@ -36,7 +36,9 @@ const UserSchema = new EntSchema({
 
   supportUpsert: true,
 
-  supportCanViewerSee: true,
+  showCanViewerSee: true,
+
+  showCanViewerEdit: true,
 
   fields: {
     FirstName: StringType(),
