@@ -564,6 +564,10 @@ export interface FieldOptions {
   // check on each field in the action that has this property set
   editPrivacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
 
+  // by default editPrivacyPolicy is used for create as well but if this exists, this will be used for create and edit will use editPrivacyPolicy
+  // intentionally ugly so it's clear...
+  createOnlyOverrideEditPrivacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
+
   // takes the name of the field and returns any fields which are derived from current field
   getDerivedFields?(name: string): FieldMap;
 
@@ -709,20 +713,35 @@ export function getFieldsWithPrivacy(
   value: SchemaInputType,
   fieldInfoMap: FieldInfoMap,
 ): Map<string, PrivacyPolicy> {
-  return getFieldsWithPrivacyImpl(value, fieldInfoMap, "privacyPolicy");
+  return getFieldsWithPrivacyImpl(value, fieldInfoMap, ["privacyPolicy"]);
 }
 
 export function getFieldsWithEditPrivacy(
   value: SchemaInputType,
   fieldInfoMap: FieldInfoMap,
 ): Map<string, PrivacyPolicy> {
-  return getFieldsWithPrivacyImpl(value, fieldInfoMap, "editPrivacyPolicy");
+  return getFieldsWithPrivacyImpl(value, fieldInfoMap, ["editPrivacyPolicy"]);
 }
+
+export function getFieldsForCreateAction(
+  value: SchemaInputType,
+  fieldInfoMap: FieldInfoMap,
+): Map<string, PrivacyPolicy> {
+  return getFieldsWithPrivacyImpl(value, fieldInfoMap, [
+    "createOnlyOverrideEditPrivacyPolicy",
+    "editPrivacyPolicy",
+  ]);
+}
+
+type policy =
+  | "privacyPolicy"
+  | "editPrivacyPolicy"
+  | "createOnlyOverrideEditPrivacyPolicy";
 
 function getFieldsWithPrivacyImpl(
   value: SchemaInputType,
   fieldInfoMap: FieldInfoMap,
-  key: "privacyPolicy" | "editPrivacyPolicy",
+  keys: policy[],
 ): Map<string, PrivacyPolicy> {
   const schema = getSchema(value);
   function addFields(fields: FieldMap) {
@@ -734,16 +753,19 @@ function getFieldsWithPrivacyImpl(
       if (field.getDerivedFields !== undefined) {
         addFields(field.getDerivedFields(name));
       }
-      let privacyPolicy = field[key];
-      if (privacyPolicy) {
-        if (typeof privacyPolicy === "function") {
-          privacyPolicy = privacyPolicy();
+      for (const key of keys) {
+        let privacyPolicy = field[key];
+        if (privacyPolicy) {
+          if (typeof privacyPolicy === "function") {
+            privacyPolicy = privacyPolicy();
+          }
+          const info = fieldInfoMap[name];
+          if (!info) {
+            throw new Error(`field with name ${name} not passed in fieldMap`);
+          }
+          m.set(info.dbCol, privacyPolicy);
+          break;
         }
-        const info = fieldInfoMap[name];
-        if (!info) {
-          throw new Error(`field with name ${name} not passed in fieldMap`);
-        }
-        m.set(info.dbCol, privacyPolicy);
       }
     }
   }

@@ -22,6 +22,7 @@ import {
   TransformedUpdateOperation,
   FieldInfoMap,
   getFieldsWithEditPrivacy,
+  getFieldsForCreateAction,
 } from "../schema/schema";
 import {
   Changeset,
@@ -695,11 +696,24 @@ export class Orchestrator<
 
     // future optimization: can get schemaFields to memoize based on different values
     const schemaFields = getFields(this.options.schema);
+
     // also future optimization, no need to go through the list of fields multiple times
-    const editPrivacyFields = getFieldsWithEditPrivacy(
-      this.options.schema,
-      this.options.fieldInfo,
-    );
+    let editPrivacyFields = new Map<string, PrivacyPolicy>();
+    switch (this.actualOperation) {
+      case WriteOperation.Edit:
+        editPrivacyFields = getFieldsWithEditPrivacy(
+          this.options.schema,
+          this.options.fieldInfo,
+        );
+        break;
+
+      case WriteOperation.Insert:
+        editPrivacyFields = getFieldsForCreateAction(
+          this.options.schema,
+          this.options.fieldInfo,
+        );
+        break;
+    }
 
     const editedFields = await this.options.editedFields();
 

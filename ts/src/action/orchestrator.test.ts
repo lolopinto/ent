@@ -72,7 +72,12 @@ import {
   Table,
 } from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
-import { convertDate, convertJSON, convertList } from "../core/convert";
+import {
+  convertBool,
+  convertDate,
+  convertJSON,
+  convertList,
+} from "../core/convert";
 import { v4 } from "uuid";
 import { NumberOps } from "./relative_value";
 import { StructType, BooleanType } from "../schema";
@@ -437,6 +442,16 @@ const EventWithEditPrivacySchema = getBuilderSchemaFromFields(
     slug: StringType({
       nullable: true,
       editPrivacyPolicy: {
+        rules: [
+          new AllowIfViewerIsEntPropertyRule<EventWithEditPrivacy>("ownerID"),
+          AlwaysDenyRule,
+        ],
+      },
+    }),
+    show_guest_list: BooleanType({
+      defaultValueOnCreate: () => false,
+      editPrivacyPolicy: AlwaysDenyPrivacyPolicy,
+      createOnlyOverrideEditPrivacyPolicy: {
         rules: [
           new AllowIfViewerIsEntPropertyRule<EventWithEditPrivacy>("ownerID"),
           AlwaysDenyRule,
@@ -1835,6 +1850,37 @@ function commonTests() {
       ];
       const edited = await action2.saveX();
       expect(convertList(edited.data.host_ids)).toEqual([host.id, host2.id]);
+    });
+
+    test("create only override privacy policy which differs from edit", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      // when creating, can set this value
+      const event = await createEvent(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+          ["host_ids", []],
+          ["show_guest_list", true],
+        ]),
+      );
+      expect(convertBool(event.data.show_guest_list)).toBe(true);
+
+      // cannot edit it
+      const action2 = new SimpleAction(
+        new IDViewer(user.id),
+        EventWithEditPrivacySchema,
+        new Map<string, any>([["show_guest_list", false]]),
+        WriteOperation.Edit,
+        event,
+      );
+      await expect(action2.saveX()).rejects.toThrowError(/show_guest_list/);
     });
   });
 
