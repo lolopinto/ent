@@ -504,6 +504,10 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		for _, action := range nodeData.ActionInfo.Actions {
 			canViewerDo := action.GetCanViewerDo()
 			if canViewerDo != nil {
+				if !action.ExposedToGraphQL() {
+					return nil, fmt.Errorf("cannot set canViewerDo on action %s which is not exposed to graphql", action.GetActionName())
+				}
+
 				if action.GetOperation() == ent.CreateAction {
 					// create canViewerdo is global
 					s.globalCanViewerDo[action.GetGraphQLName()] = action
