@@ -257,8 +257,8 @@ test("edit contact with new phone number ids", async () => {
 });
 
 test("canViewerDo", async () => {
-  let contact = await createContact();
-  let emails = await contact.loadEmails();
+  const contact = await createContact();
+  const emails = await contact.loadEmails();
   expect(emails.length).toBe(1);
 
   await expectQueryFromRoot(
@@ -272,5 +272,48 @@ test("canViewerDo", async () => {
       inlineFragmentRoot: "ContactEmail",
     },
     ["canViewerDo.contactEmailEdit", true],
+  );
+});
+
+test("global canViewerDo", async () => {
+  const user = await createUser();
+  const user2 = await createUser();
+
+  const contact = await createContact(user);
+  const contact2 = await createContact(user2);
+
+  await expectQueryFromRoot(
+    {
+      schema: schema,
+      viewer: user.viewer,
+      root: "can_viewer_do",
+      args: {},
+    },
+    [
+      `contactCreateSelf: contactCreate(userID: "${encodeGQLID(user)}")`,
+      true,
+      "contactCreateSelf",
+    ],
+    [
+      `contactCreateOther: contactCreate(userID: "${encodeGQLID(user2)}")`,
+      false,
+      "contactCreateOther",
+    ],
+    // can create email with given contact
+    [
+      `contactEmailCreateSelf: contactEmailCreate(contactID: "${encodeGQLID(
+        contact,
+      )}" emailAddress: "${randomEmail("hello")}" label: HOME)`,
+      true,
+      "contactEmailCreateSelf",
+    ],
+    // cannot create email with given contact
+    [
+      `contactEmailCreateOther: contactEmailCreate(contactID: "${encodeGQLID(
+        contact2,
+      )}" emailAddress: "${randomEmail("hello")}" label: HOME)`,
+      false,
+      "contactEmailCreateOther",
+    ],
   );
 });
