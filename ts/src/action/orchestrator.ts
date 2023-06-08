@@ -182,7 +182,9 @@ class EntCannotEditEntFieldError extends Error implements PrivacyError {
   ) {
     let msg = `${getViewer(
       viewer,
-    )} does not have permission to edit field ${field} ${ent.constructor.name}`;
+    )} does not have permission to edit field ${field} in ${
+      ent.constructor.name
+    }`;
     super(msg);
     this.privacyPolicy = privacyPolicy;
   }
