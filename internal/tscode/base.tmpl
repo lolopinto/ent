@@ -123,9 +123,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{range $field := .FieldInfo.EntFields -}}
     {{ if not ($schema.PatternFieldWithMixin $field) -}}
       {{ range $field.GetTsTypeImports -}}
-        {{ if ($nodeData.ForeignImport .Import) -}}
-          {{ reserveImportPath . false -}}
-        {{end -}}
+        {{ reserveImportPath . false -}}
         {{$typ := useImportMaybe .Import -}}
       {{end -}}
       {{ if $field.Private $cfg -}}

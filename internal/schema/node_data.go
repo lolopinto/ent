@@ -426,22 +426,6 @@ func (nodeData *NodeData) GetImportsForBaseFile(s *Schema, cfg codegenapi.Config
 	return ret, nil
 }
 
-// TODO kill
-// seems like it was mostly used for enums
-func (nodeData *NodeData) ForeignImport(imp string) bool {
-	// not the most performant but ok
-	// most classes won't have that many enums
-	// for _, enum := range nodeData.tsEnums {
-	// 	if enum.Imported {
-	// 		continue
-	// 	}
-	// 	if enum.Name == imp {
-	// 		return false
-	// 	}
-	// }
-	return true
-}
-
 // TODO kill this
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
 func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.ImportPath {

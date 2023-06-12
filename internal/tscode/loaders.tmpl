@@ -13,9 +13,7 @@
   export interface {{$dataType}} {
     {{range $field := .FieldInfo.EntFields -}}
       {{ range $field.GetTsTypeImports -}}
-        {{ if ($nodeData.ForeignImport .Import) -}}
-          {{ reserveImportPath . false -}}
-        {{end -}}
+        {{ reserveImportPath . false -}}
         {{$typ := useImportMaybe .Import -}}
       {{end -}}
 
