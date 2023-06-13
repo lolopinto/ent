@@ -120,6 +120,8 @@ interface FilterOptions<T extends Data> {
   // indicates that sort column is unique and we shouldn't use the id from the
   // table as the cursor and use the sort column instead
   sortColumnUnique?: boolean;
+
+  nullsPlacement?: "first" | "last";
 }
 
 interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
@@ -183,9 +185,19 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     // so when paging, we fetch afterCursor X
     const less = orderby === "DESC";
 
+    let nullsPlacement = "";
+    if (this.options.nullsPlacement) {
+      if (this.options.nullsPlacement === "first") {
+        nullsPlacement = " NULLS FIRST";
+      } else {
+        nullsPlacement = " NULLS LAST";
+      }
+    }
+
     if (this.options.cursorCol !== this.sortCol) {
       // we also sort unique col in same direction since it doesn't matter...
-      options.orderby = `${this.sortCol} ${orderby}, ${this.options.cursorCol} ${orderby}`;
+      // nulls placement only affects sortCol. assumption is cursorCol will not be null and no need for that
+      options.orderby = `${this.sortCol} ${orderby}${nullsPlacement}, ${this.options.cursorCol} ${orderby}`;
 
       if (this.offset) {
         const res = this.edgeQuery.getTableName();
@@ -200,7 +212,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         );
       }
     } else {
-      options.orderby = `${this.sortCol} ${orderby}`;
+      options.orderby = `${this.sortCol}${nullsPlacement} ${orderby}`;
 
       if (this.offset) {
         let clauseFn = less ? clause.Less : clause.Greater;
@@ -317,6 +329,11 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   }
 }
 
+interface EdgeQueryOptions {
+  cursorCol: string;
+  sortCol: string;
+  nullsPlacement?: "first" | "last";
+}
 export abstract class BaseEdgeQuery<
   TSource extends Ent,
   TDest extends Ent,
@@ -334,8 +351,30 @@ export abstract class BaseEdgeQuery<
   private sortCol: string;
   private cursorCol: string;
   private defaultDirection?: "ASC" | "DESC";
+  private edgeQueryOptions: EdgeQueryOptions;
 
-  constructor(public viewer: Viewer, sortCol: string, cursorCol: string) {
+  constructor(viewer: Viewer, sortCol: string, cursorCol: string);
+  constructor(viewer: Viewer, options: EdgeQueryOptions);
+
+  constructor(
+    public viewer: Viewer,
+    sortColOrOptions: any,
+    cursorColMaybe?: string,
+  ) {
+    let sortCol: string;
+    let cursorCol: string;
+    if (typeof sortColOrOptions === "string") {
+      sortCol = sortColOrOptions;
+      cursorCol = cursorColMaybe!;
+      this.edgeQueryOptions = {
+        cursorCol,
+        sortCol,
+      };
+    } else {
+      sortCol = sortColOrOptions.sortCol;
+      cursorCol = sortColOrOptions.cursorCol;
+      this.edgeQueryOptions = sortColOrOptions;
+    }
     let m = orderbyRegex.exec(sortCol);
     if (!m) {
       throw new Error(`invalid sort column ${sortCol}`);
@@ -375,6 +414,7 @@ export abstract class BaseEdgeQuery<
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
         defaultDirection: this.defaultDirection,
+        nullsPlacement: this.edgeQueryOptions.nullsPlacement,
         query: this,
       }),
     );
@@ -390,6 +430,7 @@ export abstract class BaseEdgeQuery<
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
         defaultDirection: this.defaultDirection,
+        nullsPlacement: this.edgeQueryOptions.nullsPlacement,
         query: this,
       }),
     );

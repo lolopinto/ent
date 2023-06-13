@@ -6,6 +6,7 @@ import {
   EdgeType,
   FakeUserSchema,
   getNextWeekClause,
+  FakeEventSchema,
 } from "../../testutils/fake_data";
 import {
   addEdge,
@@ -17,8 +18,13 @@ import { setLogLevels } from "../logger";
 import { TempDB } from "../../testutils/db/temp_db";
 import { buildQuery } from "../ent";
 import * as clause from "../clause";
-import { Viewer } from "../base";
-import { CustomClauseQuery } from "./custom_clause_query";
+import { Viewer, WriteOperation } from "../base";
+import {
+  CustomClauseQuery,
+  CustomClauseQueryOptions,
+} from "./custom_clause_query";
+import { SimpleBuilder } from "../../testutils/builder";
+import { DateTime } from "luxon";
 
 const INTERVAL = 24 * 60 * 60 * 1000;
 
@@ -61,9 +67,29 @@ beforeAll(async () => {
   ({ user, user2 } = await createData(startTime));
 
   // create with same startTimes to ensure there's conflicts
+  const { events } = await createData(startTime);
   await createData(startTime);
   await createData(startTime);
-  await createData(startTime);
+
+  // add some non-null endtimes.
+  for await (const event of events) {
+    const builder = new SimpleBuilder(
+      event.viewer,
+      FakeEventSchema,
+      new Map([
+        [
+          "endTime",
+          DateTime.fromJSDate(event.startTime).plus({ hours: 1 }).toJSDate(),
+        ],
+      ]),
+      WriteOperation.Edit,
+      event,
+    );
+    await builder.saveX();
+    const evt = await builder.editedEntX();
+    expect(evt.endTime).not.toBeNull();
+    expect(evt.endTime).not.toBe(event.endTime);
+  }
 });
 
 beforeEach(() => {
@@ -80,12 +106,28 @@ const getQuery = (viewer?: Viewer) => {
   return new UserToEventsInNextWeekQuery(viewer || user.viewer, user.id);
 };
 
-const getGlobalQuery = (viewer?: Viewer, opts?: any) => {
-  return new CustomClauseQuery(viewer || user.viewer, {
+const getGlobalQuery = (
+  viewer?: Viewer,
+  opts?: Partial<CustomClauseQueryOptions<any, any>>,
+) => {
+  return new CustomClauseQuery<FakeEvent>(viewer || user.viewer, {
     clause: getNextWeekClause(),
     loadEntOptions: FakeEvent.loaderOptions(),
     name: "global_events_in_next_week",
     sortColumn: "start_time",
+    ...opts,
+  });
+};
+
+const getEndTimeGlobalQuery = (
+  viewer?: Viewer,
+  opts?: Partial<CustomClauseQueryOptions<any, any>>,
+) => {
+  return new CustomClauseQuery<FakeEvent>(viewer || user.viewer, {
+    clause: getNextWeekClause(),
+    loadEntOptions: FakeEvent.loaderOptions(),
+    name: "global_events_in_next_week_end_time",
+    sortColumn: "end_time",
     ...opts,
   });
 };
@@ -239,6 +281,24 @@ describe("global query", () => {
 
   test("first N", async () => {
     const q = getGlobalQuery();
+
+    const ents = await q.first(2).queryEnts();
+    expect(ents.length).toBe(2);
+  });
+
+  test("first N. nulls first on non-nullable does nothing", async () => {
+    const q = getGlobalQuery(user.viewer, {
+      nullsPlacement: "first",
+    });
+
+    const ents = await q.first(2).queryEnts();
+    expect(ents.length).toBe(2);
+  });
+
+  test("first N. nulls last on non-nullable does nothing", async () => {
+    const q = getGlobalQuery(user.viewer, {
+      nullsPlacement: "last",
+    });
 
     const ents = await q.first(2).queryEnts();
     expect(ents.length).toBe(2);
@@ -446,5 +506,131 @@ describe("global query", () => {
     const edges2 = await q2.queryEdges();
     expect(edges2.length).toBe(edges.length);
     expect(edges.reverse()).toStrictEqual(edges2);
+  });
+});
+
+describe("global query end time", () => {
+  test("rawCount", async () => {
+    const q = getEndTimeGlobalQuery();
+
+    const count = await q.queryRawCount();
+    expect(count).toBe(7 * infos.length);
+  });
+
+  test("ents", async () => {
+    const q = getEndTimeGlobalQuery();
+
+    const ents = await q.queryEnts();
+    expect(ents.length).toBe(7 * infos.length);
+  });
+
+  test("first N", async () => {
+    const q = getEndTimeGlobalQuery();
+
+    const ents = await q.first(7).queryEnts();
+    expect(ents.length).toBe(7);
+
+    // we do 3 batches of createData() and we augment endTime to not be null for the first batch
+    // postgres by default does null first so without specifying anything, these should all be nulls
+    for (const event of ents) {
+      expect(event.endTime).toBeNull();
+    }
+  });
+
+  test("first N. nulls last", async () => {
+    const q = getEndTimeGlobalQuery(user.viewer, {
+      nullsPlacement: "last",
+    });
+
+    const ents = await q.first(7).queryEnts();
+    expect(ents.length).toBe(7);
+
+    // we do 3 batches of createData() and we augment endTime to not be null for the first batch
+    // postgres by default does null first so without specifying anything, these should all be nulls
+    for (const event of ents) {
+      expect(event.endTime).not.toBeNull();
+    }
+
+    const query = buildQuery({
+      ...FakeEvent.loaderOptions(),
+      orderby: "end_time DESC NULLS LAST, id DESC",
+      limit: 8,
+      clause: clause.AndOptional(
+        clause.GreaterEq("start_time", 1),
+        clause.LessEq("start_time", 2),
+      ),
+    });
+    expect(query).toEqual(ml.logs[0].query);
+  });
+
+  test("first N. asc", async () => {
+    // ascending is by default nulls last in postgres
+    const q = getEndTimeGlobalQuery(user.viewer, {
+      orderByDirection: "asc",
+    });
+
+    const ents = await q.first(7).queryEnts();
+    expect(ents.length).toBe(7);
+
+    for (const event of ents) {
+      expect(event.endTime).not.toBeNull();
+    }
+
+    const query = buildQuery({
+      ...FakeEvent.loaderOptions(),
+      orderby: "end_time ASC, id ASC",
+      limit: 8,
+      clause: clause.AndOptional(
+        clause.GreaterEq("start_time", 1),
+        clause.LessEq("start_time", 2),
+      ),
+    });
+    expect(query).toEqual(ml.logs[0].query);
+  });
+
+  test("first N. asc. nulls first", async () => {
+    const q = getEndTimeGlobalQuery(user.viewer, {
+      orderByDirection: "asc",
+      nullsPlacement: "first",
+    });
+
+    const ents = await q.first(7).queryEnts();
+    expect(ents.length).toBe(7);
+
+    for (const event of ents) {
+      expect(event.endTime).toBeNull();
+    }
+
+    const query = buildQuery({
+      ...FakeEvent.loaderOptions(),
+      orderby: "end_time ASC NULLS FIRST, id ASC",
+      limit: 8,
+      clause: clause.AndOptional(
+        clause.GreaterEq("start_time", 1),
+        clause.LessEq("start_time", 2),
+      ),
+    });
+    expect(query).toEqual(ml.logs[0].query);
+  });
+
+  test("ids", async () => {
+    const q = getEndTimeGlobalQuery();
+
+    const ids = await q.queryIDs();
+    expect(ids.length).toBe(7 * infos.length);
+  });
+
+  test("count", async () => {
+    const q = getEndTimeGlobalQuery();
+
+    const count = await q.queryCount();
+    expect(count).toBe(7 * infos.length);
+  });
+
+  test("edges", async () => {
+    const q = getEndTimeGlobalQuery();
+
+    const edges = await q.queryEdges();
+    expect(edges.length).toBe(7 * infos.length);
   });
 });
