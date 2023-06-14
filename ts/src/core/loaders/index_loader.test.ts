@@ -336,7 +336,7 @@ function commonTests() {
       query: buildQuery({
         tableName: "fake_contacts",
         fields: FakeContact.getFields(),
-        clause: clause.In("id", [contacts[0].id]),
+        clause: clause.UUidIn("id", [contacts[0].id]),
       }),
       values: [contacts[0].id],
     });

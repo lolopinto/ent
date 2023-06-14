@@ -1712,7 +1712,7 @@ export async function getEdgeTypeInGroup<T extends string>(
         const { cls, fields } = getEdgeClauseAndFields(
           clause.And(
             clause.Eq("id1", id1),
-            clause.In("edge_type", edgeTypes),
+            clause.UUidIn("edge_type", edgeTypes),
             clause.Eq("id2", id2),
           ),
           {},

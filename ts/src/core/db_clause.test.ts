@@ -6,6 +6,7 @@ import {
   TempDB,
   uuid,
   jsonb,
+  integer,
 } from "../testutils/db/temp_db";
 import { createRowForTest } from "../testutils/write";
 import { loadConfig } from "./config";
@@ -26,6 +27,8 @@ const fields = [
   "random",
   "foo",
 ];
+
+const tableName2 = "contacts2";
 
 const tdb = new TempDB(Dialect.Postgres, [
   table(
@@ -55,6 +58,12 @@ const tdb = new TempDB(Dialect.Postgres, [
       },
       nullable: true,
     }),
+  ),
+  table(
+    tableName2,
+    integer("id", { primaryKey: true }),
+    text("first_name"),
+    text("last_name"),
   ),
 ]);
 
@@ -253,7 +262,9 @@ test("jsonb", async () => {
 
 test("in clause", async () => {
   const ids: string[] = [];
-  const count = clause.inClause.getPostgresInClauseValuesThreshold();
+  const count = Math.floor(
+    clause.inClause.getPostgresInClauseValuesThreshold() * 1.5,
+  );
   for (let i = 0; i < count; i++) {
     const data: Data = {
       id: v1(),
@@ -277,7 +288,39 @@ test("in clause", async () => {
   const allIds = await loadRows({
     tableName,
     fields,
-    clause: clause.In("id", ids, "uuid"),
+    clause: clause.UUidIn("id", ids),
+  });
+  expect(ml.logs.length).toBe(1);
+  expect(ml.errors.length).toBe(0);
+  expect(allIds.length).toBe(count);
+});
+
+test("in clause. integer", async () => {
+  const ids: number[] = [];
+  const count = Math.floor(
+    clause.inClause.getPostgresInClauseValuesThreshold() * 1.5,
+  );
+  for (let i = 0; i < count; i++) {
+    const data: Data = {
+      id: i + 1,
+      first_name: "Jon",
+      last_name: "Snow",
+    };
+    ids.push(data.id);
+    await createRowForTest({
+      tableName: tableName2,
+      fields: data,
+    });
+  }
+
+  const ml = new MockLogs();
+  ml.mock();
+
+  setLogLevels(["query", "error"]);
+  const allIds = await loadRows({
+    tableName: tableName2,
+    fields: ["id", "first_name", "last_name"],
+    clause: clause.IntegerIn("id", ids),
   });
   expect(ml.logs.length).toBe(1);
   expect(ml.errors.length).toBe(0);

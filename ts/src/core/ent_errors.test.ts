@@ -462,7 +462,7 @@ function commonTests() {
     const ents = await loadCustomEnts(
       new IDViewer(1),
       options,
-      clause.In("id", [1, 2, 3, 4, 5]),
+      clause.IntegerIn("id", [1, 2, 3, 4, 5]),
     );
     expect(ents.length).toBe(3);
   });
@@ -471,7 +471,7 @@ function commonTests() {
     const ents = await loadCustomEnts(
       contextifyViewer(new IDViewer(1)),
       options,
-      clause.In("id", [1, 2, 3, 4, 5]),
+      clause.IntegerIn("id", [1, 2, 3, 4, 5]),
     );
     expect(ents.length).toBe(3);
   });

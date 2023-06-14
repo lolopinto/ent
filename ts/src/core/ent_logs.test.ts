@@ -431,7 +431,7 @@ function commonTests() {
       const options: LoadRowsOptions = {
         tableName: "t1",
         fields: ["col1", "col2"],
-        clause: clause.In("id", 1),
+        clause: clause.IntegerIn("id", [1]),
         context: ctx,
       };
       await loadRows(options);
@@ -443,7 +443,7 @@ function commonTests() {
         query: buildQuery({
           tableName: "t1",
           fields: ["col1", "col2"],
-          clause: clause.In("id", 1),
+          clause: clause.IntegerIn("id", [1]),
         }),
         values: [1],
       });
@@ -504,7 +504,7 @@ function commonTests() {
           tableName,
           fields,
           // data loader always does an in fetch...
-          clause: clause.In("id", 1),
+          clause: clause.IntegerIn("id", [1]),
         }),
         values: [1],
       });
@@ -554,7 +554,7 @@ function commonTests() {
           tableName,
           fields,
           // data loader always does an in fetch...
-          clause: clause.In("id", 13),
+          clause: clause.IntegerIn("id", [13]),
         }),
         values: [13],
       });
@@ -610,7 +610,7 @@ function commonTests() {
           tableName,
           fields,
           // data loader always does an in fetch...
-          clause: clause.In("id", 13),
+          clause: clause.IntegerIn("id", [13]),
         }),
         values: [13],
       });
@@ -663,7 +663,7 @@ function commonTests() {
           tableName,
           fields,
           // data loader always does an in fetch...
-          clause: clause.In("id", 1),
+          clause: clause.IntegerIn("id", [1]),
         }),
         values: [1],
       });
@@ -822,7 +822,7 @@ function commonTests() {
         query: buildQuery({
           tableName,
           fields,
-          clause: clause.In("id", 1),
+          clause: clause.IntegerIn("id", [1]),
         }),
         values: [1],
       });

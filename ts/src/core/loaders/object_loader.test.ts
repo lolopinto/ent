@@ -341,7 +341,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name"],
-      clause: clause.In("id", 1),
+      clause: clause.IntegerIn("id", [1]),
     });
     const row = await loader.load(1);
 
@@ -369,7 +369,10 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.In("id", 1), clause.Eq("deleted_at", null)),
+      clause: clause.And(
+        clause.IntegerIn("id", [1]),
+        clause.Eq("deleted_at", null),
+      ),
     });
     const row = await loader.load(1);
 
@@ -796,7 +799,7 @@ function commonTests() {
 
       const expQuery = buildQuery({
         ...FakeUser.loaderOptions(),
-        clause: clause.In("id", user.id),
+        clause: clause.UUidIn("id", [user.id]),
       });
       expect(ml.logs[0]).toStrictEqual({
         query: expQuery,
@@ -810,7 +813,7 @@ function commonTests() {
 
       const phoneQuery = buildQuery({
         ...FakeUser.loaderOptions(),
-        clause: clause.In("phone_number", user.phoneNumber),
+        clause: clause.TextIn("phone_number", [user.phoneNumber]),
       });
       // because of the nature of the nodejs event loop, we don't know when the priming will fire
       // so all we can easily confirm is that this was primed
@@ -838,7 +841,7 @@ function commonTests() {
 
       const emailQuery = buildQuery({
         ...FakeUser.loaderOptions(),
-        clause: clause.In("email_address", user.emailAddress),
+        clause: clause.TextIn("email_address", [user.emailAddress]),
       });
       // because of the nature of the nodejs event loop, we don't know when the priming will fire
       // so all we can easily confirm is that this was primed
@@ -871,7 +874,7 @@ function commonTests() {
 
       const phoneQuery = buildQuery({
         ...FakeUser.loaderOptions(),
-        clause: clause.In("phone_number", user.phoneNumber),
+        clause: clause.TextIn("phone_number", [user.phoneNumber]),
       });
 
       // confirm phone number query not seen
@@ -899,7 +902,7 @@ function commonTests() {
 
       const expQuery = buildQuery({
         ...FakeUser.loaderOptions(),
-        clause: clause.In("id", user.id),
+        clause: clause.UUidIn("id", [user.id]),
       });
       // confirm id query not seen
       ml.logs.forEach((log) =>
@@ -915,7 +918,7 @@ function commonTests() {
 
       const emailQuery = buildQuery({
         ...FakeUser.loaderOptions(),
-        clause: clause.In("email_address", user.emailAddress),
+        clause: clause.TextIn("email_address", [user.emailAddress]),
       });
       // because of the nature of the nodejs event loop, we don't know when the priming will fire
       // so all we can easily confirm is that this was primed
@@ -962,7 +965,7 @@ function commonTests() {
 
     const expQuery = buildQuery({
       ...FakeUser.loaderOptions(),
-      clause: clause.In("id", user.id),
+      clause: clause.UUidIn("id", [user.id]),
     });
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
@@ -976,7 +979,7 @@ function commonTests() {
 
     const phoneQuery = buildQuery({
       ...FakeUser.loaderOptions(),
-      clause: clause.In("phone_number", user.phoneNumber),
+      clause: clause.TextIn("phone_number", [user.phoneNumber]),
     });
 
     // confirm phone number query seen
@@ -992,7 +995,7 @@ function commonTests() {
 
     const emailQuery = buildQuery({
       ...FakeUser.loaderOptions(),
-      clause: clause.In("email_address", user.emailAddress),
+      clause: clause.TextIn("email_address", [user.emailAddress]),
     });
 
     expect(ml.logs.length).toBe(1);
@@ -1619,7 +1622,7 @@ function verifyMultiIDsGroupQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "users",
     fields: ["id", "first_name"],
-    clause: clause.In("id", ...ids),
+    clause: clause.UUidIn("id", ids),
   });
 
   expect(ml.logs.length).toBe(1);
@@ -1633,7 +1636,7 @@ function verifyMultiIDsCustomClauseGroupQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "users",
     fields: ["id", "first_name", "deleted_at"],
-    clause: clause.And(clause.In("id", ...ids), clause.Eq("deleted_at", null)),
+    clause: clause.And(clause.UUidIn("id", ids), clause.Eq("deleted_at", null)),
   });
 
   expect(ml.logs.length).toBe(1);
