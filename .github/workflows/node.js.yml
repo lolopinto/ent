@@ -19,8 +19,7 @@ defaults:
 jobs:
   build:
 
-    # runs-on: ubuntu-latest
-    runs-on: macos-13
+    runs-on: ubuntu-latest
     
     # Service containers to run with `build`
     services:
@@ -45,7 +44,8 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x, 16.x, 17.x, 18.x]
+        # node-version: [14.x, 16.x, 17.x, 18.x]
+        node-version: [14.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
