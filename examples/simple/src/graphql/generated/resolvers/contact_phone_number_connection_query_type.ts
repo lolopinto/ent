@@ -77,7 +77,7 @@ export const ContactPhoneNumberConnectionQueryType: GraphQLFieldConfig<
       (v) => {
         return new CustomClauseQuery(context.getViewer(), {
           loadEntOptions: ContactPhoneNumber.loaderOptions(),
-          clause: query.In("id", args.ids),
+          clause: query.UuidIn("id", args.ids),
           name: "ContactPhoneNumber",
           // use sortCol value or created_at (not sorted)
           sortColumn: args.sortCol ?? "created_at",

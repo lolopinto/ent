@@ -503,7 +503,7 @@ describe("validators", () => {
 
     const events = await Event.loadCustom(
       loggedOutViewer,
-      query.In("start_time", startTimes),
+      query.TextIn("start_time", startTimes),
     );
     expect(events.map((evt) => evt.id).sort()).toStrictEqual(
       expectedEventIds.sort(),
