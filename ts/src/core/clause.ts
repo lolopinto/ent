@@ -711,7 +711,7 @@ export function TextIn<T extends Data, K = keyof T>(
  */
 export function DBTypeIn<T extends Data, K = keyof T>(
   col: K,
-  values: string[],
+  values: any[],
   typ: string,
 ): Clause<T, K> {
   return new inClause(col, values, typ);

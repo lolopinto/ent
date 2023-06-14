@@ -113,9 +113,12 @@ function createDataLoader(options: SelectDataOptions) {
       return [];
     }
     let col = options.key;
+    // defaults to uuid
+    let typ = options.keyType || "uuid";
+
     const rowOptions: LoadRowOptions = {
       ...options,
-      clause: clause.In(col, ...ids),
+      clause: clause.DBTypeIn(col, ids, typ),
     };
 
     // TODO is there a better way of doing this?

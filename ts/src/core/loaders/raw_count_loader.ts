@@ -19,6 +19,10 @@ interface QueryCountOptions {
   // if groupCol provided, we can do group by queries for multiple
   // if not, can't group. similar philosophy to QueryLoader
   groupCol?: string;
+  // if postgres and using an integer primary key, we need to pass this so that when we do an In query,
+  // we can cast accurately
+  // TODO https://github.com/lolopinto/ent/issues/1431
+  groupColType?: string;
   clause?: clause.Clause;
 }
 
@@ -68,7 +72,8 @@ export function createCountDataLoader<K extends any>(
       return simpleCase(options, keys[0]);
     }
 
-    let cls: clause.Clause = clause.In(options.groupCol, ...keys);
+    let typ = options.groupColType || "uuid";
+    let cls: clause.Clause = clause.DBTypeIn(options.groupCol, keys, typ);
     if (options.clause) {
       cls = clause.And(cls, options.clause);
     }
