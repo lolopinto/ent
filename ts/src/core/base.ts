@@ -149,6 +149,10 @@ export interface SelectBaseDataOptions extends DataOptions {
 export interface SelectDataOptions extends SelectBaseDataOptions {
   // primary key we're selecting from most often 'id'
   key: string;
+  // if postgres and using an integer primary key, we need to pass this so that when we do an In query,
+  // we can cast accurately
+  // TODO https://github.com/lolopinto/ent/issues/1431
+  keyType?: string; // 'uuid' | 'integer' etc...
   // if exists, we and with the primary key query
   clause?: clause.Clause | (() => clause.Clause | undefined);
 }

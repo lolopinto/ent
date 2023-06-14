@@ -111,7 +111,7 @@ async function main() {
     const listContent = `
     const whereQueries = [
       args.id ? query.Eq('id', args.id) : undefined,
-      args.ids ? query.In('id', ...args.ids) : undefined,
+      args.ids ? query.UuidIn('id', args.ids) : undefined,
     ];
 
     if (whereQueries.filter(q => q !==undefined).length === 0) {
@@ -128,7 +128,7 @@ async function main() {
     const connectionContent = `
     return new CustomClauseQuery(context.getViewer(),{
       loadEntOptions: ${node}.loaderOptions(),
-      clause: query.In('id', args.ids),
+      clause: query.UuidIn('id', args.ids),
       name: '${node}',
       // use sortCol value or created_at (not sorted)
       sortColumn: args.sortCol ?? 'created_at',

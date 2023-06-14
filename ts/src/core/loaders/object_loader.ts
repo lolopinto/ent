@@ -24,7 +24,10 @@ async function loadRowsForIDLoader<K, V = Data>(
   context?: Context,
 ) {
   let col = options.key;
-  const cls = getCombinedClause(options, clause.In(col, ...ids));
+  const cls = getCombinedClause(
+    options,
+    clause.DBTypeIn(col, ids, options.keyType || "uuid"),
+  );
 
   const rowOptions: LoadRowOptions = {
     ...options,

@@ -77,7 +77,7 @@ export const UserConnectionQueryType: GraphQLFieldConfig<
       (v) => {
         return new CustomClauseQuery(context.getViewer(), {
           loadEntOptions: User.loaderOptions(),
-          clause: query.In("id", args.ids),
+          clause: query.UuidIn("id", args.ids),
           name: "User",
           // use sortCol value or created_at (not sorted)
           sortColumn: args.sortCol ?? "created_at",

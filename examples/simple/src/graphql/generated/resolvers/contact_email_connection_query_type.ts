@@ -77,7 +77,7 @@ export const ContactEmailConnectionQueryType: GraphQLFieldConfig<
       (v) => {
         return new CustomClauseQuery(context.getViewer(), {
           loadEntOptions: ContactEmail.loaderOptions(),
-          clause: query.In("id", args.ids),
+          clause: query.UuidIn("id", args.ids),
           name: "ContactEmail",
           // use sortCol value or created_at (not sorted)
           sortColumn: args.sortCol ?? "created_at",

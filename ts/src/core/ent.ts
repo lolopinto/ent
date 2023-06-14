@@ -113,9 +113,12 @@ function createDataLoader(options: SelectDataOptions) {
       return [];
     }
     let col = options.key;
+    // defaults to uuid
+    let typ = options.keyType || "uuid";
+
     const rowOptions: LoadRowOptions = {
       ...options,
-      clause: clause.In(col, ...ids),
+      clause: clause.DBTypeIn(col, ids, typ),
     };
 
     // TODO is there a better way of doing this?
@@ -1712,7 +1715,7 @@ export async function getEdgeTypeInGroup<T extends string>(
         const { cls, fields } = getEdgeClauseAndFields(
           clause.And(
             clause.Eq("id1", id1),
-            clause.In("edge_type", edgeTypes),
+            clause.UuidIn("edge_type", edgeTypes),
             clause.Eq("id2", id2),
           ),
           {},

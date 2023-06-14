@@ -366,7 +366,7 @@ async function loadTestRows(
 
   let options: LoadRowOptions = {
     ...selectOptions,
-    clause: clause.In("bar", 1, 2, 3),
+    clause: clause.IntegerIn("bar", [1, 2, 3]),
   };
   if (addCtx) {
     options.context = ctx!;
@@ -543,7 +543,7 @@ function commonTests() {
       const options = {
         ...User.loaderOptions(),
         // gonna end up being a data loader...
-        clause: clause.In("bar", 1),
+        clause: clause.IntegerIn("bar", [1]),
       };
 
       const testEnt = async (vc: Viewer) => {
@@ -668,7 +668,7 @@ function commonTests() {
       const options = {
         ...Contact.loaderOptions(),
         // gonna end up being a data loader...
-        clause: clause.In("bar", 1),
+        clause: clause.IntegerIn("bar", [1]),
       };
 
       const testEnt = async (vc: Viewer) => {
@@ -765,7 +765,7 @@ function commonTests() {
       const options = {
         ...Account.loaderOptions(),
         // gonna end up being a data loader...
-        clause: clause.In("bar", 1),
+        clause: clause.IntegerIn("bar", [1]),
       };
 
       const testEnt = async (vc: Viewer) => {
@@ -936,7 +936,7 @@ function commonTests() {
       const options = {
         ...User.loaderOptions(),
         // gets coalesced into 1 IN clause...
-        clause: clause.In("bar", 1, 2, 3),
+        clause: clause.IntegerIn("bar", [1, 2, 3]),
       };
       const expQueries = [
         {
@@ -1031,7 +1031,7 @@ function commonTests() {
       const options = {
         ...User.loaderOptions(),
         // context. dataloader. in query
-        clause: clause.In("bar", 1),
+        clause: clause.IntegerIn("bar", [1]),
       };
 
       const testEnt = async (vc: Viewer) => {
@@ -1073,7 +1073,7 @@ function commonTests() {
       const options = {
         ...User.loaderOptions(),
         // context. dataloader. in query
-        clause: clause.In("bar", 1),
+        clause: clause.IntegerIn("bar", [1]),
       };
 
       const testEnt = async (vc: Viewer) => {
@@ -1249,7 +1249,7 @@ function commonTests() {
 
       const options = {
         ...User.loaderOptions(),
-        clause: clause.In("bar", 1, 2, 3),
+        clause: clause.IntegerIn("bar", [1, 2, 3]),
       };
       const expQueries = [
         {
@@ -1298,7 +1298,7 @@ function commonTests() {
 
       const options = {
         ...User.loaderOptions(),
-        clause: clause.In("bar", 1, 2, 3),
+        clause: clause.IntegerIn("bar", [1, 2, 3]),
       };
       const inQuery = {
         query: ent.buildQuery(options),
@@ -1421,7 +1421,7 @@ function commonTests() {
 
       const options = {
         ...Contact.loaderOptions(),
-        clause: clause.In("bar", 1, 2, 3),
+        clause: clause.IntegerIn("bar", [1, 2, 3]),
       };
       const expQueries = [
         {
@@ -1470,7 +1470,7 @@ function commonTests() {
 
       const options = {
         ...Contact.loaderOptions(),
-        clause: clause.In("bar", 1, 2, 3),
+        clause: clause.IntegerIn("bar", [1, 2, 3]),
       };
       const inQuery = {
         query: ent.buildQuery(options),

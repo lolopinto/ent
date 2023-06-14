@@ -470,7 +470,7 @@ describe("ops", () => {
   test("IN", async () => {
     const rows = await loadRows({
       tableName: "t",
-      clause: clause.In("id", 2, 4, 6, 8, 10),
+      clause: clause.IntegerIn("id", [2, 4, 6, 8, 10]),
       fields: ["id", "name", "bar"],
     });
     const expected = [2, 4, 6, 8, 10].map((id) => {
