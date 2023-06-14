@@ -684,7 +684,7 @@ export function In<T extends Data, K = keyof T>(...args: any[]): Clause<T, K> {
   return new inClause(args[0], args.slice(1));
 }
 
-export function UUidIn<T extends Data, K = keyof T>(
+export function UuidIn<T extends Data, K = keyof T>(
   col: K,
   values: ID[],
 ): Clause<T, K> {

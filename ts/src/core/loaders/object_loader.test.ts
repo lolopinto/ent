@@ -799,7 +799,7 @@ function commonTests() {
 
       const expQuery = buildQuery({
         ...FakeUser.loaderOptions(),
-        clause: clause.UUidIn("id", [user.id]),
+        clause: clause.UuidIn("id", [user.id]),
       });
       expect(ml.logs[0]).toStrictEqual({
         query: expQuery,
@@ -902,7 +902,7 @@ function commonTests() {
 
       const expQuery = buildQuery({
         ...FakeUser.loaderOptions(),
-        clause: clause.UUidIn("id", [user.id]),
+        clause: clause.UuidIn("id", [user.id]),
       });
       // confirm id query not seen
       ml.logs.forEach((log) =>
@@ -965,7 +965,7 @@ function commonTests() {
 
     const expQuery = buildQuery({
       ...FakeUser.loaderOptions(),
-      clause: clause.UUidIn("id", [user.id]),
+      clause: clause.UuidIn("id", [user.id]),
     });
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
@@ -1622,7 +1622,7 @@ function verifyMultiIDsGroupQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "users",
     fields: ["id", "first_name"],
-    clause: clause.UUidIn("id", ids),
+    clause: clause.UuidIn("id", ids),
   });
 
   expect(ml.logs.length).toBe(1);
@@ -1636,7 +1636,7 @@ function verifyMultiIDsCustomClauseGroupQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "users",
     fields: ["id", "first_name", "deleted_at"],
-    clause: clause.And(clause.UUidIn("id", ids), clause.Eq("deleted_at", null)),
+    clause: clause.And(clause.UuidIn("id", ids), clause.Eq("deleted_at", null)),
   });
 
   expect(ml.logs.length).toBe(1);

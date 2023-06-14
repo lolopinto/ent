@@ -288,7 +288,7 @@ test("in clause", async () => {
   const allIds = await loadRows({
     tableName,
     fields,
-    clause: clause.UUidIn("id", ids),
+    clause: clause.UuidIn("id", ids),
   });
   expect(ml.logs.length).toBe(1);
   expect(ml.errors.length).toBe(0);

@@ -420,7 +420,7 @@ function verifyGroupedQuery(ids: ID[]) {
     tableName: "user_to_contacts_table",
     fields: ["count(1) as count", "id1"],
     clause: clause.AndOptional(
-      clause.UUidIn("id1", ids),
+      clause.UuidIn("id1", ids),
       clause.Eq("edge_type", EdgeType.UserToContacts),
       __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
     ),

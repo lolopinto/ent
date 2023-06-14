@@ -2762,7 +2762,7 @@ function commonTests() {
     const rows = await loadRows({
       tableName: "contact_emails",
       fields: ["id", "contact_id"],
-      clause: clause.UUidIn("id", emails as string[]),
+      clause: clause.UuidIn("id", emails as string[]),
     });
     expect(rows.length).toBe(3);
     expect(rows.every((row) => row.contact_id === contact.id)).toBe(true);
