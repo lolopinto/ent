@@ -927,17 +927,18 @@ export function buildQuery(options: QueryableDataOptions): string {
   const fields = options.fields.join(", ");
   // always start at 1
   const whereClause = options.clause.clause(1);
-  let query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
+  const parts: string[] = [];
+  parts.push(`SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`);
   if (options.groupby) {
-    query = `${query} GROUP BY ${options.groupby}`;
+    parts.push(`GROUP BY ${options.groupby}`);
   }
   if (options.orderby) {
-    query = `${query} ORDER BY ${options.orderby}`;
+    parts.push(`ORDER BY ${options.orderby}`);
   }
   if (options.limit) {
-    query = `${query} LIMIT ${options.limit}`;
+    parts.push(`LIMIT ${options.limit}`);
   }
-  return query;
+  return parts.join(" ");
 }
 
 interface GroupQueryOptions<T extends Data, K = keyof T> {

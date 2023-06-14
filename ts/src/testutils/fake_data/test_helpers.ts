@@ -378,7 +378,7 @@ export async function createAllEvents(
       const input = opts.eventInputs?.[idx];
       const builder = getEventBuilder(user.viewer, getEventInput(user, input));
       await builder.saveX();
-      return await builder.editedEntX();
+      return builder.editedEntX();
     }),
   );
   expect(events.length).toBe(opts.howMany);

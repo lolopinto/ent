@@ -17,7 +17,7 @@ import {
 import { getOrderBy } from "../loaders/query_loader";
 import { BaseEdgeQuery, IDInfo } from "./query";
 
-interface CustomClauseQueryOptions<
+export interface CustomClauseQueryOptions<
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
 > {
@@ -32,6 +32,8 @@ interface CustomClauseQueryOptions<
   // generate the query
   sortColumnUnique?: boolean;
   orderByDirection?: "asc" | "desc";
+  // in Postgres, NULLS FIRST is the default for DESC order, and NULLS LAST otherwise.
+  nullsPlacement?: "first" | "last";
 
   disableTransformations?: boolean;
 }
@@ -72,7 +74,11 @@ export class CustomClauseQuery<
     if (options.orderByDirection) {
       sortCol = `${sortCol} ${options.orderByDirection}`;
     }
-    super(viewer, sortCol, unique);
+    super(viewer, {
+      sortCol,
+      cursorCol: unique,
+      nullsPlacement: options.nullsPlacement,
+    });
     this.clause = getClause(options);
   }
 
