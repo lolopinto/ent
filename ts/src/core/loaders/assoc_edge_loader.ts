@@ -63,7 +63,6 @@ function createLoader<T extends AssocEdge>(
     options.limit = options.limit || getDefaultLimit();
 
     const tableName = edgeData.edgeTable;
-    // TODO test that group query returns deleted edges if we ask for it
     const { cls: cls1, fields } = getEdgeClauseAndFields(
       clause.Eq("edge_type", edgeType),
       {
@@ -235,7 +234,7 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     }
 
     // we create a loader which can combine first X queries in the same fetch
-    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}`;
+    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}:disableTransformations:${options.disableTransformations}`;
     return getCustomLoader(
       key,
       () => new AssocEdgeLoader(this.edgeType, ctr, options, context),

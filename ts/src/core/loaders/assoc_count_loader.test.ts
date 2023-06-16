@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { ID, WriteOperation } from "../base";
+import { EdgeQueryableDataOptions, ID, WriteOperation } from "../base";
 import { buildQuery } from "../ent";
 import {
   clearGlobalSchema,
@@ -35,6 +35,17 @@ const getNewLoader = (context: boolean = true) => {
   return new AssocEdgeCountLoader(
     EdgeType.UserToContacts,
     context ? new TestContext() : undefined,
+  );
+};
+
+const getConfigurableLoader = (
+  context: boolean = true,
+  opts: Pick<EdgeQueryableDataOptions, "disableTransformations">,
+) => {
+  return new AssocEdgeCountLoader(
+    EdgeType.UserToContacts,
+    context ? new TestContext() : undefined,
+    opts,
   );
 };
 
@@ -78,6 +89,7 @@ describe("postgres global", () => {
     clearGlobalSchema();
   });
   commonTests();
+  globalTests();
 });
 
 describe("sqlite", () => {
@@ -121,6 +133,7 @@ describe("sqlite global", () => {
   });
 
   commonTests();
+  globalTests();
 });
 
 function commonTests() {
@@ -199,6 +212,40 @@ function commonTests() {
   test("without context. cache miss. multi -ids", async () => {
     await testMultiQueryNoData(
       () => getNewLoader(false),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+    );
+  });
+}
+
+function globalTests() {
+  test("with context and deletion. cache hit. multi -ids", async () => {
+    await testWithDeleteMultiQueryDataLoadDeleted(
+      (opts) => getConfigurableLoader(true, opts),
+      verifyGroupedQuery,
+      verifyGroupedQuery,
+    );
+  });
+
+  test("without context and deletion. cache hit. multi -ids", async () => {
+    await testWithDeleteMultiQueryDataLoadDeleted(
+      (opts) => getConfigurableLoader(false, opts),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+    );
+  });
+
+  test("single id. with context and reload with deleted", async () => {
+    await testWithDeleteSingleQueryDataLoadDeleted(
+      (opts) => getConfigurableLoader(true, opts),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+    );
+  });
+
+  test("single id. without context and reload with deleted", async () => {
+    await testWithDeleteSingleQueryDataLoadDeleted(
+      (opts) => getConfigurableLoader(false, opts),
       verifyMultiCountQueryCacheMiss,
       verifyMultiCountQueryCacheMiss,
     );
@@ -391,6 +438,123 @@ async function testWithDeleteMultiQueryDataAvail(
   verifyPostSecondQuery(ids);
 }
 
+async function testWithDeleteMultiQueryDataLoadDeleted(
+  loaderFn: (opts: EdgeQueryableDataOptions) => AssocEdgeCountLoader,
+  verifyPostFirstQuery: (ids: ID[]) => void,
+  verifyPostSecondQuery: (ids: ID[], disableTransformations?: boolean) => void,
+) {
+  const m = new Map<ID, FakeContact[]>();
+  const ids: ID[] = [];
+  const users: FakeUser[] = [];
+
+  await Promise.all(
+    [1, 2, 3, 4, 5].map(async (count, idx) => {
+      const [user, contacts] = await createAllContacts({ slice: count });
+
+      m.set(user.id, contacts);
+      ids[idx] = user.id;
+      users[idx] = user;
+    }),
+  );
+
+  ml.clear();
+
+  const loader = loaderFn({});
+
+  const counts = await Promise.all(ids.map(async (id) => loader.load(id)));
+  for (let i = 0; i < ids.length; i++) {
+    expect(
+      counts[i],
+      `count for idx ${i} for id ${ids[0]} was not as expected`,
+    ).toBe(m.get(ids[i])?.length);
+  }
+
+  verifyPostFirstQuery(ids);
+
+  const userToDelete = users[0];
+  const action = new SimpleAction(
+    userToDelete.viewer,
+    FakeUserSchema,
+    new Map(),
+    WriteOperation.Edit,
+    userToDelete,
+  );
+  for (const contact of m.get(userToDelete.id) ?? []) {
+    action.builder.orchestrator.removeOutboundEdge(
+      contact.id,
+      EdgeType.UserToContacts,
+    );
+  }
+  await action.saveX();
+  // clear the logs
+  ml.clear();
+  loader.clearAll();
+
+  const loader2 = loaderFn({
+    disableTransformations: true,
+  });
+
+  // re-load
+  const counts2 = await Promise.all(ids.map(async (id) => loader2.load(id)));
+  for (let i = 0; i < ids.length; i++) {
+    const ct = counts2[i];
+    expect(ct, `count for idx ${i} for id ${ids[0]} was not as expected`).toBe(
+      m.get(ids[i])?.length,
+    );
+  }
+
+  verifyPostSecondQuery(ids, true);
+}
+
+async function testWithDeleteSingleQueryDataLoadDeleted(
+  loaderFn: (opts: EdgeQueryableDataOptions) => AssocEdgeCountLoader,
+  verifyPostFirstQuery: (ids: ID[]) => void,
+  verifyPostSecondQuery: (ids: ID[], disableTransformations?: boolean) => void,
+) {
+  const [user, contacts] = await createAllContacts();
+
+  ml.clear();
+
+  const loader = loaderFn({});
+
+  const counts = await loader.load(user.id);
+  expect(counts).toBe(contacts.length);
+
+  verifyPostFirstQuery([user.id]);
+
+  const action = new SimpleAction(
+    user.viewer,
+    FakeUserSchema,
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
+  for (const contact of contacts) {
+    action.builder.orchestrator.removeOutboundEdge(
+      contact.id,
+      EdgeType.UserToContacts,
+    );
+  }
+  await action.saveX();
+  // clear the logs
+  ml.clear();
+  loader.clearAll();
+
+  const loader2 = loaderFn({
+    disableTransformations: true,
+  });
+
+  const counts2 = await loader.load(user.id);
+  expect(counts2).toBe(0);
+  ml.clear();
+
+  // re-load
+  const counts3 = await loader2.load(user.id);
+  expect(counts3).toBe(contacts.length);
+
+  verifyPostSecondQuery([user.id], true);
+}
+
 async function testMultiQueryNoData(
   loaderFn: () => AssocEdgeCountLoader,
   verifyPostFirstQuery: (ids: ID[]) => void,
@@ -414,7 +578,7 @@ async function testMultiQueryNoData(
   verifyPostSecondQuery(ids);
 }
 
-function verifyGroupedQuery(ids: ID[]) {
+function verifyGroupedQuery(ids: ID[], disableTransformations?: boolean) {
   // loader, we combine the query...
   const expQuery = buildQuery({
     tableName: "user_to_contacts_table",
@@ -422,7 +586,9 @@ function verifyGroupedQuery(ids: ID[]) {
     clause: clause.AndOptional(
       clause.UuidIn("id1", ids),
       clause.Eq("edge_type", EdgeType.UserToContacts),
-      __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
+      __hasGlobalSchema() && !disableTransformations
+        ? clause.Eq("deleted_at", null)
+        : undefined,
     ),
     groupby: "id1",
   });
@@ -444,7 +610,10 @@ function verifyGroupedCacheHit(ids: ID[]) {
   });
 }
 
-function verifyMultiCountQueryCacheMiss(ids: ID[]) {
+function verifyMultiCountQueryCacheMiss(
+  ids: ID[],
+  disableTransformations?: boolean,
+) {
   expect(ml.logs.length).toBe(ids.length);
   ml.logs.forEach((log, idx) => {
     const expQuery = buildQuery({
@@ -453,7 +622,9 @@ function verifyMultiCountQueryCacheMiss(ids: ID[]) {
       clause: clause.AndOptional(
         clause.Eq("id1", ids[idx]),
         clause.Eq("edge_type", EdgeType.UserToContacts),
-        __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
+        __hasGlobalSchema() && !disableTransformations
+          ? clause.Eq("deleted_at", null)
+          : undefined,
       ),
     });
     expect(log).toStrictEqual({
