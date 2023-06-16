@@ -63,9 +63,12 @@ function createLoader<T extends AssocEdge>(
     options.limit = options.limit || getDefaultLimit();
 
     const tableName = edgeData.edgeTable;
+    // TODO test that group query returns deleted edges if we ask for it
     const { cls: cls1, fields } = getEdgeClauseAndFields(
       clause.Eq("edge_type", edgeType),
-      {},
+      {
+        queryOptions: options,
+      },
     );
     const [query, cls] = buildGroupQuery({
       tableName: tableName,
@@ -155,7 +158,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
   ) {}
 
   async load(id: ID) {
-    return await loadCustomEdges({
+    return loadCustomEdges({
       id1: id,
       edgeType: this.edgeType,
       context: this.context,
@@ -164,6 +167,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
     });
   }
 
+  // TODO should this have a disableTransformations flag to get these rows
   async loadEdgeForID2(id: ID, id2: ID) {
     return loadEdgeForID2({
       id1: id,

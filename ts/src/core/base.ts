@@ -48,7 +48,10 @@ export interface ConfigurableLoaderFactory<T, V> extends LoaderFactory<T, V> {
 }
 
 export type EdgeQueryableDataOptions = Partial<
-  Pick<QueryableDataOptions, "limit" | "orderby" | "clause">
+  Pick<
+    QueryableDataOptions,
+    "limit" | "orderby" | "clause" | "disableTransformations"
+  >
 >;
 
 // PrimableLoader allows us to prime data in the cache that's retrieved from

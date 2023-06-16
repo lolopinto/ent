@@ -79,6 +79,11 @@ export abstract class AssocEdgeQueryBase<
     return infos[0];
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   // doesn't work with filters...
   async queryRawCount(): Promise<number> {
     const info = await this.getSingleID();

@@ -460,7 +460,7 @@ export abstract class BaseEdgeQuery<
   abstract queryAllRawCount(): Promise<Map<ID, number>>;
 
   readonly queryAllEdges = async (): Promise<Map<ID, TEdge[]>> => {
-    return await this.memoizedloadEdges();
+    return this.memoizedloadEdges();
   };
 
   abstract dataToID(edge: TEdge): ID;
@@ -503,7 +503,7 @@ export abstract class BaseEdgeQuery<
 
   readonly queryEnts = async (): Promise<TDest[]> => {
     const edges = await this.querySingleEdge("queryEnts");
-    return await this.loadEntsFromEdges("id", edges);
+    return this.loadEntsFromEdges("id", edges);
   };
 
   readonly queryAllEnts = async (): Promise<Map<ID, TDest[]>> => {
@@ -576,6 +576,17 @@ export abstract class BaseEdgeQuery<
     );
   }
 
+  private _defaultEdgeQueryableOptions: EdgeQueryableDataOptions | undefined;
+  // FYI: this should be used sparingly.
+  // currently only exists so that disableTransformations can be configured by the developer
+  // so we're only exposing a partial API for now but maybe in the future we can expose
+  // the full API if there's a reason to use this that's not via filters
+  protected configureEdgeQueryableDataOptions(
+    opts: Pick<EdgeQueryableDataOptions, "disableTransformations">,
+  ) {
+    this._defaultEdgeQueryableOptions = opts;
+  }
+
   private async loadEdges(): Promise<Map<ID, TEdge[]>> {
     const idsInfo = await this.genIDInfosToFetch();
 
@@ -584,7 +595,9 @@ export abstract class BaseEdgeQuery<
       this.first(getDefaultLimit());
     }
 
-    let options: EdgeQueryableDataOptions = {};
+    let options: EdgeQueryableDataOptions =
+      this._defaultEdgeQueryableOptions ?? {};
+
     // TODO once we add a lot of complex filters, this needs to be more complicated
     // e.g. commutative filters. what can be done in sql or combined together etc
     // may need to bring sql mode or something back

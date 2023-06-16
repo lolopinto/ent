@@ -1,4 +1,4 @@
-import { ID, Ent, Viewer } from "../base";
+import { ID, Ent, Viewer, WriteOperation } from "../base";
 import { AssocEdge, getDefaultLimit } from "../ent";
 import { EdgeQuery } from "./query";
 import { EdgeQueryCtr } from "./assoc_query";
@@ -21,6 +21,7 @@ import {
   getEventBuilder,
   UserToIncomingFriendRequestsQuery,
   ViewerWithAccessToken,
+  FakeUserSchema,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -35,6 +36,7 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 import { MockLogs } from "../../testutils/mock_log";
 import { And, Eq } from "../clause";
+import { SimpleAction } from "../../testutils/builder";
 
 export function assocTests(ml: MockLogs, global = false) {
   ml.mock();
@@ -960,6 +962,60 @@ export function assocTests(ml: MockLogs, global = false) {
         friendRequests.length,
       );
       expect(entsMapFromUserVCToken.get(user2.id)?.length).toBe(0);
+    });
+  });
+
+  describe.only("deleted edges", () => {
+    let user: FakeUser;
+    let friendRequests: FakeUser[];
+    let user2: FakeUser;
+    beforeEach(async () => {
+      [user, friendRequests] = await createUserPlusFriendRequests();
+      user2 = await createTestUser();
+    });
+
+    async function deleteEdges() {
+      const action = new SimpleAction(
+        user.viewer,
+        FakeUserSchema,
+        new Map(),
+        WriteOperation.Edit,
+        user,
+      );
+      for (let i = 0; i < friendRequests.length; i++) {
+        if (i % 2 == 0) {
+          action.builder.orchestrator.removeInboundEdge(
+            friendRequests[i].id,
+            EdgeType.UserToFriendRequests,
+          );
+        }
+      }
+      await action.saveX();
+    }
+
+    function getQuery(viewer: Viewer) {
+      return UserToIncomingFriendRequestsQuery.query(viewer, user.id);
+    }
+
+    test("ids", async () => {
+      const ids = await getQuery(user.viewer).queryIDs();
+      expect(ids.length).toBe(friendRequests.length);
+      console.debug(friendRequests.length);
+    });
+
+    test("ids after deleted", async () => {
+      await deleteEdges();
+      const idsFromUser = await getQuery(user.viewer).queryIDs();
+      expect(idsFromUser.length).toBe(Math.floor(friendRequests.length / 2));
+    });
+
+    // ding ding ding
+    test.only("ids deleted. fetch deleted anyways", async () => {
+      await deleteEdges();
+      const idsFromUser = await getQuery(user.viewer)
+        .withoutTransformations()
+        .queryIDs();
+      expect(idsFromUser.length).toBe(friendRequests.length);
     });
   });
 }
