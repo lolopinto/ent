@@ -74,6 +74,14 @@
       return new this(viewer, src);
     }
 
+    {{ if $schema.GlobalSchemaTransformsEdges -}}
+      withoutTransformations(): this {
+        this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+      return this;
+    }
+
+    {{end }}
+
     {{ if $sourcePolymorphic -}}
       protected abstract getSourceLoadEntOptions(): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}<{{$viewerType}}>, {{$viewerType}}>;
     {{ end }}

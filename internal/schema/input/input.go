@@ -122,6 +122,7 @@ type GlobalSchema struct {
 	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
 	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
 	Init            bool         `json:"init,omitempty"`
+	TransformsEdges bool         `json:"transformsEdges,omitempty"`
 	GlobalFields    []*Field     `json:"globalFields,omitempty"`
 }
 

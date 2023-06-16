@@ -79,7 +79,9 @@ export abstract class AssocEdgeQueryBase<
     return infos[0];
   }
 
-  withoutTransformations(): this {
+  // this is public and already available to everyone...
+  // but i think it would be better to only be available to things where it matters...
+  __withoutTransformations(): this {
     this.configureEdgeQueryableDataOptions({ disableTransformations: true });
     return this;
   }

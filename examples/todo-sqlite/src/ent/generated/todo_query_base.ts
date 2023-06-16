@@ -63,6 +63,11 @@ export abstract class TodoToTagsQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   sourceEnt(id: ID) {
     return Todo.load(this.viewer, id);
   }
@@ -97,6 +102,11 @@ export abstract class TodoToTodoScopeQueryBase extends AssocEdgeQueryBase<
     src: EdgeQuerySource<Todo, Ent<Viewer>>,
   ): T {
     return new this(viewer, src);
+  }
+
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
   }
 
   sourceEnt(id: ID) {

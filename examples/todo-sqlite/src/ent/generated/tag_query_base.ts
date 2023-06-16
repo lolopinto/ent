@@ -52,6 +52,11 @@ export abstract class TagToTodosQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   sourceEnt(id: ID) {
     return Tag.load(this.viewer, id);
   }
