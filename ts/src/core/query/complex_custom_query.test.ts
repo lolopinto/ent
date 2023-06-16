@@ -132,6 +132,19 @@ const getEndTimeGlobalQuery = (
   });
 };
 
+// just to test the behavior when cursorCol == sortCol
+const getIdGlobalQuery = (
+  viewer?: Viewer,
+  opts?: Partial<CustomClauseQueryOptions<any, any>>,
+) => {
+  return new CustomClauseQuery<FakeEvent>(viewer || user.viewer, {
+    clause: getNextWeekClause(),
+    loadEntOptions: FakeEvent.loaderOptions(),
+    name: "global_events_in_next_week_id",
+    ...opts,
+  });
+};
+
 // test just to confirm that simple entquery things work
 describe("query for user", () => {
   test("rawCount", async () => {
@@ -509,7 +522,7 @@ describe("global query", () => {
   });
 });
 
-describe("global query end time", () => {
+describe("global query", () => {
   test("rawCount", async () => {
     const q = getEndTimeGlobalQuery();
 
@@ -629,6 +642,112 @@ describe("global query end time", () => {
 
   test("edges", async () => {
     const q = getEndTimeGlobalQuery();
+
+    const edges = await q.queryEdges();
+    expect(edges.length).toBe(7 * infos.length);
+  });
+});
+
+describe("global query. id. cursor and sort_column the same", () => {
+  test("rawCount", async () => {
+    const q = getIdGlobalQuery();
+
+    const count = await q.queryRawCount();
+    expect(count).toBe(7 * infos.length);
+  });
+
+  test("ents", async () => {
+    const q = getIdGlobalQuery();
+
+    const ents = await q.queryEnts();
+    expect(ents.length).toBe(7 * infos.length);
+  });
+
+  test("first N", async () => {
+    const q = getIdGlobalQuery();
+
+    const ents = await q.first(7).queryEnts();
+    expect(ents.length).toBe(7);
+  });
+
+  test("first N. nulls last", async () => {
+    const q = getIdGlobalQuery(user.viewer, {
+      nullsPlacement: "last",
+    });
+
+    const ents = await q.first(7).queryEnts();
+    expect(ents.length).toBe(7);
+
+    const query = buildQuery({
+      ...FakeEvent.loaderOptions(),
+      orderby: "id DESC NULLS LAST",
+      limit: 8,
+      clause: clause.AndOptional(
+        clause.GreaterEq("start_time", 1),
+        clause.LessEq("start_time", 2),
+      ),
+    });
+    expect(query).toEqual(ml.logs[0].query);
+  });
+
+  test("first N. asc", async () => {
+    // ascending is by default nulls last in postgres
+    const q = getIdGlobalQuery(user.viewer, {
+      orderByDirection: "asc",
+    });
+
+    const ents = await q.first(7).queryEnts();
+    expect(ents.length).toBe(7);
+
+    const query = buildQuery({
+      ...FakeEvent.loaderOptions(),
+      orderby: "id ASC",
+      limit: 8,
+      clause: clause.AndOptional(
+        clause.GreaterEq("start_time", 1),
+        clause.LessEq("start_time", 2),
+      ),
+    });
+    expect(query).toEqual(ml.logs[0].query);
+  });
+
+  test("first N. asc. nulls first", async () => {
+    const q = getIdGlobalQuery(user.viewer, {
+      orderByDirection: "asc",
+      nullsPlacement: "first",
+    });
+
+    const ents = await q.first(7).queryEnts();
+    expect(ents.length).toBe(7);
+
+    const query = buildQuery({
+      ...FakeEvent.loaderOptions(),
+      orderby: "id ASC NULLS FIRST",
+      limit: 8,
+      clause: clause.AndOptional(
+        clause.GreaterEq("start_time", 1),
+        clause.LessEq("start_time", 2),
+      ),
+    });
+    expect(query).toEqual(ml.logs[0].query);
+  });
+
+  test("ids", async () => {
+    const q = getIdGlobalQuery();
+
+    const ids = await q.queryIDs();
+    expect(ids.length).toBe(7 * infos.length);
+  });
+
+  test("count", async () => {
+    const q = getIdGlobalQuery();
+
+    const count = await q.queryCount();
+    expect(count).toBe(7 * infos.length);
+  });
+
+  test("edges", async () => {
+    const q = getIdGlobalQuery();
 
     const edges = await q.queryEdges();
     expect(edges.length).toBe(7 * infos.length);
