@@ -27,6 +27,7 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
     }
     const { cls } = getEdgeClauseAndFields(
       clause.Eq("edge_type", this.edgeType),
+      // TODO raw count to disableTransformations
       {},
     );
 

@@ -5,6 +5,8 @@ import {
   Data,
   LoadEntOptions,
   PrivacyPolicy,
+  Skip,
+  Allow,
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
 import {
@@ -54,6 +56,17 @@ export class FakeUser implements Ent {
     return {
       rules: [
         AllowIfViewerRule,
+        {
+          async apply(v, ent) {
+            if (!(v instanceof ViewerWithAccessToken)) {
+              return Skip();
+            }
+
+            return v.hasToken("always_allow_user") ? Allow() : Skip();
+          },
+        },
+
+        // TODO these need to account for deleted edges
         //can view user if friends
         new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
         //can view user if following
