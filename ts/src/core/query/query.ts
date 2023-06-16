@@ -577,6 +577,7 @@ export abstract class BaseEdgeQuery<
   }
 
   private _defaultEdgeQueryableOptions: EdgeQueryableDataOptions | undefined;
+
   // FYI: this should be used sparingly.
   // currently only exists so that disableTransformations can be configured by the developer
   // so we're only exposing a partial API for now but maybe in the future we can expose
@@ -585,6 +586,10 @@ export abstract class BaseEdgeQuery<
     opts: Pick<EdgeQueryableDataOptions, "disableTransformations">,
   ) {
     this._defaultEdgeQueryableOptions = opts;
+  }
+
+  protected getDefaultEdgeQueryOptions() {
+    return this._defaultEdgeQueryableOptions;
   }
 
   private async loadEdges(): Promise<Map<ID, TEdge[]>> {

@@ -38,6 +38,7 @@ import { MockLogs } from "../../testutils/mock_log";
 import { And, Eq } from "../clause";
 import { SimpleAction } from "../../testutils/builder";
 import { DateTime } from "luxon";
+import { convertDate } from "../convert";
 
 export function assocTests(ml: MockLogs, global = false) {
   ml.mock();
@@ -969,9 +970,10 @@ export function assocTests(ml: MockLogs, global = false) {
   if (!global) {
     return;
   }
+
   // global only tests here
 
-  describe.only("deleted edges", () => {
+  describe("deleted edges", () => {
     let user: FakeUser;
     let friendRequests: FakeUser[];
     let user2: FakeUser;
@@ -1055,13 +1057,11 @@ export function assocTests(ml: MockLogs, global = false) {
       expect(count).toBe(postDeletedCount);
     });
 
-    // TODO
-    test.only("raw count after deleted. fetch deleted", async () => {
+    test("raw count after deleted. fetch deleted", async () => {
       await deleteEdges();
       const count = await getQuery(user.viewer)
         .withoutTransformations()
         .queryRawCount();
-      console.debug(ml.logs);
       expect(count).toBe(friendRequests.length);
     });
 
@@ -1096,7 +1096,9 @@ export function assocTests(ml: MockLogs, global = false) {
         if (edge.deleted_at === null) {
           notDeletedAtCt++;
         } else {
-          expect(DateTime.fromJSDate(edge.deleted_at).isValid).toBe(true);
+          expect(
+            DateTime.fromJSDate(convertDate(edge.deleted_at)).isValid,
+          ).toBe(true);
         }
       }
       expect(notDeletedAtCt).toBe(postDeletedCount);
