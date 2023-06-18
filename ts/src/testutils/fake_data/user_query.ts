@@ -344,6 +344,14 @@ export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
   queryCustomEdge(): UserToCustomEdgeQuery {
     return UserToCustomEdgeQuery.query(this.viewer, this);
   }
+
+  // this is generated in codegen. we'll just add it manually here
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({
+      disableTransformations: true,
+    });
+    return this;
+  }
 }
 
 export class UserToEventsAttendingQuery extends AssocEdgeQueryBase<

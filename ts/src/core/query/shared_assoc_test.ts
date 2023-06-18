@@ -1022,7 +1022,7 @@ export function assocTests(ml: MockLogs, global = false) {
     test("ids deleted. fetch deleted anyways", async () => {
       await deleteEdges();
       const idsFromUser = await getQuery(user.viewer)
-        .__withoutTransformations()
+        .withoutTransformations()
         .queryIDs();
       expect(idsFromUser.length).toBe(friendRequests.length);
     });
@@ -1041,7 +1041,7 @@ export function assocTests(ml: MockLogs, global = false) {
     test("count after deleted. fetch deleted", async () => {
       await deleteEdges();
       const count = await getQuery(user.viewer)
-        .__withoutTransformations()
+        .withoutTransformations()
         .queryCount();
       expect(count).toBe(friendRequests.length);
     });
@@ -1060,7 +1060,7 @@ export function assocTests(ml: MockLogs, global = false) {
     test("raw count after deleted. fetch deleted", async () => {
       await deleteEdges();
       const count = await getQuery(user.viewer)
-        .__withoutTransformations()
+        .withoutTransformations()
         .queryRawCount();
       expect(count).toBe(friendRequests.length);
     });
@@ -1087,7 +1087,7 @@ export function assocTests(ml: MockLogs, global = false) {
     test("edges after deleted. fetch deleted", async () => {
       await deleteEdges();
       const edges = await getQuery(user.viewer)
-        .__withoutTransformations()
+        .withoutTransformations()
         .queryEdges();
       expect(edges.length).toBe(friendRequests.length);
 
@@ -1136,9 +1136,7 @@ export function assocTests(ml: MockLogs, global = false) {
         },
       });
 
-      const ents = await getQuery(viewer)
-        .__withoutTransformations()
-        .queryEnts();
+      const ents = await getQuery(viewer).withoutTransformations().queryEnts();
       expect(ents.length).toBe(friendRequests.length);
     });
   });
