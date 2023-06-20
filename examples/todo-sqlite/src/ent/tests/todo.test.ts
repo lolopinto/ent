@@ -17,7 +17,6 @@ import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
 import CreateTodoAction from "../todo/actions/create_todo_action";
 import ChangeTodoBountyAction from "../todo/actions/change_todo_bounty_action";
 import { Transaction } from "@snowtop/ent/action";
-import { setLogLevels } from "@snowtop/ent";
 
 test("create for self", async () => {
   await createTodoForSelf();
@@ -313,7 +312,7 @@ test("querying todos", async () => {
   expect(orderedOpenedTodos.length).toBe(3);
 });
 
-test.only("tags", async () => {
+test("tags", async () => {
   const todo = await createTodoForSelf();
   const account = await todo.loadCreatorX();
   const tag = await createTag("sports", account);
@@ -362,7 +361,6 @@ test.only("tags", async () => {
   expect(tags3.length).toBe(4);
   expect(edges3.filter((edge) => edge.deletedAt !== null).length).toBe(1);
 
-  setLogLevels("query");
   // reeally delete
   const action = TodoRemoveTagAction.create(todo.viewer, todo);
   action.builder.removeTagID(tag.id, {
