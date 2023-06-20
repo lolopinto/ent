@@ -3,6 +3,7 @@
 import { AssocEdgeInputOptions, Ent, ID, Viewer } from "@snowtop/ent";
 import {
   Action,
+  AssocEdgeOptions,
   Builder,
   Changeset,
   ChangesetOptions,
@@ -179,6 +180,15 @@ export class AccountBuilder<
     return this;
   }
 
+  removeClosedTodosDupID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(
+      id,
+      EdgeType.AccountToClosedTodosDup,
+      opts,
+    );
+    return this;
+  }
+
   removeClosedTodosDup(...nodes: (ID | Todo)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
@@ -220,6 +230,15 @@ export class AccountBuilder<
       EdgeType.AccountToCreatedWorkspaces,
       NodeType.Workspace,
       options,
+    );
+    return this;
+  }
+
+  removeCreatedWorkspaceID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(
+      id,
+      EdgeType.AccountToCreatedWorkspaces,
+      opts,
     );
     return this;
   }
@@ -267,6 +286,15 @@ export class AccountBuilder<
     return this;
   }
 
+  removeOpenTodosDupID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(
+      id,
+      EdgeType.AccountToOpenTodosDup,
+      opts,
+    );
+    return this;
+  }
+
   removeOpenTodosDup(...nodes: (ID | Todo)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
@@ -306,6 +334,15 @@ export class AccountBuilder<
       EdgeType.AccountToWorkspaces,
       NodeType.Workspace,
       options,
+    );
+    return this;
+  }
+
+  removeWorkspaceID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(
+      id,
+      EdgeType.AccountToWorkspaces,
+      opts,
     );
     return this;
   }

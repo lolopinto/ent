@@ -73,7 +73,10 @@ export abstract class AccountToClosedTodosDupQueryBase extends AssocEdgeQueryBas
   }
 
   static query<T extends AccountToClosedTodosDupQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Todo>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Account, Todo>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Account, Todo>,
   ): T {
@@ -118,7 +121,10 @@ export abstract class AccountToCreatedWorkspacesQueryBase extends AssocEdgeQuery
   }
 
   static query<T extends AccountToCreatedWorkspacesQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Workspace>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Account, Workspace>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Account, Workspace>,
   ): T {
@@ -160,7 +166,10 @@ export abstract class AccountToOpenTodosDupQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends AccountToOpenTodosDupQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Todo>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Account, Todo>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Account, Todo>,
   ): T {
@@ -205,7 +214,10 @@ export abstract class AccountToWorkspacesQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends AccountToWorkspacesQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Workspace>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Account, Workspace>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Account, Workspace>,
   ): T {
@@ -247,7 +259,10 @@ export class AccountToTagsQueryBase<
     T extends AccountToTagsQueryBase,
     TEnt extends Account = Account,
   >(
-    this: new (viewer: Viewer, src: TEnt | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: TEnt | ID,
+    ) => T,
     viewer: Viewer,
     src: TEnt | ID,
   ): T {
@@ -276,7 +291,10 @@ export class AccountToTodosQueryBase<
     T extends AccountToTodosQueryBase,
     TEnt extends Account = Account,
   >(
-    this: new (viewer: Viewer, src: TEnt | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: TEnt | ID,
+    ) => T,
     viewer: Viewer,
     src: TEnt | ID,
   ): T {

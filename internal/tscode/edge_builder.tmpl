@@ -1,4 +1,7 @@
-{{ $edgeInfos := edgeInfos . -}}
+{{reserveImport .Package.ActionPackagePath "AssocEdgeOptions" }}
+
+{{ $edgeInfos := edgeInfos .Edges -}}
+{{ $schema := .Schema -}}
 
 {{/* if the logic in here changes, also have to update mixin_builder.tmpl */ -}}
 {{ range $edge := $edgeInfos -}}  
@@ -59,6 +62,13 @@
     );
     return this;
   }
+
+  {{ if $schema.GlobalSchemaTransformsEdges -}}
+    {{$edge.TSRemoveIDMethodName}}(id: ID, opts?: {{useImport "AssocEdgeOptions"}}): this {
+      this.orchestrator.removeOutboundEdge(id, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}}, opts);
+      return this;
+    }
+  {{end}}
 
   {{$edge.TSRemoveMethodName}}(...nodes: (ID | {{$node}})[]): this {
     for (const node of nodes) {

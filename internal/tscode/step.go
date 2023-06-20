@@ -1126,6 +1126,7 @@ func writeMixinBuilderFile(processor *codegen.Processor, pattern *schema.Pattern
 			Config:  cfg,
 			Package: cfg.GetImportPackage(),
 			Imports: imports,
+			Schema:  processor.Schema,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("mixin_builder.tmpl"),
 		TemplateName:      "mixin_builder.tmpl",

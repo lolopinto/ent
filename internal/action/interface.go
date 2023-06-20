@@ -510,14 +510,15 @@ type EdgeActionTemplateInfo struct {
 	EdgeName     string
 	InstanceName string
 	//	AssocEdge    *edge.AssociationEdge
-	NodeType           string
-	Node               string
-	TSEdgeConst        string
-	TSNodeID           string
-	TSAddMethodName    string
-	TSAddIDMethodName  string
-	TSRemoveMethodName string
-	Edge               edge.Edge
+	NodeType             string
+	Node                 string
+	TSEdgeConst          string
+	TSNodeID             string
+	TSAddMethodName      string
+	TSAddIDMethodName    string
+	TSRemoveMethodName   string
+	TSRemoveIDMethodName string
+	Edge                 edge.Edge
 }
 
 func GetEdges(action Action) []EdgeActionTemplateInfo {
@@ -538,11 +539,12 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 			InstanceName: edge.NodeInfo.NodeInstance,
 			TSEdgeConst:  edge.TsEdgeConst,
 			//AssocEdge:    edge,
-			NodeType:           edge.NodeInfo.NodeType,
-			TSNodeID:           fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
-			TSAddIDMethodName:  fmt.Sprintf("add%sID", edge.Singular()),
-			TSAddMethodName:    fmt.Sprintf("add%s", edge.Singular()),
-			TSRemoveMethodName: fmt.Sprintf("remove%s", edge.Singular()),
+			NodeType:             edge.NodeInfo.NodeType,
+			TSNodeID:             fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+			TSAddIDMethodName:    fmt.Sprintf("add%sID", edge.Singular()),
+			TSAddMethodName:      fmt.Sprintf("add%s", edge.Singular()),
+			TSRemoveMethodName:   fmt.Sprintf("remove%s", edge.Singular()),
+			TSRemoveIDMethodName: fmt.Sprintf("remove%sID", edge.Singular()),
 		})
 	}
 
