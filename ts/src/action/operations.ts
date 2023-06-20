@@ -675,6 +675,7 @@ export class EdgeOperation implements DataOperation {
         edgeType: this.edgeInput.edgeType,
         time: this.edgeInput.time,
         data: this.edgeInput.data,
+        disableTransformations: this.edgeInput.disableTransformations,
       },
       {
         operation: this.options.operation,
@@ -696,6 +697,7 @@ export class EdgeOperation implements DataOperation {
         edgeType: edgeData.inverseEdgeType!,
         time: this.edgeInput.time,
         data: this.edgeInput.data,
+        disableTransformations: this.edgeInput.disableTransformations,
       },
       {
         operation: this.options.operation,
@@ -819,6 +821,7 @@ export class EdgeOperation implements DataOperation {
     builder: Builder<T>,
     edgeType: string,
     id1: ID,
+    options?: AssocEdgeInputOptions,
   ): EdgeOperation {
     if (!builder.existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
@@ -829,6 +832,7 @@ export class EdgeOperation implements DataOperation {
       id2: builder.existingEnt!.id,
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
+      disableTransformations: options?.disableTransformations,
     };
     return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,
@@ -839,6 +843,7 @@ export class EdgeOperation implements DataOperation {
     builder: Builder<T>,
     edgeType: string,
     id2: ID,
+    options?: AssocEdgeInputOptions,
   ): EdgeOperation {
     if (!builder.existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
@@ -849,6 +854,7 @@ export class EdgeOperation implements DataOperation {
       id1: builder.existingEnt!.id,
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
+      disableTransformations: options?.disableTransformations,
     };
     return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,

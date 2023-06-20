@@ -405,8 +405,11 @@ function commonTestsGlobalSchema() {
     await doTestAddEdge(EdgeWithDeletedAt, verifyEdge);
   });
 
-  test("remove edge", async () => {
-    const { user } = await doTestRemoveEdge(EdgeWithDeletedAt, verifyEdge);
+  async function doTestSoftDeleteEdge() {
+    const { user, edges, symmetricEdges } = await doTestRemoveEdge(
+      EdgeWithDeletedAt,
+      verifyEdge,
+    );
 
     // by default nothing is returned...
     const reloadEdges = await loadCustomEdges({
@@ -470,9 +473,74 @@ function commonTestsGlobalSchema() {
     expect(reloadSymmetricEdges2.length).toBe(1);
     expect(reloadSymmetricEdges2Count).toBe(1);
     reloadSymmetricEdges2.map((edge) => expect(edge.deletedAt).not.toBeNull());
+
+    return { user, symmetricEdges, edges };
+  }
+
+  test("remove edge", async () => {
+    await doTestSoftDeleteEdge();
   });
 
   test("add and remove edge", async () => {
     await doTestAddAndRemoveEdge(EdgeWithDeletedAt, verifyEdge);
+  });
+
+  test("really remove edge", async () => {
+    const { user, symmetricEdges, edges } = await doTestSoftDeleteEdge();
+
+    const action = new SimpleAction(
+      user.viewer,
+      UserSchema,
+      new Map(),
+      WriteOperation.Edit,
+      user,
+    );
+    for (const edge of edges) {
+      action.builder.orchestrator.removeOutboundEdge(edge.id2, edge.edgeType, {
+        disableTransformations: true,
+      });
+    }
+    for (const edge of symmetricEdges) {
+      action.builder.orchestrator.removeOutboundEdge(edge.id2, edge.edgeType, {
+        disableTransformations: true,
+      });
+    }
+    await action.saveX();
+
+    const reloadEdges2 = await loadCustomEdges({
+      id1: user.id,
+      edgeType: "edge",
+      queryOptions: {
+        disableTransformations: true,
+      },
+      ctr: EdgeWithDeletedAt,
+    });
+    const reloadEdges2Count = await loadRawEdgeCountX({
+      id1: user.id,
+      edgeType: "edge",
+      queryOptions: {
+        disableTransformations: true,
+      },
+    });
+    const reloadSymmetricEdges2 = await loadCustomEdges({
+      id1: user.id,
+      edgeType: "symmetricEdge",
+      queryOptions: {
+        disableTransformations: true,
+      },
+      ctr: EdgeWithDeletedAt,
+    });
+    const reloadSymmetricEdges2Count = await loadRawEdgeCountX({
+      id1: user.id,
+      edgeType: "symmetricEdge",
+      queryOptions: {
+        disableTransformations: true,
+      },
+    });
+
+    expect(reloadEdges2.length).toBe(0);
+    expect(reloadEdges2Count).toBe(0);
+    expect(reloadSymmetricEdges2.length).toBe(0);
+    expect(reloadSymmetricEdges2Count).toBe(0);
   });
 }

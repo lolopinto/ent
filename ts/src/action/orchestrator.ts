@@ -476,12 +476,14 @@ export class Orchestrator<
           this.options.builder,
           edgeType,
           id2,
+          edge.options,
         );
       } else {
         return EdgeOperation.removeInboundEdge(
           this.options.builder,
           edgeType,
           id2,
+          edge.options,
         );
       }
     }
