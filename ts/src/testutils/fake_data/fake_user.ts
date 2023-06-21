@@ -7,6 +7,7 @@ import {
   PrivacyPolicy,
   Skip,
   Allow,
+  Context,
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
 import {
@@ -190,9 +191,11 @@ export function getUserAction(viewer: Viewer, input: UserCreateInput) {
     WriteOperation.Insert,
     null,
   );
-  action.viewerForEntLoad = (data: Data) => {
+  action.viewerForEntLoad = (data: Data, context?: Context) => {
     // load the created ent using a VC of the newly created user.
-    return new IDViewer(data.id);
+    return new IDViewer(data.id, {
+      context,
+    });
   };
   return action;
 }

@@ -95,7 +95,7 @@ function createLoader<T extends AssocEdge>(
   }, loaderOptions);
 }
 
-interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
+export interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
   loadEdgeForID2(id: ID, id2: ID): Promise<T | undefined>;
 }
 
@@ -138,6 +138,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
       id2,
       context: this.context,
       ctr: this.edgeCtr,
+      queryOptions: this.options,
     });
   }
 
@@ -166,13 +167,13 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
     });
   }
 
-  // TODO should this have a disableTransformations flag to get these rows
   async loadEdgeForID2(id: ID, id2: ID) {
     return loadEdgeForID2({
       id1: id,
       edgeType: this.edgeType,
       id2,
       context: this.context,
+      queryOptions: this.options,
       ctr: this.edgeCtr,
     });
   }
