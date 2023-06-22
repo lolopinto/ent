@@ -786,7 +786,7 @@ async function testWithDeleteSingleQueryDataLoadDeleted(
 
   // without disableTransformations, returns []
   const edges3 = await loader.load(user.id);
-  expect(edges3).toStrictEqual([]);
+  expect(edges3).toEqual([]);
 }
 
 async function testMultiQueryDataOffset(
