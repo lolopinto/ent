@@ -54,6 +54,11 @@ export type EdgeQueryableDataOptions = Partial<
   >
 >;
 
+export type EdgeQueryableDataOptionsConfigureLoader = Pick<
+  EdgeQueryableDataOptions,
+  "disableTransformations"
+>;
+
 // PrimableLoader allows us to prime data in the cache that's retrieved from
 // other sources
 export interface PrimableLoader<K, V> extends Loader<K, V> {

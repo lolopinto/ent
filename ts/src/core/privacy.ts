@@ -11,6 +11,7 @@ import {
   PrivacyResult,
   Skip,
   Viewer,
+  EdgeQueryableDataOptionsConfigureLoader,
 } from "./base";
 import { AssocEdge, loadEdgeForID2, loadEnt } from "./ent";
 
@@ -302,6 +303,7 @@ async function allowIfEdgeExistsRule(
   id2: ID | null | undefined,
   edgeType: string,
   context?: Context,
+  options?: EdgeQueryableDataOptionsConfigureLoader,
 ): Promise<PrivacyResult> {
   if (id1 && id2) {
     const edge = await loadEdgeForID2({
@@ -310,6 +312,7 @@ async function allowIfEdgeExistsRule(
       id2,
       context,
       ctr: AssocEdge,
+      queryOptions: options,
     });
     if (edge) {
       return Allow();
@@ -319,26 +322,55 @@ async function allowIfEdgeExistsRule(
 }
 
 export class AllowIfEdgeExistsRule implements PrivacyPolicyRule {
-  constructor(private id1: ID, private id2: ID, private edgeType: string) {}
+  constructor(
+    private id1: ID,
+    private id2: ID,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
 
   async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
-    return allowIfEdgeExistsRule(this.id1, this.id2, this.edgeType, v.context);
+    return allowIfEdgeExistsRule(
+      this.id1,
+      this.id2,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
   }
 }
 
 export class AllowIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
-  constructor(private edgeType: string) {}
+  constructor(
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-    return allowIfEdgeExistsRule(v.viewerID, ent?.id, this.edgeType, v.context);
+    return allowIfEdgeExistsRule(
+      v.viewerID,
+      ent?.id,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
   }
 }
 
 export class AllowIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
-  constructor(private edgeType: string) {}
+  constructor(
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-    return allowIfEdgeExistsRule(ent?.id, v.viewerID, this.edgeType, v.context);
+    return allowIfEdgeExistsRule(
+      ent?.id,
+      v.viewerID,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
   }
 }
 
@@ -347,6 +379,7 @@ async function denyIfEdgeExistsRule(
   id2: ID | null | undefined,
   edgeType: string,
   context?: Context,
+  options?: EdgeQueryableDataOptionsConfigureLoader,
 ): Promise<PrivacyResult> {
   // edge doesn't exist if no viewer
   if (id1 && id2) {
@@ -356,6 +389,7 @@ async function denyIfEdgeExistsRule(
       id2,
       context,
       ctr: AssocEdge,
+      queryOptions: options,
     });
     if (edge) {
       return Deny();
@@ -369,6 +403,7 @@ async function denyIfEdgeDoesNotExistRule(
   id2: ID | null | undefined,
   edgeType: string,
   context?: Context,
+  options?: EdgeQueryableDataOptionsConfigureLoader,
 ): Promise<PrivacyResult> {
   // edge doesn't exist if no viewer
   if (!id1 || !id2) {
@@ -380,6 +415,7 @@ async function denyIfEdgeDoesNotExistRule(
     id2,
     context,
     ctr: AssocEdge,
+    queryOptions: options,
   });
   if (!edge) {
     return Deny();
@@ -388,31 +424,65 @@ async function denyIfEdgeDoesNotExistRule(
 }
 
 export class DenyIfEdgeExistsRule implements PrivacyPolicyRule {
-  constructor(private id1: ID, private id2: ID, private edgeType: string) {}
+  constructor(
+    private id1: ID,
+    private id2: ID,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
 
   async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
-    return denyIfEdgeExistsRule(this.id1, this.id2, this.edgeType, v.context);
+    return denyIfEdgeExistsRule(
+      this.id1,
+      this.id2,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
   }
 }
 
 export class DenyIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
-  constructor(private edgeType: string) {}
+  constructor(
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-    return denyIfEdgeExistsRule(v.viewerID, ent?.id, this.edgeType, v.context);
+    return denyIfEdgeExistsRule(
+      v.viewerID,
+      ent?.id,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
   }
 }
 
 export class DenyIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
-  constructor(private edgeType: string) {}
+  constructor(
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-    return denyIfEdgeExistsRule(ent?.id, v.viewerID, this.edgeType, v.context);
+    return denyIfEdgeExistsRule(
+      ent?.id,
+      v.viewerID,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
   }
 }
 
 export class DenyIfEdgeDoesNotExistRule implements PrivacyPolicyRule {
-  constructor(private id1: ID, private id2: ID, private edgeType: string) {}
+  constructor(
+    private id1: ID,
+    private id2: ID,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
 
   async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     return denyIfEdgeDoesNotExistRule(
@@ -420,6 +490,7 @@ export class DenyIfEdgeDoesNotExistRule implements PrivacyPolicyRule {
       this.id2,
       this.edgeType,
       v.context,
+      this.options,
     );
   }
 }
@@ -427,7 +498,10 @@ export class DenyIfEdgeDoesNotExistRule implements PrivacyPolicyRule {
 export class DenyIfViewerInboundEdgeDoesNotExistRule
   implements PrivacyPolicyRule
 {
-  constructor(private edgeType: string) {}
+  constructor(
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     return denyIfEdgeDoesNotExistRule(
@@ -435,6 +509,7 @@ export class DenyIfViewerInboundEdgeDoesNotExistRule
       ent?.id,
       this.edgeType,
       v.context,
+      this.options,
     );
   }
 }
@@ -442,7 +517,10 @@ export class DenyIfViewerInboundEdgeDoesNotExistRule
 export class DenyIfViewerOutboundEdgeDoesNotExistRule
   implements PrivacyPolicyRule
 {
-  constructor(private edgeType: string) {}
+  constructor(
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     return denyIfEdgeDoesNotExistRule(
@@ -450,6 +528,7 @@ export class DenyIfViewerOutboundEdgeDoesNotExistRule
       v.viewerID,
       this.edgeType,
       v.context,
+      this.options,
     );
   }
 }

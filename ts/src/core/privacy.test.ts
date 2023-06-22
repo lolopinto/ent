@@ -3,10 +3,10 @@ import {
   Ent,
   Viewer,
   LoadEntOptions,
-  Data,
   DenyWithReason,
   Skip,
   PrivacyPolicy,
+  WriteOperation,
 } from "./base";
 import {
   applyPrivacyPolicy,
@@ -19,19 +19,60 @@ import {
   AllowIfFuncRule,
   AllowIfEntIsVisiblePolicy,
   DenyIfEntIsVisiblePolicy,
+  AllowIfEdgeExistsRule,
+  DenyIfEdgeExistsRule,
+  DenyIfEdgeDoesNotExistRule,
 } from "./privacy";
 
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { createRowForTest } from "../testutils/write";
 import { ObjectLoaderFactory } from "./loaders";
-import { setupPostgres, table, text } from "../testutils/db/temp_db";
-import { BaseEnt } from "../testutils/builder";
+import {
+  assoc_edge_config_table,
+  assoc_edge_table,
+  setupPostgres,
+  table,
+  text,
+} from "../testutils/db/temp_db";
+import {
+  BaseEnt,
+  SimpleAction,
+  SimpleBuilder,
+  getBuilderSchemaFromFields,
+} from "../testutils/builder";
+import { loadEdgeData } from "./ent";
+import { v1 } from "uuid";
+import { setGlobalSchema } from "./global_schema";
+import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema";
 
 const loggedOutViewer = new LoggedOutViewer();
 
 setupPostgres(() => [
   table("users", text("id", { primaryKey: true }), text("name")),
+  assoc_edge_config_table(),
+  assoc_edge_table("edge_table", true),
 ]);
+
+beforeAll(async () => {
+  setGlobalSchema(testEdgeGlobalSchema);
+
+  for (const edge of ["edge"]) {
+    await createRowForTest({
+      tableName: "assoc_edge_config",
+      fields: {
+        edge_table: `${edge}_table`,
+        symmetric_edge: false,
+        inverse_edge_type: null,
+        edge_type: edge,
+        edge_name: "name",
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+    const edgeData = await loadEdgeData(edge);
+    expect(edgeData).toBeDefined();
+  }
+});
 
 class User extends BaseEnt {
   accountID: string;
@@ -243,6 +284,217 @@ describe("AllowIfViewerIsRule", () => {
     const user = getUser(new IDViewer("2"), "1", policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(true);
+  });
+});
+
+async function addEdge(user: User, id2: ID) {
+  const builder = new SimpleBuilder(
+    loggedOutViewer,
+    getBuilderSchemaFromFields({}, User),
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
+  builder.orchestrator.addOutboundEdge(id2, "edge", "User");
+  await builder.saveX();
+}
+
+async function softDeleteEdge(user: User, id2: ID) {
+  const builder = new SimpleBuilder(
+    loggedOutViewer,
+    getBuilderSchemaFromFields({}, User),
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
+  builder.orchestrator.removeOutboundEdge(id2, "edge");
+  await builder.saveX();
+}
+
+async function reallyDeleteEdge(user: User, id2: ID) {
+  const builder = new SimpleBuilder(
+    loggedOutViewer,
+    getBuilderSchemaFromFields({}, User),
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
+  builder.orchestrator.removeOutboundEdge(id2, "edge", {
+    disableTransformations: true,
+  });
+  await builder.saveX();
+}
+
+describe("AllowIfEdgeExistsRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const policy = {
+    rules: [new AllowIfEdgeExistsRule(id1, id2, "edge")],
+  };
+  const policy2 = {
+    rules: [
+      new AllowIfEdgeExistsRule(id1, id2, "edge", {
+        disableTransformations: true,
+      }),
+    ],
+  };
+  const user = getUser(loggedOutViewer, id1, policy);
+  const user2 = getUser(loggedOutViewer, id1, policy2);
+
+  test("edge exists", async () => {
+    await addEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user, id2);
+    await softDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user, id2);
+    await reallyDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+});
+
+describe("DenyIfEdgeExistsRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const policy = {
+    rules: [new DenyIfEdgeExistsRule(id1, id2, "edge"), AlwaysAllowRule],
+  };
+  const policy2 = {
+    rules: [
+      new DenyIfEdgeExistsRule(id1, id2, "edge", {
+        disableTransformations: true,
+      }),
+      AlwaysAllowRule,
+    ],
+  };
+  const user = getUser(loggedOutViewer, id1, policy);
+  const user2 = getUser(loggedOutViewer, id1, policy2);
+
+  test("edge exists", async () => {
+    await addEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user, id2);
+    await softDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user, id2);
+    await reallyDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+});
+
+describe("DenyIfEdgeDoesNotExistRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const policy = {
+    rules: [new DenyIfEdgeDoesNotExistRule(id1, id2, "edge"), AlwaysAllowRule],
+  };
+  const policy2 = {
+    rules: [
+      new DenyIfEdgeDoesNotExistRule(id1, id2, "edge", {
+        disableTransformations: true,
+      }),
+      AlwaysAllowRule,
+    ],
+  };
+  const user = getUser(loggedOutViewer, id1, policy);
+  const user2 = getUser(loggedOutViewer, id1, policy2);
+
+  test("edge exists", async () => {
+    await addEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user, id2);
+    await softDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user, id2);
+    await reallyDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(false);
   });
 });
 
