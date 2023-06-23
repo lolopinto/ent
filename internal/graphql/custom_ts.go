@@ -657,6 +657,12 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 		GQLType: gqlType,
 	})
 
+	if typ.GQLType == "GraphQLObjectType" {
+		typ.IsTypeOfMethod = []string{
+			fmt.Sprintf("return obj instanceof %s", item.Type),
+		}
+	}
+
 	s.seenCustomObjects[item.Type] = true
 
 	fields, ok := cd.Fields[item.Type]

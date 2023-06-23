@@ -161,6 +161,7 @@ export class ContactBuilder<
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
+
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
   }

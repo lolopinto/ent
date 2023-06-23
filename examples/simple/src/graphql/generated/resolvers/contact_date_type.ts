@@ -34,4 +34,7 @@ export const ContactDateType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
   }),
+  isTypeOf(obj) {
+    return obj instanceof ContactDate;
+  },
 });

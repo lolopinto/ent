@@ -150,6 +150,7 @@ export class CommentBuilder<
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
+
   addPost(...nodes: (Ent | Builder<Ent, any>)[]): this {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
