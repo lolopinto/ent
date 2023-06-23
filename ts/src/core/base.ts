@@ -1,5 +1,6 @@
 import * as clause from "./clause";
 import { ObjectLoaderFactory } from "./loaders";
+import { OrderBy } from "./query_impl";
 
 // Loader is the primitive data fetching abstraction in the framework
 // implementation details up to each instance
@@ -84,7 +85,7 @@ interface queryOptions {
   fields: string[];
   tableName: string;
   clause: clause.Clause;
-  orderby?: string;
+  orderby?: OrderBy;
 }
 
 export interface Context<TViewer extends Viewer = Viewer> {
@@ -172,7 +173,7 @@ export interface QueryableDataOptions
 export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   distinct?: boolean;
   clause: clause.Clause<T, K>;
-  orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
+  orderby?: OrderBy; // this technically doesn't make sense when querying just one row but whatevs
   groupby?: K;
   limit?: number;
   disableTransformations?: boolean;

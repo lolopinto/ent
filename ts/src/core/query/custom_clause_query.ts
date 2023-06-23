@@ -14,7 +14,7 @@ import {
   loadRows,
 } from "../ent";
 
-import { getOrderBy } from "../loaders/query_loader";
+import { getQueryLoaderOrderByDeprecated } from "../loaders/query_loader";
 import { BaseEdgeQuery, IDInfo } from "./query";
 
 export interface CustomClauseQueryOptions<
@@ -124,7 +124,10 @@ export class CustomClauseQuery<
       tableName: this.options.loadEntOptions.tableName,
       fields: this.options.loadEntOptions.fields,
       clause: AndOptional(this.clause, options.clause),
-      orderby: getOrderBy(this.getSortCol(), options?.orderby),
+      orderby: getQueryLoaderOrderByDeprecated(
+        this.getSortCol(),
+        options?.orderby,
+      ),
       limit: options?.limit || getDefaultLimit(),
       context: this.viewer.context,
     });

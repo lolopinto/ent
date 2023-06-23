@@ -9,6 +9,7 @@ import {
   Allow,
   Skip,
   LoadCustomEntOptions,
+  QueryableDataOptions,
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule } from "./privacy";
@@ -37,6 +38,7 @@ import DB, { Dialect } from "./db";
 import { ObjectLoaderFactory } from "./loaders";
 import { CustomEdgeQueryBase } from "./query";
 import { BaseEnt } from "../testutils/builder";
+import { OrderBy } from "./query_impl";
 
 let ctx: Context;
 const ml = new MockLogs();
@@ -71,6 +73,7 @@ interface DataRow {
   foo: string;
   bar: string;
   baz: string;
+  qux: string | null;
 }
 
 interface QueryDataRow extends DataRow {
@@ -107,6 +110,7 @@ const getTable = (softDelete = false) => {
     text("baz"),
     text("bar"),
     text("foo"),
+    text("qux", { nullable: true }),
     timestamp("created_at", { default: "now()" }),
   ];
   if (softDelete) {
@@ -166,6 +170,7 @@ describe("sqlite no soft delete", () => {
       text("baz"),
       text("bar"),
       text("foo"),
+      text("qux", { nullable: true }),
       timestamp("created_at", { default: new Date().toISOString() }),
     ),
   ]);
@@ -186,6 +191,7 @@ describe("sqlite with soft delete", () => {
       text("baz"),
       text("bar"),
       text("foo"),
+      text("qux", { nullable: true }),
       timestamp("created_at", { default: new Date().toISOString() }),
       timestamp("deleted_at", { nullable: true }),
     ),
@@ -211,8 +217,10 @@ async function createAllRows(addDeletedAt = false) {
     const row = { id, baz: "baz" };
     if (id % 2 == 0) {
       row["bar"] = "bar2";
+      row["qux"] = null;
     } else {
       row["bar"] = "bar";
+      row["qux"] = `qux${id}`;
     }
     if (id % 4 == 0) {
       row["foo"] = "foo4";
@@ -561,6 +569,27 @@ async function queryViaOptions(
   );
 }
 
+async function queryViaOptionsWithComplexOrderBy(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+  orderby: OrderBy,
+  expIds?: number[],
+) {
+  if (Dialect.Postgres !== DB.getDialect()) {
+    return;
+  }
+
+  return queryViaOptionsImpl(
+    opts,
+    ctx,
+    {
+      clause: clause.Greater("id", 5),
+      orderby,
+    },
+    expIds || reversed.slice(0, 5),
+  );
+}
+
 async function queryViaOptionsDisableTransformations(
   opts: LoadCustomEntOptions<User>,
   ctx: Context | undefined,
@@ -583,7 +612,7 @@ async function queryViaOptionsImpl(
   const data = await loadCustomData(opts, opts2, ctx);
 
   expect(data.length).toBe(expIds.length);
-  expect(data.map((row) => row.id).sort((a, b) => b - a)).toEqual(expIds);
+  expect(data.map((row) => row.id)).toEqual(expIds);
   expect(ml.logs.length).toBe(1);
 
   // re-query. hits the db
@@ -703,6 +732,124 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
 
     test("options without context", async () => {
       await queryViaOptions(opts, undefined);
+    });
+
+    test("options with order by nullable column desc, default with context", async () => {
+      await queryViaOptionsWithComplexOrderBy(
+        opts,
+        getCtx(undefined),
+        [
+          // postgres is nulls first by default
+          {
+            column: "qux",
+            direction: "desc",
+          },
+          {
+            column: "id",
+            direction: "desc",
+          },
+        ],
+        [10, 8, 6, 9, 7],
+      );
+    });
+
+    test("options with order by nullable column desc, nulls first with context", async () => {
+      // postgres is nulls first by default so matches above
+      await queryViaOptionsWithComplexOrderBy(
+        opts,
+        getCtx(undefined),
+        [
+          // postgres is nulls first by default for desc so result matches above
+          {
+            column: "qux",
+            direction: "desc",
+            nullsPlacement: "first",
+          },
+          {
+            column: "id",
+            direction: "desc",
+          },
+        ],
+        [10, 8, 6, 9, 7],
+      );
+    });
+
+    test("options with order by nullable column desc, nulls last with context", async () => {
+      await queryViaOptionsWithComplexOrderBy(
+        opts,
+        getCtx(undefined),
+        [
+          {
+            column: "qux",
+            direction: "desc",
+            nullsPlacement: "last",
+          },
+          {
+            column: "id",
+            direction: "desc",
+          },
+        ],
+        [9, 7, 10, 8, 6],
+      );
+    });
+
+    test("options with order by nullable column asc, default with context", async () => {
+      await queryViaOptionsWithComplexOrderBy(
+        opts,
+        getCtx(undefined),
+        [
+          // postgres is nulls last when ascending by default
+          {
+            column: "qux",
+            direction: "asc",
+          },
+          {
+            column: "id",
+            direction: "asc",
+          },
+        ],
+        [7, 9, 6, 8, 10],
+      );
+    });
+
+    test("options with order by nullable column asc, nulls last with context", async () => {
+      // postgres is nulls first by default so matches above
+      await queryViaOptionsWithComplexOrderBy(
+        opts,
+        getCtx(undefined),
+        [
+          // postgres is nulls last when ascending by default so result matches above
+          {
+            column: "qux",
+            direction: "asc",
+            nullsPlacement: "last",
+          },
+          {
+            column: "id",
+            direction: "asc",
+          },
+        ],
+        [7, 9, 6, 8, 10],
+      );
+    });
+
+    test("options with order by nullable column asc, nulls first with context", async () => {
+      await queryViaOptionsWithComplexOrderBy(
+        opts,
+        getCtx(undefined),
+        [
+          {
+            column: "qux",
+            direction: "asc",
+            nullsPlacement: "first",
+          },
+          {
+            column: "id",
+            direction: "asc",
+          },
+        ],
+        [6, 8, 10, 7, 9],
+      );
     });
 
     test("query via parameterized query with context", async () => {
