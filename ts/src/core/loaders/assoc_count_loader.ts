@@ -4,7 +4,7 @@ import {
   Context,
   Loader,
   LoaderFactory,
-  EdgeQueryableDataOptions,
+  EdgeQueryableDataOptionsConfigureLoader,
 } from "../base";
 import {
   getEdgeClauseAndFields,
@@ -23,7 +23,7 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
   constructor(
     private edgeType: string,
     public context?: Context,
-    private options?: Pick<EdgeQueryableDataOptions, "disableTransformations">,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
   ) {
     if (context) {
       this.loaderFn = memoize(this.getLoader);
@@ -86,7 +86,7 @@ export class AssocEdgeCountLoaderFactory implements LoaderFactory<ID, number> {
   }
 
   createConfigurableLoader(
-    options: Pick<EdgeQueryableDataOptions, "disableTransformations">,
+    options: EdgeQueryableDataOptionsConfigureLoader,
     context?: Context,
   ): AssocEdgeCountLoader {
     const key = `${this.name}:disableTransformations:${options.disableTransformations}`;

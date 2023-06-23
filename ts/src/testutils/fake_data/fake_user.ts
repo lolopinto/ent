@@ -67,10 +67,9 @@ export class FakeUser implements Ent {
           },
         },
 
-        // TODO these need to account for deleted edges
-        //can view user if friends
+        // can view user if friends
         new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
-        //can view user if following
+        // can view user if following
         new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFollowing),
         new AllowIfConditionAppliesRule((viewer: Viewer, ent: Ent) => {
           if (!(viewer instanceof ViewerWithAccessToken)) {

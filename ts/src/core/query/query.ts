@@ -5,6 +5,7 @@ import {
   EdgeQueryableDataOptions,
   Data,
   PrivacyPolicy,
+  EdgeQueryableDataOptionsConfigureLoader,
 } from "../base";
 import { getDefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
@@ -583,7 +584,7 @@ export abstract class BaseEdgeQuery<
   // so we're only exposing a partial API for now but maybe in the future we can expose
   // the full API if there's a reason to use this that's not via filters
   protected configureEdgeQueryableDataOptions(
-    opts: Pick<EdgeQueryableDataOptions, "disableTransformations">,
+    opts: EdgeQueryableDataOptionsConfigureLoader,
   ) {
     this._defaultEdgeQueryableOptions = opts;
   }

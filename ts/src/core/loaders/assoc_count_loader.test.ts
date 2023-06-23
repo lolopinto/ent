@@ -3,7 +3,12 @@ import { v4 as uuidv4 } from "uuid";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { EdgeQueryableDataOptions, ID, WriteOperation } from "../base";
+import {
+  EdgeQueryableDataOptions,
+  EdgeQueryableDataOptionsConfigureLoader,
+  ID,
+  WriteOperation,
+} from "../base";
 import { buildQuery } from "../ent";
 import {
   clearGlobalSchema,
@@ -40,7 +45,7 @@ const getNewLoader = (context: boolean = true) => {
 
 const getConfigurableLoader = (
   context: boolean = true,
-  opts: Pick<EdgeQueryableDataOptions, "disableTransformations">,
+  opts: EdgeQueryableDataOptionsConfigureLoader,
 ) => {
   return new AssocEdgeCountLoader(
     EdgeType.UserToContacts,
