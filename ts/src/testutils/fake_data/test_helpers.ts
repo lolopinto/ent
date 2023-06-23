@@ -1,6 +1,6 @@
 import { advanceBy, advanceTo } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { Data, Ent } from "../../core/base";
+import { Context, Data, Ent } from "../../core/base";
 import { AssocEdge, loadEdgeData } from "../../core/ent";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../write";
@@ -78,8 +78,9 @@ export function getEventInput(
 
 export async function createTestUser(
   input?: Partial<UserCreateInput>,
+  ctx?: Context,
 ): Promise<FakeUser> {
-  const user = await createUser(new LoggedOutViewer(), {
+  const user = await createUser(new LoggedOutViewer(ctx), {
     firstName: "Jon",
     lastName: "Snow",
     password: "12345678",
@@ -121,13 +122,14 @@ interface createContactOptions {
   slice?: number;
   user?: FakeUser;
   start?: number;
+  ctx?: Context;
 }
 export async function createAllContacts(
   opts?: createContactOptions,
 ): Promise<[FakeUser, FakeContact[]]> {
   let { input, slice, user } = opts || {};
   if (!user) {
-    user = await createTestUser(input);
+    user = await createTestUser(input, opts?.ctx);
   }
   const userr = user!;
 

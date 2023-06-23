@@ -28,7 +28,11 @@ import {
   createEdges,
 } from "../../testutils/fake_data/test_helpers";
 
-import { AssocEdgeLoaderFactory } from "./assoc_edge_loader";
+import {
+  AssocEdgeLoader,
+  AssocEdgeLoaderFactory,
+  AssocLoader,
+} from "./assoc_edge_loader";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { convertDate } from "../convert";
@@ -478,6 +482,67 @@ function globalTests() {
       verifyMultiCountQueryCacheMiss,
     );
   });
+
+  async function verifyLoadID2(
+    loaderFn: (opts: EdgeQueryableDataOptions) => AssocLoader<CustomEdge>,
+  ) {
+    const [user, contacts] = await createAllContacts({
+      ctx,
+    });
+    ml.clear();
+    const loader = loaderFn({});
+    const edges = await loader.load(user.id);
+    verifyUserToContactEdges(user, edges, contacts.reverse());
+    verifyMultiCountQueryCacheMiss([user.id]);
+
+    const action = new SimpleAction(
+      user.viewer,
+      FakeUserSchema,
+      new Map(),
+      WriteOperation.Edit,
+      user,
+    );
+
+    const id2Edge = await loader.loadEdgeForID2(user.id, edges[0].id2);
+    expect(id2Edge).toStrictEqual(edges[0]);
+
+    // delete edges
+    for (const edge of edges) {
+      expect(edge.deleted_at).toBeNull();
+      action.builder.orchestrator.removeOutboundEdge(
+        edge.id2,
+        EdgeType.UserToContacts,
+      );
+    }
+    await action.saveX();
+    ml.clear();
+    loader.clearAll();
+    user.viewer.context?.cache?.clearCache();
+    // do edge writes not call mutateRow???
+    // why isn't this done automatically...
+
+    const loader2 = loaderFn({
+      disableTransformations: true,
+    });
+
+    const id2Edge2 = await loader2.loadEdgeForID2(user.id, edges[0].id2);
+    expect(id2Edge2).toBeDefined();
+    expect(DateTime.fromJSDate(convertDate(id2Edge2!.deleted_at)).isValid).toBe(
+      true,
+    );
+
+    // without transformation, returns nothing
+    const id2Edge3 = await loader.loadEdgeForID2(user.id, edges[0].id2);
+    expect(id2Edge3).toBeUndefined();
+  }
+
+  test("load id2 with context", async () => {
+    await verifyLoadID2((opts) => getConfigurableLoader(true, opts));
+  });
+
+  test("load id2 without context", async () => {
+    await verifyLoadID2((opts) => getConfigurableLoader(false, opts));
+  });
 }
 
 interface createdData {
@@ -720,7 +785,7 @@ async function testWithDeleteSingleQueryDataLoadDeleted(
 
   // without disableTransformations, returns []
   const edges3 = await loader.load(user.id);
-  expect(edges3).toStrictEqual([]);
+  expect(edges3).toEqual([]);
 }
 
 async function testMultiQueryDataOffset(

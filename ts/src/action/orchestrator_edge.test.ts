@@ -1207,6 +1207,7 @@ function commonTests() {
         id2: "1",
         id1Type: "", // not useful so we don't care
         id2Type: "",
+        disableTransformations: undefined,
       });
     });
 
@@ -1265,6 +1266,7 @@ function commonTests() {
         id2: "2",
         id1Type: "", // not useful so we don't care
         id2Type: "",
+        disableTransformations: undefined,
       });
     });
 
