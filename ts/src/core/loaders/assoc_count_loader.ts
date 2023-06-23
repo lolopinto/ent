@@ -4,7 +4,6 @@ import {
   Context,
   Loader,
   LoaderFactory,
-  EdgeQueryableDataOptions,
   EdgeQueryableDataOptionsConfigureLoader,
 } from "../base";
 import {

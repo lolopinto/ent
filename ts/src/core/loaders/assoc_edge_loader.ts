@@ -95,7 +95,7 @@ function createLoader<T extends AssocEdge>(
   }, loaderOptions);
 }
 
-interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
+export interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
   loadEdgeForID2(id: ID, id2: ID): Promise<T | undefined>;
 }
 
@@ -138,6 +138,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
       id2,
       context: this.context,
       ctr: this.edgeCtr,
+      queryOptions: this.options,
     });
   }
 
@@ -173,6 +174,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
       edgeType: this.edgeType,
       id2,
       context: this.context,
+      queryOptions: this.options,
       ctr: this.edgeCtr,
     });
   }

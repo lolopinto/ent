@@ -213,7 +213,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         );
       }
     } else {
-      options.orderby = `${this.sortCol}${nullsPlacement} ${orderby}`;
+      options.orderby = `${this.sortCol} ${orderby}${nullsPlacement}`;
 
       if (this.offset) {
         let clauseFn = less ? clause.Less : clause.Greater;

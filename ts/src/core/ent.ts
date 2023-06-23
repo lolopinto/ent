@@ -1384,7 +1384,6 @@ interface loadEdgesOptions {
   edgeType: string;
   context?: Context;
   queryOptions?: EdgeQueryableDataOptions;
-  // disableTransformations?: boolean;
 }
 
 interface loadCustomEdgesOptions<T extends AssocEdge> extends loadEdgesOptions {
