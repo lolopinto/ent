@@ -1,4 +1,4 @@
-import { WriteOperation } from "../action";
+import { EntChangeset, WriteOperation } from "../action";
 import { snakeCase } from "snake-case";
 import DB, { Dialect } from "../core/db";
 import {
@@ -405,12 +405,11 @@ function commonTestsGlobalSchema() {
     await doTestAddEdge(EdgeWithDeletedAt, verifyEdge);
   });
 
-  async function doTestSoftDeleteEdge() {
-    const { user, edges, symmetricEdges } = await doTestRemoveEdge(
-      EdgeWithDeletedAt,
-      verifyEdge,
-    );
-
+  async function verifySoftDeletedEdges(
+    user: User,
+    edges: EdgeWithDeletedAt[],
+    symmetricEdges: EdgeWithDeletedAt[],
+  ) {
     // by default nothing is returned...
     const reloadEdges = await loadCustomEdges({
       id1: user.id,
@@ -475,6 +474,15 @@ function commonTestsGlobalSchema() {
     reloadSymmetricEdges2.map((edge) => expect(edge.deletedAt).not.toBeNull());
 
     return { user, symmetricEdges, edges };
+  }
+
+  async function doTestSoftDeleteEdge() {
+    const { user, edges, symmetricEdges } = await doTestRemoveEdge(
+      EdgeWithDeletedAt,
+      verifyEdge,
+    );
+
+    return verifySoftDeletedEdges(user, edges, symmetricEdges);
   }
 
   test("remove edge", async () => {
@@ -542,5 +550,255 @@ function commonTestsGlobalSchema() {
     expect(reloadEdges2Count).toBe(0);
     expect(reloadSymmetricEdges2.length).toBe(0);
     expect(reloadSymmetricEdges2Count).toBe(0);
+  });
+
+  describe("changeset apis", () => {
+    test("changesetFromOutboundEdge", async () => {
+      // manually add edges using this API that were added in doTestAddEdge
+      const user1 = await getInsertUserAction(
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+      ).saveX();
+      const user2 = await getInsertUserAction(
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+      ).saveX();
+      const action = getInsertUserAction(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      action.getTriggers = () => [
+        {
+          async changeset(builder, input) {
+            return Promise.all([
+              EntChangeset.changesetFromOutboundEdge(
+                builder,
+                "edge",
+                user1.id,
+                user1.nodeType,
+              ),
+              EntChangeset.changesetFromOutboundEdge(
+                builder,
+                "edge",
+                user2.id,
+                user2.nodeType,
+              ),
+              EntChangeset.changesetFromOutboundEdge(
+                builder,
+                "symmetricEdge",
+                user1.id,
+                user1.nodeType,
+              ),
+            ]);
+          },
+        },
+      ];
+      const user3 = await action.saveX();
+      await doVerifyAddedEdges(user3, EdgeWithDeletedAt, {
+        symmetric: user1,
+        inverse: user2,
+        verifyEdge,
+      });
+    });
+
+    test("changesetFrominboundEdge", async () => {
+      // manually add edges using this API that were added in doTestAddEdge
+      const user1 = await getInsertUserAction(
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+      ).saveX();
+      const user2 = await getInsertUserAction(
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+      ).saveX();
+      const action = getInsertUserAction(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      action.getTriggers = () => [
+        {
+          async changeset(builder, input) {
+            return Promise.all([
+              // for inboundEdge, use the flipped edge and it should be same thing
+              EntChangeset.changesetFromInboundEdge(
+                builder,
+                "inverseEdge",
+                user1.id,
+                user1.nodeType,
+              ),
+              EntChangeset.changesetFromInboundEdge(
+                builder,
+                "inverseEdge",
+                user2.id,
+                user2.nodeType,
+              ),
+              EntChangeset.changesetFromOutboundEdge(
+                builder,
+                "symmetricEdge",
+                user1.id,
+                user1.nodeType,
+              ),
+            ]);
+          },
+        },
+      ];
+      const user3 = await action.saveX();
+      await doVerifyAddedEdges(user3, EdgeWithDeletedAt, {
+        symmetric: user1,
+        inverse: user2,
+        verifyEdge,
+      });
+    });
+
+    test("changesetRemoveFromOutboundEdge", async () => {
+      const { user, edges, symmetricEdges } = await doTestAddEdge(
+        EdgeWithDeletedAt,
+        verifyEdge,
+      );
+
+      const action = new SimpleAction(
+        user.viewer,
+        UserSchema,
+        new Map(),
+        WriteOperation.Edit,
+        user,
+      );
+      action.getTriggers = () => [
+        {
+          async changeset(builder, input) {
+            return Promise.all(
+              [...edges, ...symmetricEdges].map((edge) =>
+                EntChangeset.changesetRemoveFromOutboundEdge(
+                  builder,
+                  edge.edgeType,
+                  edge.id2,
+                ),
+              ),
+            );
+          },
+        },
+      ];
+
+      await action.saveX();
+
+      await verifySoftDeletedEdges(user, edges, symmetricEdges);
+    });
+
+    test("changesetRemoveFrominboundEdge", async () => {
+      const { user, edges, symmetricEdges } = await doTestAddEdge(
+        EdgeWithDeletedAt,
+        verifyEdge,
+      );
+
+      const action = new SimpleAction(
+        user.viewer,
+        UserSchema,
+        new Map(),
+        WriteOperation.Edit,
+        user,
+      );
+      action.getTriggers = () => [
+        {
+          async changeset(builder, input) {
+            return Promise.all(
+              [...edges, ...symmetricEdges].map((edge) =>
+                EntChangeset.changesetRemoveFromInboundEdge(
+                  builder,
+                  edge.edgeType === "edge" ? "inverseEdge" : edge.edgeType,
+                  edge.id2,
+                ),
+              ),
+            );
+          },
+        },
+      ];
+
+      await action.saveX();
+
+      await verifySoftDeletedEdges(user, edges, symmetricEdges);
+    });
+
+    test("changesetRemoveFromOutboundEdge really remove", async () => {
+      const { user, edges, symmetricEdges } = await doTestAddEdge(
+        EdgeWithDeletedAt,
+        verifyEdge,
+      );
+
+      const action = new SimpleAction(
+        user.viewer,
+        UserSchema,
+        new Map(),
+        WriteOperation.Edit,
+        user,
+      );
+      action.getTriggers = () => [
+        {
+          async changeset(builder, input) {
+            return Promise.all(
+              [...edges, ...symmetricEdges].map((edge) =>
+                EntChangeset.changesetRemoveFromOutboundEdge(
+                  builder,
+                  edge.edgeType,
+                  edge.id2,
+                  {
+                    disableTransformations: true,
+                  },
+                ),
+              ),
+            );
+          },
+        },
+      ];
+
+      await action.saveX();
+
+      const reloadEdges2 = await loadCustomEdges({
+        id1: user.id,
+        edgeType: "edge",
+        queryOptions: {
+          disableTransformations: true,
+        },
+        ctr: EdgeWithDeletedAt,
+      });
+      const reloadEdges2Count = await loadRawEdgeCountX({
+        id1: user.id,
+        edgeType: "edge",
+        queryOptions: {
+          disableTransformations: true,
+        },
+      });
+      const reloadSymmetricEdges2 = await loadCustomEdges({
+        id1: user.id,
+        edgeType: "symmetricEdge",
+        queryOptions: {
+          disableTransformations: true,
+        },
+        ctr: EdgeWithDeletedAt,
+      });
+      const reloadSymmetricEdges2Count = await loadRawEdgeCountX({
+        id1: user.id,
+        edgeType: "symmetricEdge",
+        queryOptions: {
+          disableTransformations: true,
+        },
+      });
+
+      expect(reloadEdges2.length).toBe(0);
+      expect(reloadEdges2Count).toBe(0);
+      expect(reloadSymmetricEdges2.length).toBe(0);
+      expect(reloadSymmetricEdges2Count).toBe(0);
+    });
   });
 }

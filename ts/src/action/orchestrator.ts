@@ -12,6 +12,7 @@ import {
   loadEdgeDatas,
   applyPrivacyPolicyForRow,
   parameterizedQueryOptions,
+  loadEdgeData,
 } from "../core/ent";
 import {
   getFields,
@@ -520,6 +521,8 @@ export class Orchestrator<
             if (!edgeData) {
               throw new Error(`could not load edge data for '${edgeType}'`);
             }
+            // similar logic in EntChangeset.changesetFromEdgeOp
+            // doesn't support conditional edges
 
             if (edgeData.symmetricEdge) {
               let symmetric: DataOperation = edgeOp.symmetricEdge();
@@ -1401,13 +1404,83 @@ export class EntChangeset<T extends Ent> implements Changeset {
     builder: Builder<any, any, any>,
     queries: Array<string | parameterizedQueryOptions>,
   ) {
-    return new EntChangeset(
-      builder.viewer,
+    return EntChangeset.changesetFrom(builder, [
+      new RawQueryOperation(builder, queries),
+    ]);
+  }
+
+  private static async changesetFromEdgeOp(
+    builder: Builder<any, any, any>,
+    op: EdgeOperation,
+    edgeType: string,
+  ) {
+    const edgeData = await loadEdgeData(edgeType);
+    const ops: DataOperation[] = [op];
+    if (!edgeData) {
+      throw new Error(`could not load edge data for '${edgeType}'`);
+    }
+    // similar logic in Orchestrator.buildEdgeOps
+    // doesn't support conditional edges
+    if (edgeData.symmetricEdge) {
+      ops.push(op.symmetricEdge());
+    }
+    if (edgeData.inverseEdgeType) {
+      ops.push(op.inverseEdge(edgeData));
+    }
+    return EntChangeset.changesetFrom(builder, ops);
+  }
+
+  static async changesetFromOutboundEdge(
+    builder: Builder<any, any, any>,
+    edgeType: string,
+    id2: Builder<any> | ID,
+    nodeType: string,
+    options?: AssocEdgeInputOptions,
+  ) {
+    return EntChangeset.changesetFromEdgeOp(
       builder,
-      // need unique placeholderID different from the builder. see comment above EntChangeset
-      `$ent.idPlaceholderID$ ${randomNum()}-${builder.ent.name}`,
-      false,
-      [new RawQueryOperation(builder, queries)],
+      EdgeOperation.outboundEdge(builder, edgeType, id2, nodeType, options),
+      edgeType,
+    );
+  }
+
+  static async changesetFromInboundEdge(
+    builder: Builder<any, any, any>,
+    edgeType: string,
+    id1: Builder<any> | ID,
+    nodeType: string,
+    options?: AssocEdgeInputOptions,
+  ) {
+    return EntChangeset.changesetFromEdgeOp(
+      builder,
+      EdgeOperation.inboundEdge(builder, edgeType, id1, nodeType, options),
+      edgeType,
+    );
+  }
+
+  static changesetRemoveFromOutboundEdge(
+    builder: Builder<any, any, any>,
+    edgeType: string,
+    id2: ID,
+    options?: AssocEdgeInputOptions,
+  ) {
+    return EntChangeset.changesetFromEdgeOp(
+      builder,
+      EdgeOperation.removeOutboundEdge(builder, edgeType, id2, options),
+      edgeType,
+    );
+  }
+
+  static changesetRemoveFromInboundEdge(
+    builder: Builder<any, any, any>,
+    edgeType: string,
+    id1: ID,
+    options?: AssocEdgeInputOptions,
+  ) {
+    return EntChangeset.changesetFromEdgeOp(
+      builder,
+      EdgeOperation.removeInboundEdge(builder, edgeType, id1, options),
+      edgeType,
     );
   }
 
