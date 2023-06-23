@@ -65,7 +65,9 @@ function createLoader<T extends AssocEdge>(
     const tableName = edgeData.edgeTable;
     const { cls: cls1, fields } = getEdgeClauseAndFields(
       clause.Eq("edge_type", edgeType),
-      {},
+      {
+        queryOptions: options,
+      },
     );
     const [query, cls] = buildGroupQuery({
       tableName: tableName,
@@ -93,7 +95,7 @@ function createLoader<T extends AssocEdge>(
   }, loaderOptions);
 }
 
-interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
+export interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
   loadEdgeForID2(id: ID, id2: ID): Promise<T | undefined>;
 }
 
@@ -136,6 +138,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
       id2,
       context: this.context,
       ctr: this.edgeCtr,
+      queryOptions: this.options,
     });
   }
 
@@ -155,7 +158,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
   ) {}
 
   async load(id: ID) {
-    return await loadCustomEdges({
+    return loadCustomEdges({
       id1: id,
       edgeType: this.edgeType,
       context: this.context,
@@ -170,6 +173,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
       edgeType: this.edgeType,
       id2,
       context: this.context,
+      queryOptions: this.options,
       ctr: this.edgeCtr,
     });
   }
@@ -231,7 +235,7 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     }
 
     // we create a loader which can combine first X queries in the same fetch
-    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}`;
+    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}:disableTransformations:${options.disableTransformations}`;
     return getCustomLoader(
       key,
       () => new AssocEdgeLoader(this.edgeType, ctr, options, context),

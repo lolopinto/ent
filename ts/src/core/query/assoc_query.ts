@@ -87,7 +87,10 @@ export abstract class AssocEdgeQueryBase<
     }
 
     return this.countLoaderFactory
-      .createLoader(this.viewer.context)
+      .createConfigurableLoader(
+        this.getDefaultEdgeQueryOptions() ?? {},
+        this.viewer.context,
+      )
       .load(info.id);
   }
 
@@ -200,6 +203,7 @@ export abstract class AssocEdgeQueryBase<
     }
 
     const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
+    // TODO...
     return loader.loadEdgeForID2(info.id, id2);
   }
 

@@ -1384,7 +1384,6 @@ interface loadEdgesOptions {
   edgeType: string;
   context?: Context;
   queryOptions?: EdgeQueryableDataOptions;
-  disableTransformations?: boolean;
 }
 
 interface loadCustomEdgesOptions<T extends AssocEdge> extends loadEdgesOptions {
@@ -1425,14 +1424,14 @@ export async function loadEdges(
 
 export function getEdgeClauseAndFields(
   cls: clause.Clause,
-  options: Pick<loadEdgesOptions, "disableTransformations">,
+  options: Pick<loadEdgesOptions, "queryOptions">,
 ) {
   let fields = edgeFields;
 
   const transformEdgeRead = __getGlobalSchema()?.transformEdgeRead;
   if (transformEdgeRead) {
     const transformClause = transformEdgeRead();
-    if (!options.disableTransformations) {
+    if (!options.queryOptions?.disableTransformations) {
       cls = clause.And(cls, transformClause);
     }
     fields = edgeFields.concat(transformClause.columns() as string[]);

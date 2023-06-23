@@ -1,4 +1,4 @@
-import { Ent, ID, Viewer } from "../../core/base";
+import { Data, Ent, ID, Viewer } from "../../core/base";
 import { CustomEdgeQueryBase } from "../../core/query/custom_query";
 import { AssocEdge } from "../../core/ent";
 import * as clause from "../../core/clause";
@@ -190,6 +190,13 @@ export class UserToFriendsQuery extends AssocEdgeQueryBase<
 
 // example with custom method
 export class CustomEdge extends AssocEdge {
+  deleted_at: Date | null = null;
+
+  constructor(data: Data) {
+    super(data);
+    this.deleted_at = data.deleted_at;
+  }
+
   async loadUser(viewer: Viewer) {
     return await FakeUser.load(viewer, this.id2);
   }
@@ -288,7 +295,7 @@ export class UserToFriendRequestsQuery extends AssocEdgeQueryBase<
 export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
   FakeUser,
   FakeUser,
-  AssocEdge
+  CustomEdge
 > {
   constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, FakeUser>) {
     super(
@@ -297,7 +304,7 @@ export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
       new AssocEdgeCountLoaderFactory(EdgeType.UserToIncomingFriendRequests),
       new AssocEdgeLoaderFactory(
         EdgeType.UserToIncomingFriendRequests,
-        AssocEdge,
+        CustomEdge,
       ),
       FakeUser.loaderOptions(),
     );
@@ -336,6 +343,14 @@ export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
 
   queryCustomEdge(): UserToCustomEdgeQuery {
     return UserToCustomEdgeQuery.query(this.viewer, this);
+  }
+
+  // this is generated in codegen. we'll just add it manually here
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({
+      disableTransformations: true,
+    });
+    return this;
   }
 }
 

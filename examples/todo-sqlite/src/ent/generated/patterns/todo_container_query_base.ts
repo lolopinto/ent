@@ -53,6 +53,11 @@ export abstract class ObjectToScopedTodosQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   protected abstract getSourceLoadEntOptions(): LoadEntOptions<
     Ent<Viewer>,
     Viewer

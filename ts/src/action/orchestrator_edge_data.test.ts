@@ -356,25 +356,33 @@ function commonTestsNoGlobalSchema() {
       id1: user.id,
       edgeType: "edge",
       // shouldn't do anything
-      disableTransformations: true,
+      queryOptions: {
+        disableTransformations: true,
+      },
     });
     const reloadEdgesCount = await loadRawEdgeCountX({
       id1: user.id,
       edgeType: "edge",
       // shouldn't do anything
-      disableTransformations: true,
+      queryOptions: {
+        disableTransformations: true,
+      },
     });
     const reloadSymmetricEdges = await loadEdges({
       id1: user.id,
       edgeType: "symmetricEdge",
       // shouldn't do anything
-      disableTransformations: true,
+      queryOptions: {
+        disableTransformations: true,
+      },
     });
     const reloadSymmetricEdgesCount = await loadRawEdgeCountX({
       id1: user.id,
       edgeType: "symmetricEdge",
       // shouldn't do anything
-      disableTransformations: true,
+      queryOptions: {
+        disableTransformations: true,
+      },
     });
     expect(reloadEdges.length).toBe(0);
     expect(reloadSymmetricEdges.length).toBe(0);
@@ -428,24 +436,32 @@ function commonTestsGlobalSchema() {
     const reloadEdges2 = await loadCustomEdges({
       id1: user.id,
       edgeType: "edge",
-      disableTransformations: true,
+      queryOptions: {
+        disableTransformations: true,
+      },
       ctr: EdgeWithDeletedAt,
     });
     const reloadEdges2Count = await loadRawEdgeCountX({
       id1: user.id,
       edgeType: "edge",
-      disableTransformations: true,
+      queryOptions: {
+        disableTransformations: true,
+      },
     });
     const reloadSymmetricEdges2 = await loadCustomEdges({
       id1: user.id,
       edgeType: "symmetricEdge",
-      disableTransformations: true,
+      queryOptions: {
+        disableTransformations: true,
+      },
       ctr: EdgeWithDeletedAt,
     });
     const reloadSymmetricEdges2Count = await loadRawEdgeCountX({
       id1: user.id,
       edgeType: "symmetricEdge",
-      disableTransformations: true,
+      queryOptions: {
+        disableTransformations: true,
+      },
     });
     expect(reloadEdges2.length).toBe(2);
     expect(reloadEdges2Count).toBe(2);

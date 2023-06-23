@@ -39,7 +39,9 @@ describe("assoc query desc", () => {
           id1: user.id,
           edgeType: EdgeType.UserToContacts,
           ctr: EdgeWithDeletedAt,
-          disableTransformations: true,
+          queryOptions: {
+            disableTransformations: true,
+          },
         }),
       ]);
       expect(raw.length).toBe(0);

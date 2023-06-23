@@ -27,23 +27,24 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes             NodeMapInfo
-	Patterns          map[string]*PatternInfo
-	globalEdges       []*edge.AssociationEdge
-	globalEnums       map[string]*EnumInfo
-	globalConsts      *objWithConsts
-	extraEdgeFields   []*field.Field
-	initGlobalSchema  bool
-	tables            NodeMapInfo
-	edges             map[string]*ent.AssocEdgeData
-	newEdges          []*ent.AssocEdgeData
-	edgesToUpdate     []*ent.AssocEdgeData
-	Enums             map[string]*EnumInfo
-	enumTables        map[string]*EnumInfo
-	CustomInterfaces  map[string]*customtype.CustomInterface
-	allCustomTypes    map[string]field.CustomTypeWithHasConvertFunction
-	gqlTypeMap        map[string]bool
-	globalCanViewerDo map[string]action.Action
+	Nodes                       NodeMapInfo
+	Patterns                    map[string]*PatternInfo
+	globalEdges                 []*edge.AssociationEdge
+	globalEnums                 map[string]*EnumInfo
+	globalConsts                *objWithConsts
+	extraEdgeFields             []*field.Field
+	initGlobalSchema            bool
+	globalSchemaTransformsEdges bool
+	tables                      NodeMapInfo
+	edges                       map[string]*ent.AssocEdgeData
+	newEdges                    []*ent.AssocEdgeData
+	edgesToUpdate               []*ent.AssocEdgeData
+	Enums                       map[string]*EnumInfo
+	enumTables                  map[string]*EnumInfo
+	CustomInterfaces            map[string]*customtype.CustomInterface
+	allCustomTypes              map[string]field.CustomTypeWithHasConvertFunction
+	gqlTypeMap                  map[string]bool
+	globalCanViewerDo           map[string]action.Action
 
 	// used to keep track of schema-state
 	inputSchema *input.Schema
@@ -59,6 +60,10 @@ func (s *Schema) GetGlobalEdges() []*edge.AssociationEdge {
 
 func (s *Schema) InitGlobalSchema() bool {
 	return s.initGlobalSchema
+}
+
+func (s *Schema) GlobalSchemaTransformsEdges() bool {
+	return s.globalSchemaTransformsEdges
 }
 
 func (s *Schema) ExtraEdgeFields() []*field.Field {
@@ -676,6 +681,7 @@ func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema
 	}
 
 	s.initGlobalSchema = gs.Init
+	s.globalSchemaTransformsEdges = gs.TransformsEdges
 
 	return errs
 }

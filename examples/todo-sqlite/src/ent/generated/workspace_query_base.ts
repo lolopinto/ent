@@ -57,6 +57,11 @@ export abstract class WorkspaceToMembersQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   sourceEnt(id: ID) {
     return Workspace.load(this.viewer, id);
   }

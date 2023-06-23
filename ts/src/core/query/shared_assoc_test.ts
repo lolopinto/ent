@@ -1,4 +1,4 @@
-import { ID, Ent, Viewer } from "../base";
+import { ID, Ent, Viewer, WriteOperation } from "../base";
 import { AssocEdge, getDefaultLimit } from "../ent";
 import { EdgeQuery } from "./query";
 import { EdgeQueryCtr } from "./assoc_query";
@@ -21,6 +21,7 @@ import {
   getEventBuilder,
   UserToIncomingFriendRequestsQuery,
   ViewerWithAccessToken,
+  FakeUserSchema,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -35,6 +36,9 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 import { MockLogs } from "../../testutils/mock_log";
 import { And, Eq } from "../clause";
+import { SimpleAction } from "../../testutils/builder";
+import { DateTime } from "luxon";
+import { convertDate } from "../convert";
 
 export function assocTests(ml: MockLogs, global = false) {
   ml.mock();
@@ -924,7 +928,7 @@ export function assocTests(ml: MockLogs, global = false) {
       expect(countMap.get(user2.id)).toBe(0);
     });
 
-    test("count", async () => {
+    test("raw count", async () => {
       const countMap = await getQuery().queryAllRawCount();
       expect(countMap.size).toBe(2);
 
@@ -960,6 +964,180 @@ export function assocTests(ml: MockLogs, global = false) {
         friendRequests.length,
       );
       expect(entsMapFromUserVCToken.get(user2.id)?.length).toBe(0);
+    });
+  });
+
+  if (!global) {
+    return;
+  }
+
+  // global only tests here
+
+  describe("deleted edges", () => {
+    let user: FakeUser;
+    let friendRequests: FakeUser[];
+    let user2: FakeUser;
+    let postDeletedCount: number;
+
+    beforeEach(async () => {
+      [user, friendRequests] = await createUserPlusFriendRequests();
+      user2 = await createTestUser();
+      postDeletedCount = Math.floor(friendRequests.length / 2);
+    });
+
+    async function deleteEdges() {
+      const action = new SimpleAction(
+        user.viewer,
+        FakeUserSchema,
+        new Map(),
+        WriteOperation.Edit,
+        user,
+      );
+      for (let i = 0; i < friendRequests.length; i++) {
+        if (i % 2 == 0) {
+          action.builder.orchestrator.removeInboundEdge(
+            friendRequests[i].id,
+            EdgeType.UserToFriendRequests,
+          );
+        }
+      }
+      await action.saveX();
+    }
+
+    function getQuery(viewer: Viewer) {
+      return UserToIncomingFriendRequestsQuery.query(viewer, user.id);
+    }
+
+    test("ids", async () => {
+      const ids = await getQuery(user.viewer).queryIDs();
+      expect(ids.length).toBe(friendRequests.length);
+    });
+
+    test("ids after deleted", async () => {
+      await deleteEdges();
+      const idsFromUser = await getQuery(user.viewer).queryIDs();
+      expect(idsFromUser.length).toBe(postDeletedCount);
+    });
+
+    test("ids deleted. fetch deleted anyways", async () => {
+      await deleteEdges();
+      const idsFromUser = await getQuery(user.viewer)
+        .withoutTransformations()
+        .queryIDs();
+      expect(idsFromUser.length).toBe(friendRequests.length);
+    });
+
+    test("count", async () => {
+      const count = await getQuery(user.viewer).queryCount();
+      expect(count).toBe(friendRequests.length);
+    });
+
+    test("count after deleted", async () => {
+      await deleteEdges();
+      const count = await getQuery(user.viewer).queryCount();
+      expect(count).toBe(postDeletedCount);
+    });
+
+    test("count after deleted. fetch deleted", async () => {
+      await deleteEdges();
+      const count = await getQuery(user.viewer)
+        .withoutTransformations()
+        .queryCount();
+      expect(count).toBe(friendRequests.length);
+    });
+
+    test("raw count", async () => {
+      const count = await getQuery(user.viewer).queryCount();
+      expect(count).toBe(friendRequests.length);
+    });
+
+    test("raw count after deleted", async () => {
+      await deleteEdges();
+      const count = await getQuery(user.viewer).queryRawCount();
+      expect(count).toBe(postDeletedCount);
+    });
+
+    test("raw count after deleted. fetch deleted", async () => {
+      await deleteEdges();
+      const count = await getQuery(user.viewer)
+        .withoutTransformations()
+        .queryRawCount();
+      expect(count).toBe(friendRequests.length);
+    });
+
+    test("edges", async () => {
+      const edges = await getQuery(user.viewer).queryEdges();
+      expect(edges.length).toBe(friendRequests.length);
+
+      for (const edge of edges) {
+        expect(edge.deleted_at).toBeNull();
+      }
+    });
+
+    test("edges after deleted", async () => {
+      await deleteEdges();
+      const edges = await getQuery(user.viewer).queryEdges();
+      expect(edges.length).toBe(postDeletedCount);
+
+      for (const edge of edges) {
+        expect(edge.deleted_at).toBeNull();
+      }
+    });
+
+    test("edges after deleted. fetch deleted", async () => {
+      await deleteEdges();
+      const edges = await getQuery(user.viewer)
+        .withoutTransformations()
+        .queryEdges();
+      expect(edges.length).toBe(friendRequests.length);
+
+      let notDeletedAtCt = 0;
+      for (const edge of edges) {
+        if (edge.deleted_at === null) {
+          notDeletedAtCt++;
+        } else {
+          expect(
+            DateTime.fromJSDate(convertDate(edge.deleted_at)).isValid,
+          ).toBe(true);
+        }
+      }
+      expect(notDeletedAtCt).toBe(postDeletedCount);
+    });
+
+    test("ents", async () => {
+      const viewer = new ViewerWithAccessToken(user.id, {
+        tokens: {
+          allow_incoming_friend_request: true,
+        },
+      });
+
+      const ents = await getQuery(viewer).queryEnts();
+      expect(ents.length).toBe(friendRequests.length);
+    });
+
+    test("ents after deleted", async () => {
+      await deleteEdges();
+      const viewer = new ViewerWithAccessToken(user.id, {
+        tokens: {
+          allow_incoming_friend_request: true,
+        },
+      });
+
+      const ents = await getQuery(viewer).queryEnts();
+      expect(ents.length).toBe(postDeletedCount);
+    });
+
+    test("ents after deleted. fetch deleted", async () => {
+      await deleteEdges();
+      const viewer = new ViewerWithAccessToken(user.id, {
+        tokens: {
+          allow_incoming_friend_request: true,
+          always_allow_user: true,
+        },
+      });
+
+      const ents = await getQuery(viewer).withoutTransformations().queryEnts();
+      expect(ents.length).toBe(friendRequests.length);
     });
   });
 }

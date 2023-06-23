@@ -1,12 +1,18 @@
 import DataLoader from "dataloader";
-import { ID, Context, Loader, LoaderFactory } from "../base";
+import {
+  ID,
+  Context,
+  Loader,
+  LoaderFactory,
+  EdgeQueryableDataOptions,
+} from "../base";
 import {
   getEdgeClauseAndFields,
   loadEdgeData,
   loadRawEdgeCountX,
 } from "../ent";
 import * as clause from "../clause";
-import { getLoader } from "./loader";
+import { getCustomLoader, getLoader } from "./loader";
 import { createCountDataLoader } from "./raw_count_loader";
 import memoize from "memoizee";
 
@@ -14,7 +20,11 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
   private loaderFn: () => Promise<DataLoader<ID, number>>;
   private loader: DataLoader<ID, number> | undefined;
 
-  constructor(private edgeType: string, public context?: Context) {
+  constructor(
+    private edgeType: string,
+    public context?: Context,
+    private options?: Pick<EdgeQueryableDataOptions, "disableTransformations">,
+  ) {
     if (context) {
       this.loaderFn = memoize(this.getLoader);
     }
@@ -27,7 +37,9 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
     }
     const { cls } = getEdgeClauseAndFields(
       clause.Eq("edge_type", this.edgeType),
-      {},
+      {
+        queryOptions: this.options,
+      },
     );
 
     this.loader = createCountDataLoader({
@@ -43,6 +55,7 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
       return loadRawEdgeCountX({
         id1: id,
         edgeType: this.edgeType,
+        queryOptions: this.options,
       });
     }
     const loader = await this.loaderFn();
@@ -68,6 +81,18 @@ export class AssocEdgeCountLoaderFactory implements LoaderFactory<ID, number> {
     return getLoader(
       this,
       () => new AssocEdgeCountLoader(this.edgeType, context),
+      context,
+    ) as AssocEdgeCountLoader;
+  }
+
+  createConfigurableLoader(
+    options: Pick<EdgeQueryableDataOptions, "disableTransformations">,
+    context?: Context,
+  ): AssocEdgeCountLoader {
+    const key = `${this.name}:disableTransformations:${options.disableTransformations}`;
+    return getCustomLoader(
+      key,
+      () => new AssocEdgeCountLoader(this.edgeType, context, options),
       context,
     ) as AssocEdgeCountLoader;
   }
