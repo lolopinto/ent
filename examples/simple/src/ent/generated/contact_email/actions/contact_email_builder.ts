@@ -145,6 +145,7 @@ export class ContactEmailBuilder<
     }
     return edited.id;
   }
+
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
   }

@@ -233,4 +233,7 @@ export const EmailInfoType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
   }),
+  isTypeOf(obj) {
+    return obj instanceof EmailInfo;
+  },
 });

@@ -44,6 +44,9 @@ export const UserAuthPayloadType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLID),
     },
   }),
+  isTypeOf(obj) {
+    return obj instanceof UserAuthPayload;
+  },
 });
 
 export const UserAuthType: GraphQLFieldConfig<
