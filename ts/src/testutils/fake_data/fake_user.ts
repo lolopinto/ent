@@ -67,7 +67,6 @@ export class FakeUser implements Ent {
           },
         },
 
-        // TODO these need to account for deleted edges
         //can view user if friends
         new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
         //can view user if following

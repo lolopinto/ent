@@ -203,7 +203,6 @@ export abstract class AssocEdgeQueryBase<
     }
 
     const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
-    // TODO...
     return loader.loadEdgeForID2(info.id, id2);
   }
 
