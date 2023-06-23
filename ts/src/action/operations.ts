@@ -366,6 +366,10 @@ export interface AssocEdgeOptions {
   // e.g. if an upsert is being done, and the builder changes from insert to update,
   // then the edge write should not be done if this is true
   conditional?: boolean;
+
+  // if passed and we have global tranformWrite options on edges, it disables the tranformations
+  // e.g. if we have edge soft delete enabled, this exists to delete the edge without soft deleting
+  disableTransformations?: boolean;
 }
 
 export interface AssocEdgeInput extends AssocEdgeInputOptions {
@@ -451,9 +455,8 @@ export class EdgeOperation implements DataOperation {
     let op = SQLStatementOperation.Delete;
     let updateData: Data | null = null;
 
-    // TODO respect disableTransformations
     const transformedEdgeWrite = __getGlobalSchema()?.transformEdgeWrite;
-    if (transformedEdgeWrite) {
+    if (transformedEdgeWrite && !edge.disableTransformations) {
       transformed = transformedEdgeWrite({
         op: SQLStatementOperation.Delete,
         edge,
@@ -569,11 +572,9 @@ export class EdgeOperation implements DataOperation {
       }
     }
 
-    // TODO respect disableTransformations
-
     let transformed: TransformedEdgeUpdateOperation | null = null;
     const transformEdgeWrite = __getGlobalSchema()?.transformEdgeWrite;
-    if (transformEdgeWrite) {
+    if (transformEdgeWrite && !edge.disableTransformations) {
       transformed = transformEdgeWrite({
         op: SQLStatementOperation.Insert,
         edge,
@@ -674,6 +675,7 @@ export class EdgeOperation implements DataOperation {
         edgeType: this.edgeInput.edgeType,
         time: this.edgeInput.time,
         data: this.edgeInput.data,
+        disableTransformations: this.edgeInput.disableTransformations,
       },
       {
         operation: this.options.operation,
@@ -695,6 +697,7 @@ export class EdgeOperation implements DataOperation {
         edgeType: edgeData.inverseEdgeType!,
         time: this.edgeInput.time,
         data: this.edgeInput.data,
+        disableTransformations: this.edgeInput.disableTransformations,
       },
       {
         operation: this.options.operation,
@@ -818,6 +821,7 @@ export class EdgeOperation implements DataOperation {
     builder: Builder<T>,
     edgeType: string,
     id1: ID,
+    options?: AssocEdgeInputOptions,
   ): EdgeOperation {
     if (!builder.existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
@@ -828,6 +832,7 @@ export class EdgeOperation implements DataOperation {
       id2: builder.existingEnt!.id,
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
+      disableTransformations: options?.disableTransformations,
     };
     return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,
@@ -838,6 +843,7 @@ export class EdgeOperation implements DataOperation {
     builder: Builder<T>,
     edgeType: string,
     id2: ID,
+    options?: AssocEdgeInputOptions,
   ): EdgeOperation {
     if (!builder.existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
@@ -848,6 +854,7 @@ export class EdgeOperation implements DataOperation {
       id1: builder.existingEnt!.id,
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
+      disableTransformations: options?.disableTransformations,
     };
     return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,

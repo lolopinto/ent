@@ -3,6 +3,7 @@
 
 {{ $cfg := .CodePath -}}
 {{ $schema := .Schema -}}
+{{ $pkg := .Package -}}
 
 {{define "inverseEdge" -}}
   {{ $field := .Field -}}
@@ -235,7 +236,8 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     }
   {{end -}}
 
-  {{ template "edge_builder.tmpl" .BuilderEdges $schema -}}
+  {{$builderEdges := .BuilderEdges $schema}}
+  {{ template "edge_builder.tmpl" (dict "Edges" $builderEdges "Schema" $schema "Package" $pkg) -}}
 
   async build(): Promise<{{useImport "Changeset"}}> {
     return this.orchestrator.build();

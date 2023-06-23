@@ -360,6 +360,39 @@ test("tags", async () => {
   expect(edges3.length).toBe(4);
   expect(tags3.length).toBe(4);
   expect(edges3.filter((edge) => edge.deletedAt !== null).length).toBe(1);
+
+  // reeally delete
+  const action = TodoRemoveTagAction.create(todo.viewer, todo);
+  action.builder.removeTagID(tag.id, {
+    disableTransformations: true,
+  });
+  await action.saveX();
+  todo.viewer.context?.cache?.clearCache();
+
+  const count4 = await todo.queryTags().queryRawCount();
+  const tags4 = await todo.queryTags().queryEnts();
+  const edges4 = await todo.queryTags().queryEdges();
+
+  expect(edges4.length).toBe(3);
+  expect(edges4.every((edge) => edge.deletedAt === null)).toBe(true);
+  expect(count4).toBe(3);
+  expect(tags4.length).toBe(3);
+
+  // fetch without tranformations
+  // no longer there...
+  const count5 = await todo
+    .queryTags()
+    .withoutTransformations()
+    .queryRawCount();
+  const tags5 = await todo.queryTags().withoutTransformations().queryEnts();
+  const edges5 = await todo.queryTags().withoutTransformations().queryEdges();
+
+  // the deleted one is still in the db, just not returned by queries
+  // if we ask for it, we can get it...
+  expect(count5).toBe(3);
+  expect(edges5.length).toBe(3);
+  expect(tags5.length).toBe(3);
+  expect(edges5.filter((edge) => edge.deletedAt !== null).length).toBe(0);
 });
 
 test("assignees", async () => {

@@ -3,6 +3,7 @@
 import { AssocEdgeInputOptions, Ent, ID, Viewer } from "@snowtop/ent";
 import {
   Action,
+  AssocEdgeOptions,
   Builder,
   Changeset,
   ChangesetOptions,
@@ -151,6 +152,11 @@ export class TagBuilder<
       NodeType.Todo,
       options,
     );
+    return this;
+  }
+
+  removeTodoID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(id, EdgeType.TagToTodos, opts);
     return this;
   }
 

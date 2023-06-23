@@ -3,6 +3,7 @@
 import { AssocEdgeInputOptions, Ent, ID, Viewer } from "@snowtop/ent";
 import {
   Action,
+  AssocEdgeOptions,
   Builder,
   Changeset,
   ChangesetOptions,
@@ -189,6 +190,11 @@ export class WorkspaceBuilder<
       NodeType.Account,
       options,
     );
+    return this;
+  }
+
+  removeMemberID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(id, EdgeType.WorkspaceToMembers, opts);
     return this;
   }
 

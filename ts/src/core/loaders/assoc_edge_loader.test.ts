@@ -37,7 +37,6 @@ import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { convertDate } from "../convert";
 import { DateTime } from "luxon";
-import { getLoader } from "./loader";
 
 const ml = new MockLogs();
 

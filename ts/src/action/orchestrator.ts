@@ -336,6 +336,7 @@ export class Orchestrator<
         id: id1,
         edgeType,
         direction: edgeDirection.inboundEdge,
+        options,
       }),
       WriteOperation.Delete,
       options?.conditional,
@@ -348,6 +349,7 @@ export class Orchestrator<
         id: id2,
         edgeType,
         direction: edgeDirection.outboundEdge,
+        options,
       }),
       WriteOperation.Delete,
       options?.conditional,
@@ -474,12 +476,14 @@ export class Orchestrator<
           this.options.builder,
           edgeType,
           id2,
+          edge.options,
         );
       } else {
         return EdgeOperation.removeInboundEdge(
           this.options.builder,
           edgeType,
           id2,
+          edge.options,
         );
       }
     }

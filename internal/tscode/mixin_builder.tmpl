@@ -3,6 +3,8 @@
 
 {{$p := .Pattern}}
 {{ $cfg := .Config -}}
+{{ $schema := .Schema -}}
+{{ $pkg := .Package -}}
 
 {{ reserveImport "src/ent/generated/types" "EdgeType" "NodeType" }}
 
@@ -70,6 +72,6 @@ export function {{$p.GetBuilderName}}<
       super(...args);
     }
 
-  {{ template "edge_builder.tmpl" $p.GetSortedEdges -}}
+  {{ template "edge_builder.tmpl" (dict "Edges" $p.GetSortedEdges "Schema" $schema "Package" $pkg) -}}
   }
 }

@@ -167,6 +167,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
     });
   }
 
+  // TODO should this have a disableTransformations flag to get these rows
   async loadEdgeForID2(id: ID, id2: ID) {
     return loadEdgeForID2({
       id1: id,

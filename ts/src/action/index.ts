@@ -28,3 +28,4 @@ export {
   maybeConvertRelativeInputPlusExpressions,
 } from "./relative_value";
 export { Transaction } from "./transaction";
+export { AssocEdgeOptions } from "./operations";
