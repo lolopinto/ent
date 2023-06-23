@@ -19,10 +19,14 @@ import { logEnabled } from "../logger";
 import { cacheMap, getCustomLoader, getLoader } from "./loader";
 import memoizee from "memoizee";
 import { ObjectLoaderFactory } from "./object_loader";
+import { OrderBy, getOrderByPhrase } from "../query_impl";
 
-export function getOrderBy(sortCol: string, orderby?: string) {
+export function getQueryLoaderOrderByDeprecated(
+  sortCol: string,
+  orderby?: OrderBy,
+) {
   if (orderby) {
-    return orderby;
+    return getOrderByPhrase(orderby);
   }
   let sortColLower = sortCol.toLowerCase();
   let orderbyDirection = " DESC";
@@ -57,7 +61,7 @@ async function simpleCase<K extends any>(
   return await loadRows({
     ...options,
     clause: cls,
-    orderby: getOrderBy(sortCol, queryOptions?.orderby),
+    orderby: getQueryLoaderOrderByDeprecated(sortCol, queryOptions?.orderby),
     limit: queryOptions?.limit || getDefaultLimit(),
   });
 }
@@ -109,7 +113,7 @@ function createLoader<K extends any>(
       tableName: options.tableName,
       fields: options.fields,
       values: keys,
-      orderby: getOrderBy(sortCol, queryOptions?.orderby),
+      orderby: getQueryLoaderOrderByDeprecated(sortCol, queryOptions?.orderby),
       limit: queryOptions?.limit || getDefaultLimit(),
       groupColumn: col,
       clause: extraClause,

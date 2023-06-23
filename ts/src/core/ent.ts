@@ -36,6 +36,7 @@ import * as clause from "./clause";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
 import { __getGlobalSchema } from "./global_schema";
+import { OrderBy, getOrderByPhrase } from "./query_impl";
 
 // TODO kill this and createDataLoader
 class cacheMap {
@@ -936,7 +937,7 @@ export function buildQuery(options: QueryableDataOptions): string {
     parts.push(`GROUP BY ${options.groupby}`);
   }
   if (options.orderby) {
-    parts.push(`ORDER BY ${options.orderby}`);
+    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby)}`);
   }
   if (options.limit) {
     parts.push(`LIMIT ${options.limit}`);
@@ -952,7 +953,7 @@ interface GroupQueryOptions<T extends Data, K = keyof T> {
   groupColumn: K;
   fields: K[];
   values: any[];
-  orderby?: string;
+  orderby?: OrderBy;
   limit: number;
 }
 
@@ -968,7 +969,7 @@ export function buildGroupQuery<T extends Data = Data, K = keyof T>(
   }
   let orderby = "";
   if (options.orderby) {
-    orderby = `ORDER BY ${options.orderby}`;
+    orderby = `ORDER BY ${getOrderByPhrase(options.orderby)}`;
   }
 
   // window functions work in sqlite!
