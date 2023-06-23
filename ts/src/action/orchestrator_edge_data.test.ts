@@ -30,7 +30,6 @@ import {
   testEdgeGlobalSchema,
 } from "../testutils/test_edge_global_schema";
 import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
-import { Edge } from "dist";
 
 const UserSchema = getBuilderSchemaFromFields(
   {
