@@ -1,10 +1,10 @@
-interface OrderByOptions {
+export interface OrderByOption {
   column: string;
   direction: "asc" | "desc";
   nullsPlacement?: "first" | "last";
 }
 
-export type OrderBy = string | OrderByOptions[];
+export type OrderBy = string | OrderByOption[];
 
 export function getOrderByPhrase(orderby: OrderBy): string {
   let ret = "";

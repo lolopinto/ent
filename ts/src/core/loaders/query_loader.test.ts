@@ -39,7 +39,12 @@ const getNewLoader = (context: boolean = true) => {
     groupCol: "user_id",
     ...FakeEvent.loaderOptions(),
     clause: getNextWeekClause(),
-    sortColumn: "start_time asc",
+    orderby: [
+      {
+        column: "start_time",
+        direction: "asc",
+      },
+    ],
   }).createLoader(context ? ctx : undefined);
 };
 
@@ -51,7 +56,12 @@ const getConfigurableLoader = (
     groupCol: "user_id",
     ...FakeEvent.loaderOptions(),
     clause: getNextWeekClause(),
-    sortColumn: "start_time asc",
+    orderby: [
+      {
+        column: "start_time",
+        direction: "asc",
+      },
+    ],
   }).createConfigurableLoader(options, context ? ctx : undefined);
 };
 
@@ -59,7 +69,12 @@ const getNonGroupableLoader = (id: ID, context: boolean = true) => {
   return new QueryLoaderFactory({
     ...FakeEvent.loaderOptions(),
     clause: getCompleteClause(id),
-    sortColumn: "start_time asc",
+    orderby: [
+      {
+        column: "start_time",
+        direction: "asc",
+      },
+    ],
   }).createLoader(context ? ctx : undefined);
 };
 

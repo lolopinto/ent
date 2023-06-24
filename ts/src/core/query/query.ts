@@ -13,6 +13,7 @@ import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
 import { validate } from "uuid";
 import { types } from "util";
+import { OrderBy } from "../query_impl";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -330,11 +331,20 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   }
 }
 
-interface EdgeQueryOptions {
+interface EdgeQueryOptionsDeprecated {
   cursorCol: string;
   sortCol: string;
   nullsPlacement?: "first" | "last";
 }
+
+// TODO...
+interface EdgeQueryOptions {
+  cursorCol: string;
+  orderby: OrderBy;
+  // sortCol: string;
+  // nullsPlacement?: "first" | "last";
+}
+
 export abstract class BaseEdgeQuery<
   TSource extends Ent,
   TDest extends Ent,
@@ -352,10 +362,14 @@ export abstract class BaseEdgeQuery<
   private sortCol: string;
   private cursorCol: string;
   private defaultDirection?: "ASC" | "DESC";
-  private edgeQueryOptions: EdgeQueryOptions;
+  private edgeQueryOptions: EdgeQueryOptionsDeprecated;
 
+  // TODO...
+  // third overload lol...
+  // nah, we just added EdgeQueryOptions so can just change it
+  //
   constructor(viewer: Viewer, sortCol: string, cursorCol: string);
-  constructor(viewer: Viewer, options: EdgeQueryOptions);
+  constructor(viewer: Viewer, options: EdgeQueryOptionsDeprecated);
 
   constructor(
     public viewer: Viewer,
@@ -370,6 +384,13 @@ export abstract class BaseEdgeQuery<
       this.edgeQueryOptions = {
         cursorCol,
         sortCol,
+        // TODO
+        // orderby: [
+        //   {
+        //     column: sortCol,
+        //     direction: "desc",
+        //   },
+        // ],
       };
     } else {
       sortCol = sortColOrOptions.sortCol;
