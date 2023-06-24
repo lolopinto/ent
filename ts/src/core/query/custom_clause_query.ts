@@ -13,6 +13,7 @@ import {
   loadRow,
   loadRows,
 } from "../ent";
+import { OrderBy } from "../query_impl";
 
 import { BaseEdgeQuery, IDInfo } from "./query";
 
@@ -25,13 +26,19 @@ export interface CustomClauseQueryOptions<
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
   name: string;
-  // defaults to id
-  sortColumn?: string;
   // pass this if the sort column is unique and it'll be used for the cursor and used to
   // generate the query
   sortColumnUnique?: boolean;
+  orderby?: OrderBy;
+
+  // these next 3 are deprecated. use orderby
+  // defaults to id
+  // @deprecated use orderby
+  sortColumn?: string;
+  // @deprecated use orderby
   orderByDirection?: "ASC" | "DESC";
   // in Postgres, NULLS FIRST is the default for DESC order, and NULLS LAST otherwise.
+  // @deprecated user orderby`
   nullsPlacement?: "first" | "last";
 
   disableTransformations?: boolean;
@@ -63,25 +70,34 @@ export class CustomClauseQuery<
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
   ) {
-    let sortCol = options.sortColumn || "id";
-    let unique = options.sortColumnUnique
-      ? sortCol
-      : options.loadEntOptions.loaderFactory.options?.key || "id";
+    let orderby: OrderBy;
+    let primarySortCol: string;
 
-    // pass direction to base class since it uses it
-    // this API needs to be cleaned up...
-    if (options.orderByDirection) {
-      sortCol = `${sortCol} ${options.orderByDirection}`;
-    }
-    super(viewer, {
-      orderby: [
+    if (options.orderby) {
+      orderby = options.orderby;
+      if (typeof orderby === "string") {
+        primarySortCol = orderby;
+      } else {
+        primarySortCol = orderby[0].column;
+      }
+    } else {
+      // TODO kill sortColumn etc and just use orderby here
+      primarySortCol = options.sortColumn || "id";
+      orderby = [
         {
-          column: sortCol,
-          direction: "DESC",
+          column: primarySortCol,
+          direction: options.orderByDirection ?? "DESC",
           nullsPlacement: options.nullsPlacement,
         },
-      ],
-      cursorCol: unique,
+      ];
+    }
+    let cursorCol = options.sortColumnUnique
+      ? primarySortCol
+      : options.loadEntOptions.loaderFactory.options?.key || "id";
+
+    super(viewer, {
+      orderby,
+      cursorCol,
     });
     this.clause = getClause(options);
   }

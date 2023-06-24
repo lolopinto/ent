@@ -338,18 +338,9 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   }
 }
 
-interface EdgeQueryOptionsDeprecated {
-  cursorCol: string;
-  sortCol: string;
-  nullsPlacement?: "first" | "last";
-}
-
-// TODO...
 interface EdgeQueryOptions {
   cursorCol: string;
   orderby: OrderBy;
-  // sortCol: string;
-  // nullsPlacement?: "first" | "last";
 }
 
 export abstract class BaseEdgeQuery<
@@ -368,13 +359,10 @@ export abstract class BaseEdgeQuery<
   private idsToFetch: ID[] = [];
   private sortCol: string;
   private cursorCol: string;
+  // TODO do we still need this?
   private defaultDirection?: "ASC" | "DESC";
   private edgeQueryOptions: EdgeQueryOptions;
 
-  // TODO...
-  // third overload lol...
-  // nah, we just added EdgeQueryOptions so can just change it
-  //
   constructor(viewer: Viewer, sortCol: string, cursorCol: string);
   constructor(viewer: Viewer, options: EdgeQueryOptions);
 
@@ -403,6 +391,7 @@ export abstract class BaseEdgeQuery<
       } else {
         // TODO this orderby isn't consistent and this logic needs to be changed anywhere that's using this and this.getSortCol()
         sortCol = sortColOrOptions.orderby[0].column;
+        this.defaultDirection = sortColOrOptions.orderby[0].direction;
       }
       cursorCol = sortColOrOptions.cursorCol;
       this.edgeQueryOptions = sortColOrOptions;
