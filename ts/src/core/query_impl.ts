@@ -1,6 +1,6 @@
 export interface OrderByOption {
   column: string;
-  direction: "asc" | "desc";
+  direction: "ASC" | "DESC";
   nullsPlacement?: "first" | "last";
 }
 

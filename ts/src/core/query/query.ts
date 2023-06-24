@@ -181,25 +181,26 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     options.limit = limit;
 
-    let orderby = this.options.defaultDirection || "DESC";
+    const direction = this.options.defaultDirection || "DESC";
 
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
-    const less = orderby === "DESC";
-
-    let nullsPlacement = "";
-    if (this.options.nullsPlacement) {
-      if (this.options.nullsPlacement === "first") {
-        nullsPlacement = " NULLS FIRST";
-      } else {
-        nullsPlacement = " NULLS LAST";
-      }
-    }
+    const less = direction === "DESC";
 
     if (this.options.cursorCol !== this.sortCol) {
       // we also sort unique col in same direction since it doesn't matter...
-      // nulls placement only affects sortCol. assumption is cursorCol will not be null and no need for that
-      options.orderby = `${this.sortCol} ${orderby}${nullsPlacement}, ${this.options.cursorCol} ${orderby}`;
+      options.orderby = [
+        {
+          column: this.sortCol,
+          direction,
+          // nulls placement only affects sortCol. assumption is cursorCol will not be null and no need for that
+          nullsPlacement: this.options.nullsPlacement,
+        },
+        {
+          column: this.options.cursorCol,
+          direction,
+        },
+      ];
 
       if (this.offset) {
         const res = this.edgeQuery.getTableName();
@@ -214,7 +215,13 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         );
       }
     } else {
-      options.orderby = `${this.sortCol} ${orderby}${nullsPlacement}`;
+      options.orderby = [
+        {
+          column: this.sortCol,
+          direction,
+          nullsPlacement: this.options.nullsPlacement,
+        },
+      ];
 
       if (this.offset) {
         let clauseFn = less ? clause.Less : clause.Greater;
@@ -362,18 +369,18 @@ export abstract class BaseEdgeQuery<
   private sortCol: string;
   private cursorCol: string;
   private defaultDirection?: "ASC" | "DESC";
-  private edgeQueryOptions: EdgeQueryOptionsDeprecated;
+  private edgeQueryOptions: EdgeQueryOptions;
 
   // TODO...
   // third overload lol...
   // nah, we just added EdgeQueryOptions so can just change it
   //
   constructor(viewer: Viewer, sortCol: string, cursorCol: string);
-  constructor(viewer: Viewer, options: EdgeQueryOptionsDeprecated);
+  constructor(viewer: Viewer, options: EdgeQueryOptions);
 
   constructor(
     public viewer: Viewer,
-    sortColOrOptions: any,
+    sortColOrOptions: string | EdgeQueryOptions,
     cursorColMaybe?: string,
   ) {
     let sortCol: string;
@@ -383,20 +390,24 @@ export abstract class BaseEdgeQuery<
       cursorCol = cursorColMaybe!;
       this.edgeQueryOptions = {
         cursorCol,
-        sortCol,
-        // TODO
-        // orderby: [
-        //   {
-        //     column: sortCol,
-        //     direction: "desc",
-        //   },
-        // ],
+        orderby: [
+          {
+            column: sortCol,
+            direction: "DESC",
+          },
+        ],
       };
     } else {
-      sortCol = sortColOrOptions.sortCol;
+      if (typeof sortColOrOptions.orderby === "string") {
+        sortCol = sortColOrOptions.orderby;
+      } else {
+        // TODO this orderby isn't consistent and this logic needs to be changed anywhere that's using this and this.getSortCol()
+        sortCol = sortColOrOptions.orderby[0].column;
+      }
       cursorCol = sortColOrOptions.cursorCol;
       this.edgeQueryOptions = sortColOrOptions;
     }
+    // TODO stop supporting this...
     let m = orderbyRegex.exec(sortCol);
     if (!m) {
       throw new Error(`invalid sort column ${sortCol}`);
@@ -427,6 +438,16 @@ export abstract class BaseEdgeQuery<
 
   abstract sourceEnt(id: ID): Promise<Ent | null>;
 
+  private getNullsPlacement() {
+    if (
+      !this.edgeQueryOptions.orderby ||
+      typeof this.edgeQueryOptions.orderby === "string"
+    ) {
+      return;
+    }
+    return this.edgeQueryOptions.orderby[0].nullsPlacement;
+  }
+
   first(n: number, after?: string): this {
     this.assertQueryNotDispatched("first");
     this.filters.push(
@@ -436,7 +457,7 @@ export abstract class BaseEdgeQuery<
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
         defaultDirection: this.defaultDirection,
-        nullsPlacement: this.edgeQueryOptions.nullsPlacement,
+        nullsPlacement: this.getNullsPlacement(),
         query: this,
       }),
     );
@@ -452,7 +473,7 @@ export abstract class BaseEdgeQuery<
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
         defaultDirection: this.defaultDirection,
-        nullsPlacement: this.edgeQueryOptions.nullsPlacement,
+        nullsPlacement: this.getNullsPlacement(),
         query: this,
       }),
     );

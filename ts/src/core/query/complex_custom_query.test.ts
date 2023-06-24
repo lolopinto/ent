@@ -423,7 +423,7 @@ describe("global query", () => {
   });
 
   test("first N. after each cursor. asc", async () => {
-    const q = getGlobalQuery(user.viewer, { orderByDirection: "asc" });
+    const q = getGlobalQuery(user.viewer, { orderByDirection: "ASC" });
 
     const edges = await q.queryEdges();
     expect(edges.length).toBe(7 * infos.length);
@@ -437,7 +437,7 @@ describe("global query", () => {
       hasNextPage: boolean,
       cursor?: string,
     ) {
-      const q2 = getGlobalQuery(user.viewer, { orderByDirection: "asc" }).first(
+      const q2 = getGlobalQuery(user.viewer, { orderByDirection: "ASC" }).first(
         PAGE,
         cursor,
       );
@@ -511,7 +511,7 @@ describe("global query", () => {
 
   test("first N. after each cursor. asc + desc compared", async () => {
     const q = getGlobalQuery(user.viewer);
-    const q2 = getGlobalQuery(user.viewer, { orderByDirection: "asc" });
+    const q2 = getGlobalQuery(user.viewer, { orderByDirection: "ASC" });
 
     const edges = await q.queryEdges();
     expect(edges.length).toBe(7 * infos.length);
@@ -579,7 +579,7 @@ describe("global query", () => {
   test("first N. asc", async () => {
     // ascending is by default nulls last in postgres
     const q = getEndTimeGlobalQuery(user.viewer, {
-      orderByDirection: "asc",
+      orderByDirection: "ASC",
     });
 
     const ents = await q.first(7).queryEnts();
@@ -603,7 +603,7 @@ describe("global query", () => {
 
   test("first N. asc. nulls first", async () => {
     const q = getEndTimeGlobalQuery(user.viewer, {
-      orderByDirection: "asc",
+      orderByDirection: "ASC",
       nullsPlacement: "first",
     });
 
@@ -693,7 +693,7 @@ describe("global query. id. cursor and sort_column the same", () => {
   test("first N. asc", async () => {
     // ascending is by default nulls last in postgres
     const q = getIdGlobalQuery(user.viewer, {
-      orderByDirection: "asc",
+      orderByDirection: "ASC",
     });
 
     const ents = await q.first(7).queryEnts();
@@ -713,7 +713,7 @@ describe("global query. id. cursor and sort_column the same", () => {
 
   test("first N. asc. nulls first", async () => {
     const q = getIdGlobalQuery(user.viewer, {
-      orderByDirection: "asc",
+      orderByDirection: "ASC",
       nullsPlacement: "first",
     });
 

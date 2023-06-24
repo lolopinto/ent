@@ -28,9 +28,9 @@ export function getQueryLoaderOrderByDeprecated(
   if (orderby) {
     return getOrderByPhrase(orderby);
   }
-  let sortColLower = sortCol.toLowerCase();
+  let sortColLower = sortCol.toUpperCase();
   let orderbyDirection = " DESC";
-  if (sortColLower.endsWith("asc") || sortCol.endsWith("desc")) {
+  if (sortColLower.endsWith("ASC") || sortCol.endsWith("DESC")) {
     orderbyDirection = "";
   }
   return `${sortCol}${orderbyDirection}`;
@@ -45,7 +45,7 @@ function getOrderByLocal(
       queryOptions?.orderby ?? [
         {
           column: "created_at",
-          direction: "desc",
+          direction: "DESC",
         },
       ],
   );

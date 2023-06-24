@@ -14,7 +14,6 @@ import {
   loadRows,
 } from "../ent";
 
-import { getQueryLoaderOrderByDeprecated } from "../loaders/query_loader";
 import { BaseEdgeQuery, IDInfo } from "./query";
 
 export interface CustomClauseQueryOptions<
@@ -31,7 +30,7 @@ export interface CustomClauseQueryOptions<
   // pass this if the sort column is unique and it'll be used for the cursor and used to
   // generate the query
   sortColumnUnique?: boolean;
-  orderByDirection?: "asc" | "desc";
+  orderByDirection?: "ASC" | "DESC";
   // in Postgres, NULLS FIRST is the default for DESC order, and NULLS LAST otherwise.
   nullsPlacement?: "first" | "last";
 
@@ -75,9 +74,14 @@ export class CustomClauseQuery<
       sortCol = `${sortCol} ${options.orderByDirection}`;
     }
     super(viewer, {
-      sortCol,
+      orderby: [
+        {
+          column: sortCol,
+          direction: "DESC",
+          nullsPlacement: options.nullsPlacement,
+        },
+      ],
       cursorCol: unique,
-      nullsPlacement: options.nullsPlacement,
     });
     this.clause = getClause(options);
   }
@@ -113,8 +117,16 @@ export class CustomClauseQuery<
     options: EdgeQueryableDataOptions,
   ) {
     if (!options.orderby) {
-      const direction = this.options.orderByDirection ?? "desc";
-      options.orderby = `${this.options.sortColumn} ${direction}`;
+      options.orderby = [
+        {
+          column: this.getSortCol(),
+          direction: this.options.orderByDirection ?? "DESC",
+          // TODO nullsPlacement??
+          // nullsPlacement: options.
+        },
+      ];
+      // const direction = this.options.orderByDirection ?? "desc";
+      // options.orderby = `${this.options.sortColumn} ${direction}`;
     }
     if (!options.limit) {
       options.limit = getDefaultLimit();
@@ -124,10 +136,11 @@ export class CustomClauseQuery<
       tableName: this.options.loadEntOptions.tableName,
       fields: this.options.loadEntOptions.fields,
       clause: AndOptional(this.clause, options.clause),
-      orderby: getQueryLoaderOrderByDeprecated(
-        this.getSortCol(),
-        options?.orderby,
-      ),
+      orderby: options.orderby,
+      // getQueryLoaderOrderByDeprecated(
+      //   this.getSortCol(),
+      //   options?.orderby,
+      // ),
       limit: options?.limit || getDefaultLimit(),
       context: this.viewer.context,
     });

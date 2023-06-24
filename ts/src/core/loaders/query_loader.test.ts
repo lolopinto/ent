@@ -42,7 +42,7 @@ const getNewLoader = (context: boolean = true) => {
     orderby: [
       {
         column: "start_time",
-        direction: "asc",
+        direction: "ASC",
       },
     ],
   }).createLoader(context ? ctx : undefined);
@@ -59,7 +59,7 @@ const getConfigurableLoader = (
     orderby: [
       {
         column: "start_time",
-        direction: "asc",
+        direction: "ASC",
       },
     ],
   }).createConfigurableLoader(options, context ? ctx : undefined);
@@ -72,7 +72,7 @@ const getNonGroupableLoader = (id: ID, context: boolean = true) => {
     orderby: [
       {
         column: "start_time",
-        direction: "asc",
+        direction: "ASC",
       },
     ],
   }).createLoader(context ? ctx : undefined);
@@ -425,7 +425,7 @@ function commonTests() {
         tableName: "fake_events",
         fields: FakeEvent.loaderOptions().fields,
         clause: getCompleteClause(ids[idx]),
-        orderby: "start_time asc",
+        orderby: "start_time ASC",
         limit: slice || getDefaultLimit(),
       });
       // not testing actual values for timestamp here because time has probably advanced since test ran
@@ -637,7 +637,7 @@ function commonTests() {
         tableName: "fake_events",
         fields: fields,
         clause: cls,
-        orderby: "start_time asc",
+        orderby: "start_time ASC",
         limit: 1,
       });
       expect(log.query).toEqual(expQuery);

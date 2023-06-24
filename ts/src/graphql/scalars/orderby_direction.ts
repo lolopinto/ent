@@ -4,10 +4,10 @@ export const GraphQLOrderByDirection = new GraphQLEnumType({
   name: "OrderByDirection",
   values: {
     ASC: {
-      value: "asc",
+      value: "ASC",
     },
     DESC: {
-      value: "desc",
+      value: "DESC",
     },
   },
 });

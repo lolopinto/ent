@@ -742,11 +742,11 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
           // postgres is nulls first by default
           {
             column: "qux",
-            direction: "desc",
+            direction: "DESC",
           },
           {
             column: "id",
-            direction: "desc",
+            direction: "DESC",
           },
         ],
         [10, 8, 6, 9, 7],
@@ -762,12 +762,12 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
           // postgres is nulls first by default for desc so result matches above
           {
             column: "qux",
-            direction: "desc",
+            direction: "DESC",
             nullsPlacement: "first",
           },
           {
             column: "id",
-            direction: "desc",
+            direction: "DESC",
           },
         ],
         [10, 8, 6, 9, 7],
@@ -781,12 +781,12 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
         [
           {
             column: "qux",
-            direction: "desc",
+            direction: "DESC",
             nullsPlacement: "last",
           },
           {
             column: "id",
-            direction: "desc",
+            direction: "DESC",
           },
         ],
         [9, 7, 10, 8, 6],
@@ -801,11 +801,11 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
           // postgres is nulls last when ascending by default
           {
             column: "qux",
-            direction: "asc",
+            direction: "ASC",
           },
           {
             column: "id",
-            direction: "asc",
+            direction: "ASC",
           },
         ],
         [7, 9, 6, 8, 10],
@@ -821,12 +821,12 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
           // postgres is nulls last when ascending by default so result matches above
           {
             column: "qux",
-            direction: "asc",
+            direction: "ASC",
             nullsPlacement: "last",
           },
           {
             column: "id",
-            direction: "asc",
+            direction: "ASC",
           },
         ],
         [7, 9, 6, 8, 10],
@@ -840,12 +840,12 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
         [
           {
             column: "qux",
-            direction: "asc",
+            direction: "ASC",
             nullsPlacement: "first",
           },
           {
             column: "id",
-            direction: "asc",
+            direction: "ASC",
           },
         ],
         [6, 8, 10, 7, 9],
