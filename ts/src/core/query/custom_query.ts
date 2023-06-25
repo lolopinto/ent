@@ -15,7 +15,6 @@ import {
   QueryLoaderFactory,
   RawCountLoader,
 } from "../loaders";
-import { OrderByOption } from "../query_impl";
 import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
 
 export interface CustomEdgeQueryOptionsDeprecated<
@@ -30,7 +29,7 @@ export interface CustomEdgeQueryOptionsDeprecated<
   // defaults to id
   sortColumn?: string;
   // TODOOOO
-  // orderby: OrderByOption[];
+  // orderby: OrderBy;
 }
 
 export interface CustomEdgeQueryOptions<
@@ -51,7 +50,7 @@ export interface CustomEdgeQueryOptions<
   // pass this if the sort column is unique and it'll be used for the cursor and used to
   // generate the query
   // TODOOOO
-  // orderby: OrderByOption[];
+  // orderby: OrderBy;
 
   sortColumnUnique?: boolean;
 
@@ -272,7 +271,12 @@ export abstract class CustomEdgeQueryBase<
       );
     }
     if (!options.orderby) {
-      options.orderby = `${this.getSortCol()} DESC`;
+      options.orderby = [
+        {
+          column: this.getSortCol(),
+          direction: "DESC",
+        },
+      ];
     }
     if (!options.limit) {
       options.limit = getDefaultLimit();

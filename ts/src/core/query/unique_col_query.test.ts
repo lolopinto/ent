@@ -100,7 +100,12 @@ function tests(
           Eq("owner_id", user.id),
           canonicalName ? fn("canonical_name", canonicalName) : undefined,
         ),
-        orderby: `canonical_name ${orderby}`,
+        orderby: [
+          {
+            column: "canonical_name",
+            direction: orderby,
+          },
+        ],
         limit: limit + 1,
       }),
       values: [user.id, canonicalName].filter((v) => v !== undefined),

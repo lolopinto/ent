@@ -19,10 +19,7 @@ import { TempDB } from "../../testutils/db/temp_db";
 import { buildQuery } from "../ent";
 import * as clause from "../clause";
 import { Viewer, WriteOperation } from "../base";
-import {
-  CustomClauseQuery,
-  CustomClauseQueryOptions,
-} from "./custom_clause_query";
+import { CustomClauseQuery } from "./custom_clause_query";
 import { SimpleBuilder } from "../../testutils/builder";
 import { DateTime } from "luxon";
 import { OrderByOption } from "../query_impl";
@@ -216,7 +213,16 @@ describe("query for user", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "start_time DESC, id DESC",
+      orderby: [
+        {
+          column: "start_time",
+          direction: "DESC",
+        },
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
       limit: 3,
       clause: clause.And(
         clause.Eq("user_id", user.id),
@@ -371,7 +377,16 @@ describe("global query", () => {
 
       const query = buildQuery({
         ...FakeEvent.loaderOptions(),
-        orderby: "start_time DESC, id DESC",
+        orderby: [
+          {
+            column: "start_time",
+            direction: "DESC",
+          },
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
         limit: PAGE + 1,
         clause: clause.AndOptional(
           clause.GreaterEq("start_time", 1),
@@ -458,7 +473,16 @@ describe("global query", () => {
 
       const query = buildQuery({
         ...FakeEvent.loaderOptions(),
-        orderby: "start_time ASC, id ASC",
+        orderby: [
+          {
+            column: "start_time",
+            direction: "ASC",
+          },
+          {
+            column: "id",
+            direction: "ASC",
+          },
+        ],
         limit: PAGE + 1,
         clause: clause.AndOptional(
           clause.GreaterEq("start_time", 1),
@@ -577,7 +601,17 @@ describe("global query", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "end_time DESC NULLS LAST, id DESC",
+      orderby: [
+        {
+          column: "end_time",
+          direction: "DESC",
+          nullsPlacement: "last",
+        },
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -602,7 +636,16 @@ describe("global query", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "end_time ASC, id ASC",
+      orderby: [
+        {
+          column: "end_time",
+          direction: "ASC",
+        },
+        {
+          column: "id",
+          direction: "ASC",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -627,7 +670,17 @@ describe("global query", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "end_time ASC NULLS FIRST, id ASC",
+      orderby: [
+        {
+          column: "end_time",
+          direction: "ASC",
+          nullsPlacement: "first",
+        },
+        {
+          column: "id",
+          direction: "ASC",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -691,7 +744,13 @@ describe("global query. id. cursor and sort_column the same", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "id DESC NULLS LAST",
+      orderby: [
+        {
+          column: "id",
+          direction: "DESC",
+          nullsPlacement: "last",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -712,7 +771,12 @@ describe("global query. id. cursor and sort_column the same", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "id ASC",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -733,7 +797,13 @@ describe("global query. id. cursor and sort_column the same", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "id ASC NULLS FIRST",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+          nullsPlacement: "first",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),

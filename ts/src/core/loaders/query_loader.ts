@@ -39,15 +39,15 @@ export function getQueryLoaderOrderByDeprecated(
 function getOrderByLocal(
   options: QueryOptions,
   queryOptions?: EdgeQueryableDataOptions,
-) {
-  return getOrderByPhrase(
+): OrderBy {
+  return (
     options.orderby ??
-      queryOptions?.orderby ?? [
-        {
-          column: "created_at",
-          direction: "DESC",
-        },
-      ],
+    queryOptions?.orderby ?? [
+      {
+        column: "created_at",
+        direction: "DESC",
+      },
+    ]
   );
 }
 

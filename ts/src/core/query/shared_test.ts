@@ -31,7 +31,7 @@ import { SimpleAction } from "../../testutils/builder";
 import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
 import { Clause, PaginationMultipleColsSubQuery } from "../clause";
-import { OrderByOption, getOrderByPhrase, reverseOrderBy } from "../query_impl";
+import { OrderBy, getOrderByPhrase, reverseOrderBy } from "../query_impl";
 
 interface options<TData extends Data> {
   newQuery: (
@@ -47,7 +47,7 @@ interface options<TData extends Data> {
   livePostgresDB?: boolean; // if livedb creates temp db and not depending on mock
   sqlite?: boolean; // do this in sqlite
   globalSchema?: boolean;
-  orderby: OrderByOption[];
+  orderby: OrderBy;
   rawDataVerify?(user: FakeUser): Promise<void>;
 }
 

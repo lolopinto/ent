@@ -544,7 +544,12 @@ function verifyMultiCountQueryOffset(ids: ID[], m: Map<ID, FakeContact[]>) {
       tableName: "fake_contacts",
       fields: fields,
       clause: cls,
-      orderby: "created_at DESC",
+      orderby: [
+        {
+          column: "created_at",
+          direction: "DESC",
+        },
+      ],
       limit: 1,
     });
     expect(log).toStrictEqual({

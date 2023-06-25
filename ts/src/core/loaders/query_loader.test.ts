@@ -425,7 +425,12 @@ function commonTests() {
         tableName: "fake_events",
         fields: FakeEvent.loaderOptions().fields,
         clause: getCompleteClause(ids[idx]),
-        orderby: "start_time ASC",
+        orderby: [
+          {
+            column: "start_time",
+            direction: "ASC",
+          },
+        ],
         limit: slice || getDefaultLimit(),
       });
       // not testing actual values for timestamp here because time has probably advanced since test ran
@@ -637,7 +642,12 @@ function commonTests() {
         tableName: "fake_events",
         fields: fields,
         clause: cls,
-        orderby: "start_time ASC",
+        orderby: [
+          {
+            column: "start_time",
+            direction: "ASC",
+          },
+        ],
         limit: 1,
       });
       expect(log.query).toEqual(expQuery);

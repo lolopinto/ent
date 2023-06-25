@@ -13,7 +13,7 @@ import {
   loadRow,
   loadRows,
 } from "../ent";
-import { OrderBy, OrderByOption } from "../query_impl";
+import { OrderBy } from "../query_impl";
 
 import { BaseEdgeQuery, IDInfo } from "./query";
 
@@ -70,7 +70,7 @@ export class CustomClauseQuery<
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
   ) {
-    let orderby: OrderByOption[];
+    let orderby: OrderBy;
     let primarySortCol: string;
 
     if (options.orderby) {

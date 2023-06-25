@@ -13,7 +13,7 @@ import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
 import { validate } from "uuid";
 import { types } from "util";
-import { OrderBy, OrderByOption, reverseOrderBy } from "../query_impl";
+import { OrderBy, reverseOrderBy } from "../query_impl";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -114,7 +114,7 @@ interface FilterOptions<T extends Data> {
   query: BaseEdgeQuery<Ent, Ent, T>;
   sortCol: string;
   cursorCol: string;
-  orderby: OrderByOption[];
+  orderby: OrderBy;
   // TODO provide this option
   // if sortCol is Unique and time, we need to pass different values for comparisons and checks...
   sortColTime?: boolean;
@@ -315,7 +315,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
 
 interface EdgeQueryOptions {
   cursorCol: string;
-  orderby: OrderByOption[];
+  orderby: OrderBy;
 }
 
 export abstract class BaseEdgeQuery<
