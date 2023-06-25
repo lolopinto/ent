@@ -26,7 +26,6 @@ describe("assoc query desc", () => {
     uniqKey: "user_to_contacts_table_sqlite",
     entsLength: 2,
     clause: And(Eq("id1", ""), Eq("edge_type", "")),
-    sortCol: "time",
     sqlite: true,
     rawDataVerify: async (user: FakeUser) => {
       const [raw, withDeleted] = await Promise.all([
@@ -47,7 +46,12 @@ describe("assoc query desc", () => {
       expect(raw.length).toBe(0);
       expect(withDeleted.length).toBe(0);
     },
-    orderby: "DESC",
+    orderby: [
+      {
+        column: "time",
+        direction: "DESC",
+      },
+    ],
   });
 });
 

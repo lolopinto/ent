@@ -514,7 +514,12 @@ function verifyMultiCountQueryCacheMiss(ids: ID[], slice?: number) {
       tableName: "fake_contacts",
       fields: FakeContact.loaderOptions().fields,
       clause: clause.Eq("user_id", ids[idx]),
-      orderby: "created_at DESC",
+      orderby: [
+        {
+          column: "created_at",
+          direction: "DESC",
+        },
+      ],
       limit: slice || getDefaultLimit(),
     });
     expect(log).toStrictEqual({

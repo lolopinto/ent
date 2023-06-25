@@ -13,7 +13,7 @@ import {
   loadRow,
   loadRows,
 } from "../ent";
-import { OrderBy } from "../query_impl";
+import { OrderBy, OrderByOption } from "../query_impl";
 
 import { BaseEdgeQuery, IDInfo } from "./query";
 
@@ -70,15 +70,21 @@ export class CustomClauseQuery<
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
   ) {
-    let orderby: OrderBy;
+    let orderby: OrderByOption[];
     let primarySortCol: string;
 
     if (options.orderby) {
-      orderby = options.orderby;
-      if (typeof orderby === "string") {
-        primarySortCol = orderby;
+      if (typeof options.orderby === "string") {
+        primarySortCol = options.orderby;
+        orderby = [
+          {
+            column: options.orderby,
+            direction: options.orderByDirection ?? "DESC",
+          },
+        ];
       } else {
-        primarySortCol = orderby[0].column;
+        primarySortCol = options.orderby[0].column;
+        orderby = options.orderby;
       }
     } else {
       // TODO kill sortColumn etc and just use orderby here

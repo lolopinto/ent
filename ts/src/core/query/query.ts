@@ -13,7 +13,7 @@ import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
 import { validate } from "uuid";
 import { types } from "util";
-import { OrderBy } from "../query_impl";
+import { OrderBy, OrderByOption, reverseOrderBy } from "../query_impl";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -114,7 +114,7 @@ interface FilterOptions<T extends Data> {
   query: BaseEdgeQuery<Ent, Ent, T>;
   sortCol: string;
   cursorCol: string;
-  defaultDirection?: "ASC" | "DESC";
+  orderby: OrderByOption[];
   // TODO provide this option
   // if sortCol is Unique and time, we need to pass different values for comparisons and checks...
   sortColTime?: boolean;
@@ -122,8 +122,6 @@ interface FilterOptions<T extends Data> {
   // indicates that sort column is unique and we shouldn't use the id from the
   // table as the cursor and use the sort column instead
   sortColumnUnique?: boolean;
-
-  nullsPlacement?: "first" | "last";
 }
 
 interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
@@ -133,8 +131,6 @@ interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
 interface LastFilterOptions<T extends Data> extends FilterOptions<T> {
   before?: string;
 }
-
-const orderbyRegex = new RegExp(/([0-9a-z_]+)[ ]?([0-9a-z_]+)?/i);
 
 class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
@@ -181,26 +177,17 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     options.limit = limit;
 
-    const direction = this.options.defaultDirection || "DESC";
-
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
-    const less = direction === "DESC";
+    const less = this.options.orderby[0].direction === "DESC";
+    const orderby = this.options.orderby;
 
     if (this.options.cursorCol !== this.sortCol) {
-      // we also sort unique col in same direction since it doesn't matter...
-      options.orderby = [
-        {
-          column: this.sortCol,
-          direction,
-          // nulls placement only affects sortCol. assumption is cursorCol will not be null and no need for that
-          nullsPlacement: this.options.nullsPlacement,
-        },
-        {
-          column: this.options.cursorCol,
-          direction,
-        },
-      ];
+      // we also sort cursor col in same direction since it doesn't matter...
+      orderby.push({
+        column: this.options.cursorCol,
+        direction: orderby[0].direction,
+      });
 
       if (this.offset) {
         const res = this.edgeQuery.getTableName();
@@ -215,14 +202,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         );
       }
     } else {
-      options.orderby = [
-        {
-          column: this.sortCol,
-          direction,
-          nullsPlacement: this.options.nullsPlacement,
-        },
-      ];
-
       if (this.offset) {
         let clauseFn = less ? clause.Less : clause.Greater;
         let val = this.options.sortColTime
@@ -231,6 +210,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         options.clause = clauseFn(this.sortCol, val);
       }
     }
+    options.orderby = orderby;
 
     return options;
   }
@@ -241,6 +221,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   }
 }
 
+// TODO need some last tests to test all these cases. clearly don't have the tests
 class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
@@ -287,19 +268,10 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   async query(
     options: EdgeQueryableDataOptions,
   ): Promise<EdgeQueryableDataOptions> {
-    // assume desc by default
-    // so last is reverse
-    let orderby = "ASC";
-    if (this.options.defaultDirection) {
-      // reverse sort col shown...
-      if (this.options.defaultDirection === "DESC") {
-        orderby = "ASC";
-      } else {
-        orderby = "DESC";
-      }
-    }
-
-    const greater = orderby === "ASC";
+    const orderby = reverseOrderBy(this.options.orderby);
+    const greater = orderby[0].direction === "ASC";
+    // TODO verify that this greater still makes sense. tests pass
+    // but wanna confirm
 
     options.limit = this.options.limit + 1; // fetch an extra so we know if previous pag
 
@@ -317,10 +289,12 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
           this.offset,
         );
       }
-      options.orderby = `${this.sortCol} ${orderby}, ${this.options.cursorCol} ${orderby}`;
+      // we also sort cursor col in same direction since it doesn't matter...
+      orderby.push({
+        column: this.options.cursorCol,
+        direction: orderby[0].direction,
+      });
     } else {
-      options.orderby = `${this.sortCol} ${orderby}`;
-
       if (this.offset) {
         let clauseFn = greater ? clause.Greater : clause.Less;
         let val = this.options.sortColTime
@@ -329,6 +303,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
         options.clause = clauseFn(this.sortCol, val);
       }
     }
+    options.orderby = orderby;
 
     return options;
   }
@@ -340,7 +315,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
 
 interface EdgeQueryOptions {
   cursorCol: string;
-  orderby: OrderBy;
+  orderby: OrderByOption[];
 }
 
 export abstract class BaseEdgeQuery<
@@ -359,8 +334,6 @@ export abstract class BaseEdgeQuery<
   private idsToFetch: ID[] = [];
   private sortCol: string;
   private cursorCol: string;
-  // TODO do we still need this?
-  private defaultDirection?: "ASC" | "DESC";
   private edgeQueryOptions: EdgeQueryOptions;
 
   constructor(viewer: Viewer, sortCol: string, cursorCol: string);
@@ -391,27 +364,27 @@ export abstract class BaseEdgeQuery<
       } else {
         // TODO this orderby isn't consistent and this logic needs to be changed anywhere that's using this and this.getSortCol()
         sortCol = sortColOrOptions.orderby[0].column;
-        this.defaultDirection = sortColOrOptions.orderby[0].direction;
       }
       cursorCol = sortColOrOptions.cursorCol;
       this.edgeQueryOptions = sortColOrOptions;
     }
+    this.sortCol = sortCol;
     // TODO stop supporting this...
-    let m = orderbyRegex.exec(sortCol);
-    if (!m) {
-      throw new Error(`invalid sort column ${sortCol}`);
-    }
-    this.sortCol = m[1];
-    if (m[2]) {
-      // @ts-ignore
-      this.defaultDirection = m[2].toUpperCase();
-    }
+    // let m = orderbyRegex.exec(sortCol);
+    // if (!m) {
+    //   throw new Error(`invalid sort column ${sortCol}`);
+    // }
+    // this.sortCol = m[1];
+    // if (m[2]) {
+    //   // @ts-ignore
+    //   this.defaultDirection = m[2].toUpperCase();
+    // }
 
-    let m2 = orderbyRegex.exec(cursorCol);
-    if (!m2) {
-      throw new Error(`invalid sort column ${cursorCol}`);
-    }
-    this.cursorCol = m2[1];
+    // let m2 = orderbyRegex.exec(cursorCol);
+    // if (!m2) {
+    //   throw new Error(`invalid sort column ${cursorCol}`);
+    // }
+    this.cursorCol = cursorCol;
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
     this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
   }
@@ -427,16 +400,6 @@ export abstract class BaseEdgeQuery<
 
   abstract sourceEnt(id: ID): Promise<Ent | null>;
 
-  private getNullsPlacement() {
-    if (
-      !this.edgeQueryOptions.orderby ||
-      typeof this.edgeQueryOptions.orderby === "string"
-    ) {
-      return;
-    }
-    return this.edgeQueryOptions.orderby[0].nullsPlacement;
-  }
-
   first(n: number, after?: string): this {
     this.assertQueryNotDispatched("first");
     this.filters.push(
@@ -445,8 +408,7 @@ export abstract class BaseEdgeQuery<
         after,
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
-        defaultDirection: this.defaultDirection,
-        nullsPlacement: this.getNullsPlacement(),
+        orderby: this.edgeQueryOptions.orderby,
         query: this,
       }),
     );
@@ -461,8 +423,7 @@ export abstract class BaseEdgeQuery<
         before,
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
-        defaultDirection: this.defaultDirection,
-        nullsPlacement: this.getNullsPlacement(),
+        orderby: this.edgeQueryOptions.orderby,
         query: this,
       }),
     );

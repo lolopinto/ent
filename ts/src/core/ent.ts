@@ -1412,7 +1412,12 @@ function defaultEdgeQueryOptions(
   }
   return {
     clause: cls,
-    orderby: "time DESC",
+    orderby: [
+      {
+        column: "time",
+        direction: "DESC",
+      },
+    ],
     limit: defaultLimit,
   };
 }

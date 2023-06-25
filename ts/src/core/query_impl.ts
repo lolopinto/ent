@@ -28,3 +28,11 @@ export function getOrderByPhrase(orderby: OrderBy): string {
   }
   return ret;
 }
+
+export function reverseOrderBy(orderby: OrderByOption[]): OrderByOption[] {
+  return orderby.map((o) => {
+    const o2 = { ...o };
+    o2.direction = o.direction === "ASC" ? "DESC" : "ASC";
+    return o2;
+  });
+}

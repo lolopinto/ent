@@ -20,9 +20,13 @@ describe("custom query", () => {
     uniqKey: "fake_contacts_global",
     tableName: "fake_contacts",
     clause: Eq("user_id", ""),
-    sortCol: "created_at",
     sqlite: true,
-    orderby: "DESC",
+    orderby: [
+      {
+        column: "created_at",
+        direction: "DESC",
+      },
+    ],
     globalSchema: true,
   });
 });
@@ -36,9 +40,13 @@ describe("custom query ASC", () => {
     uniqKey: "fake_contacts_global_asc",
     tableName: "fake_contacts",
     clause: Eq("user_id", ""),
-    sortCol: "created_at",
     sqlite: true,
-    orderby: "ASC",
+    orderby: [
+      {
+        column: "created_at",
+        direction: "ASC",
+      },
+    ],
     globalSchema: true,
   });
 });
