@@ -132,6 +132,8 @@ interface LastFilterOptions<T extends Data> extends FilterOptions<T> {
   before?: string;
 }
 
+const orderbyRegex = new RegExp(/([0-9a-z_]+)[ ]?([0-9a-z_]+)?/i);
+
 class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
@@ -183,7 +185,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     const orderby = this.options.orderby;
 
     if (this.options.cursorCol !== this.sortCol) {
-      // we also sort cursor col in same direction since it doesn't matter...
+      // we also sort cursor col in same direction. (direction doesn't matter)
       orderby.push({
         column: this.options.cursorCol,
         direction: orderby[0].direction,
@@ -289,7 +291,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
           this.offset,
         );
       }
-      // we also sort cursor col in same direction since it doesn't matter...
+      // we also sort cursor col in same direction. (direction doesn't matter)
       orderby.push({
         column: this.options.cursorCol,
         direction: orderby[0].direction,
@@ -369,21 +371,18 @@ export abstract class BaseEdgeQuery<
       this.edgeQueryOptions = sortColOrOptions;
     }
     this.sortCol = sortCol;
-    // TODO stop supporting this...
-    // let m = orderbyRegex.exec(sortCol);
-    // if (!m) {
-    //   throw new Error(`invalid sort column ${sortCol}`);
-    // }
-    // this.sortCol = m[1];
-    // if (m[2]) {
-    //   // @ts-ignore
-    //   this.defaultDirection = m[2].toUpperCase();
-    // }
 
-    // let m2 = orderbyRegex.exec(cursorCol);
-    // if (!m2) {
-    //   throw new Error(`invalid sort column ${cursorCol}`);
-    // }
+    let m = orderbyRegex.exec(sortCol);
+    if (!m) {
+      throw new Error(`invalid sort column ${sortCol}`);
+    }
+    this.sortCol = m[1];
+    if (m[2]) {
+      throw new Error(
+        `passing direction in sort column is not supproted. use orderby`,
+      );
+    }
+
     this.cursorCol = cursorCol;
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
     this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));

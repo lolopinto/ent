@@ -36,7 +36,12 @@ export class UserToTagsFkeyQueryAsc extends CustomEdgeQueryBase<
       loadEntOptions: FakeTag.loaderOptions(),
       groupCol: "owner_id",
       name: "user_to_tags_asc",
-      sortColumn: "canonical_name ASC",
+      orderby: [
+        {
+          column: "canonical_name",
+          direction: "ASC",
+        },
+      ],
       sortColumnUnique: true,
     });
   }
