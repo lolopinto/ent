@@ -21,21 +21,6 @@ import memoizee from "memoizee";
 import { ObjectLoaderFactory } from "./object_loader";
 import { OrderBy, getOrderByPhrase } from "../query_impl";
 
-export function getQueryLoaderOrderByDeprecated(
-  sortCol: string,
-  orderby?: OrderBy,
-) {
-  if (orderby) {
-    return getOrderByPhrase(orderby);
-  }
-  let sortColLower = sortCol.toUpperCase();
-  let orderbyDirection = " DESC";
-  if (sortColLower.endsWith("ASC") || sortCol.endsWith("DESC")) {
-    orderbyDirection = "";
-  }
-  return `${sortCol}${orderbyDirection}`;
-}
-
 function getOrderByLocal(
   options: QueryOptions,
   queryOptions?: EdgeQueryableDataOptions,

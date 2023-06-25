@@ -73,21 +73,18 @@ export class CustomClauseQuery<
     let orderby: OrderBy;
     let primarySortCol: string;
 
+    if (
+      options.orderby &&
+      (options.sortColumn || options.orderByDirection || options.nullsPlacement)
+    ) {
+      throw new Error(
+        `cannot pass orderby and sortColumn|orderByDirection|nullsPlacement`,
+      );
+    }
     if (options.orderby) {
-      if (typeof options.orderby === "string") {
-        primarySortCol = options.orderby;
-        orderby = [
-          {
-            column: options.orderby,
-            direction: options.orderByDirection ?? "DESC",
-          },
-        ];
-      } else {
-        primarySortCol = options.orderby[0].column;
-        orderby = options.orderby;
-      }
+      primarySortCol = options.orderby[0].column;
+      orderby = options.orderby;
     } else {
-      // TODO kill sortColumn etc and just use orderby here
       primarySortCol = options.sortColumn || "id";
       orderby = [
         {
@@ -143,12 +140,9 @@ export class CustomClauseQuery<
         {
           column: this.getSortCol(),
           direction: this.options.orderByDirection ?? "DESC",
-          // TODO nullsPlacement??
-          // nullsPlacement: options.
+          nullsPlacement: this.options.nullsPlacement,
         },
       ];
-      // const direction = this.options.orderByDirection ?? "desc";
-      // options.orderby = `${this.options.sortColumn} ${direction}`;
     }
     if (!options.limit) {
       options.limit = getDefaultLimit();
@@ -159,10 +153,6 @@ export class CustomClauseQuery<
       fields: this.options.loadEntOptions.fields,
       clause: AndOptional(this.clause, options.clause),
       orderby: options.orderby,
-      // getQueryLoaderOrderByDeprecated(
-      //   this.getSortCol(),
-      //   options?.orderby,
-      // ),
       limit: options?.limit || getDefaultLimit(),
       context: this.viewer.context,
     });
