@@ -131,6 +131,7 @@ export interface Validator<
 export interface ChangesetOptions {
   // conditional on builder operation remaining the same
   // TODO I don't really like this
+  // https://github.com/lolopinto/ent/issues/1437
   conditionalBuilder: Builder<any, any>;
 }
 
