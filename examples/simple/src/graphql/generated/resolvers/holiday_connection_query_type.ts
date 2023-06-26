@@ -79,8 +79,13 @@ export const HolidayConnectionQueryType: GraphQLFieldConfig<
           loadEntOptions: Holiday.loaderOptions(),
           clause: query.UuidIn("id", args.ids),
           name: "Holiday",
-          // use sortCol value or created_at (not sorted)
-          sortColumn: args.sortCol ?? "created_at",
+          orderby: [
+            {
+              // use sortCol value or created_at (not sorted)
+              column: args.sortCol ?? "created_at",
+              direction: "DESC",
+            },
+          ],
         });
       },
       args,
