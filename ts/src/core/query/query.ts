@@ -219,7 +219,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   }
 }
 
-// TODO need some last tests to test all these cases. clearly don't have the tests
 class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
@@ -268,8 +267,6 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   ): Promise<EdgeQueryableDataOptions> {
     const orderby = reverseOrderBy(this.options.orderby);
     const greater = orderby[0].direction === "ASC";
-    // TODO verify that this greater still makes sense. tests pass
-    // but wanna confirm
 
     options.limit = this.options.limit + 1; // fetch an extra so we know if previous pag
 

@@ -183,7 +183,7 @@ export enum CustomObjectTypes {
   Union = 0x100,
 }
 
-// TODO what's a good name for this instead
+// what's a good name for this instead?
 export function validateNoCustom(...exceptions: number[]) {
   let bit = 0;
   exceptions.forEach((exp) => (bit = bit | exp));

@@ -1125,7 +1125,10 @@ export class Orchestrator<
       }
     } else if (this.isBuilder(value)) {
       if (field.valid) {
-        const valid = await field.valid(value);
+        let valid = field.valid(value);
+        if (types.isPromise(valid)) {
+          valid = await valid;
+        }
         if (!valid) {
           return new Error(`invalid field ${fieldName} with value ${value}`);
         }
@@ -1136,8 +1139,10 @@ export class Orchestrator<
       this.fieldsToResolve.push(dbKey);
     } else {
       if (field.valid) {
-        // TODO this could be async. handle this better
-        const valid = await field.valid(value);
+        let valid = field.valid(value);
+        if (types.isPromise(valid)) {
+          valid = await valid;
+        }
         if (!valid) {
           return new Error(`invalid field ${fieldName} with value ${value}`);
         }
