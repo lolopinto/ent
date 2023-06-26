@@ -2,12 +2,6 @@
  * Copyright whaa whaa
  */
 
-import { ExampleViewer } from "src/viewer/viewer";
-import { User, UserToContactsQueryBase } from "../../internal";
-import { ID } from "@snowtop/ent";
+import { UserToContactsQueryBase } from "../../internal";
 
-export class UserToContactsQuery extends UserToContactsQueryBase {
-  constructor(viewer: ExampleViewer, user: User | ID) {
-    super(viewer, user, "created_at");
-  }
-}
+export class UserToContactsQuery extends UserToContactsQueryBase {}

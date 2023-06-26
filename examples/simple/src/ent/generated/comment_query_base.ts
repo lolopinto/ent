@@ -11,6 +11,7 @@ import {
   EdgeQuerySource,
   Ent,
   ID,
+  OrderBy,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
 import { EdgeType, NodeType } from "./types";
@@ -66,14 +67,15 @@ export class ArticleToCommentsQueryBase<
   constructor(
     viewer: ExampleViewerAlias,
     private srcEnt: TEnt,
-    sortColumn?: string,
+    sortColumn?: string | OrderBy,
   ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "article_id",
       loadEntOptions: Comment.loaderOptions(),
       name: "ArticleToCommentsQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
@@ -102,14 +104,15 @@ export class CommentsFromAttachmentQueryBase<
   constructor(
     viewer: ExampleViewerAlias,
     private srcEnt: TEnt,
-    sortColumn?: string,
+    sortColumn?: string | OrderBy,
   ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "attachment_id",
       loadEntOptions: Comment.loaderOptions(),
       name: "CommentsFromAttachmentQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
@@ -138,14 +141,15 @@ export class AuthorToCommentsQueryBase<
   constructor(
     viewer: ExampleViewerAlias,
     private srcEnt: TEnt,
-    sortColumn?: string,
+    sortColumn?: string | OrderBy,
   ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "author_id",
       loadEntOptions: Comment.loaderOptions(),
       name: "AuthorToCommentsQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 

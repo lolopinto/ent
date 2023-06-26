@@ -1,5 +1,5 @@
 {{ reserveImport .Package.TypesImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "IndexLoaderFactory" "loadEnt" "LoadEntOptions"}}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "IndexLoaderFactory" "loadEnt" "LoadEntOptions" "OrderBy"}}
 {{$importPath := .Package.InternalImportPath -}}
 {{reserveImport "src/ent/generated/loadAny" "getLoaderOptions" -}}
 {{ reserveImport .Package.SchemaPackagePath "getTransformedReadClause" }}
@@ -128,18 +128,19 @@
 
       export class {{$name}}<TEnt extends {{$srcNode}} = {{$srcNode}}> extends {{useImport "CustomEdgeQueryBase"}}<TEnt, {{$node}}, {{$viewerType}}> {
       {{ if $srcPoly -}}
-        constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string) {
+        constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string | {{useImport "OrderBy"}}) {
           super(viewer, {
             src: srcEnt, 
       {{ else -}}
-        constructor(viewer: {{$viewerType}}, src: {{$srcType }}, sortColumn?: string) {
+        constructor(viewer: {{$viewerType}}, src: {{$srcType }}, sortColumn?: string | {{useImport "OrderBy"}}) {
           super(viewer, {
             src: src, 
       {{ end -}}
             groupCol: {{$edge.QuotedDBColName}},
             loadEntOptions: {{$node}}.loaderOptions(),
             name: "{{$edge.TsEdgeQueryName}}",
-            sortColumn,
+            sortColumn: typeof sortColumn === 'string' ? sortColumn : undefined,
+            orderby: typeof sortColumn === 'string' ? undefined : sortColumn,
           });
         }
 

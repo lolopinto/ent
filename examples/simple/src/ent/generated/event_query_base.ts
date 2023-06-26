@@ -10,6 +10,7 @@ import {
   CustomEdgeQueryBase,
   EdgeQuerySource,
   ID,
+  OrderBy,
 } from "@snowtop/ent";
 import { EdgeType } from "./types";
 import {
@@ -474,14 +475,15 @@ export class CreatorToEventsQueryBase<
   constructor(
     viewer: ExampleViewerAlias,
     private srcEnt: TEnt,
-    sortColumn?: string,
+    sortColumn?: string | OrderBy,
   ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "user_id",
       loadEntOptions: Event.loaderOptions(),
       name: "CreatorToEventsQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
