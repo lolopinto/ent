@@ -27,7 +27,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   }
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
-  private updatedOps: Map<ID, WriteOperation> = new Map();
+  private changedOps: Map<ID, WriteOperation> = new Map();
 
   resolveValue(val: ID): Ent | null {
     if (val === this.placeholderID && val !== undefined) {
@@ -38,7 +38,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   }
 
   builderOpChanged(builder: Builder<any>): boolean {
-    const v = this.updatedOps.get(builder.placeholderID);
+    const v = this.changedOps.get(builder.placeholderID);
     return v !== undefined && v !== builder.operation;
   }
 
@@ -52,21 +52,22 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     if (createdEnt) {
       this.createdEnt = createdEnt;
     }
-    maybeUpdateOperationForOp(this.lastOp, this.updatedOps);
+    maybeFlagOpOperationAsChanged(this.lastOp, this.changedOps);
 
-    const done = this.idx === this.operations.length;
-    const op = changeOp(this.operations[this.idx], this.complexOptions);
+    const done = this.idx >= this.operations.length;
+    const op = maybeChangeOp(this.operations[this.idx], this.complexOptions);
 
     this.idx++;
     this.lastOp = op;
-    // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
-    if (done) {
-      // TODO need to figure this out
-      // this.idx = 0;
+
+    if (done || op === undefined) {
+      return {
+        value: op,
+        done: true,
+      };
     }
     return {
       value: op,
-      done: done,
     };
   }
 
@@ -126,9 +127,9 @@ function getCreatedEnt<T extends Ent>(
   return null;
 }
 
-function maybeUpdateOperationForOp<T extends Ent>(
+function maybeFlagOpOperationAsChanged<T extends Ent>(
   op: DataOperation<T> | undefined,
-  updatedOps: Map<ID, WriteOperation>,
+  changedOps: Map<ID, WriteOperation>,
 ) {
   if (!op || !op.updatedOperation) {
     return;
@@ -138,11 +139,9 @@ function maybeUpdateOperationForOp<T extends Ent>(
     return;
   }
 
-  updatedOps.set(r.builder.placeholderID, r.operation);
-  // console.debug(updatedOps);
+  changedOps.set(r.builder.placeholderID, r.operation);
 }
 
-// TODO rename this?
 interface ComplexExecutorOptions {
   conditionalOverride: boolean;
   builder: Builder<any, any>;
@@ -154,7 +153,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   private lastOp: DataOperation<Ent> | undefined;
   private allOperations: DataOperation<Ent>[] = [];
   private executors: Executor[] = [];
-  private updatedOps: Map<ID, WriteOperation> = new Map();
+  private changedOps: Map<ID, WriteOperation> = new Map();
   public builder?: Builder<Ent> | undefined;
 
   constructor(
@@ -236,11 +235,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       // get ordered list of ops
       let executor = c.executor();
       for (let op of executor) {
-        if (!op) {
-          // TODO what is happening...
-          // change in behavior in next() leading to needing to do this
-          break;
-        }
         if (op.createdEnt) {
           nodeOps.add(op);
         } else {
@@ -285,21 +279,22 @@ export class ComplexExecutor<T extends Ent> implements Executor {
 
   next(): IteratorResult<DataOperation<Ent>> {
     this.handleCreatedEnt();
-    maybeUpdateOperationForOp(this.lastOp, this.updatedOps);
+    maybeFlagOpOperationAsChanged(this.lastOp, this.changedOps);
 
-    const done = this.idx === this.allOperations.length;
-    const op = changeOp(this.allOperations[this.idx], this.complexOptions);
+    const done = this.idx >= this.allOperations.length;
+    const op = maybeChangeOp(this.allOperations[this.idx], this.complexOptions);
     this.idx++;
 
     this.lastOp = op;
 
-    // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
-    if (done) {
-      // TODO need to figure this out
-      // this.idx = 0;
+    if (done || op === undefined) {
+      return {
+        value: op,
+        done: true,
+      };
     }
 
-    return { value: op, done };
+    return { value: op };
   }
 
   resolveValue(val: ID): Ent | null {
@@ -317,8 +312,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   }
 
   builderOpChanged(builder: Builder<any>): boolean {
-    const v = this.updatedOps.get(builder.placeholderID);
-    // console.debug(this.updatedOps, builder.placeholderID, v, builder.operation);
+    const v = this.changedOps.get(builder.placeholderID);
     return v !== undefined && v !== builder.operation;
   }
 
@@ -440,10 +434,10 @@ export async function executeOperations(
   return operations;
 }
 
-function changeOp<T extends Ent = Ent>(
-  op: DataOperation<T>,
+function maybeChangeOp<T extends Ent = Ent>(
+  op: DataOperation<T> | undefined,
   complexOptions?: ComplexExecutorOptions,
-): DataOperation<T> {
+): DataOperation<T> | undefined {
   if (
     !op ||
     !complexOptions?.conditionalOverride ||
