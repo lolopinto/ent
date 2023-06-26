@@ -48,36 +48,19 @@ export class CacheMap {
         "dataloader-cache-hit": key,
         "tableName": this.options.tableName,
       });
-      // } else {
-      //   log("cache", {
-      //     "dataloader-cache-miss": key,
-      //     "tableName": options.tableName,
-      //   });
     }
     return ret;
   }
 
   set(key, value) {
-    // log("cache", {
-    //   "dataloader-cache-set": key,
-    //   "tableName": options.tableName,
-    // });
     return this.m.set(key, value);
   }
 
   delete(key) {
-    // log("cache", {
-    //   "dataloader-cache-delete": key,
-    //   "tableName": options.tableName,
-    // });
     return this.m.delete(key);
   }
 
   clear() {
-    // log("cache", {
-    //   "dataloader-cache-clear": true,
-    //   "tableName": options.tableName,
-    // });
     return this.m.clear();
   }
 }
