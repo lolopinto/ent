@@ -118,10 +118,6 @@ interface FilterOptions<T extends Data> {
   // TODO provide this option
   // if sortCol is Unique and time, we need to pass different values for comparisons and checks...
   sortColTime?: boolean;
-
-  // indicates that sort column is unique and we shouldn't use the id from the
-  // table as the cursor and use the sort column instead
-  sortColumnUnique?: boolean;
 }
 
 interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {

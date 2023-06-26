@@ -26,9 +26,9 @@ export interface CustomClauseQueryOptions<
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
   name: string;
-  // pass this if the sort column is unique and it'll be used for the cursor and used to
+  // pass this if the primary sort (first column in orderby) column is unique and it'll be used for the cursor and used to
   // generate the query
-  sortColumnUnique?: boolean;
+  primarySortColIsUnique?: boolean;
   orderby?: OrderBy;
 
   // these next 3 are deprecated. use orderby
@@ -94,7 +94,7 @@ export class CustomClauseQuery<
         },
       ];
     }
-    let cursorCol = options.sortColumnUnique
+    let cursorCol = options.primarySortColIsUnique
       ? primarySortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
 

@@ -49,10 +49,9 @@ export interface CustomEdgeQueryOptions<
   // @deprecated use orderby
   sortColumn?: string;
   orderby?: OrderBy;
-  // pass this if the sort column is unique and it'll be used for the cursor and used to
+  // pass this if the primary sort (first column in orderby) column is unique and it'll be used for the cursor and used to
   // generate the query
-  // TODO different name for this now that we have orderby???
-  sortColumnUnique?: boolean;
+  primarySortColIsUnique?: boolean;
 
   disableTransformations?: boolean;
 }
@@ -169,7 +168,7 @@ export abstract class CustomEdgeQueryBase<
       opts = options.options;
     } else {
       opts = options.loadEntOptions;
-      if (options.sortColumnUnique) {
+      if (options.primarySortColIsUnique) {
         uniqueColIsSort = true;
       }
       if (options.orderby) {
