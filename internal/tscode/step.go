@@ -372,7 +372,7 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 		)
 	}
 
-	// edges with IndexLoaderFactory
+	// edges with QueryLoaderFactory
 	edges := nodeData.EdgeInfo.GetEdgesForIndexLoader()
 	for idx := range edges {
 		edge := edges[idx]
