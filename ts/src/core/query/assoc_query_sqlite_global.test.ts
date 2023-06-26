@@ -27,7 +27,6 @@ commonTests({
   uniqKey: "user_to_contacts_table_global",
   entsLength: 2,
   clause: And(Eq("id1", ""), Eq("edge_type", ""), Eq("deleted_at", null)),
-  sortCol: "time",
   sqlite: true,
   globalSchema: true,
   rawDataVerify: async (user: FakeUser) => {
@@ -53,7 +52,12 @@ commonTests({
       expect(convertDate(edge.deletedAt!)).toBeInstanceOf(Date);
     });
   },
-  orderby: "DESC",
+  orderby: [
+    {
+      column: "time",
+      direction: "DESC",
+    },
+  ],
 });
 
 describe("custom assoc", () => {

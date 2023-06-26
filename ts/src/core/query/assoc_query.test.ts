@@ -19,8 +19,12 @@ commonTests({
   uniqKey: "user_to_contacts_table",
   entsLength: 2,
   clause: And(Eq("id1", ""), Eq("edge_type", "")),
-  sortCol: "time",
-  orderby: "DESC",
+  orderby: [
+    {
+      column: "time",
+      direction: "DESC",
+    },
+  ],
   livePostgresDB: true,
 });
 

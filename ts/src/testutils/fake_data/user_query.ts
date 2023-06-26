@@ -128,7 +128,12 @@ export class UserToContactsFkeyQueryAsc extends CustomEdgeQueryBase<
       loadEntOptions: FakeContact.loaderOptions(),
       groupCol: "user_id",
       name: "user_to_contacts",
-      sortColumn: "created_at ASC",
+      orderby: [
+        {
+          column: "created_at",
+          direction: "ASC",
+        },
+      ],
     });
   }
 

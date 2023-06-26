@@ -563,7 +563,12 @@ async function queryViaOptions(
     ctx,
     {
       clause: clause.Greater("id", 5),
-      orderby: "id desc",
+      orderby: [
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
     },
     expIds || reversed.slice(0, 5),
   );
@@ -597,7 +602,12 @@ async function queryViaOptionsDisableTransformations(
   const opts2: QueryDataOptions = {
     clause: clause.Greater("id", 5),
     disableTransformations: true,
-    orderby: "id desc",
+    orderby: [
+      {
+        column: "id",
+        direction: "DESC",
+      },
+    ],
   };
   // get all the ids even the deleted ones back...
   await queryViaOptionsImpl(opts, ctx, opts2, reversed.slice(0, 5));
@@ -742,11 +752,11 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
           // postgres is nulls first by default
           {
             column: "qux",
-            direction: "desc",
+            direction: "DESC",
           },
           {
             column: "id",
-            direction: "desc",
+            direction: "DESC",
           },
         ],
         [10, 8, 6, 9, 7],
@@ -762,12 +772,12 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
           // postgres is nulls first by default for desc so result matches above
           {
             column: "qux",
-            direction: "desc",
+            direction: "DESC",
             nullsPlacement: "first",
           },
           {
             column: "id",
-            direction: "desc",
+            direction: "DESC",
           },
         ],
         [10, 8, 6, 9, 7],
@@ -781,12 +791,12 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
         [
           {
             column: "qux",
-            direction: "desc",
+            direction: "DESC",
             nullsPlacement: "last",
           },
           {
             column: "id",
-            direction: "desc",
+            direction: "DESC",
           },
         ],
         [9, 7, 10, 8, 6],
@@ -801,11 +811,11 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
           // postgres is nulls last when ascending by default
           {
             column: "qux",
-            direction: "asc",
+            direction: "ASC",
           },
           {
             column: "id",
-            direction: "asc",
+            direction: "ASC",
           },
         ],
         [7, 9, 6, 8, 10],
@@ -821,12 +831,12 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
           // postgres is nulls last when ascending by default so result matches above
           {
             column: "qux",
-            direction: "asc",
+            direction: "ASC",
             nullsPlacement: "last",
           },
           {
             column: "id",
-            direction: "asc",
+            direction: "ASC",
           },
         ],
         [7, 9, 6, 8, 10],
@@ -840,12 +850,12 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
         [
           {
             column: "qux",
-            direction: "asc",
+            direction: "ASC",
             nullsPlacement: "first",
           },
           {
             column: "id",
-            direction: "asc",
+            direction: "ASC",
           },
         ],
         [6, 8, 10, 7, 9],
@@ -945,7 +955,12 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
       const ents = await loadCustomEnts(v, opts, {
         ...options,
         clause: clause.LessEq("id", 5),
-        orderby: "id desc",
+        orderby: [
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
       });
       expect(ents.length).toBe(3);
 
@@ -998,13 +1013,18 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
 
       const ents = await loadCustomEnts(v, opts2, {
         clause: clause.Eq("bar", "bar2"),
-        orderby: "id desc",
+        orderby: [
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
       });
       expect(ents.length).toBe(5);
       expect(sortedEntIds(ents)).toEqual([10, 8, 6, 4, 2]);
       expect(ml.logs.length).toBe(1);
       expect(ml.logs[0].query).toMatch(
-        /SELECT \* FROM users WHERE bar = .+ ORDER BY id desc/,
+        /SELECT \* FROM users WHERE bar = .+ ORDER BY id DESC/,
       );
 
       ml.clear();
@@ -1031,13 +1051,18 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
 
       const ents = await loadCustomEnts(v, opts, {
         clause: clause.Eq("bar", "bar2"),
-        orderby: "id desc",
+        orderby: [
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
       });
       expect(ents.length).toBe(5);
       expect(ents.map((ent) => ent.id)).toEqual([10, 8, 6, 4, 2]);
       expect(ml.logs.length).toBe(1);
       expect(ml.logs[0].query).toMatch(
-        /SELECT \* FROM users WHERE bar = .+ ORDER BY id desc/,
+        /SELECT \* FROM users WHERE bar = .+ ORDER BY id DESC/,
       );
 
       ml.clear();
@@ -1258,7 +1283,12 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
         ...opts,
         // deleted_at automatically added...
         clause: clause.GreaterEq("id", 5),
-        orderby: "id desc",
+        orderby: [
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
       });
       expect(ents.length).toBe(1);
 
@@ -1269,7 +1299,12 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
         ...opts,
         // deleted_at automatically added...
         clause: clause.GreaterEq("id", 5),
-        orderby: "id desc",
+        orderby: [
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
         disableTransformations: true,
       });
       expect(ents2.length).toBe(3);

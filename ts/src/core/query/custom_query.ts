@@ -15,8 +15,10 @@ import {
   QueryLoaderFactory,
   RawCountLoader,
 } from "../loaders";
+import { OrderBy } from "../query_impl";
 import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
 
+// TODO kill this. only used in graphql tests
 export interface CustomEdgeQueryOptionsDeprecated<
   TSource extends Ent<TViewer>,
   TDest extends Ent<TViewer>,
@@ -44,10 +46,12 @@ export interface CustomEdgeQueryOptions<
   // and then from there it does what it needs to do to do the right thing...
   name: string;
   // defaults to id
+  // @deprecated use orderby
   sortColumn?: string;
-  // pass this if the sort column is unique and it'll be used for the cursor and used to
+  orderby?: OrderBy;
+  // pass this if the primary sort (first column in orderby) column is unique and it'll be used for the cursor and used to
   // generate the query
-  sortColumnUnique?: boolean;
+  primarySortColIsUnique?: boolean;
 
   disableTransformations?: boolean;
 }
@@ -157,21 +161,42 @@ export abstract class CustomEdgeQueryBase<
 
     let uniqueColIsSort = false;
 
+    let orderby: OrderBy | undefined;
+    let sortCol: string | undefined;
+
     if (isDeprecatedOptions(options)) {
       opts = options.options;
     } else {
       opts = options.loadEntOptions;
-      if (options.sortColumnUnique) {
+      if (options.primarySortColIsUnique) {
         uniqueColIsSort = true;
+      }
+      if (options.orderby) {
+        orderby = options.orderby;
+        sortCol = options.orderby[0].column;
       }
     }
     let uniqueCol = opts.loaderFactory.options?.key || "id";
 
-    if (uniqueColIsSort) {
-      uniqueCol = options.sortColumn || defaultSort;
+    if (!orderby) {
+      options.sortColumn = options.sortColumn || defaultSort;
+      sortCol = options.sortColumn;
+
+      orderby = [
+        {
+          column: options.sortColumn,
+          direction: "DESC",
+        },
+      ];
     }
-    options.sortColumn = options.sortColumn || defaultSort;
-    super(viewer, options.sortColumn, uniqueCol);
+
+    if (uniqueColIsSort) {
+      uniqueCol = sortCol || defaultSort;
+    }
+    super(viewer, {
+      cursorCol: uniqueCol,
+      orderby,
+    });
     if (typeof options.src === "object") {
       this.id = options.src.id;
     } else {
@@ -246,7 +271,12 @@ export abstract class CustomEdgeQueryBase<
       );
     }
     if (!options.orderby) {
-      options.orderby = `${this.getSortCol()} DESC`;
+      options.orderby = [
+        {
+          column: this.getSortCol(),
+          direction: "DESC",
+        },
+      ];
     }
     if (!options.limit) {
       options.limit = getDefaultLimit();

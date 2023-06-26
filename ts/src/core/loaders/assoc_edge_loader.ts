@@ -58,7 +58,12 @@ function createLoader<T extends AssocEdge>(
       m.set(keys[i], i);
     }
 
-    options.orderby = options.orderby || "time DESC";
+    options.orderby = options.orderby || [
+      {
+        column: "time",
+        direction: "DESC",
+      },
+    ];
     // TODO defaultEdgeQueryOptions
     options.limit = options.limit || getDefaultLimit();
 

@@ -19,12 +19,10 @@ import { TempDB } from "../../testutils/db/temp_db";
 import { buildQuery } from "../ent";
 import * as clause from "../clause";
 import { Viewer, WriteOperation } from "../base";
-import {
-  CustomClauseQuery,
-  CustomClauseQueryOptions,
-} from "./custom_clause_query";
+import { CustomClauseQuery } from "./custom_clause_query";
 import { SimpleBuilder } from "../../testutils/builder";
 import { DateTime } from "luxon";
+import { OrderByOption } from "../query_impl";
 
 const INTERVAL = 24 * 60 * 60 * 1000;
 
@@ -101,47 +99,58 @@ afterAll(async () => {
   await tdb.afterAll();
 });
 
+// this is testing deprecated sortColumn
 const getQuery = (viewer?: Viewer) => {
   // when this is user.id instead of user,
   return new UserToEventsInNextWeekQuery(viewer || user.viewer, user.id);
 };
 
-const getGlobalQuery = (
-  viewer?: Viewer,
-  opts?: Partial<CustomClauseQueryOptions<any, any>>,
-) => {
+const getGlobalQuery = (viewer?: Viewer, opts?: Partial<OrderByOption>) => {
   return new CustomClauseQuery<FakeEvent>(viewer || user.viewer, {
     clause: getNextWeekClause(),
     loadEntOptions: FakeEvent.loaderOptions(),
     name: "global_events_in_next_week",
-    sortColumn: "start_time",
-    ...opts,
+    orderby: [
+      {
+        column: "start_time",
+        direction: "DESC",
+        ...opts,
+      },
+    ],
   });
 };
 
 const getEndTimeGlobalQuery = (
   viewer?: Viewer,
-  opts?: Partial<CustomClauseQueryOptions<any, any>>,
+  opts?: Partial<OrderByOption>,
 ) => {
   return new CustomClauseQuery<FakeEvent>(viewer || user.viewer, {
     clause: getNextWeekClause(),
     loadEntOptions: FakeEvent.loaderOptions(),
     name: "global_events_in_next_week_end_time",
-    sortColumn: "end_time",
-    ...opts,
+    orderby: [
+      {
+        column: "end_time",
+        direction: "DESC",
+        ...opts,
+      },
+    ],
   });
 };
 
 // just to test the behavior when cursorCol == sortCol
-const getIdGlobalQuery = (
-  viewer?: Viewer,
-  opts?: Partial<CustomClauseQueryOptions<any, any>>,
-) => {
+const getIdGlobalQuery = (viewer?: Viewer, opts?: Partial<OrderByOption>) => {
   return new CustomClauseQuery<FakeEvent>(viewer || user.viewer, {
     clause: getNextWeekClause(),
     loadEntOptions: FakeEvent.loaderOptions(),
     name: "global_events_in_next_week_id",
-    ...opts,
+    orderby: [
+      {
+        column: "id",
+        direction: "DESC",
+        ...opts,
+      },
+    ],
   });
 };
 
@@ -205,7 +214,16 @@ describe("query for user", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "start_time DESC, id DESC",
+      orderby: [
+        {
+          column: "start_time",
+          direction: "DESC",
+        },
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
       limit: 3,
       clause: clause.And(
         clause.Eq("user_id", user.id),
@@ -360,7 +378,16 @@ describe("global query", () => {
 
       const query = buildQuery({
         ...FakeEvent.loaderOptions(),
-        orderby: "start_time DESC, id DESC",
+        orderby: [
+          {
+            column: "start_time",
+            direction: "DESC",
+          },
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
         limit: PAGE + 1,
         clause: clause.AndOptional(
           clause.GreaterEq("start_time", 1),
@@ -423,7 +450,7 @@ describe("global query", () => {
   });
 
   test("first N. after each cursor. asc", async () => {
-    const q = getGlobalQuery(user.viewer, { orderByDirection: "asc" });
+    const q = getGlobalQuery(user.viewer, { direction: "ASC" });
 
     const edges = await q.queryEdges();
     expect(edges.length).toBe(7 * infos.length);
@@ -437,7 +464,7 @@ describe("global query", () => {
       hasNextPage: boolean,
       cursor?: string,
     ) {
-      const q2 = getGlobalQuery(user.viewer, { orderByDirection: "asc" }).first(
+      const q2 = getGlobalQuery(user.viewer, { direction: "ASC" }).first(
         PAGE,
         cursor,
       );
@@ -447,7 +474,16 @@ describe("global query", () => {
 
       const query = buildQuery({
         ...FakeEvent.loaderOptions(),
-        orderby: "start_time ASC, id ASC",
+        orderby: [
+          {
+            column: "start_time",
+            direction: "ASC",
+          },
+          {
+            column: "id",
+            direction: "ASC",
+          },
+        ],
         limit: PAGE + 1,
         clause: clause.AndOptional(
           clause.GreaterEq("start_time", 1),
@@ -511,7 +547,7 @@ describe("global query", () => {
 
   test("first N. after each cursor. asc + desc compared", async () => {
     const q = getGlobalQuery(user.viewer);
-    const q2 = getGlobalQuery(user.viewer, { orderByDirection: "asc" });
+    const q2 = getGlobalQuery(user.viewer, { direction: "ASC" });
 
     const edges = await q.queryEdges();
     expect(edges.length).toBe(7 * infos.length);
@@ -566,7 +602,17 @@ describe("global query", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "end_time DESC NULLS LAST, id DESC",
+      orderby: [
+        {
+          column: "end_time",
+          direction: "DESC",
+          nullsPlacement: "last",
+        },
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -579,7 +625,7 @@ describe("global query", () => {
   test("first N. asc", async () => {
     // ascending is by default nulls last in postgres
     const q = getEndTimeGlobalQuery(user.viewer, {
-      orderByDirection: "asc",
+      direction: "ASC",
     });
 
     const ents = await q.first(7).queryEnts();
@@ -591,7 +637,16 @@ describe("global query", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "end_time ASC, id ASC",
+      orderby: [
+        {
+          column: "end_time",
+          direction: "ASC",
+        },
+        {
+          column: "id",
+          direction: "ASC",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -603,7 +658,7 @@ describe("global query", () => {
 
   test("first N. asc. nulls first", async () => {
     const q = getEndTimeGlobalQuery(user.viewer, {
-      orderByDirection: "asc",
+      direction: "ASC",
       nullsPlacement: "first",
     });
 
@@ -616,7 +671,17 @@ describe("global query", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "end_time ASC NULLS FIRST, id ASC",
+      orderby: [
+        {
+          column: "end_time",
+          direction: "ASC",
+          nullsPlacement: "first",
+        },
+        {
+          column: "id",
+          direction: "ASC",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -680,7 +745,13 @@ describe("global query. id. cursor and sort_column the same", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "id DESC NULLS LAST",
+      orderby: [
+        {
+          column: "id",
+          direction: "DESC",
+          nullsPlacement: "last",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -693,7 +764,7 @@ describe("global query. id. cursor and sort_column the same", () => {
   test("first N. asc", async () => {
     // ascending is by default nulls last in postgres
     const q = getIdGlobalQuery(user.viewer, {
-      orderByDirection: "asc",
+      direction: "ASC",
     });
 
     const ents = await q.first(7).queryEnts();
@@ -701,7 +772,12 @@ describe("global query. id. cursor and sort_column the same", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "id ASC",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),
@@ -713,7 +789,7 @@ describe("global query. id. cursor and sort_column the same", () => {
 
   test("first N. asc. nulls first", async () => {
     const q = getIdGlobalQuery(user.viewer, {
-      orderByDirection: "asc",
+      direction: "ASC",
       nullsPlacement: "first",
     });
 
@@ -722,7 +798,13 @@ describe("global query. id. cursor and sort_column the same", () => {
 
     const query = buildQuery({
       ...FakeEvent.loaderOptions(),
-      orderby: "id ASC NULLS FIRST",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+          nullsPlacement: "first",
+        },
+      ],
       limit: 8,
       clause: clause.AndOptional(
         clause.GreaterEq("start_time", 1),

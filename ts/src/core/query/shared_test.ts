@@ -31,6 +31,7 @@ import { SimpleAction } from "../../testutils/builder";
 import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
 import { Clause, PaginationMultipleColsSubQuery } from "../clause";
+import { OrderBy, getOrderByPhrase, reverseOrderBy } from "../query_impl";
 
 interface options<TData extends Data> {
   newQuery: (
@@ -43,11 +44,10 @@ interface options<TData extends Data> {
 
   entsLength?: number;
   clause: Clause;
-  sortCol: string;
   livePostgresDB?: boolean; // if livedb creates temp db and not depending on mock
   sqlite?: boolean; // do this in sqlite
   globalSchema?: boolean;
-  orderby: "DESC" | "ASC";
+  orderby: OrderBy;
   rawDataVerify?(user: FakeUser): Promise<void>;
 }
 
@@ -255,9 +255,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       let expLimit = disablePaginationBump ? limit : limit + 1;
       expect(whereClause, `${i}`).toBe(
         // default limit
-        `${opts.clause.clause(1)} ORDER BY ${
-          opts.sortCol
-        } ${orderby}, ${uniqCol} ${orderby} LIMIT ${expLimit}`,
+        `${opts.clause.clause(1)} ORDER BY ${getOrderByPhrase(
+          orderby,
+        )}, ${uniqCol} ${orderby[0].direction} LIMIT ${expLimit}`,
       );
     }
   }
@@ -281,8 +281,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     const uniqCol = isCustomQuery(filter) ? "id" : "id2";
     let parts = opts.clause.clause(1).split(" AND ");
     const cmp = PaginationMultipleColsSubQuery(
-      opts.sortCol,
-      opts.orderby === "DESC" ? "<" : ">",
+      opts.orderby[0].column,
+      opts.orderby[0].direction === "DESC" ? "<" : ">",
       opts.tableName,
       uniqCol,
       "",
@@ -296,36 +296,25 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     }
 
     expect(getWhereClause(ml.logs[0])).toBe(
-      `${parts.join(" AND ")} ORDER BY ${opts.sortCol} ${
-        opts.orderby
-      }, ${uniqCol} ${opts.orderby} LIMIT ${limit + 1}`,
+      `${parts.join(" AND ")} ORDER BY ${getOrderByPhrase(
+        opts.orderby,
+      )}, ${uniqCol} ${opts.orderby[0].direction} LIMIT ${limit + 1}`,
     );
   }
 
   function verifyLastBeforeCursorQuery(
     filter: TestQueryFilter<any> | EdgeQuery<FakeUser, FakeContact, Data>,
-    length: number = 1,
-    limit: number = 3,
+    { length = 1, limit = 3, orderby = opts.orderby },
   ) {
     // cache showing up in a few because of cross runs...
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
     const uniqCol = isCustomQuery(filter) ? "id" : "id2";
 
-    let op = "";
-    let orderby = "";
-    if (opts.orderby === "DESC") {
-      op = ">";
-      orderby = "ASC";
-    } else {
-      op = "<";
-      orderby = "DESC";
-    }
-
     let parts = opts.clause.clause(1).split(" AND ");
     const cmp = PaginationMultipleColsSubQuery(
-      opts.sortCol,
-      op,
+      orderby[0].column,
+      orderby[0].direction === "ASC" ? ">" : "<",
       opts.tableName,
       uniqCol,
       "",
@@ -340,9 +329,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     expect(getWhereClause(ml.logs[0])).toBe(
       // extra fetched for pagination
-      `${parts.join(" AND ")} ORDER BY ${
-        opts.sortCol
-      } ${orderby}, ${uniqCol} ${orderby} LIMIT ${limit + 1}`,
+      `${parts.join(" AND ")} ORDER BY ${getOrderByPhrase(
+        orderby,
+      )}, ${uniqCol} ${orderby[0].direction} LIMIT ${limit + 1}`,
     );
   }
 
@@ -440,11 +429,16 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         expect(pagination?.hasPreviousPage, `${i}`).toBe(undefined);
         expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
       }
+      const orderby = reverseOrderBy(opts.orderby);
       if (cursor) {
-        verifyLastBeforeCursorQuery(query!, 1, pageLength);
+        verifyLastBeforeCursorQuery(query!, {
+          length: 1,
+          limit: pageLength,
+          orderby,
+        });
       } else {
         verifyQuery(query!, {
-          orderby: opts.orderby === "DESC" ? "ASC" : "DESC",
+          orderby,
           limit: pageLength,
         });
       }
@@ -494,7 +488,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       (contacts: FakeContact[]) => {
         // nothing to do here
         // reverse because edges are most recent first
-        if (opts.orderby === "DESC") {
+        if (opts.orderby[0].direction === "DESC") {
           return contacts.reverse();
         }
         return contacts;
@@ -554,7 +548,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       (contacts: FakeContact[]) => {
         // nothing to do here
         // reverse because edges are most recent first
-        if (opts.orderby === "DESC") {
+        if (opts.orderby[0].direction === "DESC") {
           return contacts.reverse();
         }
         return contacts;
@@ -723,7 +717,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       opts.newQuery,
 
       (contacts: FakeContact[]) => {
-        if (opts.orderby === "DESC") {
+        if (opts.orderby[0].direction === "DESC") {
           return contacts.reverse().slice(0, N);
         }
         return contacts.slice(0, N);
@@ -783,7 +777,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       },
       opts.newQuery,
       (contacts: FakeContact[]) => {
-        if (opts.orderby === "DESC") {
+        if (opts.orderby[0].direction === "DESC") {
           return contacts.slice(0, N);
         } else {
           return contacts.reverse().slice(0, N);
@@ -791,7 +785,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       },
       getViewer(),
     );
-    const orderby = opts.orderby === "ASC" ? "DESC" : "ASC";
+    const orderby = reverseOrderBy(opts.orderby);
 
     beforeEach(async () => {
       await filter.createData();
@@ -855,7 +849,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       },
       opts.newQuery,
       (contacts: FakeContact[]) => {
-        if (opts.orderby === "DESC") {
+        if (opts.orderby[0].direction === "DESC") {
           // < check so we shouldn't get that index
           return contacts.reverse().slice(idx + 1, idx + N);
         } else {
@@ -939,13 +933,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       opts.newQuery,
       (contacts: FakeContact[]) => {
         // > check so we don't want that index
-        if (opts.orderby === "DESC") {
+        if (opts.orderby[0].direction === "DESC") {
           return contacts.reverse().slice(0, idx).reverse(); // because of order returned
         }
         return contacts.slice(0, idx).reverse(); // because of order returned
       },
       getViewer(),
     );
+    const orderby = reverseOrderBy(opts.orderby);
 
     beforeAll(async () => {
       if (opts.livePostgresDB || opts.sqlite) {
@@ -959,7 +954,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("ids", async () => {
       await filter.testIDs();
-      verifyLastBeforeCursorQuery(filter);
+      verifyLastBeforeCursorQuery(filter, { orderby });
     });
 
     test("rawCount", async () => {
@@ -969,17 +964,17 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("count", async () => {
       await filter.testCount();
-      verifyLastBeforeCursorQuery(filter);
+      verifyLastBeforeCursorQuery(filter, { orderby });
     });
 
     test("edges", async () => {
       await filter.testEdges();
-      verifyLastBeforeCursorQuery(filter);
+      verifyLastBeforeCursorQuery(filter, { orderby });
     });
 
     test("ents", async () => {
       await filter.testEnts();
-      verifyLastBeforeCursorQuery(filter, opts.entsLength);
+      verifyLastBeforeCursorQuery(filter, { orderby });
     });
 
     test("all", async () => {

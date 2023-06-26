@@ -4,6 +4,7 @@ import { IncomingMessage, ServerResponse } from "http";
 import * as clause from "./clause";
 import { log } from "./logger";
 import { Context } from "./base";
+import { OrderBy, getOrderByPhrase } from "./query_impl";
 
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext<TViewer extends Viewer = Viewer>
@@ -57,7 +58,7 @@ export class ContextCache {
       options.clause.instanceKey(),
     ];
     if (options.orderby) {
-      parts.push(options.orderby);
+      parts.push(getOrderByPhrase(options.orderby));
     }
     return parts.join(",");
   }
@@ -130,5 +131,5 @@ interface queryOptions {
   fields: string[];
   tableName: string;
   clause: clause.Clause;
-  orderby?: string;
+  orderby?: OrderBy;
 }

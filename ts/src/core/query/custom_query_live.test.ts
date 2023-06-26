@@ -20,8 +20,12 @@ describe("custom query", () => {
     uniqKey: "fake_contacts",
     tableName: "fake_contacts",
     clause: Eq("user_id", ""),
-    sortCol: "created_at",
-    orderby: "DESC",
+    orderby: [
+      {
+        column: "created_at",
+        direction: "DESC",
+      },
+    ],
     livePostgresDB: true,
   });
 });
@@ -35,8 +39,12 @@ describe("custom query ASC", () => {
     uniqKey: "fake_contacts_asc",
     tableName: "fake_contacts",
     clause: Eq("user_id", ""),
-    sortCol: "created_at",
-    orderby: "ASC",
+    orderby: [
+      {
+        column: "created_at",
+        direction: "ASC",
+      },
+    ],
     livePostgresDB: true,
   });
 });

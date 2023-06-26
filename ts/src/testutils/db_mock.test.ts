@@ -250,7 +250,12 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("name", "Jane"),
-      orderby: "id DESC",
+      orderby: [
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
       // default is ASC absence of it implies that
       // desc can be put on each row
     });
@@ -291,7 +296,12 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("name", "John"),
-      orderby: "id",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+        },
+      ],
     });
     const expected = [1, 3, 5, 7, 9].map((id) => {
       return { id, bar: "bar", name: "John" };
@@ -304,7 +314,16 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("bar", "bar"),
-      orderby: "id, name",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+        },
+        {
+          column: "name",
+          direction: "ASC",
+        },
+      ],
     });
     // Janes first
     const expected = [2, 4, 6, 8, 10].map((id) => {
@@ -322,7 +341,16 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("bar", "bar"),
-      orderby: "id, name DESC",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+        },
+        {
+          column: "name",
+          direction: "DESC",
+        },
+      ],
     });
     // Johns first
     const expected = [1, 3, 5, 7, 9].map((id) => {
@@ -340,7 +368,12 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("name", "Jane"),
-      orderby: "id DESC",
+      orderby: [
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
       limit: 2,
     });
     const expected = [10, 8].map((id) => {

@@ -919,7 +919,12 @@ function verifyMultiCountQueryCacheMiss(
           ? clause.Eq("deleted_at", null)
           : undefined,
       ),
-      orderby: "time DESC",
+      orderby: [
+        {
+          column: "time",
+          direction: "DESC",
+        },
+      ],
       limit: slice || getDefaultLimit(),
     });
     expect(log).toStrictEqual({
@@ -966,7 +971,12 @@ function verifyMultiCountQueryOffset(
       tableName: "user_to_contacts_table",
       fields: fields,
       clause: cls,
-      orderby: "time DESC",
+      orderby: [
+        {
+          column: "time",
+          direction: "DESC",
+        },
+      ],
       limit: 1,
     });
     expect(log).toStrictEqual({

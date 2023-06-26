@@ -39,7 +39,12 @@ const getNewLoader = (context: boolean = true) => {
     groupCol: "user_id",
     ...FakeEvent.loaderOptions(),
     clause: getNextWeekClause(),
-    sortColumn: "start_time asc",
+    orderby: [
+      {
+        column: "start_time",
+        direction: "ASC",
+      },
+    ],
   }).createLoader(context ? ctx : undefined);
 };
 
@@ -51,7 +56,12 @@ const getConfigurableLoader = (
     groupCol: "user_id",
     ...FakeEvent.loaderOptions(),
     clause: getNextWeekClause(),
-    sortColumn: "start_time asc",
+    orderby: [
+      {
+        column: "start_time",
+        direction: "ASC",
+      },
+    ],
   }).createConfigurableLoader(options, context ? ctx : undefined);
 };
 
@@ -59,7 +69,12 @@ const getNonGroupableLoader = (id: ID, context: boolean = true) => {
   return new QueryLoaderFactory({
     ...FakeEvent.loaderOptions(),
     clause: getCompleteClause(id),
-    sortColumn: "start_time asc",
+    orderby: [
+      {
+        column: "start_time",
+        direction: "ASC",
+      },
+    ],
   }).createLoader(context ? ctx : undefined);
 };
 
@@ -410,7 +425,12 @@ function commonTests() {
         tableName: "fake_events",
         fields: FakeEvent.loaderOptions().fields,
         clause: getCompleteClause(ids[idx]),
-        orderby: "start_time asc",
+        orderby: [
+          {
+            column: "start_time",
+            direction: "ASC",
+          },
+        ],
         limit: slice || getDefaultLimit(),
       });
       // not testing actual values for timestamp here because time has probably advanced since test ran
@@ -622,7 +642,12 @@ function commonTests() {
         tableName: "fake_events",
         fields: fields,
         clause: cls,
-        orderby: "start_time asc",
+        orderby: [
+          {
+            column: "start_time",
+            direction: "ASC",
+          },
+        ],
         limit: 1,
       });
       expect(log.query).toEqual(expQuery);

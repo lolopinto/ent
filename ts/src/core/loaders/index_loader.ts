@@ -8,6 +8,7 @@ import {
   Loader,
 } from "../base";
 import * as clause from "../clause";
+import { OrderBy } from "../query_impl";
 import { ObjectLoaderFactory } from "./object_loader";
 import { QueryLoaderFactory } from "./query_loader";
 
@@ -22,7 +23,7 @@ export class IndexLoaderFactory implements LoaderFactory<ID, Data[]> {
     col: string,
     opts?: {
       extraClause?: clause.Clause;
-      sortColumn?: string;
+      orderby?: OrderBy;
       toPrime?: ObjectLoaderFactory<Data>[];
     },
   ) {
@@ -31,7 +32,7 @@ export class IndexLoaderFactory implements LoaderFactory<ID, Data[]> {
       tableName: options.tableName,
       groupCol: col,
       clause: opts?.extraClause,
-      sortColumn: opts?.sortColumn,
+      orderby: opts?.orderby,
       toPrime: opts?.toPrime,
     });
     this.name = `indexLoader:${options.tableName}:${col}`;
