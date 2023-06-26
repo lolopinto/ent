@@ -86,6 +86,7 @@ export {
   AllowIfViewerHasIdentityPrivacyPolicy,
 } from "./core/privacy";
 export * from "./core/query";
+export * from "./core/query_impl";
 
 export * from "./schema/";
 import * as q from "./core/clause";

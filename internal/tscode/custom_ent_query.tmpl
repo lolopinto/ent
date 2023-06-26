@@ -1,6 +1,7 @@
 {{$name := .TsEdgeQueryName -}}
 {{$base := .EdgeQueryBase -}}
 {{ reserveImport .Package.InternalImportPath $base }}
+{{ reserveImport .Package.PackagePath "OrderBy"}}
 
 
 export class {{$name}} extends {{useImport $base}} {
@@ -12,7 +13,7 @@ export class {{$name}} extends {{useImport $base}} {
     {{$viewerType := useImport $viewerInfo.GetImport -}}
 
     {{  reserveImportPath $ctrInfo.Import false -}}
-    constructor(viewer: {{$viewerType}}, srcEnt: {{useImport $ctrInfo.Import.Import}}, sortColumn?: string) {
+    constructor(viewer: {{$viewerType}}, srcEnt: {{useImport $ctrInfo.Import.Import}}, sortColumn?: string | {{useImport "OrderBy"}}) {
       super(viewer, srcEnt, sortColumn);
     }
 
