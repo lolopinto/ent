@@ -1,71 +1,13 @@
-import {
-  gqlInputObjectType,
-  gqlField,
-  gqlMutation,
-  gqlContextType,
-  gqlObjectType,
-  encodeGQLID,
-} from "@snowtop/ent/graphql";
-import { ID, RequestContext } from "@snowtop/ent";
-import { GraphQLID, GraphQLString } from "graphql";
+import { gqlMutation, gqlContextType, encodeGQLID } from "@snowtop/ent/graphql";
+import { RequestContext } from "@snowtop/ent";
 import { useAndVerifyAuth, useAndVerifyAuthJWT } from "@snowtop/ent-passport";
 import { User } from "../../ent";
-
-@gqlInputObjectType()
-// we're going to test exporting UserAuthInput types
-// and not exporting JWT versions
-export class UserAuthInput {
-  @gqlField({
-    class: "UserAuthInput",
-    type: GraphQLString,
-  })
-  emailAddress: string = "";
-  @gqlField({
-    class: "UserAuthInput",
-    type: GraphQLString,
-  })
-  password: string = "";
-}
-
-@gqlInputObjectType()
-export class UserAuthJWTInput {
-  @gqlField({
-    class: "UserAuthJWTInput",
-    type: GraphQLString,
-  })
-  emailAddress: string = "";
-  @gqlField({
-    class: "UserAuthJWTInput",
-    type: GraphQLString,
-  })
-  password: string = "";
-}
-
-@gqlObjectType()
-export class UserAuthPayload {
-  @gqlField({
-    class: "UserAuthPayload",
-    type: GraphQLID,
-  })
-  viewerID: ID = "";
-}
-
-// TODO abstract classes..
-
-@gqlObjectType()
-export class UserAuthJWTPayload {
-  @gqlField({
-    class: "UserAuthJWTPayload",
-    type: GraphQLString,
-  })
-  token: string = "";
-
-  @gqlField({
-    class: "UserAuthJWTPayload",
-    type: GraphQLID,
-  })
-  viewerID: ID = "";
-}
+import {
+  UserAuthInput,
+  UserAuthJWTInput,
+  UserAuthJWTPayload,
+  UserAuthPayload,
+} from "./auth_types";
 
 export class AuthResolver {
   @gqlMutation({
@@ -104,9 +46,7 @@ export class AuthResolver {
       throw new Error("not the right credentials");
     }
 
-    return {
-      viewerID: encodeGQLID(user),
-    };
+    return new UserAuthPayload(encodeGQLID(user));
   }
 
   @gqlMutation({
@@ -157,9 +97,7 @@ export class AuthResolver {
     if (!user) {
       throw new Error("not the right credentials");
     }
-    return {
-      viewerID: encodeGQLID(user),
-      token: token,
-    };
+
+    return new UserAuthJWTPayload(encodeGQLID(user), token);
   }
 }
