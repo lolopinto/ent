@@ -8,6 +8,7 @@ import {
   EdgeQuerySource,
   Ent,
   ID,
+  OrderBy,
   Viewer,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "src/ent/generated/loadAny";
@@ -59,13 +60,18 @@ export abstract class AddressToLocatedAtQueryBase extends AssocEdgeQueryBase<
 export class OwnerToAddressesQueryBase<
   TEnt extends Ent<Viewer> = Ent<Viewer>,
 > extends CustomEdgeQueryBase<TEnt, Address, Viewer> {
-  constructor(viewer: Viewer, private srcEnt: TEnt, sortColumn?: string) {
+  constructor(
+    viewer: Viewer,
+    private srcEnt: TEnt,
+    sortColumn?: string | OrderBy,
+  ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "owner_id",
       loadEntOptions: Address.loaderOptions(),
       name: "OwnerToAddressesQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 

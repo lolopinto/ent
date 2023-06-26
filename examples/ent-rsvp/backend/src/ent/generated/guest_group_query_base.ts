@@ -7,6 +7,7 @@ import {
   CustomEdgeQueryBase,
   EdgeQuerySource,
   ID,
+  OrderBy,
   Viewer,
 } from "@snowtop/ent";
 import { EdgeType } from "src/ent/generated/types";
@@ -78,13 +79,14 @@ export abstract class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryB
 export class GuestGroupToGuestsQueryBase<
   TEnt extends GuestGroup = GuestGroup,
 > extends CustomEdgeQueryBase<TEnt, Guest, Viewer> {
-  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string | OrderBy) {
     super(viewer, {
       src: src,
       groupCol: "guest_group_id",
       loadEntOptions: Guest.loaderOptions(),
       name: "GuestGroupToGuestsQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 

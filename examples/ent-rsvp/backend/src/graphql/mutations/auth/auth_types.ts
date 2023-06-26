@@ -25,13 +25,18 @@ export class AuthGuestPayload {
     class: "AuthGuestPayload",
     type: GraphQLString,
   })
-  token: string = "";
+  token: string;
 
   @gqlField({
     class: "AuthGuestPayload",
     type: ViewerType,
   })
   viewer: ViewerType = new ViewerType(new LoggedOutViewer());
+
+  constructor(token: string, viewer: ViewerType) {
+    this.token = token;
+    this.viewer = viewer;
+  }
 }
 
 @gqlInputObjectType()
@@ -62,4 +67,9 @@ export class AuthUserPayload {
     type: ViewerType,
   })
   viewer: ViewerType = new ViewerType(new LoggedOutViewer());
+
+  constructor(token: string, viewer: ViewerType) {
+    this.token = token;
+    this.viewer = viewer;
+  }
 }

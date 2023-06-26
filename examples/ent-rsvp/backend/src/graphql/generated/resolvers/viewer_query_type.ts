@@ -35,6 +35,9 @@ export const ViewerTypeType = new GraphQLObjectType({
       },
     },
   }),
+  isTypeOf(obj) {
+    return obj instanceof ViewerType;
+  },
 });
 
 export const ViewerQueryType: GraphQLFieldConfig<

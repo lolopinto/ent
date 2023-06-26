@@ -7,6 +7,7 @@ import {
   CustomEdgeQueryBase,
   EdgeQuerySource,
   ID,
+  OrderBy,
   Viewer,
 } from "@snowtop/ent";
 import { EdgeType } from "src/ent/generated/types";
@@ -73,7 +74,10 @@ export abstract class AccountToClosedTodosDupQueryBase extends AssocEdgeQueryBas
   }
 
   static query<T extends AccountToClosedTodosDupQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Todo>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Account, Todo>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Account, Todo>,
   ): T {
@@ -118,7 +122,10 @@ export abstract class AccountToCreatedWorkspacesQueryBase extends AssocEdgeQuery
   }
 
   static query<T extends AccountToCreatedWorkspacesQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Workspace>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Account, Workspace>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Account, Workspace>,
   ): T {
@@ -160,7 +167,10 @@ export abstract class AccountToOpenTodosDupQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends AccountToOpenTodosDupQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Todo>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Account, Todo>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Account, Todo>,
   ): T {
@@ -205,7 +215,10 @@ export abstract class AccountToWorkspacesQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends AccountToWorkspacesQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Account, Workspace>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Account, Workspace>,
+    ) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Account, Workspace>,
   ): T {
@@ -233,13 +246,14 @@ export abstract class AccountToWorkspacesQueryBase extends AssocEdgeQueryBase<
 export class AccountToTagsQueryBase<
   TEnt extends Account = Account,
 > extends CustomEdgeQueryBase<TEnt, Tag, Viewer> {
-  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string | OrderBy) {
     super(viewer, {
       src: src,
       groupCol: "owner_id",
       loadEntOptions: Tag.loaderOptions(),
       name: "AccountToTagsQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
@@ -247,7 +261,10 @@ export class AccountToTagsQueryBase<
     T extends AccountToTagsQueryBase,
     TEnt extends Account = Account,
   >(
-    this: new (viewer: Viewer, src: TEnt | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: TEnt | ID,
+    ) => T,
     viewer: Viewer,
     src: TEnt | ID,
   ): T {
@@ -262,13 +279,14 @@ export class AccountToTagsQueryBase<
 export class AccountToTodosQueryBase<
   TEnt extends Account = Account,
 > extends CustomEdgeQueryBase<TEnt, Todo, Viewer> {
-  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string | OrderBy) {
     super(viewer, {
       src: src,
       groupCol: "creator_id",
       loadEntOptions: Todo.loaderOptions(),
       name: "AccountToTodosQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
@@ -276,7 +294,10 @@ export class AccountToTodosQueryBase<
     T extends AccountToTodosQueryBase,
     TEnt extends Account = Account,
   >(
-    this: new (viewer: Viewer, src: TEnt | ID) => T,
+    this: new (
+      viewer: Viewer,
+      src: TEnt | ID,
+    ) => T,
     viewer: Viewer,
     src: TEnt | ID,
   ): T {

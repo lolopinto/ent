@@ -7,6 +7,7 @@ import {
   CustomEdgeQueryBase,
   EdgeQuerySource,
   ID,
+  OrderBy,
   Viewer,
 } from "@snowtop/ent";
 import { EdgeType } from "src/ent/generated/types";
@@ -135,13 +136,14 @@ export abstract class GuestToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
 export class GuestToAuthCodesQueryBase<
   TEnt extends Guest = Guest,
 > extends CustomEdgeQueryBase<TEnt, AuthCode, Viewer> {
-  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string | OrderBy) {
     super(viewer, {
       src: src,
       groupCol: "guest_id",
       loadEntOptions: AuthCode.loaderOptions(),
       name: "GuestToAuthCodesQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
@@ -164,13 +166,14 @@ export class GuestToAuthCodesQueryBase<
 export class GuestToGuestDataQueryBase<
   TEnt extends Guest = Guest,
 > extends CustomEdgeQueryBase<TEnt, GuestData, Viewer> {
-  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string) {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string | OrderBy) {
     super(viewer, {
       src: src,
       groupCol: "guest_id",
       loadEntOptions: GuestData.loaderOptions(),
       name: "GuestToGuestDataQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 

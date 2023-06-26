@@ -307,7 +307,12 @@ test("querying todos", async () => {
       query.Eq("assignee_id", account.id),
       query.Eq("completed", false),
     ),
-    orderby: "created_at desc",
+    orderby: [
+      {
+        column: "created_at",
+        direction: "DESC",
+      },
+    ],
   });
   expect(orderedOpenedTodos.length).toBe(3);
 });
