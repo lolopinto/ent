@@ -79,8 +79,13 @@ export const CommentConnectionQueryType: GraphQLFieldConfig<
           loadEntOptions: Comment.loaderOptions(),
           clause: query.UuidIn("id", args.ids),
           name: "Comment",
-          // use sortCol value or created_at (not sorted)
-          sortColumn: args.sortCol ?? "created_at",
+          orderby: [
+            {
+              // use sortCol value or created_at (not sorted)
+              column: args.sortCol ?? "created_at",
+              direction: "DESC",
+            },
+          ],
         });
       },
       args,

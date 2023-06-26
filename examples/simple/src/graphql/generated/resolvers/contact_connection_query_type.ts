@@ -79,8 +79,13 @@ export const ContactConnectionQueryType: GraphQLFieldConfig<
           loadEntOptions: Contact.loaderOptions(),
           clause: query.UuidIn("id", args.ids),
           name: "Contact",
-          // use sortCol value or created_at (not sorted)
-          sortColumn: args.sortCol ?? "created_at",
+          orderby: [
+            {
+              // use sortCol value or created_at (not sorted)
+              column: args.sortCol ?? "created_at",
+              direction: "DESC",
+            },
+          ],
         });
       },
       args,
