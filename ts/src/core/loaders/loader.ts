@@ -34,7 +34,7 @@ export function getCustomLoader<K, V>(
   return context.cache.getLoader(key, create);
 }
 
-export class cacheMap {
+export class CacheMap {
   private m = new Map();
   constructor(private options: DataOptions) {}
   get(key) {

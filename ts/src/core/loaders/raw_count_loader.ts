@@ -10,7 +10,7 @@ import {
 import { loadRow, loadRows } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
-import { cacheMap, getLoader } from "./loader";
+import { CacheMap, getLoader } from "./loader";
 
 interface QueryCountOptions {
   tableName: string;
@@ -59,7 +59,7 @@ export function createCountDataLoader<K extends any>(
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap(options);
+    loaderOptions.cacheMap = new CacheMap(options);
   }
 
   return new DataLoader(async (keys: K[]) => {

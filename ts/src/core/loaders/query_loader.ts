@@ -16,7 +16,7 @@ import {
 } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
-import { cacheMap, getCustomLoader, getLoader } from "./loader";
+import { CacheMap, getCustomLoader, getLoader } from "./loader";
 import memoizee from "memoizee";
 import { ObjectLoaderFactory } from "./object_loader";
 import { OrderBy, getOrderByPhrase } from "../query_impl";
@@ -72,7 +72,7 @@ function createLoader<K extends any>(
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap(options);
+    loaderOptions.cacheMap = new CacheMap(options);
   }
 
   return new DataLoader(async (keys: K[]) => {
