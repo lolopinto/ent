@@ -23,7 +23,7 @@ export function getOrderByPhrase(orderby: OrderBy): string {
     .join(", ");
 }
 
-export function reverseOrderBy(orderby: OrderByOption[]): OrderByOption[] {
+export function reverseOrderBy(orderby: OrderBy): OrderBy {
   return orderby.map((o) => {
     const o2 = { ...o };
     o2.direction = o.direction === "ASC" ? "DESC" : "ASC";

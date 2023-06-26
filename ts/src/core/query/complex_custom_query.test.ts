@@ -99,6 +99,7 @@ afterAll(async () => {
   await tdb.afterAll();
 });
 
+// this is testing deprecated sortColumn
 const getQuery = (viewer?: Viewer) => {
   // when this is user.id instead of user,
   return new UserToEventsInNextWeekQuery(viewer || user.viewer, user.id);
