@@ -58,10 +58,7 @@ export class AuthResolver {
     if (!viewer) {
       throw new Error(`could not log user in with given credentials`);
     }
-    return {
-      viewer: new ViewerType(viewer),
-      token: token,
-    };
+    return new AuthGuestPayload(token, new ViewerType(viewer));
   }
 
   @gqlQuery({
@@ -143,9 +140,7 @@ export class AuthResolver {
     if (!viewer) {
       throw new Error(`not the right credentials`);
     }
-    return {
-      viewer: new ViewerType(viewer),
-      token,
-    };
+
+    return new AuthUserPayload(token, new ViewerType(viewer));
   }
 }

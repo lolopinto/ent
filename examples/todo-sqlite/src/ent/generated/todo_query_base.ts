@@ -8,6 +8,7 @@ import {
   EdgeQuerySource,
   Ent,
   ID,
+  OrderBy,
   Viewer,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "src/ent/generated/loadAny";
@@ -117,13 +118,18 @@ export abstract class TodoToTodoScopeQueryBase extends AssocEdgeQueryBase<
 export class AssigneeToTodosQueryBase<
   TEnt extends AccountBase = AccountBase,
 > extends CustomEdgeQueryBase<TEnt, Todo, Viewer> {
-  constructor(viewer: Viewer, private srcEnt: TEnt, sortColumn?: string) {
+  constructor(
+    viewer: Viewer,
+    private srcEnt: TEnt,
+    sortColumn?: string | OrderBy,
+  ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "assignee_id",
       loadEntOptions: Todo.loaderOptions(),
       name: "AssigneeToTodosQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
