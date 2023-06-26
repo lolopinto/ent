@@ -20,7 +20,7 @@ import {
 } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
-import { cacheMap, getCustomLoader } from "./loader";
+import { CacheMap, getCustomLoader } from "./loader";
 import memoizee from "memoizee";
 
 function createLoader<T extends AssocEdge>(
@@ -32,7 +32,7 @@ function createLoader<T extends AssocEdge>(
   const loaderOptions: DataLoader.Options<ID, T[]> = {};
 
   if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap({
+    loaderOptions.cacheMap = new CacheMap({
       tableName: edgeData.edgeTable,
     });
   }

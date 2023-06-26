@@ -37,34 +37,7 @@ import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
 import { __getGlobalSchema } from "./global_schema";
 import { OrderBy, getOrderByPhrase } from "./query_impl";
-
-// TODO kill this and createDataLoader
-class cacheMap {
-  private m = new Map();
-  constructor(private options: DataOptions) {}
-  get(key: string) {
-    const ret = this.m.get(key);
-    if (ret) {
-      log("cache", {
-        "dataloader-cache-hit": key,
-        "tableName": this.options.tableName,
-      });
-    }
-    return ret;
-  }
-
-  set(key: string, value: any) {
-    return this.m.set(key, value);
-  }
-
-  delete(key: string) {
-    return this.m.delete(key);
-  }
-
-  clear() {
-    return this.m.clear();
-  }
-}
+import { CacheMap } from "./loaders/loader";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   private m = new Map();
@@ -100,12 +73,12 @@ class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   }
 }
 
-function createDataLoader(options: SelectDataOptions) {
+function createAssocEdgeConfigLoader(options: SelectDataOptions) {
   const loaderOptions: DataLoader.Options<ID, Data | null> = {};
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap(options);
+    loaderOptions.cacheMap = new CacheMap(options);
   }
 
   // something here brokwn with strict:true
@@ -1326,10 +1299,11 @@ const assocEdgeFields = [
   "edge_table",
 ];
 
-export const assocEdgeLoader = createDataLoader({
+export const assocEdgeLoader = createAssocEdgeConfigLoader({
   tableName: "assoc_edge_config",
   fields: assocEdgeFields,
   key: "edge_type",
+  keyType: "uuid",
 });
 
 // we don't expect assoc_edge_config information to change
