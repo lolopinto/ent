@@ -97,17 +97,22 @@ const orderedOpenedTodos = await Todo.loadCustom(account.viewer, {
     query.Eq("creator_id", account.id),
     query.Eq("completed", false),
   ),
-  orderby: "created_at desc",
+  orderby: [
+    {
+      column: 'created_at',
+      direction: 'DESC',
+    },
+  ],
 });
 ```
 
 Other options supported here are:
 
 ```ts
-interface QueryDataOptions {
+interface QueryDataOptions<T extends Data = Data, K = keyof T> {
     distinct?: boolean;
-    clause: clause.Clause;
-    orderby?: string;
+    clause: clause.Clause<T, K>;
+    orderby?: OrderBy;
     groupby?: string;
     limit?: number;
 }
@@ -159,7 +164,12 @@ export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<Todo> {
       clause: query.Eq("completed", false),
       name: "account_to_open_todos",
       // optional...
-      // sortColumn: 'created_at',
+      orderby: [
+        {
+          column: 'created_at',
+          direction: 'DESC',
+        },
+      ],
     });
   }
 }
@@ -178,8 +188,8 @@ interface CustomEdgeQueryOptions<TSource extends Ent<TViewer>, TDest extends Ent
     groupCol?: string;
     clause?: Clause;
     name: string;
-    sortColumn?: string;
-    sortColumnUnique?: boolean;
+    orderby?: OrderBy;
+    primarySortColIsUnique?: boolean;
 }
 
 declare class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<TDest, Data> {
@@ -194,8 +204,8 @@ declare class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<TDest
 * `groupCol`: column in the database that can be converted into an IN query when querying for multiple sources
 * `clause`: [Clause](/docs/advanced-topics/clause) instance for filtering.
 * `name`: unique name used to identify this query. Used with [Context Caching](/docs/core-concepts/context-caching).
-* `sortColumn`: optional. Column in the database to sort by. If not provided, uses the `id` field.
-* `sortColumnUnique`: optional. If provided, `sortColumn` is used in generating the cursors and makes for a simpler SQL query.
+* `orderby`: optional. Used to order the query. If not provided, we sort by the `id` or primary field column field descending.
+* `primarySortColIsUnique`: optional. If provided, first `column` in `orderby` is used in generating the cursors and makes for a simpler SQL query. Otherwise, `id` or primary key column is used.
 
 ### expose query to graphql
 
@@ -230,7 +240,12 @@ To fetch a query that isn't source based or that's global to your database e.g. 
         query.GreaterEq("completed_date", start),
       ),
       name: "closed_todos_last_day",
-      sortColumn: 'completed_date',
+      orderby: [
+        {
+          column: 'completed_date',
+          direction: 'DESC',
+        },
+      ],
     });
   }
 ```

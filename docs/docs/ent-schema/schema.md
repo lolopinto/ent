@@ -23,7 +23,7 @@ The `Schema` interface referenced above:
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // list of fields
-  fields: FieldMap{};
+  fields: FieldMap;
 
   // optional, can be overriden as needed
   tableName?: string;
