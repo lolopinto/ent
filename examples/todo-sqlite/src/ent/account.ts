@@ -54,7 +54,12 @@ export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
       loadEntOptions: Todo.loaderOptions(),
       clause: query.Eq("completed", false),
       name: "account_to_open_todos",
-      sortColumn: "created_at",
+      orderby: [
+        {
+          column: "created_at",
+          direction: "DESC",
+        },
+      ],
     });
   }
   sourceEnt(id: ID) {
