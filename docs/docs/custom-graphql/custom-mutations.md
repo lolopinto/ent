@@ -13,25 +13,56 @@ A common thing for a lot of applications is to implement authentication to log t
 ```ts title="src/graphql/mutations/auth.ts"
 @gqlInputObjectType()
 export class UserAuthInput {
-  @gqlField()
-  emailAddress: string; 
-  @gqlField()
+  @gqlField({
+    class: 'UserAuthInput',
+    type: GraphQLString,
+  })
+  emailAddress: string;
+
+  @gqlField({
+    class: 'UserAuthInput',
+    type: GraphQLString,
+  })
   password: string; 
+
+  constructor(emailAddress: string, password: string) {
+    this.emailAddress = emailAddress;
+    this.password = password;
+  }
 }
 
 @gqlObjectType()
 export class UserAuthPayload {
-  @gqlField({ type: GraphQLID })
+  @gqlField({     
+    class: "UserAuthPayload", 
+    type: GraphQLID,
+  })
   viewerID: ID; 
+
+  constructor(viewerID: ID) {
+    this.viewerID = viewerID;
+  }
 }
 
 export class AuthResolver {
-  @gqlMutation({ name: "userAuth", type: UserAuthPayload })
+  @gqlMutation({ 
+    class: "AuthResolver",
+    name: "userAuth", 
+    type: UserAuthPayload,
+    async: true,
+    args: [
+      gqlContextType(),
+      {
+        name: "input",
+        type: "UserAuthInput",
+      },
+    ]
+  })
   async userAuth(
-    @gqlContextType() context: RequestContext,
-    @gqlArg("input") input: UserAuthInput,
+    context: RequestContext,
+    input: UserAuthInput,
   ): Promise<UserAuthPayload> {
-    return {viewerID : "1"};
+    return new UserAuthPayload("1");
   }
 }
 
@@ -68,12 +99,11 @@ Here's what's happening here:
 
 This uses the following concepts to implement this:
 
-* [gqlMutation](#gqlMutation)
-* [gqlInputObjectType](#gqlInputObjectType)
+* [gqlMutation](#gqlmutation)
+* [gqlInputObjectType](/docs/custom-graphql/gql-input-object-type)
 * [gqlField](/docs/custom-graphql/gql-field)
-* [gqlObjectType](#gqlObjectType)
+* [gqlObjectType](/docs/custom-graphql/gql-object-type)
 * [gqlContextType](/docs/custom-graphql/gql-context)
-* [gqlArg](/docs/custom-graphql/gql-arg)
 
 ## gqlMutation
 
@@ -81,34 +111,7 @@ This adds a new field to the GraphQL `Mutation` type. See example usage [above](
 
 Accepts the following options which overlap with [gqlField](/docs/custom-graphql/gql-field):
 
+* `class` for the name of the class the function is defined in.
 * `name` for the name of the GraphQL field
 * `description` of the field
 * `type`: type returned by the field
-
-## gqlInputObjectType
-
-Adds a new input object to the schema. See example usage [above](#auth-example).
-
-Options:
-
-### name
-
-Name of the input object. If not specified, defaults to the name of the class.
-
-### description
-
-Description nof the input object. Will be added to the Schema and exposed in tools like [GraphiQL](https://github.com/graphql/graphiql) or [Playground](https://github.com/graphql/graphql-playground).
-
-## gqlObjectType
-
-Adds a new object to the schema. See example usage [above](#auth-example).
-
-Options:
-
-### name
-
-Name of the object. If not specified, defaults to the name of the class
-
-### description
-
-Description nof the object. Will be added to the Schema and exposed in tools like [GraphiQL](https://github.com/graphql/graphiql) or [Playground](https://github.com/graphql/graphql-playground).

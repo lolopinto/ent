@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 7
 ---
 
 # gqlConnection
@@ -17,7 +17,7 @@ For example:
 ```ts title="src/account.ts"
 export class Account extends AccountBase {
 
-@gqlField({ name: "openTodos", type: gqlConnection("Todo") })
+@gqlField({ class: "Account", name: "openTodos", type: gqlConnection("Todo") })
   openTodos() {
     return new AccountToOpenTodosQuery(this.viewer, this);
   }

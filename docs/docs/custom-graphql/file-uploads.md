@@ -23,11 +23,26 @@ Here's an example usage:
 
 ```ts
 export class ImportGuestResolver {
-  @gqlMutation({ type: Event })
+  @gqlMutation({ 
+    class: "ImportGuestResolver",
+    async: true,
+    type: Event,
+    args: [
+      gqlContextType(),
+      {
+        name: "eventID",
+        type: GraphQLID,
+      },
+      {
+        name: "file",
+        type: gqlFileUpload,
+      },
+    ],
+  })
   async importGuests(
-    @gqlContextType() context: RequestContext,
-    @gqlArg("eventID", { type: GraphQLID }) eventID: ID,
-    @gqlArg("file", { type: gqlFileUpload }) file: Promise<FileUpload>,
+    context: RequestContext,
+    eventID: ID,
+    file: Promise<FileUpload>,
   ) {
   }
 }
