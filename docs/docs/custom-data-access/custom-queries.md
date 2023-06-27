@@ -137,7 +137,7 @@ To expose the Ent accessors above to GraphQL as a [list](https://graphql.org/lea
 ```ts title="src/account.ts"
 export class Account extends AccountBase {
 
-@gqlField({ name: "openTodosPlural", type: "[Todo]" })
+@gqlField({ class: "Account", name: "openTodosPlural", type: "[Todo]", async: true })
   async openTodosPlural() {
     return Todo.loadCustom(
       this.viewer,
@@ -214,7 +214,7 @@ To expose the custom ent query above to GraphQL as a connection, use [`gqlConnec
 ```ts title="src/account.ts"
 export class Account extends AccountBase {
 
-@gqlField({ name: "openTodos", type: gqlConnection("Todo") })
+@gqlField({ class: "Account", name: "openTodos", type: gqlConnection("Todo") })
   openTodos() {
     return new AccountToOpenTodosQuery(this.viewer, this);
   }
@@ -227,8 +227,13 @@ To fetch a query that isn't source based or that's global to your database e.g. 
 
 ```ts
 
-  @gqlQuery({ name: "closed_todos_last_day", type: gqlConnection("Todo") })
-  closedTodosLastDay(@gqlContextType() context: RequestContext) {
+  @gqlQuery({ 
+    class: "TodoResolver",
+    name: "closed_todos_last_day", 
+    type: gqlConnection("Todo"),
+    args: [gqlContextType()],
+  })
+  closedTodosLastDay(context: RequestContext) {
     const start = Interval.before(new Date(), { hours: 24 })
       .start.toUTC()
       .toISO();

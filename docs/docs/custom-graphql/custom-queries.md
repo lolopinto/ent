@@ -17,7 +17,12 @@ Here's an example which exposes `Viewer` :
 export class ViewerType {
   constructor(private viewer: Viewer) {}
 
-  @gqlField({ type: GraphQLID, nullable: true })
+  @gqlField({ 
+    class: 'ViewerType',
+    type: GraphQLID, 
+    nullable: true,
+    async: true,
+  })
   async viewerID() {
     const user = await this.user();
     if (!user) {
@@ -26,7 +31,12 @@ export class ViewerType {
     return encodeGQLID(user);
   }
 
-  @gqlField({ type: User, nullable: true })
+  @gqlField({ 
+    class: 'ViewerType',
+    type: User, 
+    nullable: true,
+    async: true,
+  })
   async user(): Promise<User | null> {
     const v = this.viewer.viewerID;
     if (!v) {
@@ -37,8 +47,15 @@ export class ViewerType {
 }
 
 export default class ViewerResolver {
-  @gqlQuery({ name: "viewer", type: ViewerType })
-  viewer(@gqlContextType() context: RequestContext): ViewerType {
+  @gqlQuery({ 
+    class: 'ViewerResolver',
+    name: "viewer", 
+    type: 'ViewerType',
+    args: [
+      gqlContextType(),
+    ],
+  })
+  viewer(context: RequestContext): ViewerType {
     return new ViewerType(context.getViewer());
   }
 }
@@ -51,6 +68,10 @@ This updates the GraphQL schema as follows:
 type Viewer {
   viewerID: ID
   user: User
+}
+
+type Query {
+  viewer: Viewer!
 }
 ```
 
@@ -66,7 +87,7 @@ This uses the following concepts to implement this:
 
 * [gqlQuery](#gqlquery)
 * [gqlField](/docs/custom-graphql/gql-field)
-* [gqlObjectType](#gqlobjecttype)
+* [gqlObjectType](/docs/custom-graphql/gql-object-type)
 * [gqlContextType](/docs/custom-graphql/gql-context)
 
 ## gqlQuery
@@ -75,20 +96,7 @@ This adds a new field to the GraphQL `Query` type. See example usage [above](#vi
 
 Accepts the following options which overlap with gqlField:
 
-* `name` for the name of the GraphQL field 
+* `class` for the name of the class the function is defined in.
+* `name` for the name of the GraphQL field
 * `description` of the field
 * `type`: type returned by the field
-
-## gqlObjectType
-
-Adds a new object to the schema. See example usage [above](#viewer).
-
-Options:
-
-### name
-
-Name of the object. If not specified, defaults to the name of the class
-
-### description
-
-Description of the object. Will be added to the Schema and exposed in tools like [GraphiQL](https://github.com/graphql/graphiql) or [Playground](https://github.com/graphql/graphql-playground).

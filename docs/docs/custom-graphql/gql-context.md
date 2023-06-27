@@ -13,12 +13,23 @@ For example:
 ```ts title="src/graphql/mutations/auth.ts"
 
 export class AuthResolver {
-  @gqlMutation({ name: "userAuth", type: UserAuthPayload })
+  @gqlMutation({ 
+    class: "AuthResolver",
+    name: "userAuth", 
+    type: UserAuthPayload,
+    args: [
+      gqlContextType(),
+      {
+        name: 'input',
+        type: 'UserAuthInput',
+      },
+    ],
+  })
   async userAuth(
-    @gqlContextType() context: RequestContext,
-    @gqlArg("input") input: UserAuthInput,
+    context: RequestContext,
+    input: UserAuthInput,
   ): Promise<UserAuthPayload> {
-    return {viewerID : "1"};
+    return new UserAuthPayload("1");
   }
 }
 ```

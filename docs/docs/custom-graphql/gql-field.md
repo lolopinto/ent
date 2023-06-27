@@ -6,47 +6,13 @@ sidebar_position: 2
 
 `gqlField` annotates a property or method to indicate that it should be exposed as a GraphQL Field on the source object.
 
-When a property or method explicitly returns a scalar type and isn't nullable, we can usually infer everything but as things get more complicated, have to specify more options.
-
-We continue with the [example](/docs/custom-graphql/custom-accessors).
-
-```ts title="src/ent/user.ts"
-export class User extends UserBase {
-
-  @gqlField()
-  howLong() {
-    return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
-  }
-}
-
-```
-
-For example, running `npm run codegen` on the above ends up throwing the following error because no type is explicitly specified:
-
-```
-
-Error: Function isn't a valid type for accessor/function/property
-
-```
-
-```ts title="src/ent/user.ts"
-export class User extends UserBase {
-
-  @gqlField()
-  howLong(): number {
-    return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
-  }
-}
-```
-
-Updating the above to indicate it's returning `number` actually still leads to an error because GraphQL differentiates between `Int` and `Float` even though TypeScript/JavaScript doesn't.
-
-So, the way to actually get this to work is as follows:
+For example, to expose `howLong` as a non-nullable integer on the `User` object, we do the following:
 
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
   @gqlField({
-    type: GraphQLInt
+    class: 'User',
+    type: GraphQLInt,
   })
   howLong(): number {
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds')
@@ -68,19 +34,25 @@ type User implements Node {
 }
 ```
 
-An example where no annotation is needed is:
+To expose `fullName` as a string either as a property or a method, we can do the following:
 
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
 
-  @gqlField()
+  @gqlField({
+    class: 'User',
+    type: GraphQLString,
+  })
   get fullName(): string {
     return this.firstName + " " + this.lastName;
   }
 
   // OR 
 
-  @gqlField()
+  @gqlField({
+    class: 'User',
+    type: GraphQLString,
+  })
   fullName(): string {
     return this.firstName + " " + this.lastName;
   }
@@ -100,15 +72,58 @@ type User implements Node {
 }
 ```
 
-Considering how annoying it is to remember, it's probably best to just always indicate the `type` .
+gqlField supports a few options which we'll go into below.
 
-## name
+## class
 
-Indicates the name of the GraphQL field. Should be used when we want a different name than the name of the function, method or property.
+Used to associate this field with the class the function/property is in since the TypeScript decorator API doesn't provide this information. It should be the name of the TypeScript class as opposed to the name of the GraphQL object if they're different.
 
-## description
+## args
 
-Indicates the description of the GraphQL field. Will be added to the Schema and exposed in tools like [GraphiQL](https://github.com/graphql/graphiql) or [Playground](https://github.com/graphql/graphql-playground).
+Indicates arguments of the function which will be converted to GraphQL field [arguments](https://graphql.org/learn/schema/#arguments) on the generated GraphQL field.
+
+### gqlFieldArg
+
+A simplified definition of `gqlFieldArg`'s API is:
+
+```ts
+interface gqlFieldArg {
+  name: string;
+  nullable?: boolean | NullableListOptions;
+  description?: string;
+  type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types
+}
+```
+
+`nullable`, `description` and `type` are similar to the values passed to `gqlField` and will be discussed later in this section.
+
+An example usage is as follows:
+
+```ts
+class User {
+  @gqlField({
+    class: "User",
+    type: "[Contact]",
+    name: "contactsGivenDomain",
+    args: [
+      {
+        name: "domain",
+        type: GraphQLString,
+      },
+    ],
+    async: true,
+  })
+  async getContactsGivenDomain(domain: string): Promise<Contact[]> {
+    return [];
+  }
+}
+```
+
+### gqlContextType
+
+[`gqlContextType`](/docs/custom-graphql/gql-context) annotates a method to indicate that it needs the [RequestContext](/docs/core-concepts/context#requestcontext) and the generated GraphQL code should pass it down to the method.
+
+It's a pre-defined `gqlFieldArg` because it'll be used so often in custom queries and mutations.
 
 ## type
 
@@ -131,7 +146,7 @@ export type GraphQLConnection<T> = { node: T };
 declare type Type = GraphQLScalarType | ClassType | string | CustomType;
 
 interface gqlFieldOptions {
-  type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types or GraphQLConnectionType
+  type: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types or GraphQLConnectionType
 }
 ```
 
@@ -149,7 +164,7 @@ For example, this contrived example:
 
 ```ts
 class User {
-  @gqlField({ type: User, name: "self" })
+  @gqlField({ class: 'User', type: User, name: "self", async: true })
   async loadSelf(): Promise<User> {
     return new User();
   }
@@ -173,7 +188,7 @@ And the list version:
 
 ```ts
 class User {
-  @gqlField({ type: [User], name: "selves" })
+  @gqlField({ class: 'User', type: [User], name: "selves", async: true })
   async loadSelf(): Promise<User[]> {
     return [new User()];
   }
@@ -202,12 +217,14 @@ For example:
 ```ts
 class User {
   @gqlField({
+    class: 'User',
+    async: true,
     type: "Contact",
     nullable: true,
     name: "contactSameDomain",
   })
-  async getFirstContactSameDomain(): Promise<Contact | undefined> {
-  ///...
+  async getFirstContactSameDomain(): Promise<Contact | null> {
+    return null;
   }
 }
 ```
@@ -229,7 +246,12 @@ To provide the list version of this:
 
 ```ts
 class User {
-  @gqlField({ type: "[Contact]", name: "contactsSameDomain" })
+  @gqlField({ 
+    class: 'User',
+    type: "[Contact]", 
+    name: "contactsSameDomain",
+    async: true,
+  })
   async getContactsSameDomain(): Promise<Contact[]> {
     return [];
   }
@@ -255,6 +277,14 @@ This allows the flexibility for custom types that are not the built-in GraphQL S
 
 We'll dive into a specific example of this in [gqlFileUpload](/docs/custom-graphql/file-uploads#gqlfileupload).
 
+## name
+
+Indicates the name of the GraphQL field. Should be used when we want a different name than the name of the function, method or property.
+
+## description
+
+Indicates the description of the GraphQL field. Will be added to the Schema and exposed in tools like [GraphiQL](https://github.com/graphql/graphiql) or [Playground](https://github.com/graphql/graphql-playground).
+
 ## nullable
 
 Indicates this field is nullable.
@@ -263,7 +293,13 @@ If `true` and a list, means the list is nullable even if the contents of the lis
 
 ```ts
 class User {
-  @gqlField({ type: "[Contact]", name: "contactsSameDomain", nullable: true })
+  @gqlField({ 
+    class: "User",
+    type: "[Contact]", 
+    name: "contactsSameDomain", 
+    nullable: true,
+    async: true 
+  })
   async getContactsSameDomain(): Promise<Contact[] | null> {
     return [];
   }
@@ -291,7 +327,13 @@ Indicates that the contents of the list is nullable.
 
 ```ts
 class User {
-  @gqlField({ type: "[Contact]", name: "contactsSameDomain", nullable: "contents" })
+  @gqlField({ 
+    class: "User",
+    type: "[Contact]", 
+    name: "contactsSameDomain", 
+    nullable: "contents",
+    async: true
+  })
   async getContactsSameDomain(): Promise<(Contact | null)[]> {
     return [];
   }
@@ -317,7 +359,13 @@ Indicates that both the list and its contents are nullable.
 
 ```ts
 class User {
-  @gqlField({ type: "[Contact]", name: "contactsSameDomain", nullable: "contents" })
+  @gqlField({ 
+    class: "User",
+    type: "[Contact]", 
+    name: "contactsSameDomain", 
+    nullable: "contents",
+    async: true,
+  })
   async getContactsSameDomain(): Promise<(Contact | null)[] | null> {
     return [];
   }
@@ -337,3 +385,7 @@ type User implements Node {
 ```
 
 View the [GraphQL documentation](https://graphql.org/learn/schema/#lists-and-non-null) to learn more about lists and null in GraphQL.
+
+## async
+
+Indicates that this method is async and an async caller should be generated in the generated GraphQL code.
