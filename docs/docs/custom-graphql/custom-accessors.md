@@ -57,7 +57,7 @@ export class User extends UserBase {
 
 To do so, we'll dive into the Custom GraphQL API.
 
-We use [TypeScript Decorators](https://www.typescriptlang.org/docs/handbook/decorators.html) to annotate methods to indicate what we're exposing to GraphQL.
+We use [TypeScript Decorators](https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators) introduced in TypeScript 5.0 to annotate methods to indicate what we're exposing to GraphQL.
 
 These decorators are evaluated during code generation and they do as little as possible (nothing) otherwise to reduce the overhead of using them.
 
