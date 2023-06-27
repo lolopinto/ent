@@ -12,12 +12,13 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
 
 // next tag to use
-const TAG = "0.1.0-alpha.48"
+const TAG = "0.1.0-alpha.49-test3"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 18
@@ -37,37 +38,47 @@ const TSENT_VERSION = "v0.1.0-alpha.60"
 
 var SUFFIXES = []string{
 	"dev",
-	"slim",
+	// "slim",
 }
 
 // can change platforms here to test locally
 var PLATFORMS = []string{
-	"linux/amd64",
+	// "linux/amd64",
 	"linux/arm64",
+}
+
+var PACKAGE_MANAGERS = []string{
+	"yarn",
+	"npm",
 }
 
 func main() {
 	var wg sync.WaitGroup
-	wg.Add(len(NODE_VERSIONS) * len(SUFFIXES))
-	errs := make([]error, len(NODE_VERSIONS)*len(SUFFIXES))
+	wg.Add(len(NODE_VERSIONS) * len(SUFFIXES) * len(PACKAGE_MANAGERS))
+	var serr syncerr.Error
 	for i := range NODE_VERSIONS {
 		for j := range SUFFIXES {
-			go func(i, j int) {
-				v := NODE_VERSIONS[i]
-				suffix := SUFFIXES[j]
-				errs[i*len(SUFFIXES)+j] = run(dockerfileData{
-					NodeVersion:       v,
-					DockerTag:         TAG,
-					Suffix:            suffix,
-					TsentVersion:      TSENT_VERSION,
-					AutoSchemaVersion: AUTO_SCHEMA_VERSION,
-				}, &wg)
-			}(i, j)
+			for k := range PACKAGE_MANAGERS {
+				go func(i, j, k int) {
+
+					v := NODE_VERSIONS[i]
+					suffix := SUFFIXES[j]
+					pm := PACKAGE_MANAGERS[k]
+					serr.Append(run(dockerfileData{
+						NodeVersion:       v,
+						DockerTag:         TAG,
+						Suffix:            suffix,
+						TsentVersion:      TSENT_VERSION,
+						AutoSchemaVersion: AUTO_SCHEMA_VERSION,
+						PackageManager:    pm,
+					}, &wg))
+				}(i, j, k)
+			}
 		}
 	}
 	wg.Wait()
 
-	if err := util.CoalesceErr(errs...); err != nil {
+	if err := serr.Err(); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -78,10 +89,49 @@ type dockerfileData struct {
 	Suffix            string
 	TsentVersion      string
 	AutoSchemaVersion string
+	PackageManager    string
+}
+
+func (d *dockerfileData) create() bool {
+	if d.Suffix == "dev" {
+		return true
+	}
+	// only create in prod for npm since the npm vs yarn difference only applies in dev
+	return d.PackageManager == "npm"
 }
 
 func (d *dockerfileData) Development() bool {
 	return d.Suffix == "dev"
+}
+
+func (d *dockerfileData) Npm() bool {
+	return d.PackageManager == "npm"
+}
+
+func (d *dockerfileData) Yarn() bool {
+	return d.PackageManager == "yarn"
+}
+
+func (d *dockerfileData) updateLatest() bool {
+	// current node/npm development gets latest since it should have full ish
+	return d.NodeVersion == CURRENT_NODE_VERSION && UPDATE_LATEST && d.Development() && d.Npm()
+
+}
+
+func (d *dockerfileData) getTags() []string {
+	ret := []string{}
+
+	if d.Npm() {
+		// image for npm doesn't have the package manager in the tag
+		ret = append(ret, fmt.Sprintf("%s:%s-nodejs-%d-%s", REPO, TAG, d.NodeVersion, d.Suffix))
+	} else {
+		ret = append(ret, fmt.Sprintf("%s:%s-nodejs-%d-%s-%s", REPO, TAG, d.NodeVersion, d.Suffix, d.PackageManager))
+	}
+
+	if d.updateLatest() {
+		ret = append(ret, fmt.Sprintf("%s:latest", REPO))
+	}
+	return ret
 }
 
 func createDockerfile(path string, d dockerfileData) error {
@@ -98,20 +148,9 @@ func createDockerfile(path string, d dockerfileData) error {
 	}))
 }
 
-func getTags(d dockerfileData) []string {
-	ret := []string{
-		fmt.Sprintf("%s:%s-nodejs-%d-%s", REPO, TAG, d.NodeVersion, d.Suffix),
-	}
-	// current node development gets latest since it should have full ish
-	if d.NodeVersion == CURRENT_NODE_VERSION && UPDATE_LATEST && d.Development() {
-		ret = append(ret, fmt.Sprintf("%s:latest", REPO))
-	}
-	return ret
-}
-
 func getCommandArgs(d dockerfileData, builder string) []string {
 	cacheTag := fmt.Sprintf("%s:cache-nodejs%d", REPO, d.NodeVersion)
-	tags := getTags(d)
+	tags := d.getTags()
 	ret := []string{
 		"buildx",
 		"build",
@@ -137,7 +176,12 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 
 func run(d dockerfileData, wg *sync.WaitGroup) error {
 	defer wg.Done()
-	dir := fmt.Sprintf("node_%d_%s", d.NodeVersion, d.Suffix)
+
+	if !d.create() {
+		return nil
+	}
+
+	dir := fmt.Sprintf("node_%d_%s_%s", d.NodeVersion, d.Suffix, d.PackageManager)
 	info, err := os.Stat(dir)
 	if err == nil {
 		if !info.IsDir() {
