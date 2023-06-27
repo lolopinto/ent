@@ -13,7 +13,7 @@ export class UserToTagsFkeyQuery extends CustomEdgeQueryBase<
       groupCol: "owner_id",
       name: "user_to_tags",
       sortColumn: "canonical_name",
-      sortColumnUnique: true,
+      primarySortColIsUnique: true,
     });
   }
 
@@ -36,8 +36,13 @@ export class UserToTagsFkeyQueryAsc extends CustomEdgeQueryBase<
       loadEntOptions: FakeTag.loaderOptions(),
       groupCol: "owner_id",
       name: "user_to_tags_asc",
-      sortColumn: "canonical_name ASC",
-      sortColumnUnique: true,
+      orderby: [
+        {
+          column: "canonical_name",
+          direction: "ASC",
+        },
+      ],
+      primarySortColIsUnique: true,
     });
   }
 

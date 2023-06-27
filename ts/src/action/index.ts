@@ -11,6 +11,7 @@ export {
   saveBuilderX,
   setEdgeTypeInGroup,
   TriggerReturn,
+  ChangesetOptions,
 } from "./action";
 export {
   OrchestratorOptions,
@@ -27,3 +28,4 @@ export {
   maybeConvertRelativeInputPlusExpressions,
 } from "./relative_value";
 export { Transaction } from "./transaction";
+export { AssocEdgeOptions } from "./operations";

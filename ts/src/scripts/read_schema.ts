@@ -1,4 +1,4 @@
-import glob from "glob";
+import * as glob from "glob";
 import * as path from "path";
 import { pascalCase } from "pascal-case";
 import minimist from "minimist";

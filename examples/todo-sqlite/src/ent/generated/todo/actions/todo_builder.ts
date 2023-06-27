@@ -3,8 +3,10 @@
 import { AssocEdgeInputOptions, Ent, ID, Viewer } from "@snowtop/ent";
 import {
   Action,
+  AssocEdgeOptions,
   Builder,
   Changeset,
+  ChangesetOptions,
   Orchestrator,
   OrchestratorOptions,
   WriteOperation,
@@ -154,6 +156,11 @@ export class TodoBuilder<
     return this;
   }
 
+  removeTagID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(id, EdgeType.TodoToTags, opts);
+    return this;
+  }
+
   removeTag(...nodes: (ID | Tag)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
@@ -199,6 +206,11 @@ export class TodoBuilder<
     return this;
   }
 
+  removeTodoScopeID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(id, EdgeType.TodoToTodoScope, opts);
+    return this;
+  }
+
   removeTodoScope(...nodes: (ID | Ent)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
@@ -212,6 +224,10 @@ export class TodoBuilder<
 
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
+  }
+
+  async buildWithOptions_BETA(options: ChangesetOptions): Promise<Changeset> {
+    return this.orchestrator.buildWithOptions_BETA(options);
   }
 
   async valid(): Promise<boolean> {

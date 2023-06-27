@@ -36,6 +36,10 @@ import {
 import schema from "../../schema/event_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
+export interface EventCanViewerSee {
+  addressID: () => Promise<boolean>;
+}
+
 export class EventBase implements Ent<ExampleViewerAlias> {
   protected readonly data: EventDBData;
   readonly nodeType = NodeType.Event;
@@ -299,5 +303,16 @@ export class EventBase implements Ent<ExampleViewerAlias> {
 
   loadCreatorX(): Promise<User> {
     return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
+  }
+
+  canViewerSeeInfo(): EventCanViewerSee {
+    const fieldPrivacy = getFieldsWithPrivacy(
+      schema,
+      eventLoaderInfo.fieldInfo,
+    );
+    return {
+      addressID: () =>
+        applyPrivacyPolicy(this.viewer, fieldPrivacy.get("address_id")!, this),
+    };
   }
 }

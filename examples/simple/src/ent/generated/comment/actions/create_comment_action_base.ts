@@ -13,6 +13,7 @@ import {
   Action,
   Builder,
   Changeset,
+  ChangesetOptions,
   Observer,
   Trigger,
   Validator,
@@ -27,6 +28,11 @@ export interface CommentCreateInput {
   body: string;
   articleID: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   articleType: string;
+  attachmentID?:
+    | ID
+    | null
+    | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
+  attachmentType?: string | null;
   stickerID?: ID | null | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   stickerType?: string | null;
 }
@@ -111,6 +117,12 @@ export class CreateCommentActionBase
 
   async changeset(): Promise<Changeset> {
     return this.builder.build();
+  }
+
+  async changesetWithOptions_BETA(
+    options: ChangesetOptions,
+  ): Promise<Changeset> {
+    return this.builder.buildWithOptions_BETA(options);
   }
 
   async valid(): Promise<boolean> {

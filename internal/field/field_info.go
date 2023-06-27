@@ -161,6 +161,7 @@ func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) error {
 		return fmt.Errorf("invalid field passed to InvalidateFieldForGraphQL")
 	}
 	f.hideFromGraphQL = true
+	f.hideFromGraphQLBecauseEdge = true
 	return nil
 }
 

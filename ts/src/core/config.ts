@@ -3,7 +3,7 @@ import { load } from "js-yaml";
 import DB, { Database, DBDict } from "./db";
 import * as path from "path";
 import { setLogLevels } from "./logger";
-import { ___setLogQueryErrorWithError } from "./ent";
+import { ___setLogQueryErrorWithError, setDefaultLimit } from "./ent";
 
 type logType = "query" | "warn" | "info" | "error" | "debug";
 
@@ -25,6 +25,7 @@ enum fieldPrivacyEvaluated {
   ON_DEMAND = "on_demand",
 }
 
+// runtime configurations
 export interface Config {
   dbConnectionString?: string;
   dbFile?: string; // config/database.yml is default
@@ -34,11 +35,18 @@ export interface Config {
   // info is tbd. graphql/performance/timing/request stuff
   // query includes cache hit. redis|memcache etc eventually
 
-  // config for codegen
-  codegen?: CodegenConfig;
-
   // logQueryWithError
   logQueryWithError?: boolean;
+
+  // override the default limit for edges and connections.
+  // right now, it's 1000 but can be overriden to set a higher or lower limit
+  defaultConnectionLimit?: number;
+}
+
+// things that can be set in ent.yml
+export interface ConfigWithCodegen extends Config {
+  // config for codegen
+  codegen?: CodegenConfig;
 
   // because of swc issues, we might not be able to
   // parse custom graphql via decorators so we put this
@@ -163,6 +171,10 @@ function setConfig(cfg: Config) {
   }
 
   ___setLogQueryErrorWithError(cfg.logQueryWithError);
+
+  if (cfg.defaultConnectionLimit) {
+    setDefaultLimit(cfg.defaultConnectionLimit);
+  }
 }
 
 function isBuffer(b: Buffer | Config): b is Buffer {

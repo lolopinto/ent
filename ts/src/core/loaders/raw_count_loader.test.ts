@@ -410,7 +410,7 @@ function verifyGroupedQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "fake_contacts",
     fields: ["count(1) as count", "user_id"],
-    clause: clause.In("user_id", ...ids),
+    clause: clause.UuidIn("user_id", ids),
     groupby: "user_id",
   });
   expect(ml.logs.length).toBe(1);

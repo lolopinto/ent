@@ -1,8 +1,10 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent" "Viewer" "Data" "AssocEdgeInputOptions" }}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent" "Viewer" "Data" "AssocEdgeInputOptions" }}
 {{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator"}}
 
 {{$p := .Pattern}}
 {{ $cfg := .Config -}}
+{{ $schema := .Schema -}}
+{{ $pkg := .Package -}}
 
 {{ reserveImport "src/ent/generated/types" "EdgeType" "NodeType" }}
 
@@ -70,6 +72,6 @@ export function {{$p.GetBuilderName}}<
       super(...args);
     }
 
-  {{ template "edge_builder.tmpl" $p.GetSortedEdges -}}
+  {{ template "edge_builder.tmpl" (dict "Edges" $p.GetSortedEdges "Schema" $schema "Package" $pkg) -}}
   }
 }

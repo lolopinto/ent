@@ -18,7 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Contact } from "../../../ent";
-import { ContactSortColumnType } from "./contact_sort_column_type";
+import { ContactSortColumnType } from "./enums_type";
 import { RootToContactConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
@@ -77,10 +77,15 @@ export const ContactConnectionQueryType: GraphQLFieldConfig<
       (v) => {
         return new CustomClauseQuery(context.getViewer(), {
           loadEntOptions: Contact.loaderOptions(),
-          clause: query.In("id", args.ids),
+          clause: query.UuidIn("id", args.ids),
           name: "Contact",
-          // use sortCol value or created_at (not sorted)
-          sortColumn: args.sortCol ?? "created_at",
+          orderby: [
+            {
+              // use sortCol value or created_at (not sorted)
+              column: args.sortCol ?? "created_at",
+              direction: "DESC",
+            },
+          ],
         });
       },
       args,

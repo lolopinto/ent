@@ -4,15 +4,17 @@
  */
 
 import {
+  GraphQLBoolean,
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, applyPrivacyPolicy } from "@snowtop/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { ContactEmail } from "../../../ent";
+import EditContactEmailAction from "../../../ent/contact_email/actions/edit_contact_email_action";
 import {
   ContactInfoType,
   ContactItemType,
@@ -20,6 +22,26 @@ import {
   ContactType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+
+class ContactEmailCanViewerDo {
+  constructor(
+    private context: RequestContext<ExampleViewerAlias>,
+    private contactEmail: ContactEmail,
+  ) {}
+
+  async contactEmailEdit(args: any): Promise<boolean> {
+    const action = EditContactEmailAction.create(
+      this.context.getViewer(),
+      this.contactEmail,
+      args,
+    );
+    return applyPrivacyPolicy(
+      this.context.getViewer(),
+      action.getPrivacyPolicy(),
+      this.contactEmail,
+    );
+  }
+}
 
 export const ContactEmailType = new GraphQLObjectType({
   name: "ContactEmail",
@@ -50,9 +72,38 @@ export const ContactEmailType = new GraphQLObjectType({
     label: {
       type: new GraphQLNonNull(ContactLabelType),
     },
+    canViewerDo: {
+      type: new GraphQLNonNull(ContactEmailCanViewerDoType),
+      resolve: (
+        contactEmail: ContactEmail,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new ContactEmailCanViewerDo(context, contactEmail);
+      },
+    },
   }),
   interfaces: [GraphQLNodeInterface, ContactItemType],
   isTypeOf(obj) {
     return obj instanceof ContactEmail;
   },
+});
+
+export const ContactEmailCanViewerDoType = new GraphQLObjectType({
+  name: "ContactEmailCanViewerDo",
+  fields: (): GraphQLFieldConfigMap<
+    ContactEmailCanViewerDo,
+    RequestContext<ExampleViewerAlias>
+  > => ({
+    contactEmailEdit: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        contactEmail: ContactEmailCanViewerDo,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return contactEmail.contactEmailEdit(args);
+      },
+    },
+  }),
 });

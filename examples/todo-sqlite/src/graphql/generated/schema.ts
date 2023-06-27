@@ -22,11 +22,11 @@ import {
   EditAccountPayloadType,
 } from "src/graphql/generated/mutations/account/edit_account_type";
 import {
-  AccountTodoStatusInputType,
   TodoStatusAccountEditInputType,
   TodoStatusAccountEditPayloadType,
 } from "src/graphql/generated/mutations/account/todo_status_account_edit_type";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
+import { AccountTodoStatusInputType } from "src/graphql/generated/mutations/input_enums_type";
 import { MutationType } from "src/graphql/generated/mutations/mutation_type";
 import {
   CreateTagInputType,
@@ -74,6 +74,7 @@ import {
 } from "src/graphql/generated/mutations/workspace/edit_workspace_type";
 import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
+  AccountCanViewerSeeType,
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
   AccountToCreatedWorkspacesConnectionType,
@@ -85,6 +86,7 @@ import {
   AccountToWorkspacesConnectionType,
   AccountTodoStatusType,
   AccountType,
+  AssigneeToTodosConnectionType,
   RootToClosedTodosLastDayConnectionType,
   RootToOpenTodosConnectionType,
   TagToTodosConnectionType,
@@ -102,6 +104,7 @@ export default new GraphQLSchema({
   mutation: MutationType,
   types: [
     AccountTodoStatusType,
+    AccountCanViewerSeeType,
     AccountPrefsType,
     AccountType,
     TagType,
@@ -115,6 +118,7 @@ export default new GraphQLSchema({
     AccountToTagsConnectionType(),
     AccountToTodosConnectionType(),
     AccountToWorkspacesConnectionType(),
+    AssigneeToTodosConnectionType(),
     RootToClosedTodosLastDayConnectionType(),
     RootToOpenTodosConnectionType(),
     TagToTodosConnectionType(),

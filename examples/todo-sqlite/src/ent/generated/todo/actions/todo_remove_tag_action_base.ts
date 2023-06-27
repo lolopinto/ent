@@ -9,6 +9,7 @@ import {
 import {
   Action,
   Changeset,
+  ChangesetOptions,
   Observer,
   Trigger,
   Validator,
@@ -85,6 +86,12 @@ export class TodoRemoveTagActionBase
   }
   async changeset(): Promise<Changeset> {
     return this.builder.build();
+  }
+
+  async changesetWithOptions_BETA(
+    options: ChangesetOptions,
+  ): Promise<Changeset> {
+    return this.builder.buildWithOptions_BETA(options);
   }
 
   async valid(): Promise<boolean> {

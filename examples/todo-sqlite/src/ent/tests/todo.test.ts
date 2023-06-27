@@ -2,20 +2,18 @@ import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_acti
 import RenameTodoStatusAction from "src/ent/todo/actions/rename_todo_status_action";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 import { Account, Todo } from "src/ent/";
-import { AccountTodoStatus, EdgeType, NodeType } from "src/ent/generated/types";
+import { AccountTodoStatus, NodeType } from "src/ent/generated/types";
 import {
   createAccount,
   createTag,
   createTodoForSelf,
   createTodoSelfInWorkspace,
-  createWorkspace,
+  createTodoOtherInWorksapce,
 } from "../testutils/util";
 import { IDViewer, query } from "@snowtop/ent";
 import { advanceTo } from "jest-date-mock";
 import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
 import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
-import { loadCustomEdges } from "@snowtop/ent/core/ent";
-import { CustomTodoEdge } from "../edge/custom_edge";
 import CreateTodoAction from "../todo/actions/create_todo_action";
 import ChangeTodoBountyAction from "../todo/actions/change_todo_bounty_action";
 import { Transaction } from "@snowtop/ent/action";
@@ -23,57 +21,6 @@ import { Transaction } from "@snowtop/ent/action";
 test("create for self", async () => {
   await createTodoForSelf();
 });
-
-async function createTodoOtherInWorksapce() {
-  const creator = await createAccount();
-  const assignee = await createAccount();
-  const workspace = await createWorkspace(creator);
-
-  const todo = await CreateTodoAction.create(creator.viewer, {
-    text: "watch GOT",
-    creatorID: creator.id,
-    assigneeID: assignee.id,
-    scopeID: workspace.id,
-    scopeType: NodeType.Workspace,
-  }).saveX();
-  expect(todo.text).toBe("watch GOT");
-  expect(todo.creatorID).toBe(creator.id);
-  expect(todo.completed).toBe(false);
-  expect(todo.assigneeID).toBe(assignee.id);
-  expect(todo.scopeID).toBe(workspace.id);
-  expect(todo.scopeType).toBe(NodeType.Workspace);
-
-  const scopedEnts = await todo.queryTodoScope().queryEnts();
-  expect(scopedEnts.length).toBe(1);
-  expect(scopedEnts[0].id).toBe(workspace.id);
-
-  const assignee2 = await createAccount();
-
-  const todo2 = await CreateTodoAction.create(creator.viewer, {
-    text: "watch GOT",
-    creatorID: creator.id,
-    assigneeID: assignee2.id,
-    scopeID: workspace.id,
-    scopeType: NodeType.Workspace,
-  }).saveX();
-  expect(todo2.text).toBe("watch GOT");
-  expect(todo2.creatorID).toBe(creator.id);
-  expect(todo2.completed).toBe(false);
-  expect(todo2.assigneeID).toBe(assignee2.id);
-  expect(todo2.scopeID).toBe(workspace.id);
-  expect(todo2.scopeType).toBe(NodeType.Workspace);
-
-  const scopedEnts2 = await todo2.queryTodoScope().queryEnts();
-  expect(scopedEnts2.length).toBe(1);
-  expect(scopedEnts2[0].id).toBe(workspace.id);
-
-  const scopedTodos = await workspace.queryScopedTodos().queryEnts();
-  expect(scopedTodos.length).toBe(2);
-  expect(scopedTodos.map((t) => t.id).includes(todo.id)).toBe(true);
-  expect(scopedTodos.map((t) => t.id).includes(todo2.id)).toBe(true);
-
-  return { todo, todo2 };
-}
 
 test("create for other", async () => {
   // in real life, you shouldn't just be able to create a TODO for anyone randomly lol
@@ -360,7 +307,12 @@ test("querying todos", async () => {
       query.Eq("assignee_id", account.id),
       query.Eq("completed", false),
     ),
-    orderby: "created_at desc",
+    orderby: [
+      {
+        column: "created_at",
+        direction: "DESC",
+      },
+    ],
   });
   expect(orderedOpenedTodos.length).toBe(3);
 });
@@ -400,13 +352,66 @@ test("tags", async () => {
   expect(count2).toBe(3);
   expect(tags2.length).toBe(3);
 
+  const count3 = await todo
+    .queryTags()
+    .withoutTransformations()
+    .queryRawCount();
+  const tags3 = await todo.queryTags().withoutTransformations().queryEnts();
+  const edges3 = await todo.queryTags().withoutTransformations().queryEdges();
+
   // the deleted one is still in the db, just not returned by queries
-  const rawDB = await loadCustomEdges({
-    edgeType: EdgeType.TodoToTags,
-    id1: todo.id,
-    ctr: CustomTodoEdge,
+  // if we ask for it, we can get it...
+  expect(count3).toBe(4);
+  expect(edges3.length).toBe(4);
+  expect(tags3.length).toBe(4);
+  expect(edges3.filter((edge) => edge.deletedAt !== null).length).toBe(1);
+
+  // reeally delete
+  const action = TodoRemoveTagAction.create(todo.viewer, todo);
+  action.builder.removeTagID(tag.id, {
     disableTransformations: true,
   });
-  expect(rawDB.length).toBe(4);
-  expect(rawDB.filter((edge) => edge.deletedAt !== null).length).toBe(1);
+  await action.saveX();
+  todo.viewer.context?.cache?.clearCache();
+
+  const count4 = await todo.queryTags().queryRawCount();
+  const tags4 = await todo.queryTags().queryEnts();
+  const edges4 = await todo.queryTags().queryEdges();
+
+  expect(edges4.length).toBe(3);
+  expect(edges4.every((edge) => edge.deletedAt === null)).toBe(true);
+  expect(count4).toBe(3);
+  expect(tags4.length).toBe(3);
+
+  // fetch without tranformations
+  // no longer there...
+  const count5 = await todo
+    .queryTags()
+    .withoutTransformations()
+    .queryRawCount();
+  const tags5 = await todo.queryTags().withoutTransformations().queryEnts();
+  const edges5 = await todo.queryTags().withoutTransformations().queryEdges();
+
+  // the deleted one is still in the db, just not returned by queries
+  // if we ask for it, we can get it...
+  expect(count5).toBe(3);
+  expect(edges5.length).toBe(3);
+  expect(tags5.length).toBe(3);
+  expect(edges5.filter((edge) => edge.deletedAt !== null).length).toBe(0);
+});
+
+test("assignees", async () => {
+  const { todo } = await createTodoOtherInWorksapce();
+  const todo2 = await createTodoForSelf({
+    creatorID: todo.assigneeID,
+  });
+  const todo3 = await createTodoForSelf({
+    creatorID: todo.assigneeID,
+  });
+
+  const account = await todo.loadAssigneeX();
+  const assigned = await account.queryTodosAssigned().queryEnts();
+  expect(assigned.map((t) => t.id).sort()).toEqual(
+    [todo.id, todo2.id, todo3.id].sort(),
+  );
 });

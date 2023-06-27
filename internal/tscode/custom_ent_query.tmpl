@@ -1,5 +1,22 @@
 {{$name := .TsEdgeQueryName -}}
-{{$base := printf "%sBase" $name -}}
-{{ reserveImport .Package.InternalImportPath $base -}}
+{{$base := .EdgeQueryBase -}}
+{{ reserveImport .Package.InternalImportPath $base }}
+{{ reserveImport .Package.PackagePath "OrderBy"}}
 
-export class {{$name}} extends {{useImport $base}} {}
+
+export class {{$name}} extends {{useImport $base}} {
+  {{ $ctrInfo := .OverwriteConstructor}}
+  {{ if $ctrInfo }}
+    {{ $cfg := .Config }}
+    {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
+    {{ reserveImportPath $viewerInfo.GetImportPath false -}}
+    {{$viewerType := useImport $viewerInfo.GetImport -}}
+
+    {{  reserveImportPath $ctrInfo.Import false -}}
+    constructor(viewer: {{$viewerType}}, srcEnt: {{useImport $ctrInfo.Import.Import}}, sortColumn?: string | {{useImport "OrderBy"}}) {
+      super(viewer, srcEnt, sortColumn);
+    }
+
+  {{end }}
+}
+

@@ -5,13 +5,15 @@ import {
   EdgeQueryableDataOptions,
   Data,
   PrivacyPolicy,
+  EdgeQueryableDataOptionsConfigureLoader,
 } from "../base";
-import { DefaultLimit, getCursor } from "../ent";
+import { getDefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
 import { validate } from "uuid";
 import { types } from "util";
+import { OrderBy, reverseOrderBy } from "../query_impl";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -112,14 +114,10 @@ interface FilterOptions<T extends Data> {
   query: BaseEdgeQuery<Ent, Ent, T>;
   sortCol: string;
   cursorCol: string;
-  defaultDirection?: "ASC" | "DESC";
+  orderby: OrderBy;
   // TODO provide this option
   // if sortCol is Unique and time, we need to pass different values for comparisons and checks...
   sortColTime?: boolean;
-
-  // indicates that sort column is unique and we shouldn't use the id from the
-  // table as the cursor and use the sort column instead
-  sortColumnUnique?: boolean;
 }
 
 interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
@@ -177,15 +175,17 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     options.limit = limit;
 
-    let orderby = this.options.defaultDirection || "DESC";
-
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
-    const less = orderby === "DESC";
+    const less = this.options.orderby[0].direction === "DESC";
+    const orderby = this.options.orderby;
 
     if (this.options.cursorCol !== this.sortCol) {
-      // we also sort unique col in same direction since it doesn't matter...
-      options.orderby = `${this.sortCol} ${orderby}, ${this.options.cursorCol} ${orderby}`;
+      // we also sort cursor col in same direction. (direction doesn't matter)
+      orderby.push({
+        column: this.options.cursorCol,
+        direction: orderby[0].direction,
+      });
 
       if (this.offset) {
         const res = this.edgeQuery.getTableName();
@@ -200,8 +200,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         );
       }
     } else {
-      options.orderby = `${this.sortCol} ${orderby}`;
-
       if (this.offset) {
         let clauseFn = less ? clause.Less : clause.Greater;
         let val = this.options.sortColTime
@@ -210,6 +208,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         options.clause = clauseFn(this.sortCol, val);
       }
     }
+    options.orderby = orderby;
 
     return options;
   }
@@ -266,19 +265,8 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   async query(
     options: EdgeQueryableDataOptions,
   ): Promise<EdgeQueryableDataOptions> {
-    // assume desc by default
-    // so last is reverse
-    let orderby = "ASC";
-    if (this.options.defaultDirection) {
-      // reverse sort col shown...
-      if (this.options.defaultDirection === "DESC") {
-        orderby = "ASC";
-      } else {
-        orderby = "DESC";
-      }
-    }
-
-    const greater = orderby === "ASC";
+    const orderby = reverseOrderBy(this.options.orderby);
+    const greater = orderby[0].direction === "ASC";
 
     options.limit = this.options.limit + 1; // fetch an extra so we know if previous pag
 
@@ -296,10 +284,12 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
           this.offset,
         );
       }
-      options.orderby = `${this.sortCol} ${orderby}, ${this.options.cursorCol} ${orderby}`;
+      // we also sort cursor col in same direction. (direction doesn't matter)
+      orderby.push({
+        column: this.options.cursorCol,
+        direction: orderby[0].direction,
+      });
     } else {
-      options.orderby = `${this.sortCol} ${orderby}`;
-
       if (this.offset) {
         let clauseFn = greater ? clause.Greater : clause.Less;
         let val = this.options.sortColTime
@@ -308,6 +298,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
         options.clause = clauseFn(this.sortCol, val);
       }
     }
+    options.orderby = orderby;
 
     return options;
   }
@@ -315,6 +306,11 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   paginationInfo(id: ID): PaginationInfo | undefined {
     return this.pageMap.get(id);
   }
+}
+
+interface EdgeQueryOptions {
+  cursorCol: string;
+  orderby: OrderBy;
 }
 
 export abstract class BaseEdgeQuery<
@@ -333,24 +329,54 @@ export abstract class BaseEdgeQuery<
   private idsToFetch: ID[] = [];
   private sortCol: string;
   private cursorCol: string;
-  private defaultDirection?: "ASC" | "DESC";
+  private edgeQueryOptions: EdgeQueryOptions;
 
-  constructor(public viewer: Viewer, sortCol: string, cursorCol: string) {
+  constructor(viewer: Viewer, sortCol: string, cursorCol: string);
+  constructor(viewer: Viewer, options: EdgeQueryOptions);
+
+  constructor(
+    public viewer: Viewer,
+    sortColOrOptions: string | EdgeQueryOptions,
+    cursorColMaybe?: string,
+  ) {
+    let sortCol: string;
+    let cursorCol: string;
+    if (typeof sortColOrOptions === "string") {
+      sortCol = sortColOrOptions;
+      cursorCol = cursorColMaybe!;
+      this.edgeQueryOptions = {
+        cursorCol,
+        orderby: [
+          {
+            column: sortCol,
+            direction: "DESC",
+          },
+        ],
+      };
+    } else {
+      if (typeof sortColOrOptions.orderby === "string") {
+        sortCol = sortColOrOptions.orderby;
+      } else {
+        // TODO this orderby isn't consistent and this logic needs to be changed anywhere that's using this and this.getSortCol()
+        sortCol = sortColOrOptions.orderby[0].column;
+      }
+      cursorCol = sortColOrOptions.cursorCol;
+      this.edgeQueryOptions = sortColOrOptions;
+    }
+    this.sortCol = sortCol;
+
     let m = orderbyRegex.exec(sortCol);
     if (!m) {
       throw new Error(`invalid sort column ${sortCol}`);
     }
     this.sortCol = m[1];
     if (m[2]) {
-      // @ts-ignore
-      this.defaultDirection = m[2].toUpperCase();
+      throw new Error(
+        `passing direction in sort column is not supproted. use orderby`,
+      );
     }
 
-    let m2 = orderbyRegex.exec(cursorCol);
-    if (!m2) {
-      throw new Error(`invalid sort column ${cursorCol}`);
-    }
-    this.cursorCol = m2[1];
+    this.cursorCol = cursorCol;
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
     this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
   }
@@ -374,7 +400,7 @@ export abstract class BaseEdgeQuery<
         after,
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
-        defaultDirection: this.defaultDirection,
+        orderby: this.edgeQueryOptions.orderby,
         query: this,
       }),
     );
@@ -389,7 +415,7 @@ export abstract class BaseEdgeQuery<
         before,
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
-        defaultDirection: this.defaultDirection,
+        orderby: this.edgeQueryOptions.orderby,
         query: this,
       }),
     );
@@ -419,7 +445,7 @@ export abstract class BaseEdgeQuery<
   abstract queryAllRawCount(): Promise<Map<ID, number>>;
 
   readonly queryAllEdges = async (): Promise<Map<ID, TEdge[]>> => {
-    return await this.memoizedloadEdges();
+    return this.memoizedloadEdges();
   };
 
   abstract dataToID(edge: TEdge): ID;
@@ -462,7 +488,7 @@ export abstract class BaseEdgeQuery<
 
   readonly queryEnts = async (): Promise<TDest[]> => {
     const edges = await this.querySingleEdge("queryEnts");
-    return await this.loadEntsFromEdges("id", edges);
+    return this.loadEntsFromEdges("id", edges);
   };
 
   readonly queryAllEnts = async (): Promise<Map<ID, TDest[]>> => {
@@ -535,15 +561,33 @@ export abstract class BaseEdgeQuery<
     );
   }
 
+  private _defaultEdgeQueryableOptions: EdgeQueryableDataOptions | undefined;
+
+  // FYI: this should be used sparingly.
+  // currently only exists so that disableTransformations can be configured by the developer
+  // so we're only exposing a partial API for now but maybe in the future we can expose
+  // the full API if there's a reason to use this that's not via filters
+  protected configureEdgeQueryableDataOptions(
+    opts: EdgeQueryableDataOptionsConfigureLoader,
+  ) {
+    this._defaultEdgeQueryableOptions = opts;
+  }
+
+  protected getDefaultEdgeQueryOptions() {
+    return this._defaultEdgeQueryableOptions;
+  }
+
   private async loadEdges(): Promise<Map<ID, TEdge[]>> {
     const idsInfo = await this.genIDInfosToFetch();
 
     if (!this.filters.length) {
       // if no filter, we add the firstN filter to ensure we get pagination info
-      this.first(DefaultLimit);
+      this.first(getDefaultLimit());
     }
 
-    let options: EdgeQueryableDataOptions = {};
+    let options: EdgeQueryableDataOptions =
+      this._defaultEdgeQueryableOptions ?? {};
+
     // TODO once we add a lot of complex filters, this needs to be more complicated
     // e.g. commutative filters. what can be done in sql or combined together etc
     // may need to bring sql mode or something back

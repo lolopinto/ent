@@ -1,18 +1,33 @@
 import { ID, IDViewer } from "@snowtop/ent";
-import { gqlArg, gqlMutation } from "@snowtop/ent/graphql";
-import { Account, AccountToTodosQuery, Todo } from "src/ent";
+import { gqlMutation } from "@snowtop/ent/graphql";
+import { Account, AccountToTodosQuery } from "src/ent";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
-import { GraphQLID } from "graphql";
+import { GraphQLBoolean, GraphQLID } from "graphql";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 
 export class TodosResolver {
-  @gqlMutation({ name: "markAllTodosAs", type: Account })
+  @gqlMutation({
+    class: "TodosResolver",
+    name: "markAllTodosAs",
+    type: "Account",
+    args: [
+      {
+        name: "accountID",
+        type: GraphQLID,
+      },
+      {
+        name: "completed",
+        type: GraphQLBoolean,
+      },
+    ],
+    async: true,
+  })
   async markAllTodos(
     // we're simplifying, no viewer or anything complicated and anyone can perform the action
-    @gqlArg("accountID", { type: GraphQLID }) accountID: ID,
-    @gqlArg("completed") completed: boolean,
+    accountID: ID,
+    completed: boolean,
   ) {
     const vc = new IDViewer(accountID);
     const viewer = vc.viewerID;
@@ -29,10 +44,21 @@ export class TodosResolver {
     return await bulk.saveX();
   }
 
-  @gqlMutation({ name: "removeCompletedTodos", type: Account })
+  @gqlMutation({
+    class: "TodosResolver",
+    name: "removeCompletedTodos",
+    type: "Account",
+    args: [
+      {
+        name: "accountID",
+        type: GraphQLID,
+      },
+    ],
+    async: true,
+  })
   async removeCompletedTodos(
     // we're simplifying, no viewer or anything complicated and anyone can perform the action
-    @gqlArg("accountID", { type: GraphQLID }) accountID: ID,
+    accountID: ID,
   ) {
     const vc = new IDViewer(accountID);
     const viewer = vc.viewerID;

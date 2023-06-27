@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import glob from "glob";
+import * as glob from "glob";
 import JSON5 from "json5";
 import minimist from "minimist";
 import * as path from "path";

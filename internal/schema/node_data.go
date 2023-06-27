@@ -15,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -70,12 +71,16 @@ type NodeData struct {
 	Indices                 []*input.Index
 	PatternsWithMixins      []string
 	CustomGraphQLInterfaces []string
+	SupportUpsert           bool
+	ShowCanViewerSee        bool
+	ShowCanViewerEdit       bool
 
 	schemaPath string
 
 	TransformsSelect        bool
 	TransformsDelete        bool
 	TransformsLoaderCodegen *input.TransformsLoaderCodegen
+	canViewerDo             map[string]action.Action
 }
 
 func newNodeData(packageName string) *NodeData {
@@ -84,6 +89,7 @@ func newNodeData(packageName string) *NodeData {
 		NodeInfo:    nodeinfo.GetNodeInfo(packageName),
 		EdgeInfo:    edge.NewEdgeInfo(packageName),
 		ActionInfo:  action.NewActionInfo(),
+		canViewerDo: make(map[string]action.Action),
 	}
 	nodeData.ConstantGroups = make(map[string]*ConstGroupInfo)
 	return nodeData
@@ -183,11 +189,162 @@ func (nodeData *NodeData) FieldsWithFieldPrivacy() bool {
 	return false
 }
 
+func (nodeData *NodeData) FieldsWithEditFieldPrivacy() bool {
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.HasEditFieldPrivacy() {
+			return true
+		}
+	}
+	return false
+}
+
 func (nodeData *NodeData) OnEntLoadFieldPrivacy(cfg codegenapi.Config) bool {
 	if !nodeData.FieldsWithFieldPrivacy() {
 		return false
 	}
 	return cfg.FieldPrivacyEvaluated() == codegenapi.AtEntLoad
+}
+
+type UpsertInfo struct {
+	Name          string
+	HasColumn     bool
+	HasConstraint bool
+	types         []*TypeInfo
+}
+
+func (ui *UpsertInfo) Types() string {
+	var sb strings.Builder
+
+	for _, t := range ui.types {
+		sb.WriteString(t.Type())
+		sb.WriteString("\n")
+	}
+	sb.WriteString("\n")
+	sb.WriteString("\n")
+
+	return sb.String()
+}
+
+type TypeInfo struct {
+	key        string
+	Export     bool
+	Name       string
+	Expression string
+}
+
+func (ti *TypeInfo) Type() string {
+	var export string
+	if ti.Export {
+		export = "export "
+	}
+	return fmt.Sprintf("%stype %s = %s;", export, ti.Name, ti.Expression)
+}
+
+func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
+	if !nodeData.SupportUpsert {
+		return nil
+	}
+
+	var fields []string
+	var constraints []string
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.Unique() {
+			fields = append(fields, f.GetDbColName())
+		}
+	}
+
+	for _, c := range nodeData.Constraints {
+		if c.Type == input.UniqueConstraint {
+			constraints = append(constraints, c.Name)
+		}
+	}
+
+	if len(fields) == 0 && len(constraints) == 0 {
+		return nil
+	}
+
+	getType := func(list []string, name, key string) *TypeInfo {
+		temp := make([]string, len(list))
+		for i, s := range list {
+			temp[i] = fmt.Sprintf(`'%s'`, s)
+		}
+		return &TypeInfo{
+			key:        key,
+			Name:       name,
+			Expression: strings.Join(temp, " | "),
+		}
+	}
+
+	ret := UpsertInfo{
+		Name: actionName + "UpsertOptions",
+	}
+	if len(fields) > 0 {
+		typ := getType(fields, "UpsertCols", "column")
+		ret.types = append(ret.types, typ)
+		ret.HasColumn = true
+	}
+	if len(constraints) > 0 {
+		typ := getType(constraints, "UpsertConstraints", "constraint")
+		ret.types = append(ret.types, typ)
+		ret.HasConstraint = true
+	}
+
+	buildExpression := func(left, right string) string {
+		return fmt.Sprintf("%s: %s", left, right)
+	}
+	buildType := func(expressions []string) string {
+		return fmt.Sprintf("{ %s }", strings.Join(expressions, "; "))
+	}
+
+	lastType := &TypeInfo{
+		Name:   ret.Name,
+		Export: true,
+	}
+
+	if len(ret.types) > 1 {
+		// we're reusing ret.types here to generate lastType so do this before adding more types...
+		var types []string
+		for _, v := range ret.types {
+			types = append(types, buildType([]string{buildExpression(v.key, v.Name)}))
+		}
+
+		// add Oneof Types
+		// gotten from https://www.typescriptlang.org/play?#code/LAKALgngDgpgBAVQHYEsD2SDSMIGcA8AKgHxwC8chcMAHmDEgCa6VwD8cA1jmgGasAuOEhgA3GACcA3KFAB6OXACSAWygS04uCiT0ANnpS4Gx0JFhwAojSgBDJkVIUqtekxZUOAbzgBtTNpIXDz8hAC6QoT+YXAAvnBCIuLSsuDQ8ADyIhm8RNR0DMxwXrG+YU7FoHB+ATrBEHyUEVY29oxE0XAAZHAACrYSYCi2evgASjAAxmgS7daTegCujDD4yOhYOARRSIsqAEaS5QA09Y1RmCfCYpLEdzIgpbsHRw+gOvQSvLaT8ADCtjAlRA1WqRgBYCEYAkixgD1iqQ+km+vzgABE0ABzYGg7S4DGYqEwuGgBEgd66ZE-eAAIRQsxxoKMdNmRNh8NS5ngAEFUCoRuQ4FkYDl8L4IacCacWYxyg8FKCAHpsVLTJC4IGTQFCXkofl6QU+cHauDQ2FxB5qjVwRhYnV8gUUI34u2m4kW+SKK2awEE+16x3FPEQtkwU5GP1u82xKRwBWSDQSVK8RZISZDDA2tAAdRmnAAFLZ-fqAJReVJk0C23MSAtasAlh7VvP522YxtVnMt50hqNhvGRs3wWIloA
+		// linked to from https://stackoverflow.com/questions/42123407/does-typescript-support-mutually-exclusive-types#comment123255834_53229567
+
+		ret.types = append(
+			ret.types, &TypeInfo{
+				Name:       "UnionKeys<T>",
+				Expression: "T extends T ? keyof T : never",
+			},
+			&TypeInfo{
+				Name:       "Expand<T>",
+				Expression: "T extends T ? { [K in keyof T]: T[K] } : never",
+			},
+			&TypeInfo{
+				Name:       "OneOf<T extends {}[]>",
+				Expression: "{[K in keyof T]: Expand<T[K] & Partial<Record<Exclude<UnionKeys<T[number]>, keyof T[K]>, never>>>;}[number]",
+			},
+		)
+
+		lastType.Expression = fmt.Sprintf(" %s & %s",
+			buildType([]string{buildExpression("update_cols?", "string[]")}),
+			fmt.Sprintf("OneOf<[%s]>", strings.Join(types, ", ")),
+		)
+	} else {
+
+		typ := ret.types[0]
+		key := typ.key
+
+		lastType.Expression = buildType([]string{
+			buildExpression("update_cols?", "string[]"),
+			buildExpression(key, ret.Name),
+		})
+	}
+
+	ret.types = append(ret.types, lastType)
+
+	return &ret
 }
 
 // return the list of unique nodes at the end of an association
@@ -269,22 +426,6 @@ func (nodeData *NodeData) GetImportsForBaseFile(s *Schema, cfg codegenapi.Config
 	return ret, nil
 }
 
-// TODO kill
-// seems like it was mostly used for enums
-func (nodeData *NodeData) ForeignImport(imp string) bool {
-	// not the most performant but ok
-	// most classes won't have that many enums
-	// for _, enum := range nodeData.tsEnums {
-	// 	if enum.Imported {
-	// 		continue
-	// 	}
-	// 	if enum.Name == imp {
-	// 		return false
-	// 	}
-	// }
-	return true
-}
-
 // TODO kill this
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
 func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.ImportPath {
@@ -364,6 +505,10 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.Imp
 	for _, unique := range nodeData.getUniqueNodes(true) {
 		ret = append(ret, &tsimport.ImportPath{
 			Import:     unique.Node,
+			ImportPath: codepath.GetInternalImportPath(),
+		})
+		ret = append(ret, &tsimport.ImportPath{
+			Import:     unique.Node + "Base",
 			ImportPath: codepath.GetInternalImportPath(),
 		})
 	}
@@ -559,6 +704,63 @@ func (nodeData *NodeData) GetOnEntLoadPrivacyInfo(cfg codegenapi.Config) *entLoa
 	return nil
 }
 
+type CanViewerSeeInfo struct {
+	Name   string
+	Fields []*field.Field
+}
+
+func (nodeData *NodeData) GetCanViewerSeeInfo() *CanViewerSeeInfo {
+	if !nodeData.ShowCanViewerSee || !nodeData.FieldsWithFieldPrivacy() {
+		return nil
+	}
+
+	var fields []*field.Field
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.HasFieldPrivacy() && f.ExposeFieldOrFieldEdgeToGraphQL() {
+			fields = append(fields, f)
+		}
+	}
+
+	if len(fields) == 0 {
+		return nil
+	}
+
+	return &CanViewerSeeInfo{
+		Name:   fmt.Sprintf("%sCanViewerSee", nodeData.Node),
+		Fields: fields,
+	}
+}
+
+func (nodeData *NodeData) GetCanViewerEditInfo() *CanViewerSeeInfo {
+	if !nodeData.ShowCanViewerEdit || !nodeData.FieldsWithEditFieldPrivacy() {
+		return nil
+	}
+
+	var fields []*field.Field
+	for _, f := range nodeData.FieldInfo.EntFields() {
+		if f.HasEditFieldPrivacy() && f.ExposeFieldOrFieldEdgeToGraphQL() {
+			fields = append(fields, f)
+		}
+	}
+
+	if len(fields) == 0 {
+		return nil
+	}
+
+	return &CanViewerSeeInfo{
+		Name:   fmt.Sprintf("%sCanViewerEdit", nodeData.Node),
+		Fields: fields,
+	}
+}
+
+func (nodeData *NodeData) HasCanViewerDo() bool {
+	return len(nodeData.canViewerDo) > 0
+}
+
+func (nodeData *NodeData) GetCanViewerDoInfo() map[string]action.Action {
+	return nodeData.canViewerDo
+}
+
 type extraCustomQueryInfo struct {
 	Interface string
 	Extends   string
@@ -604,7 +806,18 @@ func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) 
 		return "", fmt.Errorf("cannot call GetFieldQueryName on field %s since it's not an indexed field", field.FieldName)
 	}
 
-	fieldName := strcase.ToCamel(strings.TrimSuffix(field.FieldName, "ID"))
+	// TODO this is a hack and we should get a better version of this
+	// by matching column names. or something better
+	fieldEdge := field.FieldEdgeInfo()
+	if fieldEdge != nil {
+		edgeConstName := fieldEdge.GetEdgeConstName()
+		if edgeConstName != "" {
+			return fmt.Sprintf("%sQuery", edgeConstName), nil
+		}
+	}
+
+	fieldName, _ := base.TranslateIDSuffix(field.FieldName)
+	fieldName = strcase.ToCamel(fieldName)
 	return fmt.Sprintf("%sTo%sQuery", fieldName, strcase.ToCamel(inflection.Plural(nodeData.Node))), nil
 }
 

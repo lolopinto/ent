@@ -17,7 +17,7 @@ import { User } from "../../";
 
 export { UserCreateInput };
 import { ExampleViewer } from "../../../viewer/viewer";
-import { ContactLabel } from "../../../ent/generated/types";
+import { ContactLabel, UserAccountStatus } from "../../../ent/generated/types";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateUserAction extends CreateUserActionBase {
@@ -59,8 +59,30 @@ export default class CreateUserAction extends CreateUserActionBase {
             userID: builder,
           });
 
-          builder.addSelfContact(action.builder);
-          return action.changeset();
+          builder.addSelfContactID(action.builder, {
+            conditional: true,
+          });
+          return action.changesetWithOptions_BETA({
+            conditionalBuilder: builder,
+          });
+        },
+      },
+      {
+        changeset(builder, input) {
+          if (
+            input.accountStatusOverride !== undefined &&
+            input.accountStatus !== undefined
+          ) {
+            throw new Error(
+              `cannot set both accountStatus and accountStatusOverride`,
+            );
+          }
+          if (input.accountStatusOverride !== undefined) {
+            builder.updateInput({
+              accountStatus:
+                input.accountStatusOverride as unknown as UserAccountStatus,
+            });
+          }
         },
       },
     ];
@@ -75,9 +97,10 @@ export default class CreateUserAction extends CreateUserActionBase {
   >[] {
     return [
       {
-        observe: (_builder: UserBuilder, input: UserCreateInput): void => {
+        observe: async (_builder: UserBuilder, input: UserCreateInput) => {
           let email = input.emailAddress;
           let firstName = input.firstName;
+
           FakeComms.send({
             from: "noreply@foo.com",
             to: email,

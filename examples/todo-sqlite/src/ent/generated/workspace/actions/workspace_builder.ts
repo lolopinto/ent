@@ -3,8 +3,10 @@
 import { AssocEdgeInputOptions, Ent, ID, Viewer } from "@snowtop/ent";
 import {
   Action,
+  AssocEdgeOptions,
   Builder,
   Changeset,
+  ChangesetOptions,
   Orchestrator,
   OrchestratorOptions,
   WriteOperation,
@@ -191,6 +193,11 @@ export class WorkspaceBuilder<
     return this;
   }
 
+  removeMemberID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(id, EdgeType.WorkspaceToMembers, opts);
+    return this;
+  }
+
   removeMember(...nodes: (ID | Account)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
@@ -207,6 +214,10 @@ export class WorkspaceBuilder<
 
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
+  }
+
+  async buildWithOptions_BETA(options: ChangesetOptions): Promise<Changeset> {
+    return this.orchestrator.buildWithOptions_BETA(options);
   }
 
   async valid(): Promise<boolean> {

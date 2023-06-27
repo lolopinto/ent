@@ -4,6 +4,7 @@
  */
 
 import {
+  GraphQLBoolean,
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLInt,
@@ -12,14 +13,20 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { RequestContext, applyPrivacyPolicy } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import {
+  AuthorToCommentsQuery,
+  CreatorToEventsQuery,
   User,
+  UserArticleToCommentsQuery,
+  UserCanViewerEdit,
+  UserCanViewerSee,
+  UserCommentsFromAttachmentQuery,
   UserToCommentsQuery,
   UserToContactsQuery,
   UserToCreatedEventsQuery,
@@ -32,9 +39,14 @@ import {
   UserToLikesQuery,
   UserToMaybeEventsQuery,
 } from "../../../ent";
+import EditUserAction from "../../../ent/user/actions/edit_user_action";
 import {
+  AuthorToCommentsConnectionType,
   ContactType,
+  CreatorToEventsConnectionType,
   UserAccountStatusType,
+  UserArticleToCommentsConnectionType,
+  UserCommentsFromAttachmentConnectionType,
   UserDaysOffType,
   UserIntEnumType,
   UserNestedObjectListType,
@@ -56,6 +68,26 @@ import {
   UserToMaybeEventsConnectionType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+
+class UserCanViewerDo {
+  constructor(
+    private context: RequestContext<ExampleViewerAlias>,
+    private user: User,
+  ) {}
+
+  async userEdit(args: any): Promise<boolean> {
+    const action = EditUserAction.create(
+      this.context.getViewer(),
+      this.user,
+      args,
+    );
+    return applyPrivacyPolicy(
+      this.context.getViewer(),
+      action.getPrivacyPolicy(),
+      this.user,
+    );
+  }
+}
 
 export const UserType = new GraphQLObjectType({
   name: "User",
@@ -526,6 +558,168 @@ export const UserType = new GraphQLObjectType({
         );
       },
     },
+    articles: {
+      type: new GraphQLNonNull(UserArticleToCommentsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        user: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserArticleToCommentsQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    attachedComments: {
+      type: new GraphQLNonNull(UserCommentsFromAttachmentConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        user: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserCommentsFromAttachmentQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    commentsFromUser: {
+      type: new GraphQLNonNull(AuthorToCommentsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        user: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => AuthorToCommentsQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    eventsCreated: {
+      type: new GraphQLNonNull(CreatorToEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        user: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => CreatorToEventsQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    canViewerSeeInfo: {
+      type: new GraphQLNonNull(UserCanViewerSeeType),
+      resolve: (
+        user: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.canViewerSeeInfo();
+      },
+    },
+    canViewerEditInfo: {
+      type: new GraphQLNonNull(UserCanViewerEditType),
+      resolve: (
+        user: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.canViewerEditInfo();
+      },
+    },
+    canViewerDo: {
+      type: new GraphQLNonNull(UserCanViewerDoType),
+      resolve: (
+        user: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new UserCanViewerDo(context, user);
+      },
+    },
     fullName: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -648,4 +842,91 @@ export const UserType = new GraphQLObjectType({
   isTypeOf(obj) {
     return obj instanceof User;
   },
+});
+
+export const UserCanViewerSeeType = new GraphQLObjectType({
+  name: "UserCanViewerSee",
+  fields: (): GraphQLFieldConfigMap<
+    UserCanViewerSee,
+    RequestContext<ExampleViewerAlias>
+  > => ({
+    accountStatus: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.accountStatus();
+      },
+    },
+    prefs: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.prefs();
+      },
+    },
+    prefsList: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.prefsList();
+      },
+    },
+    prefsDiff: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.prefsDiff();
+      },
+    },
+  }),
+});
+
+export const UserCanViewerEditType = new GraphQLObjectType({
+  name: "UserCanViewerEdit",
+  fields: (): GraphQLFieldConfigMap<
+    UserCanViewerEdit,
+    RequestContext<ExampleViewerAlias>
+  > => ({
+    accountStatus: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerEdit,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.accountStatus();
+      },
+    },
+  }),
+});
+
+export const UserCanViewerDoType = new GraphQLObjectType({
+  name: "UserCanViewerDo",
+  fields: (): GraphQLFieldConfigMap<
+    UserCanViewerDo,
+    RequestContext<ExampleViewerAlias>
+  > => ({
+    userEdit: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        user: UserCanViewerDo,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return user.userEdit(args);
+      },
+    },
+  }),
 });

@@ -20,10 +20,12 @@ import {
 } from "@snowtop/ent/graphql";
 import {
   Contact,
+  ContactCommentsFromAttachmentQuery,
   ContactToCommentsQuery,
   ContactToLikersQuery,
 } from "../../../ent";
 import {
+  ContactCommentsFromAttachmentConnectionType,
   ContactEmailType,
   ContactItemResultType,
   ContactPhoneNumberType,
@@ -32,7 +34,7 @@ import {
   UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { EmailInfo } from "../../../ent/contact";
+import { EmailInfo } from "../../../ent/contact_types";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
@@ -150,6 +152,40 @@ export const ContactType = new GraphQLObjectType({
         );
       },
     },
+    attachedComments: {
+      type: new GraphQLNonNull(ContactCommentsFromAttachmentConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        contact: Contact,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          contact.viewer,
+          contact,
+          (v, contact: Contact) =>
+            ContactCommentsFromAttachmentQuery.query(v, contact),
+          args,
+        );
+      },
+    },
     fullName: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -197,4 +233,7 @@ export const EmailInfoType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
   }),
+  isTypeOf(obj) {
+    return obj instanceof EmailInfo;
+  },
 });

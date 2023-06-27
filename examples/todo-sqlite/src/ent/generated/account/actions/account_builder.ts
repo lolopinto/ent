@@ -3,8 +3,10 @@
 import { AssocEdgeInputOptions, Ent, ID, Viewer } from "@snowtop/ent";
 import {
   Action,
+  AssocEdgeOptions,
   Builder,
   Changeset,
+  ChangesetOptions,
   Orchestrator,
   OrchestratorOptions,
   WriteOperation,
@@ -178,6 +180,15 @@ export class AccountBuilder<
     return this;
   }
 
+  removeClosedTodosDupID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(
+      id,
+      EdgeType.AccountToClosedTodosDup,
+      opts,
+    );
+    return this;
+  }
+
   removeClosedTodosDup(...nodes: (ID | Todo)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
@@ -219,6 +230,15 @@ export class AccountBuilder<
       EdgeType.AccountToCreatedWorkspaces,
       NodeType.Workspace,
       options,
+    );
+    return this;
+  }
+
+  removeCreatedWorkspaceID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(
+      id,
+      EdgeType.AccountToCreatedWorkspaces,
+      opts,
     );
     return this;
   }
@@ -266,6 +286,15 @@ export class AccountBuilder<
     return this;
   }
 
+  removeOpenTodosDupID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(
+      id,
+      EdgeType.AccountToOpenTodosDup,
+      opts,
+    );
+    return this;
+  }
+
   removeOpenTodosDup(...nodes: (ID | Todo)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
@@ -309,6 +338,15 @@ export class AccountBuilder<
     return this;
   }
 
+  removeWorkspaceID(id: ID, opts?: AssocEdgeOptions): this {
+    this.orchestrator.removeOutboundEdge(
+      id,
+      EdgeType.AccountToWorkspaces,
+      opts,
+    );
+    return this;
+  }
+
   removeWorkspace(...nodes: (ID | Workspace)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
@@ -328,6 +366,10 @@ export class AccountBuilder<
 
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
+  }
+
+  async buildWithOptions_BETA(options: ChangesetOptions): Promise<Changeset> {
+    return this.orchestrator.buildWithOptions_BETA(options);
   }
 
   async valid(): Promise<boolean> {

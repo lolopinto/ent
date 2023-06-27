@@ -1,4 +1,4 @@
-import glob from "glob";
+import * as glob from "glob";
 import ts from "typescript";
 import * as fs from "fs";
 import * as path from "path";
@@ -27,7 +27,7 @@ function getFiles(filePath: string, opts?: Options): string[] {
 export interface Options {
   filter?: (file: string, index: number, array: string[]) => boolean;
   justCurrentDir?: boolean;
-  ignore?: string | Readonly<string[]> | undefined;
+  ignore?: string | string[] | undefined;
 }
 
 export interface PathResult {

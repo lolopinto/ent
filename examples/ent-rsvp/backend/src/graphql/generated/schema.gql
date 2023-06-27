@@ -44,6 +44,11 @@ type Address implements Node {
   locatedAt(first: Int, after: String, last: Int, before: String): AddressToLocatedAtConnection!
 }
 
+type EventActivityCanViewerDo {
+  eventActivityAddInvite: Boolean!
+  eventActivityRsvpStatusEdit(rsvpStatus: EventActivityRsvpStatusInput!, guestID: ID!, dietaryRestrictions: String): Boolean!
+}
+
 type EventActivity implements Node {
   address: Address
   event: Event
@@ -58,6 +63,7 @@ type EventActivity implements Node {
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
   rsvpStatusFor(id: ID!): EventActivityRsvpStatus!
+  canViewerDo: EventActivityCanViewerDo!
   addressFromOwner: Address
 }
 

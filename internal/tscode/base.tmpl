@@ -1,5 +1,5 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "loadCustomCount" "applyPrivacyPolicy" "Ent"}}
-{{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "loadCustomCount" "applyPrivacyPolicy" "Ent"}}
+{{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy" "getFieldsWithEditPrivacy"}}
 {{ reserveImport .Package.TypesImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/generated/loadAny" "loadEntByType" "loadEntXByType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
@@ -57,6 +57,24 @@
   }
 {{end}}
 
+{{ $canViewerSeeInfo := .GetCanViewerSeeInfo }}
+{{if $canViewerSeeInfo -}}
+  export interface {{$canViewerSeeInfo.Name}} {
+    {{ range $field := $canViewerSeeInfo.Fields -}}
+      {{$field.TSPublicAPIName}}: () => Promise<boolean>;
+    {{ end -}}
+  }
+{{ end}}
+
+{{ $canViewerEditInfo := .GetCanViewerEditInfo }}
+{{if $canViewerEditInfo -}}
+  export interface {{$canViewerEditInfo.Name}} {
+    {{ range $field := $canViewerEditInfo.Fields -}}
+      {{$field.TSPublicAPIName}}: () => Promise<boolean>;
+    {{ end -}}
+  }
+{{ end}}
+
 {{ $customQuery := .GetExtraCustomQueryInfo -}} 
 {{ if $customQuery -}}
   {{$customQueryDataType = $customQuery.Interface -}}
@@ -105,9 +123,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{range $field := .FieldInfo.EntFields -}}
     {{ if not ($schema.PatternFieldWithMixin $field) -}}
       {{ range $field.GetTsTypeImports -}}
-        {{ if ($nodeData.ForeignImport .Import) -}}
-          {{ reserveImportPath . false -}}
-        {{end -}}
+        {{ reserveImportPath . false -}}
         {{$typ := useImportMaybe .Import -}}
       {{end -}}
       {{ if $field.Private $cfg -}}
@@ -407,7 +423,6 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       ): {{$queryName}} {
         return {{$queryName}}.query(viewer, ent);
       }
-    {{ else if $field.QueryFrom -}}
     {{end}}
   {{end -}}
 
@@ -540,7 +555,11 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{ if not .UniqueEdge -}}
       {{$queryName := useImport .TsEdgeQueryName -}}
       query{{$edgeName}}(): {{useImport $queryName}} {
+      {{ if $edge.SourceIsPolymorphic -}}
+        return {{$queryName}}.query(this.viewer, this);
+      {{ else }}
         return {{$queryName}}.query(this.viewer, this.id);
+      {{ end }}
       }
 
     {{end -}}
@@ -638,6 +657,28 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       {{end}}
     {{end}}
   {{end}}
+
+  {{if $canViewerSeeInfo }}
+  canViewerSeeInfo(): {{$canViewerSeeInfo.Name}} {
+    const fieldPrivacy = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}}, {{useImport $loaderInfo}}.fieldInfo);
+    return {
+      {{ range $canViewerSeeInfo.Fields -}}
+        {{.TSPublicAPIName}}: () => {{useImport "applyPrivacyPolicy"}}(this.viewer, fieldPrivacy.get("{{.GetDbColName}}")!, this),
+      {{ end -}}
+    };
+  }
+  {{ end -}}
+
+  {{if $canViewerEditInfo }}
+  canViewerEditInfo(): {{$canViewerEditInfo.Name}} {
+    const fieldPrivacy = {{useImport "getFieldsWithEditPrivacy"}}({{useImport "schema"}}, {{useImport $loaderInfo}}.fieldInfo);
+    return {
+      {{ range $canViewerEditInfo.Fields -}}
+        {{.TSPublicAPIName}}: () => {{useImport "applyPrivacyPolicy"}}(this.viewer, fieldPrivacy.get("{{.GetDbColName}}")!, this),
+      {{ end -}}
+    };
+  }
+  {{ end -}}
 }
 
 {{end -}}

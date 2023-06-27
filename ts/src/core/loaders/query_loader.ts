@@ -9,27 +9,31 @@ import {
   PrimableLoader,
 } from "../base";
 import {
-  DefaultLimit,
+  getDefaultLimit,
   performRawQuery,
   buildGroupQuery,
   loadRows,
 } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
-import { cacheMap, getCustomLoader, getLoader } from "./loader";
+import { CacheMap, getCustomLoader, getLoader } from "./loader";
 import memoizee from "memoizee";
 import { ObjectLoaderFactory } from "./object_loader";
+import { OrderBy, getOrderByPhrase } from "../query_impl";
 
-export function getOrderBy(sortCol: string, orderby?: string) {
-  if (orderby) {
-    return orderby;
-  }
-  let sortColLower = sortCol.toLowerCase();
-  let orderbyDirection = " DESC";
-  if (sortColLower.endsWith("asc") || sortCol.endsWith("desc")) {
-    orderbyDirection = "";
-  }
-  return `${sortCol}${orderbyDirection}`;
+function getOrderByLocal(
+  options: QueryOptions,
+  queryOptions?: EdgeQueryableDataOptions,
+): OrderBy {
+  return (
+    options.orderby ??
+    queryOptions?.orderby ?? [
+      {
+        column: "created_at",
+        direction: "DESC",
+      },
+    ]
+  );
 }
 
 async function simpleCase<K extends any>(
@@ -52,13 +56,11 @@ async function simpleCase<K extends any>(
     cls = clause.And(cls, queryOptions.clause);
   }
 
-  let sortCol = options.sortColumn || "created_at";
-
   return await loadRows({
     ...options,
     clause: cls,
-    orderby: getOrderBy(sortCol, queryOptions?.orderby),
-    limit: queryOptions?.limit || DefaultLimit,
+    orderby: getOrderByLocal(options, queryOptions),
+    limit: queryOptions?.limit || getDefaultLimit(),
   });
 }
 
@@ -66,13 +68,11 @@ function createLoader<K extends any>(
   options: QueryOptions,
   queryOptions?: EdgeQueryableDataOptions,
 ): DataLoader<K, Data[]> {
-  let sortCol = options.sortColumn || "created_at";
-
   const loaderOptions: DataLoader.Options<K, Data[]> = {};
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap(options);
+    loaderOptions.cacheMap = new CacheMap(options);
   }
 
   return new DataLoader(async (keys: K[]) => {
@@ -109,8 +109,8 @@ function createLoader<K extends any>(
       tableName: options.tableName,
       fields: options.fields,
       values: keys,
-      orderby: getOrderBy(sortCol, queryOptions?.orderby),
-      limit: queryOptions?.limit || DefaultLimit,
+      orderby: getOrderByLocal(options, queryOptions),
+      limit: queryOptions?.limit || getDefaultLimit(),
       groupColumn: col,
       clause: extraClause,
     });
@@ -249,7 +249,8 @@ interface QueryOptions {
   // if no groupCol, this is required
   // if no clause and groupCol, we'll just use groupCol to make the query
   clause?: clause.Clause;
-  sortColumn?: string; // order by this column
+  // order by
+  orderby?: OrderBy;
 
   // if provided, will be used to prime data in this object...
   toPrime?: ObjectLoaderFactory<Data>[];

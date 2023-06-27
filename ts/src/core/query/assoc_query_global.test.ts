@@ -25,7 +25,6 @@ commonTests({
   tableName: "user_to_contacts_table",
   entsLength: 2,
   clause: And(Eq("id1", ""), Eq("edge_type", ""), Eq("deleted_at", null)),
-  sortCol: "time",
   globalSchema: true,
   livePostgresDB: true,
   rawDataVerify: async (user: FakeUser) => {
@@ -39,7 +38,9 @@ commonTests({
         id1: user.id,
         edgeType: EdgeType.UserToContacts,
         ctr: EdgeWithDeletedAt,
-        disableTransformations: true,
+        queryOptions: {
+          disableTransformations: true,
+        },
       }),
     ]);
     expect(raw.length).toBe(0);
@@ -49,7 +50,12 @@ commonTests({
       expect(convertDate(edge.deletedAt!)).toBeInstanceOf(Date);
     });
   },
-  orderby: "DESC",
+  orderby: [
+    {
+      column: "time",
+      direction: "DESC",
+    },
+  ],
 });
 
 assocTests(ml, true);

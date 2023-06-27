@@ -135,3 +135,54 @@ export async function createTag(displayName: string, account?: Account) {
   expect(tag.ownerID).toBe(account.id);
   return tag;
 }
+
+export async function createTodoOtherInWorksapce() {
+  const creator = await createAccount();
+  const assignee = await createAccount();
+  const workspace = await createWorkspace(creator);
+
+  const todo = await CreateTodoAction.create(creator.viewer, {
+    text: "watch GOT",
+    creatorID: creator.id,
+    assigneeID: assignee.id,
+    scopeID: workspace.id,
+    scopeType: NodeType.Workspace,
+  }).saveX();
+  expect(todo.text).toBe("watch GOT");
+  expect(todo.creatorID).toBe(creator.id);
+  expect(todo.completed).toBe(false);
+  expect(todo.assigneeID).toBe(assignee.id);
+  expect(todo.scopeID).toBe(workspace.id);
+  expect(todo.scopeType).toBe(NodeType.Workspace);
+
+  const scopedEnts = await todo.queryTodoScope().queryEnts();
+  expect(scopedEnts.length).toBe(1);
+  expect(scopedEnts[0].id).toBe(workspace.id);
+
+  const assignee2 = await createAccount();
+
+  const todo2 = await CreateTodoAction.create(creator.viewer, {
+    text: "watch GOT",
+    creatorID: creator.id,
+    assigneeID: assignee2.id,
+    scopeID: workspace.id,
+    scopeType: NodeType.Workspace,
+  }).saveX();
+  expect(todo2.text).toBe("watch GOT");
+  expect(todo2.creatorID).toBe(creator.id);
+  expect(todo2.completed).toBe(false);
+  expect(todo2.assigneeID).toBe(assignee2.id);
+  expect(todo2.scopeID).toBe(workspace.id);
+  expect(todo2.scopeType).toBe(NodeType.Workspace);
+
+  const scopedEnts2 = await todo2.queryTodoScope().queryEnts();
+  expect(scopedEnts2.length).toBe(1);
+  expect(scopedEnts2[0].id).toBe(workspace.id);
+
+  const scopedTodos = await workspace.queryScopedTodos().queryEnts();
+  expect(scopedTodos.length).toBe(2);
+  expect(scopedTodos.map((t) => t.id).includes(todo.id)).toBe(true);
+  expect(scopedTodos.map((t) => t.id).includes(todo2.id)).toBe(true);
+
+  return { todo, todo2 };
+}

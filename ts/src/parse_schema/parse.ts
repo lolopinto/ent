@@ -7,6 +7,7 @@ import {
   AssocEdge,
   AssocEdgeGroup,
   Action,
+  EdgeAction,
 } from "../schema";
 import {
   ActionField,
@@ -14,7 +15,8 @@ import {
   FieldMap,
   GlobalSchema,
   TransformReadBetaResult,
-  DeprecatedImportType,
+  CanViewerDo,
+  EdgeGroupAction,
 } from "../schema/schema";
 import { setGlobalSchema } from "../core/global_schema";
 
@@ -42,6 +44,7 @@ async function processFields(
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
     f.hasFieldPrivacy = field.privacyPolicy !== undefined;
+    f.hasEditFieldPrivacy = field.editPrivacyPolicy !== undefined;
     if (field.polymorphic) {
       // convert boolean into object
       // we keep boolean as an option to keep API simple
@@ -293,44 +296,49 @@ type ProcessedAssocEdgeGroup = Omit<AssocEdgeGroup, "edgeAction"> & {
   edgeAction?: OutputAction;
 };
 
-// interface InputAction extends Action {
-//   actionOnlyFields?: ActionField[];
-// }
-
-type OutputAction = Omit<Action, "actionOnlyFields"> & {
+type OutputAction = Omit<Action, "actionOnlyFields" | "canViewerDo"> & {
   actionOnlyFields?: ProcessedActionField[];
+  canViewerDo?: CanViewerDo;
 };
 
-function processAction(action: Action): OutputAction {
-  if (!action.actionOnlyFields) {
-    return { ...action } as OutputAction;
+function processAction(
+  action: Action | EdgeAction | EdgeGroupAction,
+): OutputAction {
+  const ret = { ...action } as OutputAction;
+  if (action.actionOnlyFields !== undefined) {
+    let actionOnlyFields: ProcessedActionField[] = action.actionOnlyFields.map(
+      (f) => {
+        let f2 = f as ProcessedActionField;
+        if (!f.nullable) {
+          delete f2.nullable;
+          return f2;
+        }
+        if (typeof f.nullable === "boolean") {
+          f2.nullable = NullableResult.ITEM;
+        } else {
+          if (f.nullable === "contentsAndList") {
+            f2.nullable = NullableResult.CONTENTS_AND_LIST;
+          } else if (f.nullable === "contents") {
+            f2.nullable = NullableResult.CONTENTS;
+          } else if (f.nullable === "true") {
+            // shouldn't happen but ran into weirdness where it did...
+            f2.nullable = NullableResult.ITEM;
+          }
+        }
+
+        return f2;
+      },
+    );
+    ret.actionOnlyFields = actionOnlyFields;
   }
 
-  let ret = { ...action } as OutputAction;
-  let actionOnlyFields: ProcessedActionField[] = action.actionOnlyFields.map(
-    (f) => {
-      let f2 = f as ProcessedActionField;
-      if (!f.nullable) {
-        delete f2.nullable;
-        return f2;
-      }
-      if (typeof f.nullable === "boolean") {
-        f2.nullable = NullableResult.ITEM;
-      } else {
-        if (f.nullable === "contentsAndList") {
-          f2.nullable = NullableResult.CONTENTS_AND_LIST;
-        } else if (f.nullable === "contents") {
-          f2.nullable = NullableResult.CONTENTS;
-        } else if (f.nullable === "true") {
-          // shouldn't happen but ran into weirdness where it did...
-          f2.nullable = NullableResult.ITEM;
-        }
-      }
+  if (action.canViewerDo !== undefined) {
+    if (typeof action.canViewerDo !== "object") {
+      delete ret.canViewerDo;
+      ret.canViewerDo = {};
+    }
+  }
 
-      return f2;
-    },
-  );
-  ret.actionOnlyFields = actionOnlyFields;
   return ret;
 }
 
@@ -367,6 +375,7 @@ type ProcessedField = Omit<
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
   hasFieldPrivacy?: boolean;
+  hasEditFieldPrivacy?: boolean;
   derivedFields?: ProcessedField[];
   type: ProcessedType;
   serverDefault?: string;
@@ -434,6 +443,9 @@ export async function parseSchema(
       assocEdges: [],
       assocEdgeGroups: [],
       customGraphQLInterfaces: schema.customGraphQLInterfaces,
+      supportUpsert: schema.supportUpsert,
+      showCanViewerSee: schema.showCanViewerSee,
+      showCanViewerEdit: schema.showCanViewerEdit,
     };
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯
@@ -539,6 +551,7 @@ interface ProcessedGlobalSchema {
   globalEdges: ProcessedAssocEdge[];
   extraEdgeFields: ProcessedField[];
   init?: boolean;
+  transformsEdges?: boolean;
   globalFields?: ProcessedField[];
 }
 
@@ -553,6 +566,7 @@ async function parseGlobalSchema(
       s.transformEdgeRead !== undefined ||
       s.transformEdgeWrite !== undefined ||
       s.fields !== undefined,
+    transformsEdges: !!s.transformEdgeRead || !!s.transformEdgeWrite,
   };
 
   if (s.extraEdgeFields) {

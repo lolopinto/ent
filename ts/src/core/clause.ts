@@ -1,4 +1,4 @@
-import { Data, SelectBaseDataOptions, SelectDataOptions } from "./base";
+import { Data, ID, SelectDataOptions } from "./base";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
@@ -656,11 +656,17 @@ export function OrOptional<T extends Data, K = keyof T>(
   return Or(...filtered);
 }
 
+/**
+ * @deprecated use UUidIn, TextIn, IntegerIn, or TypeIn
+ */
 export function In<T extends Data, K = keyof T>(
   col: K,
   ...values: any
 ): Clause<T, K>;
 
+/**
+ * @deprecated use UUidIn, TextIn, IntegerIn, or TypeIn
+ */
 export function In<T extends Data, K = keyof T>(
   col: K,
   values: any[],
@@ -676,6 +682,39 @@ export function In<T extends Data, K = keyof T>(...args: any[]): Clause<T, K> {
     return new inClause(args[0], args[1], args[2]);
   }
   return new inClause(args[0], args.slice(1));
+}
+
+export function UuidIn<T extends Data, K = keyof T>(
+  col: K,
+  values: ID[],
+): Clause<T, K> {
+  return new inClause(col, values, "uuid");
+}
+
+export function IntegerIn<T extends Data, K = keyof T>(
+  col: K,
+  values: number[],
+): Clause<T, K> {
+  return new inClause(col, values, "integer");
+}
+
+export function TextIn<T extends Data, K = keyof T>(
+  col: K,
+  values: any[],
+): Clause<T, K> {
+  return new inClause(col, values, "text");
+}
+
+/*
+ * if not uuid or text, pass the db type that can be used to cast this query
+ * if we end up with a large list of ids
+ */
+export function DBTypeIn<T extends Data, K = keyof T>(
+  col: K,
+  values: any[],
+  typ: string,
+): Clause<T, K> {
+  return new inClause(col, values, typ);
 }
 
 interface TsQuery {

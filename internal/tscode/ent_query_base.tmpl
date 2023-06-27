@@ -1,5 +1,5 @@
 {{ reserveImport .Package.TypesImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "IndexLoaderFactory" "loadEnt" "LoadEntOptions"}}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "loadEnt" "LoadEntOptions" "OrderBy"}}
 {{$importPath := .Package.InternalImportPath -}}
 {{reserveImport "src/ent/generated/loadAny" "getLoaderOptions" -}}
 {{ reserveImport .Package.SchemaPackagePath "getTransformedReadClause" }}
@@ -74,6 +74,14 @@
       return new this(viewer, src);
     }
 
+    {{ if $schema.GlobalSchemaTransformsEdges -}}
+      withoutTransformations(): this {
+        this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+      return this;
+    }
+
+    {{end }}
+
     {{ if $sourcePolymorphic -}}
       protected abstract getSourceLoadEntOptions(): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}<{{$viewerType}}>, {{$viewerType}}>;
     {{ end }}
@@ -100,57 +108,60 @@
   {{end}}
 
   {{range $edge := .IndexedEdges -}}
-    {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
-    {{$srcNode := useImport $edge.GetSourceNodeName -}}
-    {{$node := useImport $edge.GetNodeInfo.Node -}}
-    {{$srcPoly := $edge.SourceIsPolymorphic -}}
-    {{$srcType := printf "%s | %s " $srcNode (useImport "ID") }}
-    {{ if eq $srcNode "Ent" -}}
-      {{$srcNode = printf "%s<%s>" $srcNode $viewerType -}}
-    {{ end -}}
-    {{ if eq $node "Ent" -}}
-      {{$node = printf "%s<%s>" $node  $viewerType -}}
-    {{ end -}}
-    {{ if $srcPoly -}}
-      {{$srcType = $srcNode }}
-    {{ end -}}
-
-    {{$thisType := printf "new (viewer: %s, src: %s  ) => T" $viewerType $srcType }}
-
-    export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$srcNode}}, {{$node}}, {{$viewerType}}> {
-    {{ if $srcPoly -}}
-      constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string) {
-        super(viewer, {
-          src: srcEnt, 
-    {{ else -}}
-      constructor(viewer: {{$viewerType}}, src: {{$srcType }}, sortColumn?: string) {
-        super(viewer, {
-          src: src, 
-    {{ end -}}
-          groupCol: {{$edge.QuotedDBColName}},
-          loadEntOptions: {{$node}}.loaderOptions(),
-          name: "{{$edge.TsEdgeQueryName}}",
-          sortColumn,
-        });
-      }
-
-      static query<T extends {{$name}}>(
-        this: {{$thisType}},
-        viewer: {{$viewerType}},
-        src: {{$srcType}},
-      ): T {
-        return new this(viewer, src);
-      }
-
-      {{ if $srcPoly -}}
-        async sourceEnt(_id: ID) {
-          return this.srcEnt;
-      {{ else -}}
-        async sourceEnt(id: ID) {
-          return {{$srcNode}}.load(this.viewer, id);
+    {{ if $edge.GenerateBaseClass -}}
+      {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
+      {{$srcNode := useImport $edge.GetSourceNodeName -}}
+      {{$node := useImport $edge.GetNodeInfo.Node -}}
+      {{$srcPoly := $edge.SourceIsPolymorphic -}}
+      {{$srcType := printf "%s | %s " "TEnt" (useImport "ID") }}
+      {{ if eq $srcNode "Ent" -}}
+        {{$srcNode = printf "%s<%s>" $srcNode $viewerType -}}
       {{ end -}}
+      {{ if eq $node "Ent" -}}
+        {{$node = printf "%s<%s>" $node  $viewerType -}}
+      {{ end -}}
+      {{ if $srcPoly -}}
+        {{$srcType = "TEnt" }}
+      {{ end -}}
+
+      {{$thisType := printf "new (viewer: %s, src: %s  ) => T" $viewerType $srcType }}
+
+      export class {{$name}}<TEnt extends {{$srcNode}} = {{$srcNode}}> extends {{useImport "CustomEdgeQueryBase"}}<TEnt, {{$node}}, {{$viewerType}}> {
+      {{ if $srcPoly -}}
+        constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string | {{useImport "OrderBy"}}) {
+          super(viewer, {
+            src: srcEnt, 
+      {{ else -}}
+        constructor(viewer: {{$viewerType}}, src: {{$srcType }}, sortColumn?: string | {{useImport "OrderBy"}}) {
+          super(viewer, {
+            src: src, 
+      {{ end -}}
+            groupCol: {{$edge.QuotedDBColName}},
+            loadEntOptions: {{$node}}.loaderOptions(),
+            name: "{{$edge.TsEdgeQueryName}}",
+            sortColumn: typeof sortColumn === 'string' ? sortColumn : undefined,
+            orderby: typeof sortColumn === 'string' ? undefined : sortColumn,
+          });
+        }
+
+        static query<T extends {{$name}}, TEnt extends {{$srcNode}} = {{$srcNode}}>(
+          this: {{$thisType}},
+          viewer: {{$viewerType}},
+          src: {{$srcType}},
+        ): T {
+          return new this(viewer, src);
+        }
+
+        {{ if $srcPoly -}}
+          async sourceEnt(_id: ID) {
+            return this.srcEnt;
+        {{ else -}}
+          async sourceEnt(id: ID) {
+            return {{$srcNode}}.load(this.viewer, id);
+        {{ end -}}
+        }
       }
-    }
+    {{ end -}}
 
   {{end }}
 {{end -}}

@@ -13,6 +13,8 @@ export {
   GQLCapture,
   gqlFileUpload,
   CustomType,
+  gqlInterfaceType,
+  gqlUnionType,
 } from "./graphql";
 
 export { GraphQLTime } from "./scalars/time";

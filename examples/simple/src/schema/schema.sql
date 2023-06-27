@@ -50,12 +50,16 @@ CREATE TABLE comments (
     body TEXT NOT NULL, 
     article_id UUID NOT NULL, 
     article_type TEXT NOT NULL, 
+    attachment_id UUID, 
+    attachment_type TEXT, 
     sticker_id UUID, 
     sticker_type TEXT, 
     CONSTRAINT comments_id_pkey PRIMARY KEY (id)
 );
 
 CREATE INDEX comments_article_id_idx ON comments (article_id);
+
+CREATE INDEX comments_attachment_id_idx ON comments (attachment_id);
 
 CREATE INDEX comments_author_id_idx ON comments (author_id);
 
@@ -121,6 +125,8 @@ CREATE TABLE events (
 );
 
 CREATE INDEX event_time_indices ON events (start_time, end_time);
+
+CREATE INDEX events_user_id_idx ON events (user_id);
 
 CREATE TABLE global_login_auth_edges (
     id1 UUID NOT NULL, 

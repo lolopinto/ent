@@ -39,6 +39,7 @@ enum CatBreed {
 
 enum CommentSortColumn {
   ARTICLE_ID
+  ATTACHMENT_ID
   AUTHOR_ID
   ID
 }
@@ -125,6 +126,7 @@ enum EventRsvpStatus {
 }
 
 enum EventSortColumn {
+  CREATOR_ID
   ID
 }
 
@@ -226,11 +228,13 @@ type CatType {
 
 type Comment implements Node {
   article: Node
+  attachment: Node
   author: User
   sticker: Node
   id: ID!
   body: String!
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
+  articles(first: Int, after: String, last: Int, before: String): CommentArticleToCommentsConnection!
 }
 
 type ContactDate {
@@ -240,12 +244,17 @@ type ContactDate {
   description: String!
 }
 
+type ContactEmailCanViewerDo {
+  contactEmailEdit: Boolean!
+}
+
 type ContactEmail implements Node & ContactItemType {
   contact: Contact
   id: ID!
   extra: ContactInfo
   emailAddress: String!
   label: ContactLabel!
+  canViewerDo: ContactEmailCanViewerDo!
 }
 
 type ContactInfo {
@@ -277,6 +286,7 @@ type Contact implements Node {
   lastName: String!
   comments(first: Int, after: String, last: Int, before: String): ContactToCommentsConnection!
   likers(first: Int, after: String, last: Int, before: String): ContactToLikersConnection!
+  attachedComments(first: Int, after: String, last: Int, before: String): ContactCommentsFromAttachmentConnection!
   fullName: String!
   plusEmails: EmailInfo!
   contactItems: [ContactItemResult!]!
@@ -295,6 +305,10 @@ type EmailInfo {
   firstEmail: String!
 }
 
+type EventCanViewerSee {
+  address: Boolean!
+}
+
 type Event implements Node {
   address: Address
   creator: User
@@ -309,6 +323,12 @@ type Event implements Node {
   invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
   viewerRsvpStatus: EventRsvpStatus!
+  canViewerSeeInfo: EventCanViewerSee!
+}
+
+type GlobalCanViewerDo {
+  contactCreate(userID: ID!): Boolean!
+  contactEmailCreate(extra: ContactInfoInput, emailAddress: String!, label: ContactLabel!, contactID: ID!): Boolean!
 }
 
 type Holiday implements Node {
@@ -333,6 +353,21 @@ type RabbitType {
   name: String!
   birthday: Time!
   breed: RabbitBreed!
+}
+
+type UserCanViewerDo {
+  userEdit: Boolean!
+}
+
+type UserCanViewerEdit {
+  accountStatus: Boolean!
+}
+
+type UserCanViewerSee {
+  accountStatus: Boolean!
+  prefs: Boolean!
+  prefsList: Boolean!
+  prefsDiff: Boolean!
 }
 
 type UserNestedNestedObjectList {
@@ -423,6 +458,13 @@ type User implements Node {
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
+  articles(first: Int, after: String, last: Int, before: String): UserArticleToCommentsConnection!
+  attachedComments(first: Int, after: String, last: Int, before: String): UserCommentsFromAttachmentConnection!
+  commentsFromUser(first: Int, after: String, last: Int, before: String): AuthorToCommentsConnection!
+  eventsCreated(first: Int, after: String, last: Int, before: String): CreatorToEventsConnection!
+  canViewerSeeInfo: UserCanViewerSee!
+  canViewerEditInfo: UserCanViewerEdit!
+  canViewerDo: UserCanViewerDo!
   fullName: String!
   bar: String
   """contacts same domain..."""
@@ -447,6 +489,30 @@ type AddressToHostedEventsConnection implements Connection {
   rawCount: Int!
 }
 
+type AuthorToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type AuthorToCommentsConnection implements Connection {
+  edges: [AuthorToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type CommentArticleToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type CommentArticleToCommentsConnection implements Connection {
+  edges: [CommentArticleToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type CommentToPostEdge implements Edge {
   node: Node!
   cursor: String!
@@ -455,6 +521,18 @@ type CommentToPostEdge implements Edge {
 type CommentToPostConnection implements Connection {
   edges: [CommentToPostEdge!]!
   nodes: [Node!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactCommentsFromAttachmentEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ContactCommentsFromAttachmentConnection implements Connection {
+  edges: [ContactCommentsFromAttachmentEdge!]!
+  nodes: [Comment!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -479,6 +557,18 @@ type ContactToLikersEdge implements Edge {
 type ContactToLikersConnection implements Connection {
   edges: [ContactToLikersEdge!]!
   nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type CreatorToEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type CreatorToEventsConnection implements Connection {
+  edges: [CreatorToEventsEdge!]!
+  nodes: [Event!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -639,6 +729,30 @@ type RootToUserConnection implements Connection {
   rawCount: Int!
 }
 
+type UserArticleToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type UserArticleToCommentsConnection implements Connection {
+  edges: [UserArticleToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserCommentsFromAttachmentEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type UserCommentsFromAttachmentConnection implements Connection {
+  edges: [UserCommentsFromAttachmentEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type UserToCommentsAuthoredEdge implements Edge {
   node: Comment!
   cursor: String!
@@ -787,6 +901,7 @@ type UserToMaybeEventsConnection implements Connection {
 type Viewer {
   viewerID: ID
   user: User
+  defaultUserPrefs: UserPrefsStruct!
 }
 
 input UserAuthInput {
@@ -843,6 +958,8 @@ input CommentCreateInput {
   body: String!
   articleID: ID!
   articleType: String!
+  attachmentID: ID
+  attachmentType: String
   stickerID: ID
   stickerType: String
 }
@@ -857,6 +974,8 @@ input CommentEditInput {
   body: String
   articleID: ID
   articleType: String
+  attachmentID: ID
+  attachmentType: String
   stickerID: ID
   stickerType: String
 }
@@ -1165,6 +1284,7 @@ input UserCreateInput {
   superNestedObject: UserSuperNestedObjectInput
   nestedList: [UserNestedObjectListInput!]
   intEnum: UserIntEnum
+  accountStatusOverride: String
 }
 
 type UserCreatePayload {
@@ -1249,6 +1369,7 @@ input UserSuperNestedObjectInput {
 }
 
 type Query {
+  can_viewer_do: GlobalCanViewerDo
   comment_connection(ids: [ID!], sortCol: CommentSortColumn, first: Int, after: String, last: Int, before: String): RootToCommentConnection!
   comment_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Comment!]
   contact_connection(ids: [ID!], sortCol: ContactSortColumn, first: Int, after: String, last: Int, before: String): RootToContactConnection!

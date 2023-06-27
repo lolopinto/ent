@@ -10,6 +10,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
+  applyPrivacyPolicy,
   convertDate,
   convertNullableDate,
   convertNullableJSON,
@@ -50,6 +51,7 @@ import {
   AccountToTagsQuery,
   AccountToTodosQuery,
   AccountToWorkspacesQuery,
+  AssigneeToTodosQuery,
   ITodoContainer,
   Todo,
   TodoContainerMixin,
@@ -61,6 +63,12 @@ interface AccountData
   phone_number: string | null;
   account_prefs_3: AccountPrefs | null;
   credits: number | null;
+}
+
+export interface AccountCanViewerSee {
+  phoneNumber: () => Promise<boolean>;
+  accountPrefs3: () => Promise<boolean>;
+  credits: () => Promise<boolean>;
 }
 
 export class AccountBase
@@ -417,5 +425,32 @@ export class AccountBase
 
   queryTodos(): AccountToTodosQuery {
     return AccountToTodosQuery.query(this.viewer, this.id);
+  }
+
+  queryTodosAssigned(): AssigneeToTodosQuery {
+    return AssigneeToTodosQuery.query(this.viewer, this);
+  }
+
+  canViewerSeeInfo(): AccountCanViewerSee {
+    const fieldPrivacy = getFieldsWithPrivacy(
+      schema,
+      accountLoaderInfo.fieldInfo,
+    );
+    return {
+      phoneNumber: () =>
+        applyPrivacyPolicy(
+          this.viewer,
+          fieldPrivacy.get("phone_number")!,
+          this,
+        ),
+      accountPrefs3: () =>
+        applyPrivacyPolicy(
+          this.viewer,
+          fieldPrivacy.get("account_prefs_3")!,
+          this,
+        ),
+      credits: () =>
+        applyPrivacyPolicy(this.viewer, fieldPrivacy.get("credits")!, this),
+    };
   }
 }

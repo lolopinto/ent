@@ -26,10 +26,11 @@ type Field struct {
 	graphqlFieldType enttype.TSType
 	tsFieldType      enttype.TSType
 
-	dbColumn        bool
-	hideFromGraphQL bool
-	private         bool
-	polymorphic     *input.PolymorphicOptions
+	dbColumn                   bool
+	hideFromGraphQL            bool
+	hideFromGraphQLBecauseEdge bool
+	private                    bool
+	polymorphic                *input.PolymorphicOptions
 	// optional (in action)
 	// need to break this into optional (not required in typescript actions)
 	// ts nullable
@@ -65,6 +66,7 @@ type Field struct {
 	hasDefaultValueOnEdit      bool
 	defaultToViewerOnCreate    bool
 	hasFieldPrivacy            bool
+	hasEditFieldPrivacy        bool
 	fetchOnDemand              bool
 	dbOnly                     bool
 
@@ -110,6 +112,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		hasDefaultValueOnEdit:      f.HasDefaultValueOnEdit,
 		defaultToViewerOnCreate:    f.DefaultToViewerOnCreate,
 		hasFieldPrivacy:            f.HasFieldPrivacy,
+		hasEditFieldPrivacy:        f.HasEditFieldPrivacy,
 		fetchOnDemand:              f.FetchOnDemand,
 		dbOnly:                     f.DBOnly,
 		immutable:                  f.Immutable,
@@ -163,8 +166,10 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 
 	if f.FieldEdge != nil {
 		ret.fieldEdge = &base.FieldEdgeInfo{
-			Schema:      f.FieldEdge.Schema,
-			InverseEdge: f.FieldEdge.InverseEdge,
+			Schema:        f.FieldEdge.Schema,
+			InverseEdge:   f.FieldEdge.InverseEdge,
+			IndexEdge:     f.FieldEdge.IndexEdge,
+			EdgeConstName: f.FieldEdge.EdgeConstName,
 		}
 		ret.disableBuilderType = f.FieldEdge.DisableBuilderType
 	}
@@ -292,6 +297,13 @@ func (f *Field) ExposeToGraphQL() bool {
 	return !f.hideFromGraphQL
 }
 
+func (f *Field) ExposeFieldOrFieldEdgeToGraphQL() bool {
+	if f.hideFromGraphQLBecauseEdge {
+		return true
+	}
+	return !f.hideFromGraphQL
+}
+
 func (f *Field) Unique() bool {
 	return f.unique
 }
@@ -391,6 +403,10 @@ func (f *Field) HasFieldPrivacy() bool {
 	return f.hasFieldPrivacy
 }
 
+func (f *Field) HasEditFieldPrivacy() bool {
+	return f.hasEditFieldPrivacy
+}
+
 func (f *Field) FetchOnDemand() bool {
 	return f.fetchOnDemand
 }
@@ -435,17 +451,8 @@ func (f *Field) QueryFromEntName() string {
 	if !f.QueryFromEnt() {
 		return ""
 	}
-	ret := strings.TrimSuffix(f.CamelCaseName(), "ID")
-	ret = strings.TrimSuffix(ret, "_id")
+	ret, _ := base.TranslateIDSuffix(f.CamelCaseName())
 	return ret
-}
-
-// TODO probably gonna collapse into above
-func (f *Field) QueryFrom() bool {
-	if !f.index || f.polymorphic != nil {
-		return false
-	}
-	return !strings.HasSuffix(f.FieldName, "ID")
 }
 
 func (f *Field) Nullable() bool {
@@ -916,6 +923,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		hasDefaultValueOnEdit:      f.hasDefaultValueOnEdit,
 		defaultToViewerOnCreate:    f.defaultToViewerOnCreate,
 		hasFieldPrivacy:            f.hasFieldPrivacy,
+		hasEditFieldPrivacy:        f.hasEditFieldPrivacy,
 		fetchOnDemand:              f.fetchOnDemand,
 		dbOnly:                     f.dbOnly,
 		immutable:                  f.immutable,

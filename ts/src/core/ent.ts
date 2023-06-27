@@ -36,34 +36,8 @@ import * as clause from "./clause";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
 import { __getGlobalSchema } from "./global_schema";
-
-// TODO kill this and createDataLoader
-class cacheMap {
-  private m = new Map();
-  constructor(private options: DataOptions) {}
-  get(key: string) {
-    const ret = this.m.get(key);
-    if (ret) {
-      log("cache", {
-        "dataloader-cache-hit": key,
-        "tableName": this.options.tableName,
-      });
-    }
-    return ret;
-  }
-
-  set(key: string, value: any) {
-    return this.m.set(key, value);
-  }
-
-  delete(key: string) {
-    return this.m.delete(key);
-  }
-
-  clear() {
-    return this.m.clear();
-  }
-}
+import { OrderBy, getOrderByPhrase } from "./query_impl";
+import { CacheMap } from "./loaders/loader";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   private m = new Map();
@@ -99,12 +73,12 @@ class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   }
 }
 
-function createDataLoader(options: SelectDataOptions) {
+function createAssocEdgeConfigLoader(options: SelectDataOptions) {
   const loaderOptions: DataLoader.Options<ID, Data | null> = {};
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap(options);
+    loaderOptions.cacheMap = new CacheMap(options);
   }
 
   // something here brokwn with strict:true
@@ -113,9 +87,12 @@ function createDataLoader(options: SelectDataOptions) {
       return [];
     }
     let col = options.key;
+    // defaults to uuid
+    let typ = options.keyType || "uuid";
+
     const rowOptions: LoadRowOptions = {
       ...options,
-      clause: clause.In(col, ...ids),
+      clause: clause.DBTypeIn(col, ids, typ),
     };
 
     // TODO is there a better way of doing this?
@@ -785,11 +762,12 @@ async function doFieldPrivacy<
   }
   const promises: Promise<void>[] = [];
   let somethingChanged = false;
+  const clone = { ...data };
   const origData = {
     ...data,
   };
   for (const [k, policy] of options.fieldPrivacy) {
-    const curr = data[k];
+    const curr = clone[k];
     if (curr === null || curr === undefined) {
       continue;
     }
@@ -799,7 +777,7 @@ async function doFieldPrivacy<
         // don't do anything if key is null or for some reason missing
         const r = await applyPrivacyPolicy(viewer, policy, ent);
         if (!r) {
-          data[k] = null;
+          clone[k] = null;
           somethingChanged = true;
         }
       })(),
@@ -808,7 +786,7 @@ async function doFieldPrivacy<
   await Promise.all(promises);
   if (somethingChanged) {
     // have to create new instance
-    const ent = new options.ent(viewer, data);
+    const ent = new options.ent(viewer, clone);
     ent.__setRawDBData(origData);
     return ent;
   }
@@ -926,17 +904,18 @@ export function buildQuery(options: QueryableDataOptions): string {
   const fields = options.fields.join(", ");
   // always start at 1
   const whereClause = options.clause.clause(1);
-  let query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
+  const parts: string[] = [];
+  parts.push(`SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`);
   if (options.groupby) {
-    query = `${query} GROUP BY ${options.groupby}`;
+    parts.push(`GROUP BY ${options.groupby}`);
   }
   if (options.orderby) {
-    query = `${query} ORDER BY ${options.orderby}`;
+    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby)}`);
   }
   if (options.limit) {
-    query = `${query} LIMIT ${options.limit}`;
+    parts.push(`LIMIT ${options.limit}`);
   }
-  return query;
+  return parts.join(" ");
 }
 
 interface GroupQueryOptions<T extends Data, K = keyof T> {
@@ -947,7 +926,7 @@ interface GroupQueryOptions<T extends Data, K = keyof T> {
   groupColumn: K;
   fields: K[];
   values: any[];
-  orderby?: string;
+  orderby?: OrderBy;
   limit: number;
 }
 
@@ -963,7 +942,7 @@ export function buildGroupQuery<T extends Data = Data, K = keyof T>(
   }
   let orderby = "";
   if (options.orderby) {
-    orderby = `ORDER BY ${options.orderby}`;
+    orderby = `ORDER BY ${getOrderByPhrase(options.orderby)}`;
   }
 
   // window functions work in sqlite!
@@ -1065,8 +1044,28 @@ export function buildInsertQuery(
   const vals = valsString.join(", ");
 
   let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals})`;
+
+  if (options.onConflict) {
+    let onConflict = "";
+    if (options.onConflict.onConflictConstraint) {
+      onConflict = `ON CONFLICT ON CONSTRAINT ${options.onConflict.onConflictConstraint}`;
+    } else {
+      onConflict = `ON CONFLICT(${options.onConflict.onConflictCols.join(
+        ", ",
+      )})`;
+    }
+    if (options.onConflict.updateCols?.length) {
+      onConflict += ` DO UPDATE SET ${options.onConflict.updateCols
+        .map((f) => `${f} = EXCLUDED.${f}`)
+        .join(", ")}`;
+    } else {
+      onConflict += ` DO NOTHING`;
+    }
+    query = query + " " + onConflict;
+  }
+
   if (suffix) {
-    query = query + " " + suffix;
+    query += " " + suffix;
   }
 
   return [query, values, logValues];
@@ -1300,10 +1299,11 @@ const assocEdgeFields = [
   "edge_table",
 ];
 
-export const assocEdgeLoader = createDataLoader({
+export const assocEdgeLoader = createAssocEdgeConfigLoader({
   tableName: "assoc_edge_config",
   fields: assocEdgeFields,
   key: "edge_type",
+  keyType: "uuid",
 });
 
 // we don't expect assoc_edge_config information to change
@@ -1359,16 +1359,22 @@ interface loadEdgesOptions {
   edgeType: string;
   context?: Context;
   queryOptions?: EdgeQueryableDataOptions;
-  disableTransformations?: boolean;
 }
 
 interface loadCustomEdgesOptions<T extends AssocEdge> extends loadEdgesOptions {
   ctr: AssocEdgeConstructor<T>;
 }
 
-export const DefaultLimit = 1000;
+let defaultLimit = 1000;
 
-// TODO default limit from somewhere
+export function setDefaultLimit(limit: number) {
+  defaultLimit = limit;
+}
+
+export function getDefaultLimit() {
+  return defaultLimit;
+}
+
 function defaultEdgeQueryOptions(
   id1: ID,
   edgeType: string,
@@ -1380,8 +1386,13 @@ function defaultEdgeQueryOptions(
   }
   return {
     clause: cls,
-    orderby: "time DESC",
-    limit: DefaultLimit,
+    orderby: [
+      {
+        column: "time",
+        direction: "DESC",
+      },
+    ],
+    limit: defaultLimit,
   };
 }
 
@@ -1393,14 +1404,14 @@ export async function loadEdges(
 
 export function getEdgeClauseAndFields(
   cls: clause.Clause,
-  options: Pick<loadEdgesOptions, "disableTransformations">,
+  options: Pick<loadEdgesOptions, "queryOptions">,
 ) {
   let fields = edgeFields;
 
   const transformEdgeRead = __getGlobalSchema()?.transformEdgeRead;
   if (transformEdgeRead) {
     const transformClause = transformEdgeRead();
-    if (!options.disableTransformations) {
+    if (!options.queryOptions?.disableTransformations) {
       cls = clause.And(cls, transformClause);
     }
     fields = edgeFields.concat(transformClause.columns() as string[]);
@@ -1683,7 +1694,7 @@ export async function getEdgeTypeInGroup<T extends string>(
         const { cls, fields } = getEdgeClauseAndFields(
           clause.And(
             clause.Eq("id1", id1),
-            clause.In("edge_type", edgeTypes),
+            clause.UuidIn("edge_type", edgeTypes),
             clause.Eq("id2", id2),
           ),
           {},

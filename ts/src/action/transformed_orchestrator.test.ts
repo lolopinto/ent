@@ -11,10 +11,10 @@ import {
   SQLStatementOperation,
 } from "../schema";
 import {
-  User,
   SimpleAction,
   Contact,
   EntBuilderSchema,
+  BaseEnt,
 } from "../testutils/builder";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
@@ -136,9 +136,9 @@ class DeletedAtPatternWithExtraWrites implements Pattern {
     return clause.Eq("deleted_at", null);
   }
 
-  transformWrite<T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | null {
+  transformWrite<T extends Ent<TViewer>, TViewer extends Viewer = CustomViewer>(
+    stmt: UpdateOperation<T, TViewer>,
+  ): TransformedUpdateOperation<T, TViewer> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
@@ -148,34 +148,42 @@ class DeletedAtPatternWithExtraWrites implements Pattern {
             deletedAt: new Date(),
           },
           changeset: () =>
-            EntChangeset.changesetFrom(stmt.builder, [
-              new RawQueryOperation([
-                `DELETE FROM edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
-                `DELETE FROM inverse_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
-                `DELETE FROM symmetric_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
-                {
-                  query: `DELETE FROM edge_table WHERE id2 = ${
-                    DB.getDialect() === Dialect.Postgres ? "$1" : "?"
-                  }`,
-                  values: [stmt.builder.existingEnt?.id],
-                },
-                {
-                  query: `DELETE FROM inverse_edge_table WHERE id2 = ${
-                    DB.getDialect() === Dialect.Postgres ? "$1" : "?"
-                  }`,
-                  values: [stmt.builder.existingEnt?.id],
-                },
-                {
-                  query: `DELETE FROM symmetric_edge_table WHERE id2 = ${
-                    DB.getDialect() === Dialect.Postgres ? "$1" : "?"
-                  }`,
-                  values: [stmt.builder.existingEnt?.id],
-                },
-              ]),
+            EntChangeset.changesetFromQueries(stmt.builder, [
+              `DELETE FROM edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
+              `DELETE FROM inverse_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
+              `DELETE FROM symmetric_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
+              {
+                query: `DELETE FROM edge_table WHERE id2 = ${
+                  DB.getDialect() === Dialect.Postgres ? "$1" : "?"
+                }`,
+                values: [stmt.builder.existingEnt?.id],
+              },
+              {
+                query: `DELETE FROM inverse_edge_table WHERE id2 = ${
+                  DB.getDialect() === Dialect.Postgres ? "$1" : "?"
+                }`,
+                values: [stmt.builder.existingEnt?.id],
+              },
+              {
+                query: `DELETE FROM symmetric_edge_table WHERE id2 = ${
+                  DB.getDialect() === Dialect.Postgres ? "$1" : "?"
+                }`,
+                values: [stmt.builder.existingEnt?.id],
+              },
             ]),
         };
     }
     return null;
+  }
+}
+
+class User extends BaseEnt {
+  nodeType = "User";
+  firstName: string;
+
+  constructor(public viewer: CustomViewer, public data: Data) {
+    super(viewer, data);
+    this.firstName = data.first_name;
   }
 }
 
@@ -197,7 +205,19 @@ const ContactSchema = new EntBuilderSchema(Contact, {
   },
 });
 
-class Account extends User {}
+// custom Viewer interface
+// IDViewer and LoggedOutViewer implicitly implement this
+interface CustomViewer extends Viewer {
+  marker: string;
+}
+
+class Account extends BaseEnt {
+  nodeType = "Account";
+
+  constructor(public viewer: CustomViewer, public data: Data) {
+    super(viewer, data);
+  }
+}
 
 const AccountSchema = new EntBuilderSchema(Account, {
   patterns: [new DeletedAtPatternWithExtraWrites()],
@@ -599,8 +619,8 @@ function commonTests() {
     });
 
     const tranformJonToAegon = (
-      stmt: UpdateOperation<User>,
-    ): TransformedUpdateOperation<User> | undefined => {
+      stmt: UpdateOperation<User, CustomViewer>,
+    ): TransformedUpdateOperation<User, CustomViewer> | undefined => {
       if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
         return;
       }

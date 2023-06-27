@@ -11,7 +11,7 @@ import {
   loadCustomEdges,
   AssocEdgeConstructor,
   loadEdgeData,
-  DefaultLimit,
+  getDefaultLimit,
   performRawQuery,
   loadEdgeForID2,
   buildGroupQuery,
@@ -20,7 +20,7 @@ import {
 } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
-import { cacheMap, getCustomLoader } from "./loader";
+import { CacheMap, getCustomLoader } from "./loader";
 import memoizee from "memoizee";
 
 function createLoader<T extends AssocEdge>(
@@ -32,7 +32,7 @@ function createLoader<T extends AssocEdge>(
   const loaderOptions: DataLoader.Options<ID, T[]> = {};
 
   if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap({
+    loaderOptions.cacheMap = new CacheMap({
       tableName: edgeData.edgeTable,
     });
   }
@@ -58,21 +58,28 @@ function createLoader<T extends AssocEdge>(
       m.set(keys[i], i);
     }
 
-    options.orderby = options.orderby || "time DESC";
+    options.orderby = options.orderby || [
+      {
+        column: "time",
+        direction: "DESC",
+      },
+    ];
     // TODO defaultEdgeQueryOptions
-    options.limit = options.limit || DefaultLimit;
+    options.limit = options.limit || getDefaultLimit();
 
     const tableName = edgeData.edgeTable;
     const { cls: cls1, fields } = getEdgeClauseAndFields(
       clause.Eq("edge_type", edgeType),
-      {},
+      {
+        queryOptions: options,
+      },
     );
     const [query, cls] = buildGroupQuery({
       tableName: tableName,
       fields,
       values: keys,
       orderby: options.orderby,
-      limit: options.limit || DefaultLimit,
+      limit: options.limit || getDefaultLimit(),
       groupColumn: "id1",
       clause: cls1,
     });
@@ -93,7 +100,7 @@ function createLoader<T extends AssocEdge>(
   }, loaderOptions);
 }
 
-interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
+export interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
   loadEdgeForID2(id: ID, id2: ID): Promise<T | undefined>;
 }
 
@@ -136,6 +143,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
       id2,
       context: this.context,
       ctr: this.edgeCtr,
+      queryOptions: this.options,
     });
   }
 
@@ -155,7 +163,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
   ) {}
 
   async load(id: ID) {
-    return await loadCustomEdges({
+    return loadCustomEdges({
       id1: id,
       edgeType: this.edgeType,
       context: this.context,
@@ -170,6 +178,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
       edgeType: this.edgeType,
       id2,
       context: this.context,
+      queryOptions: this.options,
       ctr: this.edgeCtr,
     });
   }
@@ -231,7 +240,7 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     }
 
     // we create a loader which can combine first X queries in the same fetch
-    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}`;
+    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}:disableTransformations:${options.disableTransformations}`;
     return getCustomLoader(
       key,
       () => new AssocEdgeLoader(this.edgeType, ctr, options, context),

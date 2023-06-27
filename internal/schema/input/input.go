@@ -102,6 +102,9 @@ type Node struct {
 	SchemaPath              string                    `json:"schemaPath,omitempty"`
 	Patterns                []string                  `json:"patternNames,omitempty"`
 	CustomGraphQLInterfaces []string                  `json:"customGraphQLInterfaces,omitempty"`
+	SupportUpsert           bool                      `json:"supportUpsert,omitempty"`
+	ShowCanViewerSee        bool                      `json:"showCanViewerSee,omitempty"`
+	ShowCanViewerEdit       bool                      `json:"showCanViewerEdit,omitempty"`
 	// these 2 not used yet so ignoring for now
 	// TransformsInsert bool `json:"transformsInsert,omitempty"`
 	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`
@@ -119,6 +122,7 @@ type GlobalSchema struct {
 	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
 	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
 	Init            bool         `json:"init,omitempty"`
+	TransformsEdges bool         `json:"transformsEdges,omitempty"`
 	GlobalFields    []*Field     `json:"globalFields,omitempty"`
 }
 
@@ -210,6 +214,7 @@ type Field struct {
 	HasDefaultValueOnCreate    bool `json:"hasDefaultValueOnCreate,omitempty"`
 	HasDefaultValueOnEdit      bool `json:"hasDefaultValueOnEdit,omitempty"`
 	HasFieldPrivacy            bool `json:"hasFieldPrivacy,omitempty"`
+	HasEditFieldPrivacy        bool `json:"hasEditFieldPrivacy,omitempty"`
 
 	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`
@@ -274,6 +279,8 @@ type FieldEdge struct {
 	Schema             string            `json:"schema,omitempty"`
 	InverseEdge        *InverseFieldEdge `json:"inverseEdge,omitempty"`
 	DisableBuilderType bool              `json:"disableBuilderType,omitempty"`
+	IndexEdge          *IndexEdgeOptions `json:"indexEdge,omitempty"`
+	EdgeConstName      string            `json:"edgeConstName,omitempty"`
 }
 
 func (f *FieldEdge) InverseEdgeName() string {
@@ -291,12 +298,17 @@ type InverseFieldEdge struct {
 	EdgeConstName   string `json:"edgeConstName,omitempty"`
 }
 
+type IndexEdgeOptions struct {
+	Name string `json:"name,omitempty"`
+}
+
 type PolymorphicOptions struct {
 	// Note that anytime anything changes here, have to update PolymorphicOptionsEqual in compare.go
 	Types                  []string `json:"types,omitempty"`
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL,omitempty"`
 	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
 	Name                   string   `json:"name,omitempty"`
+	EdgeConstName          string   `json:"edgeConstName,omitempty"`
 }
 
 type PrivateOptions struct {
@@ -591,7 +603,7 @@ type AssocEdgeGroup struct {
 	TableName       string        `json:"tableName,omitempty"`
 	AssocEdges      []*AssocEdge  `json:"assocEdges,omitempty"`
 	EdgeActions     []*EdgeAction `json:"edgeActions,omitempty"`
-	ViewerBased     bool          `json:"viewerBased"`
+	ViewerBased     bool          `json:"viewerBased,omitempty"`
 	StatusEnums     []string      `json:"statusEnums,omitempty"`
 	NullStateFn     string        `json:"nullStateFn,omitempty"`
 	NullStates      []string      `json:"nullStates,omitempty"`
@@ -611,6 +623,7 @@ type EdgeAction struct {
 	CustomInputName   string              `json:"inputName,omitempty"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
+	CanViewerDo       *CanViewerDo        `json:"canViewerDo,omitempty"`
 }
 
 func getTSStringOperation(op ent.ActionOperation) string {
@@ -639,6 +652,11 @@ func (e *EdgeAction) GetTSStringOperation() string {
 	return getTSStringOperation(e.Operation)
 }
 
+type CanViewerDo struct {
+	AddAllFields bool     `json:"addAllFields,omitempty"`
+	InputFields  []string `json:"inputFields,omitempty"`
+}
+
 type Action struct {
 	// Note that anytime anything changes here, have to update actionEqual in compare.go
 	Operation         ent.ActionOperation `json:"operation,omitempty"`
@@ -652,6 +670,7 @@ type Action struct {
 	CustomInputName   string              `json:"inputName,omitempty"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
+	CanViewerDo       *CanViewerDo        `json:"canViewerDo,omitempty"`
 }
 
 func (a *Action) GetTSStringOperation() string {

@@ -29,6 +29,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 interface customCommentCreateInput extends CommentCreateInput {
   authorID: string;
   articleID: string;
+  attachmentID?: string;
   stickerID?: string;
 }
 
@@ -50,6 +51,12 @@ export const CommentCreateInputType = new GraphQLInputObjectType({
     },
     articleType: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    attachmentID: {
+      type: GraphQLID,
+    },
+    attachmentType: {
+      type: GraphQLString,
     },
     stickerID: {
       type: GraphQLID,
@@ -95,6 +102,8 @@ export const CommentCreateType: GraphQLFieldConfig<
       body: input.body,
       articleID: mustDecodeIDFromGQLID(input.articleID),
       articleType: input.articleType,
+      attachmentID: mustDecodeNullableIDFromGQLID(input.attachmentID),
+      attachmentType: input.attachmentType,
       stickerID: mustDecodeNullableIDFromGQLID(input.stickerID),
       stickerType: input.stickerType,
     }).saveX();

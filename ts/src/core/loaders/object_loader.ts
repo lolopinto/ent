@@ -15,7 +15,7 @@ import * as clause from "../clause";
 import { log, logEnabled } from "../logger";
 import { getCombinedClause } from "../clause";
 
-import { getLoader, cacheMap, getCustomLoader } from "./loader";
+import { getLoader, CacheMap, getCustomLoader } from "./loader";
 import memoizee from "memoizee";
 
 async function loadRowsForIDLoader<K, V = Data>(
@@ -24,7 +24,10 @@ async function loadRowsForIDLoader<K, V = Data>(
   context?: Context,
 ) {
   let col = options.key;
-  const cls = getCombinedClause(options, clause.In(col, ...ids));
+  const cls = getCombinedClause(
+    options,
+    clause.DBTypeIn(col, ids, options.keyType || "uuid"),
+  );
 
   const rowOptions: LoadRowOptions = {
     ...options,
@@ -104,7 +107,7 @@ function createDataLoader(options: SelectDataOptions) {
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap(options);
+    loaderOptions.cacheMap = new CacheMap(options);
   }
 
   return new DataLoader(async (ids: ID[]) => {

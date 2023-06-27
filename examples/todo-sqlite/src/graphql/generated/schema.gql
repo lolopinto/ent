@@ -31,6 +31,12 @@ enum AccountTodoStatus {
   UNKNOWN
 }
 
+type AccountCanViewerSee {
+  phone_number: Boolean!
+  account_prefs_3: Boolean!
+  credits: Boolean!
+}
+
 type AccountPrefs {
   finished_nux: Boolean!
   enable_notifs: Boolean!
@@ -52,7 +58,9 @@ type Account implements Node {
   workspaces(first: Int, after: String, last: Int, before: String): AccountToWorkspacesConnection!
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
-  todoStatusFor(id: ID!): AccountTodoStatus
+  todos_assigned(first: Int, after: String, last: Int, before: String): AssigneeToTodosConnection!
+  todo_status_for(id: ID!): AccountTodoStatus
+  can_viewer_see_info: AccountCanViewerSee!
   open_todos_plural: [Todo!]!
   open_todos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
 }
@@ -181,6 +189,18 @@ type AccountToWorkspacesEdge implements Edge {
 type AccountToWorkspacesConnection implements Connection {
   edges: [AccountToWorkspacesEdge!]!
   nodes: [Workspace!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AssigneeToTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type AssigneeToTodosConnection implements Connection {
+  edges: [AssigneeToTodosEdge!]!
+  nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

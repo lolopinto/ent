@@ -29,6 +29,7 @@ type EdgeInfo struct {
 	// new concepts: IndexedEdgeQueries
 	// EdgeQueries that will be in _query_base.tmpl file
 
+	// TODO clean this up. unclear what the difference is at this point...
 	// note: look at CompareEdgeInfo in compare_edge.go as this changes
 	// indexedEdgeQueriesMap has both foreign key and index edges so only comparing
 	// that. not comparing destinationEdgesMap as that only includes foreignKey edges
@@ -211,8 +212,10 @@ func (e *EdgeInfo) GetEdgesForIndexLoader() []IndexedConnectionEdge {
 }
 
 func (e *EdgeInfo) CreateEdgeBaseFile() bool {
-	if len(e.indexedEdgeQueriesMap) > 0 {
-		return true
+	for _, edge := range e.indexedEdgeQueriesMap {
+		if edge.GenerateBaseClass() {
+			return true
+		}
 	}
 
 	for _, edge := range e.Associations {
@@ -297,6 +300,7 @@ func GetFieldEdge(cfg codegenapi.Config,
 		Nullable:       nullable,
 		Polymorphic:    fieldEdgeInfo.Polymorphic,
 		fieldType:      fieldType,
+		EdgeConstName:  fieldEdgeInfo.EdgeConstName,
 	}, nil
 }
 
@@ -316,6 +320,13 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 		!validSchema(edge.commonEdgeInfo.NodeInfo.Node) {
 		return fmt.Errorf("invalid schema %s", edge.commonEdgeInfo.NodeInfo.Node)
 	}
+
+	if fieldEdgeInfo.IndexEdge != nil {
+		// set the name based on this...
+		// and generate the edge based on this
+		edge.UserGivenEdgeName = fieldEdgeInfo.IndexEdge.Name
+	}
+
 	return e.addEdge(edge)
 }
 
@@ -343,39 +354,75 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(cfg codegenapi.Config, dbColName, 
 }
 
 func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) error {
-	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
+	return e.addIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, polymorphic, "", "")
+}
+
+func (e *EdgeInfo) AddIndexedEdgeFromNonPolymorphicSource(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName, foreignNode, edgeConstName string) error {
+	return e.addIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, nil, foreignNode, edgeConstName)
+}
+
+func (e *EdgeInfo) addIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode, edgeConstName string) error {
+	tsEdgeName, _ := base.TranslateIDSuffix(tsFieldName)
+	tsEdgeName = strcase.ToCamel(tsEdgeName)
+
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				cfg,
-				// TODO this changes a bunch of things
-
-				// it changes a bunch of things
-				// so we need edge name to be the same but loader factory and query to change
-
-				// TODO test multiple polymorphic fields on the same schema
 				inflection.Plural(tsFieldName),
-				// inflection.Plural(nodeName),
 				GetEntConfigFromName(nodeName),
 			),
 			quotedDbColName: quotedDBColName,
-			unique:          polymorphic.Unique,
 		},
+		sourceNodeName: foreignNode,
+		edgeConstName:  edgeConstName,
 	}
-	if polymorphic.HideFromInverseGraphQL {
-		edge._HideFromGraphQL = true
+	if polymorphic != nil {
+		edge.destinationEdge.unique = polymorphic.Unique
+		edge._HideFromGraphQL = polymorphic.HideFromInverseGraphQL
+		edge.edgeConstName = polymorphic.EdgeConstName
 	}
+
 	edgeName := edge.GetEdgeName()
 	// TODO this is being called twice  with different edge infos...
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
+
 	return e.addEdge(edge)
 }
 
-func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
-	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
-	edgeName := inflection.Plural(nodeName)
+type IndexEdgeOptions struct {
+	DefaultEdgeName string
+	EdgeConstName   string
+}
+
+type IndexEdgeOpts func(*IndexEdgeOptions)
+
+func WithDefaultEdgeName(name string) IndexEdgeOpts {
+	return func(o *IndexEdgeOptions) {
+		o.DefaultEdgeName = name
+	}
+}
+
+func WithEdgeConstName(name string) IndexEdgeOpts {
+	return func(o *IndexEdgeOptions) {
+		o.EdgeConstName = name
+	}
+}
+
+func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string, opts ...IndexEdgeOpts) *IndexedEdge {
+	tsEdgeName, _ := base.TranslateIDSuffix(tsFieldName)
+	tsEdgeName = strcase.ToCamel(tsEdgeName)
+
+	o := IndexEdgeOptions{}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	edgeName := o.DefaultEdgeName
+	if edgeName == "" {
+		edgeName = inflection.Plural(nodeName)
+	}
 	if polymorphic != nil && polymorphic.Name != "" {
 		edgeName = polymorphic.Name
 	}
@@ -389,17 +436,35 @@ func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeNam
 			),
 			quotedDbColName: quotedDBColName,
 		},
-		foreignNode: foreignNode,
+		foreignNode:   foreignNode,
+		polymorphic:   polymorphic,
+		edgeConstName: o.EdgeConstName,
 	}
+
 	if polymorphic != nil {
 		edge._HideFromGraphQL = polymorphic.HideFromInverseGraphQL
 		edge.unique = polymorphic.Unique
+		edge.edgeConstName = polymorphic.EdgeConstName
 	}
 	return edge
 }
 
 func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
 	edge := GetIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, polymorphic, foreignNode)
+	edgeName := edge.GetEdgeName()
+	e.destinationEdgesMap[edgeName] = edge
+	e.DestinationEdges = append(e.DestinationEdges, edge)
+	e.indexedEdgeQueriesMap[edgeName] = edge
+	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
+	return e.addEdge(edge)
+}
+
+func (e *EdgeInfo) AddDestinationEdgeFromNonPolymorphicOptions(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, foreignNode, edgeConstName, userGivenEdgeName string) error {
+	opts := []IndexEdgeOpts{
+		WithDefaultEdgeName(userGivenEdgeName),
+		WithEdgeConstName(edgeConstName),
+	}
+	edge := GetIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, nil, foreignNode, opts...)
 	edgeName := edge.GetEdgeName()
 	e.destinationEdgesMap[edgeName] = edge
 	e.DestinationEdges = append(e.DestinationEdges, edge)
@@ -443,11 +508,19 @@ type ConnectionEdge interface {
 	UniqueEdge() bool
 }
 
+type OverwriteConstructorInfo struct {
+	Import *tsimport.ImportPath
+}
+
 type IndexedConnectionEdge interface {
 	// NOTE: update compareIndexedConnectionEdge if anything changes here
 	ConnectionEdge
 	SourceIsPolymorphic() bool
 	QuotedDBColName() string
+	GenerateBaseClass() bool
+	EdgeQueryBase() string
+	// OverwriteConstructor so that we can have strong types for class
+	GetOverwriteConstructorInfo() *OverwriteConstructorInfo
 }
 
 // marker interface
@@ -501,6 +574,12 @@ type FieldEdge struct {
 
 	InverseEdge *input.InverseFieldEdge
 	Polymorphic *base.PolymorphicOptions
+
+	// user given edge name is the name provided by the user
+	// done via fieldEdge.IndexEdge.Name
+	UserGivenEdgeName string
+
+	EdgeConstName string
 }
 
 func (edge *FieldEdge) PolymorphicEdge() bool {
@@ -618,7 +697,19 @@ func (e *ForeignKeyEdge) ErrorMessage(edgeInfo *EdgeInfo) error {
 	if fkey == nil {
 		return nil
 	}
-	return fmt.Errorf("To have multiple ForeignKey Edges pointing to %s, set the name on `foreignKey`", e.NodeInfo.Node)
+	return fmt.Errorf("to have multiple ForeignKey Edges pointing to %s, set the name on `foreignKey`", e.NodeInfo.Node)
+}
+
+func (e *ForeignKeyEdge) GenerateBaseClass() bool {
+	return true
+}
+
+func (e *ForeignKeyEdge) EdgeQueryBase() string {
+	return e.TsEdgeQueryName() + "Base"
+}
+
+func (e *ForeignKeyEdge) GetOverwriteConstructorInfo() *OverwriteConstructorInfo {
+	return nil
 }
 
 var _ Edge = &ForeignKeyEdge{}
@@ -665,7 +756,11 @@ type IndexedEdge struct {
 	// note that if anything is changed here, need to update indexedEdgeEqual() in compare_edge.go
 	SourceNodeName string
 	tsEdgeName     string
-	foreignNode    string
+	sourceNodeName string
+	edgeConstName  string
+
+	foreignNode string
+	polymorphic *base.PolymorphicOptions
 	destinationEdge
 }
 
@@ -684,33 +779,57 @@ func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	}
 }
 
-func (e *IndexedEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+func (e *IndexedEdge) polymorphicForeignNode() bool {
+	return e.foreignNode != "" && e.polymorphic != nil
 }
 
+func (e *IndexedEdge) getPrefix() string {
+	var prefix string
+	if e.polymorphicForeignNode() {
+		prefix = e.foreignNode
+	}
+	return prefix
+}
+
+func (e *IndexedEdge) TsEdgeQueryName() string {
+	return e.getEdgeQueryName(e.getPrefix())
+}
+
+func (e *IndexedEdge) getEdgeQueryName(prefix string) string {
+	if e.edgeConstName != "" {
+		return fmt.Sprintf("%s%sQuery", prefix, e.edgeConstName)
+	}
+	return fmt.Sprintf("%s%sTo%sQuery", prefix, e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+
+}
+
+// TODO what are we doing here
 func (e *IndexedEdge) GetSourceNodeName() string {
-	// hmm. what generates this? why is it always ent?
+	// more base class things e.g. https://github.com/lolopinto/ent/issues/1449
+	if e.sourceNodeName != "" {
+		return e.sourceNodeName + "Base"
+	}
+	if e.foreignNode != "" {
+		return e.foreignNode + "Base"
+	}
 	return "Ent"
 }
 
 func (e *IndexedEdge) SourceIsPolymorphic() bool {
+	// TODO come back...
 	return true
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
-	if e.foreignNode == "" {
-		return ""
-		//		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
+	prefix := e.getPrefix()
+	if e.edgeConstName != "" {
+		return fmt.Sprintf("%s%sConnection", prefix, e.edgeConstName)
 	}
-	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	return fmt.Sprintf("%s%sTo%sConnection", prefix, e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionType() string {
-	if e.foreignNode == "" {
-		return ""
-		//		panic("cannot call GetGraphQLConnectionType when foreignNode is empty")
-	}
-	return fmt.Sprintf("%sTo%sConnectionType", e.foreignNode, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	return fmt.Sprintf("%sType", e.GetGraphQLConnectionName())
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
@@ -719,11 +838,11 @@ func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
-	if e.foreignNode == "" {
-		return ""
-		//		panic("cannot call GetGraphQLEdgePrefix when foreignNode is empty")
+	prefix := e.getPrefix()
+	if e.edgeConstName != "" {
+		return fmt.Sprintf("%s%s", prefix, e.edgeConstName)
 	}
-	return fmt.Sprintf("%sTo%s", e.foreignNode, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%s%sTo%s", prefix, e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {
@@ -736,6 +855,35 @@ func (e *IndexedEdge) GetCountFactoryName() string {
 
 func (e *IndexedEdge) GetDataFactoryName() string {
 	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
+}
+
+func (e *IndexedEdge) EdgeQueryBase() string {
+	// if it's a polymorphic foreign node, it references the non-foreign node base class variety
+	if e.polymorphicForeignNode() {
+		return e.getEdgeQueryName("")
+	}
+	// otherwise add Base
+	return e.TsEdgeQueryName() + "Base"
+}
+
+func (e *IndexedEdge) GenerateBaseClass() bool {
+	// only generate base class for non-foreign nodes
+	// if there's a foreign node. we don't need to generate a base class
+	// we will subclass from the non-foreign node's base class
+	// see EdgeQueryBase
+	return !e.polymorphicForeignNode()
+}
+
+func (e *IndexedEdge) GetOverwriteConstructorInfo() *OverwriteConstructorInfo {
+	if e.polymorphicForeignNode() {
+		return &OverwriteConstructorInfo{
+			// base class so as to make types work without ts-ignore or ts-expect-error.
+			// we should do this in more places so as to not have to use ts-ignore
+			// e.g. https://github.com/lolopinto/ent/issues/1449
+			Import: tsimport.NewLocalEntImportPath(e.foreignNode + "Base"),
+		}
+	}
+	return nil
 }
 
 var _ Edge = &IndexedEdge{}
@@ -978,6 +1126,7 @@ type EdgeAction struct {
 	CustomGraphQLName string
 	ExposeToGraphQL   bool
 	ActionOnlyFields  []*input.ActionField
+	CanViewerDo       *input.CanViewerDo
 }
 
 type AssociationEdgeGroup struct {
@@ -1053,6 +1202,10 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
 		return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
 	}
 	return strcase.ToLowerCamel(edgeGroup.GroupStatusName) + "For"
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetGraphQLNameForStatusMethod(cfg codegenapi.Config) string {
+	return codegenapi.GraphQLName(cfg, edgeGroup.GetStatusMethod())
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
@@ -1143,6 +1296,7 @@ func edgeActionsFromInput(actions []*input.EdgeAction) ([]*EdgeAction, error) {
 			CustomGraphQLName: action.CustomGraphQLName,
 			Action:            a,
 			ActionOnlyFields:  action.ActionOnlyFields,
+			CanViewerDo:       action.CanViewerDo,
 		}
 	}
 	return ret, nil

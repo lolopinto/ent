@@ -7,6 +7,7 @@ import {
   CustomEdgeQueryBase,
   EdgeQuerySource,
   ID,
+  OrderBy,
   Viewer,
 } from "@snowtop/ent";
 import { EdgeType } from "src/ent/generated/types";
@@ -83,6 +84,11 @@ export abstract class AccountToClosedTodosDupQueryBase extends AssocEdgeQueryBas
     return new this(viewer, src);
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   sourceEnt(id: ID) {
     return Account.load(this.viewer, id);
   }
@@ -126,6 +132,11 @@ export abstract class AccountToCreatedWorkspacesQueryBase extends AssocEdgeQuery
     return new this(viewer, src);
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   sourceEnt(id: ID) {
     return Account.load(this.viewer, id);
   }
@@ -164,6 +175,11 @@ export abstract class AccountToOpenTodosDupQueryBase extends AssocEdgeQueryBase<
     src: EdgeQuerySource<Account, Todo>,
   ): T {
     return new this(viewer, src);
+  }
+
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
   }
 
   sourceEnt(id: ID) {
@@ -209,6 +225,11 @@ export abstract class AccountToWorkspacesQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   sourceEnt(id: ID) {
     return Account.load(this.viewer, id);
   }
@@ -222,28 +243,30 @@ export abstract class AccountToWorkspacesQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class AccountToTagsQueryBase extends CustomEdgeQueryBase<
-  Account,
-  Tag,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Account | ID, sortColumn?: string) {
+export class AccountToTagsQueryBase<
+  TEnt extends Account = Account,
+> extends CustomEdgeQueryBase<TEnt, Tag, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string | OrderBy) {
     super(viewer, {
       src: src,
       groupCol: "owner_id",
       loadEntOptions: Tag.loaderOptions(),
       name: "AccountToTagsQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
-  static query<T extends AccountToTagsQueryBase>(
+  static query<
+    T extends AccountToTagsQueryBase,
+    TEnt extends Account = Account,
+  >(
     this: new (
       viewer: Viewer,
-      src: Account | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Account | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }
@@ -253,28 +276,30 @@ export class AccountToTagsQueryBase extends CustomEdgeQueryBase<
   }
 }
 
-export class AccountToTodosQueryBase extends CustomEdgeQueryBase<
-  Account,
-  Todo,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Account | ID, sortColumn?: string) {
+export class AccountToTodosQueryBase<
+  TEnt extends Account = Account,
+> extends CustomEdgeQueryBase<TEnt, Todo, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string | OrderBy) {
     super(viewer, {
       src: src,
       groupCol: "creator_id",
       loadEntOptions: Todo.loaderOptions(),
       name: "AccountToTodosQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
-  static query<T extends AccountToTodosQueryBase>(
+  static query<
+    T extends AccountToTodosQueryBase,
+    TEnt extends Account = Account,
+  >(
     this: new (
       viewer: Viewer,
-      src: Account | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Account | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }

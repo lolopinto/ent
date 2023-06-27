@@ -10,6 +10,7 @@ import {
   createTodoForSelf,
   createTag,
   createWorkspace,
+  createTodoOtherInWorksapce,
 } from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
@@ -352,5 +353,36 @@ test("todo tag", async () => {
     },
     ["todo.tags.rawCount", 1],
     ["todo.tags.nodes[0].id", tag.id],
+  );
+});
+
+test("assignees", async () => {
+  const { todo } = await createTodoOtherInWorksapce();
+  const todo2 = await createTodoForSelf({
+    creatorID: todo.assigneeID,
+  });
+  const todo3 = await createTodoForSelf({
+    creatorID: todo.assigneeID,
+  });
+
+  const account = await todo.loadAssigneeX();
+
+  await expectQueryFromRoot(
+    {
+      viewer: account.viewer,
+      schema: schema,
+      root: "account",
+      args: {
+        id: account.id,
+      },
+    },
+    [
+      "todos_assigned(first:100) { edges { node { id } } } ",
+      function (data: any) {
+        expect(data.edges.length).toBe(3);
+        const ids = data.edges.map((edge: any) => edge.node.id);
+        expect(ids.sort()).toStrictEqual([todo.id, todo2.id, todo3.id].sort());
+      },
+    ],
   );
 });

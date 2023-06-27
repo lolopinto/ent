@@ -2149,10 +2149,9 @@ func TestIndexedEdgeAdded(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.AddEdge,
-		Name:   "ownerIDS",
-		// no connection...
-		GraphQLName: "",
+		Change:      change.AddEdge,
+		Name:        "ownerIDS",
+		GraphQLName: "OwnerToUsersConnection",
 		ExtraInfo:   "OwnerToUsersQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
@@ -2201,10 +2200,9 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.RemoveEdge,
-		Name:   "ownerIDS",
-		// no connection...
-		GraphQLName: "",
+		Change:      change.RemoveEdge,
+		Name:        "ownerIDS",
+		GraphQLName: "OwnerToUsersConnection",
 		ExtraInfo:   "OwnerToUsersQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
@@ -2266,11 +2264,10 @@ func TestIndexedEdgeModified(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.ModifyEdge,
-		Name:   "owner_ids",
-		// no connection
-		GraphQLName: "",
-		ExtraInfo:   "OwnerIdToUsersQuery",
+		Change:      change.ModifyEdge,
+		Name:        "owner_ids",
+		GraphQLName: "OwnerToUsersConnection",
+		ExtraInfo:   "OwnerToUsersQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -3494,10 +3491,9 @@ func TestHideNodeFromGraphQLWithIndexedEdges(t *testing.T) {
 
 	// remove edge from graphql
 	verifyChange(t, change.Change{
-		Change: change.RemoveEdge,
-		Name:   "ownerIDS",
-		// no connection...
-		GraphQLName: "",
+		Change:      change.RemoveEdge,
+		Name:        "ownerIDS",
+		GraphQLName: "OwnerToUsersConnection",
 		ExtraInfo:   "OwnerToUsersQuery",
 		GraphQLOnly: true,
 	}, user[1])
@@ -3957,10 +3953,9 @@ func TestExposeNodeToGraphQLWithIndexedEdges(t *testing.T) {
 
 	// add edge to graphql
 	verifyChange(t, change.Change{
-		Change: change.AddEdge,
-		Name:   "ownerIDS",
-		// no connection...
-		GraphQLName: "",
+		Change:      change.AddEdge,
+		Name:        "ownerIDS",
+		GraphQLName: "OwnerToUsersConnection",
 		ExtraInfo:   "OwnerToUsersQuery",
 		GraphQLOnly: true,
 	}, user[1])

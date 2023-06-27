@@ -13,7 +13,11 @@ export class AllowIfGuestInSameGuestGroupRule implements PrivacyPolicyRule {
     }
     // if id is passed, we're using that id instead of the ent we're using
     if (this.id) {
-      ent = await Guest.loadX(viewer, this.id);
+      const g = await Guest.load(viewer, this.id);
+      if (!g) {
+        return Skip();
+      }
+      ent = g;
     }
     if (!viewer.context) {
       //      console.log(viewer.context);

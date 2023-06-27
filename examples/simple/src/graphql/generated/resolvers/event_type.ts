@@ -4,6 +4,7 @@
  */
 
 import {
+  GraphQLBoolean,
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLInt,
@@ -20,6 +21,7 @@ import {
 } from "@snowtop/ent/graphql";
 import {
   Event,
+  EventCanViewerSee,
   EventToAttendingQuery,
   EventToDeclinedQuery,
   EventToHostsQuery,
@@ -255,9 +257,38 @@ export const EventType = new GraphQLObjectType({
     viewerRsvpStatus: {
       type: new GraphQLNonNull(EventRsvpStatusType),
     },
+    canViewerSeeInfo: {
+      type: new GraphQLNonNull(EventCanViewerSeeType),
+      resolve: (
+        event: Event,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return event.canViewerSeeInfo();
+      },
+    },
   }),
   interfaces: [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Event;
   },
+});
+
+export const EventCanViewerSeeType = new GraphQLObjectType({
+  name: "EventCanViewerSee",
+  fields: (): GraphQLFieldConfigMap<
+    EventCanViewerSee,
+    RequestContext<ExampleViewerAlias>
+  > => ({
+    address: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        event: EventCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return event.addressID();
+      },
+    },
+  }),
 });

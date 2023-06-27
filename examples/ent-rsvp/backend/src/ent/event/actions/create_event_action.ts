@@ -1,10 +1,7 @@
 import {
   PrivacyPolicy,
-  Ent,
   AllowIfViewerHasIdentityPrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
-import { Trigger } from "@snowtop/ent/action";
 
 import {
   CreateEventActionBase,
@@ -12,7 +9,6 @@ import {
   CreateEventActionTriggers,
 } from "src/ent/generated/event/actions/create_event_action_base";
 import CreateEventActivityAction from "src/ent/event_activity/actions/create_event_activity_action";
-import { EventBuilder } from "../../generated/event/actions/event_builder";
 
 export { EventCreateInput };
 

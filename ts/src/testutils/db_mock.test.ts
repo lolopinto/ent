@@ -12,6 +12,7 @@ jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
 beforeAll(() => {
+  process.env.DB_CONNECTION_STRING = "INVALID DATABASE";
   setLogLevels("error");
 });
 
@@ -249,7 +250,12 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("name", "Jane"),
-      orderby: "id DESC",
+      orderby: [
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
       // default is ASC absence of it implies that
       // desc can be put on each row
     });
@@ -290,7 +296,12 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("name", "John"),
-      orderby: "id",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+        },
+      ],
     });
     const expected = [1, 3, 5, 7, 9].map((id) => {
       return { id, bar: "bar", name: "John" };
@@ -303,7 +314,16 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("bar", "bar"),
-      orderby: "id, name",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+        },
+        {
+          column: "name",
+          direction: "ASC",
+        },
+      ],
     });
     // Janes first
     const expected = [2, 4, 6, 8, 10].map((id) => {
@@ -321,7 +341,16 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("bar", "bar"),
-      orderby: "id, name DESC",
+      orderby: [
+        {
+          column: "id",
+          direction: "ASC",
+        },
+        {
+          column: "name",
+          direction: "DESC",
+        },
+      ],
     });
     // Johns first
     const expected = [1, 3, 5, 7, 9].map((id) => {
@@ -339,7 +368,12 @@ describe("select", () => {
       tableName: "t",
       fields: ["id", "bar", "name"],
       clause: clause.Eq("name", "Jane"),
-      orderby: "id DESC",
+      orderby: [
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
       limit: 2,
     });
     const expected = [10, 8].map((id) => {
@@ -469,7 +503,7 @@ describe("ops", () => {
   test("IN", async () => {
     const rows = await loadRows({
       tableName: "t",
-      clause: clause.In("id", 2, 4, 6, 8, 10),
+      clause: clause.IntegerIn("id", [2, 4, 6, 8, 10]),
       fields: ["id", "name", "bar"],
     });
     const expected = [2, 4, 6, 8, 10].map((id) => {

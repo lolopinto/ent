@@ -115,9 +115,9 @@ type CustomType struct {
 
 func (ct *CustomType) getGraphQLImportPath(cfg *codegen.Config) *tsimport.ImportPath {
 	if ct.EnumMap != nil {
-		absPath := getFilePathForEnum(cfg, ct.Type)
+		absPath := getFilePathForEnums(cfg)
 		if ct.InputType {
-			absPath = getFilePathForEnumInputFile(cfg, ct.Type)
+			absPath = getFilePathForEnumInput(cfg)
 		}
 		path, err := filepath.Rel(cfg.GetAbsPathToRoot(), absPath)
 		if err != nil {

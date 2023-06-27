@@ -93,6 +93,16 @@ export default interface Schema {
 
   // indicates that this ent should implement these custom interfaces
   customGraphQLInterfaces?: string[];
+
+  // beta feature!
+  supportUpsert?: boolean;
+
+  // if ent has fields which have privacy policies and this is true, we generate a
+  // canViewerSeeInfo() function + a graphql field for each field to indicate if it's
+  // visible to the viewer
+  showCanViewerSee?: boolean;
+  // above but for editPrivacyPolicy
+  showCanViewerEdit?: boolean;
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format
@@ -145,6 +155,9 @@ export interface EdgeAction {
   hideFromGraphQL?: boolean;
   graphQLName?: string;
   actionOnlyFields?: ActionField[];
+  // if true, adds under a canViewerDo field on the source Object mapping to graphql name
+  // of this...
+  canViewerDo?: boolean | CanViewerDo;
 }
 
 // Information about the inverse edge of an assoc edge
@@ -166,6 +179,9 @@ export interface EdgeGroupAction {
   hideFromGraphQL?: boolean;
   graphQLName?: string;
   actionOnlyFields?: ActionField[];
+  // if true, adds under a canViewerDo field on the source Object mapping to graphql name
+  // of this...
+  canViewerDo?: boolean | CanViewerDo;
 }
 
 // interface AssocEdgeNullState {
@@ -426,12 +442,23 @@ export interface InverseFieldEdge {
   hideFromGraphQL?: boolean;
 }
 
+export interface IndexEdgeOptions {
+  name: string;
+}
+
 export interface FieldEdge {
   schema: string;
   // inverseEdge is optional. if present, indicates it maps to an edge in the other schema
   // it creates the edge in the other schema if not provided.
   // this makes it so that we can define and write the edge from this schema
   inverseEdge?: string | InverseFieldEdge;
+
+  // this *intentionally* breaks the mold from what we do for polymorphic edges
+  // TODO: *also* make that opt-in.
+  // if provided, we generate a query|connection for this edge.
+  // name given is used for the name of the query|connection e.g. 'todos_assigned' gives
+  // queryTodosAssigned() and a 'todos_assigned' field which points to a generated connection.
+  indexEdge?: IndexEdgeOptions;
 
   // if enforceSchema. implement the valid type.
   // we use getLoaderOptions to do it
@@ -442,6 +469,26 @@ export interface FieldEdge {
   // to simplify the code when it's known that the object here
   // would always have been previously created. simplifies validation
   disableBuilderType?: boolean;
+
+  // similar to polymorphic options && assoc edge, if provided and an index query, used to generate the query
+  // e.g.
+  //
+  // author_id: UUIDType({
+  //   index: true,
+  //   fieldEdge: {
+  //     schema: "User",
+  //     edgeConstName: 'AuthorToCommentsMade';
+  //   },
+  // })
+  // will generate the following query:
+  // AuthorToCommentsMadeQuery
+  //
+  // instead of the default:
+  // AuthorToCommentsQuery
+  //
+  // The graphql connection and edge will be AuthorToCommentsMadeConnection and AuthorToCommentsMadeEdge
+  //
+  edgeConstName?: string;
 }
 
 interface PrivateOptions {
@@ -511,6 +558,16 @@ export interface FieldOptions {
   // the privacy will be evaluated on demand when needed
   privacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
 
+  // like privacyPolicy, applies to permissions of fields when writing
+  // if this is set, the check is done in addition to the action's privacy policy
+  // the action's privacy policy is still used to determine if the action can be run and then this will be an additional
+  // check on each field in the action that has this property set
+  editPrivacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
+
+  // by default editPrivacyPolicy is used for create as well but if this exists, this will be used for create and edit will use editPrivacyPolicy
+  // intentionally ugly so it's clear...
+  createOnlyOverrideEditPrivacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
+
   // takes the name of the field and returns any fields which are derived from current field
   getDerivedFields?(name: string): FieldMap;
 
@@ -547,6 +604,29 @@ export interface PolymorphicOptions {
   // serverDefault for derived polymorphic field
   // TODO rename this. it's not clear...
   serverDefault?: any;
+
+  // similar to assoc edge, if provided and an index query, used to generate the query
+  // e.g.
+  //
+  // author_id: UUIDType({
+  //   index: true,
+  //   polymorphic: {
+  //     types: ['User', 'Account'],
+  //     edgeConstName: 'AuthorToCommentsMade';
+  //   },
+  // })
+  // will generate the following 3 queries:
+  // AuthorToCommentsMadeQuery
+  // UserAuthorToCommentsMadeQuery
+  // AccountAuthorToCommentsMadeQuery
+  //
+  // instead of the default:
+  // AuthorToCommentsQuery
+  // UserAuthorToCommentsQuery
+  // AccountAuthorToCommentsQuery
+  //
+  // The graphql connection and edge will be AuthorToCommentsMadeConnection and AuthorToCommentsMadeEdge
+  edgeConstName?: string;
 }
 
 // Field interface that each Field needs to support
@@ -631,57 +711,66 @@ export function getStorageKey(field: Field, fieldName: string): string {
 // returns a mapping of storage key to field privacy
 export function getFieldsWithPrivacy(
   value: SchemaInputType,
-  fieldMap: FieldInfoMap,
+  fieldInfoMap: FieldInfoMap,
+): Map<string, PrivacyPolicy> {
+  return getFieldsWithPrivacyImpl(value, fieldInfoMap, ["privacyPolicy"]);
+}
+
+export function getFieldsWithEditPrivacy(
+  value: SchemaInputType,
+  fieldInfoMap: FieldInfoMap,
+): Map<string, PrivacyPolicy> {
+  return getFieldsWithPrivacyImpl(value, fieldInfoMap, ["editPrivacyPolicy"]);
+}
+
+export function getFieldsForCreateAction(
+  value: SchemaInputType,
+  fieldInfoMap: FieldInfoMap,
+): Map<string, PrivacyPolicy> {
+  return getFieldsWithPrivacyImpl(value, fieldInfoMap, [
+    "createOnlyOverrideEditPrivacyPolicy",
+    "editPrivacyPolicy",
+  ]);
+}
+
+type policy =
+  | "privacyPolicy"
+  | "editPrivacyPolicy"
+  | "createOnlyOverrideEditPrivacyPolicy";
+
+function getFieldsWithPrivacyImpl(
+  value: SchemaInputType,
+  fieldInfoMap: FieldInfoMap,
+  keys: policy[],
 ): Map<string, PrivacyPolicy> {
   const schema = getSchema(value);
-  function addFields(fields: FieldMap | Field[]) {
-    if (Array.isArray(fields)) {
-      for (const field of fields) {
-        const name = field.name;
-        if (!field.name) {
-          throw new Error(`name required`);
-        }
-        if (field.getDerivedFields !== undefined) {
-          addFields(field.getDerivedFields(name));
-        }
-        if (field.privacyPolicy) {
-          let privacyPolicy: PrivacyPolicy;
-          if (typeof field.privacyPolicy === "function") {
-            privacyPolicy = field.privacyPolicy();
-          } else {
-            privacyPolicy = field.privacyPolicy;
+  function addFields(fields: FieldMap) {
+    for (const name in fields) {
+      const field = fields[name];
+      if (field.dbOnly) {
+        continue;
+      }
+      if (field.getDerivedFields !== undefined) {
+        addFields(field.getDerivedFields(name));
+      }
+      for (const key of keys) {
+        let privacyPolicy = field[key];
+        if (privacyPolicy) {
+          if (typeof privacyPolicy === "function") {
+            privacyPolicy = privacyPolicy();
           }
-          const info = fieldMap[name];
+          const info = fieldInfoMap[name];
           if (!info) {
             throw new Error(`field with name ${name} not passed in fieldMap`);
           }
           m.set(info.dbCol, privacyPolicy);
+          break;
         }
-      }
-      return;
-    }
-    for (const name in fields) {
-      const field = fields[name];
-      if (field.getDerivedFields !== undefined) {
-        addFields(field.getDerivedFields(name));
-      }
-      if (field.privacyPolicy) {
-        let privacyPolicy: PrivacyPolicy;
-        if (typeof field.privacyPolicy === "function") {
-          privacyPolicy = field.privacyPolicy();
-        } else {
-          privacyPolicy = field.privacyPolicy;
-        }
-        const info = fieldMap[name];
-        if (!info) {
-          throw new Error(`field with name ${name} not passed in fieldMap`);
-        }
-        m.set(info.dbCol, privacyPolicy);
       }
     }
   }
 
-  let m = new Map();
+  let m = new Map<string, PrivacyPolicy>();
   if (schema.patterns) {
     for (const pattern of schema.patterns) {
       addFields(pattern.fields);
@@ -836,8 +925,17 @@ export interface Action {
   requiredFields?: string[];
   noFields?: boolean;
 
+  // if true, adds under a canViewerDo field on the source Object mapping to graphql name
+  // of this...
+  canViewerDo?: boolean | CanViewerDo;
+
   // allow other keys
   [x: string]: any;
+}
+
+export interface CanViewerDo {
+  addAllFields?: boolean;
+  inputFields?: string[]; // need x fields for can ViewerDo
 }
 
 // sentinel that indicates an action has no fields

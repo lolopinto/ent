@@ -27,22 +27,24 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes            NodeMapInfo
-	Patterns         map[string]*PatternInfo
-	globalEdges      []*edge.AssociationEdge
-	globalEnums      map[string]*EnumInfo
-	globalConsts     *objWithConsts
-	extraEdgeFields  []*field.Field
-	initGlobalSchema bool
-	tables           NodeMapInfo
-	edges            map[string]*ent.AssocEdgeData
-	newEdges         []*ent.AssocEdgeData
-	edgesToUpdate    []*ent.AssocEdgeData
-	Enums            map[string]*EnumInfo
-	enumTables       map[string]*EnumInfo
-	CustomInterfaces map[string]*customtype.CustomInterface
-	allCustomTypes   map[string]field.CustomTypeWithHasConvertFunction
-	gqlTypeMap       map[string]bool
+	Nodes                       NodeMapInfo
+	Patterns                    map[string]*PatternInfo
+	globalEdges                 []*edge.AssociationEdge
+	globalEnums                 map[string]*EnumInfo
+	globalConsts                *objWithConsts
+	extraEdgeFields             []*field.Field
+	initGlobalSchema            bool
+	globalSchemaTransformsEdges bool
+	tables                      NodeMapInfo
+	edges                       map[string]*ent.AssocEdgeData
+	newEdges                    []*ent.AssocEdgeData
+	edgesToUpdate               []*ent.AssocEdgeData
+	Enums                       map[string]*EnumInfo
+	enumTables                  map[string]*EnumInfo
+	CustomInterfaces            map[string]*customtype.CustomInterface
+	allCustomTypes              map[string]field.CustomTypeWithHasConvertFunction
+	gqlTypeMap                  map[string]bool
+	globalCanViewerDo           map[string]action.Action
 
 	// used to keep track of schema-state
 	inputSchema *input.Schema
@@ -60,6 +62,10 @@ func (s *Schema) InitGlobalSchema() bool {
 	return s.initGlobalSchema
 }
 
+func (s *Schema) GlobalSchemaTransformsEdges() bool {
+	return s.globalSchemaTransformsEdges
+}
+
 func (s *Schema) ExtraEdgeFields() []*field.Field {
 	return s.extraEdgeFields
 }
@@ -70,6 +76,10 @@ func (s *Schema) GetGlobalConsts() WithConst {
 
 func (s *Schema) GetGlobalEnums() map[string]*EnumInfo {
 	return s.globalEnums
+}
+
+func (s *Schema) GetGlobalCanViewerDo() map[string]action.Action {
+	return s.globalCanViewerDo
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData, fkeyInfo *field.ForeignKeyInfo, exposeToGraphQL bool) error {
@@ -308,6 +318,7 @@ func (s *Schema) init() {
 		// just claim this for now...
 		"SubscriptionType": true,
 	}
+	s.globalCanViewerDo = map[string]action.Action{}
 	s.globalConsts = &objWithConsts{}
 }
 
@@ -418,6 +429,9 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		nodeData.TransformsDelete = node.TransformsDelete
 		nodeData.TransformsLoaderCodegen = node.TransformsLoaderCodegen
 		nodeData.CustomGraphQLInterfaces = node.CustomGraphQLInterfaces
+		nodeData.SupportUpsert = node.SupportUpsert
+		nodeData.ShowCanViewerSee = node.ShowCanViewerSee
+		nodeData.ShowCanViewerEdit = node.ShowCanViewerEdit
 		for _, p := range node.Patterns {
 			pattern := schema.Patterns[p]
 			if pattern == nil || pattern.DisableMixin {
@@ -489,6 +503,23 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		nodeData.ActionInfo, err = action.ParseFromInput(cfg, packageName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang, opts...)
 		if err != nil {
 			return nil, err
+		}
+
+		// do canViewerDo things
+		for _, action := range nodeData.ActionInfo.Actions {
+			canViewerDo := action.GetCanViewerDo()
+			if canViewerDo != nil {
+				if !action.ExposedToGraphQL() {
+					return nil, fmt.Errorf("cannot set canViewerDo on action %s which is not exposed to graphql", action.GetActionName())
+				}
+
+				if action.GetOperation() == ent.CreateAction {
+					// create canViewerdo is global
+					s.globalCanViewerDo[action.GetGraphQLName()] = action
+				} else {
+					nodeData.canViewerDo[action.GetGraphQLName()] = action
+				}
+			}
 		}
 
 		// not in schema.Nodes...
@@ -650,6 +681,7 @@ func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema
 	}
 
 	s.initGlobalSchema = gs.Init
+	s.globalSchemaTransformsEdges = gs.TransformsEdges
 
 	return errs
 }
@@ -679,6 +711,13 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 
 		if index.FullText == nil {
 			continue
+		}
+
+		for _, col := range index.Columns {
+			f := nodeData.FieldInfo.GetFieldByName(col)
+			if !enttype.IsStringDBType(f.GetFieldType()) {
+				return fmt.Errorf("only string db types are supported for full text indexes. invalid field %s passed as col for index %s", col, index.Name)
+			}
 		}
 
 		if index.IndexType != "" {
@@ -1243,7 +1282,7 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 	return edgeData, nil
 }
 
-// this adds the linked assoc edge to the field
+// this adds the linked (assoc + index) edges to the field
 func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error {
 	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
@@ -1256,6 +1295,9 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 		}
 
 		if e.Polymorphic != nil {
+			if !f.Index() && !f.Unique() {
+				continue
+			}
 			// so we want to add it to edges for
 			if err := edgeInfo.AddIndexedEdgeFromSource(
 				cfg,
@@ -1271,7 +1313,6 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 				typ = strcase.ToCamel(typ)
 				foreign, ok := s.Nodes[typ]
 				if ok {
-
 					// only add polymorphic accessors on foreign if index or unique
 					if f.Index() || f.Unique() {
 						fEdgeInfo := foreign.NodeData.EdgeInfo
@@ -1292,6 +1333,39 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 			}
 			continue
 		}
+
+		if f.Index() && !e.IsList() && f.ForeignKeyInfo() == nil {
+			if err := edgeInfo.AddIndexedEdgeFromNonPolymorphicSource(
+				cfg,
+				f.TsFieldName(cfg),
+				f.GetQuotedDBColName(),
+				nodeData.Node,
+				e.NodeInfo.Node,
+				e.EdgeConstName,
+			); err != nil {
+				return err
+			}
+
+			fNode, ok := s.Nodes[e.NodeInfo.Node]
+			if !ok {
+				return fmt.Errorf("couldn't find config for typ %s", e.NodeInfo.Node)
+			}
+
+			if e.UserGivenEdgeName != "" {
+				if err := fNode.NodeData.EdgeInfo.AddDestinationEdgeFromNonPolymorphicOptions(
+					cfg,
+					f.TsFieldName(cfg),
+					f.GetQuotedDBColName(),
+					nodeData.Node,
+					fNode.NodeData.Node,
+					e.EdgeConstName,
+					e.UserGivenEdgeName,
+				); err != nil {
+					return err
+				}
+			}
+		}
+
 		// no inverse edge or name, nothing to do here
 		if e.InverseEdge == nil || e.InverseEdge.Name == "" {
 			continue

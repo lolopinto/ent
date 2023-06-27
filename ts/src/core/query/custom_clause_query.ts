@@ -9,15 +9,15 @@ import {
 import { AndOptional, Clause } from "../clause";
 import {
   applyPrivacyPolicyForRows,
-  DefaultLimit,
+  getDefaultLimit,
   loadRow,
   loadRows,
 } from "../ent";
+import { OrderBy } from "../query_impl";
 
-import { getOrderBy } from "../loaders/query_loader";
 import { BaseEdgeQuery, IDInfo } from "./query";
 
-interface CustomClauseQueryOptions<
+export interface CustomClauseQueryOptions<
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
 > {
@@ -26,12 +26,20 @@ interface CustomClauseQueryOptions<
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
   name: string;
-  // defaults to id
-  sortColumn?: string;
-  // pass this if the sort column is unique and it'll be used for the cursor and used to
+  // pass this if the primary sort (first column in orderby) column is unique and it'll be used for the cursor and used to
   // generate the query
-  sortColumnUnique?: boolean;
-  orderByDirection?: "asc" | "desc";
+  primarySortColIsUnique?: boolean;
+  orderby?: OrderBy;
+
+  // these next 3 are deprecated. use orderby
+  // defaults to id
+  // @deprecated use orderby
+  sortColumn?: string;
+  // @deprecated use orderby
+  orderByDirection?: "ASC" | "DESC";
+  // in Postgres, NULLS FIRST is the default for DESC order, and NULLS LAST otherwise.
+  // @deprecated user orderby`
+  nullsPlacement?: "first" | "last";
 
   disableTransformations?: boolean;
 }
@@ -62,17 +70,38 @@ export class CustomClauseQuery<
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
   ) {
-    let sortCol = options.sortColumn || "id";
-    let unique = options.sortColumnUnique
-      ? sortCol
+    let orderby: OrderBy;
+    let primarySortCol: string;
+
+    if (
+      options.orderby &&
+      (options.sortColumn || options.orderByDirection || options.nullsPlacement)
+    ) {
+      throw new Error(
+        `cannot pass orderby and sortColumn|orderByDirection|nullsPlacement`,
+      );
+    }
+    if (options.orderby) {
+      primarySortCol = options.orderby[0].column;
+      orderby = options.orderby;
+    } else {
+      primarySortCol = options.sortColumn || "id";
+      orderby = [
+        {
+          column: primarySortCol,
+          direction: options.orderByDirection ?? "DESC",
+          nullsPlacement: options.nullsPlacement,
+        },
+      ];
+    }
+    let cursorCol = options.primarySortColIsUnique
+      ? primarySortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
 
-    // pass direction to base class since it uses it
-    // this API needs to be cleaned up...
-    if (options.orderByDirection) {
-      sortCol = `${sortCol} ${options.orderByDirection}`;
-    }
-    super(viewer, sortCol, unique);
+    super(viewer, {
+      orderby,
+      cursorCol,
+    });
     this.clause = getClause(options);
   }
 
@@ -107,19 +136,24 @@ export class CustomClauseQuery<
     options: EdgeQueryableDataOptions,
   ) {
     if (!options.orderby) {
-      const direction = this.options.orderByDirection ?? "desc";
-      options.orderby = `${this.options.sortColumn} ${direction}`;
+      options.orderby = [
+        {
+          column: this.getSortCol(),
+          direction: this.options.orderByDirection ?? "DESC",
+          nullsPlacement: this.options.nullsPlacement,
+        },
+      ];
     }
     if (!options.limit) {
-      options.limit = DefaultLimit;
+      options.limit = getDefaultLimit();
     }
 
     const rows = await loadRows({
       tableName: this.options.loadEntOptions.tableName,
       fields: this.options.loadEntOptions.fields,
       clause: AndOptional(this.clause, options.clause),
-      orderby: getOrderBy(this.getSortCol(), options?.orderby),
-      limit: options?.limit || DefaultLimit,
+      orderby: options.orderby,
+      limit: options?.limit || getDefaultLimit(),
       context: this.viewer.context,
     });
 

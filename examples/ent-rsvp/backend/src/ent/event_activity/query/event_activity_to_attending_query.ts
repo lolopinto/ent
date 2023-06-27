@@ -1,5 +1,5 @@
 import { EventActivityToAttendingQueryBase } from "src/ent/internal";
-import { AssocEdge, Context, EdgeQuerySource, Viewer } from "@snowtop/ent";
+import { AssocEdge, Context } from "@snowtop/ent";
 import { gqlContextType, gqlField } from "@snowtop/ent/graphql";
 import { GuestData } from "src/ent";
 
@@ -20,8 +20,4 @@ export class EventActivityToAttendingEdge extends AssocEdge {
   }
 }
 
-export class EventActivityToAttendingQuery extends EventActivityToAttendingQueryBase {
-  // constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
-  //   super(viewer, src);
-  // }
-}
+export class EventActivityToAttendingQuery extends EventActivityToAttendingQueryBase {}

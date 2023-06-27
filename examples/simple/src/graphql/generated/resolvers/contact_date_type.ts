@@ -13,7 +13,7 @@ import { RequestContext } from "@snowtop/ent";
 import { GraphQLTime } from "@snowtop/ent/graphql";
 import { ContactLabelType, ContactType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { ContactDate } from "../../../ent/contact";
+import { ContactDate } from "../../../ent/contact_types";
 
 export const ContactDateType = new GraphQLObjectType({
   name: "ContactDate",
@@ -34,4 +34,7 @@ export const ContactDateType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
   }),
+  isTypeOf(obj) {
+    return obj instanceof ContactDate;
+  },
 });

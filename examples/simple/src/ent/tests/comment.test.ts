@@ -4,6 +4,12 @@ import CreateCommentAction from "../comment/actions/create_comment_action";
 import EditCommentAction from "../comment/actions/edit_comment_action";
 import CreateUserAction from "../user/actions/create_user_action";
 import EditUserAction from "../user/actions/edit_user_action";
+import {
+  ArticleToCommentsQuery,
+  CommentArticleToCommentsQuery,
+  UserArticleToCommentsQuery,
+  AuthorToCommentsQuery,
+} from "..";
 
 const createUser = async () => {
   return CreateUserAction.create(new LoggedOutExampleViewer(), {
@@ -75,4 +81,105 @@ test("edit authorID incorrectly", async () => {
       "authorID cannot be passed to updateInput. use overrideAuthorID instead",
     );
   }
+});
+
+test("create comment and query different ways", async () => {
+  const user = await createUser();
+  const user2 = await createUser();
+  const user3 = await createUser();
+
+  const commentOnUser1 = await CreateCommentAction.create(user.viewer, {
+    authorID: user.id,
+    body: "sup",
+    articleID: user.id,
+    articleType: user.nodeType,
+  }).saveX();
+  const commentOnUser2 = await CreateCommentAction.create(user.viewer, {
+    authorID: user.id,
+    body: "sup",
+    articleID: user.id,
+    articleType: user.nodeType,
+  }).saveX();
+  const commentOnUser3 = await CreateCommentAction.create(user.viewer, {
+    authorID: user.id,
+    body: "sup",
+    articleID: user.id,
+    articleType: user.nodeType,
+  }).saveX();
+
+  const commentOnComment1 = await CreateCommentAction.create(user.viewer, {
+    authorID: user.id,
+    body: "sup",
+    articleID: commentOnUser1.id,
+    articleType: commentOnUser1.nodeType,
+  }).saveX();
+  const commentOnComment2 = await CreateCommentAction.create(user.viewer, {
+    authorID: user2.id,
+    body: "sup",
+    articleID: commentOnUser1.id,
+    articleType: commentOnUser1.nodeType,
+  }).saveX();
+  const commentOnComment3 = await CreateCommentAction.create(user.viewer, {
+    authorID: user3.id,
+    body: "sup",
+    articleID: commentOnUser1.id,
+    articleType: commentOnUser1.nodeType,
+  }).saveX();
+
+  const comments = await ArticleToCommentsQuery.query(
+    user.viewer,
+    user,
+  ).queryEnts();
+  expect(comments.length).toBe(3);
+  expect(comments.map((c) => c.id).sort()).toStrictEqual(
+    [commentOnUser1.id, commentOnUser2.id, commentOnUser3.id].sort(),
+  );
+
+  // fetching from user only. it's basically same as ArticleToCommentsQuery
+  // just can have different privacy policy and is typed to User
+  const comments2 = await UserArticleToCommentsQuery.query(
+    user.viewer,
+    user,
+  ).queryEnts();
+
+  expect(comments2.length).toBe(3);
+  expect(comments2.map((c) => c.id).sort()).toStrictEqual(
+    [commentOnUser1.id, commentOnUser2.id, commentOnUser3.id].sort(),
+  );
+
+  const comments3 = await ArticleToCommentsQuery.query(
+    user.viewer,
+    commentOnUser1,
+  ).queryEnts();
+  expect(comments3.length).toBe(3);
+  expect(comments3.map((c) => c.id).sort()).toStrictEqual(
+    [commentOnComment1.id, commentOnComment2.id, commentOnComment3.id].sort(),
+  );
+
+  // fetching from comment only. it's basically same as ArticleToCommentsQuery
+  // just can have different privacy policy and is typed to Comment
+  const comments4 = await CommentArticleToCommentsQuery.query(
+    user.viewer,
+    commentOnUser1,
+  ).queryEnts();
+  expect(comments4.length).toBe(3);
+  expect(comments4.map((c) => c.id).sort()).toStrictEqual(
+    [commentOnComment1.id, commentOnComment2.id, commentOnComment3.id].sort(),
+  );
+
+  // fetching authors
+
+  const comments5 = await AuthorToCommentsQuery.query(
+    user.viewer,
+    user,
+  ).queryEnts();
+  expect(comments5.length).toBe(4);
+  expect(comments5.map((c) => c.id).sort()).toStrictEqual(
+    [
+      commentOnUser1.id,
+      commentOnUser2.id,
+      commentOnUser3.id,
+      commentOnComment1.id,
+    ].sort(),
+  );
 });

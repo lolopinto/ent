@@ -11,10 +11,11 @@ import {
   EdgeQuerySource,
   Ent,
   ID,
+  OrderBy,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
 import { EdgeType, NodeType } from "./types";
-import { Comment, CommentToPostEdge } from "../internal";
+import { Comment, CommentToPostEdge, UserBase } from "../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
@@ -60,32 +61,34 @@ export abstract class CommentToPostQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
-  Ent<ExampleViewerAlias>,
-  Comment,
-  ExampleViewerAlias
-> {
+export class ArticleToCommentsQueryBase<
+  TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+> extends CustomEdgeQueryBase<TEnt, Comment, ExampleViewerAlias> {
   constructor(
     viewer: ExampleViewerAlias,
-    private srcEnt: Ent<ExampleViewerAlias>,
-    sortColumn?: string,
+    private srcEnt: TEnt,
+    sortColumn?: string | OrderBy,
   ) {
     super(viewer, {
       src: srcEnt,
       groupCol: "article_id",
       loadEntOptions: Comment.loaderOptions(),
       name: "ArticleToCommentsQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
-  static query<T extends ArticleToCommentsQueryBase>(
+  static query<
+    T extends ArticleToCommentsQueryBase,
+    TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+  >(
     this: new (
       viewer: ExampleViewerAlias,
-      src: Ent<ExampleViewerAlias>,
+      src: TEnt,
     ) => T,
     viewer: ExampleViewerAlias,
-    src: Ent<ExampleViewerAlias>,
+    src: TEnt,
   ): T {
     return new this(viewer, src);
   }
@@ -95,32 +98,71 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
   }
 }
 
-export class StickerToCommentsQueryBase extends CustomEdgeQueryBase<
-  Ent<ExampleViewerAlias>,
-  Comment,
-  ExampleViewerAlias
-> {
+export class CommentsFromAttachmentQueryBase<
+  TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+> extends CustomEdgeQueryBase<TEnt, Comment, ExampleViewerAlias> {
   constructor(
     viewer: ExampleViewerAlias,
-    private srcEnt: Ent<ExampleViewerAlias>,
-    sortColumn?: string,
+    private srcEnt: TEnt,
+    sortColumn?: string | OrderBy,
   ) {
     super(viewer, {
       src: srcEnt,
-      groupCol: "sticker_id",
+      groupCol: "attachment_id",
       loadEntOptions: Comment.loaderOptions(),
-      name: "StickerToCommentsQuery",
-      sortColumn,
+      name: "CommentsFromAttachmentQuery",
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
-  static query<T extends StickerToCommentsQueryBase>(
+  static query<
+    T extends CommentsFromAttachmentQueryBase,
+    TEnt extends Ent<ExampleViewerAlias> = Ent<ExampleViewerAlias>,
+  >(
     this: new (
       viewer: ExampleViewerAlias,
-      src: Ent<ExampleViewerAlias>,
+      src: TEnt,
     ) => T,
     viewer: ExampleViewerAlias,
-    src: Ent<ExampleViewerAlias>,
+    src: TEnt,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  async sourceEnt(_id: ID) {
+    return this.srcEnt;
+  }
+}
+
+export class AuthorToCommentsQueryBase<
+  TEnt extends UserBase = UserBase,
+> extends CustomEdgeQueryBase<TEnt, Comment, ExampleViewerAlias> {
+  constructor(
+    viewer: ExampleViewerAlias,
+    private srcEnt: TEnt,
+    sortColumn?: string | OrderBy,
+  ) {
+    super(viewer, {
+      src: srcEnt,
+      groupCol: "author_id",
+      loadEntOptions: Comment.loaderOptions(),
+      name: "AuthorToCommentsQuery",
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
+    });
+  }
+
+  static query<
+    T extends AuthorToCommentsQueryBase,
+    TEnt extends UserBase = UserBase,
+  >(
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: TEnt,
+    ) => T,
+    viewer: ExampleViewerAlias,
+    src: TEnt,
   ): T {
     return new this(viewer, src);
   }

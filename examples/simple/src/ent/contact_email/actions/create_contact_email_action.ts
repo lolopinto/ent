@@ -5,7 +5,6 @@
 import {
   AllowIfConditionAppliesRule,
   AllowIfEntIsVisibleRule,
-  AllowIfViewerEqualsRule,
   AlwaysDenyRule,
   PrivacyPolicy,
 } from "@snowtop/ent";
@@ -32,7 +31,6 @@ export default class CreateContactEmailAction extends CreateContactEmailActionBa
             Contact.loaderOptions(),
           ),
         ),
-        new AllowIfViewerEqualsRule(this.input.contactID),
         AlwaysDenyRule,
       ],
     };

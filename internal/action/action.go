@@ -52,6 +52,7 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 			nonEntFields,
 			opt,
 		)
+		commonInfo.canViewerDo = action.CanViewerDo
 
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
@@ -319,22 +320,28 @@ func processEdgeActions(cfg codegenapi.Config, nodeName string, assocEdge *edge.
 			return nil, err
 		}
 
-		actions[idx] = typ.getAction(
-			getCommonInfoForEdgeAction(
-				cfg,
-				nodeName,
-				assocEdge,
-				typ,
-				edgeAction,
-				lang,
-			),
+		commonInfo := getCommonInfoForEdgeAction(
+			cfg,
+			nodeName,
+			assocEdge,
+			typ,
+			edgeAction,
+			lang,
 		)
+		commonInfo.canViewerDo = edgeAction.CanViewerDo
+
+		actions[idx] = typ.getAction(commonInfo)
+
 	}
 	return actions, nil
 }
 
 func getImportPathForActionBaseFile(nodeName, actionName string) string {
 	return path.Join(fmt.Sprintf("src/ent/generated/%s/actions/%s_base", strcase.ToSnake(nodeName), strcase.ToSnake(actionName)))
+}
+
+func getFilePathForEnumInputFile() string {
+	return "src/graphql/generated/mutations/input_enums_type"
 }
 
 func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup *edge.AssociationEdgeGroup, lang base.Language) ([]Action, error) {
@@ -381,7 +388,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 							ImportPath: getImportPathForActionBaseFile(nodeName, actionName),
 							Import:     typ,
 						}).SetGraphQLImportPath(&tsimport.ImportPath{
-						ImportPath: getImportPathForActionBaseFile(nodeName, actionName),
+						ImportPath: getFilePathForEnumInputFile(),
 						// have to add type manually
 						Import: typ + "Type",
 					}),
@@ -419,6 +426,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 			lang,
 			fields,
 		)
+		commonInfo.canViewerDo = edgeAction.CanViewerDo
 		commonInfo.tsEnums = tsEnums
 		commonInfo.gqlEnums = gqlEnums
 		commonInfo.EdgeGroup = assocGroup

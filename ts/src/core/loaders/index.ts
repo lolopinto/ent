@@ -9,5 +9,4 @@ export {
   AssocEdgeLoader,
   AssocEdgeLoaderFactory,
 } from "./assoc_edge_loader";
-export { IndexLoaderFactory } from "./index_loader";
 export { QueryLoaderFactory } from "./query_loader";

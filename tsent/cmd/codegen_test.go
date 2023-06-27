@@ -402,6 +402,8 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 								DBType: input.UUID,
 							},
 							PrimaryKey: true,
+							// mark it as non user editable. same as we do with patterns
+							DisableUserEditable: true,
 						},
 						{
 							Name: "name",

@@ -1,5 +1,6 @@
 import * as clause from "./clause";
 import { ObjectLoaderFactory } from "./loaders";
+import { OrderBy } from "./query_impl";
 
 // Loader is the primitive data fetching abstraction in the framework
 // implementation details up to each instance
@@ -48,7 +49,15 @@ export interface ConfigurableLoaderFactory<T, V> extends LoaderFactory<T, V> {
 }
 
 export type EdgeQueryableDataOptions = Partial<
-  Pick<QueryableDataOptions, "limit" | "orderby" | "clause">
+  Pick<
+    QueryableDataOptions,
+    "limit" | "orderby" | "clause" | "disableTransformations"
+  >
+>;
+
+export type EdgeQueryableDataOptionsConfigureLoader = Pick<
+  EdgeQueryableDataOptions,
+  "disableTransformations"
 >;
 
 // PrimableLoader allows us to prime data in the cache that's retrieved from
@@ -76,7 +85,7 @@ interface queryOptions {
   fields: string[];
   tableName: string;
   clause: clause.Clause;
-  orderby?: string;
+  orderby?: OrderBy;
 }
 
 export interface Context<TViewer extends Viewer = Viewer> {
@@ -149,6 +158,10 @@ export interface SelectBaseDataOptions extends DataOptions {
 export interface SelectDataOptions extends SelectBaseDataOptions {
   // primary key we're selecting from most often 'id'
   key: string;
+  // if postgres and using an integer primary key, we need to pass this so that when we do an In query,
+  // we can cast accurately
+  // TODO https://github.com/lolopinto/ent/issues/1431
+  keyType?: string; // 'uuid' | 'integer' etc...
   // if exists, we and with the primary key query
   clause?: clause.Clause | (() => clause.Clause | undefined);
 }
@@ -160,7 +173,7 @@ export interface QueryableDataOptions
 export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   distinct?: boolean;
   clause: clause.Clause<T, K>;
-  orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
+  orderby?: OrderBy; // this technically doesn't make sense when querying just one row but whatevs
   groupby?: K;
   limit?: number;
   disableTransformations?: boolean;
@@ -171,13 +184,27 @@ export interface LoadRowOptions extends QueryableDataOptions {}
 
 export interface LoadRowsOptions extends QueryableDataOptions {}
 
+interface OnConflictOptions {
+  // TODO these should change to fields instead of columns
+  onConflictCols: string[];
+
+  // onConflictConstraint doesn't work with do nothing since ent always reloads the
+  // row after insert and if there's no conflict columns provided, we have no way of querying
+  // the db for the original/conflicting row
+  onConflictConstraint?: string;
+  // update values based on fields
+  // if not provided, we do nothing
+  updateCols?: string[];
+}
+
 export interface CreateRowOptions extends DataOptions {
   // fields to be edited
   fields: Data;
   fieldsToLog?: Data;
+  onConflict?: OnConflictOptions;
 }
 
-export interface EditRowOptions extends CreateRowOptions {
+export interface EditRowOptions extends Omit<CreateRowOptions, "onConflict"> {
   whereClause: clause.Clause;
   // if a column exists in here as opposed to in fields, we use the expression given
   // instead of the value

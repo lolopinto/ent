@@ -26,7 +26,12 @@ import {
   loadUniqueEdge,
   loadUniqueNode,
 } from "@snowtop/ent";
-import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
+import {
+  Field,
+  getFields,
+  getFieldsWithEditPrivacy,
+  getFieldsWithPrivacy,
+} from "@snowtop/ent/schema";
 import {
   UserDBData,
   userEmailAddressLoader,
@@ -53,9 +58,13 @@ import {
   convertNullableUserSuperNestedObject,
 } from "./types";
 import {
+  AuthorToCommentsQuery,
   Contact,
+  CreatorToEventsQuery,
   FeedbackMixin,
   IFeedback,
+  UserArticleToCommentsQuery,
+  UserCommentsFromAttachmentQuery,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
   UserToContactsQuery,
@@ -75,6 +84,17 @@ import {
   userConvertAccountStatus,
 } from "../../util/convert_user_fields";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+
+export interface UserCanViewerSee {
+  accountStatus: () => Promise<boolean>;
+  prefs: () => Promise<boolean>;
+  prefsList: () => Promise<boolean>;
+  prefsDiff: () => Promise<boolean>;
+}
+
+export interface UserCanViewerEdit {
+  accountStatus: () => Promise<boolean>;
+}
 
 interface UserCustomQueryData extends UserDBData {
   name_idx: string;
@@ -569,5 +589,54 @@ export class UserBase
 
   queryContacts(): UserToContactsQuery {
     return UserToContactsQuery.query(this.viewer, this.id);
+  }
+
+  queryArticles(): UserArticleToCommentsQuery {
+    return UserArticleToCommentsQuery.query(this.viewer, this);
+  }
+
+  queryAttachedComments(): UserCommentsFromAttachmentQuery {
+    return UserCommentsFromAttachmentQuery.query(this.viewer, this);
+  }
+
+  queryCommentsFromUser(): AuthorToCommentsQuery {
+    return AuthorToCommentsQuery.query(this.viewer, this);
+  }
+
+  queryEventsCreated(): CreatorToEventsQuery {
+    return CreatorToEventsQuery.query(this.viewer, this);
+  }
+
+  canViewerSeeInfo(): UserCanViewerSee {
+    const fieldPrivacy = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
+    return {
+      accountStatus: () =>
+        applyPrivacyPolicy(
+          this.viewer,
+          fieldPrivacy.get("account_status")!,
+          this,
+        ),
+      prefs: () =>
+        applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs")!, this),
+      prefsList: () =>
+        applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs_list")!, this),
+      prefsDiff: () =>
+        applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs_diff")!, this),
+    };
+  }
+
+  canViewerEditInfo(): UserCanViewerEdit {
+    const fieldPrivacy = getFieldsWithEditPrivacy(
+      schema,
+      userLoaderInfo.fieldInfo,
+    );
+    return {
+      accountStatus: () =>
+        applyPrivacyPolicy(
+          this.viewer,
+          fieldPrivacy.get("account_status")!,
+          this,
+        ),
+    };
   }
 }

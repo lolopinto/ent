@@ -1,5 +1,4 @@
 import {
-  ConstraintType,
   EnumType,
   IntegerType,
   StructType,
@@ -13,6 +12,8 @@ import { TodoContainerPattern } from "./patterns/todo_pattern";
 
 const AccountSchema = new TodoBaseEntSchema({
   patterns: [new TodoContainerPattern()],
+
+  showCanViewerSee: true,
 
   fields: {
     Name: StringType(),

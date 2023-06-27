@@ -8,11 +8,13 @@ import {
   EdgeQuerySource,
   Ent,
   ID,
+  OrderBy,
   Viewer,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "src/ent/generated/loadAny";
 import { EdgeType, NodeType } from "src/ent/generated/types";
 import {
+  AccountBase,
   Tag,
   TagToTodosQuery,
   Todo,
@@ -62,6 +64,11 @@ export abstract class TodoToTagsQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   sourceEnt(id: ID) {
     return Todo.load(this.viewer, id);
   }
@@ -98,38 +105,38 @@ export abstract class TodoToTodoScopeQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  withoutTransformations(): this {
+    this.configureEdgeQueryableDataOptions({ disableTransformations: true });
+    return this;
+  }
+
   sourceEnt(id: ID) {
     return Todo.load(this.viewer, id);
   }
 }
 
-export class ScopeToTodosQueryBase extends CustomEdgeQueryBase<
-  Ent<Viewer>,
-  Todo,
-  Viewer
-> {
+export class AssigneeToTodosQueryBase<
+  TEnt extends AccountBase = AccountBase,
+> extends CustomEdgeQueryBase<TEnt, Todo, Viewer> {
   constructor(
     viewer: Viewer,
-    private srcEnt: Ent<Viewer>,
-    sortColumn?: string,
+    private srcEnt: TEnt,
+    sortColumn?: string | OrderBy,
   ) {
     super(viewer, {
       src: srcEnt,
-      groupCol: "scope_id",
+      groupCol: "assignee_id",
       loadEntOptions: Todo.loaderOptions(),
-      name: "ScopeToTodosQuery",
-      sortColumn,
+      name: "AssigneeToTodosQuery",
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
-  static query<T extends ScopeToTodosQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: Ent<Viewer>,
-    ) => T,
-    viewer: Viewer,
-    src: Ent<Viewer>,
-  ): T {
+  static query<
+    T extends AssigneeToTodosQueryBase,
+    TEnt extends AccountBase = AccountBase,
+  >(this: new (viewer: Viewer, src: TEnt) => T, viewer: Viewer, src: TEnt): T {
     return new this(viewer, src);
   }
 

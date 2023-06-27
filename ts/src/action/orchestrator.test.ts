@@ -55,6 +55,7 @@ import {
   AllowIfEntPropertyIsRule,
   AlwaysDenyPrivacyPolicy,
   AlwaysAllowPrivacyPolicy,
+  AllowIfViewerIsEntPropertyRule,
 } from "../core/privacy";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
@@ -71,10 +72,16 @@ import {
   Table,
 } from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
-import { convertDate, convertJSON, convertList } from "../core/convert";
+import {
+  convertBool,
+  convertDate,
+  convertJSON,
+  convertList,
+} from "../core/convert";
 import { v4 } from "uuid";
 import { NumberOps } from "./relative_value";
 import { StructType, BooleanType } from "../schema";
+import { randomEmail } from "../testutils/db/value";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
@@ -406,10 +413,59 @@ const SchemaWithNullFields = getBuilderSchemaFromFields(
   NullableEvent,
 );
 
+class EventWithEditPrivacy extends Event {
+  public ownerID: ID;
+  constructor(viewer: Viewer, data: Data) {
+    super(viewer, data);
+    this.ownerID = data.owner_id;
+  }
+}
+
+const EventWithEditPrivacySchema = getBuilderSchemaFromFields(
+  {
+    start_time: TimestampType(),
+    end_time: TimestampType({
+      nullable: true,
+    }),
+    owner_id: UUIDType({
+      immutable: true,
+    }),
+    host_ids: UUIDListType({
+      defaultValueOnCreate: () => [],
+      editPrivacyPolicy: {
+        rules: [
+          new AllowIfViewerIsEntPropertyRule<EventWithEditPrivacy>("ownerID"),
+          AlwaysDenyRule,
+        ],
+      },
+    }),
+    slug: StringType({
+      nullable: true,
+      editPrivacyPolicy: {
+        rules: [
+          new AllowIfViewerIsEntPropertyRule<EventWithEditPrivacy>("ownerID"),
+          AlwaysDenyRule,
+        ],
+      },
+    }),
+    show_guest_list: BooleanType({
+      defaultValueOnCreate: () => false,
+      editPrivacyPolicy: AlwaysDenyPrivacyPolicy,
+      createOnlyOverrideEditPrivacyPolicy: {
+        rules: [
+          new AllowIfViewerIsEntPropertyRule<EventWithEditPrivacy>("ownerID"),
+          AlwaysDenyRule,
+        ],
+      },
+    }),
+  },
+  EventWithEditPrivacy,
+);
+
 const getTables = () => {
   const tables: Table[] = [assoc_edge_config_table()];
   edges.map((edge) =>
-    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`, false)),
   );
 
   [
@@ -434,6 +490,7 @@ const getTables = () => {
     ContactEmailSchema,
     SensitiveValuesSchema,
     SchemaWithNullFields,
+    EventWithEditPrivacySchema,
   ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
   return tables;
 };
@@ -1375,6 +1432,458 @@ function commonTests() {
     });
   });
 
+  describe("field editPrivacy", () => {
+    const createEvent = async (
+      v: Viewer,
+      fields: Map<string, any>,
+      augment?: (action: SimpleAction<EventWithEditPrivacy>) => void,
+    ) => {
+      const action = new SimpleAction(
+        v,
+        EventWithEditPrivacySchema,
+        fields,
+        WriteOperation.Insert,
+        null,
+      );
+      action.viewerForEntLoad = () => {
+        return new IDViewer(fields.get("owner_id"));
+      };
+      if (augment) {
+        augment(action);
+      }
+      return action.saveX();
+    };
+
+    test("neither field set. privacy does not apply", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const event = await createEvent(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+        ]),
+      );
+      expect(event.ownerID).toBe(user.id);
+    });
+
+    test("host_ids set. owner_id in creation can edit", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const host = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const event = await createEvent(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+          ["host_ids", [host.id]],
+        ]),
+      );
+      expect(event.ownerID).toBe(user.id);
+      expect(convertList(event.data.host_ids)).toEqual([host.id]);
+    });
+
+    test("host_ids and slug set. owner_id in creation can edit", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const host = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const slug = randomEmail();
+      const event = await createEvent(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+          ["host_ids", [host.id]],
+          ["slug", slug],
+        ]),
+      );
+      expect(event.ownerID).toBe(user.id);
+      expect(convertList(event.data.host_ids)).toEqual([host.id]);
+      expect(event.data.slug).toBe(slug);
+    });
+
+    test("host_ids set. owner_id in creation can edit. also action has privacypolicy which allows it", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const host = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const event = await createEvent(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+          ["host_ids", [host.id]],
+        ]),
+        (action) => {
+          action.getPrivacyPolicy = () => {
+            return AlwaysAllowPrivacyPolicy;
+          };
+        },
+      );
+      expect(event.ownerID).toBe(user.id);
+      expect(convertList(event.data.host_ids)).toEqual([host.id]);
+    });
+
+    test("host_ids set. owner_id in creation can edit. also action has privacypolicy which denies it", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const host = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      await expect(
+        createEvent(
+          new LoggedOutViewer(),
+          new Map<string, any>([
+            ["start_time", new Date()],
+            ["end_time", new Date()],
+            ["owner_id", user.id],
+            ["host_ids", [host.id]],
+          ]),
+          (action) => {
+            action.getPrivacyPolicy = () => {
+              return AlwaysDenyPrivacyPolicy;
+            };
+          },
+        ),
+      ).rejects.toThrowError(
+        /does not have permission to create EventWithEditPrivacy/,
+      );
+    });
+
+    test("host_ids set. non-owner cannot create", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const rando = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      await expect(
+        createEvent(
+          new IDViewer(rando.id),
+          new Map<string, any>([
+            ["start_time", new Date()],
+            ["end_time", new Date()],
+            ["owner_id", user.id],
+            ["host_ids", [rando.id]],
+          ]),
+          (action) => {
+            // unset this so it sticks with rando viewer
+            delete action.viewerForEntLoad;
+          },
+        ),
+      ).rejects.toThrowError(/host_ids/);
+    });
+
+    // works on either field
+    test("slug set. non-owner cannot create", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const rando = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      await expect(
+        createEvent(
+          new IDViewer(rando.id),
+          new Map<string, any>([
+            ["start_time", new Date()],
+            ["end_time", new Date()],
+            ["owner_id", user.id],
+            ["slug", [randomEmail()]],
+          ]),
+          (action) => {
+            // unset this so it sticks with rando viewer
+            delete action.viewerForEntLoad;
+          },
+        ),
+      ).rejects.toThrowError(/slug/);
+    });
+
+    test("host_ids and slug set. non-owner cannot create", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const rando = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      await expect(
+        createEvent(
+          new IDViewer(rando.id),
+          new Map<string, any>([
+            ["start_time", new Date()],
+            ["end_time", new Date()],
+            ["owner_id", user.id],
+            ["host_ids", [rando.id]],
+            ["slug", [randomEmail()]],
+          ]),
+          (action) => {
+            // unset this so it sticks with rando viewer
+            delete action.viewerForEntLoad;
+          },
+        ),
+        // fails with one of them
+      ).rejects.toThrowError(/slug|host_ids/);
+    });
+
+    test("host_ids set in trigger by person who can't edit. goes through", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const rando = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const event = await createEvent(
+        new IDViewer(rando.id),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+        ]),
+        (action) => {
+          // unset this so it sticks with rando viewer
+          delete action.viewerForEntLoad;
+
+          action.getTriggers = () => [
+            {
+              changeset(builder, input) {
+                builder.updateInput({
+                  host_ids: [rando.id],
+                });
+              },
+            },
+          ];
+        },
+      );
+      expect(event.ownerID).toBe(user.id);
+      expect(convertList(event.data.host_ids)).toEqual([rando.id]);
+    });
+
+    test("host_ids set. owner_id while editing can edit", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const host = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const event = await createEvent(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+        ]),
+      );
+      expect(event.ownerID).toBe(user.id);
+      expect(convertList(event.data.host_ids)).toEqual([]);
+
+      const action2 = new SimpleAction(
+        new IDViewer(event.ownerID),
+        EventWithEditPrivacySchema,
+        new Map<string, any>([["host_ids", [host.id]]]),
+        WriteOperation.Edit,
+        event,
+      );
+      const editedEvent = await action2.saveX();
+      expect(convertList(editedEvent.data.host_ids)).toEqual([host.id]);
+    });
+
+    test("host cannot edit host_ids", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const host = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const event = await createEvent(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+          ["host_ids", [host.id]],
+        ]),
+      );
+
+      expect(event.ownerID).toBe(user.id);
+      expect(convertList(event.data.host_ids)).toEqual([host.id]);
+
+      const host2 = await createUser(
+        new Map([
+          ["FirstName", "Robb"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const action2 = new SimpleAction(
+        new IDViewer(host.id),
+        EventWithEditPrivacySchema,
+        new Map<string, any>([["host_ids", [host.id, host2.id]]]),
+        WriteOperation.Edit,
+        event,
+      );
+      await expect(action2.saveX()).rejects.toThrowError(/host_ids/);
+    });
+
+    test("host_ids set in trigger by host who cannot edit. goes through", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const host = await createUser(
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const event = await createEvent(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+          ["host_ids", [host.id]],
+        ]),
+      );
+
+      expect(event.ownerID).toBe(user.id);
+      expect(convertList(event.data.host_ids)).toEqual([host.id]);
+
+      const host2 = await createUser(
+        new Map([
+          ["FirstName", "Robb"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const action2 = new SimpleAction(
+        new IDViewer(host.id),
+        EventWithEditPrivacySchema,
+        new Map<string, any>([]),
+        WriteOperation.Edit,
+        event,
+      );
+      action2.getTriggers = () => [
+        {
+          changeset(builder, input) {
+            builder.updateInput({
+              host_ids: [host.id, host2.id],
+            });
+          },
+        },
+      ];
+      const edited = await action2.saveX();
+      expect(convertList(edited.data.host_ids)).toEqual([host.id, host2.id]);
+    });
+
+    test("create only override privacy policy which differs from edit", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      // when creating, can set this value
+      const event = await createEvent(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["start_time", new Date()],
+          ["end_time", new Date()],
+          ["owner_id", user.id],
+          ["host_ids", []],
+          ["show_guest_list", true],
+        ]),
+      );
+      expect(convertBool(event.data.show_guest_list)).toBe(true);
+
+      // cannot edit it
+      const action2 = new SimpleAction(
+        new IDViewer(user.id),
+        EventWithEditPrivacySchema,
+        new Map<string, any>([["show_guest_list", false]]),
+        WriteOperation.Edit,
+        event,
+      );
+      await expect(action2.saveX()).rejects.toThrowError(/show_guest_list/);
+    });
+  });
+
   describe("trigger", () => {
     let now = new Date();
 
@@ -2253,7 +2762,7 @@ function commonTests() {
     const rows = await loadRows({
       tableName: "contact_emails",
       fields: ["id", "contact_id"],
-      clause: clause.In("id", ...emails),
+      clause: clause.UuidIn("id", emails as string[]),
     });
     expect(rows.length).toBe(3);
     expect(rows.every((row) => row.contact_id === contact.id)).toBe(true);
@@ -2578,7 +3087,7 @@ async function getFieldsFromBuilder<T extends Ent>(
   );
 }
 
-let sendEmailObserver: Observer<User, SimpleBuilder<User>> = {
+const sendEmailObserver: Observer<User, SimpleBuilder<User>> = {
   observe: (builder): void => {
     let email = builder.fields.get("EmailAddress");
     if (!email) {
@@ -2595,7 +3104,7 @@ let sendEmailObserver: Observer<User, SimpleBuilder<User>> = {
   },
 };
 
-let sendEmailObserverAsync: Observer<User, SimpleBuilder<User>> = {
+const sendEmailObserverAsync: Observer<User, SimpleBuilder<User>> = {
   observe: async (builder) => {
     let email = builder.fields.get("EmailAddress");
     if (!email) {

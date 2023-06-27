@@ -7,6 +7,7 @@ import {
   CustomEdgeQueryBase,
   EdgeQuerySource,
   ID,
+  OrderBy,
   Viewer,
 } from "@snowtop/ent";
 import { EdgeType } from "src/ent/generated/types";
@@ -132,28 +133,27 @@ export abstract class GuestToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<
-  Guest,
-  AuthCode,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Guest | ID, sortColumn?: string) {
+export class GuestToAuthCodesQueryBase<
+  TEnt extends Guest = Guest,
+> extends CustomEdgeQueryBase<TEnt, AuthCode, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string | OrderBy) {
     super(viewer, {
       src: src,
       groupCol: "guest_id",
       loadEntOptions: AuthCode.loaderOptions(),
       name: "GuestToAuthCodesQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
-  static query<T extends GuestToAuthCodesQueryBase>(
+  static query<T extends GuestToAuthCodesQueryBase, TEnt extends Guest = Guest>(
     this: new (
       viewer: Viewer,
-      src: Guest | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Guest | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }
@@ -163,28 +163,27 @@ export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<
   }
 }
 
-export class GuestToGuestDataQueryBase extends CustomEdgeQueryBase<
-  Guest,
-  GuestData,
-  Viewer
-> {
-  constructor(viewer: Viewer, src: Guest | ID, sortColumn?: string) {
+export class GuestToGuestDataQueryBase<
+  TEnt extends Guest = Guest,
+> extends CustomEdgeQueryBase<TEnt, GuestData, Viewer> {
+  constructor(viewer: Viewer, src: TEnt | ID, sortColumn?: string | OrderBy) {
     super(viewer, {
       src: src,
       groupCol: "guest_id",
       loadEntOptions: GuestData.loaderOptions(),
       name: "GuestToGuestDataQuery",
-      sortColumn,
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
-  static query<T extends GuestToGuestDataQueryBase>(
+  static query<T extends GuestToGuestDataQueryBase, TEnt extends Guest = Guest>(
     this: new (
       viewer: Viewer,
-      src: Guest | ID,
+      src: TEnt | ID,
     ) => T,
     viewer: Viewer,
-    src: Guest | ID,
+    src: TEnt | ID,
   ): T {
     return new this(viewer, src);
   }

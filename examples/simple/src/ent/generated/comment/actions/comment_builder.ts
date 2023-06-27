@@ -8,6 +8,7 @@ import {
   Action,
   Builder,
   Changeset,
+  ChangesetOptions,
   Orchestrator,
   OrchestratorOptions,
   WriteOperation,
@@ -25,6 +26,11 @@ export interface CommentInput {
   body?: string;
   articleID?: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   articleType?: string;
+  attachmentID?:
+    | ID
+    | null
+    | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
+  attachmentType?: string | null;
   stickerID?: ID | null | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   stickerType?: string | null;
   // allow other properties. useful for action-only fields
@@ -144,6 +150,7 @@ export class CommentBuilder<
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
+
   addPost(...nodes: (Ent | Builder<Ent, any>)[]): this {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
@@ -193,6 +200,10 @@ export class CommentBuilder<
     return this.orchestrator.build();
   }
 
+  async buildWithOptions_BETA(options: ChangesetOptions): Promise<Changeset> {
+    return this.orchestrator.buildWithOptions_BETA(options);
+  }
+
   async valid(): Promise<boolean> {
     return this.orchestrator.valid();
   }
@@ -231,6 +242,8 @@ export class CommentBuilder<
     addField("Body", input.body);
     addField("ArticleID", input.articleID);
     addField("ArticleType", input.articleType);
+    addField("AttachmentID", input.attachmentID);
+    addField("AttachmentType", input.attachmentType);
     addField("StickerID", input.stickerID);
     addField("StickerType", input.stickerType);
     return result;
@@ -298,6 +311,27 @@ export class CommentBuilder<
       );
     }
     return this.existingEnt.articleType;
+  }
+
+  // get value of AttachmentID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAttachmentIDValue():
+    | ID
+    | null
+    | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias> {
+    if (this.input.attachmentID !== undefined) {
+      return this.input.attachmentID;
+    }
+
+    return this.existingEnt?.attachmentID ?? null;
+  }
+
+  // get value of AttachmentType. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAttachmentTypeValue(): string | null {
+    if (this.input.attachmentType !== undefined) {
+      return this.input.attachmentType;
+    }
+
+    return this.existingEnt?.attachmentType ?? null;
   }
 
   // get value of StickerID. Retrieves it from the input if specified or takes it from existingEnt

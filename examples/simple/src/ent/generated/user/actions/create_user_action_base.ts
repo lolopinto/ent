@@ -5,12 +5,14 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  CreateRowOptions,
   ID,
   PrivacyPolicy,
 } from "@snowtop/ent";
 import {
   Action,
   Changeset,
+  ChangesetOptions,
   Observer,
   Trigger,
   Validator,
@@ -47,6 +49,7 @@ export interface UserCreateInput {
   superNestedObject?: UserSuperNestedObject | null;
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;
+  accountStatusOverride?: string | null;
 }
 
 export type CreateUserActionTriggers = (
@@ -81,6 +84,21 @@ export type CreateUserActionValidators = Validator<
   UserCreateInput,
   User | null
 >[];
+
+type UpsertCols = "email_address" | "phone_number";
+type UpsertConstraints =
+  | "users_unique_email_address"
+  | "users_unique_phone_number";
+type UnionKeys<T> = T extends T ? keyof T : never;
+type Expand<T> = T extends T ? { [K in keyof T]: T[K] } : never;
+type OneOf<T extends {}[]> = {
+  [K in keyof T]: Expand<
+    T[K] & Partial<Record<Exclude<UnionKeys<T[number]>, keyof T[K]>, never>>
+  >;
+}[number];
+export type CreateUserActionUpsertOptions = { update_cols?: string[] } & OneOf<
+  [{ column: UpsertCols }, { constraint: UpsertConstraints }]
+>;
 
 export class CreateUserActionBase
   implements
@@ -131,6 +149,12 @@ export class CreateUserActionBase
     return this.builder.build();
   }
 
+  async changesetWithOptions_BETA(
+    options: ChangesetOptions,
+  ): Promise<Changeset> {
+    return this.builder.buildWithOptions_BETA(options);
+  }
+
   async valid(): Promise<boolean> {
     return this.builder.valid();
   }
@@ -147,6 +171,42 @@ export class CreateUserActionBase
   async saveX(): Promise<User> {
     await this.builder.saveX();
     return this.builder.editedEntX();
+  }
+
+  async upsert_BETA(
+    options: CreateUserActionUpsertOptions,
+  ): Promise<User | null> {
+    const opts: CreateRowOptions["onConflict"] = {
+      onConflictCols: [],
+      updateCols: options.update_cols,
+    };
+
+    if (options.column) {
+      opts.onConflictCols = [options.column];
+    }
+
+    if (options.constraint) {
+      opts.onConflictConstraint = options.constraint;
+    }
+    this.builder.orchestrator.setOnConflictOptions(opts);
+    return this.save();
+  }
+
+  async upsert_BETAX(options: CreateUserActionUpsertOptions): Promise<User> {
+    const opts: CreateRowOptions["onConflict"] = {
+      onConflictCols: [],
+      updateCols: options.update_cols,
+    };
+
+    if (options.column) {
+      opts.onConflictCols = [options.column];
+    }
+
+    if (options.constraint) {
+      opts.onConflictConstraint = options.constraint;
+    }
+    this.builder.orchestrator.setOnConflictOptions(opts);
+    return this.saveX();
   }
 
   static create<T extends CreateUserActionBase>(

@@ -86,6 +86,7 @@ export {
   AllowIfViewerHasIdentityPrivacyPolicy,
 } from "./core/privacy";
 export * from "./core/query";
+export * from "./core/query_impl";
 
 export * from "./schema/";
 import * as q from "./core/clause";
@@ -98,6 +99,10 @@ const query = {
   Or: q.Or,
   OrOptional: q.OrOptional,
   In: q.In,
+  UuidIn: q.UuidIn,
+  IntegerIn: q.IntegerIn,
+  TextIn: q.TextIn,
+  DBTypeIn: q.DBTypeIn,
   Greater: q.Greater,
   Less: q.Less,
   GreaterEq: q.GreaterEq,

@@ -12,7 +12,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { UserType } from "../../resolvers/internal";
+import { UserPrefsStructType, UserType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import { GQLViewer } from "../../resolvers/gql_viewer";
 import { ViewerResolver } from "../../resolvers/viewer";
@@ -43,7 +43,20 @@ export const GQLViewerType = new GraphQLObjectType({
         return obj.user();
       },
     },
+    defaultUserPrefs: {
+      type: new GraphQLNonNull(UserPrefsStructType),
+      resolve: (
+        obj: GQLViewer,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.defaultUserPrefs();
+      },
+    },
   }),
+  isTypeOf(obj) {
+    return obj instanceof GQLViewer;
+  },
 });
 
 export const ViewerQueryType: GraphQLFieldConfig<

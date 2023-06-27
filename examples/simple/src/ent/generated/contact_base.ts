@@ -23,6 +23,7 @@ import { Field, getFields } from "@snowtop/ent/schema";
 import { ContactDBData, contactLoader, contactLoaderInfo } from "./loaders";
 import { NodeType } from "./types";
 import {
+  ContactCommentsFromAttachmentQuery,
   ContactEmail,
   ContactPhoneNumber,
   ContactToCommentsQuery,
@@ -236,6 +237,10 @@ export class ContactBase
 
   queryLikers(): ContactToLikersQuery {
     return ContactToLikersQuery.query(this.viewer, this.id);
+  }
+
+  queryAttachedComments(): ContactCommentsFromAttachmentQuery {
+    return ContactCommentsFromAttachmentQuery.query(this.viewer, this);
   }
 
   async loadEmails(): Promise<ContactEmail[]> {

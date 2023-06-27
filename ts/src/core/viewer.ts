@@ -1,6 +1,7 @@
 import { ID, Ent, Viewer, Context } from "./base";
 
 export class LoggedOutViewer implements Viewer {
+  marker = "loggedout";
   constructor(public context?: Context) {}
   viewerID = null;
   async viewer() {
@@ -18,6 +19,7 @@ export interface IDViewerOptions {
 }
 
 export class IDViewer implements Viewer {
+  marker = "idviewer";
   public viewerID: ID;
   private ent: Ent | null = null;
   public context?: Context;

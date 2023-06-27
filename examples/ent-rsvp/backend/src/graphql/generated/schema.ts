@@ -50,7 +50,6 @@ import {
 import {
   EventActivityRsvpStatusEditInputType,
   EventActivityRsvpStatusEditPayloadType,
-  EventActivityRsvpStatusInputType,
 } from "src/graphql/generated/mutations/event_activity/event_activity_rsvp_status_edit_type";
 import {
   GuestCreateInputType,
@@ -77,6 +76,7 @@ import {
   GuestGroupEditInputType,
   GuestGroupEditPayloadType,
 } from "src/graphql/generated/mutations/guest_group/guest_group_edit_type";
+import { EventActivityRsvpStatusInputType } from "src/graphql/generated/mutations/input_enums_type";
 import { MutationType } from "src/graphql/generated/mutations/mutation_type";
 import {
   UserCreateInputType,
@@ -86,6 +86,7 @@ import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
   AddressToLocatedAtConnectionType,
   AddressType,
+  EventActivityCanViewerDoType,
   EventActivityRsvpStatusType,
   EventActivityToAttendingConnectionType,
   EventActivityToDeclinedConnectionType,
@@ -112,6 +113,7 @@ export default new GraphQLSchema({
   types: [
     EventActivityRsvpStatusType,
     AddressType,
+    EventActivityCanViewerDoType,
     EventActivityType,
     EventType,
     GuestGroupType,

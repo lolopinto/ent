@@ -14,19 +14,13 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { ID, RequestContext } from "@snowtop/ent";
+import { RequestContext } from "@snowtop/ent";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import { AuthResolver } from "../../mutations/auth";
-
-interface UserAuthJWTInput {
-  emailAddress: string;
-  password: string;
-}
-
-interface UserAuthJWTPayload {
-  token: string;
-  viewerID: ID;
-}
+import {
+  UserAuthJWTInput,
+  UserAuthJWTPayload,
+} from "../../mutations/auth_types";
 
 export const UserAuthJWTInputType = new GraphQLInputObjectType({
   name: "UserAuthJWTInput",
@@ -53,6 +47,9 @@ export const UserAuthJWTPayloadType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLID),
     },
   }),
+  isTypeOf(obj) {
+    return obj instanceof UserAuthJWTPayload;
+  },
 });
 
 export const UserAuthJWTType: GraphQLFieldConfig<
