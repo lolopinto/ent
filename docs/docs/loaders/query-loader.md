@@ -21,7 +21,7 @@ interface QueryOptions {
     tableName: string;
     groupCol?: string;
     clause?: clause.Clause;
-    sortColumn?: string;
+    orderby?: OrderBy;
     toPrime?: ObjectLoaderFactory<ID>[];
 }
 class QueryLoaderFactory<K extends any> implements LoaderFactory<K, Data[]> {
@@ -33,7 +33,7 @@ class QueryLoaderFactory<K extends any> implements LoaderFactory<K, Data[]> {
 * `tableName`: relevant table in the database.
 * `groupCol`: column in the database that can be converted into an [IN query](https://www.w3schools.com/sql/sql_in.asp) when querying for multiple sources
 * `clause`: [Clause](/docs/advanced-topics/clause) instance for filtering.
-* `sortColumn`: optional. Column in the database to sort by. If not provided, uses the `id` field.
+* `orderby`: optional. Used to order the query. If not provided, we sort by the `id` field descending.
 * `toPrime`: optional. Other loaders that can be primed by the result of this query with the result stored in the [context cache](/docs/core-concepts/context-caching).
 
 Note that at least one of `groupCol` and `clause` must be provided.
@@ -79,7 +79,6 @@ const openTodosLoader = new QueryLoaderFactory({
 ```ts
 const openTodosLoader = new QueryLoaderFactory({
   ...Todo.loaderOptions(),
-  groupCol: "creator_id",
   clause: query.And(query.Eq("creator_id", user.id, query.Eq("completed", false)),
   toPrime: [todoLoader],
 });
@@ -104,3 +103,5 @@ const allTodosLoader = new QueryLoaderFactory({
   toPrime: [todoLoader],
 });
 ```
+
+Note that the best way to use QueryLoader is via a [custom query](/docs/custom-data-access/custom-queries#custom-entquery) as that gives you the benefits of pagination, sorting, filtering etc.
