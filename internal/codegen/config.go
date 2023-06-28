@@ -561,7 +561,9 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 		if err := yaml.Unmarshal(b, &c); err != nil {
 			return nil, err
 		}
-		c.Codegen.init()
+		if c.Codegen != nil {
+			c.Codegen.init()
+		}
 		return &c, nil
 	}
 	return nil, nil
