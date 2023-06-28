@@ -16,6 +16,8 @@ type Config interface {
 	// doesn't actually writes the files, just keeps track of which files were going to be written
 	// used to detect dangling files...
 	DummyWrite() bool
+	GetAbsPathToRoot() string
+	GetUserOverridenFiles() map[string]bool
 }
 
 type Writer interface {
@@ -86,9 +88,21 @@ func writeFile(w Writer, cfg Config, opts ...func(opt *Options)) error {
 			return nil
 		}
 		if !os.IsNotExist(err) {
-			debugLogInfo(option, "error checking to see if path %s exists \n", pathToFile)
+			debugLogInfo(option, "error %s checking to see if path %s exists \n", err.Error(), pathToFile)
 			return err
 		}
+	}
+
+	root := cfg.GetAbsPathToRoot()
+
+	relPath, err := filepath.Rel(root, fullPath)
+	if err != nil {
+		return err
+	}
+	files := cfg.GetUserOverridenFiles()
+	// user wants to override this file so don't overwrite it
+	if files[relPath] {
+		return nil
 	}
 
 	if cfg.DummyWrite() {

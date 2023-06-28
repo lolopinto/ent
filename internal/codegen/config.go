@@ -436,6 +436,13 @@ func (cfg *Config) GetGlobalImportPath() *tsimport.ImportPath {
 	return nil
 }
 
+func (cfg *Config) GetUserOverridenFiles() map[string]bool {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.GetUserOverridenFiles()
+	}
+	return nil
+}
+
 const DEFAULT_PRETTIER_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -554,6 +561,9 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 		if err := yaml.Unmarshal(b, &c); err != nil {
 			return nil, err
 		}
+		if c.Codegen != nil {
+			c.Codegen.init()
+		}
 		return &c, nil
 	}
 	return nil, nil
@@ -599,6 +609,8 @@ type CodegenConfig struct {
 	TemplatizedViewer          *codegenapi.ImportedObject       `yaml:"templatizedViewer"`
 	CustomAssocEdgePath        *codegenapi.ImportedObject       `yaml:"customAssocEdgePath"`
 	GlobalImportPath           string                           `yaml:"globalImportPath"`
+	UserOverridenFiles         []string                         `yaml:"userOverridenFiles"`
+	userOverridenFiles         map[string]bool
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -627,6 +639,17 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		CustomAssocEdgePath:        cloneImportedObject(cfg.CustomAssocEdgePath),
 		GlobalImportPath:           cfg.GlobalImportPath,
 	}
+}
+
+func (c *CodegenConfig) init() {
+	c.userOverridenFiles = make(map[string]bool)
+	for _, f := range c.UserOverridenFiles {
+		c.userOverridenFiles[f] = true
+	}
+}
+
+func (c *CodegenConfig) GetUserOverridenFiles() map[string]bool {
+	return c.userOverridenFiles
 }
 
 func clonePrivacyConfig(cfg *PrivacyConfig) *PrivacyConfig {
