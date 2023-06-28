@@ -639,4 +639,8 @@ export class UserBase
         ),
     };
   }
+
+  overridenFunction(): string {
+    return "";
+  }
 }
