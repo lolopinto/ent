@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -644,7 +645,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 	return result, nil
 }
 
-func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema, item CustomItem, obj *CustomObject, destPath, gqlType string) (*objectType, error) {
+func buildObjectTypeImpl(item CustomItem, obj *CustomObject, gqlType string, isTypeOf bool) *objectType {
 	// TODO right now it depends on custom inputs and outputs being FooInput and FooPayload to work
 	// we shouldn't do that and we should be smarter
 	// maybe add PayloadType if no Payload suffix otherwise Payload. Same for InputType and Input
@@ -657,11 +658,19 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 		GQLType: gqlType,
 	})
 
-	if typ.GQLType == "GraphQLObjectType" {
+	if isTypeOf && typ.GQLType == "GraphQLObjectType" {
 		typ.IsTypeOfMethod = []string{
 			fmt.Sprintf("return obj instanceof %s", item.Type),
 		}
 	}
+	return typ
+}
+
+func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema, item CustomItem, obj *CustomObject, destPath, gqlType string) (*objectType, error) {
+	// TODO right now it depends on custom inputs and outputs being FooInput and FooPayload to work
+	// we shouldn't do that and we should be smarter
+	// maybe add PayloadType if no Payload suffix otherwise Payload. Same for InputType and Input
+	typ := buildObjectTypeImpl(item, obj, gqlType, true)
 
 	s.seenCustomObjects[item.Type] = true
 
@@ -728,7 +737,8 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			continue
 		}
 
-		if cd.Objects[nodeName] != nil || cd.Interfaces[nodeName] != nil {
+		// TODO args works and don't need this?
+		if cd.Objects[nodeName] != nil || cd.Interfaces[nodeName] != nil || cd.Args[nodeName] != nil {
 			continue
 		}
 
@@ -893,38 +903,123 @@ func processCustomQueries(processor *codegen.Processor, cd *CustomData, s *gqlSc
 	return cq.process(processor, cd, s)
 }
 
+func processCustomEnum(processor *codegen.Processor, s *gqlSchema, typ *CustomType) error {
+	// todo type tstype empty
+	tsType := typ.TSType
+	if tsType == "" {
+		tsType = typ.Type
+	}
+
+	_, gql := enum.GetEnums(&enum.Input{
+		EnumMap:            typ.EnumMap,
+		TSName:             tsType,
+		GQLName:            typ.Type,
+		GQLType:            typ.Type + "Type",
+		DisableUnknownType: true,
+	})
+	if s.enums[gql.Type] != nil {
+		return fmt.Errorf("enum name %s already exists", gql.Type)
+	}
+
+	path := getFilePathForEnums(processor.Config)
+	if typ.InputType {
+		path = getFilePathForEnumInput(processor.Config)
+
+	}
+	s.enums[gql.Type] = &gqlEnum{
+		Type:     gql.Type,
+		Enum:     gql,
+		FilePath: path,
+	}
+	return nil
+}
+
+func processCustomStructType(processor *codegen.Processor, s *gqlSchema, typ *CustomType) error {
+	// technically not a CI but whatever
+	// TODO input file or not
+	filePath := getFilePathForCustomInterfaceInputFile(processor.Config, typ.Type)
+
+	// TODO create an interface in this file for this
+	obj := &CustomObject{
+		NodeName: typ.Type,
+	}
+	item := CustomItem{
+		Type: typ.Type,
+	}
+	// TODO need to change file of this since input type should be in differnet path
+	objType := buildObjectTypeImpl(item, obj, "GraphQLInputObjectType", false)
+
+	fi, err := field.NewFieldInfoFromInputs(processor.Config, "Root", typ.StructFields, &field.Options{})
+	if err != nil {
+		return err
+	}
+
+	customInt := newInterfaceType(&interfaceType{
+		Exported: false,
+		Name:     item.Type,
+	})
+	for _, field := range fi.AllFields() {
+		// TODO...
+		// no args, it's inline ,etc
+
+		imports := field.GetTSGraphQLTypeForFieldImports(true)
+		gqlField := &fieldType{
+			Name:               field.GetGraphQLName(),
+			HasResolveFunction: false,
+			FieldImports:       imports,
+		}
+		if err := objType.addField(gqlField); err != nil {
+			return err
+		}
+		objType.Imports = append(objType.Imports, gqlField.FieldImports...)
+
+		var useImports []string
+		imps := field.GetTsTypeImports()
+		if len(imps) != 0 {
+			objType.Imports = append(objType.Imports, imps...)
+			for _, v := range imps {
+				useImports = append(useImports, v.Import)
+			}
+		}
+		intField := &interfaceField{
+			Name:       field.GetGraphQLName(),
+			Optional:   field.Nullable(),
+			Type:       field.GetTsType(),
+			UseImports: useImports,
+		}
+		if err := customInt.addField(intField); err != nil {
+			return err
+		}
+	}
+
+	// TODO may not need this when input? not currently used
+	// objType.TSInterfaces = append(objType.TSInterfaces, customInt)
+
+	gqlNode := &gqlNode{
+		ObjData: &gqlobjectData{
+			Node:         obj.NodeName,
+			NodeInstance: "obj",
+			GQLNodes:     []*objectType{objType},
+			Package:      processor.Config.GetImportPackage(),
+		},
+		FilePath: filePath,
+	}
+	s.otherObjects[obj.NodeName] = gqlNode
+	return nil
+}
+
 func processCusomTypes(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
 	for _, typ := range cd.CustomTypes {
-		if len(typ.EnumMap) == 0 {
-			continue
+		if len(typ.EnumMap) != 0 {
+			if err := processCustomEnum(processor, s, typ); err != nil {
+				return err
+			}
 		}
 
-		// todo type tstype empty
-		tsType := typ.TSType
-		if tsType == "" {
-			tsType = typ.Type
-		}
-
-		_, gql := enum.GetEnums(&enum.Input{
-			EnumMap:            typ.EnumMap,
-			TSName:             tsType,
-			GQLName:            typ.Type,
-			GQLType:            typ.Type + "Type",
-			DisableUnknownType: true,
-		})
-		if s.enums[gql.Type] != nil {
-			return fmt.Errorf("enum name %s already exists", gql.Type)
-		}
-
-		path := getFilePathForEnums(processor.Config)
-		if typ.InputType {
-			path = getFilePathForEnumInput(processor.Config)
-
-		}
-		s.enums[gql.Type] = &gqlEnum{
-			Type:     gql.Type,
-			Enum:     gql,
-			FilePath: path,
+		if len(typ.StructFields) != 0 {
+			if err := processCustomStructType(processor, s, typ); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

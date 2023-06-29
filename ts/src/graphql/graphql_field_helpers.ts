@@ -6,6 +6,7 @@ import {
   CustomMutation,
   CustomQuery,
   CustomType,
+  CustomTypeInput,
 } from "./graphql";
 
 export function validateOneCustomField(expected: CustomField) {
@@ -203,7 +204,7 @@ export function validateNoCustom(...exceptions: number[]) {
   validate(CustomObjectTypes.Union, validateNoCustomUnions);
 }
 
-export function validateCustomTypes(expected: CustomType[]) {
+export function validateCustomTypes(expected: CustomTypeInput[]) {
   const actual = GQLCapture.getCustomTypes();
   expect(actual.size).toBe(expected.length);
 

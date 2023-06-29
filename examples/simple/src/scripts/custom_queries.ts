@@ -1,10 +1,19 @@
 import * as fs from "fs";
 import { camelCase } from "camel-case";
-import { Schema, DBType, getStorageKey } from "@snowtop/ent";
+import { snakeCase } from "snake-case";
+import {
+  Schema,
+  DBType,
+  getStorageKey,
+  UUIDType,
+  UUIDListType,
+} from "@snowtop/ent";
 
 async function main() {
   const paths = fs.readdirSync("src/schema");
   const queries: any[] = [];
+  // const fields: Data = {};
+  // const args = [];
   const customTypes: {
     [key: string]: any;
   } = {};
@@ -45,6 +54,10 @@ async function main() {
         nullable: true,
       },
     ];
+
+    const connectionArg = `${node}ArgInput`;
+    const connectionArgType = `${node}ArgInputType`;
+
     const connectionArgs: any[] = [
       {
         name: "context",
@@ -97,9 +110,19 @@ async function main() {
       }
     }
     const sortType = `${node}SortColumn`;
+    // new custom Arg here???
     customTypes[sortType] = {
       type: sortType,
       enumMap: sortKeys,
+    };
+    customTypes[connectionArg] = {
+      type: connectionArg,
+      structFields: {
+        id: UUIDType({ nullable: true }),
+        ids: UUIDListType({ nullable: true }),
+        // TODO more...
+      },
+      inputType: true,
     };
 
     connectionArgs.push({
@@ -107,6 +130,21 @@ async function main() {
       type: sortType,
       nullable: true,
     });
+    connectionArgs.push({
+      name: "query",
+      type: connectionArg,
+      nullable: true,
+    });
+    connectionImports.push({
+      importPath: `src/graphql/generated/mutations/input/${snakeCase(
+        connectionArgType,
+      )}`,
+      import: connectionArgType,
+    });
+    // connectionImports.push({
+    //   importPath: "src/graphql/resolvers/",
+    //   import: connectionArg,
+    // });
 
     const listContent = `
     const whereQueries = [
@@ -163,6 +201,16 @@ async function main() {
       extraImports: connectionImports,
       functionContents: connectionContent,
     });
+    // args.push({
+    //   name: connectionArgType,
+    // });
+    // fields[connectionArgType] = [
+    //   {
+    //     name: "id",
+    //     resultType: "String",
+    //     fieldType: "ACCESSOR",
+    //   },
+    // ];
   }
   console.log(JSON.stringify({ queries, customTypes }));
 }

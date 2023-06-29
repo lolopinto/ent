@@ -52,6 +52,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   readonly endTime: Date | null;
   readonly location: string;
   protected readonly _addressID: ID | null;
+  protected readonly localUtcOffset: string | null;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
     this.id = data.id;
@@ -63,6 +64,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     this.endTime = data.end_time;
     this.location = data.location;
     this._addressID = data.address_id;
+    this.localUtcOffset = data.local_utc_offset;
     // @ts-expect-error
     this.data = data;
   }

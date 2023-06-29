@@ -33,7 +33,7 @@
     "tsconfig-paths": "^3.11.0"
   },
   "dependencies": {
-    "@snowtop/ent": "^0.1.0-alpha154",
+    "@snowtop/ent": "^0.1.0-alpha155",
     "@snowtop/ent-email": "^0.1.0-alpha1",
     "@snowtop/ent-passport": "^0.1.0-alpha3",
     "@snowtop/ent-password": "^0.1.0-alpha1",
@@ -55,6 +55,7 @@
     "express-session": "^1.17.1",
     "glob": "^8.0.3",
     "graphql": "16.5",
+    "graphql-scalars": "^1.22.2",
     "graphql-type-json": "^0.3.2",
     "graphql-upload": "^13.0.0",
     "jsonwebtoken": "^9.0.0",
