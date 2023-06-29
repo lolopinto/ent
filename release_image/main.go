@@ -145,7 +145,7 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 		}
 	} else if os.IsNotExist(err) {
 		// only create if directory doesn't exist
-		err = os.Mkdir(dir, os.ModePerm)
+		err := os.Mkdir(dir, os.ModePerm)
 		if err != nil {
 			return errors.Wrap(err, "error creating directory")
 		}
