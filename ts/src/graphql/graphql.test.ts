@@ -774,6 +774,7 @@ describe("function", () => {
 
   test("enabled. arg class", () => {
     // TODO need to ensure no params for these since not valid graphql i believe
+    // TODO try with an arg lol
     @gqlArgType()
     class SearchArgs {
       @gqlField({

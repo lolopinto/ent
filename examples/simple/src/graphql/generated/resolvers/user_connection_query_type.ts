@@ -18,6 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { User } from "../../../ent";
+import { UserArgInputType } from "../mutations/input/user_arg_input_type";
 import { UserSortColumnType } from "./enums_type";
 import { RootToUserConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -25,6 +26,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 interface UserConnectionArgs {
   ids: any;
   sortCol: any;
+  query: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -45,6 +47,10 @@ export const UserConnectionQueryType: GraphQLFieldConfig<
     sortCol: {
       description: "",
       type: UserSortColumnType,
+    },
+    query: {
+      description: "",
+      type: UserArgInputType,
     },
     first: {
       description: "",

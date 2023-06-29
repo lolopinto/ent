@@ -18,6 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { HoursOfOperation } from "../../../ent";
+import { HoursOfOperationArgInputType } from "../mutations/input/hours_of_operation_arg_input_type";
 import { HoursOfOperationSortColumnType } from "./enums_type";
 import { RootToHoursOfOperationConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -25,6 +26,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 interface HoursOfOperationConnectionArgs {
   ids: any;
   sortCol: any;
+  query: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -45,6 +47,10 @@ export const HoursOfOperationConnectionQueryType: GraphQLFieldConfig<
     sortCol: {
       description: "",
       type: HoursOfOperationSortColumnType,
+    },
+    query: {
+      description: "",
+      type: HoursOfOperationArgInputType,
     },
     first: {
       description: "",

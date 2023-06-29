@@ -18,6 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Event } from "../../../ent";
+import { EventArgInputType } from "../mutations/input/event_arg_input_type";
 import { EventSortColumnType } from "./enums_type";
 import { RootToEventConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -25,6 +26,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 interface EventConnectionArgs {
   ids: any;
   sortCol: any;
+  query: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -45,6 +47,10 @@ export const EventConnectionQueryType: GraphQLFieldConfig<
     sortCol: {
       description: "",
       type: EventSortColumnType,
+    },
+    query: {
+      description: "",
+      type: EventArgInputType,
     },
     first: {
       description: "",

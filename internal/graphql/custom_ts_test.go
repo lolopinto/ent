@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/enum"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
@@ -960,5 +961,126 @@ func TestCustomEnumType(t *testing.T) {
 	})
 	require.Equal(t, exp.Values, gqlEnum.Enum.Values)
 
+	// this should check enum_types or whatever now
 	require.True(t, strings.Contains(gqlEnum.FilePath, "src/graphql/generated/resolvers/"))
+}
+
+func TestCustomStructType(t *testing.T) {
+	m := map[string]string{
+		"contact_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType} from "{schema}";
+
+			const Contact = new EntSchema({
+				fields: {
+					firstName: StringType(),
+					lastName: StringType(),
+				},
+			});
+			export default Contact;
+		`),
+	}
+
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	dirPath, err := os.MkdirTemp(absPath, "project")
+	defer os.RemoveAll(dirPath)
+	require.NoError(t, err)
+
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
+	tmpCfg := getConfig(t, dirPath)
+
+	structFields := []*input.Field{
+		{
+			Name: "finishedNux",
+			Type: &input.FieldType{
+				DBType: input.Boolean,
+			},
+			Nullable: true,
+		},
+		{
+			Name: "enableNotifs",
+			Type: &input.FieldType{
+				DBType: input.Boolean,
+			},
+			Nullable: true,
+		},
+		{
+			Name: "notifTypes",
+			Type: &input.FieldType{
+				DBType: input.List,
+				ListElemType: &input.FieldType{
+					Type:        "NotifType",
+					GraphQLType: "NotifType",
+					DBType:      input.StringEnum,
+					Values:      []string{"MOBILE", "WEB", "EMAIL"},
+				},
+			},
+			Nullable: true,
+		},
+	}
+
+	cd := CustomData{
+		CustomTypes: map[string]*CustomType{
+			"UserPrefs": {
+				Type:         "UserPrefs",
+				StructFields: structFields,
+			},
+		},
+	}
+
+	require.Nil(t, file.Write(
+		&file.JSONFileWriter{
+			PathToFile: filepath.Join(dirPath, "src/schema/custom_graphql.json"),
+			Config:     tmpCfg,
+			Data:       cd,
+		},
+	))
+
+	require.Nil(t, file.Write(&file.YamlFileWriter{
+		PathToFile: filepath.Join(dirPath, "ent.yml"),
+		Config:     tmpCfg,
+		Data: &codegen.ConfigurableConfig{
+			CustomGraphQLJSONPath: "src/schema/custom_graphql.json",
+		},
+	}))
+
+	// load config now which should be aware of ent.yml
+	processor := &codegen.Processor{
+		Schema: schema,
+		Config: getConfig(t, dirPath),
+	}
+
+	s, err := buildSchema(processor, true)
+	require.NoError(t, err)
+
+	require.Len(t, s.customData.Args, 0)
+	require.Len(t, s.customData.Inputs, 0)
+	require.Len(t, s.customData.Objects, 0)
+	require.Len(t, s.customData.Fields, 0)
+	require.Len(t, s.customData.Queries, 0)
+	require.Len(t, s.customData.Mutations, 0)
+	require.Len(t, s.customData.Classes, 0)
+	require.Len(t, s.customData.Files, 0)
+	validateDefaultCustomTypes(t, s.customData)
+
+	structType := s.customData.CustomTypes["UserPrefs"]
+	require.NotNil(t, structType)
+	require.Equal(t, structType.StructFields, structFields)
+	require.Equal(t, structType.Type, "UserPrefs")
+	require.Equal(t, structType.TSType, "")
+
+	require.Len(t, s.otherObjects, 1)
+	typ := s.otherObjects["UserPrefs"]
+	require.NotNil(t, typ)
+	// require.Equal(t, typ., "LanguageType")
+	// require.Equal(t, gqlEnum.Enum.Name, "Language")
+
+	// _, exp := enum.GetEnums(&enum.Input{
+	// 	EnumMap:            enumMap,
+	// 	DisableUnknownType: true,
+	// })
+	// require.Equal(t, exp.Values, gqlEnum.Enum.Values)
+
+	// TODO
+	require.True(t, strings.Contains(typ.FilePath, "src/graphql/generated/resolvers/"))
 }
