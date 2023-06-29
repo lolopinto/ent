@@ -121,6 +121,7 @@ CREATE TABLE events (
     end_time TIMESTAMP WITHOUT TIME ZONE, 
     location TEXT NOT NULL, 
     address_id UUID, 
+    local_utc_offset TEXT, 
     CONSTRAINT events_id_pkey PRIMARY KEY (id)
 );
 
