@@ -94,10 +94,13 @@ func writeFile(w Writer, cfg Config, opts ...func(opt *Options)) error {
 	}
 
 	root := cfg.GetAbsPathToRoot()
-
-	relPath, err := filepath.Rel(root, fullPath)
-	if err != nil {
-		return err
+	relPath := fullPath
+	if path.IsAbs(fullPath) {
+		var err error
+		relPath, err = filepath.Rel(root, fullPath)
+		if err != nil {
+			return err
+		}
 	}
 	files := cfg.GetUserOverridenFiles()
 	// user wants to override this file so don't overwrite it
