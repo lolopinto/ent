@@ -295,6 +295,43 @@ test("in clause", async () => {
   expect(allIds.length).toBe(count);
 });
 
+test("not in clause", async () => {
+  const ids: string[] = [];
+  const count = Math.floor(
+    clause.inClause.getPostgresInClauseValuesThreshold() * 3,
+  );
+  for (let i = 0; i < count; i++) {
+    const data: Data = {
+      id: v1(),
+      first_name: "Jon",
+      last_name: "Snow",
+      emails: [],
+      phones: [],
+      random: null,
+    };
+    if (i % 2 === 0) {
+      ids.push(data.id);
+    }
+    await createRowForTest({
+      tableName,
+      fields: data,
+    });
+  }
+
+  const ml = new MockLogs();
+  ml.mock();
+
+  setLogLevels(["query", "error"]);
+  const allIds = await loadRows({
+    tableName,
+    fields,
+    clause: clause.UuidNotIn("id", ids),
+  });
+  expect(ml.logs.length).toBe(1);
+  expect(ml.errors.length).toBe(0);
+  expect(allIds.length).toBe(count / 2);
+});
+
 test("in clause. integer", async () => {
   const ids: number[] = [];
   const count = Math.floor(
