@@ -946,7 +946,6 @@ func processCustomStructType(processor *codegen.Processor, s *gqlSchema, typ *Cu
 		gqlType = "GraphQLObjectType"
 	}
 
-	// TODO create an interface in this file for this
 	obj := &CustomObject{
 		NodeName: typ.Type,
 	}

@@ -961,8 +961,7 @@ func TestCustomEnumType(t *testing.T) {
 	})
 	require.Equal(t, exp.Values, gqlEnum.Enum.Values)
 
-	// this should check enum_types or whatever now
-	require.True(t, strings.Contains(gqlEnum.FilePath, "src/graphql/generated/resolvers/"))
+	require.True(t, strings.HasSuffix(gqlEnum.FilePath, "src/graphql/generated/resolvers/enums_type.ts"))
 }
 
 func TestCustomStructType(t *testing.T) {
