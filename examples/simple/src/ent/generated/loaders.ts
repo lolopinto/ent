@@ -457,7 +457,6 @@ export interface EventDBData {
   end_time: Date | null;
   location: string;
   address_id: ID | null;
-  local_utc_offset: string | null;
 }
 
 const eventTable = "events";
@@ -471,7 +470,6 @@ const eventFields = [
   "end_time",
   "location",
   "address_id",
-  "local_utc_offset",
 ];
 
 export const eventLoader = new ObjectLoaderFactory<EventDBData>({
@@ -521,10 +519,6 @@ export const eventLoaderInfo = {
     addressID: {
       dbCol: "address_id",
       inputKey: "addressID",
-    },
-    localUtcOffset: {
-      dbCol: "local_utc_offset",
-      inputKey: "localUtcOffset",
     },
   },
 };
