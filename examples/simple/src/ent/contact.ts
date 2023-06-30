@@ -7,7 +7,7 @@ import {
 } from "@snowtop/ent";
 import { gqlField } from "@snowtop/ent/graphql";
 import { ContactLabel } from "./generated/types";
-import { ContactDate, EmailInfo } from "./contact_types";
+import { ContactDate, ContactItemFilter, EmailInfo } from "./contact_types";
 
 export class Contact extends ContactBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
@@ -41,8 +41,15 @@ export class Contact extends ContactBase {
     type: "[ContactItemResult]",
     name: "contactItems",
     async: true,
+    args: [
+      {
+        name: "filter",
+        type: "ContactItemFilter",
+        nullable: true,
+      },
+    ],
   })
-  async queryContactItems() {
+  async queryContactItems(filter?: ContactItemFilter) {
     const [emails, phoneNumbers] = await Promise.all([
       this.loadEmails(),
       this.loadPhoneNumbers(),

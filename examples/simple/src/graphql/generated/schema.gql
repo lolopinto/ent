@@ -262,6 +262,11 @@ type ContactInfo {
   source: ContactInfoSource!
 }
 
+input ContactItemFilter {
+  emailDomain: String
+  phoneNumberAreaCode: String
+}
+
 union ContactItemResult = ContactEmail | ContactPhoneNumber | ContactDate
 
 interface ContactItem {
@@ -289,7 +294,7 @@ type Contact implements Node {
   attachedComments(first: Int, after: String, last: Int, before: String): ContactCommentsFromAttachmentConnection!
   fullName: String!
   plusEmails: EmailInfo!
-  contactItems: [ContactItemResult!]!
+  contactItems(filter: ContactItemFilter): [ContactItemResult!]!
 }
 
 type DogType {
