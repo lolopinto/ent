@@ -28,7 +28,6 @@ export interface EventInput {
   endTime?: Date | null;
   location?: string;
   addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
-  localUtcOffset?: string | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -428,7 +427,6 @@ export class EventBuilder<
         }
       }
     }
-    addField("localUtcOffset", input.localUtcOffset);
     return result;
   }
 
@@ -510,10 +508,5 @@ export class EventBuilder<
     | Builder<Address, ExampleViewerAlias>
     | undefined {
     return this.input.addressID;
-  }
-
-  // get value of localUtcOffset. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLocalUtcOffsetValue(): string | null | undefined {
-    return this.input.localUtcOffset;
   }
 }

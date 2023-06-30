@@ -481,12 +481,9 @@ async function main() {
   const buildClasses = (fields: ProcessedCustomField[]) => {
     fields.forEach((field) => {
       if (field.nodeName && !nodesMap.has(field.nodeName)) {
-        // TODO don't necessarily wanna do this
-        try {
-          let info = imports.getInfoForClass(field.nodeName);
-          classes[field.nodeName] = { ...info.class, path: info.file.path };
-          buildFiles(info.file);
-        } catch (err) {}
+        let info = imports.getInfoForClass(field.nodeName);
+        classes[field.nodeName] = { ...info.class, path: info.file.path };
+        buildFiles(info.file);
       }
 
       buildClasses2(field.args);

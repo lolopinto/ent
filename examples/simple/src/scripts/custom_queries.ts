@@ -12,8 +12,6 @@ import {
 async function main() {
   const paths = fs.readdirSync("src/schema");
   const queries: any[] = [];
-  // const fields: Data = {};
-  // const args = [];
   const customTypes: {
     [key: string]: any;
   } = {};
@@ -110,7 +108,7 @@ async function main() {
       }
     }
     const sortType = `${node}SortColumn`;
-    // new custom Arg here???
+
     customTypes[sortType] = {
       type: sortType,
       enumMap: sortKeys,
@@ -120,7 +118,7 @@ async function main() {
       structFields: {
         id: UUIDType({ nullable: true }),
         ids: UUIDListType({ nullable: true }),
-        // TODO more...
+        // more can be here. we're not actually using it so it's just an example
       },
       inputType: true,
     };
@@ -141,10 +139,6 @@ async function main() {
       )}`,
       import: connectionArgType,
     });
-    // connectionImports.push({
-    //   importPath: "src/graphql/resolvers/",
-    //   import: connectionArg,
-    // });
 
     const listContent = `
     const whereQueries = [
@@ -201,16 +195,6 @@ async function main() {
       extraImports: connectionImports,
       functionContents: connectionContent,
     });
-    // args.push({
-    //   name: connectionArgType,
-    // });
-    // fields[connectionArgType] = [
-    //   {
-    //     name: "id",
-    //     resultType: "String",
-    //     fieldType: "ACCESSOR",
-    //   },
-    // ];
   }
   console.log(JSON.stringify({ queries, customTypes }));
 }

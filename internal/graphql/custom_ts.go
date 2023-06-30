@@ -737,8 +737,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			continue
 		}
 
-		// TODO args works and don't need this?
-		if cd.Objects[nodeName] != nil || cd.Interfaces[nodeName] != nil || cd.Args[nodeName] != nil {
+		if cd.Objects[nodeName] != nil || cd.Interfaces[nodeName] != nil {
 			continue
 		}
 
@@ -935,9 +934,17 @@ func processCustomEnum(processor *codegen.Processor, s *gqlSchema, typ *CustomTy
 }
 
 func processCustomStructType(processor *codegen.Processor, s *gqlSchema, typ *CustomType) error {
+	// TODO what we probably want is to create a regular type and an input type if typ.InputType == true
 	// technically not a CI but whatever
-	// TODO input file or not
-	filePath := getFilePathForCustomInterfaceInputFile(processor.Config, typ.Type)
+	var filePath string
+	var gqlType string
+	if typ.InputType {
+		filePath = getFilePathForCustomInterfaceInputFile(processor.Config, typ.Type)
+		gqlType = "GraphQLInputObjectType"
+	} else {
+		filePath = getFilePathForCustomInterfaceFile(processor.Config, typ.Type)
+		gqlType = "GraphQLObjectType"
+	}
 
 	// TODO create an interface in this file for this
 	obj := &CustomObject{
@@ -946,54 +953,55 @@ func processCustomStructType(processor *codegen.Processor, s *gqlSchema, typ *Cu
 	item := CustomItem{
 		Type: typ.Type,
 	}
-	// TODO need to change file of this since input type should be in differnet path
-	objType := buildObjectTypeImpl(item, obj, "GraphQLInputObjectType", false)
+	objType := buildObjectTypeImpl(item, obj, gqlType, false)
 
 	fi, err := field.NewFieldInfoFromInputs(processor.Config, "Root", typ.StructFields, &field.Options{})
 	if err != nil {
 		return err
 	}
 
-	customInt := newInterfaceType(&interfaceType{
-		Exported: false,
-		Name:     item.Type,
-	})
-	for _, field := range fi.AllFields() {
-		// TODO...
-		// no args, it's inline ,etc
+	// don't need it for input types, create for non-input type
+	if !typ.InputType {
+		customInt := newInterfaceType(&interfaceType{
+			Exported: false,
+			Name:     item.Type,
+		})
+		for _, field := range fi.AllFields() {
+			// TODO...
+			// no args, it's inline ,etc
 
-		imports := field.GetTSGraphQLTypeForFieldImports(true)
-		gqlField := &fieldType{
-			Name:               field.GetGraphQLName(),
-			HasResolveFunction: false,
-			FieldImports:       imports,
-		}
-		if err := objType.addField(gqlField); err != nil {
-			return err
-		}
-		objType.Imports = append(objType.Imports, gqlField.FieldImports...)
+			imports := field.GetTSGraphQLTypeForFieldImports(true)
+			gqlField := &fieldType{
+				Name:               field.GetGraphQLName(),
+				HasResolveFunction: false,
+				FieldImports:       imports,
+			}
+			if err := objType.addField(gqlField); err != nil {
+				return err
+			}
+			objType.Imports = append(objType.Imports, gqlField.FieldImports...)
 
-		var useImports []string
-		imps := field.GetTsTypeImports()
-		if len(imps) != 0 {
-			objType.Imports = append(objType.Imports, imps...)
-			for _, v := range imps {
-				useImports = append(useImports, v.Import)
+			var useImports []string
+			imps := field.GetTsTypeImports()
+			if len(imps) != 0 {
+				objType.Imports = append(objType.Imports, imps...)
+				for _, v := range imps {
+					useImports = append(useImports, v.Import)
+				}
+			}
+			intField := &interfaceField{
+				Name:       field.GetGraphQLName(),
+				Optional:   field.Nullable(),
+				Type:       field.GetTsType(),
+				UseImports: useImports,
+			}
+			if err := customInt.addField(intField); err != nil {
+				return err
 			}
 		}
-		intField := &interfaceField{
-			Name:       field.GetGraphQLName(),
-			Optional:   field.Nullable(),
-			Type:       field.GetTsType(),
-			UseImports: useImports,
-		}
-		if err := customInt.addField(intField); err != nil {
-			return err
-		}
-	}
 
-	// TODO may not need this when input? not currently used
-	// objType.TSInterfaces = append(objType.TSInterfaces, customInt)
+		objType.TSInterfaces = append(objType.TSInterfaces, customInt)
+	}
 
 	gqlNode := &gqlNode{
 		ObjData: &gqlobjectData{

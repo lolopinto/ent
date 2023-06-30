@@ -60,8 +60,6 @@ const EventSchema = new EntSchema({
         ],
       },
     }),
-    // store the utc offset so that we can convert to local time when rendering event
-    localUtcOffset: StringType({ nullable: true, private: true }),
   },
 
   edges: [
