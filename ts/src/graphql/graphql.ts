@@ -1,5 +1,10 @@
 import { GraphQLScalarType } from "graphql";
 import { Data } from "../core/base";
+import { FieldMap } from "src/schema";
+import {
+  processFields,
+  ProcessedField as ParsedProcessedField,
+} from "../parse_schema/parse";
 
 interface ClassType<T = any> {
   new (...args: any[]): T;
@@ -9,21 +14,27 @@ declare type StringToStringMap = {
   [key: string]: string;
 };
 
-export interface CustomType {
+export interface CustomTypeInput {
   type: string;
   importPath: string;
   tsType?: string;
   tsImportPath?: string;
   enumMap?: StringToStringMap;
+  // create a struct type here...
+  structFields?: FieldMap;
   inputType?: boolean;
   [x: string]: any;
 }
+
+export type CustomType = Omit<CustomTypeInput, "structFields"> & {
+  structFields?: ParsedProcessedField[];
+};
 
 // scalars or classes
 // string for GraphQL name in situation where we can't load the object
 // e.g. User, Contact etc
 // CustomType for types that are not in "graphql" and we need to know where to load it from...
-type Type = GraphQLScalarType | ClassType | string | CustomType;
+type Type = GraphQLScalarType | ClassType | string | CustomTypeInput;
 
 // node in a connection
 export type GraphQLConnection<T> = { node: T };
@@ -199,16 +210,16 @@ const isString = (type: Type | Array<Type>): type is string => {
   return false;
 };
 
-export const isCustomType = (type: Type): type is CustomType => {
-  return (type as CustomType).importPath !== undefined;
+export const isCustomType = (type: Type): type is CustomTypeInput => {
+  return (type as CustomTypeInput).importPath !== undefined;
 };
 
 const isGraphQLScalarType = (type: Type): type is GraphQLScalarType => {
   return (type as GraphQLScalarType).serialize !== undefined;
 };
 
-export const addCustomType = (
-  type: CustomType,
+export const addCustomType = async (
+  type: CustomTypeInput,
   gqlCapture: typeof GQLCapture,
 ) => {
   // TODO these should return ReadOnly objects...
@@ -219,9 +230,17 @@ export const addCustomType = (
     return;
   }
 
-  if (type.enumMap) {
-    customTypes.set(type.type, type);
-    return;
+  const addType = async (type: CustomTypeInput) => {
+    // @ts-expect-error
+    const typ2: CustomType = { ...type };
+    if (type.structFields) {
+      typ2.structFields = await processFields(type.structFields);
+    }
+    customTypes.set(type.type, typ2);
+  };
+
+  if (type.enumMap || type.structFields) {
+    await addType(type);
   }
   try {
     const r = require(type.importPath);
@@ -255,7 +274,7 @@ export const addCustomType = (
     }
     return;
   }
-  customTypes.set(type.type, type);
+  await addType(type);
 };
 
 interface typeInfo {
@@ -800,7 +819,7 @@ export const gqlContextType = GQLCapture.gqlContextType;
 export const gqlConnection = GQLCapture.gqlConnection;
 
 // this requires the developer to npm-install "graphql-upload on their own"
-const gqlFileUpload: CustomType = {
+const gqlFileUpload: CustomTypeInput = {
   type: "GraphQLUpload",
   importPath: "graphql-upload",
   tsType: "FileUpload",

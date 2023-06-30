@@ -20,7 +20,7 @@ import {
 } from "../schema/schema";
 import { setGlobalSchema } from "../core/global_schema";
 
-async function processFields(
+export async function processFields(
   src: FieldMap | Field[],
   patternName?: string,
 ): Promise<ProcessedField[]> {
@@ -362,7 +362,7 @@ type ProcessedType = Omit<
   unionFields?: ProcessedField[];
 };
 
-type ProcessedField = Omit<
+export type ProcessedField = Omit<
   Field,
   | "defaultValueOnEdit"
   | "defaultValueOnCreate"

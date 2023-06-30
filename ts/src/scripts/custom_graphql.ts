@@ -194,32 +194,39 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
       }
 
       let json = JSON5.parse(datas.join(""));
-      for (const k in json) {
-        const v = json[k];
-        switch (k) {
-          case "queries":
-            processTopLevel(v, gqlCapture.getCustomQueries(), gqlCapture);
-            break;
 
-          case "mutations":
-            processTopLevel(v, gqlCapture.getCustomMutations(), gqlCapture);
-            break;
+      processJSON(gqlCapture, json);
 
-          case "customTypes":
-            processCustomTypes(v, gqlCapture);
-            break;
-
-          default:
-            reject(
-              new Error(
-                `key ${k} is unsupported in dynamic custom graphql. only queries and mutations are supported`,
-              ),
-            );
-        }
-      }
       resolve(undefined);
     });
   });
+}
+
+async function processJSON(gqlCapture: typeof GQLCapture, json: any) {
+  if (json.fields) {
+    for (const k in json.fields) {
+      processCustomFields(json.fields[k], gqlCapture, k);
+    }
+  }
+  if (json.inputs) {
+    processCustomObjects(json.inputs, gqlCapture, true);
+  }
+  if (json.objects) {
+    processCustomObjects(json.objects, gqlCapture);
+  }
+  if (json.queries) {
+    processTopLevel(json.queries, gqlCapture.getCustomQueries(), gqlCapture);
+  }
+  if (json.mutations) {
+    processTopLevel(
+      json.mutations,
+      gqlCapture.getCustomMutations(),
+      gqlCapture,
+    );
+  }
+  if (json.customTypes) {
+    processCustomTypes(json.customTypes, gqlCapture);
+  }
 }
 
 async function captureCustom(
@@ -234,31 +241,8 @@ async function captureCustom(
         encoding: "utf8",
       }),
     );
-    if (json.fields) {
-      for (const k in json.fields) {
-        processCustomFields(json.fields[k], gqlCapture, k);
-      }
-    }
-    if (json.inputs) {
-      processCustomObjects(json.inputs, gqlCapture, true);
-    }
-    if (json.objects) {
-      processCustomObjects(json.objects, gqlCapture);
-    }
-    if (json.queries) {
-      processTopLevel(json.queries, gqlCapture.getCustomQueries(), gqlCapture);
-    }
-    if (json.mutations) {
-      processTopLevel(
-        json.mutations,
-        gqlCapture.getCustomMutations(),
-        gqlCapture,
-      );
-    }
 
-    if (json.customTypes) {
-      processCustomTypes(json.customTypes, gqlCapture);
-    }
+    processJSON(gqlCapture, json);
 
     return;
   }

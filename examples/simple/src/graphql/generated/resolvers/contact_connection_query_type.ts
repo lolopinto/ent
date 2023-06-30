@@ -18,6 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Contact } from "../../../ent";
+import { ContactArgInputType } from "../mutations/input/contact_arg_input_type";
 import { ContactSortColumnType } from "./enums_type";
 import { RootToContactConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -25,6 +26,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 interface ContactConnectionArgs {
   ids: any;
   sortCol: any;
+  query: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -45,6 +47,10 @@ export const ContactConnectionQueryType: GraphQLFieldConfig<
     sortCol: {
       description: "",
       type: ContactSortColumnType,
+    },
+    query: {
+      description: "",
+      type: ContactArgInputType,
     },
     first: {
       description: "",
