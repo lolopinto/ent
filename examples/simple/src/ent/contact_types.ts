@@ -1,7 +1,7 @@
 import { GraphQLString } from "graphql";
 import { gqlField, gqlObjectType } from "@snowtop/ent/graphql";
 import { Contact, ContactEmail } from "./internal";
-import { gqlUnionType } from "@snowtop/ent/graphql/graphql";
+import { gqlArgType, gqlUnionType } from "@snowtop/ent/graphql/graphql";
 import { ContactLabel } from "./generated/types";
 
 @gqlObjectType()
@@ -67,3 +67,20 @@ export class ContactDate {
   unionTypes: ["ContactEmail", "ContactPhoneNumber", "ContactDate"],
 })
 export class ContactItemResult {}
+
+@gqlArgType()
+export class ContactItemFilter {
+  @gqlField({
+    class: "ContactItemFilter",
+    type: GraphQLString,
+    nullable: true,
+  })
+  emailDomain?: string;
+
+  @gqlField({
+    class: "ContactItemFilter",
+    type: GraphQLString,
+    nullable: true,
+  })
+  phoneNumberAreaCode?: string;
+}

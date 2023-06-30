@@ -4,6 +4,7 @@
  */
 
 export * from "../generated/resolvers/enums_type";
+export * from "../generated/resolvers/arg/contact_item_filter_type";
 export * from "../generated/resolvers/can_viewer_do_query_type";
 export * from "../generated/resolvers/contact_date_type";
 export * from "../generated/resolvers/contact_info_type";

@@ -737,7 +737,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			continue
 		}
 
-		if cd.Objects[nodeName] != nil || cd.Interfaces[nodeName] != nil {
+		if cd.Objects[nodeName] != nil || cd.Interfaces[nodeName] != nil || cd.Args[nodeName] != nil {
 			continue
 		}
 
@@ -1112,6 +1112,34 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 		interfaces[inter.NodeName] = node
 	}
 	s.interfaces = interfaces
+	return nil
+}
+
+func processCustomArgs(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
+	for _, arg := range cd.Args {
+
+		item := CustomItem{
+			Type: arg.NodeName,
+		}
+		filePath := getFilePathForCustomArg(processor.Config, arg.NodeName)
+
+		objType, err := buildObjectType(processor, cd, s, item, arg, filePath, "GraphQLInputObjectType")
+		objType.ArgNotInput = true
+		if err != nil {
+			return err
+		}
+		gqlNode := &gqlNode{
+			ObjData: &gqlobjectData{
+				Node:         arg.NodeName,
+				NodeInstance: "obj",
+				GQLNodes:     []*objectType{objType},
+				Package:      processor.Config.GetImportPackage(),
+			},
+			FilePath: filePath,
+		}
+		s.otherObjects[arg.NodeName] = gqlNode
+	}
+
 	return nil
 }
 
