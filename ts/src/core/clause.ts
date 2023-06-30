@@ -260,6 +260,8 @@ class postgresArrayOperatorList<
 }
 
 export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
+  protected op = "IN";
+
   static getPostgresInClauseValuesThreshold() {
     return 70;
   }
@@ -304,7 +306,7 @@ export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
       inValue = `VALUES${inValue}`;
     }
 
-    return `${this.col} IN (${inValue})`;
+    return `${this.col} ${this.op} (${inValue})`;
     // TODO we need to return idx at end to query builder...
     // or anything that's doing a composite query so next clause knows where to start
     // or change to a sqlx.Rebind format
@@ -332,8 +334,12 @@ export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 
   instanceKey(): string {
-    return `in:${this.col}:${this.values().join(",")}`;
+    return `${this.op.toLowerCase()}:${this.col}:${this.values().join(",")}`;
   }
+}
+
+export class notInClause<T extends Data, K = keyof T> extends inClause<T, K> {
+  protected op = "NOT IN";
 }
 
 class compositeClause<T extends Data, K = keyof T> implements Clause<T, K> {
@@ -715,6 +721,39 @@ export function DBTypeIn<T extends Data, K = keyof T>(
   typ: string,
 ): Clause<T, K> {
   return new inClause(col, values, typ);
+}
+
+export function UuidNotIn<T extends Data, K = keyof T>(
+  col: K,
+  values: ID[],
+): Clause<T, K> {
+  return new notInClause(col, values, "uuid");
+}
+
+export function IntegerNotIn<T extends Data, K = keyof T>(
+  col: K,
+  values: number[],
+): Clause<T, K> {
+  return new notInClause(col, values, "integer");
+}
+
+export function TextNotIn<T extends Data, K = keyof T>(
+  col: K,
+  values: any[],
+): Clause<T, K> {
+  return new notInClause(col, values, "text");
+}
+
+/*
+ * if not uuid or text, pass the db type that can be used to cast this query
+ * if we end up with a large list of ids
+ */
+export function DBTypeNotIn<T extends Data, K = keyof T>(
+  col: K,
+  values: any[],
+  typ: string,
+): Clause<T, K> {
+  return new notInClause(col, values, typ);
 }
 
 interface TsQuery {

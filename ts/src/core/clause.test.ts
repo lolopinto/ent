@@ -606,23 +606,10 @@ describe("postgres", () => {
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
       });
 
-      test("int", () => {
-        const ids = [1, 2, 3, 4, 5];
-
-        const cls = clause.In<ExampleData>("id", ids, "int");
-        expect(cls.clause(1)).toBe(
-          "id IN (VALUES($1::int), ($2), ($3), ($4), ($5))",
-        );
-        expect(cls.columns()).toStrictEqual(["id"]);
-        expect(cls.values()).toStrictEqual(ids);
-        expect(cls.logValues()).toStrictEqual(ids);
-        expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
-      });
-
       test("integer", () => {
         const ids = [1, 2, 3, 4, 5];
 
-        const cls = clause.In<ExampleData>("id", ids, "integer");
+        const cls = clause.IntegerIn<ExampleData>("id", ids);
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::integer), ($2), ($3), ($4), ($5))",
         );
@@ -635,7 +622,7 @@ describe("postgres", () => {
       test("uuid explicit", () => {
         const ids = [1, 2, 3, 4, 5].map((_) => v1());
 
-        const cls = clause.In<ExampleData>("id", ids, "uuid");
+        const cls = clause.UuidIn<ExampleData>("id", ids);
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
         );
@@ -643,6 +630,19 @@ describe("postgres", () => {
         expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
+      });
+
+      test("not in", () => {
+        const ids = [1, 2, 3, 4, 5].map((_) => v1());
+
+        const cls = clause.UuidNotIn<ExampleData>("id", ids);
+        expect(cls.clause(1)).toBe(
+          "id NOT IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
+        expect(cls.logValues()).toStrictEqual(ids);
+        expect(cls.instanceKey()).toEqual(`not in:id:${ids.join(",")}`);
       });
     });
   });
