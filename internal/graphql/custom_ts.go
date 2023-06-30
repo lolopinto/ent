@@ -960,46 +960,51 @@ func processCustomStructType(processor *codegen.Processor, s *gqlSchema, typ *Cu
 		return err
 	}
 
+	var customInt *interfaceType
 	// don't need it for input types, create for non-input type
 	if !typ.InputType {
-		customInt := newInterfaceType(&interfaceType{
+		customInt = newInterfaceType(&interfaceType{
 			Exported: false,
 			Name:     item.Type,
 		})
-		for _, field := range fi.AllFields() {
-			// TODO...
-			// no args, it's inline ,etc
+	}
 
-			imports := field.GetTSGraphQLTypeForFieldImports(true)
-			gqlField := &fieldType{
-				Name:               field.GetGraphQLName(),
-				HasResolveFunction: false,
-				FieldImports:       imports,
-			}
-			if err := objType.addField(gqlField); err != nil {
-				return err
-			}
-			objType.Imports = append(objType.Imports, gqlField.FieldImports...)
+	for _, field := range fi.AllFields() {
 
-			var useImports []string
-			imps := field.GetTsTypeImports()
-			if len(imps) != 0 {
-				objType.Imports = append(objType.Imports, imps...)
-				for _, v := range imps {
-					useImports = append(useImports, v.Import)
-				}
+		imports := field.GetTSGraphQLTypeForFieldImports(true)
+		gqlField := &fieldType{
+			Name:               field.GetGraphQLName(),
+			HasResolveFunction: false,
+			FieldImports:       imports,
+		}
+		if err := objType.addField(gqlField); err != nil {
+			return err
+		}
+		objType.Imports = append(objType.Imports, gqlField.FieldImports...)
+
+		var useImports []string
+		imps := field.GetTsTypeImports()
+		if len(imps) != 0 {
+			objType.Imports = append(objType.Imports, imps...)
+			for _, v := range imps {
+				useImports = append(useImports, v.Import)
 			}
-			intField := &interfaceField{
-				Name:       field.GetGraphQLName(),
-				Optional:   field.Nullable(),
-				Type:       field.GetTsType(),
-				UseImports: useImports,
-			}
+		}
+		intField := &interfaceField{
+			Name:       field.GetGraphQLName(),
+			Optional:   field.Nullable(),
+			Type:       field.GetTsType(),
+			UseImports: useImports,
+		}
+
+		if customInt != nil {
 			if err := customInt.addField(intField); err != nil {
 				return err
 			}
 		}
+	}
 
+	if customInt != nil {
 		objType.TSInterfaces = append(objType.TSInterfaces, customInt)
 	}
 
