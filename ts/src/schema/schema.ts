@@ -231,7 +231,7 @@ export interface AssocEdgeGroup {
 export type Edge = AssocEdge;
 
 // replaces DeprecatedImportType
-interface ImportPath {
+export interface ImportPath {
   importPath: string;
   import: string;
   defaultImport?: boolean;

@@ -1,10 +1,11 @@
 import { GraphQLScalarType } from "graphql";
 import { Data } from "../core/base";
-import { FieldMap } from "src/schema";
+import type { FieldMap } from "../schema";
 import {
   processFields,
   ProcessedField as ParsedProcessedField,
 } from "../parse_schema/parse";
+import { ImportPath } from "../schema/schema";
 
 interface ClassType<T = any> {
   new (...args: any[]): T;
@@ -14,6 +15,57 @@ declare type StringToStringMap = {
   [key: string]: string;
 };
 
+interface CustomFieldInput {
+  graphQLName?: string;
+  name?: string;
+  functionName?: string;
+  args?: Field[];
+  results?: Field[];
+  fieldType: CustomFieldTypeInput;
+  description?: string;
+}
+
+interface CustomTopLevelInput {
+  class?: string; // for inline fields, it's empty
+  graphQLName?: string;
+  name?: string;
+  functionName?: string;
+  edgeName?: string;
+  args?: Field[];
+  results?: Field[];
+  extraImports?: ImportPath[];
+  functionContents?: string;
+  fieldType: CustomFieldTypeInput;
+  description?: string;
+  list?: boolean;
+  connection?: boolean;
+  resultType?: string;
+}
+
+type CustomFieldInputMap = {
+  [key: string]: CustomFieldInput[];
+};
+
+type CustomTypeInputMap = {
+  [key: string]: CustomTypeInput;
+};
+
+interface CustomObjectInput {
+  name: string;
+  graphQLName?: string;
+  fields?: CustomFieldInput[];
+}
+
+export interface CustomGraphQLInput {
+  fields?: CustomFieldInputMap;
+  inputs?: CustomObjectInput[];
+  objects?: CustomObjectInput[];
+  args?: CustomObjectInput[];
+  queries?: CustomTopLevelInput[];
+  mutations?: CustomTopLevelInput[];
+  customTypes?: CustomTypeInputMap;
+}
+
 export interface CustomTypeInput {
   type: string;
   importPath: string;
@@ -22,6 +74,10 @@ export interface CustomTypeInput {
   enumMap?: StringToStringMap;
   // create a struct type here...
   structFields?: FieldMap;
+
+  // if enumMap or structField
+  // are we creating an inputType or output type
+  // determines where file is located and for the struct type, determines if GraphQLInputObjectType or GraphQLObjectType
   inputType?: boolean;
   [x: string]: any;
 }
@@ -88,6 +144,12 @@ export enum CustomFieldType {
   AsyncFunction = "ASYNC_FUNCTION",
 }
 
+export type CustomFieldTypeInput =
+  | "ACCESSOR"
+  | "FIELD"
+  | "FUNCTION"
+  | "ASYNC_FUNCTION";
+
 interface CustomFieldImpl {
   nodeName: string;
   gqlName: string;
@@ -101,7 +163,7 @@ interface CustomFieldImpl {
 export interface CustomField extends CustomFieldImpl {
   args: Field[];
   results: Field[];
-  extraImports?: any[]; // defined on server
+  extraImports?: ImportPath[]; // defined on server
   functionContents?: string; // used in dynamic
   // used by graphql connections e.g. if you a field `foo_connection`, you can specify the edge name here as `foo` so the generated
   // connection is RootToFooConnectionType instead of RootToFooConnectionConnectionType
