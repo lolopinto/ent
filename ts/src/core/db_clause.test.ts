@@ -298,7 +298,7 @@ test("in clause", async () => {
 test("not in clause", async () => {
   const ids: string[] = [];
   const count = Math.floor(
-    clause.inClause.getPostgresInClauseValuesThreshold() * 1.5,
+    clause.inClause.getPostgresInClauseValuesThreshold() * 3,
   );
   for (let i = 0; i < count; i++) {
     const data: Data = {
@@ -309,7 +309,9 @@ test("not in clause", async () => {
       phones: [],
       random: null,
     };
-    ids.push(data.id);
+    if (i % 2 === 0) {
+      ids.push(data.id);
+    }
     await createRowForTest({
       tableName,
       fields: data,
@@ -327,7 +329,7 @@ test("not in clause", async () => {
   });
   expect(ml.logs.length).toBe(1);
   expect(ml.errors.length).toBe(0);
-  expect(allIds.length).toBe(0);
+  expect(allIds.length).toBe(count / 2);
 });
 
 test("in clause. integer", async () => {

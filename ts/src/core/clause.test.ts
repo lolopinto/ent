@@ -632,12 +632,25 @@ describe("postgres", () => {
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
       });
 
-      test("not in", () => {
+      test("not in uuid", () => {
         const ids = [1, 2, 3, 4, 5].map((_) => v1());
 
         const cls = clause.UuidNotIn<ExampleData>("id", ids);
         expect(cls.clause(1)).toBe(
           "id NOT IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
+        expect(cls.logValues()).toStrictEqual(ids);
+        expect(cls.instanceKey()).toEqual(`not in:id:${ids.join(",")}`);
+      });
+
+      test("not in text", () => {
+        const ids = [1, 2, 3, 4, 5].map((_) => `id-${_}`);
+
+        const cls = clause.DBTypeNotIn<ExampleData>("id", ids, "text");
+        expect(cls.clause(1)).toBe(
+          "id NOT IN (VALUES($1::text), ($2), ($3), ($4), ($5))",
         );
         expect(cls.columns()).toStrictEqual(["id"]);
         expect(cls.values()).toStrictEqual(ids);
