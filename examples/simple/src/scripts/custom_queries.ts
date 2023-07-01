@@ -8,10 +8,11 @@ import {
   UUIDType,
   UUIDListType,
 } from "@snowtop/ent";
+import { CustomGraphQLInput } from "@snowtop/ent/graphql/graphql";
 
 async function main() {
   const paths = fs.readdirSync("src/schema");
-  const queries: any[] = [];
+  const queries: NonNullable<CustomGraphQLInput["queries"]> = [];
   const customTypes: {
     [key: string]: any;
   } = {};
@@ -176,7 +177,6 @@ async function main() {
       name: `${query}_list_deprecated`,
       list: true,
       fieldType: "ASYNC_FUNCTION",
-      nullable: true,
       args: listArgs,
       resultType: node,
       description: `custom query for ${query}. list`,
@@ -188,7 +188,6 @@ async function main() {
       edgeName: query,
       connection: true,
       fieldType: "ASYNC_FUNCTION",
-      nullable: true,
       args: connectionArgs,
       resultType: node,
       description: `custom query for ${query}. connection`,

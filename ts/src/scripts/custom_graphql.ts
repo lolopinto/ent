@@ -15,8 +15,13 @@ import {
   CustomField,
   knownAllowedNames,
   isCustomType,
+  CustomFieldType,
 } from "../graphql/graphql";
-import type { GQLCapture } from "../graphql/graphql";
+import type {
+  CustomFieldTypeInput,
+  CustomGraphQLInput,
+  GQLCapture,
+} from "../graphql/graphql";
 import * as readline from "readline";
 import { parseCustomImports, file } from "../imports";
 import { exit } from "process";
@@ -53,16 +58,10 @@ async function readInputs(): Promise<{
 }
 
 function processCustomObjects(
-  l: any[],
+  l: NonNullable<CustomGraphQLInput["inputs"]>,
   gqlCapture: typeof GQLCapture,
-  input?: boolean,
+  m: Map<string, CustomObject>,
 ) {
-  let m: Map<string, CustomObject>;
-  if (input) {
-    m = gqlCapture.getCustomInputObjects();
-  } else {
-    m = gqlCapture.getCustomObjects();
-  }
   for (const input of l) {
     m.set(input.name, {
       nodeName: input.graphQLName || input.name,
@@ -90,6 +89,19 @@ function transformArgs(f: any, gqlCapture: typeof GQLCapture) {
   });
 }
 
+function transformFieldTypeInput(input: CustomFieldTypeInput): CustomFieldType {
+  switch (input) {
+    case "ACCESSOR":
+      return CustomFieldType.Accessor;
+    case "ASYNC_FUNCTION":
+      return CustomFieldType.AsyncFunction;
+    case "FUNCTION":
+      return CustomFieldType.Function;
+    case "FIELD":
+      return CustomFieldType.Field;
+  }
+}
+
 function transformResultType(f: any) {
   return f.resultType
     ? [
@@ -106,17 +118,17 @@ function transformResultType(f: any) {
 }
 
 function processTopLevel(
-  l: any[],
+  l: NonNullable<CustomGraphQLInput["queries"]>,
   l2: CustomQuery[],
   gqlCapture: typeof GQLCapture,
 ) {
   for (const custom of l) {
     l2.push({
-      nodeName: custom.class,
-      functionName: custom.functionName || custom.name,
-      gqlName: custom.graphQLName || custom.name,
+      nodeName: custom.class ?? "",
+      functionName: custom.functionName || custom.name || "",
+      gqlName: custom.graphQLName || custom.name || "",
       edgeName: custom.edgeName,
-      fieldType: custom.fieldType,
+      fieldType: transformFieldTypeInput(custom.fieldType),
       args: transformArgs(custom, gqlCapture),
       results: transformResultType(custom),
       description: custom.description,
@@ -126,14 +138,17 @@ function processTopLevel(
   }
 }
 
-function processCustomTypes(m: {}, gqlCapture: typeof GQLCapture) {
+function processCustomTypes(
+  m: NonNullable<CustomGraphQLInput["customTypes"]>,
+  gqlCapture: typeof GQLCapture,
+) {
   for (const k in m) {
     addCustomType(m[k], gqlCapture);
   }
 }
 
 function processCustomFields(
-  fields: any[],
+  fields: NonNullable<CustomGraphQLInput["fields"]>[string],
   gqlCapture: typeof GQLCapture,
   nodeName: string,
 ) {
@@ -142,9 +157,9 @@ function processCustomFields(
   for (const f of fields) {
     results.push({
       nodeName: nodeName,
-      gqlName: f.graphQLName || f.name,
-      functionName: f.functionName || f.name,
-      fieldType: f.fieldType,
+      gqlName: f.graphQLName || f.name || "",
+      functionName: f.functionName || f.name || "",
+      fieldType: transformFieldTypeInput(f.fieldType),
       args: transformArgs(f, gqlCapture),
       results: transformResultType(f),
       description: f.description,
@@ -202,17 +217,31 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
   });
 }
 
-async function processJSON(gqlCapture: typeof GQLCapture, json: any) {
+async function processJSON(
+  gqlCapture: typeof GQLCapture,
+  json: CustomGraphQLInput,
+) {
   if (json.fields) {
     for (const k in json.fields) {
       processCustomFields(json.fields[k], gqlCapture, k);
     }
   }
   if (json.inputs) {
-    processCustomObjects(json.inputs, gqlCapture, true);
+    processCustomObjects(
+      json.inputs,
+      gqlCapture,
+      gqlCapture.getCustomInputObjects(),
+    );
   }
   if (json.objects) {
-    processCustomObjects(json.objects, gqlCapture);
+    processCustomObjects(
+      json.objects,
+      gqlCapture,
+      gqlCapture.getCustomObjects(),
+    );
+  }
+  if (json.args) {
+    processCustomObjects(json.args, gqlCapture, gqlCapture.getCustomArgs());
   }
   if (json.queries) {
     processTopLevel(json.queries, gqlCapture.getCustomQueries(), gqlCapture);

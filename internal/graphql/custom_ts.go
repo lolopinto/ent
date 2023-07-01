@@ -934,7 +934,6 @@ func processCustomEnum(processor *codegen.Processor, s *gqlSchema, typ *CustomTy
 }
 
 func processCustomStructType(processor *codegen.Processor, s *gqlSchema, typ *CustomType) error {
-	// TODO what we probably want is to create a regular type and an input type if typ.InputType == true
 	// technically not a CI but whatever
 	var filePath string
 	var gqlType string
