@@ -16,6 +16,7 @@ import {
   loadEnt,
   loadEnts,
   loadEntX,
+  rowIsError,
 } from "./ent";
 import {
   createRowForTest,
@@ -203,7 +204,7 @@ function commonTests() {
     const loader = getEntLoader(new IDViewer(1), invalidFieldOpts);
     const rows = await loader.loadMany([1]);
     expect(rows.length).toBe(1);
-    expect(rows[0]).toBeInstanceOf(Error);
+    expect(rowIsError(rows[0])).toBe(true);
     expect((rows[0] as Error).message).toBe(getExpectedErrorMessageOnRead());
   });
 
@@ -215,7 +216,7 @@ function commonTests() {
     );
     const rows = await loader.loadMany([1]);
     expect(rows.length).toBe(1);
-    expect(rows[0]).toBeInstanceOf(Error);
+    expect(rowIsError(rows[0])).toBe(true);
     expect((rows[0] as Error).message).toBe(getExpectedErrorMessageOnRead());
   });
 

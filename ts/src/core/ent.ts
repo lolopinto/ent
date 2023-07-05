@@ -117,7 +117,8 @@ class ErrorWrapper {
   constructor(public error: Error) {}
 }
 
-function rowIsError(row: any): row is Error {
+// note if storing the result of this in something that checks instanceof Error e.g. DataLoader, we need to check instanceof at that callsite
+export function rowIsError(row: any): row is Error {
   // jest does things that break instanceof checks
   // so we need to check the name as well for native error SqliteError
   return row instanceof Error || row?.constructor?.name === "SqliteError";
@@ -150,7 +151,12 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
 
       // db error
       if (rowIsError(row)) {
-        result[idx] = row;
+        if (row instanceof Error) {
+          result[idx] = row;
+        } else {
+          // @ts-ignore SqliteError
+          result[idx] = new Error(row.message);
+        }
         continue;
       } else if (!row) {
         if (tableName) {
