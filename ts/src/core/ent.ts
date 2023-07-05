@@ -117,6 +117,13 @@ class ErrorWrapper {
   constructor(public error: Error) {}
 }
 
+function rowIsError(row: any): row is Error {
+  return (
+    row instanceof Error ||
+    (typeof row === "object" && row.constructor.name === "SqliteError")
+  );
+}
+
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: Viewer,
   options: LoadEntOptions<TEnt, TViewer>,
@@ -143,7 +150,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       const row = rows[idx];
 
       // db error
-      if (row instanceof Error) {
+      if (rowIsError(row)) {
         result[idx] = row;
         continue;
       } else if (!row) {
@@ -160,7 +167,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
         }
       } else {
         const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-        if (r instanceof Error) {
+        if (rowIsError(r)) {
           console.debug("getEntLoader error", row, r);
           result[idx] = new ErrorWrapper(r);
         } else {
@@ -281,7 +288,7 @@ async function applyPrivacyPolicyForRowAndStoreInEntLoader<
   }
 
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-  if (r instanceof Error) {
+  if (rowIsError(r)) {
     console.debug("applyPrivacyPolicyForRowAndStoreInEntLoader", r);
     console.trace();
     loader.prime(id, new ErrorWrapper(r));
@@ -430,7 +437,7 @@ export async function loadEnts<
 
   const ret = await getEntLoader(viewer, options).loadMany(ids);
   for (const r of ret) {
-    if (r instanceof Error) {
+    if (rowIsError(r)) {
       throw r;
     }
     if (r instanceof ErrorWrapper) {
@@ -684,7 +691,7 @@ export async function loadDerivedEnt<
   const r = await applyPrivacyPolicyForEnt(viewer, ent, data, {
     ent: loader,
   });
-  if (r instanceof Error) {
+  if (rowIsError(r)) {
     return null;
   }
   return r as TEnt | null;
@@ -743,7 +750,7 @@ async function applyPrivacyPolicyForEntX<
   options: FieldPrivacyOptions<TEnt, TViewer>,
 ): Promise<TEnt> {
   const r = await applyPrivacyPolicyForEnt(viewer, ent, data, options);
-  if (r instanceof Error) {
+  if (rowIsError(r)) {
     throw r;
   }
   if (r === null) {
@@ -1336,7 +1343,7 @@ export async function loadEdgeDatas(
     if (!row) {
       return;
     }
-    if (row instanceof Error) {
+    if (rowIsError(row)) {
       throw row;
     }
     m.set(row["edge_type"], new AssocEdgeData(row));
@@ -1594,7 +1601,7 @@ export async function applyPrivacyPolicyForRow<
   row: Data,
 ): Promise<TEnt | null> {
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-  return r instanceof Error ? null : r;
+  return rowIsError(r) ? null : r;
 }
 
 async function applyPrivacyPolicyForRowImpl<
