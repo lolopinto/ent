@@ -118,10 +118,7 @@ class ErrorWrapper {
 }
 
 function rowIsError(row: any): row is Error {
-  return (
-    row instanceof Error ||
-    (typeof row === "object" && row.constructor.name === "SqliteError")
-  );
+  return row instanceof Error || row?.constructor?.name === "SqliteError";
 }
 
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
