@@ -431,6 +431,7 @@ export async function loadEnts<
       throw r;
     }
     if (r instanceof ErrorWrapper) {
+      console.debug("error-wrapper", r);
       continue;
     }
 
