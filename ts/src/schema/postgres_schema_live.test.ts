@@ -34,8 +34,7 @@ import {
 } from "../testutils/db/temp_db";
 import { defaultTimestampParser, Dialect } from "../core/db";
 import { DBType, FieldMap } from "./schema";
-import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
-import { ID, Ent, Viewer, Data, PrivacyPolicy } from "../core/base";
+import { Ent } from "../core/base";
 import { WriteOperation } from "../action";
 import { DBTimeZone } from "../testutils/db_time_zone";
 

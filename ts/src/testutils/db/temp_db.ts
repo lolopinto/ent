@@ -577,7 +577,14 @@ export class TempDB {
     if (this.dialect === Dialect.SQLite) {
       this.sqlite.close();
       if (!this.sqlite.memory) {
-        fs.rmSync(this.getSqliteClient().name);
+        const f = this.getSqliteClient().name;
+        fs.rmSync(f);
+        fs.rmSync(`${f}-shm`, {
+          force: true,
+        });
+        fs.rmSync(`${f}-wal`, {
+          force: true,
+        });
       }
       return;
     }

@@ -1,8 +1,6 @@
 import {
   PrivacyPolicy,
-  ID,
   Ent,
-  Data,
   Viewer,
   PrivacyResult,
   Allow,
@@ -12,7 +10,14 @@ import {
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule, EntPrivacyError } from "./privacy";
-import { loadCustomEnts, loadEnt, loadEnts, loadEntX } from "./ent";
+import {
+  getEntLoader,
+  loadCustomEnts,
+  loadEnt,
+  loadEnts,
+  loadEntX,
+  rowIsError,
+} from "./ent";
 import {
   createRowForTest,
   deleteRowsForTest,
@@ -194,6 +199,52 @@ function commonTests() {
     }
   });
 
+  test("query error throws for loadEnts implementation detail", async () => {
+    // use loader directly
+    const loader = getEntLoader(new IDViewer(1), invalidFieldOpts);
+    const rows = await loader.loadMany([1]);
+    expect(rows.length).toBe(1);
+    expect(rowIsError(rows[0])).toBe(true);
+    expect((rows[0] as Error).message).toBe(getExpectedErrorMessageOnRead());
+  });
+
+  test("query error throws for loadEnts implementation detail with context", async () => {
+    // use loader directly
+    const loader = getEntLoader(
+      contextifyViewer(new IDViewer(1)),
+      invalidFieldOpts,
+    );
+    const rows = await loader.loadMany([1]);
+    expect(rows.length).toBe(1);
+    expect(rowIsError(rows[0])).toBe(true);
+    expect((rows[0] as Error).message).toBe(getExpectedErrorMessageOnRead());
+  });
+
+  test("query error throws for loadEnt implementation detail", async () => {
+    // use loader directly
+    const loader = getEntLoader(new IDViewer(1), invalidFieldOpts);
+    try {
+      await loader.load(1);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
+  test("query error throws for loadEnt implementation detail with context", async () => {
+    // use loader directly
+    const loader = getEntLoader(
+      contextifyViewer(new IDViewer(1)),
+      invalidFieldOpts,
+    );
+    try {
+      await loader.load(1);
+      throw new Error("should throw");
+    } catch (err) {
+      expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
+    }
+  });
+
   test("query error throws for loadEnts. log query with error", async () => {
     loadConfig({
       logQueryWithError: true,
@@ -279,7 +330,6 @@ function commonTests() {
   test("query error throws for loadEnt", async () => {
     try {
       const r = await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
-      console.log(r);
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
@@ -292,7 +342,6 @@ function commonTests() {
     });
     try {
       const r = await loadEnt(new IDViewer(1), 2, invalidFieldOpts);
-      console.log(r);
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toMatch(
