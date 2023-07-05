@@ -165,7 +165,6 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       } else {
         const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
         if (rowIsError(r)) {
-          console.debug("getEntLoader error", row, r);
           result[idx] = new ErrorWrapper(r);
         } else {
           result[idx] = r;
@@ -286,8 +285,6 @@ async function applyPrivacyPolicyForRowAndStoreInEntLoader<
 
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
   if (rowIsError(r)) {
-    console.debug("applyPrivacyPolicyForRowAndStoreInEntLoader", r);
-    console.trace();
     loader.prime(id, new ErrorWrapper(r));
     return new ErrorWrapper(r);
   } else {
@@ -438,7 +435,6 @@ export async function loadEnts<
       throw r;
     }
     if (r instanceof ErrorWrapper) {
-      console.debug("error-wrapper", r);
       continue;
     }
 
