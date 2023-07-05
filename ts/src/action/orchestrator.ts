@@ -49,7 +49,7 @@ import { log } from "../core/logger";
 import { Trigger } from "./action";
 import memoize from "memoizee";
 import * as clause from "../core/clause";
-import { types } from "util";
+import { isPromise } from "util/types";
 import { RawQueryOperation } from "./operations";
 
 type MaybeNull<T extends Ent> = T | null;
@@ -593,7 +593,7 @@ export class Orchestrator<
 
       if (field.valid) {
         let valid = field.valid(val);
-        if (types.isPromise(valid)) {
+        if (isPromise(valid)) {
           valid = await valid;
         }
         // if not valid, don't format and don't pass to ent?
@@ -606,7 +606,7 @@ export class Orchestrator<
 
       // nested so it's not JSON stringified or anything like that
       val = field.format(formatted[dbKey], true);
-      if (types.isPromise(val)) {
+      if (isPromise(val)) {
         val = await val;
       }
 
@@ -1041,7 +1041,7 @@ export class Orchestrator<
                 `defaultValueOnCreate() returned undefined for field ${fieldName}`,
               );
             }
-            if (types.isPromise(defaultValue)) {
+            if (isPromise(defaultValue)) {
               defaultValue = await defaultValue;
             }
           }
@@ -1052,7 +1052,7 @@ export class Orchestrator<
           this.actualOperation === WriteOperation.Edit
         ) {
           defaultValue = field.defaultValueOnEdit(builder, input);
-          if (types.isPromise(defaultValue)) {
+          if (isPromise(defaultValue)) {
             defaultValue = await defaultValue;
           }
         }
@@ -1126,7 +1126,7 @@ export class Orchestrator<
     } else if (this.isBuilder(value)) {
       if (field.valid) {
         let valid = field.valid(value);
-        if (types.isPromise(valid)) {
+        if (isPromise(valid)) {
           valid = await valid;
         }
         if (!valid) {
@@ -1140,7 +1140,7 @@ export class Orchestrator<
     } else {
       if (field.valid) {
         let valid = field.valid(value);
-        if (types.isPromise(valid)) {
+        if (isPromise(valid)) {
           valid = await valid;
         }
         if (!valid) {
