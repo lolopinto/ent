@@ -1126,7 +1126,7 @@ export class Orchestrator<
     } else if (this.isBuilder(value)) {
       if (field.valid) {
         let valid = field.valid(value);
-        if (types.isPromise(valid)) {
+        if (isPromise(valid)) {
           valid = await valid;
         }
         if (!valid) {
@@ -1140,7 +1140,7 @@ export class Orchestrator<
     } else {
       if (field.valid) {
         let valid = field.valid(value);
-        if (types.isPromise(valid)) {
+        if (isPromise(valid)) {
           valid = await valid;
         }
         if (!valid) {
