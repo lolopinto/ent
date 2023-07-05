@@ -161,6 +161,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       } else {
         const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
         if (r instanceof Error) {
+          console.debug("getEntLoader error", row, r);
           result[idx] = new ErrorWrapper(r);
         } else {
           result[idx] = r;
