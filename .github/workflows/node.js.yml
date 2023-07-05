@@ -56,7 +56,6 @@ jobs:
         registry-url: 'https://npm.pkg.github.com'
         scope: '@lolopinto'
         node-version: ${{ matrix.node-version }}
-        # cache: 'npm'
 
     - uses: actions/cache@v3
       with:

@@ -258,14 +258,9 @@ function commonTests() {
     }
   });
 
-  test.only("query error throws for loadEnts with context", async () => {
+  test("query error throws for loadEnts with context", async () => {
     try {
-      const r = await loadEnts(
-        contextifyViewer(new IDViewer(1)),
-        invalidFieldOpts,
-        1,
-      );
-      console.debug(r);
+      await loadEnts(contextifyViewer(new IDViewer(1)), invalidFieldOpts, 1);
       throw new Error("should throw");
     } catch (err) {
       expect((err as Error).message).toBe(getExpectedErrorMessageOnRead());
