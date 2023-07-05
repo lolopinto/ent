@@ -163,7 +163,7 @@ export default class DB {
     } else {
       let sqlite = require("better-sqlite3");
       const dbb = sqlite(db.filePath || "");
-      dbb.exec("PRAGMA journal_mode = WAL");
+      dbb.pragma("journal_mode = WAL");
       this.q = new Sqlite(dbb);
     }
   }

@@ -118,6 +118,8 @@ class ErrorWrapper {
 }
 
 function rowIsError(row: any): row is Error {
+  // jest does things that break instanceof checks
+  // so we need to check the name as well for native error SqliteError
   return row instanceof Error || row?.constructor?.name === "SqliteError";
 }
 
