@@ -281,6 +281,8 @@ async function applyPrivacyPolicyForRowAndStoreInEntLoader<
 
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
   if (r instanceof Error) {
+    console.debug("applyPrivacyPolicyForRowAndStoreInEntLoader", r);
+    console.trace();
     loader.prime(id, new ErrorWrapper(r));
     return new ErrorWrapper(r);
   } else {
