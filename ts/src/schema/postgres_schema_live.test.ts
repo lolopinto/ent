@@ -3,6 +3,7 @@ import pg from "pg";
 import * as fs from "fs";
 import * as path from "path";
 import each from "jest-each";
+import { pipeline } from "node:stream/promises";
 import { LoggedOutViewer } from "../core/viewer";
 import {
   StringType,
@@ -37,6 +38,7 @@ import { DBType, FieldMap } from "./schema";
 import { Ent } from "../core/base";
 import { WriteOperation } from "../action";
 import { DBTimeZone } from "../testutils/db_time_zone";
+import { from as copyFrom } from "pg-copy-streams";
 
 const UserSchema = getBuilderSchemaFromFields(
   {
@@ -499,9 +501,7 @@ describe("date", () => {
   });
 });
 
-test.skip("timestamptz copy", async () => {
-  // lame version of skip for ci since test is failing
-  // TODO: https://github.com/lolopinto/ent/issues/294
+test("timestamptz copy", async () => {
   await createUsersWithTZ();
 
   const file = path.join(
@@ -527,8 +527,11 @@ test.skip("timestamptz copy", async () => {
   try {
     const client = tdb.getPostgresClient();
 
-    const query = `COPY users (${rows[0].join(",")}) FROM '${file}' CSV HEADER`;
-    await client.query(query);
+    const ingestStream = client.query(
+      copyFrom("COPY users FROM STDIN CSV HEADER"),
+    );
+    const sourceStream = fs.createReadStream(file);
+    await pipeline(sourceStream, ingestStream);
 
     const r = await client.query("SELECT COUNT(1) FROM users");
     expect(r.rowCount).toBe(1);
