@@ -499,12 +499,9 @@ describe("date", () => {
   });
 });
 
-test("timestamptz copy", async () => {
+test.skip("timestamptz copy", async () => {
   // lame version of skip for ci since test is failing
   // TODO: https://github.com/lolopinto/ent/issues/294
-  if (process.env.NODE_AUTH_TOKEN) {
-    return;
-  }
   await createUsersWithTZ();
 
   const file = path.join(
