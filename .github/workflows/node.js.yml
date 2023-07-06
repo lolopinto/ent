@@ -52,10 +52,9 @@ jobs:
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
-        always-auth: true
-        registry-url: 'https://npm.pkg.github.com'
-        scope: '@lolopinto'
         node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: ts/package-lock.json
 
     - uses: actions/cache@v3
       with:
@@ -65,8 +64,6 @@ jobs:
           ${{ runner.os }}-node-
 
     - run: npm ci 
-      env:
-        NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
     - run: npm run build --if-present 
     - run: npm test
       env:
