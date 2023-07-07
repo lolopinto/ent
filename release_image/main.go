@@ -19,7 +19,8 @@ import (
 // next tag to use
 
 // 7 is arm64
-const TAG = "0.1.0-alpha.50-test7"
+// 8 is amd64
+const TAG = "0.1.0-alpha.50-test8"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 18
@@ -44,8 +45,8 @@ var SUFFIXES = []string{
 
 // can change platforms here to test locally
 var PLATFORMS = []string{
-	// "linux/amd64",
-	"linux/arm64",
+	"linux/amd64",
+	// "linux/arm64",
 }
 
 func main() {
