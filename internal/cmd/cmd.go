@@ -24,6 +24,7 @@ func GetArgsForTsNodeScript(rootPath string) []string {
 		filepath.Join(rootPath, "tsconfig.json"),
 		"--transpileOnly",
 		"-r",
+		// for paths like src/ent/generated/types.ts
 		GetTsconfigPaths(),
 	}
 }
@@ -55,22 +56,23 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 		}
 	} else {
 		cmdName = "ts-node-script"
+		cmdArgs = append(cmdArgs, GetArgsForTsNodeScript(dirPath)...)
 
 		if useSwc {
-			// we're going to do: ts-node -r tsconfig-paths/register --swc
-			cmdName = "ts-node"
+			// for local ts-node so we get the override
+			// we're going to do: npx ts-node -r tsconfig-paths/register --swc
+			cmdName = "npx"
 			cmdArgs = append(
 				cmdArgs,
 				"--swc",
 			)
+			cmdArgs = append([]string{"ts-node"}, cmdArgs...)
 
 			env = append(env, "SWCRC=true")
-		} else {
-			cmdArgs = append(cmdArgs, GetArgsForTsNodeScript(dirPath)...)
 		}
 
 		// for paths like src/ent/generated/types.ts
-		cmdArgs = append(cmdArgs, "-r", GetTsconfigPaths())
+		// cmdArgs = append(cmdArgs, "-r", GetTsconfigPaths())
 	}
 
 	if !useSwc {

@@ -173,7 +173,7 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
     return;
   }
   return new Promise((resolve, reject) => {
-    let args: string[] = ["--swc", filePath];
+    let args: string[] = [];
     const env = {
       ...process.env,
     };
@@ -181,10 +181,10 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
     if (process.env.DISABLE_SWC) {
       args = ["--transpileOnly", filePath];
     } else {
+      args = ["--swc", filePath];
       // we seem to get tsconfig-paths by default because child process but not 100% sure...
       env.SWCRC = "true";
     }
-    // args.push(filePath);
     const r = spawn("ts-node", args, {
       env,
     });
