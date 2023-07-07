@@ -1,13 +1,25 @@
 diff --git a/node_modules/ts-node/dist/transpilers/swc.js b/node_modules/ts-node/dist/transpilers/swc.js
-index eeddd4f..064adbd 100644
+index eeddd4f..d3afef0 100644
 --- a/node_modules/ts-node/dist/transpilers/swc.js
 +++ b/node_modules/ts-node/dist/transpilers/swc.js
-@@ -165,7 +165,7 @@ function createSwcOptions(compilerOptions, nodeModuleEmitKind, swcInstance, swcD
+@@ -165,8 +165,8 @@ function createSwcOptions(compilerOptions, nodeModuleEmitKind, swcInstance, swcD
                      ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
                  }
                  : undefined,
 -            swcrc: false,
+-            jsc: {
 +            swcrc: true,
-             jsc: {
++/*            jsc: {
                  externalHelpers: importHelpers,
                  parser: {
+                     syntax: 'typescript',
+@@ -191,7 +191,8 @@ function createSwcOptions(compilerOptions, nodeModuleEmitKind, swcInstance, swcD
+                 keepClassNames,
+                 experimental: {
+                     keepImportAssertions: true,
+-                },
++                    },
++		    */
+             },
+         };
+         // Throw a helpful error if swc version is old, for example, if it rejects `ignoreDynamic`
