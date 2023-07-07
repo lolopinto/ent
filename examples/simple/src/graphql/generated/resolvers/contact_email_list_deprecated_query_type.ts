@@ -31,7 +31,9 @@ export const ContactEmailListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   ContactEmailListDeprecatedArgs
 > = {
-  type: new GraphQLList(new GraphQLNonNull(ContactEmailType)),
+  type: new GraphQLNonNull(
+    new GraphQLList(new GraphQLNonNull(ContactEmailType)),
+  ),
   args: {
     id: {
       description: "",
