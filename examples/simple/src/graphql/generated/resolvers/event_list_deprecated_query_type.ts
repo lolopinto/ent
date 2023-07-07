@@ -31,7 +31,7 @@ export const EventListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   EventListDeprecatedArgs
 > = {
-  type: new GraphQLList(new GraphQLNonNull(EventType)),
+  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(EventType))),
   args: {
     id: {
       description: "",
