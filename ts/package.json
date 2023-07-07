@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.1.0-alpha160-test2",
+  "version": "0.1.0-alpha160-test3",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -8,6 +8,7 @@
     "example": "examples"
   },
   "dependencies": {
+    "@snowtop/ts-node": "^0.0.1",
     "@types/node": "^20.2.5",
     "camel-case": "^4.1.2",
     "cosmiconfig": "^8.1.3",
@@ -24,7 +25,6 @@
     "pg": "^8.11.0",
     "prettier": "^2.8.8",
     "snake-case": "^3.0.4",
-    "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
     "tslib": "^2.5.2",
     "typescript": "^5.0.4",

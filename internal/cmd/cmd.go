@@ -66,7 +66,7 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 				cmdArgs,
 				"--swc",
 			)
-			cmdArgs = append([]string{"ts-node"}, cmdArgs...)
+			cmdArgs = append([]string{"@snowtop/ts-node"}, cmdArgs...)
 
 			env = append(env, "SWCRC=true")
 		}
