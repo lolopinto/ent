@@ -31,7 +31,9 @@ export const HoursOfOperationListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   HoursOfOperationListDeprecatedArgs
 > = {
-  type: new GraphQLList(new GraphQLNonNull(HoursOfOperationType)),
+  type: new GraphQLNonNull(
+    new GraphQLList(new GraphQLNonNull(HoursOfOperationType)),
+  ),
   args: {
     id: {
       description: "",

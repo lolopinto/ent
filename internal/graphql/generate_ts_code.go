@@ -728,7 +728,7 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
             "decorators": true
         },
         "target": "es2020",
-        "keepClassNames":true,
+        "keepClassNames": true,
         "transform": {
             "decoratorVersion": "2022-03"
         }

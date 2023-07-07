@@ -57,13 +57,11 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 		cmdName = "ts-node-script"
 
 		if useSwc {
-			// if using swc, skip ts-node and use node directly
-			// we're going to do: node -r @swc-node/register -r tsconfig-paths/register
-			cmdName = "node"
+			// we're going to do: ts-node -r tsconfig-paths/register --swc
+			cmdName = "ts-node"
 			cmdArgs = append(
 				cmdArgs,
-				"-r",
-				"@swc-node/register",
+				"--swc",
 			)
 
 			env = append(env, "SWCRC=true")

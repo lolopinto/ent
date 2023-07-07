@@ -74,7 +74,6 @@ jobs:
     - run: |
         cd ts 
         npm ci
-        npm install --save-dev @swc-node/register@1.6.5
 
     - name: Setup ripgrep
       run: curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && sudo dpkg -i ripgrep_13.0.0_amd64.deb

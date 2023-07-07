@@ -31,7 +31,7 @@ export const ContactListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   ContactListDeprecatedArgs
 > = {
-  type: new GraphQLList(new GraphQLNonNull(ContactType)),
+  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(ContactType))),
   args: {
     id: {
       description: "",
