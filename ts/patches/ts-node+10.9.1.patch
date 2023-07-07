@@ -1,25 +1,33 @@
 diff --git a/node_modules/ts-node/dist/transpilers/swc.js b/node_modules/ts-node/dist/transpilers/swc.js
-index eeddd4f..d3afef0 100644
+index eeddd4f..702a15f 100644
 --- a/node_modules/ts-node/dist/transpilers/swc.js
 +++ b/node_modules/ts-node/dist/transpilers/swc.js
-@@ -165,8 +165,8 @@ function createSwcOptions(compilerOptions, nodeModuleEmitKind, swcInstance, swcD
-                     ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
-                 }
-                 : undefined,
--            swcrc: false,
--            jsc: {
-+            swcrc: true,
-+/*            jsc: {
-                 externalHelpers: importHelpers,
+@@ -171,14 +171,16 @@ function createSwcOptions(compilerOptions, nodeModuleEmitKind, swcInstance, swcD
                  parser: {
                      syntax: 'typescript',
-@@ -191,7 +191,8 @@ function createSwcOptions(compilerOptions, nodeModuleEmitKind, swcInstance, swcD
+                     tsx: isTsx,
+-                    decorators: experimentalDecorators,
++                    decorators: true,
+                     dynamicImport: true,
+                     importAssertions: true,
+                 },
+                 target: swcTarget,
++//		keepClassNames: true,
+                 transform: {
+-                    decoratorMetadata: emitDecoratorMetadata,
+-                    legacyDecorator: true,
++//                    decoratorMetadata: emitDecoratorMetadata,
++		    decoratorVersion: "2022-03",
++//                    legacyDecorator: true,
+                     react: {
+                         throwIfNamespace: false,
+                         development: jsxDevelopment,
+@@ -191,7 +193,7 @@ function createSwcOptions(compilerOptions, nodeModuleEmitKind, swcInstance, swcD
                  keepClassNames,
                  experimental: {
                      keepImportAssertions: true,
 -                },
 +                    },
-+		    */
              },
          };
          // Throw a helpful error if swc version is old, for example, if it rejects `ignoreDynamic`
