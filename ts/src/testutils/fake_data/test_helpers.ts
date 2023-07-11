@@ -140,7 +140,8 @@ export async function createAllContacts(
   const contacts = await Promise.all(
     userInputs.map(async (input) => {
       // just to make times deterministic so that tests can consistently work
-      advanceBy(100);
+      // doing a day so we can do time range queries more easily
+      advanceBy(86400);
       const builder = getContactBuilder(
         userr.viewer,
         getContactInput(userr, input),
