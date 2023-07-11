@@ -29,7 +29,7 @@ func GetArgsForTsNodeScript(rootPath string) []string {
 }
 
 func UseSwc() bool {
-	return !util.EnvIsTrue("DISABLE_SWC")
+	return util.EnvIsTrue("ENABLE_SWC")
 }
 
 type CommandInfo struct {
@@ -75,8 +75,8 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 		cmdArgs = append(cmdArgs, "-r", GetTsconfigPaths())
 	}
 
-	if !useSwc {
-		env = append(env, "DISABLE_SWC=true")
+	if useSwc {
+		env = append(env, "ENABLE_SWC=true")
 	}
 
 	// append LOCAL_SCRIPT_PATH so we know. in typescript...

@@ -535,7 +535,7 @@ describe("postgres", () => {
     });
   });
 
-  describe("In", () => {
+  describe("In|NotIn", () => {
     test("1 arg", () => {
       const cls = clause.In<ExampleData>("id", 1);
       expect(cls.clause(1)).toBe("id = $1");
@@ -543,6 +543,15 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
       expect(cls.instanceKey()).toEqual("in:id:1");
+    });
+
+    test("not in. 1 arg", () => {
+      const cls = clause.DBTypeNotIn<ExampleData>("id", [1], "integer");
+      expect(cls.clause(1)).toBe("id != $1");
+      expect(cls.columns()).toStrictEqual(["id"]);
+      expect(cls.values()).toStrictEqual([1]);
+      expect(cls.logValues()).toStrictEqual([1]);
+      expect(cls.instanceKey()).toEqual("not in:id:1");
     });
 
     test("spread args", () => {
@@ -606,23 +615,10 @@ describe("postgres", () => {
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
       });
 
-      test("int", () => {
-        const ids = [1, 2, 3, 4, 5];
-
-        const cls = clause.In<ExampleData>("id", ids, "int");
-        expect(cls.clause(1)).toBe(
-          "id IN (VALUES($1::int), ($2), ($3), ($4), ($5))",
-        );
-        expect(cls.columns()).toStrictEqual(["id"]);
-        expect(cls.values()).toStrictEqual(ids);
-        expect(cls.logValues()).toStrictEqual(ids);
-        expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
-      });
-
       test("integer", () => {
         const ids = [1, 2, 3, 4, 5];
 
-        const cls = clause.In<ExampleData>("id", ids, "integer");
+        const cls = clause.IntegerIn<ExampleData>("id", ids);
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::integer), ($2), ($3), ($4), ($5))",
         );
@@ -635,7 +631,7 @@ describe("postgres", () => {
       test("uuid explicit", () => {
         const ids = [1, 2, 3, 4, 5].map((_) => v1());
 
-        const cls = clause.In<ExampleData>("id", ids, "uuid");
+        const cls = clause.UuidIn<ExampleData>("id", ids);
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
         );
@@ -643,6 +639,32 @@ describe("postgres", () => {
         expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
+      });
+
+      test("not in uuid", () => {
+        const ids = [1, 2, 3, 4, 5].map((_) => v1());
+
+        const cls = clause.UuidNotIn<ExampleData>("id", ids);
+        expect(cls.clause(1)).toBe(
+          "id NOT IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
+        expect(cls.logValues()).toStrictEqual(ids);
+        expect(cls.instanceKey()).toEqual(`not in:id:${ids.join(",")}`);
+      });
+
+      test("not in text", () => {
+        const ids = [1, 2, 3, 4, 5].map((_) => `id-${_}`);
+
+        const cls = clause.DBTypeNotIn<ExampleData>("id", ids, "text");
+        expect(cls.clause(1)).toBe(
+          "id NOT IN (VALUES($1::text), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
+        expect(cls.logValues()).toStrictEqual(ids);
+        expect(cls.instanceKey()).toEqual(`not in:id:${ids.join(",")}`);
       });
     });
   });
@@ -1551,6 +1573,15 @@ describe("sqlite", () => {
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
       expect(cls.instanceKey()).toEqual("in:id:1");
+    });
+
+    test("not in. 1 arg", () => {
+      const cls = clause.DBTypeNotIn<ExampleData>("id", [1], "integer");
+      expect(cls.clause(1)).toBe("id != ?");
+      expect(cls.columns()).toStrictEqual(["id"]);
+      expect(cls.values()).toStrictEqual([1]);
+      expect(cls.logValues()).toStrictEqual([1]);
+      expect(cls.instanceKey()).toEqual("not in:id:1");
     });
 
     test("spread args", () => {

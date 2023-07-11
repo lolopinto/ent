@@ -18,6 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Comment } from "../../../ent";
+import { CommentArgInputType } from "../mutations/input/comment_arg_input_type";
 import { CommentSortColumnType } from "./enums_type";
 import { RootToCommentConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -25,6 +26,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 interface CommentConnectionArgs {
   ids: any;
   sortCol: any;
+  query: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -45,6 +47,10 @@ export const CommentConnectionQueryType: GraphQLFieldConfig<
     sortCol: {
       description: "",
       type: CommentSortColumnType,
+    },
+    query: {
+      description: "",
+      type: CommentArgInputType,
     },
     first: {
       description: "",

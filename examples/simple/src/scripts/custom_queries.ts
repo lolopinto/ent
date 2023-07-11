@@ -1,10 +1,18 @@
 import * as fs from "fs";
 import { camelCase } from "camel-case";
-import { Schema, DBType, getStorageKey } from "@snowtop/ent";
+import { snakeCase } from "snake-case";
+import {
+  Schema,
+  DBType,
+  getStorageKey,
+  UUIDType,
+  UUIDListType,
+} from "@snowtop/ent";
+import { CustomGraphQLInput } from "@snowtop/ent/graphql/graphql";
 
 async function main() {
   const paths = fs.readdirSync("src/schema");
-  const queries: any[] = [];
+  const queries: NonNullable<CustomGraphQLInput["queries"]> = [];
   const customTypes: {
     [key: string]: any;
   } = {};
@@ -45,6 +53,10 @@ async function main() {
         nullable: true,
       },
     ];
+
+    const connectionArg = `${node}ArgInput`;
+    const connectionArgType = `${node}ArgInputType`;
+
     const connectionArgs: any[] = [
       {
         name: "context",
@@ -97,15 +109,36 @@ async function main() {
       }
     }
     const sortType = `${node}SortColumn`;
+
     customTypes[sortType] = {
       type: sortType,
       enumMap: sortKeys,
+    };
+    customTypes[connectionArg] = {
+      type: connectionArg,
+      structFields: {
+        id: UUIDType({ nullable: true }),
+        ids: UUIDListType({ nullable: true }),
+        // more can be here. we're not actually using it so it's just an example
+      },
+      inputType: true,
     };
 
     connectionArgs.push({
       name: "sortCol",
       type: sortType,
       nullable: true,
+    });
+    connectionArgs.push({
+      name: "query",
+      type: connectionArg,
+      nullable: true,
+    });
+    connectionImports.push({
+      importPath: `src/graphql/generated/mutations/input/${snakeCase(
+        connectionArgType,
+      )}`,
+      import: connectionArgType,
     });
 
     const listContent = `
@@ -144,7 +177,6 @@ async function main() {
       name: `${query}_list_deprecated`,
       list: true,
       fieldType: "ASYNC_FUNCTION",
-      nullable: true,
       args: listArgs,
       resultType: node,
       description: `custom query for ${query}. list`,
@@ -156,7 +188,6 @@ async function main() {
       edgeName: query,
       connection: true,
       fieldType: "ASYNC_FUNCTION",
-      nullable: true,
       args: connectionArgs,
       resultType: node,
       description: `custom query for ${query}. connection`,

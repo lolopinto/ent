@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { camelCase } from "camel-case";
-import { types } from "util";
+import { isPromise } from "util/types";
 import { validate } from "uuid";
 import { Ent, WriteOperation } from "../core/base";
 import { Builder } from "../action/action";
@@ -916,7 +916,7 @@ export class ListField extends BaseField {
       return true;
     }
     const res = valid.apply(this.field, [val[0]]);
-    if (types.isPromise(res)) {
+    if (isPromise(res)) {
       const ret = await Promise.all(
         val.map(async (v) => await valid.apply(this.field, [v])),
       );

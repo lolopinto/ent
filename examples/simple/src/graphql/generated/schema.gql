@@ -262,6 +262,11 @@ type ContactInfo {
   source: ContactInfoSource!
 }
 
+input ContactItemFilter {
+  emailDomain: String
+  phoneNumberAreaCode: String
+}
+
 union ContactItemResult = ContactEmail | ContactPhoneNumber | ContactDate
 
 interface ContactItem {
@@ -289,7 +294,7 @@ type Contact implements Node {
   attachedComments(first: Int, after: String, last: Int, before: String): ContactCommentsFromAttachmentConnection!
   fullName: String!
   plusEmails: EmailInfo!
-  contactItems: [ContactItemResult!]!
+  contactItems(filter: ContactItemFilter): [ContactItemResult!]!
 }
 
 type DogType {
@@ -953,6 +958,11 @@ type ClearEventRsvpStatusPayload {
   event: Event!
 }
 
+input CommentArgInput {
+  id: ID
+  ids: [ID!]
+}
+
 input CommentCreateInput {
   authorID: ID!
   body: String!
@@ -1006,6 +1016,11 @@ type ConfirmEditPhoneNumberPayload {
   user: User!
 }
 
+input ContactArgInput {
+  id: ID
+  ids: [ID!]
+}
+
 input ContactCreateInput {
   firstName: String!
   lastName: String!
@@ -1038,6 +1053,11 @@ input ContactEditInput {
 
 type ContactEditPayload {
   contact: Contact!
+}
+
+input ContactEmailArgInput {
+  id: ID
+  ids: [ID!]
 }
 
 input ContactEmailCreateInput {
@@ -1075,6 +1095,11 @@ type ContactEmailEditPayload {
 input ContactInfoInput {
   default: Boolean!
   source: ContactInfoSource!
+}
+
+input ContactPhoneNumberArgInput {
+  id: ID
+  ids: [ID!]
 }
 
 input ContactPhoneNumberCreateInput {
@@ -1163,6 +1188,11 @@ type EventAddHostPayload {
   event: Event!
 }
 
+input EventArgInput {
+  id: ID
+  ids: [ID!]
+}
+
 input EventCreateInput {
   name: String!
   creatorID: ID!
@@ -1227,6 +1257,11 @@ enum EventRsvpStatusInput {
   UNKNOWN
 }
 
+input HolidayArgInput {
+  id: ID
+  ids: [ID!]
+}
+
 input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt!
@@ -1237,6 +1272,11 @@ input HolidayCreateInput {
 
 type HolidayCreatePayload {
   holiday: Holiday!
+}
+
+input HoursOfOperationArgInput {
+  id: ID
+  ids: [ID!]
 }
 
 input HoursOfOperationCreateInput {
@@ -1266,6 +1306,11 @@ input RabbitTypeInput {
   name: String!
   birthday: Time!
   breed: RabbitBreed!
+}
+
+input UserArgInput {
+  id: ID
+  ids: [ID!]
 }
 
 input UserCreateInput {
@@ -1370,24 +1415,24 @@ input UserSuperNestedObjectInput {
 
 type Query {
   can_viewer_do: GlobalCanViewerDo
-  comment_connection(ids: [ID!], sortCol: CommentSortColumn, first: Int, after: String, last: Int, before: String): RootToCommentConnection!
-  comment_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Comment!]
-  contact_connection(ids: [ID!], sortCol: ContactSortColumn, first: Int, after: String, last: Int, before: String): RootToContactConnection!
-  contact_email_connection(ids: [ID!], sortCol: ContactEmailSortColumn, first: Int, after: String, last: Int, before: String): RootToContactEmailConnection!
-  contact_email_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactEmail!]
-  contact_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Contact!]
-  contact_phone_number_connection(ids: [ID!], sortCol: ContactPhoneNumberSortColumn, first: Int, after: String, last: Int, before: String): RootToContactPhoneNumberConnection!
-  contact_phone_number_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactPhoneNumber!]
-  event_connection(ids: [ID!], sortCol: EventSortColumn, first: Int, after: String, last: Int, before: String): RootToEventConnection!
-  event_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Event!]
-  holiday_connection(ids: [ID!], sortCol: HolidaySortColumn, first: Int, after: String, last: Int, before: String): RootToHolidayConnection!
-  holiday_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Holiday!]
-  hours_of_operation_connection(ids: [ID!], sortCol: HoursOfOperationSortColumn, first: Int, after: String, last: Int, before: String): RootToHoursOfOperationConnection!
-  hours_of_operation_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [HoursOfOperation!]
+  comment_connection(ids: [ID!], sortCol: CommentSortColumn, query: CommentArgInput, first: Int, after: String, last: Int, before: String): RootToCommentConnection!
+  comment_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Comment!]!
+  contact_connection(ids: [ID!], sortCol: ContactSortColumn, query: ContactArgInput, first: Int, after: String, last: Int, before: String): RootToContactConnection!
+  contact_email_connection(ids: [ID!], sortCol: ContactEmailSortColumn, query: ContactEmailArgInput, first: Int, after: String, last: Int, before: String): RootToContactEmailConnection!
+  contact_email_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactEmail!]!
+  contact_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Contact!]!
+  contact_phone_number_connection(ids: [ID!], sortCol: ContactPhoneNumberSortColumn, query: ContactPhoneNumberArgInput, first: Int, after: String, last: Int, before: String): RootToContactPhoneNumberConnection!
+  contact_phone_number_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactPhoneNumber!]!
+  event_connection(ids: [ID!], sortCol: EventSortColumn, query: EventArgInput, first: Int, after: String, last: Int, before: String): RootToEventConnection!
+  event_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Event!]!
+  holiday_connection(ids: [ID!], sortCol: HolidaySortColumn, query: HolidayArgInput, first: Int, after: String, last: Int, before: String): RootToHolidayConnection!
+  holiday_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Holiday!]!
+  hours_of_operation_connection(ids: [ID!], sortCol: HoursOfOperationSortColumn, query: HoursOfOperationArgInput, first: Int, after: String, last: Int, before: String): RootToHoursOfOperationConnection!
+  hours_of_operation_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [HoursOfOperation!]!
   node(id: ID!): Node
   timeDiff(time: Time!, log: JSON!): String!
-  user_connection(ids: [ID!], sortCol: UserSortColumn, first: Int, after: String, last: Int, before: String): RootToUserConnection!
-  user_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [User!]
+  user_connection(ids: [ID!], sortCol: UserSortColumn, query: UserArgInput, first: Int, after: String, last: Int, before: String): RootToUserConnection!
+  user_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [User!]!
   viewer: Viewer!
 }
 

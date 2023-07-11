@@ -12,6 +12,7 @@ import (
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/change"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -51,10 +52,18 @@ func (arg CustomItem) defaultArg() string {
 	return fmt.Sprintf("args.%s", arg.Name)
 }
 
+func (arg CustomItem) getCustomTypeToDeferArgImportsTo(s *gqlSchema) *CustomType {
+	ct := s.customData.CustomTypes[arg.Type]
+	if ct != nil && (ct.EnumMap != nil || len(ct.StructFields) > 0) {
+		return ct
+	}
+	return nil
+}
+
 func (arg CustomItem) renderArg(cfg *codegen.Config, s *gqlSchema) (string, []*tsimport.ImportPath) {
 	if arg.TSType != "ID" || !cfg.Base64EncodeIDs() {
-		ct := s.customData.CustomTypes[arg.Type]
-		if ct != nil && ct.EnumMap != nil {
+		ct := arg.getCustomTypeToDeferArgImportsTo(s)
+		if ct != nil {
 			return arg.defaultArg(), []*tsimport.ImportPath{
 				ct.getGraphQLImportPath(cfg),
 			}
@@ -109,16 +118,30 @@ type CustomType struct {
 	// if specified, graphql enum is generated for this...
 	EnumMap map[string]string `json:"enumMap,omitempty"`
 
+	// we need processed fields here
+	StructFields []*input.Field `json:"structFields,omitempty"`
+
 	// usually used with EnumMap to indicate if we're adding a new custom input enum where it should be placed
 	InputType bool `json:"inputType,omitempty"`
 }
 
 func (ct *CustomType) getGraphQLImportPath(cfg *codegen.Config) *tsimport.ImportPath {
+	var absPath string
 	if ct.EnumMap != nil {
-		absPath := getFilePathForEnums(cfg)
+		absPath = getFilePathForEnums(cfg)
 		if ct.InputType {
 			absPath = getFilePathForEnumInput(cfg)
 		}
+	}
+
+	if len(ct.StructFields) > 0 {
+		absPath = getFilePathForCustomInterfaceFile(cfg, ct.Type)
+		if ct.InputType {
+			absPath = getFilePathForCustomInterfaceInputFile(cfg, ct.Type)
+		}
+	}
+
+	if absPath != "" {
 		path, err := filepath.Rel(cfg.GetAbsPathToRoot(), absPath)
 		if err != nil {
 			// TODO handle better

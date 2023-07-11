@@ -1,3 +1,4 @@
+import { isPromise } from "util/types";
 import {
   Allow,
   Context,
@@ -22,6 +23,7 @@ enum privacyResult {
   Deny = 401,
   Skip = 307,
 }
+
 export class EntPrivacyError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
   privacyRule: PrivacyPolicyRule;
@@ -134,7 +136,10 @@ export class AllowIfFuncRule implements PrivacyPolicyRule {
   constructor(private fn: FuncRule) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-    const result = await this.fn(v, ent);
+    let result = this.fn(v, ent);
+    if (isPromise(result)) {
+      result = await result;
+    }
     if (result) {
       return Allow();
     }
@@ -146,7 +151,10 @@ export class DenyIfFuncRule implements PrivacyPolicyRule {
   constructor(private fn: FuncRule) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-    const result = await this.fn(v, ent);
+    let result = this.fn(v, ent);
+    if (isPromise(result)) {
+      result = await result;
+    }
     if (result) {
       return Deny();
     }
@@ -559,13 +567,15 @@ export class DelayedResultRule implements PrivacyPolicyRule {
   constructor(private fn: DelayedFuncRule) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-    const rule = await this.fn(v, ent);
+    let rule = this.fn(v, ent);
+    if (isPromise(rule)) {
+      rule = await rule;
+    }
     if (!rule) {
       return Skip();
     }
 
-    const res = await rule.apply(v, ent);
-    return res;
+    return rule.apply(v, ent);
   }
 }
 

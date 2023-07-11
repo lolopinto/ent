@@ -18,6 +18,7 @@ import {
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
 import { Holiday } from "../../../ent";
+import { HolidayArgInputType } from "../mutations/input/holiday_arg_input_type";
 import { HolidaySortColumnType } from "./enums_type";
 import { RootToHolidayConnectionType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -25,6 +26,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 interface HolidayConnectionArgs {
   ids: any;
   sortCol: any;
+  query: any;
   first: number | null;
   after: string | null;
   last: number | null;
@@ -45,6 +47,10 @@ export const HolidayConnectionQueryType: GraphQLFieldConfig<
     sortCol: {
       description: "",
       type: HolidaySortColumnType,
+    },
+    query: {
+      description: "",
+      type: HolidayArgInputType,
     },
     first: {
       description: "",

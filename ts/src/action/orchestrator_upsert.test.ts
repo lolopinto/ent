@@ -363,9 +363,12 @@ function commonTests() {
       onConflictCols: ["email_address"],
     });
 
-    await expect(
-      Promise.all([action1.saveX(), action2.saveX()]),
-    ).rejects.toThrowError(/unique_edge_table/);
+    try {
+      await Promise.all([action1.saveX(), action2.saveX()]);
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toMatch(/unique_edge_table/);
+    }
 
     // the 1 upsert and the 1 user created in the successful trigger which committed
     await verifySchemaCount(UserSchemaExtended, 2);
@@ -542,9 +545,12 @@ function commonTests() {
     action2.getTriggers = () => [addEdgeTrigger];
     action2.getObservers = () => [sendEmailObserver];
 
-    await expect(
-      Promise.all([action1.saveX(), action2.saveX()]),
-    ).rejects.toThrowError(/unique_edge_table/);
+    try {
+      await Promise.all([action1.saveX(), action2.saveX()]);
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toMatch(/unique_edge_table/);
+    }
 
     // the 1 upsert and the 1 user created in the successful trigger which committed
     await verifySchemaCount(UserSchemaExtended, 2);
