@@ -1009,7 +1009,7 @@ export function assocTests(ml: MockLogs, global = false) {
         .queryIDs();
 
       expect(ids.length).toBe(2);
-      expect(ids).toStrictEqual([contacts[1].id, contacts[0].id]);
+      expect(ids).toEqual([contacts[1].id, contacts[0].id]);
       verifyQuery({
         length: 2,
         extraClause: Less("time", contacts[2].createdAt),
@@ -1026,7 +1026,7 @@ export function assocTests(ml: MockLogs, global = false) {
         .queryIDs();
 
       expect(ids.length).toBe(1);
-      expect(ids).toStrictEqual([contacts[1].id]);
+      expect(ids).toEqual([contacts[1].id]);
       verifyQuery({
         length: 2,
         limit: 1,
@@ -1044,7 +1044,7 @@ export function assocTests(ml: MockLogs, global = false) {
         .queryIDs();
 
       expect(ids.length).toBe(1);
-      expect(ids).toStrictEqual([contacts[0].id]);
+      expect(ids).toEqual([contacts[0].id]);
       verifyQuery({
         length: 2,
         limit: 1,
@@ -1065,7 +1065,7 @@ export function assocTests(ml: MockLogs, global = false) {
       const pagination = query.paginationInfo();
 
       expect(edges.length).toBe(1);
-      expect(edges.map((edge) => edge.id2)).toStrictEqual([contacts[1].id]);
+      expect(edges.map((edge) => edge.id2)).toEqual([contacts[1].id]);
       verifyQuery({
         length: 2,
         limit: 1,
@@ -1089,7 +1089,7 @@ export function assocTests(ml: MockLogs, global = false) {
       const pagination2 = query2.paginationInfo();
 
       expect(edges2.length).toBe(1);
-      expect(edges2.map((edge) => edge.id2)).toStrictEqual([contacts[0].id]);
+      expect(edges2.map((edge) => edge.id2)).toEqual([contacts[0].id]);
 
       // complicated pagination query. ignore verifying for now
       // verifyFirstAfterCursorQuery in shared_test handles this...
@@ -1107,7 +1107,7 @@ export function assocTests(ml: MockLogs, global = false) {
         .__afterBETA(contacts[2].createdAt)
         .queryIDs();
       expect(ids.length).toBe(2);
-      expect(ids).toStrictEqual([contacts[4].id, contacts[3].id]);
+      expect(ids).toEqual([contacts[4].id, contacts[3].id]);
 
       verifyQuery({
         length: 2,
@@ -1124,7 +1124,7 @@ export function assocTests(ml: MockLogs, global = false) {
         .first(1)
         .queryIDs();
       expect(ids.length).toBe(1);
-      expect(ids).toStrictEqual([contacts[4].id]);
+      expect(ids).toEqual([contacts[4].id]);
 
       verifyQuery({
         length: 2,
@@ -1142,7 +1142,7 @@ export function assocTests(ml: MockLogs, global = false) {
         .last(1)
         .queryIDs();
       expect(ids.length).toBe(1);
-      expect(ids).toStrictEqual([contacts[3].id]);
+      expect(ids).toEqual([contacts[3].id]);
 
       verifyQuery({
         length: 2,
@@ -1160,11 +1160,7 @@ export function assocTests(ml: MockLogs, global = false) {
         .__withinBeta(contacts[1].createdAt, contacts[4].createdAt)
         .queryIDs();
       expect(ids.length).toBe(3);
-      expect(ids).toStrictEqual([
-        contacts[3].id,
-        contacts[2].id,
-        contacts[1].id,
-      ]);
+      expect(ids).toEqual([contacts[3].id, contacts[2].id, contacts[1].id]);
 
       verifyQuery({
         length: 2,
@@ -1184,7 +1180,7 @@ export function assocTests(ml: MockLogs, global = false) {
         .first(2)
         .queryIDs();
       expect(ids.length).toBe(2);
-      expect(ids).toStrictEqual([contacts[3].id, contacts[2].id]);
+      expect(ids).toEqual([contacts[3].id, contacts[2].id]);
 
       verifyQuery({
         length: 2,
@@ -1205,7 +1201,7 @@ export function assocTests(ml: MockLogs, global = false) {
         .last(2)
         .queryIDs();
       expect(ids.length).toBe(2);
-      expect(ids).toStrictEqual([contacts[1].id, contacts[2].id]);
+      expect(ids).toEqual([contacts[1].id, contacts[2].id]);
 
       verifyQuery({
         length: 2,
@@ -1230,7 +1226,7 @@ export function assocTests(ml: MockLogs, global = false) {
       const pagination = query.paginationInfo();
 
       expect(edges.length).toBe(2);
-      expect(edges.map((edge) => edge.id2)).toStrictEqual([
+      expect(edges.map((edge) => edge.id2)).toEqual([
         contacts[3].id,
         contacts[2].id,
       ]);
@@ -1261,7 +1257,7 @@ export function assocTests(ml: MockLogs, global = false) {
       const pagination2 = query2.paginationInfo();
 
       expect(edges2.length).toBe(1);
-      expect(edges2.map((edge) => edge.id2)).toStrictEqual([contacts[1].id]);
+      expect(edges2.map((edge) => edge.id2)).toEqual([contacts[1].id]);
 
       // complicated pagination query. ignore verifying for now
       // verifyFirstAfterCursorQuery in shared_test handles this...
@@ -1283,7 +1279,7 @@ export function assocTests(ml: MockLogs, global = false) {
       const pagination = query.paginationInfo();
 
       expect(edges.length).toBe(2);
-      expect(edges.map((edge) => edge.id2)).toStrictEqual([
+      expect(edges.map((edge) => edge.id2)).toEqual([
         contacts[1].id,
         contacts[2].id,
       ]);
@@ -1315,7 +1311,7 @@ export function assocTests(ml: MockLogs, global = false) {
       const pagination2 = query2.paginationInfo();
 
       expect(edges2.length).toBe(1);
-      expect(edges2.map((edge) => edge.id2)).toStrictEqual([contacts[3].id]);
+      expect(edges2.map((edge) => edge.id2)).toEqual([contacts[3].id]);
 
       // complicated pagination query. ignore verifying for now
       // verifyFirstAfterCursorQuery in shared_test handles this...
