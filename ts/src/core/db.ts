@@ -162,7 +162,9 @@ export default class DB {
       });
     } else {
       let sqlite = require("better-sqlite3");
-      this.q = new Sqlite(sqlite(db.filePath || ""));
+      const dbb = sqlite(db.filePath || "");
+      dbb.pragma("journal_mode = WAL");
+      this.q = new Sqlite(dbb);
     }
   }
 

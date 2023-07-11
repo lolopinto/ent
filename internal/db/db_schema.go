@@ -707,6 +707,9 @@ func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
 
 	after := checkDBFilesInfo(cfg)
 
+	// TODO need an override flag for this
+	// this is an issue when there's a downgrade...
+	// TODO https://github.com/lolopinto/ent/issues/1000
 	return compareDbFilesInfo(s.before, after)
 }
 

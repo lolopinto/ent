@@ -27,6 +27,7 @@ import {
 import {
   ContactCommentsFromAttachmentConnectionType,
   ContactEmailType,
+  ContactItemFilterType,
   ContactItemResultType,
   ContactPhoneNumberType,
   ContactToCommentsConnectionType,
@@ -203,12 +204,18 @@ export const ContactType = new GraphQLObjectType({
       type: new GraphQLNonNull(
         new GraphQLList(new GraphQLNonNull(ContactItemResultType)),
       ),
+      args: {
+        filter: {
+          description: "",
+          type: ContactItemFilterType,
+        },
+      },
       resolve: async (
         contact: Contact,
-        args: {},
+        args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contact.queryContactItems();
+        return contact.queryContactItems(args.filter);
       },
     },
   }),

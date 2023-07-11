@@ -117,6 +117,13 @@ class ErrorWrapper {
   constructor(public error: Error) {}
 }
 
+// note if storing the result of this in something that checks instanceof Error e.g. DataLoader, we need to check instanceof at that callsite
+export function rowIsError(row: any): row is Error {
+  // jest does things that break instanceof checks
+  // so we need to check the name as well for native error SqliteError
+  return row instanceof Error || row?.constructor?.name === "SqliteError";
+}
+
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: Viewer,
   options: LoadEntOptions<TEnt, TViewer>,
@@ -143,8 +150,13 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       const row = rows[idx];
 
       // db error
-      if (row instanceof Error) {
-        result[idx] = row;
+      if (rowIsError(row)) {
+        if (row instanceof Error) {
+          result[idx] = row;
+        } else {
+          // @ts-ignore SqliteError
+          result[idx] = new Error(row.message);
+        }
         continue;
       } else if (!row) {
         if (tableName) {
@@ -160,7 +172,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
         }
       } else {
         const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-        if (r instanceof Error) {
+        if (rowIsError(r)) {
           result[idx] = new ErrorWrapper(r);
         } else {
           result[idx] = r;
@@ -211,7 +223,7 @@ class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
   }
 }
 
-function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
+export function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
 ): EntLoader<TViewer, TEnt> {
@@ -280,7 +292,7 @@ async function applyPrivacyPolicyForRowAndStoreInEntLoader<
   }
 
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-  if (r instanceof Error) {
+  if (rowIsError(r)) {
     loader.prime(id, new ErrorWrapper(r));
     return new ErrorWrapper(r);
   } else {
@@ -427,7 +439,7 @@ export async function loadEnts<
 
   const ret = await getEntLoader(viewer, options).loadMany(ids);
   for (const r of ret) {
-    if (r instanceof Error) {
+    if (rowIsError(r)) {
       throw r;
     }
     if (r instanceof ErrorWrapper) {
@@ -680,7 +692,7 @@ export async function loadDerivedEnt<
   const r = await applyPrivacyPolicyForEnt(viewer, ent, data, {
     ent: loader,
   });
-  if (r instanceof Error) {
+  if (rowIsError(r)) {
     return null;
   }
   return r as TEnt | null;
@@ -739,7 +751,7 @@ async function applyPrivacyPolicyForEntX<
   options: FieldPrivacyOptions<TEnt, TViewer>,
 ): Promise<TEnt> {
   const r = await applyPrivacyPolicyForEnt(viewer, ent, data, options);
-  if (r instanceof Error) {
+  if (rowIsError(r)) {
     throw r;
   }
   if (r === null) {
@@ -1332,7 +1344,7 @@ export async function loadEdgeDatas(
     if (!row) {
       return;
     }
-    if (row instanceof Error) {
+    if (rowIsError(row)) {
       throw row;
     }
     m.set(row["edge_type"], new AssocEdgeData(row));
@@ -1590,7 +1602,7 @@ export async function applyPrivacyPolicyForRow<
   row: Data,
 ): Promise<TEnt | null> {
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-  return r instanceof Error ? null : r;
+  return rowIsError(r) ? null : r;
 }
 
 async function applyPrivacyPolicyForRowImpl<

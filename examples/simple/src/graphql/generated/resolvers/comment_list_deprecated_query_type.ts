@@ -31,7 +31,7 @@ export const CommentListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   CommentListDeprecatedArgs
 > = {
-  type: new GraphQLList(new GraphQLNonNull(CommentType)),
+  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(CommentType))),
   args: {
     id: {
       description: "",

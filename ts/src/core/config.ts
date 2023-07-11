@@ -135,6 +135,8 @@ interface CodegenConfig {
   // where things like global augmentation can be done
   // https://www.typescriptlang.org/docs/handbook/declaration-merging.html#global-augmentation
   globalImportPath?: string;
+
+  userOveriddenFiles?: string[];
 }
 
 interface PrettierConfig {

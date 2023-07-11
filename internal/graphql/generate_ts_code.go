@@ -506,6 +506,10 @@ func getFilePathForCustomInterfaceInputFile(cfg *codegen.Config, gqlType string)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", strcase.ToSnake(gqlType)))
 }
 
+func getFilePathForCustomArg(cfg *codegen.Config, gqlType string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/arg/%s_type.ts", strcase.ToSnake(gqlType)))
+}
+
 func getFilePathForEnums(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/resolvers/enums_type.ts")
 }
@@ -828,9 +832,9 @@ func loadOldCustomData(processor *codegen.Processor) *CustomData {
 
 func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 	cd := s.customData
-	// TODO remove this
-	if len(cd.Args) > 0 {
-		return errors.New("TOOD: need to process args. doesn't work at the moment")
+
+	if err := processCustomArgs(processor, cd, s); err != nil {
+		return err
 	}
 
 	if err := processCustomFields(processor, cd, s); err != nil {
@@ -1796,7 +1800,11 @@ func trimPath(cfg *codegen.Config, path string) string {
 func otherObjectIsInput(node *gqlNode) bool {
 	// not the best check in the world...
 	// input file
-	return len(node.ObjData.GQLNodes) >= 1 && node.ObjData.GQLNodes[0].GQLType == "GraphQLInputObjectType"
+	if len(node.ObjData.GQLNodes) < 1 {
+		return false
+	}
+	obj := node.ObjData.GQLNodes[0]
+	return obj.GQLType == "GraphQLInputObjectType" && !obj.ArgNotInput
 }
 
 func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
@@ -3104,13 +3112,14 @@ func buildCustomUnionInputNode(processor *codegen.Processor, cu *customtype.Cust
 }
 
 type objectType struct {
-	Type     string // GQLType we're creating
-	Node     string // GraphQL Node AND also ent node. Need to decouple this...
-	TSType   string
-	Fields   []*fieldType
-	fieldMap map[string]bool
-	Exported bool
-	GQLType  string // GraphQLObjectType or GraphQLInputObjectType
+	Type        string // GQLType we're creating
+	Node        string // GraphQL Node AND also ent node. Need to decouple this...
+	TSType      string
+	Fields      []*fieldType
+	fieldMap    map[string]bool
+	Exported    bool
+	ArgNotInput bool
+	GQLType     string // GraphQLObjectType or GraphQLInputObjectType
 
 	DefaultImports []*tsimport.ImportPath
 	Imports        []*tsimport.ImportPath
