@@ -54,7 +54,8 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	if processor.NoDBChanges() && processor.Config.UseChanges() {
 		return nil
 	}
-	return s.db.makeDBChanges(processor.Config)
+
+	return s.db.makeDBChanges(processor)
 }
 
 var _ codegen.Step = &Step{}
@@ -687,7 +688,8 @@ func compareDbFilesInfo(before, after *dbFileInfo) error {
 	return nil
 }
 
-func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
+func (s *dbSchema) makeDBChanges(processor *codegen.Processor) error {
+	cfg := processor.Config
 	var extraArgs []string
 	if file := cfg.SchemaSQLFilePath(); file != "" {
 		extraArgs = []string{
@@ -705,11 +707,16 @@ func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
 		return err
 	}
 
+	buildInfo := processor.GetBuildInfo()
+	// nothing to do here
+	// after a downgrade for example, we're forcing write all and no need to check schema.py
+	// as it may be out of sync
+	if buildInfo != nil && buildInfo.PrevHasForceWriteAll() {
+		return nil
+	}
+
 	after := checkDBFilesInfo(cfg)
 
-	// TODO need an override flag for this
-	// this is an issue when there's a downgrade...
-	// TODO https://github.com/lolopinto/ent/issues/1000
 	return compareDbFilesInfo(s.before, after)
 }
 
