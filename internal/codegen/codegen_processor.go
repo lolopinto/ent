@@ -198,6 +198,10 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	})
 }
 
+func (p *Processor) GetBuildInfo() *build_info.BuildInfo {
+	return p.buildInfo
+}
+
 func (p *Processor) FormatTS() error {
 	if p.Config.forcePrettier {
 		return p.formatWithPrettier()
