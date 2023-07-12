@@ -387,19 +387,32 @@ Note: The ID exposed to GraphQL is not the same as the ID for the row in the dat
 Update `src/ent/user.ts` as follows:
 
 ```ts title="src/ent/user.ts"
-import { UserBase } from "src/ent/internal";
+import {
+  PrivacyPolicy,
+  Viewer,
+  Ent,
+  ID,
+  AlwaysAllowPrivacyPolicy,
+} from "@snowtop/ent";
+import { gqlField } from "@snowtop/ent/graphql";
+import { GraphQLInt } from "graphql";
 import { Interval } from "luxon";
-import { GraphQLInt } from "graphql"
-import { gqlField } from "@snowtop/ent/graphql"
+import { UserBase } from "src/ent/internal";
 
 export class User extends UserBase {
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer<Ent<any> | null, ID | null>> {
+    return AlwaysAllowPrivacyPolicy;
+  }
+
   @gqlField({
-    type: GraphQLInt
+    class: "User",
+    type: GraphQLInt,
   })
   howLong() {
-    return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
+    return Interval.fromDateTimes(this.createdAt, new Date()).count("seconds");
   }
 }
+
 ```
 
 and then run the following command:
