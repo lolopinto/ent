@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
@@ -45,6 +47,11 @@ tsent downgrade rev2a@rev1`,
 		if err := db.DowngradeDB(cfg, args[0], downgradeInfo.keepSchemaFiles); err != nil {
 			return err
 		}
-		return build_info.FlagNextBuildInfoAsWriteAll(cfg, cfg)
+		if err := build_info.FlagNextBuildInfoAsWriteAll(cfg, cfg); err != nil {
+			return err
+		}
+
+		fmt.Println("database downgraded successfully. don't forget to undo any changes to your schema files. e.g. `git checkout src/schema` and run codegen again if needed to change other generated files")
+		return nil
 	},
 }
