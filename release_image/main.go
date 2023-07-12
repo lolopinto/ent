@@ -12,6 +12,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
@@ -26,9 +27,9 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	// 16,
+	16,
 	18,
-	// 20,
+	20,
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.28"
@@ -45,29 +46,36 @@ var PLATFORMS = []string{
 	"linux/arm64",
 }
 
-func main() {
+func do(version int) error {
 	var wg sync.WaitGroup
-	wg.Add(len(NODE_VERSIONS) * len(SUFFIXES))
-	errs := make([]error, len(NODE_VERSIONS)*len(SUFFIXES))
-	for i := range NODE_VERSIONS {
-		for j := range SUFFIXES {
-			go func(i, j int) {
-				v := NODE_VERSIONS[i]
-				suffix := SUFFIXES[j]
-				errs[i*len(SUFFIXES)+j] = run(dockerfileData{
-					NodeVersion:       v,
-					DockerTag:         TAG,
-					Suffix:            suffix,
-					TsentVersion:      TSENT_VERSION,
-					AutoSchemaVersion: AUTO_SCHEMA_VERSION,
-				}, &wg)
-			}(i, j)
-		}
+	wg.Add(len(SUFFIXES))
+	var serr syncerr.Error
+
+	for j := range SUFFIXES {
+		go func(j int) {
+			suffix := SUFFIXES[j]
+			err := run(dockerfileData{
+				NodeVersion:       version,
+				DockerTag:         TAG,
+				Suffix:            suffix,
+				TsentVersion:      TSENT_VERSION,
+				AutoSchemaVersion: AUTO_SCHEMA_VERSION,
+			}, &wg)
+			serr.Append(err)
+		}(j)
 	}
 	wg.Wait()
 
-	if err := util.CoalesceErr(errs...); err != nil {
-		log.Fatal(err)
+	return serr.Err()
+}
+
+func main() {
+	// do node versions sequentially
+	for i := range NODE_VERSIONS {
+		v := NODE_VERSIONS[i]
+		if err := do(v); err != nil {
+			log.Fatal(fmt.Sprintf(`error creating version %d`, v), err)
+		}
 	}
 }
 
