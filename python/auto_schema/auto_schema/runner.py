@@ -304,7 +304,7 @@ class Runner(object):
         connection = engine.connect()
 
         metadata = sa.MetaData()
-        metadata.reflect(connection)
+        metadata.reflect(bind=connection)
         if len(metadata.sorted_tables) != 0:
             raise Exception("to compare from base tables, cannot have any tables in database. have %d" % len(
                 metadata.sorted_tables))

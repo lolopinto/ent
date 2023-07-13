@@ -15,7 +15,7 @@ import os
 
 # there doesn't seem to be an api for this
 def get_stamped_alembic_versions(r: runner.Runner):
-    return [row['version_num'] for row in r.get_connection().execute('select * from alembic_version')]
+    return [row['version_num'] for row in r.get_connection().execute(sa.text('select * from alembic_version'))]
 
 
 def stash_new_files(r: runner.Runner, l: List[String], l2: List[String]):
@@ -142,7 +142,7 @@ def _create_parallel_changes(new_test_runner, metadata_with_table):
     assert len(files3c) == 3
 
     # reflect to reload
-    r3.metadata.reflect()
+    r3.metadata.reflect(bind=r3.get_connection())
 
     return {
         # most-recent runner
@@ -338,7 +338,7 @@ class CommandTest(object):
         testingutils.assert_num_files(r3, 3)
         testingutils.validate_metadata_after_change(r3, new_metadata)
 
-        r3.metadata.reflect()
+        r3.metadata.reflect(bind=r3.get_connection())
         if squash_raises:
             with pytest.raises(ValueError):
                 r3.squash(squash_val)
@@ -347,7 +347,7 @@ class CommandTest(object):
 
         # should be squashed down to X files after change
         testingutils.assert_num_files(r3, files_left)
-        r3.metadata.reflect()
+        r3.metadata.reflect(bind=r3.get_connection())
         testingutils.validate_metadata_after_change(r3, new_metadata)
 
 

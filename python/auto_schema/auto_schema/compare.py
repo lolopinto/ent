@@ -31,8 +31,8 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
 
         # get existing edges from db
         query = "SELECT * FROM assoc_edge_config"
-        for row in autogen_context.connection.execute(query):
-            edge = dict(row)
+        for row in autogen_context.connection.execute(sa.text(query)):
+            edge = row._asdict()
             existing_edges[edge['edge_name']] = edge
 
         db_edges[_get_schema_key(sch)] = existing_edges
@@ -127,18 +127,18 @@ def _table_exists(autogen_context: AutogenContext):
 
 
 def _execute_postgres_dialect(connection: sa.engine.Connection):
-    row = connection.execute(
+    row = connection.execute(sa.text(
         "SELECT to_regclass('%s') IS NOT NULL as exists" % (
-            "assoc_edge_config")
+            "assoc_edge_config"))
     )
-    res = row.first()
-    return res['exists']
+    res = row.first()._asdict()
+    return res["exists"]
 
 
 def _execute_sqlite_dialect(connection: sa.engine.Connection):
-    row = connection.execute(
+    row = connection.execute(sa.text(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" % (
-            "assoc_edge_config")
+            "assoc_edge_config"))
     )
     res = row.first()
     return res is not None
@@ -168,7 +168,7 @@ def _create_tuple_key(row, pkeys):
     return tuple(l)
 
 
-@comparators.dispatch_for('schema')
+@ comparators.dispatch_for('schema')
 def compare_data(autogen_context, upgrade_ops, schemas):
     # TODO not using schema correctly
     # https: // github.com/lolopinto/ent/issues/123
@@ -215,8 +215,8 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
     query = 'SELECT * FROM %s' % table_name
 
     db_rows = {}
-    for row in connection.execute(query):
-        d = dict(row)
+    for row in connection.execute(sa.text(query)):
+        d = row._asdict()
         t = _create_tuple_key(d, pkeys)
         db_rows[t] = d
 
@@ -260,7 +260,7 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
             table_name, pkeys, modified_new_rows, modified_old_rows))
 
 
-@comparators.dispatch_for("schema")
+@ comparators.dispatch_for("schema")
 def compare_schema(autogen_context, upgrade_ops, schemas):
     inspector = autogen_context.inspector
 
@@ -435,7 +435,7 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
                 )
 
 
-@comparators.dispatch_for("table")
+@ comparators.dispatch_for("table")
 def _compare_indexes(autogen_context: AutogenContext,
                      modify_table_ops: alembicops.ModifyTableOps,
                      schema,
@@ -530,49 +530,53 @@ def _compare_indexes(autogen_context: AutogenContext,
 index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
 
 # this handles computed columns changing and so drops and re-creates the column.
-@comparators.dispatch_for("table")
+
+
+@ comparators.dispatch_for("table")
 def _compare_generated_column(autogen_context: AutogenContext,
-                     modify_table_ops: alembicops.ModifyTableOps,
-                     schema,
-                     tname: str,
-                     conn_table: Optional[sa.Table],
-                     metadata_table: Optional[sa.Table],
-                     ) -> None:
-    
+                              modify_table_ops: alembicops.ModifyTableOps,
+                              schema,
+                              tname: str,
+                              conn_table: Optional[sa.Table],
+                              metadata_table: Optional[sa.Table],
+                              ) -> None:
+
     if conn_table is None or metadata_table is None:
         return
-    
+
     col_to_index = {}
-    
+
     for idx in metadata_table.indexes:
         if len(idx.columns) == 1:
             col_to_index[idx.columns[0].name] = idx
 
-
     for conn_col in conn_table.columns:
         if not conn_col.computed:
             continue
-        
-        index = col_to_index.get(conn_col.name, None) 
+
+        index = col_to_index.get(conn_col.name, None)
         if index is None:
             continue
 
         index_type = index.kwargs.get('postgresql_using')
-        
+
         for meta_col in metadata_table.columns:
             if meta_col.name == conn_col.name and meta_col.computed is not None:
-        
-                conn_info = _parse_postgres_using_internals(str(conn_col.computed.sqltext), index_type)
-                meta_info =_parse_postgres_using_internals(str(meta_col.computed.sqltext), index_type)
-                
+
+                conn_info = _parse_postgres_using_internals(
+                    str(conn_col.computed.sqltext), index_type)
+                meta_info = _parse_postgres_using_internals(
+                    str(meta_col.computed.sqltext), index_type)
+
                 # this is using underlying columns so we use drop and create directly
                 if conn_info['columns'] != meta_info['columns']:
                     # we'll have to change the entire beh
-                    create_index = alembicops.CreateIndexOp(index.name, index.table.name, index.columns, postgresql_using=index_type)
+                    create_index = alembicops.CreateIndexOp(
+                        index.name, index.table.name, index.columns, postgresql_using=index_type)
 
                     modify_table_ops.ops.append(
                         alembicops.DropIndexOp(
-                            index.name, 
+                            index.name,
                             conn_table.name,
                             schema=schema,
                             info={
@@ -582,7 +586,7 @@ def _compare_generated_column(autogen_context: AutogenContext,
                             # also pass this here so that downgrade does the right thing
                             # TODO need to make sure we test upgrade/downgrade paths are the same.
                             postgresql_using=index_type,
-                            )
+                        )
                     )
                     modify_table_ops.ops.append(
                         alembicops.DropColumnOp.from_column_and_tablename(
@@ -594,12 +598,10 @@ def _compare_generated_column(autogen_context: AutogenContext,
                             schema, tname, meta_col
                         )
                     )
-                    
+
                     modify_table_ops.ops.append(
                         create_index
                     )
-
-
 
 
 # sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
@@ -647,8 +649,8 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa
 # use a cache so we only hit the db once for each table
 # @functools.lru_cache()
 def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
-    res = connection.execute(
-        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname)
+    res = connection.execute(sa.text(
+        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname))
     return res
 
 
@@ -673,36 +675,37 @@ def _parse_cols_from(curr: str):
             cols.append(s2)
 
     return cols
-    
+
+
 sqltext_regex = re.compile(r"to_tsvector\((.+?), (.+)\)")
 
 
 # 3 is tricky
 # to_tsvector('english'::regconfig, ((((first_name || ' '::text) || last_name) || ' '::text) || (email_address)::text))
 def _parse_postgres_using_internals(internals: str, index_type: str):
-        # single-col to_tsvector('english'::regconfig, first_name)
-        # multi-col to_tsvector('english'::regconfig, ((first_name || ' '::text) || last_name))
-        m = sqltext_regex.match(internals)
-        if m:
-            groups = m.groups()
-            lang = groups[0].rstrip("::regconfig").strip("'")
+    # single-col to_tsvector('english'::regconfig, first_name)
+    # multi-col to_tsvector('english'::regconfig, ((first_name || ' '::text) || last_name))
+    m = sqltext_regex.match(internals)
+    if m:
+        groups = m.groups()
+        lang = groups[0].rstrip("::regconfig").strip("'")
 
-            cols = _parse_cols_from(groups[1])
+        cols = _parse_cols_from(groups[1])
 
-            if len(cols) > 0:
-                return {
-                    'columns': cols,
-                    'fulltext': {
-                        'language': lang,
-                        'indexType': index_type,
-                    }
-                }
-
-        cols = [col.strip() for col in internals.split(',')]
-        # multi-column index
-        if len(cols) > 1:
+        if len(cols) > 0:
             return {
                 'columns': cols,
+                'fulltext': {
+                    'language': lang,
+                    'indexType': index_type,
+                }
             }
 
-        return {}
+    cols = [col.strip() for col in internals.split(',')]
+    # multi-column index
+    if len(cols) > 1:
+        return {
+            'columns': cols,
+        }
+
+    return {}

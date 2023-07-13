@@ -128,7 +128,7 @@ def run_migrations_online():
         include_object=runner.Runner.include_object,
         compare_server_default=runner.Runner.compare_server_default,
         render_item=runner.Runner.render_item,
-        transaction_per_migration=True
+        transaction_per_migration=True,
     )
 
     with context.begin_transaction():

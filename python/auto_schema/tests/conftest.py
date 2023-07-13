@@ -16,7 +16,7 @@ import sqlalchemy as sa
 from auto_schema import runner
 from typing import List
 
-from auto_schema.schema_item import FullTextIndex
+from auto_schema import schema_item
 from auto_schema import compare
 
 
@@ -41,7 +41,8 @@ class Postgres:
                                isolation_level='AUTOCOMMIT')
         self._globalEngine = engine
         self._globalConnection = engine.connect()
-        self._globalConnection.execute('CREATE DATABASE %s' % self._randomDB)
+        self._globalConnection.execute(
+            sa.text('CREATE DATABASE %s' % self._randomDB))
         engine = create_engine("%s/%s" %
                                (self._get_url(schema_path), self._randomDB))
         self._engine = engine
@@ -54,7 +55,8 @@ class Postgres:
             self._conn.close()
             self._engine.dispose()
 
-            self._globalConnection.execute('DROP DATABASE %s' % self._randomDB)
+            self._globalConnection.execute(
+                sa.text('DROP DATABASE %s' % self._randomDB))
             self._globalConnection.close()
             self._globalEngine.dispose()
 
@@ -694,13 +696,13 @@ def metadata_with_multi_column_index(metadata_with_table):
 def metadata_with_fulltext_search_index(metadata_with_table):
     sa.Table('accounts',
              metadata_with_table,
-             FullTextIndex("accounts_first_name_idx",
-                           info={
-                               'postgresql_using': 'gin',
-                               'postgresql_using_internals': "to_tsvector('english', first_name)",
-                               'column': 'first_name',
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_first_name_idx",
+                                       info={
+                                           'postgresql_using': 'gin',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name)",
+                                           'column': 'first_name',
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata_with_table
@@ -709,13 +711,13 @@ def metadata_with_fulltext_search_index(metadata_with_table):
 def metadata_with_multicolumn_fulltext_search_index(metadata_with_table):
     sa.Table('accounts',
              metadata_with_table,
-             FullTextIndex("accounts_full_text_idx",
-                           info={
-                               'postgresql_using': 'gin',
-                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
-                               'columns': ['first_name', 'last_name'],
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_full_text_idx",
+                                       info={
+                                           'postgresql_using': 'gin',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                                           'columns': ['first_name', 'last_name'],
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata_with_table
@@ -726,13 +728,13 @@ def metadata_with_multicolumn_fulltext_search():
     metadata = metadata_with_base_table_restored()
     sa.Table('accounts',
              metadata,
-             FullTextIndex("accounts_full_text_idx",
-                           info={
-                               'postgresql_using': 'gin',
-                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
-                               'columns': ['first_name', 'last_name'],
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_full_text_idx",
+                                       info={
+                                           'postgresql_using': 'gin',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                                           'columns': ['first_name', 'last_name'],
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata
@@ -741,13 +743,13 @@ def metadata_with_multicolumn_fulltext_search():
 def metadata_with_multicolumn_fulltext_search_index_gist(metadata_with_table):
     sa.Table('accounts',
              metadata_with_table,
-             FullTextIndex("accounts_full_text_idx",
-                           info={
-                               'postgresql_using': 'gist',
-                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
-                               'columns': ['first_name', 'last_name'],
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_full_text_idx",
+                                       info={
+                                           'postgresql_using': 'gist',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                                           'columns': ['first_name', 'last_name'],
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata_with_table
@@ -756,13 +758,13 @@ def metadata_with_multicolumn_fulltext_search_index_gist(metadata_with_table):
 def metadata_with_multicolumn_fulltext_search_index_btree(metadata_with_table):
     sa.Table('accounts',
              metadata_with_table,
-             FullTextIndex("accounts_full_text_idx",
-                           info={
-                               'postgresql_using': 'btree',
-                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
-                               'columns': ['first_name', 'last_name'],
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_full_text_idx",
+                                       info={
+                                           'postgresql_using': 'btree',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                                           'columns': ['first_name', 'last_name'],
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata_with_table
@@ -792,6 +794,7 @@ def metadata_with_generated_col_fulltext_search_index_gist(metadata_with_table):
 
     return metadata_with_table
 
+
 def metadata_with_generated_col_extra_col_fulltext_search_index(metadata_with_table):
     sa.Table('accounts', metadata_with_table,
              sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
@@ -803,6 +806,7 @@ def metadata_with_generated_col_extra_col_fulltext_search_index(metadata_with_ta
 
     return metadata_with_table
 
+
 def metadata_with_generated_col_extra_col_fulltext_search_index_gist(metadata_with_table):
     sa.Table('accounts', metadata_with_table,
              sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
@@ -813,7 +817,6 @@ def metadata_with_generated_col_extra_col_fulltext_search_index_gist(metadata_wi
              extend_existing=True)
 
     return metadata_with_table
-
 
 
 @ pytest.fixture
@@ -1322,6 +1325,7 @@ def metadata_with_enum_col():
 def metadata_with_server_default_changed_enum_type(metadata):
     return _metadata_with_server_default_changed(metadata, 'rainbow', 'accounts', 'violet')
 
+
 def metadata_with_uuid_col():
     metadata = sa.MetaData()
 
@@ -1332,8 +1336,10 @@ def metadata_with_uuid_col():
              )
     return metadata
 
+
 def metadata_with_server_default_changed_uuid_type(metadata):
     return _metadata_with_server_default_changed(metadata, 'other_id', 'accounts', FOLLOWERS_EDGE)
+
 
 def metadata_with_server_default_changed_uuid_type_in_practice(metadata):
     # in practice, we never have UUID objects but strings as uuid
