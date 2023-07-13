@@ -7,17 +7,24 @@ import pytest
 import shutil
 import uuid
 import tempfile
-from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects import postgresql
 from dateutil import parser
 import sqlalchemy as sa
 
 from auto_schema import runner
-from typing import List
+from typing import List, Optional
 
 from auto_schema import schema_item
 from auto_schema import compare
+from dataclasses import dataclass
+
+
+@dataclass
+class ConnInfo:
+    engine: sa.engine.Engine
+    url: str
+    connection: Optional[sa.engine.Connection]
 
 
 class Postgres:
@@ -36,23 +43,31 @@ class Postgres:
     def _get_url(self, _schema_path):
         return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
 
-    def create_connection(self, schema_path):
+    def create_connection(self, schema_path) -> ConnInfo:
         if self._globalConnection is None:
-            engine = create_engine(self._get_url(schema_path),
-                                   isolation_level='AUTOCOMMIT')
+            engine = sa.create_engine(self._get_url(schema_path),
+                                      isolation_level='AUTOCOMMIT')
             self._globalEngine = engine
             self._globalConnection = engine.connect()
             self._globalConnection.execute(
                 sa.text('CREATE DATABASE %s' % self._randomDB))
 
-        engine = create_engine("%s/%s" %
-                               (self._get_url(schema_path), self._randomDB),
-                               )
+        url = ("%s/%s" %
+               (self._get_url(schema_path), self._randomDB))
+
+        engine = sa.create_engine(url)
         self._engines.append(engine)
+
         conn = engine.connect()
         self._conns.append(conn)
 
-        return [engine, conn]
+        return ConnInfo(engine, url, conn)
+
+        # self._engines.append(engine)
+        # conn = engine.connect()
+        # self._conns.append(conn)
+
+        # return [engine, conn]
 
     def get_finalizer(self):
         def fn():
@@ -82,9 +97,11 @@ class SQLite:
         # return "sqlite:///bar.db"  # if you want a local file to inspect for whatever reason
 
     def create_connection(self, schema_path):
-        engine = create_engine(self._get_url(schema_path))
+        url = self._get_url(schema_path)
+        engine = sa.create_engine(self._get_url(schema_path))
         self._conn = engine.connect()
-        return [engine, self._conn]
+        return ConnInfo(engine, url, self._conn)
+        # return [engine, self._conn]
 
     def get_finalizer(self):
         def fn():
@@ -97,7 +114,7 @@ def postgres_dialect_from_request(request):
     return "Postgres" in request.cls.__name__
 
 
-@pytest.fixture(scope="function")
+@ pytest.fixture(scope="function")
 def new_test_runner(request):
 
     # unclear if best way but use name of class to determine postgres vs sqlite and use that
@@ -123,13 +140,14 @@ def new_test_runner(request):
         if prev_runner is not None:
             # commit old conn
             connection = prev_runner.get_connection()
-            # connection.commit()
+            connection.commit()
 
-        l = dialect.create_connection(schema_path)
-        engine = l[0]
-        connection = l[1]
-        metadata.bind = connection
-        metadata.reflect(bind=connection)
+        info = dialect.create_connection(schema_path)
+        # engine = l[
+        # connection = l[1]
+        # bind here and then where else??
+        # metadata.bind = info.connection
+        # metadata.reflect(bind=info.connection)
 
         # else:
         #     # commit old conn
@@ -144,7 +162,7 @@ def new_test_runner(request):
         #     metadata.reflect(bind=connection)
         #     # request.addfinalizer(dialect.get_finalizer())
 
-        r = runner.Runner(metadata, engine, connection, schema_path)
+        r = runner.Runner(metadata, info.engine, info.connection, schema_path)
 
         def delete_path():
             path = r.get_schema_path()
@@ -160,7 +178,7 @@ def new_test_runner(request):
     return _make_new_test_runner
 
 
-@pytest.fixture
+@ pytest.fixture
 def empty_metadata():
     metadata = sa.MetaData()
     return metadata
@@ -190,7 +208,7 @@ def default_children_of_table():
     ]
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_table():
     return metadata_with_base_table_restored()
 
@@ -226,7 +244,7 @@ def metadata_with_base_table_restored():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_nullable_fields():
     metadata = sa.MetaData()
     sa.Table("accounts", metadata,
@@ -244,7 +262,7 @@ def metadata_with_nullable_fields():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def address_metadata_table_fixture():
     return address_metadata_table()
 
