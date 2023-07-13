@@ -31,18 +31,22 @@ from . import util
 
 
 class Runner(object):
-    def __init__(self, metadata, connection, schema_path, args: Optional[Dict] = None):
+    def __init__(self, metadata, engine, connection, schema_path, args: Optional[Dict] = None):
         self.metadata = metadata
         self.schema_path = schema_path
+        self.engine = engine
         self.connection = connection
         self.args = args or {}
 
         config.metadata = self.metadata
+        config.engine = self.engine
         config.connection = connection
 
         sql = self.args.get('sql', None)
         if sql is not None and sql.lower() != 'true':
             config.output_buffer = open(sql, 'w')
+
+        # TODO do we still want connection here?
 
         self.mc = MigrationContext.configure(
             connection=self.connection,
@@ -62,7 +66,7 @@ class Runner(object):
         engine = sa.create_engine(args.engine)
         connection = engine.connect()
         metadata.bind = connection
-        return Runner(metadata, connection, args.schema, args=args.__dict__)
+        return Runner(metadata, engine, connection, args.schema, args=args.__dict__)
 
     @classmethod
     def fix_edges(cls, metadata, args):

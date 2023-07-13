@@ -26,8 +26,8 @@ class Postgres:
         self._globalConnection = None
         self._globalEngine = None
 
-        self._conn = None
-        self._engine = None
+        self._conns = []
+        self._engines = []
 
     def randomDB(self):
         return random.choice(string.ascii_lowercase) + ''.join(random.SystemRandom().choice(
@@ -37,24 +37,33 @@ class Postgres:
         return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
 
     def create_connection(self, schema_path):
-        engine = create_engine(self._get_url(schema_path),
-                               isolation_level='AUTOCOMMIT')
-        self._globalEngine = engine
-        self._globalConnection = engine.connect()
-        self._globalConnection.execute(
-            sa.text('CREATE DATABASE %s' % self._randomDB))
-        engine = create_engine("%s/%s" %
-                               (self._get_url(schema_path), self._randomDB))
-        self._engine = engine
-        self._conn = engine.connect()
+        if self._globalConnection is None:
+            engine = create_engine(self._get_url(schema_path),
+                                   isolation_level='AUTOCOMMIT')
+            self._globalEngine = engine
+            self._globalConnection = engine.connect()
+            self._globalConnection.execute(
+                sa.text('CREATE DATABASE %s' % self._randomDB))
 
-        return self._conn
+        engine = create_engine("%s/%s" %
+                               (self._get_url(schema_path), self._randomDB),
+                               )
+        self._engines.append(engine)
+        conn = engine.connect()
+        self._conns.append(conn)
+
+        return [engine, conn]
 
     def get_finalizer(self):
         def fn():
-            self._conn.close()
-            self._engine.dispose()
+            # print('conn finalizer called')
+            for conn in self._conns:
+                conn.close()
 
+            for engine in self._engines:
+                engine.dispose()
+
+            # print(self._randomDB)
             self._globalConnection.execute(
                 sa.text('DROP DATABASE %s' % self._randomDB))
             self._globalConnection.close()
@@ -75,7 +84,7 @@ class SQLite:
     def create_connection(self, schema_path):
         engine = create_engine(self._get_url(schema_path))
         self._conn = engine.connect()
-        return self._conn
+        return [engine, self._conn]
 
     def get_finalizer(self):
         def fn():
@@ -91,7 +100,18 @@ def postgres_dialect_from_request(request):
 @pytest.fixture(scope="function")
 def new_test_runner(request):
 
-    def _make_new_test_runner(metadata, prev_runner=None):
+    # unclear if best way but use name of class to determine postgres vs sqlite and use that
+    # to make sure everything works for both
+    dialect = None
+
+    if postgres_dialect_from_request(request):
+        dialect = Postgres()
+    else:
+        dialect = SQLite()
+
+    request.addfinalizer(dialect.get_finalizer())
+
+    def _make_new_test_runner(metadata, prev_runner=None) -> runner.Runner:
         # by default, this will be none and create a temp directory where things should go
         # sometimes, when we want to test multiple revisions, we'll send the previous runner so we reuse the path
         if prev_runner is not None:
@@ -99,24 +119,32 @@ def new_test_runner(request):
         else:
             schema_path = tempfile.mkdtemp()
 
-        # unclear if best way but use name of class to determine postgres vs sqlite and use that
-        # to make sure everything works for both
-        dialect = None
-        if postgres_dialect_from_request(request):
-            dialect = Postgres()
-        else:
-            dialect = SQLite()
-
         # reuse connection if not None. same logic as schema_path above
-        if prev_runner is None:
-            connection = dialect.create_connection(schema_path)
-            metadata.bind = connection
-
-            request.addfinalizer(dialect.get_finalizer())
-        else:
+        if prev_runner is not None:
+            # commit old conn
             connection = prev_runner.get_connection()
+            # connection.commit()
 
-        r = runner.Runner(metadata, connection, schema_path)
+        l = dialect.create_connection(schema_path)
+        engine = l[0]
+        connection = l[1]
+        metadata.bind = connection
+        metadata.reflect(bind=connection)
+
+        # else:
+        #     # commit old conn
+        #     connection = prev_runner.get_connection()
+        #     connection.commit()
+        #     # connection.close()
+        #     # connection.dispose()
+
+        #     connection = dialect.create_connection(schema_path)
+        #     # print(connection)
+        #     metadata.bind = connection
+        #     metadata.reflect(bind=connection)
+        #     # request.addfinalizer(dialect.get_finalizer())
+
+        r = runner.Runner(metadata, engine, connection, schema_path)
 
         def delete_path():
             path = r.get_schema_path()

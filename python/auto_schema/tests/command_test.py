@@ -15,7 +15,7 @@ import os
 
 # there doesn't seem to be an api for this
 def get_stamped_alembic_versions(r: runner.Runner):
-    return [row['version_num'] for row in r.get_connection().execute(sa.text('select * from alembic_version'))]
+    return [row._asdict()['version_num'] for row in r.get_connection().execute(sa.text('select * from alembic_version'))]
 
 
 def stash_new_files(r: runner.Runner, l: List[String], l2: List[String]):
