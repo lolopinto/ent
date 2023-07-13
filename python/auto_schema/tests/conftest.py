@@ -90,22 +90,26 @@ class Postgres:
 class SQLite:
 
     def __init__(self) -> None:
-        self._conn = None
+        self._connInfo = None
 
     def _get_url(self, schema_path):
         return "sqlite:///%s/%s" % (schema_path, "foo.db")
         # return "sqlite:///bar.db"  # if you want a local file to inspect for whatever reason
 
     def create_connection(self, schema_path):
+        # no need to create a new connection if we already have one
+        if self._connInfo is not None:
+            return self._connInfo
+
         url = self._get_url(schema_path)
         engine = sa.create_engine(self._get_url(schema_path))
-        self._conn = engine.connect()
-        return ConnInfo(engine, url, self._conn)
-        # return [engine, self._conn]
+        conn = engine.connect()
+        self._connInfo = ConnInfo(engine, url, conn)
+        return self._connInfo
 
     def get_finalizer(self):
         def fn():
-            self._conn.close()
+            self._connInfo.connection.close()
 
         return fn
 

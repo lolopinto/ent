@@ -684,14 +684,16 @@ class BaseTestRunner(object):
         conn = r.get_connection()
         conn.execute(sa.text('delete from assoc_edge_config'))
 
+        # commit in between. not 100% sure why we need it but we also do it in conftest.py
+        conn.commit()
+
         # validate edges fails because edges incorrect
         with pytest.raises(AssertionError):
             testingutils.validate_edges_from_metadata(
                 metadata_with_one_edge, r)
 
         # re-run again. it fixes
-        runner.Runner.fix_edges(metadata_with_one_edge, {
-                                'connection': r.connection})
+        runner.Runner.fix_edges(metadata_with_one_edge, {'connection': conn})
 
         # no changes
         testingutils.run_edge_metadata_script(
