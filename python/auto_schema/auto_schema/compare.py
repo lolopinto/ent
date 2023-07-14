@@ -577,29 +577,33 @@ def _compare_indexes(autogen_context: AutogenContext,
 
         # pass
 
-    # for name, index in meta_indexes.items():
+    for name, index in meta_indexes.items():
 
-    #     # TODO this is for handling changes where we have to drop and re-create the index
+        # TODO this is for handling changes where we have to drop and re-create the index
 
-    #     # if index is there and postgresql_using changes, drop the index and add it again
-    #     # should hopefully be a one-time migration change...
-    #     # if name in conn_indexes and isinstance(index, sa.Index):
-    #     #     meta_postgresql_using = index.kwargs.get('postgresql_using')
-    #     #     conn_idx = conn_indexes[name]
-    #     #     print(conn_idx.expressions)
-    #     #     conn_postgresql_using = normalize_clause_text(
-    #     #         conn_idx.expressions[0], None)
-    #     #     # conn_postgresql_using = all_conn_indexes.get(
-    #     #     #     name, {}).get('postgresql_using')
-    #     #     if isinstance(meta_postgresql_using, str) and conn_postgresql_using is not None and meta_postgresql_using != conn_postgresql_using:
-    #     #         conn_index = conn_indexes[name]
-    #     #         conn_index.kwargs['postgresql_using'] = conn_postgresql_using
+        # if index is there and postgresql_using changes, drop the index and add it again
+        # should hopefully be a one-time migration change...
+        if name in conn_indexes and isinstance(index, sa.Index):
+            meta_postgresql_using = index.kwargs.get('postgresql_using')
+            conn_idx = conn_indexes[name]
+            # print(conn_idx.expressions)
+            # conn_postgresql_using = normalize_clause_text(
+            #     conn_idx.expressions[0], None)
+            # using this still works
+            # print(conn_idx.kwargs.get('postgresql_using'), conn_idx.)
+            # print(dir(conn_idx))
+            conn_postgresql_using = all_conn_indexes.get(
+                name, {}).get('postgresql_using')
+            # print(meta_postgresql_using, conn_postgresql_using)
+            if isinstance(meta_postgresql_using, str) and conn_postgresql_using is not None and meta_postgresql_using != conn_postgresql_using:
+                conn_index = conn_indexes[name]
+                conn_index.kwargs['postgresql_using'] = conn_postgresql_using
 
-    #     #         modify_table_ops.ops.append(
-    #     #             alembicops.DropIndexOp.from_index(conn_index))
+                modify_table_ops.ops.append(
+                    alembicops.DropIndexOp.from_index(conn_index))
 
-    #     #         modify_table_ops.ops.append(
-    #     #             alembicops.CreateIndexOp(name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
+                modify_table_ops.ops.append(
+                    alembicops.CreateIndexOp(name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
 
     #     # this is false since it'll always be there now
     #     # if not name in conn_indexes and isinstance(index, FullTextIndex):
