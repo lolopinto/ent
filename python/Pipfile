@@ -8,11 +8,11 @@ pytest = "*"
 autopep8 = ""
 
 [packages]
-alembic = "==1.8.1"
+alembic = "==1.11.1"
 datetime = "==4.3"
-sqlalchemy = "==1.4.44"
-psycopg2 = "==2.9.5"
-autopep8 = "==2.0.0"
+sqlalchemy = "==2.0.18"
+psycopg2 = "==2.9.6"
+autopep8 = "==2.0.2"
 python-dateutil= "==2.8.2"
 
 [requires]

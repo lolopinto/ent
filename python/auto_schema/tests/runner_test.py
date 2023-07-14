@@ -10,6 +10,8 @@ from . import testingutils
 from auto_schema import runner
 from auto_schema import ops
 
+from typing import Any, Optional, Callable
+
 
 class BaseTestRunner(object):
 
@@ -431,7 +433,9 @@ class BaseTestRunner(object):
         )
         conn = r.get_connection()
         conn.execute(
-            "UPDATE assoc_edge_config SET edge_table = 'user_to_followers_edge_incorrect'")
+            sa.text(
+                "UPDATE assoc_edge_config SET edge_table = 'user_to_followers_edge_incorrect'")
+        )
 
         # validate edges fails because edges incorrect
         with pytest.raises(AssertionError):
@@ -470,7 +474,7 @@ class BaseTestRunner(object):
         )
         conn = r.get_connection()
         conn.execute(
-            "UPDATE assoc_edge_config SET edge_table = 'user_to_followers_edge_incorrect'")
+            sa.text("UPDATE assoc_edge_config SET edge_table = 'user_to_followers_edge_incorrect'"))
 
         # validate edges fails because edges incorrect
         with pytest.raises(AssertionError):
@@ -678,7 +682,10 @@ class BaseTestRunner(object):
                                 'connection': r.connection})
 
         conn = r.get_connection()
-        conn.execute('delete from assoc_edge_config')
+        conn.execute(sa.text('delete from assoc_edge_config'))
+
+        # commit in between. not 100% sure why we need it but we also do it in conftest.py
+        conn.commit()
 
         # validate edges fails because edges incorrect
         with pytest.raises(AssertionError):
@@ -686,8 +693,7 @@ class BaseTestRunner(object):
                 metadata_with_one_edge, r)
 
         # re-run again. it fixes
-        runner.Runner.fix_edges(metadata_with_one_edge, {
-                                'connection': r.connection})
+        runner.Runner.fix_edges(metadata_with_one_edge, {'connection': conn})
 
         # no changes
         testingutils.run_edge_metadata_script(
@@ -951,13 +957,15 @@ class TestPostgresRunner(BaseTestRunner):
                 conftest.metadata_with_uuid_col,
                 'accounts',
                 conftest.metadata_with_server_default_changed_uuid_type,
-                "modify server_default value of column other_id from None to %s" % str(conftest.FOLLOWERS_EDGE),
+                "modify server_default value of column other_id from None to %s" % str(
+                    conftest.FOLLOWERS_EDGE),
             ),
             (
                 conftest.metadata_with_uuid_col,
                 'accounts',
                 conftest.metadata_with_server_default_changed_uuid_type_in_practice,
-                "modify server_default value of column other_id from None to %s" % str(conftest.FOLLOWERS_EDGE),
+                "modify server_default value of column other_id from None to %s" % str(
+                    conftest.FOLLOWERS_EDGE),
             ),
             (
                 # comparing string
@@ -990,28 +998,27 @@ class TestPostgresRunner(BaseTestRunner):
         diff = r3.compute_changes()
 
         assert len(diff) == 0
-        
-    
-    def test_field_with_server_default_uuid_to_start(self,new_test_runner):
+
+    def test_field_with_server_default_uuid_to_start(self, new_test_runner):
         metadata = conftest.metadata_with_uuid_col()
 
-        metadata = conftest.metadata_with_server_default_changed_uuid_type_in_practice(metadata)
-        
+        metadata = conftest.metadata_with_server_default_changed_uuid_type_in_practice(
+            metadata)
+
         r = new_test_runner(metadata)
 
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata, ['accounts'])
-        
+
         r2 = new_test_runner(metadata, r)
         diff = r2.compute_changes()
 
         # alter_op =diff[0].ops[0]
         # print(alter_op.modify_server_default)
-        
+
         assert len(diff) == 0
         testingutils.validate_metadata_after_change(r2, metadata)
         r2.run()
-
 
     # only in postgres because "No support for ALTER of constraints in SQLite dialect"
 
@@ -1061,7 +1068,7 @@ class TestPostgresRunner(BaseTestRunner):
             (conftest.metadata_with_multiple_new_values_before, 2),
         ]
     )
-    def test_enum_additions(self, new_test_runner, metadata_with_enum_type, new_metadata_func, expected_diff):
+    def test_enum_additions(self, new_test_runner: Callable[[Any, Optional[Any]], runner.Runner], metadata_with_enum_type, new_metadata_func, expected_diff):
         r = new_test_runner(metadata_with_enum_type)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_enum_type)
@@ -1078,7 +1085,7 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.validate_metadata_after_change(
             r2, metadata_with_enum_type)
 
-    @pytest.mark.usefixtures("metadata_with_enum_type")
+    @ pytest.mark.usefixtures("metadata_with_enum_type")
     def test_remove_enum_value(self, new_test_runner, metadata_with_enum_type):
         r = new_test_runner(metadata_with_enum_type)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1090,7 +1097,7 @@ class TestPostgresRunner(BaseTestRunner):
         with pytest.raises(ValueError, match="postgres doesn't support enum removals"):
             r2.compute_changes()
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_remove_column(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1124,7 +1131,7 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 2)
         testingutils.validate_metadata_after_change(r2, new_metadata)
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_add_multiple_cols(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1144,7 +1151,7 @@ class TestPostgresRunner(BaseTestRunner):
             assert change['change'] == ChangeType.ADD_COLUMN
             assert change['col'] in ['new_column', 'rainbow']
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_new_enum_column_added_then_removed(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1207,7 +1214,7 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r3, 3)
         testingutils.validate_metadata_after_change(r3, metadata_with_table)
 
-    @pytest.mark.usefixtures("metadata_with_enum_type")
+    @ pytest.mark.usefixtures("metadata_with_enum_type")
     def test_drop_table_with_enum(self, new_test_runner, metadata_with_enum_type):
         r = new_test_runner(metadata_with_enum_type)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1235,13 +1242,13 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 2)
         testingutils.validate_metadata_after_change(r2, new_metadata)
 
-    @pytest.mark.usefixtures("metadata_with_arrays")
+    @ pytest.mark.usefixtures("metadata_with_arrays")
     def test_tables_with_arrays(self, new_test_runner, metadata_with_arrays):
         r = new_test_runner(metadata_with_arrays)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_arrays, new_table_names=['tbl'])
 
-    @pytest.mark.usefixtures("metadata_with_arrays")
+    @ pytest.mark.usefixtures("metadata_with_arrays")
     def test_change_array_index_type_explicit(self, new_test_runner, metadata_with_arrays):
         r = new_test_runner(metadata_with_arrays)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1270,7 +1277,7 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 2)
         testingutils.validate_metadata_after_change(r2, r2.get_metadata())
 
-    @pytest.mark.usefixtures("metadata_with_arrays")
+    @ pytest.mark.usefixtures("metadata_with_arrays")
     def test_change_array_index_type_no_explicit(self, new_test_runner, metadata_with_arrays):
         r = new_test_runner(metadata_with_arrays)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1300,7 +1307,7 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 2)
         testingutils.validate_metadata_after_change(r2, r2.get_metadata())
 
-    @pytest.mark.usefixtures("metadata_with_arrays")
+    @ pytest.mark.usefixtures("metadata_with_arrays")
     def test_change_array_index_type_implicit_explicit_btree(self, new_test_runner, metadata_with_arrays):
         r = new_test_runner(metadata_with_arrays)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1323,13 +1330,13 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 1)
         testingutils.validate_metadata_after_change(r2, r2.get_metadata())
 
-    @pytest.mark.usefixtures("metadata_with_json")
+    @ pytest.mark.usefixtures("metadata_with_json")
     def test_tables_with_json(self, new_test_runner, metadata_with_json):
         r = new_test_runner(metadata_with_json)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_json, new_table_names=['tbl'])
 
-    @pytest.mark.usefixtures("metadata_with_json")
+    @ pytest.mark.usefixtures("metadata_with_json")
     def test_change_jsonb_index_type_explicit(self, new_test_runner, metadata_with_json):
         r = new_test_runner(metadata_with_json)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1358,7 +1365,7 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 2)
         testingutils.validate_metadata_after_change(r2, r2.get_metadata())
 
-    @pytest.mark.usefixtures("metadata_with_json")
+    @ pytest.mark.usefixtures("metadata_with_json")
     def test_change_jsonb_index_type_no_explicit(self, new_test_runner, metadata_with_json):
         r = new_test_runner(metadata_with_json)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1388,7 +1395,7 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 2)
         testingutils.validate_metadata_after_change(r2, r2.get_metadata())
 
-    @pytest.mark.usefixtures("metadata_with_json")
+    @ pytest.mark.usefixtures("metadata_with_json")
     def test_change_jsonb_index_type_implicit_explicit_btree(self, new_test_runner, metadata_with_json):
         r = new_test_runner(metadata_with_json)
         testingutils.run_and_validate_with_standard_metadata_tables(
@@ -1411,7 +1418,7 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 1)
         testingutils.validate_metadata_after_change(r2, r2.get_metadata())
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,
@@ -1423,18 +1430,18 @@ class TestPostgresRunner(BaseTestRunner):
             validate_schema=False
         )
 
-    @pytest.mark.usefixtures("metadata_with_multicolumn_fulltext_search")
+    @ pytest.mark.usefixtures("metadata_with_multicolumn_fulltext_search")
     # TODO this is failed because of index comparisons
     # this doesn't work because indexes are wrong. why we have validate false in
     # make_changes_and_restore
-    @pytest.mark.xfail()
+    @ pytest.mark.xfail()
     def test_multi_col_full_text_create(self, new_test_runner, metadata_with_multicolumn_fulltext_search):
         r = new_test_runner(
             metadata_with_multicolumn_fulltext_search)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_multicolumn_fulltext_search)
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_multi_col_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,
@@ -1446,8 +1453,8 @@ class TestPostgresRunner(BaseTestRunner):
             validate_schema=False
         )
 
-    @pytest.mark.usefixtures("metadata_with_table")
-    @pytest.mark.xfail()
+    @ pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.xfail()
     # not sure why this fails for gist but not gin|btree
     # TODO https://github.com/lolopinto/ent/issues/848
     def test_multi_col_full_text_index_added_and_removed_gist(self, new_test_runner, metadata_with_table):
@@ -1461,7 +1468,7 @@ class TestPostgresRunner(BaseTestRunner):
             validate_schema=False
         )
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_multi_col_full_text_index_added_and_removed_btree(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,
@@ -1473,7 +1480,7 @@ class TestPostgresRunner(BaseTestRunner):
             validate_schema=False
         )
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_full_text_index_with_generated_column(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,
@@ -1485,9 +1492,9 @@ class TestPostgresRunner(BaseTestRunner):
             validate_schema=False
         )
 
-    @pytest.mark.usefixtures("metadata_with_table")
-    @pytest.mark.parametrize(
-        'metadata_func, metadata_func_extra_col' ,
+    @ pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.parametrize(
+        'metadata_func, metadata_func_extra_col',
         [
             (conftest.metadata_with_generated_col_fulltext_search_index_gist,
              conftest.metadata_with_generated_col_extra_col_fulltext_search_index_gist),
@@ -1495,52 +1502,51 @@ class TestPostgresRunner(BaseTestRunner):
              conftest.metadata_with_generated_col_extra_col_fulltext_search_index)
         ]
     )
-    def test_full_text_index_with_generated_column_and_col_added(self, new_test_runner, metadata_with_table,metadata_func, metadata_func_extra_col):
+    def test_full_text_index_with_generated_column_and_col_added(self, new_test_runner, metadata_with_table, metadata_func, metadata_func_extra_col):
         r = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
-        r, metadata_with_table)
+            r, metadata_with_table)
 
         r2 = testingutils.recreate_with_new_metadata(
             r, new_test_runner, metadata_with_table, metadata_func)
 
         r2.run()
-        
+
         testingutils.assert_num_files(r2, 2)
         testingutils.assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
 
         r3 = testingutils.recreate_with_new_metadata(
-            r2, 
+            r2,
             new_test_runner,
             metadata_with_table,
             metadata_func_extra_col
         )
-        
+
         message = r3.revision_message()
         assert message == 'drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts\nadd column full_name to table accounts\nadd index accounts_full_text_idx to accounts'
         # readding index again missing
 
         r3.run()
-        
+
         testingutils.assert_num_files(r3, 3)
         testingutils.assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
 
         # run again, no changes
         r3.run()
-        
+
         testingutils.assert_num_files(r3, 3)
         testingutils.assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
 
         # back to 2 columns. same thing
         r4 = testingutils.recreate_with_new_metadata(
-            r3, 
+            r3,
             new_test_runner,
             metadata_with_table,
             conftest.metadata_with_generated_col_fulltext_search_index
         )
-        
+
         message = r4.revision_message()
         assert message == 'drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts\nadd column full_name to table accounts\nadd index accounts_full_text_idx to accounts'
-
 
         r4.run()
 
@@ -1552,9 +1558,8 @@ class TestPostgresRunner(BaseTestRunner):
 
         testingutils.assert_num_files(r4, 4)
         testingutils.assert_num_tables(r4, 2, ['accounts', 'alembic_version'])
-        
 
-    @pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_full_text_index_with_generated_column_gist(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,

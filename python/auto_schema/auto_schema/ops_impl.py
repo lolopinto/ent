@@ -71,7 +71,7 @@ def _exec_insert_statement(
     if on_conflict_do_nothing is True and dialect == 'postgresql':
         stmt += " ON CONFLICT DO NOTHING"
 
-    connection.execute(stmt)
+    connection.execute(sa.text(stmt))
 
 
 def date(operations: ops.Operations):
@@ -102,7 +102,7 @@ def _exec_delete_statement(operations: ops.Operations,
                 [_sql_version(key) for key in keys]))
 
         connection.execute(
-            stmt,
+            sa.text(stmt),
         )
 
     else:
@@ -114,7 +114,7 @@ def _exec_delete_statement(operations: ops.Operations,
 
             stmt = 'DELETE FROM %s WHERE %s ' % (
                 table.name, ' AND '.join(clauses))
-            connection.execute(stmt)
+            connection.execute(sa.text(stmt))
 
 
 def _exec_update_statement(operations: ops.Operations,
@@ -137,7 +137,7 @@ def _exec_update_statement(operations: ops.Operations,
             table.name, ", ".join(values), ' AND '.join(clauses))
 
         connection.execute(
-            stmt,
+            sa.text(stmt),
         )
 
 
@@ -214,13 +214,17 @@ def alter_enum(operations: ops.Operations, operation: ops.AlterEnumOp):
     connection = operations.get_bind()
     if operation.before is None:
         connection.execute(
-            "ALTER TYPE %s ADD VALUE '%s'" % (
-                operation.enum_name, operation.value)
+            sa.text(
+                "ALTER TYPE %s ADD VALUE '%s'" % (
+                    operation.enum_name, operation.value)
+            )
         )
     else:
         connection.execute(
-            "ALTER TYPE %s ADD VALUE '%s' BEFORE '%s'" % (
-                operation.enum_name, operation.value, operation.before)
+            sa.text(
+                "ALTER TYPE %s ADD VALUE '%s' BEFORE '%s'" % (
+                    operation.enum_name, operation.value, operation.before)
+            )
         )
 
 
@@ -229,27 +233,29 @@ def add_enum_type(operations: ops.Operations, operation: ops.AddEnumOp):
     stmt = 'CREATE TYPE %s AS ENUM (%s)' % (
         operation.enum_name, ', '.join([_sql_version(v) for v in operation.values]))
     connection = operations.get_bind()
-    connection.execute(stmt)
+    connection.execute(sa.text(stmt))
 
 
 @ Operations.implementation_for(ops.DropEnumOp)
 def drop_enum_type(operations: ops.Operations, operation: ops.DropEnumOp):
     stmt = 'DROP TYPE %s' % operation.enum_name
     connection = operations.get_bind()
-    connection.execute(stmt)
+    connection.execute(sa.text(stmt))
 
 
 @ Operations.implementation_for(ops.CreateFullTextIndexOp)
 def create_full_text_index(operations: ops.Operations, operation: ops.CreateFullTextIndexOp):
     connection = operations.get_bind()
     connection.execute(
-        "CREATE INDEX %(index_name)s ON %(table_name)s USING %(using)s (%(using_internals)s)" % {
-            'index_name': operation.index_name,
-            'table_name': operation.table_name,
-            'using': operation.kw.get('info').get('postgresql_using'),
-            # TODO should this work if empty?
-            'using_internals': operation.kw.get('info').get('postgresql_using_internals'),
-        }
+        sa.text(
+            "CREATE INDEX %(index_name)s ON %(table_name)s USING %(using)s (%(using_internals)s)" % {
+                'index_name': operation.index_name,
+                'table_name': operation.table_name,
+                'using': operation.kw.get('info').get('postgresql_using'),
+                # TODO should this work if empty?
+                'using_internals': operation.kw.get('info').get('postgresql_using_internals'),
+            }
+        )
     )
 
 
@@ -257,5 +263,7 @@ def create_full_text_index(operations: ops.Operations, operation: ops.CreateFull
 def create_full_text_index(operations: ops.Operations, operation: ops.DropFullTextIndexOp):
     connection = operations.get_bind()
     connection.execute(
-        "DROP INDEX %s" % operation.index_name
+        sa.text(
+            "DROP INDEX %s" % operation.index_name
+        )
     )
