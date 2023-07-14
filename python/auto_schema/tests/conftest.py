@@ -63,22 +63,14 @@ class Postgres:
 
         return ConnInfo(engine, url, conn)
 
-        # self._engines.append(engine)
-        # conn = engine.connect()
-        # self._conns.append(conn)
-
-        # return [engine, conn]
-
     def get_finalizer(self):
         def fn():
-            # print('conn finalizer called')
             for conn in self._conns:
                 conn.close()
 
             for engine in self._engines:
                 engine.dispose()
 
-            # print(self._randomDB)
             self._globalConnection.execute(
                 sa.text('DROP DATABASE %s' % self._randomDB))
             self._globalConnection.close()
@@ -146,25 +138,8 @@ def new_test_runner(request):
             connection = prev_runner.get_connection()
             connection.commit()
 
+        # use a new connection for each runner
         info = dialect.create_connection(schema_path)
-        # engine = l[
-        # connection = l[1]
-        # bind here and then where else??
-        # metadata.bind = info.connection
-        # metadata.reflect(bind=info.connection)
-
-        # else:
-        #     # commit old conn
-        #     connection = prev_runner.get_connection()
-        #     connection.commit()
-        #     # connection.close()
-        #     # connection.dispose()
-
-        #     connection = dialect.create_connection(schema_path)
-        #     # print(connection)
-        #     metadata.bind = connection
-        #     metadata.reflect(bind=connection)
-        #     # request.addfinalizer(dialect.get_finalizer())
 
         r = runner.Runner(metadata, info.engine, info.connection, schema_path)
 
