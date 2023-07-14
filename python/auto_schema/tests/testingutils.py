@@ -446,8 +446,6 @@ def make_changes_and_restore(
         r, new_test_runner, metadata_with_table, metadata_change_func)
 
     message = r2.revision_message()
-    print(message, r2_message)
-
     assert message == r2_message
 
     r2.run()
@@ -473,7 +471,6 @@ def make_changes_and_restore(
         new_test_runner, conftest.metadata_with_base_table_restored(), r2)
 
     message = r3.revision_message()
-    print("message", message, "r3_message", r3_message)
     assert message == r3_message
 
     r3.run()

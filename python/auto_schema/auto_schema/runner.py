@@ -46,8 +46,6 @@ class Runner(object):
         if sql is not None and sql.lower() != 'true':
             config.output_buffer = open(sql, 'w')
 
-        # TODO do we still want connection here?
-
         self.mc = MigrationContext.configure(
             connection=self.connection,
             # note that any change here also needs a comparable change in env.py

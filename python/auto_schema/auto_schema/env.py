@@ -122,9 +122,6 @@ def run_migrations_online():
 
     """
 
-    # engine = engine_from_config(
-    #     config.get_section(config.config_ini_section), prefix='sa.')
-
     with engine.connect() as connection:
         context.configure(
             connection=connection,
