@@ -3,10 +3,13 @@ from alembic.autogenerate import comparators
 from alembic.autogenerate.api import AutogenContext
 
 from auto_schema.schema_item import FullTextIndex
+from auto_schema.clause_text import normalize_clause_text
 from . import ops
 from alembic.operations import Operations, MigrateOperation
 import sqlalchemy as sa
 from sqlalchemy.engine import reflection
+from sqlalchemy.sql.elements import TextClause
+
 import pprint
 import re
 from sqlalchemy.dialects import postgresql
@@ -444,6 +447,8 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
+    # return
+
     raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
     missing_conn_indexes = raw_db_indexes.get('missing')
@@ -451,73 +456,84 @@ def _compare_indexes(autogen_context: AutogenContext,
     conn_indexes = {}
     meta_indexes = {}
 
+    def is_full_text_index(index):
+        if isinstance(index, FullTextIndex):
+            return True
+
+        expressions = index.expressions
+        return len(expressions) == 1 and isinstance(expressions[0], TextClause)
+
     if conn_table is not None:
         conn_indexes = {
             index.name: index for index in conn_table.indexes}
+        # for index in conn_table.indexes:
+        #     print('column', index.name, index.expressions,
+        #           isinstance(index, FullTextIndex))
+        #     if isinstance(index, FullTextIndex):
+        #         print(index.info)
+        # print(conn_table.indexes)
 
     if metadata_table is not None:
         meta_indexes = {
             index.name: index for index in metadata_table.indexes}
+        # print(metadata_table.indexes)
+        # for index in metadata_table.indexes:
+        #     print('meta', index.name, index.expressions,
+        #           isinstance(index, FullTextIndex))
 
     # not getting this conn index from db. maybe related
+    # print('missing conn', missing_conn_indexes)
+    # print(metadata_table.indexes)
+
+    print('ops', modify_table_ops.ops)
+
     for name, index in conn_indexes.items():
-        if not name in meta_indexes and isinstance(index, FullTextIndex):
-            modify_table_ops.ops.append(
-                ops.DropFullTextIndexOp(
-                    index.name,
-                    index.table.name,
-                    info=index.info,
-                    table=conn_table,
-                )
-            )
+        # has_expressions = len(index.expressions) == 1 and isinstance(
+        #     index.expressions[0], TextClause)
+        # full text index and not in meta index, drop it
+        # print("conn idx", name, is_full_text_index(index), name in meta_indexes)
+        if is_full_text_index(index) and not name in meta_indexes:
+            # if has_expressions or not name in meta_indexes and isinstance(index, FullTextIndex):
+            print("dropping idx", index.name)
+            # modify_table_ops.ops.append(
+            #     ops.DropFullTextIndexOp(
+            #         index.name,
+            #         index.table.name,
+            #         info=index.info,
+            #         table=conn_table,
+            #     )
+            # )
 
-    for name, v in missing_conn_indexes.items():
-        if not name in meta_indexes:
-            modify_table_ops.ops.append(
-                ops.DropFullTextIndexOp(
-                    name,
-                    conn_table.name,
-                    table=conn_table,
-                    info=v,
-                )
-            )
+    # for name, v in missing_conn_indexes.items():
+    #     if not name in meta_indexes:
+    #         modify_table_ops.ops.append(
+    #             ops.DropFullTextIndexOp(
+    #                 name,
+    #                 conn_table.name,
+    #                 table=conn_table,
+    #                 info=v,
+    #             )
+    #         )
 
-    for name, index in meta_indexes.items():
+    to_remove_list = []
+    for i in range(len(modify_table_ops.ops)):
+        op = modify_table_ops.ops[i]
+        if isinstance(op, alembicops.CreateIndexOp) and op.index_name in meta_indexes:
+            index = meta_indexes[op.index_name]
 
-        # if index is there and postgresql_using changes, drop the index and add it again
-        # should hopefully be a one-time migration change...
-        if name in conn_indexes and isinstance(index, sa.Index):
-            meta_postgresql_using = index.kwargs.get('postgresql_using')
-            conn_postgresql_using = all_conn_indexes.get(
-                name, {}).get('postgresql_using')
-            if isinstance(meta_postgresql_using, str) and conn_postgresql_using is not None and meta_postgresql_using != conn_postgresql_using:
-                conn_index = conn_indexes[name]
-                conn_index.kwargs['postgresql_using'] = conn_postgresql_using
-
-                modify_table_ops.ops.append(
-                    alembicops.DropIndexOp.from_index(conn_index))
-
-                modify_table_ops.ops.append(
-                    alembicops.CreateIndexOp(name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
-
-        if not name in conn_indexes and isinstance(index, FullTextIndex):
-
-            to_remove = name in missing_conn_indexes
-            idx = None
-            for i in range(len(modify_table_ops.ops)):
-                op = modify_table_ops.ops[i]
-                if isinstance(op, alembicops.CreateIndexOp) and op.index_name == index.name:
-                    idx = i
-                    break
-
-            # find existing create index op and replace with ours
-            if idx is not None:
-                # not in conn.indexes but in missing_conn_indexes,
-                # automerge not aware of it and tries to add it again so we need to remove it instead
+            if is_full_text_index(index):
+                # to_remove = name in missing_conn_indexes
+                # to_remove = name in conn_indexes
+                # automerge trying to add it again, remove it from here...
+                to_remove = op.index_name in conn_indexes
+                # to_remove = False
+                print("adding full text index", index, to_remove)
+                # TODO is this correct???
                 if to_remove:
-                    modify_table_ops.ops.pop(idx)
+                    to_remove_list.append(op)
+                    # modify_table_ops.ops.pop(i)
                 else:
-                    modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
+                    modify_table_ops.ops[i] = ops.CreateFullTextIndexOp(
                         index.name,
                         index.table.name,
                         schema=schema,
@@ -525,6 +541,96 @@ def _compare_indexes(autogen_context: AutogenContext,
                         unique=index.unique,
                         info=index.info,
                     )
+            continue
+
+        if isinstance(op, alembicops.DropIndexOp) and op.index_name in conn_indexes:
+            conn_index = conn_indexes.get(op.index_name, None)
+            # dropping index...
+            if is_full_text_index(conn_index):
+                print("candidate to replace and drop", op.index_name, op.table_name, meta_indexes.get(
+                    op.index_name, None), conn_indexes.get(op.index_name, None))
+
+                to_remove = op.index_name in meta_indexes
+                if to_remove:
+                    # modify_table_ops.ops.pop(i)
+                    to_remove_list.append(op)
+                else:
+                    conn_postgresql_using = normalize_clause_text(
+                        conn_index.expressions[0], None)
+
+                    modify_table_ops.ops[i] = ops.DropFullTextIndexOp(
+                        conn_index.name,
+                        conn_index.table.name,
+                        info={
+                            # TODO get the right value of this from somewhere since it won't be in expressions
+                            'postgresql_using': 'gin',
+                            'postgresql_using_internals': conn_postgresql_using,
+
+                        },
+                        # info=index.info,
+                        table=conn_table,
+                    )
+            continue
+
+    for op in to_remove_list:
+        modify_table_ops.ops.remove(op)
+
+        # pass
+
+    # for name, index in meta_indexes.items():
+
+    #     # TODO this is for handling changes where we have to drop and re-create the index
+
+    #     # if index is there and postgresql_using changes, drop the index and add it again
+    #     # should hopefully be a one-time migration change...
+    #     # if name in conn_indexes and isinstance(index, sa.Index):
+    #     #     meta_postgresql_using = index.kwargs.get('postgresql_using')
+    #     #     conn_idx = conn_indexes[name]
+    #     #     print(conn_idx.expressions)
+    #     #     conn_postgresql_using = normalize_clause_text(
+    #     #         conn_idx.expressions[0], None)
+    #     #     # conn_postgresql_using = all_conn_indexes.get(
+    #     #     #     name, {}).get('postgresql_using')
+    #     #     if isinstance(meta_postgresql_using, str) and conn_postgresql_using is not None and meta_postgresql_using != conn_postgresql_using:
+    #     #         conn_index = conn_indexes[name]
+    #     #         conn_index.kwargs['postgresql_using'] = conn_postgresql_using
+
+    #     #         modify_table_ops.ops.append(
+    #     #             alembicops.DropIndexOp.from_index(conn_index))
+
+    #     #         modify_table_ops.ops.append(
+    #     #             alembicops.CreateIndexOp(name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
+
+    #     # this is false since it'll always be there now
+    #     # if not name in conn_indexes and isinstance(index, FullTextIndex):
+    #     if is_full_text_index(index):
+
+    #         # TODO new logic for to_remove
+    #         # to_remove = name in missing_conn_indexes
+    #         # TODO is this correct???
+    #         to_remove = name in conn_indexes
+    #         idx = None
+    #         for i in range(len(modify_table_ops.ops)):
+    #             op = modify_table_ops.ops[i]
+    #             if isinstance(op, alembicops.CreateIndexOp) and op.index_name == index.name:
+    #                 idx = i
+    #                 break
+
+    #         # find existing create index op and replace with ours
+    #         if idx is not None:
+    #             # not in conn.indexes but in missing_conn_indexes,
+    #             # automerge not aware of it and tries to add it again so we need to remove it instead
+    #             if to_remove:
+    #                 modify_table_ops.ops.pop(idx)
+    #             else:
+    #                 modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
+    #                     index.name,
+    #                     index.table.name,
+    #                     schema=schema,
+    #                     table=index.table,
+    #                     unique=index.unique,
+    #                     info=index.info,
+    #                 )
 
 
 index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
