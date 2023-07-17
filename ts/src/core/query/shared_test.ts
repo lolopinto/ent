@@ -1012,11 +1012,11 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       user = u;
       const [_, contacts2] = await createAllContacts({
         user,
-        start: contacts[contacts.length - 1].createdAt.getTime() - 100,
+        start: contacts[contacts.length - 1].createdAt.getTime() - 86400,
       });
       await createAllContacts({
         user,
-        start: contacts2[contacts.length - 1].createdAt.getTime() - 100,
+        start: contacts2[contacts.length - 1].createdAt.getTime() - 86400,
       });
 
       const edges = await opts.newQuery(getViewer(), user).queryEdges();

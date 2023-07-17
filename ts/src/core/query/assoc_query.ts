@@ -4,11 +4,13 @@ import {
   Viewer,
   LoadEntOptions,
   EdgeQueryableDataOptions,
+  QueryableDataOptions,
 } from "../base";
 import { AssocEdge, loadEdgeData, loadEntsList } from "../ent";
 import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
-import { EdgeQuery, BaseEdgeQuery, IDInfo } from "./query";
+import { EdgeQuery, BaseEdgeQuery, IDInfo, EdgeQueryFilter } from "./query";
+import * as clause from "../clause";
 
 // TODO no more plurals for privacy reasons?
 export type EdgeQuerySource<
@@ -225,6 +227,25 @@ export abstract class AssocEdgeQueryBase<
     );
     return m;
   }
+
+  __beforeBETA(time: Date) {
+    this.__assertNoFiltersBETA("before");
+    this.__addCustomFilterBETA(new BeforeFilter(time));
+    return this;
+  }
+
+  __afterBETA(time: Date) {
+    this.__assertNoFiltersBETA("after");
+    this.__addCustomFilterBETA(new AfterFilter(time));
+    return this;
+  }
+
+  // start is inclusive, end is exclusive
+  __withinBeta(start: Date, end: Date) {
+    this.__assertNoFiltersBETA("after");
+    this.__addCustomFilterBETA(new WithinFilter(start, end));
+    return this;
+  }
 }
 
 export interface EdgeQueryCtr<
@@ -237,4 +258,42 @@ export interface EdgeQueryCtr<
     TDest,
     TEdge
   >;
+}
+
+class BeforeFilter implements EdgeQueryFilter<AssocEdge> {
+  constructor(private time: Date) {}
+
+  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    const cls = clause.Less("time", this.time);
+
+    options.clause = clause.AndOptional(options.clause, cls);
+
+    return options;
+  }
+}
+
+class AfterFilter implements EdgeQueryFilter<AssocEdge> {
+  constructor(private time: Date) {}
+
+  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    const cls = clause.Greater("time", this.time);
+
+    options.clause = clause.AndOptional(options.clause, cls);
+
+    return options;
+  }
+}
+
+class WithinFilter implements EdgeQueryFilter<AssocEdge> {
+  constructor(private start: Date, private end: Date) {}
+
+  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    const cls = clause.And(
+      clause.GreaterEq("time", this.start),
+      clause.Less("time", this.end),
+    );
+
+    options.clause = clause.AndOptional(options.clause, cls);
+    return options;
+  }
 }
