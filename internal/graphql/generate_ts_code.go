@@ -3722,17 +3722,26 @@ func writeRootQueryFile(processor *codegen.Processor, rq *rootQuery) error {
 }
 
 func writeTSSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
-	filePath := getTSSchemaFilePath(processor.Config)
-	imps := tsimport.NewImports(processor.Config, filePath)
+	cfg := processor.Config
+	filePath := getTSSchemaFilePath(cfg)
+	imps := tsimport.NewImports(cfg, filePath)
+
+	var subscription *tsimport.ImportPath
+	if obj := cfg.SubscriptionType(); obj != nil {
+		subscription = obj.GetImportPath()
+	}
+
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			HasMutations bool
-			QueryPath    string
-			MutationPath string
-			AllTypes     []typeInfo
+			HasMutations           bool
+			SubscriptionImportPath *tsimport.ImportPath
+			QueryPath              string
+			MutationPath           string
+			AllTypes               []typeInfo
 		}{
 			s.hasMutations,
+			subscription,
 			getQueryImportPath(),
 			getMutationImportPath(),
 			s.allTypes,
