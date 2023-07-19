@@ -27,9 +27,9 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	// 16,
+	16,
 	18,
-	// 20,
+	20,
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.28"
