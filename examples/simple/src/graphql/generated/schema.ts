@@ -233,10 +233,12 @@ import {
   UserToMaybeEventsConnectionType,
   UserType,
 } from "../resolvers";
+import { SubscriptionType } from "../resolvers/subscription_type";
 
 export default new GraphQLSchema({
   query: QueryType,
   mutation: MutationType,
+  subscription: SubscriptionType,
   types: [
     CatBreedType,
     CommentSortColumnType,

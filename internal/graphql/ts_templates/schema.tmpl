@@ -14,6 +14,10 @@ export default new {{useImport "GraphQLSchema"}}({
   {{if .HasMutations -}}
     mutation: {{useImport "MutationType"}},
   {{end -}}
+  {{ if .SubscriptionImportPath -}}
+    {{ reserveImportPath .SubscriptionImportPath false -}}
+    subscription: {{useImport .SubscriptionImportPath.Import }},
+  {{end -}}
   types: [
     {{range $typ := .AllTypes -}}
       {{ if $typ.Exported -}}

@@ -378,6 +378,13 @@ func (cfg *Config) SchemaSQLFilePath() string {
 	return ""
 }
 
+func (cfg *Config) SubscriptionType() *codegenapi.ImportedObject {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.SubscriptionType
+	}
+	return nil
+}
+
 func (cfg *Config) DatabaseToCompareTo() string {
 	if codegen := cfg.getCodegenConfig(); codegen != nil {
 		return codegen.DatabaseToCompareTo
@@ -604,6 +611,7 @@ type CodegenConfig struct {
 	DefaultGraphQLMutationName codegenapi.GraphQLMutationName   `yaml:"defaultGraphQLMutationName"`
 	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat    `yaml:"defaultGraphQLFieldFormat"`
 	SchemaSQLFilePath          string                           `yaml:"schemaSQLFilePath"`
+	SubscriptionType           *codegenapi.ImportedObject       `yaml:"subscriptionType"`
 	DatabaseToCompareTo        string                           `yaml:"databaseToCompareTo"`
 	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
 	TemplatizedViewer          *codegenapi.ImportedObject       `yaml:"templatizedViewer"`
@@ -633,6 +641,7 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		DefaultGraphQLMutationName: cfg.DefaultGraphQLMutationName,
 		DefaultGraphQLFieldFormat:  cfg.DefaultGraphQLFieldFormat,
 		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
+		SubscriptionType:           cfg.SubscriptionType,
 		DatabaseToCompareTo:        cfg.DatabaseToCompareTo,
 		FieldPrivacyEvaluated:      cfg.FieldPrivacyEvaluated,
 		TemplatizedViewer:          cloneImportedObject(cfg.TemplatizedViewer),
