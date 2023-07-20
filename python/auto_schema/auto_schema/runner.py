@@ -253,7 +253,7 @@ class Runner(object):
         # pprint.pprint(migrations, indent=2, width=30)
 
     def explicit_revision(self, message):
-        self.cmd.revision(message, autogenerate=False)
+        return self.cmd.revision(message, autogenerate=False)
 
     def upgrade(self, revision='heads', sql=False):
         return self.cmd.upgrade(revision, sql)

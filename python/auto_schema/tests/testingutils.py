@@ -47,9 +47,30 @@ def assert_num_tables(r: runner.Runner, expected_count, tables=None):
         assert table_names == tables
 
 
+def get_enums(r: runner.Runner):
+    result = []
+    for row in r.get_connection().execute(sa.text("select distinct pg_type.typname as enumtype from pg_type join pg_enum on pg_enum.enumtypid = pg_type.oid")):
+        result.append(row._asdict()['enumtype'])
+
+    return result
+
+
 def assert_no_changes_made(r: runner.Runner):
     assert_num_files(r, 0)
     assert_num_tables(r, 0)
+
+
+def find_file_by_revision(r: runner.Runner, rev):
+
+    version_files = get_version_files(r)
+    files = [f for f in version_files if f.startswith(
+        rev.revision)]
+    assert len(files) == 1
+    file = os.path.join(
+        r.cmd.alembic_cfg.get_main_option('version_locations'),
+        files[0]
+    )
+    return file
 
 
 def validate_edges_from_metadata(metadata: sa.MetaData, r: runner.Runner):

@@ -53,8 +53,8 @@ class Command(object):
         if len(heads) > 1:
             head = heads
 
-        command.revision(self.alembic_cfg, message,
-                         autogenerate=autogenerate, head=head)
+        return command.revision(self.alembic_cfg, message,
+                                autogenerate=autogenerate, head=head)
 
     def get_heads(self):
         script = ScriptDirectory.from_config(self.alembic_cfg)
