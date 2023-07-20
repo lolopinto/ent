@@ -27,3 +27,4 @@ class ChangeType(str, Enum):
     DROP_ENUM = "drop_enum"
     CREATE_CHECK_CONSTRAINT = "create_check_constraint"
     DROP_CHECK_CONSTRAINT = "drop_check_constraint"
+    EXECUTE_SQL = "execute_sql"

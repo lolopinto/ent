@@ -199,3 +199,13 @@ def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFul
             "kwargs": _render_kw_args(op.kw),
         }
     )
+
+
+# i don't think this is every used since the way it works is that this is called
+@renderers.dispatch_for(ops.ExecuteSQL)
+def render_execute_sql(autogen_context: AutogenContext, op: ops.ExecuteSQL) -> str:
+    return (
+        "op.execute_sql('%(sql)s')" % {
+            "sql": op.sql,
+        }
+    )

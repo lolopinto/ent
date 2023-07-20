@@ -10,6 +10,7 @@ from auto_schema.schema_item import FullTextIndex
 from .change_type import ChangeType
 from .change import Change
 
+
 class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_revision_message(self) -> String:
@@ -588,4 +589,38 @@ class DropFullTextIndexOp(MigrateOpInterface):
     ):
         op = cls(index_name, table_name=table_name,
                  schema=schema, **kw)
+        return operations.invoke(op)
+
+# all of this is wrong
+
+
+@Operations.register_operation("execute_sql")
+class ExecuteSQL(MigrateOpInterface):
+
+    def __init__(self, sql,
+                 schema: Optional[Any] = None,
+                 **kw
+                 ):
+        self.sql = sql
+        self.schema = schema
+        self.kw = kw
+
+    def get_revision_message(self) -> String:
+        return 'execute sql'
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.EXECUTE_SQL
+
+    def get_table_name(self) -> String:
+        raise NotImplementedError()
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
+
+    @classmethod
+    def execute_sql(cls, operations, sql, schema=None, **kw):
+        op = cls(sql, schema=schema, **kw)
         return operations.invoke(op)

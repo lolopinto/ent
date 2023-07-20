@@ -47,14 +47,14 @@ class Command(object):
         command.current(self.alembic_cfg, verbose=True)
 
     # Simulates running the `alembic revision -m` command
-    def revision(self, message):
+    def revision(self, message, autogenerate=True):
         heads = self.get_heads()
         head = 'head'
         if len(heads) > 1:
             head = heads
 
         command.revision(self.alembic_cfg, message,
-                         autogenerate=True, head=head)
+                         autogenerate=autogenerate, head=head)
 
     def get_heads(self):
         script = ScriptDirectory.from_config(self.alembic_cfg)
