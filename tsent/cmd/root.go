@@ -84,6 +84,7 @@ func init() {
 		detectDanglingFilesCmd,
 		migratev1Cmd,
 		runScriptCmd,
+		migrationCmd,
 	})
 
 	addCommands(generateCmd, []*cobra.Command{
@@ -115,9 +116,11 @@ func init() {
 
 	detectDanglingFilesCmd.Flags().BoolVar(&detectDanglingInfo.deleteFiles, "delete", false, "--delete to indicate that we should delete detected dangling files")
 
-	migratev1Cmd.Flags().StringVar(&migrateInfo.newSchemaClass, "new_schema_class", "", "new base schema class instead of EntSchema")
-	migratev1Cmd.Flags().StringVar(&migrateInfo.oldBaseClass, "old_base_class", "", "old base schema class instead of BaseEntSchema")
-	migratev1Cmd.Flags().StringVar(&migrateInfo.transformPath, "transform_path", "", "path for new base class")
+	migratev1Cmd.Flags().StringVar(&migrateV1Info.newSchemaClass, "new_schema_class", "", "new base schema class instead of EntSchema")
+	migratev1Cmd.Flags().StringVar(&migrateV1Info.oldBaseClass, "old_base_class", "", "old base schema class instead of BaseEntSchema")
+	migratev1Cmd.Flags().StringVar(&migrateV1Info.transformPath, "transform_path", "", "path for new base class")
+
+	migrationCmd.Flags().StringVar(&migrateInfo.message, "message", "", "message for migration")
 }
 
 func Execute() {

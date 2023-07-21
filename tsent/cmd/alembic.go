@@ -37,6 +37,7 @@ tsent alembic current
 tsent alembic history --verbose 
 tsent alembic history --verbose --last 4
 tsent alembic history --verbose --rev_range rev1:current
+tsent alembic revision --message "message"
 	`,
 	Args: cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
