@@ -556,7 +556,8 @@ export class EdgeOperation implements DataOperation {
       fields["time"] = new Date().toISOString();
     }
 
-    const onConflictFields = ["data"];
+    // update time if we're trying to insert a row with the same id1, edge_type, id2
+    const onConflictFields = ["data", "time"];
 
     const extraEdgeFields = __getGlobalSchema()?.extraEdgeFields;
     if (extraEdgeFields) {
