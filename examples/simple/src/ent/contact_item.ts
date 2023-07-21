@@ -16,7 +16,9 @@ export class ContactItem {
     type: "Contact",
     nullable: true,
   })
-  contact: Contact | null = null;
+  contact(): Contact | null {
+    return null;
+  }
 
   constructor(label: ContactLabel) {
     this.label = label;

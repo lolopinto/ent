@@ -238,8 +238,8 @@ type Comment implements Node {
 }
 
 type ContactDate implements ContactItemType {
-  label: ContactLabel!
   contact: Contact
+  label: ContactLabel!
   date: Time!
   description: String!
 }
@@ -270,8 +270,8 @@ input ContactItemFilter {
 union ContactItemResult = ContactEmail | ContactPhoneNumber | ContactDate
 
 interface ContactItem {
-  label: ContactLabel!
   contact: Contact
+  label: ContactLabel!
 }
 
 type ContactPhoneNumber implements Node & ContactItemType {

@@ -25,11 +25,18 @@ export const ContactDateType = new GraphQLObjectType({
     ContactDate,
     RequestContext<ExampleViewerAlias>
   > => ({
-    label: {
-      type: new GraphQLNonNull(ContactLabelType),
-    },
     contact: {
       type: ContactType,
+      resolve: (
+        obj: ContactDate,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.contact();
+      },
+    },
+    label: {
+      type: new GraphQLNonNull(ContactLabelType),
     },
     date: {
       type: new GraphQLNonNull(GraphQLTime),
