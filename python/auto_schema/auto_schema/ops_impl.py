@@ -267,3 +267,14 @@ def create_full_text_index(operations: ops.Operations, operation: ops.DropFullTe
             "DROP INDEX %s" % operation.index_name
         )
     )
+
+
+@ Operations.implementation_for(ops.ExecuteSQL)
+def execute_sql(operations: ops.Operations, operation: ops.ExecuteSQL):
+    connection = operations.get_bind()
+    # TODO document exec_driver_sql for anyone who uses this?
+    connection.execute(
+        sa.text(
+            operation.sql
+        )
+    )

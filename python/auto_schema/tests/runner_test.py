@@ -1,6 +1,7 @@
 from auto_schema.diff import Diff
 from auto_schema.change_type import ChangeType
 import pytest
+import os
 
 import sqlalchemy as sa
 import alembic.operations.ops as alembicops
@@ -1570,6 +1571,73 @@ class TestPostgresRunner(BaseTestRunner):
             # skip validation because of complications with idx
             validate_schema=False
         )
+
+    @ pytest.mark.usefixtures("metadata_with_table")
+    def test_custom_sql(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_table)
+
+        assert testingutils.get_enums(r) == []
+
+        r2 = new_test_runner(metadata_with_table, r)
+        # new change
+        new_revision = r2.explicit_revision("custom change")
+        assert new_revision is not None
+
+        testingutils.assert_num_files(r2, 2)
+        file = testingutils.find_file_by_revision(r2, new_revision)
+
+        contents = ""
+        # read revision file python
+        with open(file, 'r') as f:
+            contents = f.read()
+
+        # search for upgrade
+        upgrade_start = contents.find("def upgrade():\n")
+        downgrade_start = contents.find("def downgrade():\n")
+
+        assert upgrade_start != -1
+        assert downgrade_start != -1
+
+        #   "edit the file " to add types
+        new_upgrade = """def upgrade(): 
+    op.execute_sql("CREATE TYPE rainbow as ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')")
+            
+            
+"""
+
+        new_downgrade = """def downgrade(): 
+    op.execute_sql("DROP TYPE rainbow")
+            
+            
+        """
+
+        contents2 = contents[0: upgrade_start] + \
+            new_upgrade + new_downgrade
+
+        with open(file, 'w') as f:
+            f.write(contents2)
+
+        #  upgrade and downgrade and re-upgrade and confirm enums change as expected
+        r2.upgrade()
+
+        assert testingutils.get_enums(r2) == ["rainbow"]
+
+        r2.downgrade("-1", False)
+
+        assert testingutils.get_enums(r2) == []
+
+        r2.upgrade()
+
+        assert testingutils.get_enums(r2) == ["rainbow"]
+
+        testingutils.assert_num_files(r2, 2)
+
+        # run codegen one more time and no files change
+        r2.run()
+
+        testingutils.assert_num_files(r2, 2)
 
 
 class TestSqliteRunner(BaseTestRunner):

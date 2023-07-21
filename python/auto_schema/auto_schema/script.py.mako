@@ -10,7 +10,7 @@ Create Date: ${create_date}
 from alembic import op
 import sqlalchemy as sa
 import auto_schema
-## TODO: for down commans when removing edges, we add "UUID()" which is broken and unncessary :(
+## TODO: for down commands when removing edges, we add "UUID()" which is broken and unncessary :(
 ## from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.dialects import postgresql
 ${imports if imports else ""}

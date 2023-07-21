@@ -252,6 +252,9 @@ class Runner(object):
         # understand diff and make changes as needed
         # pprint.pprint(migrations, indent=2, width=30)
 
+    def explicit_revision(self, message):
+        return self.cmd.revision(message, autogenerate=False)
+
     def upgrade(self, revision='heads', sql=False):
         return self.cmd.upgrade(revision, sql)
 
