@@ -591,8 +591,6 @@ class DropFullTextIndexOp(MigrateOpInterface):
                  schema=schema, **kw)
         return operations.invoke(op)
 
-# all of this is wrong
-
 
 @Operations.register_operation("execute_sql")
 class ExecuteSQL(MigrateOpInterface):
@@ -606,7 +604,7 @@ class ExecuteSQL(MigrateOpInterface):
         self.kw = kw
 
     def get_revision_message(self) -> String:
-        return 'execute sql'
+        raise NotImplementedError()
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.EXECUTE_SQL

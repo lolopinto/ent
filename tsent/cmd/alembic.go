@@ -20,7 +20,7 @@ var validCmds = map[string]int{
 	"stamp":     1, // stamp --purge option may be needed. would need a child command or simple flag parsing here
 	"edit":      1, // TODO should we support this? didn't document
 	"merge":     1, // TODO should we support this?
-	"revision":  1, // TODO should we support this?
+	"revision":  1,
 }
 
 var variableArgs = map[string]bool{

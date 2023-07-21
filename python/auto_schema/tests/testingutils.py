@@ -61,7 +61,6 @@ def assert_no_changes_made(r: runner.Runner):
 
 
 def find_file_by_revision(r: runner.Runner, rev):
-
     version_files = get_version_files(r)
     files = [f for f in version_files if f.startswith(
         rev.revision)]
