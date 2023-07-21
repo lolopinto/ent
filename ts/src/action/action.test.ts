@@ -358,8 +358,8 @@ function commonTests() {
         fieldsToLog: fields,
       },
       global
-        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, deleted_at = EXCLUDED.deleted_at"
-        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, time = EXCLUDED.time, deleted_at = EXCLUDED.deleted_at"
+        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, time = EXCLUDED.time",
     );
     expect(ml.logs[lastInsertIdx]).toEqual({
       query: query,
@@ -425,8 +425,8 @@ function commonTests() {
         fieldsToLog: fields,
       },
       global
-        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, deleted_at = EXCLUDED.deleted_at"
-        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, time = EXCLUDED.time, deleted_at = EXCLUDED.deleted_at"
+        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, time = EXCLUDED.time",
     );
     expect(ml.logs[lastInsertIdx]).toEqual({
       query: query,
