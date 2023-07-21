@@ -657,6 +657,10 @@ func buildObjectTypeImpl(item CustomItem, obj *CustomObject, gqlType string, isT
 		// input or object type
 		GQLType: gqlType,
 	})
+	for _, inter := range obj.Interfaces {
+		typ.Imports = append(typ.Imports, tsimport.NewLocalGraphQLEntImportPath(inter))
+		typ.GQLInterfaces = append(typ.GQLInterfaces, inter+"Type")
+	}
 
 	if isTypeOf && typ.GQLType == "GraphQLObjectType" {
 		typ.IsTypeOfMethod = []string{
