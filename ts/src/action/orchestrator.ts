@@ -41,6 +41,7 @@ import {
   AssocEdgeOptions,
   ConditionalOperation,
   ConditionalNodeOperation,
+  NoOperation,
 } from "./operations";
 import { WriteOperation, Builder, Action } from "../action";
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "../core/privacy";
@@ -1285,14 +1286,33 @@ export class Orchestrator<
     conditionalBuilder: Builder<any>,
     conditionalOverride: boolean,
   ): Promise<EntChangeset<TEnt>> {
-    // validate everything first
-    await this.validX();
+    let ops: DataOperation[] = [];
+    let processOps = true;
+    if (
+      this.options.action?.__failPrivacySilently &&
+      this.options.action.__failPrivacySilently()
+    ) {
+      const res = await this.valid();
+      if (!res) {
+        processOps = false;
+        const op = new NoOperation(this.options.builder, this.existingEnt);
+        this.mainOp = op;
+        ops = [op];
 
-    let ops: DataOperation[] = [
-      this.buildMainOp(conditionalOverride ? conditionalBuilder : undefined),
-    ];
+        // we need an op that just returns the existing ent
+      }
+    } else {
+      // validate everything first
+      await this.validX();
+    }
 
-    await this.buildEdgeOps(ops, conditionalBuilder, conditionalOverride);
+    if (processOps) {
+      ops = [
+        this.buildMainOp(conditionalOverride ? conditionalBuilder : undefined),
+      ];
+
+      await this.buildEdgeOps(ops, conditionalBuilder, conditionalOverride);
+    }
 
     // TODO throw if we try and create a new changeset after previously creating one
 
