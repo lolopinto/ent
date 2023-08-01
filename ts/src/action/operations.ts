@@ -33,6 +33,7 @@ import {
   logQuery,
   parameterizedQueryOptions,
 } from "../core/ent";
+import e from "express";
 
 export interface UpdatedOperation {
   operation: WriteOperation;
@@ -130,6 +131,22 @@ export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
   key: string;
   onConflict?: CreateRowOptions["onConflict"];
   builder: Builder<T>;
+}
+
+export class NoOperation<T extends Ent> implements DataOperation<T> {
+  private row: Data | null = null;
+  constructor(public builder: Builder<any>, existingEnt: Ent | null = null) {
+    // @ts-ignore
+    this.row = existingEnt?.data;
+  }
+
+  async performWrite(queryer: Queryer, context?: Context) {}
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {}
+
+  returnedRow(): Data | null {
+    return this.row;
+  }
 }
 
 export class EditNodeOperation<T extends Ent> implements DataOperation {

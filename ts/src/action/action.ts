@@ -148,6 +148,22 @@ export interface Action<
   builder: TBuilder;
   getPrivacyPolicy(): PrivacyPolicy<TEnt>;
 
+  /**
+   * beta API that may change. used to indicate that we should fail privacy errors
+   * silently instead of throwing an error
+   *
+   * valid will still return false
+   * validX() will still throw an error
+   * save() and saveX() will just fail silently instead of throwing an error
+   *
+   * NOTE: this doesn't make sense on a create action since we'd still try and load the ent
+   * and if it that doesn't exist, we'd throw an error
+   *
+   * so this is only useful on update or delete actions when there's an existing ent to load
+   * or when there isn't any expected return value.
+   */
+  __failPrivacySilently?(): boolean;
+
   // we allow grouping triggers to indicate dependency trees
   // so that you can say one or more triggers is higher priority
   // than the others and should be run first

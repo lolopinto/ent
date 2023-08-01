@@ -371,6 +371,10 @@ export class SimpleAction<
     return AlwaysAllowPrivacyPolicy;
   }
 
+  __failPrivacySilently(): boolean {
+    return false;
+  }
+
   getInput() {
     const ret: Data = {};
     for (const [k, v] of this.fields) {
