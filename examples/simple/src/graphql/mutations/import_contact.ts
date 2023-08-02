@@ -31,6 +31,10 @@ export class ImportContactResolver {
         name: "file",
         type: gqlFileUpload,
       },
+      {
+        name: "defaultLabel",
+        type: "ContactLabel",
+      },
     ],
     async: true,
   })
@@ -38,6 +42,7 @@ export class ImportContactResolver {
     context: RequestContext<ExampleViewer>,
     userID: ID,
     file: Promise<FileUpload>,
+    label?: ContactLabel,
   ) {
     const file2 = await file;
 
@@ -61,7 +66,7 @@ export class ImportContactResolver {
           emails: [
             {
               emailAddress: record.emailAddress,
-              label: ContactLabel.Default,
+              label: label ?? ContactLabel.Default,
             },
           ],
           userID: user.id,
