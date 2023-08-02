@@ -707,6 +707,15 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		buf.WriteString("\n")
 	}
 
+	// todo why isn't this in Enums??
+	for _, info := range processor.Schema.GetGlobalEnums() {
+		if info.GQLEnum == nil {
+			continue
+		}
+		buf.WriteString(info.GQLEnum.Name)
+		buf.WriteString("\n")
+	}
+
 	for _, ci := range processor.Schema.CustomInterfaces {
 		buf.WriteString(ci.GQLName)
 		buf.WriteString("\n")
