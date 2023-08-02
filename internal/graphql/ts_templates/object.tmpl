@@ -78,7 +78,7 @@
         {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance "ViewerType" $viewerType) -}}
         }),
       {{if .GQLInterfaces -}}
-      interfaces: [
+      interfaces: () => [
         {{range $interface := .GQLInterfaces -}}
           {{useImport $interface}},
         {{end -}}

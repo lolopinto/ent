@@ -39,7 +39,7 @@ export const HoursOfOperationType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof HoursOfOperation;
   },
