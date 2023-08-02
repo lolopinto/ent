@@ -83,7 +83,7 @@ export const ContactEmailType = new GraphQLObjectType({
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface, ContactItemType],
+  interfaces: () => [GraphQLNodeInterface, ContactItemType],
   isTypeOf(obj) {
     return obj instanceof ContactEmail;
   },

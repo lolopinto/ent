@@ -51,7 +51,7 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
       type: new GraphQLNonNull(ContactLabelType),
     },
   }),
-  interfaces: [GraphQLNodeInterface, ContactItemType],
+  interfaces: () => [GraphQLNodeInterface, ContactItemType],
   isTypeOf(obj) {
     return obj instanceof ContactPhoneNumber;
   },

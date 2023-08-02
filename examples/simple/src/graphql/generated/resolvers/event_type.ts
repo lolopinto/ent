@@ -268,7 +268,7 @@ export const EventType = new GraphQLObjectType({
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Event;
   },

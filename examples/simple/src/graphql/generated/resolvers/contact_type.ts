@@ -219,7 +219,7 @@ export const ContactType = new GraphQLObjectType({
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Contact;
   },
