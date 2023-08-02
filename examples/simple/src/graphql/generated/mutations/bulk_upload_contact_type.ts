@@ -39,7 +39,7 @@ export const BulkUploadContactType: GraphQLFieldConfig<
     },
     defaultLabel: {
       description: "",
-      type: new GraphQLNonNull(ContactLabelType),
+      type: ContactLabelType,
     },
   },
   resolve: async (

@@ -34,6 +34,7 @@ export class ImportContactResolver {
       {
         name: "defaultLabel",
         type: "ContactLabel",
+        nullable: true,
       },
     ],
     async: true,
