@@ -10,6 +10,7 @@ import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import { query } from "@snowtop/ent";
 import { v4 } from "uuid";
 import { ContactLabel, ContactInfoSource } from "../generated/types";
+import { Transaction } from "@snowtop/ent/action";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -311,4 +312,29 @@ test("multiple phonenumbers", async () => {
   );
   expect(r3.length).toBe(1);
   expect(r3[0].id).toBe(contact.id);
+});
+
+test("transaction with different viewer type", async () => {
+  const user = await createUser();
+
+  const ct = await user.queryContacts().queryCount();
+  expect(ct).toBe(1);
+
+  const viewer = new ExampleViewer(user.id);
+  const action1 = CreateContactAction.create(viewer, {
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  });
+  const action2 = CreateContactAction.create(viewer, {
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  });
+
+  const tx = new Transaction(viewer, [action1, action2]);
+  await tx.run();
+
+  const ct2 = await user.queryContacts().queryCount();
+  expect(ct2).toBe(3);
 });
