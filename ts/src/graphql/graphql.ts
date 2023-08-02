@@ -804,6 +804,9 @@ export class GQLCapture {
     let baseArgs = new Map<string, boolean>();
     this.customArgs.forEach((_val, key) => baseArgs.set(key, true));
     this.customInputObjects.forEach((_val, key) => baseArgs.set(key, true));
+    // add all objects as arg types because it can include enums
+    // depend on graphql to throw error if it's not a valid input type
+    objects.map((object) => baseArgs.set(object, true));
     baseArgs.set("Context", true);
     this.customTypes.forEach((_val, key) => baseArgs.set(key, true));
 
@@ -831,7 +834,7 @@ export class GQLCapture {
               arg.needsResolving = false;
             } else {
               throw new Error(
-                `arg ${arg.name} of field ${field.functionName} needs resolving. should not be possible`,
+                `arg ${arg.name} of field ${field.functionName} with type ${arg.type} needs resolving. should not be possible`,
               );
             }
           }

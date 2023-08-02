@@ -909,7 +909,7 @@ describe("function", () => {
     } catch (error) {
       // TODO need a better message here
       expect(error.message).toMatch(
-        /arg searchArgs of field search needs resolving. should not be possible/,
+        /arg searchArgs of field search with type SearchArgs needs resolving. should not be possible/,
       );
     }
     validateNoCustom(CustomObjectTypes.Field);
