@@ -945,6 +945,13 @@ export function JSONPathValuePredicate<T extends Data, K = keyof T>(
   return new jSONPathValuePredicateClause(dbCol, path, val, pred);
 }
 
+export function JSONKeyExists<T extends Data, K = keyof T>(
+  dbCol: K,
+  val: any,
+): Clause<T, K> {
+  return new simpleClause(dbCol, val, "?", new isNullClause(dbCol));
+}
+
 // TODO need a better name for this lol
 // this assumes we're doing the same direction twice which isn't necessarily accurate in the future...
 class paginationMultipleColumnsSubQueryClause<T extends Data, K = keyof T>
