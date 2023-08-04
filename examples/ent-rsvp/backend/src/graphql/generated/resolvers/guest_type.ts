@@ -61,6 +61,10 @@ export const GuestType = new GraphQLObjectType({
     title: {
       type: GraphQLString,
     },
+    guestDataId: {
+      type: GraphQLID,
+      resolve: nodeIDEncoder,
+    },
     guestToAttendingEvents: {
       type: new GraphQLNonNull(GuestToAttendingEventsConnectionType()),
       args: {

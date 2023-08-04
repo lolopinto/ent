@@ -26,6 +26,7 @@ interface customGuestCreateInput extends GuestCreateInput {
   addressId?: string;
   eventID: string;
   guestGroupID: string;
+  guestDataId?: string;
 }
 
 interface GuestCreatePayload {
@@ -52,6 +53,9 @@ export const GuestCreateInputType = new GraphQLInputObjectType({
     },
     title: {
       type: GraphQLString,
+    },
+    guestDataId: {
+      type: GraphQLID,
     },
   }),
 });
@@ -93,6 +97,7 @@ export const GuestCreateType: GraphQLFieldConfig<
       emailAddress: input.emailAddress,
       guestGroupID: mustDecodeIDFromGQLID(input.guestGroupID),
       title: input.title,
+      guestDataId: mustDecodeNullableIDFromGQLID(input.guestDataId),
     }).saveX();
     return { guest: guest };
   },

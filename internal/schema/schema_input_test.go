@@ -573,7 +573,7 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 	testConsts(t, userInfo.NodeData.ConstantGroups, 1, 1)
 }
 
-func TestParseInputWitPrivateFieldEdge(t *testing.T) {
+func TestParseInputWithPrivateFieldEdge(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
 			"User": {

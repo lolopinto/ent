@@ -335,6 +335,7 @@ export interface GuestDBData {
   email_address: string | null;
   guest_group_id: ID;
   title: string | null;
+  guest_data_id: ID | null;
 }
 
 const guestTable = "guests";
@@ -348,6 +349,7 @@ const guestFields = [
   "email_address",
   "guest_group_id",
   "title",
+  "guest_data_id",
 ];
 
 export const guestLoader = new ObjectLoaderFactory<GuestDBData>({
@@ -397,6 +399,10 @@ export const guestLoaderInfo = {
     title: {
       dbCol: "title",
       inputKey: "title",
+    },
+    guest_data_id: {
+      dbCol: "guest_data_id",
+      inputKey: "guestDataId",
     },
   },
 };

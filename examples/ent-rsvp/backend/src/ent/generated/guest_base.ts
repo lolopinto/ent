@@ -27,6 +27,7 @@ import { NodeType } from "src/ent/generated/types";
 import {
   Address,
   Event,
+  GuestData,
   GuestGroup,
   GuestToAttendingEventsQuery,
   GuestToAuthCodesQuery,
@@ -51,6 +52,7 @@ export class GuestBase
   readonly emailAddress: string | null;
   readonly guestGroupID: ID;
   readonly title: string | null;
+  readonly guestDataId: ID | null;
 
   constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
@@ -63,6 +65,7 @@ export class GuestBase
     this.emailAddress = data.email_address;
     this.guestGroupID = data.guest_group_id;
     this.title = data.title;
+    this.guestDataId = data.guest_data_id;
     // @ts-expect-error
     this.data = data;
   }
@@ -271,5 +274,13 @@ export class GuestBase
 
   loadGuestGroupX(): Promise<GuestGroup> {
     return loadEntX(this.viewer, this.guestGroupID, GuestGroup.loaderOptions());
+  }
+
+  async loadGuestData(): Promise<GuestData | null> {
+    if (!this.guestDataId) {
+      return null;
+    }
+
+    return loadEnt(this.viewer, this.guestDataId, GuestData.loaderOptions());
   }
 }

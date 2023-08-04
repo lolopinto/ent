@@ -16,7 +16,7 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Address, Event, Guest, GuestGroup } from "src/ent/";
+import { Address, Event, Guest, GuestData, GuestGroup } from "src/ent/";
 import { GuestBuilder } from "src/ent/generated/guest/actions/guest_builder";
 
 export interface GuestCreateInput {
@@ -26,6 +26,7 @@ export interface GuestCreateInput {
   emailAddress?: string | null;
   guestGroupID: ID | Builder<GuestGroup, Viewer>;
   title?: string | null;
+  guestDataId?: ID | null | Builder<GuestData, Viewer>;
 }
 
 export type CreateGuestActionTriggers = (
