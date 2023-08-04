@@ -120,7 +120,7 @@ export const GuestType = new GraphQLObjectType({
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Guest;
   },

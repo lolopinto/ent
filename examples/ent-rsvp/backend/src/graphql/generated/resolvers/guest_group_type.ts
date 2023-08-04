@@ -114,7 +114,7 @@ export const GuestGroupType = new GraphQLObjectType({
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof GuestGroup;
   },

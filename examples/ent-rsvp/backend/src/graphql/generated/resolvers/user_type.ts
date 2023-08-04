@@ -63,7 +63,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof User;
   },
