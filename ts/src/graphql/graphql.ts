@@ -456,6 +456,10 @@ export class GQLCapture {
     if (fd.nullable === undefined) {
       return res;
     }
+    if (fd.nullable === false) {
+      delete res.nullable;
+      return res;
+    }
     if (fd.nullable === "contents") {
       res.nullable = NullableResult.CONTENTS;
     } else if (fd.nullable === "contentsAndList") {

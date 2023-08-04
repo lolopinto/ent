@@ -12,6 +12,7 @@ export class AuthGuestInput {
   @gqlField({
     class: "AuthGuestInput",
     type: GraphQLString,
+    nullable: false,
   })
   emailAddress: string = "";
 
