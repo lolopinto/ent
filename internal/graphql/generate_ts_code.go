@@ -2055,6 +2055,12 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 			continue
 		}
 
+		// if node is hidden from graphql, don't create edge for it
+		if edge.Polymorphic == nil &&
+			nodeMap[edge.NodeInfo.Node].NodeData.HideFromGraphQL {
+			continue
+		}
+
 		// TODO this shouldn't be here but be somewhere else...
 		if f != nil {
 			if err := fieldInfo.InvalidateFieldForGraphQL(f); err != nil {

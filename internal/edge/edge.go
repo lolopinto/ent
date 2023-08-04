@@ -233,7 +233,6 @@ func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(
 	nullable bool,
 	fieldType enttype.Type,
 	validSchema func(str string) bool,
-	schemaVisibleToGraphQL func(str string) bool,
 ) error {
 	return e.AddFieldEdgeFromFieldEdgeInfo(cfg,
 		fieldName,
@@ -243,7 +242,6 @@ func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(
 		nullable,
 		fieldType,
 		validSchema,
-		schemaVisibleToGraphQL,
 	)
 }
 
@@ -319,7 +317,6 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 	nullable bool,
 	fieldType enttype.Type,
 	validSchema func(str string) bool,
-	schemaVisibleToGraphQL func(str string) bool,
 ) error {
 	edge, err := GetFieldEdge(cfg, fieldName, fieldEdgeInfo, nullable, fieldType)
 	if err != nil || edge == nil {
@@ -328,11 +325,6 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 	if edge.Polymorphic == nil {
 		if !validSchema(edge.commonEdgeInfo.NodeInfo.Node) {
 			return fmt.Errorf("invalid schema %s", edge.commonEdgeInfo.NodeInfo.Node)
-		}
-
-		// not visible to graphql? nothing to do here
-		if !schemaVisibleToGraphQL(edge.commonEdgeInfo.NodeInfo.Node) {
-			return nil
 		}
 	}
 
@@ -706,6 +698,10 @@ func (e *ForeignKeyEdge) ErrorMessage(edgeInfo *EdgeInfo) error {
 	edgeName := e.GetEdgeName()
 	// edge name is plural of destination node
 	if edgeName != inflection.Plural(e.NodeInfo.Node) {
+		return nil
+	}
+	// plural of destination node is the same as the singular form
+	if inflection.Plural(e.NodeInfo.Node) == e.NodeInfo.Node {
 		return nil
 	}
 	fkey := edgeInfo.GetForeignKeyEdgeByName(e.GetEdgeName())

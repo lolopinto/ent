@@ -227,21 +227,19 @@ func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(
 	cfg codegenapi.Config,
 	edgeInfo *edge.EdgeInfo,
 	validSchema func(str string) bool,
-	schemaVisibleToGraphQL func(str string) bool,
 ) error {
 	fkeyInfo := f.ForeignKeyInfo()
 	if fkeyInfo == nil {
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(cfg, f.FieldName, fkeyInfo.Schema, f.Nullable(), f.fieldType, validSchema, schemaVisibleToGraphQL)
+	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(cfg, f.FieldName, fkeyInfo.Schema, f.Nullable(), f.fieldType, validSchema)
 }
 
 func (f *Field) AddFieldEdgeToEdgeInfo(
 	cfg codegenapi.Config,
 	edgeInfo *edge.EdgeInfo,
 	validSchema func(str string) bool,
-	schemaVisibleToGraphQL func(str string) bool,
 ) error {
 	fieldEdgeInfo := f.FieldEdgeInfo()
 	if fieldEdgeInfo == nil {
@@ -255,7 +253,6 @@ func (f *Field) AddFieldEdgeToEdgeInfo(
 		f.Nullable(),
 		f.fieldType,
 		validSchema,
-		schemaVisibleToGraphQL,
 	)
 }
 

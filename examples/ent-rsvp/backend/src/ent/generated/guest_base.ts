@@ -27,6 +27,7 @@ import { NodeType } from "src/ent/generated/types";
 import {
   Address,
   Event,
+  GuestData,
   GuestGroup,
   GuestToAttendingEventsQuery,
   GuestToAuthCodesQuery,
@@ -273,5 +274,13 @@ export class GuestBase
 
   loadGuestGroupX(): Promise<GuestGroup> {
     return loadEntX(this.viewer, this.guestGroupID, GuestGroup.loaderOptions());
+  }
+
+  async loadGuestData(): Promise<GuestData | null> {
+    if (!this.guestDataId) {
+      return null;
+    }
+
+    return loadEnt(this.viewer, this.guestDataId, GuestData.loaderOptions());
   }
 }

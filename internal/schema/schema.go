@@ -124,13 +124,6 @@ func (s *Schema) NameExists(k string) bool {
 	return s.NodeNameExists(k) || s.EnumNameExists(k)
 }
 
-func (s *Schema) NodeVisibleToGraphQL(k string) bool {
-	if !s.NodeNameExists(k) {
-		return false
-	}
-	return !s.Nodes[k].NodeData.HideFromGraphQL
-}
-
 func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeData *NodeData) error {
 	if !node.EnumTable || len(node.DBRows) == 0 {
 		return errors.New("can't create enum from NodeData that's not an enum table or has no rows")
@@ -1454,7 +1447,7 @@ func (s *Schema) addForeignKeyEdges(
 
 	// add a field edge on current config so we can load underlying user
 	// and return it in GraphQL appropriately
-	if err := f.AddForeignKeyFieldEdgeToEdgeInfo(cfg, edgeInfo, s.NameExists, s.NodeVisibleToGraphQL); err != nil {
+	if err := f.AddForeignKeyFieldEdgeToEdgeInfo(cfg, edgeInfo, s.NameExists); err != nil {
 		return err
 	}
 
@@ -1472,7 +1465,7 @@ func (s *Schema) addFieldEdge(
 	// and return it in GraphQL appropriately
 	// this also flags that when we write data to this field, we write the inverse edge also
 	// e.g. writing user_id field on an event will also write corresponding user -> events edge
-	return f.AddFieldEdgeToEdgeInfo(cfg, edgeInfo, s.NameExists, s.NodeVisibleToGraphQL)
+	return f.AddFieldEdgeToEdgeInfo(cfg, edgeInfo, s.NameExists)
 }
 
 func (s *Schema) addInverseAssocEdgesFromInfo(info *NodeDataInfo) error {
