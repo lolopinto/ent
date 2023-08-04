@@ -16,7 +16,7 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Address, Event, GuestGroup } from "src/ent/";
+import { Address, Event, GuestData, GuestGroup } from "src/ent/";
 import { GuestGroupBuilder } from "src/ent/generated/guest_group/actions/guest_group_builder";
 
 interface customGuestInput {
@@ -24,6 +24,7 @@ interface customGuestInput {
   name: string;
   emailAddress?: string | null;
   title?: string | null;
+  guestDataId?: ID | null | Builder<GuestData, Viewer>;
 }
 
 export interface GuestGroupCreateInput {

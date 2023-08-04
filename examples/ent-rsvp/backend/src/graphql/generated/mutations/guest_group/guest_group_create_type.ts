@@ -43,6 +43,9 @@ export const GuestGuestGroupCreateInput = new GraphQLInputObjectType({
     title: {
       type: GraphQLString,
     },
+    guestDataId: {
+      type: GraphQLID,
+    },
   }),
 });
 

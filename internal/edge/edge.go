@@ -227,7 +227,13 @@ func (e *EdgeInfo) CreateEdgeBaseFile() bool {
 	return false
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldName, nodeName string, nullable bool, fieldType enttype.Type, validSchema func(str string) bool,
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(
+	cfg codegenapi.Config,
+	fieldName, nodeName string,
+	nullable bool,
+	fieldType enttype.Type,
+	validSchema func(str string) bool,
+	schemaVisibleToGraphQL func(str string) bool,
 ) error {
 	return e.AddFieldEdgeFromFieldEdgeInfo(cfg,
 		fieldName,
@@ -236,7 +242,9 @@ func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldNa
 		},
 		nullable,
 		fieldType,
-		validSchema)
+		validSchema,
+		schemaVisibleToGraphQL,
+	)
 }
 
 func GetFieldEdge(cfg codegenapi.Config,
@@ -311,14 +319,21 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 	nullable bool,
 	fieldType enttype.Type,
 	validSchema func(str string) bool,
+	schemaVisibleToGraphQL func(str string) bool,
 ) error {
 	edge, err := GetFieldEdge(cfg, fieldName, fieldEdgeInfo, nullable, fieldType)
 	if err != nil || edge == nil {
 		return err
 	}
-	if edge.Polymorphic == nil &&
-		!validSchema(edge.commonEdgeInfo.NodeInfo.Node) {
-		return fmt.Errorf("invalid schema %s", edge.commonEdgeInfo.NodeInfo.Node)
+	if edge.Polymorphic == nil {
+		if !validSchema(edge.commonEdgeInfo.NodeInfo.Node) {
+			return fmt.Errorf("invalid schema %s", edge.commonEdgeInfo.NodeInfo.Node)
+		}
+
+		// not visible to graphql? nothing to do here
+		if !schemaVisibleToGraphQL(edge.commonEdgeInfo.NodeInfo.Node) {
+			return nil
+		}
 	}
 
 	if fieldEdgeInfo.IndexEdge != nil {

@@ -21,6 +21,17 @@ const GuestSchema = new EntSchema({
       foreignKey: { schema: "GuestGroup", column: "ID" },
     }),
     title: StringType({ nullable: true }),
+    // contrived example of a field edge of a node hidden from graphql
+    // even though this is never set based on how rsvps work (it's stored in the data field of the rsvp edge)
+    // we're just showing what happens when we have a fieldEdge for a node hidden from GraphQL
+    // https://github.com/lolopinto/ent/issues/1565
+    // field is still exposed to graphql since it's not hidden
+    guest_data_id: UUIDType({
+      nullable: true,
+      fieldEdge: {
+        schema: "GuestData",
+      },
+    }),
   },
 
   actions: [

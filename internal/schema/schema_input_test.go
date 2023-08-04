@@ -573,7 +573,7 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 	testConsts(t, userInfo.NodeData.ConstantGroups, 1, 1)
 }
 
-func TestParseInputWitPrivateFieldEdge(t *testing.T) {
+func TestParseInputWithPrivateFieldEdge(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
 			"User": {
@@ -621,6 +621,65 @@ func TestParseInputWitPrivateFieldEdge(t *testing.T) {
 
 	userEdge := eventInfo.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.Nil(t, userEdge)
+}
+
+func TestParseInputWithFieldEdgeHiddenFromGraphQL(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "user_prefs_id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						FieldEdge: &input.FieldEdge{
+							Schema: "UserPrefs",
+						},
+					},
+				},
+			},
+			"UserPrefs": {
+				HideFromGraphQL: true,
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						FieldEdge: &input.FieldEdge{
+							Schema: "User",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
+
+	userPrefsEdge := userInfo.NodeData.EdgeInfo.GetFieldEdgeByName("user_prefs")
+	assert.Nil(t, userPrefsEdge)
 }
 
 func TestParseInputWithInvalidFieldEdgeSchema(t *testing.T) {

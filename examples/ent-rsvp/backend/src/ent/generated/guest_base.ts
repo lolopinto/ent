@@ -51,6 +51,7 @@ export class GuestBase
   readonly emailAddress: string | null;
   readonly guestGroupID: ID;
   readonly title: string | null;
+  readonly guestDataId: ID | null;
 
   constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
@@ -63,6 +64,7 @@ export class GuestBase
     this.emailAddress = data.email_address;
     this.guestGroupID = data.guest_group_id;
     this.title = data.title;
+    this.guestDataId = data.guest_data_id;
     // @ts-expect-error
     this.data = data;
   }
