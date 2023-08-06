@@ -748,9 +748,11 @@ func (f *ActionField) MarshalJSON() ([]byte, error) {
 	var af actionField
 	af.List = f.list
 	af.Name = f.Name
+	af.Optional = f.Optional
 	af.ActionName = f.ActionName
 	af.Type = f.Type
 	af.ExcludedFields = f.ExcludedFields
+	af.HideFromGraphQL = f.HideFromGraphQL
 
 	if f.Nullable && f.nullableContents {
 		af.Nullable = NullableContentsAndList
