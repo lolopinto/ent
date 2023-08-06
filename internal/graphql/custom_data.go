@@ -415,11 +415,11 @@ type CustomClassInfo struct {
 }
 
 type compareCustomData struct {
-	customQueriesChanged   map[string]bool
-	customMutationsChanged map[string]bool
-	customQueriesRemoved   map[string]bool
-	customMutationsRemoved map[string]bool
-	// NB: this seems to only affect custom connections in nodes e.g. User.custom connection but not root connections
+	customQueriesChanged     map[string]bool
+	customMutationsChanged   map[string]bool
+	customConnectionsRemoved map[string]bool
+	customQueriesRemoved     map[string]bool
+	customMutationsRemoved   map[string]bool
 	customConnectionsChanged map[string]bool
 	customInterfacesChanged  map[string]bool
 	customInterfacesRemoved  map[string]bool
@@ -433,6 +433,7 @@ func (c *compareCustomData) hasAnyChanges() bool {
 		len(c.customQueriesRemoved) > 0 ||
 		len(c.customMutationsRemoved) > 0 ||
 		len(c.customConnectionsChanged) > 0 ||
+		len(c.customConnectionsRemoved) > 0 ||
 		len(c.customInterfacesChanged) > 0 ||
 		len(c.customUnionsChanged) > 0 ||
 		len(c.customInterfacesRemoved) > 0 ||
@@ -442,6 +443,7 @@ func (c *compareCustomData) hasAnyChanges() bool {
 func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, existingChangeMap change.ChangeMap) *compareCustomData {
 	ret := &compareCustomData{
 		customConnectionsChanged: map[string]bool{},
+		customConnectionsRemoved: map[string]bool{},
 		customMutationsChanged:   map[string]bool{},
 		customMutationsRemoved:   map[string]bool{},
 		customQueriesRemoved:     map[string]bool{},
@@ -458,6 +460,7 @@ func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, exist
 	q := compareCustomFields(cd1.Queries, cd2.Queries, queryReferences)
 	ret.customQueriesChanged = q.changed
 	ret.customQueriesRemoved = q.removed
+	ret.customConnectionsRemoved = q.connnectionsRemoved
 
 	m := compareCustomFields(cd1.Mutations, cd2.Mutations, mutationReferences)
 	ret.customMutationsChanged = m.changed
@@ -529,8 +532,9 @@ func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, exist
 
 func compareCustomFields(l1, l2 []CustomField, references map[string]map[string]bool) *compareListOptions {
 	opts := &compareListOptions{
-		changed: map[string]bool{},
-		removed: map[string]bool{},
+		changed:             map[string]bool{},
+		removed:             map[string]bool{},
+		connnectionsRemoved: map[string]bool{},
 	}
 	compareCustomList(l1, l2, opts, references)
 	return opts
@@ -565,8 +569,9 @@ func compareCustomMaps(m1, m2 map[string]*CustomObject) *compareListOptions {
 }
 
 type compareListOptions struct {
-	changed map[string]bool
-	removed map[string]bool
+	changed             map[string]bool
+	removed             map[string]bool
+	connnectionsRemoved map[string]bool
 }
 
 func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, references map[string]map[string]bool) {
@@ -579,6 +584,9 @@ func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, reference
 		// in 1 but not 2 removed
 		if !ok {
 			opts.removed[cf1.GraphQLName] = true
+			if cf1.Connection {
+				opts.connnectionsRemoved[cf1.GraphQLName] = true
+			}
 		} else {
 			if !customFieldEqual(cf1, cf2) {
 				opts.changed[cf1.GraphQLName] = true

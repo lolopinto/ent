@@ -186,8 +186,9 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 		opts.writeNode = true
 	}
 	if processor.Config.UseChanges() {
-		changemap := processor.ChangeMap
-		changes := changemap[node.ObjData.Node]
+		changeMap := processor.ChangeMap
+		changes := changeMap[node.ObjData.Node]
+		// spew.Dump("yse changes", changeMap, node.ObjData.Node, len(changes))
 		for _, c := range changes {
 			if c.TSOnly {
 				continue
@@ -234,6 +235,34 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 	}
 
 	return p.buildNodeWithOpts(processor, s, node, opts)
+}
+
+func (p *TSStep) processDeletedNode(processor *codegen.Processor, s *gqlSchema, nodeData *schema.NodeData) fns.FunctionList {
+	var ret fns.FunctionList
+
+	packageName := nodeData.PackageName
+
+	ret = append(ret,
+		file.GetDeleteFileFunction(processor.Config, getFilePathForNodefromPackageName(processor.Config, packageName)))
+
+	ret = append(ret,
+		file.GetDeleteFileFunction(processor.Config, getDirectoryPathForActions(processor.Config, packageName)))
+
+	if nodeData.EdgeInfo != nil {
+		for _, edge := range nodeData.EdgeInfo.GetConnectionEdges() {
+			ret = append(ret,
+				file.GetDeleteFileFunction(
+					processor.Config,
+					getFilePathForConnection(
+						processor.Config,
+						packageName,
+						edge.GetGraphQLConnectionType()),
+				),
+			)
+		}
+	}
+
+	return ret
 }
 
 // TODO all of this logic should be rewritten so that the logic for the object and files rendered are tied together so that it's
@@ -355,6 +384,14 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		funcs = append(funcs, p.processNode(processor, s, node)...)
 	}
 
+	for k := range processor.ChangeMap {
+		nodeInfo := processor.Schema.Nodes[k]
+		if s.nodes[k] == nil && nodeInfo != nil {
+			spew.Dump("deleted node", k, processor.ChangeMap[k])
+			funcs = append(funcs, p.processDeletedNode(processor, s, nodeInfo.NodeData)...)
+		}
+	}
+
 	for idx := range s.customMutations {
 		node := s.customMutations[idx]
 		funcs = append(funcs, p.processCustomNode(processor, s, node, true)...)
@@ -415,6 +452,21 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 					getFilePathForCustomMutation(
 						processor.Config,
 						k,
+					),
+				),
+			)
+		}
+
+		for k := range cmp.customConnectionsRemoved {
+			// TODO!
+			spew.Dump(k)
+			funcs = append(funcs,
+				file.GetDeleteFileFunction(
+					processor.Config,
+					getFilePathForConnection(
+						processor.Config,
+						"root",
+						fmt.Sprintf("RootTo%sType", strcase.ToCamel(k)),
 					),
 				),
 			)
@@ -492,6 +544,10 @@ var _ codegen.Step = &TSStep{}
 // TODO
 func getFilePathForNode(cfg *codegen.Config, nodeData *schema.NodeData) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", nodeData.PackageName))
+}
+
+func getFilePathForNodefromPackageName(cfg *codegen.Config, packageName string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", packageName))
 }
 
 func getFilePathForCustomInterfaceFile(cfg *codegen.Config, gqlType string) string {
@@ -572,6 +628,10 @@ func getSchemaFilePath(cfg *codegen.Config) string {
 
 func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(actionName)))
+}
+
+func getDirectoryPathForActions(cfg *codegen.Config, packageName string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s/", packageName))
 }
 
 func getImportPathForActionFromPackage(packageName string, action action.Action) string {
