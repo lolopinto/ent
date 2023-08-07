@@ -187,11 +187,7 @@ export class GuestBase
     id: ID,
     context?: Context,
   ): Promise<GuestDBData | null> {
-    const row = await guestLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return guestLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends GuestBase>(

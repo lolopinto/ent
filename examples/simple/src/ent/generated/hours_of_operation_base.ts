@@ -171,11 +171,7 @@ export class HoursOfOperationBase
     id: ID,
     context?: Context,
   ): Promise<HoursOfOperationDBData | null> {
-    const row = await hoursOfOperationLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return hoursOfOperationLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(

@@ -167,11 +167,7 @@ export class GuestGroupBase implements Ent<Viewer> {
     id: ID,
     context?: Context,
   ): Promise<GuestGroupDBData | null> {
-    const row = await guestGroupLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return guestGroupLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends GuestGroupBase>(

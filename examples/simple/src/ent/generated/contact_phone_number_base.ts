@@ -173,11 +173,7 @@ export class ContactPhoneNumberBase
     id: ID,
     context?: Context,
   ): Promise<ContactPhoneNumberDBData | null> {
-    const row = await contactPhoneNumberLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return contactPhoneNumberLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends ContactPhoneNumberBase>(

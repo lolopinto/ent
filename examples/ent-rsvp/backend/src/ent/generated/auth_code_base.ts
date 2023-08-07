@@ -170,11 +170,7 @@ export class AuthCodeBase implements Ent<Viewer> {
     id: ID,
     context?: Context,
   ): Promise<AuthCodeDBData | null> {
-    const row = await authCodeLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return authCodeLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
@@ -240,11 +236,7 @@ export class AuthCodeBase implements Ent<Viewer> {
     guestID: ID,
     context?: Context,
   ): Promise<AuthCodeDBData | null> {
-    const row = await authCodeGuestIDLoader.createLoader(context).load(guestID);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return authCodeGuestIDLoader.createLoader(context).load(guestID);
   }
 
   static loaderOptions<T extends AuthCodeBase>(

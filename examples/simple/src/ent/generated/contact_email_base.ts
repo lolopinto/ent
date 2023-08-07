@@ -173,11 +173,7 @@ export class ContactEmailBase
     id: ID,
     context?: Context,
   ): Promise<ContactEmailDBData | null> {
-    const row = await contactEmailLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return contactEmailLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends ContactEmailBase>(

@@ -182,11 +182,7 @@ export class ContactBase
     id: ID,
     context?: Context,
   ): Promise<ContactDBData | null> {
-    const row = await contactLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return contactLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends ContactBase>(
