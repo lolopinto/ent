@@ -341,11 +341,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     id: ID,
     context?: {{useImport "Context"}},
   ): Promise<{{$rawDBDataType}} | null> {
-    const row = await {{useImport $loaderName}}.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return {{useImport $loaderName}}.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
@@ -408,11 +404,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
         context?: {{useImport "Context"}},
       ): Promise<{{$rawDBDataType}} | null> {
-        const row = await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName $cfg}});
-        if (!row) {
-          return null;
-        }
-        return row;
+        return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName $cfg}});
       }
     {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}

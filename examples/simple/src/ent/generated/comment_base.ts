@@ -181,11 +181,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     id: ID,
     context?: Context,
   ): Promise<CommentDBData | null> {
-    const row = await commentLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return commentLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends CommentBase>(

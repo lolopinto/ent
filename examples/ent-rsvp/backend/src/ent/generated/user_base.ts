@@ -170,11 +170,7 @@ export class UserBase implements Ent<Viewer> {
     id: ID,
     context?: Context,
   ): Promise<UserDBData | null> {
-    const row = await userLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return userLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends UserBase>(
@@ -242,13 +238,7 @@ export class UserBase implements Ent<Viewer> {
     emailAddress: string,
     context?: Context,
   ): Promise<UserDBData | null> {
-    const row = await userEmailAddressLoader
-      .createLoader(context)
-      .load(emailAddress);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return userEmailAddressLoader.createLoader(context).load(emailAddress);
   }
 
   static loaderOptions<T extends UserBase>(

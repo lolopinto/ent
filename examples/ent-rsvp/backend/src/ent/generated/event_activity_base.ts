@@ -192,11 +192,7 @@ export class EventActivityBase
     id: ID,
     context?: Context,
   ): Promise<EventActivityDBData | null> {
-    const row = await eventActivityLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return eventActivityLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends EventActivityBase>(
