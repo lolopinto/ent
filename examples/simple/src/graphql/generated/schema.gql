@@ -1438,7 +1438,7 @@ type Query {
 
 type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
-  bulkUploadContact(userID: ID!, file: Upload!, defaultLabel: ContactLabel, defaultLabel2: ContactLabel2!): User!
+  bulkUploadContact(userID: ID!, file: Upload!, defaultLabel: ContactLabel, defaultLabel2: ContactLabel2): User!
   commentCreate(input: CommentCreateInput!): CommentCreatePayload!
   commentEdit(input: CommentEditInput!): CommentEditPayload!
   confirmEmailAddressEdit(input: ConfirmEditEmailAddressInput!): ConfirmEditEmailAddressPayload!

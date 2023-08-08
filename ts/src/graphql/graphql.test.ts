@@ -610,7 +610,7 @@ describe("property", () => {
       GQLCapture.resolve([]);
     });
 
-    test.only("enabled. custom enum as arg", () => {
+    test("enabled. custom enum as arg", () => {
       class Request {
         @gqlField({
           class: "User",

@@ -7,16 +7,12 @@ import {
 import { GraphQLID } from "graphql";
 import { FileUpload } from "graphql-upload";
 import parse from "csv-parse";
-import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { User } from "../../ent";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
-import {
-  UserBuilder,
-  UserInput,
-} from "../../ent/generated/user/actions/user_builder";
 import { ExampleViewer } from "../../viewer/viewer";
 import { ContactLabel } from "../../ent/generated/types";
 import { ContactLabel2 } from "./custom_enum";
+import { Transaction } from "@snowtop/ent/action";
 
 export class ImportContactResolver {
   @gqlMutation({
@@ -45,6 +41,7 @@ export class ImportContactResolver {
           tsType: "ContactLabel2",
           tsImportPath: "src/graphql/mutations/custom_enum",
         },
+        nullable: true,
       },
     ],
     async: true,
@@ -85,13 +82,9 @@ export class ImportContactResolver {
         }),
       );
     }
+    const tx = new Transaction(user.viewer, actions);
+    await tx.run();
 
-    // not ideal we have to type this. should be able to get UserInput for free
-    const action = BaseAction.bulkAction<User, ExampleViewer, UserInput>(
-      user,
-      UserBuilder,
-      ...actions,
-    );
-    return await action.saveX();
+    return user;
   }
 }
