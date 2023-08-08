@@ -45,7 +45,7 @@ export const BulkUploadContactType: GraphQLFieldConfig<
     },
     defaultLabel2: {
       description: "",
-      type: new GraphQLNonNull(GraphQLContactLabel2),
+      type: GraphQLContactLabel2,
     },
   },
   resolve: async (
