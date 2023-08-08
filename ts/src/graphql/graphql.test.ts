@@ -11,6 +11,8 @@ import {
   GraphQLString,
   GraphQLScalarType,
   GraphQLError,
+  GraphQLEnumType,
+  GraphQLBoolean,
 } from "graphql";
 import { Kind, ValueNode } from "graphql/language";
 
@@ -523,6 +525,142 @@ describe("property", () => {
           tsImportPath: "",
         },
       ]);
+      GQLCapture.resolve([]);
+    });
+  });
+
+  describe("enabled. custom enum ", () => {
+    enum RequestStatus {
+      PENDING = "pending",
+      ACCEPTED = "accepted",
+      REJECTED = "rejected",
+    }
+
+    const GraphQLRequestStatus = new GraphQLEnumType({
+      name: "RequestStatus",
+      values: {
+        PENDING: {
+          value: "pending",
+        },
+        ACCEPTED: {
+          value: "accepted",
+        },
+        REJECTED: {
+          value: "rejected",
+        },
+      },
+    });
+
+    test("enabled. custom enum used incorrectly", () => {
+      try {
+        class Request {
+          @gqlField({
+            class: "User",
+            type: GraphQLRequestStatus,
+          })
+          status: RequestStatus;
+        }
+        throw new Error(`should have thrown`);
+      } catch (err) {
+        expect(err.message).toMatch(
+          /custom enum type RequestStatus is not supported this way. use CustomType syntax/,
+        );
+      }
+
+      validateNoCustom();
+    });
+
+    test("enabled. custom enum", () => {
+      class Request {
+        @gqlField({
+          class: "User",
+          type: {
+            type: "GraphQLRequestStatus",
+            importPath: "",
+            tsType: "RequestStatus",
+            tsImportPath: "",
+          },
+        })
+        status: RequestStatus;
+      }
+      validateOneCustomField({
+        nodeName: "User",
+        functionName: "status",
+        gqlName: "status",
+        fieldType: CustomFieldType.Field,
+        results: [
+          {
+            type: "GraphQLRequestStatus",
+            name: "",
+            tsType: "RequestStatus",
+            needsResolving: true,
+          },
+        ],
+        args: [],
+      });
+
+      validateCustomTypes([
+        {
+          type: "GraphQLRequestStatus",
+          importPath: "",
+          tsType: "RequestStatus",
+          tsImportPath: "",
+        },
+      ]);
+      GQLCapture.resolve([]);
+    });
+
+    test.only("enabled. custom enum as arg", () => {
+      class Request {
+        @gqlField({
+          class: "User",
+          type: GraphQLBoolean,
+          args: [
+            {
+              name: "status",
+              type: {
+                type: "GraphQLRequestStatus",
+                importPath: "",
+                tsType: "RequestStatus",
+                tsImportPath: "",
+              },
+            },
+          ],
+        })
+        async doSomething(status: RequestStatus) {
+          return true;
+        }
+      }
+      validateOneCustomField({
+        nodeName: "User",
+        functionName: "doSomething",
+        gqlName: "doSomething",
+        fieldType: CustomFieldType.Function,
+        results: [
+          {
+            type: "Boolean",
+            name: "",
+          },
+        ],
+        args: [
+          {
+            name: "status",
+            type: "GraphQLRequestStatus",
+            tsType: "RequestStatus",
+            needsResolving: true,
+          },
+        ],
+      });
+
+      validateCustomTypes([
+        {
+          type: "GraphQLRequestStatus",
+          importPath: "",
+          tsType: "RequestStatus",
+          tsImportPath: "",
+        },
+      ]);
+      GQLCapture.resolve([]);
     });
   });
 });

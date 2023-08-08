@@ -1,4 +1,9 @@
-import { GraphQLScalarType } from "graphql";
+import {
+  GraphQLEnumType,
+  GraphQLScalarType,
+  isEnumType,
+  isScalarType,
+} from "graphql";
 import { Data } from "../core/base";
 import type { FieldMap } from "../schema";
 import {
@@ -68,8 +73,10 @@ export interface CustomGraphQLInput {
 
 export interface CustomTypeInput {
   type: string;
+  // note that this should be an absolute path or an absolute path starting from src
   importPath: string;
   tsType?: string;
+  // note that this should be an absolute path or an absolute path starting from src
   tsImportPath?: string;
   enumMap?: StringToStringMap;
   // create a struct type here...
@@ -90,7 +97,12 @@ export type CustomType = Omit<CustomTypeInput, "structFields"> & {
 // string for GraphQL name in situation where we can't load the object
 // e.g. User, Contact etc
 // CustomType for types that are not in "graphql" and we need to know where to load it from...
-type Type = GraphQLScalarType | ClassType | string | CustomTypeInput;
+type Type =
+  | GraphQLScalarType
+  | GraphQLEnumType
+  | ClassType
+  | string
+  | CustomTypeInput;
 
 // node in a connection
 export type GraphQLConnection<T> = { node: T };
@@ -277,7 +289,11 @@ export const isCustomType = (type: Type): type is CustomTypeInput => {
 };
 
 const isGraphQLScalarType = (type: Type): type is GraphQLScalarType => {
-  return (type as GraphQLScalarType).serialize !== undefined;
+  return isScalarType(type as GraphQLScalarType);
+};
+
+const isGraphQLEnumType = (type: Type): type is GraphQLEnumType => {
+  return isEnumType(type as GraphQLEnumType);
 };
 
 export const addCustomType = async (
@@ -304,30 +320,32 @@ export const addCustomType = async (
   if (type.enumMap || type.structFields) {
     await addType(type);
   }
-  try {
-    const r = require(type.importPath);
-    const ct = r[type.type];
-    // this gets us the information needed for scalars
-    if (ct && isGraphQLScalarType(ct)) {
-      type.scalarInfo = {
-        description: ct.description,
-        name: ct.name,
-      };
-      if (ct.specifiedByURL) {
-        type.scalarInfo.specifiedByUrl = ct.specifiedByURL;
+  if (type.importPath) {
+    try {
+      const r = require(type.importPath);
+      const ct = r[type.type];
+      // this gets us the information needed for scalars
+      if (ct && isGraphQLScalarType(ct)) {
+        type.scalarInfo = {
+          description: ct.description,
+          name: ct.name,
+        };
+        if (ct.specifiedByURL) {
+          type.scalarInfo.specifiedByUrl = ct.specifiedByURL;
+        }
       }
+    } catch (e) {
+      if (type.secondaryImportPath) {
+        await addCustomType(
+          {
+            ...type,
+            importPath: type.secondaryImportPath,
+          },
+          gqlCapture,
+        );
+      }
+      return;
     }
-  } catch (e) {
-    if (type.secondaryImportPath) {
-      addCustomType(
-        {
-          ...type,
-          importPath: type.secondaryImportPath,
-        },
-        gqlCapture,
-      );
-    }
-    return;
   }
 
   if (customType) {
@@ -342,8 +360,10 @@ export const addCustomType = async (
 interface typeInfo {
   list?: boolean | undefined;
   scalarType?: boolean;
+  enumType?: boolean;
   connection?: boolean | undefined;
   type: string;
+  tsType?: string;
 }
 
 const getType = (
@@ -375,8 +395,9 @@ const getType = (
     addCustomType(typ, GQLCapture);
     return;
   }
-  // GraphQLScalarType or ClassType
+  // GraphQLScalarType or GraphQLEnumType or ClassType
   result.scalarType = isGraphQLScalarType(typ);
+  result.enumType = isGraphQLEnumType(typ);
   result.type = typ.name;
   return;
 };
@@ -506,12 +527,14 @@ export class GQLCapture {
     let scalarType = false;
     let connection: boolean | undefined;
     let type = "";
+    let enumType = false;
 
     if (field?.type) {
       let r: typeInfo = { type: "" };
       getType(field.type, r);
       list = r.list;
       scalarType = r.scalarType || false;
+      enumType = r.enumType || false;
       connection = r.connection;
       type = r.type;
     }
@@ -538,9 +561,16 @@ export class GQLCapture {
 
     // unknown type. we need to flag that this field needs to eventually be resolved
     if (!knownAllowedNames.has(type)) {
+      // we do this so that we know how to import them later
+      // would be nice not to need that. seems like we should be able to do it by checking the imports for the page
       if (scalarType) {
         throw new Error(
           `custom scalar type ${type} is not supported this way. use CustomType syntax. see \`gqlFileUpload\` as an example`,
+        );
+      }
+      if (enumType) {
+        throw new Error(
+          `custom enum type ${type} is not supported this way. use CustomType syntax. see \`gqlFileUpload\` as an example`,
         );
       }
       result.needsResolving = true;
@@ -828,13 +858,12 @@ export class GQLCapture {
       });
     });
 
-    // TODO this should be aware of knownCustomTypes
     const resolveFields = (fields: CustomField[]) => {
       fields.forEach((field) => {
         // we have a check earlier that *should* make this path impossible
         field.args.forEach((arg) => {
           if (arg.needsResolving) {
-            if (baseArgs.has(arg.type)) {
+            if (baseArgs.has(arg.type) || this.customTypes.has(arg.type)) {
               arg.needsResolving = false;
             } else {
               throw new Error(
@@ -853,7 +882,8 @@ export class GQLCapture {
             if (
               baseObjects.has(result.type) ||
               this.customUnions.has(result.type) ||
-              this.customInterfaces.has(result.type)
+              this.customInterfaces.has(result.type) ||
+              this.customTypes.has(result.type)
             ) {
               result.needsResolving = false;
             } else {
