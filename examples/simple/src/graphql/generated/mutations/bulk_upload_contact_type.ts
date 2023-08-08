@@ -12,6 +12,7 @@ import {
 import { GraphQLUpload } from "graphql-upload";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import { GraphQLContactLabel2 } from "../../mutations/custom_enum";
 import { ContactLabelType, UserType } from "../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import { ImportContactResolver } from "../../mutations/import_contact";
@@ -20,6 +21,7 @@ interface BulkUploadContactArgs {
   userID: any;
   file: any;
   defaultLabel: any;
+  defaultLabel2: any;
 }
 
 export const BulkUploadContactType: GraphQLFieldConfig<
@@ -41,6 +43,10 @@ export const BulkUploadContactType: GraphQLFieldConfig<
       description: "",
       type: ContactLabelType,
     },
+    defaultLabel2: {
+      description: "",
+      type: new GraphQLNonNull(GraphQLContactLabel2),
+    },
   },
   resolve: async (
     _source,
@@ -54,6 +60,7 @@ export const BulkUploadContactType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(args.userID),
       args.file,
       args.defaultLabel,
+      args.defaultLabel2,
     );
   },
 };

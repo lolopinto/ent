@@ -16,6 +16,7 @@ import {
 } from "../../ent/generated/user/actions/user_builder";
 import { ExampleViewer } from "../../viewer/viewer";
 import { ContactLabel } from "../../ent/generated/types";
+import { ContactLabel2 } from "./custom_enum";
 
 export class ImportContactResolver {
   @gqlMutation({
@@ -36,6 +37,15 @@ export class ImportContactResolver {
         type: "ContactLabel",
         nullable: true,
       },
+      {
+        name: "defaultLabel2",
+        type: {
+          type: "GraphQLContactLabel2",
+          importPath: "src/graphql/mutations/custom_enum",
+          tsType: "ContactLabel2",
+          tsImportPath: "src/graphql/mutations/custom_enum",
+        },
+      },
     ],
     async: true,
   })
@@ -44,6 +54,7 @@ export class ImportContactResolver {
     userID: ID,
     file: Promise<FileUpload>,
     label?: ContactLabel,
+    _label2?: ContactLabel2,
   ) {
     const file2 = await file;
 
