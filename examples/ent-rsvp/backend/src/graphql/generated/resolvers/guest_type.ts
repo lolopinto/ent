@@ -32,20 +32,20 @@ export const GuestType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Guest, RequestContext<Viewer>> => ({
     address: {
       type: AddressType,
-      resolve: (guest: Guest, args: {}, context: RequestContext<Viewer>) => {
-        return guest.loadAddress();
+      resolve: (obj: Guest, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadAddress();
       },
     },
     event: {
       type: EventType,
-      resolve: (guest: Guest, args: {}, context: RequestContext<Viewer>) => {
-        return guest.loadEvent();
+      resolve: (obj: Guest, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadEvent();
       },
     },
     guestGroup: {
       type: GuestGroupType,
-      resolve: (guest: Guest, args: {}, context: RequestContext<Viewer>) => {
-        return guest.loadGuestGroup();
+      resolve: (obj: Guest, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadGuestGroup();
       },
     },
     id: {
@@ -85,11 +85,11 @@ export const GuestType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guest: Guest, args: any, context: RequestContext<Viewer>) => {
+      resolve: (obj: Guest, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          guest.viewer,
-          guest,
-          (v, guest: Guest) => GuestToAttendingEventsQuery.query(v, guest),
+          obj.viewer,
+          obj,
+          (v, obj: Guest) => GuestToAttendingEventsQuery.query(v, obj),
           args,
         );
       },
@@ -114,11 +114,11 @@ export const GuestType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guest: Guest, args: any, context: RequestContext<Viewer>) => {
+      resolve: (obj: Guest, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          guest.viewer,
-          guest,
-          (v, guest: Guest) => GuestToDeclinedEventsQuery.query(v, guest),
+          obj.viewer,
+          obj,
+          (v, obj: Guest) => GuestToDeclinedEventsQuery.query(v, obj),
           args,
         );
       },

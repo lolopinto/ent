@@ -38,41 +38,41 @@ export const CommentType = new GraphQLObjectType({
     article: {
       type: GraphQLNodeInterface,
       resolve: (
-        comment: Comment,
+        obj: Comment,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return comment.loadArticle();
+        return obj.loadArticle();
       },
     },
     attachment: {
       type: GraphQLNodeInterface,
       resolve: (
-        comment: Comment,
+        obj: Comment,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return comment.loadAttachment();
+        return obj.loadAttachment();
       },
     },
     author: {
       type: UserType,
       resolve: (
-        comment: Comment,
+        obj: Comment,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return comment.loadAuthor();
+        return obj.loadAuthor();
       },
     },
     sticker: {
       type: GraphQLNodeInterface,
       resolve: (
-        comment: Comment,
+        obj: Comment,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return comment.loadSticker();
+        return obj.loadSticker();
       },
     },
     id: {
@@ -103,14 +103,14 @@ export const CommentType = new GraphQLObjectType({
         },
       },
       resolve: (
-        comment: Comment,
+        obj: Comment,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          comment.viewer,
-          comment,
-          (v, comment: Comment) => CommentToPostQuery.query(v, comment),
+          obj.viewer,
+          obj,
+          (v, obj: Comment) => CommentToPostQuery.query(v, obj),
           args,
         );
       },
@@ -136,15 +136,14 @@ export const CommentType = new GraphQLObjectType({
         },
       },
       resolve: (
-        comment: Comment,
+        obj: Comment,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          comment.viewer,
-          comment,
-          (v, comment: Comment) =>
-            CommentArticleToCommentsQuery.query(v, comment),
+          obj.viewer,
+          obj,
+          (v, obj: Comment) => CommentArticleToCommentsQuery.query(v, obj),
           args,
         );
       },

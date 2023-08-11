@@ -29,22 +29,14 @@ export const WorkspaceType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Workspace, RequestContext<Viewer>> => ({
     creator: {
       type: AccountType,
-      resolve: (
-        workspace: Workspace,
-        args: {},
-        context: RequestContext<Viewer>,
-      ) => {
-        return workspace.loadCreator();
+      resolve: (obj: Workspace, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadCreator();
       },
     },
     viewer_creator: {
       type: AccountType,
-      resolve: (
-        workspace: Workspace,
-        args: {},
-        context: RequestContext<Viewer>,
-      ) => {
-        return workspace.loadViewerCreator();
+      resolve: (obj: Workspace, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadViewerCreator();
       },
     },
     id: {
@@ -76,16 +68,11 @@ export const WorkspaceType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        workspace: Workspace,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Workspace, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          workspace.viewer,
-          workspace,
-          (v, workspace: Workspace) =>
-            WorkspaceToMembersQuery.query(v, workspace),
+          obj.viewer,
+          obj,
+          (v, obj: Workspace) => WorkspaceToMembersQuery.query(v, obj),
           args,
         );
       },
@@ -110,22 +97,17 @@ export const WorkspaceType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        workspace: Workspace,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Workspace, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          workspace.viewer,
-          workspace,
-          (v, workspace: Workspace) =>
-            WorkspaceToScopedTodosQuery.query(v, workspace),
+          obj.viewer,
+          obj,
+          (v, obj: Workspace) => WorkspaceToScopedTodosQuery.query(v, obj),
           args,
         );
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Workspace;
   },

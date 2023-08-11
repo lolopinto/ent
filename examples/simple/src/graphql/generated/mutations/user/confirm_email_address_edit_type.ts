@@ -86,6 +86,6 @@ export const ConfirmEmailAddressEditType: GraphQLFieldConfig<
         code: input.code,
       },
     );
-    return { user: user };
+    return { user };
   },
 };

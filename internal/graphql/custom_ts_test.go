@@ -149,7 +149,6 @@ func TestCustomMutation(t *testing.T) {
 	require.NotNil(t, objData)
 	assert.Nil(t, objData.NodeData)
 	assert.Equal(t, objData.Node, "AuthResolver")
-	assert.Equal(t, objData.NodeInstance, "obj")
 	assert.Len(t, objData.Enums, 0)
 	assert.Len(t, objData.GQLNodes, 0)
 
@@ -292,7 +291,6 @@ func TestCustomQuery(t *testing.T) {
 	require.NotNil(t, objData)
 	assert.Nil(t, objData.NodeData)
 	assert.Equal(t, objData.Node, "AuthResolver")
-	assert.Equal(t, objData.NodeInstance, "obj")
 	assert.Len(t, objData.Enums, 0)
 	assert.Len(t, objData.GQLNodes, 0)
 
@@ -424,7 +422,6 @@ func TestCustomListQuery(t *testing.T) {
 	require.NotNil(t, objData)
 	assert.Nil(t, objData.NodeData)
 	assert.Equal(t, objData.Node, "AuthResolver")
-	assert.Equal(t, objData.NodeInstance, "obj")
 	assert.Len(t, objData.Enums, 0)
 	assert.Len(t, objData.GQLNodes, 0)
 
@@ -588,7 +585,6 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	require.NotNil(t, objData)
 	assert.Nil(t, objData.NodeData)
 	assert.Equal(t, objData.Node, "UsernameResolver")
-	assert.Equal(t, objData.NodeInstance, "obj")
 	assert.Len(t, objData.Enums, 0)
 	assert.Len(t, objData.GQLNodes, 0)
 
@@ -721,7 +717,6 @@ func TestCustomUploadType(t *testing.T) {
 	require.NotNil(t, objData)
 	assert.Nil(t, objData.NodeData)
 	assert.Equal(t, objData.Node, "ProfilePicResolver")
-	assert.Equal(t, objData.NodeInstance, "obj")
 	assert.Len(t, objData.Enums, 0)
 	assert.Len(t, objData.GQLNodes, 0)
 

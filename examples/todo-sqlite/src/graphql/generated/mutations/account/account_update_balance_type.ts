@@ -76,6 +76,6 @@ export const AccountUpdateBalanceType: GraphQLFieldConfig<
         credits: input.credits,
       },
     );
-    return { account: account };
+    return { account };
   },
 };

@@ -111,6 +111,6 @@ export const CommentEditType: GraphQLFieldConfig<
         stickerType: input.stickerType,
       },
     );
-    return { comment: comment };
+    return { comment };
   },
 };

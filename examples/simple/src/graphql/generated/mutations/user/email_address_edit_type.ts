@@ -81,6 +81,6 @@ export const EmailAddressEditType: GraphQLFieldConfig<
         newEmail: input.newEmail,
       },
     );
-    return { user: user };
+    return { user };
   },
 };

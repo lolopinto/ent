@@ -944,16 +944,15 @@ func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 }
 
 type gqlobjectData struct {
-	NodeData     *schema.NodeData
-	interfaces   []*interfaceType
-	Node         string
-	NodeInstance string
-	GQLNodes     []*objectType
-	Enums        []*gqlEnum
-	FieldConfig  *fieldConfig
-	initMap      bool
-	m            map[string]bool
-	Package      *codegen.ImportPackage
+	NodeData    *schema.NodeData
+	interfaces  []*interfaceType
+	Node        string
+	GQLNodes    []*objectType
+	Enums       []*gqlEnum
+	FieldConfig *fieldConfig
+	initMap     bool
+	m           map[string]bool
+	Package     *codegen.ImportPackage
 }
 
 func (obj *gqlobjectData) DefaultImports() []*tsimport.ImportPath {
@@ -1407,11 +1406,10 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				}
 				obj := gqlNode{
 					ObjData: &gqlobjectData{
-						NodeData:     nodeData,
-						Node:         nodeData.Node,
-						NodeInstance: nodeData.NodeInstance,
-						GQLNodes:     objectTypes,
-						Package:      processor.Config.GetImportPackage(),
+						NodeData: nodeData,
+						Node:     nodeData.Node,
+						GQLNodes: objectTypes,
+						Package:  processor.Config.GetImportPackage(),
 					},
 					FilePath: getFilePathForNode(processor.Config, nodeData),
 				}
@@ -1435,9 +1433,8 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 						}
 						actionObj := gqlNode{
 							ObjData: &gqlobjectData{
-								Node:         nodeData.Node,
-								NodeInstance: nodeData.NodeInstance,
-								GQLNodes:     nodes,
+								Node:     nodeData.Node,
+								GQLNodes: nodes,
 								// Enums:        buildActionEnums(nodeData, action),
 								FieldConfig: fieldCfg,
 								Package:     processor.Config.GetImportPackage(),
@@ -1512,10 +1509,9 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 				obj := &gqlNode{
 					ObjData: &gqlobjectData{
-						Node:         ci.GQLName,
-						NodeInstance: strcase.ToLowerCamel(ci.GQLName),
-						GQLNodes:     objs,
-						Package:      processor.Config.GetImportPackage(),
+						Node:     ci.GQLName,
+						GQLNodes: objs,
+						Package:  processor.Config.GetImportPackage(),
 					},
 					FilePath: getFilePathForCustomInterfaceFile(processor.Config, ci.GQLName),
 				}
@@ -1556,10 +1552,9 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 				inputObj := &gqlNode{
 					ObjData: &gqlobjectData{
-						Node:         inputType,
-						NodeInstance: strcase.ToLowerCamel(inputType),
-						GQLNodes:     inputObjs,
-						Package:      processor.Config.GetImportPackage(),
+						Node:     inputType,
+						GQLNodes: inputObjs,
+						Package:  processor.Config.GetImportPackage(),
 					},
 					FilePath: getFilePathForCustomInterfaceInputFile(processor.Config, inputType),
 				}
@@ -1601,11 +1596,10 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				}
 				gqlNode := &gqlNode{
 					ObjData: &gqlobjectData{
-						Node:         obj.Node,
-						NodeInstance: "global",
-						GQLNodes:     []*objectType{obj},
-						FieldConfig:  fieldCfg,
-						Package:      processor.Config.GetImportPackage(),
+						Node:        obj.Node,
+						GQLNodes:    []*objectType{obj},
+						FieldConfig: fieldCfg,
+						Package:     processor.Config.GetImportPackage(),
 					},
 					FilePath: getCanViewerDoQueryTypeFilePath(processor.Config),
 				}
@@ -2104,8 +2098,6 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		Import:     nodeData.Node,
 	})
 
-	instance := nodeData.NodeInstance
-
 	fieldInfo := nodeData.FieldInfo
 
 	for _, edge := range nodeData.EdgeInfo.FieldEdges {
@@ -2128,11 +2120,11 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 			}
 		}
 		if edge.IsList() {
-			if err := addPluralEdge(edge, result, instance); err != nil {
+			if err := addPluralEdge(edge, result); err != nil {
 				return nil, err
 			}
 		} else {
-			if err := addSingularEdge(edge, result, instance); err != nil {
+			if err := addSingularEdge(edge, result); err != nil {
 				return nil, err
 			}
 		}
@@ -2154,9 +2146,9 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 
 		if gqlField.HasResolveFunction {
 			if asyncAccessor {
-				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s();", instance, field.TSPublicAPIName())}
+				gqlField.FunctionContents = []string{fmt.Sprintf("return obj.%s();", field.TSPublicAPIName())}
 			} else {
-				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TSPublicAPIName())}
+				gqlField.FunctionContents = []string{fmt.Sprintf("return obj.%s;", field.TSPublicAPIName())}
 			}
 		}
 		if err := result.addField(gqlField); err != nil {
@@ -2168,7 +2160,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		if err := addSingularEdge(edge, result, instance); err != nil {
+		if err := addSingularEdge(edge, result); err != nil {
 			return nil, err
 		}
 	}
@@ -2177,7 +2169,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		if err := addConnection(processor, nodeData, edge, result, instance, nil); err != nil {
+		if err := addConnection(processor, nodeData, edge, result, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -2197,7 +2189,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 			var contents []string
 			if hasResolve {
 				contents = []string{
-					fmt.Sprintf("return %s.%s();", instance, method),
+					fmt.Sprintf("return obj.%s();", method),
 				}
 			}
 
@@ -2227,7 +2219,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 				HasResolveFunction: true,
 				FunctionContents: []string{
 					fmt.Sprintf("const ent = await %s.loadX(context.getViewer(), args.id);", group.DestNodeInfo.Node),
-					fmt.Sprintf("return %s.%s(ent);", instance, method),
+					fmt.Sprintf("return obj.%s(ent);", method),
 				},
 			}); err != nil {
 				return nil, err
@@ -2300,7 +2292,7 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 			HasAsyncModifier:   true,
 			HasResolveFunction: true,
 			FunctionContents: []string{
-				fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, field.TSPublicAPIName()),
+				fmt.Sprintf("return obj.%s();", field.TSPublicAPIName()),
 			},
 		}
 		if err := canViewerSee.addField(gqlField); err != nil {
@@ -2317,7 +2309,7 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 		},
 		HasResolveFunction: true,
 		FunctionContents: []string{
-			fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, method),
+			fmt.Sprintf("return obj.%s();", method),
 		},
 	}); err != nil {
 		return nil, err
@@ -2325,27 +2317,27 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 	return canViewerSee, nil
 }
 
-func addSingularEdge(edge edge.Edge, obj *objectType, instance string) error {
+func addSingularEdge(edge edge.Edge, obj *objectType) error {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
-		FunctionContents:   []string{fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName())},
+		FunctionContents:   []string{fmt.Sprintf("return obj.load%s();", edge.CamelCaseEdgeName())},
 	}
 	return obj.addField(gqlField)
 }
 
-func addPluralEdge(edge edge.Edge, obj *objectType, instance string) error {
+func addPluralEdge(edge edge.Edge, obj *objectType) error {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
-		FunctionContents:   []string{fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName())},
+		FunctionContents:   []string{fmt.Sprintf("return obj.load%s();", edge.CamelCaseEdgeName())},
 	}
 	return obj.addField(gqlField)
 }
 
-func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge edge.ConnectionEdge, obj *objectType, instance string, customField *CustomField) error {
+func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge edge.ConnectionEdge, obj *objectType, customField *CustomField) error {
 	// import GraphQLEdgeConnection and EdgeQuery file
 	extraImports := []*tsimport.ImportPath{
 		{
@@ -2362,9 +2354,9 @@ func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge
 			ImportPath: codepath.GetExternalImportPath(),
 			Import:     edge.TsEdgeQueryName(),
 		})
-		buildQuery = fmt.Sprintf("%s.query(v, %s)", edge.TsEdgeQueryName(), instance)
+		buildQuery = fmt.Sprintf("%s.query(v, obj)", edge.TsEdgeQueryName())
 	} else {
-		buildQuery = fmt.Sprintf("%s.%s()", instance, customField.FunctionName)
+		buildQuery = fmt.Sprintf("%s.%s()", "obj", customField.FunctionName)
 	}
 
 	gqlField := &fieldType{
@@ -2376,10 +2368,7 @@ func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(
-				"return new GraphQLEdgeConnection(%s.viewer, %s, (v, %s: %s) => %s, args);",
-				instance,
-				instance,
-				instance,
+				"return new GraphQLEdgeConnection(obj.viewer, obj, (v, obj: %s) => %s, args);",
 				nodeData.Node,
 				buildQuery,
 			),
@@ -3048,7 +3037,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 
 			result.FunctionContents = append(
 				result.FunctionContents,
-				fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
+				fmt.Sprintf("return {%s};", nodeData.NodeInstance),
 			)
 		}
 	}
@@ -3123,7 +3112,7 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 		}
 		if !ciInfo.input && f.TsFieldName(processor.Config) != f.GetGraphQLName() {
 			ft.HasResolveFunction = true
-			ft.FunctionContents = []string{fmt.Sprintf("return %s.%s", strcase.ToLowerCamel(node), f.TsFieldName(processor.Config))}
+			ft.FunctionContents = []string{fmt.Sprintf("return obj.%s", f.TsFieldName(processor.Config))}
 		}
 		if err := result.addField(ft); err != nil {
 			return nil, err

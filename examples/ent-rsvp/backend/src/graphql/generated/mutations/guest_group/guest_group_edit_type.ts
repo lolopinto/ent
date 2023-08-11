@@ -77,6 +77,6 @@ export const GuestGroupEditType: GraphQLFieldConfig<
         invitationName: input.invitationName,
       },
     );
-    return { guestGroup: guestGroup };
+    return { guestGroup };
   },
 };

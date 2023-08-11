@@ -22,11 +22,11 @@ export const ContactItemType = new GraphQLInterfaceType({
     contact: {
       type: ContactType,
       resolve: (
-        contactItem: ContactItem,
+        obj: ContactItem,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contactItem.contact();
+        return obj.contact();
       },
     },
     label: {

@@ -111,7 +111,7 @@ export class User extends UserBase {
       if (info.contact.id == selfContactEdge?.id2) {
         continue;
       }
-      if (domain === this.getDomainFromEmail(info.contactInfo.firstEmail)) {
+      if (domain === this.getDomainFromEmail(info.contactInfo.email1)) {
         return info.contact;
       }
     }
@@ -133,8 +133,7 @@ export class User extends UserBase {
     const contactInfos = await this.queryContactInfos();
     return contactInfos.filterMap((info) => {
       return {
-        include:
-          domain === this.getDomainFromEmail(info.contactInfo.firstEmail),
+        include: domain === this.getDomainFromEmail(info.contactInfo.email1),
         return: info.contact,
       };
     });
@@ -156,8 +155,7 @@ export class User extends UserBase {
     const contactInfos = await this.queryContactInfos();
     return contactInfos.filterMap((info) => {
       return {
-        include:
-          domain === this.getDomainFromEmail(info.contactInfo.firstEmail),
+        include: domain === this.getDomainFromEmail(info.contactInfo.email1),
         return: info.contact,
       };
     });
@@ -181,7 +179,7 @@ export class User extends UserBase {
       return {
         include:
           this.id !== info.contact.userID &&
-          domain === this.getDomainFromEmail(info.contactInfo.firstEmail),
+          domain === this.getDomainFromEmail(info.contactInfo.email1),
         return: info.contact,
       };
     });
@@ -208,7 +206,7 @@ export class User extends UserBase {
     }
     let contactInfos = await this.queryContactInfos();
     return contactInfos.map((info) => {
-      let contactDomain = this.getDomainFromEmail(info.contactInfo.firstEmail);
+      let contactDomain = this.getDomainFromEmail(info.contactInfo.email1);
       if (contactDomain === domain) {
         return info.contact;
       }
@@ -233,7 +231,7 @@ export class User extends UserBase {
     }
     const contactInfos = await this.queryContactInfos();
     return contactInfos.map((info) => {
-      let contactDomain = this.getDomainFromEmail(info.contactInfo.firstEmail);
+      let contactDomain = this.getDomainFromEmail(info.contactInfo.email1);
       if (contactDomain === domain) {
         return info.contact;
       }

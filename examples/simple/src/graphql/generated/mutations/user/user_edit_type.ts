@@ -85,6 +85,6 @@ export const UserEditType: GraphQLFieldConfig<
         lastName: input.lastName,
       },
     );
-    return { user: user };
+    return { user };
   },
 };

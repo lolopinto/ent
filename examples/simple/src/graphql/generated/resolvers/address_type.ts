@@ -70,14 +70,14 @@ export const AddressType = new GraphQLObjectType({
         },
       },
       resolve: (
-        address: Address,
+        obj: Address,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          address.viewer,
-          address,
-          (v, address: Address) => AddressToHostedEventsQuery.query(v, address),
+          obj.viewer,
+          obj,
+          (v, obj: Address) => AddressToHostedEventsQuery.query(v, obj),
           args,
         );
       },

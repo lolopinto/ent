@@ -16,10 +16,9 @@ import (
 
 type canViewerDoContextInfo struct {
 	// is this a child of a different node or a top level field somewhere else...
-	parent   *objectType
-	Name     string
-	Instance string
-	Node     string
+	parent *objectType
+	Name   string
+	Node   string
 }
 
 // in a node...
@@ -27,10 +26,9 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 	canViewerDoName := fmt.Sprintf("%sCanViewerDo", nodeData.Node)
 
 	ctx := &canViewerDoContextInfo{
-		parent:   result,
-		Name:     canViewerDoName,
-		Node:     nodeData.Node,
-		Instance: nodeData.NodeInstance,
+		parent: result,
+		Name:   canViewerDoName,
+		Node:   nodeData.Node,
 	}
 
 	obj, err := getCanViewerDoObjectImpl(processor, ctx, canViewerDoInfo)
@@ -47,7 +45,7 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 		},
 		HasResolveFunction: true,
 		FunctionContents: []string{
-			fmt.Sprintf("return new %s(context, %s);", canViewerDoName, nodeData.NodeInstance),
+			fmt.Sprintf("return new %s(context, obj);", canViewerDoName),
 		},
 	}); err != nil {
 		return nil, err
@@ -58,8 +56,7 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 
 func getGlobalCanViewerDoObject(processor *codegen.Processor, canViewerDoInfo map[string]action.Action) (*objectType, error) {
 	ctx := &canViewerDoContextInfo{
-		Name:     "GlobalCanViewerDo",
-		Instance: "global",
+		Name: "GlobalCanViewerDo",
 	}
 
 	return getCanViewerDoObjectImpl(processor, ctx, canViewerDoInfo)
@@ -94,7 +91,7 @@ func getCanViewerDoObjectImpl(processor *codegen.Processor, ctx *canViewerDoCont
 			HasAsyncModifier:   true,
 			HasResolveFunction: true,
 			FunctionContents: []string{
-				fmt.Sprintf("return %s.%s(args);", ctx.Instance, name),
+				fmt.Sprintf("return obj.%s(args);", name),
 			},
 		}
 
@@ -171,16 +168,15 @@ func getNewCanViewerDoClass(processor *codegen.Processor, ctx *canViewerDoContex
 		}
 
 		var actionLine string
-		// TODO handle ctx.Instance being emptyhere...
 		if a.MutatingExistingObject() {
 			if action.HasInput(a) {
 				actionLine =
-					fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.%s, %s);`,
-						a.GetActionName(), ctx.Instance, args)
+					fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.ent, %s);`,
+						a.GetActionName(), args)
 			} else {
 				actionLine =
-					fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.%s);`,
-						a.GetActionName(), ctx.Instance)
+					fmt.Sprintf(`const action = %s.create(this.context.getViewer(), this.ent);`,
+						a.GetActionName())
 			}
 
 		} else {
@@ -194,9 +190,9 @@ func getNewCanViewerDoClass(processor *codegen.Processor, ctx *canViewerDoContex
 			methods = append(methods, fmt.Sprintf(`
 		async %s(args: any): Promise<boolean> {
 			%s
-			return applyPrivacyPolicy(this.context.getViewer(), action.getPrivacyPolicy(), this.%s);
+			return applyPrivacyPolicy(this.context.getViewer(), action.getPrivacyPolicy(), this.ent);
 		}
-		`, a.GetGraphQLName(), actionLine, ctx.Instance))
+		`, a.GetGraphQLName(), actionLine))
 		} else {
 			methods = append(methods, fmt.Sprintf(`
 		async %s(args: any): Promise<boolean> {
@@ -211,14 +207,13 @@ func getNewCanViewerDoClass(processor *codegen.Processor, ctx *canViewerDoContex
 	if ctx.parent != nil {
 		classContents = fmt.Sprintf(`
 	class %s {
-		constructor(private context: RequestContext<%s>, private %s: %s) {}
+		constructor(private context: RequestContext<%s>, private ent: %s) {}
 
 		%s
 	}
 	`,
 			ctx.Name,
 			viewerInfo.GetImport(),
-			ctx.Instance,
 			ctx.Node,
 			strings.Join(methods, "\n\n"),
 		)

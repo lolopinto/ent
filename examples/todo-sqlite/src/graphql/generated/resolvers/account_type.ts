@@ -54,42 +54,26 @@ export const AccountType = new GraphQLObjectType({
     },
     phone_number: {
       type: GraphQLString,
-      resolve: (
-        account: Account,
-        args: {},
-        context: RequestContext<Viewer>,
-      ) => {
-        return account.phoneNumber;
+      resolve: (obj: Account, args: {}, context: RequestContext<Viewer>) => {
+        return obj.phoneNumber;
       },
     },
     account_prefs: {
       type: AccountPrefsType,
-      resolve: (
-        account: Account,
-        args: {},
-        context: RequestContext<Viewer>,
-      ) => {
-        return account.accountPrefs;
+      resolve: (obj: Account, args: {}, context: RequestContext<Viewer>) => {
+        return obj.accountPrefs;
       },
     },
     account_prefs_3: {
       type: AccountPrefsType,
-      resolve: (
-        account: Account,
-        args: {},
-        context: RequestContext<Viewer>,
-      ) => {
-        return account.accountPrefs3;
+      resolve: (obj: Account, args: {}, context: RequestContext<Viewer>) => {
+        return obj.accountPrefs3;
       },
     },
     account_prefs_list: {
       type: new GraphQLList(new GraphQLNonNull(AccountPrefsType)),
-      resolve: (
-        account: Account,
-        args: {},
-        context: RequestContext<Viewer>,
-      ) => {
-        return account.accountPrefsList;
+      resolve: (obj: Account, args: {}, context: RequestContext<Viewer>) => {
+        return obj.accountPrefsList;
       },
     },
     credits: {
@@ -115,16 +99,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        account: Account,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          account.viewer,
-          account,
-          (v, account: Account) =>
-            AccountToClosedTodosDupQuery.query(v, account),
+          obj.viewer,
+          obj,
+          (v, obj: Account) => AccountToClosedTodosDupQuery.query(v, obj),
           args,
         );
       },
@@ -149,16 +128,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        account: Account,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          account.viewer,
-          account,
-          (v, account: Account) =>
-            AccountToCreatedWorkspacesQuery.query(v, account),
+          obj.viewer,
+          obj,
+          (v, obj: Account) => AccountToCreatedWorkspacesQuery.query(v, obj),
           args,
         );
       },
@@ -183,15 +157,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        account: Account,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          account.viewer,
-          account,
-          (v, account: Account) => AccountToOpenTodosDupQuery.query(v, account),
+          obj.viewer,
+          obj,
+          (v, obj: Account) => AccountToOpenTodosDupQuery.query(v, obj),
           args,
         );
       },
@@ -216,15 +186,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        account: Account,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          account.viewer,
-          account,
-          (v, account: Account) => AccountToScopedTodosQuery.query(v, account),
+          obj.viewer,
+          obj,
+          (v, obj: Account) => AccountToScopedTodosQuery.query(v, obj),
           args,
         );
       },
@@ -249,15 +215,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        account: Account,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          account.viewer,
-          account,
-          (v, account: Account) => AccountToWorkspacesQuery.query(v, account),
+          obj.viewer,
+          obj,
+          (v, obj: Account) => AccountToWorkspacesQuery.query(v, obj),
           args,
         );
       },
@@ -282,15 +244,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        account: Account,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          account.viewer,
-          account,
-          (v, account: Account) => AccountToTagsQuery.query(v, account),
+          obj.viewer,
+          obj,
+          (v, obj: Account) => AccountToTagsQuery.query(v, obj),
           args,
         );
       },
@@ -315,15 +273,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        account: Account,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          account.viewer,
-          account,
-          (v, account: Account) => AccountToTodosQuery.query(v, account),
+          obj.viewer,
+          obj,
+          (v, obj: Account) => AccountToTodosQuery.query(v, obj),
           args,
         );
       },
@@ -348,15 +302,11 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        account: Account,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          account.viewer,
-          account,
-          (v, account: Account) => AssigneeToTodosQuery.query(v, account),
+          obj.viewer,
+          obj,
+          (v, obj: Account) => AssigneeToTodosQuery.query(v, obj),
           args,
         );
       },
@@ -370,32 +320,28 @@ export const AccountType = new GraphQLObjectType({
         },
       },
       resolve: async (
-        account: Account,
+        obj: Account,
         args: any,
         context: RequestContext<Viewer>,
       ) => {
         const ent = await Todo.loadX(context.getViewer(), args.id);
-        return account.todoStatusFor(ent);
+        return obj.todoStatusFor(ent);
       },
     },
     can_viewer_see_info: {
       type: new GraphQLNonNull(AccountCanViewerSeeType),
-      resolve: (
-        account: Account,
-        args: {},
-        context: RequestContext<Viewer>,
-      ) => {
-        return account.canViewerSeeInfo();
+      resolve: (obj: Account, args: {}, context: RequestContext<Viewer>) => {
+        return obj.canViewerSeeInfo();
       },
     },
     open_todos_plural: {
       type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(TodoType))),
       resolve: async (
-        account: Account,
+        obj: Account,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
-        return account.openTodosPlural();
+        return obj.openTodosPlural();
       },
     },
     open_todos: {
@@ -418,21 +364,17 @@ export const AccountType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        account: Account,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          account.viewer,
-          account,
-          (v, account: Account) => account.openTodos(),
+          obj.viewer,
+          obj,
+          (v, obj: Account) => obj.openTodos(),
           args,
         );
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Account;
   },
@@ -447,31 +389,31 @@ export const AccountCanViewerSeeType = new GraphQLObjectType({
     phone_number: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        account: AccountCanViewerSee,
+        obj: AccountCanViewerSee,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
-        return account.phoneNumber();
+        return obj.phoneNumber();
       },
     },
     account_prefs_3: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        account: AccountCanViewerSee,
+        obj: AccountCanViewerSee,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
-        return account.accountPrefs3();
+        return obj.accountPrefs3();
       },
     },
     credits: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        account: AccountCanViewerSee,
+        obj: AccountCanViewerSee,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
-        return account.credits();
+        return obj.credits();
       },
     },
   }),

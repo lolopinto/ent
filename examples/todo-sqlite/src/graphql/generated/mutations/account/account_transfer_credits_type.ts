@@ -82,6 +82,6 @@ export const AccountTransferCreditsType: GraphQLFieldConfig<
         amount: input.amount,
       },
     );
-    return { account: account };
+    return { account };
   },
 };
