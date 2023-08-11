@@ -81,6 +81,6 @@ export const GuestEditType: GraphQLFieldConfig<
         emailAddress: input.emailAddress,
       },
     );
-    return { guest: guest };
+    return { guest };
   },
 };

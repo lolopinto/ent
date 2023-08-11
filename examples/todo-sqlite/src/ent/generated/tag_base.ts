@@ -204,11 +204,7 @@ export class TagBase implements Ent<Viewer> {
     id: ID,
     context?: Context,
   ): Promise<TagDBData | null> {
-    const row = await tagLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return tagLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends TagBase>(

@@ -25,14 +25,14 @@ export const TagType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Tag, RequestContext<Viewer>> => ({
     owner: {
       type: AccountType,
-      resolve: (tag: Tag, args: {}, context: RequestContext<Viewer>) => {
-        return tag.loadOwner();
+      resolve: (obj: Tag, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadOwner();
       },
     },
     related_tags: {
       type: new GraphQLList(new GraphQLNonNull(TagType)),
-      resolve: (tag: Tag, args: {}, context: RequestContext<Viewer>) => {
-        return tag.loadRelatedTags();
+      resolve: (obj: Tag, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadRelatedTags();
       },
     },
     id: {
@@ -40,14 +40,14 @@ export const TagType = new GraphQLObjectType({
     },
     display_name: {
       type: new GraphQLNonNull(GraphQLString),
-      resolve: (tag: Tag, args: {}, context: RequestContext<Viewer>) => {
-        return tag.displayName;
+      resolve: (obj: Tag, args: {}, context: RequestContext<Viewer>) => {
+        return obj.displayName;
       },
     },
     canonical_name: {
       type: new GraphQLNonNull(GraphQLString),
-      resolve: (tag: Tag, args: {}, context: RequestContext<Viewer>) => {
-        return tag.canonicalName;
+      resolve: (obj: Tag, args: {}, context: RequestContext<Viewer>) => {
+        return obj.canonicalName;
       },
     },
     todos: {
@@ -70,17 +70,17 @@ export const TagType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (tag: Tag, args: any, context: RequestContext<Viewer>) => {
+      resolve: (obj: Tag, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          tag.viewer,
-          tag,
-          (v, tag: Tag) => TagToTodosQuery.query(v, tag),
+          obj.viewer,
+          obj,
+          (v, obj: Tag) => TagToTodosQuery.query(v, obj),
           args,
         );
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Tag;
   },

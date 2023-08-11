@@ -80,6 +80,6 @@ export const EditWorkspaceType: GraphQLFieldConfig<
         slug: input.slug,
       },
     );
-    return { workspace: workspace };
+    return { workspace };
   },
 };

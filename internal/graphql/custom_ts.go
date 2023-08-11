@@ -238,11 +238,10 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 			ObjData: &gqlobjectData{
 				interfaces: interfaces,
 				// TODO kill node and NodeInstance they don't make sense here...
-				Node:         field.Node,
-				NodeInstance: "obj",
-				GQLNodes:     objTypes,
-				FieldConfig:  fieldConfig,
-				Package:      processor.Config.GetImportPackage(),
+				Node:        field.Node,
+				GQLNodes:    objTypes,
+				FieldConfig: fieldConfig,
+				Package:     processor.Config.GetImportPackage(),
 			},
 			FilePath:    filePath,
 			Field:       &field,
@@ -757,14 +756,13 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 		customEdge := s.edgeNames[nodeName]
 
 		var obj *objectType
-		var instance string
+		instance := "obj"
 		var nodeData *schema.NodeData
 		if nodeInfo != nil {
 			objData := nodeInfo.ObjData
 			nodeData = objData.NodeData
 			// always has a node for now
 			obj = objData.GQLNodes[0]
-			instance = nodeData.NodeInstance
 		} else if customEdge {
 			// create new obj
 			obj = newObjectType(&objectType{
@@ -784,7 +782,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			if field.Connection {
 				customEdge := getGQLEdge(processor.Config, field, nodeName)
 				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
-				if err := addConnection(processor, nodeData, customEdge, obj, nodeData.NodeInstance, &field); err != nil {
+				if err := addConnection(processor, nodeData, customEdge, obj, &field); err != nil {
 					return err
 				}
 				continue
@@ -846,6 +844,8 @@ func isConnection(field *CustomField) bool {
 	return field.Results[0].Connection
 }
 
+// should be obj except if it's nested...
+// eg obj.edge for edges
 func getCustomGQLField(processor *codegen.Processor, cd *CustomData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
 	if field.Connection {
 		return nil, fmt.Errorf("field is a connection. this should be handled elsewhere")
@@ -1020,10 +1020,9 @@ func processCustomStructType(processor *codegen.Processor, s *gqlSchema, typ *Cu
 
 	gqlNode := &gqlNode{
 		ObjData: &gqlobjectData{
-			Node:         obj.NodeName,
-			NodeInstance: "obj",
-			GQLNodes:     []*objectType{objType},
-			Package:      processor.Config.GetImportPackage(),
+			Node:     obj.NodeName,
+			GQLNodes: []*objectType{objType},
+			Package:  processor.Config.GetImportPackage(),
 		},
 		FilePath: filePath,
 	}
@@ -1071,10 +1070,9 @@ func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSch
 
 		node := &gqlNode{
 			ObjData: &gqlobjectData{
-				Node:         union.NodeName,
-				NodeInstance: strcase.ToLowerCamel(union.NodeName),
-				GQLNodes:     []*objectType{obj},
-				Package:      processor.Config.GetImportPackage(),
+				Node:     union.NodeName,
+				GQLNodes: []*objectType{obj},
+				Package:  processor.Config.GetImportPackage(),
 			},
 			FilePath: getFilePathForUnionInterfaceFile(processor.Config, union.NodeName),
 		}
@@ -1102,7 +1100,7 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 		}
 
 		for _, f := range fields {
-			gqlField, err := getCustomGQLField(processor, cd, f, s, strcase.ToLowerCamel(inter.NodeName))
+			gqlField, err := getCustomGQLField(processor, cd, f, s, "obj")
 			if err != nil {
 				return err
 			}
@@ -1120,10 +1118,9 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 
 		node := &gqlNode{
 			ObjData: &gqlobjectData{
-				Node:         inter.NodeName,
-				NodeInstance: strcase.ToLowerCamel(inter.NodeName),
-				GQLNodes:     []*objectType{obj},
-				Package:      processor.Config.GetImportPackage(),
+				Node:     inter.NodeName,
+				GQLNodes: []*objectType{obj},
+				Package:  processor.Config.GetImportPackage(),
 			},
 			FilePath: filePath,
 		}
@@ -1148,10 +1145,9 @@ func processCustomArgs(processor *codegen.Processor, cd *CustomData, s *gqlSchem
 		}
 		gqlNode := &gqlNode{
 			ObjData: &gqlobjectData{
-				Node:         arg.NodeName,
-				NodeInstance: "obj",
-				GQLNodes:     []*objectType{objType},
-				Package:      processor.Config.GetImportPackage(),
+				Node:     arg.NodeName,
+				GQLNodes: []*objectType{objType},
+				Package:  processor.Config.GetImportPackage(),
 			},
 			FilePath: filePath,
 		}
@@ -1180,10 +1176,9 @@ func processDanglingCustomObject(processor *codegen.Processor, cd *CustomData, s
 
 	gqlNode := &gqlNode{
 		ObjData: &gqlobjectData{
-			Node:         obj.NodeName,
-			NodeInstance: "obj",
-			GQLNodes:     []*objectType{objType},
-			Package:      processor.Config.GetImportPackage(),
+			Node:     obj.NodeName,
+			GQLNodes: []*objectType{objType},
+			Package:  processor.Config.GetImportPackage(),
 		},
 		FilePath: filePath,
 	}

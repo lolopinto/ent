@@ -221,11 +221,7 @@ export class TodoBase implements Ent<Viewer> {
     id: ID,
     context?: Context,
   ): Promise<TodoDBData | null> {
-    const row = await todoLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return todoLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends TodoBase>(

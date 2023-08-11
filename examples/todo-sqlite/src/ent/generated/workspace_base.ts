@@ -221,11 +221,7 @@ export class WorkspaceBase
     id: ID,
     context?: Context,
   ): Promise<WorkspaceDBData | null> {
-    const row = await workspaceLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return workspaceLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends WorkspaceBase>(
@@ -291,11 +287,7 @@ export class WorkspaceBase
     slug: string,
     context?: Context,
   ): Promise<WorkspaceDBData | null> {
-    const row = await workspaceSlugLoader.createLoader(context).load(slug);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return workspaceSlugLoader.createLoader(context).load(slug);
   }
 
   static loaderOptions<T extends WorkspaceBase>(

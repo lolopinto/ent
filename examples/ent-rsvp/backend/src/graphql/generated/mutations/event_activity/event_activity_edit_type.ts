@@ -112,6 +112,6 @@ export const EventActivityEditType: GraphQLFieldConfig<
         inviteAllGuests: input.inviteAllGuests,
       },
     );
-    return { eventActivity: eventActivity };
+    return { eventActivity };
   },
 };

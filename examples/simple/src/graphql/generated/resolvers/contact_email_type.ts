@@ -26,19 +26,19 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 class ContactEmailCanViewerDo {
   constructor(
     private context: RequestContext<ExampleViewerAlias>,
-    private contactEmail: ContactEmail,
+    private ent: ContactEmail,
   ) {}
 
   async contactEmailEdit(args: any): Promise<boolean> {
     const action = EditContactEmailAction.create(
       this.context.getViewer(),
-      this.contactEmail,
+      this.ent,
       args,
     );
     return applyPrivacyPolicy(
       this.context.getViewer(),
       action.getPrivacyPolicy(),
-      this.contactEmail,
+      this.ent,
     );
   }
 }
@@ -52,11 +52,11 @@ export const ContactEmailType = new GraphQLObjectType({
     contact: {
       type: ContactType,
       resolve: (
-        contactEmail: ContactEmail,
+        obj: ContactEmail,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contactEmail.loadContact();
+        return obj.loadContact();
       },
     },
     id: {
@@ -75,11 +75,11 @@ export const ContactEmailType = new GraphQLObjectType({
     canViewerDo: {
       type: new GraphQLNonNull(ContactEmailCanViewerDoType),
       resolve: (
-        contactEmail: ContactEmail,
+        obj: ContactEmail,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return new ContactEmailCanViewerDo(context, contactEmail);
+        return new ContactEmailCanViewerDo(context, obj);
       },
     },
   }),
@@ -98,11 +98,11 @@ export const ContactEmailCanViewerDoType = new GraphQLObjectType({
     contactEmailEdit: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        contactEmail: ContactEmailCanViewerDo,
+        obj: ContactEmailCanViewerDo,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contactEmail.contactEmailEdit(args);
+        return obj.contactEmailEdit(args);
       },
     },
   }),

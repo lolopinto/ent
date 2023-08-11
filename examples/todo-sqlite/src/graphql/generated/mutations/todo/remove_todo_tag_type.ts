@@ -72,6 +72,6 @@ export const RemoveTodoTagType: GraphQLFieldConfig<
       input.id,
       input.tag_id,
     );
-    return { todo: todo };
+    return { todo };
   },
 };

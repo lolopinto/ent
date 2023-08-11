@@ -77,6 +77,6 @@ export const EventRemoveHostType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.id),
       mustDecodeIDFromGQLID(input.hostID),
     );
-    return { event: event };
+    return { event };
   },
 };

@@ -37,7 +37,7 @@
   {{ template "enum.tmpl" . -}}
 {{ end -}}
 
-{{$nodeInstance := $baseObj.NodeInstance}}
+{{$nodeInstance := "obj"}}
 
 {{ range $gqlNode := $baseObj.GQLNodes -}}
   {{if eq $gqlNode.GQLType "GraphQLUnionType" -}}

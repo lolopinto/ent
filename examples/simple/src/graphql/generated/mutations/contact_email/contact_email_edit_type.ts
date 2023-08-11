@@ -90,6 +90,6 @@ export const ContactEmailEditType: GraphQLFieldConfig<
         label: input.label,
       },
     );
-    return { contactEmail: contactEmail };
+    return { contactEmail };
   },
 };

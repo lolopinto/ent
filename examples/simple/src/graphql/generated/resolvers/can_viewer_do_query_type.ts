@@ -67,11 +67,11 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
         },
       },
       resolve: async (
-        global: GlobalCanViewerDo,
+        obj: GlobalCanViewerDo,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return global.contactCreate(args);
+        return obj.contactCreate(args);
       },
     },
     contactEmailCreate: {
@@ -95,11 +95,11 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
         },
       },
       resolve: async (
-        global: GlobalCanViewerDo,
+        obj: GlobalCanViewerDo,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return global.contactEmailCreate(args);
+        return obj.contactEmailCreate(args);
       },
     },
   }),

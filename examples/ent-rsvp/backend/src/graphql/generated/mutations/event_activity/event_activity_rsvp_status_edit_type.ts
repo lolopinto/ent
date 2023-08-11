@@ -88,6 +88,6 @@ export const EventActivityRsvpStatusEditType: GraphQLFieldConfig<
         dietaryRestrictions: input.dietaryRestrictions,
       },
     );
-    return { eventActivity: eventActivity };
+    return { eventActivity };
   },
 };

@@ -12,12 +12,12 @@ export class EmailInfo {
   })
   emails: ContactEmail[];
 
-  @gqlField({ class: "EmailInfo", type: GraphQLString })
-  firstEmail: string;
+  @gqlField({ class: "EmailInfo", type: GraphQLString, name: "firstEmail" })
+  email1: string;
 
   constructor(emails: ContactEmail[], firstEmail: string) {
     this.emails = emails;
-    this.firstEmail = firstEmail;
+    this.email1 = firstEmail;
   }
 }
 

@@ -48,11 +48,11 @@ export const ContactType = new GraphQLObjectType({
         new GraphQLList(new GraphQLNonNull(ContactEmailType)),
       ),
       resolve: (
-        contact: Contact,
+        obj: Contact,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contact.loadEmails();
+        return obj.loadEmails();
       },
     },
     phoneNumbers: {
@@ -60,21 +60,21 @@ export const ContactType = new GraphQLObjectType({
         new GraphQLList(new GraphQLNonNull(ContactPhoneNumberType)),
       ),
       resolve: (
-        contact: Contact,
+        obj: Contact,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contact.loadPhoneNumbers();
+        return obj.loadPhoneNumbers();
       },
     },
     user: {
       type: UserType,
       resolve: (
-        contact: Contact,
+        obj: Contact,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contact.loadUser();
+        return obj.loadUser();
       },
     },
     id: {
@@ -108,14 +108,14 @@ export const ContactType = new GraphQLObjectType({
         },
       },
       resolve: (
-        contact: Contact,
+        obj: Contact,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          contact.viewer,
-          contact,
-          (v, contact: Contact) => ContactToCommentsQuery.query(v, contact),
+          obj.viewer,
+          obj,
+          (v, obj: Contact) => ContactToCommentsQuery.query(v, obj),
           args,
         );
       },
@@ -141,14 +141,14 @@ export const ContactType = new GraphQLObjectType({
         },
       },
       resolve: (
-        contact: Contact,
+        obj: Contact,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          contact.viewer,
-          contact,
-          (v, contact: Contact) => ContactToLikersQuery.query(v, contact),
+          obj.viewer,
+          obj,
+          (v, obj: Contact) => ContactToLikersQuery.query(v, obj),
           args,
         );
       },
@@ -174,15 +174,14 @@ export const ContactType = new GraphQLObjectType({
         },
       },
       resolve: (
-        contact: Contact,
+        obj: Contact,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          contact.viewer,
-          contact,
-          (v, contact: Contact) =>
-            ContactCommentsFromAttachmentQuery.query(v, contact),
+          obj.viewer,
+          obj,
+          (v, obj: Contact) => ContactCommentsFromAttachmentQuery.query(v, obj),
           args,
         );
       },
@@ -193,11 +192,11 @@ export const ContactType = new GraphQLObjectType({
     plusEmails: {
       type: new GraphQLNonNull(EmailInfoType),
       resolve: async (
-        contact: Contact,
+        obj: Contact,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contact.queryPlusEmails();
+        return obj.queryPlusEmails();
       },
     },
     contactItems: {
@@ -211,11 +210,11 @@ export const ContactType = new GraphQLObjectType({
         },
       },
       resolve: async (
-        contact: Contact,
+        obj: Contact,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contact.queryContactItems(args.filter);
+        return obj.queryContactItems(args.filter);
       },
     },
   }),
@@ -238,6 +237,13 @@ export const EmailInfoType = new GraphQLObjectType({
     },
     firstEmail: {
       type: new GraphQLNonNull(GraphQLString),
+      resolve: (
+        obj: EmailInfo,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.email1;
+      },
     },
   }),
   isTypeOf(obj) {

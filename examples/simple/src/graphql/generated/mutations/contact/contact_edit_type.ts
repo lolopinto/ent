@@ -98,6 +98,6 @@ export const ContactEditType: GraphQLFieldConfig<
         lastName: input.lastName,
       },
     );
-    return { contact: contact };
+    return { contact };
   },
 };
