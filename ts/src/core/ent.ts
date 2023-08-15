@@ -36,7 +36,7 @@ import * as clause from "./clause";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
 import { __getGlobalSchema } from "./global_schema";
-import { OrderBy, getOrderByPhrase } from "./query_impl";
+import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
 import { CacheMap } from "./loaders/loader";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
@@ -909,25 +909,6 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
     cache.primeCache(options, r);
   }
   return r;
-}
-
-// private to ent
-export function buildQuery(options: QueryableDataOptions): string {
-  const fields = options.fields.join(", ");
-  // always start at 1
-  const whereClause = options.clause.clause(1);
-  const parts: string[] = [];
-  parts.push(`SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`);
-  if (options.groupby) {
-    parts.push(`GROUP BY ${options.groupby}`);
-  }
-  if (options.orderby) {
-    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby)}`);
-  }
-  if (options.limit) {
-    parts.push(`LIMIT ${options.limit}`);
-  }
-  return parts.join(" ");
 }
 
 interface GroupQueryOptions<T extends Data, K = keyof T> {

@@ -371,6 +371,91 @@ test("jsonb key check", async () => {
   expect(uuid3Rows.length).toEqual(6);
 });
 
+test("jsonb key in list ", async () => {
+  const uuids = [v1(), v1(), v1(), v1()];
+  expect(uuids.length).toBe(4);
+  for (let i = 0; i < 20; i++) {
+    const data: Data = {
+      id: v1(),
+      first_name: "Jon",
+      last_name: "Snow",
+      emails: [],
+      phones: [],
+      random: null,
+      foo: [
+        {
+          foo_id: uuids[0],
+          bar: "bar1",
+          arr: [1, 2, 3, 4, 5],
+          baz: null,
+        },
+      ],
+    };
+    if (i % 3 === 0) {
+      data.foo.push({
+        foo_id: uuids[1],
+        bar: "bar2",
+        arr: [4, 67],
+        baz: null,
+      });
+    }
+    if (i % 3 === 1) {
+      data.foo.push({
+        foo_id: uuids[2],
+        bar: "bar2",
+        arr: [13, 2424],
+        baz: null,
+      });
+    }
+
+    if (i % 3 === 2) {
+      data.foo.push({
+        foo_id: uuids[3],
+        bar: "bar2",
+        arr: [],
+        baz: null,
+      });
+    }
+
+    data.foo = JSON.stringify(data.foo);
+
+    await createRowForTest({
+      tableName,
+      fields: data,
+      fieldsToLog: data,
+    });
+  }
+
+  const uuid1Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.JSONBKeyInList("foo", "foo_id", uuids[0]),
+  });
+  // everything has uuid1
+  expect(uuid1Rows.length).toEqual(20);
+
+  const uuid2Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.JSONBKeyInList("foo", "foo_id", uuids[1]),
+  });
+  expect(uuid2Rows.length).toEqual(7);
+
+  const uuid3Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.JSONBKeyInList("foo", "foo_id", uuids[2]),
+  });
+  expect(uuid3Rows.length).toEqual(7);
+
+  const uuid4Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.JSONBKeyInList("foo", "foo_id", uuids[3]),
+  });
+  expect(uuid4Rows.length).toEqual(6);
+});
+
 test("in clause", async () => {
   const ids: string[] = [];
   const count = Math.floor(

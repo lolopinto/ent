@@ -22,7 +22,6 @@ import {
 import { __getGlobalSchema } from "../core/global_schema";
 import {
   AssocEdgeData,
-  buildQuery,
   createRow,
   createRowSync,
   deleteRows,
@@ -33,7 +32,7 @@ import {
   logQuery,
   parameterizedQueryOptions,
 } from "../core/ent";
-import e from "express";
+import { buildQuery } from "../core/query_impl";
 
 export interface UpdatedOperation {
   operation: WriteOperation;

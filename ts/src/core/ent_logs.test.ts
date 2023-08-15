@@ -8,7 +8,6 @@ import {
   loadRows,
   buildInsertQuery,
   buildUpdateQuery,
-  buildQuery,
   loadEnt,
   loadEnts,
   getEntKey,
@@ -34,6 +33,7 @@ import {
   setupSqlite,
   setupPostgres,
 } from "../testutils/db/temp_db";
+import { buildQuery } from "./query_impl";
 
 const ml = new MockLogs();
 beforeAll(() => {

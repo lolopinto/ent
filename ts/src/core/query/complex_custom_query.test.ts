@@ -16,7 +16,7 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 import { setLogLevels } from "../logger";
 import { TempDB } from "../../testutils/db/temp_db";
-import { buildQuery } from "../ent";
+import { buildQuery } from "../query_impl";
 import * as clause from "../clause";
 import { Viewer, WriteOperation } from "../base";
 import { CustomClauseQuery } from "./custom_clause_query";
