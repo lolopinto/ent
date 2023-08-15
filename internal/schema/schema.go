@@ -432,6 +432,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		nodeData.SupportUpsert = node.SupportUpsert
 		nodeData.ShowCanViewerSee = node.ShowCanViewerSee
 		nodeData.ShowCanViewerEdit = node.ShowCanViewerEdit
+		nodeData.HasDefaultActionPrivacy = node.HasDefaultActionPrivacy
 		for _, p := range node.Patterns {
 			pattern := schema.Patterns[p]
 			if pattern == nil || pattern.DisableMixin {

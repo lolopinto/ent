@@ -81,6 +81,7 @@ type NodeData struct {
 	TransformsDelete        bool
 	TransformsLoaderCodegen *input.TransformsLoaderCodegen
 	canViewerDo             map[string]action.Action
+	HasDefaultActionPrivacy bool
 }
 
 func newNodeData(packageName string) *NodeData {

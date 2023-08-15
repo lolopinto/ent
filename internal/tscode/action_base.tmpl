@@ -205,10 +205,21 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   }
 
   getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<{{$node}},{{$viewerType}}> {
-    {{ if .PrivacyConfig.Class }}
-      return new {{useImport .PrivacyConfig.PolicyName}}();
+    {{ if .NodeData.HasDefaultActionPrivacy}}
+      {{ reserveDefaultImport .NodeData.GetSchemaPath "schema" -}}
+      {{ $schema := useImport "schema" -}}
+
+      if (schema.defaultActionPrivacy === undefined) {
+        throw new Error(`defaultActionPrivacy in schema {{.NodeData.Node}} is undefined. This is likely a bug in the codegen. Please file an issue.`);
+      }
+
+      return typeof schema.defaultActionPrivacy === 'function' ? schema.defaultActionPrivacy(): schema.defaultActionPrivacy;
     {{ else -}}
-      return {{useImport .PrivacyConfig.PolicyName}};
+      {{ if .PrivacyConfig.Class }}
+        return new {{useImport .PrivacyConfig.PolicyName}}();
+      {{ else -}}
+        return {{useImport .PrivacyConfig.PolicyName}};
+      {{ end -}}
     {{ end -}}
   };
 

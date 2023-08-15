@@ -103,6 +103,12 @@ export default interface Schema {
   showCanViewerSee?: boolean;
   // above but for editPrivacyPolicy
   showCanViewerEdit?: boolean;
+
+  // privacy applied to actions on this ent
+  // useful when the same permissions model works for create|edit|delete|edges etc on
+  // an ent and don't need to spell it out for all implementations
+  // will override the defaultActionPolicy in the ent.yml file
+  defaultActionPrivacy?: PrivacyPolicy | (() => PrivacyPolicy);
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format

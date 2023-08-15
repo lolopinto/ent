@@ -277,7 +277,7 @@ interface TransformFlags {
 
 type ProcessedSchema = Omit<
   Schema,
-  "edges" | "actions" | "edgeGroups" | "fields"
+  "edges" | "actions" | "edgeGroups" | "fields" | "defaultActionPrivacy"
 > &
   TransformFlags & {
     actions: OutputAction[];
@@ -290,6 +290,8 @@ type ProcessedSchema = Omit<
 
     schemaPath?: string;
     patternNames?: string[];
+
+    hasDefaultActionPrivacy?: boolean;
   };
 
 type ProcessedAssocEdgeGroup = Omit<AssocEdgeGroup, "edgeAction"> & {
@@ -446,6 +448,7 @@ export async function parseSchema(
       supportUpsert: schema.supportUpsert,
       showCanViewerSee: schema.showCanViewerSee,
       showCanViewerEdit: schema.showCanViewerEdit,
+      hasDefaultActionPrivacy: schema.defaultActionPrivacy !== undefined,
     };
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯
