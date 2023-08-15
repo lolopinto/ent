@@ -2664,15 +2664,31 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 
 	nodeInfo := a.GetNodeInfo()
 	if a.GetOperation() != ent.DeleteAction {
-		if err := result.addField(&fieldType{
-			Name: nodeInfo.NodeInstance,
-			FieldImports: []*tsimport.ImportPath{
+		typ := nodeData.Node
+		var fieldImports []*tsimport.ImportPath
+
+		if a.CanFail() {
+			typ = fmt.Sprintf("%s | null", typ)
+
+			fieldImports = []*tsimport.ImportPath{
+				{
+					Import:     fmt.Sprintf("%sType", nodeInfo.Node),
+					ImportPath: codepath.GetImportPathForExternalGQLFile(),
+				},
+			}
+		} else {
+			fieldImports = []*tsimport.ImportPath{
 				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				{
 					Import:     fmt.Sprintf("%sType", nodeInfo.Node),
 					ImportPath: codepath.GetImportPathForExternalGQLFile(),
 				},
-			},
+			}
+		}
+
+		if err := result.addField(&fieldType{
+			Name:         nodeInfo.NodeInstance,
+			FieldImports: fieldImports,
 		}); err != nil {
 			return nil, err
 		}
@@ -2683,9 +2699,9 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 				Name:     payload,
 				Fields: []*interfaceField{
 					{
-						Name:      nodeData.NodeInstance,
-						Type:      nodeData.Node,
-						UseImport: true,
+						Name:       nodeData.NodeInstance,
+						Type:       typ,
+						UseImports: []string{nodeData.Node},
 					},
 				},
 			}),
@@ -2953,6 +2969,11 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			})
 		}
 
+		saveMethod := "saveXFromID"
+		if a.CanFail() {
+			saveMethod = "saveFromID"
+		}
+
 		idField, err := getIDField(processor, nodeData)
 		if err != nil {
 			return nil, err
@@ -2970,12 +2991,12 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s), {", a.GetActionName(), idField),
+					fmt.Sprintf("await %s.%s(context.getViewer(), mustDecodeIDFromGQLID(input.%s), {", a.GetActionName(), saveMethod, idField),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%s, {", a.GetActionName(), idField),
+					fmt.Sprintf("await %s.%s(context.getViewer(), input.%s, {", a.GetActionName(), saveMethod, idField),
 				)
 			}
 			for _, f := range a.GetGraphQLFields() {
@@ -2997,12 +3018,12 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s), mustDecodeIDFromGQLID(input.%s));", nodeData.NodeInstance, a.GetActionName(), idField, edgeField),
+					fmt.Sprintf("const %s = await %s.%s(context.getViewer(), mustDecodeIDFromGQLID(input.%s), mustDecodeIDFromGQLID(input.%s));", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), input.%s, input.%s);", nodeData.NodeInstance, a.GetActionName(), idField, edgeField),
+					fmt.Sprintf("const %s = await %s.%s(context.getViewer(), input.%s, input.%s);", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
 				)
 			}
 		} else {
@@ -3016,13 +3037,13 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s));", a.GetActionName(), idField),
+					fmt.Sprintf("await %s.%s(context.getViewer(), mustDecodeIDFromGQLID(input.%s));", a.GetActionName(), saveMethod, idField),
 				)
 			} else {
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%s);", a.GetActionName(), idField),
+					fmt.Sprintf("await %s.%s(context.getViewer(), input.%s);", a.GetActionName(), saveMethod, idField),
 				)
 			}
 		}

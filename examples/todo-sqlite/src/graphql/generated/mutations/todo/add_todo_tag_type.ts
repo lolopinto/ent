@@ -21,7 +21,7 @@ interface customAddTodoTagInput {
 }
 
 interface AddTodoTagPayload {
-  todo: Todo;
+  todo: Todo | null;
 }
 
 export const AddTodoTagInputType = new GraphQLInputObjectType({
@@ -44,7 +44,7 @@ export const AddTodoTagPayloadType = new GraphQLObjectType({
     RequestContext<Viewer>
   > => ({
     todo: {
-      type: new GraphQLNonNull(TodoType),
+      type: TodoType,
     },
   }),
 });
@@ -67,7 +67,7 @@ export const AddTodoTagType: GraphQLFieldConfig<
     context: RequestContext<Viewer>,
     _info: GraphQLResolveInfo,
   ): Promise<AddTodoTagPayload> => {
-    const todo = await TodoAddTagAction.saveXFromID(
+    const todo = await TodoAddTagAction.saveFromID(
       context.getViewer(),
       input.id,
       input.tag_id,

@@ -53,7 +53,11 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 			opt,
 		)
 		commonInfo.canViewerDo = action.CanViewerDo
-
+		commonInfo.canFail = action.CanFail
+		_, ok = typ.(*createActionType)
+		if ok && commonInfo.canFail {
+			return nil, fmt.Errorf("can fail is currently not supported with create actions")
+		}
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
 
@@ -329,6 +333,7 @@ func processEdgeActions(cfg codegenapi.Config, nodeName string, assocEdge *edge.
 			lang,
 		)
 		commonInfo.canViewerDo = edgeAction.CanViewerDo
+		commonInfo.canFail = edgeAction.CanFail
 
 		actions[idx] = typ.getAction(commonInfo)
 
@@ -427,6 +432,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 			fields,
 		)
 		commonInfo.canViewerDo = edgeAction.CanViewerDo
+		commonInfo.canFail = edgeAction.CanFail
 		commonInfo.tsEnums = tsEnums
 		commonInfo.gqlEnums = gqlEnums
 		commonInfo.EdgeGroup = assocGroup

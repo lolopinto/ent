@@ -158,6 +158,11 @@ export interface EdgeAction {
   // if true, adds under a canViewerDo field on the source Object mapping to graphql name
   // of this...
   canViewerDo?: boolean | CanViewerDo;
+  // indicates that an action is not expected to always pass so
+  // we should not throw if action fails e.g. no permissions to perform the action
+  // or if the ent cannot be load afterward
+  // replaces __failPrivacySilently() implementation
+  __canFailBETA?: boolean;
 }
 
 // Information about the inverse edge of an assoc edge
@@ -928,6 +933,12 @@ export interface Action {
   // if true, adds under a canViewerDo field on the source Object mapping to graphql name
   // of this...
   canViewerDo?: boolean | CanViewerDo;
+
+  // indicates that an action is not expected to always pass so
+  // we should not throw if action fails e.g. no permissions to perform the action
+  // or if the ent cannot be load afterward
+  // replaces __failPrivacySilently() implementation
+  __canFailBETA?: boolean;
 
   // allow other keys
   [x: string]: any;

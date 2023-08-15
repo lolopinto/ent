@@ -624,6 +624,7 @@ type EdgeAction struct {
 	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
 	CanViewerDo       *CanViewerDo        `json:"canViewerDo,omitempty"`
+	CanFail           bool                `json:"__canFailBETA,omitempty"`
 }
 
 func getTSStringOperation(op ent.ActionOperation) string {
@@ -671,6 +672,7 @@ type Action struct {
 	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
 	CanViewerDo       *CanViewerDo        `json:"canViewerDo,omitempty"`
+	CanFail           bool                `json:"__canFailBETA,omitempty"`
 }
 
 func (a *Action) GetTSStringOperation() string {

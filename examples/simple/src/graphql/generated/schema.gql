@@ -1134,6 +1134,19 @@ type ContactPhoneNumberEditPayload {
   contactPhoneNumber: ContactPhoneNumber!
 }
 
+input CustomEditHolidayInput {
+  """id of Holiday"""
+  id: ID!
+  dayOfWeek: DayOfWeek
+  dayOfWeekAlt: DayOfWeekAlt
+  label: String
+  date: Time
+}
+
+type CustomEditHolidayPayload {
+  holiday: Holiday
+}
+
 type DeleteUserInput2Payload {
   deletedUserID: ID
 }
@@ -1461,6 +1474,7 @@ type Mutation {
   eventRsvpStatusClear(input: ClearEventRsvpStatusInput!): ClearEventRsvpStatusPayload!
   eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
+  holidayCustomEdit(input: CustomEditHolidayInput!): CustomEditHolidayPayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
   phoneNumberEdit(input: EditPhoneNumberInput!): EditPhoneNumberPayload!
   userAuth(input: UserAuthInput!): UserAuthPayload!

@@ -69,9 +69,9 @@ describe("tag + todo", () => {
     const tag1 = await createTag("kids", account);
     const tag2 = await createTag("work", account);
 
-    await TodoAddTagAction.saveXFromID(account.viewer, todo1.id, tag1.id);
-    await TodoAddTagAction.saveXFromID(account.viewer, todo1.id, tag2.id);
-    await TodoAddTagAction.saveXFromID(account.viewer, todo2.id, tag2.id);
+    await TodoAddTagAction.saveFromID(account.viewer, todo1.id, tag1.id);
+    await TodoAddTagAction.saveFromID(account.viewer, todo1.id, tag2.id);
+    await TodoAddTagAction.saveFromID(account.viewer, todo2.id, tag2.id);
 
     const count = await todo1.queryTags().queryRawCount();
     expect(count).toBe(2);
@@ -91,7 +91,7 @@ describe("tag + todo", () => {
     const todo = await createTodoForSelf({ creatorID: account.id });
     const tag = await createTag("kids", account);
 
-    await TodoAddTagAction.saveXFromID(account.viewer, todo.id, tag.id);
+    await TodoAddTagAction.saveFromID(account.viewer, todo.id, tag.id);
 
     const count = await todo.queryTags().queryRawCount();
     expect(count).toBe(1);
