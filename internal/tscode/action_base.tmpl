@@ -383,7 +383,18 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
 
 
   {{if $hasSaveFromID -}}
-    static async saveXFromID<T extends {{$actionName}}>(
+
+    {{$name := "saveXFromID" }}
+    {{$returnType := $node}}
+    {{ if $action.CanFail }}
+      {{$name = "saveFromID" }}
+      {{$returnType = printf "%s | null" $node}}
+    {{ end }}
+    {{ if $action.IsDeletingNode }}
+      {{$returnType = "void"}}
+    {{ end }}
+
+    static async {{$name}}<T extends {{$actionName}}>(
       this: new ({{$constructor}}) => T,
       viewer: {{$viewerType}},
       id: {{useImport "ID"}},
@@ -395,14 +406,21 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
           {{$edge.TSNodeID}}: {{useImport "ID"}},
         {{end -}}
       {{ end -}}
-      {{ if $action.IsDeletingNode -}}
-        ): Promise<void> {
-      {{else -}}
-        ): Promise<{{$node}}> {
-      {{end -}}
-      const {{$instance}} = await {{$node}}.loadX(viewer, id);
+      ): Promise<{{$returnType}}> {
+      {{ if $action.CanFail -}}
+        const {{$instance}} = await {{$node}}.load(viewer, id);
+        if ({{$instance}} === null) {
+          return null;
+        }
+      {{ else -}}
+        const {{$instance}} = await {{$node}}.loadX(viewer, id);
+      {{ end -}}
       {{if $hasInput -}}
-        return new this(viewer, {{$instance}}, input).saveX();
+        {{ if $action.CanFail -}}
+          return new this(viewer, {{$instance}}, input).save();
+        {{else -}}
+          return new this(viewer, {{$instance}}, input).saveX();
+        {{end -}}
       {{else if edgeAction $action -}}
         return new this(viewer, {{$instance}})
         {{ range $edge := $edges -}}
@@ -413,9 +431,17 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
             .{{$edge.TSAddMethodName}}({{$edge.TSNodeID}})
           {{end -}}
         {{end -}}
-        .saveX();
+        {{ if $action.CanFail -}}
+          .save();
+        {{else -}}
+          .saveX();
+        {{end -}}
       {{else -}}
-        return new this(viewer, {{$instance}}).saveX();
+        {{ if $action.CanFail -}}
+          return new this(viewer, {{$instance}}).save();
+        {{else -}}
+          return new this(viewer, {{$instance}}).saveX();
+        {{end -}}
       {{end -}}
     } 
   {{end -}}

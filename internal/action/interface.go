@@ -56,6 +56,7 @@ type Action interface {
 	getCommonInfo() commonActionInfo
 	TransformsDelete() bool
 	GetCanViewerDo() *input.CanViewerDo
+	CanFail() bool
 }
 
 type ActionField interface {
@@ -139,6 +140,7 @@ type commonActionInfo struct {
 	nodeinfo.NodeInfo
 	tranformsDelete bool
 	canViewerDo     *input.CanViewerDo
+	canFail         bool
 }
 
 func (action *commonActionInfo) GetActionName() string {
@@ -236,6 +238,10 @@ func (action *commonActionInfo) getCommonInfo() commonActionInfo {
 
 func (action *commonActionInfo) GetCanViewerDo() *input.CanViewerDo {
 	return action.canViewerDo
+}
+
+func (action *commonActionInfo) CanFail() bool {
+	return action.canFail
 }
 
 func getTypes(typ enttype.TSTypeWithCustomType) (string, string) {

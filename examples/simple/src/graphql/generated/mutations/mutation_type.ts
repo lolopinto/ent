@@ -25,6 +25,7 @@ import { EventRemoveHostType } from "./event/event_remove_host_type";
 import { EventRsvpStatusClearType } from "./event/event_rsvp_status_clear_type";
 import { EventRsvpStatusEditType } from "./event/event_rsvp_status_edit_type";
 import { HolidayCreateType } from "./holiday/holiday_create_type";
+import { HolidayCustomEditType } from "./holiday/holiday_custom_edit_type";
 import { HoursOfOperationCreateType } from "./hours_of_operation/hours_of_operation_create_type";
 import { ConfirmEmailAddressEditType } from "./user/confirm_email_address_edit_type";
 import { ConfirmPhoneNumberEditType } from "./user/confirm_phone_number_edit_type";
@@ -64,6 +65,7 @@ export const MutationType = new GraphQLObjectType({
     eventRsvpStatusClear: EventRsvpStatusClearType,
     eventRsvpStatusEdit: EventRsvpStatusEditType,
     holidayCreate: HolidayCreateType,
+    holidayCustomEdit: HolidayCustomEditType,
     hoursOfOperationCreate: HoursOfOperationCreateType,
     phoneNumberEdit: PhoneNumberEditType,
     userAuth: UserAuthType,
