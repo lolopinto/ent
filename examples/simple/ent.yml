@@ -29,6 +29,3 @@ codegen:
   subscriptionType:
     path: src/graphql/resolvers/subscription_type
     name: SubscriptionType
-  userOverridenFiles:
-    - src/ent/generated/user_base.ts
-    - src/graphql/generated/resolvers/user_type.ts
