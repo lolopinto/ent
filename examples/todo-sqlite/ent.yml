@@ -9,3 +9,4 @@ codegen:
     path: 'src/ent/edge/custom_edge.ts'
     name: 'CustomTodoEdge'
   schemaSQLFilePath: 'src/schema/schema.sql'
+  transformDeleteMethod: "hardDelete"

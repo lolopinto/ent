@@ -243,7 +243,7 @@ test("delete todo", async () => {
   expect(transformed?.getDeletedAt()).toEqual(d);
 
   // then really delete
-  await DeleteTodoAction.create(todo.viewer, todo).saveWithoutTransformX();
+  await DeleteTodoAction.create(todo.viewer, todo).hardDeleteX();
   const transformed2 = await Todo.loadNoTransform(todo.viewer, todo.id);
   expect(transformed2).toBeNull();
 });
@@ -254,7 +254,7 @@ test("really delete", async () => {
 
   const d = new Date();
   advanceTo(d);
-  await DeleteTodoAction.create(todo.viewer, todo).saveWithoutTransformX();
+  await DeleteTodoAction.create(todo.viewer, todo).hardDeleteX();
 
   const reloaded = await Todo.load(todo.viewer, todo.id);
   expect(reloaded).toBeNull();

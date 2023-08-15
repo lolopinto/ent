@@ -450,6 +450,19 @@ func (cfg *Config) GetUserOverridenFiles() map[string]bool {
 	return nil
 }
 
+func (cfg *Config) TransformDeleteMethod() string {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		if codegen.TransformDeleteMethod != "" {
+			return codegen.TransformDeleteMethod
+		}
+	}
+	return "saveWithoutTransform"
+}
+
+func (cfg *Config) TransformDeleteMethodX() string {
+	return fmt.Sprintf("%sX", cfg.TransformDeleteMethod())
+}
+
 const DEFAULT_PRETTIER_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -619,6 +632,7 @@ type CodegenConfig struct {
 	GlobalImportPath           string                           `yaml:"globalImportPath"`
 	UserOverridenFiles         []string                         `yaml:"userOverridenFiles"`
 	userOverridenFiles         map[string]bool
+	TransformDeleteMethod      string `yaml:"transformDeleteMethod"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -647,6 +661,9 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		TemplatizedViewer:          cloneImportedObject(cfg.TemplatizedViewer),
 		CustomAssocEdgePath:        cloneImportedObject(cfg.CustomAssocEdgePath),
 		GlobalImportPath:           cfg.GlobalImportPath,
+		UserOverridenFiles:         cfg.UserOverridenFiles,
+		userOverridenFiles:         cfg.userOverridenFiles,
+		TransformDeleteMethod:      cfg.TransformDeleteMethod,
 	}
 }
 
