@@ -1,5 +1,6 @@
 import {
   AllowIfViewerInboundEdgeExistsRule,
+  AllowIfViewerIsEntPropertyRule,
   AllowIfViewerIsRule,
   AlwaysDenyRule,
 } from "@snowtop/ent";
@@ -60,6 +61,14 @@ const EventSchema = new EntSchema({
         ],
       },
     }),
+  },
+
+  defaultActionPrivacy: {
+    rules: [
+      // @ts-ignore
+      new AllowIfViewerIsEntPropertyRule("creatorID"),
+      AlwaysDenyRule,
+    ],
   },
 
   edges: [

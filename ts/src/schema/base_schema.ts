@@ -2,6 +2,7 @@ import { FieldMap, Pattern, FieldOverrideMap } from "./schema";
 import { v4 as uuidv4 } from "uuid";
 import { TimestampType, UUIDType } from "./field";
 import { Action, AssocEdgeGroup, Constraint, Edge, Index, Schema } from ".";
+import { PrivacyPolicy } from "../core/base";
 
 let tsFields: FieldMap = {
   createdAt: TimestampType({
@@ -112,6 +113,8 @@ export class EntSchema implements Schema {
 
   showCanViewerEdit?: boolean | undefined;
 
+  defaultActionPrivacy?: PrivacyPolicy | (() => PrivacyPolicy);
+
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.fieldOverrides = cfg.fieldOverrides;
@@ -132,6 +135,7 @@ export class EntSchema implements Schema {
     this.supportUpsert = cfg.supportUpsert;
     this.showCanViewerSee = cfg.showCanViewerSee;
     this.showCanViewerEdit = cfg.showCanViewerEdit;
+    this.defaultActionPrivacy = cfg.defaultActionPrivacy;
   }
 }
 
@@ -175,6 +179,8 @@ export class EntSchemaWithTZ implements Schema {
 
   showCanViewerEdit?: boolean | undefined;
 
+  defaultActionPrivacy?: PrivacyPolicy | (() => PrivacyPolicy);
+
   constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.fieldOverrides = cfg.fieldOverrides;
@@ -195,6 +201,7 @@ export class EntSchemaWithTZ implements Schema {
     this.supportUpsert = cfg.supportUpsert;
     this.showCanViewerSee = cfg.showCanViewerSee;
     this.showCanViewerEdit = cfg.showCanViewerEdit;
+    this.defaultActionPrivacy = cfg.defaultActionPrivacy;
   }
 }
 

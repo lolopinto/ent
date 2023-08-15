@@ -105,6 +105,7 @@ type Node struct {
 	SupportUpsert           bool                      `json:"supportUpsert,omitempty"`
 	ShowCanViewerSee        bool                      `json:"showCanViewerSee,omitempty"`
 	ShowCanViewerEdit       bool                      `json:"showCanViewerEdit,omitempty"`
+	HasDefaultActionPrivacy bool                      `json:"hasDefaultActionPrivacy,omitempty"`
 	// these 2 not used yet so ignoring for now
 	// TransformsInsert bool `json:"transformsInsert,omitempty"`
 	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`
