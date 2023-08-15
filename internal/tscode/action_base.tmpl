@@ -363,12 +363,12 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   {{ end -}} 
 
   {{ if and $action.IsDeletingNode $action.TransformsDelete -}}
-  async saveWithoutTransform(): Promise<void> {
+  async {{$cfg.TransformDeleteMethod}}(): Promise<void> {
     this.builder.orchestrator.setDisableTransformations(true);
     await this.builder.save();
   }
 
-  async saveWithoutTransformX(): Promise<void> {
+  async {{$cfg.TransformDeleteMethodX}}(): Promise<void> {
     this.builder.orchestrator.setDisableTransformations(true);
     await this.builder.saveX();
   }

@@ -125,12 +125,12 @@ export class DeleteAccountActionBase
     await this.builder.saveX();
   }
 
-  async saveWithoutTransform(): Promise<void> {
+  async hardDelete(): Promise<void> {
     this.builder.orchestrator.setDisableTransformations(true);
     await this.builder.save();
   }
 
-  async saveWithoutTransformX(): Promise<void> {
+  async hardDeleteX(): Promise<void> {
     this.builder.orchestrator.setDisableTransformations(true);
     await this.builder.saveX();
   }

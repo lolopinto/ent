@@ -65,10 +65,7 @@ test("delete", async () => {
   expect(transformed?.getDeletedAt()).toEqual(d);
 
   // then really delete
-  await DeleteAccountAction.create(
-    account.viewer,
-    account,
-  ).saveWithoutTransformX();
+  await DeleteAccountAction.create(account.viewer, account).hardDeleteX();
   const transformed2 = await Account.loadNoTransform(
     account.viewer,
     account.id,
@@ -83,10 +80,7 @@ test("really delete", async () => {
   const d = new Date();
   advanceTo(d);
 
-  await DeleteAccountAction.create(
-    account.viewer,
-    account,
-  ).saveWithoutTransformX();
+  await DeleteAccountAction.create(account.viewer, account).hardDeleteX();
   let reloaded = await Account.load(account.viewer, account.id);
   expect(reloaded).toBeNull();
 
