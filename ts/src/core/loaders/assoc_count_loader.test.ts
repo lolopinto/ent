@@ -9,7 +9,7 @@ import {
   ID,
   WriteOperation,
 } from "../base";
-import { buildQuery } from "../ent";
+import { buildQuery } from "../query_impl";
 import {
   clearGlobalSchema,
   setGlobalSchema,

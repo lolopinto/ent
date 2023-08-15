@@ -28,6 +28,7 @@ export function log(level: logType, msg: any) {
       console.error(msg.message);
       return;
     }
+    // console[m[level]](inspect(msg, false, 10));
     console[m[level]](msg);
   }
 }

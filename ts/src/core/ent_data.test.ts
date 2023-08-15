@@ -30,6 +30,7 @@ import * as clause from "./clause";
 import DB from "./db";
 import each from "jest-each";
 import { ObjectLoaderFactory } from "./loaders";
+import { buildQuery } from "./query_impl";
 
 import {
   integer,
@@ -452,7 +453,7 @@ async function testLoadRow(addCtx?: boolean, disableWrite?: boolean) {
     ent.loadRow,
     (options) => {
       const queryOption = {
-        query: ent.buildQuery(options),
+        query: buildQuery(options),
         values: options.clause.values(),
       };
 
@@ -495,7 +496,7 @@ function commonTests() {
         ent.loadRows,
         (options) => {
           const qOption = {
-            query: ent.buildQuery(options),
+            query: buildQuery(options),
             values: options.clause.values(),
           };
 
@@ -519,7 +520,7 @@ function commonTests() {
     test("without context", async () => {
       await loadTestRows(ent.loadRows, (options) => {
         const queryOption = {
-          query: ent.buildQuery(options),
+          query: buildQuery(options),
           values: options.clause.values(),
         };
 
@@ -551,7 +552,7 @@ function commonTests() {
           () => ent.loadEnt(vc, 1, User.loaderOptions()),
           () => {
             const queryOption = {
-              query: ent.buildQuery(options),
+              query: buildQuery(options),
               values: options.clause.values(),
             };
             // when there's a context cache, we only run the query once so should be the same result
@@ -635,7 +636,7 @@ function commonTests() {
         () => ent.loadEnt(vc, 1, User.loaderOptions()),
         () => {
           const queryOption = {
-            query: ent.buildQuery(options),
+            query: buildQuery(options),
             values: options.clause.values(),
           };
           // when there's a context cache, we only run the query once so should be the same result
@@ -676,7 +677,7 @@ function commonTests() {
           () => ent.loadEnt(vc, 1, Contact.loaderOptions()),
           () => {
             const queryOption = {
-              query: ent.buildQuery(options),
+              query: buildQuery(options),
               values: options.clause.values(),
             };
             // when there's a context cache, we only run the query once so should be the same result
@@ -773,7 +774,7 @@ function commonTests() {
           () => ent.loadEnt(vc, 1, Account.loaderOptions()),
           () => {
             const queryOption = {
-              query: ent.buildQuery(options),
+              query: buildQuery(options),
               values: options.clause.values(),
             };
             // when there's a context cache, we only run the query once so should be the same result
@@ -940,7 +941,7 @@ function commonTests() {
       };
       const expQueries = [
         {
-          query: ent.buildQuery(options),
+          query: buildQuery(options),
           values: options.clause.values(),
         },
       ];
@@ -1001,7 +1002,7 @@ function commonTests() {
           clause: clause.Eq("bar", id),
         };
         return {
-          query: ent.buildQuery(options),
+          query: buildQuery(options),
           values: options.clause.values(),
         };
       });
@@ -1039,7 +1040,7 @@ function commonTests() {
           () => ent.loadEntX(vc, 1, User.loaderOptions()),
           () => {
             const qOption = {
-              query: ent.buildQuery(options),
+              query: buildQuery(options),
               values: options.clause.values(),
             };
             // when there's a context cache, we only run the query once
@@ -1081,7 +1082,7 @@ function commonTests() {
           () => ent.loadEntX(vc, 1, User.loaderOptions()),
           () => {
             const qOption = {
-              query: ent.buildQuery(options),
+              query: buildQuery(options),
               values: options.clause.values(),
             };
             // when there's a context cache, we only run the query once
@@ -1122,7 +1123,7 @@ function commonTests() {
         () => ent.loadEntX(vc, 1, User.loaderOptions()),
         () => {
           const queryOption = {
-            query: ent.buildQuery(options),
+            query: buildQuery(options),
             values: options.clause.values(),
           };
           // when there's a context cache, we only run the query once so should be the same result
@@ -1147,7 +1148,7 @@ function commonTests() {
         () => ent.loadEntFromClause(vc, User.loaderOptions(), cls),
         () => {
           const qOption = {
-            query: ent.buildQuery(options),
+            query: buildQuery(options),
             values: options.clause.values(),
           };
           // when there's a context cache, we only run the query once so should be the same result
@@ -1173,7 +1174,7 @@ function commonTests() {
         () => ent.loadEntFromClause(vc, User.loaderOptions(), cls),
         () => {
           const queryOption = {
-            query: ent.buildQuery(options),
+            query: buildQuery(options),
             values: options.clause.values(),
           };
           // no context cache. so multiple queries needed
@@ -1190,7 +1191,7 @@ function commonTests() {
         () => ent.loadEntXFromClause(vc, User.loaderOptions(), cls),
         () => {
           const qOption = {
-            query: ent.buildQuery(options),
+            query: buildQuery(options),
             values: options.clause.values(),
           };
           // when there's a context cache, we only run the query once so should be the same result
@@ -1216,7 +1217,7 @@ function commonTests() {
         () => ent.loadEntXFromClause(vc, User.loaderOptions(), cls),
         () => {
           const queryOption = {
-            query: ent.buildQuery(options),
+            query: buildQuery(options),
             values: options.clause.values(),
           };
           // no context cache. so multiple queries needed
@@ -1253,7 +1254,7 @@ function commonTests() {
       };
       const expQueries = [
         {
-          query: ent.buildQuery(options),
+          query: buildQuery(options),
           values: options.clause.values(),
         },
       ];
@@ -1301,7 +1302,7 @@ function commonTests() {
         clause: clause.IntegerIn("bar", [1, 2, 3]),
       };
       const inQuery = {
-        query: ent.buildQuery(options),
+        query: buildQuery(options),
         values: options.clause.values(),
       };
       const expQueries = [inQuery];
@@ -1318,7 +1319,7 @@ function commonTests() {
           clause: cls,
         };
         expQueries2.push({
-          query: ent.buildQuery(options),
+          query: buildQuery(options),
           values: options.clause.values(),
         });
       });
@@ -1425,7 +1426,7 @@ function commonTests() {
       };
       const expQueries = [
         {
-          query: ent.buildQuery(options),
+          query: buildQuery(options),
           values: options.clause.values(),
         },
       ];
@@ -1473,7 +1474,7 @@ function commonTests() {
         clause: clause.IntegerIn("bar", [1, 2, 3]),
       };
       const inQuery = {
-        query: ent.buildQuery(options),
+        query: buildQuery(options),
         values: options.clause.values(),
       };
       const expQueries = [inQuery];
@@ -1490,7 +1491,7 @@ function commonTests() {
           clause: cls,
         };
         expQueries2.push({
-          query: ent.buildQuery(options),
+          query: buildQuery(options),
           values: options.clause.values(),
         });
       });
@@ -1536,7 +1537,7 @@ function commonTests() {
         clause: cls!,
       };
       qOption = {
-        query: ent.buildQuery(options),
+        query: buildQuery(options),
         values: options.clause.values(),
       };
     });
@@ -1605,7 +1606,7 @@ function commonTests() {
         clause: cls!,
       };
       qOption = {
-        query: ent.buildQuery(options),
+        query: buildQuery(options),
         values: options.clause.values(),
       };
     });
@@ -1782,7 +1783,7 @@ function commonTests() {
         ent.loadRow,
         (options) => {
           const queryOption = {
-            query: ent.buildQuery(options),
+            query: buildQuery(options),
             values: options.clause.values(),
           };
 
@@ -1823,7 +1824,7 @@ function commonTests() {
         ent.loadRow,
         (options) => {
           const queryOption = {
-            query: ent.buildQuery(options),
+            query: buildQuery(options),
             values: options.clause.values(),
           };
 

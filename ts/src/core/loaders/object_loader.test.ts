@@ -4,7 +4,7 @@ import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { Data, ID } from "../base";
-import { buildQuery } from "../ent";
+import { buildQuery } from "../query_impl";
 import * as clause from "../clause";
 import {
   createTestUser,

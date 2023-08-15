@@ -5,7 +5,6 @@ import { createRowForTest } from "../testutils/write";
 import {
   AssocEdge,
   buildInsertQuery,
-  buildQuery,
   buildUpdateQuery,
   loadEdgeForID2,
   assocEdgeLoader,
@@ -36,6 +35,7 @@ import * as clause from "../core/clause";
 import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema";
 import { snakeCase } from "snake-case";
 import { v1 } from "uuid";
+import { buildQuery } from "../core/query_impl";
 
 const ml = new MockLogs();
 
