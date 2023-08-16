@@ -233,7 +233,15 @@ func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(cfg, f.FieldName, fkeyInfo.Schema, f.Nullable(), f.fieldType, validSchema)
+	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(
+		cfg,
+		f.FieldName,
+		fkeyInfo.Schema,
+		// field privacy means we mark the field as nullable because it's possible it's not viewable
+		f.Nullable() || f.hasFieldPrivacy,
+		f.fieldType,
+		validSchema,
+	)
 }
 
 func (f *Field) AddFieldEdgeToEdgeInfo(
@@ -250,7 +258,8 @@ func (f *Field) AddFieldEdgeToEdgeInfo(
 		cfg,
 		f.FieldName,
 		fieldEdgeInfo,
-		f.Nullable(),
+		// field privacy means we mark the field as nullable because it's possible it's not viewable
+		f.Nullable() || f.hasFieldPrivacy,
 		f.fieldType,
 		validSchema,
 	)

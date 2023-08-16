@@ -1,4 +1,8 @@
-import { UUIDListType } from "@snowtop/ent";
+import {
+  AllowIfViewerIsEntPropertyRule,
+  AlwaysDenyRule,
+  UUIDListType,
+} from "@snowtop/ent";
 import {
   ActionOperation,
   ConstraintType,
@@ -16,6 +20,11 @@ const TagSchema = new TodoBaseEntSchema({
     // TODO https://github.com/lolopinto/ent/issues/1185
     ownerID: UUIDType({
       foreignKey: { schema: "Account", column: "ID" },
+      privacyPolicy: {
+        // only tag owner can see this
+        // @ts-ignore
+        rules: [new AllowIfViewerIsEntPropertyRule("ownerID"), AlwaysDenyRule],
+      },
     }),
     // contrived field
     relatedTagIds: UUIDListType({
