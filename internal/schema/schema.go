@@ -78,6 +78,11 @@ func (s *Schema) GetGlobalEnums() map[string]*EnumInfo {
 	return s.globalEnums
 }
 
+func (s *Schema) IsGlobalEnumWithDisableUnknownType(typ string) bool {
+	enum, ok := s.globalEnums[typ]
+	return ok && enum.Enum.DisableUnknownType
+}
+
 func (s *Schema) GetGlobalCanViewerDo() map[string]action.Action {
 	return s.globalCanViewerDo
 }

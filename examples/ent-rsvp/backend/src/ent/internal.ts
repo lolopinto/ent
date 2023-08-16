@@ -43,3 +43,7 @@ export * from "src/ent/guest_group/query/guest_group_to_guests_query";
 export * from "src/ent/guest_group/query/guest_group_to_invited_events_query";
 export * from "src/ent/user/query/user_owner_to_addresses_query";
 export * from "src/ent/user/query/user_to_events_query";
+import { setGlobalSchema } from "@snowtop/ent";
+import globalSchema from "src/schema/global_schema";
+
+setGlobalSchema(globalSchema);

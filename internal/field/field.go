@@ -550,11 +550,11 @@ func (f *Field) GetPossibleTypes() []enttype.Type {
 	return typs
 }
 
-func (f *Field) GetImportsForTypes(cfg codegenapi.Config, g CustomInterfaceGetter) []*tsimport.ImportPath {
+func (f *Field) GetImportsForTypes(cfg codegenapi.Config, g CustomInterfaceGetter, s enttype.SchemaType) []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 	tt := f.GetPossibleTypes()
 	for _, t := range tt {
-		imps := enttype.ConvertImportPaths(t)
+		imps := enttype.ConvertImportPaths(t, s)
 		for _, imp := range imps {
 			if imp.ImportPath != "" {
 				ret = append(ret, imp)

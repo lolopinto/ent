@@ -422,7 +422,7 @@ func (nodeData *NodeData) GetImportsForBaseFile(s *Schema, cfg codegenapi.Config
 			})
 		}
 
-		ret = append(ret, f.GetImportsForTypes(cfg, s)...)
+		ret = append(ret, f.GetImportsForTypes(cfg, s, s)...)
 	}
 	return ret, nil
 }

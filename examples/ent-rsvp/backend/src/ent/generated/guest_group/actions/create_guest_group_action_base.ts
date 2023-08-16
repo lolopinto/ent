@@ -18,6 +18,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event, GuestData, GuestGroup } from "src/ent/";
 import { GuestGroupBuilder } from "src/ent/generated/guest_group/actions/guest_group_builder";
+import { GuestTag } from "src/ent/generated/types";
 
 interface customGuestInput {
   addressId?: ID | null | Builder<Address, Viewer>;
@@ -25,11 +26,13 @@ interface customGuestInput {
   emailAddress?: string | null;
   title?: string | null;
   guestDataId?: ID | null | Builder<GuestData, Viewer>;
+  tag?: GuestTag | null;
 }
 
 export interface GuestGroupCreateInput {
   invitationName: string;
   eventID: ID | Builder<Event, Viewer>;
+  tag?: GuestTag | null;
   guests?: customGuestInput[] | null;
 }
 

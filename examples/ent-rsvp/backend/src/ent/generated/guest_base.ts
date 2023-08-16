@@ -23,7 +23,7 @@ import {
   guestLoader,
   guestLoaderInfo,
 } from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/generated/types";
+import { GuestTag, NodeType } from "src/ent/generated/types";
 import {
   Address,
   Event,
@@ -53,6 +53,7 @@ export class GuestBase
   readonly guestGroupID: ID;
   readonly title: string | null;
   readonly guestDataId: ID | null;
+  readonly tag: GuestTag | null;
 
   constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
@@ -66,6 +67,7 @@ export class GuestBase
     this.guestGroupID = data.guest_group_id;
     this.title = data.title;
     this.guestDataId = data.guest_data_id;
+    this.tag = data.tag;
     // @ts-expect-error
     this.data = data;
   }

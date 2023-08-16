@@ -121,3 +121,9 @@ export function convertNullableGuestDataSourceList(
   }
   return convertGuestDataSourceList(val);
 }
+
+export enum GuestTag {
+  Friend = "friend",
+  Coworker = "coworker",
+  Family = "family",
+}

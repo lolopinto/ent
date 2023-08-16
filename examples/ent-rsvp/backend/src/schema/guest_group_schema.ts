@@ -1,10 +1,20 @@
-import { ActionOperation, StringType, UUIDType, EntSchema } from "@snowtop/ent";
+import {
+  ActionOperation,
+  StringType,
+  UUIDType,
+  EntSchema,
+  EnumType,
+} from "@snowtop/ent";
 
 const GuestGroupSchema = new EntSchema({
   fields: {
     InvitationName: StringType(),
     EventID: UUIDType({
       foreignKey: { schema: "Event", column: "ID" },
+    }),
+    tag: EnumType({
+      globalType: "GuestTag",
+      nullable: true,
     }),
   },
 
