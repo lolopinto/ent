@@ -99,6 +99,7 @@ import {
   GuestGroupToGuestsConnectionType,
   GuestGroupToInvitedEventsConnectionType,
   GuestGroupType,
+  GuestTagType,
   GuestToAttendingEventsConnectionType,
   GuestToDeclinedEventsConnectionType,
   GuestType,
@@ -112,6 +113,7 @@ export default new GraphQLSchema({
   mutation: MutationType,
   types: [
     EventActivityRsvpStatusType,
+    GuestTagType,
     AddressType,
     EventActivityCanViewerDoType,
     EventActivityType,

@@ -20,7 +20,7 @@ import { Guest } from "src/ent/";
 import CreateGuestAction, {
   GuestCreateInput,
 } from "src/ent/guest/actions/create_guest_action";
-import { GuestType } from "src/graphql/resolvers/";
+import { GuestTagType, GuestType } from "src/graphql/resolvers/";
 
 interface customGuestCreateInput extends GuestCreateInput {
   addressId?: string;
@@ -56,6 +56,9 @@ export const GuestCreateInputType = new GraphQLInputObjectType({
     },
     guestDataId: {
       type: GraphQLID,
+    },
+    tag: {
+      type: GuestTagType,
     },
   }),
 });
@@ -98,6 +101,7 @@ export const GuestCreateType: GraphQLFieldConfig<
       guestGroupID: mustDecodeIDFromGQLID(input.guestGroupID),
       title: input.title,
       guestDataId: mustDecodeNullableIDFromGQLID(input.guestDataId),
+      tag: input.tag,
     }).saveX();
     return { guest: guest };
   },

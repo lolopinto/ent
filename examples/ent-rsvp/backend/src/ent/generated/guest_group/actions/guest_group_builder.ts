@@ -14,12 +14,13 @@ import {
 } from "@snowtop/ent/action";
 import { Event, EventActivity, GuestGroup } from "src/ent/";
 import { guestGroupLoaderInfo } from "src/ent/generated/loaders";
-import { EdgeType, NodeType } from "src/ent/generated/types";
+import { EdgeType, GuestTag, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/guest_group_schema";
 
 export interface GuestGroupInput {
   invitationName?: string;
   eventID?: ID | Builder<Event, Viewer>;
+  tag?: GuestTag | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -217,6 +218,7 @@ export class GuestGroupBuilder<
     };
     addField("InvitationName", input.invitationName);
     addField("EventID", input.eventID);
+    addField("tag", input.tag);
     return result;
   }
 
@@ -252,5 +254,14 @@ export class GuestGroupBuilder<
       );
     }
     return this.existingEnt.eventID;
+  }
+
+  // get value of tag. Retrieves it from the input if specified or takes it from existingEnt
+  getNewTagValue(): GuestTag | null {
+    if (this.input.tag !== undefined) {
+      return this.input.tag;
+    }
+
+    return this.existingEnt?.tag ?? null;
   }
 }

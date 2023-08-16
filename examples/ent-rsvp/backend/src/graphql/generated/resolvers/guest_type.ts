@@ -23,6 +23,7 @@ import {
   AddressType,
   EventType,
   GuestGroupType,
+  GuestTagType,
   GuestToAttendingEventsConnectionType,
   GuestToDeclinedEventsConnectionType,
 } from "src/graphql/resolvers/internal";
@@ -64,6 +65,9 @@ export const GuestType = new GraphQLObjectType({
     guestDataId: {
       type: GraphQLID,
       resolve: nodeIDEncoder,
+    },
+    tag: {
+      type: GuestTagType,
     },
     guestToAttendingEvents: {
       type: new GraphQLNonNull(GuestToAttendingEventsConnectionType()),

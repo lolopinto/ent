@@ -499,6 +499,7 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 				Values:             typ.Values,
 				EnumMap:            typ.EnumMap,
 				DisableUnknownType: typ.DisableUnknownType,
+				GlobalType:         typ.GlobalType,
 			}, nil
 		}
 		return &enttype.StringEnumType{
@@ -508,6 +509,7 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			Values:             typ.Values,
 			EnumMap:            typ.EnumMap,
 			DisableUnknownType: typ.DisableUnknownType,
+			GlobalType:         typ.GlobalType,
 		}, nil
 
 	case IntEnum:
@@ -527,6 +529,7 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 				EnumMap:            typ.IntEnumMap,
 				DeprecatedEnumMap:  typ.DeprecatedIntEnumMap,
 				DisableUnknownType: typ.DisableUnknownType,
+				GlobalType:         typ.GlobalType,
 			}, nil
 		}
 		return &enttype.IntegerEnumType{
@@ -535,6 +538,7 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			EnumMap:            typ.IntEnumMap,
 			DeprecatedEnumMap:  typ.DeprecatedIntEnumMap,
 			DisableUnknownType: typ.DisableUnknownType,
+			GlobalType:         typ.GlobalType,
 		}, nil
 
 	}

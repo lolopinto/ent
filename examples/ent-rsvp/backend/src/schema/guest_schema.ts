@@ -4,6 +4,7 @@ import {
   UUIDType,
   ConstraintType,
   EntSchema,
+  EnumType,
 } from "@snowtop/ent";
 import { EmailType } from "@snowtop/ent-email";
 import { WithAddressPattern } from "./patterns/with_address_pattern";
@@ -31,6 +32,10 @@ const GuestSchema = new EntSchema({
       fieldEdge: {
         schema: "GuestData",
       },
+    }),
+    tag: EnumType({
+      globalType: "GuestTag",
+      nullable: true,
     }),
   },
 

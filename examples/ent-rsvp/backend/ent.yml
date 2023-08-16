@@ -1,3 +1,4 @@
+globalSchemaPath: global_schema.ts
 log: 
   - query
   - error

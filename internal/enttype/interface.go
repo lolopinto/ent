@@ -45,17 +45,21 @@ type CustomGQLRenderer interface {
 	ArgImports(cfg Config) []*tsimport.ImportPath
 }
 
+type SchemaType interface {
+	IsGlobalEnumWithDisableUnknownType(typ string) bool
+}
+
 type ConvertDataTypeRet map[config.Dialect][]*tsimport.ImportPath
 type ConvertDataType interface {
 	TSType
 	// return convert info for each dialect. a lot of these only apply for one dialect
-	Convert() ConvertDataTypeRet
+	Convert(s SchemaType) ConvertDataTypeRet
 }
 
 type convertListElemType interface {
 	ConvertDataType
-	convertListWithItem() ConvertDataTypeRet
-	convertNullableListWithItem() ConvertDataTypeRet
+	convertListWithItem(s SchemaType) ConvertDataTypeRet
+	convertNullableListWithItem(s SchemaType) ConvertDataTypeRet
 }
 
 type ActionFieldsInfo struct {

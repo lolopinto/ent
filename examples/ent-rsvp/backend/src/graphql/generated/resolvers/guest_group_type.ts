@@ -23,6 +23,7 @@ import {
   EventType,
   GuestGroupToGuestsConnectionType,
   GuestGroupToInvitedEventsConnectionType,
+  GuestTagType,
 } from "src/graphql/resolvers/internal";
 
 export const GuestGroupType = new GraphQLObjectType({
@@ -40,6 +41,9 @@ export const GuestGroupType = new GraphQLObjectType({
     },
     invitationName: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    tag: {
+      type: GuestTagType,
     },
     guestGroupToInvitedEvents: {
       type: new GraphQLNonNull(GuestGroupToInvitedEventsConnectionType()),
