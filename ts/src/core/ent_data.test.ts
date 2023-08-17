@@ -1078,7 +1078,7 @@ function commonTests() {
       };
 
       const testEnt = async (vc: Viewer) => {
-        return await loadTestEnt(
+        return loadTestEnt(
           () => ent.loadEntX(vc, 1, User.loaderOptions()),
           () => {
             const qOption = {

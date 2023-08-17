@@ -156,7 +156,7 @@ export async function createAllContacts(
         },
       );
       await builder.saveX();
-      return await builder.editedEntX();
+      return builder.editedEntX();
     }),
   );
   expect(contacts.length).toBe(userInputs.length);
@@ -325,7 +325,7 @@ export async function createTestEvent(
   builder.orchestrator.addOutboundEdge(user.id, EdgeType.EventToHosts, "User");
 
   await builder.saveX();
-  return await builder.editedEntX();
+  return builder.editedEntX();
 }
 
 export async function setupTempDB(global: boolean = false) {

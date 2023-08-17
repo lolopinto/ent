@@ -336,7 +336,7 @@ function commonTests() {
         ids.map(async (id) => {
           // have to use different loader for each to get results
           const loader = getNonGroupableLoader(id);
-          return await loader.load(id);
+          return loader.load(id);
         }),
       );
       ml.verifyNoErrors();

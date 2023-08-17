@@ -133,7 +133,7 @@ export default class CreateEventAction extends CreateEventActionBase {
           if (!this.input.address) {
             return;
           }
-          return await CreateAddressAction.create(builder.viewer, {
+          return CreateAddressAction.create(builder.viewer, {
             ...this.input.address,
             ownerID: builder,
             ownerType: NodeType.Event,

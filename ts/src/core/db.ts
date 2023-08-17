@@ -461,7 +461,7 @@ export class Postgres implements Connection {
   }
 
   async close() {
-    return await this.pool.end();
+    return this.pool.end();
   }
 }
 
