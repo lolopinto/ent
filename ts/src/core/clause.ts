@@ -1140,12 +1140,13 @@ export function getCombinedClause<V extends Data = Data, K = keyof V>(
           optionClause.columns(),
         );
         const queriedCols = cls.columns();
+        const has = new Set<K | string | number>();
         for (const col of queriedCols) {
           if (transformedCols.has(col)) {
-            and = false;
-            break;
+            has.add(col);
           }
         }
+        and = transformedCols.size > 0 && has.size !== transformedCols.size;
       }
       if (and) {
         // @ts-expect-error different types
