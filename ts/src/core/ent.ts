@@ -666,6 +666,7 @@ async function loadCustomDataImpl<
       cls = clause.getCombinedClause(
         options.loaderFactory.options,
         query.clause,
+        true,
       );
     }
     return loadRows({

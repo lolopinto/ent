@@ -1,3 +1,4 @@
+import { load } from "js-yaml";
 import {
   Data,
   Ent,
@@ -8,7 +9,7 @@ import {
   LoaderFactory,
   ConfigurableLoaderFactory,
 } from "../base";
-import { AndOptional, Clause } from "../clause";
+import { AndOptional, Clause, getCombinedClause } from "../clause";
 import { applyPrivacyPolicyForRows, getDefaultLimit } from "../ent";
 import {
   ObjectLoaderFactory,
@@ -62,17 +63,14 @@ function getClause<
   TViewer extends Viewer = Viewer,
 >(opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>) {
   let cls = opts.clause;
-  if (opts.disableTransformations) {
+  if (opts.disableTransformations || !cls) {
     return cls;
   }
-  let optClause = opts.loadEntOptions.loaderFactory?.options?.clause;
-  if (typeof optClause === "function") {
-    optClause = optClause();
-  }
-  if (!optClause) {
-    return cls;
-  }
-  return AndOptional(cls, optClause);
+  return getCombinedClause(
+    opts.loadEntOptions.loaderFactory?.options,
+    cls,
+    true,
+  );
 }
 
 function getRawCountLoader<
