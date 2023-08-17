@@ -108,7 +108,7 @@ export class TagBase implements Ent<Viewer> {
   // with no transformations which are currently done implicitly
   // we don't generate the full complement of read-APIs
   // but can easily query the raw data with tagNoTransformLoader
-  static async loadNoTransform<T extends TagBase>(
+  static async loadSoftDeleted<T extends TagBase>(
     this: new (
       viewer: Viewer,
       data: Data,
@@ -124,7 +124,7 @@ export class TagBase implements Ent<Viewer> {
     return (await loadEnt(viewer, id, opts)) as T | null;
   }
 
-  static async loadNoTransformX<T extends TagBase>(
+  static async loadSoftDeletedX<T extends TagBase>(
     this: new (
       viewer: Viewer,
       data: Data,

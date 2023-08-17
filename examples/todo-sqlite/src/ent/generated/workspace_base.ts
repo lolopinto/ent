@@ -114,7 +114,7 @@ export class WorkspaceBase
   // with no transformations which are currently done implicitly
   // we don't generate the full complement of read-APIs
   // but can easily query the raw data with workspaceNoTransformLoader
-  static async loadNoTransform<T extends WorkspaceBase>(
+  static async loadSoftDeleted<T extends WorkspaceBase>(
     this: new (
       viewer: Viewer,
       data: Data,
@@ -130,7 +130,7 @@ export class WorkspaceBase
     return (await loadEnt(viewer, id, opts)) as T | null;
   }
 
-  static async loadNoTransformX<T extends WorkspaceBase>(
+  static async loadSoftDeletedX<T extends WorkspaceBase>(
     this: new (
       viewer: Viewer,
       data: Data,

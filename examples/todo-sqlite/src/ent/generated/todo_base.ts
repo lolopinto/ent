@@ -114,7 +114,7 @@ export class TodoBase implements Ent<Viewer> {
   // with no transformations which are currently done implicitly
   // we don't generate the full complement of read-APIs
   // but can easily query the raw data with todoNoTransformLoader
-  static async loadNoTransform<T extends TodoBase>(
+  static async loadSoftDeleted<T extends TodoBase>(
     this: new (
       viewer: Viewer,
       data: Data,
@@ -130,7 +130,7 @@ export class TodoBase implements Ent<Viewer> {
     return (await loadEnt(viewer, id, opts)) as T | null;
   }
 
-  static async loadNoTransformX<T extends TodoBase>(
+  static async loadSoftDeletedX<T extends TodoBase>(
     this: new (
       viewer: Viewer,
       data: Data,

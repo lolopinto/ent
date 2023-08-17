@@ -60,13 +60,13 @@ test("delete", async () => {
   let reloaded = await Account.load(account.viewer, account.id);
   expect(reloaded).toBeNull();
 
-  const transformed = await Account.loadNoTransform(account.viewer, account.id);
+  const transformed = await Account.loadSoftDeleted(account.viewer, account.id);
   expect(transformed).not.toBeNull();
   expect(transformed?.getDeletedAt()).toEqual(d);
 
   // then really delete
   await DeleteAccountAction.create(account.viewer, account).hardDeleteX();
-  const transformed2 = await Account.loadNoTransform(
+  const transformed2 = await Account.loadSoftDeleted(
     account.viewer,
     account.id,
   );
@@ -84,7 +84,7 @@ test("really delete", async () => {
   let reloaded = await Account.load(account.viewer, account.id);
   expect(reloaded).toBeNull();
 
-  const transformed = await Account.loadNoTransform(account.viewer, account.id);
+  const transformed = await Account.loadSoftDeleted(account.viewer, account.id);
   expect(transformed).toBeNull();
 });
 
