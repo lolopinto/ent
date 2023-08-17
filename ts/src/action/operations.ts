@@ -22,7 +22,6 @@ import {
 import { __getGlobalSchema } from "../core/global_schema";
 import {
   AssocEdgeData,
-  buildQuery,
   createRow,
   createRowSync,
   deleteRows,
@@ -33,6 +32,7 @@ import {
   logQuery,
   parameterizedQueryOptions,
 } from "../core/ent";
+import { buildQuery } from "../core/query_impl";
 
 export interface UpdatedOperation {
   operation: WriteOperation;
@@ -130,6 +130,22 @@ export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
   key: string;
   onConflict?: CreateRowOptions["onConflict"];
   builder: Builder<T>;
+}
+
+export class NoOperation<T extends Ent> implements DataOperation<T> {
+  private row: Data | null = null;
+  constructor(public builder: Builder<any>, existingEnt: Ent | null = null) {
+    // @ts-ignore
+    this.row = existingEnt?.data;
+  }
+
+  async performWrite(queryer: Queryer, context?: Context) {}
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {}
+
+  returnedRow(): Data | null {
+    return this.row;
+  }
 }
 
 export class EditNodeOperation<T extends Ent> implements DataOperation {
@@ -556,7 +572,8 @@ export class EdgeOperation implements DataOperation {
       fields["time"] = new Date().toISOString();
     }
 
-    const onConflictFields = ["data"];
+    // update time if we're trying to insert a row with the same id1, edge_type, id2
+    const onConflictFields = ["data", "time"];
 
     const extraEdgeFields = __getGlobalSchema()?.extraEdgeFields;
     if (extraEdgeFields) {

@@ -49,21 +49,21 @@ export const EventType = new GraphQLObjectType({
     address: {
       type: AddressType,
       resolve: (
-        event: Event,
+        obj: Event,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return event.loadAddress();
+        return obj.loadAddress();
       },
     },
     creator: {
       type: UserType,
       resolve: (
-        event: Event,
+        obj: Event,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return event.loadCreator();
+        return obj.loadCreator();
       },
     },
     id: {
@@ -82,11 +82,11 @@ export const EventType = new GraphQLObjectType({
     eventLocation: {
       type: new GraphQLNonNull(GraphQLString),
       resolve: (
-        event: Event,
+        obj: Event,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return event.location;
+        return obj.location;
       },
     },
     attending: {
@@ -110,14 +110,14 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (
-        event: Event,
+        obj: Event,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          event.viewer,
-          event,
-          (v, event: Event) => EventToAttendingQuery.query(v, event),
+          obj.viewer,
+          obj,
+          (v, obj: Event) => EventToAttendingQuery.query(v, obj),
           args,
         );
       },
@@ -143,14 +143,14 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (
-        event: Event,
+        obj: Event,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          event.viewer,
-          event,
-          (v, event: Event) => EventToDeclinedQuery.query(v, event),
+          obj.viewer,
+          obj,
+          (v, obj: Event) => EventToDeclinedQuery.query(v, obj),
           args,
         );
       },
@@ -176,14 +176,14 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (
-        event: Event,
+        obj: Event,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          event.viewer,
-          event,
-          (v, event: Event) => EventToHostsQuery.query(v, event),
+          obj.viewer,
+          obj,
+          (v, obj: Event) => EventToHostsQuery.query(v, obj),
           args,
         );
       },
@@ -209,14 +209,14 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (
-        event: Event,
+        obj: Event,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          event.viewer,
-          event,
-          (v, event: Event) => EventToInvitedQuery.query(v, event),
+          obj.viewer,
+          obj,
+          (v, obj: Event) => EventToInvitedQuery.query(v, obj),
           args,
         );
       },
@@ -242,14 +242,14 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (
-        event: Event,
+        obj: Event,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          event.viewer,
-          event,
-          (v, event: Event) => EventToMaybeQuery.query(v, event),
+          obj.viewer,
+          obj,
+          (v, obj: Event) => EventToMaybeQuery.query(v, obj),
           args,
         );
       },
@@ -260,15 +260,15 @@ export const EventType = new GraphQLObjectType({
     canViewerSeeInfo: {
       type: new GraphQLNonNull(EventCanViewerSeeType),
       resolve: (
-        event: Event,
+        obj: Event,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return event.canViewerSeeInfo();
+        return obj.canViewerSeeInfo();
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Event;
   },
@@ -283,11 +283,11 @@ export const EventCanViewerSeeType = new GraphQLObjectType({
     address: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        event: EventCanViewerSee,
+        obj: EventCanViewerSee,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return event.addressID();
+        return obj.addressID();
       },
     },
   }),

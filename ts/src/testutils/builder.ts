@@ -298,11 +298,11 @@ export class SimpleBuilder<
   }
 
   async editedEnt(): Promise<T | null> {
-    return await this.orchestrator.editedEnt();
+    return this.orchestrator.editedEnt();
   }
 
   async editedEntX(): Promise<T> {
-    return await this.orchestrator.editedEntX();
+    return this.orchestrator.editedEntX();
   }
 
   async save(): Promise<void> {
@@ -314,11 +314,11 @@ export class SimpleBuilder<
   }
 
   async valid(): Promise<boolean> {
-    return await this.orchestrator.valid();
+    return this.orchestrator.valid();
   }
 
   async validX(): Promise<void> {
-    return await this.orchestrator.validX();
+    return this.orchestrator.validX();
   }
 }
 
@@ -369,6 +369,10 @@ export class SimpleAction<
 
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
+  }
+
+  __failPrivacySilently(): boolean {
+    return false;
   }
 
   getInput() {

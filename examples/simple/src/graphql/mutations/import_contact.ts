@@ -7,15 +7,12 @@ import {
 import { GraphQLID } from "graphql";
 import { FileUpload } from "graphql-upload";
 import parse from "csv-parse";
-import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { User } from "../../ent";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
-import {
-  UserBuilder,
-  UserInput,
-} from "../../ent/generated/user/actions/user_builder";
 import { ExampleViewer } from "../../viewer/viewer";
 import { ContactLabel } from "../../ent/generated/types";
+import { ContactLabel2 } from "./custom_enum";
+import { Transaction } from "@snowtop/ent/action";
 
 export class ImportContactResolver {
   @gqlMutation({
@@ -31,6 +28,21 @@ export class ImportContactResolver {
         name: "file",
         type: gqlFileUpload,
       },
+      {
+        name: "defaultLabel",
+        type: "ContactLabel",
+        nullable: true,
+      },
+      {
+        name: "defaultLabel2",
+        type: {
+          type: "GraphQLContactLabel2",
+          importPath: "src/graphql/mutations/custom_enum",
+          tsType: "ContactLabel2",
+          tsImportPath: "src/graphql/mutations/custom_enum",
+        },
+        nullable: true,
+      },
     ],
     async: true,
   })
@@ -38,6 +50,8 @@ export class ImportContactResolver {
     context: RequestContext<ExampleViewer>,
     userID: ID,
     file: Promise<FileUpload>,
+    label?: ContactLabel,
+    _label2?: ContactLabel2,
   ) {
     const file2 = await file;
 
@@ -61,20 +75,16 @@ export class ImportContactResolver {
           emails: [
             {
               emailAddress: record.emailAddress,
-              label: ContactLabel.Default,
+              label: label ?? ContactLabel.Default,
             },
           ],
           userID: user.id,
         }),
       );
     }
+    const tx = new Transaction(user.viewer, actions);
+    await tx.run();
 
-    // not ideal we have to type this. should be able to get UserInput for free
-    const action = BaseAction.bulkAction<User, ExampleViewer, UserInput>(
-      user,
-      UserBuilder,
-      ...actions,
-    );
-    return await action.saveX();
+    return user;
   }
 }

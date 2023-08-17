@@ -122,7 +122,7 @@ export class RawCountLoader<K extends any> implements Loader<K, number> {
 
   async load(id: K): Promise<number> {
     if (this.loader) {
-      return await this.loader.load(id);
+      return this.loader.load(id);
     }
 
     const rows = await simpleCase(this.options, id, this.context);

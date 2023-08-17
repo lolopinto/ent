@@ -11,7 +11,11 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLTime } from "@snowtop/ent/graphql";
-import { ContactLabelType, ContactType } from "../../resolvers/internal";
+import {
+  ContactItemType,
+  ContactLabelType,
+  ContactType,
+} from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import { ContactDate } from "../../../ent/contact_types";
 
@@ -21,11 +25,18 @@ export const ContactDateType = new GraphQLObjectType({
     ContactDate,
     RequestContext<ExampleViewerAlias>
   > => ({
-    label: {
-      type: new GraphQLNonNull(ContactLabelType),
-    },
     contact: {
       type: ContactType,
+      resolve: (
+        obj: ContactDate,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.contact();
+      },
+    },
+    label: {
+      type: new GraphQLNonNull(ContactLabelType),
     },
     date: {
       type: new GraphQLNonNull(GraphQLTime),
@@ -34,6 +45,7 @@ export const ContactDateType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
   }),
+  interfaces: () => [ContactItemType],
   isTypeOf(obj) {
     return obj instanceof ContactDate;
   },

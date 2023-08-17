@@ -53,17 +53,17 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: any, context: RequestContext<Viewer>) => {
+      resolve: (obj: User, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToEventsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToEventsQuery.query(v, obj),
           args,
         );
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof User;
   },

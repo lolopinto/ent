@@ -22,12 +22,8 @@ export const AddressType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Address, RequestContext<Viewer>> => ({
     owner: {
       type: GraphQLNodeInterface,
-      resolve: (
-        address: Address,
-        args: {},
-        context: RequestContext<Viewer>,
-      ) => {
-        return address.loadOwner();
+      resolve: (obj: Address, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadOwner();
       },
     },
     id: {
@@ -69,21 +65,17 @@ export const AddressType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (
-        address: Address,
-        args: any,
-        context: RequestContext<Viewer>,
-      ) => {
+      resolve: (obj: Address, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          address.viewer,
-          address,
-          (v, address: Address) => AddressToLocatedAtQuery.query(v, address),
+          obj.viewer,
+          obj,
+          (v, obj: Address) => AddressToLocatedAtQuery.query(v, obj),
           args,
         );
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Address;
   },

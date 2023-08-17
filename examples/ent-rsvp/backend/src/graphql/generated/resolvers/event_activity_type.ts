@@ -39,25 +39,25 @@ import {
 class EventActivityCanViewerDo {
   constructor(
     private context: RequestContext<Viewer>,
-    private eventActivity: EventActivity,
+    private ent: EventActivity,
   ) {}
 
   async eventActivityAddInvite(args: any): Promise<boolean> {
     const action = EventActivityAddInviteAction.create(
       this.context.getViewer(),
-      this.eventActivity,
+      this.ent,
     );
     return applyPrivacyPolicy(
       this.context.getViewer(),
       action.getPrivacyPolicy(),
-      this.eventActivity,
+      this.ent,
     );
   }
 
   async eventActivityRsvpStatusEdit(args: any): Promise<boolean> {
     const action = EditEventActivityRsvpStatusAction.create(
       this.context.getViewer(),
-      this.eventActivity,
+      this.ent,
       {
         ...args,
         rsvpStatus: args.rsvpStatus,
@@ -68,7 +68,7 @@ class EventActivityCanViewerDo {
     return applyPrivacyPolicy(
       this.context.getViewer(),
       action.getPrivacyPolicy(),
-      this.eventActivity,
+      this.ent,
     );
   }
 }
@@ -79,21 +79,21 @@ export const EventActivityType = new GraphQLObjectType({
     address: {
       type: AddressType,
       resolve: (
-        eventActivity: EventActivity,
+        obj: EventActivity,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
-        return eventActivity.loadAddress();
+        return obj.loadAddress();
       },
     },
     event: {
       type: EventType,
       resolve: (
-        eventActivity: EventActivity,
+        obj: EventActivity,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
-        return eventActivity.loadEvent();
+        return obj.loadEvent();
       },
     },
     id: {
@@ -139,15 +139,15 @@ export const EventActivityType = new GraphQLObjectType({
         },
       },
       resolve: (
-        eventActivity: EventActivity,
+        obj: EventActivity,
         args: any,
         context: RequestContext<Viewer>,
       ) => {
         return new GraphQLEdgeConnection(
-          eventActivity.viewer,
-          eventActivity,
-          (v, eventActivity: EventActivity) =>
-            EventActivityToAttendingQuery.query(v, eventActivity),
+          obj.viewer,
+          obj,
+          (v, obj: EventActivity) =>
+            EventActivityToAttendingQuery.query(v, obj),
           args,
         );
       },
@@ -173,15 +173,14 @@ export const EventActivityType = new GraphQLObjectType({
         },
       },
       resolve: (
-        eventActivity: EventActivity,
+        obj: EventActivity,
         args: any,
         context: RequestContext<Viewer>,
       ) => {
         return new GraphQLEdgeConnection(
-          eventActivity.viewer,
-          eventActivity,
-          (v, eventActivity: EventActivity) =>
-            EventActivityToDeclinedQuery.query(v, eventActivity),
+          obj.viewer,
+          obj,
+          (v, obj: EventActivity) => EventActivityToDeclinedQuery.query(v, obj),
           args,
         );
       },
@@ -207,15 +206,14 @@ export const EventActivityType = new GraphQLObjectType({
         },
       },
       resolve: (
-        eventActivity: EventActivity,
+        obj: EventActivity,
         args: any,
         context: RequestContext<Viewer>,
       ) => {
         return new GraphQLEdgeConnection(
-          eventActivity.viewer,
-          eventActivity,
-          (v, eventActivity: EventActivity) =>
-            EventActivityToInvitesQuery.query(v, eventActivity),
+          obj.viewer,
+          obj,
+          (v, obj: EventActivity) => EventActivityToInvitesQuery.query(v, obj),
           args,
         );
       },
@@ -229,36 +227,36 @@ export const EventActivityType = new GraphQLObjectType({
         },
       },
       resolve: async (
-        eventActivity: EventActivity,
+        obj: EventActivity,
         args: any,
         context: RequestContext<Viewer>,
       ) => {
         const ent = await Guest.loadX(context.getViewer(), args.id);
-        return eventActivity.rsvpStatusFor(ent);
+        return obj.rsvpStatusFor(ent);
       },
     },
     canViewerDo: {
       type: new GraphQLNonNull(EventActivityCanViewerDoType),
       resolve: (
-        eventActivity: EventActivity,
+        obj: EventActivity,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
-        return new EventActivityCanViewerDo(context, eventActivity);
+        return new EventActivityCanViewerDo(context, obj);
       },
     },
     addressFromOwner: {
       type: AddressType,
       resolve: async (
-        eventActivity: EventActivity,
+        obj: EventActivity,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
-        return eventActivity.address();
+        return obj.address();
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof EventActivity;
   },
@@ -273,11 +271,11 @@ export const EventActivityCanViewerDoType = new GraphQLObjectType({
     eventActivityAddInvite: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        eventActivity: EventActivityCanViewerDo,
+        obj: EventActivityCanViewerDo,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
-        return eventActivity.eventActivityAddInvite(args);
+        return obj.eventActivityAddInvite(args);
       },
     },
     eventActivityRsvpStatusEdit: {
@@ -297,11 +295,11 @@ export const EventActivityCanViewerDoType = new GraphQLObjectType({
         },
       },
       resolve: async (
-        eventActivity: EventActivityCanViewerDo,
+        obj: EventActivityCanViewerDo,
         args: any,
         context: RequestContext<Viewer>,
       ) => {
-        return eventActivity.eventActivityRsvpStatusEdit(args);
+        return obj.eventActivityRsvpStatusEdit(args);
       },
     },
   }),

@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from "uuid";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { AssocEdge, buildQuery, getDefaultLimit } from "../ent";
+import { AssocEdge, getDefaultLimit } from "../ent";
+import { buildQuery } from "../query_impl";
 import {
   clearGlobalSchema,
   setGlobalSchema,

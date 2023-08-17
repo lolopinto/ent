@@ -227,7 +227,12 @@ func (e *EdgeInfo) CreateEdgeBaseFile() bool {
 	return false
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldName, nodeName string, nullable bool, fieldType enttype.Type, validSchema func(str string) bool,
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(
+	cfg codegenapi.Config,
+	fieldName, nodeName string,
+	nullable bool,
+	fieldType enttype.Type,
+	validSchema func(str string) bool,
 ) error {
 	return e.AddFieldEdgeFromFieldEdgeInfo(cfg,
 		fieldName,
@@ -236,7 +241,8 @@ func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldNa
 		},
 		nullable,
 		fieldType,
-		validSchema)
+		validSchema,
+	)
 }
 
 func GetFieldEdge(cfg codegenapi.Config,
@@ -316,9 +322,10 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 	if err != nil || edge == nil {
 		return err
 	}
-	if edge.Polymorphic == nil &&
-		!validSchema(edge.commonEdgeInfo.NodeInfo.Node) {
-		return fmt.Errorf("invalid schema %s", edge.commonEdgeInfo.NodeInfo.Node)
+	if edge.Polymorphic == nil {
+		if !validSchema(edge.commonEdgeInfo.NodeInfo.Node) {
+			return fmt.Errorf("invalid schema %s", edge.commonEdgeInfo.NodeInfo.Node)
+		}
 	}
 
 	if fieldEdgeInfo.IndexEdge != nil {
@@ -691,6 +698,10 @@ func (e *ForeignKeyEdge) ErrorMessage(edgeInfo *EdgeInfo) error {
 	edgeName := e.GetEdgeName()
 	// edge name is plural of destination node
 	if edgeName != inflection.Plural(e.NodeInfo.Node) {
+		return nil
+	}
+	// plural of destination node is the same as the singular form
+	if inflection.Plural(e.NodeInfo.Node) == e.NodeInfo.Node {
 		return nil
 	}
 	fkey := edgeInfo.GetForeignKeyEdgeByName(e.GetEdgeName())
@@ -1127,6 +1138,7 @@ type EdgeAction struct {
 	ExposeToGraphQL   bool
 	ActionOnlyFields  []*input.ActionField
 	CanViewerDo       *input.CanViewerDo
+	CanFail           bool
 }
 
 type AssociationEdgeGroup struct {
@@ -1297,6 +1309,7 @@ func edgeActionsFromInput(actions []*input.EdgeAction) ([]*EdgeAction, error) {
 			Action:            a,
 			ActionOnlyFields:  action.ActionOnlyFields,
 			CanViewerDo:       action.CanViewerDo,
+			CanFail:           action.CanFail,
 		}
 	}
 	return ret, nil

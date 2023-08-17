@@ -3,10 +3,13 @@ from alembic.autogenerate import comparators
 from alembic.autogenerate.api import AutogenContext
 
 from auto_schema.schema_item import FullTextIndex
+from auto_schema.clause_text import normalize_clause_text
 from . import ops
 from alembic.operations import Operations, MigrateOperation
 import sqlalchemy as sa
 from sqlalchemy.engine import reflection
+from sqlalchemy.sql.elements import TextClause
+
 import pprint
 import re
 from sqlalchemy.dialects import postgresql
@@ -31,8 +34,8 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
 
         # get existing edges from db
         query = "SELECT * FROM assoc_edge_config"
-        for row in autogen_context.connection.execute(query):
-            edge = dict(row)
+        for row in autogen_context.connection.execute(sa.text(query)):
+            edge = row._asdict()
             existing_edges[edge['edge_name']] = edge
 
         db_edges[_get_schema_key(sch)] = existing_edges
@@ -127,18 +130,18 @@ def _table_exists(autogen_context: AutogenContext):
 
 
 def _execute_postgres_dialect(connection: sa.engine.Connection):
-    row = connection.execute(
+    row = connection.execute(sa.text(
         "SELECT to_regclass('%s') IS NOT NULL as exists" % (
-            "assoc_edge_config")
+            "assoc_edge_config"))
     )
-    res = row.first()
-    return res['exists']
+    res = row.first()._asdict()
+    return res["exists"]
 
 
 def _execute_sqlite_dialect(connection: sa.engine.Connection):
-    row = connection.execute(
+    row = connection.execute(sa.text(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" % (
-            "assoc_edge_config")
+            "assoc_edge_config"))
     )
     res = row.first()
     return res is not None
@@ -168,7 +171,7 @@ def _create_tuple_key(row, pkeys):
     return tuple(l)
 
 
-@comparators.dispatch_for('schema')
+@ comparators.dispatch_for('schema')
 def compare_data(autogen_context, upgrade_ops, schemas):
     # TODO not using schema correctly
     # https: // github.com/lolopinto/ent/issues/123
@@ -215,8 +218,8 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
     query = 'SELECT * FROM %s' % table_name
 
     db_rows = {}
-    for row in connection.execute(query):
-        d = dict(row)
+    for row in connection.execute(sa.text(query)):
+        d = row._asdict()
         t = _create_tuple_key(d, pkeys)
         db_rows[t] = d
 
@@ -260,7 +263,7 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
             table_name, pkeys, modified_new_rows, modified_old_rows))
 
 
-@comparators.dispatch_for("schema")
+@ comparators.dispatch_for("schema")
 def compare_schema(autogen_context, upgrade_ops, schemas):
     inspector = autogen_context.inspector
 
@@ -435,7 +438,7 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
                 )
 
 
-@comparators.dispatch_for("table")
+@ comparators.dispatch_for("table")
 def _compare_indexes(autogen_context: AutogenContext,
                      modify_table_ops: alembicops.ModifyTableOps,
                      schema,
@@ -446,10 +449,16 @@ def _compare_indexes(autogen_context: AutogenContext,
 
     raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
-    missing_conn_indexes = raw_db_indexes.get('missing')
     all_conn_indexes = raw_db_indexes.get('all')
     conn_indexes = {}
     meta_indexes = {}
+
+    def is_full_text_index(index):
+        if isinstance(index, FullTextIndex):
+            return True
+
+        expressions = index.expressions
+        return len(expressions) == 1 and isinstance(expressions[0], TextClause)
 
     if conn_table is not None:
         conn_indexes = {
@@ -459,28 +468,61 @@ def _compare_indexes(autogen_context: AutogenContext,
         meta_indexes = {
             index.name: index for index in metadata_table.indexes}
 
-    # not getting this conn index from db. maybe related
-    for name, index in conn_indexes.items():
-        if not name in meta_indexes and isinstance(index, FullTextIndex):
-            modify_table_ops.ops.append(
-                ops.DropFullTextIndexOp(
-                    index.name,
-                    index.table.name,
-                    info=index.info,
-                    table=conn_table,
-                )
-            )
+    # sqlalchemy correctly reflects these expressions now but
+    # alembic doesn't necessarily autogenerate these correctly so we go through
+    # and make the right changes to these FullText indexes
+    # https://github.com/sqlalchemy/alembic/issues/1098
 
-    for name, v in missing_conn_indexes.items():
-        if not name in meta_indexes:
-            modify_table_ops.ops.append(
-                ops.DropFullTextIndexOp(
-                    name,
-                    conn_table.name,
-                    table=conn_table,
-                    info=v,
-                )
-            )
+    to_remove_list = []
+    for i in range(len(modify_table_ops.ops)):
+        op = modify_table_ops.ops[i]
+        if isinstance(op, alembicops.CreateIndexOp) and op.index_name in meta_indexes:
+            index = meta_indexes[op.index_name]
+
+            if is_full_text_index(index):
+                # automerge trying to add it again, remove it from here...
+                to_remove = op.index_name in conn_indexes
+
+                if to_remove:
+                    to_remove_list.append(op)
+                else:
+                    modify_table_ops.ops[i] = ops.CreateFullTextIndexOp(
+                        index.name,
+                        index.table.name,
+                        schema=schema,
+                        table=index.table,
+                        unique=index.unique,
+                        info=index.info,
+                    )
+            continue
+
+        if isinstance(op, alembicops.DropIndexOp) and op.index_name in conn_indexes:
+            conn_index = conn_indexes.get(op.index_name, None)
+            if is_full_text_index(conn_index):
+                # automerge trying to drop it again, remove it from here...
+                to_remove = op.index_name in meta_indexes
+                if to_remove:
+                    to_remove_list.append(op)
+                else:
+                    conn_postgresql_using = normalize_clause_text(
+                        conn_index.expressions[0], None)
+
+                    modify_table_ops.ops[i] = ops.DropFullTextIndexOp(
+                        conn_index.name,
+                        conn_index.table.name,
+                        info={
+                            # TODO get the right value of this from somewhere since it won't be in expressions
+                            'postgresql_using': 'gin',
+                            'postgresql_using_internals': conn_postgresql_using,
+
+                        },
+                        # info=index.info,
+                        table=conn_table,
+                    )
+            continue
+
+    for op in to_remove_list:
+        modify_table_ops.ops.remove(op)
 
     for name, index in meta_indexes.items():
 
@@ -488,8 +530,11 @@ def _compare_indexes(autogen_context: AutogenContext,
         # should hopefully be a one-time migration change...
         if name in conn_indexes and isinstance(index, sa.Index):
             meta_postgresql_using = index.kwargs.get('postgresql_using')
+
+            # TODO there's probably a better way to get this from the index now that sqlachemy is reflecting these
             conn_postgresql_using = all_conn_indexes.get(
                 name, {}).get('postgresql_using')
+
             if isinstance(meta_postgresql_using, str) and conn_postgresql_using is not None and meta_postgresql_using != conn_postgresql_using:
                 conn_index = conn_indexes[name]
                 conn_index.kwargs['postgresql_using'] = conn_postgresql_using
@@ -500,79 +545,57 @@ def _compare_indexes(autogen_context: AutogenContext,
                 modify_table_ops.ops.append(
                     alembicops.CreateIndexOp(name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
 
-        if not name in conn_indexes and isinstance(index, FullTextIndex):
-
-            to_remove = name in missing_conn_indexes
-            idx = None
-            for i in range(len(modify_table_ops.ops)):
-                op = modify_table_ops.ops[i]
-                if isinstance(op, alembicops.CreateIndexOp) and op.index_name == index.name:
-                    idx = i
-                    break
-
-            # find existing create index op and replace with ours
-            if idx is not None:
-                # not in conn.indexes but in missing_conn_indexes,
-                # automerge not aware of it and tries to add it again so we need to remove it instead
-                if to_remove:
-                    modify_table_ops.ops.pop(idx)
-                else:
-                    modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
-                        index.name,
-                        index.table.name,
-                        schema=schema,
-                        table=index.table,
-                        unique=index.unique,
-                        info=index.info,
-                    )
-
 
 index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
 
 # this handles computed columns changing and so drops and re-creates the column.
-@comparators.dispatch_for("table")
+
+
+@ comparators.dispatch_for("table")
 def _compare_generated_column(autogen_context: AutogenContext,
-                     modify_table_ops: alembicops.ModifyTableOps,
-                     schema,
-                     tname: str,
-                     conn_table: Optional[sa.Table],
-                     metadata_table: Optional[sa.Table],
-                     ) -> None:
-    
+                              modify_table_ops: alembicops.ModifyTableOps,
+                              schema,
+                              tname: str,
+                              conn_table: Optional[sa.Table],
+                              metadata_table: Optional[sa.Table],
+                              ) -> None:
+
     if conn_table is None or metadata_table is None:
         return
-    
+
     col_to_index = {}
-    
+
     for idx in metadata_table.indexes:
         if len(idx.columns) == 1:
             col_to_index[idx.columns[0].name] = idx
 
-
     for conn_col in conn_table.columns:
         if not conn_col.computed:
             continue
-        
-        index = col_to_index.get(conn_col.name, None) 
+
+        index = col_to_index.get(conn_col.name, None)
         if index is None:
             continue
 
         index_type = index.kwargs.get('postgresql_using')
-        
+
         for meta_col in metadata_table.columns:
             if meta_col.name == conn_col.name and meta_col.computed is not None:
-        
-                conn_info = _parse_postgres_using_internals(str(conn_col.computed.sqltext), index_type)
-                meta_info =_parse_postgres_using_internals(str(meta_col.computed.sqltext), index_type)
-                
+
+                conn_info = _parse_postgres_using_internals(
+                    str(conn_col.computed.sqltext), index_type)
+                meta_info = _parse_postgres_using_internals(
+                    str(meta_col.computed.sqltext), index_type)
+
                 # this is using underlying columns so we use drop and create directly
                 if conn_info['columns'] != meta_info['columns']:
                     # we'll have to change the entire beh
-                    create_index = alembicops.CreateIndexOp(index.name, index.table.name, index.columns, postgresql_using=index_type)
+                    create_index = alembicops.CreateIndexOp(
+                        index.name, index.table.name, index.columns, postgresql_using=index_type)
 
                     modify_table_ops.ops.append(
                         alembicops.DropIndexOp(
-                            index.name, 
+                            index.name,
                             conn_table.name,
                             schema=schema,
                             info={
@@ -582,7 +605,7 @@ def _compare_generated_column(autogen_context: AutogenContext,
                             # also pass this here so that downgrade does the right thing
                             # TODO need to make sure we test upgrade/downgrade paths are the same.
                             postgresql_using=index_type,
-                            )
+                        )
                     )
                     modify_table_ops.ops.append(
                         alembicops.DropColumnOp.from_column_and_tablename(
@@ -594,12 +617,10 @@ def _compare_generated_column(autogen_context: AutogenContext,
                             schema, tname, meta_col
                         )
                     )
-                    
+
                     modify_table_ops.ops.append(
                         create_index
                     )
-
-
 
 
 # sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
@@ -647,8 +668,8 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa
 # use a cache so we only hit the db once for each table
 # @functools.lru_cache()
 def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
-    res = connection.execute(
-        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname)
+    res = connection.execute(sa.text(
+        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname))
     return res
 
 
@@ -673,36 +694,37 @@ def _parse_cols_from(curr: str):
             cols.append(s2)
 
     return cols
-    
+
+
 sqltext_regex = re.compile(r"to_tsvector\((.+?), (.+)\)")
 
 
 # 3 is tricky
 # to_tsvector('english'::regconfig, ((((first_name || ' '::text) || last_name) || ' '::text) || (email_address)::text))
 def _parse_postgres_using_internals(internals: str, index_type: str):
-        # single-col to_tsvector('english'::regconfig, first_name)
-        # multi-col to_tsvector('english'::regconfig, ((first_name || ' '::text) || last_name))
-        m = sqltext_regex.match(internals)
-        if m:
-            groups = m.groups()
-            lang = groups[0].rstrip("::regconfig").strip("'")
+    # single-col to_tsvector('english'::regconfig, first_name)
+    # multi-col to_tsvector('english'::regconfig, ((first_name || ' '::text) || last_name))
+    m = sqltext_regex.match(internals)
+    if m:
+        groups = m.groups()
+        lang = groups[0].rstrip("::regconfig").strip("'")
 
-            cols = _parse_cols_from(groups[1])
+        cols = _parse_cols_from(groups[1])
 
-            if len(cols) > 0:
-                return {
-                    'columns': cols,
-                    'fulltext': {
-                        'language': lang,
-                        'indexType': index_type,
-                    }
-                }
-
-        cols = [col.strip() for col in internals.split(',')]
-        # multi-column index
-        if len(cols) > 1:
+        if len(cols) > 0:
             return {
                 'columns': cols,
+                'fulltext': {
+                    'language': lang,
+                    'indexType': index_type,
+                }
             }
 
-        return {}
+    cols = [col.strip() for col in internals.split(',')]
+    # multi-column index
+    if len(cols) > 1:
+        return {
+            'columns': cols,
+        }
+
+    return {}

@@ -13,7 +13,8 @@ import {
   UserToTagsFkeyQueryAsc,
 } from "../../testutils/fake_data";
 import { Viewer } from "../base";
-import { buildQuery, getDefaultLimit } from "../ent";
+import { getDefaultLimit } from "../ent";
+import { buildQuery } from "../query_impl";
 import { AndOptional, Eq, Greater, Less } from "../clause";
 import { EdgeQuery } from "./query";
 

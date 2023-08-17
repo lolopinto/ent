@@ -73,6 +73,6 @@ export const EventActivityRemoveInviteType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.id),
       mustDecodeIDFromGQLID(input.inviteID),
     );
-    return { eventActivity: eventActivity };
+    return { eventActivity };
   },
 };

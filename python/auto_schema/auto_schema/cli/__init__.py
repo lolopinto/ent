@@ -35,6 +35,8 @@ parser.add_argument('-d', '--downgrade', help='downgrade')
 parser.add_argument('--keep_schema_files', action='store_true')
 parser.add_argument('--history', help='alembic history',
                     action='store_true')
+parser.add_argument('--revision', help='alembic revision',
+                    action='store_true')
 parser.add_argument('--current', help='alembic current', action='store_true')
 parser.add_argument(
     '--verbose', help='alembic history --verbose', action='store_true')
@@ -47,7 +49,8 @@ parser.add_argument('--branches', help='alembic branches', action='store_true')
 parser.add_argument('--stamp', help='alembic stamp')
 parser.add_argument('--edit', help='alembic edit')
 parser.add_argument('--merge', help='alembic merge')
-parser.add_argument('--message', help='message if alembic merge is called')
+parser.add_argument(
+    '--message', help='message if alembic merge is called or alembic revision')
 parser.add_argument('--squash', help='squash the last N changes into one')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
@@ -105,6 +108,8 @@ def main():
                 elif args.history is True:
                     r.history(verbose=args.verbose, last=args.last,
                               rev_range=args.rev_range)
+                elif args.revision is True:
+                    r.explicit_revision(args.message)
                 elif args.current is True:
                     r.current()
                 elif args.heads is True:

@@ -15,13 +15,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type migrateArgs struct {
+type migrateV1Args struct {
 	oldBaseClass   string
 	newSchemaClass string
 	transformPath  string
 }
 
-var migrateInfo migrateArgs
+var migrateV1Info migrateV1Args
 
 var migratev1Cmd = &cobra.Command{
 	Use:   "migrate_v0.1",
@@ -138,15 +138,15 @@ func runNodeJSMigrateStep(p *codegen.Processor, step string) error {
 	)
 
 	if step == "--transform_schema" {
-		if migrateInfo.newSchemaClass != "" && migrateInfo.oldBaseClass != "" && migrateInfo.transformPath != "" {
+		if migrateV1Info.newSchemaClass != "" && migrateV1Info.oldBaseClass != "" && migrateV1Info.transformPath != "" {
 			cmdArgs = append(
 				cmdArgs,
 				"--old_base_class",
-				migrateInfo.oldBaseClass,
+				migrateV1Info.oldBaseClass,
 				"--new_schema_class",
-				migrateInfo.newSchemaClass,
+				migrateV1Info.newSchemaClass,
 				"--transform_path",
-				migrateInfo.transformPath,
+				migrateV1Info.transformPath,
 			)
 		}
 	}

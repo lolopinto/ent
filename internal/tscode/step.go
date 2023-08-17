@@ -1160,7 +1160,7 @@ func getBaseFuncs(s *schema.Schema, imps *tsimport.Imports) template.FuncMap {
 		// there's type convert
 		// user convert
 		// custom type convert...
-		convs := enttype.ConvertFuncs(f.GetTSFieldType(cfg))
+		convs := enttype.ConvertFuncs(f.GetTSFieldType(cfg), s)
 		convImp := f.GetConvertImport(cfg, s)
 		if convImp != nil {
 			convs = append(convs, convImp.Import)

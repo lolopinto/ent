@@ -87,6 +87,10 @@ import {
   HolidayCreatePayloadType,
 } from "./mutations/holiday/holiday_create_type";
 import {
+  CustomEditHolidayInputType,
+  CustomEditHolidayPayloadType,
+} from "./mutations/holiday/holiday_custom_edit_type";
+import {
   HoursOfOperationCreateInputType,
   HoursOfOperationCreatePayloadType,
 } from "./mutations/hours_of_operation/hours_of_operation_create_type";
@@ -233,10 +237,12 @@ import {
   UserToMaybeEventsConnectionType,
   UserType,
 } from "../resolvers";
+import { SubscriptionType } from "../resolvers/subscription_type";
 
 export default new GraphQLSchema({
   query: QueryType,
   mutation: MutationType,
+  subscription: SubscriptionType,
   types: [
     CatBreedType,
     CommentSortColumnType,
@@ -362,6 +368,8 @@ export default new GraphQLSchema({
     ContactPhoneNumberDeletePayloadType,
     ContactPhoneNumberEditInputType,
     ContactPhoneNumberEditPayloadType,
+    CustomEditHolidayInputType,
+    CustomEditHolidayPayloadType,
     DeleteUserInput2PayloadType,
     DeleteUserInput2Type,
     EditEmailAddressInputType,

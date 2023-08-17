@@ -12,9 +12,16 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Address, Event, EventActivity, Guest, GuestGroup } from "src/ent/";
+import {
+  Address,
+  Event,
+  EventActivity,
+  Guest,
+  GuestData,
+  GuestGroup,
+} from "src/ent/";
 import { guestLoaderInfo } from "src/ent/generated/loaders";
-import { EdgeType, NodeType } from "src/ent/generated/types";
+import { EdgeType, GuestTag, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/guest_schema";
 
 export interface GuestInput {
@@ -24,6 +31,8 @@ export interface GuestInput {
   emailAddress?: string | null;
   guestGroupID?: ID | Builder<GuestGroup, Viewer>;
   title?: string | null;
+  guestDataId?: ID | null | Builder<GuestData, Viewer>;
+  tag?: GuestTag | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -286,6 +295,8 @@ export class GuestBuilder<
     addField("EmailAddress", input.emailAddress);
     addField("guestGroupID", input.guestGroupID);
     addField("title", input.title);
+    addField("guest_data_id", input.guestDataId);
+    addField("tag", input.tag);
     return result;
   }
 
@@ -362,5 +373,23 @@ export class GuestBuilder<
     }
 
     return this.existingEnt?.title ?? null;
+  }
+
+  // get value of guest_data_id. Retrieves it from the input if specified or takes it from existingEnt
+  getNewGuestDataIdValue(): ID | null | Builder<GuestData, Viewer> {
+    if (this.input.guestDataId !== undefined) {
+      return this.input.guestDataId;
+    }
+
+    return this.existingEnt?.guestDataId ?? null;
+  }
+
+  // get value of tag. Retrieves it from the input if specified or takes it from existingEnt
+  getNewTagValue(): GuestTag | null {
+    if (this.input.tag !== undefined) {
+      return this.input.tag;
+    }
+
+    return this.existingEnt?.tag ?? null;
   }
 }

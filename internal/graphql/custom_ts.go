@@ -238,11 +238,10 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 			ObjData: &gqlobjectData{
 				interfaces: interfaces,
 				// TODO kill node and NodeInstance they don't make sense here...
-				Node:         field.Node,
-				NodeInstance: "obj",
-				GQLNodes:     objTypes,
-				FieldConfig:  fieldConfig,
-				Package:      processor.Config.GetImportPackage(),
+				Node:        field.Node,
+				GQLNodes:    objTypes,
+				FieldConfig: fieldConfig,
+				Package:     processor.Config.GetImportPackage(),
 			},
 			FilePath:    filePath,
 			Field:       &field,
@@ -657,6 +656,10 @@ func buildObjectTypeImpl(item CustomItem, obj *CustomObject, gqlType string, isT
 		// input or object type
 		GQLType: gqlType,
 	})
+	for _, inter := range obj.Interfaces {
+		typ.Imports = append(typ.Imports, tsimport.NewLocalGraphQLEntImportPath(inter))
+		typ.GQLInterfaces = append(typ.GQLInterfaces, inter+"Type")
+	}
 
 	if isTypeOf && typ.GQLType == "GraphQLObjectType" {
 		typ.IsTypeOfMethod = []string{
@@ -664,6 +667,32 @@ func buildObjectTypeImpl(item CustomItem, obj *CustomObject, gqlType string, isT
 		}
 	}
 	return typ
+}
+
+func maybeAddCustomImport(processor *codegen.Processor, cd *CustomData, typ *objectType, destPath, importedType string) error {
+	cls := cd.Classes[importedType]
+	if cls != nil {
+		importPath, err := getRelativeImportPath(processor, destPath, cls.Path)
+		if err != nil {
+			return err
+		}
+		if cls.DefaultExport {
+
+			// exported, we need to import it
+			typ.DefaultImports = append(typ.DefaultImports, &tsimport.ImportPath{
+				ImportPath: importPath,
+				Import:     importedType,
+			})
+		} else if cls.Exported {
+			typ.Imports = append(typ.Imports, &tsimport.ImportPath{
+				ImportPath: importPath,
+				Import:     importedType,
+			})
+		} else {
+			return fmt.Errorf("class %s is not exported and objects referenced need to be exported", importedType)
+		}
+	}
+	return nil
 }
 
 func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema, item CustomItem, obj *CustomObject, destPath, gqlType string) (*objectType, error) {
@@ -691,27 +720,9 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 		typ.Imports = append(typ.Imports, gqlField.FieldImports...)
 	}
 
-	cls := cd.Classes[item.Type]
-	if cls != nil {
-		importPath, err := getRelativeImportPath(processor, destPath, cls.Path)
-		if err != nil {
-			return nil, err
-		}
-		if cls.DefaultExport {
-
-			// exported, we need to import it
-			typ.DefaultImports = append(typ.DefaultImports, &tsimport.ImportPath{
-				ImportPath: importPath,
-				Import:     item.Type,
-			})
-		} else if cls.Exported {
-			typ.Imports = append(typ.Imports, &tsimport.ImportPath{
-				ImportPath: importPath,
-				Import:     item.Type,
-			})
-		} else {
-			return nil, fmt.Errorf("class %s is not exported and objects referenced need to be exported", item.Type)
-		}
+	err := maybeAddCustomImport(processor, cd, typ, destPath, item.Type)
+	if err != nil {
+		return nil, err
 	}
 
 	return typ, nil
@@ -745,14 +756,13 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 		customEdge := s.edgeNames[nodeName]
 
 		var obj *objectType
-		var instance string
+		instance := "obj"
 		var nodeData *schema.NodeData
 		if nodeInfo != nil {
 			objData := nodeInfo.ObjData
 			nodeData = objData.NodeData
 			// always has a node for now
 			obj = objData.GQLNodes[0]
-			instance = nodeData.NodeInstance
 		} else if customEdge {
 			// create new obj
 			obj = newObjectType(&objectType{
@@ -772,7 +782,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			if field.Connection {
 				customEdge := getGQLEdge(processor.Config, field, nodeName)
 				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
-				if err := addConnection(processor, nodeData, customEdge, obj, nodeData.NodeInstance, &field); err != nil {
+				if err := addConnection(processor, nodeData, customEdge, obj, &field); err != nil {
 					return err
 				}
 				continue
@@ -834,6 +844,8 @@ func isConnection(field *CustomField) bool {
 	return field.Results[0].Connection
 }
 
+// should be obj except if it's nested...
+// eg obj.edge for edges
 func getCustomGQLField(processor *codegen.Processor, cd *CustomData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
 	if field.Connection {
 		return nil, fmt.Errorf("field is a connection. this should be handled elsewhere")
@@ -1008,10 +1020,9 @@ func processCustomStructType(processor *codegen.Processor, s *gqlSchema, typ *Cu
 
 	gqlNode := &gqlNode{
 		ObjData: &gqlobjectData{
-			Node:         obj.NodeName,
-			NodeInstance: "obj",
-			GQLNodes:     []*objectType{objType},
-			Package:      processor.Config.GetImportPackage(),
+			Node:     obj.NodeName,
+			GQLNodes: []*objectType{objType},
+			Package:  processor.Config.GetImportPackage(),
 		},
 		FilePath: filePath,
 	}
@@ -1059,10 +1070,9 @@ func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSch
 
 		node := &gqlNode{
 			ObjData: &gqlobjectData{
-				Node:         union.NodeName,
-				NodeInstance: strcase.ToLowerCamel(union.NodeName),
-				GQLNodes:     []*objectType{obj},
-				Package:      processor.Config.GetImportPackage(),
+				Node:     union.NodeName,
+				GQLNodes: []*objectType{obj},
+				Package:  processor.Config.GetImportPackage(),
 			},
 			FilePath: getFilePathForUnionInterfaceFile(processor.Config, union.NodeName),
 		}
@@ -1080,6 +1090,7 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 			Type:     fmt.Sprintf("%sType", inter.NodeName),
 			Node:     inter.NodeName,
 			GQLType:  "GraphQLInterfaceType",
+			TSType:   inter.NodeName,
 			Exported: true,
 		})
 
@@ -1099,14 +1110,19 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 			obj.Imports = append(obj.Imports, gqlField.FieldImports...)
 		}
 
+		filePath := getFilePathForUnionInterfaceFile(processor.Config, inter.NodeName)
+		err := maybeAddCustomImport(processor, cd, obj, filePath, inter.NodeName)
+		if err != nil {
+			return err
+		}
+
 		node := &gqlNode{
 			ObjData: &gqlobjectData{
-				Node:         inter.NodeName,
-				NodeInstance: strcase.ToLowerCamel(inter.NodeName),
-				GQLNodes:     []*objectType{obj},
-				Package:      processor.Config.GetImportPackage(),
+				Node:     inter.NodeName,
+				GQLNodes: []*objectType{obj},
+				Package:  processor.Config.GetImportPackage(),
 			},
-			FilePath: getFilePathForUnionInterfaceFile(processor.Config, inter.NodeName),
+			FilePath: filePath,
 		}
 		interfaces[inter.NodeName] = node
 	}
@@ -1129,10 +1145,9 @@ func processCustomArgs(processor *codegen.Processor, cd *CustomData, s *gqlSchem
 		}
 		gqlNode := &gqlNode{
 			ObjData: &gqlobjectData{
-				Node:         arg.NodeName,
-				NodeInstance: "obj",
-				GQLNodes:     []*objectType{objType},
-				Package:      processor.Config.GetImportPackage(),
+				Node:     arg.NodeName,
+				GQLNodes: []*objectType{objType},
+				Package:  processor.Config.GetImportPackage(),
 			},
 			FilePath: filePath,
 		}
@@ -1161,10 +1176,9 @@ func processDanglingCustomObject(processor *codegen.Processor, cd *CustomData, s
 
 	gqlNode := &gqlNode{
 		ObjData: &gqlobjectData{
-			Node:         obj.NodeName,
-			NodeInstance: "obj",
-			GQLNodes:     []*objectType{objType},
-			Package:      processor.Config.GetImportPackage(),
+			Node:     obj.NodeName,
+			GQLNodes: []*objectType{objType},
+			Package:  processor.Config.GetImportPackage(),
 		},
 		FilePath: filePath,
 	}

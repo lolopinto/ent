@@ -103,7 +103,7 @@ export class GraphQLEdgeConnection<
   }
 
   async queryTotalCount() {
-    return await this.query.queryRawCount();
+    return this.query.queryRawCount();
   }
 
   async queryEdges() {
@@ -116,7 +116,7 @@ export class GraphQLEdgeConnection<
   // if nodes queried just return ents
   // unlikely to query nodes and pageInfo so we just load this separately for now
   async queryNodes() {
-    return await this.query.queryEnts();
+    return this.query.queryEnts();
   }
 
   private defaultPageInfo() {

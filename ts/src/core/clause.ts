@@ -1,5 +1,6 @@
-import { Data, ID, SelectDataOptions } from "./base";
+import { Data, ID, QueryableDataOptions, SelectDataOptions } from "./base";
 import DB, { Dialect } from "./db";
+import { buildQuery } from "./query_impl";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
 
@@ -94,6 +95,37 @@ class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
       return nullClause.instanceKey();
     }
     return `${this.col}${this.op}${rawValue(this.value)}`;
+  }
+}
+
+class queryClause<T extends Data, K = keyof T> implements Clause<T, K> {
+  constructor(
+    protected dependentQueryOptions: QueryableDataOptions, // private value: any, // private op: string, // private handleNull?: Clause<T, K>,
+  ) {}
+
+  clause(idx: number): string {
+    const q = buildQuery(this.dependentQueryOptions);
+
+    return `EXISTS (${q})`;
+  }
+
+  columns(): K[] {
+    // @ts-ignore
+    return this.dependentQueryOptions.clause.columns();
+  }
+
+  values(): any[] {
+    return this.dependentQueryOptions.clause.values();
+  }
+
+  logValues(): any[] {
+    return this.dependentQueryOptions.clause.logValues();
+  }
+
+  instanceKey(): string {
+    return `exists:${
+      this.dependentQueryOptions.tableName
+    }:${this.dependentQueryOptions.clause.instanceKey()}`;
   }
 }
 
@@ -945,6 +977,49 @@ export function JSONPathValuePredicate<T extends Data, K = keyof T>(
   return new jSONPathValuePredicateClause(dbCol, path, val, pred);
 }
 
+export function JSONKeyExists<T extends Data, K = keyof T>(
+  dbCol: K,
+  val: any,
+): Clause<T, K> {
+  return new simpleClause(dbCol, val, "?", new isNullClause(dbCol));
+}
+
+export function JSONBKeyInList<T extends Data, K = keyof T>(
+  dbCol: K,
+  jsonCol: string,
+  val: any,
+): Clause<T, K> {
+  const opts: QueryableDataOptions = {
+    fields: ["1"],
+    tableName: `jsonb_array_elements(${dbCol}) AS json_element`,
+    // @ts-ignore
+    clause: And(
+      JSONKeyExists("json_element", jsonCol),
+      // @ts-ignore
+      Eq(JSONObjectFieldKeyAsText<T, K>("json_element", jsonCol), val),
+    ),
+  };
+  return new queryClause(opts);
+}
+
+export function JSONKeyInList<T extends Data, K = keyof T>(
+  dbCol: K,
+  jsonCol: string,
+  val: any,
+): Clause<T, K> {
+  const opts: QueryableDataOptions = {
+    fields: ["1"],
+    tableName: `json_array_elements(${dbCol}) AS json_element`,
+    // @ts-ignore
+    clause: And(
+      JSONKeyExists("json_element", jsonCol),
+      // @ts-ignore
+      Eq(JSONObjectFieldKeyAsText<T, K>("json_element", jsonCol), val),
+    ),
+  };
+  return new queryClause(opts);
+}
+
 // TODO need a better name for this lol
 // this assumes we're doing the same direction twice which isn't necessarily accurate in the future...
 class paginationMultipleColumnsSubQueryClause<T extends Data, K = keyof T>
@@ -1046,8 +1121,9 @@ export function Modulo<T extends Data, K = keyof T>(
 }
 
 export function getCombinedClause<V extends Data = Data, K = keyof V>(
-  options: Omit<SelectDataOptions, "key">,
+  options: Pick<SelectDataOptions, "clause">,
   cls: Clause<V, K>,
+  checkIntersection = false,
 ): Clause<V, K> {
   if (options.clause) {
     let optionClause: Clause | undefined;
@@ -1057,8 +1133,25 @@ export function getCombinedClause<V extends Data = Data, K = keyof V>(
       optionClause = options.clause;
     }
     if (optionClause) {
-      // @ts-expect-error different types
-      cls = And(cls, optionClause);
+      let and = true;
+      if (checkIntersection) {
+        // this should be the smaller one
+        const transformedCols = new Set<K | string | number>(
+          optionClause.columns(),
+        );
+        const queriedCols = cls.columns();
+        const has = new Set<K | string | number>();
+        for (const col of queriedCols) {
+          if (transformedCols.has(col)) {
+            has.add(col);
+          }
+        }
+        and = transformedCols.size > 0 && has.size !== transformedCols.size;
+      }
+      if (and) {
+        // @ts-expect-error different types
+        cls = And(cls, optionClause);
+      }
     }
   }
   return cls;

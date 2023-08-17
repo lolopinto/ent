@@ -105,6 +105,7 @@ type Node struct {
 	SupportUpsert           bool                      `json:"supportUpsert,omitempty"`
 	ShowCanViewerSee        bool                      `json:"showCanViewerSee,omitempty"`
 	ShowCanViewerEdit       bool                      `json:"showCanViewerEdit,omitempty"`
+	HasDefaultActionPrivacy bool                      `json:"hasDefaultActionPrivacy,omitempty"`
 	// these 2 not used yet so ignoring for now
 	// TransformsInsert bool `json:"transformsInsert,omitempty"`
 	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`
@@ -498,6 +499,7 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 				Values:             typ.Values,
 				EnumMap:            typ.EnumMap,
 				DisableUnknownType: typ.DisableUnknownType,
+				GlobalType:         typ.GlobalType,
 			}, nil
 		}
 		return &enttype.StringEnumType{
@@ -507,6 +509,7 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			Values:             typ.Values,
 			EnumMap:            typ.EnumMap,
 			DisableUnknownType: typ.DisableUnknownType,
+			GlobalType:         typ.GlobalType,
 		}, nil
 
 	case IntEnum:
@@ -526,6 +529,7 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 				EnumMap:            typ.IntEnumMap,
 				DeprecatedEnumMap:  typ.DeprecatedIntEnumMap,
 				DisableUnknownType: typ.DisableUnknownType,
+				GlobalType:         typ.GlobalType,
 			}, nil
 		}
 		return &enttype.IntegerEnumType{
@@ -534,6 +538,7 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			EnumMap:            typ.IntEnumMap,
 			DeprecatedEnumMap:  typ.DeprecatedIntEnumMap,
 			DisableUnknownType: typ.DisableUnknownType,
+			GlobalType:         typ.GlobalType,
 		}, nil
 
 	}
@@ -624,6 +629,7 @@ type EdgeAction struct {
 	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
 	CanViewerDo       *CanViewerDo        `json:"canViewerDo,omitempty"`
+	CanFail           bool                `json:"__canFailBETA,omitempty"`
 }
 
 func getTSStringOperation(op ent.ActionOperation) string {
@@ -671,6 +677,7 @@ type Action struct {
 	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
 	CanViewerDo       *CanViewerDo        `json:"canViewerDo,omitempty"`
+	CanFail           bool                `json:"__canFailBETA,omitempty"`
 }
 
 func (a *Action) GetTSStringOperation() string {
@@ -748,9 +755,11 @@ func (f *ActionField) MarshalJSON() ([]byte, error) {
 	var af actionField
 	af.List = f.list
 	af.Name = f.Name
+	af.Optional = f.Optional
 	af.ActionName = f.ActionName
 	af.Type = f.Type
 	af.ExcludedFields = f.ExcludedFields
+	af.HideFromGraphQL = f.HideFromGraphQL
 
 	if f.Nullable && f.nullableContents {
 		af.Nullable = NullableContentsAndList

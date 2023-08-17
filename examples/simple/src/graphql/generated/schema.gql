@@ -237,9 +237,9 @@ type Comment implements Node {
   articles(first: Int, after: String, last: Int, before: String): CommentArticleToCommentsConnection!
 }
 
-type ContactDate {
-  label: ContactLabel!
+type ContactDate implements ContactItemType {
   contact: Contact
+  label: ContactLabel!
   date: Time!
   description: String!
 }
@@ -270,8 +270,8 @@ input ContactItemFilter {
 union ContactItemResult = ContactEmail | ContactPhoneNumber | ContactDate
 
 interface ContactItem {
-  label: ContactLabel!
   contact: Contact
+  label: ContactLabel!
 }
 
 type ContactPhoneNumber implements Node & ContactItemType {
@@ -1134,6 +1134,19 @@ type ContactPhoneNumberEditPayload {
   contactPhoneNumber: ContactPhoneNumber!
 }
 
+input CustomEditHolidayInput {
+  """id of Holiday"""
+  id: ID!
+  dayOfWeek: DayOfWeek
+  dayOfWeekAlt: DayOfWeekAlt
+  label: String
+  date: Time
+}
+
+type CustomEditHolidayPayload {
+  holiday: Holiday
+}
+
 type DeleteUserInput2Payload {
   deletedUserID: ID
 }
@@ -1438,7 +1451,7 @@ type Query {
 
 type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
-  bulkUploadContact(userID: ID!, file: Upload!): User!
+  bulkUploadContact(userID: ID!, file: Upload!, defaultLabel: ContactLabel, defaultLabel2: ContactLabel2): User!
   commentCreate(input: CommentCreateInput!): CommentCreatePayload!
   commentEdit(input: CommentEditInput!): CommentEditPayload!
   confirmEmailAddressEdit(input: ConfirmEditEmailAddressInput!): ConfirmEditEmailAddressPayload!
@@ -1461,6 +1474,7 @@ type Mutation {
   eventRsvpStatusClear(input: ClearEventRsvpStatusInput!): ClearEventRsvpStatusPayload!
   eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
+  holidayCustomEdit(input: CustomEditHolidayInput!): CustomEditHolidayPayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
   phoneNumberEdit(input: EditPhoneNumberInput!): EditPhoneNumberPayload!
   userAuth(input: UserAuthInput!): UserAuthPayload!

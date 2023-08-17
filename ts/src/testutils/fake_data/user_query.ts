@@ -203,7 +203,7 @@ export class CustomEdge extends AssocEdge {
   }
 
   async loadUser(viewer: Viewer) {
-    return await FakeUser.load(viewer, this.id2);
+    return FakeUser.load(viewer, this.id2);
   }
 }
 

@@ -378,6 +378,13 @@ func (cfg *Config) SchemaSQLFilePath() string {
 	return ""
 }
 
+func (cfg *Config) SubscriptionType() *codegenapi.ImportedObject {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.SubscriptionType
+	}
+	return nil
+}
+
 func (cfg *Config) DatabaseToCompareTo() string {
 	if codegen := cfg.getCodegenConfig(); codegen != nil {
 		return codegen.DatabaseToCompareTo
@@ -441,6 +448,19 @@ func (cfg *Config) GetUserOverridenFiles() map[string]bool {
 		return codegen.GetUserOverridenFiles()
 	}
 	return nil
+}
+
+func (cfg *Config) TransformDeleteMethod() string {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		if codegen.TransformDeleteMethod != "" {
+			return codegen.TransformDeleteMethod
+		}
+	}
+	return "saveWithoutTransform"
+}
+
+func (cfg *Config) TransformDeleteMethodX() string {
+	return fmt.Sprintf("%sX", cfg.TransformDeleteMethod())
 }
 
 const DEFAULT_PRETTIER_GLOB = "src/**/*.ts"
@@ -604,6 +624,7 @@ type CodegenConfig struct {
 	DefaultGraphQLMutationName codegenapi.GraphQLMutationName   `yaml:"defaultGraphQLMutationName"`
 	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat    `yaml:"defaultGraphQLFieldFormat"`
 	SchemaSQLFilePath          string                           `yaml:"schemaSQLFilePath"`
+	SubscriptionType           *codegenapi.ImportedObject       `yaml:"subscriptionType"`
 	DatabaseToCompareTo        string                           `yaml:"databaseToCompareTo"`
 	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
 	TemplatizedViewer          *codegenapi.ImportedObject       `yaml:"templatizedViewer"`
@@ -611,6 +632,7 @@ type CodegenConfig struct {
 	GlobalImportPath           string                           `yaml:"globalImportPath"`
 	UserOverridenFiles         []string                         `yaml:"userOverridenFiles"`
 	userOverridenFiles         map[string]bool
+	TransformDeleteMethod      string `yaml:"transformDeleteMethod"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -633,11 +655,15 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		DefaultGraphQLMutationName: cfg.DefaultGraphQLMutationName,
 		DefaultGraphQLFieldFormat:  cfg.DefaultGraphQLFieldFormat,
 		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
+		SubscriptionType:           cfg.SubscriptionType,
 		DatabaseToCompareTo:        cfg.DatabaseToCompareTo,
 		FieldPrivacyEvaluated:      cfg.FieldPrivacyEvaluated,
 		TemplatizedViewer:          cloneImportedObject(cfg.TemplatizedViewer),
 		CustomAssocEdgePath:        cloneImportedObject(cfg.CustomAssocEdgePath),
 		GlobalImportPath:           cfg.GlobalImportPath,
+		UserOverridenFiles:         cfg.UserOverridenFiles,
+		userOverridenFiles:         cfg.userOverridenFiles,
+		TransformDeleteMethod:      cfg.TransformDeleteMethod,
 	}
 }
 

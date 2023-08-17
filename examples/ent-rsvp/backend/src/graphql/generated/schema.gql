@@ -33,6 +33,12 @@ enum EventActivityRsvpStatus {
   UNKNOWN
 }
 
+enum GuestTag {
+  FRIEND
+  COWORKER
+  FAMILY
+}
+
 type Address implements Node {
   owner: Node
   id: ID!
@@ -81,6 +87,7 @@ type GuestGroup implements Node {
   event: Event
   id: ID!
   invitationName: String!
+  tag: GuestTag
   guestGroupToInvitedEvents(first: Int, after: String, last: Int, before: String): GuestGroupToInvitedEventsConnection!
   guests(first: Int, after: String, last: Int, before: String): GuestGroupToGuestsConnection!
 }
@@ -93,6 +100,8 @@ type Guest implements Node {
   name: String!
   emailAddress: String
   title: String
+  guestDataId: ID
+  tag: GuestTag
   guestToAttendingEvents(first: Int, after: String, last: Int, before: String): GuestToAttendingEventsConnection!
   guestToDeclinedEvents(first: Int, after: String, last: Int, before: String): GuestToDeclinedEventsConnection!
 }
@@ -431,6 +440,8 @@ input GuestCreateInput {
   emailAddress: String
   guestGroupID: ID!
   title: String
+  guestDataId: ID
+  tag: GuestTag
 }
 
 type GuestCreatePayload {
@@ -460,6 +471,7 @@ type GuestEditPayload {
 input GuestGroupCreateInput {
   invitationName: String!
   eventID: ID!
+  tag: GuestTag
   guests: [GuestGuestGroupCreateInput!]
 }
 
@@ -491,6 +503,8 @@ input GuestGuestGroupCreateInput {
   name: String!
   emailAddress: String
   title: String
+  guestDataId: ID
+  tag: GuestTag
 }
 
 input UserCreateInput {

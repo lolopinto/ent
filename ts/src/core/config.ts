@@ -137,6 +137,9 @@ interface CodegenConfig {
   globalImportPath?: string;
 
   userOveriddenFiles?: string[];
+
+  // if set, overrides the saveWithoutTransform(X) methods to be this instead of the default saveWithoutTransform
+  transformDeleteMethod?: string;
 }
 
 interface PrettierConfig {

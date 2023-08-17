@@ -186,8 +186,9 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 		opts.writeNode = true
 	}
 	if processor.Config.UseChanges() {
-		changemap := processor.ChangeMap
-		changes := changemap[node.ObjData.Node]
+		changeMap := processor.ChangeMap
+		changes := changeMap[node.ObjData.Node]
+		// spew.Dump("yse changes", changeMap, node.ObjData.Node, len(changes))
 		for _, c := range changes {
 			if c.TSOnly {
 				continue
@@ -234,6 +235,34 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 	}
 
 	return p.buildNodeWithOpts(processor, s, node, opts)
+}
+
+func (p *TSStep) processDeletedNode(processor *codegen.Processor, s *gqlSchema, nodeData *schema.NodeData) fns.FunctionList {
+	var ret fns.FunctionList
+
+	packageName := nodeData.PackageName
+
+	ret = append(ret,
+		file.GetDeleteFileFunction(processor.Config, getFilePathForNodefromPackageName(processor.Config, packageName)))
+
+	ret = append(ret,
+		file.GetDeleteFileFunction(processor.Config, getDirectoryPathForActions(processor.Config, packageName)))
+
+	if nodeData.EdgeInfo != nil {
+		for _, edge := range nodeData.EdgeInfo.GetConnectionEdges() {
+			ret = append(ret,
+				file.GetDeleteFileFunction(
+					processor.Config,
+					getFilePathForConnection(
+						processor.Config,
+						packageName,
+						edge.GetGraphQLConnectionType()),
+				),
+			)
+		}
+	}
+
+	return ret
 }
 
 // TODO all of this logic should be rewritten so that the logic for the object and files rendered are tied together so that it's
@@ -355,6 +384,14 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		funcs = append(funcs, p.processNode(processor, s, node)...)
 	}
 
+	for k := range processor.ChangeMap {
+		nodeInfo := processor.Schema.Nodes[k]
+		if s.nodes[k] == nil && nodeInfo != nil {
+			spew.Dump("deleted node", k, processor.ChangeMap[k])
+			funcs = append(funcs, p.processDeletedNode(processor, s, nodeInfo.NodeData)...)
+		}
+	}
+
 	for idx := range s.customMutations {
 		node := s.customMutations[idx]
 		funcs = append(funcs, p.processCustomNode(processor, s, node, true)...)
@@ -415,6 +452,21 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 					getFilePathForCustomMutation(
 						processor.Config,
 						k,
+					),
+				),
+			)
+		}
+
+		for k := range cmp.customConnectionsRemoved {
+			// TODO!
+			spew.Dump(k)
+			funcs = append(funcs,
+				file.GetDeleteFileFunction(
+					processor.Config,
+					getFilePathForConnection(
+						processor.Config,
+						"root",
+						fmt.Sprintf("RootTo%sType", strcase.ToCamel(k)),
 					),
 				),
 			)
@@ -492,6 +544,10 @@ var _ codegen.Step = &TSStep{}
 // TODO
 func getFilePathForNode(cfg *codegen.Config, nodeData *schema.NodeData) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", nodeData.PackageName))
+}
+
+func getFilePathForNodefromPackageName(cfg *codegen.Config, packageName string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", packageName))
 }
 
 func getFilePathForCustomInterfaceFile(cfg *codegen.Config, gqlType string) string {
@@ -572,6 +628,10 @@ func getSchemaFilePath(cfg *codegen.Config) string {
 
 func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(actionName)))
+}
+
+func getDirectoryPathForActions(cfg *codegen.Config, packageName string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s/", packageName))
 }
 
 func getImportPathForActionFromPackage(packageName string, action action.Action) string {
@@ -700,6 +760,15 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	// send custom enums too
 	for _, info := range processor.Schema.Enums {
 
+		if info.GQLEnum == nil {
+			continue
+		}
+		buf.WriteString(info.GQLEnum.Name)
+		buf.WriteString("\n")
+	}
+
+	// todo why isn't this in Enums??
+	for _, info := range processor.Schema.GetGlobalEnums() {
 		if info.GQLEnum == nil {
 			continue
 		}
@@ -875,16 +944,15 @@ func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 }
 
 type gqlobjectData struct {
-	NodeData     *schema.NodeData
-	interfaces   []*interfaceType
-	Node         string
-	NodeInstance string
-	GQLNodes     []*objectType
-	Enums        []*gqlEnum
-	FieldConfig  *fieldConfig
-	initMap      bool
-	m            map[string]bool
-	Package      *codegen.ImportPackage
+	NodeData    *schema.NodeData
+	interfaces  []*interfaceType
+	Node        string
+	GQLNodes    []*objectType
+	Enums       []*gqlEnum
+	FieldConfig *fieldConfig
+	initMap     bool
+	m           map[string]bool
+	Package     *codegen.ImportPackage
 }
 
 func (obj *gqlobjectData) DefaultImports() []*tsimport.ImportPath {
@@ -1338,11 +1406,10 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				}
 				obj := gqlNode{
 					ObjData: &gqlobjectData{
-						NodeData:     nodeData,
-						Node:         nodeData.Node,
-						NodeInstance: nodeData.NodeInstance,
-						GQLNodes:     objectTypes,
-						Package:      processor.Config.GetImportPackage(),
+						NodeData: nodeData,
+						Node:     nodeData.Node,
+						GQLNodes: objectTypes,
+						Package:  processor.Config.GetImportPackage(),
 					},
 					FilePath: getFilePathForNode(processor.Config, nodeData),
 				}
@@ -1366,9 +1433,8 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 						}
 						actionObj := gqlNode{
 							ObjData: &gqlobjectData{
-								Node:         nodeData.Node,
-								NodeInstance: nodeData.NodeInstance,
-								GQLNodes:     nodes,
+								Node:     nodeData.Node,
+								GQLNodes: nodes,
 								// Enums:        buildActionEnums(nodeData, action),
 								FieldConfig: fieldCfg,
 								Package:     processor.Config.GetImportPackage(),
@@ -1443,10 +1509,9 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 				obj := &gqlNode{
 					ObjData: &gqlobjectData{
-						Node:         ci.GQLName,
-						NodeInstance: strcase.ToLowerCamel(ci.GQLName),
-						GQLNodes:     objs,
-						Package:      processor.Config.GetImportPackage(),
+						Node:     ci.GQLName,
+						GQLNodes: objs,
+						Package:  processor.Config.GetImportPackage(),
 					},
 					FilePath: getFilePathForCustomInterfaceFile(processor.Config, ci.GQLName),
 				}
@@ -1487,10 +1552,9 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 				inputObj := &gqlNode{
 					ObjData: &gqlobjectData{
-						Node:         inputType,
-						NodeInstance: strcase.ToLowerCamel(inputType),
-						GQLNodes:     inputObjs,
-						Package:      processor.Config.GetImportPackage(),
+						Node:     inputType,
+						GQLNodes: inputObjs,
+						Package:  processor.Config.GetImportPackage(),
 					},
 					FilePath: getFilePathForCustomInterfaceInputFile(processor.Config, inputType),
 				}
@@ -1532,11 +1596,10 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				}
 				gqlNode := &gqlNode{
 					ObjData: &gqlobjectData{
-						Node:         obj.Node,
-						NodeInstance: "global",
-						GQLNodes:     []*objectType{obj},
-						FieldConfig:  fieldCfg,
-						Package:      processor.Config.GetImportPackage(),
+						Node:        obj.Node,
+						GQLNodes:    []*objectType{obj},
+						FieldConfig: fieldCfg,
+						Package:     processor.Config.GetImportPackage(),
 					},
 					FilePath: getCanViewerDoQueryTypeFilePath(processor.Config),
 				}
@@ -2035,14 +2098,18 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		Import:     nodeData.Node,
 	})
 
-	instance := nodeData.NodeInstance
-
 	fieldInfo := nodeData.FieldInfo
 
 	for _, edge := range nodeData.EdgeInfo.FieldEdges {
 		f := fieldInfo.GetFieldByName(edge.FieldName)
 		// if field was already hidden, don't create edge for it
 		if !f.ExposeToGraphQL() {
+			continue
+		}
+
+		// if node is hidden from graphql, don't create edge for it
+		if edge.Polymorphic == nil &&
+			nodeMap[edge.NodeInfo.Node].NodeData.HideFromGraphQL {
 			continue
 		}
 
@@ -2053,11 +2120,11 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 			}
 		}
 		if edge.IsList() {
-			if err := addPluralEdge(edge, result, instance); err != nil {
+			if err := addPluralEdge(edge, result); err != nil {
 				return nil, err
 			}
 		} else {
-			if err := addSingularEdge(edge, result, instance); err != nil {
+			if err := addSingularEdge(edge, result); err != nil {
 				return nil, err
 			}
 		}
@@ -2079,9 +2146,9 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 
 		if gqlField.HasResolveFunction {
 			if asyncAccessor {
-				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s();", instance, field.TSPublicAPIName())}
+				gqlField.FunctionContents = []string{fmt.Sprintf("return obj.%s();", field.TSPublicAPIName())}
 			} else {
-				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TSPublicAPIName())}
+				gqlField.FunctionContents = []string{fmt.Sprintf("return obj.%s;", field.TSPublicAPIName())}
 			}
 		}
 		if err := result.addField(gqlField); err != nil {
@@ -2093,7 +2160,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		if err := addSingularEdge(edge, result, instance); err != nil {
+		if err := addSingularEdge(edge, result); err != nil {
 			return nil, err
 		}
 	}
@@ -2102,7 +2169,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		if err := addConnection(processor, nodeData, edge, result, instance, nil); err != nil {
+		if err := addConnection(processor, nodeData, edge, result, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -2122,7 +2189,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 			var contents []string
 			if hasResolve {
 				contents = []string{
-					fmt.Sprintf("return %s.%s();", instance, method),
+					fmt.Sprintf("return obj.%s();", method),
 				}
 			}
 
@@ -2152,7 +2219,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 				HasResolveFunction: true,
 				FunctionContents: []string{
 					fmt.Sprintf("const ent = await %s.loadX(context.getViewer(), args.id);", group.DestNodeInfo.Node),
-					fmt.Sprintf("return %s.%s(ent);", instance, method),
+					fmt.Sprintf("return obj.%s(ent);", method),
 				},
 			}); err != nil {
 				return nil, err
@@ -2225,7 +2292,7 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 			HasAsyncModifier:   true,
 			HasResolveFunction: true,
 			FunctionContents: []string{
-				fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, field.TSPublicAPIName()),
+				fmt.Sprintf("return obj.%s();", field.TSPublicAPIName()),
 			},
 		}
 		if err := canViewerSee.addField(gqlField); err != nil {
@@ -2242,7 +2309,7 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 		},
 		HasResolveFunction: true,
 		FunctionContents: []string{
-			fmt.Sprintf("return %s.%s();", nodeData.NodeInstance, method),
+			fmt.Sprintf("return obj.%s();", method),
 		},
 	}); err != nil {
 		return nil, err
@@ -2250,27 +2317,27 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 	return canViewerSee, nil
 }
 
-func addSingularEdge(edge edge.Edge, obj *objectType, instance string) error {
+func addSingularEdge(edge edge.Edge, obj *objectType) error {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
-		FunctionContents:   []string{fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName())},
+		FunctionContents:   []string{fmt.Sprintf("return obj.load%s();", edge.CamelCaseEdgeName())},
 	}
 	return obj.addField(gqlField)
 }
 
-func addPluralEdge(edge edge.Edge, obj *objectType, instance string) error {
+func addPluralEdge(edge edge.Edge, obj *objectType) error {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
-		FunctionContents:   []string{fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName())},
+		FunctionContents:   []string{fmt.Sprintf("return obj.load%s();", edge.CamelCaseEdgeName())},
 	}
 	return obj.addField(gqlField)
 }
 
-func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge edge.ConnectionEdge, obj *objectType, instance string, customField *CustomField) error {
+func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge edge.ConnectionEdge, obj *objectType, customField *CustomField) error {
 	// import GraphQLEdgeConnection and EdgeQuery file
 	extraImports := []*tsimport.ImportPath{
 		{
@@ -2287,9 +2354,9 @@ func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge
 			ImportPath: codepath.GetExternalImportPath(),
 			Import:     edge.TsEdgeQueryName(),
 		})
-		buildQuery = fmt.Sprintf("%s.query(v, %s)", edge.TsEdgeQueryName(), instance)
+		buildQuery = fmt.Sprintf("%s.query(v, obj)", edge.TsEdgeQueryName())
 	} else {
-		buildQuery = fmt.Sprintf("%s.%s()", instance, customField.FunctionName)
+		buildQuery = fmt.Sprintf("%s.%s()", "obj", customField.FunctionName)
 	}
 
 	gqlField := &fieldType{
@@ -2301,10 +2368,7 @@ func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(
-				"return new GraphQLEdgeConnection(%s.viewer, %s, (v, %s: %s) => %s, args);",
-				instance,
-				instance,
-				instance,
+				"return new GraphQLEdgeConnection(obj.viewer, obj, (v, obj: %s) => %s, args);",
 				nodeData.Node,
 				buildQuery,
 			),
@@ -2600,15 +2664,31 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 
 	nodeInfo := a.GetNodeInfo()
 	if a.GetOperation() != ent.DeleteAction {
-		if err := result.addField(&fieldType{
-			Name: nodeInfo.NodeInstance,
-			FieldImports: []*tsimport.ImportPath{
+		typ := nodeData.Node
+		var fieldImports []*tsimport.ImportPath
+
+		if a.CanFail() {
+			typ = fmt.Sprintf("%s | null", typ)
+
+			fieldImports = []*tsimport.ImportPath{
+				{
+					Import:     fmt.Sprintf("%sType", nodeInfo.Node),
+					ImportPath: codepath.GetImportPathForExternalGQLFile(),
+				},
+			}
+		} else {
+			fieldImports = []*tsimport.ImportPath{
 				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				{
 					Import:     fmt.Sprintf("%sType", nodeInfo.Node),
 					ImportPath: codepath.GetImportPathForExternalGQLFile(),
 				},
-			},
+			}
+		}
+
+		if err := result.addField(&fieldType{
+			Name:         nodeInfo.NodeInstance,
+			FieldImports: fieldImports,
 		}); err != nil {
 			return nil, err
 		}
@@ -2619,9 +2699,9 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 				Name:     payload,
 				Fields: []*interfaceField{
 					{
-						Name:      nodeData.NodeInstance,
-						Type:      nodeData.Node,
-						UseImport: true,
+						Name:       nodeData.NodeInstance,
+						Type:       typ,
+						UseImports: []string{nodeData.Node},
 					},
 				},
 			}),
@@ -2889,6 +2969,11 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			})
 		}
 
+		saveMethod := "saveXFromID"
+		if a.CanFail() {
+			saveMethod = "saveFromID"
+		}
+
 		idField, err := getIDField(processor, nodeData)
 		if err != nil {
 			return nil, err
@@ -2906,12 +2991,12 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s), {", a.GetActionName(), idField),
+					fmt.Sprintf("await %s.%s(context.getViewer(), mustDecodeIDFromGQLID(input.%s), {", a.GetActionName(), saveMethod, idField),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%s, {", a.GetActionName(), idField),
+					fmt.Sprintf("await %s.%s(context.getViewer(), input.%s, {", a.GetActionName(), saveMethod, idField),
 				)
 			}
 			for _, f := range a.GetGraphQLFields() {
@@ -2933,12 +3018,12 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s), mustDecodeIDFromGQLID(input.%s));", nodeData.NodeInstance, a.GetActionName(), idField, edgeField),
+					fmt.Sprintf("const %s = await %s.%s(context.getViewer(), mustDecodeIDFromGQLID(input.%s), mustDecodeIDFromGQLID(input.%s));", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), input.%s, input.%s);", nodeData.NodeInstance, a.GetActionName(), idField, edgeField),
+					fmt.Sprintf("const %s = await %s.%s(context.getViewer(), input.%s, input.%s);", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
 				)
 			}
 		} else {
@@ -2952,13 +3037,13 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s));", a.GetActionName(), idField),
+					fmt.Sprintf("await %s.%s(context.getViewer(), mustDecodeIDFromGQLID(input.%s));", a.GetActionName(), saveMethod, idField),
 				)
 			} else {
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%s);", a.GetActionName(), idField),
+					fmt.Sprintf("await %s.%s(context.getViewer(), input.%s);", a.GetActionName(), saveMethod, idField),
 				)
 			}
 		}
@@ -2973,7 +3058,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 
 			result.FunctionContents = append(
 				result.FunctionContents,
-				fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
+				fmt.Sprintf("return {%s};", nodeData.NodeInstance),
 			)
 		}
 	}
@@ -3048,7 +3133,7 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 		}
 		if !ciInfo.input && f.TsFieldName(processor.Config) != f.GetGraphQLName() {
 			ft.HasResolveFunction = true
-			ft.FunctionContents = []string{fmt.Sprintf("return %s.%s", strcase.ToLowerCamel(node), f.TsFieldName(processor.Config))}
+			ft.FunctionContents = []string{fmt.Sprintf("return obj.%s", f.TsFieldName(processor.Config))}
 		}
 		if err := result.addField(ft); err != nil {
 			return nil, err
@@ -3722,17 +3807,26 @@ func writeRootQueryFile(processor *codegen.Processor, rq *rootQuery) error {
 }
 
 func writeTSSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
-	filePath := getTSSchemaFilePath(processor.Config)
-	imps := tsimport.NewImports(processor.Config, filePath)
+	cfg := processor.Config
+	filePath := getTSSchemaFilePath(cfg)
+	imps := tsimport.NewImports(cfg, filePath)
+
+	var subscription *tsimport.ImportPath
+	if obj := cfg.SubscriptionType(); obj != nil {
+		subscription = obj.GetImportPath()
+	}
+
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			HasMutations bool
-			QueryPath    string
-			MutationPath string
-			AllTypes     []typeInfo
+			HasMutations           bool
+			SubscriptionImportPath *tsimport.ImportPath
+			QueryPath              string
+			MutationPath           string
+			AllTypes               []typeInfo
 		}{
 			s.hasMutations,
+			subscription,
 			getQueryImportPath(),
 			getMutationImportPath(),
 			s.allTypes,

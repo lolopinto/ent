@@ -23,7 +23,7 @@ import {
   guestGroupLoader,
   guestGroupLoaderInfo,
 } from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/generated/types";
+import { GuestTag, NodeType } from "src/ent/generated/types";
 import {
   Event,
   GuestGroupToGuestsQuery,
@@ -39,6 +39,7 @@ export class GuestGroupBase implements Ent<Viewer> {
   readonly updatedAt: Date;
   readonly invitationName: string;
   readonly eventID: ID;
+  readonly tag: GuestTag | null;
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
@@ -46,6 +47,7 @@ export class GuestGroupBase implements Ent<Viewer> {
     this.updatedAt = data.updated_at;
     this.invitationName = data.invitation_name;
     this.eventID = data.event_id;
+    this.tag = data.tag;
     // @ts-expect-error
     this.data = data;
   }
@@ -167,11 +169,7 @@ export class GuestGroupBase implements Ent<Viewer> {
     id: ID,
     context?: Context,
   ): Promise<GuestGroupDBData | null> {
-    const row = await guestGroupLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return guestGroupLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends GuestGroupBase>(

@@ -78,6 +78,11 @@ func (s *Schema) GetGlobalEnums() map[string]*EnumInfo {
 	return s.globalEnums
 }
 
+func (s *Schema) IsGlobalEnumWithDisableUnknownType(typ string) bool {
+	enum, ok := s.globalEnums[typ]
+	return ok && enum.Enum.DisableUnknownType
+}
+
 func (s *Schema) GetGlobalCanViewerDo() map[string]action.Action {
 	return s.globalCanViewerDo
 }
@@ -432,6 +437,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		nodeData.SupportUpsert = node.SupportUpsert
 		nodeData.ShowCanViewerSee = node.ShowCanViewerSee
 		nodeData.ShowCanViewerEdit = node.ShowCanViewerEdit
+		nodeData.HasDefaultActionPrivacy = node.HasDefaultActionPrivacy
 		for _, p := range node.Patterns {
 			pattern := schema.Patterns[p]
 			if pattern == nil || pattern.DisableMixin {

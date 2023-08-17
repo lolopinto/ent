@@ -65,6 +65,7 @@ const TodoSchema = new TodoBaseEntSchema({
       edgeActions: [
         {
           operation: ActionOperation.AddEdge,
+          __canFailBETA: true,
         },
         {
           operation: ActionOperation.RemoveEdge,

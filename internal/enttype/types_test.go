@@ -857,6 +857,12 @@ func testTypeDirectly(t *testing.T, testCases map[string]*typeTestCase) {
 	}
 }
 
+type fakeSchema struct{}
+
+func (fs *fakeSchema) IsGlobalEnumWithDisableUnknownType(typ string) bool {
+	return false
+}
+
 // when testing the type directly e.g. typescript...
 type typeTestCase struct {
 	typ enttype.Type
@@ -903,7 +909,8 @@ func testType(t *testing.T, exp expType, typ enttype.Type) {
 
 	convType, ok := typ.(enttype.ConvertDataType)
 	if ok {
-		m := convType.Convert()
+		fs := &fakeSchema{}
+		m := convType.Convert(fs)
 		sqlite := m[config.SQLite]
 		if sqlite != nil {
 			require.Len(t, exp.convertSqliteFns, 1)

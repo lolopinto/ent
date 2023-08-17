@@ -169,11 +169,7 @@ export class HolidayBase
     id: ID,
     context?: Context,
   ): Promise<HolidayDBData | null> {
-    const row = await holidayLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return holidayLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends HolidayBase>(

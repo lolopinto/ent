@@ -23,6 +23,7 @@ import {
   EventType,
   GuestGroupToGuestsConnectionType,
   GuestGroupToInvitedEventsConnectionType,
+  GuestTagType,
 } from "src/graphql/resolvers/internal";
 
 export const GuestGroupType = new GraphQLObjectType({
@@ -30,12 +31,8 @@ export const GuestGroupType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<GuestGroup, RequestContext<Viewer>> => ({
     event: {
       type: EventType,
-      resolve: (
-        guestGroup: GuestGroup,
-        args: {},
-        context: RequestContext<Viewer>,
-      ) => {
-        return guestGroup.loadEvent();
+      resolve: (obj: GuestGroup, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadEvent();
       },
     },
     id: {
@@ -44,6 +41,9 @@ export const GuestGroupType = new GraphQLObjectType({
     },
     invitationName: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    tag: {
+      type: GuestTagType,
     },
     guestGroupToInvitedEvents: {
       type: new GraphQLNonNull(GuestGroupToInvitedEventsConnectionType()),
@@ -66,15 +66,14 @@ export const GuestGroupType = new GraphQLObjectType({
         },
       },
       resolve: (
-        guestGroup: GuestGroup,
+        obj: GuestGroup,
         args: any,
         context: RequestContext<Viewer>,
       ) => {
         return new GraphQLEdgeConnection(
-          guestGroup.viewer,
-          guestGroup,
-          (v, guestGroup: GuestGroup) =>
-            GuestGroupToInvitedEventsQuery.query(v, guestGroup),
+          obj.viewer,
+          obj,
+          (v, obj: GuestGroup) => GuestGroupToInvitedEventsQuery.query(v, obj),
           args,
         );
       },
@@ -100,21 +99,20 @@ export const GuestGroupType = new GraphQLObjectType({
         },
       },
       resolve: (
-        guestGroup: GuestGroup,
+        obj: GuestGroup,
         args: any,
         context: RequestContext<Viewer>,
       ) => {
         return new GraphQLEdgeConnection(
-          guestGroup.viewer,
-          guestGroup,
-          (v, guestGroup: GuestGroup) =>
-            GuestGroupToGuestsQuery.query(v, guestGroup),
+          obj.viewer,
+          obj,
+          (v, obj: GuestGroup) => GuestGroupToGuestsQuery.query(v, obj),
           args,
         );
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof GuestGroup;
   },

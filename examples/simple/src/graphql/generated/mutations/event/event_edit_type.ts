@@ -103,6 +103,6 @@ export const EventEditType: GraphQLFieldConfig<
         addressID: mustDecodeNullableIDFromGQLID(input.addressID),
       },
     );
-    return { event: event };
+    return { event };
   },
 };

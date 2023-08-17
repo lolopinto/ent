@@ -76,6 +76,6 @@ export const ChangeTodoStatusType: GraphQLFieldConfig<
         completed: input.completed,
       },
     );
-    return { todo: todo };
+    return { todo };
   },
 };

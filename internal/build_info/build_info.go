@@ -47,6 +47,10 @@ func (bi *BuildInfo) PrevGraphQLMutationName() codegenapi.GraphQLMutationName {
 	return bi.prev.DefaultGraphQLMutationName
 }
 
+func (bi *BuildInfo) PrevHasForceWriteAll() bool {
+	return bi.prev != nil && bi.prev.ForceWriteAllNextTime
+}
+
 type Config interface {
 	file.Config
 	GetPathToBuildFile() string

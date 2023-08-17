@@ -5,7 +5,6 @@ import { createRowForTest } from "../testutils/write";
 import {
   AssocEdge,
   buildInsertQuery,
-  buildQuery,
   buildUpdateQuery,
   loadEdgeForID2,
   assocEdgeLoader,
@@ -36,6 +35,7 @@ import * as clause from "../core/clause";
 import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema";
 import { snakeCase } from "snake-case";
 import { v1 } from "uuid";
+import { buildQuery } from "../core/query_impl";
 
 const ml = new MockLogs();
 
@@ -225,7 +225,7 @@ function getUserEditBuilder(
 async function createUser(): Promise<User> {
   const builder = getUserCreateBuilder();
   await builder.saveX();
-  return await builder.editedEntX();
+  return builder.editedEntX();
 }
 
 async function createEdgeRows(edges: string[]) {
@@ -358,8 +358,8 @@ function commonTests() {
         fieldsToLog: fields,
       },
       global
-        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, deleted_at = EXCLUDED.deleted_at"
-        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, time = EXCLUDED.time, deleted_at = EXCLUDED.deleted_at"
+        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, time = EXCLUDED.time",
     );
     expect(ml.logs[lastInsertIdx]).toEqual({
       query: query,
@@ -425,8 +425,8 @@ function commonTests() {
         fieldsToLog: fields,
       },
       global
-        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, deleted_at = EXCLUDED.deleted_at"
-        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+        ? "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, time = EXCLUDED.time, deleted_at = EXCLUDED.deleted_at"
+        : "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data, time = EXCLUDED.time",
     );
     expect(ml.logs[lastInsertIdx]).toEqual({
       query: query,

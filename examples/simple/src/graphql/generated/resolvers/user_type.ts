@@ -72,19 +72,19 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 class UserCanViewerDo {
   constructor(
     private context: RequestContext<ExampleViewerAlias>,
-    private user: User,
+    private ent: User,
   ) {}
 
   async userEdit(args: any): Promise<boolean> {
     const action = EditUserAction.create(
       this.context.getViewer(),
-      this.user,
+      this.ent,
       args,
     );
     return applyPrivacyPolicy(
       this.context.getViewer(),
       action.getPrivacyPolicy(),
-      this.user,
+      this.ent,
     );
   }
 }
@@ -114,11 +114,11 @@ export const UserType = new GraphQLObjectType({
     accountStatus: {
       type: UserAccountStatusType,
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.accountStatus();
+        return obj.accountStatus();
       },
     },
     bio: {
@@ -130,31 +130,31 @@ export const UserType = new GraphQLObjectType({
     prefs: {
       type: UserPrefsStructType,
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.prefs();
+        return obj.prefs();
       },
     },
     prefsList: {
       type: new GraphQLList(new GraphQLNonNull(UserPrefsStructType)),
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.prefsList();
+        return obj.prefsList();
       },
     },
     prefsDiff: {
       type: UserPrefsDiffType,
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.prefsDiff();
+        return obj.prefsDiff();
       },
     },
     daysOff: {
@@ -172,11 +172,11 @@ export const UserType = new GraphQLObjectType({
     superNestedObject: {
       type: UserSuperNestedObjectType,
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.superNestedObject();
+        return obj.superNestedObject();
       },
     },
     nestedList: {
@@ -188,11 +188,11 @@ export const UserType = new GraphQLObjectType({
     selfContact: {
       type: ContactType,
       resolve: (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.loadSelfContact();
+        return obj.loadSelfContact();
       },
     },
     comments: {
@@ -216,14 +216,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToCommentsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToCommentsQuery.query(v, obj),
           args,
         );
       },
@@ -249,14 +249,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToCreatedEventsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToCreatedEventsQuery.query(v, obj),
           args,
         );
       },
@@ -282,14 +282,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToDeclinedEventsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToDeclinedEventsQuery.query(v, obj),
           args,
         );
       },
@@ -315,14 +315,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToEventsAttendingQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToEventsAttendingQuery.query(v, obj),
           args,
         );
       },
@@ -348,14 +348,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToFriendsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToFriendsQuery.query(v, obj),
           args,
         );
       },
@@ -381,14 +381,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToInvitedEventsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToInvitedEventsQuery.query(v, obj),
           args,
         );
       },
@@ -414,14 +414,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToLikersQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToLikersQuery.query(v, obj),
           args,
         );
       },
@@ -447,14 +447,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToLikesQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToLikesQuery.query(v, obj),
           args,
         );
       },
@@ -480,14 +480,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToMaybeEventsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToMaybeEventsQuery.query(v, obj),
           args,
         );
       },
@@ -513,14 +513,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToHostedEventsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToHostedEventsQuery.query(v, obj),
           args,
         );
       },
@@ -546,14 +546,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToContactsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToContactsQuery.query(v, obj),
           args,
         );
       },
@@ -579,14 +579,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserArticleToCommentsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserArticleToCommentsQuery.query(v, obj),
           args,
         );
       },
@@ -612,14 +612,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserCommentsFromAttachmentQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserCommentsFromAttachmentQuery.query(v, obj),
           args,
         );
       },
@@ -645,14 +645,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => AuthorToCommentsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => AuthorToCommentsQuery.query(v, obj),
           args,
         );
       },
@@ -678,14 +678,14 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => CreatorToEventsQuery.query(v, user),
+          obj.viewer,
+          obj,
+          (v, obj: User) => CreatorToEventsQuery.query(v, obj),
           args,
         );
       },
@@ -693,31 +693,31 @@ export const UserType = new GraphQLObjectType({
     canViewerSeeInfo: {
       type: new GraphQLNonNull(UserCanViewerSeeType),
       resolve: (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.canViewerSeeInfo();
+        return obj.canViewerSeeInfo();
       },
     },
     canViewerEditInfo: {
       type: new GraphQLNonNull(UserCanViewerEditType),
       resolve: (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.canViewerEditInfo();
+        return obj.canViewerEditInfo();
       },
     },
     canViewerDo: {
       type: new GraphQLNonNull(UserCanViewerDoType),
       resolve: (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return new UserCanViewerDo(context, user);
+        return new UserCanViewerDo(context, obj);
       },
     },
     fullName: {
@@ -726,22 +726,22 @@ export const UserType = new GraphQLObjectType({
     bar: {
       type: GraphQLString,
       resolve: (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.getUserBar();
+        return obj.getUserBar();
       },
     },
     contactSameDomain: {
       description: "contacts same domain...",
       type: ContactType,
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.getFirstContactSameDomain();
+        return obj.getFirstContactSameDomain();
       },
     },
     contactsSameDomain: {
@@ -749,11 +749,11 @@ export const UserType = new GraphQLObjectType({
         new GraphQLList(new GraphQLNonNull(ContactType)),
       ),
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.getContactsSameDomain();
+        return obj.getContactsSameDomain();
       },
     },
     contactsGivenDomain: {
@@ -767,41 +767,41 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: async (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.getContactsGivenDomain(args.domain);
+        return obj.getContactsGivenDomain(args.domain);
       },
     },
     contactsSameDomainNullable: {
       type: new GraphQLList(new GraphQLNonNull(ContactType)),
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.getContactsSameDomainNullable();
+        return obj.getContactsSameDomainNullable();
       },
     },
     contactsSameDomainNullableContents: {
       type: new GraphQLNonNull(new GraphQLList(ContactType)),
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.getContactsSameDomainNullableContents();
+        return obj.getContactsSameDomainNullableContents();
       },
     },
     contactsSameDomainNullableContentsAndList: {
       type: new GraphQLList(ContactType),
       resolve: async (
-        user: User,
+        obj: User,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.getContactsSameDomainNullableContentsAndList();
+        return obj.getContactsSameDomainNullableContentsAndList();
       },
     },
     commentsAuthored: {
@@ -825,22 +825,21 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (
-        user: User,
+        obj: User,
         args: any,
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => user.getCommentsAuthored(),
+          obj.viewer,
+          obj,
+          (v, obj: User) => obj.getCommentsAuthored(),
           args,
         );
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
-    // isTypeOf ovveride is required for interfaces
     return obj instanceof User;
   },
 });
@@ -854,41 +853,41 @@ export const UserCanViewerSeeType = new GraphQLObjectType({
     accountStatus: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        user: UserCanViewerSee,
+        obj: UserCanViewerSee,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.accountStatus();
+        return obj.accountStatus();
       },
     },
     prefs: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        user: UserCanViewerSee,
+        obj: UserCanViewerSee,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.prefs();
+        return obj.prefs();
       },
     },
     prefsList: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        user: UserCanViewerSee,
+        obj: UserCanViewerSee,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.prefsList();
+        return obj.prefsList();
       },
     },
     prefsDiff: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        user: UserCanViewerSee,
+        obj: UserCanViewerSee,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.prefsDiff();
+        return obj.prefsDiff();
       },
     },
   }),
@@ -903,11 +902,11 @@ export const UserCanViewerEditType = new GraphQLObjectType({
     accountStatus: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        user: UserCanViewerEdit,
+        obj: UserCanViewerEdit,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.accountStatus();
+        return obj.accountStatus();
       },
     },
   }),
@@ -922,11 +921,11 @@ export const UserCanViewerDoType = new GraphQLObjectType({
     userEdit: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
-        user: UserCanViewerDo,
+        obj: UserCanViewerDo,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return user.userEdit(args);
+        return obj.userEdit(args);
       },
     },
   }),

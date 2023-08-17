@@ -127,7 +127,7 @@ func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*ts
 	}
 
 	for _, f := range p.FieldInfo.EntFields() {
-		ret = append(ret, f.GetImportsForTypes(cfg, s)...)
+		ret = append(ret, f.GetImportsForTypes(cfg, s, s)...)
 	}
 	return ret
 }

@@ -77,6 +77,6 @@ export const EventAddHostType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.id),
       mustDecodeIDFromGQLID(input.hostID),
     );
-    return { event: event };
+    return { event };
   },
 };

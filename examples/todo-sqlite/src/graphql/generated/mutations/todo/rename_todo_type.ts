@@ -82,6 +82,6 @@ export const RenameTodoType: GraphQLFieldConfig<
         reasonForChange: input.reason_for_change,
       },
     );
-    return { todo: todo };
+    return { todo };
   },
 };

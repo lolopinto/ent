@@ -47,9 +47,29 @@ def assert_num_tables(r: runner.Runner, expected_count, tables=None):
         assert table_names == tables
 
 
+def get_enums(r: runner.Runner):
+    result = []
+    for row in r.get_connection().execute(sa.text("select distinct pg_type.typname as enumtype from pg_type join pg_enum on pg_enum.enumtypid = pg_type.oid")):
+        result.append(row._asdict()['enumtype'])
+
+    return result
+
+
 def assert_no_changes_made(r: runner.Runner):
     assert_num_files(r, 0)
     assert_num_tables(r, 0)
+
+
+def find_file_by_revision(r: runner.Runner, rev):
+    version_files = get_version_files(r)
+    files = [f for f in version_files if f.startswith(
+        rev.revision)]
+    assert len(files) == 1
+    file = os.path.join(
+        r.cmd.alembic_cfg.get_main_option('version_locations'),
+        files[0]
+    )
+    return file
 
 
 def validate_edges_from_metadata(metadata: sa.MetaData, r: runner.Runner):
@@ -60,8 +80,8 @@ def validate_edges_from_metadata(metadata: sa.MetaData, r: runner.Runner):
         edges_from_metadata = edges_from_metadata['public']
 
     db_edges = {}
-    for row in r.get_connection().execute("SELECT * FROM assoc_edge_config"):
-        row_dict = dict(row)
+    for row in r.get_connection().execute(sa.text("SELECT * FROM assoc_edge_config")):
+        row_dict = row._asdict()
         db_edges[row_dict['edge_name']] = row_dict
 
     # same number of edges
@@ -100,8 +120,8 @@ def validate_data_from_metadata(metadata: sa.MetaData, r: runner.Runner):
 
         db_rows = []
         db_keys = []
-        for row in r.get_connection().execute('SELECT * FROM %s' % table_name):
-            row_dict = dict(row)
+        for row in r.get_connection().execute(sa.text('SELECT * FROM %s' % table_name)):
+            row_dict = row._asdict()
             if len(db_keys) == 0:
                 db_keys = row_dict.keys()
             db_rows.append(row_dict)
@@ -168,8 +188,7 @@ def new_runner_from_old(prev_runner: runner.Runner, new_test_runner, new_metadat
 
 
 def recreate_metadata_fixture(new_test_runner, metadata: sa.MetaData, prev_runner: runner.Runner) -> runner.Runner:
-    metadata.bind = prev_runner.get_connection()
-    metadata.reflect()
+    metadata.reflect(bind=prev_runner.get_connection())
 
     r = new_test_runner(metadata, prev_runner)
     return r
@@ -224,7 +243,7 @@ def _validate_columns(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
 
 def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String):
     assert schema_column != db_column
-    assert(id(schema_column)) != id(db_column)
+    assert (id(schema_column)) != id(db_column)
 
     assert schema_column.name == db_column.name
     _validate_column_type(schema_column, db_column, metadata, dialect)
@@ -308,7 +327,7 @@ def _validate_column_type_impl(schema_column_type, db_column_type, metadata: sa.
 
 def _validate_enum_column_type(metadata: sa.MetaData, db_column: sa.Column, schema_column: sa.Column):
     # has to be same length
-    assert(len(schema_column.type.enums) == len(db_column.type.enums))
+    assert (len(schema_column.type.enums) == len(db_column.type.enums))
 
     # if equal, nothing to do here, we're done
     if schema_column.type.enums == db_column.type.enums:
@@ -319,8 +338,8 @@ def _validate_enum_column_type(metadata: sa.MetaData, db_column: sa.Column, sche
     # https://www.postgresql.org/docs/9.5/functions-enum.html
     query = "select unnest(enum_range(enum_first(null::%s)));" % (
         db_column.type.name)
-    for row in metadata.bind.execute(query):
-        db_sorted_enums.append(dict(row)['unnest'])
+    for row in metadata.bind.execute(sa.text(query)):
+        db_sorted_enums.append(row._asdict()['unnest'])
 
     assert schema_column.type.enums == db_sorted_enums
 

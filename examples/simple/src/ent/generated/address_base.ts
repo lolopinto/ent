@@ -170,11 +170,7 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
     id: ID,
     context?: Context,
   ): Promise<AddressDBData | null> {
-    const row = await addressLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return addressLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AddressBase>(

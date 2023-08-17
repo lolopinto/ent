@@ -24,11 +24,18 @@ interface structFieldOptions extends FieldOptions {
   jsonNotJSONB?: boolean;
 }
 
+interface structFieldListOptions extends structFieldOptions {
+  validateUniqueKey?: string;
+}
+
 interface GlobalStructOptions extends FieldOptions {
   globalType: string;
 }
 
-export type StructOptions = structFieldOptions | GlobalStructOptions;
+export type StructOptions =
+  | structFieldOptions
+  | GlobalStructOptions
+  | structFieldListOptions;
 
 export class StructField extends BaseField implements Field {
   type: Type = {
@@ -205,7 +212,19 @@ export class StructField extends BaseField implements Field {
       if (!Array.isArray(obj)) {
         return false;
       }
-      const valid = await Promise.all(obj.map((v) => this.validImpl(v)));
+      const unique = new Set();
+      const valid = await Promise.all(
+        obj.map((v) => {
+          if (this.options.validateUniqueKey) {
+            const value = v[this.options.validateUniqueKey];
+            if (unique.has(value)) {
+              return false;
+            }
+            unique.add(value);
+          }
+          return this.validImpl(v);
+        }),
+      );
       return valid.every((b) => b);
     }
     if (!(obj instanceof Object)) {

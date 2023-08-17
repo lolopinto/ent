@@ -22,3 +22,18 @@ export const EventActivityRsvpStatusType = new GraphQLEnumType({
     },
   },
 });
+
+export const GuestTagType = new GraphQLEnumType({
+  name: "GuestTag",
+  values: {
+    FRIEND: {
+      value: "friend",
+    },
+    COWORKER: {
+      value: "coworker",
+    },
+    FAMILY: {
+      value: "family",
+    },
+  },
+});

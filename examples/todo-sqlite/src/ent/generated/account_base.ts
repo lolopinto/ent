@@ -272,11 +272,7 @@ export class AccountBase
     id: ID,
     context?: Context,
   ): Promise<AccountDBData | null> {
-    const row = await accountLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return accountLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AccountBase>(
@@ -344,13 +340,7 @@ export class AccountBase
     phoneNumber: string,
     context?: Context,
   ): Promise<AccountDBData | null> {
-    const row = await accountPhoneNumberLoader
-      .createLoader(context)
-      .load(phoneNumber);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return accountPhoneNumberLoader.createLoader(context).load(phoneNumber);
   }
 
   static loaderOptions<T extends AccountBase>(

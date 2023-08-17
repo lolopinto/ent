@@ -1073,6 +1073,41 @@ function commonTests() {
       expect(valid).toBe(false);
     });
 
+    test("invalid. fail silently", async () => {
+      const user = await createUser(
+        new Map([
+          ["FirstName", "Arya"],
+          ["LastName", "Stark"],
+        ]),
+      );
+      const viewer = new IDViewer("1");
+      const action = new SimpleAction(
+        viewer,
+        UserSchema,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Edit,
+        user,
+      );
+      action.getPrivacyPolicy = () => {
+        return {
+          rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+        };
+      };
+
+      action.__failPrivacySilently = () => true;
+
+      await expect(action.validX()).rejects.toThrow(
+        /Viewer with ID 1 does not have permission to edit User/,
+      );
+
+      // this doesn't throw and just fails silently. returning the same data
+      const user2 = await action.saveX();
+      expect(user2.data).toEqual(user.data);
+    });
+
     test("validWithErrors", async () => {
       const viewer = new IDViewer("1");
       const action = getInsertUserAction(

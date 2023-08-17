@@ -307,6 +307,16 @@ test("delete event", async () => {
   expect(loadEvent).toBe(null);
 });
 
+test("delete event rando", async () => {
+  let event = await create(new Date());
+  let user = await createUser();
+  const vc = new ExampleViewer(user.id);
+
+  await expect(
+    DeleteEventAction.create(vc, event).saveX(),
+  ).rejects.toThrowError(/ does not have permission to delete Event/);
+});
+
 describe("validators", () => {
   test("create just startTime", async () => {
     let user = await createUser();

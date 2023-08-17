@@ -30,11 +30,11 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
     contact: {
       type: ContactType,
       resolve: (
-        contactPhoneNumber: ContactPhoneNumber,
+        obj: ContactPhoneNumber,
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return contactPhoneNumber.loadContact();
+        return obj.loadContact();
       },
     },
     id: {
@@ -51,7 +51,7 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
       type: new GraphQLNonNull(ContactLabelType),
     },
   }),
-  interfaces: [GraphQLNodeInterface, ContactItemType],
+  interfaces: () => [GraphQLNodeInterface, ContactItemType],
   isTypeOf(obj) {
     return obj instanceof ContactPhoneNumber;
   },

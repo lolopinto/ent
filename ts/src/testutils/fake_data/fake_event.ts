@@ -146,5 +146,5 @@ export function getEventBuilder(viewer: Viewer, input: EventCreateInput) {
 
 export async function createEvent(viewer: Viewer, input: EventCreateInput) {
   const builder = getEventBuilder(viewer, input);
-  return await builder.saveX();
+  return builder.saveX();
 }

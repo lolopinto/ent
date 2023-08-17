@@ -161,15 +161,15 @@ func getAllDialectsImportMap(imps ...*tsimport.ImportPath) ConvertDataTypeRet {
 	}
 }
 
-func (t *boolType) Convert() ConvertDataTypeRet {
+func (t *boolType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertBool"))
 }
 
-func (t *boolType) convertListWithItem() ConvertDataTypeRet {
+func (t *boolType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertBoolList"))
 }
 
-func (t *boolType) convertNullableListWithItem() ConvertDataTypeRet {
+func (t *boolType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableBoolList"))
 }
 
@@ -218,7 +218,7 @@ func (t *NullableBoolType) GetTSGraphQLImports(input bool) []*tsimport.ImportPat
 	}
 }
 
-func (t *NullableBoolType) Convert() ConvertDataTypeRet {
+func (t *NullableBoolType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableBool"))
 }
 
@@ -396,7 +396,7 @@ func (t *BigIntegerType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath 
 	}
 }
 
-func (t *BigIntegerType) Convert() ConvertDataTypeRet {
+func (t *BigIntegerType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getAllDialectsImportMap(&tsimport.ImportPath{
 		Import: "BigInt",
 	})
@@ -454,7 +454,7 @@ func (t *NullableBigIntegerType) GetGraphQLType() string {
 	return "String"
 }
 
-func (t *NullableBigIntegerType) Convert() ConvertDataTypeRet {
+func (t *NullableBigIntegerType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getAllDialectsImportMap(&tsimport.ImportPath{
 		Import: "BigInt",
 	})
@@ -556,15 +556,15 @@ type dateType struct {
 	timestampType
 }
 
-func (t *dateType) Convert() ConvertDataTypeRet {
+func (t *dateType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertDate"))
 }
 
-func (t *dateType) convertListWithItem() ConvertDataTypeRet {
+func (t *dateType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertDateList"))
 }
 
-func (t *dateType) convertNullableListWithItem() ConvertDataTypeRet {
+func (t *dateType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableDateList"))
 }
 
@@ -658,7 +658,7 @@ func (t *NullableTimestampType) GetTSGraphQLImports(input bool) []*tsimport.Impo
 	}
 }
 
-func (t *NullableTimestampType) Convert() ConvertDataTypeRet {
+func (t *NullableTimestampType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableDate"))
 }
 
@@ -982,6 +982,7 @@ type StringEnumType struct {
 	DisableUnknownType       bool
 	overrideImportPath       *tsimport.ImportPath
 	overideGraphQLImportPath *tsimport.ImportPath
+	GlobalType               string
 }
 
 func (t *StringEnumType) GetDBType() string {
@@ -1051,8 +1052,8 @@ func (t *StringEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath 
 	}
 }
 
-func getEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
-	if disable {
+func getEnumConvertMap(typ string, disable bool, globalType string, s SchemaType) ConvertDataTypeRet {
+	if disable || s.IsGlobalEnumWithDisableUnknownType(globalType) {
 		return nil
 	}
 	return getAllDialectsImportMap(&tsimport.ImportPath{
@@ -1061,8 +1062,8 @@ func getEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
 	})
 }
 
-func getNullableEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
-	if disable {
+func getNullableEnumConvertMap(typ string, disable bool, globalType string, s SchemaType) ConvertDataTypeRet {
+	if disable || s.IsGlobalEnumWithDisableUnknownType(globalType) {
 		return nil
 	}
 	return getAllDialectsImportMap(&tsimport.ImportPath{
@@ -1071,8 +1072,8 @@ func getNullableEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
 	})
 }
 
-func getListEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
-	if disable {
+func getListEnumConvertMap(typ string, disable bool, globalType string, s SchemaType) ConvertDataTypeRet {
+	if disable || s.IsGlobalEnumWithDisableUnknownType(globalType) {
 		return nil
 	}
 	return getAllDialectsImportMap(&tsimport.ImportPath{
@@ -1081,8 +1082,8 @@ func getListEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
 	})
 }
 
-func getNullableListEnumConvertMap(typ string, disable bool) ConvertDataTypeRet {
-	if disable {
+func getNullableListEnumConvertMap(typ string, disable bool, globalType string, s SchemaType) ConvertDataTypeRet {
+	if disable || s.IsGlobalEnumWithDisableUnknownType(globalType) {
 		return nil
 	}
 	return getAllDialectsImportMap(&tsimport.ImportPath{
@@ -1091,16 +1092,16 @@ func getNullableListEnumConvertMap(typ string, disable bool) ConvertDataTypeRet 
 	})
 }
 
-func (t *StringEnumType) Convert() ConvertDataTypeRet {
-	return getEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *StringEnumType) Convert(s SchemaType) ConvertDataTypeRet {
+	return getEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
-func (t *StringEnumType) convertListWithItem() ConvertDataTypeRet {
-	return getListEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *StringEnumType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
+	return getListEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
-func (t *StringEnumType) convertNullableListWithItem() ConvertDataTypeRet {
-	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *StringEnumType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
+	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
 var _ EnumeratedType = &StringEnumType{}
@@ -1113,6 +1114,7 @@ type NullableStringEnumType struct {
 	Values             []string
 	EnumMap            map[string]string
 	DisableUnknownType bool
+	GlobalType         string
 }
 
 func (t *NullableStringEnumType) GetDBType() string {
@@ -1160,16 +1162,16 @@ func (t *NullableStringEnumType) GetTSGraphQLImports(input bool) []*tsimport.Imp
 	}
 }
 
-func (t *NullableStringEnumType) Convert() ConvertDataTypeRet {
-	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *NullableStringEnumType) Convert(s SchemaType) ConvertDataTypeRet {
+	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
-func (t *NullableStringEnumType) convertListWithItem() ConvertDataTypeRet {
-	return getListEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *NullableStringEnumType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
+	return getListEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
-func (t *NullableStringEnumType) convertNullableListWithItem() ConvertDataTypeRet {
-	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *NullableStringEnumType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
+	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
 var _ EnumeratedType = &NullableStringEnumType{}
@@ -1180,6 +1182,7 @@ type IntegerEnumType struct {
 	EnumMap            map[string]int
 	DeprecatedEnumMap  map[string]int
 	DisableUnknownType bool
+	GlobalType         string
 }
 
 func (t *IntegerEnumType) GetDBType() string {
@@ -1226,16 +1229,16 @@ func (t *IntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath
 	}
 }
 
-func (t *IntegerEnumType) Convert() ConvertDataTypeRet {
-	return getEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *IntegerEnumType) Convert(s SchemaType) ConvertDataTypeRet {
+	return getEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
-func (t *IntegerEnumType) convertListWithItem() ConvertDataTypeRet {
-	return getListEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *IntegerEnumType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
+	return getListEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
-func (t *IntegerEnumType) convertNullableListWithItem() ConvertDataTypeRet {
-	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *IntegerEnumType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
+	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
 var _ EnumeratedType = &IntegerEnumType{}
@@ -1246,6 +1249,7 @@ type NullableIntegerEnumType struct {
 	EnumMap            map[string]int
 	DeprecatedEnumMap  map[string]int
 	DisableUnknownType bool
+	GlobalType         string
 }
 
 func (t *NullableIntegerEnumType) GetDBType() string {
@@ -1291,16 +1295,16 @@ func (t *NullableIntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.Im
 	}
 }
 
-func (t *NullableIntegerEnumType) Convert() ConvertDataTypeRet {
-	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *NullableIntegerEnumType) Convert(s SchemaType) ConvertDataTypeRet {
+	return getNullableEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
-func (t *NullableIntegerEnumType) convertListWithItem() ConvertDataTypeRet {
-	return getListEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *NullableIntegerEnumType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
+	return getListEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
-func (t *NullableIntegerEnumType) convertNullableListWithItem() ConvertDataTypeRet {
-	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType)
+func (t *NullableIntegerEnumType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
+	return getNullableListEnumConvertMap(t.Type, t.DisableUnknownType, t.GlobalType, s)
 }
 
 var _ EnumeratedType = &NullableIntegerEnumType{}
@@ -1365,13 +1369,13 @@ func (t *ArrayListType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return ret
 }
 
-func (t *ArrayListType) Convert() ConvertDataTypeRet {
+func (t *ArrayListType) Convert(s SchemaType) ConvertDataTypeRet {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
 		// NB: this is intentionally only sqlite because postgres automatically returns as a list but sqlite doesn't
 		return getSqliteImportMap(tsimport.NewEntImportPath("convertList"))
 	}
-	return elem.convertListWithItem()
+	return elem.convertListWithItem(s)
 }
 
 func (t *ArrayListType) GetImportDepsType() *tsimport.ImportPath {
@@ -1463,12 +1467,12 @@ func (t *NullableArrayListType) GetTSGraphQLImports(input bool) []*tsimport.Impo
 // TODO why is there ListWrapperType (for ActionFields)
 // and NullableArrayListType /ArrayListType for regular lists?
 // TODO GetCustomTypeInfo
-func (t *NullableArrayListType) Convert() ConvertDataTypeRet {
+func (t *NullableArrayListType) Convert(s SchemaType) ConvertDataTypeRet {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
 		return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableList"))
 	}
-	return elem.convertNullableListWithItem()
+	return elem.convertNullableListWithItem(s)
 }
 
 func (t *NullableArrayListType) GetImportDepsType() *tsimport.ImportPath {
@@ -1652,15 +1656,15 @@ func (t *JSONType) GetNullableType() TSType {
 	return ret
 }
 
-func (t *JSONType) Convert() ConvertDataTypeRet {
+func (t *JSONType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSON"))
 }
 
-func (t *JSONType) convertListWithItem() ConvertDataTypeRet {
+func (t *JSONType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
 }
 
-func (t *JSONType) convertNullableListWithItem() ConvertDataTypeRet {
+func (t *JSONType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
 }
 
@@ -1700,15 +1704,15 @@ func (t *NullableJSONType) GetTSGraphQLImports(input bool) []*tsimport.ImportPat
 	}
 }
 
-func (t *NullableJSONType) Convert() ConvertDataTypeRet {
+func (t *NullableJSONType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSON"))
 }
 
-func (t *NullableJSONType) convertListWithItem() ConvertDataTypeRet {
+func (t *NullableJSONType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
 }
 
-func (t *NullableJSONType) convertNullableListWithItem() ConvertDataTypeRet {
+func (t *NullableJSONType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
 }
 
@@ -1750,15 +1754,15 @@ func (t *JSONBType) GetNullableType() TSType {
 	return ret
 }
 
-func (t *JSONBType) Convert() ConvertDataTypeRet {
+func (t *JSONBType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSON"))
 }
 
-func (t *JSONBType) convertListWithItem() ConvertDataTypeRet {
+func (t *JSONBType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
 }
 
-func (t *JSONBType) convertNullableListWithItem() ConvertDataTypeRet {
+func (t *JSONBType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
 }
 
@@ -1813,15 +1817,15 @@ func (t *NullableJSONBType) GetNonNullableType() TSType {
 	return ret
 }
 
-func (t *NullableJSONBType) Convert() ConvertDataTypeRet {
+func (t *NullableJSONBType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSON"))
 }
 
-func (t *NullableJSONBType) convertListWithItem() ConvertDataTypeRet {
+func (t *NullableJSONBType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
 }
 
-func (t *NullableJSONBType) convertNullableListWithItem() ConvertDataTypeRet {
+func (t *NullableJSONBType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
 }
 
@@ -1834,8 +1838,8 @@ func IsImportDepsType(t Type) bool {
 	return ok
 }
 
-func ConvertFuncs(t Type) []string {
-	imps := ConvertImportPaths(t)
+func ConvertFuncs(t Type, s SchemaType) []string {
+	imps := ConvertImportPaths(t, s)
 	if imps == nil {
 		return nil
 	}
@@ -1846,13 +1850,13 @@ func ConvertFuncs(t Type) []string {
 	return ret
 }
 
-func ConvertImportPaths(t Type) []*tsimport.ImportPath {
+func ConvertImportPaths(t Type, s SchemaType) []*tsimport.ImportPath {
 	tt, ok := t.(ConvertDataType)
 	if !ok {
 		return nil
 	}
 
-	m := tt.Convert()
+	m := tt.Convert(s)
 	return m[config.GetDialect()]
 }
 

@@ -103,6 +103,6 @@ export const EditAccountType: GraphQLFieldConfig<
         accountPrefsList: input.account_prefs_list,
       },
     );
-    return { account: account };
+    return { account };
   },
 };

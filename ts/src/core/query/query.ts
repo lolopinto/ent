@@ -191,12 +191,15 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         const res = this.edgeQuery.getTableName();
         const tableName = isPromise(res) ? await res : res;
         // inner col time
-        options.clause = clause.PaginationMultipleColsSubQuery(
-          this.sortCol,
-          less ? "<" : ">",
-          tableName,
-          this.options.cursorCol,
-          this.offset,
+        options.clause = clause.AndOptional(
+          options.clause,
+          clause.PaginationMultipleColsSubQuery(
+            this.sortCol,
+            less ? "<" : ">",
+            tableName,
+            this.options.cursorCol,
+            this.offset,
+          ),
         );
       }
     } else {
@@ -205,7 +208,10 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         let val = this.options.sortColTime
           ? new Date(this.offset).toISOString()
           : this.offset;
-        options.clause = clauseFn(this.sortCol, val);
+        options.clause = clause.AndOptional(
+          options.clause,
+          clauseFn(this.sortCol, val),
+        );
       }
     }
     options.orderby = orderby;
@@ -276,12 +282,15 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
 
       if (this.offset) {
         // inner col time
-        options.clause = clause.PaginationMultipleColsSubQuery(
-          this.sortCol,
-          greater ? ">" : "<",
-          tableName,
-          this.options.cursorCol,
-          this.offset,
+        options.clause = clause.AndOptional(
+          options.clause,
+          clause.PaginationMultipleColsSubQuery(
+            this.sortCol,
+            greater ? ">" : "<",
+            tableName,
+            this.options.cursorCol,
+            this.offset,
+          ),
         );
       }
       // we also sort cursor col in same direction. (direction doesn't matter)
@@ -295,7 +304,10 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
         let val = this.options.sortColTime
           ? new Date(this.offset).toISOString()
           : this.offset;
-        options.clause = clauseFn(this.sortCol, val);
+        options.clause = clause.AndOptional(
+          options.clause,
+          clauseFn(this.sortCol, val),
+        );
       }
     }
     options.orderby = orderby;
@@ -330,6 +342,7 @@ export abstract class BaseEdgeQuery<
   private sortCol: string;
   private cursorCol: string;
   private edgeQueryOptions: EdgeQueryOptions;
+  private limitAdded = false;
 
   constructor(viewer: Viewer, sortCol: string, cursorCol: string);
   constructor(viewer: Viewer, options: EdgeQueryOptions);
@@ -393,6 +406,7 @@ export abstract class BaseEdgeQuery<
   abstract sourceEnt(id: ID): Promise<Ent | null>;
 
   first(n: number, after?: string): this {
+    this.limitAdded = true;
     this.assertQueryNotDispatched("first");
     this.filters.push(
       new FirstFilter({
@@ -407,7 +421,20 @@ export abstract class BaseEdgeQuery<
     return this;
   }
 
+  // API subject to change
+  // TODO https://github.com/lolopinto/ent/issues/685
+  __addCustomFilterBETA(filter: EdgeQueryFilter<TEdge>) {
+    this.filters.push(filter);
+  }
+
+  protected __assertNoFiltersBETA(name: string) {
+    if (this.filters.length !== 0) {
+      throw new Error(`${name} must be the first filter called`);
+    }
+  }
+
   last(n: number, before?: string): this {
+    this.limitAdded = true;
     this.assertQueryNotDispatched("last");
     this.filters.push(
       new LastFilter({
@@ -437,7 +464,7 @@ export abstract class BaseEdgeQuery<
 
   // this is basically just raw rows
   readonly queryEdges = async (): Promise<TEdge[]> => {
-    return await this.querySingleEdge("queryEdges");
+    return this.querySingleEdge("queryEdges");
   };
 
   abstract queryRawCount(): Promise<number>;
@@ -580,8 +607,9 @@ export abstract class BaseEdgeQuery<
   private async loadEdges(): Promise<Map<ID, TEdge[]>> {
     const idsInfo = await this.genIDInfosToFetch();
 
-    if (!this.filters.length) {
-      // if no filter, we add the firstN filter to ensure we get pagination info
+    // we need first even if other filters are included...
+    if (!this.limitAdded) {
+      // if no limit filter, we add the firstN filter to ensure we get pagination info
       this.first(getDefaultLimit());
     }
 

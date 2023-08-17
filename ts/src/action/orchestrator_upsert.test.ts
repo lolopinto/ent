@@ -1,6 +1,7 @@
 import { Observer, WriteOperation } from "../action";
 import { Ent } from "../core/base";
-import { buildQuery, loadEdges, loadRow } from "../core/ent";
+import { loadEdges, loadRow } from "../core/ent";
+import { buildQuery } from "../core/query_impl";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { StringType, TimestampType, UUIDType } from "../schema/field";
 import {

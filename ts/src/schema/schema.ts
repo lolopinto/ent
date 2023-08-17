@@ -103,6 +103,12 @@ export default interface Schema {
   showCanViewerSee?: boolean;
   // above but for editPrivacyPolicy
   showCanViewerEdit?: boolean;
+
+  // privacy applied to actions on this ent
+  // useful when the same permissions model works for create|edit|delete|edges etc on
+  // an ent and don't need to spell it out for all implementations
+  // will override the defaultActionPolicy in the ent.yml file
+  defaultActionPrivacy?: PrivacyPolicy | (() => PrivacyPolicy);
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format
@@ -158,6 +164,11 @@ export interface EdgeAction {
   // if true, adds under a canViewerDo field on the source Object mapping to graphql name
   // of this...
   canViewerDo?: boolean | CanViewerDo;
+  // indicates that an action is not expected to always pass so
+  // we should not throw if action fails e.g. no permissions to perform the action
+  // or if the ent cannot be load afterward
+  // replaces __failPrivacySilently() implementation
+  __canFailBETA?: boolean;
 }
 
 // Information about the inverse edge of an assoc edge
@@ -928,6 +939,12 @@ export interface Action {
   // if true, adds under a canViewerDo field on the source Object mapping to graphql name
   // of this...
   canViewerDo?: boolean | CanViewerDo;
+
+  // indicates that an action is not expected to always pass so
+  // we should not throw if action fails e.g. no permissions to perform the action
+  // or if the ent cannot be load afterward
+  // replaces __failPrivacySilently() implementation
+  __canFailBETA?: boolean;
 
   // allow other keys
   [x: string]: any;

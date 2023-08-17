@@ -329,7 +329,7 @@ input AddTodoTagInput {
 }
 
 type AddTodoTagPayload {
-  todo: Todo!
+  todo: Todo
 }
 
 input ChangeTodoBountyInput {

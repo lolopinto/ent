@@ -12,12 +12,12 @@ export class EmailInfo {
   })
   emails: ContactEmail[];
 
-  @gqlField({ class: "EmailInfo", type: GraphQLString })
-  firstEmail: string;
+  @gqlField({ class: "EmailInfo", type: GraphQLString, name: "firstEmail" })
+  email1: string;
 
   constructor(emails: ContactEmail[], firstEmail: string) {
     this.emails = emails;
-    this.firstEmail = firstEmail;
+    this.email1 = firstEmail;
   }
 }
 
@@ -31,12 +31,15 @@ export class ContactDate {
   })
   label: ContactLabel;
 
+  private _contact: Contact | null = null;
   @gqlField({
     class: "ContactDate",
     type: "Contact",
     nullable: true,
   })
-  contact: Contact | null = null;
+  contact(): Contact | null {
+    return this._contact;
+  }
 
   @gqlField({
     class: "ContactDate",
@@ -57,7 +60,7 @@ export class ContactDate {
     description: string,
   ) {
     this.label = label;
-    this.contact = contact;
+    this._contact = contact;
     this.date = date;
     this.description = description;
   }

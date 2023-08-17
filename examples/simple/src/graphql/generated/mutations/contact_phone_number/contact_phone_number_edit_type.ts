@@ -91,6 +91,6 @@ export const ContactPhoneNumberEditType: GraphQLFieldConfig<
         label: input.label,
       },
     );
-    return { contactPhoneNumber: contactPhoneNumber };
+    return { contactPhoneNumber };
   },
 };

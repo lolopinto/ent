@@ -43,7 +43,7 @@ export const HolidayType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLTime),
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Holiday;
   },

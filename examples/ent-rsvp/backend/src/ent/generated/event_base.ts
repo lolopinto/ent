@@ -174,11 +174,7 @@ export class EventBase implements Ent<Viewer> {
     id: ID,
     context?: Context,
   ): Promise<EventDBData | null> {
-    const row = await eventLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return eventLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends EventBase>(
@@ -244,11 +240,7 @@ export class EventBase implements Ent<Viewer> {
     slug: string,
     context?: Context,
   ): Promise<EventDBData | null> {
-    const row = await eventSlugLoader.createLoader(context).load(slug);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return eventSlugLoader.createLoader(context).load(slug);
   }
 
   static loaderOptions<T extends EventBase>(

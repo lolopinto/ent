@@ -528,6 +528,42 @@ async function queryViaClause(
   }
 }
 
+async function queryViaClausePlusDeletedAt(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+  expIds?: number[],
+) {
+  const data = await loadCustomData(
+    opts,
+    clause.And(clause.Greater("id", 5), clause.NotEq("deleted_at", null)),
+    ctx,
+  );
+  expect(data.length).toBe(expIds?.length || 5);
+  expect(data.map((row) => row.id).sort()).toEqual(
+    (expIds || ids.slice(5, 10)).sort(),
+  );
+  expect(ml.logs.length).toBe(1);
+
+  // re-query. hits the db
+  const data2 = await loadCustomData(
+    opts,
+    clause.And(clause.Greater("id", 5), clause.NotEq("deleted_at", null)),
+    ctx,
+  );
+  expect(data).toEqual(data2);
+  expect(ml.logs.length).toBe(2);
+  const lastLog = ml.logs[1];
+
+  // if context, cache hit, otherwise, hits db
+  if (ctx) {
+    expect(lastLog["dataloader-cache-hit"]).toBeDefined();
+    expect(lastLog["query"]).toBeUndefined();
+  } else {
+    expect(lastLog["cache-hit"]).toBeUndefined();
+    expect(lastLog["query"]).toBeDefined();
+  }
+}
+
 async function queryCountViaClause(
   opts: LoadCustomEntOptions<User>,
   ctx: Context | undefined,
@@ -553,6 +589,39 @@ async function queryCountViaClause(
   }
 }
 
+async function queryCountViaClausePlusDeletedAt(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+  expIds?: number[],
+) {
+  const count = await loadCustomCount(
+    opts,
+    clause.And(clause.Greater("id", 5), clause.NotEq("deleted_at", null)),
+    ctx,
+  );
+  expect(count).toBe(expIds?.length || 5);
+  expect(ml.logs.length).toBe(1);
+
+  // re-query. hits the db
+  const count2 = await loadCustomCount(
+    opts,
+    clause.And(clause.Greater("id", 5), clause.NotEq("deleted_at", null)),
+    ctx,
+  );
+  expect(count).toEqual(count2);
+  expect(ml.logs.length).toBe(2);
+  const lastLog = ml.logs[1];
+
+  // if context, cache hit, otherwise, hits db
+  if (ctx) {
+    expect(lastLog["dataloader-cache-hit"]).toBeDefined();
+    expect(lastLog["query"]).toBeUndefined();
+  } else {
+    expect(lastLog["dataloader-cache-hit"]).toBeUndefined();
+    expect(lastLog["query"]).toBeDefined();
+  }
+}
+
 async function queryViaOptions(
   opts: LoadCustomEntOptions<User>,
   ctx: Context | undefined,
@@ -563,6 +632,30 @@ async function queryViaOptions(
     ctx,
     {
       clause: clause.Greater("id", 5),
+      orderby: [
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
+    },
+    expIds || reversed.slice(0, 5),
+  );
+}
+
+async function queryViaOptionsPlusDeletedAt(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+  expIds?: number[],
+) {
+  return queryViaOptionsImpl(
+    opts,
+    ctx,
+    {
+      clause: clause.And(
+        clause.Greater("id", 5),
+        clause.NotEq("deleted_at", null),
+      ),
       orderby: [
         {
           column: "id",
@@ -662,6 +755,50 @@ async function queryCountViaOptions(
     opts,
     {
       clause: clause.Greater("id", 5),
+    },
+    ctx,
+  );
+  expect(count).toEqual(count2);
+  expect(ml.logs.length).toBe(2);
+  const lastLog = ml.logs[1];
+
+  // if context, cache hit, otherwise, hits db
+  if (ctx) {
+    expect(lastLog["cache-hit"]).toBeDefined();
+    expect(lastLog["query"]).toBeUndefined();
+  } else {
+    expect(lastLog["cache-hit"]).toBeUndefined();
+    expect(lastLog["query"]).toBeDefined();
+  }
+}
+
+async function queryCountViaOptionsPlusDeletedAt(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+  expIds?: number[],
+) {
+  const count = await loadCustomCount(
+    opts,
+    {
+      clause: clause.And(
+        clause.Greater("id", 5),
+        clause.NotEq("deleted_at", null),
+      ),
+    },
+    ctx,
+  );
+
+  expect(count).toBe((expIds || reversed.slice(0, 5)).length);
+  expect(ml.logs.length).toBe(1);
+
+  // re-query. hits the db
+  const count2 = await loadCustomCount(
+    opts,
+    {
+      clause: clause.And(
+        clause.Greater("id", 5),
+        clause.NotEq("deleted_at", null),
+      ),
     },
     ctx,
   );
@@ -1128,12 +1265,36 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
       await queryViaClause(opts, undefined, [6]);
     });
 
+    test("clause with context including deleted_at", async () => {
+      // because explicitly indicating deleted_at is not null, we don't automatically add it back in
+      await queryViaClausePlusDeletedAt(opts, getCtx(undefined), [7, 8, 9, 10]);
+    });
+
+    test("clause without context including deleted_at", async () => {
+      // because explicitly indicating deleted_at is not null, we don't automatically add it back in
+      await queryViaClausePlusDeletedAt(opts, undefined, [7, 8, 9, 10]);
+    });
+
     test("options with context", async () => {
       await queryViaOptions(opts, getCtx(undefined), [6]);
     });
 
     test("options without context", async () => {
       await queryViaOptions(opts, undefined, [6]);
+    });
+
+    // these 2 are flipped from above because we are querying for deleted items
+    // and now we respect that and don't automatically add deleted_at is null back in
+    test("options without context including deleted at", async () => {
+      await queryViaOptionsPlusDeletedAt(
+        opts,
+        getCtx(undefined),
+        [10, 9, 8, 7],
+      );
+    });
+
+    test("options without context including deleted at", async () => {
+      await queryViaOptionsPlusDeletedAt(opts, undefined, [10, 9, 8, 7]);
     });
 
     test("options disable transformations with context", async () => {
@@ -1187,12 +1348,36 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
       await queryCountViaClause(opts, undefined, [6]);
     });
 
+    test("query count via clause plus deleted_at with context", async () => {
+      await queryCountViaClausePlusDeletedAt(
+        opts,
+        getCtx(undefined),
+        [7, 8, 9, 10],
+      );
+    });
+
+    test("query count via clause plus deleted_at without context", async () => {
+      await queryCountViaClausePlusDeletedAt(opts, undefined, [7, 8, 9, 10]);
+    });
+
     test("count options with context", async () => {
       await queryCountViaOptions(opts, getCtx(undefined), [6]);
     });
 
     test("count options without context", async () => {
       await queryCountViaOptions(opts, undefined, [6]);
+    });
+
+    test("count options plus deleted_at with context", async () => {
+      await queryCountViaOptionsPlusDeletedAt(
+        opts,
+        getCtx(undefined),
+        [7, 8, 9, 10],
+      );
+    });
+
+    test("count options plus deleted_at without context", async () => {
+      await queryCountViaOptionsPlusDeletedAt(opts, undefined, [7, 8, 9, 10]);
     });
 
     test("count options disable transformations with context", async () => {
@@ -1272,8 +1457,31 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
       const ents2 = await loadCustomEnts(v2, opts, clause.Eq("bar", "bar2"));
       // soft deleted items not included...
       expect(ents2.length).toBe(3);
-      // order not actually guaranteed so this may eventually break
       expect(ents2.map((ent) => ent.id).sort()).toEqual([2, 4, 6]);
+    });
+
+    test("clause soft deleted included", async () => {
+      const v = getIDViewer(1, getCtx());
+
+      const ents = await loadCustomEnts(
+        v,
+        opts,
+        clause.And(clause.Eq("bar", "bar2"), clause.NotEq("deleted_at", null)),
+      );
+      // not visible... all even
+      expect(ents.length).toBe(0);
+
+      // reload with different viewer and we should get data now
+      const v2 = getIDViewer(2, getCtx());
+
+      const ents2 = await loadCustomEnts(
+        v2,
+        opts,
+        clause.And(clause.Eq("bar", "bar2"), clause.NotEq("deleted_at", null)),
+      );
+      // only soft deleted items included since we explicitly queried for them
+      expect(ents2.length).toBe(2);
+      expect(ents2.map((ent) => ent.id).sort()).toEqual([10, 8]);
     });
 
     test("options", async () => {
@@ -1312,6 +1520,47 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
       // only odd numbers visible
       expect(ents2.map((ent) => ent.id)).toEqual([9, 7, 5]);
     });
+
+    test("options soft delete included", async () => {
+      const v = getIDViewer(1, getCtx());
+
+      const ents = await loadCustomEnts(v, opts, {
+        ...opts,
+        clause: clause.And(
+          clause.GreaterEq("id", 5),
+          clause.NotEq("deleted_at", null),
+        ),
+        orderby: [
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
+      });
+      expect(ents.length).toBe(2);
+
+      // only odd numbers visible
+      expect(ents.map((ent) => ent.id)).toEqual([9, 7]);
+
+      const ents2 = await loadCustomEnts(v, opts, {
+        ...opts,
+        clause: clause.And(
+          clause.GreaterEq("id", 5),
+          clause.NotEq("deleted_at", null),
+        ),
+        orderby: [
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
+        disableTransformations: true,
+      });
+      expect(ents2.length).toBe(2);
+
+      // only odd numbers visible
+      expect(ents2.map((ent) => ent.id)).toEqual([9, 7]);
+    });
   });
 
   describe("custom query soft delete", () => {
@@ -1343,8 +1592,10 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
       const v = getIDViewer(2, getCtx());
 
       const q = new CustomQuery(v, clause.Eq("bar", "bar2"));
+      const ids = await q.queryIDs();
+      expect(ids.sort()).toEqual([2, 4, 6]);
+
       const ents = await q.queryEnts();
-      // 2, 4, 6
       expect(ents.length).toBe(3);
 
       const count = await q.queryCount();
@@ -1362,16 +1613,76 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
       }
     });
 
+    test("simple clause with query for deleted at", async () => {
+      const v = getIDViewer(2, getCtx());
+
+      const q = new CustomQuery(
+        v,
+        clause.And(clause.Eq("bar", "bar2"), clause.NotEq("deleted_at", null)),
+      );
+
+      const ids = await q.queryIDs();
+      expect(ids.sort()).toEqual([10, 8]);
+
+      const ents = await q.queryEnts();
+      expect(ents.length).toBe(2);
+
+      const count = await q.queryCount();
+      expect(count).toBe(2);
+
+      ml.clear();
+
+      await Promise.all(
+        ents.map((ent) => loadEnt(v, ent.id, softDeleteOptions)),
+      );
+
+      expect(ml.logs.length).toBe(count);
+      for (const log of ml.logs) {
+        expect(log["ent-cache-hit"]).toBeDefined();
+      }
+    });
+
     test("disable Transformations", async () => {
       const v = getIDViewer(2, getCtx());
 
       const q = new CustomQuery(v, clause.Eq("bar", "bar2"), true);
+      const ids = await q.queryIDs();
+      expect(ids.sort()).toEqual([10, 2, 4, 6, 8]);
+
       const ents = await q.queryEnts();
-      // 2,4, 6, 8, 10
       expect(ents.length).toBe(5);
 
       const count = await q.queryCount();
       expect(count).toBe(5);
+
+      ml.clear();
+
+      await Promise.all(
+        ents.map((ent) => loadEnt(v, ent.id, softDeleteOptions)),
+      );
+
+      expect(ml.logs.length).toBe(count);
+      for (const log of ml.logs) {
+        expect(log["ent-cache-hit"]).toBeDefined();
+      }
+    });
+
+    test("disable Transformations while quering deleted at", async () => {
+      const v = getIDViewer(2, getCtx());
+
+      const q = new CustomQuery(
+        v,
+        clause.And(clause.Eq("bar", "bar2"), clause.NotEq("deleted_at", null)),
+        true,
+      );
+      const ids = await q.queryIDs();
+      expect(ids.sort()).toEqual([10, 8]);
+
+      const ents = await q.queryEnts();
+      expect(ents.length).toBe(2);
+
+      const count = await q.queryCount();
+      expect(count).toBe(2);
 
       ml.clear();
 

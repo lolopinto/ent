@@ -20,7 +20,7 @@ import {
   loadEntX,
   loadEnts,
 } from "@snowtop/ent";
-import { Field, getFields } from "@snowtop/ent/schema";
+import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
   TagDBData,
   tagLoader,
@@ -31,8 +31,13 @@ import { NodeType } from "src/ent/generated/types";
 import { Account, Tag, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag_schema";
 
+interface TagData extends Omit<TagDBData, "owner_id"> {
+  owner_id: ID | null;
+}
+
 export class TagBase implements Ent<Viewer> {
-  protected readonly data: TagDBData;
+  protected readonly data: TagData;
+  private rawDBData: TagDBData | undefined;
   readonly nodeType = NodeType.Tag;
   readonly id: ID;
   readonly createdAt: Date;
@@ -40,7 +45,7 @@ export class TagBase implements Ent<Viewer> {
   protected readonly deletedAt: Date | null;
   readonly displayName: string;
   readonly canonicalName: string;
-  readonly ownerID: ID;
+  readonly ownerID: ID | null;
   readonly relatedTagIds: ID[] | null;
 
   constructor(public viewer: Viewer, data: Data) {
@@ -56,11 +61,17 @@ export class TagBase implements Ent<Viewer> {
     this.data = data;
   }
 
-  __setRawDBData<TagDBData>(data: TagDBData) {}
+  __setRawDBData<TagDBData>(data: TagDBData) {
+    // @ts-expect-error
+    this.rawDBData = data;
+  }
 
   /** used by some ent internals to get access to raw db data. should not be depended on. may not always be on the ent **/
   ___getRawDBData(): TagDBData {
-    return this.data;
+    if (this.rawDBData === undefined) {
+      throw new Error(`trying to get raw db data when it was never set`);
+    }
+    return this.rawDBData;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
@@ -204,11 +215,7 @@ export class TagBase implements Ent<Viewer> {
     id: ID,
     context?: Context,
   ): Promise<TagDBData | null> {
-    const row = await tagLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return tagLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends TagBase>(
@@ -237,6 +244,7 @@ export class TagBase implements Ent<Viewer> {
       fields: tagLoaderInfo.fields,
       ent: this,
       loaderFactory: tagLoader,
+      fieldPrivacy: getFieldsWithPrivacy(schema, tagLoaderInfo.fieldInfo),
     };
   }
 
@@ -258,11 +266,11 @@ export class TagBase implements Ent<Viewer> {
   }
 
   async loadOwner(): Promise<Account | null> {
-    return loadEnt(this.viewer, this.ownerID, Account.loaderOptions());
-  }
+    if (!this.ownerID) {
+      return null;
+    }
 
-  loadOwnerX(): Promise<Account> {
-    return loadEntX(this.viewer, this.ownerID, Account.loaderOptions());
+    return loadEnt(this.viewer, this.ownerID, Account.loaderOptions());
   }
 
   async loadRelatedTags(): Promise<Tag[] | null> {

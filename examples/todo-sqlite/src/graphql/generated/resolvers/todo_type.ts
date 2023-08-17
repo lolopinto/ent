@@ -27,20 +27,20 @@ export const TodoType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Todo, RequestContext<Viewer>> => ({
     assignee: {
       type: AccountType,
-      resolve: (todo: Todo, args: {}, context: RequestContext<Viewer>) => {
-        return todo.loadAssignee();
+      resolve: (obj: Todo, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadAssignee();
       },
     },
     creator: {
       type: AccountType,
-      resolve: (todo: Todo, args: {}, context: RequestContext<Viewer>) => {
-        return todo.loadCreator();
+      resolve: (obj: Todo, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadCreator();
       },
     },
     scope: {
       type: GraphQLNodeInterface,
-      resolve: (todo: Todo, args: {}, context: RequestContext<Viewer>) => {
-        return todo.loadScope();
+      resolve: (obj: Todo, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadScope();
       },
     },
     id: {
@@ -54,8 +54,8 @@ export const TodoType = new GraphQLObjectType({
     },
     completed_date: {
       type: GraphQLTime,
-      resolve: (todo: Todo, args: {}, context: RequestContext<Viewer>) => {
-        return todo.completedDate;
+      resolve: (obj: Todo, args: {}, context: RequestContext<Viewer>) => {
+        return obj.completedDate;
       },
     },
     bounty: {
@@ -81,11 +81,11 @@ export const TodoType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (todo: Todo, args: any, context: RequestContext<Viewer>) => {
+      resolve: (obj: Todo, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          todo.viewer,
-          todo,
-          (v, todo: Todo) => TodoToTagsQuery.query(v, todo),
+          obj.viewer,
+          obj,
+          (v, obj: Todo) => TodoToTagsQuery.query(v, obj),
           args,
         );
       },
@@ -110,17 +110,17 @@ export const TodoType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (todo: Todo, args: any, context: RequestContext<Viewer>) => {
+      resolve: (obj: Todo, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          todo.viewer,
-          todo,
-          (v, todo: Todo) => TodoToTodoScopeQuery.query(v, todo),
+          obj.viewer,
+          obj,
+          (v, obj: Todo) => TodoToTodoScopeQuery.query(v, obj),
           args,
         );
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Todo;
   },

@@ -28,7 +28,7 @@ afterAll(() => {
 });
 
 async function readStream(file): Promise<string> {
-  return await new Promise((resolve) => {
+  return new Promise((resolve) => {
     const stream = file.createReadStream();
     let data: string[] = [];
     stream.on("data", function (chunk) {

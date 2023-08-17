@@ -171,11 +171,7 @@ export class GuestDataBase implements Ent<Viewer> {
     id: ID,
     context?: Context,
   ): Promise<GuestDataDBData | null> {
-    const row = await guestDataLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return guestDataLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends GuestDataBase>(

@@ -38,7 +38,7 @@ async function readInputs(): Promise<{
   nodes: string[];
   nodesMap: Map<string, boolean>;
 }> {
-  return await new Promise((resolve) => {
+  return new Promise((resolve) => {
     const rl = readline.createInterface({
       input: process.stdin,
       //  output: process.stdout,

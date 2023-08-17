@@ -166,11 +166,7 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
     id: ID,
     context?: Context,
   ): Promise<AuthCodeDBData | null> {
-    const row = await authCodeLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return authCodeLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(

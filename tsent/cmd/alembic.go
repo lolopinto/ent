@@ -20,10 +20,12 @@ var validCmds = map[string]int{
 	"stamp":     1, // stamp --purge option may be needed. would need a child command or simple flag parsing here
 	"edit":      1, // TODO should we support this? didn't document
 	"merge":     1, // TODO should we support this?
+	"revision":  1,
 }
 
 var variableArgs = map[string]bool{
-	"history": true,
+	"history":  true,
+	"revision": true,
 }
 
 var alembicCmd = &cobra.Command{
@@ -35,6 +37,7 @@ tsent alembic current
 tsent alembic history --verbose 
 tsent alembic history --verbose --last 4
 tsent alembic history --verbose --rev_range rev1:current
+tsent alembic revision --message "message"
 	`,
 	Args: cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,6 +58,11 @@ tsent alembic history --verbose --rev_range rev1:current
 
 		if command == "history" {
 			args[0] = "--history"
+			return auto_schema.RunPythonCommand(cfg, args...)
+		}
+
+		if command == "revision" {
+			args[0] = "--revision"
 			return auto_schema.RunPythonCommand(cfg, args...)
 		}
 

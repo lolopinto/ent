@@ -105,6 +105,6 @@ export const AddressEditType: GraphQLFieldConfig<
         ownerType: input.ownerType,
       },
     );
-    return { address: address };
+    return { address };
   },
 };

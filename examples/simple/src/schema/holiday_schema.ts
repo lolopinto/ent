@@ -53,6 +53,8 @@ const HolidaySchema = new EntSchemaWithTZ({
       inputName: "CustomCreateHolidayInput2",
       actionName: "CustomCreateHolidayAction2",
       hideFromGraphQL: true,
+      // todo not supported yet
+      // __canFailBETA: true,
       // this action exists just to test ID list action only field
       actionOnlyFields: [
         {
@@ -62,6 +64,13 @@ const HolidaySchema = new EntSchemaWithTZ({
           nullable: true,
         },
       ],
+    },
+    {
+      operation: ActionOperation.Edit,
+      inputName: "CustomEditHolidayInput",
+      actionName: "CustomEditHolidayAction",
+      __canFailBETA: true,
+      graphQLName: "holidayCustomEdit",
     },
   ],
 });

@@ -261,7 +261,7 @@ export class TagBuilder<
   }
 
   // get value of ownerID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOwnerIDValue(): ID | Builder<Account, Viewer> {
+  getNewOwnerIDValue(): ID | null | Builder<Account, Viewer> {
     if (this.input.ownerID !== undefined) {
       return this.input.ownerID;
     }

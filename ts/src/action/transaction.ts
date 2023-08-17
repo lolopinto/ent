@@ -2,19 +2,19 @@ import { Ent, Viewer } from "../core/base";
 import { Action, Builder, Changeset } from "./action";
 import { ComplexExecutor } from "./executor";
 
-type ActionAny = Action<
-  Ent<Viewer<any, any>>,
-  Builder<Ent<Viewer<any, any>>, Viewer<any, any>, any>,
+type ActionAny<TViewer extends Viewer = Viewer> = Action<
+  Ent<TViewer>,
+  Builder<Ent<TViewer>, TViewer, any>,
   Viewer<any, any>,
   any,
   any
 >;
 
-export class Transaction {
+export class Transaction<TViewer extends Viewer = Viewer> {
   constructor(
-    private viewer: Viewer,
+    private viewer: TViewer,
     // independent operations
-    private actions: ActionAny[], // TODO ops for different types of transaction
+    private actions: ActionAny<TViewer>[], // TODO ops for different types of transaction
   ) {}
 
   async run() {

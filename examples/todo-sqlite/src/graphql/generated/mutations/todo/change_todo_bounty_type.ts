@@ -76,6 +76,6 @@ export const ChangeTodoBountyType: GraphQLFieldConfig<
         bounty: input.bounty,
       },
     );
-    return { todo: todo };
+    return { todo };
   },
 };

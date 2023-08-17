@@ -32,8 +32,8 @@ export const EventType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Event, RequestContext<Viewer>> => ({
     creator: {
       type: UserType,
-      resolve: (event: Event, args: {}, context: RequestContext<Viewer>) => {
-        return event.loadCreator();
+      resolve: (obj: Event, args: {}, context: RequestContext<Viewer>) => {
+        return obj.loadCreator();
       },
     },
     id: {
@@ -66,11 +66,11 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext<Viewer>) => {
+      resolve: (obj: Event, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          event.viewer,
-          event,
-          (v, event: Event) => EventToEventActivitiesQuery.query(v, event),
+          obj.viewer,
+          obj,
+          (v, obj: Event) => EventToEventActivitiesQuery.query(v, obj),
           args,
         );
       },
@@ -95,11 +95,11 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext<Viewer>) => {
+      resolve: (obj: Event, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          event.viewer,
-          event,
-          (v, event: Event) => EventToGuestGroupsQuery.query(v, event),
+          obj.viewer,
+          obj,
+          (v, obj: Event) => EventToGuestGroupsQuery.query(v, obj),
           args,
         );
       },
@@ -124,17 +124,17 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: any, context: RequestContext<Viewer>) => {
+      resolve: (obj: Event, args: any, context: RequestContext<Viewer>) => {
         return new GraphQLEdgeConnection(
-          event.viewer,
-          event,
-          (v, event: Event) => EventToGuestsQuery.query(v, event),
+          obj.viewer,
+          obj,
+          (v, obj: Event) => EventToGuestsQuery.query(v, obj),
           args,
         );
       },
     },
   }),
-  interfaces: [GraphQLNodeInterface],
+  interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Event;
   },

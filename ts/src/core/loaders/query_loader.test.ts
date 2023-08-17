@@ -1,7 +1,8 @@
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { buildQuery, getDefaultLimit } from "../ent";
+import { getDefaultLimit } from "../ent";
+import { buildQuery } from "../query_impl";
 import * as clause from "../clause";
 import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
@@ -335,7 +336,7 @@ function commonTests() {
         ids.map(async (id) => {
           // have to use different loader for each to get results
           const loader = getNonGroupableLoader(id);
-          return await loader.load(id);
+          return loader.load(id);
         }),
       );
       ml.verifyNoErrors();

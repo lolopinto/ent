@@ -35,10 +35,11 @@ import {
   createUserPlusFriendRequests,
 } from "../../testutils/fake_data/test_helpers";
 import { MockLogs } from "../../testutils/mock_log";
-import { And, Eq } from "../clause";
+import { And, Clause, Eq, Greater, GreaterEq, Less } from "../clause";
 import { SimpleAction } from "../../testutils/builder";
 import { DateTime } from "luxon";
 import { convertDate } from "../convert";
+import { TestContext } from "../../testutils/context/test_context";
 
 export function assocTests(ml: MockLogs, global = false) {
   ml.mock();
@@ -108,33 +109,42 @@ export function assocTests(ml: MockLogs, global = false) {
     return execArray?.[3];
   }
 
+  interface verifyQueryProps {
+    length?: number;
+    numQueries?: number;
+    limit?: number;
+    extraClause?: Clause;
+    disablePaginationBump?: boolean;
+    logsStart?: number;
+    direction?: "ASC" | "DESC";
+  }
   function verifyQuery({
     length = 1,
     numQueries = 1,
     limit = getDefaultLimit(),
+    extraClause = undefined,
     disablePaginationBump = false,
-  }) {
+    logsStart = 0,
+    direction = "DESC",
+  }: verifyQueryProps) {
+    const clses: Clause[] = [Eq("id1", ""), Eq("edge_type", "")];
+    if (extraClause) {
+      clses.push(extraClause);
+    }
+    if (global) {
+      clses.push(Eq("deleted_at", null));
+    }
     expect(ml.logs.length).toBe(length);
-    for (let i = 0; i < numQueries; i++) {
+    for (let i = logsStart; i < numQueries; i++) {
       const whereClause = getWhereClause(ml.logs[i]);
       let expLimit = disablePaginationBump ? limit : limit + 1;
-      if (global) {
-        expect(whereClause, `${i}`).toBe(
-          // default limit
-          `${And(
-            Eq("id1", ""),
-            Eq("edge_type", ""),
-            Eq("deleted_at", null),
-          ).clause(1)} ORDER BY time DESC, id2 DESC LIMIT ${expLimit}`,
-        );
-      } else {
-        expect(whereClause, `${i}`).toBe(
-          // default limit
-          `${And(Eq("id1", ""), Eq("edge_type", "")).clause(
-            1,
-          )} ORDER BY time DESC, id2 DESC LIMIT ${expLimit}`,
-        );
-      }
+
+      expect(whereClause, `${i}`).toBe(
+        // default limit
+        `${And(...clses).clause(
+          1,
+        )} ORDER BY time ${direction}, id2 ${direction} LIMIT ${expLimit}`,
+      );
     }
   }
 
@@ -454,7 +464,7 @@ export function assocTests(ml: MockLogs, global = false) {
             );
           }
           await builder.saveX();
-          return await builder.editedEntX();
+          return builder.editedEntX();
         }),
       );
 
@@ -964,6 +974,354 @@ export function assocTests(ml: MockLogs, global = false) {
         friendRequests.length,
       );
       expect(entsMapFromUserVCToken.get(user2.id)?.length).toBe(0);
+    });
+  });
+
+  describe("time based queries", () => {
+    let user: FakeUser;
+    let contacts: FakeContact[];
+    let ctx: TestContext;
+
+    beforeEach(async () => {
+      ctx = new TestContext();
+      [user, contacts] = await createAllContacts({ ctx });
+      const sortedTimes = contacts.map((c) => c.createdAt.getTime());
+
+      expect(sortedTimes[1] - sortedTimes[0]).toBe(86400);
+      expect(contacts.length).toBe(5);
+      ml.clear();
+      // to prime the cache
+      await FakeUser.load(user.viewer, user.id);
+    });
+
+    function getQuery(viewer: Viewer) {
+      return UserToContactsQuery.query(viewer, user.id);
+    }
+
+    test("ids", async () => {
+      const ids = await getQuery(user.viewer).queryIDs();
+      expect(ids.length).toBe(contacts.length);
+    });
+
+    test("before", async () => {
+      const ids = await getQuery(user.viewer)
+        .__beforeBETA(contacts[2].createdAt)
+        .queryIDs();
+
+      expect(ids.length).toBe(2);
+      expect(ids).toEqual([contacts[1].id, contacts[0].id]);
+      verifyQuery({
+        length: 2,
+        extraClause: Less("time", contacts[2].createdAt),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+      });
+    });
+
+    test("before + first", async () => {
+      const ids = await getQuery(user.viewer)
+        .__beforeBETA(contacts[2].createdAt)
+        .first(1)
+        .queryIDs();
+
+      expect(ids.length).toBe(1);
+      expect(ids).toEqual([contacts[1].id]);
+      verifyQuery({
+        length: 2,
+        limit: 1,
+        extraClause: Less("time", contacts[2].createdAt),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+      });
+    });
+
+    test("before + last", async () => {
+      const ids = await getQuery(user.viewer)
+        .__beforeBETA(contacts[2].createdAt)
+        .last(1)
+        .queryIDs();
+
+      expect(ids.length).toBe(1);
+      expect(ids).toEqual([contacts[0].id]);
+      verifyQuery({
+        length: 2,
+        limit: 1,
+        extraClause: Less("time", contacts[2].createdAt),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+        direction: "ASC",
+      });
+    });
+
+    test("before + first with pagination", async () => {
+      const query = getQuery(user.viewer);
+      const edges = await query
+        .__beforeBETA(contacts[2].createdAt)
+        .first(1)
+        .queryEdges();
+      const pagination = query.paginationInfo();
+
+      expect(edges.length).toBe(1);
+      expect(edges.map((edge) => edge.id2)).toEqual([contacts[1].id]);
+      verifyQuery({
+        length: 2,
+        limit: 1,
+        extraClause: Less("time", contacts[2].createdAt),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+      });
+
+      const info = pagination.get(user.id)!;
+      expect(info.hasNextPage).toBe(true);
+      expect(info.hasPreviousPage).toBe(false);
+
+      ml.clear();
+
+      const query2 = getQuery(user.viewer);
+      const edges2 = await query2
+        .__beforeBETA(contacts[2].createdAt)
+        .first(1, info.endCursor)
+        .queryEdges();
+      const pagination2 = query2.paginationInfo();
+
+      expect(edges2.length).toBe(1);
+      expect(edges2.map((edge) => edge.id2)).toEqual([contacts[0].id]);
+
+      // complicated pagination query. ignore verifying for now
+      // verifyFirstAfterCursorQuery in shared_test handles this...
+
+      const info2 = pagination2.get(user.id) ?? {
+        hasNextPage: false,
+        hasPreviousPage: false,
+      };
+      expect(info2.hasNextPage).toBe(false);
+      expect(info2.hasPreviousPage).toBe(false);
+    });
+
+    test("after", async () => {
+      const ids = await getQuery(user.viewer)
+        .__afterBETA(contacts[2].createdAt)
+        .queryIDs();
+      expect(ids.length).toBe(2);
+      expect(ids).toEqual([contacts[4].id, contacts[3].id]);
+
+      verifyQuery({
+        length: 2,
+        extraClause: Greater("time", contacts[2].createdAt),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+      });
+    });
+
+    test("after + first", async () => {
+      const ids = await getQuery(user.viewer)
+        .__afterBETA(contacts[2].createdAt)
+        .first(1)
+        .queryIDs();
+      expect(ids.length).toBe(1);
+      expect(ids).toEqual([contacts[4].id]);
+
+      verifyQuery({
+        length: 2,
+        limit: 1,
+        extraClause: Greater("time", contacts[2].createdAt),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+      });
+    });
+
+    test("after + last", async () => {
+      const ids = await getQuery(user.viewer)
+        .__afterBETA(contacts[2].createdAt)
+        .last(1)
+        .queryIDs();
+      expect(ids.length).toBe(1);
+      expect(ids).toEqual([contacts[3].id]);
+
+      verifyQuery({
+        length: 2,
+        limit: 1,
+        extraClause: Greater("time", contacts[2].createdAt),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+        direction: "ASC",
+      });
+    });
+
+    test("within", async () => {
+      const ids = await getQuery(user.viewer)
+        .__withinBeta(contacts[1].createdAt, contacts[4].createdAt)
+        .queryIDs();
+      expect(ids.length).toBe(3);
+      expect(ids).toEqual([contacts[3].id, contacts[2].id, contacts[1].id]);
+
+      verifyQuery({
+        length: 2,
+        extraClause: And(
+          GreaterEq("time", contacts[1].createdAt),
+          Less("time", contacts[4].createdAt),
+        ),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+      });
+    });
+
+    test("within + first", async () => {
+      const ids = await getQuery(user.viewer)
+        .__withinBeta(contacts[1].createdAt, contacts[4].createdAt)
+        .first(2)
+        .queryIDs();
+      expect(ids.length).toBe(2);
+      expect(ids).toEqual([contacts[3].id, contacts[2].id]);
+
+      verifyQuery({
+        length: 2,
+        limit: 2,
+        extraClause: And(
+          GreaterEq("time", contacts[1].createdAt),
+          Less("time", contacts[4].createdAt),
+        ),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+      });
+    });
+
+    test("within + last", async () => {
+      const ids = await getQuery(user.viewer)
+        .__withinBeta(contacts[1].createdAt, contacts[4].createdAt)
+        .last(2)
+        .queryIDs();
+      expect(ids.length).toBe(2);
+      expect(ids).toEqual([contacts[1].id, contacts[2].id]);
+
+      verifyQuery({
+        length: 2,
+        limit: 2,
+        extraClause: And(
+          GreaterEq("time", contacts[1].createdAt),
+          Less("time", contacts[4].createdAt),
+        ),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+        direction: "ASC",
+      });
+    });
+
+    test("within + first with pagination", async () => {
+      const query = getQuery(user.viewer);
+      const edges = await query
+        .__withinBeta(contacts[1].createdAt, contacts[4].createdAt)
+        .first(2)
+        .queryEdges();
+      const pagination = query.paginationInfo();
+
+      expect(edges.length).toBe(2);
+      expect(edges.map((edge) => edge.id2)).toEqual([
+        contacts[3].id,
+        contacts[2].id,
+      ]);
+
+      verifyQuery({
+        length: 2,
+        limit: 2,
+        extraClause: And(
+          GreaterEq("time", contacts[1].createdAt),
+          Less("time", contacts[4].createdAt),
+        ),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+      });
+
+      const info = pagination.get(user.id)!;
+      expect(info.hasNextPage).toBe(true);
+      expect(info.hasPreviousPage).toBe(false);
+
+      ml.clear();
+
+      const query2 = getQuery(user.viewer);
+      const edges2 = await query2
+        .__withinBeta(contacts[1].createdAt, contacts[4].createdAt)
+        .first(2, info.endCursor)
+        .queryEdges();
+      const pagination2 = query2.paginationInfo();
+
+      expect(edges2.length).toBe(1);
+      expect(edges2.map((edge) => edge.id2)).toEqual([contacts[1].id]);
+
+      // complicated pagination query. ignore verifying for now
+      // verifyFirstAfterCursorQuery in shared_test handles this...
+
+      const info2 = pagination2.get(user.id) ?? {
+        hasNextPage: false,
+        hasPreviousPage: false,
+      };
+      expect(info2.hasNextPage).toBe(false);
+      expect(info2.hasPreviousPage).toBe(false);
+    });
+
+    test("within + last with pagination", async () => {
+      const query = getQuery(user.viewer);
+      const edges = await query
+        .__withinBeta(contacts[1].createdAt, contacts[4].createdAt)
+        .last(2)
+        .queryEdges();
+      const pagination = query.paginationInfo();
+
+      expect(edges.length).toBe(2);
+      expect(edges.map((edge) => edge.id2)).toEqual([
+        contacts[1].id,
+        contacts[2].id,
+      ]);
+
+      verifyQuery({
+        length: 2,
+        limit: 2,
+        extraClause: And(
+          GreaterEq("time", contacts[1].createdAt),
+          Less("time", contacts[4].createdAt),
+        ),
+        // there's a load for user we don't care about here so just skip it...
+        logsStart: 1,
+        numQueries: 2,
+        direction: "ASC",
+      });
+
+      const info = pagination.get(user.id)!;
+      expect(info.hasNextPage).toBe(false);
+      expect(info.hasPreviousPage).toBe(true);
+
+      ml.clear();
+
+      const query2 = getQuery(user.viewer);
+      const edges2 = await query2
+        .__withinBeta(contacts[1].createdAt, contacts[4].createdAt)
+        .last(2, info.endCursor)
+        .queryEdges();
+      const pagination2 = query2.paginationInfo();
+
+      expect(edges2.length).toBe(1);
+      expect(edges2.map((edge) => edge.id2)).toEqual([contacts[3].id]);
+
+      // complicated pagination query. ignore verifying for now
+      // verifyFirstAfterCursorQuery in shared_test handles this...
+
+      const info2 = pagination2.get(user.id) ?? {
+        hasNextPage: false,
+        hasPreviousPage: false,
+      };
+      expect(info2.hasNextPage).toBe(false);
+      expect(info2.hasPreviousPage).toBe(false);
     });
   });
 

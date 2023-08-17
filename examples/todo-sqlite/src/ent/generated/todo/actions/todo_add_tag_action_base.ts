@@ -130,7 +130,7 @@ export class TodoAddTagActionBase
     return new this(viewer, todo);
   }
 
-  static async saveXFromID<T extends TodoAddTagActionBase>(
+  static async saveFromID<T extends TodoAddTagActionBase>(
     this: new (
       viewer: Viewer,
       todo: Todo,
@@ -138,8 +138,11 @@ export class TodoAddTagActionBase
     viewer: Viewer,
     id: ID,
     tagID: ID,
-  ): Promise<Todo> {
-    const todo = await Todo.loadX(viewer, id);
-    return new this(viewer, todo).addTag(tagID).saveX();
+  ): Promise<Todo | null> {
+    const todo = await Todo.load(viewer, id);
+    if (todo === null) {
+      return null;
+    }
+    return new this(viewer, todo).addTag(tagID).save();
   }
 }

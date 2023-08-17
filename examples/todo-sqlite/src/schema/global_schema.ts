@@ -8,7 +8,7 @@ import { GlobalDeletedEdge } from "@snowtop/ent-soft-delete";
 
 const glo: GlobalSchema = {
   fields: {
-    enum: StructType({
+    account_prefs: StructType({
       tsType: "AccountPrefs",
       graphQLType: "AccountPrefs",
       fields: {

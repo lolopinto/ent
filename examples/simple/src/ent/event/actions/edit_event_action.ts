@@ -4,11 +4,6 @@ import {
 } from "../../generated/event/actions/edit_event_action_base";
 import { Validator } from "@snowtop/ent/action";
 import { SharedValidators } from "./event_validators";
-import {
-  AllowIfViewerIsEntPropertyRule,
-  AlwaysDenyRule,
-  PrivacyPolicy,
-} from "@snowtop/ent";
 import { EventBuilder } from "../../generated/event/actions/event_builder";
 import { Event } from "../../../ent";
 import { ExampleViewer } from "../../../viewer/viewer";
@@ -25,14 +20,5 @@ export default class EditEventAction extends EditEventActionBase {
     Event
   >[] {
     return [...SharedValidators];
-  }
-
-  getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [
-        new AllowIfViewerIsEntPropertyRule<Event>("creatorID"),
-        AlwaysDenyRule,
-      ],
-    };
   }
 }

@@ -567,7 +567,7 @@ describe("ops", () => {
   test("AND 2 ops", async () => {
     await Promise.all(
       [4, 8].map(async (id) => {
-        return await editRowForTest({
+        return editRowForTest({
           tableName: "t",
           fields: {
             bar: "bar2",
@@ -594,7 +594,7 @@ describe("ops", () => {
   test("AND 3 ops", async () => {
     await Promise.all(
       [4, 8].map(async (id) => {
-        return await editRowForTest({
+        return editRowForTest({
           tableName: "t",
           fields: {
             bar: "bar2",
@@ -650,7 +650,7 @@ describe("ops", () => {
   test("OR 4 ops", async () => {
     await Promise.all(
       [4, 8].map(async (id) => {
-        return await editRowForTest({
+        return editRowForTest({
           tableName: "t",
           fields: {
             bar: "bar2",

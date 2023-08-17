@@ -86,6 +86,6 @@ export const EventRsvpStatusEditType: GraphQLFieldConfig<
         userID: mustDecodeIDFromGQLID(input.userID),
       },
     );
-    return { event: event };
+    return { event };
   },
 };

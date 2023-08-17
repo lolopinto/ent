@@ -7,17 +7,24 @@ import pytest
 import shutil
 import uuid
 import tempfile
-from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects import postgresql
 from dateutil import parser
 import sqlalchemy as sa
 
 from auto_schema import runner
-from typing import List
+from typing import List, Optional
 
-from auto_schema.schema_item import FullTextIndex
+from auto_schema import schema_item
 from auto_schema import compare
+from dataclasses import dataclass
+
+
+@dataclass
+class ConnInfo:
+    engine: sa.engine.Engine
+    url: str
+    connection: Optional[sa.engine.Connection]
 
 
 class Postgres:
@@ -26,8 +33,8 @@ class Postgres:
         self._globalConnection = None
         self._globalEngine = None
 
-        self._conn = None
-        self._engine = None
+        self._conns = []
+        self._engines = []
 
     def randomDB(self):
         return random.choice(string.ascii_lowercase) + ''.join(random.SystemRandom().choice(
@@ -36,25 +43,36 @@ class Postgres:
     def _get_url(self, _schema_path):
         return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
 
-    def create_connection(self, schema_path):
-        engine = create_engine(self._get_url(schema_path),
-                               isolation_level='AUTOCOMMIT')
-        self._globalEngine = engine
-        self._globalConnection = engine.connect()
-        self._globalConnection.execute('CREATE DATABASE %s' % self._randomDB)
-        engine = create_engine("%s/%s" %
-                               (self._get_url(schema_path), self._randomDB))
-        self._engine = engine
-        self._conn = engine.connect()
+    def create_connection(self, schema_path) -> ConnInfo:
+        if self._globalConnection is None:
+            engine = sa.create_engine(self._get_url(schema_path),
+                                      isolation_level='AUTOCOMMIT')
+            self._globalEngine = engine
+            self._globalConnection = engine.connect()
+            self._globalConnection.execute(
+                sa.text('CREATE DATABASE %s' % self._randomDB))
 
-        return self._conn
+        url = ("%s/%s" %
+               (self._get_url(schema_path), self._randomDB))
+
+        engine = sa.create_engine(url)
+        self._engines.append(engine)
+
+        conn = engine.connect()
+        self._conns.append(conn)
+
+        return ConnInfo(engine, url, conn)
 
     def get_finalizer(self):
         def fn():
-            self._conn.close()
-            self._engine.dispose()
+            for conn in self._conns:
+                conn.close()
 
-            self._globalConnection.execute('DROP DATABASE %s' % self._randomDB)
+            for engine in self._engines:
+                engine.dispose()
+
+            self._globalConnection.execute(
+                sa.text('DROP DATABASE %s' % self._randomDB))
             self._globalConnection.close()
             self._globalEngine.dispose()
 
@@ -64,20 +82,26 @@ class Postgres:
 class SQLite:
 
     def __init__(self) -> None:
-        self._conn = None
+        self._connInfo = None
 
     def _get_url(self, schema_path):
         return "sqlite:///%s/%s" % (schema_path, "foo.db")
         # return "sqlite:///bar.db"  # if you want a local file to inspect for whatever reason
 
     def create_connection(self, schema_path):
-        engine = create_engine(self._get_url(schema_path))
-        self._conn = engine.connect()
-        return self._conn
+        # no need to create a new connection if we already have one
+        if self._connInfo is not None:
+            return self._connInfo
+
+        url = self._get_url(schema_path)
+        engine = sa.create_engine(self._get_url(schema_path))
+        conn = engine.connect()
+        self._connInfo = ConnInfo(engine, url, conn)
+        return self._connInfo
 
     def get_finalizer(self):
         def fn():
-            self._conn.close()
+            self._connInfo.connection.close()
 
         return fn
 
@@ -86,10 +110,21 @@ def postgres_dialect_from_request(request):
     return "Postgres" in request.cls.__name__
 
 
-@pytest.fixture(scope="function")
+@ pytest.fixture(scope="function")
 def new_test_runner(request):
 
-    def _make_new_test_runner(metadata, prev_runner=None):
+    # unclear if best way but use name of class to determine postgres vs sqlite and use that
+    # to make sure everything works for both
+    dialect = None
+
+    if postgres_dialect_from_request(request):
+        dialect = Postgres()
+    else:
+        dialect = SQLite()
+
+    request.addfinalizer(dialect.get_finalizer())
+
+    def _make_new_test_runner(metadata, prev_runner=None) -> runner.Runner:
         # by default, this will be none and create a temp directory where things should go
         # sometimes, when we want to test multiple revisions, we'll send the previous runner so we reuse the path
         if prev_runner is not None:
@@ -97,24 +132,16 @@ def new_test_runner(request):
         else:
             schema_path = tempfile.mkdtemp()
 
-        # unclear if best way but use name of class to determine postgres vs sqlite and use that
-        # to make sure everything works for both
-        dialect = None
-        if postgres_dialect_from_request(request):
-            dialect = Postgres()
-        else:
-            dialect = SQLite()
-
         # reuse connection if not None. same logic as schema_path above
-        if prev_runner is None:
-            connection = dialect.create_connection(schema_path)
-            metadata.bind = connection
-
-            request.addfinalizer(dialect.get_finalizer())
-        else:
+        if prev_runner is not None:
+            # commit old conn
             connection = prev_runner.get_connection()
+            connection.commit()
 
-        r = runner.Runner(metadata, connection, schema_path)
+        # use a new connection for each runner
+        info = dialect.create_connection(schema_path)
+
+        r = runner.Runner(metadata, info.engine, info.connection, schema_path)
 
         def delete_path():
             path = r.get_schema_path()
@@ -130,7 +157,7 @@ def new_test_runner(request):
     return _make_new_test_runner
 
 
-@pytest.fixture
+@ pytest.fixture
 def empty_metadata():
     metadata = sa.MetaData()
     return metadata
@@ -160,7 +187,7 @@ def default_children_of_table():
     ]
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_table():
     return metadata_with_base_table_restored()
 
@@ -196,7 +223,7 @@ def metadata_with_base_table_restored():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_nullable_fields():
     metadata = sa.MetaData()
     sa.Table("accounts", metadata,
@@ -214,7 +241,7 @@ def metadata_with_nullable_fields():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def address_metadata_table_fixture():
     return address_metadata_table()
 
@@ -694,13 +721,13 @@ def metadata_with_multi_column_index(metadata_with_table):
 def metadata_with_fulltext_search_index(metadata_with_table):
     sa.Table('accounts',
              metadata_with_table,
-             FullTextIndex("accounts_first_name_idx",
-                           info={
-                               'postgresql_using': 'gin',
-                               'postgresql_using_internals': "to_tsvector('english', first_name)",
-                               'column': 'first_name',
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_first_name_idx",
+                                       info={
+                                           'postgresql_using': 'gin',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name)",
+                                           'column': 'first_name',
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata_with_table
@@ -709,13 +736,13 @@ def metadata_with_fulltext_search_index(metadata_with_table):
 def metadata_with_multicolumn_fulltext_search_index(metadata_with_table):
     sa.Table('accounts',
              metadata_with_table,
-             FullTextIndex("accounts_full_text_idx",
-                           info={
-                               'postgresql_using': 'gin',
-                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
-                               'columns': ['first_name', 'last_name'],
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_full_text_idx",
+                                       info={
+                                           'postgresql_using': 'gin',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                                           'columns': ['first_name', 'last_name'],
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata_with_table
@@ -726,13 +753,13 @@ def metadata_with_multicolumn_fulltext_search():
     metadata = metadata_with_base_table_restored()
     sa.Table('accounts',
              metadata,
-             FullTextIndex("accounts_full_text_idx",
-                           info={
-                               'postgresql_using': 'gin',
-                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
-                               'columns': ['first_name', 'last_name'],
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_full_text_idx",
+                                       info={
+                                           'postgresql_using': 'gin',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                                           'columns': ['first_name', 'last_name'],
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata
@@ -741,13 +768,13 @@ def metadata_with_multicolumn_fulltext_search():
 def metadata_with_multicolumn_fulltext_search_index_gist(metadata_with_table):
     sa.Table('accounts',
              metadata_with_table,
-             FullTextIndex("accounts_full_text_idx",
-                           info={
-                               'postgresql_using': 'gist',
-                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
-                               'columns': ['first_name', 'last_name'],
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_full_text_idx",
+                                       info={
+                                           'postgresql_using': 'gist',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                                           'columns': ['first_name', 'last_name'],
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata_with_table
@@ -756,13 +783,13 @@ def metadata_with_multicolumn_fulltext_search_index_gist(metadata_with_table):
 def metadata_with_multicolumn_fulltext_search_index_btree(metadata_with_table):
     sa.Table('accounts',
              metadata_with_table,
-             FullTextIndex("accounts_full_text_idx",
-                           info={
-                               'postgresql_using': 'btree',
-                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
-                               'columns': ['first_name', 'last_name'],
-                           }
-                           ),
+             schema_item.FullTextIndex("accounts_full_text_idx",
+                                       info={
+                                           'postgresql_using': 'btree',
+                                           'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                                           'columns': ['first_name', 'last_name'],
+                                       }
+                                       ),
              extend_existing=True
              )
     return metadata_with_table
@@ -792,6 +819,7 @@ def metadata_with_generated_col_fulltext_search_index_gist(metadata_with_table):
 
     return metadata_with_table
 
+
 def metadata_with_generated_col_extra_col_fulltext_search_index(metadata_with_table):
     sa.Table('accounts', metadata_with_table,
              sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
@@ -803,6 +831,7 @@ def metadata_with_generated_col_extra_col_fulltext_search_index(metadata_with_ta
 
     return metadata_with_table
 
+
 def metadata_with_generated_col_extra_col_fulltext_search_index_gist(metadata_with_table):
     sa.Table('accounts', metadata_with_table,
              sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
@@ -813,7 +842,6 @@ def metadata_with_generated_col_extra_col_fulltext_search_index_gist(metadata_wi
              extend_existing=True)
 
     return metadata_with_table
-
 
 
 @ pytest.fixture
@@ -1322,6 +1350,7 @@ def metadata_with_enum_col():
 def metadata_with_server_default_changed_enum_type(metadata):
     return _metadata_with_server_default_changed(metadata, 'rainbow', 'accounts', 'violet')
 
+
 def metadata_with_uuid_col():
     metadata = sa.MetaData()
 
@@ -1332,8 +1361,10 @@ def metadata_with_uuid_col():
              )
     return metadata
 
+
 def metadata_with_server_default_changed_uuid_type(metadata):
     return _metadata_with_server_default_changed(metadata, 'other_id', 'accounts', FOLLOWERS_EDGE)
+
 
 def metadata_with_server_default_changed_uuid_type_in_practice(metadata):
     # in practice, we never have UUID objects but strings as uuid

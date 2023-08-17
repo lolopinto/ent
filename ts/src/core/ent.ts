@@ -36,7 +36,7 @@ import * as clause from "./clause";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
 import { __getGlobalSchema } from "./global_schema";
-import { OrderBy, getOrderByPhrase } from "./query_impl";
+import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
 import { CacheMap } from "./loaders/loader";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
@@ -419,7 +419,7 @@ export async function loadEntXFromClause<
     context: viewer.context,
   };
   const row = await loadRowX(rowOptions);
-  return await applyPrivacyPolicyForRowX(viewer, options, row);
+  return applyPrivacyPolicyForRowX(viewer, options, row);
 }
 
 export async function loadEnts<
@@ -666,6 +666,7 @@ async function loadCustomDataImpl<
       cls = clause.getCombinedClause(
         options.loaderFactory.options,
         query.clause,
+        true,
       );
     }
     return loadRows({
@@ -708,7 +709,7 @@ export async function loadDerivedEntX<
   loader: new (viewer: TViewer, data: Data) => TEnt,
 ): Promise<TEnt> {
   const ent = new loader(viewer, data);
-  return await applyPrivacyPolicyForEntX(viewer, ent, data, { ent: loader });
+  return applyPrivacyPolicyForEntX(viewer, ent, data, { ent: loader });
 }
 
 interface FieldPrivacyOptions<
@@ -909,25 +910,6 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
     cache.primeCache(options, r);
   }
   return r;
-}
-
-// private to ent
-export function buildQuery(options: QueryableDataOptions): string {
-  const fields = options.fields.join(", ");
-  // always start at 1
-  const whereClause = options.clause.clause(1);
-  const parts: string[] = [];
-  parts.push(`SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`);
-  if (options.groupby) {
-    parts.push(`GROUP BY ${options.groupby}`);
-  }
-  if (options.orderby) {
-    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby)}`);
-  }
-  if (options.limit) {
-    parts.push(`LIMIT ${options.limit}`);
-  }
-  return parts.join(" ");
 }
 
 interface GroupQueryOptions<T extends Data, K = keyof T> {
@@ -1523,7 +1505,7 @@ export async function loadUniqueNode<
   if (!edge) {
     return null;
   }
-  return await loadEnt(viewer, edge.id2, options);
+  return loadEnt(viewer, edge.id2, options);
 }
 
 export async function loadRawEdgeCountX(
@@ -1626,7 +1608,7 @@ async function applyPrivacyPolicyForRowX<
   row: Data,
 ): Promise<TEnt> {
   const ent = new options.ent(viewer, row);
-  return await applyPrivacyPolicyForEntX(viewer, ent, row, options);
+  return applyPrivacyPolicyForEntX(viewer, ent, row, options);
 }
 
 // deprecated. doesn't use entcache

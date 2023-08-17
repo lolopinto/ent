@@ -37,7 +37,7 @@
   {{ template "enum.tmpl" . -}}
 {{ end -}}
 
-{{$nodeInstance := $baseObj.NodeInstance}}
+{{$nodeInstance := "obj"}}
 
 {{ range $gqlNode := $baseObj.GQLNodes -}}
   {{if eq $gqlNode.GQLType "GraphQLUnionType" -}}
@@ -78,7 +78,7 @@
         {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance "ViewerType" $viewerType) -}}
         }),
       {{if .GQLInterfaces -}}
-      interfaces: [
+      interfaces: () => [
         {{range $interface := .GQLInterfaces -}}
           {{useImport $interface}},
         {{end -}}

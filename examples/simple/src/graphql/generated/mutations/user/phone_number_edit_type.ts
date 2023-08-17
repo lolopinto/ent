@@ -81,6 +81,6 @@ export const PhoneNumberEditType: GraphQLFieldConfig<
         newPhoneNumber: input.newPhoneNumber,
       },
     );
-    return { user: user };
+    return { user };
   },
 };

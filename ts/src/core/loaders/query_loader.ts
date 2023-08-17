@@ -1,7 +1,6 @@
 import DataLoader from "dataloader";
 import {
   Context,
-  ID,
   EdgeQueryableDataOptions,
   Loader,
   LoaderFactory,
@@ -19,7 +18,7 @@ import { logEnabled } from "../logger";
 import { CacheMap, getCustomLoader, getLoader } from "./loader";
 import memoizee from "memoizee";
 import { ObjectLoaderFactory } from "./object_loader";
-import { OrderBy, getOrderByPhrase } from "../query_impl";
+import { OrderBy } from "../query_impl";
 
 function getOrderByLocal(
   options: QueryOptions,
@@ -53,10 +52,11 @@ async function simpleCase<K extends any>(
     throw new Error(`need options.groupCol or options.clause`);
   }
   if (queryOptions?.clause) {
+    // TODO does this one need a getCombinedClause check??
     cls = clause.And(cls, queryOptions.clause);
   }
 
-  return await loadRows({
+  return loadRows({
     ...options,
     clause: cls,
     orderby: getOrderByLocal(options, queryOptions),
