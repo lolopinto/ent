@@ -128,7 +128,7 @@ async function create(opts: Partial<UserCreateInput>): Promise<User> {
     phoneNumber: randomPhoneNumber(),
     ...opts,
   };
-  return await CreateUserAction.create(loggedOutViewer, input).saveX();
+  return CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
 test("baratheon", async () => {

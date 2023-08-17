@@ -37,6 +37,6 @@ export class EventResolver {
     ],
   })
   async event(context: RequestContext, slug: string) {
-    return await Event.loadFromSlug(context.getViewer(), slug);
+    return Event.loadFromSlug(context.getViewer(), slug);
   }
 }

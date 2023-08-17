@@ -15,7 +15,7 @@ import { Transaction } from "@snowtop/ent/action";
 const loggedOutViewer = new LoggedOutExampleViewer();
 
 async function createUser(): Promise<User> {
-  return await CreateUserAction.create(loggedOutViewer, {
+  return CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
@@ -29,7 +29,7 @@ async function create(
   firstName: string,
   lastName: string,
 ): Promise<Contact> {
-  return await CreateContactAction.create(new ExampleViewer(user.id), {
+  return CreateContactAction.create(new ExampleViewer(user.id), {
     emails: [
       {
         emailAddress: randomEmail(),

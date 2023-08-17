@@ -82,7 +82,7 @@ export class PassportAuthHandler implements AuthHandler {
       return null;
     }
     let userr = await user;
-    return await toViewer(context, userr, this.options?.userToViewer);
+    return toViewer(context, userr, this.options?.userToViewer);
   }
 
   static testInitSessionBasedFunction(
@@ -111,7 +111,7 @@ async function toViewer(
     return obj;
   }
   if (userToViewer) {
-    return await userToViewer(context, obj);
+    return userToViewer(context, obj);
   }
 
   throw new Error("cannot convert to Viewer");
@@ -322,15 +322,11 @@ export async function useAndVerifyAuth(
       if (!viewerMaybe) {
         return null;
       }
-      return await toViewer(
-        context,
-        viewerMaybe,
-        defaultReqToViewer(loadOptions),
-      );
+      return toViewer(context, viewerMaybe, defaultReqToViewer(loadOptions));
     },
   });
 
-  return await useAndAuth(context, strategy, options);
+  return useAndAuth(context, strategy, options);
 }
 
 interface JWTOptions {

@@ -344,7 +344,7 @@ export async function expectQueryFromRoot(
   config: queryRootConfig,
   ...options: Option[] // TODO queries? expected values
 ): Promise<supertest.SuperTest<supertest.Test>> {
-  return await expectFromRoot(
+  return expectFromRoot(
     {
       ...config,
       queryPrefix: "query",
@@ -375,7 +375,7 @@ export async function expectMutation(
     };
   }
 
-  return await expectFromRoot(
+  return expectFromRoot(
     {
       ...config,
       args: args,
