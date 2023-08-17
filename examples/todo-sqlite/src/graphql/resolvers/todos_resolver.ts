@@ -54,7 +54,7 @@ export class TodoResolver {
   })
   async openTodosPlural(id: ID): Promise<Todo[]> {
     const viewer = new IDViewer(id);
-    return await Todo.loadCustom(
+    return Todo.loadCustom(
       viewer,
       query.And(query.Eq("assignee_id", id), query.Eq("completed", false)),
     );

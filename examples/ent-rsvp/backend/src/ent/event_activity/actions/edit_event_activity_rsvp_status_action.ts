@@ -67,7 +67,7 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
             EdgeType.EventActivityToAttending,
             WriteOperation.Insert,
           );
-          return await Promise.all(
+          return Promise.all(
             edges.map(async (edge) => {
               if (edge.isBuilder(edge.id)) {
                 throw new Error("edge should not be a builder");

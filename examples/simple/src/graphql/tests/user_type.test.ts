@@ -53,7 +53,7 @@ async function create(opts: Partial<UserCreateInput>): Promise<User> {
     password: "pa$$w0rd",
     ...opts,
   };
-  return await CreateUserAction.create(loggedOutViewer, input).saveX();
+  return CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
 function getNodeConfig(

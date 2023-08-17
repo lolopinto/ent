@@ -56,7 +56,7 @@ export async function createActivity(
     eventID = event.id;
   }
 
-  return await CreateEventActivityAction.create(event.viewer, {
+  return CreateEventActivityAction.create(event.viewer, {
     startTime: new Date(),
     location: "fun location",
     name: "welcome dinner",
@@ -142,7 +142,7 @@ export async function createGuests(
   group: GuestGroup,
   idx: number,
 ): Promise<Guest[]> {
-  return await Promise.all(
+  return Promise.all(
     inputs[idx].map(async (input) => {
       return CreateGuestAction.create(group.viewer, {
         ...input,

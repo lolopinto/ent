@@ -37,7 +37,7 @@ function getUserRootConfig(
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 async function createUser(input?: Partial<UserCreateInput>): Promise<User> {
-  return await CreateUserAction.create(loggedOutViewer, {
+  return CreateUserAction.create(loggedOutViewer, {
     firstName: "first",
     lastName: "last",
     emailAddress: randomEmail(),

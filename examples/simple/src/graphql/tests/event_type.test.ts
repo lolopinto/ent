@@ -61,7 +61,7 @@ async function createEvent(options: Partial<EventCreateInput>): Promise<Event> {
   const user = await createUser();
 
   let vc = new ExampleViewer(user.id);
-  return await CreateEventAction.create(vc, {
+  return CreateEventAction.create(vc, {
     name: "event",
     creatorID: user.id,
     startTime: new Date(),

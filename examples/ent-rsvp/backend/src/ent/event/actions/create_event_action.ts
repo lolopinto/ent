@@ -25,7 +25,7 @@ export default class CreateEventAction extends CreateEventActionBase {
             return;
           }
 
-          return await Promise.all(
+          return Promise.all(
             input.activities.map(async (activity) => {
               return CreateEventActivityAction.create(builder.viewer, {
                 eventID: builder,

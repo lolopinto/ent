@@ -41,7 +41,7 @@ export class TodosResolver {
         ChangeTodoStatusAction.create(vc, todo, { completed: completed }),
       ),
     );
-    return await bulk.saveX();
+    return bulk.saveX();
   }
 
   @gqlMutation({
@@ -72,6 +72,6 @@ export class TodosResolver {
       AccountBuilder,
       ...completedTodos.map((todo) => DeleteTodoAction.create(vc, todo)),
     );
-    return await bulk.saveX();
+    return bulk.saveX();
   }
 }
