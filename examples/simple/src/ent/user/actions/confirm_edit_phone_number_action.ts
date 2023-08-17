@@ -69,7 +69,7 @@ export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumber
             );
           }
           // delete the authCode
-          return await DeleteAuthCodeAction.create(
+          return DeleteAuthCodeAction.create(
             builder.viewer,
             authCode,
           ).changeset();

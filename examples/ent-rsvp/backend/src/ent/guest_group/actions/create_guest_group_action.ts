@@ -42,7 +42,7 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
             (activity) => activity.inviteAllGuests,
           );
 
-          return await Promise.all(
+          return Promise.all(
             activities.map((activity) =>
               EventActivityAddInviteAction.create(builder.viewer, activity)
                 .addInviteID(builder)
@@ -57,7 +57,7 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
             return;
           }
 
-          return await Promise.all(
+          return Promise.all(
             input.guests.map(async (guest) => {
               return CreateGuestAction.create(builder.viewer, {
                 eventID: input.eventID,

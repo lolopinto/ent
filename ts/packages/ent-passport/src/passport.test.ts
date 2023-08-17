@@ -124,7 +124,7 @@ let viewerType = new GraphQLObjectType({
       async resolve(_source, args, context) {
         const v = context.getViewer() as IDViewer;
 
-        return await v.viewer();
+        return v.viewer();
       },
     },
   },
@@ -196,7 +196,7 @@ const authUserSessionType: GraphQLFieldConfig<
   },
   type: new GraphQLNonNull(viewerType),
   async resolve(_source, args, context) {
-    return await useAndVerifyAuth(
+    return useAndVerifyAuth(
       context,
       async () => {
         const row = await loadRow({
@@ -263,7 +263,7 @@ interface User {
 }
 
 async function createUser(opts?: Partial<User>) {
-  return await createRowForTest(
+  return createRowForTest(
     {
       tableName: "users",
       fields: {

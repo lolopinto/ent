@@ -25,7 +25,7 @@ export default class CreateEventActivityAction extends CreateEventActivityAction
           if (!this.input.address) {
             return;
           }
-          return await CreateAddressAction.create(builder.viewer, {
+          return CreateAddressAction.create(builder.viewer, {
             ...this.input.address,
             ownerID: builder,
             ownerType: NodeType.EventActivity,

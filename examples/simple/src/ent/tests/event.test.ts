@@ -13,7 +13,7 @@ import { ID, query } from "@snowtop/ent";
 const loggedOutViewer = new LoggedOutExampleViewer();
 
 async function createUser() {
-  return await CreateUserAction.create(loggedOutViewer, {
+  return CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
@@ -28,7 +28,7 @@ async function create(
 ): Promise<Event> {
   let user = await createUser();
 
-  return await CreateEventAction.create(loggedOutViewer, {
+  return CreateEventAction.create(loggedOutViewer, {
     name: "fun event",
     creatorID: user.id,
     startTime: startTime,

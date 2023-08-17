@@ -60,7 +60,7 @@ function getUserConfig(
 }
 
 async function createUser(): Promise<User> {
-  return await CreateUserAction.create(loggedOutViewer, {
+  return CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
@@ -84,7 +84,7 @@ async function createContact(user?: User): Promise<Contact> {
     userID: user.id,
   }).saveX();
   // reload
-  return await Contact.loadX(contact.viewer, contact.id);
+  return Contact.loadX(contact.viewer, contact.id);
 }
 
 test("query contact", async () => {

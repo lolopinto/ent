@@ -66,7 +66,7 @@ export class Password extends BaseField implements Field {
     val = this.stringType.format(val);
 
     let salt = await bcrypt.genSalt(this._cost);
-    return await bcrypt.hash(val, salt);
+    return bcrypt.hash(val, salt);
   }
 
   valid(val: any): boolean {

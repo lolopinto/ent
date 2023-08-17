@@ -70,7 +70,7 @@ export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddre
             );
           }
           // delete the authCode
-          return await DeleteAuthCodeAction.create(
+          return DeleteAuthCodeAction.create(
             builder.viewer,
             authCode,
           ).changeset();
