@@ -188,7 +188,6 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 	if processor.Config.UseChanges() {
 		changeMap := processor.ChangeMap
 		changes := changeMap[node.ObjData.Node]
-		// spew.Dump("yse changes", changeMap, node.ObjData.Node, len(changes))
 		for _, c := range changes {
 			if c.TSOnly {
 				continue
@@ -387,7 +386,6 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	for k := range processor.ChangeMap {
 		nodeInfo := processor.Schema.Nodes[k]
 		if s.nodes[k] == nil && nodeInfo != nil {
-			spew.Dump("deleted node", k, processor.ChangeMap[k])
 			funcs = append(funcs, p.processDeletedNode(processor, s, nodeInfo.NodeData)...)
 		}
 	}
@@ -458,8 +456,6 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		}
 
 		for k := range cmp.customConnectionsRemoved {
-			// TODO!
-			spew.Dump(k)
 			funcs = append(funcs,
 				file.GetDeleteFileFunction(
 					processor.Config,
@@ -2486,10 +2482,6 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	}
 
 	for _, f := range a.GetGraphQLFields() {
-		if a.GetActionName() == "EditEventActivityRsvpStatusAction" {
-			// if f.GetGraphQLName() == "rsvpStatus" {
-			spew.Dump(f)
-		}
 		if err := result.addField(&fieldType{
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetTSMutationGraphQLTypeForFieldImports(!action.IsRequiredField(a, f), true), true),
