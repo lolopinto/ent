@@ -10,3 +10,4 @@ codegen:
     name: 'CustomTodoEdge'
   schemaSQLFilePath: 'src/schema/schema.sql'
   transformDeleteMethod: "hardDelete"
+  transformLoadMethod: "loadSoftDeleted"

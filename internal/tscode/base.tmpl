@@ -245,7 +245,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     // with no transformations which are currently done implicitly
     // we don't generate the full complement of read-APIs 
     // but can easily query the raw data with {{$noTransformLoader}}
-    static async loadNoTransform<T extends {{$baseClass}}>(
+    static async {{$cfg.TransformLoadMethod}}<T extends {{$baseClass}}>(
       this: {{$thisType}},
       viewer: {{$viewerType}}, 
       id: {{$idType}},
@@ -262,7 +262,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       ) as T | null;
     }
 
-    static async loadNoTransformX<T extends {{$baseClass}}>(
+    static async {{$cfg.TransformLoadMethodX}}<T extends {{$baseClass}}>(
       this: {{$thisType}},
       viewer: {{$viewerType}}, 
       id: {{$idType}},

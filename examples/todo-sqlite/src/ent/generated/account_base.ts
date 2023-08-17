@@ -165,7 +165,7 @@ export class AccountBase
   // with no transformations which are currently done implicitly
   // we don't generate the full complement of read-APIs
   // but can easily query the raw data with accountNoTransformLoader
-  static async loadNoTransform<T extends AccountBase>(
+  static async loadSoftDeleted<T extends AccountBase>(
     this: new (
       viewer: Viewer,
       data: Data,
@@ -181,7 +181,7 @@ export class AccountBase
     return (await loadEnt(viewer, id, opts)) as T | null;
   }
 
-  static async loadNoTransformX<T extends AccountBase>(
+  static async loadSoftDeletedX<T extends AccountBase>(
     this: new (
       viewer: Viewer,
       data: Data,

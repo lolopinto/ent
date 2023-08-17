@@ -138,7 +138,10 @@ interface CodegenConfig {
 
   userOveriddenFiles?: string[];
 
-  // if set, overrides the saveWithoutTransform(X) methods to be this instead of the default saveWithoutTransform
+  // if set, overrides the loadNoTransform(X) methods to be this instead of the default loadNoTransform(X)
+  transformLoadMethod?: string;
+
+  // if set, overrides the saveWithoutTransform(X) methods to be this instead of the default saveWithoutTransform(X)
   transformDeleteMethod?: string;
 }
 
