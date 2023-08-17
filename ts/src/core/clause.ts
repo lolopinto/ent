@@ -1121,8 +1121,9 @@ export function Modulo<T extends Data, K = keyof T>(
 }
 
 export function getCombinedClause<V extends Data = Data, K = keyof V>(
-  options: Omit<SelectDataOptions, "key">,
+  options: Pick<SelectDataOptions, "clause">,
   cls: Clause<V, K>,
+  checkIntersection = false,
 ): Clause<V, K> {
   if (options.clause) {
     let optionClause: Clause | undefined;
@@ -1132,8 +1133,25 @@ export function getCombinedClause<V extends Data = Data, K = keyof V>(
       optionClause = options.clause;
     }
     if (optionClause) {
-      // @ts-expect-error different types
-      cls = And(cls, optionClause);
+      let and = true;
+      if (checkIntersection) {
+        // this should be the smaller one
+        const transformedCols = new Set<K | string | number>(
+          optionClause.columns(),
+        );
+        const queriedCols = cls.columns();
+        const has = new Set<K | string | number>();
+        for (const col of queriedCols) {
+          if (transformedCols.has(col)) {
+            has.add(col);
+          }
+        }
+        and = transformedCols.size > 0 && has.size !== transformedCols.size;
+      }
+      if (and) {
+        // @ts-expect-error different types
+        cls = And(cls, optionClause);
+      }
     }
   }
   return cls;

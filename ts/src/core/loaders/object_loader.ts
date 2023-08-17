@@ -73,7 +73,7 @@ async function loadRowsForClauseLoader<
   const rowOptions: LoadRowOptions = {
     ...options,
     // @ts-expect-error clause in LoadRowOptions doesn't take templatized version of Clause
-    clause: getCombinedClause(options, clause),
+    clause: getCombinedClause(options, clause, true),
   };
 
   return (await loadRows(rowOptions)) as TResultData[];
@@ -86,7 +86,7 @@ async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
   const rowOptions: LoadRowOptions = {
     ...options,
     // @ts-expect-error clause in LoadRowOptions doesn't take templatized version of Clause
-    clause: getCombinedClause(options, clause),
+    clause: getCombinedClause(options, clause, true),
   };
 
   const row = await loadRow({
