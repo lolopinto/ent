@@ -140,7 +140,7 @@ export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
 
 export async function createContact(viewer: Viewer, input: ContactCreateInput) {
   const builder = getContactBuilder(viewer, input);
-  return await builder.saveX();
+  return builder.saveX();
 }
 
 export const contactLoader = new ObjectLoaderFactory({

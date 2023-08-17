@@ -752,9 +752,8 @@ function commonTests() {
     async function doNothing(): Promise<void> {}
     action.getTriggers = () => [
       {
-        changeset: async () => {
-          return await Promise.all([userAction.changeset(), doNothing()]);
-        },
+        changeset: async () =>
+          Promise.all([userAction.changeset(), doNothing()]),
       },
     ];
 

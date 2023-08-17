@@ -464,7 +464,7 @@ export function assocTests(ml: MockLogs, global = false) {
             );
           }
           await builder.saveX();
-          return await builder.editedEntX();
+          return builder.editedEntX();
         }),
       );
 

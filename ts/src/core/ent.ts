@@ -419,7 +419,7 @@ export async function loadEntXFromClause<
     context: viewer.context,
   };
   const row = await loadRowX(rowOptions);
-  return await applyPrivacyPolicyForRowX(viewer, options, row);
+  return applyPrivacyPolicyForRowX(viewer, options, row);
 }
 
 export async function loadEnts<
@@ -709,7 +709,7 @@ export async function loadDerivedEntX<
   loader: new (viewer: TViewer, data: Data) => TEnt,
 ): Promise<TEnt> {
   const ent = new loader(viewer, data);
-  return await applyPrivacyPolicyForEntX(viewer, ent, data, { ent: loader });
+  return applyPrivacyPolicyForEntX(viewer, ent, data, { ent: loader });
 }
 
 interface FieldPrivacyOptions<
@@ -1505,7 +1505,7 @@ export async function loadUniqueNode<
   if (!edge) {
     return null;
   }
-  return await loadEnt(viewer, edge.id2, options);
+  return loadEnt(viewer, edge.id2, options);
 }
 
 export async function loadRawEdgeCountX(
@@ -1608,7 +1608,7 @@ async function applyPrivacyPolicyForRowX<
   row: Data,
 ): Promise<TEnt> {
   const ent = new options.ent(viewer, row);
-  return await applyPrivacyPolicyForEntX(viewer, ent, row, options);
+  return applyPrivacyPolicyForEntX(viewer, ent, row, options);
 }
 
 // deprecated. doesn't use entcache

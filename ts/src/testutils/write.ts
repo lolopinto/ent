@@ -34,7 +34,7 @@ export async function createRowForTest(
     if (isSyncClient(client)) {
       return createRowSync(client, options, suffix || "");
     }
-    return await createRow(client, options, suffix || "");
+    return createRow(client, options, suffix || "");
   } finally {
     client.release();
   }
@@ -47,7 +47,7 @@ export async function editRowForTest(options: EditRowOptions, suffix?: string) {
     if (isSyncClient(client)) {
       return editRowSync(client, options, suffix || "");
     }
-    return await editRow(client, options, suffix);
+    return editRow(client, options, suffix);
   } finally {
     client.release();
   }
@@ -63,7 +63,7 @@ export async function deleteRowsForTest(
     if (isSyncClient(client)) {
       return deleteRowsSync(client, options, cls);
     }
-    return await deleteRows(client, options, cls);
+    return deleteRows(client, options, cls);
   } finally {
     client.release();
   }

@@ -164,12 +164,12 @@ export class BaseAction<
 
   async save(): Promise<TEnt | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<TEnt> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   getInput() {

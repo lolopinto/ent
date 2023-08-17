@@ -59,7 +59,7 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
       });
     }
     const loader = await this.loaderFn();
-    return await loader.load(id);
+    return loader.load(id);
   }
 
   clearAll() {

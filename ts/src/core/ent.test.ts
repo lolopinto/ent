@@ -77,7 +77,7 @@ function getUserEditBuilder(
 async function createUser(): Promise<User> {
   const builder = getUserCreateBuilder();
   await builder.saveX();
-  return await builder.editedEntX();
+  return builder.editedEntX();
 }
 
 async function createEdgeRows(edges: string[], table?: string) {

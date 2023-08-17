@@ -464,7 +464,7 @@ export abstract class BaseEdgeQuery<
 
   // this is basically just raw rows
   readonly queryEdges = async (): Promise<TEdge[]> => {
-    return await this.querySingleEdge("queryEdges");
+    return this.querySingleEdge("queryEdges");
   };
 
   abstract queryRawCount(): Promise<number>;
