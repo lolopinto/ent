@@ -319,3 +319,18 @@ INSERT INTO assoc_edge_config(edge_name, edge_type, edge_table, symmetric_edge, 
 ('UserToMaybeEventsEdge', '8d5b1dee-ce65-452e-9f8d-78eca1993800', 'event_rsvps_edges', false, 'b0f6311b-fdab-4c26-b6bf-b751e0997735', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('UserToSelfContactEdge', 'd504201d-cf3f-4eef-b6a0-0b46a7ae186b', 'user_self_contact_edges', false, NULL, now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC') ON CONFLICT DO NOTHING;
 
+-- custom sql for rev 63ec20382c27
+CREATE OR REPLACE FUNCTION users_notify()
+RETURNS trigger AS
+$$
+BEGIN
+  PERFORM pg_notify(’users_created’, NEW.id::text);
+  RETURN NEW;
+END;
+$$ LANGUAGE 'plpgsql';
+ 
+CREATE OR REPLACE TRIGGER users_created BEFORE INSERT OR UPDATE
+       ON users
+       FOR EACH ROW EXECUTE PROCEDURE users_notify();;
+
+-- custom sql for rev 466d862abc01

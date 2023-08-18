@@ -1600,6 +1600,7 @@ class TestPostgresRunner(BaseTestRunner):
         assert upgrade_start != -1
         assert downgrade_start != -1
 
+# TODO render_python_code in alemibc could be helpful?
         #   "edit the file " to add types
         new_upgrade = """def upgrade(): 
     op.execute_sql("CREATE TYPE rainbow as ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')")

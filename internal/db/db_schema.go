@@ -663,7 +663,11 @@ func checkDBFilesInfo(cfg *codegen.Config) *dbFileInfo {
 	}
 }
 
-func compareDbFilesInfo(before, after *dbFileInfo) error {
+func compareDbFilesInfo(processor *codegen.Processor, before, after *dbFileInfo) error {
+	// TODO we need a different way to handle this
+	if processor.Config.WriteAllFiles() {
+		return nil
+	}
 	// nothing to do here
 	if !before.useVersionsInfo || !after.useVersionsInfo {
 		return nil
@@ -676,6 +680,7 @@ func compareDbFilesInfo(before, after *dbFileInfo) error {
 	// TODO does this account for future formatting differences???
 
 	// time is not enough. we need to check the contents of the files
+	// should this be a prompt????
 	if after.schemaPy.exists && before.schemaPy.exists &&
 		string(before.schemaPy.contents) != string(after.schemaPy.contents) {
 		return fmt.Errorf("schema.py changed when no version files changed. there's an ent db error. you should file a bug report about what you were trying to do. it's probably unsupported")
@@ -717,7 +722,7 @@ func (s *dbSchema) makeDBChanges(processor *codegen.Processor) error {
 
 	after := checkDBFilesInfo(cfg)
 
-	return compareDbFilesInfo(s.before, after)
+	return compareDbFilesInfo(processor, s.before, after)
 }
 
 func UpgradeDB(cfg *codegen.Config, revision string, sql bool) error {
