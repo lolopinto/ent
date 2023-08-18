@@ -302,34 +302,8 @@ class Runner(object):
     def squash(self, squash):
         self.cmd.squash(self.revision, squash)
 
-    # doesn't invoke env.py. completely different flow
-    # progressive_sql and upgrade range do go through offline path
-    def all_sql(self, file=None, database=''):
-        dialect = self.connection.dialect.name
 
-        raw_engine = self.args.get('engine', None)
-        if raw_engine is None:
-            return
-
-        # use passed in database. make sure not None
-        url = make_url(raw_engine).set(database=database or '')
-
-        engine = sa.create_engine(url)
-        connection = engine.connect()
-
-        metadata = sa.MetaData()
-        metadata.reflect(bind=connection)
-        if len(metadata.sorted_tables) != 0:
-            raise Exception("to compare from base tables, cannot have any tables in database. have %d" % len(
-                metadata.sorted_tables))
-
-        mc = MigrationContext.configure(
-            connection=connection,
-            dialect_name=dialect,
-            opts=Runner.get_opts(),
-        )
-        migrations = produce_migrations(mc, self.metadata)
-        
+    def _get_custom_sql(self, connection, dialect) -> io.StringIO:
         script_directory = self.cmd.get_script_directory()
         revs = script_directory.walk_revisions()
         
@@ -362,6 +336,11 @@ class Runner(object):
             
         Dispatcher.dispatch = my_decorator(Dispatcher.dispatch)
 
+        # order is flipped, it goes from most recent to oldest
+        # we want to go from oldest -> most recent 
+        revs = list(revs)
+        revs.reverse()
+
         with Operations.context(mc):
             for rev in revs:
                 # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
@@ -372,7 +351,37 @@ class Runner(object):
                     custom_sql_buffer.write(temp_buffer.getvalue())
 
                 temp_buffer.clear()
+        
+        return custom_sql_buffer
                     
+    # doesn't invoke env.py. completely different flow
+    # progressive_sql and upgrade range do go through offline path
+    def all_sql(self, file=None, database=''):
+        dialect = self.connection.dialect.name
+
+        raw_engine = self.args.get('engine', None)
+        if raw_engine is None:
+            return
+
+        # use passed in database. make sure not None
+        url = make_url(raw_engine).set(database=database or '')
+
+        engine = sa.create_engine(url)
+        connection = engine.connect()
+
+        metadata = sa.MetaData()
+        metadata.reflect(bind=connection)
+        if len(metadata.sorted_tables) != 0:
+            raise Exception("to compare from base tables, cannot have any tables in database. have %d" % len(
+                metadata.sorted_tables))
+
+        mc = MigrationContext.configure(
+            connection=connection,
+            dialect_name=dialect,
+            opts=Runner.get_opts(),
+        )
+        migrations = produce_migrations(mc, self.metadata)
+        
 
         # default is stdout so let's use it
         buffer = sys.stdout
@@ -410,6 +419,8 @@ class Runner(object):
         for op in migrations.upgrade_ops.ops:
             invoke(op)
         
+        custom_sql_buffer = self._get_custom_sql(connection, dialect)
+
         # add custom sql at the end
         buffer.write(custom_sql_buffer.getvalue())
 
