@@ -319,10 +319,10 @@ class Runner(object):
             custom_sql_exclude = set(custom_sql_exclude_list)
             
         def include_rev(name):
-            if custom_sql_include is not None and name in custom_sql_include:
-                return True
-            if custom_sql_exclude is not None and name in custom_sql_exclude:
-                return False
+            if custom_sql_include is not None:
+                return name in custom_sql_include
+            if custom_sql_exclude is not None:
+                return name in custom_sql_exclude
             return True
         
 
@@ -368,7 +368,7 @@ class Runner(object):
                 # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
                 rev.module.upgrade()
 
-                if (isinstance(last_obj, ops.ExecuteSQL) or isinstance(last_obj, alembicops.ExecuteSQLOp) and include_rev(rev.revision)):
+                if (isinstance(last_obj, ops.ExecuteSQL) or isinstance(last_obj, alembicops.ExecuteSQLOp)) and include_rev(rev.revision):
                     custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
                     custom_sql_buffer.write(temp_buffer.getvalue())
 
