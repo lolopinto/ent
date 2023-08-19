@@ -29,3 +29,6 @@ codegen:
   subscriptionType:
     path: src/graphql/resolvers/subscription_type
     name: SubscriptionType
+databaseMigration:
+  customSQLInclude:
+    - 63ec20382c27

@@ -45,5 +45,24 @@ metadata.info["data"] = {
 }
 {{end}}
 
+{{ if .Config.CustomSQLInclude -}}
+  metadata.info["custom_sql_include"] = {
+    'public': [
+      {{ range .Config.CustomSQLInclude -}}
+        '{{.}}',
+      {{end -}}
+    ],
+  }
+{{ end -}}
+{{ if .Config.CustomSQLExclude -}}
+  metadata.info["custom_sql_exclude"] = {
+    'public': [
+      {{ range .Config.CustomSQLExclude -}}
+        '{{.}}',
+      {{end -}}
+    ],
+  }
+{{ end}}
+
 def get_metadata():
   return metadata

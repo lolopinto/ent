@@ -197,6 +197,13 @@ func (cfg *Config) getCodegenConfig() *CodegenConfig {
 	return nil
 }
 
+func (cfg *Config) getDatabaseMigrationConfig() *DatabaseMigrationConfig {
+	if cfg.config != nil && cfg.config.DatabaseMigration != nil {
+		return cfg.config.DatabaseMigration
+	}
+	return nil
+}
+
 func (cfg *Config) ShouldUseRelativePaths() bool {
 	if codegen := cfg.getCodegenConfig(); codegen != nil {
 		return codegen.RelativeImports
@@ -476,6 +483,20 @@ func (cfg *Config) TransformLoadMethodX() string {
 	return fmt.Sprintf("%sX", cfg.TransformLoadMethod())
 }
 
+func (cfg *Config) CustomSQLInclude() []string {
+	if dbMigration := cfg.getDatabaseMigrationConfig(); dbMigration != nil {
+		return dbMigration.CustomSQLInclude
+	}
+	return nil
+}
+
+func (cfg *Config) CustomSQLExclude() []string {
+	if dbMigration := cfg.getDatabaseMigrationConfig(); dbMigration != nil {
+		return dbMigration.CustomSQLExclude
+	}
+	return nil
+}
+
 const DEFAULT_PRETTIER_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -603,15 +624,17 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 }
 
 type ConfigurableConfig struct {
-	Codegen                            *CodegenConfig `yaml:"codegen"`
-	CustomGraphQLJSONPath              string         `yaml:"customGraphQLJSONPath"`
-	DynamicScriptCustomGraphQLJSONPath string         `yaml:"dynamicScriptCustomGraphQLJSONPath"`
-	GlobalSchemaPath                   string         `yaml:"globalSchemaPath"`
+	Codegen                            *CodegenConfig           `yaml:"codegen"`
+	DatabaseMigration                  *DatabaseMigrationConfig `yaml:"databaseMigration"`
+	CustomGraphQLJSONPath              string                   `yaml:"customGraphQLJSONPath"`
+	DynamicScriptCustomGraphQLJSONPath string                   `yaml:"dynamicScriptCustomGraphQLJSONPath"`
+	GlobalSchemaPath                   string                   `yaml:"globalSchemaPath"`
 }
 
 func (cfg *ConfigurableConfig) Clone() *ConfigurableConfig {
 	return &ConfigurableConfig{
 		Codegen:                            cloneCodegen(cfg.Codegen),
+		DatabaseMigration:                  cloneDatabaseMigration(cfg.DatabaseMigration),
 		CustomGraphQLJSONPath:              cfg.CustomGraphQLJSONPath,
 		DynamicScriptCustomGraphQLJSONPath: cfg.DynamicScriptCustomGraphQLJSONPath,
 		GlobalSchemaPath:                   cfg.GlobalSchemaPath,
@@ -650,6 +673,13 @@ type CodegenConfig struct {
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
+func cloneDatabaseMigration(cfg *DatabaseMigrationConfig) *DatabaseMigrationConfig {
 	if cfg == nil {
 		return nil
 	}
@@ -737,5 +767,17 @@ func (cfg *PrettierConfig) Clone() *PrettierConfig {
 	return &PrettierConfig{
 		Custom: cfg.Custom,
 		Glob:   cfg.Glob,
+	}
+}
+
+type DatabaseMigrationConfig struct {
+	CustomSQLInclude []string `yaml:"customSQLInclude"`
+	CustomSQLExclude []string `yaml:"customSQLExclude"`
+}
+
+func (cfg *DatabaseMigrationConfig) Clone() *DatabaseMigrationConfig {
+	return &DatabaseMigrationConfig{
+		CustomSQLInclude: cfg.CustomSQLInclude,
+		CustomSQLExclude: cfg.CustomSQLExclude,
 	}
 }

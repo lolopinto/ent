@@ -333,4 +333,3 @@ CREATE OR REPLACE TRIGGER users_created BEFORE INSERT OR UPDATE
        ON users
        FOR EACH ROW EXECUTE PROCEDURE users_notify();;
 
--- custom sql for rev 466d862abc01
