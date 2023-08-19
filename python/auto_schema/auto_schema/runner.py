@@ -305,6 +305,27 @@ class Runner(object):
 
 
     def _get_custom_sql(self, connection, dialect) -> io.StringIO:
+        custom_sql_include_all = config.metadata.info.setdefault('custom_sql_include', {})
+        custom_sql_exclude_all= config.metadata.info.setdefault('custom_sql_exclude', {})
+        custom_sql_include_list = custom_sql_include_all.setdefault('public', [])
+        custom_sql_exclude_list = custom_sql_exclude_all.setdefault('public', [])
+        
+        custom_sql_include = None
+        custom_sql_exclude = None
+        
+        if len(custom_sql_include_list) > 0:
+            custom_sql_include = set(custom_sql_include_list)
+        if len(custom_sql_exclude_list) > 0:
+            custom_sql_exclude = set(custom_sql_exclude_list)
+            
+        def include_rev(name):
+            if custom_sql_include is not None and name in custom_sql_include:
+                return True
+            if custom_sql_exclude is not None and name in custom_sql_exclude:
+                return False
+            return True
+        
+
         script_directory = self.cmd.get_script_directory()
         revs = script_directory.walk_revisions()
         
@@ -347,7 +368,7 @@ class Runner(object):
                 # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
                 rev.module.upgrade()
 
-                if isinstance(last_obj, ops.ExecuteSQL) or isinstance(last_obj, alembicops.ExecuteSQLOp):
+                if (isinstance(last_obj, ops.ExecuteSQL) or isinstance(last_obj, alembicops.ExecuteSQLOp) and include_rev(rev.revision)):
                     custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
                     custom_sql_buffer.write(temp_buffer.getvalue())
 

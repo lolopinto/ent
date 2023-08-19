@@ -759,7 +759,7 @@ func RunAlembicCommand(cfg *codegen.Config, command string, args ...string) erro
 }
 
 func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
-	data, err := s.getSchemaForTemplate()
+	data, err := s.getSchemaForTemplate(cfg)
 	if err != nil {
 		return err
 	}
@@ -774,8 +774,10 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 	)
 }
 
-func (s *dbSchema) getSchemaForTemplate() (*dbSchemaTemplate, error) {
-	ret := &dbSchemaTemplate{}
+func (s *dbSchema) getSchemaForTemplate(cfg *codegen.Config) (*dbSchemaTemplate, error) {
+	ret := &dbSchemaTemplate{
+		Config: cfg,
+	}
 
 	for _, table := range s.Tables {
 
@@ -1456,6 +1458,7 @@ type dbDataInfo struct {
 
 // wrapper object to represent the list of tables that will be passed to a schema template file
 type dbSchemaTemplate struct {
+	Config *codegen.Config
 	Tables []dbSchemaTableInfo
 	Edges  []dbEdgeInfo
 	Data   []dbDataInfo

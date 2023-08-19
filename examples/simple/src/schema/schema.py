@@ -310,5 +310,12 @@ metadata.info["edges"] = {
 
 
 
+metadata.info["custom_sql_include"] = {
+    'public': [
+      '63ec20382c27',
+      ],
+  }
+
+
 def get_metadata():
   return metadata
