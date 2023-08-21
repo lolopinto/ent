@@ -12,7 +12,8 @@ var squashCmd = &cobra.Command{
 	Use:     "squash",
 	Short:   "squash last N revs of the db into one",
 	Example: `tsent squash 2`,
-	Args:    cobra.ExactArgs(1),
+	//  also needs a fancy --all which requires a prompt
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// another hardcoded place
 		cfg, err := codegen.NewConfig("src/schema", "")

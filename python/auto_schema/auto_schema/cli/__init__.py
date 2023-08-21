@@ -127,6 +127,8 @@ def main():
                 elif args.merge is not None:
                     r.merge(args.merge, args.message)
                 elif args.squash is not None:
+                    # all or number to squash together
+                    # very different implementations
                     r.squash(args.squash)
                 elif args.all_sql is True:
                     r.all_sql(file=args.file, database=args.empty_database)

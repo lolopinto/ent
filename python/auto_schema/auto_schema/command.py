@@ -47,14 +47,14 @@ class Command(object):
         command.current(self.alembic_cfg, verbose=True)
 
     # Simulates running the `alembic revision -m` command
-    def revision(self, message, autogenerate=True):
+    def revision(self, message, autogenerate=True, revision=None):
         heads = self.get_heads()
         head = 'head'
         if len(heads) > 1:
             head = heads
-
+            
         return command.revision(self.alembic_cfg, message,
-                                autogenerate=autogenerate, head=head)
+                                autogenerate=autogenerate, head=head, rev_id=revision)
 
 
     def get_script_directory(self) -> ScriptDirectory:
@@ -167,10 +167,25 @@ class Command(object):
         squash = int(squash)
         if squash < 2:
             raise ValueError("squash needs to be an integer of at least 2")
+        
+        revision = None
+        heads = self.get_heads()
+        if len(heads) == 1:
+            revision = heads[0]
 
         # downgrade -2 and re-run upgrade
         self.downgrade('-%d' % squash)
 
         # generate a new revision
-        gen_revision()
+        gen_revision(revision=revision)
         self.upgrade()
+    
+    def squash_all(self):
+        # TODO
+        heads = self.get_heads()
+        if len(heads) > 1:
+            raise ValueError("cannot squash_all when there are multiple heads")
+        
+        # now have value to stamp
+
+        pass

@@ -249,7 +249,7 @@ class Runner(object):
         message = "\n".join(changes)
         return message
 
-    def revision(self, diff=None):
+    def revision(self, diff=None, revision=None):
         # print(self.cmd.current())
 
         # if diff is None:
@@ -257,7 +257,7 @@ class Runner(object):
 
         message = self.revision_message(diff)
 
-        self.cmd.revision(message)
+        self.cmd.revision(message, revision=revision)
 
         # understand diff and make changes as needed
         # pprint.pprint(migrations, indent=2, width=30)
