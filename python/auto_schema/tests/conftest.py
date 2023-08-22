@@ -147,8 +147,8 @@ def new_test_runner(request):
             path = r.get_schema_path()
 
             # delete temp directory which was created
-            if os.path.isdir(path):
-                shutil.rmtree(path)
+            # if os.path.isdir(path):
+            #     shutil.rmtree(path)
 
         request.addfinalizer(delete_path)
 
@@ -178,6 +178,7 @@ def default_children_of_table():
                   nullable=False, server_default='false'),
 
         sa.Column('phone_number', sa.Text(), nullable=False),
+        sa.Column('bio', sa.Text(), nullable=True),
         sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
         sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'),
         # support unique constraint as part of initial table creation
@@ -492,6 +493,12 @@ def server_default_int_list_value():
 def metadata_with_server_default_changed_int_list(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_int_list_value())
 
+def metadata_with_server_default_changed_uuid_list(metadata):
+    # it doesn't handle modifying both at the same time???
+    return _metadata_with_server_default_changed(
+        _metadata_with_nullable_changed(metadata, 'uuid_list', 'tbl', False), 
+        'uuid_list', 'tbl', '{}')
+
 
 @ pytest.fixture()
 def table_with_timestamptz_plus_date():
@@ -536,46 +543,77 @@ def metadata_table_with_timetz():
 def metadata_with_arrays():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,
-             sa.Column('string_list', postgresql.ARRAY(
-                 sa.Text), nullable=False),
-             sa.Column('string_list_2', postgresql.ARRAY(
-                 sa.Text()), nullable=False),
-             sa.Column('int_list', postgresql.ARRAY(
-                 sa.Integer), nullable=False),
-             sa.Column('bool_list', postgresql.ARRAY(
-                 sa.Boolean), nullable=False),
-             sa.Column('date_list', postgresql.ARRAY(sa.Date), nullable=False),
-             sa.Column('time_list', postgresql.ARRAY(sa.Time), nullable=False),
-             sa.Column('timetz_list', postgresql.ARRAY(
-                 sa.Time(timezone=True)), nullable=False),
-             sa.Column('timestamp_list', postgresql.ARRAY(
-                 sa.TIMESTAMP), nullable=False),
-             sa.Column('timestamptz_list', postgresql.ARRAY(
-                 sa.TIMESTAMP(timezone=True)), nullable=False),
-             # TODO https://github.com/lolopinto/ent/issues/1029 support gist here
-             # need to support operators...
-             sa.Column('float_list', postgresql.ARRAY(
-                 sa.Float), nullable=False),
-             sa.Column('uuid_list', postgresql.ARRAY(
-                 postgresql.UUID), nullable=False),
-             sa.Index('tbl_string_list_idx', 'string_list',
-                      postgresql_using='gin'),
-             sa.Index('tbl_uuid_list_idx', 'uuid_list',
-                      postgresql_using='gin'),
-             sa.Index('tbl_int_list_idx', 'int_list',
-                      postgresql_using='gin'),
-             sa.Index('tbl_time_list_idx', 'time_list',
-                      postgresql_using='gin'),
-             sa.Index('tbl_timetz_list_idx', 'timetz_list',
-                      postgresql_using='gin'),
-             # just to confirm btree works...
-             sa.Index('tbl_float_list_idx', 'float_list',
-                      postgresql_using='btree'),
-             # index with no type..
-             sa.Index('tbl_date_list_idx', 'date_list'),
+            sa.Column('string_list', postgresql.ARRAY(
+                sa.Text), nullable=False),
+            sa.Column('string_list_2', postgresql.ARRAY(
+                sa.Text()), nullable=False),
+            sa.Column('int_list', postgresql.ARRAY(
+                sa.Integer), nullable=False),
+            sa.Column('bool_list', postgresql.ARRAY(
+                sa.Boolean), nullable=False),
+            sa.Column('date_list', postgresql.ARRAY(sa.Date), nullable=False),
+            sa.Column('time_list', postgresql.ARRAY(sa.Time), nullable=False),
+            sa.Column('timetz_list', postgresql.ARRAY(
+                sa.Time(timezone=True)), nullable=False),
+            sa.Column('timestamp_list', postgresql.ARRAY(
+                sa.TIMESTAMP), nullable=False),
+            sa.Column('timestamptz_list', postgresql.ARRAY(
+                sa.TIMESTAMP(timezone=True)), nullable=False),
+            # TODO https://github.com/lolopinto/ent/issues/1029 support gist here
+            # need to support operators...
+            sa.Column('float_list', postgresql.ARRAY(
+                sa.Float), nullable=False),
+            sa.Column('uuid_list', postgresql.ARRAY(
+                postgresql.UUID), nullable=True),
+            sa.Index('tbl_string_list_idx', 'string_list',
+                    postgresql_using='gin'),
+            sa.Index('tbl_uuid_list_idx', 'uuid_list',
+                    postgresql_using='gin'),
+            sa.Index('tbl_int_list_idx', 'int_list',
+                    postgresql_using='gin'),
+            sa.Index('tbl_time_list_idx', 'time_list',
+                    postgresql_using='gin'),
+            sa.Index('tbl_timetz_list_idx', 'timetz_list',
+                    postgresql_using='gin'),
+            # just to confirm btree works...
+            sa.Index('tbl_float_list_idx', 'float_list',
+                    postgresql_using='btree'),
+            # index with no type..
+            sa.Index('tbl_date_list_idx', 'date_list'),
 
-             )
+            )
     return metadata
+
+
+def metadata_arrays_table():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('uuid_list', postgresql.ARRAY(
+                postgresql.UUID), nullable=True),
+            sa.Index('tbl_uuid_list_idx', 'uuid_list',
+                    postgresql_using='gin'),
+            sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+            )
+    return metadata
+    
+def metadata_arrays_table_rows():
+    return [
+        {
+            "id": 1,
+            "uuid_list": None
+        },
+        {
+            "id": 2,
+            "uuid_list": None
+        },
+        {
+            "id": 3,
+            "uuid_list": [uuid.uuid4(), uuid.uuid4()]
+        },
+
+
+    ]
 
 
 @ pytest.fixture
@@ -643,6 +681,9 @@ def metadata_with_timestamp_changed(metadata):
 def metadata_with_nullable_changed(metadata):
     return _metadata_with_nullable_changed(metadata, 'last_name', 'accounts', True)
 
+
+def metadata_with_nullable_changed_to_false(metadata):
+    return _metadata_with_nullable_changed(metadata, 'bio', 'accounts', False)
 
 # takes the account table and converts the default value of meaning_of_life column from 42 to 35
 def metadata_with_server_default_changed_int(metadata):

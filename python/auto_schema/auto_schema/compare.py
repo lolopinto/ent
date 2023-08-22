@@ -728,3 +728,34 @@ def _parse_postgres_using_internals(internals: str, index_type: str):
         }
 
     return {}
+
+
+@ comparators.dispatch_for("table")
+def _compare_server_default_nullable(
+    autogen_context: AutogenContext,
+    modify_table_ops: alembicops.ModifyTableOps,
+    schema,
+    tname: str,
+    conn_table: Optional[sa.Table],
+    metadata_table: sa.Table,
+):
+    if conn_table is None or metadata_table is None:
+        return
+
+    for i in range(len(modify_table_ops.ops)):
+        op = modify_table_ops.ops[i]
+        if not isinstance(op, alembicops.AlterColumnOp):
+            continue
+
+
+        # changing server default to non-null value
+        if op.modify_nullable is False and op.modify_server_default is not False and op.modify_server_default is not None:
+            raise ValueError(
+                """
+                Can't effectively do this in one step. Have to break this into 2 steps:
+                1. set the server_default to new value, run codegen
+                2. change nullable to False, run codegen
+                """
+            )
+
+        
