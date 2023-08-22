@@ -147,8 +147,8 @@ def new_test_runner(request):
             path = r.get_schema_path()
 
             # delete temp directory which was created
-            # if os.path.isdir(path):
-            #     shutil.rmtree(path)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
 
         request.addfinalizer(delete_path)
 
@@ -611,8 +611,6 @@ def metadata_arrays_table_rows():
             "id": 3,
             "uuid_list": [uuid.uuid4(), uuid.uuid4()]
         },
-
-
     ]
 
 

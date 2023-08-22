@@ -782,12 +782,12 @@ class TestPostgresRunner(BaseTestRunner):
     @pytest.mark.parametrize(
         "new_metadata_func, expected_message",
         [
-            # (conftest.metadata_with_table_text_changed,
-            #  "modify column email_address type from VARCHAR(255) to TEXT"),
-            # (conftest.metadata_with_timestamp_changed,
-            #  "modify column created_at type from DATE to TIMESTAMP"),
-            # (conftest.metadata_with_nullable_changed,
-            #  "modify nullable value of column last_name from False to True"),
+            (conftest.metadata_with_table_text_changed,
+             "modify column email_address type from VARCHAR(255) to TEXT"),
+            (conftest.metadata_with_timestamp_changed,
+             "modify column created_at type from DATE to TIMESTAMP"),
+            (conftest.metadata_with_nullable_changed,
+             "modify nullable value of column last_name from False to True"),
             (conftest.metadata_with_nullable_changed_to_false,
              "modify nullable value of column bio from True to False"),
         ])
