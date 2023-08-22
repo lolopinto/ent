@@ -27,7 +27,7 @@ def upgrade():
 RETURNS trigger AS
 $$
 BEGIN
-  PERFORM pg_notify(’users_created’, NEW.id::text);
+  PERFORM pg_notify('users_created', NEW.id::text);
   RETURN NEW;
 END;
 $$ LANGUAGE 'plpgsql';

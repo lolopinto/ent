@@ -56,14 +56,15 @@ class Command(object):
         return command.revision(self.alembic_cfg, message,
                                 autogenerate=autogenerate, head=head)
 
-    def get_heads(self):
-        script = ScriptDirectory.from_config(self.alembic_cfg)
 
-        return script.get_heads()
+    def get_script_directory(self) -> ScriptDirectory:
+        return ScriptDirectory.from_config(self.alembic_cfg)
+        
+    def get_heads(self):
+        return self.get_script_directory().get_heads()
 
     def get_revisions(self, revs):
-        script = ScriptDirectory.from_config(self.alembic_cfg)
-        return script.get_revisions(revs)
+        return self.get_script_directory().get_revisions(revs)
 
     # Simulates running the `alembic upgrade` command
 
@@ -94,8 +95,7 @@ class Command(object):
             os.remove(os.path.join(location, path))
 
     def _get_paths_to_delete(self, revision):
-        script = ScriptDirectory.from_config(self.alembic_cfg)
-        revs = list(script.revision_map.iterate_revisions(
+        revs = list(self.get_script_directory().revision_map.iterate_revisions(
             self.get_heads(), revision, select_for_downgrade=True
         ))
 
@@ -116,8 +116,7 @@ class Command(object):
         return result
 
     def get_history(self):
-        script = ScriptDirectory.from_config(self.alembic_cfg)
-        return list(script.walk_revisions())
+        return list(self.get_script_directory().walk_revisions())
 
     # Simulates running the `alembic history` command
     def history(self, verbose=False, last=None, rev_range=None):
@@ -125,8 +124,7 @@ class Command(object):
             raise ValueError(
                 "cannot pass both last and rev_range. please pick one")
         if last is not None:
-            script = ScriptDirectory.from_config(self.alembic_cfg)
-            revs = list(script.revision_map.iterate_revisions(
+            revs = list(self.get_script_directory().revision_map.iterate_revisions(
                 self.get_heads(), '-%d' % int(last), select_for_downgrade=True
             ))
             rev_range = '%s:current' % revs[-1].revision

@@ -1,25 +1,30 @@
 from argparse import Namespace
+import io
 import json
 import sys
 from collections.abc import Mapping
 from alembic.operations import Operations
+from alembic.util.langhelpers import Dispatcher
 from uuid import UUID
+from functools import wraps
 
 from .diff import Diff
 from .clause_text import get_clause_text
+from .clearable_string_io import ClearableStringIO
 import sqlalchemy as sa
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.engine.url import make_url
 
-from alembic.migration import MigrationContext
 from alembic.autogenerate import produce_migrations
 from alembic.autogenerate import render_python_code
+from alembic.migration import MigrationContext
+from alembic import context
 from alembic.util.exc import CommandError
+from alembic.script import ScriptDirectory
 
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
-from alembic.operations import Operations
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 from . import command
 from . import config
@@ -48,16 +53,20 @@ class Runner(object):
 
         self.mc = MigrationContext.configure(
             connection=self.connection,
-            # note that any change here also needs a comparable change in env.py
-            opts={
+            opts=Runner.get_opts(),
+        )
+        self.cmd = command.Command(self.connection, self.schema_path)
+        
+    @classmethod   
+    def get_opts(cls):
+        # note that any change here also needs a comparable change in env.py
+        return {
                 "compare_type": Runner.compare_type,
                 "include_object": Runner.include_object,
                 "compare_server_default": Runner.compare_server_default,
                 "transaction_per_migration": True,
                 "render_item": Runner.render_item,
-            },
-        )
-        self.cmd = command.Command(self.connection, self.schema_path)
+            }
 
     @classmethod
     def from_command_line(cls, metadata, args: Namespace):
@@ -294,6 +303,58 @@ class Runner(object):
     def squash(self, squash):
         self.cmd.squash(self.revision, squash)
 
+
+    def _get_custom_sql(self, connection, dialect) -> io.StringIO:
+        script_directory = self.cmd.get_script_directory()
+        revs = script_directory.walk_revisions()
+        
+        # this is cleared after each upgrade
+        temp_buffer = ClearableStringIO()
+
+        opts = Runner.get_opts()
+        opts['as_sql'] = True
+        opts['output_buffer'] = temp_buffer
+        mc = MigrationContext.configure(
+            connection=connection,
+            dialect_name=dialect,
+            opts=opts,
+        )
+        
+        custom_sql_buffer = io.StringIO()
+
+        # monkey patch the Dispatcher.dispatch method to know what's being changed/dispatched
+        # for each upgrade path, we'll know what the last object was and can make decisions based on that
+        
+        last_obj = None
+
+        def my_decorator(func):
+            @wraps(func)
+            def wrapper(self, *args, **kwargs):
+                nonlocal last_obj
+                last_obj = args[0]
+                return func(self, *args, **kwargs)  
+            return wrapper   
+            
+        Dispatcher.dispatch = my_decorator(Dispatcher.dispatch)
+
+        # order is flipped, it goes from most recent to oldest
+        # we want to go from oldest -> most recent 
+        revs = list(revs)
+        revs.reverse()
+
+        with Operations.context(mc):
+            for rev in revs:
+                # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
+                rev.module.upgrade()
+
+                if isinstance(last_obj, ops.ExecuteSQL) or isinstance(last_obj, alembicops.ExecuteSQLOp):
+                    custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
+                    custom_sql_buffer.write(temp_buffer.getvalue())
+
+                temp_buffer.clear()
+        
+        return custom_sql_buffer
+                    
     # doesn't invoke env.py. completely different flow
     # progressive_sql and upgrade range do go through offline path
     def all_sql(self, file=None, database=''):
@@ -318,34 +379,22 @@ class Runner(object):
         mc = MigrationContext.configure(
             connection=connection,
             dialect_name=dialect,
-            # note that any change here also needs a comparable change in env.py
-            opts={
-                "compare_type": Runner.compare_type,
-                "include_object": Runner.include_object,
-                "compare_server_default": Runner.compare_server_default,
-                "transaction_per_migration": True,
-                "render_item": Runner.render_item,
-            },
+            opts=Runner.get_opts(),
         )
         migrations = produce_migrations(mc, self.metadata)
-
+        
         # default is stdout so let's use it
         buffer = sys.stdout
         if file is not None:
             buffer = open(file, 'w')
 
         # use different migrations context with as_sql so that we don't have issues
+        opts = Runner.get_opts()
+        opts['as_sql'] = True
+        opts['output_buffer'] = buffer
         mc2 = MigrationContext.configure(
             connection=connection,
-            # note that any change here also needs a comparable change in env.py
-            opts={
-                "compare_type": Runner.compare_type,
-                "include_object": Runner.include_object,
-                "compare_server_default": Runner.compare_server_default,
-                "render_item": Runner.render_item,
-                "as_sql": True,
-                "output_buffer": buffer,
-            },
+            opts=opts
         )
 
         # let's do a consistent (not runtime dependent) sort of constraints by using name instead of _creation_order
@@ -369,6 +418,12 @@ class Runner(object):
 
         for op in migrations.upgrade_ops.ops:
             invoke(op)
+        
+        custom_sql_buffer = self._get_custom_sql(connection, dialect)
+
+        # add custom sql at the end
+        buffer.write(custom_sql_buffer.getvalue())
+
 
     def progressive_sql(self, file=None):
         if file is not None:
