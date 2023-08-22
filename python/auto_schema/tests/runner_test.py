@@ -788,6 +788,8 @@ class TestPostgresRunner(BaseTestRunner):
              "modify column created_at type from DATE to TIMESTAMP"),
             (conftest.metadata_with_nullable_changed,
              "modify nullable value of column last_name from False to True"),
+            (conftest.metadata_with_nullable_changed_to_false,
+             "modify nullable value of column bio from True to False"),
         ])
     def test_column_attr_change(self, new_test_runner, metadata_with_table, new_metadata_func, expected_message):
         r = new_test_runner(metadata_with_table)
@@ -999,6 +1001,42 @@ class TestPostgresRunner(BaseTestRunner):
         diff = r3.compute_changes()
 
         assert len(diff) == 0
+        
+    @pytest.mark.parametrize(
+    "new_metadata_func, table_name, seed_table_func, change_metadata_func, expected_message",
+    [
+
+        (
+            conftest.metadata_arrays_table,
+            'tbl',
+            conftest.metadata_arrays_table_rows,
+            conftest.metadata_with_server_default_changed_uuid_list,
+            'modify server_default value of column uuid_list from None to %s\nmodify nullable value of column uuid_list from True to False' % '{}',
+        )
+    ])
+    def test_server_default_plus_nullable_change(self, new_test_runner, new_metadata_func, table_name, seed_table_func, change_metadata_func, expected_message):
+        metadata = new_metadata_func()
+        r = new_test_runner(metadata)
+
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata, [table_name])
+
+        conn = r.get_connection()
+        for row in seed_table_func():
+            conn.execute(sa.text("insert into tbl (id, uuid_list) values (:id, :uuid_list)"), {
+                'id': row['id'],
+                'uuid_list': row['uuid_list'],
+            })
+
+        change_metadata_func(metadata)
+
+        r2 = new_test_runner(metadata, r)
+        with pytest.raises(ValueError, match="Can't effectively do this in one step"):
+            r2.compute_changes()
+
+        with pytest.raises(ValueError, match="Can't effectively do this in one step"):
+            r2.run()
+
 
     def test_field_with_server_default_uuid_to_start(self, new_test_runner):
         metadata = conftest.metadata_with_uuid_col()

@@ -203,15 +203,16 @@ class Runner(object):
         migrations = produce_migrations(self.mc, config.metadata)
         return migrations.upgrade_ops.ops
 
-    def run(self):
+    # sql used for debugging in tests
+    def run(self, sql=False):
         diff = self.compute_changes()
 
         if len(diff) == 0:
             return None
         else:
-            return self._apply_changes(diff)
+            return self._apply_changes(diff, sql=sql)
 
-    def _apply_changes(self, diff):
+    def _apply_changes(self, diff, sql=False):
         # pprint.pprint(diff, indent=2, width=20)
 
         # migration_script = produce_migrations(self.mc, self.metadata)
@@ -226,7 +227,7 @@ class Runner(object):
             else:
                 raise err
 
-        return self.upgrade()
+        return self.upgrade(sql=sql)
 
     def revision_message(self, diff=None):
         if diff is None:
