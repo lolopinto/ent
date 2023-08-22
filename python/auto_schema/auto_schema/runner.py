@@ -382,7 +382,6 @@ class Runner(object):
         )
         migrations = produce_migrations(mc, self.metadata)
         
-
         # default is stdout so let's use it
         buffer = sys.stdout
         if file is not None:
