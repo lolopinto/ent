@@ -324,7 +324,7 @@ CREATE OR REPLACE FUNCTION users_notify()
 RETURNS trigger AS
 $$
 BEGIN
-  PERFORM pg_notify(’users_created’, NEW.id::text);
+  PERFORM pg_notify('users_created', NEW.id::text);
   RETURN NEW;
 END;
 $$ LANGUAGE 'plpgsql';
@@ -333,4 +333,3 @@ CREATE OR REPLACE TRIGGER users_created BEFORE INSERT OR UPDATE
        ON users
        FOR EACH ROW EXECUTE PROCEDURE users_notify();;
 
--- custom sql for rev 466d862abc01

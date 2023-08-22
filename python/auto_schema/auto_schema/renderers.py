@@ -205,7 +205,7 @@ def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFul
 @renderers.dispatch_for(ops.ExecuteSQL)
 def render_execute_sql(autogen_context: AutogenContext, op: ops.ExecuteSQL) -> str:
     return (
-        "op.execute_sql('%(sql)s')" % {
+        'op.execute_sql("""%(sql)s""")' % {
             "sql": op.sql,
         }
     )
