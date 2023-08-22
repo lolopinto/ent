@@ -3,7 +3,7 @@ from alembic.autogenerate import renderers
 from alembic.autogenerate.api import AutogenContext
 from sqlalchemy.dialects import postgresql
 from . import ops
-from . import util
+from . import csv
 import sqlalchemy as sa
 # no need to put timestamps when rendering
 _IGNORED_KEYS = ['created_at', 'updated_at']
@@ -79,7 +79,7 @@ def _render_row_from_op(row_fn_name, table_name, pkeys, rows):
         "])" % {
             "row_fn_name": row_fn_name,
             "table_name": table_name,
-            "pkeys": util.render_list_csv_as_list(pkeys),
+            "pkeys": csv.render_list_csv_as_list(pkeys),
             "rows": "".join(rows),
         }
     )
@@ -117,7 +117,7 @@ def render_modify_rows(autogen_context: AutogenContext, op: ops.ModifyRowsOp) ->
         "[\n%(old_rows)s"
         "])" % {
             "table_name": op.table_name,
-            "pkeys": util.render_list_csv_as_list(op.pkeys),
+            "pkeys": csv.render_list_csv_as_list(op.pkeys),
             "rows": "".join(rows),
             "old_rows": "".join(old_rows),
         }
@@ -154,12 +154,12 @@ def render_no_downgrade_op(autogen_context: AutogenContext, op: ops.NoDowngradeO
 
 @renderers.dispatch_for(ops.AddEnumOp)
 def render_add_enum_op(autogen_context: AutogenContext, op: ops.AddEnumOp) -> str:
-    return "op.add_enum_type('%s', [%s])" % (op.enum_name, util.render_list_csv(op.values))
+    return "op.add_enum_type('%s', [%s])" % (op.enum_name, csv.render_list_csv(op.values))
 
 
 @renderers.dispatch_for(ops.DropEnumOp)
 def render_drop_enum_op(autogen_context: AutogenContext, op: ops.DropEnumOp) -> str:
-    return "op.drop_enum_type('%s', [%s])" % (op.enum_name, util.render_list_csv(op.values))
+    return "op.drop_enum_type('%s', [%s])" % (op.enum_name, csv.render_list_csv(op.values))
 
 
 # hmm not sure why we need this. there's probably an easier way to do this that doesn't require this...

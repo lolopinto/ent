@@ -8,6 +8,7 @@ pytest = "*"
 autopep8 = ""
 
 [packages]
+aiofiles = "==23.2.1"
 alembic = "==1.11.1"
 datetime = "==4.3"
 sqlalchemy = "==2.0.18"

@@ -51,7 +51,7 @@ parser.add_argument('--edit', help='alembic edit')
 parser.add_argument('--merge', help='alembic merge')
 parser.add_argument(
     '--message', help='message if alembic merge is called or alembic revision')
-parser.add_argument('--squash', help='squash the last N changes into one')
+parser.add_argument('--squash', help='squash the last N changes into one or squash all changes into one revision')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
 parser.add_argument(

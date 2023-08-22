@@ -163,28 +163,31 @@ class Command(object):
     def merge(self, revisions, message=None):
         command.merge(self.alembic_cfg, revisions, message=message)
 
-    def squash(self, gen_revision, squash):
-        squash = int(squash)
-        if squash < 2:
-            raise ValueError("squash needs to be an integer of at least 2")
+    # def squash(self, gen_revision, squash):
+    #     squash = int(squash)
+    #     if squash < 2:
+    #         raise ValueError("squash needs to be an integer of at least 2")
         
-        revision = None
-        heads = self.get_heads()
-        if len(heads) == 1:
-            revision = heads[0]
+    #     revision = None
+    #     heads = self.get_heads()
+    #     if len(heads) == 1:
+    #         revision = heads[0]
 
-        # downgrade -2 and re-run upgrade
-        self.downgrade('-%d' % squash)
+    #     # downgrade -2 and re-run upgrade
+    #     self.downgrade('-%d' % squash)
 
-        # generate a new revision
-        gen_revision(revision=revision)
-        self.upgrade()
+    #     # generate a new revision
+    #     gen_revision(revision=revision)
+    #     self.upgrade()
     
     def squash_all(self):
         # TODO
         heads = self.get_heads()
         if len(heads) > 1:
             raise ValueError("cannot squash_all when there are multiple heads")
+        
+        revision = heads[0]
+        
         
         # now have value to stamp
 
