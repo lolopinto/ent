@@ -322,7 +322,7 @@ class Runner(object):
             if custom_sql_include is not None:
                 return name in custom_sql_include
             if custom_sql_exclude is not None:
-                return name in custom_sql_exclude
+                return name not in custom_sql_exclude
             return True
         
 
