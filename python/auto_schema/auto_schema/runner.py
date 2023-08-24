@@ -305,9 +305,9 @@ class Runner(object):
     def merge(self, revisions, message=None):
         self.cmd.merge(revisions, message=message)
 
-    def squash(self, squash):
+    def squash(self, squash, message=None):
         if squash == 'all':
-            self.squash_all()
+            self.squash_all(message)
         else:
             self.squash_n(squash)
             
@@ -328,7 +328,7 @@ class Runner(object):
         self.revision(revision=revision)
         self.cmd.upgrade()
         
-    def squash_all(self):
+    def squash_all(self, message=None):
         heads = self.cmd.get_heads()
         if len(heads) > 1:
             raise ValueError("cannot squash_all when there are multiple heads")
@@ -355,8 +355,9 @@ class Runner(object):
         # delete existing files
         asyncio.run(delete_py_files(location))
 
+        message = message or "all the things"
         command_args = dict(
-            message="all the things",
+            message=message,
             autogenerate=False,
             sql=False,
             head="head",
@@ -373,7 +374,7 @@ class Runner(object):
         )
         migration_script = alembicops.MigrationScript(
             rev_id=revision,
-            message="all the things",
+            message=message,
             upgrade_ops=migrations.upgrade_ops,
             downgrade_ops=migrations.downgrade_ops,
             head="head",

@@ -50,7 +50,7 @@ parser.add_argument('--stamp', help='alembic stamp')
 parser.add_argument('--edit', help='alembic edit')
 parser.add_argument('--merge', help='alembic merge')
 parser.add_argument(
-    '--message', help='message if alembic merge is called or alembic revision')
+    '--message', help='message if alembic merge is called or alembic revision or squash_all')
 parser.add_argument('--squash', help='squash the last N changes into one or squash all changes into one revision')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
@@ -129,7 +129,7 @@ def main():
                 elif args.squash is not None:
                     # all or number to squash together
                     # very different implementations
-                    r.squash(args.squash)
+                    r.squash(args.squash, args.message)
                 elif args.all_sql is True:
                     r.all_sql(file=args.file, database=args.empty_database)
                 elif args.progressive_sql is True:

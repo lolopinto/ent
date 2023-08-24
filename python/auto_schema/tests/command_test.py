@@ -619,7 +619,7 @@ CREATE OR REPLACE TRIGGER events_name_change_trigger BEFORE UPDATE
             'public': exclude_list
         }
 
-        r2.squash_all()
+        r2.squash_all("squash all")
         testingutils.assert_num_files(r2, 1)
         
         assert get_stamped_alembic_versions(r2) == stamped
