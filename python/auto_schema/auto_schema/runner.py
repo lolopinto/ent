@@ -1,6 +1,8 @@
 from argparse import Namespace
 import io
 import json
+import os
+import asyncio
 import sys
 from collections.abc import Mapping
 from alembic.operations import Operations
@@ -16,6 +18,8 @@ from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.engine.url import make_url
 
 from alembic.autogenerate import produce_migrations
+from alembic.autogenerate import RevisionContext
+from alembic.autogenerate.api import AutogenContext
 from alembic.autogenerate import render_python_code
 from alembic.migration import MigrationContext
 from alembic import context
@@ -24,7 +28,7 @@ from alembic.script import ScriptDirectory
 
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, List, Tuple
 
 from . import command
 from . import config
@@ -32,7 +36,8 @@ from . import ops
 from . import renderers
 from . import compare
 from . import ops_impl
-from . import util
+from . import csv
+from .util.os import delete_py_files
 
 
 class Runner(object):
@@ -186,7 +191,7 @@ class Runner(object):
                 # render postgres with create_type=False so that the type is not automatically created
                 # we want an explicit create type and drop type
                 # which we apparently don't get by default
-                return "postgresql.ENUM(%s, name='%s', create_type=False)" % (util.render_list_csv(item.enums), item.name)
+                return "postgresql.ENUM(%s, name='%s', create_type=False)" % (csv.render_list_csv(item.enums), item.name)
             return False
 
         type_map = {
@@ -249,7 +254,7 @@ class Runner(object):
         message = "\n".join(changes)
         return message
 
-    def revision(self, diff=None):
+    def revision(self, diff=None, revision=None):
         # print(self.cmd.current())
 
         # if diff is None:
@@ -257,7 +262,7 @@ class Runner(object):
 
         message = self.revision_message(diff)
 
-        self.cmd.revision(message)
+        self.cmd.revision(message, revision=revision)
 
         # understand diff and make changes as needed
         # pprint.pprint(migrations, indent=2, width=30)
@@ -300,11 +305,105 @@ class Runner(object):
     def merge(self, revisions, message=None):
         self.cmd.merge(revisions, message=message)
 
-    def squash(self, squash):
-        self.cmd.squash(self.revision, squash)
+    def squash(self, squash, message=None, database=''):
+        if squash == 'all':
+            self.squash_all(message, database=database)
+        else:
+            self.squash_n(squash)
+            
+    def squash_n(self, squash):
+        squash = int(squash)
+        if squash < 2:
+            raise ValueError("squash needs to be an integer of at least 2")
+        
+        revision = None
+        heads = self.cmd.get_heads()
+        if len(heads) == 1:
+            revision = heads[0]
 
+        # downgrade -2 and re-run upgrade
+        self.cmd.downgrade('-%d' % squash)
 
-    def _get_custom_sql(self, connection, dialect) -> io.StringIO:
+        # generate a new revision
+        self.revision(revision=revision)
+        self.cmd.upgrade()
+        
+    def squash_all(self, message=None, database=''):
+        heads = self.cmd.get_heads()
+        if len(heads) > 1:
+            raise ValueError("cannot squash_all when there are multiple heads")
+        
+        revision = heads[0]
+        
+        location = self.cmd.alembic_cfg.get_main_option('version_locations')
+        
+        (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
+
+        (custom_sql_upgrade_ops, custom_sql_downgrade_ops) = self._get_custom_sql(connection, dialect, as_ops=True)
+        migrations.upgrade_ops.ops.extend(custom_sql_upgrade_ops)
+
+        # in practice, shouldn't care about downgrade at this point since if you're doing this, you're past the point
+        # of no return but doing it anyway for tests and completeness
+        # reverse downgrade_ops
+        migrations.downgrade_ops.ops.reverse()
+        # reverse custom_sql
+        custom_sql_downgrade_ops.reverse()
+        # add reversed custom sql since we add them last
+        migrations.downgrade_ops.ops.extend(custom_sql_downgrade_ops)
+        
+        # delete existing files
+        asyncio.run(delete_py_files(location))
+
+        message = message or "all the things"
+        command_args = dict(
+            message=message,
+            autogenerate=False,
+            sql=False,
+            head="head",
+            splice=False,
+            branch_label=None,
+            version_path=None,
+            rev_id=revision,
+            depends_on=None,
+        )
+        revision_context = RevisionContext(
+            self.cmd.alembic_cfg,
+            self.cmd.get_script_directory(),
+            command_args,
+        )
+        migration_script = alembicops.MigrationScript(
+            rev_id=revision,
+            message=message,
+            upgrade_ops=migrations.upgrade_ops,
+            downgrade_ops=migrations.downgrade_ops,
+            head="head",
+            splice=False,
+            branch_label=None,
+            version_path=None,
+            depends_on=None,
+        )
+        # set up autogenerate code so it renders the migrations
+        opts=Runner.get_opts()
+        opts['sqlalchemy_module_prefix'] = 'sa.'
+        opts['alembic_module_prefix'] = 'op.'
+        opts['user_module_prefix'] = None
+        opts['render_as_batch'] = False
+        autogen_context = AutogenContext(
+            mc, autogenerate=False,
+            opts=opts,
+        )
+        revision_context._last_autogen_context = autogen_context
+
+        migration_script._needs_render = True
+
+        # writes the file and we can do something with the script if we want but we don't need to
+        revision_context._to_script(migration_script)
+        
+
+    def _get_custom_sql(self, connection, dialect, as_buffer=False, as_ops=False) -> Union[io.StringIO, Tuple[List[alembicops.MigrateOperation], List[alembicops.MigrateOperation]]]:
+        if not as_ops ^ as_buffer:
+            raise ValueError("must specify either as_buffer or as_ops")
+
         custom_sql_include_all = config.metadata.info.setdefault('custom_sql_include', {})
         custom_sql_exclude_all= config.metadata.info.setdefault('custom_sql_exclude', {})
         custom_sql_include_list = custom_sql_include_all.setdefault('public', [])
@@ -318,13 +417,16 @@ class Runner(object):
         if len(custom_sql_exclude_list) > 0:
             custom_sql_exclude = set(custom_sql_exclude_list)
             
-        def include_rev(name):
+        def is_custom_op(obj: ops.ExecuteSQL):
+            return isinstance(obj, ops.ExecuteSQL) or isinstance(obj, alembicops.ExecuteSQLOp)
+
+        def include_rev(name: str):
             if custom_sql_include is not None:
                 return name in custom_sql_include
             if custom_sql_exclude is not None:
                 return name not in custom_sql_exclude
             return True
-        
+     
 
         script_directory = self.cmd.get_script_directory()
         revs = script_directory.walk_revisions()
@@ -346,13 +448,13 @@ class Runner(object):
         # monkey patch the Dispatcher.dispatch method to know what's being changed/dispatched
         # for each upgrade path, we'll know what the last object was and can make decisions based on that
         
-        last_obj = None
+        last_ops = []
 
         def my_decorator(func):
             @wraps(func)
             def wrapper(self, *args, **kwargs):
-                nonlocal last_obj
-                last_obj = args[0]
+                nonlocal last_ops
+                last_ops.append(args[0])
                 return func(self, *args, **kwargs)  
             return wrapper   
             
@@ -363,27 +465,47 @@ class Runner(object):
         revs = list(revs)
         revs.reverse()
 
+        upgrade_ops = []
+        downgrade_ops = []
         with Operations.context(mc):
             for rev in revs:
                 # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
                 rev.module.upgrade()
 
-                if (isinstance(last_obj, ops.ExecuteSQL) or isinstance(last_obj, alembicops.ExecuteSQLOp)) and include_rev(rev.revision):
-                    custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
-                    custom_sql_buffer.write(temp_buffer.getvalue())
+                if include_rev(rev.revision):
+                    for op in last_ops:
+                        if is_custom_op(op):
+                            if as_buffer:
+                                custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
+                                custom_sql_buffer.write(temp_buffer.getvalue())
+
+                            if as_ops:
+                                upgrade_ops.append(op)
+
+                    last_ops = []
+
+
+                    # run downgrade, capture what's being changed via the dispatcher and see if it's custom sql                        
+                    rev.module.downgrade()
+                    for op in last_ops:
+                        if is_custom_op(op):
+                            downgrade_ops.append(op)
+
+                last_ops = []
 
                 temp_buffer.clear()
         
+        if as_ops:
+            return (upgrade_ops, downgrade_ops)
+
         return custom_sql_buffer
-                    
-    # doesn't invoke env.py. completely different flow
-    # progressive_sql and upgrade range do go through offline path
-    def all_sql(self, file=None, database=''):
+    
+    def migrations_against_empty(self, database=''):
         dialect = self.connection.dialect.name
 
         raw_engine = self.args.get('engine', None)
         if raw_engine is None:
-            return
+            raise ValueError("must specify engine")
 
         # use passed in database. make sure not None
         url = make_url(raw_engine).set(database=database or '')
@@ -402,8 +524,14 @@ class Runner(object):
             dialect_name=dialect,
             opts=Runner.get_opts(),
         )
-        migrations = produce_migrations(mc, self.metadata)
-        
+        migrations = produce_migrations(mc, self.metadata) 
+        return (migrations, connection, dialect, mc)
+                    
+    # doesn't invoke env.py. completely different flow
+    # progressive_sql and upgrade range do go through offline path
+    def all_sql(self, file=None, database=''):
+        (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
+    
         # default is stdout so let's use it
         buffer = sys.stdout
         if file is not None:
@@ -440,7 +568,7 @@ class Runner(object):
         for op in migrations.upgrade_ops.ops:
             invoke(op)
         
-        custom_sql_buffer = self._get_custom_sql(connection, dialect)
+        custom_sql_buffer = self._get_custom_sql(connection, dialect, as_buffer=True)
 
         # add custom sql at the end
         buffer.write(custom_sql_buffer.getvalue())

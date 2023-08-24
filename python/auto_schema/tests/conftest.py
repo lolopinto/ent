@@ -141,7 +141,10 @@ def new_test_runner(request):
         # use a new connection for each runner
         info = dialect.create_connection(schema_path)
 
-        r = runner.Runner(metadata, info.engine, info.connection, schema_path)
+        args = {
+            'engine': info.url,
+        }
+        r = runner.Runner(metadata, info.engine, info.connection, schema_path, args=args)
 
         def delete_path():
             path = r.get_schema_path()

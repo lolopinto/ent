@@ -3,6 +3,7 @@ import alembic
 from alembic.util.exc import CommandError
 import alembic.operations.ops as alembicops
 from auto_schema import runner
+from auto_schema.change_type import ChangeType
 from sqlalchemy.sql.sqltypes import String
 import pytest
 import sqlalchemy as sa
@@ -312,7 +313,7 @@ class CommandTest(object):
             (1, 3, True),
         ]
     )
-    def test_squash(self, new_test_runner, metadata_with_table, squash_val, files_left, squash_raises):
+    def test_squash_n(self, new_test_runner, metadata_with_table, squash_val, files_left, squash_raises):
         r: runner.Runner = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_table)
@@ -350,7 +351,305 @@ class CommandTest(object):
         r3.metadata.reflect(bind=r3.get_connection())
         testingutils.validate_metadata_after_change(r3, new_metadata)
 
+    @ pytest.mark.parametrize(
+        'include, exclude, squash_raises',
+        [
+            # exclude is true so anything that flags as should be excluded will be excluded in squash when exclude is True
+            (False, True, None), 
+            # include and make sure we throw by including something that will cause an error because the table doesn't exist anymore
+            (True, False, 'relation "contacts" does not exist'), 
+            # if we include, there should be no error since events trigger is included
+            (True, False, None),
+            # no include or exclude, we throw 
+            (False, False, 'relation "contacts" does not exist')
+        ]
 
+    ) 
+    def test_squash_all(self, new_test_runner, include, exclude, squash_raises):
+        def add_table(table_name, metadata):
+            sa.Table(
+                table_name, 
+                metadata, 
+                sa.Column('id', sa.Integer, primary_key=True),
+                sa.Column('name', sa.String(255), nullable=False),
+                sa.PrimaryKeyConstraint('id', name = '%s_pkey' % table_name),
+            )
+            
+        def add_column(table_name, column_name, metadata):
+            sa.Table(
+                table_name, 
+                metadata, 
+                sa.Column(column_name, sa.String(255), nullable=False),
+                extend_existing=True,
+            )
+        
+        def add_nullable_column(table_name, column_name, metadata):
+            sa.Table(
+                table_name, 
+                metadata, 
+                sa.Column(column_name, sa.String(255), nullable=True),
+                extend_existing=True,
+            )
+            
+        def add_nullable_column(table_name, column_name, metadata):
+            sa.Table(
+                table_name, 
+                metadata, 
+                sa.Column(column_name, sa.String(255), nullable=True),
+                extend_existing=True,
+            )
+            
+        def drop_column(table_name, column_name, metadata):
+            cols = [col.name for col in metadata.tables[table_name].columns if col.name != column_name]
+            
+            # eureka! how to drop columns            
+            sa.Table(table_name, metadata, extend_existing=True, include_columns=cols)
+            
+        def drop_table(table_name, metadata):
+            metadata.remove(metadata.tables[table_name])
+            
+        def custom_sql_without_contacts(include, exclude, squash_raises, c):
+            if exclude and not squash_raises:
+                c["exclude_if_excluding"] = True
+                return
+
+            if include and squash_raises:
+                c["include_if_including"] = True
+                return
+        
+        def custom_sql_with_events(include, exclude, squash_raises, c):
+            if include:
+                c["include_if_including"] = True
+
+        changes = [
+            {
+                "change": ChangeType.ADD_TABLE,
+                "metadata_lambda": lambda metadata: add_table('accounts', metadata),
+                "tables": ['accounts'],
+            },
+            {
+                "change": ChangeType.ADD_COLUMN,
+                "metadata_lambda": lambda metadata: add_column('accounts', 'bio', metadata),
+                "tables": ['accounts'],
+            },
+            {
+                "change": ChangeType.ADD_TABLE,
+                "metadata_lambda": lambda metadata: add_table('contacts', metadata),
+                "tables": ['accounts', 'contacts'],
+            },
+            {
+                "change": ChangeType.ADD_COLUMN,
+                "metadata_lambda": lambda metadata: add_nullable_column('contacts', 'email_address', metadata),
+                "tables": ['accounts', 'contacts'],
+            },
+            {
+                "change": ChangeType.DROP_COLUMN,
+                "metadata_lambda": lambda metadata: drop_column('contacts', 'email_address', metadata),
+                "tables": ['accounts', 'contacts'],
+            },
+            {
+                "change": ChangeType.EXECUTE_SQL,
+                "tables": ['accounts', 'contacts'],
+                # nothing 
+                "runner_lambda": lambda r: testingutils.create_custom_revision(
+                    r,
+                    "custom change",
+                    len(testingutils.get_version_files(r)) + 1,
+                    """op.execute_sql(\"""CREATE OR REPLACE FUNCTION contacts_name_change()
+RETURNS trigger AS
+$$
+BEGIN
+  IF (NEW.name <> OLD.name) THEN
+    PERFORM pg_notify('contact_name_change', row_to_json(NEW)::text);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE 'plpgsql';
+ 
+CREATE OR REPLACE TRIGGER contacts_name_change_trigger BEFORE UPDATE 
+       ON contacts
+       FOR EACH ROW EXECUTE PROCEDURE contacts_name_change();\""")""",
+                    """op.execute_sql("DROP TRIGGER IF EXISTS contacts_name_change_trigger ON contacts")
+    op.execute_sql("DROP FUNCTION IF EXISTS contacts_name_change")""",
+                ),
+                "dynamic_lambda": lambda include, exclude, squash_raises, c:  custom_sql_without_contacts(include, exclude, squash_raises, c),
+            },
+            {
+                "change": ChangeType.DROP_TABLE,
+                "desc": "drop table contacts",
+                "metadata_lambda": lambda metadata: drop_table('contacts', metadata),
+                "tables": ['accounts'],
+            },
+            {
+                "change": ChangeType.ADD_TABLE,
+                "metadata_lambda": lambda metadata: add_table('events', metadata),
+                "tables": ['accounts', 'events'],
+            },
+            {
+                "change": ChangeType.EXECUTE_SQL,
+                "tables": ['accounts', 'events'],
+                "runner_lambda": lambda r: testingutils.create_custom_revision(
+                    r,
+                    "custom change",
+                    len(testingutils.get_version_files(r)) + 1,
+                    """op.execute_sql(\"""CREATE OR REPLACE FUNCTION events_name_change()
+RETURNS trigger AS
+$$
+BEGIN
+  IF (NEW.name <> OLD.name) THEN
+    PERFORM pg_notify('event_name_change', row_to_json(NEW)::text);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE 'plpgsql';
+ 
+CREATE OR REPLACE TRIGGER events_name_change_trigger BEFORE UPDATE 
+       ON events
+       FOR EACH ROW EXECUTE PROCEDURE events_name_change();\""")""",
+                    """op.execute_sql("DROP TRIGGER IF EXISTS events_name_change_trigger ON events")
+    op.execute_sql("DROP FUNCTION IF EXISTS events_name_change")""",
+                ),
+                "dynamic_lambda": lambda include, exclude, squash_raises, c:  custom_sql_with_events(include, exclude, squash_raises, c),
+            },
+            {
+                "change": ChangeType.EXECUTE_SQL,
+                "tables": ['accounts', 'events'],
+                "runner_lambda": lambda r: testingutils.create_custom_revision(
+                    r,
+                    "custom change",
+                    len(testingutils.get_version_files(r)) + 1,
+                    """op.execute_sql("CREATE TYPE rainbow as ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')")""",
+                    """op.execute_sql("DROP TYPE rainbow")""",
+                ),
+                "validate_lambda": lambda r: testingutils.get_enums(r) == ["rainbow"]
+            },
+            {
+                "change": ChangeType.EXECUTE_SQL,
+                "tables": ['accounts', 'events'],
+                "runner_lambda": lambda r: testingutils.create_custom_revision(
+                    r,
+                    "custom change again",
+                    len(testingutils.get_version_files(r)) + 1,
+                    """op.execute_sql("DROP TYPE rainbow")""",
+                    """op.execute_sql("CREATE TYPE rainbow as ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')")""",
+                ),
+                "validate_lambda": lambda r: testingutils.get_enums(r) == []
+            },
+            # TODO downgrade in custom_sql needs to be added
+        ]
+        
+        metadata = sa.MetaData()
+        prev = None
+        count = 0
+        
+        def process_change(c, prev, num_files):
+            lam = c.setdefault('metadata_lambda', None)
+            if lam is not None:
+                lam(metadata)
+                
+
+            if prev is None:
+                r: runner.Runner = new_test_runner(metadata)
+            else:
+                r = testingutils.new_runner_from_old(
+                    prev,
+                    new_test_runner,
+                    metadata
+                )
+                
+            lam = c.setdefault('runner_lambda', None)
+            # make custom changes to runner here e.g. execute sql
+            if lam is not None:
+                lam(r)
+            
+            r.run()
+            # upgrade again just case in we don't go through autogenerate flow and have to upgrade if it was 
+            # done manually via execute_sql
+            r.upgrade()
+            testingutils.assert_num_files(r, num_files)
+            return verify_change(c, r)
+            
+        def verify_change(c, r):
+            tables = ['alembic_version']
+            [tables.append(t) for t in c['tables']]
+            tables.sort()
+            testingutils.assert_num_tables(r, len(tables), tables)
+                
+            testingutils.validate_metadata_after_change(r, metadata)
+
+            lam = c.setdefault('validate_lambda', None)
+            if lam is not None:
+                lam(r)
+                
+            return r
+
+        include_list = []
+        exclude_list = []
+        for c in changes:
+            count += 1
+            r = process_change(c, prev, count)
+
+            stamped = get_stamped_alembic_versions(r) 
+            assert len(stamped) == 1
+            
+            if c.setdefault('dynamic_lambda', None) is not None:
+                c['dynamic_lambda'](include, exclude, squash_raises, c)
+
+            if include and c.setdefault('include_if_including', False):
+                include_list.append(stamped[0])
+            if exclude and c.setdefault('exclude_if_excluding', False):
+                exclude_list.append(stamped[0])
+
+            prev = r
+            
+        stamped = get_stamped_alembic_versions(prev)
+        assert len(stamped) == 1
+    
+        # add to info
+        r2 = testingutils.new_runner_from_old(
+            prev,
+            new_test_runner,
+            metadata
+        )
+        
+        metadata.info["custom_sql_include"] = {
+            'public': include_list
+        }
+        metadata.info["custom_sql_exclude"] = {
+            'public': exclude_list
+        }
+
+        r2.squash_all("squash all")
+        testingutils.assert_num_files(r2, 1)
+        
+        assert get_stamped_alembic_versions(r2) == stamped
+
+        # downgrade the squash to base
+        assert len(get_stamped_alembic_versions(r2)) == 1
+        
+        # nothing here!
+        r2.downgrade('-1', False)
+                
+        new_metadata = testingutils._get_new_metadata_for_runner(r2)
+        assert len(new_metadata.sorted_tables) == 1 and new_metadata.sorted_tables[0].name == 'alembic_version'
+        
+        assert get_stamped_alembic_versions(r2) == []
+
+        # upgrade everything
+        
+        if squash_raises is not None:
+            with pytest.raises(Exception, match=squash_raises):
+                r2.upgrade()
+        else:
+            r2.upgrade()
+        
+            assert get_stamped_alembic_versions(r2) == stamped
+            
+            last_change = changes[-1]
+            # verify the last change
+            verify_change(last_change, r2)
+        
+    
 class TestPostgresCommand(CommandTest):
     pass
 
