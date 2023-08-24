@@ -357,15 +357,16 @@ class Runner(object):
         (migrations, connection, dialect, mc) = self.migrations_against_empty(database='')
 
         # don't care about downgrade, will be a big what are you doing?
-        print(len(migrations.upgrade_ops.ops))
+        # print(len(migrations.upgrade_ops.ops))
         # print(len(migrations.downgrade_ops.ops))
         
         # ToDO get downgrade too because why not
+        # TODO still needed
         custom_sql_ops = self._get_custom_sql(connection, dialect, as_ops=True)
-        print(custom_sql_ops)
+        # print(custom_sql_ops)
         migrations.upgrade_ops.ops.extend(custom_sql_ops)
 
-        print(len(migrations.upgrade_ops.ops))
+        # print(len(migrations.upgrade_ops.ops))
         
         # delete existing files
         asyncio.run(delete_py_files(location))
@@ -391,7 +392,8 @@ class Runner(object):
             rev_id=revision,
             message="all the things",
             upgrade_ops=migrations.upgrade_ops,
-            downgrade_ops=alembicops.DowngradeOps([]),
+            # downgrade_ops=alembicops.DowngradeOps([]),
+            downgrade_ops=migrations.downgrade_ops,
             head="head",
             splice=False,
             branch_label=None,
@@ -508,7 +510,7 @@ class Runner(object):
 
         raw_engine = self.args.get('engine', None)
         if raw_engine is None:
-            return
+            raise ValueError("must specify engine")
 
         # use passed in database. make sure not None
         url = make_url(raw_engine).set(database=database or '')

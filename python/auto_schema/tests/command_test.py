@@ -3,6 +3,7 @@ import alembic
 from alembic.util.exc import CommandError
 import alembic.operations.ops as alembicops
 from auto_schema import runner
+from auto_schema.change_type import ChangeType
 from sqlalchemy.sql.sqltypes import String
 import pytest
 import sqlalchemy as sa
@@ -351,6 +352,198 @@ class CommandTest(object):
         testingutils.validate_metadata_after_change(r3, new_metadata)
 
 
+    def test_squash_all(self, new_test_runner):
+        def add_table(table_name, metadata):
+            sa.Table(
+                table_name, 
+                metadata, 
+                sa.Column('id', sa.Integer, primary_key=True),
+                sa.Column('name', sa.String(255), nullable=False),
+                sa.PrimaryKeyConstraint('id', name = '%s_pkey' % table_name),
+            )
+            
+        def add_column(table_name, column_name, metadata):
+            sa.Table(
+                table_name, 
+                metadata, 
+                sa.Column(column_name, sa.String(255), nullable=False),
+                extend_existing=True,
+            )
+        
+        def add_nullable_column(table_name, column_name, metadata):
+            sa.Table(
+                table_name, 
+                metadata, 
+                sa.Column(column_name, sa.String(255), nullable=True),
+                extend_existing=True,
+            )
+            
+        def add_nullable_column(table_name, column_name, metadata):
+            sa.Table(
+                table_name, 
+                metadata, 
+                sa.Column(column_name, sa.String(255), nullable=True),
+                extend_existing=True,
+            )
+            
+        def drop_column(table_name, column_name, metadata):
+            cols = [col.name for col in metadata.tables[table_name].columns if col.name != column_name]
+            
+            # eureka! how to drop columns            
+            sa.Table(table_name, metadata, extend_existing=True, include_columns=cols)
+            
+        def drop_table(table_name, metadata):
+            metadata.remove(metadata.tables[table_name])
+
+        changes = [
+            {
+                "change": ChangeType.ADD_TABLE,
+                "metadata_lambda": lambda metadata: add_table('accounts', metadata),
+                "tables": ['accounts'],
+            },
+            {
+                "change": ChangeType.ADD_COLUMN,
+                "metadata_lambda": lambda metadata: add_column('accounts', 'bio', metadata),
+                "tables": ['accounts'],
+            },
+            {
+                "change": ChangeType.ADD_TABLE,
+                "metadata_lambda": lambda metadata: add_table('contacts', metadata),
+                "tables": ['accounts', 'contacts'],
+            },
+            {
+                "change": ChangeType.ADD_COLUMN,
+                "metadata_lambda": lambda metadata: add_nullable_column('contacts', 'email_address', metadata),
+                "tables": ['accounts', 'contacts'],
+            },
+            {
+                "change": ChangeType.DROP_COLUMN,
+                "metadata_lambda": lambda metadata: drop_column('contacts', 'email_address', metadata),
+                "tables": ['accounts', 'contacts'],
+            },
+            {
+                "change": ChangeType.DROP_TABLE,
+                "desc": "drop table contacts",
+                "metadata_lambda": lambda metadata: drop_table('contacts', metadata),
+                "tables": ['accounts'],
+            },
+            {
+                "change": ChangeType.ADD_TABLE,
+                "metadata_lambda": lambda metadata: add_table('events', metadata),
+                "tables": ['accounts', 'events'],
+            },
+            {
+                "change": ChangeType.EXECUTE_SQL,
+                # "lambda": lambda metadata: add_table('events', metadata),
+                "tables": ['accounts', 'events'],
+                "runner_lambda": lambda r: testingutils.create_custom_revision(
+                    r,
+                    "custom change",
+                    len(testingutils.get_version_files(r)) + 1,
+                    """op.execute_sql("CREATE TYPE rainbow as ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')")""",
+                    """op.execute_sql("DROP TYPE rainbow")""",
+                ),
+                "validate_lambda": lambda r: testingutils.get_enums(r) == ["rainbow"]
+            },
+            {
+                "change": ChangeType.EXECUTE_SQL,
+                "tables": ['accounts', 'events'],
+                "runner_lambda": lambda r: testingutils.create_custom_revision(
+                    r,
+                    "custom change again",
+                    len(testingutils.get_version_files(r)) + 1,
+                    """op.execute_sql("DROP TYPE rainbow")""",
+                    """op.execute_sql("CREATE TYPE rainbow as ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')")""",
+                ),
+                "validate_lambda": lambda r: testingutils.get_enums(r) == []
+            },
+        ]
+        
+        metadata = sa.MetaData()
+        prev = None
+        count = 0
+        
+        def process_change(c, prev, num_files):
+            lam = c.setdefault('metadata_lambda', None)
+            if lam is not None:
+                lam(metadata)
+                
+
+            if prev is None:
+                r: runner.Runner = new_test_runner(metadata)
+            else:
+                r = testingutils.new_runner_from_old(
+                    prev,
+                    new_test_runner,
+                    metadata
+                )
+                
+            lam = c.setdefault('runner_lambda', None)
+            if lam is not None:
+                lam(r)
+            # make custom changes to runner here e.g. execute sql
+            
+            r.run()
+            # upgrade again just case in we don't go through autogenerate flow and have to upgrade if it was 
+            # done manually via execute_sql
+            r.upgrade()
+            testingutils.assert_num_files(r, num_files)
+            return verify_change(c, r)
+            
+        def verify_change(c, r):
+            tables = ['alembic_version']
+            [tables.append(t) for t in c['tables']]
+            tables.sort()
+            testingutils.assert_num_tables(r, len(tables), tables)
+                
+            testingutils.validate_metadata_after_change(r, metadata)
+
+            lam = c.setdefault('validate_lambda', None)
+            if lam is not None:
+                lam(r)
+                
+            return r
+
+        for c in changes:
+            count += 1
+            r = process_change(c, prev, count)
+
+            prev = r
+            
+        stamped = get_stamped_alembic_versions(prev)
+        assert len(stamped) == 1
+    
+        r2 = testingutils.new_runner_from_old(
+            prev,
+            new_test_runner,
+            metadata
+        )
+
+        r2.squash_all()
+        testingutils.assert_num_files(r2, 1)
+        
+        assert get_stamped_alembic_versions(r2) == stamped
+
+        # downgrade the squash to base
+        assert len(get_stamped_alembic_versions(r2)) == 1
+        
+        # nothing here!
+        r2.downgrade('-1', False)
+                
+        new_metadata = testingutils._get_new_metadata_for_runner(r2)
+        assert len(new_metadata.sorted_tables) == 1 and new_metadata.sorted_tables[0].name == 'alembic_version'
+        
+        assert get_stamped_alembic_versions(r2) == []
+        # upgrade everything
+        r2.upgrade()
+        
+        assert get_stamped_alembic_versions(r2) == stamped
+        
+        last_change = changes[-1]
+        # verify the last change
+        verify_change(last_change, r2)
+        
+    
 class TestPostgresCommand(CommandTest):
     pass
 

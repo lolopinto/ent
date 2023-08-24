@@ -141,14 +141,17 @@ def new_test_runner(request):
         # use a new connection for each runner
         info = dialect.create_connection(schema_path)
 
-        r = runner.Runner(metadata, info.engine, info.connection, schema_path)
+        args = {
+            'engine': info.url,
+        }
+        r = runner.Runner(metadata, info.engine, info.connection, schema_path, args=args)
 
         def delete_path():
             path = r.get_schema_path()
 
             # delete temp directory which was created
-            if os.path.isdir(path):
-                shutil.rmtree(path)
+            # if os.path.isdir(path):
+            #     shutil.rmtree(path)
 
         request.addfinalizer(delete_path)
 
