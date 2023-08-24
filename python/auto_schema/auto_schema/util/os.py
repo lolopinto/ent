@@ -23,4 +23,3 @@ async def delete_py_files(dir):
             if file.endswith('.py'):
                 file_path = os.path.join(root, file)
                 os.remove(file_path)
-                print(f"Deleted {file_path}")

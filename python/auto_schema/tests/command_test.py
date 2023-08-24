@@ -457,6 +457,9 @@ class CommandTest(object):
                 ),
                 "validate_lambda": lambda r: testingutils.get_enums(r) == []
             },
+            # TODO test custom_sql that conflicts with both still existing so that we need to pick one
+            # TODO test with option where a custom_sql is filtered out so we test the include/exclude/default logic
+            # TODO downgrade in custom_sql needs to be added
         ]
         
         metadata = sa.MetaData()

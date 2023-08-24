@@ -338,27 +338,10 @@ class Runner(object):
         
         location = self.cmd.alembic_cfg.get_main_option('version_locations')
         
-        # asyncio.run(delete_py_files(location))
-        
-        # engine = sa.create_engine(url)
-        # connection = engine.connect()
-        
-        # self.metadata.create_all(self.engine)
-        # from alembic.config import Config
-        # self.cmd.stamp('head')
-        # mc = MigrationContext.configure(
-        #     connection=self.connection,
-        #     dialect_name=self.connection.dialect.name,
-        #     opts=Runner.get_opts(),
-        # )
-        # migration_script = produce_migrations(mc, self.metadata)
-        
         # TODO pass empty database to this...
         (migrations, connection, dialect, mc) = self.migrations_against_empty(database='')
 
         # don't care about downgrade, will be a big what are you doing?
-        # print(len(migrations.upgrade_ops.ops))
-        # print(len(migrations.downgrade_ops.ops))
         
         # ToDO get downgrade too because why not
         # TODO still needed
@@ -366,7 +349,6 @@ class Runner(object):
         # print(custom_sql_ops)
         migrations.upgrade_ops.ops.extend(custom_sql_ops)
 
-        # print(len(migrations.upgrade_ops.ops))
         
         # delete existing files
         asyncio.run(delete_py_files(location))
@@ -386,7 +368,6 @@ class Runner(object):
             self.cmd.alembic_cfg,
             self.cmd.get_script_directory(),
             command_args,
-            # process_revision_directives=process_revision_directives,
         )
         migration_script = alembicops.MigrationScript(
             rev_id=revision,
@@ -414,12 +395,8 @@ class Runner(object):
 
         migration_script._needs_render = True
 
-        script = revision_context._to_script(migration_script)
-        # print(len(migrations.downgrade_ops.ops))
-        
-        
-        # print(revision)
-        # self.cmd.revision(revision=revision, message='all the things')
+        # writes the file and we can do something with the script if we want but we don't need to
+        revision_context._to_script(migration_script)
         
 
     def _get_custom_sql(self, connection, dialect, as_buffer=False, as_ops=False) -> io.StringIO:
@@ -536,31 +513,7 @@ class Runner(object):
     # progressive_sql and upgrade range do go through offline path
     def all_sql(self, file=None, database=''):
         (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
-        # dialect = self.connection.dialect.name
-
-        # raw_engine = self.args.get('engine', None)
-        # if raw_engine is None:
-        #     return
-
-        # # use passed in database. make sure not None
-        # url = make_url(raw_engine).set(database=database or '')
-
-        # engine = sa.create_engine(url)
-        # connection = engine.connect()
-
-        # metadata = sa.MetaData()
-        # metadata.reflect(bind=connection)
-        # if len(metadata.sorted_tables) != 0:
-        #     raise Exception("to compare from base tables, cannot have any tables in database. have %d" % len(
-        #         metadata.sorted_tables))
-
-        # mc = MigrationContext.configure(
-        #     connection=connection,
-        #     dialect_name=dialect,
-        #     opts=Runner.get_opts(),
-        # )
-        # migrations = produce_migrations(mc, self.metadata)
-        
+    
         # default is stdout so let's use it
         buffer = sys.stdout
         if file is not None:
