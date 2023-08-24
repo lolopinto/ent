@@ -313,7 +313,7 @@ class CommandTest(object):
             (1, 3, True),
         ]
     )
-    def test_squash(self, new_test_runner, metadata_with_table, squash_val, files_left, squash_raises):
+    def test_squash_n(self, new_test_runner, metadata_with_table, squash_val, files_left, squash_raises):
         r: runner.Runner = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_table)
@@ -340,7 +340,7 @@ class CommandTest(object):
         testingutils.validate_metadata_after_change(r3, new_metadata)
 
         r3.metadata.reflect(bind=r3.get_connection())
-        if squash_raises is not None:
+        if squash_raises:
             with pytest.raises(ValueError):
                 r3.squash(squash_val)
         else:
