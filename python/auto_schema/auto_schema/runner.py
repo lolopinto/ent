@@ -448,7 +448,6 @@ class Runner(object):
         # monkey patch the Dispatcher.dispatch method to know what's being changed/dispatched
         # for each upgrade path, we'll know what the last object was and can make decisions based on that
         
-        # last_obj = None
         last_ops = []
 
         def my_decorator(func):
