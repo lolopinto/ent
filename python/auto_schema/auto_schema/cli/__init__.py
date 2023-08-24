@@ -80,7 +80,7 @@ parser.add_argument(
 )
 # if none is provided, it defaults to the database associated with the username
 parser.add_argument(
-    '--empty_database', help='with --all_sql or --run_and_all_sql, we need an empty database to compare against',
+    '--empty_database', help='with --all_sql or --run_and_all_sql or --squash all, we need an empty database to compare against',
 )
 
 
@@ -129,7 +129,7 @@ def main():
                 elif args.squash is not None:
                     # all or number to squash together
                     # very different implementations
-                    r.squash(args.squash, args.message)
+                    r.squash(args.squash, args.message, database=args.empty_database)
                 elif args.all_sql is True:
                     r.all_sql(file=args.file, database=args.empty_database)
                 elif args.progressive_sql is True:

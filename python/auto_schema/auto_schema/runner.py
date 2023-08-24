@@ -305,9 +305,9 @@ class Runner(object):
     def merge(self, revisions, message=None):
         self.cmd.merge(revisions, message=message)
 
-    def squash(self, squash, message=None):
+    def squash(self, squash, message=None, database=''):
         if squash == 'all':
-            self.squash_all(message)
+            self.squash_all(message, database=database)
         else:
             self.squash_n(squash)
             
@@ -328,7 +328,7 @@ class Runner(object):
         self.revision(revision=revision)
         self.cmd.upgrade()
         
-    def squash_all(self, message=None):
+    def squash_all(self, message=None, database=''):
         heads = self.cmd.get_heads()
         if len(heads) > 1:
             raise ValueError("cannot squash_all when there are multiple heads")
@@ -337,8 +337,7 @@ class Runner(object):
         
         location = self.cmd.alembic_cfg.get_main_option('version_locations')
         
-        # TODO pass empty database to this...
-        (migrations, connection, dialect, mc) = self.migrations_against_empty(database='')
+        (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
 
         (custom_sql_upgrade_ops, custom_sql_downgrade_ops) = self._get_custom_sql(connection, dialect, as_ops=True)
         migrations.upgrade_ops.ops.extend(custom_sql_upgrade_ops)
