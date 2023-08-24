@@ -128,7 +128,7 @@ func init() {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("%s \n  %s \n", util.WrapRed("Error"), err.Error())
+		fmt.Printf("%s \n  %s\n", util.WrapRed("Error"), err.Error())
 		fmt.Println(rootCmd.UsageString())
 		os.Exit(1)
 	}

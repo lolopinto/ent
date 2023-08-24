@@ -52,7 +52,6 @@ var squashCmd = &cobra.Command{
 			return err
 		}
 
-		// prompt all
 		return db.SquashN(cfg, i)
 	},
 }
