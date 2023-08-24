@@ -417,14 +417,16 @@ class Runner(object):
         if len(custom_sql_exclude_list) > 0:
             custom_sql_exclude = set(custom_sql_exclude_list)
             
-        def include_rev(obj, name: str):
-            if isinstance(obj, ops.ExecuteSQL) or isinstance(obj, alembicops.ExecuteSQLOp):
-                if custom_sql_include is not None:
-                    return name in custom_sql_include
-                if custom_sql_exclude is not None:
-                    return name not in custom_sql_exclude
-                return True
-            return False        
+        def is_custom_op(obj: ops.ExecuteSQL):
+            return isinstance(obj, ops.ExecuteSQL) or isinstance(obj, alembicops.ExecuteSQLOp)
+
+        def include_rev(name: str):
+            if custom_sql_include is not None:
+                return name in custom_sql_include
+            if custom_sql_exclude is not None:
+                return name not in custom_sql_exclude
+            return True
+     
 
         script_directory = self.cmd.get_script_directory()
         revs = script_directory.walk_revisions()
@@ -446,13 +448,14 @@ class Runner(object):
         # monkey patch the Dispatcher.dispatch method to know what's being changed/dispatched
         # for each upgrade path, we'll know what the last object was and can make decisions based on that
         
-        last_obj = None
+        # last_obj = None
+        last_ops = []
 
         def my_decorator(func):
             @wraps(func)
             def wrapper(self, *args, **kwargs):
-                nonlocal last_obj
-                last_obj = args[0]
+                nonlocal last_ops
+                last_ops.append(args[0])
                 return func(self, *args, **kwargs)  
             return wrapper   
             
@@ -470,18 +473,26 @@ class Runner(object):
                 # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
                 rev.module.upgrade()
 
-                if include_rev(last_obj, rev.revision):
-                    if as_buffer:
-                        custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
-                        custom_sql_buffer.write(temp_buffer.getvalue())
-                        
-                    if as_ops:
-                        upgrade_ops.append(last_obj)
+                if include_rev(rev.revision):
+                    for op in last_ops:
+                        if is_custom_op(op):
+                            if as_buffer:
+                                custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
+                                custom_sql_buffer.write(temp_buffer.getvalue())
+
+                            if as_ops:
+                                upgrade_ops.append(op)
+
+                    last_ops = []
+
 
                     # run downgrade, capture what's being changed via the dispatcher and see if it's custom sql                        
                     rev.module.downgrade()
-                    if include_rev(last_obj, rev.revision):
-                        downgrade_ops.append(last_obj)
+                    for op in last_ops:
+                        if is_custom_op(op):
+                            downgrade_ops.append(op)
+
+                last_ops = []
 
                 temp_buffer.clear()
         
