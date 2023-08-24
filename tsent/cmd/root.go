@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -121,11 +122,13 @@ func init() {
 	migratev1Cmd.Flags().StringVar(&migrateV1Info.transformPath, "transform_path", "", "path for new base class")
 
 	migrationCmd.Flags().StringVar(&migrateInfo.message, "message", "", "message for migration")
+
+	squashCmd.Flags().StringVar(&squashInfo.message, "message", "", "message for new file when squash all is run")
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("\u001b[31mError:\u001b[0m \n  %s\n", err.Error())
+		fmt.Printf("%s \n  %s \n", util.WrapRed("Error"), err.Error())
 		fmt.Println(rootCmd.UsageString())
 		os.Exit(1)
 	}
