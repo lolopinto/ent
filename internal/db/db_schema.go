@@ -774,7 +774,7 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 	)
 }
 
-func (s *dbSchema) getSchemaForTemplate(cfg *codegen.Config) (*dbSchemaTemplate, error) {
+func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplate, error) {
 	ret := &dbSchemaTemplate{
 		Config: cfg,
 	}
@@ -1458,7 +1458,7 @@ type dbDataInfo struct {
 
 // wrapper object to represent the list of tables that will be passed to a schema template file
 type dbSchemaTemplate struct {
-	Config *codegen.Config
+	Config codegenapi.Config
 	Tables []dbSchemaTableInfo
 	Edges  []dbEdgeInfo
 	Data   []dbDataInfo

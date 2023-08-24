@@ -717,7 +717,7 @@ func TestEnumTableInSchema(t *testing.T) {
 		},
 	)
 
-	templateData, err := dbSchema.getSchemaForTemplate()
+	templateData, err := dbSchema.getSchemaForTemplate(dbSchema.cfg)
 	require.Nil(t, err)
 
 	assert.Len(t, templateData.Data, 1)
@@ -2941,7 +2941,7 @@ func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColum
 
 func getEdgeByName(edgeName string, t *testing.T) *dbEdgeInfo {
 	s := getTestSchema(t)
-	template, err := s.getSchemaForTemplate()
+	template, err := s.getSchemaForTemplate(s.cfg)
 	require.Nil(t, err)
 
 	for _, edge := range template.Edges {

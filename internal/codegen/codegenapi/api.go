@@ -81,6 +81,8 @@ type Config interface {
 	DummyWrite() bool
 	GetTemplatizedViewer() *ImportedObject
 	GetAssocEdgePath() *ImportedObject
+	CustomSQLInclude() []string
+	CustomSQLExclude() []string
 }
 
 // DummyConfig exists for tests/legacy paths which need Configs and don't want to create the production one
@@ -127,6 +129,14 @@ func (cfg DummyConfig) GetAssocEdgePath() *ImportedObject {
 		Path: codepath.Package,
 		Name: "AssocEdge",
 	}
+}
+
+func (cfg DummyConfig) CustomSQLInclude() []string {
+	return []string{}
+}
+
+func (cfg DummyConfig) CustomSQLExclude() []string {
+	return []string{}
 }
 
 var _ Config = &DummyConfig{}
