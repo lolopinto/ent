@@ -90,7 +90,7 @@ def create_custom_revision(r: runner.Runner, message, num_files, upgrade, downgr
     assert upgrade_start != -1
     assert downgrade_start != -1
 
-# TODO render_python_code in alemibc could be helpful?
+# TODO render_python_code in alembic could be helpful?
     #   "edit the file " to add types
     new_upgrade = """def upgrade(): 
     %s

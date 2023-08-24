@@ -3,7 +3,6 @@ import io
 import json
 import os
 import asyncio
-import aiofiles
 import sys
 from collections.abc import Mapping
 from alembic.operations import Operations
