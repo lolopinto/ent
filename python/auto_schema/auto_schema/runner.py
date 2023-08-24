@@ -29,7 +29,7 @@ from alembic.script import ScriptDirectory
 
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, List, Tuple
 
 from . import command
 from . import config
@@ -341,14 +341,17 @@ class Runner(object):
         # TODO pass empty database to this...
         (migrations, connection, dialect, mc) = self.migrations_against_empty(database='')
 
-        # don't care about downgrade, will be a big what are you doing?
-        
-        # ToDO get downgrade too because why not
-        # TODO still needed
-        custom_sql_ops = self._get_custom_sql(connection, dialect, as_ops=True)
-        # print(custom_sql_ops)
-        migrations.upgrade_ops.ops.extend(custom_sql_ops)
+        (custom_sql_upgrade_ops, custom_sql_downgrade_ops) = self._get_custom_sql(connection, dialect, as_ops=True)
+        migrations.upgrade_ops.ops.extend(custom_sql_upgrade_ops)
 
+        # in practice, shouldn't care about downgrade at this point since if you're doing this, you're past the point
+        # of no return but doing it anyway for tests and completeness
+        # reverse downgrade_ops
+        migrations.downgrade_ops.ops.reverse()
+        # reverse custom_sql
+        custom_sql_downgrade_ops.reverse()
+        # add reversed custom sql since we add them last
+        migrations.downgrade_ops.ops.extend(custom_sql_downgrade_ops)
         
         # delete existing files
         asyncio.run(delete_py_files(location))
@@ -373,7 +376,6 @@ class Runner(object):
             rev_id=revision,
             message="all the things",
             upgrade_ops=migrations.upgrade_ops,
-            # downgrade_ops=alembicops.DowngradeOps([]),
             downgrade_ops=migrations.downgrade_ops,
             head="head",
             splice=False,
@@ -399,7 +401,7 @@ class Runner(object):
         revision_context._to_script(migration_script)
         
 
-    def _get_custom_sql(self, connection, dialect, as_buffer=False, as_ops=False) -> io.StringIO:
+    def _get_custom_sql(self, connection, dialect, as_buffer=False, as_ops=False) -> Union[io.StringIO, Tuple[List[alembicops.MigrateOperation], List[alembicops.MigrateOperation]]]:
         if not as_ops ^ as_buffer:
             raise ValueError("must specify either as_buffer or as_ops")
 
@@ -416,13 +418,14 @@ class Runner(object):
         if len(custom_sql_exclude_list) > 0:
             custom_sql_exclude = set(custom_sql_exclude_list)
             
-        def include_rev(name):
-            if custom_sql_include is not None:
-                return name in custom_sql_include
-            if custom_sql_exclude is not None:
-                return name not in custom_sql_exclude
-            return True
-        
+        def include_rev(obj, name: str):
+            if isinstance(obj, ops.ExecuteSQL) or isinstance(obj, alembicops.ExecuteSQLOp):
+                if custom_sql_include is not None:
+                    return name in custom_sql_include
+                if custom_sql_exclude is not None:
+                    return name not in custom_sql_exclude
+                return True
+            return False        
 
         script_directory = self.cmd.get_script_directory()
         revs = script_directory.walk_revisions()
@@ -461,24 +464,30 @@ class Runner(object):
         revs = list(revs)
         revs.reverse()
 
-        ret = []
+        upgrade_ops = []
+        downgrade_ops = []
         with Operations.context(mc):
             for rev in revs:
                 # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
                 rev.module.upgrade()
 
-                if (isinstance(last_obj, ops.ExecuteSQL) or isinstance(last_obj, alembicops.ExecuteSQLOp)) and include_rev(rev.revision):
+                if include_rev(last_obj, rev.revision):
                     if as_buffer:
                         custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
                         custom_sql_buffer.write(temp_buffer.getvalue())
                         
                     if as_ops:
-                        ret.append(last_obj)
+                        upgrade_ops.append(last_obj)
+
+                    # run downgrade, capture what's being changed via the dispatcher and see if it's custom sql                        
+                    rev.module.downgrade()
+                    if include_rev(last_obj, rev.revision):
+                        downgrade_ops.append(last_obj)
 
                 temp_buffer.clear()
         
         if as_ops:
-            return ret
+            return (upgrade_ops, downgrade_ops)
 
         return custom_sql_buffer
     
