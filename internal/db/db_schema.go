@@ -741,8 +741,13 @@ func DowngradeDB(cfg *codegen.Config, revision string, keepSchemaFiles bool) err
 	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
-func Squash(cfg *codegen.Config, squash int) error {
+func SquashN(cfg *codegen.Config, squash int) error {
 	extraArgs := []string{fmt.Sprintf("--squash=%d", squash)}
+	return auto_schema.RunPythonCommand(cfg, extraArgs...)
+}
+
+func SquashAll(cfg *codegen.Config, message string) error {
+	extraArgs := []string{"--squash=all", fmt.Sprintf("--message=%s", message)}
 	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 

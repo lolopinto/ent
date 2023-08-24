@@ -680,7 +680,7 @@ func searchForFiles(processor *codegen.Processor) []string {
 			return nil
 		}
 		if strings.Contains(err.Error(), "executable file not found") {
-			fmt.Print("\u001b[31mrg executable not found so can't search for custom files. local development error?\u001b[0m\n")
+			fmt.Printf("%s\n", util.WrapRed("rg executable not found so can't search for custom files. local development error?"))
 			return nil
 		}
 		// this could be because no files exist at all e.g. when running codegen first time...
