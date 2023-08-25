@@ -748,6 +748,9 @@ func SquashN(cfg *codegen.Config, squash int) error {
 
 func SquashAll(cfg *codegen.Config, message string) error {
 	extraArgs := []string{"--squash=all", fmt.Sprintf("--message=%s", message)}
+	if db := cfg.DatabaseToCompareTo(); db != "" {
+		extraArgs = append(extraArgs, "--empty_database", db)
+	}
 	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
