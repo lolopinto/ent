@@ -18,7 +18,11 @@ Steps to release new version:
 * Bump version in `setup.py`
 * Run the following command from `python/auto_schema` (where `setup.py` is located): `python3 setup.py sdist bdist_wheel`.
 * Run `python3 -m twine upload --repository pypi dist/*` to upload to pypi OR `python3 -m twine upload --repository testpypi dist/*`. You need to be added to the project and have a [token](https://pypi.org/help/#apitoken) (or [test token](https://test.pypi.org/help/#apitoken))  in `~/.pypirc` or equivalent location.
-* Recommend cleaning up after by running `rm -rf dist/`
+* Recommend cleaning up after by running the following:
+
+ 1. `rm -rf dist/`
+ 2. `rm -rf auto_schema.egg-info`
+ 3. `rm -rf auto_schema_test.egg-info`
 
 ## Testing
 

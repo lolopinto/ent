@@ -29,13 +29,13 @@ class Command(object):
             "alembic:exclude", "tables", runner.Runner.exclude_tables())
 
         # for default formatting
-        alembic_cfg.set_section_option('post_write_hooks', 'hooks', 'autopep8')
+        alembic_cfg.set_section_option('post_write_hooks', 'hooks', 'ruff')
         alembic_cfg.set_section_option(
-            'post_write_hooks', 'autopep8.type', 'console_scripts')
+            'post_write_hooks', 'ruff.type', 'exec')
         alembic_cfg.set_section_option(
-            'post_write_hooks', 'autopep8.entrypoint', 'autopep8')
+            'post_write_hooks', 'ruff.executable', 'ruff')
         alembic_cfg.set_section_option(
-            'post_write_hooks', 'autopep8.options', '--in-place')
+            'post_write_hooks', 'ruff.options', '--fix REVISION_SCRIPT_FILENAME --silent')
 
         self.alembic_cfg = alembic_cfg
 
