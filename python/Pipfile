@@ -8,11 +8,13 @@ pytest = "*"
 autopep8 = ""
 
 [packages]
-alembic = "==1.11.1"
+#alembic = "==1.12.0"
+#alembic = "==git+https://github.com/sqlalchemy/alembic.git@dbdec2661b8a01132ea3f7a027f85fed2eaf5e54"
+lolopinto-alembic-fork = "==0.0.1.dev0"
 datetime = "==4.3"
 sqlalchemy = "==2.0.18"
 psycopg2 = "==2.9.6"
-autopep8 = "==2.0.2"
+ruff = "==0.0.285"
 python-dateutil= "==2.8.2"
 
 [requires]

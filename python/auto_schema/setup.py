@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="auto_schema_test",  # auto_schema_test to test
     # 0.0.29 production
-    version="0.0.31",  # 0.0.26 was last test version
+    version="0.0.32",  # 0.0.26 was last test version
     author="Ola Okelola",
     author_email="email@email.com",
     description="auto schema for a db",
@@ -23,10 +23,11 @@ setuptools.setup(
     ],
     python_requires='==3.11',
     install_requires=["sqlalchemy==2.0.18",
-                      "alembic==1.11.1",
+                    #   "alembic @ git+https://github.com/sqlalchemy/alembic.git@dbdec2661b8a01132ea3f7a027f85fed2eaf5e54#egg=alembic",
+                      "lolopinto-alembic-fork==0.0.1.dev0",
                       "datetime==4.3",
                       "psycopg2==2.9.6",
-                      "autopep8==2.0.2",
+                      "ruff==0.0.285",
                       "python-dateutil==2.8.2"
                       ],
     entry_points={'console_scripts': ["auto_schema = auto_schema.cli:main"]},

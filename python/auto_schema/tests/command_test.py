@@ -526,6 +526,8 @@ CREATE OR REPLACE TRIGGER events_name_change_trigger BEFORE UPDATE
             {
                 "change": ChangeType.EXECUTE_SQL,
                 "tables": ['accounts', 'events'],
+                # by the time we're editing the file, we have run ruff and removed the file
+                # so we need to do something similar to what happens with alembic
                 "runner_lambda": lambda r: testingutils.create_custom_revision(
                     r,
                     "custom change again",
