@@ -562,6 +562,7 @@ class Runner(object):
         def sort_constraints_by_name(self):
             return sorted(self.constraints, key=lambda c: c.name)
 
+        prev_sort = sa.Table._sorted_constraints
         sa.Table._sorted_constraints = sort_constraints_by_name
 
         def invoke(op):
@@ -583,8 +584,11 @@ class Runner(object):
 
         # add custom sql at the end
         buffer.write(custom_sql_buffer.getvalue())
-        
         buffer.close()
+        
+        # restore this
+        sa.Table._sorted_constraints = prev_sort
+        
 
 
     def progressive_sql(self, file=None):
