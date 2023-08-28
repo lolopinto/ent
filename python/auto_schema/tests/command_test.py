@@ -648,6 +648,20 @@ CREATE OR REPLACE TRIGGER events_name_change_trigger BEFORE UPDATE
             last_change = changes[-1]
             # verify the last change
             verify_change(last_change, r2)
+            
+            # can create a new change and squash again and it works
+            new_change = {
+                "change": ChangeType.ADD_TABLE,
+                "metadata_lambda": lambda metadata: add_table('contact_emails', metadata),
+                "tables": ['accounts', 'events', 'contact_emails'],
+            }
+            
+            # process new change, we should have 2 files now
+            r3 = process_change(new_change, r2, 2)
+            
+            r3.squash_all("squash all")
+            
+            testingutils.assert_num_files(r3, 1)
         
     
 class TestPostgresCommand(CommandTest):
