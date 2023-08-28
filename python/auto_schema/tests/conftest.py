@@ -26,19 +26,20 @@ class ConnInfo:
     url: str
     connection: Optional[sa.engine.Connection]
 
+def randomDB() -> str:
+    return random.choice(string.ascii_lowercase) + ''.join(random.SystemRandom().choice(
+            string.ascii_lowercase + string.digits) for _ in range(20))
+
 
 class Postgres:
     def __init__(self) -> None:
-        self._randomDB = self.randomDB()
+        self._randomDB = randomDB()
+        self._dbs = [self._randomDB]
         self._globalConnection = None
         self._globalEngine = None
 
         self._conns = []
         self._engines = []
-
-    def randomDB(self):
-        return random.choice(string.ascii_lowercase) + ''.join(random.SystemRandom().choice(
-            string.ascii_lowercase + string.digits) for _ in range(20))
 
     def _get_url(self, _schema_path):
         return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
@@ -52,8 +53,11 @@ class Postgres:
             self._globalConnection.execute(
                 sa.text('CREATE DATABASE %s' % self._randomDB))
 
+        return self._conn_info_for_engine(schema_path, self._randomDB)
+    
+    def _conn_info_for_engine(self, schema_path: str, db: str) -> ConnInfo:
         url = ("%s/%s" %
-               (self._get_url(schema_path), self._randomDB))
+               (self._get_url(schema_path), db))
 
         engine = sa.create_engine(url)
         self._engines.append(engine)
@@ -62,6 +66,18 @@ class Postgres:
         self._conns.append(conn)
 
         return ConnInfo(engine, url, conn)
+    
+    
+    def create_new_database(self, schema_path) -> ConnInfo:
+        assert self._globalConnection is not None
+        new_db = randomDB()
+        self._dbs.append(new_db)
+        self._globalConnection.execute(
+                sa.text('CREATE DATABASE %s' % new_db))
+
+
+        return self._conn_info_for_engine(schema_path, new_db)
+
 
     def get_finalizer(self):
         def fn():
@@ -71,8 +87,9 @@ class Postgres:
             for engine in self._engines:
                 engine.dispose()
 
-            self._globalConnection.execute(
-                sa.text('DROP DATABASE %s' % self._randomDB))
+            for db in self._dbs:
+                self._globalConnection.execute(
+                    sa.text('DROP DATABASE %s' % db))
             self._globalConnection.close()
             self._globalEngine.dispose()
 
@@ -124,7 +141,10 @@ def new_test_runner(request):
 
     request.addfinalizer(dialect.get_finalizer())
 
-    def _make_new_test_runner(metadata, prev_runner=None) -> runner.Runner:
+    def _make_new_test_runner(metadata, prev_runner=None, new_database=False) -> runner.Runner:
+        if new_database:
+            assert prev_runner is None
+
         # by default, this will be none and create a temp directory where things should go
         # sometimes, when we want to test multiple revisions, we'll send the previous runner so we reuse the path
         if prev_runner is not None:
@@ -138,8 +158,17 @@ def new_test_runner(request):
             connection = prev_runner.get_connection()
             connection.commit()
 
-        # use a new connection for each runner
-        info = dialect.create_connection(schema_path)
+
+        if new_database:
+            if not hasattr(dialect, 'create_new_database'):
+                raise Exception("create_new_database not implemented for %s" % dialect)
+            if not callable(getattr(dialect, 'create_new_database')):
+                raise Exception("create_new_database not callable for %s" % dialect)
+
+            info = dialect.create_new_database(schema_path)
+        else:
+            # use a new connection for each runner
+            info = dialect.create_connection(schema_path)
 
         args = {
             'engine': info.url,

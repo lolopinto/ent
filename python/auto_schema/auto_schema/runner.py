@@ -472,12 +472,23 @@ class Runner(object):
                 # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
                 rev.module.upgrade()
 
+                header_written = False
                 if include_rev(rev.revision):
-                    for op in last_ops:
+                    # the number of ops should match the number of sql chunks written
+                    # may eventually have ops that do more than 1 sql write and need to handle this differently???
+                    assert len(last_ops) == temp_buffer.chunk_len()
+
+                    for i in range(len(last_ops)):
+                        op = last_ops[i]
                         if is_custom_op(op):
                             if as_buffer:
-                                custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
-                                custom_sql_buffer.write(temp_buffer.getvalue())
+                                chunk = temp_buffer.get_chunk(i)
+                                if not header_written:
+                                    custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
+                                    header_written = True
+                                    
+                                # only write if chunk is custom op 
+                                custom_sql_buffer.write(chunk)
 
                             if as_ops:
                                 upgrade_ops.append(op)
@@ -572,6 +583,8 @@ class Runner(object):
 
         # add custom sql at the end
         buffer.write(custom_sql_buffer.getvalue())
+        
+        buffer.close()
 
 
     def progressive_sql(self, file=None):
