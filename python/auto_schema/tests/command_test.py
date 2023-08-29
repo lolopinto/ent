@@ -660,9 +660,24 @@ CREATE OR REPLACE TRIGGER events_name_change_trigger BEFORE UPDATE
             r3 = process_change(new_change, r2, 2)
             
             r3.squash_all("squash all")
-            
             testingutils.assert_num_files(r3, 1)
-        
+
+            # run all_sql into schema.sql to verify that that keeps working
+            file = os.path.join(r.get_schema_path(), 'schema.sql')
+            r3.all_sql(file=file)
+            
+            r4 = new_test_runner(metadata, new_database=True)
+
+            # write sql file to new database
+            conn = r4.get_connection()
+            with open(file, 'r') as f:
+                # shouldn't have duplicates so writing it should work
+                conn.execute(sa.text(f.read()))
+                # conn.execute(sa.text('create table foo (id int); create table bar (id int); create table foo(id int);'))
+
+            
+            testingutils.validate_metadata_after_change(r4, metadata)
+
     
 class TestPostgresCommand(CommandTest):
     pass
