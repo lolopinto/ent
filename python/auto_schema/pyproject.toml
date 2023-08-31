@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 # auto_schema_test https://test.pypi.org/project/auto-schema-test/
 name = "auto_schema_test"
-version = "0.0.33"
+version = "0.0.34"
 # production https://pypi.org/project/auto-schema/
 # name = "auto_schema"
 # version = "0.0.31"
@@ -18,6 +18,18 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
+dependencies = [
+  "sqlalchemy==2.0.18",
+  #   "alembic @ git+https://github.com/sqlalchemy/alembic.git@dbdec2661b8a01132ea3f7a027f85fed2eaf5e54#egg=alembic",
+  "lolopinto-alembic-fork==0.0.1.dev0",
+  "datetime==4.3",
+  "psycopg2==2.9.6",
+  "ruff==0.0.285",
+  "python-dateutil==2.8.2",
+]
+
+[project.scripts]
+auto-schema = "auto_schema.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/lolopinto/ent/tree/main/python/auto_schema"
