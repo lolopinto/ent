@@ -9,7 +9,7 @@ This follows the high level steps at https://packaging.python.org/en/latest/tuto
 * `wheel`
 * `twine`
 
-Can get the latest of each via the following command:  `python3 -m pip install --upgrade build setuptools wheel twine` in a venv.
+Can get the latest of each via the following command: `python3 -m pip install --upgrade build setuptools wheel twine` in a venv.
 
 ## Releasing
 

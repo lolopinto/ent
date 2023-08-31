@@ -32,18 +32,18 @@ var NODE_VERSIONS = []int{
 	// 20,
 }
 
-const AUTO_SCHEMA_VERSION = "0.0.35"
+const AUTO_SCHEMA_VERSION = "0.0.31"
 const TSENT_VERSION = "v0.1.6"
 
 var SUFFIXES = []string{
 	"dev",
-	// "slim",
+	"slim",
 }
 
 // can change platforms here to test locally
 var PLATFORMS = []string{
 	"linux/amd64",
-	// "linux/arm64",
+	"linux/arm64",
 }
 
 func do(version int) error {
