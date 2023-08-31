@@ -102,6 +102,8 @@ function createLoader<T extends AssocEdge>(
 
 export interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
   loadEdgeForID2(id: ID, id2: ID): Promise<T | undefined>;
+
+  loadTwoWay(id: ID): Promise<T[]>;
 }
 
 export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
@@ -133,6 +135,11 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
   async load(id: ID): Promise<T[]> {
     const loader = await this.loaderFn();
     return loader.load(id);
+  }
+
+  // TODO!
+  async loadTwoWay(id: ID): Promise<T[]> {
+    return [];
   }
 
   // maybe eventually optimize this
@@ -170,6 +177,11 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
       queryOptions: this.options,
       ctr: this.edgeCtr,
     });
+  }
+
+  // TODO!
+  async loadTwoWay(id: ID): Promise<T[]> {
+    return [];
   }
 
   async loadEdgeForID2(id: ID, id2: ID) {

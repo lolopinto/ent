@@ -32,6 +32,7 @@ import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
 import { Clause, PaginationMultipleColsSubQuery } from "../clause";
 import { OrderBy, getOrderByPhrase, reverseOrderBy } from "../query_impl";
+import { getVerifyAfterEachCursorGeneric } from "../../testutils/query";
 
 interface options<TData extends Data> {
   newQuery: (
@@ -351,47 +352,55 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     pageLength: number,
     user: FakeUser,
   ) {
-    let query: EdgeQuery<FakeUser, FakeContact, Data>;
+    return getVerifyAfterEachCursorGeneric<FakeUser, FakeContact, TData>(
+      edges,
+      pageLength,
+      user,
+      // @ts-ignore come back
+      () => opts.newQuery(getViewer(), user),
+      ml,
+    );
+    // let query: EdgeQuery<FakeUser, FakeContact, Data>;
 
-    async function verify(
-      i: number,
-      hasEdge: boolean,
-      hasNextPage: boolean,
-      cursor?: string,
-    ) {
-      ml.clear();
-      query = opts.newQuery(getViewer(), user);
-      const newEdges = await query.first(pageLength, cursor).queryEdges();
+    // async function verify(
+    //   i: number,
+    //   hasEdge: boolean,
+    //   hasNextPage: boolean,
+    //   cursor?: string,
+    // ) {
+    //   ml.clear();
+    //   query = opts.newQuery(getViewer(), user);
+    //   const newEdges = await query.first(pageLength, cursor).queryEdges();
 
-      const pagination = query.paginationInfo().get(user.id);
-      if (hasEdge) {
-        expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
-        expect(newEdges.length, `${i}`).toBe(
-          edges.length - i >= pageLength ? pageLength : edges.length - i,
-        );
-      } else {
-        expect(newEdges.length, `${i}`).toBe(0);
-      }
+    //   const pagination = query.paginationInfo().get(user.id);
+    //   if (hasEdge) {
+    //     expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
+    //     expect(newEdges.length, `${i}`).toBe(
+    //       edges.length - i >= pageLength ? pageLength : edges.length - i,
+    //     );
+    //   } else {
+    //     expect(newEdges.length, `${i}`).toBe(0);
+    //   }
 
-      if (hasNextPage) {
-        expect(pagination?.hasNextPage, `${i}`).toBe(true);
-        expect(pagination?.hasPreviousPage, `${i}`).toBe(false);
-      } else {
-        expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
-        expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
-      }
+    //   if (hasNextPage) {
+    //     expect(pagination?.hasNextPage, `${i}`).toBe(true);
+    //     expect(pagination?.hasPreviousPage, `${i}`).toBe(false);
+    //   } else {
+    //     expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
+    //     expect(pagination?.hasNextPage, `${i}`).toBe(undefined);
+    //   }
 
-      if (cursor) {
-        verifyFirstAfterCursorQuery(query!, 1, pageLength);
-      } else {
-        verifyQuery(query!, { orderby: opts.orderby, limit: pageLength });
-      }
-    }
+    //   if (cursor) {
+    //     verifyFirstAfterCursorQuery(query!, 1, pageLength);
+    //   } else {
+    //     verifyQuery(query!, { orderby: opts.orderby, limit: pageLength });
+    //   }
+    // }
 
-    function getCursor(edge: TData) {
-      return query.getCursor(edge);
-    }
-    return { verify, getCursor };
+    // function getCursor(edge: TData) {
+    //   return query.getCursor(edge);
+    // }
+    // return { verify, getCursor };
   }
 
   function getVerifyBeforeEachCursor(

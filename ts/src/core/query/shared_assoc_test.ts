@@ -33,6 +33,8 @@ import {
   createTestEvent,
   getEventInput,
   createUserPlusFriendRequests,
+  addEdge,
+  createEdges,
 } from "../../testutils/fake_data/test_helpers";
 import { MockLogs } from "../../testutils/mock_log";
 import { And, Clause, Eq, Greater, GreaterEq, Less } from "../clause";
@@ -40,6 +42,7 @@ import { SimpleAction } from "../../testutils/builder";
 import { DateTime } from "luxon";
 import { convertDate } from "../convert";
 import { TestContext } from "../../testutils/context/test_context";
+import { getVerifyAfterEachCursorGeneric } from "../../testutils/query";
 
 export function assocTests(ml: MockLogs, global = false) {
   ml.mock();
@@ -95,6 +98,11 @@ export function assocTests(ml: MockLogs, global = false) {
     });
   });
 
+  beforeAll(async () => {
+    // commonTests already has it but assocTests didn't...
+    await createEdges();
+  });
+
   const N = 2;
   function firstNFilter(q: UserToContactsQuery) {
     return q.first(N);
@@ -127,12 +135,12 @@ export function assocTests(ml: MockLogs, global = false) {
     logsStart = 0,
     direction = "DESC",
   }: verifyQueryProps) {
-    const clses: Clause[] = [Eq("id1", ""), Eq("edge_type", "")];
+    const clauses: Clause[] = [Eq("id1", ""), Eq("edge_type", "")];
     if (extraClause) {
-      clses.push(extraClause);
+      clauses.push(extraClause);
     }
     if (global) {
-      clses.push(Eq("deleted_at", null));
+      clauses.push(Eq("deleted_at", null));
     }
     expect(ml.logs.length).toBe(length);
     for (let i = logsStart; i < numQueries; i++) {
@@ -141,7 +149,7 @@ export function assocTests(ml: MockLogs, global = false) {
 
       expect(whereClause, `${i}`).toBe(
         // default limit
-        `${And(...clses).clause(
+        `${And(...clauses).clause(
           1,
         )} ORDER BY time ${direction}, id2 ${direction} LIMIT ${expLimit}`,
       );
@@ -1322,6 +1330,126 @@ export function assocTests(ml: MockLogs, global = false) {
       };
       expect(info2.hasNextPage).toBe(false);
       expect(info2.hasPreviousPage).toBe(false);
+    });
+  });
+
+  describe.only("intersect", () => {
+    let users: FakeUser[] = [];
+    let user1: FakeUser;
+    let user2: FakeUser;
+
+    beforeEach(async () => {
+      users = [];
+      for (let i = 0; i < 10; i++) {
+        const user = await createTestUser();
+        users.push(user);
+      }
+
+      for (let i = 0; i < 10; i++) {
+        const user = users[i];
+        // decreasing number of friends for each user
+        const candidates = users
+          .slice(0, 10 - i)
+          .filter((u) => u.id != user.id);
+        await addEdge(
+          user,
+          FakeUserSchema,
+          EdgeType.UserToFriends,
+          false,
+          ...candidates,
+        );
+        const count = await UserToFriendsQuery.query(
+          user.viewer,
+          user,
+        ).queryRawCount();
+        // console.debug(
+        //   candidates.length,
+        //   candidates.map((u) => u.id).includes(user.id),
+        //   count,
+        // );
+        expect(count, `${i}`).toBe(candidates.length);
+      }
+
+      user1 = users[0];
+      user2 = users[1];
+    });
+
+    function getQuery() {
+      return UserToFriendsQuery.query(user1.viewer, user1.id).__intersect(
+        UserToFriendsQuery.query(user2.viewer, user2.id),
+      );
+    }
+
+    function getCandidateIDs() {
+      // not the first 2 since that's user1 and user2
+      // not the last one since that's removed from user2's list of friends
+      return users.slice(2, users.length - 1).map((u) => u.id);
+    }
+
+    test("ids", async () => {
+      const ids = await getQuery().queryIDs();
+      const candidates = getCandidateIDs();
+      expect(ids.length).toBe(candidates.length);
+      expect(ids.sort()).toStrictEqual(candidates.sort());
+    });
+
+    test("count", async () => {
+      const count = await getQuery().queryCount();
+      const candidates = getCandidateIDs();
+      expect(count).toBe(candidates.length);
+    });
+
+    test("raw_count", async () => {
+      const count = await getQuery().queryRawCount();
+      // raw count doesn't include the intersection
+      expect(count).toBe(users.length - 1);
+    });
+
+    test("edges", async () => {
+      const edges = await getQuery().queryEdges();
+      const candidates = getCandidateIDs();
+      expect(edges.length).toBe(candidates.length);
+      // for an intersect, the edge returned is always for the source id
+      for (const edge of edges) {
+        expect(edge.id1).toBe(user1.id);
+      }
+    });
+
+    test("ents", async () => {
+      const ents = await getQuery().queryEnts();
+      const candidates = getCandidateIDs().sort();
+      expect(ents.length).toBe(candidates.length);
+      expect(ents.map((u) => u.id).sort()).toStrictEqual(candidates.sort());
+    });
+
+    test("first", async () => {
+      const ents = await getQuery().first(2).queryEnts();
+      expect(ents.length).toBe(2);
+      // TODO
+      // expect(ents.fir)
+    });
+    // // TODO
+
+    test.only("first. after each cursor", async () => {
+      const edges = await getQuery().queryEdges();
+      // expect(edges.length).toBe(2);
+      // edges.reverse();
+
+      const { verify, getCursor } = getVerifyAfterEachCursorGeneric(
+        edges,
+        2,
+        user1,
+        getQuery,
+        ml,
+      );
+      // this one intentionally not generic so we know where to stop...
+      expect(edges.length).toBe(7);
+      await verify(0, true, true, undefined);
+      await verify(2, true, true, getCursor(edges[1]));
+      await verify(4, true, true, getCursor(edges[3]));
+      // 1 item, no nextPage
+      await verify(6, true, false, getCursor(edges[5]));
+      await verify(7, false, false, getCursor(edges[6]));
     });
   });
 

@@ -281,6 +281,7 @@ export function verifyUserToContacts(
 }
 
 export async function createEdges() {
+  console.log("createEdges called");
   // create all edges// for now all one-way
   const edgeNames = Object.keys(EdgeType);
   const edges = Object.values(EdgeType);
