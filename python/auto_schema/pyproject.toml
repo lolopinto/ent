@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 # auto_schema_test https://test.pypi.org/project/auto-schema-test/
 name = "auto_schema_test"
-version = "0.0.34"
+version = "0.0.35"
 # production https://pypi.org/project/auto-schema/
 # name = "auto_schema"
 # version = "0.0.31"
@@ -29,7 +29,7 @@ dependencies = [
 ]
 
 [project.scripts]
-auto-schema = "auto_schema.cli:main"
+auto_schema = "auto_schema.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/lolopinto/ent/tree/main/python/auto_schema"
