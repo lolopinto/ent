@@ -37,12 +37,12 @@ const TSENT_VERSION = "v0.1.6"
 
 var SUFFIXES = []string{
 	"dev",
-	"slim",
+	// "slim",
 }
 
 // can change platforms here to test locally
 var PLATFORMS = []string{
-	"linux/amd64",
+	// "linux/amd64",
 	"linux/arm64",
 }
 
