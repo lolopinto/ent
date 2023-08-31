@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# auto_schema_test https://test.pypi.org/project/auto-schema-test/
+name = "auto_schema_test"
+version = "0.0.33"
+# production https://pypi.org/project/auto-schema/
+# name = "auto_schema"
+# version = "0.0.31"
+authors = [{ name = "Ola Okelola", email = "email@email.com" }]
+description = "auto schema for a db"
+readme = "README.md"
+requires-python = "==3.11"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/lolopinto/ent/tree/main/python/auto_schema"
+"Bug Tracker" = "https://github.com/lolopinto/ent/tree/main/python/auto_schema/issues"
