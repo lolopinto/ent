@@ -360,7 +360,6 @@ class IntersectFilter<
   ) {}
 
   async fetch(): Promise<void> {
-    console.debug("intersect fetch called");
     let i = 0;
     for await (const query of this.queries) {
       const edges = await query.queryEdges();
@@ -374,13 +373,6 @@ class IntersectFilter<
   }
 
   filter(_id: ID, edges: TEdge[]): TEdge[] {
-    // console.debug(
-    //   edges.length,
-    //   edges.map((e) => e.id2),
-    // );
-    // for (const set of this.edges) {
-    //   console.debug(set.size, set, set.has(_id));
-    // }
     return edges.filter((edge) => {
       return this.edges.every((set) => {
         return set.has(edge.id2);
@@ -401,7 +393,6 @@ class UnionFilter<
   ) {}
 
   async fetch(): Promise<void> {
-    console.debug("union fetch called");
     let i = 0;
     for await (const query of this.queries) {
       const edges = await query.queryEdges();

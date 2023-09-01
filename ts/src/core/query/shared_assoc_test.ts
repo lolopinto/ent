@@ -43,7 +43,6 @@ import { DateTime } from "luxon";
 import { convertDate } from "../convert";
 import { TestContext } from "../../testutils/context/test_context";
 import { getVerifyAfterEachCursorGeneric } from "../../testutils/query";
-import { use } from "passport";
 
 export function assocTests(ml: MockLogs, global = false) {
   ml.mock();
@@ -1469,15 +1468,99 @@ export function assocTests(ml: MockLogs, global = false) {
       await verify(6, true, false, getCursor(edges[5]));
       await verify(7, false, false, getCursor(edges[6]));
     });
+
+    test("multiple intersections", async () => {
+      const query = UserToFriendsQuery.query(
+        user1.viewer,
+        user1.id,
+      ).__intersect(
+        UserToFriendsQuery.query(user2.viewer, user2.id),
+        UserToFriendsQuery.query(user2.viewer, users[2].id),
+        UserToFriendsQuery.query(user2.viewer, users[3].id),
+      );
+
+      // user0 => 0-9 - self
+      // user1 => 0-8 - self
+      // user2 => 0-7 - self
+      // user3 => 0-6 -self
+      // 7 users - 4 = 3 since you can't be friends with yourself
+      const candidates = [users[4], users[5], users[6]];
+      const [ids, count, edges, ents] = await Promise.all([
+        query.queryIDs(),
+        query.queryCount(),
+        query.queryEdges(),
+        query.queryEnts(),
+      ]);
+      expect(ids.length).toBe(candidates.length);
+      expect(count).toBe(candidates.length);
+      expect(edges.length).toBe(candidates.length);
+      expect(ents.length).toBe(candidates.length);
+      expect(edges.map((e) => e.id2).sort()).toStrictEqual(
+        candidates.map((u) => u.id).sort(),
+      );
+      expect(ents.map((e) => e.id).sort()).toStrictEqual(
+        candidates.map((u) => u.id).sort(),
+      );
+    });
+
+    test("multiple sources", async () => {
+      const query = UserToFriendsQuery.query(user1.viewer, [
+        user1.id,
+        user2.id,
+      ]).__intersect(
+        UserToFriendsQuery.query(user2.viewer, users[2].id),
+        UserToFriendsQuery.query(user2.viewer, users[3].id),
+      );
+
+      // user0 => 0-9 - self
+      // user1 => 0-8 - self
+
+      // user2 => 0-7 - self
+      // user3 => 0-6 -self
+
+      // 7 users - 3 = 4 since you can't be friends with yourself
+      // subtracting 3 for each instead of 4 like above because user1 not intersecting with user2
+      const candidates1 = [users[1], users[4], users[5], users[6]];
+      const candidates2 = [users[0], users[4], users[5], users[6]];
+      const [idsMap, countMap, edgesMap, entsMap] = await Promise.all([
+        query.queryAllIDs(),
+        query.queryAllCount(),
+        query.queryAllEdges(),
+        query.queryAllEnts(),
+      ]);
+
+      async function verify(source: FakeUser, candidates: FakeUser[]) {
+        const ids = idsMap.get(source.id) ?? [];
+        const count = countMap.get(source.id) ?? [];
+        const edges = edgesMap.get(source.id) ?? [];
+        const ents = entsMap.get(source.id) ?? [];
+
+        expect(ids.length).toBe(candidates.length);
+        expect(count).toBe(candidates.length);
+        expect(edges.length).toBe(candidates.length);
+        expect(ents.length).toBe(candidates.length);
+        expect(edges.map((e) => e.id2).sort()).toStrictEqual(
+          candidates.map((u) => u.id).sort(),
+        );
+        expect(ents.map((e) => e.id).sort()).toStrictEqual(
+          candidates.map((u) => u.id).sort(),
+        );
+      }
+
+      await verify(user1, candidates1);
+      await verify(user2, candidates2);
+    });
   });
 
   describe("union", () => {
     let users: FakeUser[] = [];
     let user1: FakeUser;
     let user2: FakeUser;
+    let friends: Map<ID, FakeUser[]> = new Map();
 
     beforeEach(async () => {
       users = [];
+      friends = new Map();
       for (let i = 0; i < 10; i++) {
         const user = await createTestUser();
         users.push(user);
@@ -1486,9 +1569,33 @@ export function assocTests(ml: MockLogs, global = false) {
       for (let i = 0; i < 10; i++) {
         const user = users[i];
         // decreasing number of friends for each user
+
+        // we want little overlap so new users created.
         const candidates = users
           .slice(0, 10 - i)
           .filter((u) => u.id != user.id);
+
+        // add at least 5 more to each user
+        // every user should end up with 14 or 15
+        // 9 + 5 = 14
+        // 8 + 6 = 14
+        // 7 + 7 = 14
+        // 6 + 8 = 14
+        // 5 + 9 = 14
+        // 4 + 10 = 14
+        // 3 + 11 = 14
+        // 2 + 12 = 14
+        // 1 + 13 = 14
+        // 0 + 14 = 14
+
+        // 10 original
+        // 5 new for friend 1
+        // 6 new for friend 2
+        const newFriends = await Promise.all(
+          new Array(5 + i).fill(null).map(() => createTestUser()),
+        );
+        candidates.push(...newFriends);
+
         await addEdge(
           user,
           FakeUserSchema,
@@ -1501,6 +1608,7 @@ export function assocTests(ml: MockLogs, global = false) {
           user,
         ).queryRawCount();
         expect(count, `${i}`).toBe(candidates.length);
+        friends.set(user.id, candidates);
       }
 
       user1 = users[0];
@@ -1514,8 +1622,11 @@ export function assocTests(ml: MockLogs, global = false) {
     }
 
     function getCandidateIDs() {
-      // all users are returned
-      return users.map((u) => u.id);
+      const set = new Set<FakeUser>();
+      friends.get(user1.id)?.forEach((u) => set.add(u));
+      friends.get(user2.id)?.forEach((u) => set.add(u));
+
+      return Array.from(set.values()).map((u) => u.id);
     }
 
     test("ids", async () => {
@@ -1534,7 +1645,7 @@ export function assocTests(ml: MockLogs, global = false) {
     test("raw_count", async () => {
       const count = await getQuery().queryRawCount();
       // raw count doesn't include the intersection
-      expect(count).toBe(users.length - 1);
+      expect(count).toBe(friends.get(user1.id)?.length);
     });
 
     test("edges", async () => {
@@ -1547,16 +1658,19 @@ export function assocTests(ml: MockLogs, global = false) {
         const ct = (idMap.get(edge.id1) ?? 0) + 1;
         idMap.set(edge.id1, ct);
       }
-      // 9 from user1 and 1 from user2
-      expect(idMap.get(user1.id)).toBe(9);
-      expect(idMap.get(user2.id)).toBe(1);
+      let id1count = friends.get(user1.id)?.length ?? 0;
+      expect(idMap.get(user1.id)).toBe(id1count);
+      expect(idMap.get(user2.id)).toBe(edges.length - id1count);
     });
 
     test("ents", async () => {
+      // only returns privacy aware which is friends + self...
       const ents = await getQuery().queryEnts();
       const candidates = getCandidateIDs().sort();
-      expect(ents.length).toBe(candidates.length);
-      expect(ents.map((u) => u.id).sort()).toStrictEqual(candidates.sort());
+      let id1count = friends.get(user1.id)?.length ?? 0;
+      const visible = id1count + 1;
+
+      expect(ents.length).toBe(visible);
     });
 
     test("first", async () => {
@@ -1569,7 +1683,7 @@ export function assocTests(ml: MockLogs, global = false) {
 
       const { verify, getCursor } = getVerifyAfterEachCursorGeneric(
         edges,
-        2,
+        3,
         user1,
         getQuery,
         ml,
@@ -1601,14 +1715,124 @@ export function assocTests(ml: MockLogs, global = false) {
           expect(ml.logs[3].values).toStrictEqual(clause2.values());
         },
       );
-
-      expect(edges.length).toBe(10);
+      // hardcoded to test
+      expect(edges.length).toBe(21);
       await verify(0, true, true, undefined);
-      await verify(2, true, true, getCursor(edges[1]));
-      await verify(4, true, true, getCursor(edges[3]));
+      await verify(3, true, true, getCursor(edges[2]));
       await verify(6, true, true, getCursor(edges[5]));
-      await verify(8, true, true, getCursor(edges[7]));
-      await verify(10, false, false, getCursor(edges[9]));
+      await verify(9, true, true, getCursor(edges[8]));
+      await verify(12, true, true, getCursor(edges[11]));
+      await verify(15, true, true, getCursor(edges[14]));
+      await verify(18, true, true, getCursor(edges[17]));
+      await verify(21, false, false, getCursor(edges[20]));
+    });
+
+    test("multiple unions", async () => {
+      const user3 = users[2];
+      const user4 = users[3];
+
+      const query = UserToFriendsQuery.query(user1.viewer, user1.id).__union(
+        UserToFriendsQuery.query(user1.viewer, user2.id),
+        UserToFriendsQuery.query(user1.viewer, user3.id),
+        UserToFriendsQuery.query(user1.viewer, user4.id),
+      );
+      const candidates = Array.from(
+        new Set([
+          ...(friends.get(user1.id) ?? []), // 0-9 (-self) + 5 friends
+          ...(friends.get(user2.id) ?? []), // 0-9 (-self)  + 6 friends
+          ...(friends.get(user3.id) ?? []), // 0-9 (-self) + 7 friends
+          ...(friends.get(user4.id) ?? []), // 0-9 (-self) + 8 friends
+        ]).values(),
+      );
+      // user1 can only see self + friends
+      const user1Visible = friends.get(user1.id) ?? [];
+      user1Visible.push(user1);
+
+      // should be 36
+      expect(candidates.length).toBe(10 + 5 + 6 + 7 + 8);
+      const [ids, count, edges, ents] = await Promise.all([
+        query.queryIDs(),
+        query.queryCount(),
+        query.queryEdges(),
+        query.queryEnts(),
+      ]);
+      expect(ids.length).toBe(candidates.length);
+      expect(count).toBe(candidates.length);
+      expect(edges.length).toBe(candidates.length);
+      expect(ents.length).toBe(user1Visible.length);
+      expect(edges.map((e) => e.id2).sort()).toStrictEqual(
+        candidates.map((u) => u.id).sort(),
+      );
+      expect(ents.map((e) => e.id).sort()).toStrictEqual(
+        user1Visible.map((u) => u.id).sort(),
+      );
+    });
+
+    test("multiple sources", async () => {
+      const user3 = users[2];
+      const user4 = users[3];
+
+      const query = UserToFriendsQuery.query(user1.viewer, [
+        user1.id,
+        user2.id,
+      ]).__union(
+        UserToFriendsQuery.query(user2.viewer, user3.id),
+        UserToFriendsQuery.query(user2.viewer, user4.id),
+      );
+
+      const candidates1 = Array.from(
+        new Set([
+          ...(friends.get(user1.id) ?? []), // 0-9 (-self) + 5 friends
+          ...(friends.get(user3.id) ?? []), // 0-9 (-self) + 7 friends
+          ...(friends.get(user4.id) ?? []), // 0-9 (-self) + 8 friends
+        ]).values(),
+      );
+      const candidates2 = Array.from(
+        new Set([
+          ...(friends.get(user2.id) ?? []), // 0-9 (-self) + 6 friends
+          ...(friends.get(user3.id) ?? []), // 0-9 (-self) + 7 friends
+          ...(friends.get(user4.id) ?? []), // 0-9 (-self) + 8 friends
+        ]).values(),
+      );
+      const [idsMap, countMap, edgesMap, entsMap] = await Promise.all([
+        query.queryAllIDs(),
+        query.queryAllCount(),
+        query.queryAllEdges(),
+        query.queryAllEnts(),
+      ]);
+      // user1 can only see self + friends
+      const user1Visible = friends.get(user1.id) ?? [];
+      user1Visible.push(user1);
+
+      // since the EntQuery uses user1's viewer
+      // can only see user2's friends that intersect with user1's friends
+      // and that's every user except for the last user since we don't add that user to user2's friends
+      const user2Visible = users.slice(0, users.length - 1);
+
+      async function verify(
+        source: FakeUser,
+        candidates: FakeUser[],
+        visible: FakeUser[],
+      ) {
+        const ids = idsMap.get(source.id) ?? [];
+        const count = countMap.get(source.id) ?? [];
+        const edges = edgesMap.get(source.id) ?? [];
+        const ents = entsMap.get(source.id) ?? [];
+
+        expect(ids.length).toBe(candidates.length);
+        expect(count).toBe(candidates.length);
+        expect(edges.length).toBe(candidates.length);
+        expect(ents.length).toBe(visible.length);
+        expect(edges.map((e) => e.id2).sort()).toStrictEqual(
+          candidates.map((u) => u.id).sort(),
+        );
+        expect(ents.map((e) => e.id).sort()).toStrictEqual(
+          visible.map((u) => u.id).sort(),
+        );
+      }
+
+      await verify(user1, candidates1, user1Visible);
+      await verify(user2, candidates2, user2Visible);
     });
   });
 
