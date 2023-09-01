@@ -43,6 +43,7 @@ import { DateTime } from "luxon";
 import { convertDate } from "../convert";
 import { TestContext } from "../../testutils/context/test_context";
 import { getVerifyAfterEachCursorGeneric } from "../../testutils/query";
+import { use } from "passport";
 
 export function assocTests(ml: MockLogs, global = false) {
   ml.mock();
@@ -1362,11 +1363,6 @@ export function assocTests(ml: MockLogs, global = false) {
           user.viewer,
           user,
         ).queryRawCount();
-        // console.debug(
-        //   candidates.length,
-        //   candidates.map((u) => u.id).includes(user.id),
-        //   count,
-        // );
         expect(count, `${i}`).toBe(candidates.length);
       }
 
@@ -1472,6 +1468,147 @@ export function assocTests(ml: MockLogs, global = false) {
       // 1 item, no nextPage
       await verify(6, true, false, getCursor(edges[5]));
       await verify(7, false, false, getCursor(edges[6]));
+    });
+  });
+
+  describe("union", () => {
+    let users: FakeUser[] = [];
+    let user1: FakeUser;
+    let user2: FakeUser;
+
+    beforeEach(async () => {
+      users = [];
+      for (let i = 0; i < 10; i++) {
+        const user = await createTestUser();
+        users.push(user);
+      }
+
+      for (let i = 0; i < 10; i++) {
+        const user = users[i];
+        // decreasing number of friends for each user
+        const candidates = users
+          .slice(0, 10 - i)
+          .filter((u) => u.id != user.id);
+        await addEdge(
+          user,
+          FakeUserSchema,
+          EdgeType.UserToFriends,
+          false,
+          ...candidates,
+        );
+        const count = await UserToFriendsQuery.query(
+          user.viewer,
+          user,
+        ).queryRawCount();
+        expect(count, `${i}`).toBe(candidates.length);
+      }
+
+      user1 = users[0];
+      user2 = users[1];
+    });
+
+    function getQuery() {
+      return UserToFriendsQuery.query(user1.viewer, user1.id).__union(
+        UserToFriendsQuery.query(user2.viewer, user2.id),
+      );
+    }
+
+    function getCandidateIDs() {
+      // all users are returned
+      return users.map((u) => u.id);
+    }
+
+    test("ids", async () => {
+      const ids = await getQuery().queryIDs();
+      const candidates = getCandidateIDs();
+      expect(ids.length).toBe(candidates.length);
+      expect(ids.sort()).toStrictEqual(candidates.sort());
+    });
+
+    test("count", async () => {
+      const count = await getQuery().queryCount();
+      const candidates = getCandidateIDs();
+      expect(count).toBe(candidates.length);
+    });
+
+    test("raw_count", async () => {
+      const count = await getQuery().queryRawCount();
+      // raw count doesn't include the intersection
+      expect(count).toBe(users.length - 1);
+    });
+
+    test("edges", async () => {
+      const edges = await getQuery().queryEdges();
+      const candidates = getCandidateIDs();
+      expect(edges.length).toBe(candidates.length);
+      const idMap = new Map<ID, number>();
+
+      for (const edge of edges) {
+        const ct = (idMap.get(edge.id1) ?? 0) + 1;
+        idMap.set(edge.id1, ct);
+      }
+      // 9 from user1 and 1 from user2
+      expect(idMap.get(user1.id)).toBe(9);
+      expect(idMap.get(user2.id)).toBe(1);
+    });
+
+    test("ents", async () => {
+      const ents = await getQuery().queryEnts();
+      const candidates = getCandidateIDs().sort();
+      expect(ents.length).toBe(candidates.length);
+      expect(ents.map((u) => u.id).sort()).toStrictEqual(candidates.sort());
+    });
+
+    test("first", async () => {
+      const ents = await getQuery().first(2).queryEnts();
+      expect(ents.length).toBe(2);
+    });
+
+    test("first. after each cursor", async () => {
+      const edges = await getQuery().queryEdges();
+
+      const { verify, getCursor } = getVerifyAfterEachCursorGeneric(
+        edges,
+        2,
+        user1,
+        getQuery,
+        ml,
+        // TODO this function needs to be saved somewhere since it's the same for intersect + union
+        (_query, _cursor: string | undefined) => {
+          // 2 queries for user because privacy
+          // 2 queries to fetch edges.
+          expect(ml.logs.length).toBe(4);
+
+          const where1 = getWhereClause(ml.logs[1]);
+          const clause1 = And(
+            Eq("id1", user1.id),
+            Eq("edge_type", EdgeType.UserToFriends),
+          );
+          expect(where1).toBe(
+            `${clause1.clause(1)} ORDER BY time DESC LIMIT 1000`,
+          );
+          expect(ml.logs[1].values).toStrictEqual(clause1.values());
+
+          const where2 = getWhereClause(ml.logs[3]);
+          const clause2 = And(
+            Eq("id1", user2.id),
+            Eq("edge_type", EdgeType.UserToFriends),
+          );
+          // TODO 1001 vs 1000 here
+          expect(where2).toBe(
+            `${clause2.clause(1)} ORDER BY time DESC, id2 DESC LIMIT 1001`,
+          );
+          expect(ml.logs[3].values).toStrictEqual(clause2.values());
+        },
+      );
+
+      expect(edges.length).toBe(10);
+      await verify(0, true, true, undefined);
+      await verify(2, true, true, getCursor(edges[1]));
+      await verify(4, true, true, getCursor(edges[3]));
+      await verify(6, true, true, getCursor(edges[5]));
+      await verify(8, true, true, getCursor(edges[7]));
+      await verify(10, false, false, getCursor(edges[9]));
     });
   });
 
