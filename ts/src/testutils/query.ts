@@ -13,8 +13,12 @@ export function getVerifyAfterEachCursorGeneric<
   user: FakeUser,
   getQuery: () => EdgeQuery<TSource, TDest, TData>,
   ml: MockLogs,
+  verifyQuery?: (
+    query: EdgeQuery<TSource, TDest, TData>,
+    cursor: string | undefined,
+  ) => void,
 ) {
-  let query: EdgeQuery<TSource, TDest, Data>;
+  let query: EdgeQuery<TSource, TDest, TData>;
 
   async function verify(
     i: number,
@@ -23,7 +27,6 @@ export function getVerifyAfterEachCursorGeneric<
     cursor?: string,
   ) {
     ml.clear();
-    // query = opts.newQuery(getViewer(), user);
     query = getQuery();
     console.debug("first", pageLength, cursor);
     const newEdges = await query.first(pageLength, cursor).queryEdges();
@@ -33,6 +36,10 @@ export function getVerifyAfterEachCursorGeneric<
       expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
       expect(newEdges.length, `${i}`).toBe(
         edges.length - i >= pageLength ? pageLength : edges.length - i,
+      );
+      // verify items are the same in order
+      expect(newEdges, `${i}`).toStrictEqual(
+        edges.slice(i, i + newEdges.length),
       );
     } else {
       expect(newEdges.length, `${i}`).toBe(0);
@@ -46,12 +53,8 @@ export function getVerifyAfterEachCursorGeneric<
       expect(pagination?.hasNextPage, `${i}`).toBeFalsy();
     }
 
-    if (cursor) {
-      // TODO!
-      // verifyFirstAfterCursorQuery(query!, 1, pageLength);
-    } else {
-      // TODO!
-      // verifyQuery(query!, { orderby: opts.orderby, limit: pageLength });
+    if (verifyQuery) {
+      verifyQuery(query!, cursor);
     }
   }
 
@@ -60,6 +63,16 @@ export function getVerifyAfterEachCursorGeneric<
     return query.getCursor(edge);
   }
   return { verify, getCursor };
+}
+
+// TODO copy from shared_test
+
+export function getWhereClause(query: any) {
+  const idx = (query.query as string).indexOf("WHERE");
+  if (idx !== -1) {
+    return query.query.substr(idx + 6);
+  }
+  return null;
 }
 
 // TODO...

@@ -1333,7 +1333,7 @@ export function assocTests(ml: MockLogs, global = false) {
     });
   });
 
-  describe.only("intersect", () => {
+  describe("intersect", () => {
     let users: FakeUser[] = [];
     let user1: FakeUser;
     let user2: FakeUser;
@@ -1425,15 +1425,10 @@ export function assocTests(ml: MockLogs, global = false) {
     test("first", async () => {
       const ents = await getQuery().first(2).queryEnts();
       expect(ents.length).toBe(2);
-      // TODO
-      // expect(ents.fir)
     });
-    // // TODO
 
-    test.only("first. after each cursor", async () => {
+    test("first. after each cursor", async () => {
       const edges = await getQuery().queryEdges();
-      // expect(edges.length).toBe(2);
-      // edges.reverse();
 
       const { verify, getCursor } = getVerifyAfterEachCursorGeneric(
         edges,
@@ -1441,7 +1436,34 @@ export function assocTests(ml: MockLogs, global = false) {
         user1,
         getQuery,
         ml,
+        (_query, _cursor: string | undefined) => {
+          // 2 queries for user because privacy
+          // 2 queries to fetch edges.
+          expect(ml.logs.length).toBe(4);
+
+          const where1 = getWhereClause(ml.logs[1]);
+          const clause1 = And(
+            Eq("id1", user1.id),
+            Eq("edge_type", EdgeType.UserToFriends),
+          );
+          expect(where1).toBe(
+            `${clause1.clause(1)} ORDER BY time DESC LIMIT 1000`,
+          );
+          expect(ml.logs[1].values).toStrictEqual(clause1.values());
+
+          const where2 = getWhereClause(ml.logs[3]);
+          const clause2 = And(
+            Eq("id1", user2.id),
+            Eq("edge_type", EdgeType.UserToFriends),
+          );
+          // TODO 1001 vs 1000 here
+          expect(where2).toBe(
+            `${clause2.clause(1)} ORDER BY time DESC, id2 DESC LIMIT 1001`,
+          );
+          expect(ml.logs[3].values).toStrictEqual(clause2.values());
+        },
       );
+
       // this one intentionally not generic so we know where to stop...
       expect(edges.length).toBe(7);
       await verify(0, true, true, undefined);
