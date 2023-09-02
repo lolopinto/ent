@@ -34,7 +34,6 @@ import {
   getEventInput,
   createUserPlusFriendRequests,
   addEdge,
-  createEdges,
 } from "../../testutils/fake_data/test_helpers";
 import { MockLogs } from "../../testutils/mock_log";
 import { And, Clause, Eq, Greater, GreaterEq, Less } from "../clause";
@@ -96,11 +95,6 @@ export function assocTests(ml: MockLogs, global = false) {
       expect(edge!.id2).toBe(user2.id);
       expect(edge!.edgeType).toBe(EdgeType.UserToCustomEdge);
     });
-  });
-
-  beforeAll(async () => {
-    // commonTests already has it but assocTests didn't...
-    await createEdges();
   });
 
   const N = 2;
