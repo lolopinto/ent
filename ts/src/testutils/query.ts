@@ -28,7 +28,6 @@ export function getVerifyAfterEachCursorGeneric<
   ) {
     ml.clear();
     query = getQuery();
-    console.debug("first", pageLength, cursor);
     const newEdges = await query.first(pageLength, cursor).queryEdges();
 
     const pagination = query.paginationInfo().get(user.id);
@@ -59,7 +58,6 @@ export function getVerifyAfterEachCursorGeneric<
   }
 
   function getCursor(edge: TData) {
-    // console.debug(query.getCursor(edge));
     return query.getCursor(edge);
   }
   return { verify, getCursor };

@@ -147,13 +147,11 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     this.sortCol = options.sortCol;
     if (options.after) {
       this.offset = assertValidCursor(options.after, options.cursorCol);
-      console.debug("options.after", options.after, this.offset);
     }
     this.edgeQuery = options.query;
   }
 
   filter(id: ID, edges: T[]): T[] {
-    // console.debug(edges.length, this.options.limit, this.offset);
     if (edges.length > this.options.limit) {
       //  we need a way to know where the curors is and if we used it and if not need to do this in TypeScript and not in SQL
       // so can't filter from 0 but speicifc item
@@ -187,7 +185,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
             ret.push(edge);
             if (ret.length === this.options.limit) {
               if (i === ret.length - 1) {
-                console.debug("hasNextPage false end");
                 hasNextPage = false;
               }
               break;
@@ -196,8 +193,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
           i++;
         }
         if (hasNextPage && ret.length < this.options.limit) {
-          console.debug("hasNextPage false ret");
-
           hasNextPage = false;
         }
         if (ret.length) {

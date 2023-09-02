@@ -411,6 +411,43 @@ export function assocTests(ml: MockLogs, global = false) {
     });
   });
 
+  function validateQueryIntersectOrUnion(
+    ml: MockLogs,
+    user1: FakeUser,
+    user2: FakeUser,
+  ) {
+    return function (_query, _cursor: string | undefined) {
+      // 2 queries for user because privacy
+      // 2 queries to fetch edges.
+      expect(ml.logs.length).toBe(4);
+
+      const where1 = getWhereClause(ml.logs[1]);
+      const clauses1 = [
+        Eq("id1", user1.id),
+        Eq("edge_type", EdgeType.UserToFriends),
+      ];
+      const clauses2 = [
+        Eq("id1", user2.id),
+        Eq("edge_type", EdgeType.UserToFriends),
+      ];
+      if (global) {
+        clauses1.push(Eq("deleted_at", null));
+        clauses2.push(Eq("deleted_at", null));
+      }
+      const clause1 = And(...clauses1);
+      expect(where1).toBe(`${clause1.clause(1)} ORDER BY time DESC LIMIT 1000`);
+      expect(ml.logs[1].values).toStrictEqual(clause1.values());
+
+      const where2 = getWhereClause(ml.logs[3]);
+      const clause2 = And(...clauses2);
+      // TODO 1001 vs 1000 here
+      expect(where2).toBe(
+        `${clause2.clause(1)} ORDER BY time DESC, id2 DESC LIMIT 1001`,
+      );
+      expect(ml.logs[3].values).toStrictEqual(clause2.values());
+    };
+  }
+
   class ChainTestQueryFilter {
     user: FakeUser;
     event: FakeEvent;
@@ -1431,32 +1468,7 @@ export function assocTests(ml: MockLogs, global = false) {
         user1,
         getQuery,
         ml,
-        (_query, _cursor: string | undefined) => {
-          // 2 queries for user because privacy
-          // 2 queries to fetch edges.
-          expect(ml.logs.length).toBe(4);
-
-          const where1 = getWhereClause(ml.logs[1]);
-          const clause1 = And(
-            Eq("id1", user1.id),
-            Eq("edge_type", EdgeType.UserToFriends),
-          );
-          expect(where1).toBe(
-            `${clause1.clause(1)} ORDER BY time DESC LIMIT 1000`,
-          );
-          expect(ml.logs[1].values).toStrictEqual(clause1.values());
-
-          const where2 = getWhereClause(ml.logs[3]);
-          const clause2 = And(
-            Eq("id1", user2.id),
-            Eq("edge_type", EdgeType.UserToFriends),
-          );
-          // TODO 1001 vs 1000 here
-          expect(where2).toBe(
-            `${clause2.clause(1)} ORDER BY time DESC, id2 DESC LIMIT 1001`,
-          );
-          expect(ml.logs[3].values).toStrictEqual(clause2.values());
-        },
+        validateQueryIntersectOrUnion(ml, user1, user2),
       );
 
       // this one intentionally not generic so we know where to stop...
@@ -1687,33 +1699,7 @@ export function assocTests(ml: MockLogs, global = false) {
         user1,
         getQuery,
         ml,
-        // TODO this function needs to be saved somewhere since it's the same for intersect + union
-        (_query, _cursor: string | undefined) => {
-          // 2 queries for user because privacy
-          // 2 queries to fetch edges.
-          expect(ml.logs.length).toBe(4);
-
-          const where1 = getWhereClause(ml.logs[1]);
-          const clause1 = And(
-            Eq("id1", user1.id),
-            Eq("edge_type", EdgeType.UserToFriends),
-          );
-          expect(where1).toBe(
-            `${clause1.clause(1)} ORDER BY time DESC LIMIT 1000`,
-          );
-          expect(ml.logs[1].values).toStrictEqual(clause1.values());
-
-          const where2 = getWhereClause(ml.logs[3]);
-          const clause2 = And(
-            Eq("id1", user2.id),
-            Eq("edge_type", EdgeType.UserToFriends),
-          );
-          // TODO 1001 vs 1000 here
-          expect(where2).toBe(
-            `${clause2.clause(1)} ORDER BY time DESC, id2 DESC LIMIT 1001`,
-          );
-          expect(ml.logs[3].values).toStrictEqual(clause2.values());
-        },
+        validateQueryIntersectOrUnion(ml, user1, user2),
       );
       // hardcoded to test
       expect(edges.length).toBe(21);
