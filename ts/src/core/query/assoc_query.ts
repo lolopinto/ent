@@ -361,6 +361,7 @@ class IntersectFilter<
 
   async fetch(): Promise<void> {
     let i = 0;
+    // maybe future optimization. instead of this, use a SQL query if edge_types are the same
     for await (const query of this.queries) {
       const edges = await query.queryEdges();
       const set = new Set<ID>();
@@ -394,6 +395,7 @@ class UnionFilter<
 
   async fetch(): Promise<void> {
     let i = 0;
+    // maybe future optimization. instead of this, use a SQL query if edge_types are the same
     for await (const query of this.queries) {
       const edges = await query.queryEdges();
       this.edges[i] = edges;

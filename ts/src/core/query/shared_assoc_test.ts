@@ -22,6 +22,8 @@ import {
   UserToIncomingFriendRequestsQuery,
   ViewerWithAccessToken,
   FakeUserSchema,
+  FakeEventSchema,
+  EventToAttendeesQuery,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -34,6 +36,7 @@ import {
   getEventInput,
   createUserPlusFriendRequests,
   addEdge,
+  createEdges,
 } from "../../testutils/fake_data/test_helpers";
 import { MockLogs } from "../../testutils/mock_log";
 import { And, Clause, Eq, Greater, GreaterEq, Less } from "../clause";
@@ -45,6 +48,12 @@ import { getVerifyAfterEachCursorGeneric } from "../../testutils/query";
 
 export function assocTests(ml: MockLogs, global = false) {
   ml.mock();
+
+  // beforeAll(async () => {
+  //   // TODO this is needed when we do only in a test here
+  //   // need to figure this out
+  //   await createEdges();
+  // });
 
   describe("custom edge", () => {
     let user1, user2: FakeUser;
@@ -1556,6 +1565,58 @@ export function assocTests(ml: MockLogs, global = false) {
       await verify(user1, candidates1);
       await verify(user2, candidates2);
     });
+
+    test("different edge types", async () => {
+      const event = await createTestEvent(user2);
+      for (let i = 0; i < 5; i++) {
+        const newUser = await createTestUser();
+        await addEdge(
+          event,
+          FakeEventSchema,
+          EdgeType.EventToAttendees,
+          false,
+          newUser,
+        );
+      }
+
+      const query = UserToFriendsQuery.query(
+        user1.viewer,
+        user1.id,
+      ).__intersect(EventToAttendeesQuery.query(user1.viewer, event.id));
+
+      const count = await query.queryCount();
+      expect(count).toBe(0);
+
+      const candidates: FakeUser[] = [];
+      for (let i = 0; i < users.length; i++) {
+        const user = users[i];
+        if (user.id !== user1.id && user.id !== user2.id) {
+          await addEdge(
+            event,
+            FakeEventSchema,
+            EdgeType.EventToAttendees,
+            false,
+            user,
+          );
+          candidates.push(user);
+        }
+      }
+
+      const query2 = UserToFriendsQuery.query(
+        user1.viewer,
+        user1.id,
+      ).__intersect(EventToAttendeesQuery.query(user1.viewer, event.id));
+
+      const count2 = await query2.queryCount();
+      const ents = await query2.queryEnts();
+      const ids = await query2.queryIDs();
+      expect(count2).toBe(candidates.length);
+      expect(ids.length).toBe(candidates.length);
+      expect(ents.length).toBe(candidates.length);
+      expect(ents.map((e) => e.id).sort()).toStrictEqual(
+        candidates.map((u) => u.id).sort(),
+      );
+    });
   });
 
   describe("union", () => {
@@ -1813,6 +1874,40 @@ export function assocTests(ml: MockLogs, global = false) {
 
       await verify(user1, candidates1, user1Visible);
       await verify(user2, candidates2, user2Visible);
+    });
+
+    test("different edge types", async () => {
+      const event = await createTestEvent(user2);
+      const newUsers: FakeUser[] = [];
+      for (let i = 0; i < 5; i++) {
+        const newUser = await createTestUser();
+        await addEdge(
+          event,
+          FakeEventSchema,
+          EdgeType.EventToAttendees,
+          false,
+          newUser,
+        );
+        newUsers.push(newUser);
+      }
+
+      const query = UserToFriendsQuery.query(user1.viewer, user1.id).__union(
+        EventToAttendeesQuery.query(user1.viewer, event.id),
+      );
+
+      const candidates = [
+        ...(friends.get(user1.id) ?? []).map((u) => u.id),
+        ...newUsers.map((u) => u.id),
+      ];
+
+      const count = await query.queryCount();
+      expect(count).toBe(candidates.length);
+
+      const ents = await query.queryEnts();
+      const ids = await query.queryIDs();
+      expect(ids.length).toBe(candidates.length);
+      // can only see friends
+      expect(ents.length).toBe(friends.get(user1.id)?.length);
     });
   });
 
