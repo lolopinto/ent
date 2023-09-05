@@ -242,7 +242,7 @@ export function assocTests(ml: MockLogs, global = false) {
       for (let i = 0; i < this.dataz.length; i++) {
         let data = this.dataz[i];
 
-        expect(countMap.get(data[0].id)).toStrictEqual(inputs.length);
+        expect(countMap.get(data[0].id)).toBe(inputs.length);
       }
       verifyCountQuery({ numQueries: 3, length: 3 });
     }
@@ -255,7 +255,7 @@ export function assocTests(ml: MockLogs, global = false) {
       for (let i = 0; i < this.dataz.length; i++) {
         let data = this.dataz[i];
 
-        expect(countMap.get(data[0].id)).toStrictEqual(data[1].length);
+        expect(countMap.get(data[0].id)).toBe(data[1].length);
       }
       verifyQuery({
         length: this.dataz.length,
@@ -1425,7 +1425,7 @@ export function assocTests(ml: MockLogs, global = false) {
       const ids = await getQuery().queryIDs();
       const candidates = getCandidateIDs();
       expect(ids.length).toBe(candidates.length);
-      expect(ids.sort()).toStrictEqual(candidates.sort());
+      expect(ids.sort()).toEqual(candidates.sort());
     });
 
     test("count", async () => {
@@ -1454,7 +1454,7 @@ export function assocTests(ml: MockLogs, global = false) {
       const ents = await getQuery().queryEnts();
       const candidates = getCandidateIDs().sort();
       expect(ents.length).toBe(candidates.length);
-      expect(ents.map((u) => u.id).sort()).toStrictEqual(candidates.sort());
+      expect(ents.map((u) => u.id).sort()).toEqual(candidates.sort());
     });
 
     test("first", async () => {
@@ -1510,10 +1510,10 @@ export function assocTests(ml: MockLogs, global = false) {
       expect(count).toBe(candidates.length);
       expect(edges.length).toBe(candidates.length);
       expect(ents.length).toBe(candidates.length);
-      expect(edges.map((e) => e.id2).sort()).toStrictEqual(
+      expect(edges.map((e) => e.id2).sort()).toEqual(
         candidates.map((u) => u.id).sort(),
       );
-      expect(ents.map((e) => e.id).sort()).toStrictEqual(
+      expect(ents.map((e) => e.id).sort()).toEqual(
         candidates.map((u) => u.id).sort(),
       );
     });
@@ -1554,10 +1554,10 @@ export function assocTests(ml: MockLogs, global = false) {
         expect(count).toBe(candidates.length);
         expect(edges.length).toBe(candidates.length);
         expect(ents.length).toBe(candidates.length);
-        expect(edges.map((e) => e.id2).sort()).toStrictEqual(
+        expect(edges.map((e) => e.id2).sort()).toEqual(
           candidates.map((u) => u.id).sort(),
         );
-        expect(ents.map((e) => e.id).sort()).toStrictEqual(
+        expect(ents.map((e) => e.id).sort()).toEqual(
           candidates.map((u) => u.id).sort(),
         );
       }
@@ -1613,7 +1613,7 @@ export function assocTests(ml: MockLogs, global = false) {
       expect(count2).toBe(candidates.length);
       expect(ids.length).toBe(candidates.length);
       expect(ents.length).toBe(candidates.length);
-      expect(ents.map((e) => e.id).sort()).toStrictEqual(
+      expect(ents.map((e) => e.id).sort()).toEqual(
         candidates.map((u) => u.id).sort(),
       );
     });
@@ -1700,7 +1700,7 @@ export function assocTests(ml: MockLogs, global = false) {
       const ids = await getQuery().queryIDs();
       const candidates = getCandidateIDs();
       expect(ids.length).toBe(candidates.length);
-      expect(ids.sort()).toStrictEqual(candidates.sort());
+      expect(ids.sort()).toEqual(candidates.sort());
     });
 
     test("count", async () => {
@@ -1801,10 +1801,10 @@ export function assocTests(ml: MockLogs, global = false) {
       expect(count).toBe(candidates.length);
       expect(edges.length).toBe(candidates.length);
       expect(ents.length).toBe(user1Visible.length);
-      expect(edges.map((e) => e.id2).sort()).toStrictEqual(
+      expect(edges.map((e) => e.id2).sort()).toEqual(
         candidates.map((u) => u.id).sort(),
       );
-      expect(ents.map((e) => e.id).sort()).toStrictEqual(
+      expect(ents.map((e) => e.id).sort()).toEqual(
         user1Visible.map((u) => u.id).sort(),
       );
     });
@@ -1864,10 +1864,10 @@ export function assocTests(ml: MockLogs, global = false) {
         expect(count).toBe(candidates.length);
         expect(edges.length).toBe(candidates.length);
         expect(ents.length).toBe(visible.length);
-        expect(edges.map((e) => e.id2).sort()).toStrictEqual(
+        expect(edges.map((e) => e.id2).sort()).toEqual(
           candidates.map((u) => u.id).sort(),
         );
-        expect(ents.map((e) => e.id).sort()).toStrictEqual(
+        expect(ents.map((e) => e.id).sort()).toEqual(
           visible.map((u) => u.id).sort(),
         );
       }

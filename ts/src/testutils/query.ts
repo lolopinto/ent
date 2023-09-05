@@ -32,14 +32,12 @@ export function getVerifyAfterEachCursorGeneric<
 
     const pagination = query.paginationInfo().get(user.id);
     if (hasEdge) {
-      expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
+      expect(newEdges[0], `${i}`).toEqual(edges[i]);
       expect(newEdges.length, `${i}`).toBe(
         edges.length - i >= pageLength ? pageLength : edges.length - i,
       );
       // verify items are the same in order
-      expect(newEdges, `${i}`).toStrictEqual(
-        edges.slice(i, i + newEdges.length),
-      );
+      expect(newEdges, `${i}`).toEqual(edges.slice(i, i + newEdges.length));
     } else {
       expect(newEdges.length, `${i}`).toBe(0);
     }

@@ -480,7 +480,7 @@ function commonTests() {
     const edges = await loader.load(user.id);
     const twoWay = await loader.loadTwoWay(user.id);
     // TODO need to flip the edges probably. shouldn't have the source id always be id2 here...
-    expect(twowayIds.sort()).toStrictEqual(twoWay.map((e) => e.id1).sort());
+    expect(twowayIds.sort()).toEqual(twoWay.map((e) => e.id1).sort());
     expect(edges.length).toBe(10);
     expect(twoWay.length).toBe(5);
 
@@ -515,7 +515,7 @@ function commonTests() {
     const twoWay2 = await loader.loadTwoWay(user.id);
 
     // TODO need to flip the edges probably. shouldn't have the source id always be id2 here...
-    expect(twowayIds.sort()).toStrictEqual(twoWay2.map((e) => e.id1).sort());
+    expect(twowayIds.sort()).toEqual(twoWay2.map((e) => e.id1).sort());
 
     // deleted some things here which shouldn't show up here
     expect(edges2.length).toBe(8);
@@ -533,7 +533,7 @@ function commonTests() {
       expect(twoWay3.length).toBe(3);
 
       // same ids as second time
-      expect(twoWay2.map((e) => e.id1).sort()).toStrictEqual(
+      expect(twoWay2.map((e) => e.id1).sort()).toEqual(
         twoWay3.map((e) => e.id1).sort(),
       );
     } else {
@@ -541,7 +541,7 @@ function commonTests() {
       expect(twoWay3.length).toBe(5);
 
       // same ids as first time
-      expect(twoWay.map((e) => e.id1).sort()).toStrictEqual(
+      expect(twoWay.map((e) => e.id1).sort()).toEqual(
         twoWay3.map((e) => e.id1).sort(),
       );
     }
