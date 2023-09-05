@@ -483,6 +483,9 @@ def metadata_with_json_column():
              )
     return metadata
 
+@pytest.fixture()
+def metadata_with_json_column_fixture():
+    return metadata_with_json_column()
 
 def metadata_with_server_default_changed_json(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_json_value())

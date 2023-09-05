@@ -165,6 +165,12 @@ class Runner(object):
             new_metadata_default = cls.convert_postgres_boolean(
                 new_metadata_default)
 
+
+        if isinstance(metadata_column.type, postgresql.JSON) or isinstance(metadata_column.type, postgresql.JSONB):
+            if (new_inspected_default is None and new_metadata_default is not None) or (new_inspected_default is not None and new_metadata_default is None):
+                return True
+            return json.loads(new_inspected_default) != json.loads(new_metadata_default)
+
         if new_inspected_default != new_metadata_default:
             # specific case. not sure why this is needed
             # can be generalized at some point in the future
