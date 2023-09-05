@@ -48,6 +48,8 @@ describe("postgres", () => {
       const cls = clause.Eq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id = $1");
       expect(cls.clause(2)).toBe("id = $2");
+      expect(cls.clause(1, "t")).toBe("t.id = $1");
+      expect(cls.clause(2, "t")).toBe("t.id = $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -58,6 +60,8 @@ describe("postgres", () => {
       const cls = clause.Eq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id = $1");
       expect(cls.clause(2)).toBe("id = $2");
+      expect(cls.clause(1, "t")).toBe("t.id = $1");
+      expect(cls.clause(2, "t")).toBe("t.id = $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -70,6 +74,8 @@ describe("postgres", () => {
       const cls = clause.NotEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id != $1");
       expect(cls.clause(2)).toBe("id != $2");
+      expect(cls.clause(1, "t")).toBe("t.id != $1");
+      expect(cls.clause(2, "t")).toBe("t.id != $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -80,6 +86,8 @@ describe("postgres", () => {
       const cls = clause.NotEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id != $1");
       expect(cls.clause(2)).toBe("id != $2");
+      expect(cls.clause(1, "t")).toBe("t.id != $1");
+      expect(cls.clause(2, "t")).toBe("t.id != $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -92,6 +100,8 @@ describe("postgres", () => {
       const cls = clause.Greater<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id > $1");
       expect(cls.clause(2)).toBe("id > $2");
+      expect(cls.clause(1, "t")).toBe("t.id > $1");
+      expect(cls.clause(2, "t")).toBe("t.id > $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -102,6 +112,8 @@ describe("postgres", () => {
       const cls = clause.Greater<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id > $1");
       expect(cls.clause(2)).toBe("id > $2");
+      expect(cls.clause(1, "t")).toBe("t.id > $1");
+      expect(cls.clause(2, "t")).toBe("t.id > $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -114,6 +126,8 @@ describe("postgres", () => {
       const cls = clause.Less<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id < $1");
       expect(cls.clause(2)).toBe("id < $2");
+      expect(cls.clause(1, "t")).toBe("t.id < $1");
+      expect(cls.clause(2, "t")).toBe("t.id < $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -124,6 +138,8 @@ describe("postgres", () => {
       const cls = clause.Less<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id < $1");
       expect(cls.clause(2)).toBe("id < $2");
+      expect(cls.clause(1, "t")).toBe("t.id < $1");
+      expect(cls.clause(2, "t")).toBe("t.id < $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -136,6 +152,8 @@ describe("postgres", () => {
       const cls = clause.GreaterEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id >= $1");
       expect(cls.clause(2)).toBe("id >= $2");
+      expect(cls.clause(1, "t")).toBe("t.id >= $1");
+      expect(cls.clause(2, "t")).toBe("t.id >= $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -146,6 +164,8 @@ describe("postgres", () => {
       const cls = clause.GreaterEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id >= $1");
       expect(cls.clause(2)).toBe("id >= $2");
+      expect(cls.clause(1, "t")).toBe("t.id >= $1");
+      expect(cls.clause(2, "t")).toBe("t.id >= $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -158,6 +178,8 @@ describe("postgres", () => {
       const cls = clause.LessEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id <= $1");
       expect(cls.clause(2)).toBe("id <= $2");
+      expect(cls.clause(1, "t")).toBe("t.id <= $1");
+      expect(cls.clause(2, "t")).toBe("t.id <= $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -168,6 +190,8 @@ describe("postgres", () => {
       const cls = clause.LessEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id <= $1");
       expect(cls.clause(2)).toBe("id <= $2");
+      expect(cls.clause(1, "t")).toBe("t.id <= $1");
+      expect(cls.clause(2, "t")).toBe("t.id <= $2");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -182,6 +206,7 @@ describe("postgres", () => {
         clause.Eq("id2", "foo"),
       );
       expect(cls.clause(1)).toBe("id1 = $1 AND id2 = $2");
+      expect(cls.clause(1, "t")).toBe("t.id1 = $1 AND t.id2 = $2");
       expect(cls.columns()).toStrictEqual(["id1", "id2"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo"]);
@@ -195,6 +220,9 @@ describe("postgres", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = $1 AND id2 = $2 AND id3 = $3");
+      expect(cls.clause(1, "t")).toBe(
+        "t.id1 = $1 AND t.id2 = $2 AND t.id3 = $3",
+      );
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -208,6 +236,9 @@ describe("postgres", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = $1 AND id2 = $2 AND id3 = $3");
+      expect(cls.clause(1, "t")).toBe(
+        "t.id1 = $1 AND t.id2 = $2 AND t.id3 = $3",
+      );
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "***", "baz"]);
@@ -220,6 +251,9 @@ describe("postgres", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = $1 AND id2 = $2 AND id3 = $3");
+      expect(cls.clause(1, "t")).toBe(
+        "t.id1 = $1 AND t.id2 = $2 AND t.id3 = $3",
+      );
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -232,6 +266,9 @@ describe("postgres", () => {
         clause.And(clause.Eq("id2", "foo"), clause.Eq("id3", "baz")),
       );
       expect(cls.clause(1)).toBe("id1 = $1 AND id2 = $2 AND id3 = $3");
+      expect(cls.clause(1, "t")).toBe(
+        "t.id1 = $1 AND t.id2 = $2 AND t.id3 = $3",
+      );
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -247,6 +284,9 @@ describe("postgres", () => {
         ),
       );
       expect(cls.clause(1)).toBe("id1 = $1 AND id2 = $2 AND id3 = $3");
+      expect(cls.clause(1, "t")).toBe(
+        "t.id1 = $1 AND t.id2 = $2 AND t.id3 = $3",
+      );
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "***"]);
@@ -261,6 +301,7 @@ describe("postgres", () => {
         clause.Eq("id2", "foo"),
       );
       expect(cls.clause(1)).toBe("id1 = $1 OR id2 = $2");
+      expect(cls.clause(1, "t")).toBe("t.id1 = $1 OR t.id2 = $2");
       expect(cls.columns()).toStrictEqual(["id1", "id2"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo"]);
@@ -274,6 +315,7 @@ describe("postgres", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = $1 OR id2 = $2 OR id3 = $3");
+      expect(cls.clause(1, "t")).toBe("t.id1 = $1 OR t.id2 = $2 OR t.id3 = $3");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -287,6 +329,7 @@ describe("postgres", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = $1 OR id2 = $2 OR id3 = $3");
+      expect(cls.clause(1, "t")).toBe("t.id1 = $1 OR t.id2 = $2 OR t.id3 = $3");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "***", "baz"]);
@@ -299,6 +342,7 @@ describe("postgres", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = $1 OR id2 = $2 OR id3 = $3");
+      expect(cls.clause(1, "t")).toBe("t.id1 = $1 OR t.id2 = $2 OR t.id3 = $3");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -311,6 +355,7 @@ describe("postgres", () => {
         clause.Or(clause.Eq("id2", "foo"), clause.Eq("id3", "baz")),
       );
       expect(cls.clause(1)).toBe("id1 = $1 OR id2 = $2 OR id3 = $3");
+      expect(cls.clause(1, "t")).toBe("t.id1 = $1 OR t.id2 = $2 OR t.id3 = $3");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -326,6 +371,7 @@ describe("postgres", () => {
         ),
       );
       expect(cls.clause(1)).toBe("id1 = $1 OR id2 = $2 OR id3 = $3");
+      expect(cls.clause(1, "t")).toBe("t.id1 = $1 OR t.id2 = $2 OR t.id3 = $3");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "***"]);
@@ -340,6 +386,9 @@ describe("postgres", () => {
         clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
       );
       expect(cls.clause(1)).toBe("id3 = $1 AND (id1 = $2 OR id2 = $3)");
+      expect(cls.clause(1, "t")).toBe(
+        "t.id3 = $1 AND (t.id1 = $2 OR t.id2 = $3)",
+      );
       expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["bar", "iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["bar", "iddd", "foo"]);
@@ -352,6 +401,9 @@ describe("postgres", () => {
         clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
       );
       expect(cls.clause(1)).toBe("id3 = $1 OR (id1 = $2 AND id2 = $3)");
+      expect(cls.clause(1, "t")).toBe(
+        "t.id3 = $1 OR (t.id1 = $2 AND t.id2 = $3)",
+      );
       expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["bar", "iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["bar", "iddd", "foo"]);
@@ -368,6 +420,9 @@ describe("postgres", () => {
       );
       expect(cls.clause(1)).toBe(
         "id4 = $1 OR (id3 = $2 AND (id1 = $3 OR id2 = $4))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "t.id4 = $1 OR (t.id3 = $2 AND (t.id1 = $3 OR t.id2 = $4))",
       );
       expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
@@ -388,6 +443,9 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe(
         "id4 = $1 AND (id3 = $2 OR (id1 = $3 AND id2 = $4))",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "t.id4 = $1 AND (t.id3 = $2 OR (t.id1 = $3 AND t.id2 = $4))",
+      );
       expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
@@ -396,7 +454,7 @@ describe("postgres", () => {
       );
     });
 
-    test("complexx ", () => {
+    test("complexx", () => {
       const cls = clause.And<EdgeData>(
         clause.Eq("id4", "baz"),
         clause.Or(
@@ -407,6 +465,11 @@ describe("postgres", () => {
       );
       expect(cls.clause(1)).toBe(
         "id4 = $1 AND (id3 = $2 OR (id1 = $3 AND id2 = $4) OR id5 = $5 OR id6 = $6)",
+        // could also do this...
+        //         "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?) OR (id5 = ? OR id6 = ?))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "t.id4 = $1 AND (t.id3 = $2 OR (t.id1 = $3 AND t.id2 = $4) OR t.id5 = $5 OR t.id6 = $6)",
         // could also do this...
         //         "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?) OR (id5 = ? OR id6 = ?))",
       );
@@ -447,6 +510,9 @@ describe("postgres", () => {
         clause.Or(clause.Eq("id1", null), clause.Eq("id2", "foo")),
       );
       expect(cls.clause(1)).toBe("id3 IS NULL AND (id1 IS NULL OR id2 = $1)");
+      expect(cls.clause(1, "t")).toBe(
+        "t.id3 IS NULL AND (t.id1 IS NULL OR t.id2 = $1)",
+      );
       expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["foo"]);
       expect(cls.logValues()).toStrictEqual(["foo"]);
@@ -461,6 +527,9 @@ describe("postgres", () => {
         clause.And(clause.Eq("id1", null), clause.Eq("id2", "foo")),
       );
       expect(cls.clause(1)).toBe("id3 IS NULL OR (id1 IS NULL AND id2 = $1)");
+      expect(cls.clause(1, "t")).toBe(
+        "t.id3 IS NULL OR (t.id1 IS NULL AND t.id2 = $1)",
+      );
       expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["foo"]);
       expect(cls.logValues()).toStrictEqual(["foo"]);
@@ -479,6 +548,9 @@ describe("postgres", () => {
       );
       expect(cls.clause(1)).toBe(
         "id4 = $1 OR (id3 IS NULL AND (id1 IS NULL OR id2 = $2))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "t.id4 = $1 OR (t.id3 IS NULL AND (t.id1 IS NULL OR t.id2 = $2))",
       );
       expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["baz", "foo"]);
@@ -504,6 +576,9 @@ describe("postgres", () => {
       );
       expect(cls.clause(1)).toBe(
         "id4 = $1 AND (id3 IS NULL OR (id1 IS NULL AND id2 = $2) OR id5 = $3 OR id6 = $4 OR id7 IS NULL OR id8 = $5)",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "t.id4 = $1 AND (t.id3 IS NULL OR (t.id1 IS NULL AND t.id2 = $2) OR t.id5 = $3 OR t.id6 = $4 OR t.id7 IS NULL OR t.id8 = $5)",
       );
       expect(cls.columns()).toStrictEqual([
         "id4",
@@ -539,6 +614,7 @@ describe("postgres", () => {
     test("1 arg", () => {
       const cls = clause.In<ExampleData>("id", 1);
       expect(cls.clause(1)).toBe("id = $1");
+      expect(cls.clause(1, "t")).toBe("t.id = $1");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
@@ -548,6 +624,7 @@ describe("postgres", () => {
     test("not in. 1 arg", () => {
       const cls = clause.DBTypeNotIn<ExampleData>("id", [1], "integer");
       expect(cls.clause(1)).toBe("id != $1");
+      expect(cls.clause(1, "t")).toBe("t.id != $1");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
@@ -557,6 +634,7 @@ describe("postgres", () => {
     test("spread args", () => {
       const cls = clause.In<ExampleData>("id", 1, 2, 3);
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
+      expect(cls.clause(1, "t")).toBe("t.id IN ($1, $2, $3)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
       expect(cls.logValues()).toStrictEqual([1, 2, 3]);
@@ -566,6 +644,7 @@ describe("postgres", () => {
     test("spread args with sensitive value", () => {
       const cls = clause.In<ExampleData>("id", 1, 2, clause.sensitiveValue(3));
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
+      expect(cls.clause(1, "t")).toBe("t.id IN ($1, $2, $3)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
       expect(cls.logValues()).toStrictEqual([1, 2, "*"]);
@@ -575,6 +654,7 @@ describe("postgres", () => {
     test("list", () => {
       const cls = clause.In<ExampleData>("id", ...[1, 2, 3]);
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
+      expect(cls.clause(1, "t")).toBe("t.id IN ($1, $2, $3)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
       expect(cls.logValues()).toStrictEqual([1, 2, 3]);
@@ -587,6 +667,7 @@ describe("postgres", () => {
         ...[1, clause.sensitiveValue(2), 3],
       );
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
+      expect(cls.clause(1, "t")).toBe("t.id IN ($1, $2, $3)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
       expect(cls.logValues()).toStrictEqual([1, "*", 3]);
@@ -609,6 +690,9 @@ describe("postgres", () => {
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
         );
+        expect(cls.clause(1, "t")).toBe(
+          "t.id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
         expect(cls.columns()).toStrictEqual(["id"]);
         expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
@@ -621,6 +705,9 @@ describe("postgres", () => {
         const cls = clause.IntegerIn<ExampleData>("id", ids);
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::integer), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.clause(1, "t")).toBe(
+          "t.id IN (VALUES($1::integer), ($2), ($3), ($4), ($5))",
         );
         expect(cls.columns()).toStrictEqual(["id"]);
         expect(cls.values()).toStrictEqual(ids);
@@ -635,6 +722,9 @@ describe("postgres", () => {
         expect(cls.clause(1)).toBe(
           "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
         );
+        expect(cls.clause(1, "t")).toBe(
+          "t.id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
         expect(cls.columns()).toStrictEqual(["id"]);
         expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
@@ -647,6 +737,9 @@ describe("postgres", () => {
         const cls = clause.UuidNotIn<ExampleData>("id", ids);
         expect(cls.clause(1)).toBe(
           "id NOT IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls.clause(1, "t")).toBe(
+          "t.id NOT IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
         );
         expect(cls.columns()).toStrictEqual(["id"]);
         expect(cls.values()).toStrictEqual(ids);
@@ -661,6 +754,9 @@ describe("postgres", () => {
         expect(cls.clause(1)).toBe(
           "id NOT IN (VALUES($1::text), ($2), ($3), ($4), ($5))",
         );
+        expect(cls.clause(1, "t")).toBe(
+          "t.id NOT IN (VALUES($1::text), ($2), ($3), ($4), ($5))",
+        );
         expect(cls.columns()).toStrictEqual(["id"]);
         expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
@@ -673,6 +769,7 @@ describe("postgres", () => {
     test("eq", () => {
       const cls = clause.ArrayEq<ExampleData>("ids", 3);
       expect(cls.clause(1)).toBe("$1 = ANY(ids)");
+      expect(cls.clause(1, "t")).toBe("$1 = ANY(t.ids)");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([3]);
       expect(cls.logValues()).toStrictEqual([3]);
@@ -682,6 +779,7 @@ describe("postgres", () => {
     test("ne", () => {
       const cls = clause.ArrayNotEq<ExampleData>("ids", 3);
       expect(cls.clause(1)).toBe("$1 != ANY(ids)");
+      expect(cls.clause(1, "t")).toBe("$1 != ANY(t.ids)");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([3]);
       expect(cls.logValues()).toStrictEqual([3]);
@@ -691,6 +789,7 @@ describe("postgres", () => {
     test("contains val", () => {
       const cls = clause.PostgresArrayContainsValue<ExampleData>("ids", 3);
       expect(cls.clause(1)).toBe("ids @> $1");
+      expect(cls.clause(1, "t")).toBe("t.ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3}`]);
       expect(cls.logValues()).toStrictEqual([`{3}`]);
@@ -700,6 +799,7 @@ describe("postgres", () => {
     test("contains val:string", () => {
       const cls = clause.PostgresArrayContainsValue<ExampleData>("ids", "foo");
       expect(cls.clause(1)).toBe("ids @> $1");
+      expect(cls.clause(1, "t")).toBe("t.ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{foo}`]);
       expect(cls.logValues()).toStrictEqual([`{foo}`]);
@@ -709,6 +809,7 @@ describe("postgres", () => {
     test("contains list", () => {
       const cls = clause.PostgresArrayContains<ExampleData>("ids", [3, 4]);
       expect(cls.clause(1)).toBe("ids @> $1");
+      expect(cls.clause(1, "t")).toBe("t.ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
       expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
@@ -721,6 +822,7 @@ describe("postgres", () => {
         "bar",
       ]);
       expect(cls.clause(1)).toBe("ids @> $1");
+      expect(cls.clause(1, "t")).toBe("t.ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{foo, bar}`]);
       expect(cls.logValues()).toStrictEqual([`{foo, bar}`]);
@@ -730,6 +832,7 @@ describe("postgres", () => {
     test("not contains val", () => {
       const cls = clause.PostgresArrayNotContainsValue<ExampleData>("ids", 3);
       expect(cls.clause(1)).toBe("NOT ids @> $1");
+      expect(cls.clause(1, "t")).toBe("NOT t.ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3}`]);
       expect(cls.logValues()).toStrictEqual([`{3}`]);
@@ -739,6 +842,7 @@ describe("postgres", () => {
     test("not contains list", () => {
       const cls = clause.PostgresArrayNotContains<ExampleData>("ids", [3, 4]);
       expect(cls.clause(1)).toBe("NOT ids @> $1");
+      expect(cls.clause(1, "t")).toBe("NOT t.ids @> $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
       expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
@@ -748,6 +852,7 @@ describe("postgres", () => {
     test("overlaps", () => {
       const cls = clause.PostgresArrayOverlaps<ExampleData>("ids", [3, 4]);
       expect(cls.clause(1)).toBe("ids && $1");
+      expect(cls.clause(1, "t")).toBe("t.ids && $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
       expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
@@ -757,6 +862,7 @@ describe("postgres", () => {
     test("not overlaps", () => {
       const cls = clause.PostgresArrayNotOverlaps<ExampleData>("ids", [3, 4]);
       expect(cls.clause(1)).toBe("NOT ids && $1");
+      expect(cls.clause(1, "t")).toBe("NOT t.ids && $1");
       expect(cls.columns()).toStrictEqual(["ids"]);
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
       expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
@@ -773,6 +879,7 @@ describe("postgres", () => {
         "==",
       );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.clause(1, "t")).toBe("t.jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.* == 3"]);
       expect(cls.logValues()).toStrictEqual(["$.* == 3"]);
@@ -787,6 +894,7 @@ describe("postgres", () => {
         "==",
       );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.clause(1, "t")).toBe("t.jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(['$.* == "hello"']);
       expect(cls.logValues()).toStrictEqual(['$.* == "hello"']);
@@ -801,6 +909,7 @@ describe("postgres", () => {
         ">",
       );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.clause(1, "t")).toBe("t.jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.* > 3"]);
       expect(cls.logValues()).toStrictEqual(["$.* > 3"]);
@@ -815,6 +924,7 @@ describe("postgres", () => {
         "!=",
       );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.clause(1, "t")).toBe("t.jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.* != 3"]);
       expect(cls.logValues()).toStrictEqual(["$.* != 3"]);
@@ -829,6 +939,7 @@ describe("postgres", () => {
         "!=",
       );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.clause(1, "t")).toBe("t.jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.col != 3"]);
       expect(cls.logValues()).toStrictEqual(["$.col != 3"]);
@@ -843,6 +954,7 @@ describe("postgres", () => {
         "!=",
       );
       expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.clause(1, "t")).toBe("t.jsonb @@ $1");
       expect(cls.columns()).toStrictEqual(["jsonb"]);
       expect(cls.values()).toStrictEqual(["$.col[*] != 3"]);
       expect(cls.logValues()).toStrictEqual(["$.col[*] != 3"]);
@@ -854,6 +966,9 @@ describe("postgres", () => {
     test("tsquery string", () => {
       const cls = clause.TsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe("name_idx @@ to_tsquery('english', $1)");
+      expect(cls.clause(1, "t")).toBe(
+        "t.name_idx @@ to_tsquery('english', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -866,6 +981,7 @@ describe("postgres", () => {
         value: "value",
       });
       expect(cls.clause(1)).toBe("name_idx @@ to_tsquery('simple', $1)");
+      expect(cls.clause(1, "t")).toBe("t.name_idx @@ to_tsquery('simple', $1)");
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -875,6 +991,9 @@ describe("postgres", () => {
     test("plainto_tsquery string", () => {
       const cls = clause.PlainToTsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe("name_idx @@ plainto_tsquery('english', $1)");
+      expect(cls.clause(1, "t")).toBe(
+        "t.name_idx @@ plainto_tsquery('english', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -889,6 +1008,9 @@ describe("postgres", () => {
         value: "value",
       });
       expect(cls.clause(1)).toBe("name_idx @@ plainto_tsquery('simple', $1)");
+      expect(cls.clause(1, "t")).toBe(
+        "t.name_idx @@ plainto_tsquery('simple', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -900,6 +1022,9 @@ describe("postgres", () => {
     test("phraseto_tsquery string", () => {
       const cls = clause.PhraseToTsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe("name_idx @@ phraseto_tsquery('english', $1)");
+      expect(cls.clause(1, "t")).toBe(
+        "t.name_idx @@ phraseto_tsquery('english', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -914,6 +1039,9 @@ describe("postgres", () => {
         value: "value",
       });
       expect(cls.clause(1)).toBe("name_idx @@ phraseto_tsquery('simple', $1)");
+      expect(cls.clause(1, "t")).toBe(
+        "t.name_idx @@ phraseto_tsquery('simple', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -926,6 +1054,9 @@ describe("postgres", () => {
       const cls = clause.WebsearchToTsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe(
         "name_idx @@ websearch_to_tsquery('english', $1)",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "t.name_idx @@ websearch_to_tsquery('english', $1)",
       );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
@@ -943,6 +1074,9 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe(
         "name_idx @@ websearch_to_tsquery('simple', $1)",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "t.name_idx @@ websearch_to_tsquery('simple', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -955,6 +1089,9 @@ describe("postgres", () => {
       const cls = clause.TsVectorColTsQuery<FullTextData>("name_idx", "value");
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ to_tsquery('english', $1)",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "to_tsvector(t.name_idx) @@ to_tsquery('english', $1)",
       );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
@@ -972,6 +1109,9 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ to_tsquery('simple', $1)",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "to_tsvector(t.name_idx) @@ to_tsquery('simple', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -987,6 +1127,9 @@ describe("postgres", () => {
       );
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ plainto_tsquery('english', $1)",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "to_tsvector(t.name_idx) @@ plainto_tsquery('english', $1)",
       );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
@@ -1004,6 +1147,9 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ plainto_tsquery('simple', $1)",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "to_tsvector(t.name_idx) @@ plainto_tsquery('simple', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -1019,6 +1165,9 @@ describe("postgres", () => {
       );
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ phraseto_tsquery('english', $1)",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "to_tsvector(t.name_idx) @@ phraseto_tsquery('english', $1)",
       );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
@@ -1036,6 +1185,9 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ phraseto_tsquery('simple', $1)",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "to_tsvector(t.name_idx) @@ phraseto_tsquery('simple', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -1052,6 +1204,9 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ websearch_to_tsquery('english', $1)",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "to_tsvector(t.name_idx) @@ websearch_to_tsquery('english', $1)",
+      );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
@@ -1067,6 +1222,9 @@ describe("postgres", () => {
       });
       expect(cls.clause(1)).toBe(
         "to_tsvector(name_idx) @@ websearch_to_tsquery('simple', $1)",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "to_tsvector(t.name_idx) @@ websearch_to_tsquery('simple', $1)",
       );
       expect(cls.columns()).toStrictEqual(["name_idx"]);
       expect(cls.values()).toStrictEqual(["value"]);
@@ -1089,6 +1247,9 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe(
         "(start_time > (SELECT start_time FROM events WHERE id = $1) OR (start_time = (SELECT start_time FROM events WHERE id = $2) AND id > $3))",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time > (SELECT t.start_time FROM events WHERE t.id = $1) OR (t.start_time = (SELECT t.start_time FROM events WHERE t.id = $2) AND t.id > $3))",
+      );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1105,6 +1266,9 @@ describe("postgres", () => {
       );
       expect(cls.clause(3)).toBe(
         "(start_time > (SELECT start_time FROM events WHERE id = $3) OR (start_time = (SELECT start_time FROM events WHERE id = $4) AND id > $5))",
+      );
+      expect(cls.clause(3, "t")).toBe(
+        "(t.start_time > (SELECT t.start_time FROM events WHERE t.id = $3) OR (t.start_time = (SELECT t.start_time FROM events WHERE t.id = $4) AND t.id > $5))",
       );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1123,6 +1287,9 @@ describe("postgres", () => {
       expect(cls.clause(1)).toBe(
         "(start_time < (SELECT start_time FROM events WHERE id = $1) OR (start_time = (SELECT start_time FROM events WHERE id = $2) AND id < $3))",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time < (SELECT t.start_time FROM events WHERE t.id = $1) OR (t.start_time = (SELECT t.start_time FROM events WHERE t.id = $2) AND t.id < $3))",
+      );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1135,6 +1302,8 @@ describe("postgres", () => {
       const cls = clause.Add<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance + $1");
       expect(cls.clause(2)).toBe("balance + $2");
+      expect(cls.clause(1, "t")).toBe("t.balance + $1");
+      expect(cls.clause(2, "t")).toBe("t.balance + $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1145,6 +1314,8 @@ describe("postgres", () => {
       const cls = clause.Subtract<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance - $1");
       expect(cls.clause(2)).toBe("balance - $2");
+      expect(cls.clause(1, "t")).toBe("t.balance - $1");
+      expect(cls.clause(2, "t")).toBe("t.balance - $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1155,6 +1326,8 @@ describe("postgres", () => {
       const cls = clause.Divide<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance / $1");
       expect(cls.clause(2)).toBe("balance / $2");
+      expect(cls.clause(1, "t")).toBe("t.balance / $1");
+      expect(cls.clause(2, "t")).toBe("t.balance / $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1165,6 +1338,8 @@ describe("postgres", () => {
       const cls = clause.Multiply<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance * $1");
       expect(cls.clause(2)).toBe("balance * $2");
+      expect(cls.clause(1, "t")).toBe("t.balance * $1");
+      expect(cls.clause(2, "t")).toBe("t.balance * $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1175,6 +1350,8 @@ describe("postgres", () => {
       const cls = clause.Modulo<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance % $1");
       expect(cls.clause(2)).toBe("balance % $2");
+      expect(cls.clause(1, "t")).toBe("t.balance % $1");
+      expect(cls.clause(2, "t")).toBe("t.balance % $2");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1195,6 +1372,8 @@ describe("sqlite", () => {
       const cls = clause.Eq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id = ?");
       expect(cls.clause(2)).toBe("id = ?");
+      expect(cls.clause(1, "t")).toBe("t.id = ?");
+      expect(cls.clause(2, "t")).toBe("t.id = ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1205,6 +1384,8 @@ describe("sqlite", () => {
       const cls = clause.Eq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id = ?");
       expect(cls.clause(2)).toBe("id = ?");
+      expect(cls.clause(1, "t")).toBe("t.id = ?");
+      expect(cls.clause(2, "t")).toBe("t.id = ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -1217,6 +1398,8 @@ describe("sqlite", () => {
       const cls = clause.Greater<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id > ?");
       expect(cls.clause(2)).toBe("id > ?");
+      expect(cls.clause(1, "t")).toBe("t.id > ?");
+      expect(cls.clause(2, "t")).toBe("t.id > ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1227,6 +1410,8 @@ describe("sqlite", () => {
       const cls = clause.Greater<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id > ?");
       expect(cls.clause(2)).toBe("id > ?");
+      expect(cls.clause(1, "t")).toBe("t.id > ?");
+      expect(cls.clause(2, "t")).toBe("t.id > ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -1239,6 +1424,8 @@ describe("sqlite", () => {
       const cls = clause.Less<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id < ?");
       expect(cls.clause(2)).toBe("id < ?");
+      expect(cls.clause(1, "t")).toBe("t.id < ?");
+      expect(cls.clause(2, "t")).toBe("t.id < ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1249,6 +1436,8 @@ describe("sqlite", () => {
       const cls = clause.Less<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id < ?");
       expect(cls.clause(2)).toBe("id < ?");
+      expect(cls.clause(1, "t")).toBe("t.id < ?");
+      expect(cls.clause(2, "t")).toBe("t.id < ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -1261,6 +1450,8 @@ describe("sqlite", () => {
       const cls = clause.GreaterEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id >= ?");
       expect(cls.clause(2)).toBe("id >= ?");
+      expect(cls.clause(1, "t")).toBe("t.id >= ?");
+      expect(cls.clause(2, "t")).toBe("t.id >= ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1271,6 +1462,8 @@ describe("sqlite", () => {
       const cls = clause.GreaterEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id >= ?");
       expect(cls.clause(2)).toBe("id >= ?");
+      expect(cls.clause(1, "t")).toBe("t.id >= ?");
+      expect(cls.clause(2, "t")).toBe("t.id >= ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -1283,6 +1476,8 @@ describe("sqlite", () => {
       const cls = clause.LessEq<ExampleData>("id", 4);
       expect(cls.clause(1)).toBe("id <= ?");
       expect(cls.clause(2)).toBe("id <= ?");
+      expect(cls.clause(1, "t")).toBe("t.id <= ?");
+      expect(cls.clause(2, "t")).toBe("t.id <= ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1293,6 +1488,8 @@ describe("sqlite", () => {
       const cls = clause.LessEq<ExampleData>("id", clause.sensitiveValue(4));
       expect(cls.clause(1)).toBe("id <= ?");
       expect(cls.clause(2)).toBe("id <= ?");
+      expect(cls.clause(1, "t")).toBe("t.id <= ?");
+      expect(cls.clause(2, "t")).toBe("t.id <= ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
@@ -1307,6 +1504,7 @@ describe("sqlite", () => {
         clause.Eq("id2", "foo"),
       );
       expect(cls.clause(1)).toBe("id1 = ? AND id2 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? AND t.id2 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo"]);
@@ -1320,6 +1518,7 @@ describe("sqlite", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = ? AND id2 = ? AND id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? AND t.id2 = ? AND t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -1333,6 +1532,7 @@ describe("sqlite", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = ? AND id2 = ? AND id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? AND t.id2 = ? AND t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "***", "baz"]);
@@ -1345,6 +1545,7 @@ describe("sqlite", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = ? AND id2 = ? AND id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? AND t.id2 = ? AND t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -1357,6 +1558,7 @@ describe("sqlite", () => {
         clause.And(clause.Eq("id2", "foo"), clause.Eq("id3", "baz")),
       );
       expect(cls.clause(1)).toBe("id1 = ? AND id2 = ? AND id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? AND t.id2 = ? AND t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -1372,6 +1574,7 @@ describe("sqlite", () => {
         ),
       );
       expect(cls.clause(1)).toBe("id1 = ? AND id2 = ? AND id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? AND t.id2 = ? AND t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "***"]);
@@ -1386,6 +1589,7 @@ describe("sqlite", () => {
         clause.Eq("id2", "foo"),
       );
       expect(cls.clause(1)).toBe("id1 = ? OR id2 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? OR t.id2 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo"]);
@@ -1399,6 +1603,7 @@ describe("sqlite", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = ? OR id2 = ? OR id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? OR t.id2 = ? OR t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -1412,6 +1617,7 @@ describe("sqlite", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = ? OR id2 = ? OR id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? OR t.id2 = ? OR t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "***", "baz"]);
@@ -1424,6 +1630,7 @@ describe("sqlite", () => {
         clause.Eq("id3", "baz"),
       );
       expect(cls.clause(1)).toBe("id1 = ? OR id2 = ? OR id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? OR t.id2 = ? OR t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -1436,6 +1643,7 @@ describe("sqlite", () => {
         clause.Or(clause.Eq("id2", "foo"), clause.Eq("id3", "baz")),
       );
       expect(cls.clause(1)).toBe("id1 = ? OR id2 = ? OR id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? OR t.id2 = ? OR t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "baz"]);
@@ -1451,6 +1659,7 @@ describe("sqlite", () => {
         ),
       );
       expect(cls.clause(1)).toBe("id1 = ? OR id2 = ? OR id3 = ?");
+      expect(cls.clause(1, "t")).toBe("t.id1 = ? OR t.id2 = ? OR t.id3 = ?");
       expect(cls.columns()).toStrictEqual(["id1", "id2", "id3"]);
       expect(cls.values()).toStrictEqual(["iddd", "foo", "baz"]);
       expect(cls.logValues()).toStrictEqual(["iddd", "foo", "***"]);
@@ -1465,6 +1674,7 @@ describe("sqlite", () => {
         clause.Or(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
       );
       expect(cls.clause(1)).toBe("id3 = ? AND (id1 = ? OR id2 = ?)");
+      expect(cls.clause(1, "t")).toBe("t.id3 = ? AND (t.id1 = ? OR t.id2 = ?)");
       expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["bar", "iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["bar", "iddd", "foo"]);
@@ -1477,6 +1687,7 @@ describe("sqlite", () => {
         clause.And(clause.Eq("id1", "iddd"), clause.Eq("id2", "foo")),
       );
       expect(cls.clause(1)).toBe("id3 = ? OR (id1 = ? AND id2 = ?)");
+      expect(cls.clause(1, "t")).toBe("t.id3 = ? OR (t.id1 = ? AND t.id2 = ?)");
       expect(cls.columns()).toStrictEqual(["id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["bar", "iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["bar", "iddd", "foo"]);
@@ -1493,6 +1704,9 @@ describe("sqlite", () => {
       );
       expect(cls.clause(1)).toBe(
         "id4 = ? OR (id3 = ? AND (id1 = ? OR id2 = ?))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "t.id4 = ? OR (t.id3 = ? AND (t.id1 = ? OR t.id2 = ?))",
       );
       expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
@@ -1513,6 +1727,9 @@ describe("sqlite", () => {
       expect(cls.clause(1)).toBe(
         "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?))",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "t.id4 = ? AND (t.id3 = ? OR (t.id1 = ? AND t.id2 = ?))",
+      );
       expect(cls.columns()).toStrictEqual(["id4", "id3", "id1", "id2"]);
       expect(cls.values()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
       expect(cls.logValues()).toStrictEqual(["baz", "bar", "iddd", "foo"]);
@@ -1532,6 +1749,11 @@ describe("sqlite", () => {
       );
       expect(cls.clause(1)).toBe(
         "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?) OR id5 = ? OR id6 = ?)",
+        // could also do this...
+        //         "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?) OR (id5 = ? OR id6 = ?))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "t.id4 = ? AND (t.id3 = ? OR (t.id1 = ? AND t.id2 = ?) OR t.id5 = ? OR t.id6 = ?)",
         // could also do this...
         //         "id4 = ? AND (id3 = ? OR (id1 = ? AND id2 = ?) OR (id5 = ? OR id6 = ?))",
       );
@@ -1569,6 +1791,7 @@ describe("sqlite", () => {
     test("1 arg", () => {
       const cls = clause.In<ExampleData>("id", 1);
       expect(cls.clause(1)).toBe("id = ?");
+      expect(cls.clause(1, "t")).toBe("t.id = ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
@@ -1578,6 +1801,7 @@ describe("sqlite", () => {
     test("not in. 1 arg", () => {
       const cls = clause.DBTypeNotIn<ExampleData>("id", [1], "integer");
       expect(cls.clause(1)).toBe("id != ?");
+      expect(cls.clause(1, "t")).toBe("t.id != ?");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
@@ -1587,6 +1811,7 @@ describe("sqlite", () => {
     test("spread args", () => {
       const cls = clause.In<ExampleData>("id", 1, 2, 3);
       expect(cls.clause(1)).toBe("id IN (?, ?, ?)");
+      expect(cls.clause(1, "t")).toBe("t.id IN (?, ?, ?)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
       expect(cls.logValues()).toStrictEqual([1, 2, 3]);
@@ -1596,6 +1821,7 @@ describe("sqlite", () => {
     test("spread args with sensitive value", () => {
       const cls = clause.In<ExampleData>("id", 1, 2, clause.sensitiveValue(3));
       expect(cls.clause(1)).toBe("id IN (?, ?, ?)");
+      expect(cls.clause(1, "t")).toBe("t.id IN (?, ?, ?)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
       expect(cls.logValues()).toStrictEqual([1, 2, "*"]);
@@ -1605,6 +1831,7 @@ describe("sqlite", () => {
     test("list", () => {
       const cls = clause.In<ExampleData>("id", ...[1, 2, 3]);
       expect(cls.clause(1)).toBe("id IN (?, ?, ?)");
+      expect(cls.clause(1, "t")).toBe("t.id IN (?, ?, ?)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
       expect(cls.logValues()).toStrictEqual([1, 2, 3]);
@@ -1617,6 +1844,7 @@ describe("sqlite", () => {
         ...[1, clause.sensitiveValue(2), 3],
       );
       expect(cls.clause(1)).toBe("id IN (?, ?, ?)");
+      expect(cls.clause(1, "t")).toBe("t.id IN (?, ?, ?)");
       expect(cls.columns()).toStrictEqual(["id"]);
       expect(cls.values()).toStrictEqual([1, 2, 3]);
       expect(cls.logValues()).toStrictEqual([1, "*", 3]);
@@ -1636,6 +1864,9 @@ describe("sqlite", () => {
       expect(cls.clause(1)).toBe(
         "(start_time > (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id > ?))",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time > (SELECT t.start_time FROM events WHERE t.id = ?) OR (t.start_time = (SELECT t.start_time FROM events WHERE t.id = ?) AND t.id > ?))",
+      );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1652,6 +1883,9 @@ describe("sqlite", () => {
       );
       expect(cls.clause(3)).toBe(
         "(start_time > (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id > ?))",
+      );
+      expect(cls.clause(3, "t")).toBe(
+        "(t.start_time > (SELECT t.start_time FROM events WHERE t.id = ?) OR (t.start_time = (SELECT t.start_time FROM events WHERE t.id = ?) AND t.id > ?))",
       );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1670,6 +1904,9 @@ describe("sqlite", () => {
       expect(cls.clause(1)).toBe(
         "(start_time < (SELECT start_time FROM events WHERE id = ?) OR (start_time = (SELECT start_time FROM events WHERE id = ?) AND id < ?))",
       );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time < (SELECT t.start_time FROM events WHERE t.id = ?) OR (t.start_time = (SELECT t.start_time FROM events WHERE t.id = ?) AND t.id < ?))",
+      );
       expect(cls.columns()).toStrictEqual(["start_time"]);
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
@@ -1682,6 +1919,8 @@ describe("sqlite", () => {
       const cls = clause.Add<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance + ?");
       expect(cls.clause(2)).toBe("balance + ?");
+      expect(cls.clause(1, "t")).toBe("t.balance + ?");
+      expect(cls.clause(2, "t")).toBe("t.balance + ?");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1692,6 +1931,8 @@ describe("sqlite", () => {
       const cls = clause.Subtract<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance - ?");
       expect(cls.clause(2)).toBe("balance - ?");
+      expect(cls.clause(1, "t")).toBe("t.balance - ?");
+      expect(cls.clause(2, "t")).toBe("t.balance - ?");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1702,6 +1943,8 @@ describe("sqlite", () => {
       const cls = clause.Divide<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance / ?");
       expect(cls.clause(2)).toBe("balance / ?");
+      expect(cls.clause(1, "t")).toBe("t.balance / ?");
+      expect(cls.clause(2, "t")).toBe("t.balance / ?");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1712,6 +1955,8 @@ describe("sqlite", () => {
       const cls = clause.Multiply<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance * ?");
       expect(cls.clause(2)).toBe("balance * ?");
+      expect(cls.clause(1, "t")).toBe("t.balance * ?");
+      expect(cls.clause(2, "t")).toBe("t.balance * ?");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
@@ -1722,6 +1967,8 @@ describe("sqlite", () => {
       const cls = clause.Modulo<BalanceData>("balance", 4);
       expect(cls.clause(1)).toBe("balance % ?");
       expect(cls.clause(2)).toBe("balance % ?");
+      expect(cls.clause(1, "t")).toBe("t.balance % ?");
+      expect(cls.clause(2, "t")).toBe("t.balance % ?");
       expect(cls.columns()).toStrictEqual(["balance"]);
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);

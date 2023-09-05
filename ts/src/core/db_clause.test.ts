@@ -12,12 +12,13 @@ import { createRowForTest } from "../testutils/write";
 import { loadConfig } from "./config";
 import { loadRows } from "./ent";
 import * as clause from "./clause";
-import { Data } from "./base";
+import { Data, LoadRowsOptions } from "./base";
 import { v1 } from "uuid";
 import { MockLogs } from "../testutils/mock_log";
 import { setLogLevels } from "./logger";
 
 const tableName = "contacts";
+const alias = "c";
 const fields = [
   "id",
   "first_name",
@@ -29,6 +30,7 @@ const fields = [
 ];
 
 const tableName2 = "contacts2";
+const alias2 = "c2";
 
 const tdb = new TempDB(Dialect.Postgres, [
   table(
@@ -91,6 +93,20 @@ afterEach(async () => {
   await DB.getInstance().getPool().exec(`DELETE FROM ${tableName}`);
 });
 
+async function verifyQueryWithAlias(options: LoadRowsOptions, a: string) {
+  const rows = await loadRows(options);
+
+  const rowsFromAlias = await loadRows({
+    ...options,
+    alias: a,
+  });
+
+  expect(rows.length).toEqual(rowsFromAlias.length);
+  expect(rows).toStrictEqual(rowsFromAlias);
+
+  return rows;
+}
+
 test("create + array query", async () => {
   let random = v1();
   for (let i = 0; i < 20; i++) {
@@ -111,62 +127,86 @@ test("create + array query", async () => {
     });
   }
 
-  const randomRows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.PostgresArrayContainsValue("random", random),
-  });
+  const randomRows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.PostgresArrayContainsValue("random", random),
+    },
+    alias,
+  );
   expect(randomRows.length).toEqual(Math.ceil(20 / 3));
 
-  const randomRows2 = await loadRows({
-    tableName,
-    fields,
-    clause: clause.PostgresArrayContains("random", [random]),
-  });
+  const randomRows2 = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.PostgresArrayContains("random", [random]),
+    },
+    alias,
+  );
   expect(randomRows2.length).toEqual(Math.ceil(20 / 3));
 
-  const randomRows3 = await loadRows({
-    tableName,
-    fields,
-    clause: clause.PostgresArrayOverlaps("random", [random, v1()]),
-  });
+  const randomRows3 = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.PostgresArrayOverlaps("random", [random, v1()]),
+    },
+    alias,
+  );
   expect(randomRows3.length).toEqual(Math.ceil(20 / 3));
 
   const row = randomRows[0];
   expect(row.emails.length).toBe(4);
-  const fromSingleEmail = await loadRows({
-    tableName,
-    fields,
-    clause: clause.PostgresArrayContainsValue("emails", row.emails[0]),
-  });
+  const fromSingleEmail = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.PostgresArrayContainsValue("emails", row.emails[0]),
+    },
+    alias,
+  );
   expect(fromSingleEmail.length).toBe(1);
 
-  const fromAllEmails = await loadRows({
-    tableName,
-    fields,
-    clause: clause.PostgresArrayContains("emails", row.emails),
-  });
+  const fromAllEmails = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.PostgresArrayContains("emails", row.emails),
+    },
+    alias,
+  );
   expect(fromAllEmails.length).toBe(1);
 
-  const fromEmailsOverlap = await loadRows({
-    tableName,
-    fields,
-    clause: clause.PostgresArrayOverlaps("emails", [...row.emails, v1()]),
-  });
+  const fromEmailsOverlap = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.PostgresArrayOverlaps("emails", [...row.emails, v1()]),
+    },
+    alias,
+  );
   expect(fromEmailsOverlap.length).toBe(1);
 
-  const notFromSingleEmail = await loadRows({
-    tableName,
-    fields,
-    clause: clause.PostgresArrayNotContainsValue("emails", row.emails[0]),
-  });
+  const notFromSingleEmail = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.PostgresArrayNotContainsValue("emails", row.emails[0]),
+    },
+    alias,
+  );
   expect(notFromSingleEmail.length).toBe(19);
 
-  const notFromAllEmails = await loadRows({
-    tableName,
-    fields,
-    clause: clause.PostgresArrayNotContains("emails", row.emails),
-  });
+  const notFromAllEmails = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.PostgresArrayNotContains("emails", row.emails),
+    },
+    alias,
+  );
   expect(notFromAllEmails.length).toBe(19);
 });
 
@@ -206,55 +246,76 @@ test("jsonb", async () => {
     });
   }
 
-  const nullableBazRows = await loadRows({
-    tableName,
-    fields,
-    // this stops at null fields
-    clause: clause.Eq(clause.JSONObjectFieldKeyASJSON("foo", "baz"), null),
-  });
+  const nullableBazRows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      // this stops at null fields
+      clause: clause.Eq(clause.JSONObjectFieldKeyASJSON("foo", "baz"), null),
+    },
+    alias,
+  );
   expect(nullableBazRows.length).toEqual(7);
 
   // this is actually what you want
-  const nullableBazRows2 = await loadRows({
-    tableName,
-    fields,
-    clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "baz"), null),
-  });
+  const nullableBazRows2 = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "baz"), null),
+    },
+    alias,
+  );
   expect(nullableBazRows2.length).toEqual(14);
 
-  const fooFoo1Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "foo"), "foo1"),
-  });
+  const fooFoo1Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "foo"), "foo1"),
+    },
+    alias,
+  );
   expect(fooFoo1Rows.length).toEqual(7);
 
-  const fooFoo2Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "bar"), "bar2"),
-  });
+  const fooFoo2Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "bar"), "bar2"),
+    },
+    alias,
+  );
   expect(fooFoo2Rows.length).toEqual(6);
 
-  const arrGreater5Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, ">"),
-  });
+  const arrGreater5Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, ">"),
+    },
+    alias,
+  );
   expect(arrGreater5Rows.length).toEqual(6);
 
-  const arrLess5Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, "<"),
-  });
+  const arrLess5Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, "<"),
+    },
+    alias,
+  );
   expect(arrLess5Rows.length).toEqual(7);
 
-  const helloRows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONPathValuePredicate("foo", "$.*", "hello", "=="),
-  });
+  const helloRows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONPathValuePredicate("foo", "$.*", "hello", "=="),
+    },
+    alias,
+  );
   expect(helloRows.length).toEqual(13);
 
   // TODO check to make sure we tested it all...
@@ -316,58 +377,76 @@ test("jsonb key check", async () => {
     });
   }
 
-  const uuid1Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONKeyExists("foo", uuids[0]),
-  });
+  const uuid1Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONKeyExists("foo", uuids[0]),
+    },
+    alias,
+  );
   expect(uuid1Rows.length).toEqual(7);
 
   // key and value
-  const uuid1HelloRows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.And(
-      clause.JSONKeyExists("foo", uuids[0]),
-      clause.JSONPathValuePredicate("foo", "$.*", "hello2", "=="),
-    ),
-  });
+  const uuid1HelloRows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.And(
+        clause.JSONKeyExists("foo", uuids[0]),
+        clause.JSONPathValuePredicate("foo", "$.*", "hello2", "=="),
+      ),
+    },
+    alias,
+  );
   expect(uuid1HelloRows.length).toEqual(3);
 
   // key and value 2. more direct
-  const uuid1HelloRows2 = await loadRows({
-    tableName,
-    fields,
-    clause: clause.Eq(
-      clause.JSONObjectFieldKeyAsText("foo", uuids[0]),
-      "hello2",
-    ),
-  });
+  const uuid1HelloRows2 = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.Eq(
+        clause.JSONObjectFieldKeyAsText("foo", uuids[0]),
+        "hello2",
+      ),
+    },
+    alias,
+  );
   expect(uuid1HelloRows2.length).toEqual(3);
 
-  const uuid12Rows = await loadRows({
-    tableName,
-    fields,
-    // nested!
-    clause: clause.JSONKeyExists(
-      clause.JSONObjectFieldKeyASJSON("foo", uuids[0]),
-      uuids[1],
-    ),
-  });
+  const uuid12Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      // nested!
+      clause: clause.JSONKeyExists(
+        clause.JSONObjectFieldKeyASJSON("foo", uuids[0]),
+        uuids[1],
+      ),
+    },
+    alias,
+  );
   expect(uuid12Rows.length).toEqual(4);
 
-  const uuid2Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONKeyExists("foo", uuids[1]),
-  });
+  const uuid2Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONKeyExists("foo", uuids[1]),
+    },
+    alias,
+  );
   expect(uuid2Rows.length).toEqual(7);
 
-  const uuid3Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONKeyExists("foo", uuids[2]),
-  });
+  const uuid3Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONKeyExists("foo", uuids[2]),
+    },
+    alias,
+  );
   expect(uuid3Rows.length).toEqual(6);
 });
 
@@ -426,33 +505,45 @@ test("jsonb key in list ", async () => {
     });
   }
 
-  const uuid1Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONBKeyInList("foo", "foo_id", uuids[0]),
-  });
+  const uuid1Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONBKeyInList("foo", "foo_id", uuids[0]),
+    },
+    alias,
+  );
   // everything has uuid1
   expect(uuid1Rows.length).toEqual(20);
 
-  const uuid2Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONBKeyInList("foo", "foo_id", uuids[1]),
-  });
+  const uuid2Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONBKeyInList("foo", "foo_id", uuids[1]),
+    },
+    alias,
+  );
   expect(uuid2Rows.length).toEqual(7);
 
-  const uuid3Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONBKeyInList("foo", "foo_id", uuids[2]),
-  });
+  const uuid3Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONBKeyInList("foo", "foo_id", uuids[2]),
+    },
+    alias,
+  );
   expect(uuid3Rows.length).toEqual(7);
 
-  const uuid4Rows = await loadRows({
-    tableName,
-    fields,
-    clause: clause.JSONBKeyInList("foo", "foo_id", uuids[3]),
-  });
+  const uuid4Rows = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.JSONBKeyInList("foo", "foo_id", uuids[3]),
+    },
+    alias,
+  );
   expect(uuid4Rows.length).toEqual(6);
 });
 
@@ -481,12 +572,16 @@ test("in clause", async () => {
   ml.mock();
 
   setLogLevels(["query", "error"]);
-  const allIds = await loadRows({
-    tableName,
-    fields,
-    clause: clause.UuidIn("id", ids),
-  });
-  expect(ml.logs.length).toBe(1);
+  const allIds = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.UuidIn("id", ids),
+    },
+    alias,
+  );
+  // 1 query with alias. 1 without
+  expect(ml.logs.length).toBe(2);
   expect(ml.errors.length).toBe(0);
   expect(allIds.length).toBe(count);
 });
@@ -518,12 +613,16 @@ test("not in clause", async () => {
   ml.mock();
 
   setLogLevels(["query", "error"]);
-  const allIds = await loadRows({
-    tableName,
-    fields,
-    clause: clause.UuidNotIn("id", ids),
-  });
-  expect(ml.logs.length).toBe(1);
+  const allIds = await verifyQueryWithAlias(
+    {
+      tableName,
+      fields,
+      clause: clause.UuidNotIn("id", ids),
+    },
+    alias,
+  );
+  // 1 query with alias. 1 without
+  expect(ml.logs.length).toBe(2);
   expect(ml.errors.length).toBe(0);
   expect(allIds.length).toBe(count / 2);
 });
@@ -550,12 +649,16 @@ test("in clause. integer", async () => {
   ml.mock();
 
   setLogLevels(["query", "error"]);
-  const allIds = await loadRows({
-    tableName: tableName2,
-    fields: ["id", "first_name", "last_name"],
-    clause: clause.IntegerIn("id", ids),
-  });
-  expect(ml.logs.length).toBe(1);
+  const allIds = await verifyQueryWithAlias(
+    {
+      tableName: tableName2,
+      fields: ["id", "first_name", "last_name"],
+      clause: clause.IntegerIn("id", ids),
+    },
+    alias2,
+  );
+  // 1 query with alias. 1 without
+  expect(ml.logs.length).toBe(2);
   expect(ml.errors.length).toBe(0);
   expect(allIds.length).toBe(count);
 });

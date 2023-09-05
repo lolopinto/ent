@@ -5,7 +5,7 @@ import { buildQuery } from "./query_impl";
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
 
 export interface Clause<T extends Data = Data, K = keyof T> {
-  clause(idx: number): string;
+  clause(idx: number, alias?: string): string;
   columns(): K[];
   values(): any[];
   instanceKey(): string;
@@ -37,6 +37,13 @@ function rawValue(val: any) {
   return val;
 }
 
+function renderCol<T extends Data, K = keyof T>(col: K, alias?: string) {
+  if (alias) {
+    return `${alias}.${col}`;
+  }
+  return col;
+}
+
 class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(
     protected col: K,
@@ -45,15 +52,15 @@ class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
     private handleNull?: Clause<T, K>,
   ) {}
 
-  clause(idx: number): string {
+  clause(idx: number, alias?: string): string {
     const nullClause = this.nullClause();
     if (nullClause) {
-      return nullClause.clause(idx);
+      return nullClause.clause(idx, alias);
     }
     if (DB.getDialect() === Dialect.Postgres) {
-      return `${this.col} ${this.op} $${idx}`;
+      return `${renderCol(this.col, alias)} ${this.op} $${idx}`;
     }
-    return `${this.col} ${this.op} ?`;
+    return `${renderCol(this.col, alias)} ${this.op} ?`;
   }
 
   private nullClause() {
@@ -101,12 +108,13 @@ class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
 class queryClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(
     protected dependentQueryOptions: QueryableDataOptions, // private value: any, // private op: string, // private handleNull?: Clause<T, K>,
+    private prefix: string,
   ) {}
 
-  clause(idx: number): string {
+  clause(idx: number, alias?: string): string {
     const q = buildQuery(this.dependentQueryOptions);
 
-    return `EXISTS (${q})`;
+    return `${this.prefix} (${q})`;
   }
 
   columns(): K[] {
@@ -123,17 +131,37 @@ class queryClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 
   instanceKey(): string {
-    return `exists:${
+    return `${this.prefix.toLowerCase()}:${
       this.dependentQueryOptions.tableName
     }:${this.dependentQueryOptions.clause.instanceKey()}`;
+  }
+}
+
+class existsQueryClause<T extends Data, K = keyof T> extends queryClause<T, K> {
+  constructor(protected dependentQueryOptions: QueryableDataOptions) {
+    super(dependentQueryOptions, "EXISTS");
+  }
+}
+
+class columnInQueryClause<T extends Data, K = keyof T> extends queryClause<
+  T,
+  K
+> {
+  constructor(
+    protected dependentQueryOptions: QueryableDataOptions,
+    protected col: K,
+  ) {
+    // TODO renderCol needed here...
+    //TODO cal just kill this
+    super(dependentQueryOptions, `${col} IN`);
   }
 }
 
 class isNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(protected col: K) {}
 
-  clause(_idx: number): string {
-    return `${this.col} IS NULL`;
+  clause(_idx: number, alias?: string): string {
+    return `${renderCol(this.col, alias)} IS NULL`;
   }
 
   columns(): K[] {
@@ -156,8 +184,8 @@ class isNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
 class isNotNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(protected col: K) {}
 
-  clause(idx: number): string {
-    return `${this.col} IS NOT NULL`;
+  clause(idx: number, alias?: string): string {
+    return `${renderCol(this.col, alias)} IS NOT NULL`;
   }
 
   columns(): K[] {
@@ -180,11 +208,11 @@ class isNotNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
 class arraySimpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(protected col: K, private value: any, private op: string) {}
 
-  clause(idx: number): string {
+  clause(idx: number, alias?: string): string {
     if (DB.getDialect() === Dialect.Postgres) {
-      return `$${idx} ${this.op} ANY(${this.col})`;
+      return `$${idx} ${this.op} ANY(${renderCol(this.col, alias)})`;
     }
-    return `${this.col} ${this.op} ?`;
+    return `${renderCol(this.col, alias)} ${this.op} ?`;
   }
 
   columns(): K[] {
@@ -220,12 +248,12 @@ class postgresArrayOperator<T extends Data, K = keyof T>
     private not?: boolean,
   ) {}
 
-  clause(idx: number): string {
+  clause(idx: number, alias?: string): string {
     if (DB.getDialect() === Dialect.Postgres) {
       if (this.not) {
-        return `NOT ${this.col} ${this.op} $${idx}`;
+        return `NOT ${renderCol(this.col, alias)} ${this.op} $${idx}`;
       }
-      return `${this.col} ${this.op} $${idx}`;
+      return `${renderCol(this.col, alias)} ${this.op} $${idx}`;
     }
     throw new Error(`not supported`);
   }
@@ -302,13 +330,19 @@ export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
 
   constructor(private col: K, private value: any[], private type = "uuid") {}
 
-  clause(idx: number): string {
+  clause(idx: number, alias?: string): string {
     // do a simple = when only one item
     if (this.value.length === 1) {
       if (this.op === "IN") {
-        return new simpleClause(this.col, this.value[0], "=").clause(idx);
+        return new simpleClause(this.col, this.value[0], "=").clause(
+          idx,
+          alias,
+        );
       } else {
-        return new simpleClause(this.col, this.value[0], "!=").clause(idx);
+        return new simpleClause(this.col, this.value[0], "!=").clause(
+          idx,
+          alias,
+        );
       }
     }
 
@@ -344,7 +378,7 @@ export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
       inValue = `VALUES${inValue}`;
     }
 
-    return `${this.col} ${this.op} (${inValue})`;
+    return `${renderCol(this.col, alias)} ${this.op} (${inValue})`;
     // TODO we need to return idx at end to query builder...
     // or anything that's doing a composite query so next clause knows where to start
     // or change to a sqlx.Rebind format
@@ -387,10 +421,10 @@ class compositeClause<T extends Data, K = keyof T> implements Clause<T, K> {
     this.compositeOp = this.sep;
   }
 
-  clause(idx: number): string {
+  clause(idx: number, alias?: string): string {
     let clauses: string[] = [];
     for (const clause of this.clauses) {
-      let cls = clause.clause(idx);
+      let cls = clause.clause(idx, alias);
       // if composite clause and a different op, add parens so that we enforce order of precedence
       if (clause.compositeOp && clause.compositeOp !== this.sep) {
         cls = `(${cls})`;
@@ -459,18 +493,25 @@ class tsQueryClause<T extends Data, K = keyof T> implements Clause<T, K> {
     };
   }
 
-  clause(idx: number): string {
+  clause(idx: number, alias?: string): string {
     const { language } = this.getInfo();
     if (Dialect.Postgres === DB.getDialect()) {
       if (this.tsVectorCol) {
-        return `to_tsvector(${
-          this.col
-        }) @@ ${this.getFunction()}('${language}', $${idx})`;
+        return `to_tsvector(${renderCol(
+          this.col,
+          alias,
+        )}) @@ ${this.getFunction()}('${language}', $${idx})`;
       }
-      return `${this.col} @@ ${this.getFunction()}('${language}', $${idx})`;
+      return `${renderCol(
+        this.col,
+        alias,
+      )} @@ ${this.getFunction()}('${language}', $${idx})`;
     }
     // FYI this doesn't actually work for sqlite since different
-    return `${this.col} @@ ${this.getFunction()}('${language}', ?)`;
+    return `${renderCol(
+      this.col,
+      alias,
+    )} @@ ${this.getFunction()}('${language}', ?)`;
   }
 
   columns(): K[] {
@@ -794,6 +835,13 @@ export function DBTypeNotIn<T extends Data, K = keyof T>(
   return new notInClause(col, values, typ);
 }
 
+export function ColInQuery<T extends Data, K = keyof T>(
+  col: K,
+  queryOptions: QueryableDataOptions,
+): Clause<T, K> {
+  return new columnInQueryClause(queryOptions, col);
+}
+
 interface TsQuery {
   // todo lang ::reconfig
   language: "english" | "french" | "german" | "simple";
@@ -932,11 +980,11 @@ class jSONPathValuePredicateClause<T extends Data, K = keyof T>
     private pred: predicate,
   ) {}
 
-  clause(idx: number): string {
+  clause(idx: number, alias?: string): string {
     if (DB.getDialect() !== Dialect.Postgres) {
       throw new Error(`not supported`);
     }
-    return `${this.col} @@ $${idx}`;
+    return `${renderCol(this.col, alias)} @@ $${idx}`;
   }
 
   columns(): K[] {
@@ -999,7 +1047,7 @@ export function JSONBKeyInList<T extends Data, K = keyof T>(
       Eq(JSONObjectFieldKeyAsText<T, K>("json_element", jsonCol), val),
     ),
   };
-  return new queryClause(opts);
+  return new existsQueryClause(opts);
 }
 
 export function JSONKeyInList<T extends Data, K = keyof T>(
@@ -1017,7 +1065,7 @@ export function JSONKeyInList<T extends Data, K = keyof T>(
       Eq(JSONObjectFieldKeyAsText<T, K>("json_element", jsonCol), val),
     ),
   };
-  return new queryClause(opts);
+  return new existsQueryClause(opts);
 }
 
 // TODO need a better name for this lol
@@ -1033,21 +1081,29 @@ class paginationMultipleColumnsSubQueryClause<T extends Data, K = keyof T>
     private val: any,
   ) {}
 
-  private buildSimpleQuery(clause: Clause<T, K>, idx: number) {
-    return `SELECT ${this.col} FROM ${this.tableName} WHERE ${clause.clause(
-      idx,
-    )}`;
+  private buildSimpleQuery(clause: Clause<T, K>, idx: number, alias?: string) {
+    return `SELECT ${renderCol(this.col, alias)} FROM ${
+      this.tableName
+    } WHERE ${clause.clause(idx, alias)}`;
   }
 
-  clause(idx: number): string {
-    const eq1 = this.buildSimpleQuery(Eq(this.uniqueCol, this.val), idx);
-    const eq2 = this.buildSimpleQuery(Eq(this.uniqueCol, this.val), idx + 1);
+  clause(idx: number, alias?: string): string {
+    const eq1 = this.buildSimpleQuery(Eq(this.uniqueCol, this.val), idx, alias);
+    const eq2 = this.buildSimpleQuery(
+      Eq(this.uniqueCol, this.val),
+      idx + 1,
+      alias,
+    );
     const op = new simpleClause(this.uniqueCol, this.val, this.op).clause(
       idx + 2,
+      alias,
     );
 
     // nest in () to make sure it's scoped correctly
-    return `(${this.col} ${this.op} (${eq1}) OR (${this.col} = (${eq2}) AND ${op}))`;
+    return `(${renderCol(this.col, alias)} ${this.op} (${eq1}) OR (${renderCol(
+      this.col,
+      alias,
+    )} = (${eq2}) AND ${op}))`;
   }
 
   columns(): K[] {
