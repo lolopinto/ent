@@ -145,6 +145,8 @@ export interface DataOptions {
   // TODO this can be passed in for scenarios where we are not using default configuration
   //  clientConfig?: ClientConfig;
   tableName: string;
+  // rename table as alias
+  alias?: string;
 
   // TODO remove this from here since we're changing how this works....
   context?: Context;
