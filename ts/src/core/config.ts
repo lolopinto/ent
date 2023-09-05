@@ -48,6 +48,8 @@ export interface ConfigWithCodegen extends Config {
   // config for codegen
   codegen?: CodegenConfig;
 
+  databaseMigration?: DatabaseMigrationConfig;
+
   // because of swc issues, we might not be able to
   // parse custom graphql via decorators so we put this
   // in a json file for now
@@ -62,6 +64,11 @@ export interface ConfigWithCodegen extends Config {
   // defaults to __global__schema.ts if not provided
   // relative to src/schema for now
   globalSchemaPath?: string;
+}
+
+interface DatabaseMigrationConfig {
+  custom_sql_include?: string[];
+  custom_sql_exclude?: string[];
 }
 
 interface CodegenConfig {
@@ -138,7 +145,10 @@ interface CodegenConfig {
 
   userOveriddenFiles?: string[];
 
-  // if set, overrides the saveWithoutTransform(X) methods to be this instead of the default saveWithoutTransform
+  // if set, overrides the loadNoTransform(X) methods to be this instead of the default loadNoTransform(X)
+  transformLoadMethod?: string;
+
+  // if set, overrides the saveWithoutTransform(X) methods to be this instead of the default saveWithoutTransform(X)
   transformDeleteMethod?: string;
 }
 

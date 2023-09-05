@@ -8,7 +8,7 @@ export interface OrderByOption {
 
 export type OrderBy = OrderByOption[];
 
-export function getOrderByPhrase(orderby: OrderBy): string {
+export function getOrderByPhrase(orderby: OrderBy, alias?: string): string {
   return orderby
     .map((v) => {
       let nullsPlacement = "";
@@ -20,7 +20,8 @@ export function getOrderByPhrase(orderby: OrderBy): string {
           nullsPlacement = " NULLS LAST";
           break;
       }
-      return `${v.column} ${v.direction}${nullsPlacement}`;
+      const col = alias ? `${alias}.${v.column}` : v.column;
+      return `${col} ${v.direction}${nullsPlacement}`;
     })
     .join(", ");
 }
@@ -34,16 +35,30 @@ export function reverseOrderBy(orderby: OrderBy): OrderBy {
 }
 
 export function buildQuery(options: QueryableDataOptions): string {
-  const fields = options.fields.join(", ");
+  const fields = options.alias
+    ? options.fields.map((f) => `${options.alias}.${f}`).join(", ")
+    : options.fields.join(", ");
+
   // always start at 1
-  const whereClause = options.clause.clause(1);
   const parts: string[] = [];
-  parts.push(`SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`);
+  const tableName = options.alias
+    ? `${options.tableName} AS ${options.alias}`
+    : options.tableName;
+  parts.push(`SELECT ${fields} FROM ${tableName}`);
+
+  let whereStart = 1;
+  if (options.join) {
+    const joinTable = options.join.alias ? `${options.join.tableName} ${options.join.alias}` : options.join.tableName;
+    parts.push(`JOIN ${joinTable} ON ${options.join.clause.clause(1)}`);
+    whereStart += options.join.clause.values().length;
+  }
+  
+  parts.push(`WHERE ${options.clause.clause(whereStart, options.alias)}`);
   if (options.groupby) {
     parts.push(`GROUP BY ${options.groupby}`);
   }
   if (options.orderby) {
-    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby)}`);
+    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby, options.alias)}`);
   }
   if (options.limit) {
     parts.push(`LIMIT ${options.limit}`);

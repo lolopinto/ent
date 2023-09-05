@@ -21,7 +21,7 @@
     "minimist": "^1.2.8",
     "pascal-case": "^3.1.2",
     "pg": "^8.11.0",
-    "prettier": "^2.8.8",
+    "prettier": "^3.0.3",
     "snake-case": "^3.0.4",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",

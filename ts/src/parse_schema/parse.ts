@@ -392,7 +392,8 @@ interface Result {
   patterns: patternsDict;
   globalSchema?: ProcessedGlobalSchema;
   config?: {
-    rome?: RomeConfig;
+    // TODO rename this to biome eventually...
+    rome?: BiomeConfig;
   };
 }
 
@@ -493,19 +494,19 @@ export async function parseSchema(
 
     schemas[key] = processedSchema;
   }
-  const rome = translatePrettier();
+  const biome = translatePrettier();
 
   return {
     schemas,
     patterns,
     globalSchema: parsedGlobalSchema,
     config: {
-      rome,
+      rome: biome,
     },
   };
 }
 
-interface RomeConfig {
+interface BiomeConfig {
   indentStyle?: string;
   lineWidth?: number;
   indentSize?: number;
@@ -514,12 +515,12 @@ interface RomeConfig {
   trailingComma?: string;
 }
 
-function translatePrettier(): RomeConfig | undefined {
+function translatePrettier(): BiomeConfig | undefined {
   const r = cosmiconfigSync("prettier").search();
   if (!r) {
     return;
   }
-  const ret: RomeConfig = {};
+  const ret: BiomeConfig = {};
   if (r.config.printWidth !== undefined) {
     ret.lineWidth = parseInt(r.config.printWidth);
   }
@@ -538,7 +539,7 @@ function translatePrettier(): RomeConfig | undefined {
   }
   if (r.config.quoteProps !== undefined) {
     if (r.config.quoteProps === "consistent") {
-      // rome doesn't support this
+      // biome doesn't support this
       ret.quoteProperties = "as-needed";
     } else {
       ret.quoteProperties = r.config.quoteProps;

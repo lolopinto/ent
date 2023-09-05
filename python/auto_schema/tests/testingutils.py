@@ -71,6 +71,44 @@ def find_file_by_revision(r: runner.Runner, rev):
     )
     return file
 
+def create_custom_revision(r: runner.Runner, message, num_files, upgrade, downgrade):
+    new_revision = r.explicit_revision(message)
+    assert new_revision is not None
+
+    assert_num_files(r, num_files)
+    file = find_file_by_revision(r, new_revision)
+
+    contents = ""
+    # read revision file python
+    with open(file, 'r') as f:
+        contents = f.read()
+
+    # search for upgrade
+    upgrade_start = contents.find("def upgrade():\n")
+    downgrade_start = contents.find("def downgrade():\n")
+
+    assert upgrade_start != -1
+    assert downgrade_start != -1
+
+# TODO render_python_code in alembic could be helpful?
+    #   "edit the file " to add types
+    new_upgrade = """def upgrade(): 
+    %s
+        
+""" % upgrade
+
+    new_downgrade = """def downgrade(): 
+    %s
+        
+    """ % downgrade
+
+    contents2 = contents[0: upgrade_start] + \
+        new_upgrade + new_downgrade
+
+    with open(file, 'w') as f:
+        f.write(contents2)
+        
+    return (new_revision, file)
 
 def validate_edges_from_metadata(metadata: sa.MetaData, r: runner.Runner):
     edges_from_metadata = metadata.info.setdefault("edges", {})

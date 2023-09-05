@@ -26,19 +26,20 @@ class ConnInfo:
     url: str
     connection: Optional[sa.engine.Connection]
 
+def randomDB() -> str:
+    return random.choice(string.ascii_lowercase) + ''.join(random.SystemRandom().choice(
+            string.ascii_lowercase + string.digits) for _ in range(20))
+
 
 class Postgres:
     def __init__(self) -> None:
-        self._randomDB = self.randomDB()
+        self._randomDB = randomDB()
+        self._dbs = [self._randomDB]
         self._globalConnection = None
         self._globalEngine = None
 
         self._conns = []
         self._engines = []
-
-    def randomDB(self):
-        return random.choice(string.ascii_lowercase) + ''.join(random.SystemRandom().choice(
-            string.ascii_lowercase + string.digits) for _ in range(20))
 
     def _get_url(self, _schema_path):
         return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
@@ -52,8 +53,11 @@ class Postgres:
             self._globalConnection.execute(
                 sa.text('CREATE DATABASE %s' % self._randomDB))
 
+        return self._conn_info_for_engine(schema_path, self._randomDB)
+    
+    def _conn_info_for_engine(self, schema_path: str, db: str) -> ConnInfo:
         url = ("%s/%s" %
-               (self._get_url(schema_path), self._randomDB))
+               (self._get_url(schema_path), db))
 
         engine = sa.create_engine(url)
         self._engines.append(engine)
@@ -62,6 +66,18 @@ class Postgres:
         self._conns.append(conn)
 
         return ConnInfo(engine, url, conn)
+    
+    
+    def create_new_database(self, schema_path) -> ConnInfo:
+        assert self._globalConnection is not None
+        new_db = randomDB()
+        self._dbs.append(new_db)
+        self._globalConnection.execute(
+                sa.text('CREATE DATABASE %s' % new_db))
+
+
+        return self._conn_info_for_engine(schema_path, new_db)
+
 
     def get_finalizer(self):
         def fn():
@@ -71,8 +87,9 @@ class Postgres:
             for engine in self._engines:
                 engine.dispose()
 
-            self._globalConnection.execute(
-                sa.text('DROP DATABASE %s' % self._randomDB))
+            for db in self._dbs:
+                self._globalConnection.execute(
+                    sa.text('DROP DATABASE %s' % db))
             self._globalConnection.close()
             self._globalEngine.dispose()
 
@@ -124,7 +141,10 @@ def new_test_runner(request):
 
     request.addfinalizer(dialect.get_finalizer())
 
-    def _make_new_test_runner(metadata, prev_runner=None) -> runner.Runner:
+    def _make_new_test_runner(metadata, prev_runner=None, new_database=False) -> runner.Runner:
+        if new_database:
+            assert prev_runner is None
+
         # by default, this will be none and create a temp directory where things should go
         # sometimes, when we want to test multiple revisions, we'll send the previous runner so we reuse the path
         if prev_runner is not None:
@@ -138,10 +158,22 @@ def new_test_runner(request):
             connection = prev_runner.get_connection()
             connection.commit()
 
-        # use a new connection for each runner
-        info = dialect.create_connection(schema_path)
 
-        r = runner.Runner(metadata, info.engine, info.connection, schema_path)
+        if new_database:
+            if not hasattr(dialect, 'create_new_database'):
+                raise Exception("create_new_database not implemented for %s" % dialect)
+            if not callable(getattr(dialect, 'create_new_database')):
+                raise Exception("create_new_database not callable for %s" % dialect)
+
+            info = dialect.create_new_database(schema_path)
+        else:
+            # use a new connection for each runner
+            info = dialect.create_connection(schema_path)
+
+        args = {
+            'engine': info.url,
+        }
+        r = runner.Runner(metadata, info.engine, info.connection, schema_path, args=args)
 
         def delete_path():
             path = r.get_schema_path()
@@ -178,6 +210,7 @@ def default_children_of_table():
                   nullable=False, server_default='false'),
 
         sa.Column('phone_number', sa.Text(), nullable=False),
+        sa.Column('bio', sa.Text(), nullable=True),
         sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
         sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'),
         # support unique constraint as part of initial table creation
@@ -492,6 +525,12 @@ def server_default_int_list_value():
 def metadata_with_server_default_changed_int_list(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_int_list_value())
 
+def metadata_with_server_default_changed_uuid_list(metadata):
+    # it doesn't handle modifying both at the same time???
+    return _metadata_with_server_default_changed(
+        _metadata_with_nullable_changed(metadata, 'uuid_list', 'tbl', False), 
+        'uuid_list', 'tbl', '{}')
+
 
 @ pytest.fixture()
 def table_with_timestamptz_plus_date():
@@ -536,46 +575,75 @@ def metadata_table_with_timetz():
 def metadata_with_arrays():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,
-             sa.Column('string_list', postgresql.ARRAY(
-                 sa.Text), nullable=False),
-             sa.Column('string_list_2', postgresql.ARRAY(
-                 sa.Text()), nullable=False),
-             sa.Column('int_list', postgresql.ARRAY(
-                 sa.Integer), nullable=False),
-             sa.Column('bool_list', postgresql.ARRAY(
-                 sa.Boolean), nullable=False),
-             sa.Column('date_list', postgresql.ARRAY(sa.Date), nullable=False),
-             sa.Column('time_list', postgresql.ARRAY(sa.Time), nullable=False),
-             sa.Column('timetz_list', postgresql.ARRAY(
-                 sa.Time(timezone=True)), nullable=False),
-             sa.Column('timestamp_list', postgresql.ARRAY(
-                 sa.TIMESTAMP), nullable=False),
-             sa.Column('timestamptz_list', postgresql.ARRAY(
-                 sa.TIMESTAMP(timezone=True)), nullable=False),
-             # TODO https://github.com/lolopinto/ent/issues/1029 support gist here
-             # need to support operators...
-             sa.Column('float_list', postgresql.ARRAY(
-                 sa.Float), nullable=False),
-             sa.Column('uuid_list', postgresql.ARRAY(
-                 postgresql.UUID), nullable=False),
-             sa.Index('tbl_string_list_idx', 'string_list',
-                      postgresql_using='gin'),
-             sa.Index('tbl_uuid_list_idx', 'uuid_list',
-                      postgresql_using='gin'),
-             sa.Index('tbl_int_list_idx', 'int_list',
-                      postgresql_using='gin'),
-             sa.Index('tbl_time_list_idx', 'time_list',
-                      postgresql_using='gin'),
-             sa.Index('tbl_timetz_list_idx', 'timetz_list',
-                      postgresql_using='gin'),
-             # just to confirm btree works...
-             sa.Index('tbl_float_list_idx', 'float_list',
-                      postgresql_using='btree'),
-             # index with no type..
-             sa.Index('tbl_date_list_idx', 'date_list'),
+            sa.Column('string_list', postgresql.ARRAY(
+                sa.Text), nullable=False),
+            sa.Column('string_list_2', postgresql.ARRAY(
+                sa.Text()), nullable=False),
+            sa.Column('int_list', postgresql.ARRAY(
+                sa.Integer), nullable=False),
+            sa.Column('bool_list', postgresql.ARRAY(
+                sa.Boolean), nullable=False),
+            sa.Column('date_list', postgresql.ARRAY(sa.Date), nullable=False),
+            sa.Column('time_list', postgresql.ARRAY(sa.Time), nullable=False),
+            sa.Column('timetz_list', postgresql.ARRAY(
+                sa.Time(timezone=True)), nullable=False),
+            sa.Column('timestamp_list', postgresql.ARRAY(
+                sa.TIMESTAMP), nullable=False),
+            sa.Column('timestamptz_list', postgresql.ARRAY(
+                sa.TIMESTAMP(timezone=True)), nullable=False),
+            # TODO https://github.com/lolopinto/ent/issues/1029 support gist here
+            # need to support operators...
+            sa.Column('float_list', postgresql.ARRAY(
+                sa.Float), nullable=False),
+            sa.Column('uuid_list', postgresql.ARRAY(
+                postgresql.UUID), nullable=True),
+            sa.Index('tbl_string_list_idx', 'string_list',
+                    postgresql_using='gin'),
+            sa.Index('tbl_uuid_list_idx', 'uuid_list',
+                    postgresql_using='gin'),
+            sa.Index('tbl_int_list_idx', 'int_list',
+                    postgresql_using='gin'),
+            sa.Index('tbl_time_list_idx', 'time_list',
+                    postgresql_using='gin'),
+            sa.Index('tbl_timetz_list_idx', 'timetz_list',
+                    postgresql_using='gin'),
+            # just to confirm btree works...
+            sa.Index('tbl_float_list_idx', 'float_list',
+                    postgresql_using='btree'),
+            # index with no type..
+            sa.Index('tbl_date_list_idx', 'date_list'),
 
-             )
+            )
     return metadata
+
+
+def metadata_arrays_table():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('uuid_list', postgresql.ARRAY(
+                postgresql.UUID), nullable=True),
+            sa.Index('tbl_uuid_list_idx', 'uuid_list',
+                    postgresql_using='gin'),
+            sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
+            )
+    return metadata
+    
+def metadata_arrays_table_rows():
+    return [
+        {
+            "id": 1,
+            "uuid_list": None
+        },
+        {
+            "id": 2,
+            "uuid_list": None
+        },
+        {
+            "id": 3,
+            "uuid_list": [uuid.uuid4(), uuid.uuid4()]
+        },
+    ]
 
 
 @ pytest.fixture
@@ -643,6 +711,9 @@ def metadata_with_timestamp_changed(metadata):
 def metadata_with_nullable_changed(metadata):
     return _metadata_with_nullable_changed(metadata, 'last_name', 'accounts', True)
 
+
+def metadata_with_nullable_changed_to_false(metadata):
+    return _metadata_with_nullable_changed(metadata, 'bio', 'accounts', False)
 
 # takes the account table and converts the default value of meaning_of_life column from 42 to 35
 def metadata_with_server_default_changed_int(metadata):

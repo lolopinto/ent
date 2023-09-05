@@ -50,8 +50,8 @@ parser.add_argument('--stamp', help='alembic stamp')
 parser.add_argument('--edit', help='alembic edit')
 parser.add_argument('--merge', help='alembic merge')
 parser.add_argument(
-    '--message', help='message if alembic merge is called or alembic revision')
-parser.add_argument('--squash', help='squash the last N changes into one')
+    '--message', help='message if alembic merge is called or alembic revision or squash_all')
+parser.add_argument('--squash', help='squash the last N changes into one or squash all changes into one revision')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
 parser.add_argument(
@@ -80,7 +80,7 @@ parser.add_argument(
 )
 # if none is provided, it defaults to the database associated with the username
 parser.add_argument(
-    '--empty_database', help='with --all_sql or --run_and_all_sql, we need an empty database to compare against',
+    '--empty_database', help='with --all_sql or --run_and_all_sql or --squash all, we need an empty database to compare against',
 )
 
 
@@ -127,7 +127,9 @@ def main():
                 elif args.merge is not None:
                     r.merge(args.merge, args.message)
                 elif args.squash is not None:
-                    r.squash(args.squash)
+                    # all or number to squash together
+                    # very different implementations
+                    r.squash(args.squash, args.message, database=args.empty_database)
                 elif args.all_sql is True:
                     r.all_sql(file=args.file, database=args.empty_database)
                 elif args.progressive_sql is True:

@@ -788,6 +788,8 @@ class TestPostgresRunner(BaseTestRunner):
              "modify column created_at type from DATE to TIMESTAMP"),
             (conftest.metadata_with_nullable_changed,
              "modify nullable value of column last_name from False to True"),
+            (conftest.metadata_with_nullable_changed_to_false,
+             "modify nullable value of column bio from True to False"),
         ])
     def test_column_attr_change(self, new_test_runner, metadata_with_table, new_metadata_func, expected_message):
         r = new_test_runner(metadata_with_table)
@@ -999,6 +1001,42 @@ class TestPostgresRunner(BaseTestRunner):
         diff = r3.compute_changes()
 
         assert len(diff) == 0
+        
+    @pytest.mark.parametrize(
+    "new_metadata_func, table_name, seed_table_func, change_metadata_func, expected_message",
+    [
+
+        (
+            conftest.metadata_arrays_table,
+            'tbl',
+            conftest.metadata_arrays_table_rows,
+            conftest.metadata_with_server_default_changed_uuid_list,
+            'modify server_default value of column uuid_list from None to %s\nmodify nullable value of column uuid_list from True to False' % '{}',
+        )
+    ])
+    def test_server_default_plus_nullable_change(self, new_test_runner, new_metadata_func, table_name, seed_table_func, change_metadata_func, expected_message):
+        metadata = new_metadata_func()
+        r = new_test_runner(metadata)
+
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata, [table_name])
+
+        conn = r.get_connection()
+        for row in seed_table_func():
+            conn.execute(sa.text("insert into tbl (id, uuid_list) values (:id, :uuid_list)"), {
+                'id': row['id'],
+                'uuid_list': row['uuid_list'],
+            })
+
+        change_metadata_func(metadata)
+
+        r2 = new_test_runner(metadata, r)
+        with pytest.raises(ValueError, match="Can't effectively do this in one step"):
+            r2.compute_changes()
+
+        with pytest.raises(ValueError, match="Can't effectively do this in one step"):
+            r2.run()
+
 
     def test_field_with_server_default_uuid_to_start(self, new_test_runner):
         metadata = conftest.metadata_with_uuid_col()
@@ -1582,42 +1620,14 @@ class TestPostgresRunner(BaseTestRunner):
 
         r2 = new_test_runner(metadata_with_table, r)
         # new change
-        new_revision = r2.explicit_revision("custom change")
-        assert new_revision is not None
-
-        testingutils.assert_num_files(r2, 2)
-        file = testingutils.find_file_by_revision(r2, new_revision)
-
-        contents = ""
-        # read revision file python
-        with open(file, 'r') as f:
-            contents = f.read()
-
-        # search for upgrade
-        upgrade_start = contents.find("def upgrade():\n")
-        downgrade_start = contents.find("def downgrade():\n")
-
-        assert upgrade_start != -1
-        assert downgrade_start != -1
-
-        #   "edit the file " to add types
-        new_upgrade = """def upgrade(): 
-    op.execute_sql("CREATE TYPE rainbow as ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')")
-            
-            
-"""
-
-        new_downgrade = """def downgrade(): 
-    op.execute_sql("DROP TYPE rainbow")
-            
-            
-        """
-
-        contents2 = contents[0: upgrade_start] + \
-            new_upgrade + new_downgrade
-
-        with open(file, 'w') as f:
-            f.write(contents2)
+        
+        testingutils.create_custom_revision(
+            r2,
+            "custom change", 
+            2,
+            """op.execute_sql("CREATE TYPE rainbow as ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')")""",
+            """op.execute_sql("DROP TYPE rainbow")""",
+        )
 
         #  upgrade and downgrade and re-upgrade and confirm enums change as expected
         r2.upgrade()

@@ -305,7 +305,7 @@ describe("struct as list", () => {
   });
   const f2 = structListTypeF(
     {
-      uuid: UUIDType(),
+      uuidUnique: UUIDType(),
       int: IntegerType(),
       string: StringType(),
       bool: BooleanType(),
@@ -314,7 +314,7 @@ describe("struct as list", () => {
       enum: EnumType({ values: ["yes", "no", "maybe"] }),
     },
     {
-      validateUniqueKey: "uuid",
+      validateUniqueKey: "uuidUnique",
     },
   );
 
@@ -353,11 +353,11 @@ describe("struct as list", () => {
     expect(f.format(data)).toBe(JSON.stringify(format));
   });
 
-  test("valid unique key ", async () => {
+  test("valid unique key camel case", async () => {
     const d = new Date();
     const d2 = new Date();
     const val = {
-      uuid: v1(),
+      uuidUnique: v1(),
       int: 2,
       string: "string",
       bool: false,
@@ -366,7 +366,49 @@ describe("struct as list", () => {
       enum: "yes",
     };
     const val2 = {
-      uuid: v1(),
+      uuidUnique: v1(),
+      int: 3,
+      string: "string",
+      bool: true,
+      ts: d2,
+      float: 2.0,
+      enum: "yes",
+    };
+    const formatted1 = {
+      uuid_unique: val.uuidUnique,
+      ...val,
+      ts: d.toISOString(),
+    };
+    // @ts-expect-error
+    delete formatted1["uuidUnique"];
+    const formatted2 = {
+      uuid_unique: val2.uuidUnique,
+      ...val2,
+      ts: d2.toISOString(),
+    };
+    // @ts-expect-error
+    delete formatted2["uuidUnique"];
+
+    const data = [val, val2];
+    const format = [formatted1, formatted2];
+    expect(await f2.valid(data)).toBe(true);
+    expect(f2.format(data)).toBe(JSON.stringify(format));
+  });
+
+  test("valid unique key snake case", async () => {
+    const d = new Date();
+    const d2 = new Date();
+    const val = {
+      uuid_unique: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+    const val2 = {
+      uuid_unique: v1(),
       int: 3,
       string: "string",
       bool: true,
@@ -388,11 +430,11 @@ describe("struct as list", () => {
     expect(f2.format(data)).toBe(JSON.stringify(format));
   });
 
-  test("invvalid unique key ", async () => {
+  test("invalid unique key", async () => {
     const d = new Date();
     const d2 = new Date();
     const val = {
-      uuid: v1(),
+      uuidUnique: v1(),
       int: 2,
       string: "string",
       bool: false,
@@ -401,7 +443,32 @@ describe("struct as list", () => {
       enum: "yes",
     };
     const val2 = {
-      uuid: val.uuid,
+      uuidUnique: val.uuidUnique,
+      int: 3,
+      string: "string",
+      bool: true,
+      ts: d2,
+      float: 2.0,
+      enum: "yes",
+    };
+    const data = [val, val2];
+    expect(await f2.valid(data)).toBe(false);
+  });
+
+  test("invalid unique key. storage_case", async () => {
+    const d = new Date();
+    const d2 = new Date();
+    const val = {
+      uuid_unique: v1(),
+      int: 2,
+      string: "string",
+      bool: false,
+      ts: d,
+      float: 1.0,
+      enum: "yes",
+    };
+    const val2 = {
+      uuid_unique: val.uuid_unique,
       int: 3,
       string: "string",
       bool: true,

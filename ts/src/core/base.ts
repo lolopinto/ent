@@ -145,6 +145,8 @@ export interface DataOptions {
   // TODO this can be passed in for scenarios where we are not using default configuration
   //  clientConfig?: ClientConfig;
   tableName: string;
+  // rename table as alias
+  alias?: string;
 
   // TODO remove this from here since we're changing how this works....
   context?: Context;
@@ -170,6 +172,14 @@ export interface QueryableDataOptions
   extends SelectBaseDataOptions,
     QueryDataOptions {}
 
+// for now, no complicated joins or no need to support multiple joins
+// just one simple join
+interface JoinOptions<T2 extends Data = Data, K2 = keyof T2> {
+  tableName: string;
+  alias?: string;
+  clause: clause.Clause<T2,K2>;
+}
+
 export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   distinct?: boolean;
   clause: clause.Clause<T, K>;
@@ -177,6 +187,7 @@ export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   groupby?: K;
   limit?: number;
   disableTransformations?: boolean;
+  join?:JoinOptions;
 }
 
 // For loading data from database

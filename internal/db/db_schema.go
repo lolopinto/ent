@@ -663,7 +663,11 @@ func checkDBFilesInfo(cfg *codegen.Config) *dbFileInfo {
 	}
 }
 
-func compareDbFilesInfo(before, after *dbFileInfo) error {
+func compareDbFilesInfo(processor *codegen.Processor, before, after *dbFileInfo) error {
+	// TODO we need a different way to handle this
+	if processor.Config.WriteAllFiles() {
+		return nil
+	}
 	// nothing to do here
 	if !before.useVersionsInfo || !after.useVersionsInfo {
 		return nil
@@ -676,6 +680,7 @@ func compareDbFilesInfo(before, after *dbFileInfo) error {
 	// TODO does this account for future formatting differences???
 
 	// time is not enough. we need to check the contents of the files
+	// should this be a prompt????
 	if after.schemaPy.exists && before.schemaPy.exists &&
 		string(before.schemaPy.contents) != string(after.schemaPy.contents) {
 		return fmt.Errorf("schema.py changed when no version files changed. there's an ent db error. you should file a bug report about what you were trying to do. it's probably unsupported")
@@ -717,7 +722,7 @@ func (s *dbSchema) makeDBChanges(processor *codegen.Processor) error {
 
 	after := checkDBFilesInfo(cfg)
 
-	return compareDbFilesInfo(s.before, after)
+	return compareDbFilesInfo(processor, s.before, after)
 }
 
 func UpgradeDB(cfg *codegen.Config, revision string, sql bool) error {
@@ -736,8 +741,16 @@ func DowngradeDB(cfg *codegen.Config, revision string, keepSchemaFiles bool) err
 	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
-func Squash(cfg *codegen.Config, squash int) error {
+func SquashN(cfg *codegen.Config, squash int) error {
 	extraArgs := []string{fmt.Sprintf("--squash=%d", squash)}
+	return auto_schema.RunPythonCommand(cfg, extraArgs...)
+}
+
+func SquashAll(cfg *codegen.Config, message string) error {
+	extraArgs := []string{"--squash=all", fmt.Sprintf("--message=%s", message)}
+	if db := cfg.DatabaseToCompareTo(); db != "" {
+		extraArgs = append(extraArgs, "--empty_database", db)
+	}
 	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
@@ -754,7 +767,7 @@ func RunAlembicCommand(cfg *codegen.Config, command string, args ...string) erro
 }
 
 func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
-	data, err := s.getSchemaForTemplate()
+	data, err := s.getSchemaForTemplate(cfg)
 	if err != nil {
 		return err
 	}
@@ -769,8 +782,10 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 	)
 }
 
-func (s *dbSchema) getSchemaForTemplate() (*dbSchemaTemplate, error) {
-	ret := &dbSchemaTemplate{}
+func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplate, error) {
+	ret := &dbSchemaTemplate{
+		Config: cfg,
+	}
 
 	for _, table := range s.Tables {
 
@@ -1451,6 +1466,7 @@ type dbDataInfo struct {
 
 // wrapper object to represent the list of tables that will be passed to a schema template file
 type dbSchemaTemplate struct {
+	Config codegenapi.Config
 	Tables []dbSchemaTableInfo
 	Edges  []dbEdgeInfo
 	Data   []dbDataInfo

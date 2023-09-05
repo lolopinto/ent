@@ -29,13 +29,13 @@ class Command(object):
             "alembic:exclude", "tables", runner.Runner.exclude_tables())
 
         # for default formatting
-        alembic_cfg.set_section_option('post_write_hooks', 'hooks', 'autopep8')
+        alembic_cfg.set_section_option('post_write_hooks', 'hooks', 'ruff')
         alembic_cfg.set_section_option(
-            'post_write_hooks', 'autopep8.type', 'console_scripts')
+            'post_write_hooks', 'ruff.type', 'exec')
         alembic_cfg.set_section_option(
-            'post_write_hooks', 'autopep8.entrypoint', 'autopep8')
+            'post_write_hooks', 'ruff.executable', 'ruff')
         alembic_cfg.set_section_option(
-            'post_write_hooks', 'autopep8.options', '--in-place')
+            'post_write_hooks', 'ruff.options', '--fix REVISION_SCRIPT_FILENAME --silent')
 
         self.alembic_cfg = alembic_cfg
 
@@ -47,23 +47,24 @@ class Command(object):
         command.current(self.alembic_cfg, verbose=True)
 
     # Simulates running the `alembic revision -m` command
-    def revision(self, message, autogenerate=True):
+    def revision(self, message, autogenerate=True, revision=None):
         heads = self.get_heads()
         head = 'head'
         if len(heads) > 1:
             head = heads
-
+            
         return command.revision(self.alembic_cfg, message,
-                                autogenerate=autogenerate, head=head)
+                                autogenerate=autogenerate, head=head, rev_id=revision)
 
+
+    def get_script_directory(self) -> ScriptDirectory:
+        return ScriptDirectory.from_config(self.alembic_cfg)
+        
     def get_heads(self):
-        script = ScriptDirectory.from_config(self.alembic_cfg)
-
-        return script.get_heads()
+        return self.get_script_directory().get_heads()
 
     def get_revisions(self, revs):
-        script = ScriptDirectory.from_config(self.alembic_cfg)
-        return script.get_revisions(revs)
+        return self.get_script_directory().get_revisions(revs)
 
     # Simulates running the `alembic upgrade` command
 
@@ -94,8 +95,7 @@ class Command(object):
             os.remove(os.path.join(location, path))
 
     def _get_paths_to_delete(self, revision):
-        script = ScriptDirectory.from_config(self.alembic_cfg)
-        revs = list(script.revision_map.iterate_revisions(
+        revs = list(self.get_script_directory().revision_map.iterate_revisions(
             self.get_heads(), revision, select_for_downgrade=True
         ))
 
@@ -116,8 +116,7 @@ class Command(object):
         return result
 
     def get_history(self):
-        script = ScriptDirectory.from_config(self.alembic_cfg)
-        return list(script.walk_revisions())
+        return list(self.get_script_directory().walk_revisions())
 
     # Simulates running the `alembic history` command
     def history(self, verbose=False, last=None, rev_range=None):
@@ -125,8 +124,7 @@ class Command(object):
             raise ValueError(
                 "cannot pass both last and rev_range. please pick one")
         if last is not None:
-            script = ScriptDirectory.from_config(self.alembic_cfg)
-            revs = list(script.revision_map.iterate_revisions(
+            revs = list(self.get_script_directory().revision_map.iterate_revisions(
                 self.get_heads(), '-%d' % int(last), select_for_downgrade=True
             ))
             rev_range = '%s:current' % revs[-1].revision
@@ -165,14 +163,3 @@ class Command(object):
     def merge(self, revisions, message=None):
         command.merge(self.alembic_cfg, revisions, message=message)
 
-    def squash(self, gen_revision, squash):
-        squash = int(squash)
-        if squash < 2:
-            raise ValueError("squash needs to be an integer of at least 2")
-
-        # downgrade -2 and re-run upgrade
-        self.downgrade('-%d' % squash)
-
-        # generate a new revision
-        gen_revision()
-        self.upgrade()

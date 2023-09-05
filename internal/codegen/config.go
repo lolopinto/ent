@@ -197,6 +197,13 @@ func (cfg *Config) getCodegenConfig() *CodegenConfig {
 	return nil
 }
 
+func (cfg *Config) getDatabaseMigrationConfig() *DatabaseMigrationConfig {
+	if cfg.config != nil && cfg.config.DatabaseMigration != nil {
+		return cfg.config.DatabaseMigration
+	}
+	return nil
+}
+
 func (cfg *Config) ShouldUseRelativePaths() bool {
 	if codegen := cfg.getCodegenConfig(); codegen != nil {
 		return codegen.RelativeImports
@@ -288,11 +295,11 @@ func (cfg *Config) DummyWrite() bool {
 	return cfg.dummyWrite
 }
 
-func (cfg *Config) GetRomeConfig() *input.RomeConfig {
+func (cfg *Config) GetBiomeConfig() *input.BiomeConfig {
 	if cfg.inputConfig == nil {
 		return nil
 	}
-	return cfg.inputConfig.RomeConfig
+	return cfg.inputConfig.BiomeConfig
 }
 
 func (cfg *Config) SetDummyWrite(val bool) {
@@ -463,10 +470,37 @@ func (cfg *Config) TransformDeleteMethodX() string {
 	return fmt.Sprintf("%sX", cfg.TransformDeleteMethod())
 }
 
+func (cfg *Config) TransformLoadMethod() string {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		if codegen.TransformLoadMethod != "" {
+			return codegen.TransformLoadMethod
+		}
+	}
+	return "loadNoTransform"
+}
+
+func (cfg *Config) TransformLoadMethodX() string {
+	return fmt.Sprintf("%sX", cfg.TransformLoadMethod())
+}
+
+func (cfg *Config) CustomSQLInclude() []string {
+	if dbMigration := cfg.getDatabaseMigrationConfig(); dbMigration != nil {
+		return dbMigration.CustomSQLInclude
+	}
+	return nil
+}
+
+func (cfg *Config) CustomSQLExclude() []string {
+	if dbMigration := cfg.getDatabaseMigrationConfig(); dbMigration != nil {
+		return dbMigration.CustomSQLExclude
+	}
+	return nil
+}
+
 const DEFAULT_PRETTIER_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
-// use rome instead of prettier to speed up
+// use biome instead of prettier to speed up
 // options: https://prettier.io/docs/en/options.html
 var defaultArgs = []string{
 	"--trailing-comma", "all",
@@ -475,9 +509,9 @@ var defaultArgs = []string{
 	"--end-of-line", "lf",
 }
 
-// options: https://docs.rome.tools/formatter/#use-the-formatter-with-the-cli
+// options: https://biomejs.dev/reference/cli/#biome
 // everything else is sticking with default...
-var defaultRomeArgs = []string{
+var defaultBiomeArgs = []string{
 	"--indent-style", "space",
 }
 
@@ -590,15 +624,17 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 }
 
 type ConfigurableConfig struct {
-	Codegen                            *CodegenConfig `yaml:"codegen"`
-	CustomGraphQLJSONPath              string         `yaml:"customGraphQLJSONPath"`
-	DynamicScriptCustomGraphQLJSONPath string         `yaml:"dynamicScriptCustomGraphQLJSONPath"`
-	GlobalSchemaPath                   string         `yaml:"globalSchemaPath"`
+	Codegen                            *CodegenConfig           `yaml:"codegen"`
+	DatabaseMigration                  *DatabaseMigrationConfig `yaml:"databaseMigration"`
+	CustomGraphQLJSONPath              string                   `yaml:"customGraphQLJSONPath"`
+	DynamicScriptCustomGraphQLJSONPath string                   `yaml:"dynamicScriptCustomGraphQLJSONPath"`
+	GlobalSchemaPath                   string                   `yaml:"globalSchemaPath"`
 }
 
 func (cfg *ConfigurableConfig) Clone() *ConfigurableConfig {
 	return &ConfigurableConfig{
 		Codegen:                            cloneCodegen(cfg.Codegen),
+		DatabaseMigration:                  cloneDatabaseMigration(cfg.DatabaseMigration),
 		CustomGraphQLJSONPath:              cfg.CustomGraphQLJSONPath,
 		DynamicScriptCustomGraphQLJSONPath: cfg.DynamicScriptCustomGraphQLJSONPath,
 		GlobalSchemaPath:                   cfg.GlobalSchemaPath,
@@ -633,9 +669,17 @@ type CodegenConfig struct {
 	UserOverridenFiles         []string                         `yaml:"userOverridenFiles"`
 	userOverridenFiles         map[string]bool
 	TransformDeleteMethod      string `yaml:"transformDeleteMethod"`
+	TransformLoadMethod        string `yaml:"transformLoadMethod"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
+func cloneDatabaseMigration(cfg *DatabaseMigrationConfig) *DatabaseMigrationConfig {
 	if cfg == nil {
 		return nil
 	}
@@ -664,6 +708,7 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		UserOverridenFiles:         cfg.UserOverridenFiles,
 		userOverridenFiles:         cfg.userOverridenFiles,
 		TransformDeleteMethod:      cfg.TransformDeleteMethod,
+		TransformLoadMethod:        cfg.TransformLoadMethod,
 	}
 }
 
@@ -722,5 +767,17 @@ func (cfg *PrettierConfig) Clone() *PrettierConfig {
 	return &PrettierConfig{
 		Custom: cfg.Custom,
 		Glob:   cfg.Glob,
+	}
+}
+
+type DatabaseMigrationConfig struct {
+	CustomSQLInclude []string `yaml:"customSQLInclude"`
+	CustomSQLExclude []string `yaml:"customSQLExclude"`
+}
+
+func (cfg *DatabaseMigrationConfig) Clone() *DatabaseMigrationConfig {
+	return &DatabaseMigrationConfig{
+		CustomSQLInclude: cfg.CustomSQLInclude,
+		CustomSQLExclude: cfg.CustomSQLExclude,
 	}
 }

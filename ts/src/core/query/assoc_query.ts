@@ -38,6 +38,8 @@ export abstract class AssocEdgeQueryBase<
   extends BaseEdgeQuery<TSource, TDest, TEdge>
   implements EdgeQuery<TSource, TDest, TEdge>
 {
+  private loadTwoWay: boolean = false;
+
   constructor(
     public viewer: TViewer,
     public src: EdgeQuerySource<TSource, TDest, TViewer>,
@@ -192,7 +194,9 @@ export abstract class AssocEdgeQueryBase<
         // so only makes sense if one of these...
 
         // Id2 needs to be an option
-        const edges = await loader.load(info.id);
+        const edges = this.loadTwoWay
+          ? await loader.loadTwoWay(info.id)
+          : await loader.load(info.id);
         this.edges.set(info.id, edges);
       }),
     );
@@ -242,8 +246,50 @@ export abstract class AssocEdgeQueryBase<
 
   // start is inclusive, end is exclusive
   __withinBeta(start: Date, end: Date) {
-    this.__assertNoFiltersBETA("after");
+    this.__assertNoFiltersBETA("within");
     this.__addCustomFilterBETA(new WithinFilter(start, end));
+    return this;
+  }
+
+  /**
+   * intersect multiple queries together with this one to get candidate edges
+   * the edges returned will always be from the originating edge query
+   *
+   * @param others list of other queries to intersect with the source edge
+   */
+  __intersect(...others: AssocEdgeQueryBase<any, TDest, TEdge, TViewer>[]) {
+    // TODO I don't really see a reason why we can't chain first or something first before this
+    // but for now let's not support it
+    // when we do this correctly, we'll allow chaining
+    this.__assertNoFiltersBETA("intersect");
+    this.__addCustomFilterBETA(new IntersectFilter(others));
+    return this;
+  }
+
+  /**
+   * union multiple queries together with this one to get candidate edges
+   * if the edge exists in the source query, that's the edge returned
+   * if the edge doesn't exist, the first edge in the list of queries that has the edge is returned
+   * @param others list of other queries to union with the source edge
+   */
+  __union<TSource2 extends Ent<TViewer>>(
+    ...others: AssocEdgeQueryBase<TSource2, TDest, TEdge, TViewer>[]
+  ) {
+    // same chain comment from intersect...
+    this.__assertNoFiltersBETA("union");
+    this.__addCustomFilterBETA(new UnionFilter(others));
+    return this;
+  }
+
+  /**
+   * this fetches edges where there's a two way connection between both sets of edges
+   * e.g. in a social networking system, where the source and dest are both following each other
+   *
+   * will not work in the future when there's sharding...
+   */
+  __twoWay() {
+    this.__assertNoFiltersBETA("twoWay");
+    this.loadTwoWay = true;
     return this;
   }
 }
@@ -295,5 +341,82 @@ class WithinFilter implements EdgeQueryFilter<AssocEdge> {
 
     options.clause = clause.AndOptional(options.clause, cls);
     return options;
+  }
+}
+
+class IntersectFilter<
+  TDest extends Ent<TViewer>,
+  TEdge extends AssocEdge,
+  TViewer extends Viewer = Viewer,
+> implements EdgeQueryFilter<TEdge>
+{
+  private edges: Array<Set<ID>> = [];
+  constructor(
+    private queries: AssocEdgeQueryBase<any, TDest, TEdge, TViewer>[],
+  ) {}
+
+  async fetch(): Promise<void> {
+    let i = 0;
+    // maybe future optimization. instead of this, use a SQL query if edge_types are the same
+    for await (const query of this.queries) {
+      const edges = await query.queryEdges();
+      const set = new Set<ID>();
+      edges.forEach((edge) => {
+        set.add(edge.id2);
+      });
+      this.edges[i] = set;
+      i++;
+    }
+  }
+
+  filter(_id: ID, edges: TEdge[]): TEdge[] {
+    return edges.filter((edge) => {
+      return this.edges.every((set) => {
+        return set.has(edge.id2);
+      });
+    });
+  }
+}
+
+class UnionFilter<
+  TDest extends Ent<TViewer>,
+  TEdge extends AssocEdge,
+  TViewer extends Viewer = Viewer,
+> implements EdgeQueryFilter<TEdge>
+{
+  private edges: Array<TEdge[]> = [];
+  constructor(
+    private queries: AssocEdgeQueryBase<any, TDest, TEdge, TViewer>[],
+  ) {}
+
+  async fetch(): Promise<void> {
+    let i = 0;
+    // maybe future optimization. instead of this, use a SQL query if edge_types are the same
+    for await (const query of this.queries) {
+      const edges = await query.queryEdges();
+      this.edges[i] = edges;
+      i++;
+    }
+  }
+
+  filter(_id: ID, edges: TEdge[]): TEdge[] {
+    const set = new Set<ID>();
+    const result: TEdge[] = [];
+    for (const edge of edges) {
+      set.add(edge.id2);
+      result.push(edge);
+    }
+
+    for (const edges of this.edges) {
+      for (const edge of edges) {
+        if (set.has(edge.id2)) {
+          continue;
+        }
+        result.push(edge);
+        set.add(edge.id2);
+      }
+    }
+
+    return result;
   }
 }

@@ -17,12 +17,15 @@ import {
   buildGroupQuery,
   AssocEdgeData,
   getEdgeClauseAndFields,
+  loadTwoWayEdges,
 } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
 import { CacheMap, getCustomLoader } from "./loader";
 import memoizee from "memoizee";
 
+// any loader created here or in places like this doesn't get context cache cleared...
+// so any manual createLoader needs to be changed and added to ContextCache so that ContextCache.clearAll() works
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
   edgeType: string,
@@ -102,6 +105,8 @@ function createLoader<T extends AssocEdge>(
 
 export interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
   loadEdgeForID2(id: ID, id2: ID): Promise<T | undefined>;
+
+  loadTwoWay(id: ID): Promise<T[]>;
 }
 
 export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
@@ -133,6 +138,16 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
   async load(id: ID): Promise<T[]> {
     const loader = await this.loaderFn();
     return loader.load(id);
+  }
+
+  async loadTwoWay(id: ID): Promise<T[]> {
+    return loadTwoWayEdges({
+      ctr: this.edgeCtr,
+      id1: id,
+      edgeType: this.edgeType,
+      context: this.context,
+      queryOptions: this.options,
+    });
   }
 
   // maybe eventually optimize this
@@ -169,6 +184,16 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
       context: this.context,
       queryOptions: this.options,
       ctr: this.edgeCtr,
+    });
+  }
+
+  async loadTwoWay(id: ID): Promise<T[]> {
+    return loadTwoWayEdges({
+      ctr: this.edgeCtr,
+      id1: id,
+      edgeType: this.edgeType,
+      context: this.context,
+      queryOptions: this.options,
     });
   }
 

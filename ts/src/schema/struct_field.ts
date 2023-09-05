@@ -42,6 +42,9 @@ export class StructField extends BaseField implements Field {
     dbType: DBType.JSONB,
   };
 
+  private validateUniqueKey?: string | undefined;
+  private checkUniqueKey: boolean;
+
   constructor(private options: StructOptions, private jsonAsList?: boolean) {
     super();
     this.type.subFields = options.fields;
@@ -55,6 +58,10 @@ export class StructField extends BaseField implements Field {
       this.type.listElemType = {
         dbType: DBType.JSONB,
       };
+    }
+    if (options.validateUniqueKey) {
+      this.validateUniqueKey = options.validateUniqueKey;
+      this.checkUniqueKey = true;
     }
   }
 
@@ -151,10 +158,31 @@ export class StructField extends BaseField implements Field {
       let camelKey = camelCase(k);
       let val = obj[camelKey];
 
-      if (val === undefined && obj[dbKey] !== undefined) {
-        val = obj[dbKey];
+      let uniqueKeyField = false;
+      if (
+        this.validateUniqueKey !== undefined &&
+        (camelKey === this.validateUniqueKey ||
+          k === this.validateUniqueKey ||
+          dbKey === this.validateUniqueKey)
+      ) {
+        // this.validateUniqueKey = camelKey;
+        uniqueKeyField = true;
       }
 
+      if (uniqueKeyField && this.checkUniqueKey) {
+        this.validateUniqueKey = camelKey;
+      }
+
+      if (val === undefined && obj[dbKey] !== undefined) {
+        if (uniqueKeyField && this.checkUniqueKey) {
+          this.validateUniqueKey = dbKey;
+        }
+        val = obj[dbKey];
+      }
+      // we've processed this once and no need to process this again
+      if (uniqueKeyField && this.checkUniqueKey) {
+        this.checkUniqueKey = false;
+      }
       if (val === undefined || val === null) {
         // nullable, nothing to do here
         if (field.nullable) {
@@ -212,17 +240,24 @@ export class StructField extends BaseField implements Field {
       if (!Array.isArray(obj)) {
         return false;
       }
+      // hmm shared instance across tests means this is needed.
+      // are there other places that have an issue like this???
+      this.checkUniqueKey = true;
       const unique = new Set();
       const valid = await Promise.all(
-        obj.map((v) => {
-          if (this.options.validateUniqueKey) {
-            const value = v[this.options.validateUniqueKey];
+        obj.map(async (v) => {
+          const valid = await this.validImpl(v);
+          if (!valid) {
+            return false;
+          }
+          if (this.validateUniqueKey) {
+            let value = v[this.validateUniqueKey];
             if (unique.has(value)) {
               return false;
             }
             unique.add(value);
           }
-          return this.validImpl(v);
+          return true;
         }),
       );
       return valid.every((b) => b);

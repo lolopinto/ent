@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -101,7 +102,7 @@ func init() {
 	codegenCmd.Flags().BoolVar(&codegenInfo.disableCustomGraphQL, "disable-custom-graphql", false, "to disable custom graphql during codegen. used when we need to rebuild everything and minimize parsing code")
 	codegenCmd.Flags().BoolVar(&codegenInfo.disablePrompts, "disable_prompts", false, "disable prompts")
 	codegenCmd.Flags().BoolVar(&codegenInfo.disableUpgrade, "disable_upgrade", false, "disable upgrade when running codegen. codegen automatically checks that the db is upgraded before making any changes. if you want to disable that for any reason, use this flag")
-	codegenCmd.Flags().BoolVar(&codegenInfo.forcePrettier, "force_prettier", false, "force prettier instead of rome when running codegen.")
+	codegenCmd.Flags().BoolVar(&codegenInfo.forcePrettier, "force_prettier", false, "force prettier instead of biome when running codegen.")
 
 	generateSchemasCmd.Flags().StringVar(&schemasInfo.file, "file", "", "file to get data from. also supports piping it through")
 	generateSchemasCmd.Flags().BoolVar(&schemasInfo.force, "force", false, "if force is true, it overwrites existing schema, otherwise throws error")
@@ -121,11 +122,13 @@ func init() {
 	migratev1Cmd.Flags().StringVar(&migrateV1Info.transformPath, "transform_path", "", "path for new base class")
 
 	migrationCmd.Flags().StringVar(&migrateInfo.message, "message", "", "message for migration")
+
+	squashCmd.Flags().StringVar(&squashInfo.message, "message", "", "message for new file when squash all is run")
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("\u001b[31mError:\u001b[0m \n  %s\n", err.Error())
+		fmt.Printf("%s \n  %s\n", util.WrapRed("Error"), err.Error())
 		fmt.Println(rootCmd.UsageString())
 		os.Exit(1)
 	}

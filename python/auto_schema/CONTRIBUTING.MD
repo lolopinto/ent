@@ -8,6 +8,7 @@ make changes to code and then run as following:
 
 * `pip3 install pipenv` to install `pipenv`
 * `pipenv install --dev` to install dependencies from `Pipfile`
+* `pipenv lock` to fix `Pipfile.lock` if you add and remove something
 
 or it uses the one provided via environment variable `DB_CONNECTION_STRING`
 

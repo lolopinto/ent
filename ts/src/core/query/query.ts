@@ -56,6 +56,10 @@ export interface EdgeQuery<
 //maybe id2 shouldn't return EdgeQuery but a different object from which you can query edge. the ent you don't need to query since you can just query that on your own.
 
 export interface EdgeQueryFilter<T extends Data> {
+  // filter that needs to fetch data before it can be applied
+  // should not be used in conjunction with query
+  fetch?(): Promise<void>;
+
   // this is a filter that does the processing in TypeScript instead of (or in addition to) the SQL layer
   filter?(id: ID, edges: T[]): T[];
 
@@ -135,6 +139,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   private sortCol: string;
   private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
   private pageMap: Map<ID, PaginationInfo> = new Map();
+  private usedQuery = false;
 
   constructor(private options: FirstFilterOptions<T>) {
     assertPositive(options.limit);
@@ -146,18 +151,59 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     this.edgeQuery = options.query;
   }
 
+  private setPageMap(ret: T[], id: ID, hasNextPage: boolean) {
+    this.pageMap.set(id, {
+      hasNextPage,
+      // hasPreviousPage always false even if there's a previous page because
+      // we shouldn't be querying in both directions at the same
+      hasPreviousPage: false,
+      startCursor: this.edgeQuery.getCursor(ret[0]),
+      endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
+    });
+  }
+
   filter(id: ID, edges: T[]): T[] {
     if (edges.length > this.options.limit) {
-      const ret = edges.slice(0, this.options.limit);
-      this.pageMap.set(id, {
-        hasNextPage: true,
-        // hasPreviousPage always false even if there's a previous page because
-        // we shouldn't be querying in both directions at the same
-        hasPreviousPage: false,
-        startCursor: this.edgeQuery.getCursor(ret[0]),
-        endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
-      });
-      return ret;
+      //  we need a way to know where the cursor is and if we used it and if not need to do this in TypeScript and not in SQL
+      // so can't filter from 0 but specific item
+
+      // if we used the query or we're querying the first N, slice from 0
+      if (this.usedQuery || !this.offset) {
+        const ret = edges.slice(0, this.options.limit);
+        this.setPageMap(ret, id, true);
+        return ret;
+      } else if (this.offset) {
+        const ret: T[] = [];
+        let found = false;
+        let i = 0;
+        let hasNextPage = false;
+        for (const edge of edges) {
+          const id = edge[this.options.cursorCol];
+          if (id === this.offset) {
+            // found!
+            found = true;
+            hasNextPage = true;
+            continue;
+          }
+          if (found) {
+            ret.push(edge);
+            if (ret.length === this.options.limit) {
+              if (i === ret.length - 1) {
+                hasNextPage = false;
+              }
+              break;
+            }
+          }
+          i++;
+        }
+        if (hasNextPage && ret.length < this.options.limit) {
+          hasNextPage = false;
+        }
+        if (ret.length) {
+          this.setPageMap(ret, id, hasNextPage);
+        }
+        return ret;
+      }
     }
     // TODO: in the future, when we have caching for edges
     // we'll want to hit that cache instead of passing the limit down to the
@@ -170,6 +216,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   async query(
     options: EdgeQueryableDataOptions,
   ): Promise<EdgeQueryableDataOptions> {
+    this.usedQuery = true;
+
     // we fetch an extra one to see if we're at the end
     const limit = this.options.limit + 1;
 
@@ -621,8 +669,24 @@ export abstract class BaseEdgeQuery<
     // may need to bring sql mode or something back
     for (const filter of this.filters) {
       if (filter.query) {
+        if (filter.fetch) {
+          throw new Error(
+            `a filter that augments the query cannot currently fetch`,
+          );
+        }
         let res = filter.query(options);
         options = isPromise(res) ? await res : res;
+      } else {
+        // if we've seen a filter that doesn't have a query, we can't do anything in SQL
+        // TODO figure out filter interactions https://github.com/lolopinto/ent/issues/685
+
+        // this is a scenario where if we have the first N filters that can modify the query,
+        // we do that in SQL and then we do the rest in code
+        // but once we have something doing it in code (e.g. intersect()), we can't do anything else in SQL
+
+        // and then have to differentiate between filters that augment (limit or add to) the items returned
+        // and those that reorder...
+        break;
       }
     }
 
@@ -631,6 +695,13 @@ export abstract class BaseEdgeQuery<
     // no filters. nothing to do here.
     if (!this.filters.length) {
       return this.edges;
+    }
+
+    // fetch anything we need to filter the query
+    for await (const filter of this.filters) {
+      if (filter.fetch) {
+        await filter.fetch();
+      }
     }
 
     // filter as needed
