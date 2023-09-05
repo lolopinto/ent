@@ -1373,7 +1373,7 @@ function defaultEdgeQueryOptions(
   id1: ID,
   edgeType: string,
   id2?: ID,
-): EdgeQueryableDataOptions {
+): Required<Omit<EdgeQueryableDataOptions, "disableTransformations">> {
   let cls = clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType));
   if (id2) {
     cls = clause.And(cls, clause.Eq("id2", id2));
@@ -1424,7 +1424,7 @@ export async function loadCustomEdges<T extends AssocEdge>(
     fields,
     defaultOptions,
     tableName,
-  } = await loadEgesInfo(options);
+  } = await loadEdgesInfo(options);
 
   const rows = await loadRows({
     tableName,
@@ -1439,7 +1439,7 @@ export async function loadCustomEdges<T extends AssocEdge>(
   });
 }
 
-async function loadEgesInfo<T extends AssocEdge>(
+async function loadEdgesInfo<T extends AssocEdge>(
   options: loadCustomEdgesOptions<T>,
   id2?: ID,
 ) {
@@ -1450,7 +1450,7 @@ async function loadEgesInfo<T extends AssocEdge>(
   }
 
   const defaultOptions = defaultEdgeQueryOptions(id1, edgeType, id2);
-  let cls = defaultOptions.clause!;
+  let cls = defaultOptions.clause;
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
   }
@@ -1543,17 +1543,41 @@ export async function loadEdgeForID2<T extends AssocEdge>(
     cls: actualClause,
     fields,
     tableName,
-  } = await loadEgesInfo(options, options.id2);
+  } = await loadEdgesInfo(options, options.id2);
 
   const row = await loadRow({
     tableName,
-    fields: fields,
+    fields,
     clause: actualClause,
     context: options.context,
   });
   if (row) {
     return new options.ctr(row);
   }
+}
+
+export async function loadTwoWayEdges<T extends AssocEdge>(
+  opts: loadCustomEdgesOptions<T>,
+): Promise<T[]> {
+  const { cls: actualClause, fields, tableName } = await loadEdgesInfo(opts);
+
+  const rows = await loadRows({
+    tableName,
+    alias: "t1",
+    fields,
+    clause: actualClause,
+    context: opts.context,
+    join: {
+      tableName,
+      alias: "t2",
+      clause: clause.And(
+        // these are not values so need this to not think they're values...
+        clause.Expression("t1.id1 = t2.id2"),
+        clause.Expression("t1.id2 = t2.id1"),
+      ),
+    },
+  });
+  return rows as T[];
 }
 
 export async function loadNodesByEdge<T extends Ent>(

@@ -105,6 +105,8 @@ class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 }
 
+// NB: we're not using alias in this class in clause method
+// if we end up with a subclass that does, we need to handle it 
 class queryClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(
     protected dependentQueryOptions: QueryableDataOptions, // private value: any, // private op: string, // private handleNull?: Clause<T, K>,
@@ -140,20 +142,6 @@ class queryClause<T extends Data, K = keyof T> implements Clause<T, K> {
 class existsQueryClause<T extends Data, K = keyof T> extends queryClause<T, K> {
   constructor(protected dependentQueryOptions: QueryableDataOptions) {
     super(dependentQueryOptions, "EXISTS");
-  }
-}
-
-class columnInQueryClause<T extends Data, K = keyof T> extends queryClause<
-  T,
-  K
-> {
-  constructor(
-    protected dependentQueryOptions: QueryableDataOptions,
-    protected col: K,
-  ) {
-    // TODO renderCol needed here...
-    //TODO cal just kill this
-    super(dependentQueryOptions, `${col} IN`);
   }
 }
 
@@ -202,6 +190,30 @@ class isNotNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
 
   instanceKey(): string {
     return `${this.col} IS NOT NULL`;
+  }
+}
+
+class simpleExpression<T extends Data, K = keyof T> implements Clause<T, K> {
+  constructor(protected expression: string) {}
+
+  clause(idx: number, alias?: string): string {
+    return this.expression;
+  }
+
+  columns(): K[] {
+    return [];
+  }
+
+  values(): any[] {
+    return [];
+  }
+
+  logValues(): any[] {
+    return [];
+  }
+
+  instanceKey(): string {
+    return `${this.expression}`;
   }
 }
 
@@ -835,13 +847,6 @@ export function DBTypeNotIn<T extends Data, K = keyof T>(
   return new notInClause(col, values, typ);
 }
 
-export function ColInQuery<T extends Data, K = keyof T>(
-  col: K,
-  queryOptions: QueryableDataOptions,
-): Clause<T, K> {
-  return new columnInQueryClause(queryOptions, col);
-}
-
 interface TsQuery {
   // todo lang ::reconfig
   language: "english" | "french" | "german" | "simple";
@@ -1211,4 +1216,10 @@ export function getCombinedClause<V extends Data = Data, K = keyof V>(
     }
   }
   return cls;
+}
+
+export function Expression<T extends Data, K = keyof T>(
+  expression: string,
+): Clause<T, K> {
+  return new simpleExpression(expression);
 }

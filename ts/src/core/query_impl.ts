@@ -40,12 +40,20 @@ export function buildQuery(options: QueryableDataOptions): string {
     : options.fields.join(", ");
 
   // always start at 1
-  const whereClause = options.clause.clause(1, options.alias);
   const parts: string[] = [];
   const tableName = options.alias
     ? `${options.tableName} AS ${options.alias}`
     : options.tableName;
-  parts.push(`SELECT ${fields} FROM ${tableName} WHERE ${whereClause}`);
+  parts.push(`SELECT ${fields} FROM ${tableName}`);
+
+  let whereStart = 1;
+  if (options.join) {
+    const joinTable = options.join.alias ? `${options.join.tableName} ${options.join.alias}` : options.join.tableName;
+    parts.push(`JOIN ${joinTable} ON ${options.join.clause.clause(1)}`);
+    whereStart += options.join.clause.values().length;
+  }
+  
+  parts.push(`WHERE ${options.clause.clause(whereStart, options.alias)}`);
   if (options.groupby) {
     parts.push(`GROUP BY ${options.groupby}`);
   }

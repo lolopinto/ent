@@ -32,7 +32,7 @@ import {
   EntSchemaWithTZ,
 } from "../schema/base_schema";
 import { FieldInfoMap, getStorageKey } from "../schema/schema";
-import { Clause } from "src/core/clause";
+import { Clause } from "../core/clause";
 import { ChangesetOptions } from "../action/action";
 
 export class BaseEnt {
