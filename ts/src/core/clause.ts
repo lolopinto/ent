@@ -151,8 +151,6 @@ class columnInQueryClause<T extends Data, K = keyof T> extends queryClause<
     protected dependentQueryOptions: QueryableDataOptions,
     protected col: K,
   ) {
-    // TODO renderCol needed here...
-    //TODO cal just kill this
     super(dependentQueryOptions, `${col} IN`);
   }
 }

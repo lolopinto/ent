@@ -246,7 +246,7 @@ export abstract class AssocEdgeQueryBase<
 
   // start is inclusive, end is exclusive
   __withinBeta(start: Date, end: Date) {
-    this.__assertNoFiltersBETA("after");
+    this.__assertNoFiltersBETA("within");
     this.__addCustomFilterBETA(new WithinFilter(start, end));
     return this;
   }

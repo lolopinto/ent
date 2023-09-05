@@ -1370,11 +1370,17 @@ export function getDefaultLimit() {
 }
 
 function defaultEdgeQueryOptions(
+  edgeData: AssocEdgeData,
   id1: ID,
   edgeType: string,
   id2?: ID,
+  id1Clause?: (edgeData: AssocEdgeData) => clause.Clause,
 ): EdgeQueryableDataOptions {
-  let cls = clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType));
+  let id1cls: clause.Clause = clause.Eq("id1", id1);
+  if (id1Clause) {
+    id1cls = id1Clause(edgeData);
+  }
+  let cls = clause.And(id1cls, clause.Eq("edge_type", edgeType));
   if (id2) {
     cls = clause.And(cls, clause.Eq("id2", id2));
   }
@@ -1424,7 +1430,7 @@ export async function loadCustomEdges<T extends AssocEdge>(
     fields,
     defaultOptions,
     tableName,
-  } = await loadEgesInfo(options);
+  } = await loadEdgesInfo(options);
 
   const rows = await loadRows({
     tableName,
@@ -1439,17 +1445,26 @@ export async function loadCustomEdges<T extends AssocEdge>(
   });
 }
 
-async function loadEgesInfo<T extends AssocEdge>(
+async function loadEdgesInfo<T extends AssocEdge>(
   options: loadCustomEdgesOptions<T>,
   id2?: ID,
+  id1Clause?: (edgeData: AssocEdgeData) => clause.Clause,
 ) {
   const { id1, edgeType } = options;
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
   }
+  // call it here with edgeData and edgeClauseAndFields
+  // there's a circular dependency involved here...
 
-  const defaultOptions = defaultEdgeQueryOptions(id1, edgeType, id2);
+  const defaultOptions = defaultEdgeQueryOptions(
+    edgeData,
+    id1,
+    edgeType,
+    id2,
+    id1Clause,
+  );
   let cls = defaultOptions.clause!;
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
@@ -1543,17 +1558,55 @@ export async function loadEdgeForID2<T extends AssocEdge>(
     cls: actualClause,
     fields,
     tableName,
-  } = await loadEgesInfo(options, options.id2);
+  } = await loadEdgesInfo(options, options.id2);
 
   const row = await loadRow({
     tableName,
-    fields: fields,
+    fields,
     clause: actualClause,
     context: options.context,
   });
   if (row) {
     return new options.ctr(row);
   }
+}
+
+//TODO: here
+export async function loadTwoWayEdges<T extends AssocEdge>(
+  opts: loadCustomEdgesOptions<T>,
+  // id1: ID,
+  // edgeType: string,
+): Promise<T[]> {
+  const {
+    cls: actualClause,
+    fields,
+    tableName,
+  } = await loadEdgesInfo(opts, undefined, (edgeData: AssocEdgeData) => {
+    const { clause: subClause } = defaultEdgeQueryOptions(
+      edgeData,
+      opts.id1,
+      opts.edgeType,
+    );
+
+    if (!subClause) {
+      throw new Error(`subClause should be defined...`);
+    }
+    const { cls } = getEdgeClauseAndFields(subClause, opts);
+    const subquery: QueryableDataOptions = {
+      tableName: edgeData.edgeTable,
+      fields: ["id2"],
+      clause: cls,
+    };
+    return clause.ColInQuery("id1", subquery);
+  });
+
+  const rows = await loadRows({
+    tableName,
+    fields,
+    clause: actualClause,
+    context: opts.context,
+  });
+  return rows as T[];
 }
 
 export async function loadNodesByEdge<T extends Ent>(
