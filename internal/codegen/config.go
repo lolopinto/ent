@@ -295,11 +295,11 @@ func (cfg *Config) DummyWrite() bool {
 	return cfg.dummyWrite
 }
 
-func (cfg *Config) GetRomeConfig() *input.RomeConfig {
+func (cfg *Config) GetBiomeConfig() *input.BiomeConfig {
 	if cfg.inputConfig == nil {
 		return nil
 	}
-	return cfg.inputConfig.RomeConfig
+	return cfg.inputConfig.BiomeConfig
 }
 
 func (cfg *Config) SetDummyWrite(val bool) {
@@ -500,7 +500,7 @@ func (cfg *Config) CustomSQLExclude() []string {
 const DEFAULT_PRETTIER_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
-// use rome instead of prettier to speed up
+// use biome instead of prettier to speed up
 // options: https://prettier.io/docs/en/options.html
 var defaultArgs = []string{
 	"--trailing-comma", "all",
@@ -509,9 +509,9 @@ var defaultArgs = []string{
 	"--end-of-line", "lf",
 }
 
-// options: https://docs.rome.tools/formatter/#use-the-formatter-with-the-cli
+// options: https://biomejs.dev/reference/cli/#biome
 // everything else is sticking with default...
-var defaultRomeArgs = []string{
+var defaultBiomeArgs = []string{
 	"--indent-style", "space",
 }
 

@@ -207,12 +207,12 @@ func (p *Processor) FormatTS() error {
 		return p.formatWithPrettier()
 	}
 
-	return p.formatWithRome()
+	return p.formatWithBiome()
 }
 
-func (p *Processor) formatWithRome() error {
-	rome := p.Config.GetRomeConfig()
-	// get files without "generated" in the path and pass them manually to rome
+func (p *Processor) formatWithBiome() error {
+	biome := p.Config.GetBiomeConfig()
+	// get files without "generated" in the path and pass them manually to biome
 	// for the generated paths, we'll pass src/ent/generated and src/graphql/generated to handle that
 	var nonGenerated []string
 	root := p.Config.GetAbsPathToRoot()
@@ -230,14 +230,14 @@ func (p *Processor) formatWithRome() error {
 	}
 
 	var args []string
-	if rome != nil {
-		args = rome.GetArgs()
+	if biome != nil {
+		args = biome.GetArgs()
 	} else {
-		args = defaultRomeArgs
+		args = defaultBiomeArgs
 	}
 	if len(args) == 0 {
 		if p.debugMode {
-			fmt.Printf("no args to pass to rome to format\n")
+			fmt.Printf("no args to pass to biome to format\n")
 		}
 		return nil
 	}
@@ -259,7 +259,7 @@ func (p *Processor) formatWithRome() error {
 	args = append(args, nonGenerated...)
 	args = append([]string{"format"}, args...)
 
-	cmd := exec.Command("rome", args...)
+	cmd := exec.Command("biome", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -381,9 +381,9 @@ type constructOption struct {
 	debugFilesMode bool
 	writeAll       bool
 	forceWriteAll  bool
-	// we're using rome as default for now so
+	// we're using biome as default for now so
 	// this provides a way to force prettier if we want to test or if somehow something
-	// wrong with rome
+	// wrong with biome
 	forcePrettier bool
 	buildInfo     *build_info.BuildInfo
 	cfg           *Config

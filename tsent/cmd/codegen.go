@@ -85,7 +85,7 @@ var codegenCmd = &cobra.Command{
 		if codegenInfo.forcePrettier {
 			opts = append(opts, codegen.ForcePrettier())
 		} else {
-			// automatically force write-all with rome
+			// automatically force write-all with biome
 			opts = append(opts, codegen.ForceWriteAll())
 		}
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
