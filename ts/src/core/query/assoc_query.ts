@@ -257,11 +257,7 @@ export abstract class AssocEdgeQueryBase<
    *
    * @param others list of other queries to intersect with the source edge
    */
-  __intersect(
-    // TODO make sure this supports different types of sources
-    // e.g. user.friends and event.attendees
-    ...others: AssocEdgeQueryBase<any, TDest, TEdge, TViewer>[]
-  ) {
+  __intersect(...others: AssocEdgeQueryBase<any, TDest, TEdge, TViewer>[]) {
     // TODO I don't really see a reason why we can't chain first or something first before this
     // but for now let's not support it
     // when we do this correctly, we'll allow chaining

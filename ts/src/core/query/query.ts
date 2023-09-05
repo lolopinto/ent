@@ -151,22 +151,26 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     this.edgeQuery = options.query;
   }
 
+  private setPageMap(ret: T[], id: ID, hasNextPage: boolean) {
+    this.pageMap.set(id, {
+      hasNextPage,
+      // hasPreviousPage always false even if there's a previous page because
+      // we shouldn't be querying in both directions at the same
+      hasPreviousPage: false,
+      startCursor: this.edgeQuery.getCursor(ret[0]),
+      endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
+    });
+  }
+
   filter(id: ID, edges: T[]): T[] {
     if (edges.length > this.options.limit) {
-      //  we need a way to know where the curors is and if we used it and if not need to do this in TypeScript and not in SQL
-      // so can't filter from 0 but speicifc item
+      //  we need a way to know where the cursor is and if we used it and if not need to do this in TypeScript and not in SQL
+      // so can't filter from 0 but specific item
 
       // if we used the query or we're querying the first N, slice from 0
       if (this.usedQuery || !this.offset) {
         const ret = edges.slice(0, this.options.limit);
-        this.pageMap.set(id, {
-          hasNextPage: true,
-          // hasPreviousPage always false even if there's a previous page because
-          // we shouldn't be querying in both directions at the same
-          hasPreviousPage: false,
-          startCursor: this.edgeQuery.getCursor(ret[0]),
-          endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
-        });
+        this.setPageMap(ret, id, true);
         return ret;
       } else if (this.offset) {
         const ret: T[] = [];
@@ -196,15 +200,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
           hasNextPage = false;
         }
         if (ret.length) {
-          // TODO share with above?
-          this.pageMap.set(id, {
-            hasNextPage,
-            // hasPreviousPage always false even if there's a previous page because
-            // we shouldn't be querying in both directions at the same
-            hasPreviousPage: false,
-            startCursor: this.edgeQuery.getCursor(ret[0]),
-            endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
-          });
+          this.setPageMap(ret, id, hasNextPage);
         }
         return ret;
       }
@@ -682,7 +678,7 @@ export abstract class BaseEdgeQuery<
         options = isPromise(res) ? await res : res;
       } else {
         // if we've seen a filter that doesn't have a query, we can't do anything in SQL
-        // TODO come back and figure out filter interactions
+        // TODO figure out filter interactions https://github.com/lolopinto/ent/issues/685
 
         // this is a scenario where if we have the first N filters that can modify the query,
         // we do that in SQL and then we do the rest in code

@@ -63,8 +63,6 @@ export function getVerifyAfterEachCursorGeneric<
   return { verify, getCursor };
 }
 
-// TODO copy from shared_test
-
 export function getWhereClause(query: any) {
   const idx = (query.query as string).indexOf("WHERE");
   if (idx !== -1) {

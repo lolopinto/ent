@@ -1375,7 +1375,7 @@ function defaultEdgeQueryOptions(
   edgeType: string,
   id2?: ID,
   id1Clause?: (edgeData: AssocEdgeData) => clause.Clause,
-): EdgeQueryableDataOptions {
+): Required<Omit<EdgeQueryableDataOptions, "disableTransformations">> {
   let id1cls: clause.Clause = clause.Eq("id1", id1);
   if (id1Clause) {
     id1cls = id1Clause(edgeData);
@@ -1455,8 +1455,6 @@ async function loadEdgesInfo<T extends AssocEdge>(
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
   }
-  // call it here with edgeData and edgeClauseAndFields
-  // there's a circular dependency involved here...
 
   const defaultOptions = defaultEdgeQueryOptions(
     edgeData,
@@ -1465,7 +1463,7 @@ async function loadEdgesInfo<T extends AssocEdge>(
     id2,
     id1Clause,
   );
-  let cls = defaultOptions.clause!;
+  let cls = defaultOptions.clause;
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
   }
@@ -1571,11 +1569,8 @@ export async function loadEdgeForID2<T extends AssocEdge>(
   }
 }
 
-//TODO: here
 export async function loadTwoWayEdges<T extends AssocEdge>(
   opts: loadCustomEdgesOptions<T>,
-  // id1: ID,
-  // edgeType: string,
 ): Promise<T[]> {
   const {
     cls: actualClause,
@@ -1588,9 +1583,6 @@ export async function loadTwoWayEdges<T extends AssocEdge>(
       opts.edgeType,
     );
 
-    if (!subClause) {
-      throw new Error(`subClause should be defined...`);
-    }
     const { cls } = getEdgeClauseAndFields(subClause, opts);
     const subquery: QueryableDataOptions = {
       tableName: edgeData.edgeTable,

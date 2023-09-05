@@ -32,7 +32,10 @@ import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
 import { Clause, PaginationMultipleColsSubQuery } from "../clause";
 import { OrderBy, getOrderByPhrase, reverseOrderBy } from "../query_impl";
-import { getVerifyAfterEachCursorGeneric } from "../../testutils/query";
+import {
+  getVerifyAfterEachCursorGeneric,
+  getWhereClause,
+} from "../../testutils/query";
 
 interface options<TData extends Data> {
   newQuery: (
@@ -50,14 +53,6 @@ interface options<TData extends Data> {
   globalSchema?: boolean;
   orderby: OrderBy;
   rawDataVerify?(user: FakeUser): Promise<void>;
-}
-
-function getWhereClause(query: any) {
-  const idx = (query.query as string).indexOf("WHERE");
-  if (idx !== -1) {
-    return query.query.substr(idx + 6);
-  }
-  return null;
 }
 
 export const commonTests = <TData extends Data>(opts: options<TData>) => {
@@ -356,7 +351,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       edges,
       pageLength,
       user,
-      // @ts-ignore come back
+      // @ts-ignore weirdness with import paths...
       () => opts.newQuery(getViewer(), user),
       ml,
       (query, cursor) => {
