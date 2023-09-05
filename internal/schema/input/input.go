@@ -20,15 +20,16 @@ type Schema struct {
 
 type Config struct {
 	// the prettier config that's being used is parsed and sent up to format the files as needed
-	// since we're trying to use rome...
-	RomeConfig *RomeConfig `json:"rome"`
+	// since we're trying to use biome...
+	// for now keep this named as rome but eventually change to biome?
+	BiomeConfig *BiomeConfig `json:"rome"`
 }
 
-// indicates the rome onfig that should be used here
+// indicates the biome onfig that should be used here
 // taken from the prettier config
 // https://prettier.io/docs/en/options.html#quotes
-// https://docs.rome.tools/formatter/#use-the-formatter-with-the-cli
-type RomeConfig struct {
+// https://biomejs.dev/reference/cli/#biome
+type BiomeConfig struct {
 	// we always do --indent-style=space
 	IndentStyle     *string `json:"indentStyle"`
 	LineWidth       *int    `json:"lineWidth"`
@@ -38,7 +39,7 @@ type RomeConfig struct {
 	TrailingComma   *string `json:"trailingComma"`
 }
 
-func (cfg *RomeConfig) GetArgs() []string {
+func (cfg *BiomeConfig) GetArgs() []string {
 	var ret []string
 
 	if cfg.IndentStyle != nil {
