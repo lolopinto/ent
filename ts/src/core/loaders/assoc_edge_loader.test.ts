@@ -479,8 +479,7 @@ function commonTests() {
     }
     const edges = await loader.load(user.id);
     const twoWay = await loader.loadTwoWay(user.id);
-    // TODO need to flip the edges probably. shouldn't have the source id always be id2 here...
-    expect(twowayIds.sort()).toEqual(twoWay.map((e) => e.id1).sort());
+    expect(twowayIds.sort()).toEqual(twoWay.map((e) => e.id2).sort());
     expect(edges.length).toBe(10);
     expect(twoWay.length).toBe(5);
 
@@ -497,10 +496,10 @@ function commonTests() {
     twowayIds = [];
     for await (const edge of twoWay) {
       if (i % 2 === 0) {
-        twowayIds.push(edge.id1);
+        twowayIds.push(edge.id2);
       } else {
         action.builder.orchestrator.removeOutboundEdge(
-          edge.id1,
+          edge.id2,
           EdgeType.UserToFollowing,
         );
       }
@@ -514,8 +513,7 @@ function commonTests() {
     const edges2 = await loader.load(user.id);
     const twoWay2 = await loader.loadTwoWay(user.id);
 
-    // TODO need to flip the edges probably. shouldn't have the source id always be id2 here...
-    expect(twowayIds.sort()).toEqual(twoWay2.map((e) => e.id1).sort());
+    expect(twowayIds.sort()).toEqual(twoWay2.map((e) => e.id2).sort());
 
     // deleted some things here which shouldn't show up here
     expect(edges2.length).toBe(8);

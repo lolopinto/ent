@@ -1370,17 +1370,11 @@ export function getDefaultLimit() {
 }
 
 function defaultEdgeQueryOptions(
-  edgeData: AssocEdgeData,
   id1: ID,
   edgeType: string,
   id2?: ID,
-  id1Clause?: (edgeData: AssocEdgeData) => clause.Clause,
 ): Required<Omit<EdgeQueryableDataOptions, "disableTransformations">> {
-  let id1cls: clause.Clause = clause.Eq("id1", id1);
-  if (id1Clause) {
-    id1cls = id1Clause(edgeData);
-  }
-  let cls = clause.And(id1cls, clause.Eq("edge_type", edgeType));
+  let cls = clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType));
   if (id2) {
     cls = clause.And(cls, clause.Eq("id2", id2));
   }
@@ -1448,7 +1442,6 @@ export async function loadCustomEdges<T extends AssocEdge>(
 async function loadEdgesInfo<T extends AssocEdge>(
   options: loadCustomEdgesOptions<T>,
   id2?: ID,
-  id1Clause?: (edgeData: AssocEdgeData) => clause.Clause,
 ) {
   const { id1, edgeType } = options;
   const edgeData = await loadEdgeData(edgeType);
@@ -1456,13 +1449,7 @@ async function loadEdgesInfo<T extends AssocEdge>(
     throw new Error(`error loading edge data for ${edgeType}`);
   }
 
-  const defaultOptions = defaultEdgeQueryOptions(
-    edgeData,
-    id1,
-    edgeType,
-    id2,
-    id1Clause,
-  );
+  const defaultOptions = defaultEdgeQueryOptions(id1, edgeType, id2);
   let cls = defaultOptions.clause;
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
@@ -1572,31 +1559,23 @@ export async function loadEdgeForID2<T extends AssocEdge>(
 export async function loadTwoWayEdges<T extends AssocEdge>(
   opts: loadCustomEdgesOptions<T>,
 ): Promise<T[]> {
-  const {
-    cls: actualClause,
-    fields,
-    tableName,
-  } = await loadEdgesInfo(opts, undefined, (edgeData: AssocEdgeData) => {
-    const { clause: subClause } = defaultEdgeQueryOptions(
-      edgeData,
-      opts.id1,
-      opts.edgeType,
-    );
-
-    const { cls } = getEdgeClauseAndFields(subClause, opts);
-    const subquery: QueryableDataOptions = {
-      tableName: edgeData.edgeTable,
-      fields: ["id2"],
-      clause: cls,
-    };
-    return clause.ColInQuery("id1", subquery);
-  });
+  const { cls: actualClause, fields, tableName } = await loadEdgesInfo(opts);
 
   const rows = await loadRows({
     tableName,
+    alias: "t1",
     fields,
     clause: actualClause,
     context: opts.context,
+    join: {
+      tableName,
+      alias: "t2",
+      clause: clause.And(
+        // these are not values so need this to not think they're values...
+        clause.Expression("t1.id1 = t2.id2"),
+        clause.Expression("t1.id2 = t2.id1"),
+      ),
+    },
   });
   return rows as T[];
 }
