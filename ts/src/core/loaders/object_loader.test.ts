@@ -773,9 +773,9 @@ function commonTests() {
       fields: {
         deleted_at: new Date(),
       },
+      context: ctx,
     });
 
-    ctx.cache.clearCache();
     const rowPostDelete = await loader.load(1);
     expect(rowPostDelete).toEqual({ id: 1, first_name: "Jon" });
 

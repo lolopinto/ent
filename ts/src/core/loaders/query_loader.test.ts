@@ -87,11 +87,6 @@ describe("postgres", () => {
     tdb = await setupTempDB();
   });
 
-  beforeEach(() => {
-    // reset context for each test
-    ctx?.cache.clearCache();
-  });
-
   afterEach(() => {
     ml.clear();
   });
@@ -109,14 +104,6 @@ describe("sqlite", () => {
   beforeAll(async () => {
     setLogLevels(["query", "error", "cache"]);
     ml.mock();
-  });
-
-  beforeEach(async () => {
-    // reset context for each test
-    ctx?.cache.clearCache();
-
-    // create once
-    //    await createEdges();
   });
 
   afterEach(() => {

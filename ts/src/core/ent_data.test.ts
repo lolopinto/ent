@@ -228,7 +228,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  ctx.cache?.clearCache();
   clearLogLevels();
 });
 
