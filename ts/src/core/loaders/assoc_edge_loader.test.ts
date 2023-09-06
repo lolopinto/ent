@@ -41,6 +41,7 @@ const ml = new MockLogs();
 
 let ctx: TestContext;
 
+// TODO these and how it's used with the loaders below
 const getNewContactsLoader = (context: boolean = true) => {
   return new AssocEdgeLoaderFactory(
     EdgeType.UserToContacts,

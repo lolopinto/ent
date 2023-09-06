@@ -20,7 +20,7 @@ import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
 import { snakeCase } from "snake-case";
 import DB, { Dialect } from "../core/db";
-import { ObjectLoader } from "../core/loaders";
+import { ObjectLoader, ObjectLoaderFactory } from "../core/loaders";
 import { TestContext } from "../testutils/context/test_context";
 import {
   assoc_edge_config_table,
@@ -269,73 +269,86 @@ describe("sqlite", () => {
   commonTests();
 });
 
+const usersLoaderFactory = new ObjectLoaderFactory(
+  {
+    tableName: "users",
+    fields: ["id", "first_name", "last_name", "deleted_at"],
+    key: "id",
+    clause: clause.Eq("deleted_at", null),
+  });
+
+  const accountsLoaderFactory = new ObjectLoaderFactory(
+  {
+    tableName: "accounts",
+    fields: ["id", "first_name", "last_name", "deleted_at"],
+    key: "id",
+    clause: clause.Eq("deleted_at", null),
+    });
+  
+      const contactsLoaderFactory = new ObjectLoaderFactory(
+  {
+    tableName: "contacts",
+    fields: ["id", "first_name", "last_name", "deleted_at"],
+    key: "id",
+    clause: clause.Eq("deleted_at", null),
+        });
+    
+        const usersLoaderFactoryNoClause = new ObjectLoaderFactory(
+  {
+    tableName: "users",
+    fields: ["id", "first_name", "last_name", "deleted_at"],
+    key: "id",
+  });
+
+  const accountsLoaderFactoryNoClause = new ObjectLoaderFactory(
+  {
+    tableName: "accounts",
+    fields: ["id", "first_name", "last_name", "deleted_at"],
+    key: "id",
+    });
+  
+      const contactsLoaderFactoryNoClause = new ObjectLoaderFactory(
+  {
+    tableName: "contacts",
+    fields: ["id", "first_name", "last_name", "deleted_at"],
+    key: "id",
+        });
+
 const getNewLoader = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "users",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-      clause: clause.Eq("deleted_at", null),
-    },
+  return usersLoaderFactory.createLoader(
     context ? new TestContext() : undefined,
   );
 };
 
 const getAccountNewLoader = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "accounts",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-      clause: clause.Eq("deleted_at", null),
-    },
+  return accountsLoaderFactory.createLoader(
     context ? new TestContext() : undefined,
   );
 };
 
 const getContactNewLoader = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "contacts",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-      clause: clause.Eq("deleted_at", null),
-    },
+    return contactsLoaderFactory.createLoader(
     context ? new TestContext() : undefined,
   );
+
 };
 
 // deleted_at field but no custom_clause
 // behavior when we're ignoring deleted_at. exception...
 const getNewLoaderNoCustomClause = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "users",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-    },
+  return usersLoaderFactoryNoClause.createLoader(
     context ? new TestContext() : undefined,
   );
 };
 
 const getContactNewLoaderNoCustomClause = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "contacts",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-    },
+  return contactsLoaderFactoryNoClause.createLoader(
     context ? new TestContext() : undefined,
   );
 };
 
 const getAccountNewLoaderNoCustomClause = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "accounts",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-    },
+  return accountsLoaderFactoryNoClause.createLoader(
     context ? new TestContext() : undefined,
   );
 };

@@ -22,12 +22,13 @@ import { clear } from "jest-date-mock";
 
 const ml = new MockLogs();
 
+const fakeContactsLoader = new RawCountLoaderFactory({
+  tableName: "fake_contacts",
+  groupCol: "user_id",
+});
+
 const getNewLoader = (context: boolean = true) => {
-  return new RawCountLoader(
-    {
-      tableName: "fake_contacts",
-      groupCol: "user_id",
-    },
+  return fakeContactsLoader.createLoader(
     context ? new TestContext() : undefined,
   );
 };
@@ -248,13 +249,14 @@ function commonTests() {
     const INTERVAL = 24 * 60 * 60 * 1000;
 
     const getNonGroupableLoader = (id: ID, context: boolean = true) => {
-      return new RawCountLoader(
+      // unclear if there's benefit of using factory here but we're consistent with API access patterns this way
+      const fakeEventsLoaderFactory = new RawCountLoaderFactory(
         {
           tableName: "fake_events",
           clause: getCompleteClause(id),
-        },
-        context ? new TestContext() : undefined,
+        }
       );
+      return fakeEventsLoaderFactory.createLoader(context ? new TestContext() : undefined);
     };
 
     test("single id. with context", async () => {

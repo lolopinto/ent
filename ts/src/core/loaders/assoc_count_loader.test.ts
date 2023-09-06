@@ -30,28 +30,23 @@ import {
   setupTempDB,
   tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
-import { AssocEdgeCountLoader } from "./assoc_count_loader";
+import { AssocEdgeCountLoader, AssocEdgeCountLoaderFactory } from "./assoc_count_loader";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 
 const ml = new MockLogs();
 
+const assocEdgeLoaderFactory = new AssocEdgeCountLoaderFactory(EdgeType.UserToContacts);
+
 const getNewLoader = (context: boolean = true) => {
-  return new AssocEdgeCountLoader(
-    EdgeType.UserToContacts,
-    context ? new TestContext() : undefined,
-  );
+  return assocEdgeLoaderFactory.createLoader(context ? new TestContext() : undefined);
 };
 
 const getConfigurableLoader = (
   context: boolean = true,
   opts: EdgeQueryableDataOptionsConfigureLoader,
 ) => {
-  return new AssocEdgeCountLoader(
-    EdgeType.UserToContacts,
-    context ? new TestContext() : undefined,
-    opts,
-  );
+  return assocEdgeLoaderFactory.createConfigurableLoader(opts, context ? new TestContext() : undefined);
 };
 
 describe("postgres", () => {
