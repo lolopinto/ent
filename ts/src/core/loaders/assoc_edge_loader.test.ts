@@ -453,7 +453,7 @@ function commonTests() {
     loaderFn: (opts: EdgeQueryableDataOptions) => AssocLoader<CustomEdge>,
   ) {
     // create loader first so we can pass context to createTestUser
-    const loader = loaderFn({});
+    let loader = loaderFn({});
 
     const user = await createTestUser({}, loader.context);
     let twowayIds: ID[] = [];
@@ -506,18 +506,20 @@ function commonTests() {
       i++;
     }
     await action.saveX();
-    user.viewer.context?.cache?.clearCache();
-    loader.clearAll();
-    // TODO why isn't this done automatically...
+
+    // reload loader. because in practice we don't have the same loader
+    // since in production we call LoaderFactory.createLoader() next time we use it
+    // TODO change tests to use production paradigms
+    loader = loaderFn({});
 
     const edges2 = await loader.load(user.id);
     const twoWay2 = await loader.loadTwoWay(user.id);
 
-    expect(twowayIds.sort()).toEqual(twoWay2.map((e) => e.id2).sort());
-
     // deleted some things here which shouldn't show up here
     expect(edges2.length).toBe(8);
     expect(twoWay2.length).toBe(3);
+
+    expect(twowayIds.sort()).toEqual(twoWay2.map((e) => e.id2).sort());
 
     const hasGlobal = __hasGlobalSchema();
 
@@ -607,7 +609,7 @@ function globalTests() {
       ctx,
     });
     ml.clear();
-    const loader = loaderFn({});
+    let loader = loaderFn({});
     const edges = await loader.load(user.id);
     verifyUserToContactEdges(user, edges, contacts.reverse());
     verifyMultiCountQueryCacheMiss([user.id]);
@@ -633,10 +635,9 @@ function globalTests() {
     }
     await action.saveX();
     ml.clear();
-    loader.clearAll();
-    user.viewer.context?.cache?.clearCache();
-    // do edge writes not call mutateRow???
-    // why isn't this done automatically...
+
+    // reload loader. TODO change tests to use production paradigms and call LoaderFactory.createLoader
+    loader = loaderFn({});
 
     const loader2 = loaderFn({
       disableTransformations: true,

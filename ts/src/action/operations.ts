@@ -526,6 +526,7 @@ export class EdgeOperation implements DataOperation {
         whereClause: params.clause,
         fields: params.updateData!,
         fieldsToLog: params.updateData!,
+        context,
       });
     }
   }
@@ -547,6 +548,7 @@ export class EdgeOperation implements DataOperation {
         tableName: params.options.tableName,
         whereClause: params.clause,
         fields: params.updateData!,
+        context,
       });
     }
   }
