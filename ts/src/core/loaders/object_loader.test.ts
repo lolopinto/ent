@@ -35,12 +35,35 @@ interface LoaderRow {
   first_name: string;
 }
 
+const usersLoaderFactory = new ObjectLoaderFactory<LoaderRow>({
+  tableName: "users",
+  fields: ["id", "first_name"],
+  key: "id",
+});
+
+const usersLoaderFactoryDeleted = new ObjectLoaderFactory<LoaderRowWithCustomClause>({
+  tableName: "users",
+  fields: ["id", "first_name", "deleted_at"],
+  key: "id",
+  clause: clause.Eq("deleted_at", null),
+});
+
+const usersLoaderFactoryDeletedNoClause = new ObjectLoaderFactory<LoaderRowWithCustomClause>({
+  tableName: "users",
+  fields: ["id", "first_name", "deleted_at"],
+  key: "id",
+});
+
+const usersLoaderFactoryDeletedFunc = new ObjectLoaderFactory<LoaderRowWithCustomClause>({
+  tableName: "users",
+  fields: ["id", "first_name", "deleted_at"],
+  key: "id",
+  clause: () => clause.Eq("deleted_at", null),
+  instanceKey: "users:transformedReadClause",
+});
+
 const getNewLoader = (context: boolean | TestContext = true) => {
-  return new ObjectLoaderFactory<LoaderRow>({
-    tableName: "users",
-    fields: ["id", "first_name"],
-    key: "id",
-  }).createLoader(
+  return usersLoaderFactory.createLoader(
     context
       ? typeof context === "boolean"
         ? new TestContext()
@@ -50,11 +73,7 @@ const getNewLoader = (context: boolean | TestContext = true) => {
 };
 
 const getNewCountLoader = (context: boolean | TestContext = true) => {
-  return new ObjectLoaderFactory<LoaderRow>({
-    tableName: "users",
-    fields: ["id", "first_name"],
-    key: "id",
-  }).createCountLoader(
+  return usersLoaderFactory.createCountLoader(
     context
       ? typeof context === "boolean"
         ? new TestContext()
@@ -70,12 +89,7 @@ interface LoaderRowWithCustomClause extends LoaderRow {
 const getNewLoaderWithCustomClause = (
   context: boolean | TestContext = true,
 ) => {
-  return new ObjectLoaderFactory<LoaderRowWithCustomClause>({
-    tableName: "users",
-    fields: ["id", "first_name", "deleted_at"],
-    key: "id",
-    clause: clause.Eq("deleted_at", null),
-  }).createLoader(
+  return usersLoaderFactoryDeleted.createLoader(
     context
       ? typeof context === "boolean"
         ? new TestContext()
@@ -87,12 +101,7 @@ const getNewLoaderWithCustomClause = (
 const getNewCountLoaderWithCustomClause = (
   context: boolean | TestContext = true,
 ) => {
-  return new ObjectLoaderFactory<LoaderRowWithCustomClause>({
-    tableName: "users",
-    fields: ["id", "first_name", "deleted_at"],
-    key: "id",
-    clause: clause.Eq("deleted_at", null),
-  }).createCountLoader(
+  return usersLoaderFactoryDeleted.createCountLoader(
     context
       ? typeof context === "boolean"
         ? new TestContext()
@@ -104,13 +113,7 @@ const getNewCountLoaderWithCustomClause = (
 const getNewLoaderWithCustomClauseFunc = (
   context: boolean | TestContext = true,
 ) => {
-  return new ObjectLoaderFactory<LoaderRowWithCustomClause>({
-    tableName: "users",
-    fields: ["id", "first_name", "deleted_at"],
-    key: "id",
-    clause: () => clause.Eq("deleted_at", null),
-    instanceKey: "users:transformedReadClause",
-  }).createLoader(
+  return usersLoaderFactoryDeletedFunc.createLoader(
     context
       ? typeof context === "boolean"
         ? new TestContext()
@@ -122,13 +125,7 @@ const getNewLoaderWithCustomClauseFunc = (
 const getNewCountLoaderWithCustomClauseFunc = (
   context: boolean | TestContext = true,
 ) => {
-  return new ObjectLoaderFactory<LoaderRowWithCustomClause>({
-    tableName: "users",
-    fields: ["id", "first_name", "deleted_at"],
-    key: "id",
-    clause: () => clause.Eq("deleted_at", null),
-    instanceKey: "users:transformedReadClause",
-  }).createCountLoader(
+  return usersLoaderFactoryDeletedFunc.createCountLoader(
     context
       ? typeof context === "boolean"
         ? new TestContext()
@@ -140,14 +137,7 @@ const getNewCountLoaderWithCustomClauseFunc = (
 // deleted_at field but no custom_clause
 // behavior when we're ignoring deleted_at. exception...
 const getNewLoaderWithDeletedAtField = (context: boolean = true) => {
-  return new ObjectLoader<LoaderRowWithCustomClause>(
-    {
-      tableName: "users",
-      fields: ["id", "first_name", "deleted_at"],
-      key: "id",
-    },
-    context ? new TestContext() : undefined,
-  );
+  return usersLoaderFactoryDeletedNoClause.createLoader(context ? new TestContext() : undefined);
 };
 
 async function create(id?: ID) {
@@ -946,20 +936,20 @@ function commonTests() {
     ml.clear();
 
     const ctx = new TestContext();
-    const newUserLoader = new ObjectLoaderFactory({
+    const newUserLoaderFactory = new ObjectLoaderFactory({
       ...FakeUser.loaderOptions(),
       key: "id",
     });
-    const newUserPhoneLoader = new ObjectLoaderFactory({
+    const newUserPhoneLoaderFactory = new ObjectLoaderFactory({
       ...FakeUser.loaderOptions(),
       key: "phone_number",
     });
-    const newUserEmailAddressLoader = new ObjectLoaderFactory({
+    const newUserEmailAddressLoaderFactory = new ObjectLoaderFactory({
       ...FakeUser.loaderOptions(),
       key: "email_address",
     });
 
-    await newUserLoader.createLoader(ctx).load(user.id);
+    await newUserLoaderFactory.createLoader(ctx).load(user.id);
 
     expect(ml.logs.length).toBe(1);
 
@@ -974,7 +964,7 @@ function commonTests() {
 
     ml.clear();
 
-    await newUserPhoneLoader.createLoader(ctx).load(user.phoneNumber!);
+    await newUserPhoneLoaderFactory.createLoader(ctx).load(user.phoneNumber!);
     expect(ml.logs.length).toBe(1);
 
     const phoneQuery = buildQuery({
@@ -990,7 +980,7 @@ function commonTests() {
 
     ml.clear();
 
-    await newUserEmailAddressLoader.createLoader(ctx).load(user.emailAddress);
+    await newUserEmailAddressLoaderFactory.createLoader(ctx).load(user.emailAddress);
     expect(ml.logs.length).toEqual(1);
 
     const emailQuery = buildQuery({
