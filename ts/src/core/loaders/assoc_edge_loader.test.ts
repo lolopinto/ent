@@ -47,32 +47,43 @@ const ml = new MockLogs();
 
 let ctx: TestContext;
 
-// TODO these and how it's used with the loaders below
+const userToContactsLoader = new AssocEdgeLoaderFactory(
+  EdgeType.UserToContacts,
+  AssocEdge,
+);
+
+const userToContactsCustomLoader = new AssocEdgeLoaderFactory(
+  EdgeType.UserToContacts,
+  CustomEdge,
+);
+
+const userToFollowingCustomLoader = new AssocEdgeLoaderFactory(
+  EdgeType.UserToFollowing,
+  CustomEdge,
+);
+
 const getNewContactsLoader = (context: boolean = true) => {
-  return new AssocEdgeLoaderFactory(
-    EdgeType.UserToContacts,
-    AssocEdge,
-  ).createLoader(context ? ctx : undefined);
+  return userToContactsLoader.createLoader(context ? ctx : undefined);
 };
 
 const getConfigurableContactsLoader = (
   context: boolean,
   options: EdgeQueryableDataOptions,
 ) => {
-  return new AssocEdgeLoaderFactory(
-    EdgeType.UserToContacts,
-    CustomEdge,
-  ).createConfigurableLoader(options, context ? ctx : undefined);
+  return userToContactsCustomLoader.createConfigurableLoader(
+    options,
+    context ? ctx : undefined,
+  );
 };
 
 const getConfigurableFollowingLoader = (
   context: boolean,
   options: EdgeQueryableDataOptions,
 ) => {
-  return new AssocEdgeLoaderFactory(
-    EdgeType.UserToFollowing,
-    CustomEdge,
-  ).createConfigurableLoader(options, context ? ctx : undefined);
+  return userToFollowingCustomLoader.createConfigurableLoader(
+    options,
+    context ? ctx : undefined,
+  );
 };
 
 describe("postgres", () => {
