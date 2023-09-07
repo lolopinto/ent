@@ -34,8 +34,13 @@ export function reverseOrderBy(orderby: OrderBy): OrderBy {
   });
 }
 
-export function getJoinPhrase(join: NonNullable<QueryableDataOptions['join']>,  clauseIdx = 1): string {
-  const joinTable = join.alias ? `${join.tableName} ${join.alias}` : join.tableName;
+export function getJoinPhrase(
+  join: NonNullable<QueryableDataOptions["join"]>,
+  clauseIdx = 1,
+): string {
+  const joinTable = join.alias
+    ? `${join.tableName} ${join.alias}`
+    : join.tableName;
   return `${joinTable} ON ${join.clause.clause(clauseIdx)}`;
 }
 
@@ -56,7 +61,7 @@ export function buildQuery(options: QueryableDataOptions): string {
     parts.push(`JOIN ${getJoinPhrase(options.join, 1)}`);
     whereStart += options.join.clause.values().length;
   }
-  
+
   parts.push(`WHERE ${options.clause.clause(whereStart, options.alias)}`);
   if (options.groupby) {
     parts.push(`GROUP BY ${options.groupby}`);

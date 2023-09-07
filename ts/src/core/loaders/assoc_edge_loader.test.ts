@@ -12,7 +12,13 @@ import {
 } from "../global_schema";
 import * as clause from "../clause";
 
-import { EdgeQueryableDataOptions, ID, Loader, WriteOperation } from "../base";
+import {
+  Context,
+  EdgeQueryableDataOptions,
+  ID,
+  Loader,
+  WriteOperation,
+} from "../base";
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import {
   FakeUser,
@@ -453,8 +459,7 @@ function commonTests() {
   async function verifyTwoWayEdges(
     loaderFn: (opts: EdgeQueryableDataOptions) => AssocLoader<CustomEdge>,
   ) {
-    // create loader first so we can pass context to createTestUser
-    let loader = loaderFn({});
+    const loader = loaderFn({});
 
     const user = await createTestUser({}, loader.context);
     let twowayIds: ID[] = [];
@@ -507,11 +512,6 @@ function commonTests() {
       i++;
     }
     await action.saveX();
-
-    // reload loader. because in practice we don't have the same loader
-    // since in production we call LoaderFactory.createLoader() next time we use it
-    // TODO change tests to use production paradigms
-    loader = loaderFn({});
 
     const edges2 = await loader.load(user.id);
     const twoWay2 = await loader.loadTwoWay(user.id);
@@ -610,7 +610,7 @@ function globalTests() {
       ctx,
     });
     ml.clear();
-    let loader = loaderFn({});
+    const loader = loaderFn({});
     const edges = await loader.load(user.id);
     verifyUserToContactEdges(user, edges, contacts.reverse());
     verifyMultiCountQueryCacheMiss([user.id]);
@@ -636,9 +636,6 @@ function globalTests() {
     }
     await action.saveX();
     ml.clear();
-
-    // reload loader. TODO change tests to use production paradigms and call LoaderFactory.createLoader
-    loader = loaderFn({});
 
     const loader2 = loaderFn({
       disableTransformations: true,
@@ -670,14 +667,17 @@ interface createdData {
   users: FakeUser[];
 }
 
-async function createData(): Promise<createdData> {
+async function createData(context?: Context): Promise<createdData> {
   const m = new Map<ID, FakeContact[]>();
   const ids: ID[] = [];
   const users: FakeUser[] = [];
 
   await Promise.all(
     [1, 2, 3, 4, 5].map(async (count, idx) => {
-      let [user, contacts] = await createAllContacts({ slice: count });
+      let [user, contacts] = await createAllContacts({
+        slice: count,
+        ctx: context,
+      });
 
       m.set(user.id, contacts.reverse());
       ids[idx] = user.id;
@@ -694,19 +694,22 @@ async function testMultiQueryDataAvail(
   slice?: number,
   data?: createdData,
 ) {
+  // TODO this needs to be done prior to the JS event loop
+  // need to make this work for scenarios where the loader is created in same loop
+
+  // TODOOO
+  const loader = loaderFn({
+    limit: slice,
+  });
+
   if (!data) {
-    data = await createData();
+    data = await createData(loader.context);
   }
   let { m, ids, users } = data;
 
   // clear post creation
   ml.clear();
 
-  // TODO this needs to be done prior to the JS event loop
-  // need to make this work for scenarios where the loader is created in same loop
-  const loader = loaderFn({
-    limit: slice,
-  });
   const edges = await Promise.all(ids.map(async (id) => loader.load(id)));
   ml.verifyNoErrors();
 
@@ -733,19 +736,20 @@ async function testWithDeleteMultiQueryDataAvail(
   slice?: number,
   data?: createdData,
 ) {
+  // TODO this needs to be done prior to the JS event loop
+  // need to make this work for scenarios where the loader is created in same loop
+  const loader = loaderFn({
+    limit: slice,
+  });
+
   if (!data) {
-    data = await createData();
+    data = await createData(loader.context);
   }
   let { m, ids, users } = data;
 
   // clear post creation
   ml.clear();
 
-  // TODO this needs to be done prior to the JS event loop
-  // need to make this work for scenarios where the loader is created in same loop
-  const loader = loaderFn({
-    limit: slice,
-  });
   const edges = await Promise.all(ids.map(async (id) => loader.load(id)));
   ml.verifyNoErrors();
 
@@ -771,8 +775,6 @@ async function testWithDeleteMultiQueryDataAvail(
   await action.saveX();
   ml.clear();
 
-  // clear loader
-  loader.clearAll();
   // reload data
   const edges2 = await Promise.all(ids.map(async (id) => loader.load(id)));
 
@@ -794,15 +796,15 @@ async function testWithDeleteMultiQueryDataLoadDeleted(
     disableTransformations?: boolean,
   ) => void,
 ) {
-  const data = await createData();
+  // TODO this needs to be done prior to the JS event loop
+  // need to make this work for scenarios where the loader is created in same loop
+  const loader = loaderFn({});
+  const data = await createData(loader.context);
   let { m, ids, users } = data;
 
   // clear post creation
   ml.clear();
 
-  // TODO this needs to be done prior to the JS event loop
-  // need to make this work for scenarios where the loader is created in same loop
-  const loader = loaderFn({});
   const edges = await Promise.all(ids.map(async (id) => loader.load(id)));
   ml.verifyNoErrors();
 
@@ -829,9 +831,6 @@ async function testWithDeleteMultiQueryDataLoadDeleted(
   }
   await action.saveX();
   ml.clear();
-
-  // clear loader
-  loader.clearAll();
 
   const loader2 = loaderFn({
     disableTransformations: true,
@@ -861,9 +860,9 @@ async function testWithDeleteSingleQueryDataLoadDeleted(
     disableTransformations?: boolean,
   ) => void,
 ) {
-  const [user, contacts] = await createAllContacts();
-  ml.clear();
   const loader = loaderFn({});
+  const [user, contacts] = await createAllContacts({ ctx: loader.context });
+  ml.clear();
   const edges = await loader.load(user.id);
   verifyUserToContactEdges(user, edges, contacts.reverse());
   verifyPostFirstQuery([user.id]);
@@ -886,7 +885,6 @@ async function testWithDeleteSingleQueryDataLoadDeleted(
   }
   await action.saveX();
   ml.clear();
-  loader.clearAll();
 
   const loader2 = getConfigurableContactsLoader(true, {
     disableTransformations: true,

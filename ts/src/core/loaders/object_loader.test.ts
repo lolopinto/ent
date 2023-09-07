@@ -41,26 +41,29 @@ const usersLoaderFactory = new ObjectLoaderFactory<LoaderRow>({
   key: "id",
 });
 
-const usersLoaderFactoryDeleted = new ObjectLoaderFactory<LoaderRowWithCustomClause>({
-  tableName: "users",
-  fields: ["id", "first_name", "deleted_at"],
-  key: "id",
-  clause: clause.Eq("deleted_at", null),
-});
+const usersLoaderFactoryDeleted =
+  new ObjectLoaderFactory<LoaderRowWithCustomClause>({
+    tableName: "users",
+    fields: ["id", "first_name", "deleted_at"],
+    key: "id",
+    clause: clause.Eq("deleted_at", null),
+  });
 
-const usersLoaderFactoryDeletedNoClause = new ObjectLoaderFactory<LoaderRowWithCustomClause>({
-  tableName: "users",
-  fields: ["id", "first_name", "deleted_at"],
-  key: "id",
-});
+const usersLoaderFactoryDeletedNoClause =
+  new ObjectLoaderFactory<LoaderRowWithCustomClause>({
+    tableName: "users",
+    fields: ["id", "first_name", "deleted_at"],
+    key: "id",
+  });
 
-const usersLoaderFactoryDeletedFunc = new ObjectLoaderFactory<LoaderRowWithCustomClause>({
-  tableName: "users",
-  fields: ["id", "first_name", "deleted_at"],
-  key: "id",
-  clause: () => clause.Eq("deleted_at", null),
-  instanceKey: "users:transformedReadClause",
-});
+const usersLoaderFactoryDeletedFunc =
+  new ObjectLoaderFactory<LoaderRowWithCustomClause>({
+    tableName: "users",
+    fields: ["id", "first_name", "deleted_at"],
+    key: "id",
+    clause: () => clause.Eq("deleted_at", null),
+    instanceKey: "users:transformedReadClause",
+  });
 
 const getNewLoader = (context: boolean | TestContext = true) => {
   return usersLoaderFactory.createLoader(
@@ -137,7 +140,9 @@ const getNewCountLoaderWithCustomClauseFunc = (
 // deleted_at field but no custom_clause
 // behavior when we're ignoring deleted_at. exception...
 const getNewLoaderWithDeletedAtField = (context: boolean = true) => {
-  return usersLoaderFactoryDeletedNoClause.createLoader(context ? new TestContext() : undefined);
+  return usersLoaderFactoryDeletedNoClause.createLoader(
+    context ? new TestContext() : undefined,
+  );
 };
 
 async function create(id?: ID) {
@@ -980,7 +985,9 @@ function commonTests() {
 
     ml.clear();
 
-    await newUserEmailAddressLoaderFactory.createLoader(ctx).load(user.emailAddress);
+    await newUserEmailAddressLoaderFactory
+      .createLoader(ctx)
+      .load(user.emailAddress);
     expect(ml.logs.length).toEqual(1);
 
     const emailQuery = buildQuery({

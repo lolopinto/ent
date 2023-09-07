@@ -516,7 +516,7 @@ export class EdgeOperation implements DataOperation {
   ): Promise<void> {
     const params = this.getDeleteRowParams(edgeData, edge, context);
     if (params.op === SQLStatementOperation.Delete) {
-      return deleteRows(q, params.options, params.clause);
+      return deleteRows(q, { ...params.options, context }, params.clause);
     } else {
       if (params.op !== SQLStatementOperation.Update) {
         throw new Error(`invalid operation ${params.op}`);
@@ -539,7 +539,7 @@ export class EdgeOperation implements DataOperation {
   ): void {
     const params = this.getDeleteRowParams(edgeData, edge, context);
     if (params.op === SQLStatementOperation.Delete) {
-      return deleteRowsSync(q, params.options, params.clause);
+      return deleteRowsSync(q, { ...params.options, context }, params.clause);
     } else {
       if (params.op !== SQLStatementOperation.Update) {
         throw new Error(`invalid operation ${params.op}`);

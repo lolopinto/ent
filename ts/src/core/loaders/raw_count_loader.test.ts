@@ -250,13 +250,13 @@ function commonTests() {
 
     const getNonGroupableLoader = (id: ID, context: boolean = true) => {
       // unclear if there's benefit of using factory here but we're consistent with API access patterns this way
-      const fakeEventsLoaderFactory = new RawCountLoaderFactory(
-        {
-          tableName: "fake_events",
-          clause: getCompleteClause(id),
-        }
+      const fakeEventsLoaderFactory = new RawCountLoaderFactory({
+        tableName: "fake_events",
+        clause: getCompleteClause(id),
+      });
+      return fakeEventsLoaderFactory.createLoader(
+        context ? new TestContext() : undefined,
       );
-      return fakeEventsLoaderFactory.createLoader(context ? new TestContext() : undefined);
     };
 
     test("single id. with context", async () => {

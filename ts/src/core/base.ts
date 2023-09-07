@@ -68,7 +68,10 @@ export interface PrimableLoader<K, V> extends Loader<K, V> {
   primeAll?(d: V): void;
 }
 
-export type QueryOptions = Required<Pick<LoadRowsOptions, "clause" | "fields" | 'tableName'>> & Pick<LoadRowsOptions, 'orderby' | 'join'>;
+export type QueryOptions = Required<
+  Pick<LoadRowsOptions, "clause" | "fields" | "tableName">
+> &
+  Pick<LoadRowsOptions, "orderby" | "join">;
 
 interface cache {
   getLoader<K, V>(name: string, create: () => Loader<K, V>): Loader<K, V>;
@@ -172,7 +175,7 @@ export interface QueryableDataOptions
 interface JoinOptions<T2 extends Data = Data, K2 = keyof T2> {
   tableName: string;
   alias?: string;
-  clause: clause.Clause<T2,K2>;
+  clause: clause.Clause<T2, K2>;
 }
 
 export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
@@ -182,7 +185,7 @@ export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   groupby?: K;
   limit?: number;
   disableTransformations?: boolean;
-  join?:JoinOptions;
+  join?: JoinOptions;
 }
 
 // For loading data from database

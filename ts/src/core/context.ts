@@ -19,6 +19,10 @@ export class ContextCache {
   // we should eventually combine the two but better for typing to be separate for now
   loaderWithLoadMany: Map<string, LoaderWithLoadMany<any, any>> = new Map();
 
+  // keep track of discarded loaders in case someone ends up holding onto a reference
+  // so that we can call clearAll() on them
+  discardedLoaders: Loader<any, any>[] = [];
+
   getLoader<K, V>(name: string, create: () => Loader<K, V>): Loader<K, V> {
     let l = this.loaders.get(name);
     if (l) {
@@ -112,15 +116,15 @@ export class ContextCache {
   }
 
   clearCache(): void {
+    this.discardedLoaders.forEach((l) => l.clearAll());
+
     for (const [_key, loader] of this.loaders) {
-      // may not need this since we're clearing the loaders themselves...
-      // but may have some benefits by explicitily doing so?
       loader.clearAll();
+      this.discardedLoaders.push(loader);
     }
     for (const [_key, loader] of this.loaderWithLoadMany) {
-      // may not need this since we're clearing the loaders themselves...
-      // but may have some benefits by explicitily doing so?
       loader.clearAll();
+      this.discardedLoaders.push(loader);
     }
     this.loaders.clear();
     this.loaderWithLoadMany.clear();
