@@ -106,7 +106,7 @@ class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
 }
 
 // NB: we're not using alias in this class in clause method
-// if we end up with a subclass that does, we need to handle it 
+// if we end up with a subclass that does, we need to handle it
 class queryClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(
     protected dependentQueryOptions: QueryableDataOptions, // private value: any, // private op: string, // private handleNull?: Clause<T, K>,

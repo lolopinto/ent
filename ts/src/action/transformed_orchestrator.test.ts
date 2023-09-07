@@ -1,7 +1,7 @@
 import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
 import { EntChangeset } from "../action/orchestrator";
-import { Data, Ent, Viewer } from "../core/base";
+import { Context, Data, Ent, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
 import { StringType, TimestampType } from "../schema/field";
 import {
@@ -20,7 +20,7 @@ import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
 import { snakeCase } from "snake-case";
 import DB, { Dialect } from "../core/db";
-import { ObjectLoader } from "../core/loaders";
+import { ObjectLoaderFactory } from "../core/loaders";
 import { TestContext } from "../testutils/context/test_context";
 import {
   assoc_edge_config_table,
@@ -33,7 +33,6 @@ import {
 import { convertDate } from "../core/convert";
 import { FieldMap } from "../schema";
 import { loadRawEdgeCountX } from "../core/ent";
-import { RawQueryOperation } from "./operations";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 async function createEdges() {
@@ -269,38 +268,59 @@ describe("sqlite", () => {
   commonTests();
 });
 
+const usersLoaderFactory = new ObjectLoaderFactory({
+  tableName: "users",
+  fields: ["id", "first_name", "last_name", "deleted_at"],
+  key: "id",
+  clause: clause.Eq("deleted_at", null),
+});
+
+const accountsLoaderFactory = new ObjectLoaderFactory({
+  tableName: "accounts",
+  fields: ["id", "first_name", "last_name", "deleted_at"],
+  key: "id",
+  clause: clause.Eq("deleted_at", null),
+});
+
+const contactsLoaderFactory = new ObjectLoaderFactory({
+  tableName: "contacts",
+  fields: ["id", "first_name", "last_name", "deleted_at"],
+  key: "id",
+  clause: clause.Eq("deleted_at", null),
+});
+
+const usersLoaderFactoryNoClause = new ObjectLoaderFactory({
+  tableName: "users",
+  fields: ["id", "first_name", "last_name", "deleted_at"],
+  key: "id",
+});
+
+const accountsLoaderFactoryNoClause = new ObjectLoaderFactory({
+  tableName: "accounts",
+  fields: ["id", "first_name", "last_name", "deleted_at"],
+  key: "id",
+});
+
+const contactsLoaderFactoryNoClause = new ObjectLoaderFactory({
+  tableName: "contacts",
+  fields: ["id", "first_name", "last_name", "deleted_at"],
+  key: "id",
+});
+
 const getNewLoader = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "users",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-      clause: clause.Eq("deleted_at", null),
-    },
+  return usersLoaderFactory.createLoader(
     context ? new TestContext() : undefined,
   );
 };
 
 const getAccountNewLoader = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "accounts",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-      clause: clause.Eq("deleted_at", null),
-    },
+  return accountsLoaderFactory.createLoader(
     context ? new TestContext() : undefined,
   );
 };
 
 const getContactNewLoader = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "contacts",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-      clause: clause.Eq("deleted_at", null),
-    },
+  return contactsLoaderFactory.createLoader(
     context ? new TestContext() : undefined,
   );
 };
@@ -308,34 +328,19 @@ const getContactNewLoader = (context: boolean = true) => {
 // deleted_at field but no custom_clause
 // behavior when we're ignoring deleted_at. exception...
 const getNewLoaderNoCustomClause = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "users",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-    },
+  return usersLoaderFactoryNoClause.createLoader(
     context ? new TestContext() : undefined,
   );
 };
 
 const getContactNewLoaderNoCustomClause = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "contacts",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-    },
+  return contactsLoaderFactoryNoClause.createLoader(
     context ? new TestContext() : undefined,
   );
 };
 
 const getAccountNewLoaderNoCustomClause = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "accounts",
-      fields: ["id", "first_name", "last_name", "deleted_at"],
-      key: "id",
-    },
+  return accountsLoaderFactoryNoClause.createLoader(
     context ? new TestContext() : undefined,
   );
 };
@@ -353,15 +358,19 @@ function transformDeletedAt(row: Data | null) {
 
 function getInsertUserAction(
   map: Map<string, any>,
-  viewer: Viewer = new LoggedOutViewer(),
+  context: Context | undefined,
 ) {
+  const viewer = new LoggedOutViewer(context);
+
   return new SimpleAction(viewer, UserSchema, map, WriteOperation.Insert, null);
 }
 
 function getInsertAccountAction(
   map: Map<string, any>,
-  viewer: Viewer = new LoggedOutViewer(),
+  context: Context | undefined,
 ) {
+  const viewer = new LoggedOutViewer(context);
+
   return new SimpleAction(
     viewer,
     AccountSchema,
@@ -373,8 +382,10 @@ function getInsertAccountAction(
 
 function getInsertContactAction(
   map: Map<string, any>,
-  viewer: Viewer = new LoggedOutViewer(),
+  context: Context | undefined,
 ) {
+  const viewer = new LoggedOutViewer(context);
+
   return new SimpleAction(
     viewer,
     ContactSchema,
@@ -386,14 +397,15 @@ function getInsertContactAction(
 
 function commonTests() {
   test("delete -> update", async () => {
+    const loader = getNewLoader();
     const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      loader.context,
     );
     const user = await action.saveX();
-    const loader = getNewLoader();
 
     const row = await loader.load(user.id);
     expect(row).toEqual({
@@ -406,7 +418,7 @@ function commonTests() {
     const d = new Date();
     advanceTo(d);
     const action2 = new SimpleAction(
-      new LoggedOutViewer(),
+      new LoggedOutViewer(loader.context),
       UserSchema,
       new Map(),
       WriteOperation.Delete,
@@ -415,7 +427,6 @@ function commonTests() {
 
     await action2.save();
 
-    loader.clearAll();
     const row2 = await loader.load(user.id);
     expect(row2).toBeNull();
 
@@ -431,11 +442,13 @@ function commonTests() {
   });
 
   test("delete -> update with extra writes", async () => {
+    const loader = getAccountNewLoader();
     const action = getInsertAccountAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      loader.context,
     );
     const account1 = await action.saveX();
 
@@ -444,6 +457,7 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      loader.context,
     );
     const account2 = await action2.saveX();
 
@@ -452,6 +466,7 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      loader.context,
     );
     action3.builder.orchestrator.addOutboundEdge(
       account1.id,
@@ -471,7 +486,6 @@ function commonTests() {
     );
 
     const account3 = await action3.saveX();
-    const loader = getAccountNewLoader();
 
     const row = await loader.load(account3.id);
     expect(row).toEqual({
@@ -504,7 +518,7 @@ function commonTests() {
     expect(inverseEdgeCt).toBe(1);
 
     const action4 = new SimpleAction(
-      new LoggedOutViewer(),
+      account1.viewer,
       AccountSchema,
       new Map(),
       WriteOperation.Delete,
@@ -513,7 +527,6 @@ function commonTests() {
 
     await action4.save();
 
-    loader.clearAll();
     const row2 = await loader.load(account3.id);
     expect(row2).toBeNull();
 
@@ -548,14 +561,15 @@ function commonTests() {
   });
 
   test("really delete", async () => {
+    const loader = getNewLoader();
     const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      loader.context,
     );
     const user = await action.saveX();
-    const loader = getNewLoader();
 
     const row = await loader.load(user.id);
     expect(row).toEqual({
@@ -566,7 +580,7 @@ function commonTests() {
     });
 
     const action2 = new SimpleAction(
-      new LoggedOutViewer(),
+      action.viewer,
       UserSchema,
       new Map(),
       WriteOperation.Delete,
@@ -576,7 +590,6 @@ function commonTests() {
 
     await action2.save();
 
-    loader.clearAll();
     const row2 = await loader.load(user.id);
     expect(row2).toBeNull();
 
@@ -599,16 +612,18 @@ function commonTests() {
     };
 
     await verifyRows(0);
+
+    const loader = getNewLoader();
+
     const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      loader.context,
     );
     const user = await action.saveX();
     await verifyRows(1);
-
-    const loader = getNewLoader();
 
     const row = await loader.load(user.id);
     expect(row).toEqual({
@@ -641,6 +656,7 @@ function commonTests() {
         ["FirstName", "Aegon"],
         ["LastName", "Targaryen"],
       ]),
+      loader.context,
     );
     // @ts-ignore
     action2.transformWrite = tranformJonToAegon;
@@ -656,6 +672,7 @@ function commonTests() {
         ["FirstName", "Sansa"],
         ["LastName", "Stark"],
       ]),
+      loader.context,
     );
     // @ts-ignore
     action3.transformWrite = tranformJonToAegon;
@@ -669,14 +686,15 @@ function commonTests() {
   });
 
   test("delete -> update. snake_case", async () => {
+    const loader = getContactNewLoader();
     const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
+      loader.context,
     );
     const contact = await action.saveX();
-    const loader = getContactNewLoader();
 
     const row = await loader.load(contact.id);
     expect(row).toEqual({
@@ -689,7 +707,7 @@ function commonTests() {
     const d = new Date();
     advanceTo(d);
     const action2 = new SimpleAction(
-      new LoggedOutViewer(),
+      action.viewer,
       ContactSchema,
       new Map(),
       WriteOperation.Delete,
@@ -698,7 +716,6 @@ function commonTests() {
 
     await action2.save();
 
-    loader.clearAll();
     const row2 = await loader.load(contact.id);
     expect(row2).toBeNull();
 
@@ -714,14 +731,15 @@ function commonTests() {
   });
 
   test("really delete. snake_case", async () => {
+    const loader = getContactNewLoader();
     const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
+      loader.context,
     );
     const contact = await action.saveX();
-    const loader = getContactNewLoader();
 
     const row = await loader.load(contact.id);
     expect(row).toEqual({
@@ -732,7 +750,7 @@ function commonTests() {
     });
 
     const action2 = new SimpleAction(
-      new LoggedOutViewer(),
+      action.viewer,
       ContactSchema,
       new Map(),
       WriteOperation.Delete,
@@ -742,7 +760,6 @@ function commonTests() {
 
     await action2.save();
 
-    loader.clearAll();
     const row2 = await loader.load(contact.id);
     expect(row2).toBeNull();
 
@@ -763,16 +780,17 @@ function commonTests() {
       expect(parseInt(res.rows[0].count)).toBe(ct);
     };
     await verifyRows(0);
+    const loader = getContactNewLoader();
+
     const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
+      loader.context,
     );
     const contact = await action.saveX();
     await verifyRows(1);
-
-    const loader = getContactNewLoader();
 
     const row = await loader.load(contact.id);
     expect(row).toEqual({
@@ -805,6 +823,7 @@ function commonTests() {
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
       ]),
+      loader.context,
     );
     // @ts-ignore
     action2.transformWrite = tranformJonToAegon;
@@ -820,6 +839,7 @@ function commonTests() {
         ["first_name", "Sansa"],
         ["last_name", "Stark"],
       ]),
+      loader.context,
     );
     // @ts-ignore
     action3.transformWrite = tranformJonToAegon;
@@ -843,16 +863,16 @@ function commonTests() {
       expect(parseInt(res.rows[0].count)).toBe(ct);
     };
     await verifyRows(0);
+    const loader = getContactNewLoader();
     const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
+      loader.context,
     );
     const contact = await action.saveX();
     await verifyRows(1);
-
-    const loader = getContactNewLoader();
 
     const row = await loader.load(contact.id);
     expect(row).toEqual({
@@ -884,6 +904,7 @@ function commonTests() {
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
       ]),
+      loader.context,
     );
     // @ts-ignore
     action2.transformWrite = tranformJonToAegon;
@@ -904,16 +925,16 @@ function commonTests() {
       expect(parseInt(res.rows[0].count)).toBe(ct);
     };
     await verifyRows(0);
+    const loader = getContactNewLoader();
     const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
+      loader.context,
     );
     const contact = await action.saveX();
     await verifyRows(1);
-
-    const loader = getContactNewLoader();
 
     const row = await loader.load(contact.id);
     expect(row).toEqual({
@@ -934,6 +955,7 @@ function commonTests() {
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
       ]),
+      loader.context,
     );
     // @ts-ignore
     action2.transformWrite = tranformJonToAegon;
