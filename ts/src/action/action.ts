@@ -132,6 +132,7 @@ export interface ChangesetOptions {
   // conditional on builder operation remaining the same
   // TODO I don't really like this
   // https://github.com/lolopinto/ent/issues/1437
+  // conditional needs to be a different type and not always TEnt, TViewer of the source action...
   conditionalBuilder: Builder<any, any>;
 }
 

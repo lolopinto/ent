@@ -396,10 +396,10 @@ export interface AssocEdgeInput extends AssocEdgeInputOptions {
   id2Type: string;
 }
 
-export class EdgeOperation implements DataOperation<Ent> {
+export class EdgeOperation <TViewer extends Viewer = Viewer> implements DataOperation<any, TViewer> {
   private edgeData: AssocEdgeData | undefined;
   private constructor(
-    public builder: Builder<any>,
+    public builder: Builder<any, TViewer>,
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
   ) {}
@@ -683,7 +683,7 @@ export class EdgeOperation implements DataOperation<Ent> {
     }
   }
 
-  symmetricEdge(): EdgeOperation {
+  symmetricEdge(): EdgeOperation<TViewer> {
     return new EdgeOperation(
       this.builder,
       {
@@ -705,7 +705,7 @@ export class EdgeOperation implements DataOperation<Ent> {
     );
   }
 
-  inverseEdge(edgeData: AssocEdgeData): EdgeOperation {
+  inverseEdge(edgeData: AssocEdgeData): EdgeOperation<TViewer> {
     return new EdgeOperation(
       this.builder,
       {
@@ -775,13 +775,13 @@ export class EdgeOperation implements DataOperation<Ent> {
     return [data, false];
   }
 
-  static inboundEdge<T extends Ent, T2 extends Ent>(
-    builder: Builder<T>,
+  static inboundEdge<T extends Ent<TViewer>, T2 extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+    builder: Builder<T, TViewer>,
     edgeType: string,
-    id1: Builder<T2> | ID,
+    id1: Builder<T2, TViewer> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
-  ): EdgeOperation {
+  ): EdgeOperation<TViewer> {
     let [id2Val, id2Type, id2Placeholder, id1Val, id1Placeholder] =
       EdgeOperation.resolveIDs(builder, id1);
     let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
@@ -805,13 +805,13 @@ export class EdgeOperation implements DataOperation<Ent> {
     });
   }
 
-  static outboundEdge<T extends Ent, T2 extends Ent>(
-    builder: Builder<T>,
+  static outboundEdge<T extends Ent<TViewer>, T2 extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+    builder: Builder<T, TViewer>,
     edgeType: string,
-    id2: Builder<T2> | ID,
+    id2: Builder<T2, TViewer> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
-  ): EdgeOperation {
+  ): EdgeOperation<TViewer> {
     let [id1Val, id1Type, id1Placeholder, id2Val, id2Placeholder] =
       EdgeOperation.resolveIDs(builder, id2);
     let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
@@ -836,12 +836,12 @@ export class EdgeOperation implements DataOperation<Ent> {
     });
   }
 
-  static removeInboundEdge<T extends Ent>(
-    builder: Builder<T>,
+  static removeInboundEdge<T extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+    builder: Builder<T, TViewer>,
     edgeType: string,
     id1: ID,
     options?: AssocEdgeInputOptions,
-  ): EdgeOperation {
+  ): EdgeOperation<TViewer> {
     if (!builder.existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }
@@ -858,12 +858,12 @@ export class EdgeOperation implements DataOperation<Ent> {
     });
   }
 
-  static removeOutboundEdge<T extends Ent>(
-    builder: Builder<T>,
+  static removeOutboundEdge<T extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+    builder: Builder<T, TViewer>,
     edgeType: string,
     id2: ID,
     options?: AssocEdgeInputOptions,
-  ): EdgeOperation {
+  ): EdgeOperation<TViewer> {
     if (!builder.existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }

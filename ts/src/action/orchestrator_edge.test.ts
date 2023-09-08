@@ -90,8 +90,8 @@ const getLoggedInBuilder = () => {
   );
 };
 
-function getOperations(c: Changeset): DataOperation[] {
-  let ops: DataOperation[] = [];
+function getOperations(c: Changeset): DataOperation<any, Viewer>[] {
+  let ops: DataOperation<any, Viewer>[] = [];
   for (let op of c.executor()) {
     ops.push(op);
   }
