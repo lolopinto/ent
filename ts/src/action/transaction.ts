@@ -1,20 +1,22 @@
-import { Ent, Viewer } from "../core/base";
-import { Action, Builder, Changeset } from "./action";
+import { Ent, Viewer, Data } from "../core/base";
+import { Action, Changeset } from "./action";
 import { ComplexExecutor } from "./executor";
+import { EntBuilder } from "./experimental_action";
 
-type ActionAny<TViewer extends Viewer = Viewer> = Action<
-  Ent<TViewer>,
-  Builder<Ent<TViewer>, TViewer, any>,
-  Viewer<any, any>,
-  any,
-  any
->;
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+type ActionAny<TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+    TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+  > = Action<TEnt, EntBuilder<TEnt, TViewer, TInput, TExistingEnt>, TViewer, TInput, TExistingEnt>;
 
 export class Transaction<TViewer extends Viewer = Viewer> {
   constructor(
     private viewer: TViewer,
     // independent operations
-    private actions: ActionAny<TViewer>[], // TODO ops for different types of transaction
+    private actions: ActionAny<any, TViewer, Data>[], // TODO ops for different types of transaction
   ) {}
 
   async run() {

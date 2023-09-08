@@ -13,7 +13,6 @@ import {
   AlwaysDenyRule,
   PrivacyPolicy,
   Data,
-  IDViewer,
   ID,
 } from "@snowtop/ent";
 import { AllowIfBuilder, Observer, Trigger } from "@snowtop/ent/action";
@@ -115,6 +114,6 @@ export default class CreateContactAction extends CreateContactActionBase {
   viewerForEntLoad(data: Data) {
     // needed if created in user action and we want to make sure this
     // ent is viewable. especially bcos of EntCreationObserver
-    return new IDViewer(data.user_id);
+    return new ExampleViewer(data.user_id);
   }
 }
