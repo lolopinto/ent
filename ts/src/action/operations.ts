@@ -34,15 +34,15 @@ import {
 } from "../core/ent";
 import { buildQuery } from "../core/query_impl";
 
-export interface UpdatedOperation {
+export interface UpdatedOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> {
   operation: WriteOperation;
-  builder: Builder<any>;
+  builder: Builder<TEnt,TViewer>;
 }
 
 // PS: anytime this is updated, need to update ConditionalOperation
-export interface DataOperation<T extends Ent = Ent> {
+export interface DataOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> {
   // builder associated with the operation
-  builder: Builder<T>;
+  builder: Builder<TEnt, TViewer>;
   // any data that needs to be fetched before the write should be fetched here
   // because of how SQLite works, we can't use asynchronous fetches during the write
   // so we batch up fetching to be done beforehand here
@@ -54,21 +54,21 @@ export interface DataOperation<T extends Ent = Ent> {
 
   placeholderID?: ID;
   returnedRow?(): Data | null; // optional to get the raw row
-  createdEnt?(viewer: Viewer): T | null; // optional to indicate the ent that was created
+  createdEnt?(viewer: Viewer): TEnt | null; // optional to indicate the ent that was created
 
   // optional to indicate that the operation should not be performed. used for conditional changesets/operations
   shortCircuit?(executor: Executor): boolean;
-  updatedOperation?(): UpdatedOperation | null;
+  updatedOperation?(): UpdatedOperation<TEnt,TViewer> | null;
   resolve?(executor: Executor): void; //throws?
 
   // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
 }
 
-export class DeleteNodeOperation implements DataOperation {
+export class DeleteNodeOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> implements DataOperation<TEnt, TViewer> {
   constructor(
     private id: ID,
-    public readonly builder: Builder<Ent>,
+    public readonly builder: Builder<TEnt,TViewer>,
     private options: DataOptions,
   ) {}
 
@@ -92,7 +92,7 @@ export class DeleteNodeOperation implements DataOperation {
 export class RawQueryOperation<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
-> implements DataOperation<TEnt>
+> implements DataOperation<TEnt, TViewer>
 {
   constructor(
     public builder: Builder<TEnt, TViewer>,
@@ -124,17 +124,17 @@ export class RawQueryOperation<
   }
 }
 
-export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
+export interface EditNodeOptions<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> extends EditRowOptions {
   fieldsToResolve: string[];
-  loadEntOptions: LoadEntOptions<T>;
+  loadEntOptions: LoadEntOptions<TEnt>;
   key: string;
   onConflict?: CreateRowOptions["onConflict"];
-  builder: Builder<T>;
+  builder: Builder<TEnt, TViewer>;
 }
 
-export class NoOperation<T extends Ent> implements DataOperation<T> {
+export class NoOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> implements DataOperation<TEnt, TViewer> {
   private row: Data | null = null;
-  constructor(public builder: Builder<any>, existingEnt: Ent | null = null) {
+  constructor(public builder: Builder<TEnt, TViewer>, existingEnt: Ent | null = null) {
     // @ts-ignore
     this.row = existingEnt?.data;
   }
@@ -148,15 +148,15 @@ export class NoOperation<T extends Ent> implements DataOperation<T> {
   }
 }
 
-export class EditNodeOperation<T extends Ent> implements DataOperation {
+export class EditNodeOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> implements DataOperation<TEnt, TViewer> {
   private row: Data | null = null;
   placeholderID?: ID | undefined;
-  private updatedOp: UpdatedOperation | null = null;
-  public builder: Builder<T>;
+  private updatedOp: UpdatedOperation<TEnt, TViewer> | null = null;
+  public builder: Builder<TEnt,TViewer>;
   private resolved = false;
 
   constructor(
-    public options: EditNodeOptions<T>,
+    public options: EditNodeOptions<TEnt, TViewer>,
     private existingEnt: Ent | null = null,
   ) {
     this.builder = options.builder;
@@ -199,7 +199,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     return false;
   }
 
-  private buildOnConflictQuery(options: EditNodeOptions<T>) {
+  private buildOnConflictQuery(options: EditNodeOptions<TEnt,TViewer>) {
     // assumes onConflict has been checked already...
     const clauses: clause.Clause[] = [];
     for (const col of this.options.onConflict!.onConflictCols) {
@@ -256,12 +256,12 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     }
   }
 
-  private buildReloadQuery(options: EditNodeOptions<T>, cls: clause.Clause) {
+  private buildReloadQuery(options: EditNodeOptions<TEnt,TViewer>, cls: clause.Clause) {
     // TODO this isn't always an ObjectLoader. should throw or figure out a way to get query
     // and run this on its own...
     const loader = this.options.loadEntOptions.loaderFactory.createLoader(
       options.context,
-    ) as ObjectLoader<T>;
+    ) as ObjectLoader;
     const opts = loader.getOptions();
     if (opts.clause) {
       let optionClause: clause.Clause | undefined;
@@ -283,7 +283,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     return query;
   }
 
-  private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<T>) {
+  private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<TEnt,TViewer>) {
     const query = this.buildReloadQuery(options, clause.Eq(options.key, id));
 
     // special case log here because we're not going through any of the normal
@@ -353,14 +353,14 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     return this.row;
   }
 
-  createdEnt(viewer: Viewer): T | null {
+  createdEnt(viewer: Viewer): TEnt | null {
     if (!this.row) {
       return null;
     }
     return new this.options.loadEntOptions.ent(viewer, this.row);
   }
 
-  updatedOperation(): UpdatedOperation | null {
+  updatedOperation(): UpdatedOperation<TEnt,TViewer> | null {
     return this.updatedOp;
   }
 }
@@ -396,7 +396,7 @@ export interface AssocEdgeInput extends AssocEdgeInputOptions {
   id2Type: string;
 }
 
-export class EdgeOperation implements DataOperation {
+export class EdgeOperation implements DataOperation<Ent> {
   private edgeData: AssocEdgeData | undefined;
   private constructor(
     public builder: Builder<any>,
@@ -881,16 +881,16 @@ export class EdgeOperation implements DataOperation {
   }
 }
 
-export class ConditionalOperation<T extends Ent = Ent>
-  implements DataOperation<T>
+export class ConditionalOperation<TEnt extends Ent<TViewer>,TViewer extends Viewer = Viewer>
+  implements DataOperation<TEnt, TViewer>
 {
   placeholderID?: ID | undefined;
   protected shortCircuited = false;
-  public readonly builder: Builder<T>;
+  public readonly builder: Builder<TEnt,TViewer>;
 
   constructor(
-    protected op: DataOperation<T>,
-    private conditionalBuilder: Builder<any>,
+    protected op: DataOperation<TEnt,TViewer>,
+    private conditionalBuilder: Builder<TEnt,TViewer>,
   ) {
     this.builder = op.builder;
     this.placeholderID = op.placeholderID;
@@ -931,7 +931,7 @@ export class ConditionalOperation<T extends Ent = Ent>
     return null;
   }
 
-  updatedOperation(): UpdatedOperation | null {
+  updatedOperation(): UpdatedOperation<TEnt, TViewer> | null {
     if (this.op.updatedOperation) {
       return this.op.updatedOperation();
     }
@@ -956,16 +956,16 @@ export class ConditionalOperation<T extends Ent = Ent>
 
 // separate because we need to implement createdEnt and we manually run those before edge/other operations in executors
 export class ConditionalNodeOperation<
-  T extends Ent,
-> extends ConditionalOperation<T> {
-  createdEnt(viewer: Viewer): T | null {
+  TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer,
+> extends ConditionalOperation<TEnt, TViewer> {
+  createdEnt(viewer: Viewer): TEnt | null {
     if (this.op.createdEnt) {
       return this.op.createdEnt(viewer);
     }
     return null;
   }
 
-  updatedOperation(): UpdatedOperation | null {
+  updatedOperation(): UpdatedOperation<TEnt, TViewer> | null {
     if (!this.op.updatedOperation) {
       return null;
     }

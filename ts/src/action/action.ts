@@ -48,8 +48,8 @@ export interface Builder<
 
 // PS: this is a private API subject to change
 export interface Executor
-  extends Iterable<DataOperation>,
-    Iterator<DataOperation> {
+  extends Iterable<DataOperation<Ent>>,
+    Iterator<DataOperation<Ent>> {
   placeholderID: ID;
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;

@@ -230,7 +230,7 @@ export class Orchestrator<
   private changesets: Changeset[] = [];
   private dependencies: Map<ID, Builder<TEnt>> = new Map();
   private fieldsToResolve: string[] = [];
-  private mainOp: DataOperation<TEnt> | null;
+  private mainOp: DataOperation<TEnt, TViewer> | null;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -381,7 +381,7 @@ export class Orchestrator<
     }
   }
 
-  private buildMainOp(conditionalBuilder?: Builder<any>): DataOperation {
+  private buildMainOp(conditionalBuilder?: Builder<TEnt, TViewer>): DataOperation<TEnt, TViewer> {
     // this assumes we have validated fields
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -406,7 +406,7 @@ export class Orchestrator<
             `expressions are only supported in edit operations for now`,
           );
         }
-        const opts: EditNodeOptions<TEnt> = {
+        const opts: EditNodeOptions<TEnt,TViewer> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
@@ -495,8 +495,8 @@ export class Orchestrator<
   }
 
   private async buildEdgeOps(
-    ops: DataOperation[],
-    conditionalBuilder: Builder<any>,
+    ops: DataOperation<TEnt, TViewer>[],
+    conditionalBuilder: Builder<TEnt, TViewer>,
     conditionalOverride: boolean,
   ): Promise<void> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
@@ -526,7 +526,7 @@ export class Orchestrator<
             // doesn't support conditional edges
 
             if (edgeData.symmetricEdge) {
-              let symmetric: DataOperation = edgeOp.symmetricEdge();
+              let symmetric: DataOperation<TEnt,TViewer> = edgeOp.symmetricEdge();
               if (conditional) {
                 symmetric = new ConditionalOperation(
                   symmetric,
@@ -537,7 +537,7 @@ export class Orchestrator<
             }
 
             if (edgeData.inverseEdgeType) {
-              let inverse: DataOperation = edgeOp.inverseEdge(edgeData);
+              let inverse: DataOperation<TEnt, TViewer> = edgeOp.inverseEdge(edgeData);
               if (conditional) {
                 inverse = new ConditionalOperation(inverse, conditionalBuilder);
               }
@@ -1283,10 +1283,10 @@ export class Orchestrator<
   }
 
   private async buildPlusChangeset(
-    conditionalBuilder: Builder<any>,
+    conditionalBuilder: Builder<TEnt, TViewer>,
     conditionalOverride: boolean,
   ): Promise<EntChangeset<TEnt>> {
-    let ops: DataOperation[] = [];
+    let ops: DataOperation<TEnt, TViewer>[] = [];
     let processOps = true;
     if (
       this.options.action?.__failPrivacySilently &&
