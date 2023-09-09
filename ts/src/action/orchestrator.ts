@@ -91,7 +91,10 @@ export interface OrchestratorOptions<
   fieldInfo: FieldInfoMap;
 }
 
-interface edgeInputDataOpts<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> {
+interface edgeInputDataOpts<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
   edgeType: string;
   id: Builder<TEnt, TViewer> | ID; // when an OutboundEdge, this is the id2, when an inbound edge, this is the id1
   nodeType?: string; // expected to be set for WriteOperation.Insert and undefined for WriteOperation.Delete
@@ -101,7 +104,10 @@ interface edgeInputDataOpts<TEnt extends Ent<TViewer>, TViewer extends Viewer = 
 // hmm is it worth having multiple types here or just having one?
 // we have one type here instead
 // TODO does this need TEnt??
-export interface EdgeInputData<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> extends edgeInputDataOpts<TEnt,TViewer> {
+export interface EdgeInputData<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> extends edgeInputDataOpts<TEnt, TViewer> {
   isBuilder(id: Builder<TEnt, TViewer> | ID): id is Builder<TEnt, TViewer>;
 }
 
@@ -110,11 +116,16 @@ export enum edgeDirection {
   outboundEdge,
 }
 
-interface internalEdgeInputData<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> extends edgeInputDataOpts<TEnt,TViewer> {
+interface internalEdgeInputData<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> extends edgeInputDataOpts<TEnt, TViewer> {
   direction: edgeDirection;
 }
 
-class edgeInputData<TViewer extends Viewer = Viewer> implements EdgeInputData<any,TViewer> {
+class edgeInputData<TViewer extends Viewer = Viewer>
+  implements EdgeInputData<any, TViewer>
+{
   direction: edgeDirection;
   edgeType: string;
   id: Builder<any, TViewer> | ID;
@@ -130,8 +141,11 @@ class edgeInputData<TViewer extends Viewer = Viewer> implements EdgeInputData<an
   }
 }
 
-type IDMap< TViewer extends Viewer = Viewer> = Map<ID, edgeInputData<TViewer>>;
-type OperationMap<TViewer extends Viewer = Viewer> = Map<WriteOperation, IDMap<TViewer>>;
+type IDMap<TViewer extends Viewer = Viewer> = Map<ID, edgeInputData<TViewer>>;
+type OperationMap<TViewer extends Viewer = Viewer> = Map<
+  WriteOperation,
+  IDMap<TViewer>
+>;
 // this is a map of
 // edgeType : {
 //   WriteOperation: {
@@ -140,7 +154,10 @@ type OperationMap<TViewer extends Viewer = Viewer> = Map<WriteOperation, IDMap<T
 //     }
 //   }
 // }
-type EdgeMap<TViewer extends Viewer = Viewer> = Map<string, OperationMap<TViewer>>;
+type EdgeMap<TViewer extends Viewer = Viewer> = Map<
+  string,
+  OperationMap<TViewer>
+>;
 
 function getViewer(viewer: Viewer) {
   if (!viewer.viewerID) {
@@ -362,7 +379,10 @@ export class Orchestrator<
   // this doesn't take a direction as that's an implementation detail
   // it doesn't make any sense to use the same edgeType for inbound and outbound edges
   // so no need for that
-  getInputEdges(edgeType: string, op: WriteOperation): EdgeInputData<any, TViewer>[] {
+  getInputEdges(
+    edgeType: string,
+    op: WriteOperation,
+  ): EdgeInputData<any, TViewer>[] {
     let m: IDMap<TViewer> = this.edges.get(edgeType)?.get(op) || new Map();
     // want a list and not an IterableIterator
     let ret: edgeInputData<TViewer>[] = [];
@@ -382,7 +402,9 @@ export class Orchestrator<
     }
   }
 
-  private buildMainOp(conditionalBuilder?: Builder<TEnt, TViewer>): DataOperation<TEnt, TViewer> {
+  private buildMainOp(
+    conditionalBuilder?: Builder<TEnt, TViewer>,
+  ): DataOperation<TEnt, TViewer> {
     // this assumes we have validated fields
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -407,7 +429,7 @@ export class Orchestrator<
             `expressions are only supported in edit operations for now`,
           );
         }
-        const opts: EditNodeOptions<TEnt,TViewer> = {
+        const opts: EditNodeOptions<TEnt, TViewer> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
@@ -527,7 +549,8 @@ export class Orchestrator<
             // doesn't support conditional edges
 
             if (edgeData.symmetricEdge) {
-              let symmetric: DataOperation<any, TViewer> = edgeOp.symmetricEdge();
+              let symmetric: DataOperation<any, TViewer> =
+                edgeOp.symmetricEdge();
               if (conditional) {
                 symmetric = new ConditionalOperation(
                   symmetric,
@@ -538,7 +561,8 @@ export class Orchestrator<
             }
 
             if (edgeData.inverseEdgeType) {
-              let inverse: DataOperation<any, TViewer> = edgeOp.inverseEdge(edgeData);
+              let inverse: DataOperation<any, TViewer> =
+                edgeOp.inverseEdge(edgeData);
               if (conditional) {
                 inverse = new ConditionalOperation(inverse, conditionalBuilder);
               }
@@ -1402,11 +1426,15 @@ function randomNum(): string {
 // used in executor. if we end up creating multiple changesets from a builder, we need
 // different placeholders
 // in practice, only applies to Entchangeset::changesetFrom()
-export class EntChangeset<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> implements Changeset {
+export class EntChangeset<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> implements Changeset
+{
   private _executor: Executor | null;
   constructor(
     public viewer: Viewer,
-    private builder: Builder<TEnt,TViewer>,
+    private builder: Builder<TEnt, TViewer>,
     public readonly placeholderID: ID,
     private conditionalOverride: boolean,
     public operations: DataOperation<any, TViewer>[],
@@ -1415,7 +1443,10 @@ export class EntChangeset<TEnt extends Ent<TViewer>, TViewer extends Viewer = Vi
     private options?: OrchestratorOptions<TEnt, Data, TViewer>,
   ) {}
 
-  static changesetFrom<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer>(builder: Builder<TEnt, TViewer, any>, ops: DataOperation<any, TViewer>[]) {
+  static changesetFrom<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(builder: Builder<TEnt, TViewer, any>, ops: DataOperation<any, TViewer>[]) {
     return new EntChangeset(
       builder.viewer,
       builder,
@@ -1426,7 +1457,10 @@ export class EntChangeset<TEnt extends Ent<TViewer>, TViewer extends Viewer = Vi
     );
   }
 
-  static changesetFromQueries<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  static changesetFromQueries<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<TEnt, TViewer, any>,
     queries: Array<string | parameterizedQueryOptions>,
   ) {
@@ -1435,7 +1469,10 @@ export class EntChangeset<TEnt extends Ent<TViewer>, TViewer extends Viewer = Vi
     ]);
   }
 
-  private static async changesetFromEdgeOp<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  private static async changesetFromEdgeOp<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<TEnt, TViewer, any>,
     op: EdgeOperation<TViewer>,
     edgeType: string,
@@ -1456,7 +1493,10 @@ export class EntChangeset<TEnt extends Ent<TViewer>, TViewer extends Viewer = Vi
     return EntChangeset.changesetFrom(builder, ops);
   }
 
-  static async changesetFromOutboundEdge<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  static async changesetFromOutboundEdge<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<TEnt, TViewer, any>,
     edgeType: string,
     id2: Builder<any, TViewer> | ID,
@@ -1470,7 +1510,10 @@ export class EntChangeset<TEnt extends Ent<TViewer>, TViewer extends Viewer = Vi
     );
   }
 
-  static async changesetFromInboundEdge<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  static async changesetFromInboundEdge<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<TEnt, TViewer, any>,
     edgeType: string,
     id1: Builder<any, TViewer> | ID,
@@ -1484,7 +1527,10 @@ export class EntChangeset<TEnt extends Ent<TViewer>, TViewer extends Viewer = Vi
     );
   }
 
-  static changesetRemoveFromOutboundEdge<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  static changesetRemoveFromOutboundEdge<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<TEnt, TViewer, any>,
     edgeType: string,
     id2: ID,
@@ -1497,7 +1543,10 @@ export class EntChangeset<TEnt extends Ent<TViewer>, TViewer extends Viewer = Vi
     );
   }
 
-  static changesetRemoveFromInboundEdge<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  static changesetRemoveFromInboundEdge<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<TEnt, TViewer, any>,
     edgeType: string,
     id1: ID,

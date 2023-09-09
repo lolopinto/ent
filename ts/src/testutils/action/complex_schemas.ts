@@ -368,7 +368,7 @@ export class UserAction extends SimpleAction<User> {
 
 type getMembershipFunction = (
   viewer: Viewer,
-  edge: EdgeInputData<Ent,Viewer>,
+  edge: EdgeInputData<Ent, Viewer>,
 ) => SimpleAction<Ent>;
 
 export class GroupMembershipTrigger

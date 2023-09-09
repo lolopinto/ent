@@ -34,13 +34,19 @@ import {
 } from "../core/ent";
 import { buildQuery } from "../core/query_impl";
 
-export interface UpdatedOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> {
+export interface UpdatedOperation<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
   operation: WriteOperation;
-  builder: Builder<TEnt,TViewer>;
+  builder: Builder<TEnt, TViewer>;
 }
 
 // PS: anytime this is updated, need to update ConditionalOperation
-export interface DataOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> {
+export interface DataOperation<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
   // builder associated with the operation
   builder: Builder<TEnt, TViewer>;
   // any data that needs to be fetched before the write should be fetched here
@@ -58,17 +64,21 @@ export interface DataOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer
 
   // optional to indicate that the operation should not be performed. used for conditional changesets/operations
   shortCircuit?(executor: Executor): boolean;
-  updatedOperation?(): UpdatedOperation<TEnt,TViewer> | null;
+  updatedOperation?(): UpdatedOperation<TEnt, TViewer> | null;
   resolve?(executor: Executor): void; //throws?
 
   // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
 }
 
-export class DeleteNodeOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> implements DataOperation<TEnt, TViewer> {
+export class DeleteNodeOperation<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> implements DataOperation<TEnt, TViewer>
+{
   constructor(
     private id: ID,
-    public readonly builder: Builder<TEnt,TViewer>,
+    public readonly builder: Builder<TEnt, TViewer>,
     private options: DataOptions,
   ) {}
 
@@ -124,7 +134,10 @@ export class RawQueryOperation<
   }
 }
 
-export interface EditNodeOptions<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> extends EditRowOptions {
+export interface EditNodeOptions<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> extends EditRowOptions {
   fieldsToResolve: string[];
   loadEntOptions: LoadEntOptions<TEnt>;
   key: string;
@@ -132,9 +145,16 @@ export interface EditNodeOptions<TEnt extends Ent<TViewer>, TViewer extends View
   builder: Builder<TEnt, TViewer>;
 }
 
-export class NoOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> implements DataOperation<TEnt, TViewer> {
+export class NoOperation<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> implements DataOperation<TEnt, TViewer>
+{
   private row: Data | null = null;
-  constructor(public builder: Builder<TEnt, TViewer>, existingEnt: Ent | null = null) {
+  constructor(
+    public builder: Builder<TEnt, TViewer>,
+    existingEnt: Ent | null = null,
+  ) {
     // @ts-ignore
     this.row = existingEnt?.data;
   }
@@ -148,11 +168,15 @@ export class NoOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Vie
   }
 }
 
-export class EditNodeOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer> implements DataOperation<TEnt, TViewer> {
+export class EditNodeOperation<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> implements DataOperation<TEnt, TViewer>
+{
   private row: Data | null = null;
   placeholderID?: ID | undefined;
   private updatedOp: UpdatedOperation<TEnt, TViewer> | null = null;
-  public builder: Builder<TEnt,TViewer>;
+  public builder: Builder<TEnt, TViewer>;
   private resolved = false;
 
   constructor(
@@ -199,7 +223,7 @@ export class EditNodeOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer
     return false;
   }
 
-  private buildOnConflictQuery(options: EditNodeOptions<TEnt,TViewer>) {
+  private buildOnConflictQuery(options: EditNodeOptions<TEnt, TViewer>) {
     // assumes onConflict has been checked already...
     const clauses: clause.Clause[] = [];
     for (const col of this.options.onConflict!.onConflictCols) {
@@ -256,7 +280,10 @@ export class EditNodeOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer
     }
   }
 
-  private buildReloadQuery(options: EditNodeOptions<TEnt,TViewer>, cls: clause.Clause) {
+  private buildReloadQuery(
+    options: EditNodeOptions<TEnt, TViewer>,
+    cls: clause.Clause,
+  ) {
     // TODO this isn't always an ObjectLoader. should throw or figure out a way to get query
     // and run this on its own...
     const loader = this.options.loadEntOptions.loaderFactory.createLoader(
@@ -283,7 +310,11 @@ export class EditNodeOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer
     return query;
   }
 
-  private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<TEnt,TViewer>) {
+  private reloadRow(
+    queryer: SyncQueryer,
+    id: ID,
+    options: EditNodeOptions<TEnt, TViewer>,
+  ) {
     const query = this.buildReloadQuery(options, clause.Eq(options.key, id));
 
     // special case log here because we're not going through any of the normal
@@ -360,7 +391,7 @@ export class EditNodeOperation<TEnt extends Ent<TViewer>, TViewer extends Viewer
     return new this.options.loadEntOptions.ent(viewer, this.row);
   }
 
-  updatedOperation(): UpdatedOperation<TEnt,TViewer> | null {
+  updatedOperation(): UpdatedOperation<TEnt, TViewer> | null {
     return this.updatedOp;
   }
 }
@@ -396,7 +427,9 @@ export interface AssocEdgeInput extends AssocEdgeInputOptions {
   id2Type: string;
 }
 
-export class EdgeOperation <TViewer extends Viewer = Viewer> implements DataOperation<any, TViewer> {
+export class EdgeOperation<TViewer extends Viewer = Viewer>
+  implements DataOperation<any, TViewer>
+{
   private edgeData: AssocEdgeData | undefined;
   private constructor(
     public builder: Builder<any, TViewer>,
@@ -775,7 +808,11 @@ export class EdgeOperation <TViewer extends Viewer = Viewer> implements DataOper
     return [data, false];
   }
 
-  static inboundEdge<T extends Ent<TViewer>, T2 extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  static inboundEdge<
+    T extends Ent<TViewer>,
+    T2 extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<T, TViewer>,
     edgeType: string,
     id1: Builder<T2, TViewer> | ID,
@@ -805,7 +842,11 @@ export class EdgeOperation <TViewer extends Viewer = Viewer> implements DataOper
     });
   }
 
-  static outboundEdge<T extends Ent<TViewer>, T2 extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  static outboundEdge<
+    T extends Ent<TViewer>,
+    T2 extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<T, TViewer>,
     edgeType: string,
     id2: Builder<T2, TViewer> | ID,
@@ -836,7 +877,10 @@ export class EdgeOperation <TViewer extends Viewer = Viewer> implements DataOper
     });
   }
 
-  static removeInboundEdge<T extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  static removeInboundEdge<
+    T extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<T, TViewer>,
     edgeType: string,
     id1: ID,
@@ -858,7 +902,10 @@ export class EdgeOperation <TViewer extends Viewer = Viewer> implements DataOper
     });
   }
 
-  static removeOutboundEdge<T extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
+  static removeOutboundEdge<
+    T extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
     builder: Builder<T, TViewer>,
     edgeType: string,
     id2: ID,
@@ -881,16 +928,18 @@ export class EdgeOperation <TViewer extends Viewer = Viewer> implements DataOper
   }
 }
 
-export class ConditionalOperation<TEnt extends Ent<TViewer>,TViewer extends Viewer = Viewer>
-  implements DataOperation<TEnt, TViewer>
+export class ConditionalOperation<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> implements DataOperation<TEnt, TViewer>
 {
   placeholderID?: ID | undefined;
   protected shortCircuited = false;
-  public readonly builder: Builder<TEnt,TViewer>;
+  public readonly builder: Builder<TEnt, TViewer>;
 
   constructor(
-    protected op: DataOperation<TEnt,TViewer>,
-    private conditionalBuilder: Builder<TEnt,TViewer>,
+    protected op: DataOperation<TEnt, TViewer>,
+    private conditionalBuilder: Builder<TEnt, TViewer>,
   ) {
     this.builder = op.builder;
     this.placeholderID = op.placeholderID;
@@ -956,7 +1005,8 @@ export class ConditionalOperation<TEnt extends Ent<TViewer>,TViewer extends View
 
 // separate because we need to implement createdEnt and we manually run those before edge/other operations in executors
 export class ConditionalNodeOperation<
-  TEnt extends Ent<TViewer>, TViewer extends Viewer = Viewer,
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
 > extends ConditionalOperation<TEnt, TViewer> {
   createdEnt(viewer: Viewer): TEnt | null {
     if (this.op.createdEnt) {
