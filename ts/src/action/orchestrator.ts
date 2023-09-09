@@ -103,12 +103,10 @@ interface edgeInputDataOpts<
 
 // hmm is it worth having multiple types here or just having one?
 // we have one type here instead
-// TODO does this need TEnt??
 export interface EdgeInputData<
-  TEnt extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
-> extends edgeInputDataOpts<TEnt, TViewer> {
-  isBuilder(id: Builder<TEnt, TViewer> | ID): id is Builder<TEnt, TViewer>;
+> extends edgeInputDataOpts<any, TViewer> {
+  isBuilder(id: Builder<any, TViewer> | ID): id is Builder<any, TViewer>;
 }
 
 export enum edgeDirection {
@@ -124,7 +122,7 @@ interface internalEdgeInputData<
 }
 
 class edgeInputData<TViewer extends Viewer = Viewer>
-  implements EdgeInputData<any, TViewer>
+  implements EdgeInputData<TViewer>
 {
   direction: edgeDirection;
   edgeType: string;
@@ -382,7 +380,7 @@ export class Orchestrator<
   getInputEdges(
     edgeType: string,
     op: WriteOperation,
-  ): EdgeInputData<any, TViewer>[] {
+  ): EdgeInputData<TViewer>[] {
     let m: IDMap<TViewer> = this.edges.get(edgeType)?.get(op) || new Map();
     // want a list and not an IterableIterator
     let ret: edgeInputData<TViewer>[] = [];
