@@ -53,7 +53,7 @@ import { Dialect } from "../../core/db";
 import { ConstraintType } from "../../schema";
 
 const ml = new MockLogs();
-let operations: DataOperation[] = [];
+let operations: DataOperation<any, Viewer>[] = [];
 
 const edges = [
   "fake_edge",
@@ -368,7 +368,7 @@ export class UserAction extends SimpleAction<User> {
 
 type getMembershipFunction = (
   viewer: Viewer,
-  edge: EdgeInputData,
+  edge: EdgeInputData<Viewer>,
 ) => SimpleAction<Ent>;
 
 export class GroupMembershipTrigger

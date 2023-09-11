@@ -91,17 +91,22 @@ export interface OrchestratorOptions<
   fieldInfo: FieldInfoMap;
 }
 
-interface edgeInputDataOpts {
+interface edgeInputDataOpts<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
   edgeType: string;
-  id: Builder<Ent> | ID; // when an OutboundEdge, this is the id2, when an inbound edge, this is the id1
+  id: Builder<TEnt, TViewer> | ID; // when an OutboundEdge, this is the id2, when an inbound edge, this is the id1
   nodeType?: string; // expected to be set for WriteOperation.Insert and undefined for WriteOperation.Delete
   options?: AssocEdgeInputOptions;
 }
 
 // hmm is it worth having multiple types here or just having one?
 // we have one type here instead
-export interface EdgeInputData extends edgeInputDataOpts {
-  isBuilder(id: Builder<Ent> | ID): id is Builder<Ent>;
+export interface EdgeInputData<
+  TViewer extends Viewer = Viewer,
+> extends edgeInputDataOpts<any, TViewer> {
+  isBuilder(id: Builder<any, TViewer> | ID): id is Builder<any, TViewer>;
 }
 
 export enum edgeDirection {
@@ -109,28 +114,36 @@ export enum edgeDirection {
   outboundEdge,
 }
 
-interface internalEdgeInputData extends edgeInputDataOpts {
+interface internalEdgeInputData<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> extends edgeInputDataOpts<TEnt, TViewer> {
   direction: edgeDirection;
 }
 
-class edgeInputData implements EdgeInputData {
+class edgeInputData<TViewer extends Viewer = Viewer>
+  implements EdgeInputData<TViewer>
+{
   direction: edgeDirection;
   edgeType: string;
-  id: Builder<Ent> | ID;
+  id: Builder<any, TViewer> | ID;
   nodeType?: string;
   options?: AssocEdgeInputOptions;
 
-  constructor(opts: internalEdgeInputData) {
+  constructor(opts: internalEdgeInputData<any, TViewer>) {
     Object.assign(this, opts);
   }
 
-  isBuilder(id: Builder<Ent> | ID): id is Builder<Ent> {
-    return (id as Builder<Ent>).placeholderID !== undefined;
+  isBuilder(id: Builder<any, TViewer> | ID): id is Builder<any, TViewer> {
+    return (id as Builder<any, TViewer>).placeholderID !== undefined;
   }
 }
 
-type IDMap = Map<ID, edgeInputData>;
-type OperationMap = Map<WriteOperation, IDMap>;
+type IDMap<TViewer extends Viewer = Viewer> = Map<ID, edgeInputData<TViewer>>;
+type OperationMap<TViewer extends Viewer = Viewer> = Map<
+  WriteOperation,
+  IDMap<TViewer>
+>;
 // this is a map of
 // edgeType : {
 //   WriteOperation: {
@@ -139,7 +152,10 @@ type OperationMap = Map<WriteOperation, IDMap>;
 //     }
 //   }
 // }
-type EdgeMap = Map<string, OperationMap>;
+type EdgeMap<TViewer extends Viewer = Viewer> = Map<
+  string,
+  OperationMap<TViewer>
+>;
 
 function getViewer(viewer: Viewer) {
   if (!viewer.viewerID) {
@@ -223,14 +239,14 @@ export class Orchestrator<
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   private edgeSet: Set<string> = new Set<string>();
-  private edges: EdgeMap = new Map();
-  private conditionalEdges: EdgeMap = new Map();
+  private edges: EdgeMap<TViewer> = new Map();
+  private conditionalEdges: EdgeMap<TViewer> = new Map();
   private validatedFields: Data | null;
   private logValues: Data | null;
   private changesets: Changeset[] = [];
   private dependencies: Map<ID, Builder<TEnt>> = new Map();
   private fieldsToResolve: string[] = [];
-  private mainOp: DataOperation<TEnt> | null;
+  private mainOp: DataOperation<TEnt, TViewer> | null;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -258,14 +274,14 @@ export class Orchestrator<
   }
 
   private addEdge(
-    edge: edgeInputData,
+    edge: edgeInputData<TViewer>,
     op: WriteOperation,
     conditional?: boolean,
   ) {
     this.edgeSet.add(edge.edgeType);
 
-    let m1: OperationMap = this.edges.get(edge.edgeType) || new Map();
-    let m2: IDMap = m1.get(op) || new Map();
+    let m1: OperationMap<TViewer> = this.edges.get(edge.edgeType) || new Map();
+    let m2: IDMap<TViewer> = m1.get(op) || new Map();
     let id: ID;
     if (edge.isBuilder(edge.id)) {
       id = edge.id.placeholderID;
@@ -361,10 +377,13 @@ export class Orchestrator<
   // this doesn't take a direction as that's an implementation detail
   // it doesn't make any sense to use the same edgeType for inbound and outbound edges
   // so no need for that
-  getInputEdges(edgeType: string, op: WriteOperation): EdgeInputData[] {
-    let m: IDMap = this.edges.get(edgeType)?.get(op) || new Map();
+  getInputEdges(
+    edgeType: string,
+    op: WriteOperation,
+  ): EdgeInputData<TViewer>[] {
+    let m: IDMap<TViewer> = this.edges.get(edgeType)?.get(op) || new Map();
     // want a list and not an IterableIterator
-    let ret: edgeInputData[] = [];
+    let ret: edgeInputData<TViewer>[] = [];
     m.forEach((v) => ret.push(v));
 
     return ret;
@@ -381,7 +400,9 @@ export class Orchestrator<
     }
   }
 
-  private buildMainOp(conditionalBuilder?: Builder<any>): DataOperation {
+  private buildMainOp(
+    conditionalBuilder?: Builder<TEnt, TViewer>,
+  ): DataOperation<TEnt, TViewer> {
     // this assumes we have validated fields
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -406,7 +427,7 @@ export class Orchestrator<
             `expressions are only supported in edit operations for now`,
           );
         }
-        const opts: EditNodeOptions<TEnt> = {
+        const opts: EditNodeOptions<TEnt, TViewer> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
@@ -444,8 +465,8 @@ export class Orchestrator<
   private getEdgeOperation(
     edgeType: string,
     op: WriteOperation,
-    edge: internalEdgeInputData,
-  ): EdgeOperation {
+    edge: internalEdgeInputData<any, TViewer>,
+  ): EdgeOperation<TViewer> {
     if (op === WriteOperation.Insert) {
       if (!edge.nodeType) {
         throw new Error(`no nodeType for edge when adding outboundEdge`);
@@ -495,12 +516,12 @@ export class Orchestrator<
   }
 
   private async buildEdgeOps(
-    ops: DataOperation[],
-    conditionalBuilder: Builder<any>,
+    ops: DataOperation<any, TViewer>[],
+    conditionalBuilder: Builder<TEnt, TViewer>,
     conditionalOverride: boolean,
   ): Promise<void> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
-    const edges: [EdgeMap, boolean][] = [
+    const edges: [EdgeMap<TViewer>, boolean][] = [
       [this.edges, false],
       [this.conditionalEdges, true],
     ];
@@ -526,7 +547,8 @@ export class Orchestrator<
             // doesn't support conditional edges
 
             if (edgeData.symmetricEdge) {
-              let symmetric: DataOperation = edgeOp.symmetricEdge();
+              let symmetric: DataOperation<any, TViewer> =
+                edgeOp.symmetricEdge();
               if (conditional) {
                 symmetric = new ConditionalOperation(
                   symmetric,
@@ -537,7 +559,8 @@ export class Orchestrator<
             }
 
             if (edgeData.inverseEdgeType) {
-              let inverse: DataOperation = edgeOp.inverseEdge(edgeData);
+              let inverse: DataOperation<any, TViewer> =
+                edgeOp.inverseEdge(edgeData);
               if (conditional) {
                 inverse = new ConditionalOperation(inverse, conditionalBuilder);
               }
@@ -1283,10 +1306,10 @@ export class Orchestrator<
   }
 
   private async buildPlusChangeset(
-    conditionalBuilder: Builder<any>,
+    conditionalBuilder: Builder<TEnt, TViewer>,
     conditionalOverride: boolean,
   ): Promise<EntChangeset<TEnt>> {
-    let ops: DataOperation[] = [];
+    let ops: DataOperation<any, TViewer>[] = [];
     let processOps = true;
     if (
       this.options.action?.__failPrivacySilently &&
@@ -1401,20 +1424,27 @@ function randomNum(): string {
 // used in executor. if we end up creating multiple changesets from a builder, we need
 // different placeholders
 // in practice, only applies to Entchangeset::changesetFrom()
-export class EntChangeset<T extends Ent> implements Changeset {
+export class EntChangeset<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> implements Changeset
+{
   private _executor: Executor | null;
   constructor(
     public viewer: Viewer,
-    private builder: Builder<T>,
+    private builder: Builder<TEnt, TViewer>,
     public readonly placeholderID: ID,
     private conditionalOverride: boolean,
-    public operations: DataOperation[],
+    public operations: DataOperation<any, TViewer>[],
     public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset[],
-    private options?: OrchestratorOptions<T, Data, Viewer>,
+    private options?: OrchestratorOptions<TEnt, Data, TViewer>,
   ) {}
 
-  static changesetFrom(builder: Builder<any, any, any>, ops: DataOperation[]) {
+  static changesetFrom<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(builder: Builder<TEnt, TViewer, any>, ops: DataOperation<any, TViewer>[]) {
     return new EntChangeset(
       builder.viewer,
       builder,
@@ -1425,8 +1455,11 @@ export class EntChangeset<T extends Ent> implements Changeset {
     );
   }
 
-  static changesetFromQueries(
-    builder: Builder<any, any, any>,
+  static changesetFromQueries<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
+    builder: Builder<TEnt, TViewer, any>,
     queries: Array<string | parameterizedQueryOptions>,
   ) {
     return EntChangeset.changesetFrom(builder, [
@@ -1434,13 +1467,16 @@ export class EntChangeset<T extends Ent> implements Changeset {
     ]);
   }
 
-  private static async changesetFromEdgeOp(
-    builder: Builder<any, any, any>,
-    op: EdgeOperation,
+  private static async changesetFromEdgeOp<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
+    builder: Builder<TEnt, TViewer, any>,
+    op: EdgeOperation<TViewer>,
     edgeType: string,
   ) {
     const edgeData = await loadEdgeData(edgeType);
-    const ops: DataOperation[] = [op];
+    const ops: DataOperation<TEnt, TViewer>[] = [op];
     if (!edgeData) {
       throw new Error(`could not load edge data for '${edgeType}'`);
     }
@@ -1455,10 +1491,13 @@ export class EntChangeset<T extends Ent> implements Changeset {
     return EntChangeset.changesetFrom(builder, ops);
   }
 
-  static async changesetFromOutboundEdge(
-    builder: Builder<any, any, any>,
+  static async changesetFromOutboundEdge<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
+    builder: Builder<TEnt, TViewer, any>,
     edgeType: string,
-    id2: Builder<any> | ID,
+    id2: Builder<any, TViewer> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ) {
@@ -1469,10 +1508,13 @@ export class EntChangeset<T extends Ent> implements Changeset {
     );
   }
 
-  static async changesetFromInboundEdge(
-    builder: Builder<any, any, any>,
+  static async changesetFromInboundEdge<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
+    builder: Builder<TEnt, TViewer, any>,
     edgeType: string,
-    id1: Builder<any> | ID,
+    id1: Builder<any, TViewer> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ) {
@@ -1483,8 +1525,11 @@ export class EntChangeset<T extends Ent> implements Changeset {
     );
   }
 
-  static changesetRemoveFromOutboundEdge(
-    builder: Builder<any, any, any>,
+  static changesetRemoveFromOutboundEdge<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
+    builder: Builder<TEnt, TViewer, any>,
     edgeType: string,
     id2: ID,
     options?: AssocEdgeInputOptions,
@@ -1496,8 +1541,11 @@ export class EntChangeset<T extends Ent> implements Changeset {
     );
   }
 
-  static changesetRemoveFromInboundEdge(
-    builder: Builder<any, any, any>,
+  static changesetRemoveFromInboundEdge<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(
+    builder: Builder<TEnt, TViewer, any>,
     edgeType: string,
     id1: ID,
     options?: AssocEdgeInputOptions,

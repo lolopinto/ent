@@ -48,8 +48,8 @@ export interface Builder<
 
 // PS: this is a private API subject to change
 export interface Executor
-  extends Iterable<DataOperation>,
-    Iterator<DataOperation> {
+  extends Iterable<DataOperation<Ent>>,
+    Iterator<DataOperation<Ent>> {
   placeholderID: ID;
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
@@ -132,6 +132,7 @@ export interface ChangesetOptions {
   // conditional on builder operation remaining the same
   // TODO I don't really like this
   // https://github.com/lolopinto/ent/issues/1437
+  // conditional needs to be a different type and not always TEnt, TViewer of the source action...
   conditionalBuilder: Builder<any, any>;
 }
 
