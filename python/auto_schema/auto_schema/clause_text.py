@@ -11,20 +11,20 @@ date_regex = re.compile(
 
 
 valid_suffixes = {
-    'text': True,
-    'double precision': True,
-    'bigint': True,
-    'timestamp without time zone': True,
-    'timestamp with time zone': True,
-    'time without time zone': True,
-    'time with time zone': True,
-    'date': True,
-    'jsonb': True,
-    'json': True,
+    'text',
+    'double precision',
+    'bigint',
+    'timestamp without time zone',
+    'timestamp with time zone',
+    'time without time zone',
+    'time with time zone',
+    'date',
+    'jsonb',
+    'json',
     # mostly used for lists
-    'integer': True,
-    'character varying': True,
-    'uuid': True,
+    'integer',
+    'character varying',
+    'uuid',
 }
 
 def handle_date(arg, col_type):
@@ -74,10 +74,10 @@ def normalize_clause_text(arg, col_type):
 
     type = m.group(2)
     default = m.group(1)
-    if valid_suffixes.get(type):
+    if type in valid_suffixes:
         return handle_date(default, col_type)
     # handle list types
-    elif type.endswith("[]") and valid_suffixes.get(type.strip("[]")):
+    elif type.endswith("[]") and type.strip("[]") in valid_suffixes:
         return handle_date(default, col_type)
 
     if isinstance(col_type, postgresql.ENUM) and col_type.name == type:
