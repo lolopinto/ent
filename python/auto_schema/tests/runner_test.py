@@ -1686,5 +1686,12 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 2)
 
 
+    @pytest.mark.usefixtures("metadata_with_bytea_column_fixture")
+    def test_bytea_column(self, new_test_runner, metadata_with_bytea_column_fixture):
+        r = new_test_runner(metadata_with_bytea_column_fixture)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_bytea_column_fixture, ['tbl'])
+
+
 class TestSqliteRunner(BaseTestRunner):
     pass
