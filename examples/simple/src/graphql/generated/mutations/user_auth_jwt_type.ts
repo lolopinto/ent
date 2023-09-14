@@ -58,6 +58,7 @@ export const UserAuthJWTType: GraphQLFieldConfig<
   { [input: string]: UserAuthJWTInput }
 > = {
   type: new GraphQLNonNull(UserAuthJWTPayloadType),
+  description: "authenticate a user with JWT",
   args: {
     input: {
       description: "",

@@ -32,6 +32,7 @@ export const UserListDeprecatedQueryType: GraphQLFieldConfig<
   UserListDeprecatedArgs
 > = {
   type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(UserType))),
+  description: "custom query for user. list",
   args: {
     id: {
       description: "",

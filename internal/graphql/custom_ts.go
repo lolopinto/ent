@@ -629,6 +629,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 	result := &fieldConfig{
 		Exported:         true,
 		Name:             builder.getName(),
+		Description:      field.Description,
 		Arg:              builder.getArg(),
 		ResolveMethodArg: builder.getResolveMethodArg(),
 		TypeImports:      builder.getTypeImports(processor, s),

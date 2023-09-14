@@ -23,9 +23,11 @@ export const UserAuthInputType = new GraphQLInputObjectType({
   name: "UserAuthInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     emailAddress: {
+      description: "email address of the user",
       type: new GraphQLNonNull(GraphQLString),
     },
     password: {
+      description: "password of the user",
       type: new GraphQLNonNull(GraphQLString),
     },
   }),
@@ -52,6 +54,7 @@ export const UserAuthType: GraphQLFieldConfig<
   { [input: string]: UserAuthInput }
 > = {
   type: new GraphQLNonNull(UserAuthPayloadType),
+  description: "authenticate a user",
   args: {
     input: {
       description: "",

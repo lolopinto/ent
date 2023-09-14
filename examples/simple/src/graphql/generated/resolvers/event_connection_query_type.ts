@@ -39,6 +39,7 @@ export const EventConnectionQueryType: GraphQLFieldConfig<
   EventConnectionArgs
 > = {
   type: new GraphQLNonNull(RootToEventConnectionType()),
+  description: "custom query for event. connection",
   args: {
     ids: {
       description: "",

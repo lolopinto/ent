@@ -34,6 +34,7 @@ export const ContactEmailListDeprecatedQueryType: GraphQLFieldConfig<
   type: new GraphQLNonNull(
     new GraphQLList(new GraphQLNonNull(ContactEmailType)),
   ),
+  description: "custom query for contact_email. list",
   args: {
     id: {
       description: "",

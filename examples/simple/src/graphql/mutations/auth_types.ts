@@ -7,17 +7,17 @@ import { ID } from "@snowtop/ent";
 import { GraphQLID, GraphQLString } from "graphql";
 
 @gqlInputObjectType()
-// we're going to test exporting UserAuthInput types
-// and not exporting JWT versions
 export class UserAuthInput {
   @gqlField({
     class: "UserAuthInput",
     type: GraphQLString,
+    description: "email address of the user",
   })
   emailAddress: string;
   @gqlField({
     class: "UserAuthInput",
     type: GraphQLString,
+    description: "password of the user",
   })
   password: string;
 

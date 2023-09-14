@@ -15,6 +15,7 @@ export class GQLViewer {
     class: "GQLViewer",
     type: GraphQLID,
     nullable: true,
+    description: "the id of the viewer",
     async: true,
   })
   async viewerID() {
