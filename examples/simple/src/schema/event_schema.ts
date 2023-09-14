@@ -10,6 +10,8 @@ import {
   StringType,
   TimestampType,
   UUIDType,
+  ByteaType,
+  BinaryTextType,
 } from "@snowtop/ent/schema/";
 import { EdgeType } from "../ent/generated/types";
 
@@ -61,6 +63,8 @@ const EventSchema = new EntSchema({
         ],
       },
     }),
+    cover_photo: ByteaType({ nullable: true }),
+    cover_photo2: BinaryTextType({ nullable: true }),
   },
 
   defaultActionPrivacy: {

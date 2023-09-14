@@ -1851,11 +1851,7 @@ func (t *ByteaType) GetTSType() string {
 func (t *ByteaType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
 		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-		{
-			// TODO test this to confirm this is the right thing...
-			ImportPath: "graphql-scalars",
-			Import:     "GraphQLByte",
-		},
+		tsimport.NewGraphQLScalarsImportPath("GraphQLByte"),
 	}
 }
 
@@ -1890,11 +1886,7 @@ func (t *NullableByteaType) GetTSType() string {
 
 func (t *NullableByteaType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		{
-			// TODO test this to confirm this is the right thing...
-			ImportPath: "graphql-scalars",
-			Import:     "GraphQLByte",
-		},
+		tsimport.NewGraphQLScalarsImportPath("GraphQLByte"),
 	}
 }
 

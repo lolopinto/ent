@@ -15,6 +15,10 @@ export class ByteaField extends BaseField implements Field {
   }
 }
 
+/*
+ * NB: using this field requires the developer to run `npm i graphql-scalars` for the correct
+ * graphql types to be available.
+ */
 export function ByteaType(options?: FieldOptions) {
   const result = new ByteaField();
   return Object.assign(result, options);
@@ -22,7 +26,7 @@ export function ByteaType(options?: FieldOptions) {
 
 export class BinaryTextField extends BaseField implements Field {
   type: Type = {
-    dbType: DBType.String,
+    dbType: DBType.StringByte,
   };
 
   format(val: any) {
@@ -34,6 +38,10 @@ export class BinaryTextField extends BaseField implements Field {
   }
 }
 
+/*
+ * NB: using this field requires the developer to run `npm i graphql-scalars` for the correct
+ * graphql types to be available.
+ */
 export function BinaryTextType(options?: FieldOptions) {
   const result = new BinaryTextField();
   return Object.assign(result, options);

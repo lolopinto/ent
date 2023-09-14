@@ -72,6 +72,7 @@ var knownTsTypes = map[string]string{
 var knownCustomTypes = map[string]string{
 	"Date": "GraphQLTime",
 	"JSON": "GraphQLJSON",
+	"Byte": "GraphQLByte",
 }
 
 type NullableItem string

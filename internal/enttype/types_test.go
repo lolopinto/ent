@@ -856,10 +856,7 @@ func TestByteaType(t *testing.T) {
 				db:      "postgresql.BYTEA()",
 				graphql: "Byte",
 				graphqlImports: []*tsimport.ImportPath{
-					{
-						Import:     "GraphQLByte",
-						ImportPath: "graphql-scalars",
-					},
+					tsimport.NewGraphQLScalarsImportPath("GraphQLByte"),
 				},
 				tsType:          "Buffer | null",
 				nonNullableType: &enttype.ByteaType{},
@@ -872,10 +869,7 @@ func TestByteaType(t *testing.T) {
 				graphql: "Byte!",
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-					{
-						Import:     "GraphQLByte",
-						ImportPath: "graphql-scalars",
-					},
+					tsimport.NewGraphQLScalarsImportPath("GraphQLByte"),
 				},
 				tsType:       "Buffer",
 				nullableType: &enttype.NullableByteaType{},
@@ -892,10 +886,7 @@ func TestBinaryTextType(t *testing.T) {
 				db:      "sa.Text()",
 				graphql: "Byte",
 				graphqlImports: []*tsimport.ImportPath{
-					{
-						Import:     "GraphQLByte",
-						ImportPath: "graphql-scalars",
-					},
+					tsimport.NewGraphQLScalarsImportPath("GraphQLByte"),
 				},
 				tsType:             "Buffer | null",
 				nonNullableType:    &enttype.BinaryTextType{},
@@ -910,10 +901,7 @@ func TestBinaryTextType(t *testing.T) {
 				graphql: "Byte!",
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-					{
-						Import:     "GraphQLByte",
-						ImportPath: "graphql-scalars",
-					},
+					tsimport.NewGraphQLScalarsImportPath("GraphQLByte"),
 				},
 				tsType:             "Buffer",
 				nullableType:       &enttype.NullableBinaryTextType{},

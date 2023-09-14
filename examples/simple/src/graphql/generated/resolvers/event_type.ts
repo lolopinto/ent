@@ -12,6 +12,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
+import { GraphQLByte } from "graphql-scalars";
 import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
@@ -88,6 +89,12 @@ export const EventType = new GraphQLObjectType({
       ) => {
         return obj.location;
       },
+    },
+    coverPhoto: {
+      type: GraphQLByte,
+    },
+    coverPhoto2: {
+      type: GraphQLByte,
     },
     attending: {
       type: new GraphQLNonNull(EventToAttendingConnectionType()),

@@ -13,6 +13,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   applyPrivacyPolicy,
+  convertNullableTextToBuffer,
   getEdgeTypeInGroup,
   loadCustomCount,
   loadCustomData,
@@ -52,6 +53,8 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   readonly endTime: Date | null;
   readonly location: string;
   protected readonly _addressID: ID | null;
+  readonly coverPhoto: Buffer | null;
+  readonly coverPhoto2: Buffer | null;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
     this.id = data.id;
@@ -63,6 +66,8 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     this.endTime = data.end_time;
     this.location = data.location;
     this._addressID = data.address_id;
+    this.coverPhoto = data.cover_photo;
+    this.coverPhoto2 = convertNullableTextToBuffer(data.cover_photo_2);
     // @ts-expect-error
     this.data = data;
   }
