@@ -25,6 +25,8 @@ export interface EventEditInput {
   endTime?: Date | null;
   location?: string;
   addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
+  coverPhoto?: Buffer | null;
+  coverPhoto2?: Buffer | null;
 }
 
 export type EditEventActionTriggers = (

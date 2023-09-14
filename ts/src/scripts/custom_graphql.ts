@@ -438,6 +438,13 @@ async function main() {
     },
     gqlCapture,
   );
+  addCustomType(
+    {
+      importPath: "graphql-scalars",
+      type: "GraphQLByte",
+    },
+    gqlCapture,
+  );
 
   const [inputsRead, _, __, imports] = await Promise.all([
     readInputs(),

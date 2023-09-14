@@ -283,6 +283,16 @@ export function jsonb(name: string, opts?: options): Column {
   };
 }
 
+export function bytea(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "BYTEA";
+    },
+    ...opts,
+  };
+}
+
 function list(name: string, col: Column, opts?: options): Column {
   return {
     name,
@@ -866,7 +876,10 @@ function getColumnForDbType(
       return jsonb;
     case DBType.JSON:
       return json;
-
+    case DBType.StringByte:
+      return text;
+    case DBType.Bytea:
+      return bytea;
     default:
       return undefined;
   }

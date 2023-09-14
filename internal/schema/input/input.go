@@ -150,6 +150,8 @@ const (
 	StringEnum  DBType = "StringEnum"
 	IntEnum     DBType = "IntEnum"
 	List        DBType = "List"
+	Bytea       DBType = "Bytea"
+	StringByte  DBType = "StringByte"
 )
 
 type CustomType string
@@ -468,6 +470,18 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		}
 
 		return getJSONOrJSONBType(typ, nullable), nil
+
+	case StringByte:
+		if nullable {
+			return &enttype.NullableBinaryTextType{}, nil
+		}
+		return &enttype.BinaryTextType{}, nil
+
+	case Bytea:
+		if nullable {
+			return &enttype.NullableByteaType{}, nil
+		}
+		return &enttype.ByteaType{}, nil
 
 	case StringEnum, Enum:
 		tsType := strcase.ToCamel(typ.Type)

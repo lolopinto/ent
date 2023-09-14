@@ -104,3 +104,17 @@ export function convertJSONList(val: any): any[] {
 export function convertNullableJSONList(val: any): any[] | null {
   return convertNullableList(val, convertJSON);
 }
+
+export function convertTextToBuffer(val: any): Buffer {
+  if (typeof val === "string") {
+    return Buffer.from(val, "base64");
+  }
+  return val;
+}
+
+export function convertNullableTextToBuffer(val: any): Buffer {
+  if (val == null) {
+    return val;
+  }
+  return convertTextToBuffer(val);
+}

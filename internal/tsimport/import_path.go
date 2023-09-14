@@ -52,6 +52,13 @@ func NewGraphQLJSONImportPath(typ string) *ImportPath {
 	}
 }
 
+func NewGraphQLScalarsImportPath(typ string) *ImportPath {
+	return &ImportPath{
+		Import:     typ,
+		ImportPath: "graphql-scalars",
+	}
+}
+
 func NewEntImportPath(typ string) *ImportPath {
 	return &ImportPath{
 		Import:     typ,

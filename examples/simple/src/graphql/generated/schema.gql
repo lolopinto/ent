@@ -322,6 +322,8 @@ type Event implements Node {
   startTime: Time!
   endTime: Time
   eventLocation: String!
+  coverPhoto: Byte
+  coverPhoto2: Byte
   attending(first: Int, after: String, last: Int, before: String): EventToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventToDeclinedConnection!
   hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
@@ -1216,6 +1218,8 @@ input EventCreateInput {
   endTime: Time
   eventLocation: String!
   addressID: ID
+  coverPhoto: Byte
+  coverPhoto2: Byte
 }
 
 type EventCreatePayload {
@@ -1239,6 +1243,8 @@ input EventEditInput {
   endTime: Time
   eventLocation: String
   addressID: ID
+  coverPhoto: Byte
+  coverPhoto2: Byte
 }
 
 type EventEditPayload {
@@ -1506,6 +1512,9 @@ type Mutation {
   userDelete2(input: DeleteUserInput2!): DeleteUserInput2Payload!
   userEdit(input: UserEditInput!): UserEditPayload!
 }
+
+"""The `Byte` scalar type represents byte value as a Buffer"""
+scalar Byte
 
 """The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""
 scalar JSON
