@@ -39,6 +39,7 @@ export const ContactPhoneNumberConnectionQueryType: GraphQLFieldConfig<
   ContactPhoneNumberConnectionArgs
 > = {
   type: new GraphQLNonNull(RootToContactPhoneNumberConnectionType()),
+  description: "custom query for contact_phone_number. connection",
   args: {
     ids: {
       description: "",

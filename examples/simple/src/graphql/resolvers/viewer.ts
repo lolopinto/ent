@@ -11,6 +11,7 @@ export class ViewerResolver {
     class: "ViewerResolver",
     name: "viewer",
     type: "GQLViewer",
+    description: "the viewer query",
     args: [gqlContextType()],
   })
   viewer(context: RequestContext<ExampleViewer>): GQLViewer {

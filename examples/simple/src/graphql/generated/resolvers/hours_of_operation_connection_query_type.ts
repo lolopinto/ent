@@ -39,6 +39,7 @@ export const HoursOfOperationConnectionQueryType: GraphQLFieldConfig<
   HoursOfOperationConnectionArgs
 > = {
   type: new GraphQLNonNull(RootToHoursOfOperationConnectionType()),
+  description: "custom query for hours_of_operation. connection",
   args: {
     ids: {
       description: "",

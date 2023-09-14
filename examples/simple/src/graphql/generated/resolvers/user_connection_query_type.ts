@@ -39,6 +39,7 @@ export const UserConnectionQueryType: GraphQLFieldConfig<
   UserConnectionArgs
 > = {
   type: new GraphQLNonNull(RootToUserConnectionType()),
+  description: "custom query for user. connection",
   args: {
     ids: {
       description: "",

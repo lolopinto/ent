@@ -39,6 +39,7 @@ export const CommentConnectionQueryType: GraphQLFieldConfig<
   CommentConnectionArgs
 > = {
   type: new GraphQLNonNull(RootToCommentConnectionType()),
+  description: "custom query for comment. connection",
   args: {
     ids: {
       description: "",

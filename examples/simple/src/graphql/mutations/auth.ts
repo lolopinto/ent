@@ -15,6 +15,7 @@ export class AuthResolver {
     name: "userAuth",
     type: "UserAuthPayload",
     async: true,
+    description: "authenticate a user",
     args: [
       gqlContextType(),
       {
@@ -53,6 +54,7 @@ export class AuthResolver {
     class: "AuthResolver",
     name: "userAuthJWT",
     type: "UserAuthJWTPayload",
+    description: "authenticate a user with JWT",
     async: true,
     args: [
       gqlContextType(),
