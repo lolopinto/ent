@@ -6,6 +6,8 @@ sidebar_position: 11
 
 Adds a new [GraphQL Union](https://graphql.org/learn/schema/#union-types) to the schema.
 
+Until [this bug](https://github.com/microsoft/TypeScript/issues/53332) is fixed, custom unions need to be defined in a separate file from where they're consumed.
+
 Options:
 
 * name
