@@ -6,7 +6,6 @@ sidebar_position: 8
 
 Adds a new object to the schema. See example [usage](/docs/custom-graphql/custom-queries#viewer).
 
-Until [this bug](https://github.com/microsoft/TypeScript/issues/53332) is fixed, custom objects need to be defined in a separate file from where they're consumed.
 
 Options:
 

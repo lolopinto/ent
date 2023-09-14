@@ -12,7 +12,13 @@ import {
 } from "../global_schema";
 import * as clause from "../clause";
 
-import { EdgeQueryableDataOptions, ID, Loader, WriteOperation } from "../base";
+import {
+  Context,
+  EdgeQueryableDataOptions,
+  ID,
+  Loader,
+  WriteOperation,
+} from "../base";
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import {
   FakeUser,
@@ -41,31 +47,43 @@ const ml = new MockLogs();
 
 let ctx: TestContext;
 
+const userToContactsLoader = new AssocEdgeLoaderFactory(
+  EdgeType.UserToContacts,
+  AssocEdge,
+);
+
+const userToContactsCustomLoader = new AssocEdgeLoaderFactory(
+  EdgeType.UserToContacts,
+  CustomEdge,
+);
+
+const userToFollowingCustomLoader = new AssocEdgeLoaderFactory(
+  EdgeType.UserToFollowing,
+  CustomEdge,
+);
+
 const getNewContactsLoader = (context: boolean = true) => {
-  return new AssocEdgeLoaderFactory(
-    EdgeType.UserToContacts,
-    AssocEdge,
-  ).createLoader(context ? ctx : undefined);
+  return userToContactsLoader.createLoader(context ? ctx : undefined);
 };
 
 const getConfigurableContactsLoader = (
   context: boolean,
   options: EdgeQueryableDataOptions,
 ) => {
-  return new AssocEdgeLoaderFactory(
-    EdgeType.UserToContacts,
-    CustomEdge,
-  ).createConfigurableLoader(options, context ? ctx : undefined);
+  return userToContactsCustomLoader.createConfigurableLoader(
+    options,
+    context ? ctx : undefined,
+  );
 };
 
 const getConfigurableFollowingLoader = (
   context: boolean,
   options: EdgeQueryableDataOptions,
 ) => {
-  return new AssocEdgeLoaderFactory(
-    EdgeType.UserToFollowing,
-    CustomEdge,
-  ).createConfigurableLoader(options, context ? ctx : undefined);
+  return userToFollowingCustomLoader.createConfigurableLoader(
+    options,
+    context ? ctx : undefined,
+  );
 };
 
 describe("postgres", () => {
@@ -452,7 +470,6 @@ function commonTests() {
   async function verifyTwoWayEdges(
     loaderFn: (opts: EdgeQueryableDataOptions) => AssocLoader<CustomEdge>,
   ) {
-    // create loader first so we can pass context to createTestUser
     const loader = loaderFn({});
 
     const user = await createTestUser({}, loader.context);
@@ -506,18 +523,15 @@ function commonTests() {
       i++;
     }
     await action.saveX();
-    user.viewer.context?.cache?.clearCache();
-    loader.clearAll();
-    // TODO why isn't this done automatically...
 
     const edges2 = await loader.load(user.id);
     const twoWay2 = await loader.loadTwoWay(user.id);
 
-    expect(twowayIds.sort()).toEqual(twoWay2.map((e) => e.id2).sort());
-
     // deleted some things here which shouldn't show up here
     expect(edges2.length).toBe(8);
     expect(twoWay2.length).toBe(3);
+
+    expect(twowayIds.sort()).toEqual(twoWay2.map((e) => e.id2).sort());
 
     const hasGlobal = __hasGlobalSchema();
 
@@ -633,10 +647,6 @@ function globalTests() {
     }
     await action.saveX();
     ml.clear();
-    loader.clearAll();
-    user.viewer.context?.cache?.clearCache();
-    // do edge writes not call mutateRow???
-    // why isn't this done automatically...
 
     const loader2 = loaderFn({
       disableTransformations: true,
@@ -668,14 +678,17 @@ interface createdData {
   users: FakeUser[];
 }
 
-async function createData(): Promise<createdData> {
+async function createData(context?: Context): Promise<createdData> {
   const m = new Map<ID, FakeContact[]>();
   const ids: ID[] = [];
   const users: FakeUser[] = [];
 
   await Promise.all(
     [1, 2, 3, 4, 5].map(async (count, idx) => {
-      let [user, contacts] = await createAllContacts({ slice: count });
+      let [user, contacts] = await createAllContacts({
+        slice: count,
+        ctx: context,
+      });
 
       m.set(user.id, contacts.reverse());
       ids[idx] = user.id;
@@ -692,19 +705,22 @@ async function testMultiQueryDataAvail(
   slice?: number,
   data?: createdData,
 ) {
+  // TODO this needs to be done prior to the JS event loop
+  // need to make this work for scenarios where the loader is created in same loop
+
+  // TODOOO
+  const loader = loaderFn({
+    limit: slice,
+  });
+
   if (!data) {
-    data = await createData();
+    data = await createData(loader.context);
   }
   let { m, ids, users } = data;
 
   // clear post creation
   ml.clear();
 
-  // TODO this needs to be done prior to the JS event loop
-  // need to make this work for scenarios where the loader is created in same loop
-  const loader = loaderFn({
-    limit: slice,
-  });
   const edges = await Promise.all(ids.map(async (id) => loader.load(id)));
   ml.verifyNoErrors();
 
@@ -731,19 +747,20 @@ async function testWithDeleteMultiQueryDataAvail(
   slice?: number,
   data?: createdData,
 ) {
+  // TODO this needs to be done prior to the JS event loop
+  // need to make this work for scenarios where the loader is created in same loop
+  const loader = loaderFn({
+    limit: slice,
+  });
+
   if (!data) {
-    data = await createData();
+    data = await createData(loader.context);
   }
   let { m, ids, users } = data;
 
   // clear post creation
   ml.clear();
 
-  // TODO this needs to be done prior to the JS event loop
-  // need to make this work for scenarios where the loader is created in same loop
-  const loader = loaderFn({
-    limit: slice,
-  });
   const edges = await Promise.all(ids.map(async (id) => loader.load(id)));
   ml.verifyNoErrors();
 
@@ -769,8 +786,6 @@ async function testWithDeleteMultiQueryDataAvail(
   await action.saveX();
   ml.clear();
 
-  // clear loader
-  loader.clearAll();
   // reload data
   const edges2 = await Promise.all(ids.map(async (id) => loader.load(id)));
 
@@ -792,15 +807,15 @@ async function testWithDeleteMultiQueryDataLoadDeleted(
     disableTransformations?: boolean,
   ) => void,
 ) {
-  const data = await createData();
+  // TODO this needs to be done prior to the JS event loop
+  // need to make this work for scenarios where the loader is created in same loop
+  const loader = loaderFn({});
+  const data = await createData(loader.context);
   let { m, ids, users } = data;
 
   // clear post creation
   ml.clear();
 
-  // TODO this needs to be done prior to the JS event loop
-  // need to make this work for scenarios where the loader is created in same loop
-  const loader = loaderFn({});
   const edges = await Promise.all(ids.map(async (id) => loader.load(id)));
   ml.verifyNoErrors();
 
@@ -827,9 +842,6 @@ async function testWithDeleteMultiQueryDataLoadDeleted(
   }
   await action.saveX();
   ml.clear();
-
-  // clear loader
-  loader.clearAll();
 
   const loader2 = loaderFn({
     disableTransformations: true,
@@ -859,9 +871,9 @@ async function testWithDeleteSingleQueryDataLoadDeleted(
     disableTransformations?: boolean,
   ) => void,
 ) {
-  const [user, contacts] = await createAllContacts();
-  ml.clear();
   const loader = loaderFn({});
+  const [user, contacts] = await createAllContacts({ ctx: loader.context });
+  ml.clear();
   const edges = await loader.load(user.id);
   verifyUserToContactEdges(user, edges, contacts.reverse());
   verifyPostFirstQuery([user.id]);
@@ -884,7 +896,6 @@ async function testWithDeleteSingleQueryDataLoadDeleted(
   }
   await action.saveX();
   ml.clear();
-  loader.clearAll();
 
   const loader2 = getConfigurableContactsLoader(true, {
     disableTransformations: true,

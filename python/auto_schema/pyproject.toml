@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 # auto_schema_test https://test.pypi.org/project/auto-schema-test/
-name = "auto_schema_test"
-version = "0.0.35"
+# name = "auto_schema_test"
+# version = "0.0.36"
 # production https://pypi.org/project/auto-schema/
-# name = "auto_schema"
-# version = "0.0.31"
+name = "auto_schema"
+version = "0.0.32"
 authors = [{ name = "Ola Okelola", email = "email@email.com" }]
 description = "auto schema for a db"
 readme = "README.md"

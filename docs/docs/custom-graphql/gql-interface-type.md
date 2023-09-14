@@ -6,8 +6,6 @@ sidebar_position: 10
 
 Adds a new [GraphQL interface](https://graphql.org/learn/schema/#interfaces) to the schema.
 
-Until [this bug](https://github.com/microsoft/TypeScript/issues/53332) is fixed, custom interfaces need to be defined in a separate file from where they're consumed.
-
 Options:
 
 * name

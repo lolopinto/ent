@@ -24,8 +24,6 @@ import { logEnabled } from "../logger";
 import { CacheMap, getCustomLoader } from "./loader";
 import memoizee from "memoizee";
 
-// any loader created here or in places like this doesn't get context cache cleared...
-// so any manual createLoader needs to be changed and added to ContextCache so that ContextCache.clearAll() works
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
   edgeType: string,

@@ -159,7 +159,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   constructor(
     private viewer: Viewer,
     public placeholderID: ID,
-    operations: DataOperation[],
+    operations: DataOperation<T>[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset[],
     options?: OrchestratorOptions<T, Data, Viewer>,
@@ -368,7 +368,7 @@ export async function executeOperations(
 ) {
   const client = await DB.getInstance().getNewClient();
 
-  const operations: DataOperation[] = [];
+  const operations: DataOperation<Ent>[] = [];
   try {
     if (executor.preFetch) {
       await executor.preFetch(client, context);

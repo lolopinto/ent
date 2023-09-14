@@ -9,7 +9,6 @@ import {
   Allow,
   Skip,
   LoadCustomEntOptions,
-  QueryableDataOptions,
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule } from "./privacy";
@@ -257,7 +256,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  ctx.cache?.clearCache();
   clearLogLevels();
 });
 

@@ -474,15 +474,18 @@ def metadata_with_server_default_changed_jsonb_array(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_json_array_value())
 
 
-def metadata_with_json_column():
+def metadata_with_jsonb_column():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,
              sa.Column('id', sa.Integer(), nullable=False),
-             sa.Column('col', postgresql.JSON, nullable=False),
+             sa.Column('col', postgresql.JSONB, nullable=False),
              sa.PrimaryKeyConstraint("id", name='tbl_id_pkey'),
              )
     return metadata
 
+@pytest.fixture()
+def metadata_with_jsonb_column_fixture():
+    return metadata_with_jsonb_column()
 
 def metadata_with_server_default_changed_json(metadata):
     return _metadata_with_server_default_changed(metadata, 'col', 'tbl', server_default_json_value())

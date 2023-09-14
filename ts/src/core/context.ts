@@ -1,10 +1,9 @@
-import { Viewer, Data, Loader, LoaderWithLoadMany } from "./base";
+import { Viewer, Data, Loader, LoaderWithLoadMany, QueryOptions } from "./base";
 import { IncomingMessage, ServerResponse } from "http";
 
-import * as clause from "./clause";
 import { log } from "./logger";
 import { Context } from "./base";
-import { OrderBy, getOrderByPhrase } from "./query_impl";
+import { getJoinPhrase, getOrderByPhrase } from "./query_impl";
 
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext<TViewer extends Viewer = Viewer>
@@ -19,6 +18,10 @@ export class ContextCache {
   loaders: Map<string, Loader<any, any>> = new Map();
   // we should eventually combine the two but better for typing to be separate for now
   loaderWithLoadMany: Map<string, LoaderWithLoadMany<any, any>> = new Map();
+
+  // keep track of discarded loaders in case someone ends up holding onto a reference
+  // so that we can call clearAll() on them
+  discardedLoaders: Loader<any, any>[] = [];
 
   getLoader<K, V>(name: string, create: () => Loader<K, V>): Loader<K, V> {
     let l = this.loaders.get(name);
@@ -52,7 +55,7 @@ export class ContextCache {
   // tableName is ignored bcos already indexed on that
   // maybe we just want to store sql queries???
 
-  private getkey(options: queryOptions): string {
+  private getkey(options: QueryOptions): string {
     let parts: string[] = [
       options.fields.join(","),
       options.clause.instanceKey(),
@@ -60,10 +63,13 @@ export class ContextCache {
     if (options.orderby) {
       parts.push(getOrderByPhrase(options.orderby));
     }
+    if (options.join) {
+      parts.push(getJoinPhrase(options.join));
+    }
     return parts.join(",");
   }
 
-  getCachedRows(options: queryOptions): Data[] | null {
+  getCachedRows(options: QueryOptions): Data[] | null {
     let m = this.listMap.get(options.tableName);
     if (!m) {
       return null;
@@ -79,7 +85,7 @@ export class ContextCache {
     return rows || null;
   }
 
-  getCachedRow(options: queryOptions): Data | null {
+  getCachedRow(options: QueryOptions): Data | null {
     let m = this.itemMap.get(options.tableName);
     if (!m) {
       return null;
@@ -95,9 +101,9 @@ export class ContextCache {
     return row || null;
   }
 
-  primeCache(options: queryOptions, rows: Data[]): void;
-  primeCache(options: queryOptions, rows: Data): void;
-  primeCache(options: queryOptions, rows: Data[] | Data): void {
+  primeCache(options: QueryOptions, rows: Data[]): void;
+  primeCache(options: QueryOptions, rows: Data): void;
+  primeCache(options: QueryOptions, rows: Data[] | Data): void {
     if (Array.isArray(rows)) {
       let m = this.listMap.get(options.tableName) || new Map();
       m.set(this.getkey(options), rows);
@@ -110,26 +116,19 @@ export class ContextCache {
   }
 
   clearCache(): void {
+    this.discardedLoaders.forEach((l) => l.clearAll());
+
     for (const [_key, loader] of this.loaders) {
-      // may not need this since we're clearing the loaders themselves...
-      // but may have some benefits by explicitily doing so?
       loader.clearAll();
+      this.discardedLoaders.push(loader);
     }
     for (const [_key, loader] of this.loaderWithLoadMany) {
-      // may not need this since we're clearing the loaders themselves...
-      // but may have some benefits by explicitily doing so?
       loader.clearAll();
+      this.discardedLoaders.push(loader);
     }
     this.loaders.clear();
     this.loaderWithLoadMany.clear();
     this.itemMap.clear();
     this.listMap.clear();
   }
-}
-
-interface queryOptions {
-  fields: string[];
-  tableName: string;
-  clause: clause.Clause;
-  orderby?: OrderBy;
 }

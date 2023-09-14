@@ -3096,8 +3096,8 @@ function validateFieldsDoNotExist(fields: {}, ...names: string[]) {
   }
 }
 
-function getOperations(c: Changeset): DataOperation[] {
-  let ops: DataOperation[] = [];
+function getOperations(c: Changeset): DataOperation<Ent>[] {
+  let ops: DataOperation<Ent>[] = [];
   for (let op of c.executor()) {
     ops.push(op);
   }

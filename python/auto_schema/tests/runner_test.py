@@ -824,6 +824,42 @@ class TestPostgresRunner(BaseTestRunner):
 
         # nothing changed, we should have no changes
         assert len(diff) == 0
+        
+    @pytest.mark.usefixtures("metadata_with_jsonb_column_fixture")
+    def test_server_default_no_real_change_json(self, new_test_runner, metadata_with_jsonb_column_fixture):
+        r = new_test_runner(metadata_with_jsonb_column_fixture)
+
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_jsonb_column_fixture, ['tbl'])
+
+
+        conftest._metadata_with_server_default_changed(metadata_with_jsonb_column_fixture, 'col', 'tbl', '{"col":"val"}')
+
+        r2 = new_test_runner(metadata_with_jsonb_column_fixture, r)
+        diff = r2.compute_changes()
+
+        # 1 change. add server default
+        assert len(diff) == 1
+        
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        
+        # fix the json 
+        conftest._metadata_with_server_default_changed(metadata_with_jsonb_column_fixture, 'col', 'tbl', '{"col": "val"}')
+
+        r3 = new_test_runner(metadata_with_jsonb_column_fixture, r2)
+        diff = r3.compute_changes()
+
+        # nothing changed, we should have no changes
+        assert len(diff) == 0
+        
+        r3.run()
+        testingutils.assert_num_files(r3, 2)
+        
+        r3.run()
+        testingutils.assert_num_files(r3, 2)
+
+
 
     @pytest.mark.parametrize(
         "new_metadata_func, table_name, change_metadata_func, expected_message",
@@ -927,7 +963,7 @@ class TestPostgresRunner(BaseTestRunner):
                 'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),
             ),
             (
-                conftest.metadata_with_json_column,
+                conftest.metadata_with_jsonb_column,
                 'tbl',
                 conftest.metadata_with_server_default_changed_json,
                 'modify server_default value of column col from None to %s' % conftest.server_default_json_value(),

@@ -68,24 +68,22 @@ export interface PrimableLoader<K, V> extends Loader<K, V> {
   primeAll?(d: V): void;
 }
 
+export type QueryOptions = Required<
+  Pick<LoadRowsOptions, "clause" | "fields" | "tableName">
+> &
+  Pick<LoadRowsOptions, "orderby" | "join">;
+
 interface cache {
   getLoader<K, V>(name: string, create: () => Loader<K, V>): Loader<K, V>;
   getLoaderWithLoadMany<K, V>(
     name: string,
     create: () => LoaderWithLoadMany<K, V>,
   ): LoaderWithLoadMany<K, V>;
-  getCachedRows(options: queryOptions): Data[] | null;
-  getCachedRow(options: queryOptions): Data | null;
-  primeCache(options: queryOptions, rows: Data[]): void;
-  primeCache(options: queryOptions, rows: Data): void;
+  getCachedRows(options: QueryOptions): Data[] | null;
+  getCachedRow(options: QueryOptions): Data | null;
+  primeCache(options: QueryOptions, rows: Data[]): void;
+  primeCache(options: QueryOptions, rows: Data): void;
   clearCache(): void;
-}
-
-interface queryOptions {
-  fields: string[];
-  tableName: string;
-  clause: clause.Clause;
-  orderby?: OrderBy;
 }
 
 export interface Context<TViewer extends Viewer = Viewer> {
@@ -177,7 +175,7 @@ export interface QueryableDataOptions
 interface JoinOptions<T2 extends Data = Data, K2 = keyof T2> {
   tableName: string;
   alias?: string;
-  clause: clause.Clause<T2,K2>;
+  clause: clause.Clause<T2, K2>;
 }
 
 export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
@@ -187,7 +185,7 @@ export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   groupby?: K;
   limit?: number;
   disableTransformations?: boolean;
-  join?:JoinOptions;
+  join?: JoinOptions;
 }
 
 // For loading data from database

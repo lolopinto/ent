@@ -30,15 +30,21 @@ import {
   setupTempDB,
   tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
-import { AssocEdgeCountLoader } from "./assoc_count_loader";
+import {
+  AssocEdgeCountLoader,
+  AssocEdgeCountLoaderFactory,
+} from "./assoc_count_loader";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 
 const ml = new MockLogs();
 
+const assocEdgeLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToContacts,
+);
+
 const getNewLoader = (context: boolean = true) => {
-  return new AssocEdgeCountLoader(
-    EdgeType.UserToContacts,
+  return assocEdgeLoaderFactory.createLoader(
     context ? new TestContext() : undefined,
   );
 };
@@ -47,10 +53,9 @@ const getConfigurableLoader = (
   context: boolean = true,
   opts: EdgeQueryableDataOptionsConfigureLoader,
 ) => {
-  return new AssocEdgeCountLoader(
-    EdgeType.UserToContacts,
-    context ? new TestContext() : undefined,
+  return assocEdgeLoaderFactory.createConfigurableLoader(
     opts,
+    context ? new TestContext() : undefined,
   );
 };
 
@@ -262,11 +267,11 @@ async function verifySingleIDHit(
   verifyPostFirstQuery: (id: ID) => void,
   verifyPostSecondQuery: (id: ID) => void,
 ) {
-  const [user, contacts] = await createAllContacts();
+  const loader = loaderFn();
+  const [user, contacts] = await createAllContacts({ ctx: loader.context });
   // clear post creation
   ml.clear();
 
-  const loader = loaderFn();
   const count = await loader.load(user.id);
   expect(count).toBe(contacts.length);
 
@@ -337,9 +342,14 @@ async function testMultiQueryDataAvail(
   const m = new Map<ID, FakeContact[]>();
   const ids: ID[] = [];
 
+  const loader = loaderFn();
+
   await Promise.all(
     [1, 2, 3, 4, 5].map(async (count, idx) => {
-      const [user, contacts] = await createAllContacts({ slice: count });
+      const [user, contacts] = await createAllContacts({
+        slice: count,
+        ctx: loader.context,
+      });
 
       m.set(user.id, contacts);
       ids[idx] = user.id;
@@ -347,8 +357,6 @@ async function testMultiQueryDataAvail(
   );
 
   ml.clear();
-
-  const loader = loaderFn();
 
   const counts = await Promise.all(ids.map(async (id) => loader.load(id)));
   for (let i = 0; i < ids.length; i++) {
@@ -383,9 +391,15 @@ async function testWithDeleteMultiQueryDataAvail(
   const ids: ID[] = [];
   const users: FakeUser[] = [];
 
+  // pass context to createAllContacts
+  const loader = loaderFn();
+
   await Promise.all(
     [1, 2, 3, 4, 5].map(async (count, idx) => {
-      const [user, contacts] = await createAllContacts({ slice: count });
+      const [user, contacts] = await createAllContacts({
+        slice: count,
+        ctx: loader.context,
+      });
 
       m.set(user.id, contacts);
       ids[idx] = user.id;
@@ -394,8 +408,6 @@ async function testWithDeleteMultiQueryDataAvail(
   );
 
   ml.clear();
-
-  const loader = loaderFn();
 
   const counts = await Promise.all(ids.map(async (id) => loader.load(id)));
   for (let i = 0; i < ids.length; i++) {
@@ -424,7 +436,6 @@ async function testWithDeleteMultiQueryDataAvail(
   await action.saveX();
   // clear the logs
   ml.clear();
-  loader.clearAll();
 
   // re-load
   const counts2 = await Promise.all(ids.map(async (id) => loader.load(id)));
@@ -452,9 +463,14 @@ async function testWithDeleteMultiQueryDataLoadDeleted(
   const ids: ID[] = [];
   const users: FakeUser[] = [];
 
+  const loader = loaderFn({});
+
   await Promise.all(
     [1, 2, 3, 4, 5].map(async (count, idx) => {
-      const [user, contacts] = await createAllContacts({ slice: count });
+      const [user, contacts] = await createAllContacts({
+        slice: count,
+        ctx: loader.context,
+      });
 
       m.set(user.id, contacts);
       ids[idx] = user.id;
@@ -463,8 +479,6 @@ async function testWithDeleteMultiQueryDataLoadDeleted(
   );
 
   ml.clear();
-
-  const loader = loaderFn({});
 
   const counts = await Promise.all(ids.map(async (id) => loader.load(id)));
   for (let i = 0; i < ids.length; i++) {
@@ -493,7 +507,6 @@ async function testWithDeleteMultiQueryDataLoadDeleted(
   await action.saveX();
   // clear the logs
   ml.clear();
-  loader.clearAll();
 
   const loader2 = loaderFn({
     disableTransformations: true,
@@ -516,11 +529,10 @@ async function testWithDeleteSingleQueryDataLoadDeleted(
   verifyPostFirstQuery: (ids: ID[]) => void,
   verifyPostSecondQuery: (ids: ID[], disableTransformations?: boolean) => void,
 ) {
-  const [user, contacts] = await createAllContacts();
+  const loader = loaderFn({});
+  const [user, contacts] = await createAllContacts({ ctx: loader.context });
 
   ml.clear();
-
-  const loader = loaderFn({});
 
   const counts = await loader.load(user.id);
   expect(counts).toBe(contacts.length);
@@ -543,7 +555,6 @@ async function testWithDeleteSingleQueryDataLoadDeleted(
   await action.saveX();
   // clear the logs
   ml.clear();
-  loader.clearAll();
 
   const loader2 = loaderFn({
     disableTransformations: true,
