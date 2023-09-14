@@ -35,7 +35,7 @@ import {
   UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { EmailInfo } from "../../../ent/contact_types";
+import { EmailInfo } from "../../../ent/contact";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",

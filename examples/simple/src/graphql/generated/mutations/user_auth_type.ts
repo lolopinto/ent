@@ -16,8 +16,11 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { AuthResolver } from "../../mutations/auth";
-import { UserAuthInput, UserAuthPayload } from "../../mutations/auth_types";
+import {
+  AuthResolver,
+  UserAuthInput,
+  UserAuthPayload,
+} from "../../mutations/auth";
 
 export const UserAuthInputType = new GraphQLInputObjectType({
   name: "UserAuthInput",

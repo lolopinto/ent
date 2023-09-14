@@ -17,7 +17,7 @@ import {
   ContactType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { ContactDate } from "../../../ent/contact_types";
+import { ContactDate } from "../../../ent/contact";
 
 export const ContactDateType = new GraphQLObjectType({
   name: "ContactDate",
