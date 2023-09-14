@@ -34,6 +34,7 @@ export const HoursOfOperationListDeprecatedQueryType: GraphQLFieldConfig<
   type: new GraphQLNonNull(
     new GraphQLList(new GraphQLNonNull(HoursOfOperationType)),
   ),
+  description: "custom query for hours_of_operation. list",
   args: {
     id: {
       description: "",

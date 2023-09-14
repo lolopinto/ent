@@ -39,6 +39,7 @@ export const HolidayConnectionQueryType: GraphQLFieldConfig<
   HolidayConnectionArgs
 > = {
   type: new GraphQLNonNull(RootToHolidayConnectionType()),
+  description: "custom query for holiday. connection",
   args: {
     ids: {
       description: "",

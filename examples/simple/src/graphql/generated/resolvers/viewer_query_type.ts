@@ -24,6 +24,7 @@ export const GQLViewerType = new GraphQLObjectType({
     RequestContext<ExampleViewerAlias>
   > => ({
     viewerID: {
+      description: "the id of the viewer",
       type: GraphQLID,
       resolve: async (
         obj: GQLViewer,
@@ -65,6 +66,7 @@ export const ViewerQueryType: GraphQLFieldConfig<
   {}
 > = {
   type: new GraphQLNonNull(GQLViewerType),
+  description: "the viewer query",
   resolve: async (
     _source,
     {},

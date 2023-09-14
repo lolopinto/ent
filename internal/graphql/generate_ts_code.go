@@ -1999,6 +1999,7 @@ type fieldConfig struct {
 	Exported         bool
 	Name             string
 	Arg              string
+	Description      string
 	ResolveMethodArg string
 	TypeImports      []*tsimport.ImportPath
 	//	ArgImports       []string // incase it's { [argName: string]: any }, we need to know difference
@@ -3505,6 +3506,7 @@ func getQueryData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
 			Name:         rootQuery.Name,
 			Args:         rootQuery.FieldConfig.Args,
 			FieldImports: rootQuery.FieldConfig.TypeImports,
+			Description:  rootQuery.FieldConfig.Description,
 		})
 	}
 
@@ -3523,6 +3525,7 @@ func getQueryData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
 			Name:         query.GraphQLName,
 			Args:         node.ObjData.FieldConfig.Args,
 			FieldImports: node.ObjData.FieldConfig.TypeImports,
+			Description:  node.ObjData.FieldConfig.Description,
 		})
 	}
 
@@ -3577,6 +3580,7 @@ func getMutationData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
 				Name:         gqlName,
 				Args:         dep.ObjData.FieldConfig.Args,
 				FieldImports: dep.ObjData.FieldConfig.TypeImports,
+				Description:  dep.ObjData.FieldConfig.Description,
 			})
 		}
 	}
@@ -3596,6 +3600,7 @@ func getMutationData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
 			Name:         mutation.GraphQLName,
 			Args:         node.ObjData.FieldConfig.Args,
 			FieldImports: node.ObjData.FieldConfig.TypeImports,
+			Description:  node.ObjData.FieldConfig.Description,
 		})
 	}
 

@@ -36,6 +36,9 @@
   {{ end -}}
 > = {
   type: {{$fieldConfig.FieldType}},
+  {{ if $fieldConfig.Description -}}
+    description: "{{$fieldConfig.Description}}",
+  {{ end -}}
   {{ template "render_args.tmpl" (dict "Base" $baseObj "Args" $fieldConfig.Args) -}}
   {{if $fieldConfig.ReturnTypeHint -}}
     {{ if $fieldConfig.ResolveMethodArg -}}

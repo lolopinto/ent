@@ -32,6 +32,7 @@ export const HolidayListDeprecatedQueryType: GraphQLFieldConfig<
   HolidayListDeprecatedArgs
 > = {
   type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(HolidayType))),
+  description: "custom query for holiday. list",
   args: {
     id: {
       description: "",

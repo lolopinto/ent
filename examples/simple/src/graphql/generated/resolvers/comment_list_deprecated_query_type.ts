@@ -32,6 +32,7 @@ export const CommentListDeprecatedQueryType: GraphQLFieldConfig<
   CommentListDeprecatedArgs
 > = {
   type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(CommentType))),
+  description: "custom query for comment. list",
   args: {
     id: {
       description: "",

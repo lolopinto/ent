@@ -34,6 +34,7 @@ export const ContactPhoneNumberListDeprecatedQueryType: GraphQLFieldConfig<
   type: new GraphQLNonNull(
     new GraphQLList(new GraphQLNonNull(ContactPhoneNumberType)),
   ),
+  description: "custom query for contact_phone_number. list",
   args: {
     id: {
       description: "",
