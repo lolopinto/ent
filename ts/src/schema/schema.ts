@@ -369,6 +369,9 @@ export enum DBType {
   Time = "Time",
   Timetz = "Timetz",
 
+  Bytea = "Bytea", // bytea type in the database
+  StringByte = "StringByte", // string type in the database
+
   List = "List",
 }
 
