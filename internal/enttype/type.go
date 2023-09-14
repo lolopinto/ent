@@ -1833,6 +1833,116 @@ func (t *NullableJSONBType) GetImportType() Import {
 	return &JSONBImport{}
 }
 
+type ByteaType struct {
+}
+
+func (t *ByteaType) GetDBType() string {
+	return "postgresql.BYTEA()"
+}
+
+func (t *ByteaType) GetGraphQLType() string {
+	return "Byte!"
+}
+
+func (t *ByteaType) GetTSType() string {
+	return "Buffer"
+}
+
+func (t *ByteaType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		{
+			// TODO test this to confirm this is the right thing...
+			ImportPath: "graphql-scalars",
+			Import:     "GraphQLByte",
+		},
+	}
+}
+
+func (t *ByteaType) GetTsTypeImports() []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{}
+}
+
+// only need these for the string text one
+// convertNullableTextToBuffer
+//
+//	func (t *ByteaType) Convert(s SchemaType) ConvertDataTypeRet {
+//		return getAllDialectsImportMap(tsimport.NewEntImportPath("convertTextToBuffer"))
+//	}
+func (t *ByteaType) GetNullableType() TSType {
+	return &NullableByteaType{}
+}
+
+type NullableByteaType struct {
+}
+
+func (t *NullableByteaType) GetDBType() string {
+	return "postgresql.BYTEA()"
+}
+
+func (t *NullableByteaType) GetGraphQLType() string {
+	return "Byte"
+}
+
+func (t *NullableByteaType) GetTSType() string {
+	return "Buffer | null"
+}
+
+func (t *NullableByteaType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		{
+			// TODO test this to confirm this is the right thing...
+			ImportPath: "graphql-scalars",
+			Import:     "GraphQLByte",
+		},
+	}
+}
+
+func (t *NullableByteaType) GetTsTypeImports() []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{}
+}
+
+func (t *NullableByteaType) GetNonNullableType() TSType {
+	return &ByteaType{}
+}
+
+type BinaryTextType struct {
+	ByteaType
+}
+
+func (t *BinaryTextType) GetDBType() string {
+	return "sa.Text()"
+}
+
+func (t *BinaryTextType) Convert(s SchemaType) ConvertDataTypeRet {
+	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertTextToBuffer"))
+}
+
+func (t *BinaryTextType) GetNullableType() TSType {
+	return &NullableBinaryTextType{}
+}
+
+type NullableBinaryTextType struct {
+	NullableByteaType
+}
+
+func (t *NullableBinaryTextType) GetDBType() string {
+	return "sa.Text()"
+}
+
+func (t *NullableBinaryTextType) GetNonNullableType() TSType {
+	return &BinaryTextType{}
+}
+
+func (t *NullableBinaryTextType) Convert(s SchemaType) ConvertDataTypeRet {
+	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertNullableTextToBuffer"))
+}
+
+var _ ConvertDataType = &BinaryTextType{}
+var _ ConvertDataType = &NullableBinaryTextType{}
+var _ TSTypeWithImports = &ByteaType{}
+var _ TSTypeWithImports = &NullableByteaType{}
+
 func IsImportDepsType(t Type) bool {
 	_, ok := t.(ImportDepsType)
 	return ok

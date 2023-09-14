@@ -848,6 +848,82 @@ func TestDateType(t *testing.T) {
 	})
 }
 
+func TestByteaType(t *testing.T) {
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"nullable": {
+			&enttype.NullableByteaType{},
+			expType{
+				db:      "postgresql.BYTEA()",
+				graphql: "Byte",
+				graphqlImports: []*tsimport.ImportPath{
+					{
+						Import:     "GraphQLByte",
+						ImportPath: "graphql-scalars",
+					},
+				},
+				tsType:          "Buffer | null",
+				nonNullableType: &enttype.ByteaType{},
+			},
+		},
+		"not nullable": {
+			&enttype.ByteaType{},
+			expType{
+				db:      "postgresql.BYTEA()",
+				graphql: "Byte!",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					{
+						Import:     "GraphQLByte",
+						ImportPath: "graphql-scalars",
+					},
+				},
+				tsType:       "Buffer",
+				nullableType: &enttype.NullableByteaType{},
+			},
+		},
+	})
+}
+
+func TestBinaryTextType(t *testing.T) {
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"nullable": {
+			&enttype.NullableBinaryTextType{},
+			expType{
+				db:      "sa.Text()",
+				graphql: "Byte",
+				graphqlImports: []*tsimport.ImportPath{
+					{
+						Import:     "GraphQLByte",
+						ImportPath: "graphql-scalars",
+					},
+				},
+				tsType:             "Buffer | null",
+				nonNullableType:    &enttype.BinaryTextType{},
+				convertSqliteFns:   []string{"convertNullableTextToBuffer"},
+				convertPostgresFns: []string{"convertNullableTextToBuffer"},
+			},
+		},
+		"not nullable": {
+			&enttype.BinaryTextType{},
+			expType{
+				db:      "sa.Text()",
+				graphql: "Byte!",
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					{
+						Import:     "GraphQLByte",
+						ImportPath: "graphql-scalars",
+					},
+				},
+				tsType:             "Buffer",
+				nullableType:       &enttype.NullableBinaryTextType{},
+				convertSqliteFns:   []string{"convertTextToBuffer"},
+				convertPostgresFns: []string{"convertTextToBuffer"},
+			},
+		},
+	})
+}
+
 func testTypeDirectly(t *testing.T, testCases map[string]*typeTestCase) {
 	for name, tt := range testCases {
 		t.Run(name, func(t *testing.T) {
