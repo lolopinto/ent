@@ -1,4 +1,3 @@
-import { load } from "js-yaml";
 import {
   Data,
   Ent,
@@ -9,7 +8,7 @@ import {
   LoaderFactory,
   ConfigurableLoaderFactory,
 } from "../base";
-import { AndOptional, Clause, getCombinedClause } from "../clause";
+import { Clause, getCombinedClause } from "../clause";
 import { applyPrivacyPolicyForRows, getDefaultLimit } from "../ent";
 import {
   ObjectLoaderFactory,
