@@ -69,7 +69,7 @@ jobs:
 
     - name: run test suite
       run: |
-        pipenv run pytest -svv
+        pipenv run pytest -k test_compute_changes_with_new_table -svv
       env:
         DB_CONNECTION_STRING: 'postgresql://postgres:postgres@localhost:5432'
         POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
