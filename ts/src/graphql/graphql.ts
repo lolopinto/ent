@@ -42,6 +42,7 @@ interface CustomTopLevelInput {
   functionContents?: string;
   fieldType: CustomFieldTypeInput;
   description?: string;
+  nullable?: boolean;
   list?: boolean;
   connection?: boolean;
   resultType?: string;
