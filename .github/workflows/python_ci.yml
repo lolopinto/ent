@@ -17,29 +17,26 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgresql-version: [13, 14, 15, 16]
 
     services:
-      # Label used to access the service container
-      postgres:
-        # Docker Hub image
-        image: postgres:14.6
-        # Provide the password for postgres
-        env:
-          POSTGRES_PASSWORD: postgres
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          # Maps tcp port 5432 on service container to the host
-          - 5432:5432
-
       sqlite:
         image: nouchka/sqlite3
+
+
     steps:
     - uses: actions/checkout@v3
+
+    - name: Install PostgreSQL
+      env:
+        POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
+      run: |
+        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        sudo apt-get update
+        sudo apt-get -y install "postgresql-$POSTGRESQL_VERSION"
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -74,3 +71,4 @@ jobs:
         pipenv run pytest -svv
       env:
         DB_CONNECTION_STRING: 'postgresql://postgres:postgres@localhost:5432'
+        POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
