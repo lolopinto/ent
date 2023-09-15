@@ -84,9 +84,15 @@ interface cache {
   primeCache(options: QueryOptions, rows: Data[]): void;
   primeCache(options: QueryOptions, rows: Data): void;
   clearCache(): void;
+  reset(): void;
 }
 
 export interface Context<TViewer extends Viewer = Viewer> {
+  // TODO https://github.com/lolopinto/ent/pull/1658
+  // if we ever make Context required, as part of that breaking change add reset()
+  // method so that we can reset the context for long-running "requests" like websockets
+  // and that'll be the official API/way of doing this
+  // TODO https://github.com/lolopinto/ent/issues/1576
   getViewer(): TViewer;
   // optional per (request)contet
   // absence means we are not doing any caching
