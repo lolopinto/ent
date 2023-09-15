@@ -131,4 +131,13 @@ export class ContextCache {
     this.itemMap.clear();
     this.listMap.clear();
   }
+
+  /**
+   * reset clears the cache and resets the discarded loaders
+   * this is used in long-running things like tests or websocket connections where the same Context or ContextCache is being used repeatedly
+   */
+  reset(): void {
+    this.clearCache();
+    this.discardedLoaders = [];
+  }
 }

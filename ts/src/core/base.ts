@@ -84,6 +84,7 @@ interface cache {
   primeCache(options: QueryOptions, rows: Data[]): void;
   primeCache(options: QueryOptions, rows: Data): void;
   clearCache(): void;
+  reset(): void;
 }
 
 export interface Context<TViewer extends Viewer = Viewer> {
