@@ -75,6 +75,6 @@ jobs:
 
     - name: run test suite
       run: |
-        pipenv run pytest -k test_compute_changes_with_new_table -svv
+        pipenv run pytest -svv
       env:
         DB_CONNECTION_STRING: 'postgresql://postgres:postgres@localhost:5432'
