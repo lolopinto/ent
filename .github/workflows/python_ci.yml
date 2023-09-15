@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - python/**
+      - .github/workflows/python_ci.yml
 
 defaults:
   run:
@@ -17,12 +18,15 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgresql-version: [14.6, 15.4, "16rc1"]
 
     services:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:14.6
+        image: postgres:${{ matrix.postgresql-version }}
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
