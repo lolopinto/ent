@@ -218,7 +218,11 @@ class simpleExpression<T extends Data, K = keyof T> implements Clause<T, K> {
 }
 
 class arraySimpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
-  constructor(protected col: K, private value: any, private op: string) {}
+  constructor(
+    protected col: K,
+    private value: any,
+    private op: string,
+  ) {}
 
   clause(idx: number, alias?: string): string {
     if (DB.getDialect() === Dialect.Postgres) {
@@ -340,7 +344,11 @@ export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
     return 70;
   }
 
-  constructor(private col: K, private value: any[], private type = "uuid") {}
+  constructor(
+    private col: K,
+    private value: any[],
+    private type = "uuid",
+  ) {}
 
   clause(idx: number, alias?: string): string {
     // do a simple = when only one item
@@ -429,7 +437,10 @@ export class notInClause<T extends Data, K = keyof T> extends inClause<T, K> {
 class compositeClause<T extends Data, K = keyof T> implements Clause<T, K> {
   compositeOp: string;
 
-  constructor(private clauses: Clause<T, K>[], private sep: string) {
+  constructor(
+    private clauses: Clause<T, K>[],
+    private sep: string,
+  ) {
     this.compositeOp = this.sep;
   }
 
@@ -682,6 +693,48 @@ export function Eq<T extends Data, K = keyof T>(
   value: any,
 ): Clause<T, K> {
   return new simpleClause<T, K>(col, value, "=", new isNullClause(col));
+}
+
+export function StartsWith<T extends Data, K = keyof T>(
+  col: K,
+  value: string,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, `${value}%`, "LIKE");
+}
+
+export function EndsWith<T extends Data, K = keyof T>(
+  col: K,
+  value: string,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, `%${value}`, "LIKE");
+}
+
+export function Contains<T extends Data, K = keyof T>(
+  col: K,
+  value: string,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, `%${value}%`, "LIKE");
+}
+
+export function StartsWithIgnoreCase<T extends Data, K = keyof T>(
+  col: K,
+  value: string,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, `${value}%`, "ILIKE");
+}
+
+export function EndsWithIgnoreCase<T extends Data, K = keyof T>(
+  col: K,
+  value: string,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, `%${value}`, "ILIKE");
+}
+
+export function ContainsIgnoreCase<T extends Data, K = keyof T>(
+  col: K,
+  value: string,
+): Clause<T, K> {
+  return new simpleClause<T, K>(col, `%${value}%`, "ILIKE");
 }
 
 export function NotEq<T extends Data, K = keyof T>(

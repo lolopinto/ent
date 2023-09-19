@@ -662,3 +662,181 @@ test("in clause. integer", async () => {
   expect(ml.errors.length).toBe(0);
   expect(allIds.length).toBe(count);
 });
+
+describe("like clauses", () => {
+  const inputs = [
+    {
+      firstName: "Caetlyn",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Eddard",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Robb",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Jon",
+      lastName: "Snow",
+    },
+    {
+      firstName: "Sansa",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Arya",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Bran",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Rickon",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Daenerys",
+      lastName: "Targaryen",
+    },
+    {
+      firstName: "Cersei",
+      lastName: "Lannister",
+    },
+    {
+      firstName: "Tywin",
+      lastName: "Lannister",
+    },
+    {
+      firstName: "Jaime",
+      lastName: "Lannister",
+    },
+    {
+      firstName: "Tyrion",
+      lastName: "Lannister",
+    },
+    {
+      firstName: "Robert",
+      lastName: "Baratheon",
+    },
+    {
+      firstName: "Joffrey",
+      lastName: "Baratheon",
+    },
+    {
+      firstName: "Myrcella",
+      lastName: "Baratheon",
+    },
+    {
+      firstName: "Tommen",
+      lastName: "Baratheon",
+    },
+    {
+      firstName: "Stannis",
+      lastName: "Baratheon",
+    },
+    {
+      firstName: "Shireen",
+      lastName: "Baratheon",
+    },
+  ];
+
+  beforeEach(async () => {
+    for (const input of inputs) {
+      const data: Data = {
+        id: v1(),
+        first_name: input.firstName,
+        last_name: input.lastName,
+        emails: [],
+        phones: [],
+        random: null,
+        foo: null,
+      };
+      await createRowForTest({
+        tableName,
+        fields: data,
+        fieldsToLog: data,
+      });
+    }
+  });
+
+  test("starts_with", async () => {
+    const expected = inputs.filter((input) => input.lastName.startsWith("S"));
+
+    const lastNameS = await verifyQueryWithAlias(
+      {
+        tableName,
+        fields,
+        clause: clause.StartsWith("last_name", "S"),
+      },
+      alias,
+    );
+
+    expect(lastNameS.length).toBeGreaterThan(0);
+    expect(lastNameS.length).toEqual(expected.length);
+
+    const lastNameSIgnore = await verifyQueryWithAlias(
+      {
+        tableName,
+        fields,
+        clause: clause.StartsWithIgnoreCase("last_name", "s"),
+      },
+      alias,
+    );
+    expect(lastNameSIgnore).toStrictEqual(lastNameS);
+  });
+
+  test("ends_with", async () => {
+    const expected = inputs.filter((input) => input.firstName.endsWith("n"));
+
+    const firstNameN = await verifyQueryWithAlias(
+      {
+        tableName,
+        fields,
+        clause: clause.EndsWith("first_name", "n"),
+      },
+      alias,
+    );
+
+    expect(firstNameN.length).toBeGreaterThan(0);
+    expect(firstNameN.length).toEqual(expected.length);
+
+    const firstNameNIgnore = await verifyQueryWithAlias(
+      {
+        tableName,
+        fields,
+        clause: clause.EndsWithIgnoreCase("first_name", "N"),
+      },
+      alias,
+    );
+    expect(firstNameNIgnore).toStrictEqual(firstNameN);
+  });
+
+  test("contains", async () => {
+    const expected = inputs.filter((input) => input.firstName.includes("o"));
+
+    const containsO = await verifyQueryWithAlias(
+      {
+        tableName,
+        fields,
+        clause: clause.Contains("first_name", "o"),
+      },
+      alias,
+    );
+
+    expect(containsO.length).toBeGreaterThan(0);
+    expect(containsO.length).toEqual(expected.length);
+
+    const containsOIgnore = await verifyQueryWithAlias(
+      {
+        tableName,
+        fields,
+        clause: clause.ContainsIgnoreCase("first_name", "O"),
+      },
+      alias,
+    );
+    expect(containsOIgnore).toStrictEqual(containsO);
+  });
+});
