@@ -1358,6 +1358,80 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual("balance%4");
     });
   });
+
+  describe("like queries", () => {
+    test("contains", () => {
+      const cls = clause.Contains<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar LIKE $1");
+      expect(cls.clause(2)).toBe("bar LIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar LIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar LIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["%foo%"]);
+      expect(cls.logValues()).toStrictEqual(["%foo%"]);
+      expect(cls.instanceKey()).toEqual("barLIKE%foo%");
+    });
+
+    test("contains ignore case", () => {
+      const cls = clause.ContainsIgnoreCase<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar ILIKE $1");
+      expect(cls.clause(2)).toBe("bar ILIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar ILIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar ILIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["%foo%"]);
+      expect(cls.logValues()).toStrictEqual(["%foo%"]);
+      expect(cls.instanceKey()).toEqual("barILIKE%foo%");
+    });
+
+    test("starts_with", () => {
+      const cls = clause.StartsWith<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar LIKE $1");
+      expect(cls.clause(2)).toBe("bar LIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar LIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar LIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["foo%"]);
+      expect(cls.logValues()).toStrictEqual(["foo%"]);
+      expect(cls.instanceKey()).toEqual("barLIKEfoo%");
+    });
+
+    test("starts_with ignore case", () => {
+      const cls = clause.StartsWithIgnoreCase<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar ILIKE $1");
+      expect(cls.clause(2)).toBe("bar ILIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar ILIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar ILIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["foo%"]);
+      expect(cls.logValues()).toStrictEqual(["foo%"]);
+      expect(cls.instanceKey()).toEqual("barILIKEfoo%");
+    });
+
+    test("ends_with", () => {
+      const cls = clause.EndsWith<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar LIKE $1");
+      expect(cls.clause(2)).toBe("bar LIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar LIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar LIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["%foo"]);
+      expect(cls.logValues()).toStrictEqual(["%foo"]);
+      expect(cls.instanceKey()).toEqual("barLIKE%foo");
+    });
+
+    test("ends_with ignore_case", () => {
+      const cls = clause.EndsWithIgnoreCase<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar ILIKE $1");
+      expect(cls.clause(2)).toBe("bar ILIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar ILIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar ILIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["%foo"]);
+      expect(cls.logValues()).toStrictEqual(["%foo"]);
+      expect(cls.instanceKey()).toEqual("barILIKE%foo");
+    });
+  });
 });
 
 describe("sqlite", () => {
