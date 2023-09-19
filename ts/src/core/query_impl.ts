@@ -34,19 +34,35 @@ export function reverseOrderBy(orderby: OrderBy): OrderBy {
   });
 }
 
-export function getJoinPhrase(
+interface JoinInfo {
+  phrase: string;
+  valuesUsed: number;
+}
+
+export function getJoinInfo(
   join: NonNullable<QueryableDataOptions["join"]>,
   clauseIdx = 1,
-): string {
-  const joinTable = join.alias
-    ? `${join.tableName} ${join.alias}`
-    : join.tableName;
-  return `${joinTable} ON ${join.clause.clause(clauseIdx)}`;
+): JoinInfo {
+  let valuesUsed = 0;
+  const str = join
+    .map((join) => {
+      const joinTable = join.alias
+        ? `${join.tableName} ${join.alias}`
+        : join.tableName;
+      valuesUsed += join.clause.values().length;
+      return `JOIN ${joinTable} ON ${join.clause.clause(clauseIdx)}`;
+    })
+    .join(" ");
+  return {
+    phrase: str,
+    valuesUsed,
+  };
 }
 
 export function buildQuery(options: QueryableDataOptions): string {
-  const fields = options.alias
-    ? options.fields.map((f) => `${options.alias}.${f}`).join(", ")
+  const fieldsAlias = options.fieldsAlias ?? options.alias;
+  const fields = fieldsAlias
+    ? options.fields.map((f) => `${fieldsAlias}.${f}`).join(", ")
     : options.fields.join(", ");
 
   // always start at 1
@@ -58,8 +74,9 @@ export function buildQuery(options: QueryableDataOptions): string {
 
   let whereStart = 1;
   if (options.join) {
-    parts.push(`JOIN ${getJoinPhrase(options.join, 1)}`);
-    whereStart += options.join.clause.values().length;
+    const { phrase, valuesUsed } = getJoinInfo(options.join);
+    parts.push(phrase);
+    whereStart += valuesUsed;
   }
 
   parts.push(`WHERE ${options.clause.clause(whereStart, options.alias)}`);

@@ -159,6 +159,9 @@ export interface DataOptions {
 export interface SelectBaseDataOptions extends DataOptions {
   // list of fields to read
   fields: string[];
+  // use this alias to alias the fields instead of the table name or table alias
+  // takes precedence over tableName and alias
+  fieldsAlias?: string;
 }
 
 export interface SelectDataOptions extends SelectBaseDataOptions {
@@ -176,8 +179,7 @@ export interface QueryableDataOptions
   extends SelectBaseDataOptions,
     QueryDataOptions {}
 
-// for now, no complicated joins or no need to support multiple joins
-// just one simple join
+// for now, no complicated joins. just simple joins
 interface JoinOptions<T2 extends Data = Data, K2 = keyof T2> {
   tableName: string;
   alias?: string;
@@ -191,7 +193,7 @@ export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   groupby?: K;
   limit?: number;
   disableTransformations?: boolean;
-  join?: JoinOptions;
+  join?: JoinOptions[];
 }
 
 // For loading data from database

@@ -1567,15 +1567,17 @@ export async function loadTwoWayEdges<T extends AssocEdge>(
     fields,
     clause: actualClause,
     context: opts.context,
-    join: {
-      tableName,
-      alias: "t2",
-      clause: clause.And(
-        // these are not values so need this to not think they're values...
-        clause.Expression("t1.id1 = t2.id2"),
-        clause.Expression("t1.id2 = t2.id1"),
-      ),
-    },
+    join: [
+      {
+        tableName,
+        alias: "t2",
+        clause: clause.And(
+          // these are not values so need this to not think they're values...
+          clause.Expression("t1.id1 = t2.id2"),
+          clause.Expression("t1.id2 = t2.id1"),
+        ),
+      },
+    ],
   });
   return rows as T[];
 }
