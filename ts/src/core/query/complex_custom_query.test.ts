@@ -991,6 +991,8 @@ describe.only("global query - with joins", () => {
                 // these 2 values don't matter
                 new Date().getTime(),
                 4,
+                // fake_users alias will be used here
+                "u",
               )
             : undefined,
         ),
@@ -1038,7 +1040,7 @@ describe.only("global query - with joins", () => {
 
     // this should fail, we need to change the pagination logic to take the second id
     // and instead of using a subquery changes the and clause to handle this
-    await verify(1 * PAGE, true, false, q.getCursor(edges[PAGE - 1])); // 2-
+    await verify(1 * PAGE, true, false, q.getCursor(edges[PAGE - 1])); // 2-3
 
     // await verify(2 * PAGE, true, true, q.getCursor(edges[2 * PAGE - 1])); // 10-14
     // await verify(3 * PAGE, true, true, q.getCursor(edges[3 * PAGE - 1])); //15-19

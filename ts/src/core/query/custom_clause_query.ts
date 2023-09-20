@@ -101,10 +101,12 @@ export class CustomClauseQuery<
       ? primarySortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
 
+    console.debug("fieldOptions", options.loadEntOptions);
     super(viewer, {
       orderby,
       cursorCol,
       join: options.join,
+      fieldOptions: options.loadEntOptions,
     });
     this.clause = getClause(options);
   }

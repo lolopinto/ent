@@ -205,7 +205,7 @@ export interface LoadRowOptions extends QueryableDataOptions {}
 export interface LoadRowsOptions extends QueryableDataOptions {}
 
 interface OnConflictOptions {
-  // TODO these should change to fields instead of columns
+  // TODO should these change to fields instead of columns?
   onConflictCols: string[];
 
   // onConflictConstraint doesn't work with do nothing since ent always reloads the

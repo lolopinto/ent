@@ -7,6 +7,7 @@ import {
   PrivacyPolicy,
   EdgeQueryableDataOptionsConfigureLoader,
   QueryableDataOptions,
+  SelectBaseDataOptions,
 } from "../base";
 import { getDefaultLimit, getCursor, cursorOptions } from "../ent";
 import * as clause from "../clause";
@@ -151,6 +152,10 @@ interface FilterOptions<T extends Data> {
 
   // TODO probably don't need this long term
   join?: NonNullable<QueryableDataOptions["join"]>;
+
+  // fieldOptions used to query field values
+  // used for alias
+  fieldOptions?: SelectBaseDataOptions;
 }
 
 interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
@@ -314,6 +319,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
               // TODO we need a way to know if this is a time column or not
               new Date(this.cursorValues[1]).toISOString(),
               this.offset,
+              this.options.fieldOptions?.fieldsAlias ??
+                this.options.fieldOptions?.alias,
             ),
           );
         } else {
@@ -455,7 +462,10 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
 interface EdgeQueryOptions {
   cursorCol: string;
   orderby: OrderBy;
+  // TODO kill?
   join?: NonNullable<QueryableDataOptions["join"]>;
+  // field options used to query field values
+  fieldOptions?: SelectBaseDataOptions;
 }
 
 export abstract class BaseEdgeQuery<
@@ -556,6 +566,7 @@ export abstract class BaseEdgeQuery<
         cursorKeys: this.cursorKeys,
         orderby: this.edgeQueryOptions.orderby,
         query: this,
+        fieldOptions: this.edgeQueryOptions.fieldOptions,
         join: this.edgeQueryOptions.join,
       }),
     );
@@ -586,6 +597,7 @@ export abstract class BaseEdgeQuery<
         cursorKeys: this.cursorKeys,
         orderby: this.edgeQueryOptions.orderby,
         query: this,
+        fieldOptions: this.edgeQueryOptions.fieldOptions,
         join: this.edgeQueryOptions.join,
       }),
     );
