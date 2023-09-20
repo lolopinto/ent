@@ -117,14 +117,10 @@ export class CustomClauseQuery<
     return this.options.loadEntOptions.tableName;
   }
 
-  protected getCursorParts(row: Data) {
-    // TODO we're going to do this differently
-    const ret = super.getCursorParts(row);
-    if (this.sortCol !== this.cursorCol) {
-      // add the sortCol to the generated cursor so we can use it
-      ret.extraParts = [this.sortCol];
-    }
-    return ret;
+  protected includeSortColInCursor() {
+    // TODO maybe we should just always do this?
+    // return this.options.join !== undefined &&
+    return this.sortCol !== this.cursorCol;
   }
 
   async queryRawCount(): Promise<number> {

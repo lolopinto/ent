@@ -80,7 +80,7 @@ export const commonTests = <TEdge extends Data>(
   function getCursorFrom(contacts: FakeContact[], idx: number) {
     return getCursor({
       row: contacts[idx],
-      col: "id",
+      keys: ["id"],
     });
   }
 

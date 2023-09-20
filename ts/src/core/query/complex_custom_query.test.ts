@@ -983,14 +983,24 @@ describe.only("global query - with joins", () => {
           clause.LessEq("start_time", 2),
           // the cursor check
           cursor
-            ? clause.PaginationMultipleColsSubQuery(
+            ? // this clause needs to be u not e...
+              clause.PaginationMultipleColsQuery(
                 "created_at",
-                "<",
-                FakeEvent.loaderOptions().tableName,
                 "id",
+                true,
+                // these 2 values don't matter
+                new Date().getTime(),
                 4,
               )
             : undefined,
+          // ? clause.PaginationMultipleColsSubQuery(
+          //     "created_at",
+          //     "<",
+          //     FakeEvent.loaderOptions().tableName,
+          //     "id",
+          //     4,
+          //   )
+          // : undefined,
         ),
         tableName: "fake_events",
         fieldsAlias: "u",
@@ -1034,7 +1044,10 @@ describe.only("global query - with joins", () => {
     const cursor = q.getCursor(edges[PAGE - 1]);
     console.debug(cursor, Buffer.from(cursor, "base64").toString("ascii"));
 
-    // await verify(1 * PAGE, true, false, q.getCursor(edges[PAGE - 1])); // 2-
+    // this should fail, we need to change the pagination logic to take the second id
+    // and instead of using a subquery changes the and clause to handle this
+    await verify(1 * PAGE, true, false, q.getCursor(edges[PAGE - 1])); // 2-
+
     // await verify(2 * PAGE, true, true, q.getCursor(edges[2 * PAGE - 1])); // 10-14
     // await verify(3 * PAGE, true, true, q.getCursor(edges[3 * PAGE - 1])); //15-19
     // await verify(4 * PAGE, true, true, q.getCursor(edges[4 * PAGE - 1])); //20-24

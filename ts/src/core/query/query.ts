@@ -101,13 +101,12 @@ interface validCursorOptions {
 function assertValidCursor(cursor: string, opts: validCursorOptions): any {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
-  // uuid, don't parse int since it tries to validate just first part
-  if (validate(parts[1])) {
-    return parts[1];
-  }
+
   const { keys } = opts;
   // invalid or unknown cursor. nothing to do here.
   // we should have the same number of parts as keys * 2
+  // ISO string has...
+  // console.debug(decoded, parts, keys);
   if (parts.length !== keys.length * 2) {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
@@ -119,6 +118,11 @@ function assertValidCursor(cursor: string, opts: validCursorOptions): any {
       throw new Error(`invalid cursor ${cursor} passed`);
     }
     const val = parts[i * 2 + 1];
+    // uuid, don't parse int since it tries to validate just first part
+    if (validate(val)) {
+      values.push(val);
+      continue;
+    }
 
     // TODO handle both cases... (time vs not) better
     // TODO change this to only do the parseInt part if time...
@@ -143,6 +147,8 @@ interface FilterOptions<T extends Data> {
   // if sortCol is Unique and time, we need to pass different values for comparisons and checks...
   sortColTime?: boolean;
 
+  cursorKeys: string[];
+
   // TODO probably don't need this long term
   join?: NonNullable<QueryableDataOptions["join"]>;
 }
@@ -163,16 +169,18 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
   private pageMap: Map<ID, PaginationInfo> = new Map();
   private usedQuery = false;
+  private cursorValues: any[] = [];
 
   constructor(private options: FirstFilterOptions<T>) {
     assertPositive(options.limit);
 
     this.sortCol = options.sortCol;
+    console.debug(options.after, options.cursorKeys);
     if (options.after) {
-      const vals = assertValidCursor(options.after, {
-        keys: [options.cursorCol],
+      this.cursorValues = assertValidCursor(options.after, {
+        keys: options.cursorKeys,
       });
-      this.offset = vals[0];
+      this.offset = this.cursorValues[0];
     }
     this.edgeQuery = options.query;
   }
@@ -269,8 +277,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
           // console.debug(this.options);
           // TODO good way to always derive this somehow
           // use fields alias/regular alias to map?
-          console.debug("changing tableName");
-          tableName = "fake_users";
+          // console.debug("changing tableName");
+          // tableName = "fake_users";
         }
         // inner col time
 
@@ -279,37 +287,71 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         // TODO: do we need a subclause here or can we just and with the existing clause?
         // we need a subclause when
         // if (this.options.join) {
-        //   // options.clause = clause.AndOptional(
-        //   //   options.clause,
-        //   //   clause.And(
-        //   //     less
-        //   //       ? clause.Less(this.sortCol, this.offset)
-        //   //       : clause.Greater(this.sortCol, this.offset),
-        //   //     clause.Or(
-        //   //       clause.And(
-        //   //       clause.Eq(this.sortCol, this.offset), clause.IsNull(this.sortCol)),
-        //   //   ),
-        //   //   // TODO come back
-        //   //   // clause.Eq("foo", "bar"),
-        //   // );
+
         // } else {
 
-        options.clause = clause.AndOptional(
-          options.clause,
-          clause.PaginationMultipleColsSubQuery(
-            this.sortCol,
-            less ? "<" : ">",
-            tableName,
-            this.options.cursorCol,
-            this.offset,
-          ),
-        );
+        // using a join, we already know sortCol and cursorCol are different
+        // we have encoded both values in the cursor
+        // includeSortColInCursor() is true in this case
+        if (
+          this.cursorValues.length === 2 &&
+          this.options.cursorKeys.length === 2
+        ) {
+          // console.debug(
+          //   this.sortCol,
+          //   this.options.cursorCol,
+          //   this.cursorValues,
+          // );
+          options.clause = clause.AndOptional(
+            options.clause,
+            // this clause needs to be u not e...
+            clause.PaginationMultipleColsQuery(
+              this.sortCol,
+              this.options.cursorCol,
+              less,
+              // TODO we need a way to know if this is a time column or not
+              new Date(this.cursorValues[1]).toISOString(),
+              this.offset,
+            ),
+            // clause.And(
+            //   clause.Or(
+            //     less
+            //       ? clause.Less(this.options.cursorCol, this.offset)
+            //       : clause.Greater(this.options.cursorCol, this.offset),
+            //     clause.And(
+            //       clause.Eq(this.options.cursorCol, this.offset),
+            //       less
+            //         ? // TODO we need a way to know if this is a time column or not
+            //           clause.Less(
+            //             this.sortCol,
+            //             new Date(this.cursorValues[1]).toISOString(),
+            //           )
+            //         : clause.Greater(
+            //             this.sortCol,
+            //             new Date(this.cursorValues[1]).toISOString(),
+            //           ),
+            //     ),
+            //   ),
+            // ),
+          );
+        } else {
+          options.clause = clause.AndOptional(
+            options.clause,
+            clause.PaginationMultipleColsSubQuery(
+              this.sortCol,
+              less ? "<" : ">",
+              tableName,
+              this.options.cursorCol,
+              this.offset,
+            ),
+          );
+        }
         // }
       }
     } else {
       if (this.offset) {
-        let clauseFn = less ? clause.Less : clause.Greater;
-        let val = this.options.sortColTime
+        const clauseFn = less ? clause.Less : clause.Greater;
+        const val = this.options.sortColTime
           ? new Date(this.offset).toISOString()
           : this.offset;
         options.clause = clause.AndOptional(
@@ -334,16 +376,17 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   private sortCol: string;
   private pageMap: Map<ID, PaginationInfo> = new Map();
   private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
+  private cursorValues: any[] = [];
 
   constructor(private options: LastFilterOptions<T>) {
     assertPositive(options.limit);
 
     this.sortCol = options.sortCol;
     if (options.before) {
-      const vals = assertValidCursor(options.before, {
-        keys: [options.cursorCol],
+      this.cursorValues = assertValidCursor(options.before, {
+        keys: options.cursorKeys,
       });
-      this.offset = vals[0];
+      this.offset = this.cursorValues[0];
     }
     this.edgeQuery = options.query;
   }
@@ -407,8 +450,8 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
       });
     } else {
       if (this.offset) {
-        let clauseFn = greater ? clause.Greater : clause.Less;
-        let val = this.options.sortColTime
+        const clauseFn = greater ? clause.Greater : clause.Less;
+        const val = this.options.sortColTime
           ? new Date(this.offset).toISOString()
           : this.offset;
         options.clause = clause.AndOptional(
@@ -451,6 +494,7 @@ export abstract class BaseEdgeQuery<
   protected cursorCol: string;
   private edgeQueryOptions: EdgeQueryOptions;
   private limitAdded = false;
+  private cursorKeys: string[] = [];
 
   constructor(viewer: Viewer, sortCol: string, cursorCol: string);
   constructor(viewer: Viewer, options: EdgeQueryOptions);
@@ -500,6 +544,10 @@ export abstract class BaseEdgeQuery<
     this.cursorCol = cursorCol;
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
     this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
+    this.cursorKeys.push(this.cursorCol);
+    if (this.includeSortColInCursor()) {
+      this.cursorKeys.push(this.sortCol);
+    }
   }
 
   protected getSortCol(): string {
@@ -514,6 +562,7 @@ export abstract class BaseEdgeQuery<
   abstract sourceEnt(id: ID): Promise<Ent | null>;
 
   first(n: number, after?: string): this {
+    console.debug("first", n, after);
     this.limitAdded = true;
     this.assertQueryNotDispatched("first");
     this.filters.push(
@@ -522,6 +571,7 @@ export abstract class BaseEdgeQuery<
         after,
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
+        cursorKeys: this.cursorKeys,
         orderby: this.edgeQueryOptions.orderby,
         query: this,
         join: this.edgeQueryOptions.join,
@@ -551,6 +601,7 @@ export abstract class BaseEdgeQuery<
         before,
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
+        cursorKeys: this.cursorKeys,
         orderby: this.edgeQueryOptions.orderby,
         query: this,
         join: this.edgeQueryOptions.join,
@@ -787,15 +838,15 @@ export abstract class BaseEdgeQuery<
     return this.edges;
   }
 
-  protected getCursorParts(row: TEdge): cursorOptions {
-    return {
-      row,
-      col: this.cursorCol,
-    };
+  protected includeSortColInCursor() {
+    return false;
   }
 
   getCursor(row: TEdge): string {
-    return getCursor(this.getCursorParts(row));
+    return getCursor({
+      row,
+      keys: this.cursorKeys,
+    });
   }
 }
 

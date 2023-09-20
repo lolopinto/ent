@@ -1237,49 +1237,51 @@ export class AssocEdge {
   getCursor(): string {
     return getCursor({
       row: this,
-      col: "id2",
+      keys: ["id2"],
     });
   }
 }
 
 export interface cursorOptions {
   row: Data;
-  col: string;
-  cursorKey?: string; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
+  keys: string[];
+  // col: string;
+  // cursorKey?: string; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
   // used rarely, indicates that the cursor will be more than 2 parts and will have more fields
-  extraParts?: string[];
-  conv?: (any: any) => any;
+  // extraParts?: string[];
+  // conv?: (any: any) => any;
 }
 
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
-  const { row, col, conv } = opts;
+  const { row, keys } = opts;
   //  row: Data, col: string, conv?: (any) => any) {
   if (!row) {
     throw new Error(`no row passed to getCursor`);
   }
-  const convert = (d: any, convFn?: any) => {
-    if (convFn) {
-      return convFn(d);
-    }
+  const convert = (d: any) => {
+    // if (convFn) {
+    //   return convFn(d);
+    // }
     if (d instanceof Date) {
-      return d.toISOString();
+      return d.getTime();
     }
     return d;
   };
 
-  let datum = convert(row[col], conv);
-  if (!datum) {
-    return "";
-  }
+  // let datum = convert(row[col], conv);
+  // if (!datum) {
+  //   return "";
+  // }
 
-  const cursorKey = opts.cursorKey || col;
-  const parts: string[] = [cursorKey, datum];
-  if (opts.extraParts) {
-    for (const p of opts.extraParts) {
-      parts.push(p);
-      parts.push(convert(row[p]));
-    }
+  // const cursorKey = opts.cursorKey || col;
+  const parts: string[] = [];
+  for (const key of keys) {
+    // if (opts.extraParts) {
+    // for (const p of opts.extraParts) {
+    parts.push(key);
+    parts.push(convert(row[key]));
+    // }
   }
   const str = parts.join(":");
   return Buffer.from(str, "ascii").toString("base64");
