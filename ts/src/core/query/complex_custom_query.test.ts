@@ -993,14 +993,6 @@ describe.only("global query - with joins", () => {
                 4,
               )
             : undefined,
-          // ? clause.PaginationMultipleColsSubQuery(
-          //     "created_at",
-          //     "<",
-          //     FakeEvent.loaderOptions().tableName,
-          //     "id",
-          //     4,
-          //   )
-          // : undefined,
         ),
         tableName: "fake_events",
         fieldsAlias: "u",

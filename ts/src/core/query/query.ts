@@ -305,6 +305,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
           options.clause = clause.AndOptional(
             options.clause,
             // this clause needs to be u not e...
+            // use aliases and we know we need aliases since
+            // they must match...
             clause.PaginationMultipleColsQuery(
               this.sortCol,
               this.options.cursorCol,
@@ -313,26 +315,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
               new Date(this.cursorValues[1]).toISOString(),
               this.offset,
             ),
-            // clause.And(
-            //   clause.Or(
-            //     less
-            //       ? clause.Less(this.options.cursorCol, this.offset)
-            //       : clause.Greater(this.options.cursorCol, this.offset),
-            //     clause.And(
-            //       clause.Eq(this.options.cursorCol, this.offset),
-            //       less
-            //         ? // TODO we need a way to know if this is a time column or not
-            //           clause.Less(
-            //             this.sortCol,
-            //             new Date(this.cursorValues[1]).toISOString(),
-            //           )
-            //         : clause.Greater(
-            //             this.sortCol,
-            //             new Date(this.cursorValues[1]).toISOString(),
-            //           ),
-            //     ),
-            //   ),
-            // ),
           );
         } else {
           options.clause = clause.AndOptional(

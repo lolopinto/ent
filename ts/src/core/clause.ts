@@ -1205,13 +1205,11 @@ export function PaginationMultipleColsQuery<T extends Data, K = keyof T>(
   sortValue: any,
   cursorValue: any,
 ): Clause<T, K> {
+  const clauseFn = less ? Less : Greater;
   return And(
     Or(
-      less ? Less(sortCol, sortValue) : Greater(sortCol, sortValue),
-      And(
-        Eq(sortCol, sortValue),
-        less ? Less(cursorCol, cursorValue) : Greater(cursorCol, cursorValue),
-      ),
+      clauseFn(sortCol, sortValue),
+      And(Eq(sortCol, sortValue), clauseFn(cursorCol, cursorValue)),
     ),
   );
 }
