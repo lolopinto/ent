@@ -162,6 +162,9 @@ export interface SelectBaseDataOptions extends DataOptions {
   // use this alias to alias the fields instead of the table name or table alias
   // takes precedence over tableName and alias
   fieldsAlias?: string;
+  // don't use either alias for this query.
+  // possible reason in when doing aggregate queries and may have already aliased what we're querying
+  disableFieldsAlias?: boolean;
 }
 
 export interface SelectDataOptions extends SelectBaseDataOptions {

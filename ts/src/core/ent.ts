@@ -1242,10 +1242,12 @@ export class AssocEdge {
   }
 }
 
-interface cursorOptions {
+export interface cursorOptions {
   row: Data;
   col: string;
   cursorKey?: string; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
+  // used rarely, indicates that the cursor will be more than 2 parts and will have more fields
+  extraParts?: string[];
   conv?: (any: any) => any;
 }
 
@@ -1256,16 +1258,30 @@ export function getCursor(opts: cursorOptions) {
   if (!row) {
     throw new Error(`no row passed to getCursor`);
   }
-  let datum = row[col];
+  const convert = (d: any, convFn?: any) => {
+    if (convFn) {
+      return convFn(d);
+    }
+    if (d instanceof Date) {
+      return d.toISOString();
+    }
+    return d;
+  };
+
+  let datum = convert(row[col], conv);
   if (!datum) {
     return "";
   }
-  if (conv) {
-    datum = conv(datum);
-  }
 
   const cursorKey = opts.cursorKey || col;
-  const str = `${cursorKey}:${datum}`;
+  const parts: string[] = [cursorKey, datum];
+  if (opts.extraParts) {
+    for (const p of opts.extraParts) {
+      parts.push(p);
+      parts.push(convert(row[p]));
+    }
+  }
+  const str = parts.join(":");
   return Buffer.from(str, "ascii").toString("base64");
 }
 

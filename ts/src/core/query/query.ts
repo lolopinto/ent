@@ -6,8 +6,9 @@ import {
   Data,
   PrivacyPolicy,
   EdgeQueryableDataOptionsConfigureLoader,
+  QueryableDataOptions,
 } from "../base";
-import { getDefaultLimit, getCursor } from "../ent";
+import { getDefaultLimit, getCursor, cursorOptions } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
@@ -92,25 +93,44 @@ function assertPositive(n: number) {
   }
 }
 
-function assertValidCursor(cursor: string, col: string): any {
+interface validCursorOptions {
+  keys: string[];
+  // timeIsNumber?: boolean;
+}
+
+function assertValidCursor(cursor: string, opts: validCursorOptions): any {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
   // uuid, don't parse int since it tries to validate just first part
   if (validate(parts[1])) {
     return parts[1];
   }
+  const { keys } = opts;
   // invalid or unknown cursor. nothing to do here.
-  if (parts.length !== 2 || parts[0] !== col) {
+  // we should have the same number of parts as keys * 2
+  if (parts.length !== keys.length * 2) {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
-  // TODO handle both cases... (time vs not) better
-  // TODO change this to only do the parseInt part if time...
-  // pass flag indicating if time?
-  const time = parseInt(parts[1], 10);
-  if (isNaN(time)) {
-    return parts[1];
+  const values: any = [];
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const keyPart = parts[i * 2];
+    if (key !== keyPart) {
+      throw new Error(`invalid cursor ${cursor} passed`);
+    }
+    const val = parts[i * 2 + 1];
+
+    // TODO handle both cases... (time vs not) better
+    // TODO change this to only do the parseInt part if time...
+    // pass flag indicating if time?
+    const time = parseInt(val, 10);
+    if (isNaN(time)) {
+      values.push(val);
+    } else {
+      values.push(time);
+    }
   }
-  return time;
+  return values;
 }
 
 interface FilterOptions<T extends Data> {
@@ -122,6 +142,9 @@ interface FilterOptions<T extends Data> {
   // TODO provide this option
   // if sortCol is Unique and time, we need to pass different values for comparisons and checks...
   sortColTime?: boolean;
+
+  // TODO probably don't need this long term
+  join?: NonNullable<QueryableDataOptions["join"]>;
 }
 
 interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
@@ -146,7 +169,10 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     this.sortCol = options.sortCol;
     if (options.after) {
-      this.offset = assertValidCursor(options.after, options.cursorCol);
+      const vals = assertValidCursor(options.after, {
+        keys: [options.cursorCol],
+      });
+      this.offset = vals[0];
     }
     this.edgeQuery = options.query;
   }
@@ -228,6 +254,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     const less = this.options.orderby[0].direction === "DESC";
     const orderby = this.options.orderby;
 
+    // console.debug(this.options);
     if (this.options.cursorCol !== this.sortCol) {
       // we also sort cursor col in same direction. (direction doesn't matter)
       orderby.push({
@@ -237,8 +264,36 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 
       if (this.offset) {
         const res = this.edgeQuery.getTableName();
-        const tableName = isPromise(res) ? await res : res;
+        let tableName = isPromise(res) ? await res : res;
+        if (this.options.join) {
+          // console.debug(this.options);
+          // TODO good way to always derive this somehow
+          // use fields alias/regular alias to map?
+          console.debug("changing tableName");
+          tableName = "fake_users";
+        }
         // inner col time
+
+        // TODO if join, use a different clause instead of PaginationMultipleColsSubQuery
+
+        // TODO: do we need a subclause here or can we just and with the existing clause?
+        // we need a subclause when
+        // if (this.options.join) {
+        //   // options.clause = clause.AndOptional(
+        //   //   options.clause,
+        //   //   clause.And(
+        //   //     less
+        //   //       ? clause.Less(this.sortCol, this.offset)
+        //   //       : clause.Greater(this.sortCol, this.offset),
+        //   //     clause.Or(
+        //   //       clause.And(
+        //   //       clause.Eq(this.sortCol, this.offset), clause.IsNull(this.sortCol)),
+        //   //   ),
+        //   //   // TODO come back
+        //   //   // clause.Eq("foo", "bar"),
+        //   // );
+        // } else {
+
         options.clause = clause.AndOptional(
           options.clause,
           clause.PaginationMultipleColsSubQuery(
@@ -249,6 +304,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
             this.offset,
           ),
         );
+        // }
       }
     } else {
       if (this.offset) {
@@ -284,7 +340,10 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
 
     this.sortCol = options.sortCol;
     if (options.before) {
-      this.offset = assertValidCursor(options.before, options.cursorCol);
+      const vals = assertValidCursor(options.before, {
+        keys: [options.cursorCol],
+      });
+      this.offset = vals[0];
     }
     this.edgeQuery = options.query;
   }
@@ -371,6 +430,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
 interface EdgeQueryOptions {
   cursorCol: string;
   orderby: OrderBy;
+  join?: NonNullable<QueryableDataOptions["join"]>;
 }
 
 export abstract class BaseEdgeQuery<
@@ -387,8 +447,8 @@ export abstract class BaseEdgeQuery<
   protected genIDInfosToFetch: () => Promise<IDInfo[]>;
   private idMap: Map<ID, TSource> = new Map();
   private idsToFetch: ID[] = [];
-  private sortCol: string;
-  private cursorCol: string;
+  protected sortCol: string;
+  protected cursorCol: string;
   private edgeQueryOptions: EdgeQueryOptions;
   private limitAdded = false;
 
@@ -464,6 +524,7 @@ export abstract class BaseEdgeQuery<
         cursorCol: this.cursorCol,
         orderby: this.edgeQueryOptions.orderby,
         query: this,
+        join: this.edgeQueryOptions.join,
       }),
     );
     return this;
@@ -492,6 +553,7 @@ export abstract class BaseEdgeQuery<
         cursorCol: this.cursorCol,
         orderby: this.edgeQueryOptions.orderby,
         query: this,
+        join: this.edgeQueryOptions.join,
       }),
     );
     return this;
@@ -725,11 +787,15 @@ export abstract class BaseEdgeQuery<
     return this.edges;
   }
 
-  getCursor(row: TEdge): string {
-    return getCursor({
+  protected getCursorParts(row: TEdge): cursorOptions {
+    return {
       row,
       col: this.cursorCol,
-    });
+    };
+  }
+
+  getCursor(row: TEdge): string {
+    return getCursor(this.getCursorParts(row));
   }
 }
 

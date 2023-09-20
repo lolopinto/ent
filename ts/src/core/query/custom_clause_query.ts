@@ -4,6 +4,7 @@ import {
   Ent,
   ID,
   LoadEntOptions,
+  QueryDataOptions,
   Viewer,
 } from "../base";
 import { AndOptional, Clause } from "../clause";
@@ -42,6 +43,8 @@ export interface CustomClauseQueryOptions<
   nullsPlacement?: "first" | "last";
 
   disableTransformations?: boolean;
+
+  join?: QueryDataOptions["join"];
 }
 
 function getClause<TDest extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
@@ -101,6 +104,7 @@ export class CustomClauseQuery<
     super(viewer, {
       orderby,
       cursorCol,
+      join: options.join,
     });
     this.clause = getClause(options);
   }
@@ -113,13 +117,44 @@ export class CustomClauseQuery<
     return this.options.loadEntOptions.tableName;
   }
 
+  protected getCursorParts(row: Data) {
+    // TODO we're going to do this differently
+    const ret = super.getCursorParts(row);
+    if (this.sortCol !== this.cursorCol) {
+      // add the sortCol to the generated cursor so we can use it
+      ret.extraParts = [this.sortCol];
+    }
+    return ret;
+  }
+
   async queryRawCount(): Promise<number> {
+    // if (this.options.join) {
+    //   throw new Error(
+    //     `queryRawCount doesn't support join. use queryAllRawCount`,
+    //   );
+    // }
+
+    // sqlite needs as count otherwise it returns count(1)
+    let fields = ["count(1) as count"];
+    if (this.options.join) {
+      const requestedFields = this.options.loadEntOptions.fields;
+      const alias =
+        this.options.loadEntOptions.fieldsAlias ??
+        this.options.loadEntOptions.alias;
+      if (alias) {
+        fields = [`count(distinct ${alias}.${requestedFields[0]}) as count`];
+      } else {
+        fields = [`count(distinct ${requestedFields[0]}) as count`];
+      }
+    }
     const row = await loadRow({
+      ...this.options.loadEntOptions,
       tableName: this.options.loadEntOptions.tableName,
-      // sqlite needs as count otherwise it returns count(1)
-      fields: ["count(1) as count"],
+      fields,
       clause: this.clause,
       context: this.viewer.context,
+      join: this.options.join,
+      disableFieldsAlias: true,
     });
     return parseInt(row?.count, 10) || 0;
   }
@@ -148,14 +183,18 @@ export class CustomClauseQuery<
       options.limit = getDefaultLimit();
     }
 
+    // console.debug(this.options.loadEntOptions, this.options.join);
     const rows = await loadRows({
-      tableName: this.options.loadEntOptions.tableName,
-      fields: this.options.loadEntOptions.fields,
+      ...this.options.loadEntOptions,
       clause: AndOptional(this.clause, options.clause),
       orderby: options.orderby,
       limit: options?.limit || getDefaultLimit(),
       context: this.viewer.context,
+      join: this.options.join,
+      // if doing a join, select distinct rows
+      distinct: this.options.join !== undefined,
     });
+    // console.debug(rows);
 
     this.edges.set(1, rows);
   }
