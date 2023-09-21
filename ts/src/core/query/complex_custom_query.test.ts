@@ -1,3 +1,5 @@
+import { v1 } from "uuid";
+import { DateTime } from "luxon";
 import { MockLogs } from "../../testutils/mock_log";
 import {
   FakeEvent,
@@ -13,17 +15,21 @@ import {
   addEdge,
   createAllEvents,
   createTestUser,
+  inputs,
   setupTempDB,
 } from "../../testutils/fake_data/test_helpers";
 import { setLogLevels } from "../logger";
-import { TempDB } from "../../testutils/db/temp_db";
+import { TempDB, integer, table, text, uuid } from "../../testutils/db/temp_db";
 import { buildQuery } from "../query_impl";
 import * as clause from "../clause";
-import { Viewer, WriteOperation } from "../base";
+import { Data, Viewer, WriteOperation } from "../base";
 import { CustomClauseQuery } from "./custom_clause_query";
-import { SimpleBuilder } from "../../testutils/builder";
-import { DateTime } from "luxon";
+import { AnyEnt, SimpleBuilder } from "../../testutils/builder";
 import { OrderByOption } from "../query_impl";
+import { createRowForTest } from "../../testutils/write";
+import { randomEmail } from "../../testutils/db/value";
+import DB from "../db";
+import { LoggedOutViewer } from "../viewer";
 
 const INTERVAL = 24 * 60 * 60 * 1000;
 
@@ -876,7 +882,7 @@ describe("global query. id. cursor and sort_column the same", () => {
   });
 });
 
-describe.only("global query - with joins", () => {
+describe("global query - with joins", () => {
   test("rawCount", async () => {
     const q = getCreatorsOfGlobalEventsInNextWeek();
 
@@ -943,7 +949,7 @@ describe.only("global query - with joins", () => {
 
   // need different pagination logic for joins
   // may need a different example so that we have enough ids to test pagination
-  test.only("first N. after each cursor", async () => {
+  test("first N. after each cursor", async () => {
     const q = getCreatorsOfGlobalEventsInNextWeek();
 
     const edges = await q.queryEdges();
@@ -1058,6 +1064,7 @@ describe.only("global query - with joins", () => {
     // await verify(14, true, true, q.getCursor(edges[13]));
     // await verify(19, true, true, q.getCursor(edges[18]));
   });
+  // these 2 haven't been tackled
 
   test("first N. after each cursor. asc", async () => {
     const q = getGlobalQuery(user.viewer, { direction: "ASC" });
@@ -1166,4 +1173,429 @@ describe.only("global query - with joins", () => {
     expect(edges2.length).toBe(edges.length);
     expect(edges.reverse()).toStrictEqual(edges2);
   });
+});
+
+describe.only("joins - products", () => {
+  // TODO more
+  const usersTable = table(
+    "users",
+    uuid("id", {
+      primaryKey: true,
+    }),
+    text("name"),
+    text("email"),
+  );
+  const categoriesTable = table(
+    "categories",
+    uuid("id", {
+      primaryKey: true,
+    }),
+    text("name"),
+  );
+
+  const productsTable = table(
+    "products",
+    uuid("id", { primaryKey: true }),
+    uuid("category_id", {
+      foreignKey: {
+        table: "categories",
+        col: "id",
+      },
+    }),
+    integer("price"),
+    text("product_name"),
+  );
+
+  const ordersTable = table(
+    "orders",
+    uuid("id", { primaryKey: true }),
+    uuid("user_id", {
+      foreignKey: {
+        table: "users",
+        col: "id",
+      },
+    }),
+    uuid("product_id", {
+      foreignKey: {
+        table: "products",
+        col: "id",
+      },
+    }),
+    integer("quantity"),
+  );
+
+  const NUM_USERS = 20;
+  const NUM_CATEGORIES = 10;
+  const NUM_PRODUCTS = 200;
+
+  const POTENTIAL_CATEGORIES = [
+    "electronics",
+    "clothing",
+    "food",
+    "books",
+    "toys",
+    "games",
+    "sports",
+    "tools",
+    "furniture",
+    "appliances",
+  ];
+
+  const users: Data[] = [];
+  const categories: Data[] = [];
+  const products: Data[] = [];
+  const orders: Data[] = [];
+
+  beforeAll(async () => {
+    await tdb.create(usersTable, categoriesTable, productsTable, ordersTable);
+
+    for (let i = 0; i < NUM_USERS; i++) {
+      const input = inputs[i % inputs.length];
+      const user = await createRowForTest(
+        {
+          tableName: "users",
+          fields: {
+            id: v1(),
+            name: `${input.firstName} ${input.lastName}`,
+            email: randomEmail(),
+          },
+        },
+        "RETURNING *",
+      );
+      console.assert(user, `couldn't create user`);
+      users.push(user!);
+    }
+
+    for (let i = 0; i < NUM_CATEGORIES; i++) {
+      const category = await createRowForTest(
+        {
+          tableName: "categories",
+          fields: {
+            id: v1(),
+            name: POTENTIAL_CATEGORIES[i % POTENTIAL_CATEGORIES.length],
+          },
+        },
+        "RETURNING *",
+      );
+      console.assert(category, `couldn't create category`);
+      categories.push(category!);
+    }
+
+    for (let i = 0; i < NUM_PRODUCTS; i++) {
+      const category = categories[i % categories.length];
+      const category_id = category.id;
+      const product = await createRowForTest(
+        {
+          tableName: "products",
+          fields: {
+            id: v1(),
+            category_id,
+            product_name: `${Math.random().toString(16).substring(2)}_${
+              category.name
+            }`,
+            price: Math.floor(Math.random() * 100),
+          },
+        },
+        "RETURNING *",
+      );
+      console.assert(product, `couldn't create product`);
+      products.push(product!);
+    }
+    function getRandomNumber(min: number, max: number) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    for (const user of users) {
+      for (let i = 0; i < getRandomNumber(10, 30); i++) {
+        const product = products[i % products.length];
+        const product_id = product.id;
+        const quantity = Math.floor(Math.random() * 10);
+        const order = await createRowForTest(
+          {
+            tableName: "orders",
+            fields: {
+              id: v1(),
+              user_id: user.id,
+              product_id,
+              quantity,
+            },
+          },
+          "RETURNING *",
+        );
+        console.assert(order, `couldn't create order`);
+        orders.push(order!);
+      }
+    }
+  });
+
+  // psql tb826ca1e5d3a6
+  test.skip("query users for product", async () => {
+    // find the most ordered product
+    const r = await DB.getInstance().getPool().query(`
+          SELECT
+      p.id,
+          COUNT(DISTINCT o.user_id) AS num_users
+      FROM 
+          orders o
+      JOIN 
+          products p ON p.id = o.product_id
+      GROUP BY 
+          p.id
+      ORDER BY 
+          num_users DESC
+      LIMIT 1;
+`);
+    const expCount = parseInt(r.rows[0].num_users, 10);
+
+    const productId = r.rows[0].id;
+    // query for the users who ordered that product
+    const r2 = await DB.getInstance()
+      .getPool()
+      .query(
+        `SELECT
+        u.id,
+        u.name,
+        u.email
+    FROM
+        users u
+    JOIN
+        orders o ON u.id = o.user_id
+    JOIN
+        products p ON o.product_id = p.id
+    WHERE
+        p.id = $1
+    ORDER BY u.name DESC, u.id DESC
+        `,
+        [productId],
+      );
+
+    expect(r2.rows.length).toEqual(expCount);
+
+    // now let's do an ent query for it and the results should be the same
+
+    const getQuery = () => {
+      return new CustomClauseQuery(new LoggedOutViewer(), {
+        clause: clause.Eq("id", productId, "p"),
+        name: "users_purchased_product",
+        loadEntOptions: AnyEnt.loaderOptions("users", ["id", "name", "email"]),
+        orderby: [
+          {
+            column: "name",
+            direction: "DESC",
+          },
+        ],
+        join: [
+          {
+            tableName: "orders",
+            alias: "o",
+            clause: clause.Expression("u.id = o.user_id"),
+          },
+          {
+            tableName: "products",
+            alias: "p",
+            clause: clause.Expression("o.product_id = p.id"),
+          },
+        ],
+      });
+    };
+
+    const q = getQuery();
+
+    const [edges, count, rawCount, ents] = await Promise.all([
+      q.queryEdges(),
+      q.queryCount(),
+      q.queryRawCount(),
+      q.queryEnts(),
+    ]);
+    expect(edges.length).toBe(expCount);
+    expect(count).toBe(expCount);
+    expect(rawCount).toBe(expCount);
+    expect(ents.length).toBe(expCount);
+
+    expect(edges).toStrictEqual(r2.rows);
+    expect(ents.map((ent) => ent.id)).toStrictEqual(
+      r2.rows.map((row) => row.id),
+    );
+
+    // TODO generic pagination tests??
+  });
+
+  test.only("query products for user", async () => {
+    // find the user who ordered the most products
+    const r = await DB.getInstance().getPool().query(`
+          SELECT
+      u.id,
+          COUNT(DISTINCT o.product_id) AS num_products
+      FROM 
+          users u
+      JOIN 
+          orders o ON u.id = o.user_id
+      GROUP BY 
+          u.id
+      ORDER BY 
+          num_products DESC
+      LIMIT 1;
+`);
+    console.debug(r.rows);
+
+    const expCount = parseInt(r.rows[0].num_products, 10);
+
+    const userId = r.rows[0].id;
+    // query for the products ordered by that user
+    // 2 simple ways to do this
+    const r2 = await DB.getInstance()
+      .getPool()
+      .query(
+        `SELECT
+        p.id,
+        p.category_id,
+        p.price,
+        p.product_name
+    FROM
+        users u
+    JOIN
+        orders o ON u.id = o.user_id
+    JOIN
+        products p ON o.product_id = p.id
+    WHERE
+        u.id = $1
+    ORDER BY p.product_name DESC, p.id DESC
+        `,
+        [userId],
+      );
+
+    expect(r2.rows.length).toEqual(expCount);
+
+    const r3 = await DB.getInstance()
+      .getPool()
+      .query(
+        `SELECT
+        p.id,
+        p.category_id,
+        p.price,
+        p.product_name
+    FROM
+        orders o
+    JOIN
+        products p ON o.product_id = p.id
+    WHERE
+        o.user_id = $1
+    ORDER BY p.product_name DESC, p.id DESC
+        `,
+        [userId],
+      );
+    expect(r3.rows.length).toEqual(expCount);
+
+    const getQuery = () => {
+      return new CustomClauseQuery(new LoggedOutViewer(), {
+        // aliasing with u since the where clause is from table users
+        clause: clause.Eq("id", userId, "u"),
+        name: "products_purchased_by_user_1",
+        // tableName is users because we're querying from users
+        loadEntOptions: AnyEnt.loaderOptions(
+          "users",
+          ["id", "category_id", "price", "product_name"],
+          {
+            // fields alias because we're getting fields from product
+            fieldsAlias: "p",
+          },
+        ),
+        orderby: [
+          {
+            // orderby will get the fields alias by default since ordering by column we're selecting from
+            column: "product_name",
+            direction: "DESC",
+          },
+        ],
+        join: [
+          {
+            tableName: "orders",
+            alias: "o",
+            clause: clause.Expression("u.id = o.user_id"),
+          },
+          {
+            tableName: "products",
+            alias: "p",
+            clause: clause.Expression("o.product_id = p.id"),
+          },
+        ],
+      });
+    };
+
+    const q = getQuery();
+
+    const [edges, count, rawCount, ents] = await Promise.all([
+      q.queryEdges(),
+      q.queryCount(),
+      q.queryRawCount(),
+      q.queryEnts(),
+    ]);
+    expect(edges.length).toBe(expCount);
+    expect(count).toBe(expCount);
+    expect(rawCount).toBe(expCount);
+    expect(ents.length).toBe(expCount);
+
+    expect(edges).toStrictEqual(r2.rows);
+    expect(ents.map((ent) => ent.id)).toStrictEqual(
+      r2.rows.map((row) => row.id),
+    );
+
+    const getQuery2 = () => {
+      return new CustomClauseQuery(new LoggedOutViewer(), {
+        // aliasing with o since the where clause is from table orders
+        clause: clause.Eq("user_id", userId, "o"),
+        name: "products_purchased_by_user_2",
+        // tableName is orders because we're querying from orders
+        loadEntOptions: AnyEnt.loaderOptions(
+          "orders",
+          ["id", "category_id", "price", "product_name"],
+          {
+            // fields alias because we're getting fields from product
+            fieldsAlias: "p",
+          },
+        ),
+        orderby: [
+          {
+            // orderby will get the fields alias by default since ordering by column we're selecting from
+            column: "product_name",
+            direction: "DESC",
+          },
+        ],
+        join: [
+          // {
+          //   tableName: "orders",
+          //   alias: "o",
+          //   clause: clause.Expression("u.id = o.user_id"),
+          // },
+          {
+            tableName: "products",
+            alias: "p",
+            clause: clause.Expression("o.product_id = p.id"),
+          },
+        ],
+      });
+    };
+
+    const q2 = getQuery2();
+
+    const [edges2, count2, rawCount2, ents2] = await Promise.all([
+      q2.queryEdges(),
+      q2.queryCount(),
+      q2.queryRawCount(),
+      q2.queryEnts(),
+    ]);
+    expect(edges2.length).toBe(expCount);
+    expect(count2).toBe(expCount);
+    expect(rawCount2).toBe(expCount);
+    expect(ents2.length).toBe(expCount);
+
+    expect(edges2).toStrictEqual(r2.rows);
+    expect(ents2.map((ent) => ent.id)).toStrictEqual(
+      r2.rows.map((row) => row.id),
+    );
+    // TODO generic pagination tests??
+  });
+
+  // TODO next. may need more examples to test pagination
+  test("query products for user in given category", async () => {});
 });

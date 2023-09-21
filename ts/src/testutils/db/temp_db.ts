@@ -606,7 +606,7 @@ export class TempDB {
 
     // drop db
     await this.client.query(`DROP DATABASE ${this.db}`);
-    // console.log(this.db);
+    // console.debug(this.db);
 
     await this.client.end();
   }

@@ -5,6 +5,7 @@ import {
   Data,
   EntConstructor,
   PrivacyPolicy,
+  LoadEntOptions,
 } from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { Orchestrator } from "../action/orchestrator";
@@ -38,7 +39,10 @@ import { ChangesetOptions } from "../action/action";
 export class BaseEnt {
   readonly id: ID;
 
-  constructor(public viewer: Viewer, public readonly data: Data) {
+  constructor(
+    public viewer: Viewer,
+    public readonly data: Data,
+  ) {
     this.data.created_at = convertDate(data.created_at);
     this.data.updated_at = convertDate(data.updated_at);
     this.id = data[this.getKey()];
@@ -56,12 +60,57 @@ export class BaseEnt {
   }
 }
 
+export class AnyEnt implements Ent {
+  nodeType = "Any";
+  readonly id: ID;
+
+  constructor(
+    public viewer: Viewer,
+    public readonly data: Data,
+  ) {
+    this.id = data[this.getKey()];
+  }
+
+  getKey() {
+    return "id";
+  }
+
+  getPrivacyPolicy(): PrivacyPolicy {
+    return AlwaysAllowPrivacyPolicy;
+  }
+  __setRawDBData(data: Data) {
+    // doesn't apply here so ignore...
+  }
+
+  static loaderOptions(
+    tableName: string,
+    fields: string[],
+    opts?: Partial<LoadEntOptions<AnyEnt>>,
+  ): LoadEntOptions<AnyEnt> {
+    return {
+      tableName,
+      fields,
+      ent: AnyEnt,
+      loaderFactory: new ObjectLoaderFactory({
+        tableName,
+        fields,
+        key: "id",
+      }),
+      alias: tableName[0],
+      ...opts,
+    };
+  }
+}
+
 export class User extends BaseEnt implements Ent {
   accountID: string = "";
   nodeType = "User";
   firstName: string;
 
-  constructor(public viewer: Viewer, public data: Data) {
+  constructor(
+    public viewer: Viewer,
+    public data: Data,
+  ) {
     super(viewer, data);
     this.firstName = data.first_name;
   }
@@ -103,7 +152,10 @@ export interface BuilderSchema<T extends Ent> extends Schema {
 }
 
 export class EntBuilderSchema<T extends Ent> extends EntSchema {
-  constructor(public ent: EntConstructor<T>, cfg: SchemaConfig) {
+  constructor(
+    public ent: EntConstructor<T>,
+    cfg: SchemaConfig,
+  ) {
     super(cfg);
   }
 }
@@ -194,9 +246,8 @@ export class SimpleBuilder<
     // create dynamic placeholder
     // TODO: do we need to use this as the node when there's an existingEnt
     // same for generated builders.
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-${
-      schema.ent?.name
-    }`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-${schema.ent
+      ?.name}`;
 
     if (this.operation === WriteOperation.Insert) {
       for (const [key, value] of fields) {
@@ -354,8 +405,10 @@ export class SimpleAction<
     );
   }
 
-  getTriggers():
-    | (Trigger<T, SimpleBuilder<T>> | Array<Trigger<T, SimpleBuilder<T>>>)[] {
+  getTriggers(): (
+    | Trigger<T, SimpleBuilder<T>>
+    | Array<Trigger<T, SimpleBuilder<T>>>
+  )[] {
     return [];
   }
 
