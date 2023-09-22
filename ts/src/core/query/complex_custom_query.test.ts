@@ -1308,7 +1308,6 @@ describe.only("joins - products", () => {
     const max = min * 4;
     // increased these numbers so that we can have enough numbers
     // when querying for the most ordered product by a given user in a category
-    // console.debug(min, max);
     for (const user of users) {
       for (let i = 0; i < getRandomNumber(min, max); i++) {
         const product = products[i % products.length];
@@ -1330,7 +1329,6 @@ describe.only("joins - products", () => {
         orders.push(order!);
       }
     }
-    // console.debug(orders.length);
   });
 
   function getPaginationVerify(
@@ -1383,7 +1381,6 @@ describe.only("joins - products", () => {
         clause: cls,
         join: options.join,
       });
-      // console.debug(query, ml.logs);
       expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
 
       // 1 is a hack...
@@ -1391,7 +1388,6 @@ describe.only("joins - products", () => {
       if (hasEdge) {
         expect(ents.length, idx.toString()).toBeGreaterThan(0);
         expect(ents.length, idx.toString()).toBeLessThanOrEqual(perPage);
-        // console.debug(page, ents[0].id, edges[PAGE * page]);
         expect(ents[0].id, idx.toString()).toBe(edges[idx].id);
       } else {
         expect(ents.length, idx.toString()).toBe(0);
@@ -1436,7 +1432,6 @@ describe.only("joins - products", () => {
       last = edges[i * perPage + perPage - 1];
       // hasMorePages | last issues | cursor
       let hasMorePages = edges[(i + 1) * perPage] !== undefined;
-      console.debug(i, perPage, edges.length, hasEdge, hasMorePages, cursor);
       await verify(i * perPage, hasEdge, hasMorePages, cursor);
       if (!hasMorePages) {
         break;
@@ -1554,11 +1549,8 @@ describe.only("joins - products", () => {
           num_products DESC
       LIMIT 1;
 `);
-    // console.debug(r.rows);
 
     const expCount = parseInt(r.rows[0].num_products, 10);
-
-    console.debug(expCount);
 
     const userId = r.rows[0].id;
     // query for the products ordered by that user
@@ -1720,7 +1712,7 @@ describe.only("joins - products", () => {
   });
 
   // ~15
-  test.only("query products for user in given category", async () => {
+  test("query products for user in given category", async () => {
     // TODO sc6193ba6874ed
     const r = await DB.getInstance().getPool().query(`
 WITH UserCategoryOrders AS (
@@ -1753,8 +1745,6 @@ LIMIT 1;
     const expCount = parseInt(r.rows[0].num_products, 10);
     const userId = r.rows[0].uid;
     const categoryId = r.rows[0].cid;
-
-    console.debug(expCount);
 
     const r2 = await DB.getInstance()
       .getPool()

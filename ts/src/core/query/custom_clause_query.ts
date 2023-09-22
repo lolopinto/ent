@@ -101,7 +101,6 @@ export class CustomClauseQuery<
       ? primarySortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
 
-    console.debug("fieldOptions", options.loadEntOptions);
     super(viewer, {
       orderby,
       cursorCol,
@@ -181,7 +180,6 @@ export class CustomClauseQuery<
       options.limit = getDefaultLimit();
     }
 
-    // console.debug(this.options.loadEntOptions, this.options.join);
     const rows = await loadRows({
       ...this.options.loadEntOptions,
       clause: AndOptional(this.clause, options.clause),
@@ -192,7 +190,6 @@ export class CustomClauseQuery<
       // if doing a join, select distinct rows
       distinct: this.options.join !== undefined,
     });
-    // console.debug(rows);
 
     this.edges.set(1, rows);
   }

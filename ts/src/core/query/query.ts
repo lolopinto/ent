@@ -124,7 +124,6 @@ function assertValidCursor(cursor: string, opts: validCursorOptions): any {
   // invalid or unknown cursor. nothing to do here.
   // we should have the same number of parts as keys * 2
   // ISO string has...
-  // console.debug(decoded, parts, keys);
   if (parts.length !== keys.length * 2) {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
@@ -189,7 +188,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     assertPositive(options.limit);
 
     this.sortCol = options.sortCol;
-    console.debug(options.after, options.cursorKeys);
     if (options.after) {
       this.cursorValues = assertValidCursor(options.after, {
         keys: options.cursorKeys,
@@ -276,7 +274,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     const less = this.options.orderby[0].direction === "DESC";
     const orderby = this.options.orderby;
 
-    // console.debug(this.options);
     if (this.options.cursorCol !== this.sortCol) {
       // we also sort cursor col in same direction. (direction doesn't matter)
       orderby.push({
@@ -311,12 +308,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
           this.cursorValues.length === 2 &&
           this.options.cursorKeys.length === 2
         ) {
-          console.debug(
-            this.sortCol,
-            this.options.cursorCol,
-            this.cursorValues,
-          );
-
           options.clause = clause.AndOptional(
             options.clause,
             // this clause needs to be u not e...
@@ -566,7 +557,6 @@ export abstract class BaseEdgeQuery<
   abstract sourceEnt(id: ID): Promise<Ent | null>;
 
   first(n: number, after?: string): this {
-    console.debug("first", n, after);
     this.limitAdded = true;
     this.assertQueryNotDispatched("first");
     this.filters.push(
