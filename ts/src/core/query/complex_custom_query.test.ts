@@ -22,7 +22,7 @@ import { setLogLevels } from "../logger";
 import { TempDB, integer, table, text, uuid } from "../../testutils/db/temp_db";
 import { buildQuery } from "../query_impl";
 import * as clause from "../clause";
-import { Data, Viewer, WriteOperation } from "../base";
+import { Data, Ent, Viewer, WriteOperation } from "../base";
 import { CustomClauseQuery } from "./custom_clause_query";
 import { AnyEnt, SimpleBuilder } from "../../testutils/builder";
 import { OrderByOption } from "../query_impl";
@@ -121,6 +121,7 @@ const getGlobalQuery = (viewer?: Viewer, opts?: Partial<OrderByOption>) => {
       {
         column: "start_time",
         direction: "DESC",
+        dateColumn: true,
         ...opts,
       },
     ],
@@ -128,10 +129,7 @@ const getGlobalQuery = (viewer?: Viewer, opts?: Partial<OrderByOption>) => {
 };
 
 // get creators of users in next week
-const getCreatorsOfGlobalEventsInNextWeek = (
-  // viewer?: Viewer,
-  opts?: Partial<OrderByOption>,
-) => {
+const getCreatorsOfGlobalEventsInNextWeek = (opts?: Partial<OrderByOption>) => {
   const loaderOptions = FakeUser.loaderOptions();
   const tableName = loaderOptions.tableName;
   loaderOptions.tableName = "fake_events";
@@ -153,6 +151,7 @@ const getCreatorsOfGlobalEventsInNextWeek = (
       {
         column: "created_at",
         direction: "DESC",
+        dateColumn: true,
         ...opts,
       },
     ],
@@ -955,218 +954,37 @@ describe("global query - with joins", () => {
     const edges = await q.queryEdges();
     expect(edges.length).toBe(infos.length);
 
-    ml.clear();
-    const PAGE = 2;
-
-    async function verify(
-      idx: number,
-      hasEdge: boolean,
-      hasNextPage: boolean,
-      cursor?: string,
-    ) {
-      const q2 = getCreatorsOfGlobalEventsInNextWeek().first(PAGE, cursor);
-
-      const ents = await q2.queryEnts();
-      const newEdges = await q2.queryEdges();
-      console.debug(ents.length, newEdges.length);
-
-      const query = buildQuery({
-        ...FakeUser.loaderOptions(),
-        distinct: true,
-        orderby: [
-          {
-            column: "created_at",
-            direction: "DESC",
-          },
-          {
-            column: "id",
-            direction: "DESC",
-          },
-        ],
-        limit: PAGE + 1,
-        clause: clause.AndOptional(
-          clause.GreaterEq("start_time", 1),
-          clause.LessEq("start_time", 2),
-          // the cursor check
-          cursor
-            ? clause.PaginationMultipleColsQuery(
-                "created_at",
-                "id",
-                true,
-                // these 2 values don't matter
-                new Date().getTime(),
-                4,
-                // fake_users alias will be used here
-                "u",
-              )
-            : undefined,
-        ),
-        tableName: "fake_events",
-        fieldsAlias: "u",
-        alias: "e",
-        join: [
-          {
-            tableName: "fake_users",
-            alias: "u",
-            clause: clause.Expression("u.id = e.user_id"),
-          },
-        ],
-      });
-      console.debug(query);
-      expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
-
-      // 1 is a hack...
-      const pagination = q2.paginationInfo().get(1);
-      if (hasEdge) {
-        expect(ents.length, idx.toString()).toBeGreaterThan(0);
-        expect(ents.length, idx.toString()).toBeLessThanOrEqual(PAGE);
-        // console.debug(page, ents[0].id, edges[PAGE * page]);
-        expect(ents[0].id, idx.toString()).toBe(edges[idx].id);
-      } else {
-        expect(ents.length, idx.toString()).toBe(0);
-        expect(newEdges.length, idx.toString()).toBe(0);
-      }
-
-      if (hasNextPage) {
-        // has exact if next page
-        expect(ents.length, idx.toString()).toBe(PAGE);
-
-        expect(pagination?.hasNextPage, idx.toString()).toBe(true);
-        expect(pagination?.hasPreviousPage, idx.toString()).toBe(false);
-      } else {
-        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
-        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
-      }
-    }
-
-    await verify(0, true, true); // 0-1
-    const cursor = q.getCursor(edges[PAGE - 1]);
-    console.debug(cursor, Buffer.from(cursor, "base64").toString("ascii"));
-
-    // this should fail, we need to change the pagination logic to take the second id
-    // and instead of using a subquery changes the and clause to handle this
-    await verify(1 * PAGE, true, false, q.getCursor(edges[PAGE - 1])); // 2-3
-
-    // await verify(2 * PAGE, true, true, q.getCursor(edges[2 * PAGE - 1])); // 10-14
-    // await verify(3 * PAGE, true, true, q.getCursor(edges[3 * PAGE - 1])); //15-19
-    // await verify(4 * PAGE, true, true, q.getCursor(edges[4 * PAGE - 1])); //20-24
-    // await verify(5 * PAGE, true, false, q.getCursor(edges[5 * PAGE - 1])); //25-28
-
-    // // do a few around transitions to make sure we handle it correctly
-    // // 0-4, 5-8, 9-12, 13-16 etc have duplicate timestamps
-    // await verify(1, true, true, q.getCursor(edges[0]));
-    // await verify(2, true, true, q.getCursor(edges[1]));
-    // await verify(3, true, true, q.getCursor(edges[2]));
-    // await verify(4, true, true, q.getCursor(edges[3]));
-
-    // await verify(8, true, true, q.getCursor(edges[7]));
-    // await verify(14, true, true, q.getCursor(edges[13]));
-    // await verify(19, true, true, q.getCursor(edges[18]));
+    await paginateAndVerifyClauseWithJoin(
+      getCreatorsOfGlobalEventsInNextWeek,
+      edges,
+    );
   });
-  // these 2 haven't been tackled
 
   test("first N. after each cursor. asc", async () => {
-    const q = getGlobalQuery(user.viewer, { direction: "ASC" });
+    const q = getCreatorsOfGlobalEventsInNextWeek({
+      direction: "ASC",
+    });
 
     const edges = await q.queryEdges();
-    expect(edges.length).toBe(7 * infos.length);
+    expect(edges.length).toBe(infos.length);
 
-    ml.clear();
-    const PAGE = 5;
-
-    async function verify(
-      idx: number,
-      hasEdge: boolean,
-      hasNextPage: boolean,
-      cursor?: string,
-    ) {
-      const q2 = getGlobalQuery(user.viewer, { direction: "ASC" }).first(
-        PAGE,
-        cursor,
-      );
-
-      const ents = await q2.queryEnts();
-      const newEdges = await q2.queryEdges();
-
-      const query = buildQuery({
-        ...FakeEvent.loaderOptions(),
-        orderby: [
-          {
-            column: "start_time",
-            direction: "ASC",
-          },
-          {
-            column: "id",
-            direction: "ASC",
-          },
-        ],
-        limit: PAGE + 1,
-        clause: clause.AndOptional(
-          clause.GreaterEq("start_time", 1),
-          clause.LessEq("start_time", 2),
-          // the cursor check
-          cursor
-            ? clause.PaginationMultipleColsSubQuery(
-                "start_time",
-                ">",
-                FakeEvent.loaderOptions().tableName,
-                "id",
-                4,
-              )
-            : undefined,
-        ),
-      });
-      expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
-
-      // 1 is a hack...
-      const pagination = q2.paginationInfo().get(1);
-      if (hasEdge) {
-        expect(ents.length, idx.toString()).toBeGreaterThan(0);
-        expect(ents.length, idx.toString()).toBeLessThanOrEqual(PAGE);
-        // console.debug(page, ents[0].id, edges[PAGE * page]);
-        expect(ents[0].id, idx.toString()).toBe(edges[idx].id);
-      } else {
-        expect(ents.length, idx.toString()).toBe(0);
-        expect(newEdges.length, idx.toString()).toBe(0);
-      }
-
-      if (hasNextPage) {
-        // has exact if next page
-        expect(ents.length, idx.toString()).toBe(PAGE);
-
-        expect(pagination?.hasNextPage, idx.toString()).toBe(true);
-        expect(pagination?.hasPreviousPage, idx.toString()).toBe(false);
-      } else {
-        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
-        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
-      }
-    }
-
-    await verify(0, true, true); // 0-4
-    await verify(1 * PAGE, true, true, q.getCursor(edges[PAGE - 1])); // 5-9
-    await verify(2 * PAGE, true, true, q.getCursor(edges[2 * PAGE - 1])); // 10-14
-    await verify(3 * PAGE, true, true, q.getCursor(edges[3 * PAGE - 1])); //15-19
-    await verify(4 * PAGE, true, true, q.getCursor(edges[4 * PAGE - 1])); //20-24
-    await verify(5 * PAGE, true, false, q.getCursor(edges[5 * PAGE - 1])); //25-28
-
-    // do a few around transitions to make sure we handle it correctly
-    // 0-4, 5-8, 9-12, 13-16 etc have duplicate timestamps
-    await verify(1, true, true, q.getCursor(edges[0]));
-    await verify(2, true, true, q.getCursor(edges[1]));
-    await verify(3, true, true, q.getCursor(edges[2]));
-    await verify(4, true, true, q.getCursor(edges[3]));
-
-    await verify(8, true, true, q.getCursor(edges[7]));
-    await verify(14, true, true, q.getCursor(edges[13]));
-    await verify(19, true, true, q.getCursor(edges[18]));
+    await paginateAndVerifyClauseWithJoin(
+      () =>
+        getCreatorsOfGlobalEventsInNextWeek({
+          direction: "ASC",
+        }),
+      edges,
+    );
   });
 
   test("first N. after each cursor. asc + desc compared", async () => {
-    const q = getGlobalQuery(user.viewer);
-    const q2 = getGlobalQuery(user.viewer, { direction: "ASC" });
+    const q = getCreatorsOfGlobalEventsInNextWeek();
+    const q2 = getCreatorsOfGlobalEventsInNextWeek({
+      direction: "ASC",
+    });
 
     const edges = await q.queryEdges();
-    expect(edges.length).toBe(7 * infos.length);
+    expect(edges.length).toBe(infos.length);
 
     const edges2 = await q2.queryEdges();
     expect(edges2.length).toBe(edges.length);
@@ -1174,7 +992,7 @@ describe("global query - with joins", () => {
   });
 });
 
-describe.only("joins - products", () => {
+describe("joins - products", () => {
   // TODO more
   const usersTable = table(
     "users",
@@ -1331,114 +1149,6 @@ describe.only("joins - products", () => {
     }
   });
 
-  function getPaginationVerify(
-    toQuery: () => CustomClauseQuery<AnyEnt>,
-    edges: Data[],
-    perPage: number,
-  ) {
-    async function verify(
-      idx: number,
-      hasEdge: boolean,
-      hasNextPage: boolean,
-      cursor?: string,
-    ) {
-      const q2 = toQuery().first(perPage, cursor);
-
-      const options = q2.__getOptions();
-
-      const orderBy = options.orderby!;
-      // TODO support different directions
-      orderBy.push({
-        column: "id",
-        direction: "DESC",
-      });
-      let cls = options.clause;
-      if (cursor) {
-        cls = clause.AndOptional(
-          cls,
-          clause.PaginationMultipleColsQuery(
-            // same column from orderBy
-            orderBy[0].column,
-            "id",
-            // assumes less
-            true,
-            // these 2 values don't matter so just putting whatever
-            new Date().getTime(),
-            4,
-            options.loadEntOptions.fieldsAlias ?? options.loadEntOptions.alias,
-          ),
-        );
-      }
-
-      const ents = await q2.queryEnts();
-      const newEdges = await q2.queryEdges();
-      const query = buildQuery({
-        // tableName, fieldsAlias, alias all from here
-        ...options.loadEntOptions,
-        distinct: true,
-        orderby: orderBy,
-        limit: perPage + 1,
-        clause: cls,
-        join: options.join,
-      });
-      expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
-
-      // 1 is a hack...
-      const pagination = q2.paginationInfo().get(1);
-      if (hasEdge) {
-        expect(ents.length, idx.toString()).toBeGreaterThan(0);
-        expect(ents.length, idx.toString()).toBeLessThanOrEqual(perPage);
-        expect(ents[0].id, idx.toString()).toBe(edges[idx].id);
-      } else {
-        expect(ents.length, idx.toString()).toBe(0);
-        expect(newEdges.length, idx.toString()).toBe(0);
-      }
-
-      if (hasNextPage) {
-        // has exact if next page
-        expect(ents.length, idx.toString()).toBe(perPage);
-
-        expect(pagination?.hasNextPage, idx.toString()).toBe(true);
-        expect(pagination?.hasPreviousPage, idx.toString()).toBe(false);
-      } else {
-        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
-        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
-      }
-    }
-
-    return verify;
-  }
-
-  async function paginateAndVerify(
-    toQuery: () => CustomClauseQuery<AnyEnt>,
-    edges: Data[],
-  ) {
-    ml.clear();
-    // query up to 10 times
-    // page number at least 2
-    const perPage = Math.max(Math.floor(edges.length / 10), 2);
-    const q = toQuery();
-
-    const verify = getPaginationVerify(toQuery, edges, perPage);
-
-    let last: Data | undefined = undefined;
-    for (let i = 0; i < 10; i++) {
-      let cursor: string | undefined = undefined;
-      if (last) {
-        cursor = q.getCursor(last);
-      }
-      // let hasEdge = edges[i * perPage] !== undefined;
-      const hasEdge = i * perPage < edges.length;
-      last = edges[i * perPage + perPage - 1];
-      // hasMorePages | last issues | cursor
-      let hasMorePages = edges[(i + 1) * perPage] !== undefined;
-      await verify(i * perPage, hasEdge, hasMorePages, cursor);
-      if (!hasMorePages) {
-        break;
-      }
-      last = edges[(i + 1) * perPage - 1];
-    }
-  }
   // psql tb826ca1e5d3a6
   // ~20
   test("query users for product", async () => {
@@ -1529,7 +1239,7 @@ describe.only("joins - products", () => {
       r2.rows.map((row) => row.id),
     );
 
-    await paginateAndVerify(getQuery, edges);
+    await paginateAndVerifyClauseWithJoin(getQuery, edges);
   });
 
   // ~147
@@ -1706,9 +1416,9 @@ describe.only("joins - products", () => {
       r2.rows.map((row) => row.id),
     );
 
-    await paginateAndVerify(getQuery, edges);
+    await paginateAndVerifyClauseWithJoin(getQuery, edges);
 
-    await paginateAndVerify(getQuery2, edges2);
+    await paginateAndVerifyClauseWithJoin(getQuery2, edges2);
   });
 
   // ~15
@@ -1818,6 +1528,115 @@ LIMIT 1;
       r2.rows.map((row) => row.id),
     );
 
-    await paginateAndVerify(getQuery, edges);
+    await paginateAndVerifyClauseWithJoin(getQuery, edges);
   });
 });
+
+function getPaginationVerifyClauseWithJoin<T extends Ent>(
+  toQuery: () => CustomClauseQuery<T>,
+  edges: Data[],
+  perPage: number,
+) {
+  async function verify(
+    idx: number,
+    hasEdge: boolean,
+    hasNextPage: boolean,
+    cursor?: string,
+  ) {
+    const q2 = toQuery().first(perPage, cursor);
+
+    const options = q2.__getOptions();
+
+    const orderBy = options.orderby!;
+    console.assert(orderBy.length === 1);
+    const less = orderBy[0].direction === "DESC";
+    orderBy.push({
+      column: "id",
+      direction: orderBy[0].direction,
+    });
+    let cls = options.clause;
+    if (cursor) {
+      cls = clause.AndOptional(
+        cls,
+        clause.PaginationMultipleColsQuery(
+          // same column from orderBy
+          orderBy[0].column,
+          "id",
+          less,
+          // these 2 values don't matter so just putting whatever
+          new Date().getTime(),
+          4,
+          options.loadEntOptions.fieldsAlias ?? options.loadEntOptions.alias,
+        ),
+      );
+    }
+
+    const ents = await q2.queryEnts();
+    const newEdges = await q2.queryEdges();
+    const query = buildQuery({
+      // tableName, fieldsAlias, alias all from here
+      ...options.loadEntOptions,
+      distinct: true,
+      orderby: orderBy,
+      limit: perPage + 1,
+      clause: cls,
+      join: options.join,
+    });
+    expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
+
+    // 1 is a hack...
+    const pagination = q2.paginationInfo().get(1);
+    if (hasEdge) {
+      expect(ents.length, idx.toString()).toBeGreaterThan(0);
+      expect(ents.length, idx.toString()).toBeLessThanOrEqual(perPage);
+      expect(ents[0].id, idx.toString()).toBe(edges[idx].id);
+    } else {
+      expect(ents.length, idx.toString()).toBe(0);
+      expect(newEdges.length, idx.toString()).toBe(0);
+    }
+
+    if (hasNextPage) {
+      // has exact if next page
+      expect(ents.length, idx.toString()).toBe(perPage);
+
+      expect(pagination?.hasNextPage, idx.toString()).toBe(true);
+      expect(pagination?.hasPreviousPage, idx.toString()).toBe(false);
+    } else {
+      expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
+      expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
+    }
+  }
+
+  return verify;
+}
+
+async function paginateAndVerifyClauseWithJoin<T extends Ent>(
+  toQuery: () => CustomClauseQuery<T>,
+  edges: Data[],
+) {
+  ml.clear();
+  // query up to 10 times
+  // page number at least 2
+  const perPage = Math.max(Math.floor(edges.length / 10), 2);
+  const q = toQuery();
+
+  const verify = getPaginationVerifyClauseWithJoin(toQuery, edges, perPage);
+
+  let last: Data | undefined = undefined;
+  for (let i = 0; i < 10; i++) {
+    let cursor: string | undefined = undefined;
+    if (last) {
+      cursor = q.getCursor(last);
+    }
+    // let hasEdge = edges[i * perPage] !== undefined;
+    const hasEdge = i * perPage < edges.length;
+    last = edges[i * perPage + perPage - 1];
+    // hasMorePages | last issues | cursor
+    let hasMorePages = edges[(i + 1) * perPage] !== undefined;
+    await verify(i * perPage, hasEdge, hasMorePages, cursor);
+    if (!hasMorePages) {
+      break;
+    }
+    last = edges[(i + 1) * perPage - 1];
+  }
+}

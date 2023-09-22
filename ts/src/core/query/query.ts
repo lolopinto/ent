@@ -152,9 +152,9 @@ interface FilterOptions<T extends Data> {
   sortCol: string;
   cursorCol: string;
   orderby: OrderBy;
-  // TODO provide this option
   // if sortCol is Unique and time, we need to pass different values for comparisons and checks...
-  sortColTime?: boolean;
+  sortColIsDate?: boolean;
+  cursorColIsDate?: boolean;
 
   cursorKeys: string[];
 
@@ -308,6 +308,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
           this.cursorValues.length === 2 &&
           this.options.cursorKeys.length === 2
         ) {
+          console.debug(this.offset);
           options.clause = clause.AndOptional(
             options.clause,
             // this clause needs to be u not e...
@@ -317,16 +318,18 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
               this.sortCol,
               this.options.cursorCol,
               less,
-              // TODO we need a way to know if this is a time column or not
-              // not time column for products|users|categories
-              this.cursorValues[1],
-              // new Date(this.cursorValues[1]).toISOString(),
-              this.offset,
+              this.options.sortColIsDate
+                ? new Date(this.cursorValues[1]).toISOString()
+                : this.cursorValues[1],
+              this.options.cursorColIsDate
+                ? new Date(this.offset).toISOString()
+                : this.offset,
               this.options.fieldOptions?.fieldsAlias ??
                 this.options.fieldOptions?.alias,
             ),
           );
         } else {
+          // TODO audit values for cursorColIsDate and sortColIsDate...
           options.clause = clause.AndOptional(
             options.clause,
             clause.PaginationMultipleColsSubQuery(
@@ -334,16 +337,18 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
               less ? "<" : ">",
               tableName,
               this.options.cursorCol,
-              this.offset,
+              this.options.cursorColIsDate
+                ? new Date(this.offset).toISOString()
+                : this.offset,
             ),
           );
         }
-        // }
       }
     } else {
+      console.debug(this.offset);
       if (this.offset) {
         const clauseFn = less ? clause.Less : clause.Greater;
-        const val = this.options.sortColTime
+        const val = this.options.sortColIsDate
           ? new Date(this.offset).toISOString()
           : this.offset;
         options.clause = clause.AndOptional(
@@ -363,6 +368,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   }
 }
 
+// TODO LastFilter same behavior as FirstFilter
+// TODO can we share so we don't keep needing to change in both
 class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
@@ -443,7 +450,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     } else {
       if (this.offset) {
         const clauseFn = greater ? clause.Greater : clause.Less;
-        const val = this.options.sortColTime
+        const val = this.options.sortColIsDate
           ? new Date(this.offset).toISOString()
           : this.offset;
         options.clause = clause.AndOptional(
@@ -462,10 +469,10 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   }
 }
 
-interface EdgeQueryOptions {
+export interface EdgeQueryOptions {
   cursorCol: string;
+  cursorColIsDate?: boolean;
   orderby: OrderBy;
-  // TODO kill?
   join?: NonNullable<QueryableDataOptions["join"]>;
   // field options used to query field values
   fieldOptions?: SelectBaseDataOptions;
@@ -487,6 +494,8 @@ export abstract class BaseEdgeQuery<
   private idsToFetch: ID[] = [];
   protected sortCol: string;
   protected cursorCol: string;
+  protected cursorColIsDate: boolean;
+  protected sortColIsDate: boolean;
   private edgeQueryOptions: EdgeQueryOptions;
   private limitAdded = false;
   private cursorKeys: string[] = [];
@@ -501,6 +510,8 @@ export abstract class BaseEdgeQuery<
   ) {
     let sortCol: string;
     let cursorCol: string;
+    let sortColIsDate = false;
+    let cursorColIsDate = false;
     if (typeof sortColOrOptions === "string") {
       sortCol = sortColOrOptions;
       cursorCol = cursorColMaybe!;
@@ -519,11 +530,15 @@ export abstract class BaseEdgeQuery<
       } else {
         // TODO this orderby isn't consistent and this logic needs to be changed anywhere that's using this and this.getSortCol()
         sortCol = sortColOrOptions.orderby[0].column;
+        sortColIsDate = sortColOrOptions.orderby[0].dateColumn ?? false;
       }
       cursorCol = sortColOrOptions.cursorCol;
+      cursorColIsDate = sortColOrOptions.cursorColIsDate ?? false;
       this.edgeQueryOptions = sortColOrOptions;
     }
     this.sortCol = sortCol;
+    this.sortColIsDate = sortColIsDate;
+    this.cursorColIsDate = cursorColIsDate;
 
     let m = orderbyRegex.exec(sortCol);
     if (!m) {
@@ -540,7 +555,7 @@ export abstract class BaseEdgeQuery<
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
     this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
     this.cursorKeys.push(this.cursorCol);
-    if (this.includeSortColInCursor()) {
+    if (this.includeSortColInCursor(this.edgeQueryOptions)) {
       this.cursorKeys.push(this.sortCol);
     }
   }
@@ -566,6 +581,8 @@ export abstract class BaseEdgeQuery<
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
         cursorKeys: this.cursorKeys,
+        cursorColIsDate: this.cursorColIsDate,
+        sortColIsDate: this.sortColIsDate,
         orderby: this.edgeQueryOptions.orderby,
         query: this,
         fieldOptions: this.edgeQueryOptions.fieldOptions,
@@ -597,6 +614,8 @@ export abstract class BaseEdgeQuery<
         sortCol: this.sortCol,
         cursorCol: this.cursorCol,
         cursorKeys: this.cursorKeys,
+        cursorColIsDate: this.cursorColIsDate,
+        sortColIsDate: this.sortColIsDate,
         orderby: this.edgeQueryOptions.orderby,
         query: this,
         fieldOptions: this.edgeQueryOptions.fieldOptions,
@@ -834,7 +853,7 @@ export abstract class BaseEdgeQuery<
     return this.edges;
   }
 
-  protected includeSortColInCursor() {
+  protected includeSortColInCursor(options: EdgeQueryOptions) {
     return false;
   }
 

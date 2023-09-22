@@ -4,6 +4,11 @@ export interface OrderByOption {
   column: string;
   direction: "ASC" | "DESC";
   nullsPlacement?: "first" | "last";
+  // is this column a date/time column?
+  // needed to know if we create a cursor based on this column to conver to timestamp and ISO string for
+  // comparison
+  // maybe eventually want a more generic version of this but for now this suffices
+  dateColumn?: boolean;
 }
 
 export type OrderBy = OrderByOption[];

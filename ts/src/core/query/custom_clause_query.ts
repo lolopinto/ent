@@ -16,7 +16,7 @@ import {
 } from "../ent";
 import { OrderBy } from "../query_impl";
 
-import { BaseEdgeQuery, IDInfo } from "./query";
+import { BaseEdgeQuery, EdgeQueryOptions, IDInfo } from "./query";
 
 export interface CustomClauseQueryOptions<
   TDest extends Ent<TViewer>,
@@ -69,6 +69,11 @@ export class CustomClauseQuery<
   TViewer extends Viewer = Viewer,
 > extends BaseEdgeQuery<any, TDest, Data> {
   private clause: Clause;
+  // store this here because we want the value in this class
+  // separate from this.options
+  // private join: QueryDataOptions["join"] | undefined;
+  // private options: CustomClauseQueryOptions<TDest, TViewer>;
+
   constructor(
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
@@ -101,6 +106,7 @@ export class CustomClauseQuery<
       ? primarySortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
 
+    // this.options = options;
     super(viewer, {
       orderby,
       cursorCol,
@@ -118,10 +124,9 @@ export class CustomClauseQuery<
     return this.options.loadEntOptions.tableName;
   }
 
-  protected includeSortColInCursor() {
+  protected includeSortColInCursor(options: EdgeQueryOptions) {
     // TODO maybe we should just always do this?
-    // return this.options.join !== undefined &&
-    return this.sortCol !== this.cursorCol;
+    return options.join !== undefined && this.sortCol !== this.cursorCol;
   }
 
   async queryRawCount(): Promise<number> {
