@@ -99,6 +99,23 @@ interface validCursorOptions {
   // timeIsNumber?: boolean;
 }
 
+function convertToIntMaybe(val: string) {
+  // TODO handle both cases... (time vs not) better
+  // TODO change this to only do the parseInt part if time...
+  // pass flag indicating if time?
+
+  // handle non-integers for which the first part is an int
+  // @ts-ignore
+  if (isNaN(val)) {
+    return val;
+  }
+  const time = parseInt(val, 10);
+  if (isNaN(time)) {
+    return val;
+  }
+  return time;
+}
+
 function assertValidCursor(cursor: string, opts: validCursorOptions): any {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
@@ -125,15 +142,7 @@ function assertValidCursor(cursor: string, opts: validCursorOptions): any {
       continue;
     }
 
-    // TODO handle both cases... (time vs not) better
-    // TODO change this to only do the parseInt part if time...
-    // pass flag indicating if time?
-    const time = parseInt(val, 10);
-    if (isNaN(time)) {
-      values.push(val);
-    } else {
-      values.push(time);
-    }
+    values.push(convertToIntMaybe(val));
   }
   return values;
 }
@@ -302,11 +311,12 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
           this.cursorValues.length === 2 &&
           this.options.cursorKeys.length === 2
         ) {
-          // console.debug(
-          //   this.sortCol,
-          //   this.options.cursorCol,
-          //   this.cursorValues,
-          // );
+          console.debug(
+            this.sortCol,
+            this.options.cursorCol,
+            this.cursorValues,
+          );
+
           options.clause = clause.AndOptional(
             options.clause,
             // this clause needs to be u not e...

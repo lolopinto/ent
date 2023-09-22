@@ -1377,39 +1377,13 @@ describe.only("joins - products", () => {
       const query = buildQuery({
         // tableName, fieldsAlias, alias all from here
         ...options.loadEntOptions,
-        // ...FakeEvent.loaderOptions(),
         distinct: true,
-
         orderby: orderBy,
-        // orderby: [
-        //   {
-        //     column: "start_time",
-        //     direction: "DESC",
-        //   },
-        //   {
-        //     column: "id",
-        //     direction: "DESC",
-        //   },
-        // ],
         limit: perPage + 1,
         clause: cls,
         join: options.join,
-        // clause: clause.AndOptional(
-        //   clause.GreaterEq("start_time", 1),
-        //   clause.LessEq("start_time", 2),
-        //   // the cursor check
-        //   cursor
-        //     ? clause.PaginationMultipleColsSubQuery(
-        //         "start_time",
-        //         "<",
-        //         FakeEvent.loaderOptions().tableName,
-        //         "id",
-        //         4,
-        //       )
-        //     : undefined,
-        // ),
       });
-      console.debug(query, ml.logs);
+      // console.debug(query, ml.logs);
       expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
 
       // 1 is a hack...
@@ -1457,16 +1431,17 @@ describe.only("joins - products", () => {
       if (last) {
         cursor = q.getCursor(last);
       }
-      let hasEdge = i * perPage < edges.length;
+      // let hasEdge = edges[i * perPage] !== undefined;
+      const hasEdge = i * perPage < edges.length;
       last = edges[i * perPage + perPage - 1];
       // hasMorePages | last issues | cursor
-      let hasMorePages = edges[i * perPage + perPage] !== undefined;
-      // console.debug(i, hasEdge, hasMorePages, cursor);
+      let hasMorePages = edges[(i + 1) * perPage] !== undefined;
+      console.debug(i, perPage, edges.length, hasEdge, hasMorePages, cursor);
       await verify(i * perPage, hasEdge, hasMorePages, cursor);
-      if (!hasEdge) {
+      if (!hasMorePages) {
         break;
       }
-      last = edges[i * perPage + perPage - 1];
+      last = edges[(i + 1) * perPage - 1];
     }
   }
   // psql tb826ca1e5d3a6
@@ -1563,7 +1538,7 @@ describe.only("joins - products", () => {
   });
 
   // ~147
-  test.only("query products for user", async () => {
+  test("query products for user", async () => {
     // find the user who ordered the most products
     const r = await DB.getInstance().getPool().query(`
           SELECT
@@ -1739,16 +1714,13 @@ describe.only("joins - products", () => {
       r2.rows.map((row) => row.id),
     );
 
-    // TODO paginate both...
     await paginateAndVerify(getQuery, edges);
 
-    // await paginateAndVerify(getQuery2, edges2);
-
-    // TODO generic pagination tests??
+    await paginateAndVerify(getQuery2, edges2);
   });
 
   // ~15
-  test("query products for user in given category", async () => {
+  test.only("query products for user in given category", async () => {
     // TODO sc6193ba6874ed
     const r = await DB.getInstance().getPool().query(`
 WITH UserCategoryOrders AS (
@@ -1855,7 +1827,7 @@ LIMIT 1;
     expect(ents.map((ent) => ent.id)).toStrictEqual(
       r2.rows.map((row) => row.id),
     );
-  });
 
-  // TODO generic pagination tests
+    await paginateAndVerify(getQuery, edges);
+  });
 });
