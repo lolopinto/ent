@@ -989,8 +989,7 @@ describe("global query - with joins", () => {
           clause.LessEq("start_time", 2),
           // the cursor check
           cursor
-            ? // this clause needs to be u not e...
-              clause.PaginationMultipleColsQuery(
+            ? clause.PaginationMultipleColsQuery(
                 "created_at",
                 "id",
                 true,
@@ -1305,8 +1304,13 @@ describe.only("joins - products", () => {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
+    const min = Math.floor(NUM_PRODUCTS / NUM_USERS) * 10;
+    const max = min * 4;
+    // increased these numbers so that we can have enough numbers
+    // when querying for the most ordered product by a given user in a category
+    // console.debug(min, max);
     for (const user of users) {
-      for (let i = 0; i < getRandomNumber(10, 30); i++) {
+      for (let i = 0; i < getRandomNumber(min, max); i++) {
         const product = products[i % products.length];
         const product_id = product.id;
         const quantity = Math.floor(Math.random() * 10);
@@ -1326,10 +1330,148 @@ describe.only("joins - products", () => {
         orders.push(order!);
       }
     }
+    // console.debug(orders.length);
   });
 
+  function getPaginationVerify(
+    toQuery: () => CustomClauseQuery<AnyEnt>,
+    edges: Data[],
+    perPage: number,
+  ) {
+    async function verify(
+      idx: number,
+      hasEdge: boolean,
+      hasNextPage: boolean,
+      cursor?: string,
+    ) {
+      const q2 = toQuery().first(perPage, cursor);
+
+      const options = q2.__getOptions();
+
+      const orderBy = options.orderby!;
+      // TODO support different directions
+      orderBy.push({
+        column: "id",
+        direction: "DESC",
+      });
+      let cls = options.clause;
+      if (cursor) {
+        cls = clause.AndOptional(
+          cls,
+          clause.PaginationMultipleColsQuery(
+            // same column from orderBy
+            orderBy[0].column,
+            "id",
+            // assumes less
+            true,
+            // these 2 values don't matter so just putting whatever
+            new Date().getTime(),
+            4,
+            options.loadEntOptions.fieldsAlias ?? options.loadEntOptions.alias,
+          ),
+        );
+      }
+
+      const ents = await q2.queryEnts();
+      const newEdges = await q2.queryEdges();
+      const query = buildQuery({
+        // tableName, fieldsAlias, alias all from here
+        ...options.loadEntOptions,
+        // ...FakeEvent.loaderOptions(),
+        distinct: true,
+
+        orderby: orderBy,
+        // orderby: [
+        //   {
+        //     column: "start_time",
+        //     direction: "DESC",
+        //   },
+        //   {
+        //     column: "id",
+        //     direction: "DESC",
+        //   },
+        // ],
+        limit: perPage + 1,
+        clause: cls,
+        join: options.join,
+        // clause: clause.AndOptional(
+        //   clause.GreaterEq("start_time", 1),
+        //   clause.LessEq("start_time", 2),
+        //   // the cursor check
+        //   cursor
+        //     ? clause.PaginationMultipleColsSubQuery(
+        //         "start_time",
+        //         "<",
+        //         FakeEvent.loaderOptions().tableName,
+        //         "id",
+        //         4,
+        //       )
+        //     : undefined,
+        // ),
+      });
+      console.debug(query, ml.logs);
+      expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
+
+      // 1 is a hack...
+      const pagination = q2.paginationInfo().get(1);
+      if (hasEdge) {
+        expect(ents.length, idx.toString()).toBeGreaterThan(0);
+        expect(ents.length, idx.toString()).toBeLessThanOrEqual(perPage);
+        // console.debug(page, ents[0].id, edges[PAGE * page]);
+        expect(ents[0].id, idx.toString()).toBe(edges[idx].id);
+      } else {
+        expect(ents.length, idx.toString()).toBe(0);
+        expect(newEdges.length, idx.toString()).toBe(0);
+      }
+
+      if (hasNextPage) {
+        // has exact if next page
+        expect(ents.length, idx.toString()).toBe(perPage);
+
+        expect(pagination?.hasNextPage, idx.toString()).toBe(true);
+        expect(pagination?.hasPreviousPage, idx.toString()).toBe(false);
+      } else {
+        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
+        expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
+      }
+    }
+
+    return verify;
+  }
+
+  async function paginateAndVerify(
+    toQuery: () => CustomClauseQuery<AnyEnt>,
+    edges: Data[],
+  ) {
+    ml.clear();
+    // query up to 10 times
+    // page number at least 2
+    const perPage = Math.max(Math.floor(edges.length / 10), 2);
+    const q = toQuery();
+
+    const verify = getPaginationVerify(toQuery, edges, perPage);
+
+    let last: Data | undefined = undefined;
+    for (let i = 0; i < 10; i++) {
+      let cursor: string | undefined = undefined;
+      if (last) {
+        cursor = q.getCursor(last);
+      }
+      let hasEdge = i * perPage < edges.length;
+      last = edges[i * perPage + perPage - 1];
+      // hasMorePages | last issues | cursor
+      let hasMorePages = edges[i * perPage + perPage] !== undefined;
+      // console.debug(i, hasEdge, hasMorePages, cursor);
+      await verify(i * perPage, hasEdge, hasMorePages, cursor);
+      if (!hasEdge) {
+        break;
+      }
+      last = edges[i * perPage + perPage - 1];
+    }
+  }
   // psql tb826ca1e5d3a6
-  test.skip("query users for product", async () => {
+  // ~20
+  test("query users for product", async () => {
     // find the most ordered product
     const r = await DB.getInstance().getPool().query(`
           SELECT
@@ -1417,9 +1559,10 @@ describe.only("joins - products", () => {
       r2.rows.map((row) => row.id),
     );
 
-    // TODO generic pagination tests??
+    await paginateAndVerify(getQuery, edges);
   });
 
+  // ~147
   test.only("query products for user", async () => {
     // find the user who ordered the most products
     const r = await DB.getInstance().getPool().query(`
@@ -1436,9 +1579,11 @@ describe.only("joins - products", () => {
           num_products DESC
       LIMIT 1;
 `);
-    console.debug(r.rows);
+    // console.debug(r.rows);
 
     const expCount = parseInt(r.rows[0].num_products, 10);
+
+    console.debug(expCount);
 
     const userId = r.rows[0].id;
     // query for the products ordered by that user
@@ -1593,9 +1738,124 @@ describe.only("joins - products", () => {
     expect(ents2.map((ent) => ent.id)).toStrictEqual(
       r2.rows.map((row) => row.id),
     );
+
+    // TODO paginate both...
+    await paginateAndVerify(getQuery, edges);
+
+    // await paginateAndVerify(getQuery2, edges2);
+
     // TODO generic pagination tests??
   });
 
-  // TODO next. may need more examples to test pagination
-  test("query products for user in given category", async () => {});
+  // ~15
+  test("query products for user in given category", async () => {
+    // TODO sc6193ba6874ed
+    const r = await DB.getInstance().getPool().query(`
+WITH UserCategoryOrders AS (
+    SELECT 
+        u.id as uid,
+        c.id as cid,
+        COUNT(DISTINCT o.product_id) AS num_products
+    FROM 
+        users u
+    JOIN 
+        orders o ON u.id = o.user_id
+    JOIN 
+        products p ON o.product_id = p.id
+    JOIN 
+        categories c ON p.category_id = c.id
+    GROUP BY 
+        u.id, c.id
+)
+
+SELECT 
+    uid,
+    cid,
+    num_products
+FROM 
+    UserCategoryOrders
+ORDER BY 
+    num_products DESC
+LIMIT 1;
+`);
+    const expCount = parseInt(r.rows[0].num_products, 10);
+    const userId = r.rows[0].uid;
+    const categoryId = r.rows[0].cid;
+
+    console.debug(expCount);
+
+    const r2 = await DB.getInstance()
+      .getPool()
+      .query(
+        `SELECT
+        p.id,
+        p.category_id,
+        p.price,
+        p.product_name
+    FROM
+        orders o
+    JOIN
+        products p ON o.product_id = p.id
+    WHERE
+        o.user_id = $1
+    AND
+        p.category_id = $2
+    ORDER BY p.product_name DESC, p.id DESC`,
+        [userId, categoryId],
+      );
+
+    expect(r2.rows.length).toEqual(expCount);
+
+    const getQuery = () => {
+      return new CustomClauseQuery(new LoggedOutViewer(), {
+        clause: clause.And(
+          clause.Eq("user_id", userId, "o"),
+          clause.Eq("category_id", categoryId, "p"),
+        ),
+        name: "products_purchased_by_user_category",
+        loadEntOptions: AnyEnt.loaderOptions(
+          "orders",
+          ["id", "category_id", "price", "product_name"],
+          {
+            // fields alias because we're getting fields from product
+            fieldsAlias: "p",
+          },
+        ),
+        orderby: [
+          {
+            // orderby will get the fields alias by default since ordering by column we're selecting from
+            column: "product_name",
+            direction: "DESC",
+          },
+        ],
+        join: [
+          {
+            tableName: "products",
+            alias: "p",
+            clause: clause.Expression("o.product_id = p.id"),
+          },
+        ],
+      });
+    };
+
+    const q = getQuery();
+
+    const [edges, count, rawCount, ents] = await Promise.all([
+      q.queryEdges(),
+      q.queryCount(),
+      q.queryRawCount(),
+      q.queryEnts(),
+    ]);
+    expect(edges.length).toBe(expCount);
+    expect(count).toBe(expCount);
+    expect(rawCount).toBe(expCount);
+    expect(ents.length).toBe(expCount);
+
+    expect(edges).toStrictEqual(r2.rows);
+    expect(ents.map((ent) => ent.id)).toStrictEqual(
+      r2.rows.map((row) => row.id),
+    );
+  });
+
+  // TODO generic pagination tests
 });

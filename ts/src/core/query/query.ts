@@ -317,7 +317,9 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
               this.options.cursorCol,
               less,
               // TODO we need a way to know if this is a time column or not
-              new Date(this.cursorValues[1]).toISOString(),
+              // not time column for products|users|categories
+              this.cursorValues[1],
+              // new Date(this.cursorValues[1]).toISOString(),
               this.offset,
               this.options.fieldOptions?.fieldsAlias ??
                 this.options.fieldOptions?.alias,

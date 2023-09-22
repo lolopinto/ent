@@ -208,4 +208,8 @@ export class CustomClauseQuery<
       this.options.loadEntOptions,
     );
   }
+
+  __getOptions() {
+    return this.options;
+  }
 }
