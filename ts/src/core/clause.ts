@@ -603,7 +603,7 @@ class tsQueryClause<T extends Data, K = keyof T> implements Clause<T, K> {
     if (this.opts?.tsVectorCol) {
       return `${this.opts?.overrideAlias ?? ""}to_tsvector(${
         this.col
-      }):@@${this.getFunction()}:${language}:${value}`;
+      })@@${this.getFunction()}:${language}:${value}`;
     }
     return `${this.col}${
       this.opts?.overrideAlias ?? ""
