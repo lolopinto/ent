@@ -1,5 +1,11 @@
 import { Data, ID, Viewer } from "../base";
-import { getDefaultLimit, AssocEdge, getCursor, setDefaultLimit } from "../ent";
+import {
+  getDefaultLimit,
+  AssocEdge,
+  getCursor,
+  setDefaultLimit,
+  cursorOptions,
+} from "../ent";
 import { setGlobalSchema } from "../global_schema";
 import { IDViewer, LoggedOutViewer } from "../viewer";
 import {
@@ -335,11 +341,27 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     return new LoggedOutViewer();
   }
 
-  function getCursorFrom(contacts: FakeContact[], idx: number) {
-    return getCursor({
-      row: contacts[idx],
-      keys: ["id"],
-    });
+  function getCursorFrom(
+    q: TestQueryFilter<any> | EdgeQuery<FakeUser, FakeContact, any>,
+    contacts: FakeContact[],
+    idx: number,
+  ) {
+    let opts: cursorOptions;
+    if (isCustomQuery(q)) {
+      opts = {
+        row: contacts[idx],
+        keys: ["id"],
+      };
+    } else {
+      // for assoc queries, we're getting the value from 'id' field but the edge
+      // is from assoc_edge table id2 field and so cursor takes it from there
+      opts = {
+        row: contacts[idx],
+        keys: ["id2"],
+        cursorKeys: ["id"],
+      };
+    }
+    return getCursor(opts);
   }
 
   function getVerifyAfterEachCursor<TData extends Data>(
@@ -815,7 +837,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         user: FakeUser,
         contacts: FakeContact[],
       ) => {
-        return q.first(N, getCursorFrom(contacts, idx));
+        return q.first(N, getCursorFrom(q, contacts, idx));
       },
       opts.newQuery,
       (contacts: FakeContact[]) => {
@@ -898,7 +920,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         user: FakeUser,
         contacts: FakeContact[],
       ) => {
-        return q.last(N, getCursorFrom(contacts, idx));
+        return q.last(N, getCursorFrom(q, contacts, idx));
       },
       opts.newQuery,
       (contacts: FakeContact[]) => {

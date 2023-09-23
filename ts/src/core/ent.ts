@@ -1245,8 +1245,8 @@ export class AssocEdge {
 export interface cursorOptions {
   row: Data;
   keys: string[];
+  cursorKeys?: string[]; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
   // col: string;
-  // cursorKey?: string; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
   // used rarely, indicates that the cursor will be more than 2 parts and will have more fields
   // extraParts?: string[];
   // conv?: (any: any) => any;
@@ -1254,10 +1254,13 @@ export interface cursorOptions {
 
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
-  const { row, keys } = opts;
+  const { row, keys, cursorKeys } = opts;
   //  row: Data, col: string, conv?: (any) => any) {
   if (!row) {
     throw new Error(`no row passed to getCursor`);
+  }
+  if (cursorKeys?.length && cursorKeys.length !== keys.length) {
+    throw new Error("length of cursorKeys should match keys");
   }
   const convert = (d: any) => {
     // if (convFn) {
@@ -1274,14 +1277,12 @@ export function getCursor(opts: cursorOptions) {
   //   return "";
   // }
 
-  // const cursorKey = opts.cursorKey || col;
   const parts: string[] = [];
-  for (const key of keys) {
-    // if (opts.extraParts) {
-    // for (const p of opts.extraParts) {
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const cursorKey = cursorKeys?.[i] || key;
     parts.push(key);
-    parts.push(convert(row[key]));
-    // }
+    parts.push(convert(row[cursorKey]));
   }
   const str = parts.join(":");
   return Buffer.from(str, "ascii").toString("base64");
