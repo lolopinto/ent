@@ -69,10 +69,6 @@ export class CustomClauseQuery<
   TViewer extends Viewer = Viewer,
 > extends BaseEdgeQuery<any, TDest, Data> {
   private clause: Clause;
-  // store this here because we want the value in this class
-  // separate from this.options
-  // private join: QueryDataOptions["join"] | undefined;
-  // private options: CustomClauseQueryOptions<TDest, TViewer>;
 
   constructor(
     public viewer: TViewer,
@@ -106,7 +102,6 @@ export class CustomClauseQuery<
       ? primarySortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
 
-    // this.options = options;
     super(viewer, {
       orderby,
       cursorCol,
@@ -130,12 +125,6 @@ export class CustomClauseQuery<
   }
 
   async queryRawCount(): Promise<number> {
-    // if (this.options.join) {
-    //   throw new Error(
-    //     `queryRawCount doesn't support join. use queryAllRawCount`,
-    //   );
-    // }
-
     // sqlite needs as count otherwise it returns count(1)
     let fields = ["count(1) as count"];
     if (this.options.join) {
