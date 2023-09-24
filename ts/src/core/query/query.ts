@@ -308,7 +308,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
           this.cursorValues.length === 2 &&
           this.options.cursorKeys.length === 2
         ) {
-          console.debug(this.offset);
           options.clause = clause.AndOptional(
             options.clause,
             // this clause needs to be u not e...
@@ -345,7 +344,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         }
       }
     } else {
-      console.debug(this.offset);
       if (this.offset) {
         const clauseFn = less ? clause.Less : clause.Greater;
         const val = this.options.sortColIsDate
@@ -430,17 +428,48 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
       const tableName = isPromise(res) ? await res : res;
 
       if (this.offset) {
-        // inner col time
-        options.clause = clause.AndOptional(
-          options.clause,
-          clause.PaginationMultipleColsSubQuery(
-            this.sortCol,
-            greater ? ">" : "<",
-            tableName,
-            this.options.cursorCol,
-            this.offset,
-          ),
-        );
+        // using a join, we already know sortCol and cursorCol are different
+        // we have encoded both values in the cursor
+        // includeSortColInCursor() is true in this case
+
+        if (
+          this.cursorValues.length === 2 &&
+          this.options.cursorKeys.length === 2
+        ) {
+          options.clause = clause.AndOptional(
+            options.clause,
+            clause.PaginationMultipleColsQuery(
+              this.sortCol,
+              this.options.cursorCol,
+              // flipped here since we're going in the opposite direction
+              !greater,
+              this.options.sortColIsDate
+                ? new Date(this.cursorValues[1]).toISOString()
+                : this.cursorValues[1],
+              this.options.cursorColIsDate
+                ? new Date(this.offset).toISOString()
+                : this.offset,
+              this.options.fieldOptions?.fieldsAlias ??
+                this.options.fieldOptions?.alias,
+            ),
+          );
+        } else {
+          // TODO audit values for cursorColIsDate and sortColIsDate...
+
+          // inner col time
+          options.clause = clause.AndOptional(
+            options.clause,
+            clause.PaginationMultipleColsSubQuery(
+              this.sortCol,
+              greater ? ">" : "<",
+              tableName,
+              this.options.cursorCol,
+              this.options.cursorColIsDate
+                ? new Date(this.offset).toISOString()
+                : this.offset,
+            ),
+          );
+        }
       }
       // we also sort cursor col in same direction. (direction doesn't matter)
       orderby.push({

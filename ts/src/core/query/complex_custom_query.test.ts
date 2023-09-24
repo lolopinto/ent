@@ -20,7 +20,7 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 import { setLogLevels } from "../logger";
 import { TempDB, integer, table, text, uuid } from "../../testutils/db/temp_db";
-import { buildQuery } from "../query_impl";
+import { buildQuery, reverseOrderBy } from "../query_impl";
 import * as clause from "../clause";
 import { Data, Ent, Viewer, WriteOperation } from "../base";
 import { CustomClauseQuery } from "./custom_clause_query";
@@ -886,7 +886,6 @@ describe("global query - with joins", () => {
     const q = getCreatorsOfGlobalEventsInNextWeek();
 
     const count = await q.queryRawCount();
-    // console.debug("result", count);
     expect(count).toBe(infos.length);
   });
 
@@ -894,9 +893,6 @@ describe("global query - with joins", () => {
     const q = getCreatorsOfGlobalEventsInNextWeek();
 
     const ents = await q.queryEnts();
-    // console.debug(ml.logs);
-    // console.debug(new Set(ents.map((ent) => ent.id)));
-    // console.debug(ents.length);
     expect(ents.length).toBe(infos.length);
   });
 
@@ -1528,6 +1524,7 @@ LIMIT 1;
       r2.rows.map((row) => row.id),
     );
 
+    // need a last version of this to work..
     await paginateAndVerifyClauseWithJoin(getQuery, edges);
   });
 });
@@ -1536,19 +1533,29 @@ function getPaginationVerifyClauseWithJoin<T extends Ent>(
   toQuery: () => CustomClauseQuery<T>,
   edges: Data[],
   perPage: number,
+  first = true, // if false, we're going backwards and using last()
 ) {
   async function verify(
     idx: number,
     hasEdge: boolean,
-    hasNextPage: boolean,
+    hasNextOrLastPage: boolean,
     cursor?: string,
   ) {
-    const q2 = toQuery().first(perPage, cursor);
+    let q2: CustomClauseQuery<T>;
+    if (first) {
+      q2 = toQuery().first(perPage, cursor);
+    } else {
+      q2 = toQuery().last(perPage, cursor);
+    }
 
     const options = q2.__getOptions();
 
     const orderBy = options.orderby!;
     console.assert(orderBy.length === 1);
+    // flip the order by
+    if (!first) {
+      // orderBy[0].direction = orderBy[0].direction === "DESC" ? "ASC" : "DESC";
+    }
     const less = orderBy[0].direction === "DESC";
     orderBy.push({
       column: "id",
@@ -1595,15 +1602,20 @@ function getPaginationVerifyClauseWithJoin<T extends Ent>(
       expect(newEdges.length, idx.toString()).toBe(0);
     }
 
-    if (hasNextPage) {
+    if (hasNextOrLastPage) {
       // has exact if next page
       expect(ents.length, idx.toString()).toBe(perPage);
 
-      expect(pagination?.hasNextPage, idx.toString()).toBe(true);
-      expect(pagination?.hasPreviousPage, idx.toString()).toBe(false);
+      if (first) {
+        expect(pagination?.hasNextPage, idx.toString()).toBe(true);
+        expect(pagination?.hasPreviousPage, idx.toString()).toBe(false);
+      } else {
+        expect(pagination?.hasPreviousPage, idx.toString()).toBe(true);
+        expect(pagination?.hasNextPage, idx.toString()).toBe(false);
+      }
     } else {
       expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
-      expect(pagination?.hasNextPage, idx.toString()).toBe(undefined);
+      expect(pagination?.hasPreviousPage, idx.toString()).toBe(undefined);
     }
   }
 
@@ -1615,6 +1627,13 @@ async function paginateAndVerifyClauseWithJoin<T extends Ent>(
   edges: Data[],
 ) {
   ml.clear();
+
+  const reverseQ = toQuery().last(100000);
+  const reverseEdges = await reverseQ.queryEdges();
+  expect(reverseEdges.length).toBe(edges.length);
+  // make sure we use a different array here for the check because reverse() reverses in place...
+  expect([...reverseEdges].reverse()).toStrictEqual(edges);
+
   // query up to 10 times
   // page number at least 2
   const perPage = Math.max(Math.floor(edges.length / 10), 2);
@@ -1638,5 +1657,42 @@ async function paginateAndVerifyClauseWithJoin<T extends Ent>(
       break;
     }
     last = edges[(i + 1) * perPage - 1];
+  }
+
+  const toQueryReverse = () => {
+    const q = toQuery();
+    const options = q.__getOptions();
+    let orderby = options.orderby;
+    if (orderby) {
+      orderby = reverseOrderBy(orderby);
+    }
+    options.orderby = orderby;
+    return q;
+  };
+  const qLast = toQueryReverse();
+
+  const verifyLast = getPaginationVerifyClauseWithJoin(
+    toQueryReverse,
+    reverseEdges,
+    perPage,
+    false,
+  );
+
+  let first: Data | undefined = undefined;
+  for (let i = 0; i < 10; i++) {
+    let cursor: string | undefined = undefined;
+    if (first) {
+      cursor = qLast.getCursor(first);
+    }
+    // let hasEdge = edges[i * perPage] !== undefined;
+    const hasEdge = i * perPage < reverseEdges.length;
+    last = reverseEdges[i * perPage + perPage - 1];
+    // hasMorePages | last issues | cursor
+    let hasMorePages = reverseEdges[(i + 1) * perPage] !== undefined;
+    await verifyLast(i * perPage, hasEdge, hasMorePages, cursor);
+    if (!hasMorePages) {
+      break;
+    }
+    first = reverseEdges[(i + 1) * perPage - 1];
   }
 }
