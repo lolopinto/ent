@@ -117,9 +117,12 @@ class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
     if (nullClause) {
       return nullClause.instanceKey();
     }
-    return `${this.col}${this.op}${this.opts?.overrideAlias ?? ""}${rawValue(
-      this.value,
-    )}`;
+    if (this.opts?.overrideAlias) {
+      return `${this.opts.overrideAlias}.${this.col}${this.op}${rawValue(
+        this.value,
+      )}`;
+    }
+    return `${this.col}${this.op}${rawValue(this.value)}`;
   }
 }
 
@@ -317,13 +320,21 @@ class postgresArrayOperator<T extends Data, K = keyof T>
 
   instanceKey(): string {
     if (this.opts?.not) {
+      if (this.opts.overrideAlias) {
+        return `NOT:${this.opts.overrideAlias}.${this.col}${this.op}${rawValue(
+          this.value,
+        )}`;
+      }
       return `NOT:${this.col}${this.opts?.overrideAlias ?? ""}${
         this.op
       }${rawValue(this.value)}`;
     }
-    return `${this.col}${this.opts?.overrideAlias ?? ""}${this.op}${rawValue(
-      this.value,
-    )}`;
+    if (this.opts?.overrideAlias) {
+      return `${this.opts.overrideAlias}.${this.col}${this.op}${rawValue(
+        this.value,
+      )}`;
+    }
+    return `${this.col}${this.op}${rawValue(this.value)}`;
   }
 }
 
@@ -459,9 +470,12 @@ export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 
   instanceKey(): string {
-    return `${this.op.toLowerCase()}:${this.col}${
-      this.overrideAlias ?? ""
-    }:${this.values().join(",")}`;
+    if (this.overrideAlias) {
+      return `${this.op.toLowerCase()}:${this.overrideAlias}.${
+        this.col
+      }:${this.values().join(",")}`;
+    }
+    return `${this.op.toLowerCase()}:${this.col}:${this.values().join(",")}`;
   }
 }
 
@@ -601,13 +615,21 @@ class tsQueryClause<T extends Data, K = keyof T> implements Clause<T, K> {
   instanceKey(): string {
     const { language, value } = this.getInfo();
     if (this.opts?.tsVectorCol) {
-      return `${this.opts?.overrideAlias ?? ""}to_tsvector(${
+      if (this.opts.overrideAlias) {
+        return `to_tsvector(${this.opts.overrideAlias}.${
+          this.col
+        })@@${this.getFunction()}:${language}:${value}`;
+      }
+      return `to_tsvector(${
         this.col
       })@@${this.getFunction()}:${language}:${value}`;
     }
-    return `${this.col}${
-      this.opts?.overrideAlias ?? ""
-    }@@${this.getFunction()}:${language}:${value}`;
+    if (this.opts?.overrideAlias) {
+      return `${this.opts.overrideAlias}.${
+        this.col
+      }@@${this.getFunction()}:${language}:${value}`;
+    }
+    return `${this.col}@@${this.getFunction()}:${language}:${value}`;
   }
 }
 
@@ -1189,9 +1211,12 @@ class jSONPathValuePredicateClause<T extends Data, K = keyof T>
   }
 
   instanceKey(): string {
-    return `${this.col}${this.overrideAlias ?? ""}${this.path}${rawValue(
-      this.value,
-    )}${this.pred}`;
+    if (this.overrideAlias) {
+      return `${this.overrideAlias}.${this.col}${this.path}${rawValue(
+        this.value,
+      )}${this.pred}`;
+    }
+    return `${this.col}${this.path}${rawValue(this.value)}${this.pred}`;
   }
 }
 
@@ -1327,9 +1352,10 @@ class paginationMultipleColumnsSubQueryClause<T extends Data, K = keyof T>
   }
 
   instanceKey(): string {
-    return `${this.col}${this.overrideAlias ?? ""}-${this.op}-${
-      this.tableName
-    }-${this.uniqueCol}-${this.val}`;
+    if (this.overrideAlias) {
+      return `${this.overrideAlias}.${this.col}-${this.op}-${this.tableName}-${this.overrideAlias}.${this.uniqueCol}-${this.val}`;
+    }
+    return `${this.col}-${this.op}-${this.tableName}-${this.uniqueCol}-${this.val}`;
   }
 }
 
