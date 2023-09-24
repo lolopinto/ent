@@ -99,6 +99,5 @@ export function buildQuery(options: QueryableDataOptions): string {
   if (options.limit) {
     parts.push(`LIMIT ${options.limit}`);
   }
-  // console.debug("buildQuery", parts.join(" "));
   return parts.join(" ");
 }

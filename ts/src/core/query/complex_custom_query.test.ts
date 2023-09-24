@@ -882,6 +882,8 @@ describe("global query. id. cursor and sort_column the same", () => {
 });
 
 describe("global query - with joins", () => {
+  // this only has 4 ids returned so not the best example which is
+  // why we have what's below
   test("rawCount", async () => {
     const q = getCreatorsOfGlobalEventsInNextWeek();
 
@@ -942,8 +944,6 @@ describe("global query - with joins", () => {
     expect(edges.length).toBe(infos.length);
   });
 
-  // need different pagination logic for joins
-  // may need a different example so that we have enough ids to test pagination
   test("first N. after each cursor", async () => {
     const q = getCreatorsOfGlobalEventsInNextWeek();
 
@@ -989,7 +989,6 @@ describe("global query - with joins", () => {
 });
 
 describe("joins - products", () => {
-  // TODO more
   const usersTable = table(
     "users",
     uuid("id", {
@@ -1005,7 +1004,6 @@ describe("joins - products", () => {
     }),
     text("name"),
   );
-
   const productsTable = table(
     "products",
     uuid("id", { primaryKey: true }),
@@ -1018,7 +1016,6 @@ describe("joins - products", () => {
     integer("price"),
     text("product_name"),
   );
-
   const ordersTable = table(
     "orders",
     uuid("id", { primaryKey: true }),
@@ -1075,7 +1072,7 @@ describe("joins - products", () => {
         },
         "RETURNING *",
       );
-      console.assert(user, `couldn't create user`);
+      expect(user).not.toBeUndefined();
       users.push(user!);
     }
 
@@ -1090,7 +1087,7 @@ describe("joins - products", () => {
         },
         "RETURNING *",
       );
-      console.assert(category, `couldn't create category`);
+      expect(category).not.toBeUndefined();
       categories.push(category!);
     }
 
@@ -1111,7 +1108,7 @@ describe("joins - products", () => {
         },
         "RETURNING *",
       );
-      console.assert(product, `couldn't create product`);
+      expect(product).not.toBeUndefined();
       products.push(product!);
     }
     function getRandomNumber(min: number, max: number) {
@@ -1145,7 +1142,6 @@ describe("joins - products", () => {
     }
   });
 
-  // psql tb826ca1e5d3a6
   // ~20
   test("query users for product", async () => {
     // find the most ordered product
@@ -1380,11 +1376,6 @@ describe("joins - products", () => {
           },
         ],
         join: [
-          // {
-          //   tableName: "orders",
-          //   alias: "o",
-          //   clause: clause.Expression("u.id = o.user_id"),
-          // },
           {
             tableName: "products",
             alias: "p",
@@ -1419,7 +1410,6 @@ describe("joins - products", () => {
 
   // ~15
   test("query products for user in given category", async () => {
-    // TODO sc6193ba6874ed
     const r = await DB.getInstance().getPool().query(`
 WITH UserCategoryOrders AS (
     SELECT 
@@ -1524,7 +1514,6 @@ LIMIT 1;
       r2.rows.map((row) => row.id),
     );
 
-    // need a last version of this to work..
     await paginateAndVerifyClauseWithJoin(getQuery, edges);
   });
 });
@@ -1551,11 +1540,7 @@ function getPaginationVerifyClauseWithJoin<T extends Ent>(
     const options = q2.__getOptions();
 
     const orderBy = options.orderby!;
-    console.assert(orderBy.length === 1);
-    // flip the order by
-    if (!first) {
-      // orderBy[0].direction = orderBy[0].direction === "DESC" ? "ASC" : "DESC";
-    }
+    expect(orderBy.length).toBe(1);
     const less = orderBy[0].direction === "DESC";
     orderBy.push({
       column: "id",
@@ -1622,6 +1607,9 @@ function getPaginationVerifyClauseWithJoin<T extends Ent>(
   return verify;
 }
 
+// this paginates forwards and backwards and verifies that it returns
+// values in the list
+// TODO: get this logic somewhere else and use it in all these places that dos pagination tests?
 async function paginateAndVerifyClauseWithJoin<T extends Ent>(
   toQuery: () => CustomClauseQuery<T>,
   edges: Data[],

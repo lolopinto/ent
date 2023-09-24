@@ -96,7 +96,6 @@ function assertPositive(n: number) {
 
 interface validCursorOptions {
   keys: string[];
-  // timeIsNumber?: boolean;
 }
 
 function convertToIntMaybe(val: string) {
@@ -284,22 +283,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
       if (this.offset) {
         const res = this.edgeQuery.getTableName();
         let tableName = isPromise(res) ? await res : res;
-        if (this.options.join) {
-          // console.debug(this.options);
-          // TODO good way to always derive this somehow
-          // use fields alias/regular alias to map?
-          // console.debug("changing tableName");
-          // tableName = "fake_users";
-        }
-        // inner col time
-
-        // TODO if join, use a different clause instead of PaginationMultipleColsSubQuery
-
-        // TODO: do we need a subclause here or can we just and with the existing clause?
-        // we need a subclause when
-        // if (this.options.join) {
-
-        // } else {
 
         // using a join, we already know sortCol and cursorCol are different
         // we have encoded both values in the cursor
@@ -310,9 +293,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         ) {
           options.clause = clause.AndOptional(
             options.clause,
-            // this clause needs to be u not e...
-            // use aliases and we know we need aliases since
-            // they must match...
             clause.PaginationMultipleColsQuery(
               this.sortCol,
               this.options.cursorCol,
@@ -328,6 +308,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
             ),
           );
         } else {
+          // inner col time
+
           // TODO audit values for cursorColIsDate and sortColIsDate...
           options.clause = clause.AndOptional(
             options.clause,

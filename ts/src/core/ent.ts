@@ -1246,10 +1246,6 @@ export interface cursorOptions {
   row: Data;
   keys: string[];
   cursorKeys?: string[]; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
-  // col: string;
-  // used rarely, indicates that the cursor will be more than 2 parts and will have more fields
-  // extraParts?: string[];
-  // conv?: (any: any) => any;
 }
 
 // TODO eventually update this for sortCol time unique keys
@@ -1263,19 +1259,11 @@ export function getCursor(opts: cursorOptions) {
     throw new Error("length of cursorKeys should match keys");
   }
   const convert = (d: any) => {
-    // if (convFn) {
-    //   return convFn(d);
-    // }
     if (d instanceof Date) {
       return d.getTime();
     }
     return d;
   };
-
-  // let datum = convert(row[col], conv);
-  // if (!datum) {
-  //   return "";
-  // }
 
   const parts: string[] = [];
   for (let i = 0; i < keys.length; i++) {
