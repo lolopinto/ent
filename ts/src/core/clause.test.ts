@@ -2713,7 +2713,7 @@ describe("sqlite", () => {
     });
   });
 
-  describe("pagination multiple cols query", () => {
+  describe("pagination multiple cols sub query", () => {
     test(">", () => {
       const cls = clause.PaginationMultipleColsSubQuery<EventData>(
         "start_time",
@@ -2772,6 +2772,108 @@ describe("sqlite", () => {
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.instanceKey()).toEqual("start_time-<-events-id-fooo");
+    });
+  });
+
+  describe("pagination multiple cols query", () => {
+    test("less", () => {
+      const d = new Date();
+      const cls = clause.PaginationMultipleColsQuery<EventData>(
+        "start_time",
+        "id",
+        true,
+        d.toISOString(),
+        4,
+      );
+      expect(cls.clause(1)).toBe(
+        "(start_time < ? OR (start_time = ? AND id < ?))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time < ? OR (t.start_time = ? AND t.id < ?))",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time", "start_time", "id"]);
+      expect(cls.values()).toStrictEqual([d.toISOString(), d.toISOString(), 4]);
+      expect(cls.logValues()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+
+      const cls2 = clause.PaginationMultipleColsQuery<EventData>(
+        "start_time",
+        "id",
+        true,
+        d.toISOString(),
+        4,
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "(t2.start_time < ? OR (t2.start_time = ? AND t2.id < ?))",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "(t2.start_time < ? OR (t2.start_time = ? AND t2.id < ?))",
+      );
+      expect(cls2.columns()).toStrictEqual(["start_time", "start_time", "id"]);
+      expect(cls2.values()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+      expect(cls2.logValues()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+    });
+
+    test("greater", () => {
+      const d = new Date();
+      const cls = clause.PaginationMultipleColsQuery<EventData>(
+        "start_time",
+        "id",
+        false,
+        d.toISOString(),
+        4,
+      );
+      expect(cls.clause(1)).toBe(
+        "(start_time > ? OR (start_time = ? AND id > ?))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time > ? OR (t.start_time = ? AND t.id > ?))",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time", "start_time", "id"]);
+      expect(cls.values()).toStrictEqual([d.toISOString(), d.toISOString(), 4]);
+      expect(cls.logValues()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+
+      const cls2 = clause.PaginationMultipleColsQuery<EventData>(
+        "start_time",
+        "id",
+        false,
+        d.toISOString(),
+        4,
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "(t2.start_time > ? OR (t2.start_time = ? AND t2.id > ?))",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "(t2.start_time > ? OR (t2.start_time = ? AND t2.id > ?))",
+      );
+      expect(cls2.columns()).toStrictEqual(["start_time", "start_time", "id"]);
+      expect(cls2.values()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+      expect(cls2.logValues()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
     });
   });
 
