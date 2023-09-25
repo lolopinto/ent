@@ -155,7 +155,7 @@ const getCreatorsOfGlobalEventsInNextWeek = (opts?: Partial<OrderByOption>) => {
         ...opts,
       },
     ],
-    join: [
+    joinBETA: [
       {
         tableName,
         alias: "u",
@@ -1198,7 +1198,7 @@ describe("joins - products", () => {
             direction: "DESC",
           },
         ],
-        join: [
+        joinBETA: [
           {
             tableName: "orders",
             alias: "o",
@@ -1321,7 +1321,7 @@ describe("joins - products", () => {
             direction: "DESC",
           },
         ],
-        join: [
+        joinBETA: [
           {
             tableName: "orders",
             alias: "o",
@@ -1375,7 +1375,7 @@ describe("joins - products", () => {
             direction: "DESC",
           },
         ],
-        join: [
+        joinBETA: [
           {
             tableName: "products",
             alias: "p",
@@ -1486,7 +1486,7 @@ LIMIT 1;
             direction: "DESC",
           },
         ],
-        join: [
+        joinBETA: [
           {
             tableName: "products",
             alias: "p",
@@ -1572,7 +1572,7 @@ function getPaginationVerifyClauseWithJoin<T extends Ent>(
       orderby: orderBy,
       limit: perPage + 1,
       clause: cls,
-      join: options.join,
+      join: options.joinBETA,
     });
     expect(query, idx.toString()).toEqual(ml.logs[ml.logs.length - 1].query);
 

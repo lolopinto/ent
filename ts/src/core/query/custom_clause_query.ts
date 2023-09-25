@@ -44,7 +44,7 @@ export interface CustomClauseQueryOptions<
 
   disableTransformations?: boolean;
 
-  join?: QueryDataOptions["join"];
+  joinBETA?: QueryDataOptions["join"];
 }
 
 function getClause<TDest extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
@@ -105,7 +105,7 @@ export class CustomClauseQuery<
     super(viewer, {
       orderby,
       cursorCol,
-      join: options.join,
+      join: options.joinBETA,
       fieldOptions: options.loadEntOptions,
     });
     this.clause = getClause(options);
@@ -127,7 +127,7 @@ export class CustomClauseQuery<
   async queryRawCount(): Promise<number> {
     // sqlite needs as count otherwise it returns count(1)
     let fields = ["count(1) as count"];
-    if (this.options.join) {
+    if (this.options.joinBETA) {
       const requestedFields = this.options.loadEntOptions.fields;
       const alias =
         this.options.loadEntOptions.fieldsAlias ??
@@ -144,7 +144,7 @@ export class CustomClauseQuery<
       fields,
       clause: this.clause,
       context: this.viewer.context,
-      join: this.options.join,
+      join: this.options.joinBETA,
       disableFieldsAlias: true,
     });
     return parseInt(row?.count, 10) || 0;
@@ -180,9 +180,9 @@ export class CustomClauseQuery<
       orderby: options.orderby,
       limit: options?.limit || getDefaultLimit(),
       context: this.viewer.context,
-      join: this.options.join,
+      join: this.options.joinBETA,
       // if doing a join, select distinct rows
-      distinct: this.options.join !== undefined,
+      distinct: this.options.joinBETA !== undefined,
     });
 
     this.edges.set(1, rows);

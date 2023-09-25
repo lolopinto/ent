@@ -9,7 +9,7 @@ import {
   QueryableDataOptions,
   SelectBaseDataOptions,
 } from "../base";
-import { getDefaultLimit, getCursor, cursorOptions } from "../ent";
+import { getDefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
@@ -156,9 +156,6 @@ interface FilterOptions<T extends Data> {
   cursorColIsDate?: boolean;
 
   cursorKeys: string[];
-
-  // TODO probably don't need this long term
-  join?: NonNullable<QueryableDataOptions["join"]>;
 
   // fieldOptions used to query field values
   // used for alias
@@ -597,7 +594,6 @@ export abstract class BaseEdgeQuery<
         orderby: this.edgeQueryOptions.orderby,
         query: this,
         fieldOptions: this.edgeQueryOptions.fieldOptions,
-        join: this.edgeQueryOptions.join,
       }),
     );
     return this;
@@ -630,7 +626,6 @@ export abstract class BaseEdgeQuery<
         orderby: this.edgeQueryOptions.orderby,
         query: this,
         fieldOptions: this.edgeQueryOptions.fieldOptions,
-        join: this.edgeQueryOptions.join,
       }),
     );
     return this;
