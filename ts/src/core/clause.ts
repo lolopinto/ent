@@ -37,11 +37,23 @@ function rawValue(val: any) {
   return val;
 }
 
-function renderCol<T extends Data, K = keyof T>(col: K, alias?: string) {
+function renderCol<T extends Data, K = keyof T>(
+  col: K,
+  overrideAlias?: string,
+  alias?: string,
+) {
+  if (overrideAlias) {
+    return `${overrideAlias}.${col}`;
+  }
   if (alias) {
     return `${alias}.${col}`;
   }
   return col;
+}
+
+interface simpleClauseOptions<T extends Data, K = keyof T> {
+  handleNull?: Clause<T, K>;
+  overrideAlias?: string;
 }
 
 class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
@@ -49,7 +61,7 @@ class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
     protected col: K,
     private value: any,
     private op: string,
-    private handleNull?: Clause<T, K>,
+    private opts?: simpleClauseOptions<T, K>,
   ) {}
 
   clause(idx: number, alias?: string): string {
@@ -58,16 +70,20 @@ class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
       return nullClause.clause(idx, alias);
     }
     if (DB.getDialect() === Dialect.Postgres) {
-      return `${renderCol(this.col, alias)} ${this.op} $${idx}`;
+      return `${renderCol(this.col, this.opts?.overrideAlias, alias)} ${
+        this.op
+      } $${idx}`;
     }
-    return `${renderCol(this.col, alias)} ${this.op} ?`;
+    return `${renderCol(this.col, this.opts?.overrideAlias, alias)} ${
+      this.op
+    } ?`;
   }
 
   private nullClause() {
-    if (!this.handleNull || this.value !== null) {
+    if (!this.opts?.handleNull || this.value !== null) {
       return;
     }
-    return this.handleNull;
+    return this.opts.handleNull;
   }
 
   columns(): K[] {
@@ -100,6 +116,11 @@ class simpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
     const nullClause = this.nullClause();
     if (nullClause) {
       return nullClause.instanceKey();
+    }
+    if (this.opts?.overrideAlias) {
+      return `${this.opts.overrideAlias}.${this.col}${this.op}${rawValue(
+        this.value,
+      )}`;
     }
     return `${this.col}${this.op}${rawValue(this.value)}`;
   }
@@ -146,10 +167,13 @@ class existsQueryClause<T extends Data, K = keyof T> extends queryClause<T, K> {
 }
 
 class isNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
-  constructor(protected col: K) {}
+  constructor(
+    protected col: K,
+    protected overrideAlias?: string,
+  ) {}
 
   clause(_idx: number, alias?: string): string {
-    return `${renderCol(this.col, alias)} IS NULL`;
+    return `${renderCol(this.col, this.overrideAlias, alias)} IS NULL`;
   }
 
   columns(): K[] {
@@ -165,31 +189,17 @@ class isNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 
   instanceKey(): string {
-    return `${this.col} IS NULL`;
+    return `${this.col}${this.overrideAlias ?? ""} IS NULL`;
   }
 }
 
-class isNotNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
-  constructor(protected col: K) {}
-
+class isNotNullClause<T extends Data, K = keyof T> extends isNullClause<T, K> {
   clause(idx: number, alias?: string): string {
-    return `${renderCol(this.col, alias)} IS NOT NULL`;
-  }
-
-  columns(): K[] {
-    return [];
-  }
-
-  values(): any[] {
-    return [];
-  }
-
-  logValues(): any[] {
-    return [];
+    return `${renderCol(this.col, this.overrideAlias, alias)} IS NOT NULL`;
   }
 
   instanceKey(): string {
-    return `${this.col} IS NOT NULL`;
+    return `${this.col}${this.overrideAlias ?? ""} IS NOT NULL`;
   }
 }
 
@@ -222,11 +232,16 @@ class arraySimpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
     protected col: K,
     private value: any,
     private op: string,
+    private overrideAlias?: string,
   ) {}
 
   clause(idx: number, alias?: string): string {
     if (DB.getDialect() === Dialect.Postgres) {
-      return `$${idx} ${this.op} ANY(${renderCol(this.col, alias)})`;
+      return `$${idx} ${this.op} ANY(${renderCol(
+        this.col,
+        this.overrideAlias,
+        alias,
+      )})`;
     }
     return `${renderCol(this.col, alias)} ${this.op} ?`;
   }
@@ -250,8 +265,15 @@ class arraySimpleClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 
   instanceKey(): string {
-    return `${this.col}${this.op}${rawValue(this.value)}`;
+    return `${this.col}${this.overrideAlias ?? ""}${this.op}${rawValue(
+      this.value,
+    )}`;
   }
+}
+
+interface postgresArrayOperatorOptions {
+  not?: boolean;
+  overrideAlias?: string;
 }
 
 class postgresArrayOperator<T extends Data, K = keyof T>
@@ -261,15 +283,19 @@ class postgresArrayOperator<T extends Data, K = keyof T>
     protected col: K,
     protected value: any,
     private op: string,
-    private not?: boolean,
+    private opts?: postgresArrayOperatorOptions,
   ) {}
 
   clause(idx: number, alias?: string): string {
     if (DB.getDialect() === Dialect.Postgres) {
-      if (this.not) {
-        return `NOT ${renderCol(this.col, alias)} ${this.op} $${idx}`;
+      if (this.opts?.not) {
+        return `NOT ${renderCol(this.col, this.opts.overrideAlias, alias)} ${
+          this.op
+        } $${idx}`;
       }
-      return `${renderCol(this.col, alias)} ${this.op} $${idx}`;
+      return `${renderCol(this.col, this.opts?.overrideAlias, alias)} ${
+        this.op
+      } $${idx}`;
     }
     throw new Error(`not supported`);
   }
@@ -293,8 +319,20 @@ class postgresArrayOperator<T extends Data, K = keyof T>
   }
 
   instanceKey(): string {
-    if (this.not) {
-      return `NOT:${this.col}${this.op}${rawValue(this.value)}`;
+    if (this.opts?.not) {
+      if (this.opts.overrideAlias) {
+        return `NOT:${this.opts.overrideAlias}.${this.col}${this.op}${rawValue(
+          this.value,
+        )}`;
+      }
+      return `NOT:${this.col}${this.opts?.overrideAlias ?? ""}${
+        this.op
+      }${rawValue(this.value)}`;
+    }
+    if (this.opts?.overrideAlias) {
+      return `${this.opts.overrideAlias}.${this.col}${this.op}${rawValue(
+        this.value,
+      )}`;
     }
     return `${this.col}${this.op}${rawValue(this.value)}`;
   }
@@ -304,8 +342,13 @@ class postgresArrayOperatorList<
   T extends Data,
   K = keyof T,
 > extends postgresArrayOperator<T, K> {
-  constructor(col: K, value: any[], op: string, not?: boolean) {
-    super(col, value, op, not);
+  constructor(
+    col: K,
+    value: any[],
+    op: string,
+    opts?: postgresArrayOperatorOptions,
+  ) {
+    super(col, value, op, opts);
   }
 
   values(): any[] {
@@ -348,21 +391,20 @@ export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
     private col: K,
     private value: any[],
     private type = "uuid",
+    private overrideAlias?: string,
   ) {}
 
   clause(idx: number, alias?: string): string {
     // do a simple = when only one item
     if (this.value.length === 1) {
       if (this.op === "IN") {
-        return new simpleClause(this.col, this.value[0], "=").clause(
-          idx,
-          alias,
-        );
+        return new simpleClause(this.col, this.value[0], "=", {
+          overrideAlias: this.overrideAlias,
+        }).clause(idx, alias);
       } else {
-        return new simpleClause(this.col, this.value[0], "!=").clause(
-          idx,
-          alias,
-        );
+        return new simpleClause(this.col, this.value[0], "!=", {
+          overrideAlias: this.overrideAlias,
+        }).clause(idx, alias);
       }
     }
 
@@ -398,7 +440,9 @@ export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
       inValue = `VALUES${inValue}`;
     }
 
-    return `${renderCol(this.col, alias)} ${this.op} (${inValue})`;
+    return `${renderCol(this.col, this.overrideAlias, alias)} ${
+      this.op
+    } (${inValue})`;
     // TODO we need to return idx at end to query builder...
     // or anything that's doing a composite query so next clause knows where to start
     // or change to a sqlx.Rebind format
@@ -426,6 +470,11 @@ export class inClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 
   instanceKey(): string {
+    if (this.overrideAlias) {
+      return `${this.op.toLowerCase()}:${this.overrideAlias}.${
+        this.col
+      }:${this.values().join(",")}`;
+    }
     return `${this.op.toLowerCase()}:${this.col}:${this.values().join(",")}`;
   }
 }
@@ -495,11 +544,16 @@ class compositeClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 }
 
+interface tsQueryClauseOptions {
+  tsVectorCol?: boolean;
+  overrideAlias?: string;
+}
+
 class tsQueryClause<T extends Data, K = keyof T> implements Clause<T, K> {
   constructor(
     protected col: K,
     protected val: string | TsQuery,
-    private tsVectorCol?: boolean,
+    private opts?: tsQueryClauseOptions,
   ) {}
 
   private isTsQuery(val: string | TsQuery): val is TsQuery {
@@ -519,20 +573,23 @@ class tsQueryClause<T extends Data, K = keyof T> implements Clause<T, K> {
   clause(idx: number, alias?: string): string {
     const { language } = this.getInfo();
     if (Dialect.Postgres === DB.getDialect()) {
-      if (this.tsVectorCol) {
+      if (this.opts?.tsVectorCol) {
         return `to_tsvector(${renderCol(
           this.col,
+          this.opts.overrideAlias,
           alias,
         )}) @@ ${this.getFunction()}('${language}', $${idx})`;
       }
       return `${renderCol(
         this.col,
+        this.opts?.overrideAlias,
         alias,
       )} @@ ${this.getFunction()}('${language}', $${idx})`;
     }
     // FYI this doesn't actually work for sqlite since different
     return `${renderCol(
       this.col,
+      this.opts?.overrideAlias,
       alias,
     )} @@ ${this.getFunction()}('${language}', ?)`;
   }
@@ -557,10 +614,20 @@ class tsQueryClause<T extends Data, K = keyof T> implements Clause<T, K> {
 
   instanceKey(): string {
     const { language, value } = this.getInfo();
-    if (this.tsVectorCol) {
+    if (this.opts?.tsVectorCol) {
+      if (this.opts.overrideAlias) {
+        return `to_tsvector(${this.opts.overrideAlias}.${
+          this.col
+        })@@${this.getFunction()}:${language}:${value}`;
+      }
       return `to_tsvector(${
         this.col
       })@@${this.getFunction()}:${language}:${value}`;
+    }
+    if (this.opts?.overrideAlias) {
+      return `${this.opts.overrideAlias}.${
+        this.col
+      }@@${this.getFunction()}:${language}:${value}`;
     }
     return `${this.col}@@${this.getFunction()}:${language}:${value}`;
   }
@@ -604,8 +671,9 @@ class websearchTosQueryClause<
 export function PostgresArrayContainsValue<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new postgresArrayOperator(col, value, "@>");
+  return new postgresArrayOperator(col, value, "@>", { overrideAlias });
 }
 
 /**
@@ -616,8 +684,9 @@ export function PostgresArrayContainsValue<T extends Data, K = keyof T>(
 export function PostgresArrayContains<T extends Data, K = keyof T>(
   col: K,
   value: any[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new postgresArrayOperatorList(col, value, "@>");
+  return new postgresArrayOperatorList(col, value, "@>", { overrideAlias });
 }
 
 /**
@@ -628,8 +697,12 @@ export function PostgresArrayContains<T extends Data, K = keyof T>(
 export function PostgresArrayNotContainsValue<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new postgresArrayOperator(col, value, "@>", true);
+  return new postgresArrayOperator(col, value, "@>", {
+    not: true,
+    overrideAlias,
+  });
 }
 
 /**
@@ -640,8 +713,12 @@ export function PostgresArrayNotContainsValue<T extends Data, K = keyof T>(
 export function PostgresArrayNotContains<T extends Data, K = keyof T>(
   col: K,
   value: any[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new postgresArrayOperatorList(col, value, "@>", true);
+  return new postgresArrayOperatorList(col, value, "@>", {
+    not: true,
+    overrideAlias,
+  });
 }
 
 /**
@@ -652,8 +729,11 @@ export function PostgresArrayNotContains<T extends Data, K = keyof T>(
 export function PostgresArrayOverlaps<T extends Data, K = keyof T>(
   col: K,
   value: any[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new postgresArrayOperatorList(col, value, "&&");
+  return new postgresArrayOperatorList(col, value, "&&", {
+    overrideAlias,
+  });
 }
 
 /**
@@ -664,8 +744,12 @@ export function PostgresArrayOverlaps<T extends Data, K = keyof T>(
 export function PostgresArrayNotOverlaps<T extends Data, K = keyof T>(
   col: K,
   value: any[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new postgresArrayOperatorList(col, value, "&&", true);
+  return new postgresArrayOperatorList(col, value, "&&", {
+    not: true,
+    overrideAlias,
+  });
 }
 
 /**
@@ -691,85 +775,115 @@ export function ArrayNotEq<T extends Data, K = keyof T>(
 export function Eq<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, value, "=", new isNullClause(col));
+  return new simpleClause<T, K>(col, value, "=", {
+    handleNull: new isNullClause(col),
+    overrideAlias,
+  });
 }
 
 export function StartsWith<T extends Data, K = keyof T>(
   col: K,
   value: string,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, `${value}%`, "LIKE");
+  return new simpleClause<T, K>(col, `${value}%`, "LIKE", {
+    overrideAlias,
+  });
 }
 
 export function EndsWith<T extends Data, K = keyof T>(
   col: K,
   value: string,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, `%${value}`, "LIKE");
+  return new simpleClause<T, K>(col, `%${value}`, "LIKE", {
+    overrideAlias,
+  });
 }
 
 export function Contains<T extends Data, K = keyof T>(
   col: K,
   value: string,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, `%${value}%`, "LIKE");
+  return new simpleClause<T, K>(col, `%${value}%`, "LIKE", {
+    overrideAlias,
+  });
 }
 
 export function StartsWithIgnoreCase<T extends Data, K = keyof T>(
   col: K,
   value: string,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, `${value}%`, "ILIKE");
+  return new simpleClause<T, K>(col, `${value}%`, "ILIKE", {
+    overrideAlias,
+  });
 }
 
 export function EndsWithIgnoreCase<T extends Data, K = keyof T>(
   col: K,
   value: string,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, `%${value}`, "ILIKE");
+  return new simpleClause<T, K>(col, `%${value}`, "ILIKE", { overrideAlias });
 }
 
 export function ContainsIgnoreCase<T extends Data, K = keyof T>(
   col: K,
   value: string,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, `%${value}%`, "ILIKE");
+  return new simpleClause<T, K>(col, `%${value}%`, "ILIKE", {
+    overrideAlias,
+  });
 }
 
 export function NotEq<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, value, "!=", new isNotNullClause(col));
+  return new simpleClause<T, K>(col, value, "!=", {
+    handleNull: new isNotNullClause(col),
+    overrideAlias,
+  });
 }
 
 export function Greater<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, value, ">");
+  return new simpleClause<T, K>(col, value, ">", {
+    overrideAlias,
+  });
 }
 
 export function Less<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, value, "<");
+  return new simpleClause<T, K>(col, value, "<", { overrideAlias });
 }
 
 export function GreaterEq<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, value, ">=");
+  return new simpleClause<T, K>(col, value, ">=", { overrideAlias });
 }
 
 export function LessEq<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause<T, K>(col, value, "<=");
+  return new simpleClause<T, K>(col, value, "<=", { overrideAlias });
 }
 
 export function And<T extends Data, K = keyof T>(
@@ -837,22 +951,25 @@ export function In<T extends Data, K = keyof T>(...args: any[]): Clause<T, K> {
 export function UuidIn<T extends Data, K = keyof T>(
   col: K,
   values: ID[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new inClause(col, values, "uuid");
+  return new inClause(col, values, "uuid", overrideAlias);
 }
 
 export function IntegerIn<T extends Data, K = keyof T>(
   col: K,
   values: number[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new inClause(col, values, "integer");
+  return new inClause(col, values, "integer", overrideAlias);
 }
 
 export function TextIn<T extends Data, K = keyof T>(
   col: K,
   values: any[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new inClause(col, values, "text");
+  return new inClause(col, values, "text", overrideAlias);
 }
 
 /*
@@ -863,29 +980,33 @@ export function DBTypeIn<T extends Data, K = keyof T>(
   col: K,
   values: any[],
   typ: string,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new inClause(col, values, typ);
+  return new inClause(col, values, typ, overrideAlias);
 }
 
 export function UuidNotIn<T extends Data, K = keyof T>(
   col: K,
   values: ID[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new notInClause(col, values, "uuid");
+  return new notInClause(col, values, "uuid", overrideAlias);
 }
 
 export function IntegerNotIn<T extends Data, K = keyof T>(
   col: K,
   values: number[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new notInClause(col, values, "integer");
+  return new notInClause(col, values, "integer", overrideAlias);
 }
 
 export function TextNotIn<T extends Data, K = keyof T>(
   col: K,
   values: any[],
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new notInClause(col, values, "text");
+  return new notInClause(col, values, "text", overrideAlias);
 }
 
 /*
@@ -896,8 +1017,9 @@ export function DBTypeNotIn<T extends Data, K = keyof T>(
   col: K,
   values: any[],
   typ: string,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new notInClause(col, values, typ);
+  return new notInClause(col, values, typ, overrideAlias);
 }
 
 interface TsQuery {
@@ -915,29 +1037,33 @@ interface TsQuery {
 export function TsQuery<T extends Data, K = keyof T>(
   col: K,
   val: string | TsQuery,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new tsQueryClause(col, val);
+  return new tsQueryClause(col, val, { overrideAlias });
 }
 
 export function PlainToTsQuery<T extends Data, K = keyof T>(
   col: K,
   val: string | TsQuery,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new plainToTsQueryClause(col, val);
+  return new plainToTsQueryClause(col, val, { overrideAlias });
 }
 
 export function PhraseToTsQuery<T extends Data, K = keyof T>(
   col: K,
   val: string | TsQuery,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new phraseToTsQueryClause(col, val);
+  return new phraseToTsQueryClause(col, val, { overrideAlias });
 }
 
 export function WebsearchToTsQuery<T extends Data, K = keyof T>(
   col: K,
   val: string | TsQuery,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new websearchTosQueryClause(col, val);
+  return new websearchTosQueryClause(col, val, { overrideAlias });
 }
 
 // TsVectorColTsQuery is used when the column is not a tsvector field e.g.
@@ -945,8 +1071,9 @@ export function WebsearchToTsQuery<T extends Data, K = keyof T>(
 export function TsVectorColTsQuery<T extends Data, K = keyof T>(
   col: K,
   val: string | TsQuery,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new tsQueryClause(col, val, true);
+  return new tsQueryClause(col, val, { tsVectorCol: true, overrideAlias });
 }
 
 // TsVectorPlainToTsQuery is used when the column is not a tsvector field e.g.
@@ -956,8 +1083,12 @@ export function TsVectorColTsQuery<T extends Data, K = keyof T>(
 export function TsVectorPlainToTsQuery<T extends Data, K = keyof T>(
   col: K,
   val: string | TsQuery,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new plainToTsQueryClause(col, val, true);
+  return new plainToTsQueryClause(col, val, {
+    tsVectorCol: true,
+    overrideAlias,
+  });
 }
 
 // TsVectorPhraseToTsQuery is used when the column is not a tsvector field e.g.
@@ -965,8 +1096,12 @@ export function TsVectorPlainToTsQuery<T extends Data, K = keyof T>(
 export function TsVectorPhraseToTsQuery<T extends Data, K = keyof T>(
   col: K,
   val: string | TsQuery,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new phraseToTsQueryClause(col, val, true);
+  return new phraseToTsQueryClause(col, val, {
+    tsVectorCol: true,
+    overrideAlias,
+  });
 }
 
 // TsVectorWebsearchToTsQuery is used when the column is not a tsvector field e.g.
@@ -974,8 +1109,12 @@ export function TsVectorPhraseToTsQuery<T extends Data, K = keyof T>(
 export function TsVectorWebsearchToTsQuery<T extends Data, K = keyof T>(
   col: K,
   val: string | TsQuery,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new websearchTosQueryClause(col, val, true);
+  return new websearchTosQueryClause(col, val, {
+    tsVectorCol: true,
+    overrideAlias,
+  });
 }
 
 // TODO would be nice to support this with building blocks but not supporting for now
@@ -1007,17 +1146,19 @@ export function sensitiveValue(val: any): SensitiveValue {
 export function JSONObjectFieldKeyASJSON<T extends Data, K = keyof T>(
   col: K,
   field: string,
+  overrideAlias?: string,
 ): keyof T {
   // type as keyof T to make it easier to use in other queries
-  return `${col}->'${field}'`;
+  return `${renderCol(col, overrideAlias)}->'${field}'`;
 }
 
 export function JSONObjectFieldKeyAsText<T extends Data, K = keyof T>(
   col: K,
   field: string,
+  overrideAlias?: string,
 ): keyof T {
   // type as keyof T to make it easier to use in other queries
-  return `${col}->>'${field}'`;
+  return `${renderCol(col, overrideAlias)}->>'${field}'`;
 }
 
 // can't get this to work...
@@ -1036,13 +1177,14 @@ class jSONPathValuePredicateClause<T extends Data, K = keyof T>
     protected path: string,
     protected value: any,
     private pred: predicate,
+    private overrideAlias?: string,
   ) {}
 
   clause(idx: number, alias?: string): string {
     if (DB.getDialect() !== Dialect.Postgres) {
       throw new Error(`not supported`);
     }
-    return `${renderCol(this.col, alias)} @@ $${idx}`;
+    return `${renderCol(this.col, this.overrideAlias, alias)} @@ $${idx}`;
   }
 
   columns(): K[] {
@@ -1069,6 +1211,11 @@ class jSONPathValuePredicateClause<T extends Data, K = keyof T>
   }
 
   instanceKey(): string {
+    if (this.overrideAlias) {
+      return `${this.overrideAlias}.${this.col}${this.path}${rawValue(
+        this.value,
+      )}${this.pred}`;
+    }
     return `${this.col}${this.path}${rawValue(this.value)}${this.pred}`;
   }
 }
@@ -1079,25 +1226,41 @@ export function JSONPathValuePredicate<T extends Data, K = keyof T>(
   path: string,
   val: any,
   pred: predicate,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new jSONPathValuePredicateClause(dbCol, path, val, pred);
+  return new jSONPathValuePredicateClause(
+    dbCol,
+    path,
+    val,
+    pred,
+    overrideAlias,
+  );
 }
 
 export function JSONKeyExists<T extends Data, K = keyof T>(
   dbCol: K,
   val: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause(dbCol, val, "?", new isNullClause(dbCol));
+  return new simpleClause(dbCol, val, "?", {
+    // TODO ola: does isNullClause make sense here???
+    handleNull: new isNullClause(dbCol),
+    overrideAlias,
+  });
 }
 
 export function JSONBKeyInList<T extends Data, K = keyof T>(
   dbCol: K,
   jsonCol: string,
   val: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
   const opts: QueryableDataOptions = {
     fields: ["1"],
-    tableName: `jsonb_array_elements(${dbCol}) AS json_element`,
+    tableName: `jsonb_array_elements(${renderCol(
+      dbCol,
+      overrideAlias,
+    )}) AS json_element`,
     // @ts-ignore
     clause: And(
       JSONKeyExists("json_element", jsonCol),
@@ -1112,10 +1275,14 @@ export function JSONKeyInList<T extends Data, K = keyof T>(
   dbCol: K,
   jsonCol: string,
   val: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
   const opts: QueryableDataOptions = {
     fields: ["1"],
-    tableName: `json_array_elements(${dbCol}) AS json_element`,
+    tableName: `json_array_elements(${renderCol(
+      dbCol,
+      overrideAlias,
+    )}) AS json_element`,
     // @ts-ignore
     clause: And(
       JSONKeyExists("json_element", jsonCol),
@@ -1137,29 +1304,36 @@ class paginationMultipleColumnsSubQueryClause<T extends Data, K = keyof T>
     private tableName: string,
     private uniqueCol: K,
     private val: any,
+    private overrideAlias?: string,
   ) {}
 
   private buildSimpleQuery(clause: Clause<T, K>, idx: number, alias?: string) {
-    return `SELECT ${renderCol(this.col, alias)} FROM ${
+    return `SELECT ${renderCol(this.col, this.overrideAlias, alias)} FROM ${
       this.tableName
     } WHERE ${clause.clause(idx, alias)}`;
   }
 
   clause(idx: number, alias?: string): string {
-    const eq1 = this.buildSimpleQuery(Eq(this.uniqueCol, this.val), idx, alias);
+    const eq1 = this.buildSimpleQuery(
+      Eq(this.uniqueCol, this.val, this.overrideAlias),
+      idx,
+      alias,
+    );
     const eq2 = this.buildSimpleQuery(
-      Eq(this.uniqueCol, this.val),
+      Eq(this.uniqueCol, this.val, this.overrideAlias),
       idx + 1,
       alias,
     );
-    const op = new simpleClause(this.uniqueCol, this.val, this.op).clause(
-      idx + 2,
-      alias,
-    );
+    const op = new simpleClause(this.uniqueCol, this.val, this.op, {
+      overrideAlias: this.overrideAlias,
+    }).clause(idx + 2, alias);
 
     // nest in () to make sure it's scoped correctly
-    return `(${renderCol(this.col, alias)} ${this.op} (${eq1}) OR (${renderCol(
+    return `(${renderCol(this.col, this.overrideAlias, alias)} ${
+      this.op
+    } (${eq1}) OR (${renderCol(
       this.col,
+      this.overrideAlias,
       alias,
     )} = (${eq2}) AND ${op}))`;
   }
@@ -1178,6 +1352,9 @@ class paginationMultipleColumnsSubQueryClause<T extends Data, K = keyof T>
   }
 
   instanceKey(): string {
+    if (this.overrideAlias) {
+      return `${this.overrideAlias}.${this.col}-${this.op}-${this.tableName}-${this.overrideAlias}.${this.uniqueCol}-${this.val}`;
+    }
     return `${this.col}-${this.op}-${this.tableName}-${this.uniqueCol}-${this.val}`;
   }
 }
@@ -1188,6 +1365,7 @@ export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
   tableName: string,
   uniqueCol: K,
   val: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
   return new paginationMultipleColumnsSubQueryClause(
     col,
@@ -1195,6 +1373,7 @@ export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
     tableName,
     uniqueCol,
     val,
+    overrideAlias,
   );
 }
 
@@ -1202,36 +1381,56 @@ export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
 export function Add<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause(col, value, "+", new isNullClause(col));
+  return new simpleClause(col, value, "+", {
+    handleNull: new isNullClause(col),
+    overrideAlias,
+  });
 }
 
 export function Subtract<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause(col, value, "-", new isNullClause(col));
+  return new simpleClause(col, value, "-", {
+    handleNull: new isNullClause(col),
+    overrideAlias,
+  });
 }
 
 export function Multiply<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause(col, value, "*", new isNullClause(col));
+  return new simpleClause(col, value, "*", {
+    handleNull: new isNullClause(col),
+    overrideAlias,
+  });
 }
 
 export function Divide<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause(col, value, "/", new isNullClause(col));
+  return new simpleClause(col, value, "/", {
+    handleNull: new isNullClause(col),
+    overrideAlias,
+  });
 }
 
 export function Modulo<T extends Data, K = keyof T>(
   col: K,
   value: any,
+  overrideAlias?: string,
 ): Clause<T, K> {
-  return new simpleClause(col, value, "%", new isNullClause(col));
+  return new simpleClause(col, value, "%", {
+    handleNull: new isNullClause(col),
+    overrideAlias,
+  });
 }
 
 export function getCombinedClause<V extends Data = Data, K = keyof V>(
