@@ -1,8 +1,14 @@
 import { IDViewer } from "../../core/viewer";
 import { Viewer, Data, Ent } from "../../core/base";
-import { getCursor } from "../../core/ent";
+import { cursorOptions, getCursor } from "../../core/ent";
 import { GraphQLEdgeConnection } from "./edge_connection";
-import { FakeUser, FakeContact } from "../../testutils/fake_data/index";
+import {
+  FakeUser,
+  FakeContact,
+  UserToContactsFkeyQuery,
+  UserToContactsFkeyQueryDeprecated,
+  UserToContactsFkeyQueryAsc,
+} from "../../testutils/fake_data/index";
 import {
   inputs,
   createAllContacts,
@@ -77,11 +83,36 @@ interface options<TEnt extends Ent, TEdge extends Data> {
 export const commonTests = <TEdge extends Data>(
   opts: options<FakeContact, TEdge>,
 ) => {
-  function getCursorFrom(contacts: FakeContact[], idx: number) {
-    return getCursor({
-      row: contacts[idx],
-      col: "id",
-    });
+  function isCustomQuery(q: EdgeQuery<Ent, Ent, any>): boolean {
+    // TODO sad not generic enough
+    return (
+      q instanceof UserToContactsFkeyQuery ||
+      q instanceof UserToContactsFkeyQueryDeprecated ||
+      q instanceof UserToContactsFkeyQueryAsc
+    );
+  }
+
+  function getCursorFrom(
+    q: EdgeQuery<Ent, Ent, any>,
+    contacts: FakeContact[],
+    idx: number,
+  ) {
+    let opts: cursorOptions;
+    if (isCustomQuery(q)) {
+      opts = {
+        row: contacts[idx],
+        keys: ["id"],
+      };
+    } else {
+      // for assoc queries, we're getting the value from 'id' field but the edge
+      // is from assoc_edge table id2 field and so cursor takes it from there
+      opts = {
+        row: contacts[idx],
+        keys: ["id2"],
+        cursorKeys: ["id"],
+      };
+    }
+    return getCursor(opts);
   }
 
   describe("no filters", () => {
@@ -163,7 +194,7 @@ export const commonTests = <TEdge extends Data>(
         user: FakeUser,
         contacts: FakeContact[],
       ) => {
-        const cursor = getCursorFrom(contacts, idx);
+        const cursor = getCursorFrom(conn.query, contacts, idx);
         conn.first(2, cursor);
       },
     );
@@ -207,7 +238,7 @@ export const commonTests = <TEdge extends Data>(
         contacts: FakeContact[],
       ) => {
         // get the 2 before it
-        const cursor = getCursorFrom(contacts, 4);
+        const cursor = getCursorFrom(conn.query, contacts, 4);
 
         conn.last(2, cursor);
       },

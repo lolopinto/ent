@@ -4,6 +4,11 @@ export interface OrderByOption {
   column: string;
   direction: "ASC" | "DESC";
   nullsPlacement?: "first" | "last";
+  // is this column a date/time column?
+  // needed to know if we create a cursor based on this column to conver to timestamp and ISO string for
+  // comparison
+  // maybe eventually want a more generic version of this but for now this suffices
+  dateColumn?: boolean;
 }
 
 export type OrderBy = OrderByOption[];
@@ -61,16 +66,21 @@ export function getJoinInfo(
 
 export function buildQuery(options: QueryableDataOptions): string {
   const fieldsAlias = options.fieldsAlias ?? options.alias;
-  const fields = fieldsAlias
-    ? options.fields.map((f) => `${fieldsAlias}.${f}`).join(", ")
-    : options.fields.join(", ");
+  const fields =
+    fieldsAlias && !options.disableFieldsAlias
+      ? options.fields.map((f) => `${fieldsAlias}.${f}`).join(", ")
+      : options.fields.join(", ");
 
   // always start at 1
   const parts: string[] = [];
   const tableName = options.alias
     ? `${options.tableName} AS ${options.alias}`
     : options.tableName;
-  parts.push(`SELECT ${fields} FROM ${tableName}`);
+  if (options.distinct) {
+    parts.push(`SELECT DISTINCT ${fields} FROM ${tableName}`);
+  } else {
+    parts.push(`SELECT ${fields} FROM ${tableName}`);
+  }
 
   let whereStart = 1;
   if (options.join) {
@@ -84,7 +94,7 @@ export function buildQuery(options: QueryableDataOptions): string {
     parts.push(`GROUP BY ${options.groupby}`);
   }
   if (options.orderby) {
-    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby, options.alias)}`);
+    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby, fieldsAlias)}`);
   }
   if (options.limit) {
     parts.push(`LIMIT ${options.limit}`);

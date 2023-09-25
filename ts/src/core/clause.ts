@@ -1377,6 +1377,26 @@ export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
   );
 }
 
+export function PaginationMultipleColsQuery<T extends Data, K = keyof T>(
+  sortCol: K,
+  cursorCol: K,
+  less: boolean, // if true, <, if false, >
+  sortValue: any,
+  cursorValue: any,
+  overrideAlias?: string,
+): Clause<T, K> {
+  const clauseFn = less ? Less : Greater;
+  return And(
+    Or(
+      clauseFn(sortCol, sortValue, overrideAlias),
+      And(
+        Eq(sortCol, sortValue, overrideAlias),
+        clauseFn(cursorCol, cursorValue, overrideAlias),
+      ),
+    ),
+  );
+}
+
 // These 5 are used on the RHS of an expression
 export function Add<T extends Data, K = keyof T>(
   col: K,

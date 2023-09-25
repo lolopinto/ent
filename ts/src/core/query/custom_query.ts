@@ -193,6 +193,7 @@ export abstract class CustomEdgeQueryBase<
     super(viewer, {
       cursorCol: uniqueCol,
       orderby,
+      fieldOptions: opts.loaderFactory.options,
     });
     if (typeof options.src === "object") {
       this.id = options.src.id;

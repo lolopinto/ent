@@ -1237,35 +1237,42 @@ export class AssocEdge {
   getCursor(): string {
     return getCursor({
       row: this,
-      col: "id2",
+      keys: ["id2"],
     });
   }
 }
 
-interface cursorOptions {
+export interface cursorOptions {
   row: Data;
-  col: string;
-  cursorKey?: string; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
-  conv?: (any: any) => any;
+  keys: string[];
+  cursorKeys?: string[]; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
 }
 
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
-  const { row, col, conv } = opts;
+  const { row, keys, cursorKeys } = opts;
   //  row: Data, col: string, conv?: (any) => any) {
   if (!row) {
     throw new Error(`no row passed to getCursor`);
   }
-  let datum = row[col];
-  if (!datum) {
-    return "";
+  if (cursorKeys?.length && cursorKeys.length !== keys.length) {
+    throw new Error("length of cursorKeys should match keys");
   }
-  if (conv) {
-    datum = conv(datum);
-  }
+  const convert = (d: any) => {
+    if (d instanceof Date) {
+      return d.getTime();
+    }
+    return d;
+  };
 
-  const cursorKey = opts.cursorKey || col;
-  const str = `${cursorKey}:${datum}`;
+  const parts: string[] = [];
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const cursorKey = cursorKeys?.[i] || key;
+    parts.push(key);
+    parts.push(convert(row[cursorKey]));
+  }
+  const str = parts.join(":");
   return Buffer.from(str, "ascii").toString("base64");
 }
 
