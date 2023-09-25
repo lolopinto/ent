@@ -122,7 +122,6 @@ function assertValidCursor(cursor: string, opts: validCursorOptions): any {
   const { keys } = opts;
   // invalid or unknown cursor. nothing to do here.
   // we should have the same number of parts as keys * 2
-  // ISO string has...
   if (parts.length !== keys.length * 2) {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
@@ -131,7 +130,9 @@ function assertValidCursor(cursor: string, opts: validCursorOptions): any {
     const key = keys[i];
     const keyPart = parts[i * 2];
     if (key !== keyPart) {
-      throw new Error(`invalid cursor ${cursor} passed`);
+      throw new Error(
+        `invalid cursor ${cursor} passed. expected ${key}. got ${keyPart} as key of field`,
+      );
     }
     const val = parts[i * 2 + 1];
     // uuid, don't parse int since it tries to validate just first part
@@ -151,7 +152,7 @@ interface FilterOptions<T extends Data> {
   sortCol: string;
   cursorCol: string;
   orderby: OrderBy;
-  // if sortCol is Unique and time, we need to pass different values for comparisons and checks...
+  // if sortCol is unique and time, we need to pass different values for comparisons and checks...
   sortColIsDate?: boolean;
   cursorColIsDate?: boolean;
 
@@ -255,6 +256,20 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     return edges;
   }
 
+  private getOffsetForQuery() {
+    // cursorCol maps to offset which we get from the cursor in assertValidCursor
+    return this.options.cursorColIsDate
+      ? new Date(this.offset).toISOString()
+      : this.offset;
+  }
+
+  private getSortValueForQuery() {
+    // sortCol maps to the value we're comparing against
+    return this.options.sortColIsDate
+      ? new Date(this.cursorValues[1]).toISOString()
+      : this.cursorValues[1];
+  }
+
   async query(
     options: EdgeQueryableDataOptions,
   ): Promise<EdgeQueryableDataOptions> {
@@ -294,12 +309,8 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
               this.sortCol,
               this.options.cursorCol,
               less,
-              this.options.sortColIsDate
-                ? new Date(this.cursorValues[1]).toISOString()
-                : this.cursorValues[1],
-              this.options.cursorColIsDate
-                ? new Date(this.offset).toISOString()
-                : this.offset,
+              this.getSortValueForQuery(),
+              this.getOffsetForQuery(),
               this.options.fieldOptions?.fieldsAlias ??
                 this.options.fieldOptions?.alias,
             ),
@@ -307,7 +318,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         } else {
           // inner col time
 
-          // TODO audit values for cursorColIsDate and sortColIsDate...
           options.clause = clause.AndOptional(
             options.clause,
             clause.PaginationMultipleColsSubQuery(
@@ -315,9 +325,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
               less ? "<" : ">",
               tableName,
               this.options.cursorCol,
-              this.options.cursorColIsDate
-                ? new Date(this.offset).toISOString()
-                : this.offset,
+              this.getOffsetForQuery(),
             ),
           );
         }
@@ -325,9 +333,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     } else {
       if (this.offset) {
         const clauseFn = less ? clause.Less : clause.Greater;
-        const val = this.options.sortColIsDate
-          ? new Date(this.offset).toISOString()
-          : this.offset;
+        const val = this.getOffsetForQuery();
         options.clause = clause.AndOptional(
           options.clause,
           clauseFn(this.sortCol, val),
@@ -394,6 +400,21 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     return ret;
   }
 
+  // copied from FirstFilter
+  private getOffsetForQuery() {
+    // cursorCol maps to offset which we get from the cursor in assertValidCursor
+    return this.options.cursorColIsDate
+      ? new Date(this.offset).toISOString()
+      : this.offset;
+  }
+
+  private getSortValueForQuery() {
+    // sortCol maps to the value we're comparing against
+    return this.options.sortColIsDate
+      ? new Date(this.cursorValues[1]).toISOString()
+      : this.cursorValues[1];
+  }
+
   async query(
     options: EdgeQueryableDataOptions,
   ): Promise<EdgeQueryableDataOptions> {
@@ -422,19 +443,13 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
               this.options.cursorCol,
               // flipped here since we're going in the opposite direction
               !greater,
-              this.options.sortColIsDate
-                ? new Date(this.cursorValues[1]).toISOString()
-                : this.cursorValues[1],
-              this.options.cursorColIsDate
-                ? new Date(this.offset).toISOString()
-                : this.offset,
+              this.getSortValueForQuery(),
+              this.getOffsetForQuery(),
               this.options.fieldOptions?.fieldsAlias ??
                 this.options.fieldOptions?.alias,
             ),
           );
         } else {
-          // TODO audit values for cursorColIsDate and sortColIsDate...
-
           // inner col time
           options.clause = clause.AndOptional(
             options.clause,
@@ -443,9 +458,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
               greater ? ">" : "<",
               tableName,
               this.options.cursorCol,
-              this.options.cursorColIsDate
-                ? new Date(this.offset).toISOString()
-                : this.offset,
+              this.getOffsetForQuery(),
             ),
           );
         }
@@ -458,9 +471,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     } else {
       if (this.offset) {
         const clauseFn = greater ? clause.Greater : clause.Less;
-        const val = this.options.sortColIsDate
-          ? new Date(this.offset).toISOString()
-          : this.offset;
+        const val = this.getOffsetForQuery();
         options.clause = clause.AndOptional(
           options.clause,
           clauseFn(this.sortCol, val),
@@ -500,8 +511,13 @@ export abstract class BaseEdgeQuery<
   protected genIDInfosToFetch: () => Promise<IDInfo[]>;
   private idMap: Map<ID, TSource> = new Map();
   private idsToFetch: ID[] = [];
+
+  // this is the column we're sorting by e.g. created_at, name, id etc
   protected sortCol: string;
+  // if the column we're sorting by is not unique e.g. created_at, we add a secondary sort column which is used in the cursor
+  // to break ties and ensure that we can paginate correctly
   protected cursorCol: string;
+  // both of these are used to determine if we need to convert the value to a date before comparing i.e. new Date(timestamp)->toISOString()
   protected cursorColIsDate: boolean;
   protected sortColIsDate: boolean;
   private edgeQueryOptions: EdgeQueryOptions;

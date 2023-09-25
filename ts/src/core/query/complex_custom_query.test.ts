@@ -128,7 +128,7 @@ const getGlobalQuery = (viewer?: Viewer, opts?: Partial<OrderByOption>) => {
   });
 };
 
-// get creators of users in next week
+// get creators of events (users) in next week
 const getCreatorsOfGlobalEventsInNextWeek = (opts?: Partial<OrderByOption>) => {
   const loaderOptions = FakeUser.loaderOptions();
   const tableName = loaderOptions.tableName;
@@ -883,7 +883,7 @@ describe("global query. id. cursor and sort_column the same", () => {
 
 describe("global query - with joins", () => {
   // this only has 4 ids returned so not the best example which is
-  // why we have what's below
+  // why we have what's below (joins - products)
   test("rawCount", async () => {
     const q = getCreatorsOfGlobalEventsInNextWeek();
 
@@ -1609,7 +1609,7 @@ function getPaginationVerifyClauseWithJoin<T extends Ent>(
 
 // this paginates forwards and backwards and verifies that it returns
 // values in the list
-// TODO: get this logic somewhere else and use it in all these places that dos pagination tests?
+// TODO: get this logic somewhere else and use it in all these places that does pagination tests?
 async function paginateAndVerifyClauseWithJoin<T extends Ent>(
   toQuery: () => CustomClauseQuery<T>,
   edges: Data[],
