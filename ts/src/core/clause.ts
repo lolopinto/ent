@@ -334,9 +334,7 @@ class postgresArrayOperator<T extends Data, K = keyof T>
         this.value,
       )}`;
     }
-    return `${this.col}${this.opts?.overrideAlias ?? ""}${this.op}${rawValue(
-      this.value,
-    )}`;
+    return `${this.col}${this.op}${rawValue(this.value)}`;
   }
 }
 

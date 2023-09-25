@@ -481,7 +481,7 @@ export interface EdgeQueryOptions {
   cursorCol: string;
   cursorColIsDate?: boolean;
   orderby: OrderBy;
-  join?: NonNullable<QueryableDataOptions["join"]>;
+  joinBETA?: NonNullable<QueryableDataOptions["join"]>;
   // field options used to query field values
   fieldOptions?: SelectBaseDataOptions;
 }

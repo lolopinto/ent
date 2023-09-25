@@ -105,7 +105,7 @@ export class CustomClauseQuery<
     super(viewer, {
       orderby,
       cursorCol,
-      join: options.joinBETA,
+      joinBETA: options.joinBETA,
       fieldOptions: options.loadEntOptions,
     });
     this.clause = getClause(options);
@@ -121,7 +121,7 @@ export class CustomClauseQuery<
 
   protected includeSortColInCursor(options: EdgeQueryOptions) {
     // TODO maybe we should just always do this?
-    return options.join !== undefined && this.sortCol !== this.cursorCol;
+    return options.joinBETA !== undefined && this.sortCol !== this.cursorCol;
   }
 
   async queryRawCount(): Promise<number> {
