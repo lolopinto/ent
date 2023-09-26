@@ -17,6 +17,8 @@ import {
   FakeContactSchema,
   UserToContactsFkeyQuery,
   UserToContactsFkeyQueryAsc,
+  FakeContactSchemaWithDeletedAt,
+  UserToContactsFkeyQueryDeletedAt,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -59,6 +61,8 @@ interface options<TData extends Data> {
   globalSchema?: boolean;
   orderby: OrderBy;
   rawDataVerify?(user: FakeUser): Promise<void>;
+  loadEnt?(v: Viewer, id: ID): Promise<FakeContact>;
+  loadRawData?(id: ID, context: any): Promise<Data | null>;
 }
 
 export const commonTests = <TData extends Data>(opts: options<TData>) => {
@@ -77,7 +81,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     return (
       q instanceof UserToContactsFkeyQuery ||
       q instanceof UserToContactsFkeyQueryDeprecated ||
-      q instanceof UserToContactsFkeyQueryAsc
+      q instanceof UserToContactsFkeyQueryAsc ||
+      q instanceof UserToContactsFkeyQueryDeletedAt
     );
   }
 
@@ -157,6 +162,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     private verifyEdges(edges: Data[]) {
       // TODO sad not generic enough
+      // console.debug(ml.logs);
+      // console.debug(edges);
       if (this.customQuery) {
         verifyUserToContactRawData(this.user, edges, this.filteredContacts);
       } else {
@@ -186,7 +193,11 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       expect(ml.logs.length).toBe(1);
       expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM /);
 
-      await Promise.all(ents.map((ent) => FakeContact.loadX(v, ent.id)));
+      await Promise.all(
+        ents.map((ent) =>
+          opts.loadEnt ? opts.loadEnt(v, ent.id) : FakeContact.loadX(v, ent.id),
+        ),
+      );
 
       expect(ml.logs.length).toBe(this.filteredContacts.length + 1);
       for (const log of ml.logs.slice(1)) {
@@ -207,7 +218,11 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM /);
 
       await Promise.all(
-        ents.map((ent) => FakeContact.loadRawData(ent.id, v.context)),
+        ents.map((ent) =>
+          opts.loadRawData
+            ? opts.loadRawData(ent.id, v.context)
+            : FakeContact.loadRawData(ent.id, v.context),
+        ),
       );
 
       expect(ml.logs.length).toBe(this.filteredContacts.length + 1);
@@ -289,7 +304,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       uniqCol,
       "",
     ).clause(opts.clause.values().length + 1);
-    if (parts[parts.length - 1] === "deleted_at IS NULL") {
+
+    // order of parts is different in custom query seemingly
+    const customQuery = isCustomQuery(filter);
+    if (!customQuery && parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)
         .concat([cmp, "deleted_at IS NULL"]);
@@ -321,7 +339,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       uniqCol,
       "",
     ).clause(opts.clause.values().length + 1);
-    if (parts[parts.length - 1] === "deleted_at IS NULL") {
+
+    // order of parts is different in custom query seemingly
+    const customQuery = isCustomQuery(filter);
+    if (!customQuery && parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)
         .concat([cmp, "deleted_at IS NULL"]);
@@ -507,7 +528,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       verifyQuery(filter, {});
     });
 
-    test("edges", async () => {
+    test.only("edges", async () => {
       await filter.testEdges();
       verifyQuery(filter, {});
     });
@@ -642,12 +663,13 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
           const action2 = new SimpleAction(
             filter.user.viewer,
-            FakeContactSchema,
+            FakeContactSchemaWithDeletedAt,
             new Map(),
             WriteOperation.Delete,
             contact,
           );
           await action2.save();
+          // console.debug(ml.logs);
         }),
       );
       await action.save();

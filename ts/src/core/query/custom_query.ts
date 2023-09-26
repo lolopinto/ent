@@ -62,7 +62,7 @@ function getClause<
   TViewer extends Viewer = Viewer,
 >(opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>) {
   let cls = opts.clause;
-  if (opts.disableTransformations || !cls) {
+  if (opts.disableTransformations) {
     return cls;
   }
   return getCombinedClause(

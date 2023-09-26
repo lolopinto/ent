@@ -8,6 +8,7 @@ import {
   UserToContactsFkeyQuery,
   UserToContactsFkeyQueryDeprecated,
   UserToContactsFkeyQueryAsc,
+  UserToContactsFkeyQueryDeletedAt,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -88,7 +89,8 @@ export const commonTests = <TEdge extends Data>(
     return (
       q instanceof UserToContactsFkeyQuery ||
       q instanceof UserToContactsFkeyQueryDeprecated ||
-      q instanceof UserToContactsFkeyQueryAsc
+      q instanceof UserToContactsFkeyQueryAsc ||
+      q instanceof UserToContactsFkeyQueryDeletedAt
     );
   }
 

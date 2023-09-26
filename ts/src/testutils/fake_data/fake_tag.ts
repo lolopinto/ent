@@ -7,6 +7,7 @@ import {
   PrivacyPolicy,
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
+import * as clause from "../../core/clause";
 import {
   AlwaysDenyRule,
   AllowIfViewerIsEntPropertyRule,
@@ -28,6 +29,7 @@ export class FakeTag implements Ent {
   readonly displayName: string;
   readonly canonicalName: string;
   readonly ownerID: string;
+  readonly deletedAt: Date | null;
 
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
@@ -35,7 +37,10 @@ export class FakeTag implements Ent {
     };
   }
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.data = data;
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
@@ -43,6 +48,7 @@ export class FakeTag implements Ent {
     this.displayName = data.display_name;
     this.canonicalName = data.canonical_name;
     this.ownerID = data.owner_id;
+    this.deletedAt = data.deleted_at ? convertDate(data.deleted_at) : null;
   }
 
   __setRawDBData(data: Data) {}
@@ -58,6 +64,10 @@ export class FakeTag implements Ent {
     ];
   }
 
+  static getFieldsWithDeletedAt(): string[] {
+    return [...FakeTag.getFields(), "deleted_at"];
+  }
+
   static getTestTable() {
     return table(
       "fake_tags",
@@ -71,6 +81,22 @@ export class FakeTag implements Ent {
     );
   }
 
+  static getTestTableWithDeletedAt() {
+    return table(
+      "fake_tags",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      text("display_name"),
+      text("canonical_name"),
+      uuid("owner_id"), // TODO index: true sqlite broken?
+      index("fake_tags", ["canonical_name", "owner_id"], { unique: true }),
+      timestamptz("deleted_at", {
+        nullable: true,
+      }),
+    );
+  }
+
   static loaderOptions(): LoadEntOptions<FakeTag> {
     return {
       tableName: "fake_tags",
@@ -79,6 +105,16 @@ export class FakeTag implements Ent {
       loaderFactory: tagLoader,
     };
   }
+
+  static loaderOptionsWithDeletedAt(): LoadEntOptions<FakeTag> {
+    return {
+      tableName: "fake_tags",
+      fields: FakeTag.getFields(),
+      ent: this,
+      loaderFactory: tagLoader,
+    };
+  }
+
   static async load(v: Viewer, id: ID): Promise<FakeTag | null> {
     return loadEnt(v, id, FakeTag.loaderOptions());
   }
@@ -136,4 +172,12 @@ export const tagLoader = new ObjectLoaderFactory({
   tableName: "fake_tags",
   fields: FakeTag.getFields(),
   key: "id",
+});
+
+export const tagLoaderWithDeletedAt = new ObjectLoaderFactory({
+  tableName: "fake_tags",
+  fields: FakeTag.getFieldsWithDeletedAt(),
+  key: "id",
+  clause: clause.Eq("deleted_at", null),
+  instanceKey: "fake_tags:transformedReadClause",
 });

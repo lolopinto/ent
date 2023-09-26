@@ -10,6 +10,7 @@ import {
   Context,
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
+import * as clause from "../../core/clause";
 import {
   AllowIfViewerRule,
   AlwaysDenyRule,
@@ -31,7 +32,10 @@ interface TokenOptions extends IDViewerOptions {
 }
 
 export class ViewerWithAccessToken extends IDViewer {
-  constructor(viewerID: ID, private opts?: Partial<TokenOptions>) {
+  constructor(
+    viewerID: ID,
+    private opts?: Partial<TokenOptions>,
+  ) {
     super(viewerID, opts);
   }
 
@@ -52,6 +56,7 @@ export class FakeUser implements Ent {
   readonly emailAddress: string;
   readonly phoneNumber: string | null;
   protected readonly password: string | null;
+  readonly deletedAt: Date | null;
 
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
@@ -90,7 +95,10 @@ export class FakeUser implements Ent {
     };
   }
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.data = data;
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
@@ -100,6 +108,7 @@ export class FakeUser implements Ent {
     this.emailAddress = data.email_address;
     this.phoneNumber = data.phone_number;
     this.password = data.password;
+    this.deletedAt = data.deleted_at ? convertDate(data.deleted_at) : null;
   }
 
   __setRawDBData(data: Data) {}
@@ -117,6 +126,20 @@ export class FakeUser implements Ent {
     ];
   }
 
+  static getFieldsWithDeletedAt(): string[] {
+    return [
+      "id",
+      "created_at",
+      "updated_at",
+      "first_name",
+      "last_name",
+      "email_address",
+      "phone_number",
+      "password",
+      "deleted_at",
+    ];
+  }
+
   static getTestTable() {
     return table(
       "fake_users",
@@ -131,6 +154,23 @@ export class FakeUser implements Ent {
     );
   }
 
+  static getTestTableWithDeletedAt() {
+    return table(
+      "fake_users",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      text("first_name"),
+      text("last_name"),
+      text("email_address"),
+      text("phone_number"),
+      text("password"),
+      timestamptz("deleted_at", {
+        nullable: true,
+      }),
+    );
+  }
+
   static loaderOptions(): LoadEntOptions<FakeUser> {
     return {
       tableName: "fake_users",
@@ -139,12 +179,30 @@ export class FakeUser implements Ent {
       loaderFactory: userLoader,
     };
   }
+
+  static loaderOptionsWithDeletedAt(): LoadEntOptions<FakeUser> {
+    return {
+      tableName: "fake_users",
+      fields: FakeUser.getFields(),
+      ent: this,
+      loaderFactory: userLoaderWithDeletedAt,
+    };
+  }
+
   static async load(v: Viewer, id: ID): Promise<FakeUser | null> {
     return loadEnt(v, id, FakeUser.loaderOptions());
   }
 
   static async loadX(v: Viewer, id: ID): Promise<FakeUser> {
     return loadEntX(v, id, FakeUser.loaderOptions());
+  }
+
+  static async loadWithDeletedAt(v: Viewer, id: ID): Promise<FakeUser | null> {
+    return loadEnt(v, id, FakeUser.loaderOptionsWithDeletedAt());
+  }
+
+  static async loadWithDeletedAtX(v: Viewer, id: ID): Promise<FakeUser> {
+    return loadEntX(v, id, FakeUser.loaderOptionsWithDeletedAt());
   }
 }
 
@@ -208,6 +266,14 @@ export const userLoader = new ObjectLoaderFactory({
   tableName: "fake_users",
   fields: FakeUser.getFields(),
   key: "id",
+});
+
+export const userLoaderWithDeletedAt = new ObjectLoaderFactory({
+  tableName: "fake_users",
+  fields: FakeUser.getFieldsWithDeletedAt(),
+  key: "id",
+  clause: clause.Eq("deleted_at", null),
+  instanceKey: "fake_users:transformedReadClause",
 });
 
 export const userEmailLoader = new ObjectLoaderFactory({

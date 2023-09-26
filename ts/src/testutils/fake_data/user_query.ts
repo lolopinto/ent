@@ -118,6 +118,30 @@ export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<
   }
 }
 
+export class UserToContactsFkeyQueryDeletedAt extends CustomEdgeQueryBase<
+  FakeUser,
+  FakeContact
+> {
+  constructor(viewer: Viewer, src: ID | FakeUser) {
+    super(viewer, {
+      src,
+      loadEntOptions: FakeContact.loaderOptionsWithDeletedAt(),
+      groupCol: "user_id",
+      name: "user_to_contacts",
+      // instead of the id col...
+      sortColumn: "created_at",
+    });
+  }
+
+  static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {
+    return new UserToContactsFkeyQueryDeletedAt(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
+}
+
 export class UserToContactsFkeyQueryAsc extends CustomEdgeQueryBase<
   FakeUser,
   FakeContact

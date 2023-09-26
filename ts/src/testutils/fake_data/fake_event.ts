@@ -7,6 +7,7 @@ import {
   PrivacyPolicy,
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
+import * as clause from "../../core/clause";
 import { AlwaysAllowPrivacyPolicy } from "../../core/privacy";
 import { getBuilderSchemaFromFields, SimpleBuilder } from "../builder";
 import { StringType, UUIDType, TimestampType } from "../../schema";
@@ -28,12 +29,16 @@ export class FakeEvent implements Ent {
   readonly title: string;
   readonly description: string | null;
   readonly userID: ID;
+  readonly deletedAt: Date | null;
 
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.data = data;
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
@@ -62,6 +67,10 @@ export class FakeEvent implements Ent {
     ];
   }
 
+  private static getFieldsWithDeletedAt(): string[] {
+    return [...FakeEvent.getFields(), "deleted_at"];
+  }
+
   static getTestTable() {
     return table(
       "fake_events",
@@ -78,6 +87,23 @@ export class FakeEvent implements Ent {
     );
   }
 
+  static getTestTableWithDeletedAt() {
+    return table(
+      "fake_events",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      // TODO index:true
+      timestamptz("start_time"),
+      timestamptz("end_time", { nullable: true }),
+      text("location"),
+      text("title"),
+      text("description", { nullable: true }),
+      uuid("user_id"),
+      timestamptz("deleted_at", { nullable: true }),
+    );
+  }
+
   static loaderOptions(): LoadEntOptions<FakeEvent> {
     return {
       tableName: "fake_events",
@@ -90,12 +116,36 @@ export class FakeEvent implements Ent {
       }),
     };
   }
+
+  static loaderOptionsWithDeletedAt(): LoadEntOptions<FakeEvent> {
+    return {
+      tableName: "fake_events",
+      fields: FakeEvent.getFields(),
+      ent: this,
+      loaderFactory: new ObjectLoaderFactory({
+        tableName: "fake_events",
+        key: "id",
+        fields: FakeEvent.getFieldsWithDeletedAt(),
+        clause: clause.Eq("deleted_at", null),
+        instanceKey: "fake_events:transformedReadClause",
+      }),
+    };
+  }
+
   static async load(v: Viewer, id: ID): Promise<FakeEvent | null> {
     return loadEnt(v, id, FakeEvent.loaderOptions());
   }
 
   static async loadX(v: Viewer, id: ID): Promise<FakeEvent> {
     return loadEntX(v, id, FakeEvent.loaderOptions());
+  }
+
+  static async loadWithDeletedAt(v: Viewer, id: ID): Promise<FakeEvent | null> {
+    return loadEnt(v, id, FakeEvent.loaderOptionsWithDeletedAt());
+  }
+
+  static async loadWithDeletedAtX(v: Viewer, id: ID): Promise<FakeEvent> {
+    return loadEntX(v, id, FakeEvent.loaderOptionsWithDeletedAt());
   }
 }
 
