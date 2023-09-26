@@ -260,6 +260,10 @@ export class SimpleBuilder<
 
     const schemaFields = getFields(schema);
     let key = "id";
+    const dbFields: string[] = [];
+    for (const [name, f] of schemaFields) {
+      dbFields.push(getStorageKey(f, name));
+    }
     if (!schemaFields.has("id") && !schemaFields.has("ID")) {
       if (schemaFields.size !== 1) {
         throw new Error(
@@ -283,12 +287,12 @@ export class SimpleBuilder<
       loaderOptions: {
         loaderFactory: new ObjectLoaderFactory({
           tableName: tableName,
-          fields: [],
+          fields: dbFields,
           key,
         }),
         ent: schema.ent,
         tableName: tableName,
-        fields: [],
+        fields: dbFields,
         fieldPrivacy: getFieldsWithPrivacy(schema, fieldInfo),
       },
       builder: this,

@@ -103,9 +103,8 @@ interface edgeInputDataOpts<
 
 // hmm is it worth having multiple types here or just having one?
 // we have one type here instead
-export interface EdgeInputData<
-  TViewer extends Viewer = Viewer,
-> extends edgeInputDataOpts<any, TViewer> {
+export interface EdgeInputData<TViewer extends Viewer = Viewer>
+  extends edgeInputDataOpts<any, TViewer> {
   isBuilder(id: Builder<any, TViewer> | ID): id is Builder<any, TViewer>;
 }
 

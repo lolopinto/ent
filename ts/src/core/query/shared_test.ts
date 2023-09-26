@@ -19,6 +19,7 @@ import {
   UserToContactsFkeyQueryAsc,
   FakeContactSchemaWithDeletedAt,
   UserToContactsFkeyQueryDeletedAt,
+  UserToContactsFkeyQueryDeletedAtAsc,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -35,7 +36,7 @@ import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
-import { SimpleAction } from "../../testutils/builder";
+import { BuilderSchema, SimpleAction } from "../../testutils/builder";
 import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
 import { Clause, PaginationMultipleColsSubQuery } from "../clause";
@@ -63,6 +64,7 @@ interface options<TData extends Data> {
   rawDataVerify?(user: FakeUser): Promise<void>;
   loadEnt?(v: Viewer, id: ID): Promise<FakeContact>;
   loadRawData?(id: ID, context: any): Promise<Data | null>;
+  contactSchemaForDeletionTest?: BuilderSchema<FakeContact>;
 }
 
 export const commonTests = <TData extends Data>(opts: options<TData>) => {
@@ -82,7 +84,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       q instanceof UserToContactsFkeyQuery ||
       q instanceof UserToContactsFkeyQueryDeprecated ||
       q instanceof UserToContactsFkeyQueryAsc ||
-      q instanceof UserToContactsFkeyQueryDeletedAt
+      q instanceof UserToContactsFkeyQueryDeletedAt ||
+      q instanceof UserToContactsFkeyQueryDeletedAtAsc
     );
   }
 
@@ -162,8 +165,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     private verifyEdges(edges: Data[]) {
       // TODO sad not generic enough
-      // console.debug(ml.logs);
-      // console.debug(edges);
       if (this.customQuery) {
         verifyUserToContactRawData(this.user, edges, this.filteredContacts);
       } else {
@@ -528,7 +529,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       verifyQuery(filter, {});
     });
 
-    test.only("edges", async () => {
+    test("edges", async () => {
       await filter.testEdges();
       verifyQuery(filter, {});
     });
@@ -663,13 +664,12 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
           const action2 = new SimpleAction(
             filter.user.viewer,
-            FakeContactSchemaWithDeletedAt,
+            opts.contactSchemaForDeletionTest ?? FakeContactSchema,
             new Map(),
             WriteOperation.Delete,
             contact,
           );
           await action2.save();
-          // console.debug(ml.logs);
         }),
       );
       await action.save();

@@ -127,7 +127,7 @@ export class UserToContactsFkeyQueryDeletedAt extends CustomEdgeQueryBase<
       src,
       loadEntOptions: FakeContact.loaderOptionsWithDeletedAt(),
       groupCol: "user_id",
-      name: "user_to_contacts",
+      name: "user_to_contacts_deleted_at",
       // instead of the id col...
       sortColumn: "created_at",
     });
@@ -151,7 +151,7 @@ export class UserToContactsFkeyQueryAsc extends CustomEdgeQueryBase<
       src,
       loadEntOptions: FakeContact.loaderOptions(),
       groupCol: "user_id",
-      name: "user_to_contacts",
+      name: "user_to_contacts_asc",
       orderby: [
         {
           column: "created_at",
@@ -163,6 +163,34 @@ export class UserToContactsFkeyQueryAsc extends CustomEdgeQueryBase<
 
   static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {
     return new UserToContactsFkeyQueryAsc(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
+}
+
+export class UserToContactsFkeyQueryDeletedAtAsc extends CustomEdgeQueryBase<
+  FakeUser,
+  FakeContact
+> {
+  constructor(viewer: Viewer, src: ID | FakeUser) {
+    super(viewer, {
+      src,
+      loadEntOptions: FakeContact.loaderOptionsWithDeletedAt(),
+      groupCol: "user_id",
+      name: "user_to_contacts_deleted_at_asc",
+      orderby: [
+        {
+          column: "created_at",
+          direction: "ASC",
+        },
+      ],
+    });
+  }
+
+  static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {
+    return new UserToContactsFkeyQueryDeletedAtAsc(viewer, src);
   }
 
   sourceEnt(id: ID) {

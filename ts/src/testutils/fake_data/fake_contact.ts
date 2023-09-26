@@ -49,7 +49,6 @@ export class FakeContact implements Ent {
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
     this.userID = data.user_id;
-    console.debug(data);
     this.deletedAt = data.deleted_at ? convertDate(data.deleted_at) : null;
   }
 
