@@ -23,6 +23,7 @@ describe("custom query", () => {
     orderby: [
       {
         column: "created_at",
+        // dateColumn: true,
         direction: "DESC",
       },
     ],

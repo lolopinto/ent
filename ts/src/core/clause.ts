@@ -1237,8 +1237,18 @@ export function Modulo<T extends Data, K = keyof T>(
 export function getCombinedClause<V extends Data = Data, K = keyof V>(
   options: Pick<SelectDataOptions, "clause">,
   cls: Clause<V, K>,
+  checkIntersection?: boolean,
+): Clause<V, K>;
+export function getCombinedClause<V extends Data = Data, K = keyof V>(
+  options: Pick<SelectDataOptions, "clause">,
+  cls: Clause<V, K> | undefined,
+  checkIntersection?: boolean,
+): Clause<V, K> | undefined;
+export function getCombinedClause<V extends Data = Data, K = keyof V>(
+  options: Pick<SelectDataOptions, "clause">,
+  cls: Clause<V, K> | undefined,
   checkIntersection = false,
-): Clause<V, K> {
+): Clause<V, K> | undefined {
   if (options.clause) {
     let optionClause: Clause | undefined;
     if (typeof options.clause === "function") {
@@ -1253,7 +1263,7 @@ export function getCombinedClause<V extends Data = Data, K = keyof V>(
         const transformedCols = new Set<K | string | number>(
           optionClause.columns(),
         );
-        const queriedCols = cls.columns();
+        const queriedCols = cls?.columns() ?? [];
         const has = new Set<K | string | number>();
         for (const col of queriedCols) {
           if (transformedCols.has(col)) {
@@ -1264,7 +1274,7 @@ export function getCombinedClause<V extends Data = Data, K = keyof V>(
       }
       if (and) {
         // @ts-expect-error different types
-        cls = And(cls, optionClause);
+        cls = AndOptional(cls, optionClause);
       }
     }
   }

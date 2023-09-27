@@ -1242,7 +1242,7 @@ export class AssocEdge {
   }
 }
 
-interface cursorOptions {
+export interface cursorOptions {
   row: Data;
   col: string;
   cursorKey?: string; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
