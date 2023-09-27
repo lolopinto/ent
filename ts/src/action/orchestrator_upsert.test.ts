@@ -13,6 +13,7 @@ import {
   getBuilderSchemaFromFields,
   BuilderSchema,
   getTableName,
+  getDbFields,
 } from "../testutils/builder";
 import { FakeComms, Mode } from "../testutils/fake_comms";
 import { createRowForTest } from "../testutils/write";
@@ -29,7 +30,7 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/temp_db";
-import { ConstraintType } from "../schema";
+import { ConstraintType, getStorageKey } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 import DB, { Dialect } from "../core/db";
 
@@ -341,7 +342,7 @@ function commonTests() {
     expect(select).toContainEqual({
       query: buildQuery({
         tableName: "user_extendeds",
-        fields: ["*"],
+        fields: getDbFields(UserSchemaExtended),
         clause: clause.Eq("email_address", email),
       }),
       values: [email],
@@ -422,7 +423,7 @@ function commonTests() {
     expect(select).toContainEqual({
       query: buildQuery({
         tableName: "user_extendeds",
-        fields: ["*"],
+        fields: getDbFields(UserSchemaExtended),
         clause: clause.Eq("email_address", email),
       }),
       values: [email],
@@ -470,7 +471,7 @@ function commonTests() {
     expect(select).toContainEqual({
       query: buildQuery({
         tableName: "user_extendeds",
-        fields: ["*"],
+        fields: getDbFields(UserSchemaExtended),
         clause: clause.Eq("email_address", email),
       }),
       values: [email],
@@ -519,7 +520,7 @@ function commonTests() {
       expect(select).toContainEqual({
         query: buildQuery({
           tableName: "user_extendeds",
-          fields: ["*"],
+          fields: getDbFields(UserSchemaExtended),
           clause: clause.Eq("email_address", email),
         }),
         values: [email],
@@ -595,7 +596,7 @@ function commonTests() {
       expect(select).not.toContainEqual({
         query: buildQuery({
           tableName: "user_extendeds",
-          fields: ["*"],
+          fields: getDbFields(UserSchemaExtended),
           clause: clause.Eq("email_address", email),
         }),
         values: [email],
@@ -605,7 +606,7 @@ function commonTests() {
       expect(select).toContainEqual({
         query: buildQuery({
           tableName: "user_extendeds",
-          fields: ["*"],
+          fields: getDbFields(UserSchemaExtended),
           clause: clause.Eq("email_address", email),
         }),
         values: [email],
@@ -658,7 +659,7 @@ function commonTests() {
       expect(select).toContainEqual({
         query: buildQuery({
           tableName: "user_extendeds",
-          fields: ["*"],
+          fields: getDbFields(UserSchemaExtended),
           clause: clause.Eq("email_address", email),
         }),
         values: [email],
@@ -700,7 +701,7 @@ function commonTests() {
     expect(select).toContainEqual({
       query: buildQuery({
         tableName: "user_multiple_uniques",
-        fields: ["*"],
+        fields: getDbFields(UserSchemaMultipleUnique),
         clause: clause.And(
           clause.Eq("email_address", email),
           clause.Eq("account_status", "UNVERIFIED"),
@@ -741,7 +742,7 @@ function commonTests() {
       expect(select).toContainEqual({
         query: buildQuery({
           tableName: "user_multiple_uniques",
-          fields: ["*"],
+          fields: getDbFields(UserSchemaMultipleUnique),
           clause: clause.And(
             clause.Eq("email_address", email),
             clause.Eq("account_status", "UNVERIFIED"),
@@ -807,7 +808,7 @@ function commonTests() {
       expect(select).toContainEqual({
         query: buildQuery({
           tableName: "user_multiple_uniques",
-          fields: ["*"],
+          fields: getDbFields(UserSchemaMultipleUnique),
           clause: clause.And(
             clause.Eq("email_address", email),
             clause.Eq("account_status", "UNVERIFIED"),
@@ -851,7 +852,7 @@ function commonTests() {
     expect(select).toContainEqual({
       query: buildQuery({
         tableName: "user_extendeds",
-        fields: ["*"],
+        fields: getDbFields(UserSchemaExtended),
         clause: clause.Eq("email_address", email),
       }),
       values: [email],
@@ -997,7 +998,7 @@ function commonTests() {
     // and the conditional flows through in an upsert
     const event_row = await loadRow({
       tableName: "events",
-      fields: ["*"],
+      fields: getDbFields(EventSchema),
       clause: clause.Eq("owner_id", u1.id),
     });
     if (!event_row) {
@@ -1006,7 +1007,7 @@ function commonTests() {
 
     const address_row = await loadRow({
       tableName: getTableName(AddressSchema),
-      fields: ["*"],
+      fields: getDbFields(AddressSchema),
       clause: clause.Eq("owner_id", event_row.id),
     });
 
@@ -1103,7 +1104,7 @@ function commonTests() {
     // and the conditional flows through in an upsert
     const event_row = await loadRow({
       tableName: "events",
-      fields: ["*"],
+      fields: getDbFields(EventSchema),
       clause: clause.Eq("owner_id", u1.id),
     });
     if (!event_row) {
@@ -1112,7 +1113,7 @@ function commonTests() {
 
     const address_row = await loadRow({
       tableName: getTableName(AddressSchema),
-      fields: ["*"],
+      fields: getDbFields(AddressSchema),
       clause: clause.Eq("owner_id", event_row.id),
     });
 

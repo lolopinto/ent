@@ -328,9 +328,6 @@ export class EditNodeOperation<
   }
 
   private getReturning() {
-    // TODO only in tests? or only in specific tests?
-    // this will break other things?
-    // also we shouldn't be getting dbOnly fields out anyways
     if (this.options.loadEntOptions.fields.length) {
       return `RETURNING ${this.options.loadEntOptions.fields.join(",")}`;
     }

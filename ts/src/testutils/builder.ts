@@ -199,6 +199,15 @@ export function getTableName(value: BuilderSchema<Ent>) {
   return pluralize(snakeCase(value.ent.name)).toLowerCase();
 }
 
+export const getDbFields = (schema: BuilderSchema<Ent>) => {
+  const fields = getFields(schema);
+  const dbFields: string[] = [];
+  for (const [fieldName, field] of fields) {
+    dbFields.push(getStorageKey(field, fieldName));
+  }
+  return dbFields;
+};
+
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
