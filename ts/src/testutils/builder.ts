@@ -199,6 +199,15 @@ export function getTableName(value: BuilderSchema<Ent>) {
   return pluralize(snakeCase(value.ent.name)).toLowerCase();
 }
 
+export const getDbFields = (schema: BuilderSchema<Ent>) => {
+  const fields = getFields(schema);
+  const dbFields: string[] = [];
+  for (const [fieldName, field] of fields) {
+    dbFields.push(getStorageKey(field, fieldName));
+  }
+  return dbFields;
+};
+
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -260,6 +269,10 @@ export class SimpleBuilder<
 
     const schemaFields = getFields(schema);
     let key = "id";
+    const dbFields: string[] = [];
+    for (const [name, f] of schemaFields) {
+      dbFields.push(getStorageKey(f, name));
+    }
     if (!schemaFields.has("id") && !schemaFields.has("ID")) {
       if (schemaFields.size !== 1) {
         throw new Error(
@@ -283,12 +296,12 @@ export class SimpleBuilder<
       loaderOptions: {
         loaderFactory: new ObjectLoaderFactory({
           tableName: tableName,
-          fields: [],
+          fields: dbFields,
           key,
         }),
         ent: schema.ent,
         tableName: tableName,
-        fields: [],
+        fields: dbFields,
         fieldPrivacy: getFieldsWithPrivacy(schema, fieldInfo),
       },
       builder: this,

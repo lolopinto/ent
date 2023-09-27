@@ -1,4 +1,9 @@
-import { User, BuilderSchema, SimpleBuilder } from "../testutils/builder";
+import {
+  User,
+  BuilderSchema,
+  SimpleBuilder,
+  getDbFields,
+} from "../testutils/builder";
 import { IDViewer, LoggedOutViewer } from "../core/viewer";
 import { StringType, UUIDType, FieldMap } from "../schema";
 import { createRowForTest } from "../testutils/write";
@@ -187,7 +192,7 @@ function getInsertQuery(id: ID) {
         foo: "bar",
       },
     },
-    "RETURNING *",
+    "RETURNING id,foo",
   );
   return { query, values: logValues };
 }
@@ -204,7 +209,7 @@ function getUpdateQuery(ent: User) {
       },
       whereClause: clause.Eq("id", ent.id),
     },
-    "RETURNING *",
+    "RETURNING id,foo",
   );
   return { query, values: logValues };
 }
@@ -251,7 +256,7 @@ function getSelectQuery(id: ID): Data | undefined {
     return {
       query: buildQuery({
         tableName: "users",
-        fields: ["*"],
+        fields: ["id", "foo"],
         clause: clause.Eq("id", id),
       }),
       values: [id],
