@@ -40,7 +40,7 @@ var SUFFIXES = []string{
 	"slim",
 }
 
-// can change platforms here to test locally
+// you can change platforms here to test locally
 var PLATFORMS = []string{
 	"linux/amd64",
 	"linux/arm64",
