@@ -62,7 +62,7 @@ function getClause<
   TViewer extends Viewer = Viewer,
 >(opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>) {
   let cls = opts.clause;
-  if (opts.disableTransformations || !cls) {
+  if (opts.disableTransformations) {
     return cls;
   }
   return getCombinedClause(
@@ -85,6 +85,7 @@ function getRawCountLoader<
     });
   }
   const name = `custom_query_count_loader:${opts.name}`;
+  console.debug(opts.name);
   return viewer.context.cache.getLoader(
     name,
     () =>

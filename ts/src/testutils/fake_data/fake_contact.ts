@@ -8,6 +8,7 @@ import {
   Context,
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
+import * as clause from "../../core/clause";
 import { AllowIfViewerIsRule, AlwaysDenyRule } from "../../core/privacy";
 import { getBuilderSchemaFromFields, SimpleBuilder } from "../builder";
 import { StringType, UUIDType } from "../../schema";
@@ -16,6 +17,7 @@ import { table, uuid, text, timestamptz } from "../db/temp_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate } from "../../core/convert";
 import { WriteOperation } from "../../action";
+import { DeletedAtPattern } from "../soft_delete";
 
 export class FakeContact implements Ent {
   readonly id: ID;
@@ -27,6 +29,7 @@ export class FakeContact implements Ent {
   readonly lastName: string;
   readonly emailAddress: string;
   readonly userID: ID;
+  readonly deletedAt: Date | null;
 
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
@@ -34,7 +37,10 @@ export class FakeContact implements Ent {
     };
   }
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.data = data;
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
@@ -43,6 +49,7 @@ export class FakeContact implements Ent {
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
     this.userID = data.user_id;
+    this.deletedAt = data.deleted_at ? convertDate(data.deleted_at) : null;
   }
 
   __setRawDBData(data: Data) {}
@@ -59,6 +66,10 @@ export class FakeContact implements Ent {
     ];
   }
 
+  static getFieldsWithDeletedAt(): string[] {
+    return [...FakeContact.getFields(), "deleted_at"];
+  }
+
   static getTestTable() {
     return table(
       "fake_contacts",
@@ -69,6 +80,20 @@ export class FakeContact implements Ent {
       text("last_name"),
       text("email_address"),
       uuid("user_id"),
+    );
+  }
+
+  static getTestTableWithDeletedAt() {
+    return table(
+      "fake_contacts",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      text("first_name"),
+      text("last_name"),
+      text("email_address"),
+      uuid("user_id"),
+      timestamptz("deleted_at", { nullable: true }),
     );
   }
 
@@ -84,6 +109,22 @@ export class FakeContact implements Ent {
       }),
     };
   }
+
+  static loaderOptionsWithDeletedAt(): LoadEntOptions<FakeContact> {
+    return {
+      tableName: "fake_contacts",
+      fields: FakeContact.getFieldsWithDeletedAt(),
+      ent: this,
+      loaderFactory: new ObjectLoaderFactory({
+        tableName: "fake_contacts",
+        key: "id",
+        fields: FakeContact.getFieldsWithDeletedAt(),
+        clause: clause.Eq("deleted_at", null),
+        instanceKey: "fake_contacts:transformedReadClause",
+      }),
+    };
+  }
+
   static async load(v: Viewer, id: ID): Promise<FakeContact | null> {
     return loadEnt(v, id, FakeContact.loaderOptions());
   }
@@ -92,8 +133,28 @@ export class FakeContact implements Ent {
     return loadEntX(v, id, FakeContact.loaderOptions());
   }
 
+  static async loadWithDeletedAt(
+    v: Viewer,
+    id: ID,
+  ): Promise<FakeContact | null> {
+    return loadEnt(v, id, FakeContact.loaderOptionsWithDeletedAt());
+  }
+
+  static async loadXWithDeletedAt(v: Viewer, id: ID): Promise<FakeContact> {
+    return loadEntX(v, id, FakeContact.loaderOptionsWithDeletedAt());
+  }
+
   static async loadRawData(id: ID, context?: Context): Promise<Data | null> {
     return FakeContact.loaderOptions()
+      .loaderFactory.createLoader(context)
+      .load(id);
+  }
+
+  static async loadRawDataWithDeletedAt(
+    id: ID,
+    context?: Context,
+  ): Promise<Data | null> {
+    return FakeContact.loaderOptionsWithDeletedAt()
       .loaderFactory.createLoader(context)
       .load(id);
   }
@@ -109,6 +170,21 @@ export const FakeContactSchema = getBuilderSchemaFromFields(
     }),
   },
   FakeContact,
+);
+
+export const FakeContactSchemaWithDeletedAt = getBuilderSchemaFromFields(
+  {
+    firstName: StringType(),
+    lastName: StringType(),
+    emailAddress: StringType(),
+    userID: UUIDType({
+      foreignKey: { schema: "User", column: "ID" },
+    }),
+  },
+  FakeContact,
+  {
+    patterns: [new DeletedAtPattern()],
+  },
 );
 
 export interface ContactCreateInput {

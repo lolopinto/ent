@@ -123,7 +123,10 @@ function createDataLoader(options: SelectDataOptions) {
 class clauseCacheMap {
   private m = new Map();
 
-  constructor(private options: DataOptions, private count?: boolean) {}
+  constructor(
+    private options: DataOptions,
+    private count?: boolean,
+  ) {}
 
   get(key: clause.Clause) {
     const key2 = key.instanceKey();
@@ -198,10 +201,11 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
 }
 
 export class ObjectLoader<
-  TQueryData extends Data = Data,
-  TResultData extends Data = TQueryData,
-  K = keyof TQueryData,
-> implements
+    TQueryData extends Data = Data,
+    TResultData extends Data = TQueryData,
+    K = keyof TQueryData,
+  >
+  implements
     Loader<ID, TResultData | null>,
     Loader<clause.Clause<TQueryData, K>, TResultData[] | null>
 {
@@ -381,7 +385,10 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
 {
   private loader: DataLoader<clause.Clause<V, K>, number> | null;
 
-  constructor(private options: SelectDataOptions, public context?: Context) {
+  constructor(
+    private options: SelectDataOptions,
+    public context?: Context,
+  ) {
     if (context) {
       this.loader = createClauseCountDataLoader(options);
     }
