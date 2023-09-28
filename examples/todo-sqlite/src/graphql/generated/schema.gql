@@ -51,6 +51,7 @@ type Account implements Node {
   account_prefs_3: AccountPrefs
   account_prefs_list: [AccountPrefs!]
   credits: Int
+  country_infos: [CountryInfo!]
   closed_todos_dup(first: Int, after: String, last: Int, before: String): AccountToClosedTodosDupConnection!
   created_workspaces(first: Int, after: String, last: Int, before: String): AccountToCreatedWorkspacesConnection!
   open_todos_dup(first: Int, after: String, last: Int, before: String): AccountToOpenTodosDupConnection!
@@ -63,6 +64,21 @@ type Account implements Node {
   can_viewer_see_info: AccountCanViewerSee!
   open_todos_plural: [Todo!]!
   open_todos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
+}
+
+type CountryCapital {
+  name: String!
+  population: String!
+}
+
+type CountryInfo {
+  countries: [Country!]!
+}
+
+type Country {
+  name: String!
+  code: String!
+  capital: CountryCapital!
 }
 
 type Tag implements Node {
@@ -352,6 +368,21 @@ type ChangeTodoStatusPayload {
   todo: Todo!
 }
 
+input CountryCapitalInput {
+  name: String!
+  population: String!
+}
+
+input CountryInfoInput {
+  countries: [CountryInput!]!
+}
+
+input CountryInput {
+  name: String!
+  code: String!
+  capital: CountryCapitalInput!
+}
+
 input CreateAccountInput {
   name: String!
   phone_number: String!
@@ -359,6 +390,7 @@ input CreateAccountInput {
   account_prefs_3: AccountPrefsInput
   account_prefs_list: [AccountPrefsInput!]
   credits: Int
+  country_infos: [CountryInfoInput!]
 }
 
 type CreateAccountPayload {
@@ -433,6 +465,7 @@ input EditAccountInput {
   account_prefs: AccountPrefsInput
   account_prefs_3: AccountPrefsInput
   account_prefs_list: [AccountPrefsInput!]
+  country_infos: [CountryInfoInput!]
 }
 
 type EditAccountPayload {

@@ -17,7 +17,11 @@ import {
 } from "@snowtop/ent/action";
 import { Account } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
-import { AccountPrefs, AccountState } from "src/ent/generated/types";
+import {
+  AccountPrefs,
+  AccountState,
+  CountryInfo,
+} from "src/ent/generated/types";
 
 export interface AccountEditInput {
   name?: string;
@@ -26,6 +30,7 @@ export interface AccountEditInput {
   accountPrefs?: AccountPrefs | null;
   accountPrefs3?: AccountPrefs;
   accountPrefsList?: AccountPrefs[] | null;
+  countryInfos?: CountryInfo[] | null;
 }
 
 export type EditAccountActionTriggers = (
