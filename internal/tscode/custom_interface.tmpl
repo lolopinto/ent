@@ -4,11 +4,16 @@
 {{ $pkg := .Package }}
 {{ $cfg := .Config }}
 {{ $schema := .Schema }}
+{{ $root := .Root }} 
 
 
 {{ range $ci.GetAllCustomTypes -}}
   {{ if .IsCustomInterface -}}
-    {{ template "interface.tmpl" (dict "RootInterface" $ci "Interface" . "Package" $pkg "Config" $cfg)}}
+      {{ if $root -}}
+        {{ template "interface.tmpl" (dict "RootInterface" $root "Interface" . "Package" $pkg "Config" $cfg)}}
+      {{ else -}}
+        {{ template "interface.tmpl" (dict "RootInterface" $ci "Interface" . "Package" $pkg "Config" $cfg)}}
+      {{ end -}}
     {{ if .HasConvertFunction $cfg }}
       {{ if .Exported -}}
         export function {{.GetConvertMethod}}(input: any): {{.TSType}} {

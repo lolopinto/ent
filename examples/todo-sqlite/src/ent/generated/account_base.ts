@@ -37,6 +37,7 @@ import {
   AccountPrefs,
   AccountState,
   AccountTodoStatus,
+  CountryInfo,
   EdgeType,
   NodeType,
   convertNullableAccountPrefs,
@@ -89,6 +90,7 @@ export class AccountBase
   readonly accountPrefs3: AccountPrefs | null;
   readonly accountPrefsList: AccountPrefs[] | null;
   readonly credits: number | null;
+  readonly countryInfos: CountryInfo[] | null;
 
   constructor(public viewer: Viewer, data: Data) {
     // @ts-ignore pass to mixin
@@ -110,6 +112,7 @@ export class AccountBase
       convertNullableJSONList(data.account_prefs_list),
     );
     this.credits = data.credits;
+    this.countryInfos = convertNullableJSONList(data.country_infos);
     // @ts-expect-error
     this.data = data;
   }

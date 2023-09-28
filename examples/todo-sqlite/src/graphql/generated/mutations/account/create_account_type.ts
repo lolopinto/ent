@@ -17,19 +17,25 @@ import { Account } from "src/ent/";
 import CreateAccountAction, {
   AccountCreateInput,
 } from "src/ent/account/actions/create_account_action";
-import { AccountPrefs } from "src/ent/generated/types";
+import { AccountPrefs, CountryInfo } from "src/ent/generated/types";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
+import { CountryInfoInputType } from "src/graphql/generated/mutations/input/country_info_input_type";
 import { AccountType } from "src/graphql/resolvers/";
 
 interface customCreateAccountInput
   extends Omit<
     AccountCreateInput,
-    "phoneNumber" | "accountPrefs" | "accountPrefs3" | "accountPrefsList"
+    | "phoneNumber"
+    | "accountPrefs"
+    | "accountPrefs3"
+    | "accountPrefsList"
+    | "countryInfos"
   > {
   phone_number: string;
   account_prefs?: AccountPrefs | null;
   account_prefs_3?: AccountPrefs;
   account_prefs_list?: AccountPrefs[] | null;
+  country_infos?: CountryInfo[] | null;
 }
 
 interface CreateAccountPayload {
@@ -56,6 +62,9 @@ export const CreateAccountInputType = new GraphQLInputObjectType({
     },
     credits: {
       type: GraphQLInt,
+    },
+    country_infos: {
+      type: new GraphQLList(new GraphQLNonNull(CountryInfoInputType)),
     },
   }),
 });
@@ -97,6 +106,7 @@ export const CreateAccountType: GraphQLFieldConfig<
       accountPrefs3: input.account_prefs_3,
       accountPrefsList: input.account_prefs_list,
       credits: input.credits,
+      countryInfos: input.country_infos,
     }).saveX();
     return { account: account };
   },

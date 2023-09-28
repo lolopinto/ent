@@ -3,6 +3,7 @@ import {
   GlobalSchema,
   StringType,
   StructType,
+  StructTypeAsList,
 } from "@snowtop/ent/schema/";
 import { GlobalDeletedEdge } from "@snowtop/ent-soft-delete";
 
@@ -15,6 +16,22 @@ const glo: GlobalSchema = {
         finishedNux: BooleanType(),
         enableNotifs: BooleanType(),
         preferredLanguage: StringType(),
+      },
+    }),
+    countries: StructTypeAsList({
+      tsType: "Country",
+      graphQLType: "Country",
+      fields: {
+        name: StringType(),
+        code: StringType(),
+        capital: StructType({
+          tsType: "CountryCapital",
+          graphQLType: "CountryCapital",
+          fields: {
+            name: StringType(),
+            population: StringType(),
+          },
+        }),
       },
     }),
   },

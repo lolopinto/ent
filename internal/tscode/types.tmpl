@@ -12,6 +12,7 @@
 {{ $package := .Package }}
 {{ $config := .Config }}
 
+{{ $root := .Root }}
 {{ range .Schema.CustomInterfaces }}
-  {{ template "custom_interface.tmpl" (dict "Interface" .  "Package" $package "Schema" $schema  "Config" $config) }}
+  {{ template "custom_interface.tmpl" (dict "Interface" .  "Package" $package "Schema" $schema  "Config" $config "Root" $root) }}
 {{ end -}}

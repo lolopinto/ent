@@ -19,6 +19,7 @@ import { TodoContainerBuilder } from "src/ent/generated/mixins/todo_container/ac
 import {
   AccountPrefs,
   AccountState,
+  CountryInfo,
   EdgeType,
   NodeType,
 } from "src/ent/generated/types";
@@ -33,6 +34,7 @@ export interface AccountInput {
   accountPrefs3?: AccountPrefs;
   accountPrefsList?: AccountPrefs[] | null;
   credits?: number;
+  countryInfos?: CountryInfo[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -414,6 +416,7 @@ export class AccountBuilder<
     addField("accountPrefs3", input.accountPrefs3);
     addField("accountPrefsList", input.accountPrefsList);
     addField("credits", input.credits);
+    addField("country_infos", input.countryInfos);
     return result;
   }
 
@@ -509,5 +512,14 @@ export class AccountBuilder<
       );
     }
     return this.existingEnt.credits;
+  }
+
+  // get value of country_infos. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCountryInfosValue(): CountryInfo[] | null {
+    if (this.input.countryInfos !== undefined) {
+      return this.input.countryInfos;
+    }
+
+    return this.existingEnt?.countryInfos ?? null;
   }
 }

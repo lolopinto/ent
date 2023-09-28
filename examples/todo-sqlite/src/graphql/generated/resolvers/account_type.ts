@@ -40,6 +40,7 @@ import {
   AccountToWorkspacesConnectionType,
   AccountTodoStatusType,
   AssigneeToTodosConnectionType,
+  CountryInfoType,
   TodoType,
 } from "src/graphql/resolvers/internal";
 
@@ -78,6 +79,12 @@ export const AccountType = new GraphQLObjectType({
     },
     credits: {
       type: GraphQLInt,
+    },
+    country_infos: {
+      type: new GraphQLList(new GraphQLNonNull(CountryInfoType)),
+      resolve: (obj: Account, args: {}, context: RequestContext<Viewer>) => {
+        return obj.countryInfos;
+      },
     },
     closed_todos_dup: {
       type: new GraphQLNonNull(AccountToClosedTodosDupConnectionType()),

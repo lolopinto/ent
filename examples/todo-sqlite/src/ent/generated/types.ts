@@ -149,3 +149,18 @@ export function convertNullableAccountPrefsList(
   }
   return input.map((v) => convertAccountPrefs(v));
 }
+
+export interface CountryCapital {
+  name: string;
+  population: string;
+}
+
+export interface Country {
+  name: string;
+  code: string;
+  capital: CountryCapital;
+}
+
+export interface CountryInfo {
+  countries: Country[];
+}
