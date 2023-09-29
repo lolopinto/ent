@@ -113,8 +113,8 @@ export const commonTests = <TEdge extends Data>(
       // is from assoc_edge table id2 field and so cursor takes it from there
       opts = {
         row: contacts[idx],
-        col: "id2",
-        cursorKey: "id",
+        col: "id",
+        cursorKey: "id2",
         // keys: ["id2"],
         // cursorKeys: ["id"],
       };
