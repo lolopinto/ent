@@ -46,8 +46,6 @@ Diving into the code here shows usage of all the supprted features of the Ent fr
 * [Schema hidden from GraphQL](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/schema/guest_data.ts#L11)
 * [Storing an id the data field of an edge to create a 3-way edge](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/event_activity/actions/edit_event_activity_rsvp_status_action.ts#L49-L83)
 
-The site is currently available live at https://ent-rsvp-static-site.onrender.com/.
-
 It currently doesn't send an email to guests so the login link isn't available for anyone without database access.
 
 ## Running locally
