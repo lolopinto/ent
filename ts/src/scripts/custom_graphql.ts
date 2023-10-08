@@ -73,7 +73,10 @@ function processCustomObjects(
   }
 }
 
-function transformArgs(f: any, gqlCapture: typeof GQLCapture) {
+function transformArgs(
+  f: NonNullable<CustomGraphQLInput["queries"]>[0],
+  gqlCapture: typeof GQLCapture,
+) {
   return (f.args || []).map((v: any) => {
     const ret = {
       ...v,
@@ -102,7 +105,7 @@ function transformFieldTypeInput(input: CustomFieldTypeInput): CustomFieldType {
   }
 }
 
-function transformResultType(f: any) {
+function transformResultType(f: NonNullable<CustomGraphQLInput["queries"]>[0]) {
   return f.resultType
     ? [
         {
@@ -435,6 +438,13 @@ async function main() {
     {
       importPath: "graphql-type-json",
       type: "GraphQLJSON",
+    },
+    gqlCapture,
+  );
+  addCustomType(
+    {
+      importPath: "graphql-scalars",
+      type: "GraphQLByte",
     },
     gqlCapture,
   );

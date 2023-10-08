@@ -14,6 +14,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
+import { GraphQLByte } from "graphql-scalars";
 import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLTime,
@@ -59,6 +60,12 @@ export const EventEditInputType = new GraphQLInputObjectType({
     addressID: {
       type: GraphQLID,
     },
+    coverPhoto: {
+      type: GraphQLByte,
+    },
+    coverPhoto2: {
+      type: GraphQLByte,
+    },
   }),
 });
 
@@ -101,6 +108,8 @@ export const EventEditType: GraphQLFieldConfig<
         endTime: input.endTime,
         location: input.eventLocation,
         addressID: mustDecodeNullableIDFromGQLID(input.addressID),
+        coverPhoto: input.coverPhoto,
+        coverPhoto2: input.coverPhoto2,
       },
     );
     return { event };

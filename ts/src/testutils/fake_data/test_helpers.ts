@@ -341,10 +341,10 @@ export async function setupTempDB(global: boolean = false) {
 
 export function tempDBTables(global: boolean = false) {
   const tables = [
-    FakeUser.getTestTable(),
-    FakeContact.getTestTable(),
-    FakeEvent.getTestTable(),
-    FakeTag.getTestTable(),
+    FakeUser.getTestTableWithDeletedAt(),
+    FakeContact.getTestTableWithDeletedAt(),
+    FakeEvent.getTestTableWithDeletedAt(),
+    FakeTag.getTestTableWithDeletedAt(),
     assoc_edge_config_table(),
   ];
   edgeTableNames().forEach((tableName) =>

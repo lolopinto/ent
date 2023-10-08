@@ -4,6 +4,7 @@ import {
   Ent,
   ID,
   LoadEntOptions,
+  QueryDataOptions,
   Viewer,
 } from "../base";
 import { AndOptional, Clause } from "../clause";
@@ -15,7 +16,7 @@ import {
 } from "../ent";
 import { OrderBy } from "../query_impl";
 
-import { BaseEdgeQuery, IDInfo } from "./query";
+import { BaseEdgeQuery, EdgeQueryOptions, IDInfo } from "./query";
 
 export interface CustomClauseQueryOptions<
   TDest extends Ent<TViewer>,
@@ -42,6 +43,8 @@ export interface CustomClauseQueryOptions<
   nullsPlacement?: "first" | "last";
 
   disableTransformations?: boolean;
+
+  joinBETA?: QueryDataOptions["join"];
 }
 
 function getClause<TDest extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
@@ -66,6 +69,7 @@ export class CustomClauseQuery<
   TViewer extends Viewer = Viewer,
 > extends BaseEdgeQuery<any, TDest, Data> {
   private clause: Clause;
+
   constructor(
     public viewer: TViewer,
     private options: CustomClauseQueryOptions<TDest, TViewer>,
@@ -101,6 +105,8 @@ export class CustomClauseQuery<
     super(viewer, {
       orderby,
       cursorCol,
+      joinBETA: options.joinBETA,
+      fieldOptions: options.loadEntOptions,
     });
     this.clause = getClause(options);
   }
@@ -113,13 +119,33 @@ export class CustomClauseQuery<
     return this.options.loadEntOptions.tableName;
   }
 
+  protected includeSortColInCursor(options: EdgeQueryOptions) {
+    // TODO maybe we should just always do this?
+    return options.joinBETA !== undefined && this.sortCol !== this.cursorCol;
+  }
+
   async queryRawCount(): Promise<number> {
+    // sqlite needs as count otherwise it returns count(1)
+    let fields = ["count(1) as count"];
+    if (this.options.joinBETA) {
+      const requestedFields = this.options.loadEntOptions.fields;
+      const alias =
+        this.options.loadEntOptions.fieldsAlias ??
+        this.options.loadEntOptions.alias;
+      if (alias) {
+        fields = [`count(distinct ${alias}.${requestedFields[0]}) as count`];
+      } else {
+        fields = [`count(distinct ${requestedFields[0]}) as count`];
+      }
+    }
     const row = await loadRow({
+      ...this.options.loadEntOptions,
       tableName: this.options.loadEntOptions.tableName,
-      // sqlite needs as count otherwise it returns count(1)
-      fields: ["count(1) as count"],
+      fields,
       clause: this.clause,
       context: this.viewer.context,
+      join: this.options.joinBETA,
+      disableFieldsAlias: true,
     });
     return parseInt(row?.count, 10) || 0;
   }
@@ -149,12 +175,14 @@ export class CustomClauseQuery<
     }
 
     const rows = await loadRows({
-      tableName: this.options.loadEntOptions.tableName,
-      fields: this.options.loadEntOptions.fields,
+      ...this.options.loadEntOptions,
       clause: AndOptional(this.clause, options.clause),
       orderby: options.orderby,
       limit: options?.limit || getDefaultLimit(),
       context: this.viewer.context,
+      join: this.options.joinBETA,
+      // if doing a join, select distinct rows
+      distinct: this.options.joinBETA !== undefined,
     });
 
     this.edges.set(1, rows);
@@ -170,5 +198,9 @@ export class CustomClauseQuery<
       rows,
       this.options.loadEntOptions,
     );
+  }
+
+  __getOptions() {
+    return this.options;
   }
 }

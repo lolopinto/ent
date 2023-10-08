@@ -28,6 +28,8 @@ export interface EventInput {
   endTime?: Date | null;
   location?: string;
   addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
+  coverPhoto?: Buffer | null;
+  coverPhoto2?: Buffer | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -427,6 +429,8 @@ export class EventBuilder<
         }
       }
     }
+    addField("cover_photo", input.coverPhoto);
+    addField("cover_photo2", input.coverPhoto2);
     return result;
   }
 
@@ -508,5 +512,23 @@ export class EventBuilder<
     | Builder<Address, ExampleViewerAlias>
     | undefined {
     return this.input.addressID;
+  }
+
+  // get value of cover_photo. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCoverPhotoValue(): Buffer | null {
+    if (this.input.coverPhoto !== undefined) {
+      return this.input.coverPhoto;
+    }
+
+    return this.existingEnt?.coverPhoto ?? null;
+  }
+
+  // get value of cover_photo2. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCoverPhoto2Value(): Buffer | null {
+    if (this.input.coverPhoto2 !== undefined) {
+      return this.input.coverPhoto2;
+    }
+
+    return this.existingEnt?.coverPhoto2 ?? null;
   }
 }

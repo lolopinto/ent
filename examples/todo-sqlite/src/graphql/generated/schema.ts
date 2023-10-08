@@ -26,6 +26,8 @@ import {
   TodoStatusAccountEditPayloadType,
 } from "src/graphql/generated/mutations/account/todo_status_account_edit_type";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
+import { CountryInfoInputType } from "src/graphql/generated/mutations/input/country_info_input_type";
+import { CountryInputType } from "src/graphql/generated/mutations/input/country_input_type";
 import { AccountTodoStatusInputType } from "src/graphql/generated/mutations/input_enums_type";
 import { MutationType } from "src/graphql/generated/mutations/mutation_type";
 import {
@@ -87,6 +89,8 @@ import {
   AccountTodoStatusType,
   AccountType,
   AssigneeToTodosConnectionType,
+  CountryInfoType,
+  CountryType,
   RootToClosedTodosLastDayConnectionType,
   RootToOpenTodosConnectionType,
   TagToTodosConnectionType,
@@ -107,6 +111,8 @@ export default new GraphQLSchema({
     AccountCanViewerSeeType,
     AccountPrefsType,
     AccountType,
+    CountryInfoType,
+    CountryType,
     TagType,
     TodoType,
     WorkspaceType,
@@ -138,6 +144,8 @@ export default new GraphQLSchema({
     ChangeTodoBountyPayloadType,
     ChangeTodoStatusInputType,
     ChangeTodoStatusPayloadType,
+    CountryInfoInputType,
+    CountryInputType,
     CreateAccountInputType,
     CreateAccountPayloadType,
     CreateTagInputType,

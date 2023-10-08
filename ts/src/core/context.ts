@@ -3,7 +3,7 @@ import { IncomingMessage, ServerResponse } from "http";
 
 import { log } from "./logger";
 import { Context } from "./base";
-import { getJoinPhrase, getOrderByPhrase } from "./query_impl";
+import { getJoinInfo, getOrderByPhrase } from "./query_impl";
 
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext<TViewer extends Viewer = Viewer>
@@ -64,7 +64,7 @@ export class ContextCache {
       parts.push(getOrderByPhrase(options.orderby));
     }
     if (options.join) {
-      parts.push(getJoinPhrase(options.join));
+      parts.push(getJoinInfo(options.join).phrase);
     }
     return parts.join(",");
   }
@@ -130,5 +130,14 @@ export class ContextCache {
     this.loaderWithLoadMany.clear();
     this.itemMap.clear();
     this.listMap.clear();
+  }
+
+  /**
+   * reset clears the cache and resets the discarded loaders
+   * this is used in long-running things like tests or websocket connections where the same Context or ContextCache is being used repeatedly
+   */
+  reset(): void {
+    this.clearCache();
+    this.discardedLoaders = [];
   }
 }

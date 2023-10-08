@@ -457,6 +457,8 @@ export interface EventDBData {
   end_time: Date | null;
   location: string;
   address_id: ID | null;
+  cover_photo: Buffer | null;
+  cover_photo_2: Buffer | null;
 }
 
 const eventTable = "events";
@@ -470,6 +472,8 @@ const eventFields = [
   "end_time",
   "location",
   "address_id",
+  "cover_photo",
+  "cover_photo_2",
 ];
 
 export const eventLoader = new ObjectLoaderFactory<EventDBData>({
@@ -519,6 +523,14 @@ export const eventLoaderInfo = {
     addressID: {
       dbCol: "address_id",
       inputKey: "addressID",
+    },
+    cover_photo: {
+      dbCol: "cover_photo",
+      inputKey: "coverPhoto",
+    },
+    cover_photo2: {
+      dbCol: "cover_photo_2",
+      inputKey: "coverPhoto2",
     },
   },
 };

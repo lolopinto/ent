@@ -9,6 +9,7 @@ import DeleteEventAction from "../event/actions/delete_event_action";
 import CreateAddressAction from "../address/actions/create_address_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import { ID, query } from "@snowtop/ent";
+import { readFileSync } from "fs";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -519,4 +520,14 @@ describe("validators", () => {
       expectedEventIds.sort(),
     );
   });
+});
+
+test("binary types", async () => {
+  const b = readFileSync("../../testdata/flower.jpg");
+  const event = await create(new Date(), {
+    coverPhoto: b,
+    coverPhoto2: b,
+  });
+  expect(event.coverPhoto).toStrictEqual(b);
+  expect(event.coverPhoto2).toStrictEqual(b);
 });

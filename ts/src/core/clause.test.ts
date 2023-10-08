@@ -54,6 +54,14 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
       expect(cls.instanceKey()).toEqual("id=4");
+
+      const cls2 = clause.Eq<ExampleData>("id", 4, "t2");
+      expect(cls2.clause(2)).toBe("t2.id = $2");
+      expect(cls2.clause(1, "t")).toBe("t2.id = $1");
+      expect(cls2.columns()).toStrictEqual(["id"]);
+      expect(cls2.values()).toStrictEqual([4]);
+      expect(cls2.logValues()).toStrictEqual([4]);
+      expect(cls2.instanceKey()).toEqual("t2.id=4");
     });
 
     test("sensitive value", () => {
@@ -66,6 +74,14 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
       expect(cls.instanceKey()).toEqual("id=4");
+
+      const cls2 = clause.Eq<ExampleData>("id", clause.sensitiveValue(4), "t2");
+      expect(cls2.clause(2)).toBe("t2.id = $2");
+      expect(cls2.clause(1, "t")).toBe("t2.id = $1");
+      expect(cls2.columns()).toStrictEqual(["id"]);
+      expect(cls2.values()).toStrictEqual([4]);
+      expect(cls2.logValues()).toStrictEqual(["*"]);
+      expect(cls2.instanceKey()).toEqual("t2.id=4");
     });
   });
 
@@ -611,7 +627,7 @@ describe("postgres", () => {
   });
 
   describe("In|NotIn", () => {
-    test("1 arg", () => {
+    test("In. deprecated. 1 arg", () => {
       const cls = clause.In<ExampleData>("id", 1);
       expect(cls.clause(1)).toBe("id = $1");
       expect(cls.clause(1, "t")).toBe("t.id = $1");
@@ -619,6 +635,24 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
       expect(cls.instanceKey()).toEqual("in:id:1");
+    });
+
+    test("in. 1 arg", () => {
+      const cls = clause.DBTypeIn<ExampleData>("id", [1], "integer");
+      expect(cls.clause(1)).toBe("id = $1");
+      expect(cls.clause(1, "t")).toBe("t.id = $1");
+      expect(cls.columns()).toStrictEqual(["id"]);
+      expect(cls.values()).toStrictEqual([1]);
+      expect(cls.logValues()).toStrictEqual([1]);
+      expect(cls.instanceKey()).toEqual("in:id:1");
+
+      const cls2 = clause.DBTypeIn<ExampleData>("id", [1], "integer", "t2");
+      expect(cls2.clause(1)).toBe("t2.id = $1");
+      expect(cls2.clause(1, "t")).toBe("t2.id = $1");
+      expect(cls2.columns()).toStrictEqual(["id"]);
+      expect(cls2.values()).toStrictEqual([1]);
+      expect(cls2.logValues()).toStrictEqual([1]);
+      expect(cls2.instanceKey()).toEqual("in:t2.id:1");
     });
 
     test("not in. 1 arg", () => {
@@ -629,6 +663,14 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
       expect(cls.instanceKey()).toEqual("not in:id:1");
+
+      const cls2 = clause.DBTypeNotIn<ExampleData>("id", [1], "integer", "t2");
+      expect(cls2.clause(1)).toBe("t2.id != $1");
+      expect(cls2.clause(1, "t")).toBe("t2.id != $1");
+      expect(cls2.columns()).toStrictEqual(["id"]);
+      expect(cls2.values()).toStrictEqual([1]);
+      expect(cls2.logValues()).toStrictEqual([1]);
+      expect(cls2.instanceKey()).toEqual("not in:t2.id:1");
     });
 
     test("spread args", () => {
@@ -713,6 +755,18 @@ describe("postgres", () => {
         expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
+
+        const cls2 = clause.IntegerIn<ExampleData>("id", ids, "t2");
+        expect(cls2.clause(1)).toBe(
+          "t2.id IN (VALUES($1::integer), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls2.clause(1, "t")).toBe(
+          "t2.id IN (VALUES($1::integer), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls2.columns()).toStrictEqual(["id"]);
+        expect(cls2.values()).toStrictEqual(ids);
+        expect(cls2.logValues()).toStrictEqual(ids);
+        expect(cls2.instanceKey()).toEqual(`in:t2.id:${ids.join(",")}`);
       });
 
       test("uuid explicit", () => {
@@ -729,6 +783,18 @@ describe("postgres", () => {
         expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
+
+        const cls2 = clause.UuidIn<ExampleData>("id", ids, "t2");
+        expect(cls2.clause(1)).toBe(
+          "t2.id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls2.clause(1, "t")).toBe(
+          "t2.id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls2.columns()).toStrictEqual(["id"]);
+        expect(cls2.values()).toStrictEqual(ids);
+        expect(cls2.logValues()).toStrictEqual(ids);
+        expect(cls2.instanceKey()).toEqual(`in:t2.id:${ids.join(",")}`);
       });
 
       test("not in uuid", () => {
@@ -745,6 +811,18 @@ describe("postgres", () => {
         expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`not in:id:${ids.join(",")}`);
+
+        const cls2 = clause.UuidNotIn<ExampleData>("id", ids, "t2");
+        expect(cls2.clause(1)).toBe(
+          "t2.id NOT IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls2.clause(1, "t")).toBe(
+          "t2.id NOT IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls2.columns()).toStrictEqual(["id"]);
+        expect(cls2.values()).toStrictEqual(ids);
+        expect(cls2.logValues()).toStrictEqual(ids);
+        expect(cls2.instanceKey()).toEqual(`not in:t2.id:${ids.join(",")}`);
       });
 
       test("not in text", () => {
@@ -761,6 +839,18 @@ describe("postgres", () => {
         expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`not in:id:${ids.join(",")}`);
+
+        const cls2 = clause.DBTypeNotIn<ExampleData>("id", ids, "text", "t2");
+        expect(cls2.clause(1)).toBe(
+          "t2.id NOT IN (VALUES($1::text), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls2.clause(1, "t")).toBe(
+          "t2.id NOT IN (VALUES($1::text), ($2), ($3), ($4), ($5))",
+        );
+        expect(cls2.columns()).toStrictEqual(["id"]);
+        expect(cls2.values()).toStrictEqual(ids);
+        expect(cls2.logValues()).toStrictEqual(ids);
+        expect(cls2.instanceKey()).toEqual(`not in:t2.id:${ids.join(",")}`);
       });
     });
   });
@@ -794,6 +884,18 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([`{3}`]);
       expect(cls.logValues()).toStrictEqual([`{3}`]);
       expect(cls.instanceKey()).toEqual("ids@>3");
+
+      const cls2 = clause.PostgresArrayContainsValue<ExampleData>(
+        "ids",
+        3,
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.ids @> $1");
+      expect(cls2.clause(1, "t")).toBe("t2.ids @> $1");
+      expect(cls2.columns()).toStrictEqual(["ids"]);
+      expect(cls2.values()).toStrictEqual([`{3}`]);
+      expect(cls2.logValues()).toStrictEqual([`{3}`]);
+      expect(cls2.instanceKey()).toEqual("t2.ids@>3");
     });
 
     test("contains val:string", () => {
@@ -804,6 +906,18 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([`{foo}`]);
       expect(cls.logValues()).toStrictEqual([`{foo}`]);
       expect(cls.instanceKey()).toEqual("ids@>foo");
+
+      const cls2 = clause.PostgresArrayContainsValue<ExampleData>(
+        "ids",
+        "foo",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.ids @> $1");
+      expect(cls2.clause(1, "t")).toBe("t2.ids @> $1");
+      expect(cls2.columns()).toStrictEqual(["ids"]);
+      expect(cls2.values()).toStrictEqual([`{foo}`]);
+      expect(cls2.logValues()).toStrictEqual([`{foo}`]);
+      expect(cls2.instanceKey()).toEqual("t2.ids@>foo");
     });
 
     test("contains list", () => {
@@ -814,6 +928,18 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
       expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("ids@>3,4");
+
+      const cls2 = clause.PostgresArrayContains<ExampleData>(
+        "ids",
+        [3, 4],
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.ids @> $1");
+      expect(cls2.clause(1, "t")).toBe("t2.ids @> $1");
+      expect(cls2.columns()).toStrictEqual(["ids"]);
+      expect(cls2.values()).toStrictEqual([`{3, 4}`]);
+      expect(cls2.logValues()).toStrictEqual([`{3, 4}`]);
+      expect(cls2.instanceKey()).toEqual("t2.ids@>3,4");
     });
 
     test("contains list string", () => {
@@ -827,6 +953,18 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([`{foo, bar}`]);
       expect(cls.logValues()).toStrictEqual([`{foo, bar}`]);
       expect(cls.instanceKey()).toEqual("ids@>foo,bar");
+
+      const cls2 = clause.PostgresArrayContains<ExampleData>(
+        "ids",
+        ["foo", "bar"],
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.ids @> $1");
+      expect(cls2.clause(1, "t")).toBe("t2.ids @> $1");
+      expect(cls2.columns()).toStrictEqual(["ids"]);
+      expect(cls2.values()).toStrictEqual([`{foo, bar}`]);
+      expect(cls2.logValues()).toStrictEqual([`{foo, bar}`]);
+      expect(cls2.instanceKey()).toEqual("t2.ids@>foo,bar");
     });
 
     test("not contains val", () => {
@@ -837,6 +975,18 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([`{3}`]);
       expect(cls.logValues()).toStrictEqual([`{3}`]);
       expect(cls.instanceKey()).toEqual("NOT:ids@>3");
+
+      const cls2 = clause.PostgresArrayNotContainsValue<ExampleData>(
+        "ids",
+        3,
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("NOT t2.ids @> $1");
+      expect(cls2.clause(1, "t")).toBe("NOT t2.ids @> $1");
+      expect(cls2.columns()).toStrictEqual(["ids"]);
+      expect(cls2.values()).toStrictEqual([`{3}`]);
+      expect(cls2.logValues()).toStrictEqual([`{3}`]);
+      expect(cls2.instanceKey()).toEqual("NOT:t2.ids@>3");
     });
 
     test("not contains list", () => {
@@ -847,6 +997,18 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
       expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("NOT:ids@>3,4");
+
+      const cls2 = clause.PostgresArrayNotContains<ExampleData>(
+        "ids",
+        [3, 4],
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("NOT t2.ids @> $1");
+      expect(cls2.clause(1, "t")).toBe("NOT t2.ids @> $1");
+      expect(cls2.columns()).toStrictEqual(["ids"]);
+      expect(cls2.values()).toStrictEqual([`{3, 4}`]);
+      expect(cls2.logValues()).toStrictEqual([`{3, 4}`]);
+      expect(cls2.instanceKey()).toEqual("NOT:t2.ids@>3,4");
     });
 
     test("overlaps", () => {
@@ -857,6 +1019,18 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
       expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("ids&&3,4");
+
+      const cls2 = clause.PostgresArrayOverlaps<ExampleData>(
+        "ids",
+        [3, 4],
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.ids && $1");
+      expect(cls2.clause(1, "t")).toBe("t2.ids && $1");
+      expect(cls2.columns()).toStrictEqual(["ids"]);
+      expect(cls2.values()).toStrictEqual([`{3, 4}`]);
+      expect(cls2.logValues()).toStrictEqual([`{3, 4}`]);
+      expect(cls2.instanceKey()).toEqual("t2.ids&&3,4");
     });
 
     test("not overlaps", () => {
@@ -867,6 +1041,18 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([`{3, 4}`]);
       expect(cls.logValues()).toStrictEqual([`{3, 4}`]);
       expect(cls.instanceKey()).toEqual("NOT:ids&&3,4");
+
+      const cls2 = clause.PostgresArrayNotOverlaps<ExampleData>(
+        "ids",
+        [3, 4],
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("NOT t2.ids && $1");
+      expect(cls2.clause(1, "t")).toBe("NOT t2.ids && $1");
+      expect(cls2.columns()).toStrictEqual(["ids"]);
+      expect(cls2.values()).toStrictEqual([`{3, 4}`]);
+      expect(cls2.logValues()).toStrictEqual([`{3, 4}`]);
+      expect(cls2.instanceKey()).toEqual("NOT:t2.ids&&3,4");
     });
   });
 
@@ -884,6 +1070,20 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["$.* == 3"]);
       expect(cls.logValues()).toStrictEqual(["$.* == 3"]);
       expect(cls.instanceKey()).toEqual("jsonb$.*3==");
+
+      const cls2 = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.*",
+        3,
+        "==",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.jsonb @@ $1");
+      expect(cls2.clause(1, "t")).toBe("t2.jsonb @@ $1");
+      expect(cls2.columns()).toStrictEqual(["jsonb"]);
+      expect(cls2.values()).toStrictEqual(["$.* == 3"]);
+      expect(cls2.logValues()).toStrictEqual(["$.* == 3"]);
+      expect(cls2.instanceKey()).toEqual("t2.jsonb$.*3==");
     });
 
     test("eq string", () => {
@@ -899,6 +1099,20 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(['$.* == "hello"']);
       expect(cls.logValues()).toStrictEqual(['$.* == "hello"']);
       expect(cls.instanceKey()).toEqual("jsonb$.*hello==");
+
+      const cls2 = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.*",
+        "hello",
+        "==",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.jsonb @@ $1");
+      expect(cls2.clause(1, "t")).toBe("t2.jsonb @@ $1");
+      expect(cls2.columns()).toStrictEqual(["jsonb"]);
+      expect(cls2.values()).toStrictEqual(['$.* == "hello"']);
+      expect(cls2.logValues()).toStrictEqual(['$.* == "hello"']);
+      expect(cls2.instanceKey()).toEqual("t2.jsonb$.*hello==");
     });
 
     test("ge", () => {
@@ -914,6 +1128,20 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["$.* > 3"]);
       expect(cls.logValues()).toStrictEqual(["$.* > 3"]);
       expect(cls.instanceKey()).toEqual("jsonb$.*3>");
+
+      const cls2 = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.*",
+        3,
+        ">",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.jsonb @@ $1");
+      expect(cls2.clause(1, "t")).toBe("t2.jsonb @@ $1");
+      expect(cls2.columns()).toStrictEqual(["jsonb"]);
+      expect(cls2.values()).toStrictEqual(["$.* > 3"]);
+      expect(cls2.logValues()).toStrictEqual(["$.* > 3"]);
+      expect(cls2.instanceKey()).toEqual("t2.jsonb$.*3>");
     });
 
     test("ne", () => {
@@ -929,6 +1157,20 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["$.* != 3"]);
       expect(cls.logValues()).toStrictEqual(["$.* != 3"]);
       expect(cls.instanceKey()).toEqual("jsonb$.*3!=");
+
+      const cls2 = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.*",
+        3,
+        "!=",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.jsonb @@ $1");
+      expect(cls2.clause(1, "t")).toBe("t2.jsonb @@ $1");
+      expect(cls2.columns()).toStrictEqual(["jsonb"]);
+      expect(cls2.values()).toStrictEqual(["$.* != 3"]);
+      expect(cls2.logValues()).toStrictEqual(["$.* != 3"]);
+      expect(cls2.instanceKey()).toEqual("t2.jsonb$.*3!=");
     });
 
     test("specific path", () => {
@@ -944,6 +1186,20 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["$.col != 3"]);
       expect(cls.logValues()).toStrictEqual(["$.col != 3"]);
       expect(cls.instanceKey()).toEqual("jsonb$.col3!=");
+
+      const cls2 = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.col",
+        3,
+        "!=",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.jsonb @@ $1");
+      expect(cls2.clause(1, "t")).toBe("t2.jsonb @@ $1");
+      expect(cls2.columns()).toStrictEqual(["jsonb"]);
+      expect(cls2.values()).toStrictEqual(["$.col != 3"]);
+      expect(cls2.logValues()).toStrictEqual(["$.col != 3"]);
+      expect(cls2.instanceKey()).toEqual("t2.jsonb$.col3!=");
     });
 
     test("specific path arr idx", () => {
@@ -959,6 +1215,20 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["$.col[*] != 3"]);
       expect(cls.logValues()).toStrictEqual(["$.col[*] != 3"]);
       expect(cls.instanceKey()).toEqual("jsonb$.col[*]3!=");
+
+      const cls2 = clause.JSONPathValuePredicate<JSONData>(
+        "jsonb",
+        "$.col[*]",
+        3,
+        "!=",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.jsonb @@ $1");
+      expect(cls2.clause(1, "t")).toBe("t2.jsonb @@ $1");
+      expect(cls2.columns()).toStrictEqual(["jsonb"]);
+      expect(cls2.values()).toStrictEqual(["$.col[*] != 3"]);
+      expect(cls2.logValues()).toStrictEqual(["$.col[*] != 3"]);
+      expect(cls2.instanceKey()).toEqual("t2.jsonb$.col[*]3!=");
     });
   });
 
@@ -973,6 +1243,18 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
       expect(cls.instanceKey()).toEqual("name_idx@@to_tsquery:english:value");
+
+      const cls2 = clause.TsQuery<FullTextData>("name_idx", "value", "t2");
+      expect(cls2.clause(1)).toBe("t2.name_idx @@ to_tsquery('english', $1)");
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.name_idx @@ to_tsquery('english', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.name_idx@@to_tsquery:english:value",
+      );
     });
 
     test("tsquery complex", () => {
@@ -986,6 +1268,25 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["value"]);
       expect(cls.logValues()).toStrictEqual(["value"]);
       expect(cls.instanceKey()).toEqual("name_idx@@to_tsquery:simple:value");
+
+      const cls2 = clause.TsQuery<FullTextData>(
+        "name_idx",
+        {
+          language: "simple",
+          value: "value",
+        },
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe("t2.name_idx @@ to_tsquery('simple', $1)");
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.name_idx @@ to_tsquery('simple', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.name_idx@@to_tsquery:simple:value",
+      );
     });
 
     test("plainto_tsquery string", () => {
@@ -999,6 +1300,24 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual(["value"]);
       expect(cls.instanceKey()).toEqual(
         "name_idx@@plainto_tsquery:english:value",
+      );
+
+      const cls2 = clause.PlainToTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "t2.name_idx @@ plainto_tsquery('english', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.name_idx @@ plainto_tsquery('english', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.name_idx@@plainto_tsquery:english:value",
       );
     });
 
@@ -1017,6 +1336,27 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual(
         "name_idx@@plainto_tsquery:simple:value",
       );
+
+      const cls2 = clause.PlainToTsQuery<FullTextData>(
+        "name_idx",
+        {
+          language: "simple",
+          value: "value",
+        },
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "t2.name_idx @@ plainto_tsquery('simple', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.name_idx @@ plainto_tsquery('simple', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.name_idx@@plainto_tsquery:simple:value",
+      );
     });
 
     test("phraseto_tsquery string", () => {
@@ -1030,6 +1370,24 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual(["value"]);
       expect(cls.instanceKey()).toEqual(
         "name_idx@@phraseto_tsquery:english:value",
+      );
+
+      const cls2 = clause.PhraseToTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "t2.name_idx @@ phraseto_tsquery('english', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.name_idx @@ phraseto_tsquery('english', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.name_idx@@phraseto_tsquery:english:value",
       );
     });
 
@@ -1048,6 +1406,27 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual(
         "name_idx@@phraseto_tsquery:simple:value",
       );
+
+      const cls2 = clause.PhraseToTsQuery<FullTextData>(
+        "name_idx",
+        {
+          language: "simple",
+          value: "value",
+        },
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "t2.name_idx @@ phraseto_tsquery('simple', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.name_idx @@ phraseto_tsquery('simple', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.name_idx@@phraseto_tsquery:simple:value",
+      );
     });
 
     test("websearch_to_tsquery string", () => {
@@ -1063,6 +1442,24 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual(["value"]);
       expect(cls.instanceKey()).toEqual(
         "name_idx@@websearch_to_tsquery:english:value",
+      );
+
+      const cls2 = clause.WebsearchToTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "t2.name_idx @@ websearch_to_tsquery('english', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.name_idx @@ websearch_to_tsquery('english', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.name_idx@@websearch_to_tsquery:english:value",
       );
     });
 
@@ -1083,6 +1480,27 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual(
         "name_idx@@websearch_to_tsquery:simple:value",
       );
+
+      const cls2 = clause.WebsearchToTsQuery<FullTextData>(
+        "name_idx",
+        {
+          language: "simple",
+          value: "value",
+        },
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "t2.name_idx @@ websearch_to_tsquery('simple', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.name_idx @@ websearch_to_tsquery('simple', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.name_idx@@websearch_to_tsquery:simple:value",
+      );
     });
 
     test("tsvectorcol_tsquery string", () => {
@@ -1098,6 +1516,24 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual(["value"]);
       expect(cls.instanceKey()).toEqual(
         "to_tsvector(name_idx)@@to_tsquery:english:value",
+      );
+
+      const cls2 = clause.TsVectorColTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "to_tsvector(t2.name_idx) @@ to_tsquery('english', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "to_tsvector(t2.name_idx) @@ to_tsquery('english', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "to_tsvector(t2.name_idx)@@to_tsquery:english:value",
       );
     });
 
@@ -1118,6 +1554,27 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual(
         "to_tsvector(name_idx)@@to_tsquery:simple:value",
       );
+
+      const cls2 = clause.TsVectorColTsQuery<FullTextData>(
+        "name_idx",
+        {
+          language: "simple",
+          value: "value",
+        },
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "to_tsvector(t2.name_idx) @@ to_tsquery('simple', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "to_tsvector(t2.name_idx) @@ to_tsquery('simple', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "to_tsvector(t2.name_idx)@@to_tsquery:simple:value",
+      );
     });
 
     test("tsvectorcol_plainto_tsquery string", () => {
@@ -1136,6 +1593,24 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual(["value"]);
       expect(cls.instanceKey()).toEqual(
         "to_tsvector(name_idx)@@plainto_tsquery:english:value",
+      );
+
+      const cls2 = clause.TsVectorPlainToTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "to_tsvector(t2.name_idx) @@ plainto_tsquery('english', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "to_tsvector(t2.name_idx) @@ plainto_tsquery('english', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "to_tsvector(t2.name_idx)@@plainto_tsquery:english:value",
       );
     });
 
@@ -1156,6 +1631,27 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual(
         "to_tsvector(name_idx)@@plainto_tsquery:simple:value",
       );
+
+      const cls2 = clause.TsVectorPlainToTsQuery<FullTextData>(
+        "name_idx",
+        {
+          language: "simple",
+          value: "value",
+        },
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "to_tsvector(t2.name_idx) @@ plainto_tsquery('simple', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "to_tsvector(t2.name_idx) @@ plainto_tsquery('simple', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "to_tsvector(t2.name_idx)@@plainto_tsquery:simple:value",
+      );
     });
 
     test("tsvectorcol__phraseto_tsquery string", () => {
@@ -1174,6 +1670,24 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual(["value"]);
       expect(cls.instanceKey()).toEqual(
         "to_tsvector(name_idx)@@phraseto_tsquery:english:value",
+      );
+
+      const cls2 = clause.TsVectorPhraseToTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "to_tsvector(t2.name_idx) @@ phraseto_tsquery('english', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "to_tsvector(t2.name_idx) @@ phraseto_tsquery('english', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "to_tsvector(t2.name_idx)@@phraseto_tsquery:english:value",
       );
     });
 
@@ -1194,6 +1708,27 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual(
         "to_tsvector(name_idx)@@phraseto_tsquery:simple:value",
       );
+
+      const cls2 = clause.TsVectorPhraseToTsQuery(
+        "name_idx",
+        {
+          language: "simple",
+          value: "value",
+        },
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "to_tsvector(t2.name_idx) @@ phraseto_tsquery('simple', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "to_tsvector(t2.name_idx) @@ phraseto_tsquery('simple', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "to_tsvector(t2.name_idx)@@phraseto_tsquery:simple:value",
+      );
     });
 
     test("tsvectorcol_websearch_to_tsquery string", () => {
@@ -1213,6 +1748,24 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual(
         "to_tsvector(name_idx)@@websearch_to_tsquery:english:value",
       );
+
+      const cls2 = clause.TsVectorWebsearchToTsQuery<FullTextData>(
+        "name_idx",
+        "value",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "to_tsvector(t2.name_idx) @@ websearch_to_tsquery('english', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "to_tsvector(t2.name_idx) @@ websearch_to_tsquery('english', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "to_tsvector(t2.name_idx)@@websearch_to_tsquery:english:value",
+      );
     });
 
     test("websearch_to_tsquery complex", () => {
@@ -1231,6 +1784,27 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual(["value"]);
       expect(cls.instanceKey()).toEqual(
         "to_tsvector(name_idx)@@websearch_to_tsquery:simple:value",
+      );
+
+      const cls2 = clause.TsVectorWebsearchToTsQuery<FullTextData>(
+        "name_idx",
+        {
+          language: "simple",
+          value: "value",
+        },
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "to_tsvector(t2.name_idx) @@ websearch_to_tsquery('simple', $1)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "to_tsvector(t2.name_idx) @@ websearch_to_tsquery('simple', $1)",
+      );
+      expect(cls2.columns()).toStrictEqual(["name_idx"]);
+      expect(cls2.values()).toStrictEqual(["value"]);
+      expect(cls2.logValues()).toStrictEqual(["value"]);
+      expect(cls2.instanceKey()).toEqual(
+        "to_tsvector(t2.name_idx)@@websearch_to_tsquery:simple:value",
       );
     });
   });
@@ -1254,6 +1828,25 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.instanceKey()).toEqual("start_time->-events-id-fooo");
+
+      const cls2 = clause.PaginationMultipleColsSubQuery<EventData>(
+        "start_time",
+        ">",
+        "events",
+        "id",
+        "fooo",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "(t2.start_time > (SELECT t2.start_time FROM events WHERE t2.id = $1) OR (t2.start_time = (SELECT t2.start_time FROM events WHERE t2.id = $2) AND t2.id > $3))",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "(t2.start_time > (SELECT t2.start_time FROM events WHERE t2.id = $1) OR (t2.start_time = (SELECT t2.start_time FROM events WHERE t2.id = $2) AND t2.id > $3))",
+      );
+      expect(cls2.columns()).toStrictEqual(["start_time"]);
+      expect(cls2.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls2.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls2.instanceKey()).toEqual("t2.start_time->-events-t2.id-fooo");
     });
 
     test("> clause 3", () => {
@@ -1274,6 +1867,25 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.instanceKey()).toEqual("start_time->-events-id-fooo");
+
+      const cls2 = clause.PaginationMultipleColsSubQuery<EventData>(
+        "start_time",
+        ">",
+        "events",
+        "id",
+        "fooo",
+        "t2",
+      );
+      expect(cls2.clause(3)).toBe(
+        "(t2.start_time > (SELECT t2.start_time FROM events WHERE t2.id = $3) OR (t2.start_time = (SELECT t2.start_time FROM events WHERE t2.id = $4) AND t2.id > $5))",
+      );
+      expect(cls2.clause(3, "t")).toBe(
+        "(t2.start_time > (SELECT t2.start_time FROM events WHERE t2.id = $3) OR (t2.start_time = (SELECT t2.start_time FROM events WHERE t2.id = $4) AND t2.id > $5))",
+      );
+      expect(cls2.columns()).toStrictEqual(["start_time"]);
+      expect(cls2.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls2.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls2.instanceKey()).toEqual("t2.start_time->-events-t2.id-fooo");
     });
 
     test("<", () => {
@@ -1294,6 +1906,25 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.instanceKey()).toEqual("start_time-<-events-id-fooo");
+
+      const cls2 = clause.PaginationMultipleColsSubQuery<EventData>(
+        "start_time",
+        "<",
+        "events",
+        "id",
+        "fooo",
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "(t2.start_time < (SELECT t2.start_time FROM events WHERE t2.id = $1) OR (t2.start_time = (SELECT t2.start_time FROM events WHERE t2.id = $2) AND t2.id < $3))",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "(t2.start_time < (SELECT t2.start_time FROM events WHERE t2.id = $1) OR (t2.start_time = (SELECT t2.start_time FROM events WHERE t2.id = $2) AND t2.id < $3))",
+      );
+      expect(cls2.columns()).toStrictEqual(["start_time"]);
+      expect(cls2.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls2.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
+      expect(cls2.instanceKey()).toEqual("t2.start_time-<-events-t2.id-fooo");
     });
   });
 
@@ -1308,6 +1939,16 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
       expect(cls.instanceKey()).toEqual("balance+4");
+
+      const cls2 = clause.Add<BalanceData>("balance", 4, "t2");
+      expect(cls2.clause(1)).toBe("t2.balance + $1");
+      expect(cls2.clause(2)).toBe("t2.balance + $2");
+      expect(cls2.clause(1, "t")).toBe("t2.balance + $1");
+      expect(cls2.clause(2, "t")).toBe("t2.balance + $2");
+      expect(cls2.columns()).toStrictEqual(["balance"]);
+      expect(cls2.values()).toStrictEqual([4]);
+      expect(cls2.logValues()).toStrictEqual([4]);
+      expect(cls2.instanceKey()).toEqual("t2.balance+4");
     });
 
     test("subtract", () => {
@@ -1320,6 +1961,16 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
       expect(cls.instanceKey()).toEqual("balance-4");
+
+      const cls2 = clause.Subtract<BalanceData>("balance", 4, "t2");
+      expect(cls2.clause(1)).toBe("t2.balance - $1");
+      expect(cls2.clause(2)).toBe("t2.balance - $2");
+      expect(cls2.clause(1, "t")).toBe("t2.balance - $1");
+      expect(cls2.clause(2, "t")).toBe("t2.balance - $2");
+      expect(cls2.columns()).toStrictEqual(["balance"]);
+      expect(cls2.values()).toStrictEqual([4]);
+      expect(cls2.logValues()).toStrictEqual([4]);
+      expect(cls2.instanceKey()).toEqual("t2.balance-4");
     });
 
     test("divide", () => {
@@ -1332,6 +1983,16 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
       expect(cls.instanceKey()).toEqual("balance/4");
+
+      const cls2 = clause.Divide<BalanceData>("balance", 4, "t2");
+      expect(cls2.clause(1)).toBe("t2.balance / $1");
+      expect(cls2.clause(2)).toBe("t2.balance / $2");
+      expect(cls2.clause(1, "t")).toBe("t2.balance / $1");
+      expect(cls2.clause(2, "t")).toBe("t2.balance / $2");
+      expect(cls2.columns()).toStrictEqual(["balance"]);
+      expect(cls2.values()).toStrictEqual([4]);
+      expect(cls2.logValues()).toStrictEqual([4]);
+      expect(cls2.instanceKey()).toEqual("t2.balance/4");
     });
 
     test("multiply", () => {
@@ -1344,6 +2005,16 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
       expect(cls.instanceKey()).toEqual("balance*4");
+
+      const cls2 = clause.Multiply<BalanceData>("balance", 4, "t2");
+      expect(cls2.clause(1)).toBe("t2.balance * $1");
+      expect(cls2.clause(2)).toBe("t2.balance * $2");
+      expect(cls2.clause(1, "t")).toBe("t2.balance * $1");
+      expect(cls2.clause(2, "t")).toBe("t2.balance * $2");
+      expect(cls2.columns()).toStrictEqual(["balance"]);
+      expect(cls2.values()).toStrictEqual([4]);
+      expect(cls2.logValues()).toStrictEqual([4]);
+      expect(cls2.instanceKey()).toEqual("t2.balance*4");
     });
 
     test("modulo", () => {
@@ -1356,6 +2027,150 @@ describe("postgres", () => {
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
       expect(cls.instanceKey()).toEqual("balance%4");
+
+      const cls2 = clause.Modulo<BalanceData>("balance", 4, "t2");
+      expect(cls2.clause(1)).toBe("t2.balance % $1");
+      expect(cls2.clause(2)).toBe("t2.balance % $2");
+      expect(cls2.clause(1, "t")).toBe("t2.balance % $1");
+      expect(cls2.clause(2, "t")).toBe("t2.balance % $2");
+      expect(cls2.columns()).toStrictEqual(["balance"]);
+      expect(cls2.values()).toStrictEqual([4]);
+      expect(cls2.logValues()).toStrictEqual([4]);
+      expect(cls2.instanceKey()).toEqual("t2.balance%4");
+    });
+  });
+
+  describe("like queries", () => {
+    test("contains", () => {
+      const cls = clause.Contains<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar LIKE $1");
+      expect(cls.clause(2)).toBe("bar LIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar LIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar LIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["%foo%"]);
+      expect(cls.logValues()).toStrictEqual(["%foo%"]);
+      expect(cls.instanceKey()).toEqual("barLIKE%foo%");
+
+      const cls2 = clause.Contains<ExampleData>("bar", "foo", "t2");
+      expect(cls2.clause(1)).toBe("t2.bar LIKE $1");
+      expect(cls2.clause(2)).toBe("t2.bar LIKE $2");
+      expect(cls2.clause(1, "t")).toBe("t2.bar LIKE $1");
+      expect(cls2.clause(2, "t")).toBe("t2.bar LIKE $2");
+      expect(cls2.columns()).toStrictEqual(["bar"]);
+      expect(cls2.values()).toStrictEqual(["%foo%"]);
+      expect(cls2.logValues()).toStrictEqual(["%foo%"]);
+      expect(cls2.instanceKey()).toEqual("t2.barLIKE%foo%");
+    });
+
+    test("contains ignore case", () => {
+      const cls = clause.ContainsIgnoreCase<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar ILIKE $1");
+      expect(cls.clause(2)).toBe("bar ILIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar ILIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar ILIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["%foo%"]);
+      expect(cls.logValues()).toStrictEqual(["%foo%"]);
+      expect(cls.instanceKey()).toEqual("barILIKE%foo%");
+
+      const cls2 = clause.ContainsIgnoreCase<ExampleData>("bar", "foo", "t2");
+      expect(cls2.clause(1)).toBe("t2.bar ILIKE $1");
+      expect(cls2.clause(2)).toBe("t2.bar ILIKE $2");
+      expect(cls2.clause(1, "t")).toBe("t2.bar ILIKE $1");
+      expect(cls2.clause(2, "t")).toBe("t2.bar ILIKE $2");
+      expect(cls2.columns()).toStrictEqual(["bar"]);
+      expect(cls2.values()).toStrictEqual(["%foo%"]);
+      expect(cls2.logValues()).toStrictEqual(["%foo%"]);
+      expect(cls2.instanceKey()).toEqual("t2.barILIKE%foo%");
+    });
+
+    test("starts_with", () => {
+      const cls = clause.StartsWith<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar LIKE $1");
+      expect(cls.clause(2)).toBe("bar LIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar LIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar LIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["foo%"]);
+      expect(cls.logValues()).toStrictEqual(["foo%"]);
+      expect(cls.instanceKey()).toEqual("barLIKEfoo%");
+
+      const cls2 = clause.StartsWith<ExampleData>("bar", "foo", "t2");
+      expect(cls2.clause(1)).toBe("t2.bar LIKE $1");
+      expect(cls2.clause(2)).toBe("t2.bar LIKE $2");
+      expect(cls2.clause(1, "t")).toBe("t2.bar LIKE $1");
+      expect(cls2.clause(2, "t")).toBe("t2.bar LIKE $2");
+      expect(cls2.columns()).toStrictEqual(["bar"]);
+      expect(cls2.values()).toStrictEqual(["foo%"]);
+      expect(cls2.logValues()).toStrictEqual(["foo%"]);
+      expect(cls2.instanceKey()).toEqual("t2.barLIKEfoo%");
+    });
+
+    test("starts_with ignore case", () => {
+      const cls = clause.StartsWithIgnoreCase<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar ILIKE $1");
+      expect(cls.clause(2)).toBe("bar ILIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar ILIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar ILIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["foo%"]);
+      expect(cls.logValues()).toStrictEqual(["foo%"]);
+      expect(cls.instanceKey()).toEqual("barILIKEfoo%");
+
+      const cls2 = clause.StartsWithIgnoreCase<ExampleData>("bar", "foo", "t2");
+      expect(cls2.clause(1)).toBe("t2.bar ILIKE $1");
+      expect(cls2.clause(2)).toBe("t2.bar ILIKE $2");
+      expect(cls2.clause(1, "t")).toBe("t2.bar ILIKE $1");
+      expect(cls2.clause(2, "t")).toBe("t2.bar ILIKE $2");
+      expect(cls2.columns()).toStrictEqual(["bar"]);
+      expect(cls2.values()).toStrictEqual(["foo%"]);
+      expect(cls2.logValues()).toStrictEqual(["foo%"]);
+      expect(cls2.instanceKey()).toEqual("t2.barILIKEfoo%");
+    });
+
+    test("ends_with", () => {
+      const cls = clause.EndsWith<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar LIKE $1");
+      expect(cls.clause(2)).toBe("bar LIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar LIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar LIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["%foo"]);
+      expect(cls.logValues()).toStrictEqual(["%foo"]);
+      expect(cls.instanceKey()).toEqual("barLIKE%foo");
+
+      const cls2 = clause.EndsWith<ExampleData>("bar", "foo", "t2");
+      expect(cls2.clause(1)).toBe("t2.bar LIKE $1");
+      expect(cls2.clause(2)).toBe("t2.bar LIKE $2");
+      expect(cls2.clause(1, "t")).toBe("t2.bar LIKE $1");
+      expect(cls2.clause(2, "t")).toBe("t2.bar LIKE $2");
+      expect(cls2.columns()).toStrictEqual(["bar"]);
+      expect(cls2.values()).toStrictEqual(["%foo"]);
+      expect(cls2.logValues()).toStrictEqual(["%foo"]);
+      expect(cls2.instanceKey()).toEqual("t2.barLIKE%foo");
+    });
+
+    test("ends_with ignore_case", () => {
+      const cls = clause.EndsWithIgnoreCase<ExampleData>("bar", "foo");
+      expect(cls.clause(1)).toBe("bar ILIKE $1");
+      expect(cls.clause(2)).toBe("bar ILIKE $2");
+      expect(cls.clause(1, "t")).toBe("t.bar ILIKE $1");
+      expect(cls.clause(2, "t")).toBe("t.bar ILIKE $2");
+      expect(cls.columns()).toStrictEqual(["bar"]);
+      expect(cls.values()).toStrictEqual(["%foo"]);
+      expect(cls.logValues()).toStrictEqual(["%foo"]);
+      expect(cls.instanceKey()).toEqual("barILIKE%foo");
+
+      const cls2 = clause.EndsWithIgnoreCase<ExampleData>("bar", "foo", "t2");
+      expect(cls2.clause(1)).toBe("t2.bar ILIKE $1");
+      expect(cls2.clause(2)).toBe("t2.bar ILIKE $2");
+      expect(cls2.clause(1, "t")).toBe("t2.bar ILIKE $1");
+      expect(cls2.clause(2, "t")).toBe("t2.bar ILIKE $2");
+      expect(cls2.columns()).toStrictEqual(["bar"]);
+      expect(cls2.values()).toStrictEqual(["%foo"]);
+      expect(cls2.logValues()).toStrictEqual(["%foo"]);
+      expect(cls2.instanceKey()).toEqual("t2.barILIKE%foo");
     });
   });
 });
@@ -1378,6 +2193,16 @@ describe("sqlite", () => {
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual([4]);
       expect(cls.instanceKey()).toEqual("id=4");
+
+      const cls2 = clause.Eq<ExampleData>("id", 4, "t2");
+      expect(cls2.clause(1)).toBe("t2.id = ?");
+      expect(cls2.clause(2)).toBe("t2.id = ?");
+      expect(cls2.clause(1, "t")).toBe("t2.id = ?");
+      expect(cls2.clause(2, "t")).toBe("t2.id = ?");
+      expect(cls2.columns()).toStrictEqual(["id"]);
+      expect(cls2.values()).toStrictEqual([4]);
+      expect(cls2.logValues()).toStrictEqual([4]);
+      expect(cls2.instanceKey()).toEqual("t2.id=4");
     });
 
     test("sensitive value", () => {
@@ -1390,6 +2215,16 @@ describe("sqlite", () => {
       expect(cls.values()).toStrictEqual([4]);
       expect(cls.logValues()).toStrictEqual(["*"]);
       expect(cls.instanceKey()).toEqual("id=4");
+
+      const cls2 = clause.Eq<ExampleData>("id", clause.sensitiveValue(4), "t2");
+      expect(cls2.clause(1)).toBe("t2.id = ?");
+      expect(cls2.clause(2)).toBe("t2.id = ?");
+      expect(cls2.clause(1, "t")).toBe("t2.id = ?");
+      expect(cls2.clause(2, "t")).toBe("t2.id = ?");
+      expect(cls2.columns()).toStrictEqual(["id"]);
+      expect(cls2.values()).toStrictEqual([4]);
+      expect(cls2.logValues()).toStrictEqual(["*"]);
+      expect(cls2.instanceKey()).toEqual("t2.id=4");
     });
   });
 
@@ -1788,7 +2623,7 @@ describe("sqlite", () => {
   });
 
   describe("In", () => {
-    test("1 arg", () => {
+    test("In. deprecated. 1 arg", () => {
       const cls = clause.In<ExampleData>("id", 1);
       expect(cls.clause(1)).toBe("id = ?");
       expect(cls.clause(1, "t")).toBe("t.id = ?");
@@ -1796,6 +2631,24 @@ describe("sqlite", () => {
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
       expect(cls.instanceKey()).toEqual("in:id:1");
+    });
+
+    test("In. 1 arg", () => {
+      const cls = clause.DBTypeIn<ExampleData>("id", [1], "integer");
+      expect(cls.clause(1)).toBe("id = ?");
+      expect(cls.clause(1, "t")).toBe("t.id = ?");
+      expect(cls.columns()).toStrictEqual(["id"]);
+      expect(cls.values()).toStrictEqual([1]);
+      expect(cls.logValues()).toStrictEqual([1]);
+      expect(cls.instanceKey()).toEqual("in:id:1");
+
+      const cls2 = clause.DBTypeIn<ExampleData>("id", [1], "integer", "t2");
+      expect(cls2.clause(1)).toBe("t2.id = ?");
+      expect(cls2.clause(1, "t")).toBe("t2.id = ?");
+      expect(cls2.columns()).toStrictEqual(["id"]);
+      expect(cls2.values()).toStrictEqual([1]);
+      expect(cls2.logValues()).toStrictEqual([1]);
+      expect(cls2.instanceKey()).toEqual("in:t2.id:1");
     });
 
     test("not in. 1 arg", () => {
@@ -1806,6 +2659,14 @@ describe("sqlite", () => {
       expect(cls.values()).toStrictEqual([1]);
       expect(cls.logValues()).toStrictEqual([1]);
       expect(cls.instanceKey()).toEqual("not in:id:1");
+
+      const cls2 = clause.DBTypeNotIn<ExampleData>("id", [1], "integer", "t2");
+      expect(cls2.clause(1)).toBe("t2.id != ?");
+      expect(cls2.clause(1, "t")).toBe("t2.id != ?");
+      expect(cls2.columns()).toStrictEqual(["id"]);
+      expect(cls2.values()).toStrictEqual([1]);
+      expect(cls2.logValues()).toStrictEqual([1]);
+      expect(cls2.instanceKey()).toEqual("not in:t2.id:1");
     });
 
     test("spread args", () => {
@@ -1852,7 +2713,7 @@ describe("sqlite", () => {
     });
   });
 
-  describe("pagination multiple cols query", () => {
+  describe("pagination multiple cols sub query", () => {
     test(">", () => {
       const cls = clause.PaginationMultipleColsSubQuery<EventData>(
         "start_time",
@@ -1911,6 +2772,108 @@ describe("sqlite", () => {
       expect(cls.values()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.logValues()).toStrictEqual(["fooo", "fooo", "fooo"]);
       expect(cls.instanceKey()).toEqual("start_time-<-events-id-fooo");
+    });
+  });
+
+  describe("pagination multiple cols query", () => {
+    test("less", () => {
+      const d = new Date();
+      const cls = clause.PaginationMultipleColsQuery<EventData>(
+        "start_time",
+        "id",
+        true,
+        d.toISOString(),
+        4,
+      );
+      expect(cls.clause(1)).toBe(
+        "(start_time < ? OR (start_time = ? AND id < ?))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time < ? OR (t.start_time = ? AND t.id < ?))",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time", "start_time", "id"]);
+      expect(cls.values()).toStrictEqual([d.toISOString(), d.toISOString(), 4]);
+      expect(cls.logValues()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+
+      const cls2 = clause.PaginationMultipleColsQuery<EventData>(
+        "start_time",
+        "id",
+        true,
+        d.toISOString(),
+        4,
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "(t2.start_time < ? OR (t2.start_time = ? AND t2.id < ?))",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "(t2.start_time < ? OR (t2.start_time = ? AND t2.id < ?))",
+      );
+      expect(cls2.columns()).toStrictEqual(["start_time", "start_time", "id"]);
+      expect(cls2.values()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+      expect(cls2.logValues()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+    });
+
+    test("greater", () => {
+      const d = new Date();
+      const cls = clause.PaginationMultipleColsQuery<EventData>(
+        "start_time",
+        "id",
+        false,
+        d.toISOString(),
+        4,
+      );
+      expect(cls.clause(1)).toBe(
+        "(start_time > ? OR (start_time = ? AND id > ?))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time > ? OR (t.start_time = ? AND t.id > ?))",
+      );
+      expect(cls.columns()).toStrictEqual(["start_time", "start_time", "id"]);
+      expect(cls.values()).toStrictEqual([d.toISOString(), d.toISOString(), 4]);
+      expect(cls.logValues()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+
+      const cls2 = clause.PaginationMultipleColsQuery<EventData>(
+        "start_time",
+        "id",
+        false,
+        d.toISOString(),
+        4,
+        "t2",
+      );
+      expect(cls2.clause(1)).toBe(
+        "(t2.start_time > ? OR (t2.start_time = ? AND t2.id > ?))",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "(t2.start_time > ? OR (t2.start_time = ? AND t2.id > ?))",
+      );
+      expect(cls2.columns()).toStrictEqual(["start_time", "start_time", "id"]);
+      expect(cls2.values()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
+      expect(cls2.logValues()).toStrictEqual([
+        d.toISOString(),
+        d.toISOString(),
+        4,
+      ]);
     });
   });
 

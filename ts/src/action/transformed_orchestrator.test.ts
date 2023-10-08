@@ -33,6 +33,11 @@ import {
 import { convertDate } from "../core/convert";
 import { FieldMap } from "../schema";
 import { loadRawEdgeCountX } from "../core/ent";
+import {
+  DeletedAtSnakeCasePattern,
+  DeletedAtPattern,
+  DeletedAtPatternWithExtraWrites,
+} from "../testutils/soft_delete";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 async function createEdges() {
@@ -52,135 +57,14 @@ async function createEdges() {
   }
 }
 
-class DeletedAtPattern implements Pattern {
-  name = "deleted_at";
-  fields: FieldMap = {
-    // need this to be lowerCamelCase because we do this based on field name
-    // #510
-    deletedAt: TimestampType({
-      nullable: true,
-      index: true,
-      defaultValueOnCreate: () => null,
-    }),
-  };
-
-  transformRead(): clause.Clause {
-    // this is based on sql. other is based on field
-    return clause.Eq("deleted_at", null);
-  }
-
-  transformWrite<T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | null {
-    switch (stmt.op) {
-      case SQLStatementOperation.Delete:
-        return {
-          op: SQLStatementOperation.Update,
-          data: {
-            // this should return field, it'll be formatted as needed
-            deletedAt: new Date(),
-          },
-        };
-    }
-    return null;
-  }
-}
-
-class DeletedAtSnakeCasePattern implements Pattern {
-  name = "deleted_at";
-  fields: FieldMap = {
-    deleted_at: TimestampType({
-      nullable: true,
-      index: true,
-      defaultValueOnCreate: () => null,
-    }),
-  };
-
-  transformRead(): clause.Clause {
-    // this is based on sql. other is based on field
-    return clause.Eq("deleted_at", null);
-  }
-
-  transformWrite<T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | null {
-    switch (stmt.op) {
-      case SQLStatementOperation.Delete:
-        return {
-          op: SQLStatementOperation.Update,
-          data: {
-            // this should return field, it'll be formatted as needed
-            deleted_at: new Date(),
-          },
-        };
-    }
-    return null;
-  }
-}
-
-class DeletedAtPatternWithExtraWrites implements Pattern {
-  name = "deleted_at";
-  fields: FieldMap = {
-    // need this to be lowerCamelCase because we do this based on field name
-    // #510
-    deletedAt: TimestampType({
-      nullable: true,
-      index: true,
-      defaultValueOnCreate: () => null,
-    }),
-  };
-
-  transformRead(): clause.Clause {
-    // this is based on sql. other is based on field
-    return clause.Eq("deleted_at", null);
-  }
-
-  transformWrite<T extends Ent<TViewer>, TViewer extends Viewer = CustomViewer>(
-    stmt: UpdateOperation<T, TViewer>,
-  ): TransformedUpdateOperation<T, TViewer> | null {
-    switch (stmt.op) {
-      case SQLStatementOperation.Delete:
-        return {
-          op: SQLStatementOperation.Update,
-          data: {
-            // this should return field, it'll be formatted as needed
-            deletedAt: new Date(),
-          },
-          changeset: () =>
-            EntChangeset.changesetFromQueries(stmt.builder, [
-              `DELETE FROM edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
-              `DELETE FROM inverse_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
-              `DELETE FROM symmetric_edge_table WHERE id1 = '${stmt.builder.existingEnt?.id}'`,
-              {
-                query: `DELETE FROM edge_table WHERE id2 = ${
-                  DB.getDialect() === Dialect.Postgres ? "$1" : "?"
-                }`,
-                values: [stmt.builder.existingEnt?.id],
-              },
-              {
-                query: `DELETE FROM inverse_edge_table WHERE id2 = ${
-                  DB.getDialect() === Dialect.Postgres ? "$1" : "?"
-                }`,
-                values: [stmt.builder.existingEnt?.id],
-              },
-              {
-                query: `DELETE FROM symmetric_edge_table WHERE id2 = ${
-                  DB.getDialect() === Dialect.Postgres ? "$1" : "?"
-                }`,
-                values: [stmt.builder.existingEnt?.id],
-              },
-            ]),
-        };
-    }
-    return null;
-  }
-}
-
 class User extends BaseEnt {
   nodeType = "User";
   firstName: string;
 
-  constructor(public viewer: CustomViewer, public data: Data) {
+  constructor(
+    public viewer: CustomViewer,
+    public data: Data,
+  ) {
     super(viewer, data);
     this.firstName = data.first_name;
   }
@@ -213,7 +97,10 @@ interface CustomViewer extends Viewer {
 class Account extends BaseEnt {
   nodeType = "Account";
 
-  constructor(public viewer: CustomViewer, public data: Data) {
+  constructor(
+    public viewer: CustomViewer,
+    public data: Data,
+  ) {
     super(viewer, data);
   }
 }

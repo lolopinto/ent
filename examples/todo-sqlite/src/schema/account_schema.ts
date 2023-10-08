@@ -62,6 +62,17 @@ const AccountSchema = new TodoBaseEntSchema({
       // only viewer can see their credits balance
       privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
+    country_infos: StructTypeAsList({
+      tsType: "CountryInfo",
+      graphQLType: "CountryInfo",
+      nullable: true,
+      defaultValueOnCreate: () => [],
+      fields: {
+        countries: StructTypeAsList({
+          globalType: "Country",
+        }),
+      },
+    }),
   },
 
   actions: [

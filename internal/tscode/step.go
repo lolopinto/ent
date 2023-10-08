@@ -897,6 +897,28 @@ func writeLoadAnyFile(nodeData []*enum.Data, processor *codegen.Processor) error
 	})
 }
 
+type typesRoot struct {
+	s *schema.Schema
+	m map[string]bool
+}
+
+func (t *typesRoot) init() {
+	t.m = make(map[string]bool)
+	for _, ci := range t.s.CustomInterfaces {
+		for _, tt := range ci.GetAllCustomTypes() {
+			t.m[tt.GetTSType()] = true
+		}
+
+		for _, tt := range ci.GetAllEnums() {
+			t.m[tt.Name] = true
+		}
+	}
+}
+
+func (t *typesRoot) ForeignImport(name string) bool {
+	return !t.m[name]
+}
+
 func writeTypesFile(processor *codegen.Processor, nodeData []*enum.Data, edgeData []*enum.Data) error {
 	cfg := processor.Config
 	filePath := getFilePathForTypesFile(cfg)
@@ -910,6 +932,9 @@ func writeTypesFile(processor *codegen.Processor, nodeData []*enum.Data, edgeDat
 		return edgeData[i].Name < edgeData[j].Name
 	})
 
+	root := &typesRoot{s: processor.Schema}
+	root.init()
+
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
@@ -918,6 +943,7 @@ func writeTypesFile(processor *codegen.Processor, nodeData []*enum.Data, edgeDat
 			Config   *codegen.Config
 			NodeType *enum.Enum
 			EdgeType *enum.Enum
+			Root     *typesRoot
 		}{
 			processor.Schema,
 			cfg.GetImportPackage(),
@@ -930,6 +956,9 @@ func writeTypesFile(processor *codegen.Processor, nodeData []*enum.Data, edgeDat
 				Name:   "EdgeType",
 				Values: edgeData,
 			},
+			// used to know if we should import a foreign type
+			// e.g. in types.tmpl, we don't wanna import types defined in that file
+			root,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("types.tmpl"),
 		OtherTemplateFiles: []string{

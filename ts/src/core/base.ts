@@ -84,9 +84,15 @@ interface cache {
   primeCache(options: QueryOptions, rows: Data[]): void;
   primeCache(options: QueryOptions, rows: Data): void;
   clearCache(): void;
+  reset(): void;
 }
 
 export interface Context<TViewer extends Viewer = Viewer> {
+  // TODO https://github.com/lolopinto/ent/pull/1658
+  // if we ever make Context required, as part of that breaking change add reset()
+  // method so that we can reset the context for long-running "requests" like websockets
+  // and that'll be the official API/way of doing this
+  // TODO https://github.com/lolopinto/ent/issues/1576
   getViewer(): TViewer;
   // optional per (request)contet
   // absence means we are not doing any caching
@@ -153,6 +159,12 @@ export interface DataOptions {
 export interface SelectBaseDataOptions extends DataOptions {
   // list of fields to read
   fields: string[];
+  // use this alias to alias the fields instead of the table name or table alias
+  // takes precedence over tableName and alias
+  fieldsAlias?: string;
+  // don't use either alias for this query.
+  // possible reason in when doing aggregate queries and may have already aliased what we're querying
+  disableFieldsAlias?: boolean;
 }
 
 export interface SelectDataOptions extends SelectBaseDataOptions {
@@ -170,8 +182,7 @@ export interface QueryableDataOptions
   extends SelectBaseDataOptions,
     QueryDataOptions {}
 
-// for now, no complicated joins or no need to support multiple joins
-// just one simple join
+// for now, no complicated joins. just simple joins
 interface JoinOptions<T2 extends Data = Data, K2 = keyof T2> {
   tableName: string;
   alias?: string;
@@ -185,7 +196,7 @@ export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   groupby?: K;
   limit?: number;
   disableTransformations?: boolean;
-  join?: JoinOptions;
+  join?: JoinOptions[];
 }
 
 // For loading data from database
@@ -194,7 +205,7 @@ export interface LoadRowOptions extends QueryableDataOptions {}
 export interface LoadRowsOptions extends QueryableDataOptions {}
 
 interface OnConflictOptions {
-  // TODO these should change to fields instead of columns
+  // TODO should these change to fields instead of columns?
   onConflictCols: string[];
 
   // onConflictConstraint doesn't work with do nothing since ent always reloads the

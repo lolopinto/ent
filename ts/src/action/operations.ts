@@ -243,7 +243,7 @@ export class EditNodeOperation<
       if (this.hasData(options.fields)) {
         // even this with returning * may not always work if transformed...
         // we can have a transformed flag to see if it should be returned?
-        this.row = await editRow(queryer, options, "RETURNING *");
+        this.row = await editRow(queryer, options, this.getReturning());
       } else {
         // @ts-ignore
         this.row = this.existingEnt["data"];
@@ -252,7 +252,7 @@ export class EditNodeOperation<
       // TODO: eventually, when we officially support auto-increment ids. need to make sure/test that this works
       // https://github.com/lolopinto/ent/issues/1431
 
-      this.row = await createRow(queryer, options, "RETURNING *");
+      this.row = await createRow(queryer, options, this.getReturning());
       const key = this.options.key;
 
       if (this.row && this.row[key] !== this.options.fields[key]) {
@@ -327,6 +327,13 @@ export class EditNodeOperation<
     }
   }
 
+  private getReturning() {
+    if (this.options.loadEntOptions.fields.length) {
+      return `RETURNING ${this.options.loadEntOptions.fields.join(",")}`;
+    }
+    return `RETURNING *`;
+  }
+
   performWriteSync(queryer: SyncQueryer, context?: Context): void {
     let options = {
       ...this.options,
@@ -335,14 +342,14 @@ export class EditNodeOperation<
 
     if (this.existingEnt) {
       if (this.hasData(this.options.fields)) {
-        editRowSync(queryer, options, "RETURNING *");
+        editRowSync(queryer, options, this.getReturning());
         this.reloadRow(queryer, this.existingEnt.id, options);
       } else {
         // @ts-ignore
         this.row = this.existingEnt["data"];
       }
     } else {
-      createRowSync(queryer, options, "RETURNING *");
+      createRowSync(queryer, options, this.getReturning());
       const id = options.fields[options.key];
       this.reloadRow(queryer, id, options);
       const key = this.options.key;

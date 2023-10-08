@@ -1,4 +1,3 @@
-import { load } from "js-yaml";
 import {
   Data,
   Ent,
@@ -9,7 +8,7 @@ import {
   LoaderFactory,
   ConfigurableLoaderFactory,
 } from "../base";
-import { AndOptional, Clause, getCombinedClause } from "../clause";
+import { Clause, getCombinedClause } from "../clause";
 import { applyPrivacyPolicyForRows, getDefaultLimit } from "../ent";
 import {
   ObjectLoaderFactory,
@@ -63,7 +62,7 @@ function getClause<
   TViewer extends Viewer = Viewer,
 >(opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>) {
   let cls = opts.clause;
-  if (opts.disableTransformations || !cls) {
+  if (opts.disableTransformations) {
     return cls;
   }
   return getCombinedClause(
@@ -86,6 +85,7 @@ function getRawCountLoader<
     });
   }
   const name = `custom_query_count_loader:${opts.name}`;
+  console.debug(opts.name);
   return viewer.context.cache.getLoader(
     name,
     () =>
@@ -194,6 +194,7 @@ export abstract class CustomEdgeQueryBase<
     super(viewer, {
       cursorCol: uniqueCol,
       orderby,
+      fieldOptions: opts.loaderFactory.options,
     });
     if (typeof options.src === "object") {
       this.id = options.src.id;

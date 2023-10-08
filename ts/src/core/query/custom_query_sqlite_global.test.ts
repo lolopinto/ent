@@ -1,12 +1,16 @@
-import { Viewer } from "../base";
+import { Context, Viewer } from "../base";
 import {
+  FakeContact,
+  FakeContactSchemaWithDeletedAt,
   FakeUser,
   UserToContactsFkeyQuery,
   UserToContactsFkeyQueryAsc,
+  UserToContactsFkeyQueryDeletedAt,
+  UserToContactsFkeyQueryDeletedAtAsc,
 } from "../../testutils/fake_data/index";
 import { commonTests } from "./shared_test";
 import { MockLogs } from "../../testutils/mock_log";
-import { Eq } from "../clause";
+import * as clause from "../clause";
 
 const ml = new MockLogs();
 ml.mock();
@@ -14,12 +18,12 @@ ml.mock();
 describe("custom query", () => {
   commonTests({
     newQuery(viewer: Viewer, user: FakeUser) {
-      return UserToContactsFkeyQuery.query(viewer, user);
+      return UserToContactsFkeyQueryDeletedAt.query(viewer, user);
     },
     ml,
     uniqKey: "fake_contacts_global",
     tableName: "fake_contacts",
-    clause: Eq("user_id", ""),
+    clause: clause.And(clause.Eq("user_id", ""), clause.Eq("deleted_at", null)),
     sqlite: true,
     orderby: [
       {
@@ -28,18 +32,22 @@ describe("custom query", () => {
       },
     ],
     globalSchema: true,
+    loadEnt: (v: Viewer, id: string) => FakeContact.loadXWithDeletedAt(v, id),
+    loadRawData: (id: string, context?: Context) =>
+      FakeContact.loadRawDataWithDeletedAt(id, context),
+    contactSchemaForDeletionTest: FakeContactSchemaWithDeletedAt,
   });
 });
 
 describe("custom query ASC", () => {
   commonTests({
     newQuery(viewer: Viewer, user: FakeUser) {
-      return UserToContactsFkeyQueryAsc.query(viewer, user);
+      return UserToContactsFkeyQueryDeletedAtAsc.query(viewer, user);
     },
     ml,
     uniqKey: "fake_contacts_global_asc",
     tableName: "fake_contacts",
-    clause: Eq("user_id", ""),
+    clause: clause.And(clause.Eq("user_id", ""), clause.Eq("deleted_at", null)),
     sqlite: true,
     orderby: [
       {
@@ -48,6 +56,10 @@ describe("custom query ASC", () => {
       },
     ],
     globalSchema: true,
+    loadEnt: (v: Viewer, id: string) => FakeContact.loadXWithDeletedAt(v, id),
+    loadRawData: (id: string, context?: Context) =>
+      FakeContact.loadRawDataWithDeletedAt(id, context),
+    contactSchemaForDeletionTest: FakeContactSchemaWithDeletedAt,
   });
 });
 

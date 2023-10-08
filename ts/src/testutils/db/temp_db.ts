@@ -283,6 +283,16 @@ export function jsonb(name: string, opts?: options): Column {
   };
 }
 
+export function bytea(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "BYTEA";
+    },
+    ...opts,
+  };
+}
+
 function list(name: string, col: Column, opts?: options): Column {
   return {
     name,
@@ -596,7 +606,7 @@ export class TempDB {
 
     // drop db
     await this.client.query(`DROP DATABASE ${this.db}`);
-    // console.log(this.db);
+    // console.debug(this.db);
 
     await this.client.end();
   }
@@ -866,7 +876,10 @@ function getColumnForDbType(
       return jsonb;
     case DBType.JSON:
       return json;
-
+    case DBType.StringByte:
+      return text;
+    case DBType.Bytea:
+      return bytea;
     default:
       return undefined;
   }
