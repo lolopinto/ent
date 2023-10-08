@@ -11,8 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- add BETA support for joins to CustomClauseQuery. API may change in the future (#1673).
 - support multiple joins and change the API to take a list instead of just one join (#1665).
+- add BETA support for joins to CustomClauseQuery. API may change in the future (#1673).
+- bump graphql peer dependency (#1674)
+- instead of `RETURNING *` in actions, we indicate list of fields (#1677).
 
 ## [0.1.19] - 2023-10-08
 
