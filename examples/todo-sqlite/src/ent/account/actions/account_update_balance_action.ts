@@ -7,7 +7,7 @@ import {
 
 export { AccountUpdateBalanceInput };
 
-export default class AccountUpdateBalanceAction extends AccountUpdateBalanceActionBase {
+export class AccountUpdateBalanceAction extends AccountUpdateBalanceActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }

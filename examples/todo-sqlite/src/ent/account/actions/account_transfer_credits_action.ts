@@ -15,7 +15,7 @@ import AccountUpdateBalanceAction from "./account_update_balance_action";
 
 export { AccountTransferCreditsInput };
 
-export default class AccountTransferCreditsAction extends AccountTransferCreditsActionBase {
+export class AccountTransferCreditsAction extends AccountTransferCreditsActionBase {
   getPrivacyPolicy(): PrivacyPolicy<
     Account,
     Viewer<Ent<any> | null, ID | null>

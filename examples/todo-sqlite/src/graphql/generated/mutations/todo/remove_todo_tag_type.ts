@@ -12,7 +12,7 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Todo } from "src/ent/";
-import TodoRemoveTagAction from "src/ent/todo/actions/todo_remove_tag_action";
+import { TodoRemoveTagAction } from "src/ent/todo/actions/todo_remove_tag_action";
 import { TodoType } from "src/graphql/resolvers/";
 
 interface customRemoveTodoTagInput {

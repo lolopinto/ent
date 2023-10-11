@@ -2626,12 +2626,6 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 		TSType:   payload,
 		Exported: true,
 		GQLType:  "GraphQLObjectType",
-		DefaultImports: []*tsimport.ImportPath{
-			{
-				ImportPath: getActionPath(nodeData, a),
-				Import:     a.GetActionName(),
-			},
-		},
 		Imports: []*tsimport.ImportPath{
 			{
 				ImportPath: codepath.GetExternalImportPath(),
@@ -2647,6 +2641,17 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 			},
 		},
 	})
+	if processor.Config.DisableDefaultExportForActions() {
+		result.Imports = append(result.Imports, &tsimport.ImportPath{
+			ImportPath: getActionPath(nodeData, a),
+			Import:     a.GetActionName(),
+		})
+	} else {
+		result.DefaultImports = append(result.Imports, &tsimport.ImportPath{
+			ImportPath: getActionPath(nodeData, a),
+			Import:     a.GetActionName(),
+		})
+	}
 
 	// this is here but it's probably better in buildActionFieldConfig
 	if action.HasInput(a) {

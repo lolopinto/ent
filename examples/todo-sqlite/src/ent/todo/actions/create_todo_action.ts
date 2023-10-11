@@ -8,7 +8,7 @@ import { NodeType } from "src/ent/generated/types";
 
 export { TodoCreateInput };
 
-export default class CreateTodoAction extends CreateTodoActionBase {
+export class CreateTodoAction extends CreateTodoActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }

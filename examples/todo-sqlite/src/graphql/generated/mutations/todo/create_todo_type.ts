@@ -14,7 +14,8 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Todo } from "src/ent/";
-import CreateTodoAction, {
+import {
+  CreateTodoAction,
   TodoCreateInput,
 } from "src/ent/todo/actions/create_todo_action";
 import { TodoType } from "src/graphql/resolvers/";

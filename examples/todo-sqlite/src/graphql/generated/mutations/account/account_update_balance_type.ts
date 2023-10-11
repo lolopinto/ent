@@ -13,7 +13,8 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Account } from "src/ent/";
-import AccountUpdateBalanceAction, {
+import {
+  AccountUpdateBalanceAction,
   AccountUpdateBalanceInput,
 } from "src/ent/account/actions/account_update_balance_action";
 import { AccountType } from "src/graphql/resolvers/";
