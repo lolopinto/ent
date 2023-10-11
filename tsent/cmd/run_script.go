@@ -28,7 +28,6 @@ var runScriptCmd = &cobra.Command{
 			cmd2.GetArgsForTsNodeScript(cfg.GetAbsPathToRoot()),
 			// "--swc",
 			scriptPath,
-			// TODO extra args...
 		)
 
 		command := exec.Command("ts-node-script", cmdArgs...)
