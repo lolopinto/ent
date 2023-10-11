@@ -11,7 +11,7 @@ import {
   AccountTransferCreditsInput,
 } from "src/ent/generated/account/actions/account_transfer_credits_action_base";
 import { Account } from "src/ent/internal";
-import AccountUpdateBalanceAction from "./account_update_balance_action";
+import { AccountUpdateBalanceAction } from "./account_update_balance_action";
 
 export { AccountTransferCreditsInput };
 
