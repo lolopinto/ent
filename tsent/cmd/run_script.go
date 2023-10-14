@@ -15,6 +15,7 @@ var runScriptCmd = &cobra.Command{
 	Short: "run script",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// usually a path like scripts/fix_action_exports.ts
 		script := args[0]
 
 		cfg, err := codegen.NewConfig("src/schema", "")

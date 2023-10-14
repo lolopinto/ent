@@ -12,7 +12,8 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Account } from "src/ent/";
-import EditAccountTodoStatusAction, {
+import {
+  EditAccountTodoStatusAction,
   EditAccountTodoStatusInput,
 } from "src/ent/account/actions/edit_account_todo_status_action";
 import { AccountTodoStatusInput } from "src/ent/generated/account/actions/edit_account_todo_status_action_base";

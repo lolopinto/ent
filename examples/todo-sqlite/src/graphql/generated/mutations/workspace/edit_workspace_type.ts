@@ -13,7 +13,8 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Workspace } from "src/ent/";
-import EditWorkspaceAction, {
+import {
+  EditWorkspaceAction,
   WorkspaceEditInput,
 } from "src/ent/workspace/actions/edit_workspace_action";
 import { WorkspaceType } from "src/graphql/resolvers/";

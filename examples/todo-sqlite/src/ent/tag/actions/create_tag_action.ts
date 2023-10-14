@@ -7,7 +7,7 @@ import {
 
 export { TagCreateInput };
 
-export default class CreateTagAction extends CreateTagActionBase {
+export class CreateTagAction extends CreateTagActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }

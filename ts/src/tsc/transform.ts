@@ -1,6 +1,6 @@
 import * as glob from "glob";
 import ts from "typescript";
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 import * as fs from "fs";
 import { getImportInfo, transformImport } from "./ast";
 import { createSourceFile, getTargetFromCurrentDir } from "./compilerOptions";
@@ -212,7 +212,7 @@ export function transform(transform: TransformFile) {
   });
 
   if (transform.prettierGlob) {
-    execSync(`prettier ${transform.prettierGlob} --write`);
+    spawnSync(`prettier`, [transform.prettierGlob, "--write"]);
   }
 }
 

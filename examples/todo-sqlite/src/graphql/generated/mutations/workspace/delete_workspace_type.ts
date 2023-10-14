@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
-import DeleteWorkspaceAction from "src/ent/workspace/actions/delete_workspace_action";
+import { DeleteWorkspaceAction } from "src/ent/workspace/actions/delete_workspace_action";
 
 interface customDeleteWorkspaceInput {
   id: string;

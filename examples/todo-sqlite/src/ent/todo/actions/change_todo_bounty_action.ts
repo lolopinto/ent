@@ -15,7 +15,7 @@ import { Account } from "src/ent/internal";
 
 export { ChangeTodoBountyInput };
 
-export default class ChangeTodoBountyAction extends ChangeTodoBountyActionBase {
+export class ChangeTodoBountyAction extends ChangeTodoBountyActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }

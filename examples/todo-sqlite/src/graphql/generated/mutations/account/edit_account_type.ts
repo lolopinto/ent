@@ -14,8 +14,9 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Account } from "src/ent/";
-import EditAccountAction, {
+import {
   AccountEditInput,
+  EditAccountAction,
 } from "src/ent/account/actions/edit_account_action";
 import { AccountPrefs, CountryInfo } from "src/ent/generated/types";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";

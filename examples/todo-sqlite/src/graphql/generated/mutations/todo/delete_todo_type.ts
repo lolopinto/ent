@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
-import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
+import { DeleteTodoAction } from "src/ent/todo/actions/delete_todo_action";
 
 interface customDeleteTodoInput {
   id: string;

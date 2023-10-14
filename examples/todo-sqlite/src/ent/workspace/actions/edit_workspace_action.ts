@@ -14,7 +14,7 @@ import { Workspace } from "src/ent/workspace";
 
 export { WorkspaceEditInput };
 
-export default class EditWorkspaceAction extends EditWorkspaceActionBase {
+export class EditWorkspaceAction extends EditWorkspaceActionBase {
   getPrivacyPolicy(): PrivacyPolicy<
     Workspace,
     Viewer<Ent<any> | null, ID | null>
