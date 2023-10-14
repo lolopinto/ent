@@ -2647,7 +2647,7 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 			Import:     a.GetActionName(),
 		})
 	} else {
-		result.DefaultImports = append(result.Imports, &tsimport.ImportPath{
+		result.DefaultImports = append(result.DefaultImports, &tsimport.ImportPath{
 			ImportPath: getActionPath(nodeData, a),
 			Import:     a.GetActionName(),
 		})
