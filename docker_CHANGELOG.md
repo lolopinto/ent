@@ -9,6 +9,12 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.11] - 2023-10-14
+
+### Added
+
+- ability to configure exports for actions not to be default export (#1689)
+
 ## [0.1.10] - 2023-10-08
 
 ### Fixed
