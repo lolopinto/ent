@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.21] - 2023-10-14
+
+### Added
+
+- ability to configure exports for actions not to be default export (#1689)
+
 ## [0.1.20] - 2023-10-08
 
 ### Added

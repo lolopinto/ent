@@ -1,7 +1,7 @@
 import { createAccount, createTodoForSelf, createTag } from "../testutils/util";
 import { AccountToTagsQuery } from "../account/query/account_to_tags_query";
-import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
-import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
+import { TodoAddTagAction } from "../todo/actions/todo_add_tag_action";
+import { TodoRemoveTagAction } from "../todo/actions/todo_remove_tag_action";
 
 test("create", async () => {
   await createTag("SPORTS");

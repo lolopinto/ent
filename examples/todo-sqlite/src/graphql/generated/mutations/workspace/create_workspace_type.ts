@@ -12,7 +12,8 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Workspace } from "src/ent/";
-import CreateWorkspaceAction, {
+import {
+  CreateWorkspaceAction,
   WorkspaceCreateInput,
 } from "src/ent/workspace/actions/create_workspace_action";
 import { WorkspaceType } from "src/graphql/resolvers/";

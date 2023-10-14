@@ -29,6 +29,10 @@ export function getClassInfo(
   fileContents: string,
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
+  override?: {
+    hasExport: boolean;
+    hasDefault: boolean;
+  },
 ): ClassInfo | undefined {
   let className = node.name?.text;
 
@@ -83,7 +87,10 @@ export function getClassInfo(
     }`;
   };
 
-  if (node.modifiers) {
+  if (override) {
+    hasExport = override.hasExport;
+    hasDefault = override.hasDefault;
+  } else if (node.modifiers) {
     for (const mod of node.modifiers) {
       const text = mod.getText(sourceFile);
       if (text === "export") {

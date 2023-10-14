@@ -14,7 +14,8 @@ import {
 } from "graphql";
 import { ID, RequestContext, Viewer } from "@snowtop/ent";
 import { Tag } from "src/ent/";
-import CreateTagAction, {
+import {
+  CreateTagAction,
   TagCreateInput,
 } from "src/ent/tag/actions/create_tag_action";
 import { TagType } from "src/graphql/resolvers/";

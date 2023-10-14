@@ -1,6 +1,6 @@
-import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
-import RenameTodoStatusAction from "src/ent/todo/actions/rename_todo_status_action";
-import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
+import { ChangeTodoStatusAction } from "src/ent/todo/actions/change_todo_status_action";
+import { RenameTodoStatusAction } from "src/ent/todo/actions/rename_todo_status_action";
+import { DeleteTodoAction } from "src/ent/todo/actions/delete_todo_action";
 import { Account, Todo } from "src/ent/";
 import { AccountTodoStatus, NodeType } from "src/ent/generated/types";
 import {
@@ -12,10 +12,10 @@ import {
 } from "../testutils/util";
 import { IDViewer, query } from "@snowtop/ent";
 import { advanceTo } from "jest-date-mock";
-import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
-import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
-import CreateTodoAction from "../todo/actions/create_todo_action";
-import ChangeTodoBountyAction from "../todo/actions/change_todo_bounty_action";
+import { TodoAddTagAction } from "../todo/actions/todo_add_tag_action";
+import { TodoRemoveTagAction } from "../todo/actions/todo_remove_tag_action";
+import { CreateTodoAction } from "../todo/actions/create_todo_action";
+import { ChangeTodoBountyAction } from "../todo/actions/change_todo_bounty_action";
 import { Transaction } from "@snowtop/ent/action";
 
 test("create for self", async () => {

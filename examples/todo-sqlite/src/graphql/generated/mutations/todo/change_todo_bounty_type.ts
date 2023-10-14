@@ -13,7 +13,8 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Todo } from "src/ent/";
-import ChangeTodoBountyAction, {
+import {
+  ChangeTodoBountyAction,
   ChangeTodoBountyInput,
 } from "src/ent/todo/actions/change_todo_bounty_action";
 import { TodoType } from "src/graphql/resolvers/";

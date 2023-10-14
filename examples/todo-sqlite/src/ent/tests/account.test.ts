@@ -1,10 +1,10 @@
-import EditAccountAction from "../account/actions/edit_account_action";
-import DeleteAccountAction from "../account/actions/delete_account_action";
+import { EditAccountAction } from "../account/actions/edit_account_action";
+import { DeleteAccountAction } from "../account/actions/delete_account_action";
 import { Account } from "../internal";
 import { createAccount } from "../testutils/util";
 import { advanceTo } from "jest-date-mock";
-import AccountUpdateBalanceAction from "../account/actions/account_update_balance_action";
-import AccountTransferCreditsAction from "../account/actions/account_transfer_credits_action";
+import { AccountUpdateBalanceAction } from "../account/actions/account_update_balance_action";
+import { AccountTransferCreditsAction } from "../account/actions/account_transfer_credits_action";
 import { Transaction } from "@snowtop/ent/action";
 
 test("create", async () => {

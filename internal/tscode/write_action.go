@@ -62,6 +62,8 @@ func writeActionFile(nodeData *schema.NodeData, processor *codegen.Processor, ac
 		Config: processor.Config,
 		Data: actionTemplate{
 			NodeData: nodeData,
+			// TODO more places where s/CodePath/Config
+			CodePath: processor.Config,
 			Action:   action,
 			BasePath: getImportPathForActionBaseFile(nodeData, action),
 			Package:  cfg.GetImportPackage(),

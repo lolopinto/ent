@@ -6,7 +6,7 @@ import {
 
 export { RenameTodoInput };
 
-export default class RenameTodoStatusAction extends RenameTodoStatusActionBase {
+export class RenameTodoStatusAction extends RenameTodoStatusActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }
