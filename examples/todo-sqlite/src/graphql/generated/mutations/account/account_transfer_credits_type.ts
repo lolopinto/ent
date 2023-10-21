@@ -13,7 +13,8 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Account } from "src/ent/";
-import AccountTransferCreditsAction, {
+import {
+  AccountTransferCreditsAction,
   AccountTransferCreditsInput,
 } from "src/ent/account/actions/account_transfer_credits_action";
 import { AccountType } from "src/graphql/resolvers/";

@@ -6,7 +6,7 @@ import {
 
 export { AccountCreateInput };
 
-export default class CreateAccountAction extends CreateAccountActionBase {
+export class CreateAccountAction extends CreateAccountActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }

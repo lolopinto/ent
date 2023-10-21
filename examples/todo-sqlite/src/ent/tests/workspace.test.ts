@@ -1,7 +1,7 @@
 import { createAccount, createWorkspace } from "../testutils/util";
 import { Workspace } from "../workspace";
-import DeleteWorkspaceAction from "../workspace/actions/delete_workspace_action";
-import EditWorkspaceAction from "../workspace/actions/edit_workspace_action";
+import { DeleteWorkspaceAction } from "../workspace/actions/delete_workspace_action";
+import { EditWorkspaceAction } from "../workspace/actions/edit_workspace_action";
 
 test("create", async () => {
   await createWorkspace();

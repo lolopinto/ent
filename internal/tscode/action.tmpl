@@ -1,5 +1,6 @@
 {{$action := .Action }}
 {{ $actionName := $action.GetActionName -}}
+{{ $cfg := .CodePath }}
 {{ $baseName := printf "%sBase" $actionName -}}
 
 {{ $hasInput := hasInput $action -}}
@@ -14,6 +15,12 @@
   export { {{useImport $inputName}} };
 {{end}}
 
+{{if  $cfg.DisableDefaultExportForActions }} 
+export class {{$actionName}} extends {{useImport $baseName}} {
+
+}
+{{else}}
 export default class {{$actionName}} extends {{useImport $baseName}} {
 
 }
+{{end}}

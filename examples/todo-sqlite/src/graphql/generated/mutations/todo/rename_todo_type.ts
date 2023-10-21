@@ -13,8 +13,9 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Todo } from "src/ent/";
-import RenameTodoStatusAction, {
+import {
   RenameTodoInput,
+  RenameTodoStatusAction,
 } from "src/ent/todo/actions/rename_todo_status_action";
 import { TodoType } from "src/graphql/resolvers/";
 

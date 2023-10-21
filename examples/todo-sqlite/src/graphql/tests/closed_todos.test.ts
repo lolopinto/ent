@@ -1,7 +1,7 @@
 import { Account, Todo } from "src/ent";
 import { expectQueryFromRoot } from "@snowtop/ent-graphql-tests";
 import schema from "src/graphql/generated/schema";
-import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
+import { ChangeTodoStatusAction } from "src/ent/todo/actions/change_todo_status_action";
 import { createAccount, createTodoForSelf } from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
 import { DB, loadConfig } from "@snowtop/ent";

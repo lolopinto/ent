@@ -7,7 +7,7 @@ import {
 
 export { EditAccountTodoStatusInput };
 
-export default class EditAccountTodoStatusAction extends EditAccountTodoStatusActionBase {
+export class EditAccountTodoStatusAction extends EditAccountTodoStatusActionBase {
   getPrivacyPolicy(): PrivacyPolicy {
     return AlwaysAllowPrivacyPolicy;
   }

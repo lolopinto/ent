@@ -15,7 +15,7 @@
     "extract-files": "^9.0.0",
     "graphql": "^15.5.0",
     "luxon": "^3.2.1",
-    "next": "^12.1.0",
+    "next": "^13.5.4",
     "react": "^17.0.1",
     "react-bootstrap": "^1.5.2",
     "react-datepicker": "^3.6.0",
