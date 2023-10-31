@@ -9,6 +9,12 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.12] - 2023-10-30
+
+### Fixed
+
+- Export interfaces and other types generated in mixin builders (#1704)
+
 ## [0.1.11] - 2023-10-14
 
 ### Added
