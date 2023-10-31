@@ -18,9 +18,9 @@
 {{ end}}
 
 
-interface {{$p.GetMixinWithInterfaceName}} extends {{useImport "Ent"}}<{{$viewerType}}>, {{useImport $p.GetMixinInterfaceName}} {}
+export interface {{$p.GetMixinWithInterfaceName}} extends {{useImport "Ent"}}<{{$viewerType}}>, {{useImport $p.GetMixinInterfaceName}} {}
 
-interface {{$p.GetBuilderInterfaceName}}<T extends {{$p.GetMixinWithInterfaceName}}> {
+export interface {{$p.GetBuilderInterfaceName}}<T extends {{$p.GetMixinWithInterfaceName}}> {
   {{/* if the logic in here changes, also have to update edge_builder.tmpl */ -}}
   {{ $edgeInfos := edgeInfos $p.GetSortedEdges -}}
   {{ range $edge := $edgeInfos -}}  
@@ -55,7 +55,7 @@ interface BuilderConstructor<T extends {{$p.GetMixinWithInterfaceName}} , C = {}
 
 {{$ishName := printf "%sIsh" $p.GetBuilderName -}} 
 
-type {{$ishName}}<T extends {{$p.GetMixinWithInterfaceName}} > = Constructor<
+export type {{$ishName}}<T extends {{$p.GetMixinWithInterfaceName}} > = Constructor<
   BuilderConstructor<T>
 >;
 

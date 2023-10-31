@@ -5,9 +5,9 @@ import { AssocEdgeOptions, Builder, Orchestrator } from "@snowtop/ent/action";
 import { EdgeType, NodeType } from "src/ent/generated/types";
 import { ITodoContainer, Todo } from "src/ent/internal";
 
-interface IEntWithTodoContainer extends Ent<Viewer>, ITodoContainer {}
+export interface IEntWithTodoContainer extends Ent<Viewer>, ITodoContainer {}
 
-interface ITodoContainerBuilder<T extends IEntWithTodoContainer> {
+export interface ITodoContainerBuilder<T extends IEntWithTodoContainer> {
   addScopedTodo(...nodes: (ID | Todo | Builder<Todo, any>)[]): this;
   addScopedTodoID(
     id: ID | Builder<Todo, any>,
@@ -24,9 +24,8 @@ interface BuilderConstructor<T extends IEntWithTodoContainer, C = {}> {
   ): node is Builder<T, any>;
 }
 
-type TodoContainerBuilderIsh<T extends IEntWithTodoContainer> = Constructor<
-  BuilderConstructor<T>
->;
+export type TodoContainerBuilderIsh<T extends IEntWithTodoContainer> =
+  Constructor<BuilderConstructor<T>>;
 
 export function TodoContainerBuilder<
   TEnt extends IEntWithTodoContainer,
