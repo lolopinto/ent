@@ -1678,6 +1678,18 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 							return err
 						}
 					}
+					// force optional in action. fake the field as nullable
+					// this is kinda like a hack because we have nullable and optional
+					// conflated in so many places.
+					// we use field.Nullable when rendering interfaces in interface.tmpl to determine if optional
+
+					if f2.ForceOptionalInAction() {
+						var err error
+						f3, err = f2.Clone(field.Nullable())
+						if err != nil {
+							return err
+						}
+					}
 					a.AddCustomField(t, f3)
 				}
 			}

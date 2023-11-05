@@ -415,6 +415,7 @@ input CreateTodoInput {
   scope_id: ID!
   scope_type: String!
   bounty: Int
+  tags: [TagTodoCreateInput!]
 }
 
 type CreateTodoPayload {
@@ -502,6 +503,12 @@ input RenameTodoInput {
 
 type RenameTodoPayload {
   todo: Todo!
+}
+
+input TagTodoCreateInput {
+  display_name: String!
+  related_tag_ids: [ID!]
+  canonical_name: String
 }
 
 input TodoStatusAccountEditInput {
