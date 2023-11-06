@@ -9,6 +9,12 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.13] - 2023-11-05
+
+### Fixed
+
+- Fix optional non-nullable field in action not being optional in certain actions (#1708)
+
 ## [0.1.12] - 2023-10-30
 
 ### Fixed
