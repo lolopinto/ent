@@ -9,9 +9,9 @@ import { EdgeType, NodeType } from "../../../types";
 import { Comment, IFeedback, User } from "../../../../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../../viewer/viewer";
 
-interface IEntWithFeedback extends Ent<ExampleViewerAlias>, IFeedback {}
+export interface IEntWithFeedback extends Ent<ExampleViewerAlias>, IFeedback {}
 
-interface IFeedbackBuilder<T extends IEntWithFeedback> {
+export interface IFeedbackBuilder<T extends IEntWithFeedback> {
   addComment(...nodes: (ID | Comment | Builder<Comment, any>)[]): this;
   addCommentID(
     id: ID | Builder<Comment, any>,
@@ -35,7 +35,7 @@ interface BuilderConstructor<T extends IEntWithFeedback, C = {}> {
   ): node is Builder<T, any>;
 }
 
-type FeedbackBuilderIsh<T extends IEntWithFeedback> = Constructor<
+export type FeedbackBuilderIsh<T extends IEntWithFeedback> = Constructor<
   BuilderConstructor<T>
 >;
 
