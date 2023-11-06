@@ -7,6 +7,7 @@ import {
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
   GraphQLInt,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -31,6 +32,21 @@ interface CreateTodoPayload {
   todo: Todo;
 }
 
+export const TagTodoCreateInput = new GraphQLInputObjectType({
+  name: "TagTodoCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    display_name: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    related_tag_ids: {
+      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
+    },
+    canonical_name: {
+      type: GraphQLString,
+    },
+  }),
+});
+
 export const CreateTodoInputType = new GraphQLInputObjectType({
   name: "CreateTodoInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -51,6 +67,9 @@ export const CreateTodoInputType = new GraphQLInputObjectType({
     },
     bounty: {
       type: GraphQLInt,
+    },
+    tags: {
+      type: new GraphQLList(new GraphQLNonNull(TagTodoCreateInput)),
     },
   }),
 });
@@ -92,6 +111,7 @@ export const CreateTodoType: GraphQLFieldConfig<
       scopeID: input.scope_id,
       scopeType: input.scope_type,
       bounty: input.bounty,
+      tags: input.tags,
     }).saveX();
     return { todo: todo };
   },

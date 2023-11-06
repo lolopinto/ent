@@ -49,6 +49,7 @@ import {
 import {
   CreateTodoInputType,
   CreateTodoPayloadType,
+  TagTodoCreateInput,
 } from "src/graphql/generated/mutations/todo/create_todo_type";
 import {
   DeleteTodoInputType,
@@ -168,6 +169,7 @@ export default new GraphQLSchema({
     RemoveTodoTagPayloadType,
     RenameTodoInputType,
     RenameTodoPayloadType,
+    TagTodoCreateInput,
     TodoStatusAccountEditInputType,
     TodoStatusAccountEditPayloadType,
   ],

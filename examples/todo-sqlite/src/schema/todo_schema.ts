@@ -78,6 +78,17 @@ const TodoSchema = new TodoBaseEntSchema({
     {
       operation: ActionOperation.Create,
       excludedFields: ["Completed", "completedDate"],
+      actionOnlyFields: [
+        {
+          name: "tags",
+          list: true,
+          optional: true,
+          type: "Object",
+          actionName: "CreateTagAction",
+          // TODO excludedFields should verify that all fields are valid
+          excludedFields: ["ownerID"],
+        },
+      ],
     },
     {
       operation: ActionOperation.Edit,

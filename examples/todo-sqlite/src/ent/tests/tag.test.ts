@@ -101,4 +101,36 @@ describe("tag + todo", () => {
     const count2 = await todo.queryTags().queryRawCount();
     expect(count2).toBe(0);
   });
+
+  test("add tag while creating todo", async () => {
+    const account = await createAccount();
+
+    const todo = await createTodoForSelf({
+      creatorID: account.id,
+      tags: [
+        {
+          displayName: "kids",
+        },
+        {
+          displayName: "WORK",
+          canonicalName: "work",
+        },
+      ],
+    });
+
+    const count = await todo.queryTags().queryRawCount();
+    expect(count).toBe(2);
+
+    const ents = await todo.queryTags().queryEnts();
+    expect(ents.map((ent) => ent.displayName).sort()).toEqual(["WORK", "kids"]);
+    expect(ents.map((ent) => ent.canonicalName).sort()).toEqual([
+      "kids",
+      "work",
+    ]);
+
+    const count2 = await ents[0].queryTodos().queryRawCount();
+    const count3 = await ents[1].queryTodos().queryRawCount();
+    expect(count2).toBe(1);
+    expect(count3).toBe(1);
+  });
 });
