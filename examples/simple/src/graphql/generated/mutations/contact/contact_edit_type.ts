@@ -21,7 +21,8 @@ import { Contact } from "../../../../ent";
 import EditContactAction, {
   ContactEditInput,
 } from "../../../../ent/contact/actions/edit_contact_action";
-import { ContactType } from "../../../resolvers";
+import { ContactInfoInputType } from "../input/contact_info_input_type";
+import { ContactLabelType, ContactType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactEditInput extends ContactEditInput {
@@ -31,6 +32,24 @@ interface customContactEditInput extends ContactEditInput {
 interface ContactEditPayload {
   contact: Contact;
 }
+
+export const EmailContactEditInput = new GraphQLInputObjectType({
+  name: "EmailContactEditInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    id: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    extra: {
+      type: ContactInfoInputType,
+    },
+    emailAddress: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    label: {
+      type: new GraphQLNonNull(ContactLabelType),
+    },
+  }),
+});
 
 export const ContactEditInputType = new GraphQLInputObjectType({
   name: "ContactEditInput",
@@ -50,6 +69,9 @@ export const ContactEditInputType = new GraphQLInputObjectType({
     },
     lastName: {
       type: GraphQLString,
+    },
+    emails: {
+      type: new GraphQLList(new GraphQLNonNull(EmailContactEditInput)),
     },
   }),
 });
@@ -96,6 +118,7 @@ export const ContactEditType: GraphQLFieldConfig<
           : undefined,
         firstName: input.firstName,
         lastName: input.lastName,
+        emails: input.emails,
       },
     );
     return { contact };

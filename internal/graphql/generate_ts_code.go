@@ -2466,6 +2466,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	}
 
 	// add id field for edit and delete mutations
+	// TODO use GetPublicAPIFields and remove this check everywhere that's doing this check here
 	if a.MutatingExistingObject() {
 		id, err := getIDField(processor, nodeData)
 		if err != nil {

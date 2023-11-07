@@ -914,6 +914,7 @@ func Nullable() Option {
 	return func(f *Field) {
 		f.nullable = true
 		f.forceOptionalInAction = true
+		f.graphqlNullable = true
 	}
 }
 
