@@ -29,6 +29,7 @@ import {
 import {
   ContactEditInputType,
   ContactEditPayloadType,
+  EmailContactEditInput,
 } from "./mutations/contact/contact_edit_type";
 import {
   ContactEmailCreateInputType,
@@ -377,6 +378,7 @@ export default new GraphQLSchema({
     EditPhoneNumberInputType,
     EditPhoneNumberPayloadType,
     EmailContactCreateInput,
+    EmailContactEditInput,
     EventAddHostInputType,
     EventAddHostPayloadType,
     EventArgInputType,

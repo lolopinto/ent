@@ -28,6 +28,8 @@ import (
 
 type Action interface {
 	GetFields() []*field.Field
+	// get public fields. this is GetFields() + id for editable fields
+	GetPublicAPIFields() []*field.Field
 	GetGraphQLFields() []*field.Field
 	GetNonEntFields() []*field.NonEntField
 	GetGraphQLNonEntFields() []*field.NonEntField
@@ -60,6 +62,7 @@ type Action interface {
 }
 
 type ActionField interface {
+	SingleFieldPrimaryKey() bool
 	GetFieldType() enttype.Type
 	TsFieldName(cfg codegenapi.Config) string
 	TsBuilderType(cfg codegenapi.Config) string
@@ -139,6 +142,7 @@ type commonActionInfo struct {
 	gqlEnums         []*enum.GQLEnum
 	nodeinfo.NodeInfo
 	tranformsDelete bool
+	primaryKeyField *field.Field
 	canViewerDo     *input.CanViewerDo
 	canFail         bool
 }
@@ -184,7 +188,18 @@ func (action *commonActionInfo) GetFields() []*field.Field {
 	return action.Fields
 }
 
+func (action *commonActionInfo) GetPublicAPIFields() []*field.Field {
+	var ret []*field.Field
+	if action.primaryKeyField != nil {
+		ret = append(ret, action.primaryKeyField)
+	}
+	ret = append(ret, action.Fields...)
+
+	return ret
+}
+
 func (action *commonActionInfo) GetGraphQLFields() []*field.Field {
+	// TODO update this to use GetPublicAPIFields?
 	var ret []*field.Field
 	for _, f := range action.Fields {
 		if f.EditableGraphQLField() {
@@ -380,6 +395,7 @@ type EdgeGroupAction struct {
 
 type option struct {
 	transformsDelete bool
+	primaryKeyField  *field.Field
 }
 
 type Option func(*option)
@@ -558,6 +574,10 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 }
 
 func IsRequiredField(action Action, field ActionField) bool {
+	if field.SingleFieldPrimaryKey() {
+		return true
+	}
+
 	if field.ForceRequiredInAction() {
 		return true
 	}

@@ -1,4 +1,4 @@
-import { User, Contact } from "../../ent";
+import { User, Contact, ContactEmail } from "../../ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction from "../user/actions/create_user_action";
 import CreateContactAction, {
@@ -238,6 +238,28 @@ test("multiple emails", async () => {
   );
   expect(r3.length).toBe(1);
   expect(r3[0].id).toBe(contact.id);
+
+  const email1 = emails[0];
+  const newEmail = randomEmail();
+  const editedContact = await EditContactAction.create(
+    contact.viewer,
+    contact,
+    {
+      firstName: "Aegon",
+      lastName: "Targaryen",
+      emails: [
+        {
+          id: email1.id,
+          emailAddress: newEmail,
+        },
+      ],
+    },
+  ).saveX();
+  expect(editedContact.firstName).toBe("Aegon");
+  expect(editedContact.lastName).toBe("Targaryen");
+
+  const email1Reloaded = await ContactEmail.loadX(contact.viewer, email1.id);
+  expect(email1Reloaded.emailAddress).toBe(newEmail);
 });
 
 test("multiple phonenumbers", async () => {

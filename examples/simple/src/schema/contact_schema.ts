@@ -64,6 +64,15 @@ const ContactSchema = new EntSchema({
     },
     {
       operation: ActionOperation.Edit,
+      actionOnlyFields: [
+        {
+          name: "emails",
+          list: true,
+          nullable: true,
+          type: "Object",
+          actionName: "EditContactEmailAction",
+        },
+      ],
     },
     {
       operation: ActionOperation.Delete,

@@ -30,7 +30,7 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 	// create/edit/delete
 	concreteAction, ok := typ.(concreteNodeActionType)
 	if ok {
-		fields, err := getFieldsForAction(nodeName, action, fieldInfo, concreteAction)
+		fields, primaryKeyField, err := getFieldsForAction(nodeName, action, fieldInfo, concreteAction)
 		if err != nil {
 			return nil, err
 		}
@@ -39,6 +39,8 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 		if err != nil {
 			return nil, err
 		}
+
+		opt.primaryKeyField = primaryKeyField
 
 		commonInfo := getCommonInfo(
 			cfg,
@@ -82,10 +84,11 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 	var actions []Action
 
 	createTyp := &createActionType{}
-	fields, err := getFieldsForAction(nodeName, action, fieldInfo, createTyp)
+	fields, primaryKeyField, err := getFieldsForAction(nodeName, action, fieldInfo, createTyp)
 	if err != nil {
 		return nil, err
 	}
+	opt.primaryKeyField = primaryKeyField
 	actions = append(actions, getCreateAction(
 		getCommonInfo(
 			cfg,
@@ -102,10 +105,11 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 	))
 
 	editTyp := &editActionType{}
-	fields, err = getFieldsForAction(nodeName, action, fieldInfo, editTyp)
+	fields, primaryKeyField, err = getFieldsForAction(nodeName, action, fieldInfo, editTyp)
 	if err != nil {
 		return nil, err
 	}
+	opt.primaryKeyField = primaryKeyField
 	actions = append(actions, getEditAction(
 		getCommonInfo(
 			cfg,
@@ -122,7 +126,8 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 	))
 
 	deleteTyp := &deleteActionType{}
-	fields, err = getFieldsForAction(nodeName, action, fieldInfo, deleteTyp)
+	fields, primaryKeyField, err = getFieldsForAction(nodeName, action, fieldInfo, deleteTyp)
+	opt.primaryKeyField = primaryKeyField
 	if err != nil {
 		return nil, err
 	}
@@ -146,10 +151,21 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 // provides a way to say this action doesn't have any fields
 const NO_FIELDS = "__NO_FIELDS__"
 
-func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.FieldInfo, typ concreteNodeActionType) ([]*field.Field, error) {
+func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.FieldInfo, typ concreteNodeActionType) ([]*field.Field, *field.Field, error) {
+	var primaryKeyField *field.Field
+
+	if fieldInfo != nil && typ.mutatingExistingObject() {
+		for _, f := range fieldInfo.EntFields() {
+			if f.SingleFieldPrimaryKey() {
+				primaryKeyField = f
+				break
+			}
+		}
+	}
+
 	var fields []*field.Field
 	if !typ.supportsFieldsFromEnt() {
-		return fields, nil
+		return fields, primaryKeyField, nil
 	}
 
 	fieldNames := action.Fields
@@ -170,11 +186,11 @@ func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.
 	}
 
 	if len(fieldNames) != 0 && len(excludedFields) != 0 {
-		return nil, fmt.Errorf("cannot provide both fields and excluded fields")
+		return nil, nil, fmt.Errorf("cannot provide both fields and excluded fields")
 	}
 
 	if noFields {
-		return fields, nil
+		return fields, primaryKeyField, nil
 	}
 
 	getField := func(f *field.Field, fieldName string) (*field.Field, error) {
@@ -236,7 +252,7 @@ func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.
 			if f.ExposeToActionsByDefault() && f.EditableField(typ.getEditableFieldContext()) && !excludedFields[f.FieldName] {
 				f2, err := getField(f, f.FieldName)
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 				fields = append(fields, f2)
 			}
@@ -246,15 +262,16 @@ func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.
 		for _, fieldName := range fieldNames {
 			f, err := getField(nil, fieldName)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if !f.EditableField(typ.getEditableFieldContext()) {
-				return nil, fmt.Errorf("field %s is not editable and cannot be added to action", fieldName)
+				return nil, nil, fmt.Errorf("field %s is not editable and cannot be added to action", fieldName)
 			}
 			fields = append(fields, f)
 		}
 	}
-	return fields, nil
+
+	return fields, primaryKeyField, nil
 }
 
 func getNonEntFieldsFromInput(cfg codegenapi.Config, nodeName string, action *input.Action, typ concreteNodeActionType) ([]*field.NonEntField, error) {
@@ -496,6 +513,7 @@ func getCommonInfo(
 		NodeInfo:         nodeinfo.GetNodeInfo(nodeName),
 		Operation:        typ.getOperation(),
 		tranformsDelete:  opt.transformsDelete,
+		primaryKeyField:  opt.primaryKeyField,
 	}
 }
 

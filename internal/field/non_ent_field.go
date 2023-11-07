@@ -145,3 +145,7 @@ func (f *NonEntField) GetTsTypeImports() []*tsimport.ImportPath {
 func (f *NonEntField) GetTSGraphQLTypeForFieldImports(input bool) []*tsimport.ImportPath {
 	return f.fieldType.GetTSGraphQLImports(input)
 }
+
+func (f *NonEntField) SingleFieldPrimaryKey() bool {
+	return false
+}
