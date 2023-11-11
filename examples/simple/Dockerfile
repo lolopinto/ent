@@ -1,4 +1,4 @@
-FROM ghcr.io/lolopinto/ent:v0.1.13-nodejs-18-slim
+FROM ghcr.io/lolopinto/ent:v0.1.14-nodejs-18-slim
 
 # TODO this needs to be tested for "production"
 # works locally when run here but needs to be tested in hostile environments
