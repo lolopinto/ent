@@ -9,6 +9,12 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.14] - 2023-11-06
+
+### Fixed
+
+- fix #1706. take 2 but with edit actions (#1711)
+
 ## [0.1.13] - 2023-11-05
 
 ### Fixed
