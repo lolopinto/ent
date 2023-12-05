@@ -30,7 +30,7 @@
     "uuid": "^9.0.0"
   },
   "peerDependencies": {
-    "@swc-node/register": "^1.6.5",
+    "@swc-node/register": "^1.6.8",
     "better-sqlite3": "^8.4.0",
     "graphql": "^16.8.1"
   },

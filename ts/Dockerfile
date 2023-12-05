@@ -64,7 +64,7 @@ RUN apt update && apt --assume-yes install zsh && \
 RUN npm install -g typescript@5.3.2 prettier@3.1.0 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@1.4.1
 
 WORKDIR /app
-RUN npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.6.6
+RUN npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.6.8
 
 COPY --from=golang-image /go/bin/tsent /go/bin/tsent
 # NOTE: if ever debugging in docker image, code is at 
