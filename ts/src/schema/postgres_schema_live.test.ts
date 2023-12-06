@@ -1,5 +1,7 @@
 import { v1, v4 as uuidv4 } from "uuid";
+import { DateTime } from "luxon";
 import pg from "pg";
+import DB from "../core/db";
 import * as fs from "fs";
 import * as path from "path";
 import each from "jest-each";
@@ -170,7 +172,30 @@ describe("timestamp", () => {
     expect(updatedAt.getTime()).toBe(date.getTime());
   });
 
+  let dbOffset: number | undefined;
+
+  async function shouldSkipTimezoneQuery(): Promise<boolean> {
+    if (dbOffset === undefined) {
+      const result = await DB.getInstance()
+        .getPool()
+        .query(
+          "SELECT EXTRACT(TIMEZONE FROM CURRENT_TIMESTAMP) / 60 AS timezone_offset_hours",
+        );
+      dbOffset = parseFloat(result.rows[0]["timezone_offset_hours"]);
+    }
+
+    const nodeOffset = DateTime.now().offset;
+    // if (dbOffset.toString() !== nodeOffset.toString()) {
+    return dbOffset !== nodeOffset;
+  }
+
   test("no setTypeParser", async () => {
+    const shouldSkip = await shouldSkipTimezoneQuery();
+    if (shouldSkip) {
+      console.warn("skipping because db offset and node offset are different");
+      return;
+    }
+
     const date = new Date();
     const action = getInsertAction(
       UserSchema,
@@ -212,6 +237,12 @@ describe("timestamp", () => {
   }
 
   test("no toISO formattting", async () => {
+    const shouldSkip = await shouldSkipTimezoneQuery();
+    if (shouldSkip) {
+      console.warn("skipping because db offset and node offset are different");
+      return;
+    }
+
     const date = new Date();
     const action = getInsertAction(
       new UserWithTimestampNoFormatSchema(),
