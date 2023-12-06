@@ -5,6 +5,7 @@ import {
   TodoCreateInput,
 } from "src/ent/generated/todo/actions/create_todo_action_base";
 import { NodeType } from "src/ent/generated/types";
+import { CreateTagAction } from "src/ent/tag/actions/create_tag_action";
 
 export { TodoCreateInput };
 
@@ -22,6 +23,23 @@ export class CreateTodoAction extends CreateTodoActionBase {
             scopeID,
             builder.getNewScopeTypeValue() as NodeType,
           );
+        },
+      },
+      {
+        async changeset(builder, input) {
+          if (input.tags) {
+            return Promise.all(
+              input.tags.map(async (tagInput) => {
+                const action = CreateTagAction.create(builder.viewer, {
+                  ...tagInput,
+                  ownerID: input.creatorID,
+                });
+                const tagId = await action.builder.getEntID();
+                builder.addTag(tagId);
+                return action.changeset();
+              }),
+            );
+          }
         },
       },
     ];

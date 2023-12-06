@@ -9,6 +9,29 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- Updated swc and ts-node to latest versions. Adds module to generated .swcrc used for graphql codegen (#1717)
+- fix EdgeGroup actions sets incorrect ent type in DB (#1719)
+
+## [0.1.14] - 2023-11-06
+
+### Fixed
+
+- fix #1706. take 2 but with edit actions (#1711)
+
+## [0.1.13] - 2023-11-05
+
+### Fixed
+
+- Fix optional non-nullable field in action not being optional in certain actions (#1708)
+
+## [0.1.12] - 2023-10-30
+
+### Fixed
+
+- Export interfaces and other types generated in mixin builders (#1704)
+
 ## [0.1.11] - 2023-10-14
 
 ### Added

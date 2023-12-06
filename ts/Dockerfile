@@ -1,7 +1,7 @@
-ARG GOLANG_VERSION=v0.1.4
-ARG AUTO_SCHEMA_VERSION=0.0.29
+ARG GOLANG_VERSION=v0.1.11
+ARG AUTO_SCHEMA_VERSION=0.0.32
 ARG NODE_VERSION=18
-ARG DOCKER_TAG=v0.1.4
+ARG DOCKER_TAG=v0.1.12
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.21-bullseye As golang-image
@@ -18,7 +18,7 @@ ARG TARGETOS TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
-FROM python:3.11.0-buster AS python-image
+FROM python:3.11.0-bullseye AS python-image
 ARG AUTO_SCHEMA_VERSION
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv
@@ -48,13 +48,12 @@ RUN \
   # add architecture needed for arm64 builds
   dpkg --add-architecture amd64 && \
   curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && dpkg -i ripgrep_13.0.0_amd64.deb && \
-  #  echo "deb https://deb.nodesource.com/node_$NODE_VERSION.x/ buster main" > /etc/apt/sources.list.d/nodesource.list && \
-  #  wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
-  echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \
-  wget -qO- https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
-  curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | bash - && \
+  apt-get install -y ca-certificates curl gnupg && \
+  mkdir -p /etc/apt/keyrings && \
+  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
   apt-get update && \
-  apt-get install -yqq nodejs yarn && \
+  apt-get install nodejs -yqq yarn && \
   apt-get autoremove wget -yqq && \
   rm -rf /var/lib/apt/lists/*
 
@@ -62,10 +61,10 @@ RUN \
 
 RUN apt update && apt --assume-yes install zsh && \
   rm -rf /var/lib/apt/lists/*
-RUN npm install -g typescript@5.1.6 prettier@3.0.3 ts-node@10.9.1 @swc/core@1.3.68 @swc/cli@0.1.62 @biomejs/biome@1.0.0
+RUN npm install -g typescript@5.3.2 prettier@3.1.0 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@1.4.1
 
 WORKDIR /app
-RUN npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.6.6
+RUN npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.6.8
 
 COPY --from=golang-image /go/bin/tsent /go/bin/tsent
 # NOTE: if ever debugging in docker image, code is at 

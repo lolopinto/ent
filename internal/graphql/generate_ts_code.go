@@ -788,6 +788,7 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 			// temp .swcrc file to be used
 			// probably need this for parse_ts too
 			err = os.WriteFile(".swcrc", []byte(`{
+		"$schema": "http://json.schemastore.org/swcrc",
     "jsc": {
         "parser": {
             "syntax": "typescript",
@@ -798,7 +799,10 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
         "transform": {
             "decoratorVersion": "2022-03"
         }
-    }
+    },
+		"module": {
+			"type": "commonjs",
+		}
 }
 				`), os.ModePerm)
 
@@ -2466,6 +2470,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	}
 
 	// add id field for edit and delete mutations
+	// TODO use GetPublicAPIFields and remove this check everywhere that's doing this check here
 	if a.MutatingExistingObject() {
 		id, err := getIDField(processor, nodeData)
 		if err != nil {

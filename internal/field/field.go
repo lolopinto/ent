@@ -910,6 +910,14 @@ func Required() Option {
 	}
 }
 
+func Nullable() Option {
+	return func(f *Field) {
+		f.nullable = true
+		f.forceOptionalInAction = true
+		f.graphqlNullable = true
+	}
+}
+
 func (f *Field) Clone(opts ...Option) (*Field, error) {
 	ret := &Field{
 		FieldName:                  f.FieldName,

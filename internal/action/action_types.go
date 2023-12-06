@@ -29,6 +29,7 @@ type concreteNodeActionType interface {
 	getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string) string
 	getEditableFieldContext() field.EditableContext
 	supportsFieldsFromEnt() bool
+	mutatingExistingObject() bool
 }
 
 type concreteEdgeActionType interface {
@@ -79,6 +80,10 @@ func (action *createActionType) getAction(commonInfo commonActionInfo) Action {
 
 func (action *createActionType) supportsFieldsFromEnt() bool {
 	return true
+}
+
+func (action *createActionType) mutatingExistingObject() bool {
+	return false
 }
 
 func (action *createActionType) getActionVerb() string {
@@ -141,6 +146,10 @@ func (action *editActionType) getEditableFieldContext() field.EditableContext {
 	return field.EditEditableContext
 }
 
+func (action *editActionType) mutatingExistingObject() bool {
+	return true
+}
+
 var _ concreteNodeActionType = &editActionType{}
 
 type deleteActionType struct {
@@ -184,6 +193,10 @@ func (action *deleteActionType) getOperation() ent.ActionOperation {
 
 func (action *deleteActionType) getEditableFieldContext() field.EditableContext {
 	return field.DeleteEditableContext
+}
+
+func (action *deleteActionType) mutatingExistingObject() bool {
+	return true
 }
 
 var _ concreteNodeActionType = &deleteActionType{}

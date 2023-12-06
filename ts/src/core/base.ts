@@ -191,6 +191,8 @@ interface JoinOptions<T2 extends Data = Data, K2 = keyof T2> {
 
 export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   distinct?: boolean;
+  // To alias the main table's query when doing joins.
+  alias?: string;
   clause: clause.Clause<T, K>;
   orderby?: OrderBy; // this technically doesn't make sense when querying just one row but whatevs
   groupby?: K;

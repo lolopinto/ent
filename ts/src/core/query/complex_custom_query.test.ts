@@ -21,6 +21,7 @@ import {
 import { setLogLevels } from "../logger";
 import { TempDB, integer, table, text, uuid } from "../../testutils/db/temp_db";
 import { buildQuery, reverseOrderBy } from "../query_impl";
+import { loadCustomEnts } from "../ent";
 import * as clause from "../clause";
 import { Data, Ent, Viewer, WriteOperation } from "../base";
 import { CustomClauseQuery } from "./custom_clause_query";
@@ -30,6 +31,7 @@ import { createRowForTest } from "../../testutils/write";
 import { randomEmail } from "../../testutils/db/value";
 import DB from "../db";
 import { LoggedOutViewer } from "../viewer";
+import { load } from "js-yaml";
 
 const INTERVAL = 24 * 60 * 60 * 1000;
 
@@ -1232,6 +1234,56 @@ describe("joins - products", () => {
     );
 
     await paginateAndVerifyClauseWithJoin(getQuery, edges);
+
+    ml.clear();
+
+    // can perform same query Foo.loadCustom if CustomClauseQuery is overkill
+    // maybe loadCustom should wrap CustomClauseQuery with a limit intentionally disabled
+    // so logic isn't duplicated?
+    const loaderOptions = AnyEnt.loaderOptions("users", [
+      "id",
+      "name",
+      "email",
+    ]);
+    delete loaderOptions.alias;
+    const customEnts = await loadCustomEnts(
+      new LoggedOutViewer(),
+      loaderOptions,
+      {
+        // intentionally different alias than what AnyEnt.loaderOptions would have done
+        alias: "u2",
+        clause: clause.Eq("id", productId, "p"),
+        orderby: [
+          {
+            column: "name",
+            direction: "DESC",
+          },
+          // have to add this manually since not a query and this isn't done for us because no pagination is happening
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
+        join: [
+          {
+            tableName: "orders",
+            alias: "o",
+            clause: clause.Expression("u2.id = o.user_id"),
+          },
+          {
+            tableName: "products",
+            alias: "p",
+            clause: clause.Expression("o.product_id = p.id"),
+          },
+        ],
+      },
+    );
+    // can construct a query with loadCustomEnts e.g. Foo.loadCustom and still do joins with an alias and
+    // get the same result
+    expect(ents.length).toBe(customEnts.length);
+    expect(ents.map((ent) => ent.id)).toStrictEqual(
+      customEnts.map((row) => row.id),
+    );
   });
 
   // ~147

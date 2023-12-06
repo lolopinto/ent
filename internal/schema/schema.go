@@ -1667,16 +1667,26 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 			typ := f.GetFieldType()
 			t := typ.(enttype.TSTypeWithActionFields)
 
-			for _, f2 := range a2.GetFields() {
+			for _, f2 := range a2.GetPublicAPIFields() {
 				if f2.EmbeddableInParentAction() && !excludedFields[f2.FieldName] {
 
-					f3 := f2
+					var opts []field.Option
 					if action.IsRequiredField(a2, f2) {
-						var err error
-						f3, err = f2.Clone(field.Required())
-						if err != nil {
-							return err
-						}
+						opts = append(opts, field.Required())
+					} else {
+						// e.g. if field is not currently required
+						// e.g. field in edit action or optional non-nullable field in action
+
+						// force optional in action. fake the field as nullable
+						// this is kinda like a hack because we have nullable and optional
+						// conflated in so many places.
+						// we use field.Nullable when rendering interfaces in interface.tmpl to determine if optional
+						opts = append(opts, field.Nullable())
+					}
+					var err error
+					f3, err := f2.Clone(opts...)
+					if err != nil {
+						return err
 					}
 					a.AddCustomField(t, f3)
 				}

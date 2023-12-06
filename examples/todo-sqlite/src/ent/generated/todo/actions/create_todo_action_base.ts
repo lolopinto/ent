@@ -19,6 +19,12 @@ import {
 import { Account, Todo } from "src/ent/";
 import { TodoBuilder } from "src/ent/generated/todo/actions/todo_builder";
 
+interface customTagInput {
+  displayName: string;
+  relatedTagIds?: ID[] | null;
+  canonicalName?: string;
+}
+
 export interface TodoCreateInput {
   text: string;
   creatorID: ID | Builder<Account, Viewer>;
@@ -26,6 +32,7 @@ export interface TodoCreateInput {
   scopeID: ID;
   scopeType: string;
   bounty?: number | null;
+  tags?: customTagInput[];
 }
 
 export type CreateTodoActionTriggers = (

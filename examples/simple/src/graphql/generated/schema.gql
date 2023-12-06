@@ -1054,6 +1054,7 @@ input ContactEditInput {
   phoneNumberIds: [ID!]
   firstName: String
   lastName: String
+  emails: [EmailContactEditInput!]
 }
 
 type ContactEditPayload {
@@ -1191,6 +1192,13 @@ type EditPhoneNumberPayload {
 }
 
 input EmailContactCreateInput {
+  extra: ContactInfoInput
+  emailAddress: String!
+  label: ContactLabel!
+}
+
+input EmailContactEditInput {
+  id: ID!
   extra: ContactInfoInput
   emailAddress: String!
   label: ContactLabel!
