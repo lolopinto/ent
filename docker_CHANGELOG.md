@@ -9,6 +9,10 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- fix EdgeGroup actions sets incorrect ent type in DB (#1719)
+
 ## [0.1.14] - 2023-11-06
 
 ### Fixed
