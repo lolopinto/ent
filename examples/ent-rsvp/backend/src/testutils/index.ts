@@ -12,7 +12,6 @@ import CreateGuestAction, {
 } from "src/ent/guest/actions/create_guest_action";
 import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
 import { Builder } from "@snowtop/ent/action";
-import { execute } from "graphql";
 import { NodeType } from "src/ent/generated/types";
 
 export async function createUser() {
