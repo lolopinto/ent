@@ -9,6 +9,10 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- Updated swc and ts-node to latest versions. Adds module to generated .swcrc used for graphql codegen (#1717)
+
 ## [0.1.14] - 2023-11-06
 
 ### Fixed
