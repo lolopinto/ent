@@ -287,7 +287,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
         this.input.{{$edgeGroup.TSGroupStatusName}},
         this.{{$instance}}.id,
         this.input.{{$edgeGroup.GetIDArg}},
-        {{useImport "NodeType"}}.{{$edgeGroup.NodeInfo.Node}},
+        {{useImport "NodeType"}}.{{$edgeGroup.DestNodeInfo.Node}},
         this.{{$instance}}.{{$edgeGroup.GetStatusMapMethod}}(),
       );
     }
