@@ -174,7 +174,7 @@ export class EditEventActivityRsvpStatusActionBase
       this.input.rsvpStatus,
       this.eventActivity.id,
       this.input.guestID,
-      NodeType.EventActivity,
+      NodeType.Guest,
       this.eventActivity.getEventActivityRsvpStatusMap(),
     );
   }

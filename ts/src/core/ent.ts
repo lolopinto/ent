@@ -662,12 +662,20 @@ async function loadCustomDataImpl<
   } else {
     // this will have rudimentary caching but nothing crazy
     let cls = query.clause;
+    let opts = options.loaderFactory.options;
+    if (query.alias) {
+      if (opts.alias) {
+        throw new Error(
+          `cannot have an alias in LoaderOptions and QueryOptions. can only pass one`,
+        );
+      }
+      opts = {
+        ...opts,
+        alias: query.alias,
+      };
+    }
     if (!query.disableTransformations) {
-      cls = clause.getCombinedClause(
-        options.loaderFactory.options,
-        query.clause,
-        true,
-      );
+      cls = clause.getCombinedClause(opts, query.clause, true);
     }
     return loadRows({
       ...query,
