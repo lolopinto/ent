@@ -788,6 +788,7 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 			// temp .swcrc file to be used
 			// probably need this for parse_ts too
 			err = os.WriteFile(".swcrc", []byte(`{
+		"$schema": "http://json.schemastore.org/swcrc",
     "jsc": {
         "parser": {
             "syntax": "typescript",
@@ -798,7 +799,10 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
         "transform": {
             "decoratorVersion": "2022-03"
         }
-    }
+    },
+		"module": {
+			"type": "commonjs",
+		}
 }
 				`), os.ModePerm)
 
