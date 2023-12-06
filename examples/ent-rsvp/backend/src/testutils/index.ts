@@ -12,6 +12,8 @@ import CreateGuestAction, {
 } from "src/ent/guest/actions/create_guest_action";
 import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
 import { Builder } from "@snowtop/ent/action";
+import { execute } from "graphql";
+import { NodeType } from "src/ent/generated/types";
 
 export async function createUser() {
   const user = await CreateUserAction.create(new LoggedOutViewer(), {
@@ -121,6 +123,11 @@ export async function createAndInvite(): Promise<[EventActivity, GuestGroup]> {
   );
   const newCount = await reloaded.queryInvites().queryCount();
   expect(newCount).toBe(1);
+
+  const edges = await reloaded.queryInvites().queryEdges();
+  expect(edges.length).toBe(1);
+  expect(edges[0].id1Type).toBe(NodeType.EventActivity);
+  expect(edges[0].id2Type).toBe(NodeType.GuestGroup);
 
   return [activity, group];
 }
