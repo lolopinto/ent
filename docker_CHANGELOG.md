@@ -13,6 +13,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 - Updated swc and ts-node to latest versions. Adds module to generated .swcrc used for graphql codegen (#1717)
 - fix EdgeGroup actions sets incorrect ent type in DB (#1719)
+- Fix id fields with disable user graphql editable (#1723)
 
 ## [0.1.14] - 2023-11-06
 
