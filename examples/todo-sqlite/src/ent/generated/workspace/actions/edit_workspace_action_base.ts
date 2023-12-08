@@ -19,6 +19,9 @@ import { Workspace } from "src/ent/";
 import { WorkspaceBuilder } from "src/ent/generated/workspace/actions/workspace_builder";
 
 export interface WorkspaceEditInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name?: string;
   slug?: string;
 }

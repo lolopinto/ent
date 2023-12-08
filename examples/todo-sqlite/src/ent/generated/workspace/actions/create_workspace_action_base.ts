@@ -2,6 +2,7 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  ID,
   PrivacyPolicy,
   Viewer,
 } from "@snowtop/ent";
@@ -18,6 +19,9 @@ import { Workspace } from "src/ent/";
 import { WorkspaceBuilder } from "src/ent/generated/workspace/actions/workspace_builder";
 
 export interface WorkspaceCreateInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name: string;
   slug: string;
 }

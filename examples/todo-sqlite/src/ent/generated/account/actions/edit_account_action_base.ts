@@ -24,6 +24,9 @@ import {
 } from "src/ent/generated/types";
 
 export interface AccountEditInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name?: string;
   phoneNumber?: string;
   accountState?: AccountState | null;
