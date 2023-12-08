@@ -235,6 +235,11 @@ func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.
 				return nil, err
 			}
 		}
+		// hack to force id fields when disableUserGraphQLEditable is true
+		// to be optional in actions
+		if f2.HasDefaultValueOnCreate() && f2.DisableUserGraphQLEditable() {
+			optional = true
+		}
 		if optional || optionalFields[fieldName] {
 			// optional
 			var err error

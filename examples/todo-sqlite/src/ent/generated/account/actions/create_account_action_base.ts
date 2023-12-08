@@ -2,6 +2,7 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  ID,
   PrivacyPolicy,
   Viewer,
 } from "@snowtop/ent";
@@ -23,6 +24,9 @@ import {
 } from "src/ent/generated/types";
 
 export interface AccountCreateInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name: string;
   phoneNumber: string;
   accountState?: AccountState | null;

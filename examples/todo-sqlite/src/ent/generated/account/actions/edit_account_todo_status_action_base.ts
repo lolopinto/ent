@@ -170,7 +170,7 @@ export class EditAccountTodoStatusActionBase
       this.input.todoStatus,
       this.account.id,
       this.input.todoID,
-      NodeType.Account,
+      NodeType.Todo,
       this.account.getAccountTodoStatusMap(),
     );
   }

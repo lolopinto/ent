@@ -19,6 +19,9 @@ import { EdgeType, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/todo_schema";
 
 export interface TodoInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   deletedAt?: Date | null;
   text?: string;
   completed?: boolean;
@@ -264,6 +267,9 @@ export class TodoBuilder<
         result.set(key, value);
       }
     };
+    addField("ID", input.id);
+    addField("createdAt", input.createdAt);
+    addField("updatedAt", input.updatedAt);
     addField("deleted_at", input.deletedAt);
     addField("Text", input.text);
     addField("Completed", input.completed);
@@ -280,6 +286,48 @@ export class TodoBuilder<
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any> {
     return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+
+  // get value of ID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewIdValue(): ID {
+    if (this.input.id !== undefined) {
+      return this.input.id;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `id` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.id;
+  }
+
+  // get value of createdAt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCreatedAtValue(): Date {
+    if (this.input.createdAt !== undefined) {
+      return this.input.createdAt;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `createdAt` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.createdAt;
+  }
+
+  // get value of updatedAt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewUpdatedAtValue(): Date {
+    if (this.input.updatedAt !== undefined) {
+      return this.input.updatedAt;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `updatedAt` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.updatedAt;
   }
 
   // get value of deleted_at. Retrieves it from the input if specified or takes it from existingEnt

@@ -396,6 +396,10 @@ func (f *Field) EditableGraphQLField() bool {
 	return !f.disableUserEditable && !f.disableUserGraphQLEditable
 }
 
+func (f *Field) DisableUserGraphQLEditable() bool {
+	return f.disableUserGraphQLEditable
+}
+
 func (f *Field) HasDefaultValueOnCreate() bool {
 	return f.hasDefaultValueOnCreate
 }
