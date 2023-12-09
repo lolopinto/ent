@@ -12,6 +12,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 ### Fixed
 
 - changed error message when changing database type to be more descriptive (#1726)
+- fix disableBuilderType in UUIDType not respected when defaultValueOnCreate is true and disableUserGraphQLEditable is true (#1727)
 
 ## [0.1.15] - 2023-12-08
 
