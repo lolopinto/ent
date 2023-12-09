@@ -9,6 +9,13 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.22] - 2023-12-08
+
+### Added
+
+- add alias to QueryDataOptions (#1714)
+- update a bunch of dependencies
+
 ## [0.1.21] - 2023-10-14
 
 ### Added
