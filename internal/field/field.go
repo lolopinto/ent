@@ -939,6 +939,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		exposeToActionsByDefault:   f.exposeToActionsByDefault,
 		singleFieldPrimaryKey:      f.singleFieldPrimaryKey,
 		disableUserEditable:        f.disableUserEditable,
+		disableBuilderType:         f.disableBuilderType,
 		disableUserGraphQLEditable: f.disableUserGraphQLEditable,
 		hasDefaultValueOnCreate:    f.hasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:      f.hasDefaultValueOnEdit,
