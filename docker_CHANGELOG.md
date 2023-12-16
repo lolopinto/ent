@@ -9,6 +9,8 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.16] - 2023-12-09
+
 ### Fixed
 
 - changed error message when changing database type to be more descriptive (#1726)
