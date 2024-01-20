@@ -79,6 +79,7 @@ func init() {
 		alembicCmd,
 		generateCmd,
 		squashCmd,
+		parseSchemaCmd,
 		printSchemaCmd,
 		printCustomSchemaCmd,
 		deleteSchemaCmd,
