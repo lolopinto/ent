@@ -5,8 +5,16 @@ import { Data, ID, Viewer } from "@snowtop/ent";
 type Constructor<T = {}> = new (...args: any[]) => T;
 
 export interface IWithAddress {
-  isWithAddress(): boolean;
+  // isWithAddress(): boolean;
   addressId: ID | null;
+}
+
+export function isWithAddress(obj: unknown): obj is IWithAddress{
+  // if (typeof obj !== "object" || obj === null) {
+  //   return false;
+  // }
+  const o = (obj as unknown as IWithAddress)
+  return 'addressId' in o && typeof o.addressId === 'string' || typeof o.addressId === 'number' || o.addressId === null;
 }
 
 function extractFromArgs<TViewer extends Viewer, TData extends Data>(
@@ -30,8 +38,8 @@ export function WithAddressMixin<T extends Constructor>(BaseClass: T) {
       this.addressId = data.address_id;
     }
 
-    isWithAddress() {
-      return true;
-    }
+    // isWithAddress() {
+    //   return true;
+    // }
   };
 }

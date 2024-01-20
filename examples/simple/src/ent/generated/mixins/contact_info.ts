@@ -9,7 +9,7 @@ import { ContactInfo } from "../types";
 type Constructor<T = {}> = new (...args: any[]) => T;
 
 export interface IContactInfo {
-  isContactInfo(): boolean;
+  // isContactInfo(): boolean;
   extra: ContactInfo | null;
 }
 
@@ -25,6 +25,12 @@ function extractFromArgs<TViewer extends Viewer, TData extends Data>(
   };
 }
 
+export function isContactInfo(obj: unknown): obj is IContactInfo {
+  const o = (obj as unknown as IContactInfo)
+  return 'extra' in o && typeof o.extra === 'object'  || o.extra === null;
+}
+
+
 export function ContactInfoMixin<T extends Constructor>(BaseClass: T) {
   return class ContactInfoMixin extends BaseClass {
     readonly extra: ContactInfo | null;
@@ -34,8 +40,8 @@ export function ContactInfoMixin<T extends Constructor>(BaseClass: T) {
       this.extra = data.extra;
     }
 
-    isContactInfo() {
-      return true;
-    }
+    // isContactInfo() {
+    //   return true;
+    // }
   };
 }
