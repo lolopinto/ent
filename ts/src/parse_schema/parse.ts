@@ -19,7 +19,6 @@ import {
   EdgeGroupAction,
 } from "../schema/schema";
 import { setGlobalSchema } from "../core/global_schema";
-import { bool } from "src/testutils/db/temp_db";
 
 export async function processFields(
   src: FieldMap | Field[],
