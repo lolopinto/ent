@@ -133,7 +133,7 @@ export class StructField extends BaseField implements Field {
         }
 
         // TODO handle format code
-        // ola 1/20/24 don't know what this means lol
+        // ola 1/20/24 don't know what this TODO means lol
         return f.format(obj, nested);
       }
     }
