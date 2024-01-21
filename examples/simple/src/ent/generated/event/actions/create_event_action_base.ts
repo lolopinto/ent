@@ -16,6 +16,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event } from "../../..";
 import { EventBuilder } from "./event_builder";
+import { Attachment } from "../../types";
 import schema from "../../../../schema/event_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -28,6 +29,7 @@ export interface EventCreateInput {
   addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
   coverPhoto?: Buffer | null;
   coverPhoto2?: Buffer | null;
+  attachments?: Attachment[] | null;
 }
 
 export type CreateEventActionTriggers = (

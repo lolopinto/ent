@@ -123,12 +123,23 @@ CREATE TABLE events (
     address_id UUID, 
     cover_photo BYTEA, 
     cover_photo_2 TEXT, 
+    attachments JSONB, 
     CONSTRAINT events_id_pkey PRIMARY KEY (id)
 );
 
 CREATE INDEX event_time_indices ON events (start_time, end_time);
 
 CREATE INDEX events_user_id_idx ON events (user_id);
+
+CREATE TABLE files (
+    id UUID NOT NULL, 
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    name TEXT NOT NULL, 
+    path TEXT NOT NULL, 
+    creator_id UUID NOT NULL, 
+    CONSTRAINT files_id_pkey PRIMARY KEY (id)
+);
 
 CREATE TABLE global_login_auth_edges (
     id1 UUID NOT NULL, 
@@ -289,6 +300,7 @@ CREATE TABLE contacts (
     first_name TEXT NOT NULL, 
     last_name TEXT NOT NULL, 
     user_id UUID NOT NULL, 
+    attachments JSONB, 
     CONSTRAINT contacts_id_pkey PRIMARY KEY (id), 
     CONSTRAINT contacts_user_id_fkey FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
 );

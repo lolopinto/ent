@@ -5,6 +5,7 @@
 
 export * from "../generated/resolvers/enums_type";
 export * from "../generated/resolvers/arg/contact_item_filter_type";
+export * from "../generated/resolvers/attachment_type";
 export * from "../generated/resolvers/can_viewer_do_query_type";
 export * from "../generated/resolvers/contact_date_type";
 export * from "../generated/resolvers/contact_info_type";
@@ -20,6 +21,7 @@ export * from "../generated/resolvers/contact_email_type";
 export * from "../generated/resolvers/contact_phone_number_type";
 export * from "../generated/resolvers/contact_type";
 export * from "../generated/resolvers/event_type";
+export * from "../generated/resolvers/file_type";
 export * from "../generated/resolvers/holiday_type";
 export * from "../generated/resolvers/hours_of_operation_type";
 export * from "../generated/resolvers/user_type";
@@ -39,6 +41,7 @@ export * from "../generated/resolvers/root/root_to_contact_connection_type";
 export * from "../generated/resolvers/root/root_to_contact_email_connection_type";
 export * from "../generated/resolvers/root/root_to_contact_phone_number_connection_type";
 export * from "../generated/resolvers/root/root_to_event_connection_type";
+export * from "../generated/resolvers/root/root_to_file_connection_type";
 export * from "../generated/resolvers/root/root_to_holiday_connection_type";
 export * from "../generated/resolvers/root/root_to_hours_of_operation_connection_type";
 export * from "../generated/resolvers/root/root_to_user_connection_type";
@@ -68,6 +71,8 @@ export * from "../generated/resolvers/contact_phone_number_connection_query_type
 export * from "../generated/resolvers/contact_phone_number_list_deprecated_query_type";
 export * from "../generated/resolvers/event_connection_query_type";
 export * from "../generated/resolvers/event_list_deprecated_query_type";
+export * from "../generated/resolvers/file_connection_query_type";
+export * from "../generated/resolvers/file_list_deprecated_query_type";
 export * from "../generated/resolvers/holiday_connection_query_type";
 export * from "../generated/resolvers/holiday_list_deprecated_query_type";
 export * from "../generated/resolvers/hours_of_operation_connection_query_type";

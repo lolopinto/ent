@@ -18,7 +18,7 @@ import {
 import { Contact, User } from "../../..";
 import { contactLoaderInfo } from "../../loaders";
 import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
-import { EdgeType, NodeType } from "../../types";
+import { Attachment, EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/contact_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -28,6 +28,7 @@ export interface ContactInput {
   firstName?: string;
   lastName?: string;
   userID?: ID | Builder<User, ExampleViewerAlias>;
+  attachments?: Attachment[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -209,6 +210,7 @@ export class ContactBuilder<
     addField("firstName", input.firstName);
     addField("lastName", input.lastName);
     addField("userID", input.userID);
+    addField("attachments", input.attachments);
     return result;
   }
 
@@ -286,5 +288,14 @@ export class ContactBuilder<
       );
     }
     return this.existingEnt.userID;
+  }
+
+  // get value of attachments. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAttachmentsValue(): Attachment[] | null {
+    if (this.input.attachments !== undefined) {
+      return this.input.attachments;
+    }
+
+    return this.existingEnt?.attachments ?? null;
   }
 }

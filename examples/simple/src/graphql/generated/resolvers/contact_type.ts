@@ -25,6 +25,7 @@ import {
   ContactToLikersQuery,
 } from "../../../ent";
 import {
+  AttachmentType,
   ContactCommentsFromAttachmentConnectionType,
   ContactEmailType,
   ContactItemFilterType,
@@ -86,6 +87,9 @@ export const ContactType = new GraphQLObjectType({
     },
     lastName: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentType)),
     },
     comments: {
       type: new GraphQLNonNull(ContactToCommentsConnectionType()),

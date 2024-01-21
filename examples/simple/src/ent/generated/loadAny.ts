@@ -20,6 +20,7 @@ import {
   ContactEmail,
   ContactPhoneNumber,
   Event,
+  File,
   Holiday,
   HoursOfOperation,
   User,
@@ -57,6 +58,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent, any> {
       return ContactPhoneNumber.loaderOptions();
     case NodeType.Event:
       return Event.loaderOptions();
+    case NodeType.File:
+      return File.loaderOptions();
     case NodeType.Holiday:
       return Holiday.loaderOptions();
     case NodeType.HoursOfOperation:

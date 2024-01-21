@@ -84,6 +84,18 @@ import {
   EventRsvpStatusEditPayloadType,
 } from "./mutations/event/event_rsvp_status_edit_type";
 import {
+  FileCreateInputType,
+  FileCreatePayloadType,
+} from "./mutations/file/file_create_type";
+import {
+  FileDeleteInputType,
+  FileDeletePayloadType,
+} from "./mutations/file/file_delete_type";
+import {
+  FileEditInputType,
+  FileEditPayloadType,
+} from "./mutations/file/file_edit_type";
+import {
   HolidayCreateInputType,
   HolidayCreatePayloadType,
 } from "./mutations/holiday/holiday_create_type";
@@ -95,12 +107,14 @@ import {
   HoursOfOperationCreateInputType,
   HoursOfOperationCreatePayloadType,
 } from "./mutations/hours_of_operation/hours_of_operation_create_type";
+import { AttachmentInputType } from "./mutations/input/attachment_input_type";
 import { CommentArgInputType } from "./mutations/input/comment_arg_input_type";
 import { ContactArgInputType } from "./mutations/input/contact_arg_input_type";
 import { ContactEmailArgInputType } from "./mutations/input/contact_email_arg_input_type";
 import { ContactInfoInputType } from "./mutations/input/contact_info_input_type";
 import { ContactPhoneNumberArgInputType } from "./mutations/input/contact_phone_number_arg_input_type";
 import { EventArgInputType } from "./mutations/input/event_arg_input_type";
+import { FileArgInputType } from "./mutations/input/file_arg_input_type";
 import { HolidayArgInputType } from "./mutations/input/holiday_arg_input_type";
 import { HoursOfOperationArgInputType } from "./mutations/input/hours_of_operation_arg_input_type";
 import { UserArgInputType } from "./mutations/input/user_arg_input_type";
@@ -154,6 +168,7 @@ import { QueryType } from "./resolvers/query_type";
 import {
   AddressToHostedEventsConnectionType,
   AddressType,
+  AttachmentType,
   AuthorToCommentsConnectionType,
   CatBreedType,
   CommentArticleToCommentsConnectionType,
@@ -192,6 +207,8 @@ import {
   EventToInvitedConnectionType,
   EventToMaybeConnectionType,
   EventType,
+  FileSortColumnType,
+  FileType,
   GQLViewerType,
   GlobalCanViewerDoType,
   HolidaySortColumnType,
@@ -207,6 +224,7 @@ import {
   RootToContactEmailConnectionType,
   RootToContactPhoneNumberConnectionType,
   RootToEventConnectionType,
+  RootToFileConnectionType,
   RootToHolidayConnectionType,
   RootToHoursOfOperationConnectionType,
   RootToUserConnectionType,
@@ -258,6 +276,7 @@ export default new GraphQLSchema({
     DogBreedType,
     EventRsvpStatusType,
     EventSortColumnType,
+    FileSortColumnType,
     HolidaySortColumnType,
     HoursOfOperationSortColumnType,
     IntEnumUsedInListType,
@@ -270,6 +289,7 @@ export default new GraphQLSchema({
     UserPreferredShiftType,
     UserSortColumnType,
     AddressType,
+    AttachmentType,
     CommentType,
     ContactDateType,
     ContactEmailCanViewerDoType,
@@ -283,6 +303,7 @@ export default new GraphQLSchema({
     EmailInfoType,
     EventCanViewerSeeType,
     EventType,
+    FileType,
     GlobalCanViewerDoType,
     HolidayType,
     HoursOfOperationType,
@@ -312,6 +333,7 @@ export default new GraphQLSchema({
     RootToContactEmailConnectionType(),
     RootToContactPhoneNumberConnectionType(),
     RootToEventConnectionType(),
+    RootToFileConnectionType(),
     RootToHolidayConnectionType(),
     RootToHoursOfOperationConnectionType(),
     RootToUserConnectionType(),
@@ -336,6 +358,7 @@ export default new GraphQLSchema({
     UserAuthPayloadType,
     AddressCreateInputType,
     AddressCreatePayloadType,
+    AttachmentInputType,
     ClearEventRsvpStatusInputType,
     ClearEventRsvpStatusPayloadType,
     CommentArgInputType,
@@ -393,6 +416,13 @@ export default new GraphQLSchema({
     EventRsvpStatusEditInputType,
     EventRsvpStatusEditPayloadType,
     EventRsvpStatusInputType,
+    FileArgInputType,
+    FileCreateInputType,
+    FileCreatePayloadType,
+    FileDeleteInputType,
+    FileDeletePayloadType,
+    FileEditInputType,
+    FileEditPayloadType,
     HolidayArgInputType,
     HolidayCreateInputType,
     HolidayCreatePayloadType,
