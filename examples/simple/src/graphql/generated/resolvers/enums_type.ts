@@ -281,6 +281,15 @@ export const EventSortColumnType = new GraphQLEnumType({
   },
 });
 
+export const FileSortColumnType = new GraphQLEnumType({
+  name: "FileSortColumn",
+  values: {
+    ID: {
+      value: "id",
+    },
+  },
+});
+
 export const HolidaySortColumnType = new GraphQLEnumType({
   name: "HolidaySortColumn",
   values: {

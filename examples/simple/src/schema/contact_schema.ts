@@ -4,6 +4,7 @@ import {
   StringType,
   UUIDType,
   UUIDListType,
+  StructTypeAsList,
 } from "@snowtop/ent/schema/";
 import Feedback from "./patterns/feedback";
 
@@ -26,6 +27,10 @@ const ContactSchema = new EntSchema({
     userID: UUIDType({
       immutable: true,
       foreignKey: { schema: "User", column: "ID" },
+    }),
+    attachments: StructTypeAsList({
+      nullable: true,
+      globalType: "Attachment",
     }),
   },
 

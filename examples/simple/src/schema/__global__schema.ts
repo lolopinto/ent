@@ -1,9 +1,15 @@
+import { EmailType } from "@snowtop/ent-email";
+import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import {
   BooleanType,
   EnumType,
   GlobalSchema,
   EnumListType,
   StructType,
+  StructTypeAsList,
+  UUIDType,
+  StringType,
+  TimestampType,
 } from "@snowtop/ent/schema/";
 
 const glo: GlobalSchema = {
@@ -40,6 +46,20 @@ const glo: GlobalSchema = {
       values: ["yes", "no", "maybe"],
       tsType: "ResponseType",
       graphQLType: "ResponseType",
+    }),
+    attachments: StructTypeAsList({
+      tsType: "Attachment",
+      nullable: true,
+      graphQLType: "Attachment",
+      fields: {
+        file_id: UUIDType({
+          foreignKey: { schema: "File", column: "ID" },
+        }),
+        note: StringType({ nullable: true }),
+        date: TimestampType(),
+        phone_number: PhoneNumberType({ nullable: true }),
+        email_address: EmailType({ nullable: true }),
+      },
     }),
   },
 };

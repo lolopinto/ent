@@ -11,6 +11,8 @@ import { query } from "@snowtop/ent";
 import { v4 } from "uuid";
 import { ContactLabel, ContactInfoSource } from "../generated/types";
 import { Transaction } from "@snowtop/ent/action";
+import CreateFileAction from "../file/actions/create_file_action";
+import { advanceTo } from "jest-date-mock";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -28,6 +30,7 @@ async function create(
   user: User,
   firstName: string,
   lastName: string,
+  partial?: Partial<ContactCreateInput>,
 ): Promise<Contact> {
   return CreateContactAction.create(new ExampleViewer(user.id), {
     emails: [
@@ -39,6 +42,7 @@ async function create(
     firstName: firstName,
     lastName: lastName,
     userID: user.id,
+    ...partial,
   }).saveX();
 }
 
@@ -49,17 +53,20 @@ async function createMany(
   let results: Contact[] = [];
   for (const name of names) {
     // TODO eventually a multi-create API
-    let contact = await CreateContactAction.create(new ExampleViewer(user.id), {
-      emails: [
-        {
-          emailAddress: randomEmail(),
-          label: ContactLabel.Default,
-        },
-      ],
-      firstName: name.firstName,
-      lastName: name.lastName,
-      userID: user.id,
-    }).saveX();
+    const contact = await CreateContactAction.create(
+      new ExampleViewer(user.id),
+      {
+        emails: [
+          {
+            emailAddress: randomEmail(),
+            label: ContactLabel.Default,
+          },
+        ],
+        firstName: name.firstName,
+        lastName: name.lastName,
+        userID: user.id,
+      },
+    ).saveX();
     results.push(contact);
   }
 
@@ -75,21 +82,81 @@ test("create contact", async () => {
   expect(contact.lastName).toBe("Stark");
 });
 
+test("create contact with explicit empty attachments", async () => {
+  let user = await createUser();
+  const contact = await create(user, "Sansa", "Stark", {
+    attachments: [],
+  });
+
+  expect(contact).toBeInstanceOf(Contact);
+  expect(contact.firstName).toBe("Sansa");
+  expect(contact.lastName).toBe("Stark");
+  expect(contact.attachments).toStrictEqual([]);
+});
+
+test("create contact with explicit attachments", async () => {
+  let user = await createUser();
+  const file = await CreateFileAction.create(user.viewer, {
+    creatorId: user.id,
+    name: "test.png",
+    path: "/tmp/test.png",
+  }).saveX();
+  const file2 = await CreateFileAction.create(user.viewer, {
+    creatorId: user.id,
+    name: "test.png2",
+    path: "/tmp/test.png2",
+  }).saveX();
+  const d = new Date();
+  advanceTo(d);
+  const contact = await create(user, "Sansa", "Stark", {
+    attachments: [
+      {
+        fileId: file.id,
+        date: d,
+        note: "test",
+      },
+      {
+        fileId: file2.id,
+        date: d,
+        note: "test",
+      },
+    ],
+  });
+
+  expect(contact).toBeInstanceOf(Contact);
+  expect(contact.firstName).toBe("Sansa");
+  expect(contact.lastName).toBe("Stark");
+  expect(contact.attachments).toMatchObject([
+    {
+      fileId: file.id,
+      date: d.toISOString(),
+      note: "test",
+    },
+    {
+      fileId: file2.id,
+      date: d.toISOString(),
+      note: "test",
+    },
+  ]);
+});
+
 test("create contacts", async () => {
   function verifyContacts(
     contacts: Contact[],
     inputs: Pick<ContactCreateInput, "firstName" | "lastName">[],
   ) {
     expect(contacts.length).toBe(inputs.length);
-    let idx = 0;
-    for (const input of inputs) {
-      let contact = contacts[idx];
-      expect(contact.firstName).toBe(input.firstName);
-      expect(contact.lastName).toBe(input.lastName);
-      idx++;
+    // order is not always as expected so just sort them
+    contacts.sort((a, b) => a.firstName.localeCompare(b.firstName));
+    inputs.sort((a, b) => a.firstName.localeCompare(b.firstName));
+    for (let i = 0; i < inputs.length; i++) {
+      const input = inputs[i];
+      const contact = contacts[i];
+      expect(contact.firstName, `${i}`).toBe(input.firstName);
+      expect(contact.lastName, `${i}`).toBe(input.lastName);
     }
   }
-  let inputs = [
+  const inputs = [
     { firstName: "Robb", lastName: "Stark" },
     { firstName: "Sansa", lastName: "Stark" },
     { firstName: "Arya", lastName: "Stark" },
@@ -120,7 +187,7 @@ test("create contacts", async () => {
   verifyContacts(loadedContacts, inputs2);
 
   // ygritte can't see jon snow's contacts
-  let action = CreateUserAction.create(loggedOutViewer, {
+  const action = CreateUserAction.create(loggedOutViewer, {
     firstName: "Ygritte",
     lastName: "",
     emailAddress: randomEmail(),

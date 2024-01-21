@@ -24,7 +24,13 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import { EventDBData, eventLoader, eventLoaderInfo } from "./loaders";
-import { EdgeType, EventRsvpStatus, NodeType } from "./types";
+import {
+  Attachment,
+  EdgeType,
+  EventRsvpStatus,
+  NodeType,
+  convertNullableAttachmentList,
+} from "./types";
 import {
   Address,
   EventToAttendingQuery,
@@ -55,6 +61,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   protected readonly _addressID: ID | null;
   readonly coverPhoto: Buffer | null;
   readonly coverPhoto2: Buffer | null;
+  readonly attachments: Attachment[] | null;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
     this.id = data.id;
@@ -68,6 +75,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     this._addressID = data.address_id;
     this.coverPhoto = data.cover_photo;
     this.coverPhoto2 = convertNullableTextToBuffer(data.cover_photo_2);
+    this.attachments = convertNullableAttachmentList(data.attachments);
     // @ts-expect-error
     this.data = data;
   }

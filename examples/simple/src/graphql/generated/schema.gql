@@ -130,6 +130,10 @@ enum EventSortColumn {
   ID
 }
 
+enum FileSortColumn {
+  ID
+}
+
 enum HolidaySortColumn {
   ID
 }
@@ -219,6 +223,14 @@ type Address implements Node {
   hostedEvents(first: Int, after: String, last: Int, before: String): AddressToHostedEventsConnection!
 }
 
+type Attachment {
+  fileId: ID!
+  note: String
+  date: Time!
+  phoneNumber: String
+  emailAddress: String
+}
+
 type CatType {
   name: String!
   birthday: Time!
@@ -289,6 +301,7 @@ type Contact implements Node {
   id: ID!
   firstName: String!
   lastName: String!
+  attachments: [Attachment!]
   comments(first: Int, after: String, last: Int, before: String): ContactToCommentsConnection!
   likers(first: Int, after: String, last: Int, before: String): ContactToLikersConnection!
   attachedComments(first: Int, after: String, last: Int, before: String): ContactCommentsFromAttachmentConnection!
@@ -324,6 +337,7 @@ type Event implements Node {
   eventLocation: String!
   coverPhoto: Byte
   coverPhoto2: Byte
+  attachments: [Attachment!]
   attending(first: Int, after: String, last: Int, before: String): EventToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventToDeclinedConnection!
   hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
@@ -331,6 +345,13 @@ type Event implements Node {
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
   viewerRsvpStatus: EventRsvpStatus!
   canViewerSeeInfo: EventCanViewerSee!
+}
+
+type File implements Node {
+  creator: User
+  id: ID!
+  name: String!
+  path: String!
 }
 
 type GlobalCanViewerDo {
@@ -700,6 +721,18 @@ type RootToEventConnection implements Connection {
   rawCount: Int!
 }
 
+type RootToFileEdge implements Edge {
+  node: File!
+  cursor: String!
+}
+
+type RootToFileConnection implements Connection {
+  edges: [RootToFileEdge!]!
+  nodes: [File!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type RootToHolidayEdge implements Edge {
   node: Holiday!
   cursor: String!
@@ -946,6 +979,14 @@ type AddressCreatePayload {
   address: Address!
 }
 
+input AttachmentInput {
+  fileId: ID!
+  note: String
+  date: Time!
+  phoneNumber: String
+  emailAddress: String
+}
+
 input CatTypeInput {
   name: String!
   birthday: Time!
@@ -1030,6 +1071,7 @@ input ContactCreateInput {
   firstName: String!
   lastName: String!
   userID: ID!
+  attachments: [AttachmentInput!]
   emails: [EmailContactCreateInput!]
   phoneNumbers: [PhoneNumberContactCreateInput!]
 }
@@ -1054,6 +1096,7 @@ input ContactEditInput {
   phoneNumberIds: [ID!]
   firstName: String
   lastName: String
+  attachments: [AttachmentInput!]
   emails: [EmailContactEditInput!]
 }
 
@@ -1228,6 +1271,7 @@ input EventCreateInput {
   addressID: ID
   coverPhoto: Byte
   coverPhoto2: Byte
+  attachments: [AttachmentInput!]
 }
 
 type EventCreatePayload {
@@ -1253,6 +1297,7 @@ input EventEditInput {
   addressID: ID
   coverPhoto: Byte
   coverPhoto2: Byte
+  attachments: [AttachmentInput!]
 }
 
 type EventEditPayload {
@@ -1285,6 +1330,42 @@ enum EventRsvpStatusInput {
   DECLINED
   MAYBE
   UNKNOWN
+}
+
+input FileArgInput {
+  id: ID
+  ids: [ID!]
+}
+
+input FileCreateInput {
+  name: String!
+  path: String!
+  creatorId: ID!
+}
+
+type FileCreatePayload {
+  file: File!
+}
+
+input FileDeleteInput {
+  """id of File"""
+  id: ID!
+}
+
+type FileDeletePayload {
+  deletedFileID: ID
+}
+
+input FileEditInput {
+  """id of File"""
+  id: ID!
+  name: String
+  path: String
+  creatorId: ID
+}
+
+type FileEditPayload {
+  file: File!
 }
 
 input HolidayArgInput {
@@ -1465,6 +1546,10 @@ type Query {
   event_connection(ids: [ID!], sortCol: EventSortColumn, query: EventArgInput, first: Int, after: String, last: Int, before: String): RootToEventConnection!
   """custom query for event. list"""
   event_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Event!]!
+  """custom query for file. connection"""
+  file_connection(ids: [ID!], sortCol: FileSortColumn, query: FileArgInput, first: Int, after: String, last: Int, before: String): RootToFileConnection!
+  """custom query for file. list"""
+  file_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [File!]!
   """custom query for holiday. connection"""
   holiday_connection(ids: [ID!], sortCol: HolidaySortColumn, query: HolidayArgInput, first: Int, after: String, last: Int, before: String): RootToHolidayConnection!
   """custom query for holiday. list"""
@@ -1507,6 +1592,9 @@ type Mutation {
   eventRemoveHost(input: EventRemoveHostInput!): EventRemoveHostPayload!
   eventRsvpStatusClear(input: ClearEventRsvpStatusInput!): ClearEventRsvpStatusPayload!
   eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
+  fileCreate(input: FileCreateInput!): FileCreatePayload!
+  fileDelete(input: FileDeleteInput!): FileDeletePayload!
+  fileEdit(input: FileEditInput!): FileEditPayload!
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
   holidayCustomEdit(input: CustomEditHolidayInput!): CustomEditHolidayPayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!

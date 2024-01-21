@@ -21,6 +21,7 @@ import { Contact } from "../../../../ent";
 import EditContactAction, {
   ContactEditInput,
 } from "../../../../ent/contact/actions/edit_contact_action";
+import { AttachmentInputType } from "../input/attachment_input_type";
 import { ContactInfoInputType } from "../input/contact_info_input_type";
 import { ContactLabelType, ContactType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
@@ -70,6 +71,9 @@ export const ContactEditInputType = new GraphQLInputObjectType({
     lastName: {
       type: GraphQLString,
     },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentInputType)),
+    },
     emails: {
       type: new GraphQLList(new GraphQLNonNull(EmailContactEditInput)),
     },
@@ -118,6 +122,7 @@ export const ContactEditType: GraphQLFieldConfig<
           : undefined,
         firstName: input.firstName,
         lastName: input.lastName,
+        attachments: input.attachments,
         emails: input.emails,
       },
     );
