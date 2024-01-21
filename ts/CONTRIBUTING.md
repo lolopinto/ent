@@ -18,3 +18,9 @@ To make local changes:
   * `npm link @snowtop/ent`
   * `rm -rf node_modules/graphql`
   * run `tsent codegen` or whatever command to see your changes
+
+Notes for myself:
+
+* `LOCAL_SCRIPT_PATH=true tsent parse_schema` to parse the schema and not print anything
+* `LOCAL_SCRIPT_PATH=true tsent print_schema` to print the parsed schema
+* `console.error` in ts parse schema code to output to stderr since that's not (currently) captured by go codegen code
