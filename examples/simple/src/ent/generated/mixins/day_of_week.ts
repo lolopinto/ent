@@ -13,20 +13,15 @@ import {
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
-export interface IDayOfWeek {
-  // isDayOfWeek(): boolean;
-  dayOfWeek: DayOfWeek;
-  dayOfWeekAlt: DayOfWeekAlt | null;
+export function isDayOfWeek(ent: unknown): ent is IDayOfWeek {
+  const o = ent as IDayOfWeek;
+  return (o.isDayOfWeek && o.isDayOfWeek()) ?? false;
 }
 
-export function isDaOfWeek(obj: unknown): obj is IDayOfWeek {
-  const o = obj as IDayOfWeek;
-  return (
-    "dayOfWeek" in o &&
-    typeof o.dayOfWeek === "string" &&
-    "dayOfWeekAlt" in o &&
-    (typeof o.dayOfWeekAlt === "string" || o.dayOfWeekAlt === null)
-  );
+export interface IDayOfWeek {
+  isDayOfWeek(): boolean;
+  dayOfWeek: DayOfWeek;
+  dayOfWeekAlt: DayOfWeekAlt | null;
 }
 
 function extractFromArgs<TViewer extends Viewer, TData extends Data>(
@@ -52,8 +47,8 @@ export function DayOfWeekMixin<T extends Constructor>(BaseClass: T) {
       this.dayOfWeekAlt = convertNullableDayOfWeekAlt(data.day_of_week_alt);
     }
 
-    // isDayOfWeek() {
-    //   return true;
-    // }
+    isDayOfWeek() {
+      return true;
+    }
   };
 }
