@@ -4,6 +4,9 @@
  */
 
 import { ID } from "@snowtop/ent";
+import { Builder } from "@snowtop/ent/action";
+import { File } from "..";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export enum NodeType {
   // Address is the node type for the Address object. Used to identify this node in edges and other places.
@@ -20,6 +23,8 @@ export enum NodeType {
   ContactPhoneNumber = "contactPhoneNumber",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
   Event = "event",
+  // File is the node type for the File object. Used to identify this node in edges and other places.
+  File = "file",
   // Holiday is the node type for the Holiday object. Used to identify this node in edges and other places.
   Holiday = "holiday",
   // HoursOfOperation is the node type for the HoursOfOperation object. Used to identify this node in edges and other places.
@@ -719,6 +724,44 @@ export function convertNullableUserPreferredShiftList(
     return null;
   }
   return convertUserPreferredShiftList(val);
+}
+
+export interface Attachment {
+  fileId: ID | Builder<File, ExampleViewerAlias>;
+  note?: string | null;
+  date: Date;
+  phoneNumber?: string | null;
+  emailAddress?: string | null;
+}
+
+export function convertAttachment(input: any): Attachment {
+  return {
+    fileId: input.file_id,
+    note: input.note,
+    date: input.date,
+    phoneNumber: input.phone_number,
+    emailAddress: input.email_address,
+  };
+}
+
+export function convertNullableAttachment(input: any): Attachment | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertAttachment(input);
+}
+
+export function convertAttachmentList(input: any[]): Attachment[] {
+  return input.map((v) => convertAttachment(v));
+}
+
+export function convertNullableAttachmentList(
+  input: any[] | null,
+): Attachment[] | null {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  return input.map((v) => convertAttachment(v));
 }
 
 export interface ContactInfo {

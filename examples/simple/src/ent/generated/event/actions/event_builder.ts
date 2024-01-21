@@ -17,7 +17,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event, User } from "../../..";
 import { eventLoaderInfo } from "../../loaders";
-import { EdgeType, NodeType } from "../../types";
+import { Attachment, EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/event_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -30,6 +30,7 @@ export interface EventInput {
   addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
   coverPhoto?: Buffer | null;
   coverPhoto2?: Buffer | null;
+  attachments?: Attachment[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -431,6 +432,7 @@ export class EventBuilder<
     }
     addField("cover_photo", input.coverPhoto);
     addField("cover_photo2", input.coverPhoto2);
+    addField("attachments", input.attachments);
     return result;
   }
 
@@ -530,5 +532,14 @@ export class EventBuilder<
     }
 
     return this.existingEnt?.coverPhoto2 ?? null;
+  }
+
+  // get value of attachments. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAttachmentsValue(): Attachment[] | null {
+    if (this.input.attachments !== undefined) {
+      return this.input.attachments;
+    }
+
+    return this.existingEnt?.attachments ?? null;
   }
 }

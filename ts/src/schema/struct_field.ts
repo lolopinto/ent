@@ -45,7 +45,10 @@ export class StructField extends BaseField implements Field {
   private validateUniqueKey?: string | undefined;
   private checkUniqueKey: boolean;
 
-  constructor(private options: StructOptions, private jsonAsList?: boolean) {
+  constructor(
+    private options: StructOptions,
+    private jsonAsList?: boolean,
+  ) {
     super();
     this.type.subFields = options.fields;
     this.type.type = options.tsType;
@@ -130,7 +133,8 @@ export class StructField extends BaseField implements Field {
         }
 
         // TODO handle format code
-        return f.format(obj);
+        // ola 1/20/24 don't know what this means lol
+        return f.format(obj, nested);
       }
     }
     if (Array.isArray(obj) && this.jsonAsList) {

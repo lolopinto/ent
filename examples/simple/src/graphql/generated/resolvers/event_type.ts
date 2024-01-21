@@ -8,6 +8,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLInt,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -31,6 +32,7 @@ import {
 } from "../../../ent";
 import {
   AddressType,
+  AttachmentType,
   EventRsvpStatusType,
   EventToAttendingConnectionType,
   EventToDeclinedConnectionType,
@@ -95,6 +97,9 @@ export const EventType = new GraphQLObjectType({
     },
     coverPhoto2: {
       type: GraphQLByte,
+    },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentType)),
     },
     attending: {
       type: new GraphQLNonNull(EventToAttendingConnectionType()),
