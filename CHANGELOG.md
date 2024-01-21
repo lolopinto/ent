@@ -13,6 +13,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - Validate that we can't have multiple patterns with the same name (#1733)
 
+### Fixed
+
+- fix issue with StructTypeAsList globalType fields during create (#1734)
+
 ## [0.1.22] - 2023-12-08
 
 ### Added
