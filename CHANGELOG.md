@@ -9,7 +9,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
-### Added 
+### Added
 
 - Validate that we can't have multiple patterns with the same name (#1733)
 
