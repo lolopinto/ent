@@ -14,9 +14,12 @@ import { EventActivity } from "src/ent";
 import { Event } from "src/ent/internal";
 
 export class AllowIfEventCreatorRule implements PrivacyPolicyRule {
-  constructor(private id: ID | Builder<Ent>, private input?: Data) {}
+  constructor(
+    private id: ID | Builder<Ent>,
+    private input?: Data,
+  ) {}
 
-  async apply(viewer: Viewer, _ent: Ent) {
+  async apply(viewer: Viewer, _ent: Ent | undefined) {
     if (typeof this.id === "object") {
       // if we're creating something with an eventID, allow this
       // e.g. creating an event while creating an activity
@@ -56,7 +59,10 @@ export class DenyIfNotEventCreatorRule implements PrivacyPolicyRule {
 }
 
 export class AllowIfEventCreatorPrivacyPolicy {
-  constructor(private id: ID | Builder<Ent>, private input?: Data) {}
+  constructor(
+    private id: ID | Builder<Ent>,
+    private input?: Data,
+  ) {}
   rules = [new AllowIfEventCreatorRule(this.id, this.input), AlwaysDenyRule];
 }
 
