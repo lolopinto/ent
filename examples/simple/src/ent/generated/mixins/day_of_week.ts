@@ -13,6 +13,11 @@ import {
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
+export function isDayOfWeek(ent: unknown): ent is IDayOfWeek {
+  const o = ent as IDayOfWeek;
+  return (o.isDayOfWeek && o.isDayOfWeek()) ?? false;
+}
+
 export interface IDayOfWeek {
   isDayOfWeek(): boolean;
   dayOfWeek: DayOfWeek;
