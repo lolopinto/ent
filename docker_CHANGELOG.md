@@ -9,6 +9,8 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.17] - 2024-01-21
+
 ### Added
 
 - Typescript user-defined type guard functions for patterns (#1735)
