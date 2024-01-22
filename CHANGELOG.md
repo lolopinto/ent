@@ -9,7 +9,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
-## [0.1.23]
+## [0.1.23] - 2024-01-21
 
 ### Added
 
