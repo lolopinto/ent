@@ -7,6 +7,11 @@ import { ObjectToCommentsQuery, ObjectToLikersQuery } from "../../internal";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
+export function isFeedback(ent: unknown): ent is IFeedback {
+  const o = ent as IFeedback;
+  return (o.isFeedback && o.isFeedback()) ?? false;
+}
+
 export interface IFeedback {
   isFeedback(): boolean;
   queryComments(): ObjectToCommentsQuery;

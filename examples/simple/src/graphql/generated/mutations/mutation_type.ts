@@ -24,6 +24,9 @@ import { EventEditType } from "./event/event_edit_type";
 import { EventRemoveHostType } from "./event/event_remove_host_type";
 import { EventRsvpStatusClearType } from "./event/event_rsvp_status_clear_type";
 import { EventRsvpStatusEditType } from "./event/event_rsvp_status_edit_type";
+import { FileCreateType } from "./file/file_create_type";
+import { FileDeleteType } from "./file/file_delete_type";
+import { FileEditType } from "./file/file_edit_type";
 import { HolidayCreateType } from "./holiday/holiday_create_type";
 import { HolidayCustomEditType } from "./holiday/holiday_custom_edit_type";
 import { HoursOfOperationCreateType } from "./hours_of_operation/hours_of_operation_create_type";
@@ -64,6 +67,9 @@ export const MutationType = new GraphQLObjectType({
     eventRemoveHost: EventRemoveHostType,
     eventRsvpStatusClear: EventRsvpStatusClearType,
     eventRsvpStatusEdit: EventRsvpStatusEditType,
+    fileCreate: FileCreateType,
+    fileDelete: FileDeleteType,
+    fileEdit: FileEditType,
     holidayCreate: HolidayCreateType,
     holidayCustomEdit: HolidayCustomEditType,
     hoursOfOperationCreate: HoursOfOperationCreateType,

@@ -9,10 +9,24 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- Typescript user-defined type guard functions for patterns (#1735)
+
+## [0.1.16] - 2023-12-09
+
+### Fixed
+
+- changed error message when changing database type to be more descriptive (#1726)
+- fix disableBuilderType in UUIDType not respected when defaultValueOnCreate is true and disableUserGraphQLEditable is true (#1727)
+
+## [0.1.15] - 2023-12-08
+
 ### Fixed
 
 - Updated swc and ts-node to latest versions. Adds module to generated .swcrc used for graphql codegen (#1717)
 - fix EdgeGroup actions sets incorrect ent type in DB (#1719)
+- Fix id fields with disable user graphql editable (#1723)
 
 ## [0.1.14] - 2023-11-06
 

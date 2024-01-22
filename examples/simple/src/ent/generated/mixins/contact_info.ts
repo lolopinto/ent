@@ -8,6 +8,11 @@ import { ContactInfo } from "../types";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
+export function isContactInfo(ent: unknown): ent is IContactInfo {
+  const o = ent as IContactInfo;
+  return (o.isContactInfo && o.isContactInfo()) ?? false;
+}
+
 export interface IContactInfo {
   isContactInfo(): boolean;
   extra: ContactInfo | null;

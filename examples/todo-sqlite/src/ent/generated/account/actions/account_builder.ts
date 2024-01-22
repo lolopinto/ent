@@ -26,6 +26,9 @@ import {
 import schema from "src/schema/account_schema";
 
 export interface AccountInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   deletedAt?: Date | null;
   name?: string;
   phoneNumber?: string;
@@ -408,6 +411,9 @@ export class AccountBuilder<
         result.set(key, value);
       }
     };
+    addField("ID", input.id);
+    addField("createdAt", input.createdAt);
+    addField("updatedAt", input.updatedAt);
     addField("deleted_at", input.deletedAt);
     addField("Name", input.name);
     addField("PhoneNumber", input.phoneNumber);
@@ -424,6 +430,48 @@ export class AccountBuilder<
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any> {
     return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+
+  // get value of ID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewIdValue(): ID {
+    if (this.input.id !== undefined) {
+      return this.input.id;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `id` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.id;
+  }
+
+  // get value of createdAt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCreatedAtValue(): Date {
+    if (this.input.createdAt !== undefined) {
+      return this.input.createdAt;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `createdAt` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.createdAt;
+  }
+
+  // get value of updatedAt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewUpdatedAtValue(): Date {
+    if (this.input.updatedAt !== undefined) {
+      return this.input.updatedAt;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `updatedAt` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.updatedAt;
   }
 
   // get value of deleted_at. Retrieves it from the input if specified or takes it from existingEnt

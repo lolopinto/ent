@@ -9,6 +9,7 @@ import {
   GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -25,6 +26,7 @@ import { Event } from "../../../../ent";
 import EditEventAction, {
   EventEditInput,
 } from "../../../../ent/event/actions/edit_event_action";
+import { AttachmentInputType } from "../input/attachment_input_type";
 import { EventType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -65,6 +67,9 @@ export const EventEditInputType = new GraphQLInputObjectType({
     },
     coverPhoto2: {
       type: GraphQLByte,
+    },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentInputType)),
     },
   }),
 });
@@ -110,6 +115,7 @@ export const EventEditType: GraphQLFieldConfig<
         addressID: mustDecodeNullableIDFromGQLID(input.addressID),
         coverPhoto: input.coverPhoto,
         coverPhoto2: input.coverPhoto2,
+        attachments: input.attachments,
       },
     );
     return { event };

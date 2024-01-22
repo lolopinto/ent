@@ -574,15 +574,15 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 }
 
 func IsRequiredField(action Action, field ActionField) bool {
-	if field.SingleFieldPrimaryKey() {
-		return true
-	}
-
 	if field.ForceRequiredInAction() {
 		return true
 	}
 	if field.ForceOptionalInAction() {
 		return false
+	}
+
+	if field.SingleFieldPrimaryKey() {
+		return true
 	}
 
 	// for non-create actions, not required

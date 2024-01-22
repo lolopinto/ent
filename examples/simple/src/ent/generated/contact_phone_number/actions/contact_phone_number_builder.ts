@@ -39,8 +39,7 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export class ContactPhoneNumberBuilder<
   TInput extends ContactPhoneNumberInput = ContactPhoneNumberInput,
-  TExistingEnt extends
-    TMaybleNullableEnt<ContactPhoneNumber> = ContactPhoneNumber | null,
+  TExistingEnt extends TMaybleNullableEnt<ContactPhoneNumber> = ContactPhoneNumber | null,
 > implements Builder<ContactPhoneNumber, ExampleViewerAlias, TExistingEnt>
 {
   orchestrator: Orchestrator<

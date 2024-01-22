@@ -178,7 +178,7 @@ export class EditEventRsvpStatusActionBase
       this.input.rsvpStatus,
       this.event.id,
       this.input.userID,
-      NodeType.Event,
+      NodeType.User,
       this.event.getEventRsvpStatusMap(),
     );
   }

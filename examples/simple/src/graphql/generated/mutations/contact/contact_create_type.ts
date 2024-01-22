@@ -21,6 +21,7 @@ import { Contact } from "../../../../ent";
 import CreateContactAction, {
   ContactCreateInput,
 } from "../../../../ent/contact/actions/create_contact_action";
+import { AttachmentInputType } from "../input/attachment_input_type";
 import { ContactInfoInputType } from "../input/contact_info_input_type";
 import { ContactLabelType, ContactType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
@@ -75,6 +76,9 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
     userID: {
       type: new GraphQLNonNull(GraphQLID),
     },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentInputType)),
+    },
     emails: {
       type: new GraphQLList(new GraphQLNonNull(EmailContactCreateInput)),
     },
@@ -118,6 +122,7 @@ export const ContactCreateType: GraphQLFieldConfig<
       firstName: input.firstName,
       lastName: input.lastName,
       userID: mustDecodeIDFromGQLID(input.userID),
+      attachments: input.attachments,
       emails: input.emails,
       phoneNumbers: input.phoneNumbers,
     }).saveX();

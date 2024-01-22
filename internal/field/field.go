@@ -396,6 +396,10 @@ func (f *Field) EditableGraphQLField() bool {
 	return !f.disableUserEditable && !f.disableUserGraphQLEditable
 }
 
+func (f *Field) DisableUserGraphQLEditable() bool {
+	return f.disableUserGraphQLEditable
+}
+
 func (f *Field) HasDefaultValueOnCreate() bool {
 	return f.hasDefaultValueOnCreate
 }
@@ -935,6 +939,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		exposeToActionsByDefault:   f.exposeToActionsByDefault,
 		singleFieldPrimaryKey:      f.singleFieldPrimaryKey,
 		disableUserEditable:        f.disableUserEditable,
+		disableBuilderType:         f.disableBuilderType,
 		disableUserGraphQLEditable: f.disableUserGraphQLEditable,
 		hasDefaultValueOnCreate:    f.hasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:      f.hasDefaultValueOnEdit,

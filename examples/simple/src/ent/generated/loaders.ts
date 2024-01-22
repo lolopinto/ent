@@ -5,6 +5,7 @@
 
 import { ID, ObjectLoaderFactory } from "@snowtop/ent";
 import {
+  Attachment,
   ContactInfo,
   ContactLabel,
   DayOfWeek,
@@ -257,6 +258,7 @@ export interface ContactDBData {
   first_name: string;
   last_name: string;
   user_id: ID;
+  attachments: Attachment[] | null;
 }
 
 const contactTable = "contacts";
@@ -269,6 +271,7 @@ const contactFields = [
   "first_name",
   "last_name",
   "user_id",
+  "attachments",
 ];
 
 export const contactLoader = new ObjectLoaderFactory<ContactDBData>({
@@ -314,6 +317,10 @@ export const contactLoaderInfo = {
     userID: {
       dbCol: "user_id",
       inputKey: "userID",
+    },
+    attachments: {
+      dbCol: "attachments",
+      inputKey: "attachments",
     },
   },
 };
@@ -459,6 +466,7 @@ export interface EventDBData {
   address_id: ID | null;
   cover_photo: Buffer | null;
   cover_photo_2: Buffer | null;
+  attachments: Attachment[] | null;
 }
 
 const eventTable = "events";
@@ -474,6 +482,7 @@ const eventFields = [
   "address_id",
   "cover_photo",
   "cover_photo_2",
+  "attachments",
 ];
 
 export const eventLoader = new ObjectLoaderFactory<EventDBData>({
@@ -531,6 +540,68 @@ export const eventLoaderInfo = {
     cover_photo2: {
       dbCol: "cover_photo_2",
       inputKey: "coverPhoto2",
+    },
+    attachments: {
+      dbCol: "attachments",
+      inputKey: "attachments",
+    },
+  },
+};
+
+export interface FileDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  name: string;
+  path: string;
+  creator_id: ID;
+}
+
+const fileTable = "files";
+const fileFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "name",
+  "path",
+  "creator_id",
+];
+
+export const fileLoader = new ObjectLoaderFactory<FileDBData>({
+  tableName: fileTable,
+  fields: fileFields,
+  key: "id",
+});
+
+export const fileLoaderInfo = {
+  tableName: fileTable,
+  fields: fileFields,
+  nodeType: NodeType.File,
+  loaderFactory: fileLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    path: {
+      dbCol: "path",
+      inputKey: "path",
+    },
+    creator_id: {
+      dbCol: "creator_id",
+      inputKey: "creatorId",
     },
   },
 };
@@ -852,6 +923,8 @@ export function getLoaderInfoFromSchema(schema: string) {
       return contactPhoneNumberLoaderInfo;
     case "Event":
       return eventLoaderInfo;
+    case "File":
+      return fileLoaderInfo;
     case "Holiday":
       return holidayLoaderInfo;
     case "HoursOfOperation":
@@ -881,6 +954,8 @@ export function getLoaderInfoFromNodeType(nodeType: NodeType) {
       return contactPhoneNumberLoaderInfo;
     case NodeType.Event:
       return eventLoaderInfo;
+    case NodeType.File:
+      return fileLoaderInfo;
     case NodeType.Holiday:
       return holidayLoaderInfo;
     case NodeType.HoursOfOperation:

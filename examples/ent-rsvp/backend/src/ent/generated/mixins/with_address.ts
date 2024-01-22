@@ -4,6 +4,11 @@ import { Data, ID, Viewer } from "@snowtop/ent";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
+export function isWithAddress(ent: unknown): ent is IWithAddress {
+  const o = ent as IWithAddress;
+  return (o.isWithAddress && o.isWithAddress()) ?? false;
+}
+
 export interface IWithAddress {
   isWithAddress(): boolean;
   addressId: ID | null;

@@ -137,7 +137,7 @@ func compareFieldMap(m1, m2 map[string]*Field) ([]change.Change, error) {
 		} else {
 			if !FieldEqual(f1, f2) {
 				if f1.fieldType.GetDBType() != f2.fieldType.GetDBType() {
-					return nil, fmt.Errorf("changing the database type of a field isn't currently supported. you should drop the field and add it back if you really want to do that")
+					return nil, fmt.Errorf("changing the database type of a field isn't currently supported. you should drop field %s and add it back if you really want to do that", f1.FieldName)
 				}
 				ret = append(ret, change.Change{
 					Change: change.ModifyField,

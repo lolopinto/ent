@@ -26,6 +26,9 @@ interface customTagInput {
 }
 
 export interface TodoCreateInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   text: string;
   creatorID: ID | Builder<Account, Viewer>;
   assigneeID: ID | Builder<Account, Viewer>;
