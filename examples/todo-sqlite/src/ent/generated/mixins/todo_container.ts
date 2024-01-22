@@ -4,6 +4,11 @@ import { ObjectToScopedTodosQuery } from "src/ent/internal";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
+export function isTodoContainer(ent: unknown): ent is ITodoContainer {
+  const o = ent as ITodoContainer;
+  return (o.isTodoContainer && o.isTodoContainer()) ?? false;
+}
+
 export interface ITodoContainer {
   isTodoContainer(): boolean;
   queryScopedTodos(): ObjectToScopedTodosQuery;

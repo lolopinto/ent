@@ -39,7 +39,8 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export class HoursOfOperationBuilder<
   TInput extends HoursOfOperationInput = HoursOfOperationInput,
-  TExistingEnt extends TMaybleNullableEnt<HoursOfOperation> = HoursOfOperation | null,
+  TExistingEnt extends
+    TMaybleNullableEnt<HoursOfOperation> = HoursOfOperation | null,
 > implements Builder<HoursOfOperation, ExampleViewerAlias, TExistingEnt>
 {
   orchestrator: Orchestrator<
