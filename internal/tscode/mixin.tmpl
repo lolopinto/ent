@@ -10,6 +10,10 @@ type Constructor<T = {}> = new (...args: any[]) => T;
   {{ reserveImportPath . false -}}
 {{ end}}
 
+export function {{$p.GetPatternMethod}}(ent: unknown): ent is {{$p.GetMixinInterfaceName}} {
+  const o = ent as {{$p.GetMixinInterfaceName}};
+  return o.{{$p.GetPatternMethod}} && o.{{$p.GetPatternMethod}}() ?? false;
+}
 
 export interface {{$p.GetMixinInterfaceName}} {
   {{$p.GetPatternMethod}}(): boolean;
