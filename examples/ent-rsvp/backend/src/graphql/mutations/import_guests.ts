@@ -7,7 +7,7 @@ import {
 import { Action, Builder } from "@snowtop/ent/action";
 import { GraphQLID } from "graphql";
 import { Event } from "src/ent";
-import { FileUpload } from "graphql-upload";
+import { FileUpload } from "graphql-upload/processRequest.mjs";
 import parse from "csv-parse";
 import CreateGuestGroupAction from "src/ent/guest_group/actions/create_guest_group_action";
 import CreateGuestAction from "src/ent/guest/actions/create_guest_action";

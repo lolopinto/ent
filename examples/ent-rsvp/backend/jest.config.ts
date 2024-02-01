@@ -1,0 +1,44 @@
+import type { JestConfigWithTsJest } from "ts-jest";
+
+// module.exports = {
+//   preset: "ts-jest",
+//   testEnvironment: "node",
+//   testRegex: "(/tests/.*|(\\.|/)(test|spec))\\.(tsx?)$",
+//   rootDir: ".",
+//   moduleNameMapper: {
+//     // corresponding change from paths in tsconfig.json
+//     // map to src/ so that we don't have relative paths like "./../"
+//     "^src/(.*)": "<rootDir>/src/$1",
+//   },
+//   setupFilesAfterEnv: ["jest-expect-message", "./src/testsetup/setup.ts"],
+//   testPathIgnorePatterns: ["dist"],
+//   transformIgnorePatterns: ["<rootDir>/node_modules/"],
+// };
+
+const jestConfig: JestConfigWithTsJest = {
+  // [...]
+  extensionsToTreatAsEsm: [".ts"],
+  testRegex: "(/tests/.*|(\\.|/)(test|spec))\\.(tsx?)$",
+  // preset: "ts-jest/presets/default-esm", // or other ESM presets
+  rootDir: ".",
+  moduleNameMapper: {
+    // corresponding change from paths in tsconfig.json
+    // map to src/ so that we don't have relative paths like "./../"
+    "^src/(.*)": "<rootDir>/src/$1",
+  },
+  transform: {
+    // '^.+\\.[tj]sx?$' to process js/ts with `ts-jest`
+    // '^.+\\.m?[tj]sx?$' to process js/ts/mjs/mts with `ts-jest`
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        useESM: true,
+      },
+    ],
+  },
+  setupFilesAfterEnv: ["jest-expect-message", "./src/testsetup/setup.ts"],
+  testPathIgnorePatterns: ["dist"],
+  transformIgnorePatterns: ["<rootDir>/node_modules/"],
+};
+
+export default jestConfig;

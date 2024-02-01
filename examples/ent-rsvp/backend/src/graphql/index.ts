@@ -11,7 +11,7 @@ import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import passport from "passport";
 import cors, { CorsOptions, CorsOptionsDelegate } from "cors";
-import { graphqlUploadExpress } from "graphql-upload";
+import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 import * as Sentry from "@sentry/node";
 import * as Tracing from "@sentry/tracing";
 import { config } from "dotenv";

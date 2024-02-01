@@ -2,7 +2,7 @@ import { randomEmail } from "src/util/random";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import schema from "src/graphql/generated/schema";
-import { graphqlUploadExpress } from "graphql-upload";
+import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 import { createEvent } from "src/testutils";
 
 test("bulk upload. required columns not provided", async () => {
