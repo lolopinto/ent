@@ -7,8 +7,6 @@ import {
   shouldRenderGraphiQL,
   renderGraphiQL,
 } from "graphql-helix";
-import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
-import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import passport from "passport";
 import cors, { CorsOptions, CorsOptionsDelegate } from "cors";
 import { graphqlUploadExpress } from "graphql-upload";
@@ -17,8 +15,8 @@ import * as Tracing from "@sentry/tracing";
 import { config } from "dotenv";
 import { DB, loadConfig } from "@snowtop/ent";
 // this line fixes the issue by loading ent first but we need to do that consistently everywhere
-import { User } from "src/ent";
 import schema from "./generated/schema";
+import { OurContext } from "src/context/context";
 
 // load env
 config();
@@ -50,13 +48,6 @@ app.use(express.json());
 app.disable("x-powered-by");
 
 app.use(passport.initialize());
-registerAuthHandler(
-  "viewer",
-  PassportStrategyHandler.jwtHandler({
-    secretOrKey: "secret",
-    loaderOptions: User.loaderOptions(),
-  }),
-);
 
 const delegagte: CorsOptionsDelegate = function (req, callback) {
   const corsOptions: CorsOptions = {
@@ -103,7 +94,7 @@ app.use(
         request: req,
         schema,
         contextFactory: async (executionContext: ExecutionContext) => {
-          return buildContext(req, res);
+          return OurContext.createFromRequest(req, res);
         },
       });
       await sendResult(result, res);
