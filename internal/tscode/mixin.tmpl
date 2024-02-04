@@ -4,72 +4,24 @@
 {{$cfg := .Config}}
 {{$schema := .Schema}}
 
+{{ reserveImport $p.GetImportPathForMixinBase  $p.GetMixinBaseName $p.GetPatternMethod -}}
+
+export { {{useImport $p.GetPatternMethod }} };
+
 type Constructor<T = {}> = new (...args: any[]) => T;
 
 {{ range $p.GetImportsForMixin $schema $cfg -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 
-export function {{$p.GetPatternMethod}}(ent: unknown): ent is {{$p.GetMixinInterfaceName}} {
-  const o = ent as {{$p.GetMixinInterfaceName}};
-  return o.{{$p.GetPatternMethod}} && o.{{$p.GetPatternMethod}}() ?? false;
-}
 
 export interface {{$p.GetMixinInterfaceName}} {
-  {{$p.GetPatternMethod}}(): boolean;
-  {{ range $field := $p.FieldInfo.EntFields -}}
-    {{ range $field.GetTsTypeImports -}}
-      {{ if ($p.ForeignImport .Import) -}}
-        {{ reserveImportPath . false -}}
-      {{end -}}
-      {{$typ := useImportMaybe .Import -}}
-    {{end -}}
-    {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
-  {{end -}}
-  {{/* no easy way to guarantee this from the mixin so we'll just do it from the ent side */ -}}
-  {{range $edge := $p.AssocEdges -}}
-    {{$edgeName := .CamelCaseEdgeName -}}
-    {{$queryName := useImport $edge.TsEdgeQueryName -}}
-    query{{$edgeName}}(): {{$queryName}};
-  {{end -}}
+  // add custom fields
 }
-
-{{ if $p.HasFields -}}
-  function extractFromArgs<TViewer extends {{useImport "Viewer"}}, TData extends {{useImport "Data"}}>(
-    args: any[],
-  ): { viewer: TViewer; data: TData } {
-    if (args.length !== 2) {
-      throw new Error("args should be length 2");
-    }
-    return {
-      viewer: args[0],
-      data: args[1],
-    };
-  }
-{{ end}}
 
 
 export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
-  return class {{$p.GetMixinName}} extends BaseClass {
-
-    {{ range $field := $p.FieldInfo.EntFields -}}
-      readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
-    {{end -}}
-  
-    constructor(...args: any[]) {
-      super(...args);
-      {{ if $p.HasFields -}}
-        const { data } = extractFromArgs(args);
-      {{ end -}}
-
-      {{ range $field := $p.FieldInfo.EntFields -}}
-        {{$val := printf "data.%s" $field.GetDbColName -}}
-        this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg  $val }}
-      {{end -}}
-    }
-
-    {{$p.GetPatternMethod}}() {
-      return true;
-    }
+  return class {{$p.GetMixinName}} extends {{useImport $p.GetMixinBaseName}}(BaseClass) implements {{$p.GetMixinInterfaceName}} {
+  // add custom fields implementation
   };
 }

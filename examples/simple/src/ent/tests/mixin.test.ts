@@ -60,12 +60,14 @@ async function createEvent(
 test("feedback user", async () => {
   const user = await createUser();
   expect(isFeedback(user)).toBe(true);
+  expect(await user.hasLikers()).toBe(true);
 });
 
 test("feedback contact", async () => {
   const user = await createUser();
   const contact = await createContact(user, "Jon", "Snow");
   expect(isFeedback(contact)).toBe(true);
+  expect(await user.hasLikers()).toBe(true);
 });
 
 test("feedback event", async () => {

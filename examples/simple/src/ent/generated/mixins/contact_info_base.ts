@@ -30,8 +30,8 @@ function extractFromArgs<TViewer extends Viewer, TData extends Data>(
   };
 }
 
-export function ContactInfoMixin<T extends Constructor>(BaseClass: T) {
-  return class ContactInfoMixin extends BaseClass {
+export function ContactInfoBaseMixin<T extends Constructor>(BaseClass: T) {
+  return class ContactInfoBaseMixin extends BaseClass {
     readonly extra: ContactInfo | null;
     constructor(...args: any[]) {
       super(...args);

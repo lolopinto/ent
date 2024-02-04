@@ -46,6 +46,7 @@ type writeOptions struct {
 	// anytime any boolean is added here, need to update the
 	// else case in processNode
 	writeMixin         bool
+	writeMixinBase     bool
 	writeEnt           bool
 	writeBase          bool
 	writeAllActions    bool
@@ -200,6 +201,7 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 		opts.edgeBaseFile = true
 		if pattern.HasMixin() {
 			opts.writeMixin = true
+			opts.writeMixinBase = true
 		}
 		if pattern.HasBuilder() {
 			opts.writeBuilder = true
@@ -240,6 +242,14 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 	if opts.writeMixin {
 		ret = append(ret, func() error {
 			return writeMixinFile(processor, pattern)
+		})
+		// delete old file because path has changed and we don't want to keep it around
+		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getOldFilePathForMixin(processor.Config, pattern.Name)))
+	}
+
+	if opts.writeMixinBase {
+		ret = append(ret, func() error {
+			return writeMixinBaseFile(processor, pattern)
 		})
 	}
 
@@ -289,6 +299,10 @@ func (s *Step) processDeletedPatterns(processor *codegen.Processor) fns.Function
 		if processor.ChangeMap.ChangesExist(k, change.RemovePattern) {
 			ret = append(ret,
 				file.GetDeleteFileFunction(processor.Config, getFilePathForMixin(processor.Config, k)),
+			)
+			ret = append(ret,
+				// TODO right name
+				file.GetDeleteFileFunction(processor.Config, getFilePathForMixinBase(processor.Config, k)),
 			)
 			ret = append(ret,
 				file.GetDeleteFileFunction(processor.Config, getFilePathForMixinBuilderFile(processor.Config, k)),
@@ -538,11 +552,23 @@ func getFilePathForBaseModelFile(cfg *codegen.Config, nodeData *schema.NodeData)
 }
 
 func getFilePathForMixin(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/mixins/%s.ts", strcase.ToSnake(name)))
+}
+
+func getOldFilePathForMixin(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/mixins/%s.ts", strcase.ToSnake(name)))
+}
+
+func getFilePathForMixinBase(cfg *codegen.Config, name string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/mixins/%s.ts", strcase.ToSnake(name)))
 }
 
 func getImportPathForMixin(pattern *schema.PatternInfo) string {
-	return fmt.Sprintf("src/ent/generated/mixins/%s", strcase.ToSnake(pattern.Name))
+	return fmt.Sprintf("src/ent/mixins/%s", strcase.ToSnake(pattern.Name))
+}
+
+func getImportPathForMixinBase(pattern *schema.PatternInfo) string {
+	return pattern.GetImportPathForMixinBase()
 }
 
 func getFilePathForModelFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
@@ -717,6 +743,28 @@ func writeMixinFile(processor *codegen.Processor, pattern *schema.PatternInfo) e
 		},
 		AbsPathToTemplate:  util.GetAbsolutePath("mixin.tmpl"),
 		TemplateName:       "mixin.tmpl",
+		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
+		PathToFile:         filePath,
+		TsImports:          imps,
+		FuncMap:            getBaseFuncs(processor.Schema, imps),
+	}, file.WriteOnce())
+}
+
+func writeMixinBaseFile(processor *codegen.Processor, pattern *schema.PatternInfo) error {
+	cfg := processor.Config
+	filePath := getFilePathForMixinBase(cfg, pattern.GetMixinBaseFile())
+	imps := tsimport.NewImports(processor.Config, filePath)
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
+		Data: patternTemplateCodePath{
+			Pattern: pattern,
+			Config:  cfg,
+			Package: cfg.GetImportPackage(),
+			Schema:  processor.Schema,
+		},
+		AbsPathToTemplate:  util.GetAbsolutePath("mixin_base.tmpl"),
+		TemplateName:       "mixin_base.tmpl",
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		PathToFile:         filePath,
 		TsImports:          imps,

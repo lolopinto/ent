@@ -18,8 +18,8 @@ export interface IFeedback {
   queryLikers(): ObjectToLikersQuery;
 }
 
-export function FeedbackMixin<T extends Constructor>(BaseClass: T) {
-  return class FeedbackMixin extends BaseClass {
+export function FeedbackBaseMixin<T extends Constructor>(BaseClass: T) {
+  return class FeedbackBaseMixin extends BaseClass {
     constructor(...args: any[]) {
       super(...args);
     }

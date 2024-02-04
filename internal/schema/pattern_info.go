@@ -31,6 +31,10 @@ func (p *PatternInfo) HasMixin() bool {
 	return !p.DisableMixin
 }
 
+func (p *PatternInfo) GetMixinBaseFile() string {
+	return p.Name + "Base"
+}
+
 func (p *PatternInfo) GetSortedEdges() []*edge.AssociationEdge {
 	ret := make([]*edge.AssociationEdge, len(p.AssocEdges))
 	i := 0
@@ -102,6 +106,10 @@ func (p *PatternInfo) GetMixinName() string {
 	return fmt.Sprintf("%sMixin", strcase.ToCamel(p.Name))
 }
 
+func (p *PatternInfo) GetMixinBaseName() string {
+	return fmt.Sprintf("%sBaseMixin", strcase.ToCamel(p.Name))
+}
+
 func (p *PatternInfo) GetPatternMethod() string {
 	return fmt.Sprintf("is%s", strcase.ToCamel(p.Name))
 }
@@ -136,3 +144,7 @@ func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*ts
 // or handle private fields in patterns and mixins...
 // or fields with fieldPrivacy
 // https://github.com/lolopinto/ent/issues/911
+
+func (p *PatternInfo) GetImportPathForMixinBase() string {
+	return fmt.Sprintf("src/ent/generated/mixins/%s", strcase.ToSnake(p.GetMixinBaseFile()))
+}

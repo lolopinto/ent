@@ -5,9 +5,9 @@
 
 export * from "./generated/loaders";
 export * from "./generated/loadAny";
-export * from "./generated/mixins/contact_info";
-export * from "./generated/mixins/day_of_week";
-export * from "./generated/mixins/feedback";
+export * from "./mixins/contact_info";
+export * from "./mixins/day_of_week";
+export * from "./mixins/feedback";
 export * from "./generated/address_base";
 export * from "./generated/auth_code_base";
 export * from "./generated/comment_base";
