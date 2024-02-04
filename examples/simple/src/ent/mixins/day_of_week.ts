@@ -5,6 +5,7 @@
 
 import {
   DayOfWeekBaseMixin,
+  IDayOfWeekBase,
   isDayOfWeek,
 } from "../generated/mixins/day_of_week_base";
 
@@ -12,7 +13,7 @@ export { isDayOfWeek };
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
-export interface IDayOfWeek {
+export interface IDayOfWeek extends IDayOfWeekBase {
   // add custom fields
 }
 

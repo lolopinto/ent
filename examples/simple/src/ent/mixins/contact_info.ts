@@ -5,6 +5,7 @@
 
 import {
   ContactInfoBaseMixin,
+  IContactInfoBase,
   isContactInfo,
 } from "../generated/mixins/contact_info_base";
 
@@ -12,7 +13,7 @@ export { isContactInfo };
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
-export interface IContactInfo {
+export interface IContactInfo extends IContactInfoBase {
   // add custom fields
 }
 

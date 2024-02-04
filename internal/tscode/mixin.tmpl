@@ -4,7 +4,7 @@
 {{$cfg := .Config}}
 {{$schema := .Schema}}
 
-{{ reserveImport $p.GetImportPathForMixinBase  $p.GetMixinBaseName $p.GetPatternMethod -}}
+{{ reserveImport $p.GetImportPathForMixinBase  $p.GetMixinBaseName $p.GetPatternMethod $p.GetMixinInterfaceBaseName -}}
 
 export { {{useImport $p.GetPatternMethod }} };
 
@@ -15,7 +15,7 @@ type Constructor<T = {}> = new (...args: any[]) => T;
 {{ end}}
 
 
-export interface {{$p.GetMixinInterfaceName}} {
+export interface {{$p.GetMixinInterfaceName}} extends {{useImport $p.GetMixinInterfaceBaseName }} {
   // add custom fields
 }
 

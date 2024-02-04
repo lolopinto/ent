@@ -10,12 +10,12 @@ type Constructor<T = {}> = new (...args: any[]) => T;
   {{ reserveImportPath . false -}}
 {{ end}}
 
-export function {{$p.GetPatternMethod}}(ent: unknown): ent is {{$p.GetMixinInterfaceName}} {
-  const o = ent as {{$p.GetMixinInterfaceName}};
+export function {{$p.GetPatternMethod}}(ent: unknown): ent is {{$p.GetMixinInterfaceBaseName}} {
+  const o = ent as {{$p.GetMixinInterfaceBaseName}};
   return o.{{$p.GetPatternMethod}} && o.{{$p.GetPatternMethod}}() ?? false;
 }
 
-export interface {{$p.GetMixinInterfaceName}} {
+export interface {{$p.GetMixinInterfaceBaseName}} extends {{useImport "Ent" }} {
   {{$p.GetPatternMethod}}(): boolean;
   {{ range $field := $p.FieldInfo.EntFields -}}
     {{ range $field.GetTsTypeImports -}}

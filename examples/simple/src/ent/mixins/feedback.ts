@@ -5,6 +5,7 @@
 
 import {
   FeedbackBaseMixin,
+  IFeedbackBase,
   isFeedback,
 } from "../generated/mixins/feedback_base";
 
@@ -12,22 +13,15 @@ export { isFeedback };
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
-export interface IFeedback {
+export interface IFeedback extends IFeedbackBase {
   // add custom fields
-
-  hasLikers(): Promise<boolean>;
 }
 
 export function FeedbackMixin<T extends Constructor>(BaseClass: T) {
+  // THIS DOESN'T WORK BECAUSE DOESN'T HAVE IFeedbackBase methods
   return class FeedbackMixin
     extends FeedbackBaseMixin(BaseClass)
-    implements IFeedback
-  {
+    implements IFeedback {
     // add custom fields implementation
-
-    async hasLikers(): Promise<boolean> {
-      // cannot reference base feedback fields here :
-      return true;
-    }
   };
 }

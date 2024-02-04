@@ -86,6 +86,10 @@ func (p *PatternInfo) GetMixinInterfaceName() string {
 	return fmt.Sprintf("I%s", strcase.ToCamel(p.Name))
 }
 
+func (p *PatternInfo) GetMixinInterfaceBaseName() string {
+	return fmt.Sprintf("I%sBase", strcase.ToCamel(p.Name))
+}
+
 func (p *PatternInfo) GetMixinWithInterfaceName() string {
 	return fmt.Sprintf("IEntWith%s", strcase.ToCamel(p.Name))
 }
