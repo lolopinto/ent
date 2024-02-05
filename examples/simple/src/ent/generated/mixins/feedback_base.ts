@@ -8,13 +8,7 @@ import { ObjectToCommentsQuery, ObjectToLikersQuery } from "../../internal";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
-export function isFeedback(ent: unknown): ent is IFeedbackBase {
-  const o = ent as IFeedbackBase;
-  return (o.isFeedback && o.isFeedback()) ?? false;
-}
-
 export interface IFeedbackBase extends Ent {
-  isFeedback(): boolean;
   queryComments(): ObjectToCommentsQuery;
   queryLikers(): ObjectToLikersQuery;
 }
@@ -23,10 +17,6 @@ export function FeedbackBaseMixin<T extends Constructor>(BaseClass: T) {
   return class FeedbackBaseMixin extends BaseClass {
     constructor(...args: any[]) {
       super(...args);
-    }
-
-    isFeedback() {
-      return true;
     }
   };
 }
