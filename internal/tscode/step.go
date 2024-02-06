@@ -747,7 +747,7 @@ func writeMixinFile(processor *codegen.Processor, pattern *schema.PatternInfo) e
 		PathToFile:         filePath,
 		TsImports:          imps,
 		FuncMap:            getBaseFuncs(processor.Schema, imps),
-	})
+	}, file.WriteOnce())
 }
 
 func writeMixinBaseFile(processor *codegen.Processor, pattern *schema.PatternInfo) error {

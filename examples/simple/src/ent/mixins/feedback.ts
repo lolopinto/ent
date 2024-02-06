@@ -24,7 +24,6 @@ export function isFeedback(ent: unknown): ent is IFeedback {
 }
 
 export function FeedbackMixin<T extends Constructor>(BaseClass: T) {
-  // THIS DOESN'T WORK BECAUSE DOESN'T HAVE IFeedbackBase methods
   return class FeedbackMixin
     extends FeedbackBaseMixin(BaseClass)
     implements IFeedback
