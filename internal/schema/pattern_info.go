@@ -90,10 +90,6 @@ func (p *PatternInfo) GetMixinInterfaceBaseName() string {
 	return fmt.Sprintf("I%sBase", strcase.ToCamel(p.Name))
 }
 
-func (p *PatternInfo) GetMixinWithInterfaceName() string {
-	return fmt.Sprintf("IEntWith%s", strcase.ToCamel(p.Name))
-}
-
 func (p *PatternInfo) HasBuilder() bool {
 	return len(p.AssocEdges) > 0
 }

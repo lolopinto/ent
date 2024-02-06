@@ -837,6 +837,8 @@ func (nodeData *NodeData) GetMixinInfo(s *Schema) (*mixinInfo, error) {
 
 	var extends strings.Builder
 	var impls []string
+
+	intName := ""
 	for _, p := range nodeData.PatternsWithMixins {
 		pattern := s.Patterns[p]
 		if pattern == nil {
@@ -853,8 +855,14 @@ func (nodeData *NodeData) GetMixinInfo(s *Schema) (*mixinInfo, error) {
 		extends.WriteString(pattern.GetMixinName())
 		extends.WriteString("(")
 		impls = append(impls, pattern.GetMixinInterfaceName())
+		intName = pattern.GetMixinInterfaceName()
 	}
-	extends.WriteString("class {}")
+	// TODO multi-pattern support
+	if intName == "" {
+		extends.WriteString("class {}")
+	} else {
+		extends.WriteString(fmt.Sprintf("class {} as new(...args: any[]) => %s", intName))
+	}
 	extends.WriteString(strings.Repeat(")", len(nodeData.PatternsWithMixins)))
 
 	return &mixinInfo{

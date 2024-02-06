@@ -6,14 +6,15 @@
 import { Ent, Viewer } from "@snowtop/ent";
 import { ObjectToCommentsQuery, ObjectToLikersQuery } from "../../internal";
 
-
-export interface IFeedbackBase<TViewer extends Viewer = Viewer> extends Ent<TViewer> {
+export interface IFeedbackBase<TViewer extends Viewer = Viewer>
+  extends Ent<TViewer> {
   queryComments(): ObjectToCommentsQuery;
   queryLikers(): ObjectToLikersQuery;
 }
 
-type Constructor<T extends IFeedbackBase = IFeedbackBase> = new (...args: any[]) => T;
-
+type Constructor<T extends IFeedbackBase = IFeedbackBase> = new (
+  ...args: any[]
+) => T;
 
 export function FeedbackBaseMixin<T extends Constructor>(BaseClass: T) {
   return class FeedbackBaseMixin extends BaseClass {

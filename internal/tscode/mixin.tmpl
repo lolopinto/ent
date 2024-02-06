@@ -6,22 +6,34 @@
 
 {{ reserveImport $p.GetImportPathForMixinBase  $p.GetMixinBaseName $p.GetPatternMethod $p.GetMixinInterfaceBaseName -}}
 
-export { {{useImport $p.GetPatternMethod }} };
+export interface {{$p.GetMixinInterfaceName}} <TViewer extends {{useImport "Viewer"}} = Viewer>
+  extends {{useImport $p.GetMixinInterfaceBaseName }}<TViewer> {
 
-type Constructor<T = {}> = new (...args: any[]) => T;
+  {{$p.GetPatternMethod}}(): boolean;
+
+  // add custom fields
+
+}
+
+type Constructor<T extends {{$p.GetMixinInterfaceName}} = {{$p.GetMixinInterfaceName}}> = new (...args: any[]) => T;
+
+export function {{$p.GetPatternMethod}}(ent: unknown): ent is {{$p.GetMixinInterfaceName}} {
+  const o = ent as {{$p.GetMixinInterfaceName}};
+  return o.{{$p.GetPatternMethod}} && o.{{$p.GetPatternMethod}}() ?? false;
+}
 
 {{ range $p.GetImportsForMixin $schema $cfg -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 
 
-export interface {{$p.GetMixinInterfaceName}} extends {{useImport $p.GetMixinInterfaceBaseName }} {
-  // add custom fields
-}
-
-
 export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
   return class {{$p.GetMixinName}} extends {{useImport $p.GetMixinBaseName}}(BaseClass) implements {{$p.GetMixinInterfaceName}} {
-  // add custom fields implementation
+
+    {{$p.GetPatternMethod}}() {
+      return true;
+    }
+
+    // add custom fields implementation
   };
 }

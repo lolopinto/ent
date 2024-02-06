@@ -6,17 +6,14 @@
 import { Data, Ent, Viewer } from "@snowtop/ent";
 import { ContactInfo } from "../types";
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-
-export function isContactInfo(ent: unknown): ent is IContactInfoBase {
-  const o = ent as IContactInfoBase;
-  return (o.isContactInfo && o.isContactInfo()) ?? false;
-}
-
-export interface IContactInfoBase extends Ent {
-  isContactInfo(): boolean;
+export interface IContactInfoBase<TViewer extends Viewer = Viewer>
+  extends Ent<TViewer> {
   extra: ContactInfo | null;
 }
+
+type Constructor<T extends IContactInfoBase = IContactInfoBase> = new (
+  ...args: any[]
+) => T;
 
 function extractFromArgs<TViewer extends Viewer, TData extends Data>(
   args: any[],
@@ -37,10 +34,6 @@ export function ContactInfoBaseMixin<T extends Constructor>(BaseClass: T) {
       super(...args);
       const { data } = extractFromArgs(args);
       this.extra = data.extra;
-    }
-
-    isContactInfo() {
-      return true;
     }
   };
 }

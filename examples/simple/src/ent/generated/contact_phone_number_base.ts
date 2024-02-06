@@ -31,7 +31,7 @@ import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class ContactPhoneNumberBase
-  extends ContactInfoMixin(class {})
+  extends ContactInfoMixin(class {} as new (...args: any[]) => IContactInfo)
   implements Ent<ExampleViewerAlias>, IContactInfo
 {
   protected readonly data: ContactPhoneNumberDBData;

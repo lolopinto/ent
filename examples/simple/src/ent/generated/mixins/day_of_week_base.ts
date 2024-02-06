@@ -11,18 +11,15 @@ import {
   convertNullableDayOfWeekAlt,
 } from "../types";
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-
-export function isDayOfWeek(ent: unknown): ent is IDayOfWeekBase {
-  const o = ent as IDayOfWeekBase;
-  return (o.isDayOfWeek && o.isDayOfWeek()) ?? false;
-}
-
-export interface IDayOfWeekBase extends Ent {
-  isDayOfWeek(): boolean;
+export interface IDayOfWeekBase<TViewer extends Viewer = Viewer>
+  extends Ent<TViewer> {
   dayOfWeek: DayOfWeek;
   dayOfWeekAlt: DayOfWeekAlt | null;
 }
+
+type Constructor<T extends IDayOfWeekBase = IDayOfWeekBase> = new (
+  ...args: any[]
+) => T;
 
 function extractFromArgs<TViewer extends Viewer, TData extends Data>(
   args: any[],
@@ -45,10 +42,6 @@ export function DayOfWeekBaseMixin<T extends Constructor>(BaseClass: T) {
       const { data } = extractFromArgs(args);
       this.dayOfWeek = convertDayOfWeek(data.day_of_week);
       this.dayOfWeekAlt = convertNullableDayOfWeekAlt(data.day_of_week_alt);
-    }
-
-    isDayOfWeek() {
-      return true;
     }
   };
 }

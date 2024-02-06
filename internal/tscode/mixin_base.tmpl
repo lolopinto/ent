@@ -4,19 +4,11 @@
 {{$cfg := .Config}}
 {{$schema := .Schema}}
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-
 {{ range $p.GetImportsForMixin $schema $cfg -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 
-export function {{$p.GetPatternMethod}}(ent: unknown): ent is {{$p.GetMixinInterfaceBaseName}} {
-  const o = ent as {{$p.GetMixinInterfaceBaseName}};
-  return o.{{$p.GetPatternMethod}} && o.{{$p.GetPatternMethod}}() ?? false;
-}
-
-export interface {{$p.GetMixinInterfaceBaseName}} extends {{useImport "Ent" }} {
-  {{$p.GetPatternMethod}}(): boolean;
+export interface {{$p.GetMixinInterfaceBaseName}}<TViewer extends {{useImport "Viewer"}} = Viewer> extends {{useImport "Ent" }}<TViewer> {
   {{ range $field := $p.FieldInfo.EntFields -}}
     {{ range $field.GetTsTypeImports -}}
       {{ if ($p.ForeignImport .Import) -}}
@@ -33,6 +25,9 @@ export interface {{$p.GetMixinInterfaceBaseName}} extends {{useImport "Ent" }} {
     query{{$edgeName}}(): {{$queryName}};
   {{end -}}
 }
+
+type Constructor<T extends {{$p.GetMixinInterfaceBaseName}} = {{$p.GetMixinInterfaceBaseName}}> = new (...args: any[]) => T;
+
 
 {{ if $p.HasFields -}}
   function extractFromArgs<TViewer extends {{useImport "Viewer"}}, TData extends {{useImport "Data"}}>(
@@ -66,10 +61,6 @@ export function {{$p.GetMixinBaseName}}<T extends Constructor>(BaseClass: T) {
         {{$val := printf "data.%s" $field.GetDbColName -}}
         this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg  $val }}
       {{end -}}
-    }
-
-    {{$p.GetPatternMethod}}() {
-      return true;
     }
   };
 }

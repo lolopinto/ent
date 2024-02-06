@@ -36,7 +36,7 @@ import schema from "../../schema/contact_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class ContactBase
-  extends FeedbackMixin(class {} as new(...args: any[]) => IFeedback)
+  extends FeedbackMixin(class {} as new (...args: any[]) => IFeedback)
   implements Ent<ExampleViewerAlias>, IFeedback
 {
   protected readonly data: ContactDBData;
