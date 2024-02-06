@@ -16,9 +16,7 @@ export interface IFeedback<TViewer extends Viewer = Viewer>
   hasLikers(): Promise<boolean>;
 }
 
-type Constructor<T extends IFeedbackBase = IFeedbackBase> = new (
-  ...args: any[]
-) => T;
+type Constructor<T extends IFeedback = IFeedback> = new (...args: any[]) => T;
 
 export function isFeedback(ent: unknown): ent is IFeedback {
   const o = ent as IFeedback;

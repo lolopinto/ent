@@ -27,20 +27,22 @@ export interface IFeedbackBuilder<T extends IFeedback> {
   removeLiker(...nodes: (ID | User)[]): this;
 }
 
-type Constructor<T extends IFeedback> = new (...args: any[]) => T;
-interface BuilderConstructor<T extends IFeedback, C = {}> {
+type Constructor<T extends IFeedback<ExampleViewerAlias> = IFeedback<ExampleViewerAlias>> = new (...args: any[]) => T;
+
+interface BuilderConstructor<T extends IFeedback<ExampleViewerAlias>, C = {}> {
   orchestrator: Orchestrator<T, any, ExampleViewerAlias>;
   isBuilder<T extends Ent>(
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any>;
 }
 
-export type FeedbackBuilderIsh<T extends IEntWithFeedback> = Constructor<
+export type FeedbackBuilderIsh<T extends IFeedback<ExampleViewerAlias>> = Constructor<
+  // @ts-ignore TODO fix
   BuilderConstructor<T>
 >;
 
 export function FeedbackBuilder<
-  TEnt extends IEntWithFeedback,
+  TEnt extends IFeedback<ExampleViewerAlias>,
   TBase extends FeedbackBuilderIsh<TEnt>,
 >(BaseClass: TBase) {
   return class FeedbackBuilder
