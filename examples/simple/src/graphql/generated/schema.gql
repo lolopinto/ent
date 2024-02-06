@@ -266,6 +266,8 @@ type ContactEmail implements Node & ContactItemType {
   extra: ContactInfo
   emailAddress: String!
   label: ContactLabel!
+  comments(first: Int, after: String, last: Int, before: String): ContactEmailToCommentsConnection!
+  likers(first: Int, after: String, last: Int, before: String): ContactEmailToLikersConnection!
   canViewerDo: ContactEmailCanViewerDo!
 }
 
@@ -292,6 +294,8 @@ type ContactPhoneNumber implements Node & ContactItemType {
   extra: ContactInfo
   phoneNumber: String!
   label: ContactLabel!
+  comments(first: Int, after: String, last: Int, before: String): ContactPhoneNumberToCommentsConnection!
+  likers(first: Int, after: String, last: Int, before: String): ContactPhoneNumberToLikersConnection!
 }
 
 type Contact implements Node {
@@ -561,6 +565,54 @@ type ContactCommentsFromAttachmentEdge implements Edge {
 type ContactCommentsFromAttachmentConnection implements Connection {
   edges: [ContactCommentsFromAttachmentEdge!]!
   nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactEmailToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ContactEmailToCommentsConnection implements Connection {
+  edges: [ContactEmailToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactEmailToLikersEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type ContactEmailToLikersConnection implements Connection {
+  edges: [ContactEmailToLikersEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactPhoneNumberToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ContactPhoneNumberToCommentsConnection implements Connection {
+  edges: [ContactPhoneNumberToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactPhoneNumberToLikersEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type ContactPhoneNumberToLikersConnection implements Connection {
+  edges: [ContactPhoneNumberToLikersEdge!]!
+  nodes: [User!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

@@ -17,7 +17,8 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { contactPhoneNumberLoaderInfo } from "../../loaders";
-import { ContactInfo, ContactLabel, NodeType } from "../../types";
+import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
+import { ContactInfo, ContactLabel, EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -34,13 +35,28 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+class Base {
+  // @ts-ignore not assigning. need for Mixin
+  orchestrator: Orchestrator<ContactPhoneNumber, any, ExampleViewerAlias>;
+
+  constructor() {}
+
+  isBuilder<T extends Ent>(
+    node: ID | T | Builder<T, any>,
+  ): node is Builder<T, any> {
+    return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+}
+
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export class ContactPhoneNumberBuilder<
-  TInput extends ContactPhoneNumberInput = ContactPhoneNumberInput,
-  TExistingEnt extends TMaybleNullableEnt<ContactPhoneNumber> = ContactPhoneNumber | null,
-> implements Builder<ContactPhoneNumber, ExampleViewerAlias, TExistingEnt>
+    TInput extends ContactPhoneNumberInput = ContactPhoneNumberInput,
+    TExistingEnt extends TMaybleNullableEnt<ContactPhoneNumber> = ContactPhoneNumber | null,
+  >
+  extends FeedbackBuilder(Base)
+  implements Builder<ContactPhoneNumber, ExampleViewerAlias, TExistingEnt>
 {
   orchestrator: Orchestrator<
     ContactPhoneNumber,
@@ -74,6 +90,7 @@ export class ContactPhoneNumberBuilder<
       >
     >,
   ) {
+    super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-ContactPhoneNumber`;
     this.input = action.getInput();
     const updateInput = (d: ContactPhoneNumberInput) =>
@@ -144,6 +161,15 @@ export class ContactPhoneNumberBuilder<
       );
     }
     return edited.id;
+  }
+  // this gets the inputs that have been written for a given edgeType and operation
+  // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
+  getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {
+    return this.orchestrator.getInputEdges(edgeType, op);
+  }
+
+  clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
+    this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
   async build(): Promise<Changeset> {
