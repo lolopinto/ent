@@ -94,7 +94,12 @@ export function buildQuery(options: QueryableDataOptions): string {
     parts.push(`GROUP BY ${options.groupby}`);
   }
   if (options.orderby) {
-    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby, fieldsAlias)}`);
+    parts.push(
+      `ORDER BY ${getOrderByPhrase(
+        options.orderby,
+        options.disableOrderByAlias ? undefined : fieldsAlias,
+      )}`,
+    );
   }
   if (options.limit) {
     parts.push(`LIMIT ${options.limit}`);
