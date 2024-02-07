@@ -167,7 +167,7 @@ export interface SelectBaseDataOptions extends DataOptions {
   disableFieldsAlias?: boolean;
   // don't use the alias for the order by clause
   // this is useful when doing a join and the order by clause is not on the main table
-  disableOrderByAlias?: boolean;
+  disableDefaultOrderByAlias?: boolean;
 }
 
 export interface SelectDataOptions extends SelectBaseDataOptions {

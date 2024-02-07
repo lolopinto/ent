@@ -3,6 +3,7 @@ import { QueryableDataOptions } from "./base";
 export interface OrderByOption {
   column: string;
   direction: "ASC" | "DESC";
+  alias?: string;
   nullsPlacement?: "first" | "last";
   // is this column a date/time column?
   // needed to know if we create a cursor based on this column to conver to timestamp and ISO string for
@@ -25,7 +26,8 @@ export function getOrderByPhrase(orderby: OrderBy, alias?: string): string {
           nullsPlacement = " NULLS LAST";
           break;
       }
-      const col = alias ? `${alias}.${v.column}` : v.column;
+      const orderByAlias = v.alias ?? alias;
+      const col = orderByAlias ? `${orderByAlias}.${v.column}` : v.column;
       return `${col} ${v.direction}${nullsPlacement}`;
     })
     .join(", ");
@@ -97,7 +99,7 @@ export function buildQuery(options: QueryableDataOptions): string {
     parts.push(
       `ORDER BY ${getOrderByPhrase(
         options.orderby,
-        options.disableOrderByAlias ? undefined : fieldsAlias,
+        options.disableDefaultOrderByAlias ? undefined : fieldsAlias,
       )}`,
     );
   }
