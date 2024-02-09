@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.24] - 2024-02-08
+
+### Added
+
+- Add ability to remove alias from order by clause or to specify alias for order by (#1745)
+
 ## [0.1.23] - 2024-01-21
 
 ### Added
