@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.25] - 2024-02-11
+
+### Added
+
+- Forward overrideAlias to isNullClause (#1747)
+
 ## [0.1.24] - 2024-02-08
 
 ### Added
