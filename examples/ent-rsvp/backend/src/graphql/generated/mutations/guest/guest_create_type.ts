@@ -24,8 +24,8 @@ import { GuestTagType, GuestType } from "src/graphql/resolvers/";
 
 interface customGuestCreateInput extends GuestCreateInput {
   addressId?: string;
-  eventID: string;
-  guestGroupID: string;
+  eventId: string;
+  guestGroupId: string;
   guestDataId?: string;
 }
 
@@ -42,13 +42,13 @@ export const GuestCreateInputType = new GraphQLInputObjectType({
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    eventID: {
+    eventId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     emailAddress: {
       type: GraphQLString,
     },
-    guestGroupID: {
+    guestGroupId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     title: {
@@ -96,9 +96,9 @@ export const GuestCreateType: GraphQLFieldConfig<
     const guest = await CreateGuestAction.create(context.getViewer(), {
       addressId: mustDecodeNullableIDFromGQLID(input.addressId),
       name: input.name,
-      eventID: mustDecodeIDFromGQLID(input.eventID),
+      eventId: mustDecodeIDFromGQLID(input.eventId),
       emailAddress: input.emailAddress,
-      guestGroupID: mustDecodeIDFromGQLID(input.guestGroupID),
+      guestGroupId: mustDecodeIDFromGQLID(input.guestGroupId),
       title: input.title,
       guestDataId: mustDecodeNullableIDFromGQLID(input.guestDataId),
       tag: input.tag,

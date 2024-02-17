@@ -19,7 +19,7 @@ interface customGuestGroupDeleteInput {
 }
 
 interface GuestGroupDeletePayload {
-  deletedGuestGroupID: string;
+  deletedGuestGroupId: string;
 }
 
 export const GuestGroupDeleteInputType = new GraphQLInputObjectType({
@@ -38,7 +38,7 @@ export const GuestGroupDeletePayloadType = new GraphQLObjectType({
     GuestGroupDeletePayload,
     RequestContext<Viewer>
   > => ({
-    deletedGuestGroupID: {
+    deletedGuestGroupId: {
       type: GraphQLID,
     },
   }),
@@ -66,6 +66,6 @@ export const GuestGroupDeleteType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedGuestGroupID: input.id };
+    return { deletedGuestGroupId: input.id };
   },
 };

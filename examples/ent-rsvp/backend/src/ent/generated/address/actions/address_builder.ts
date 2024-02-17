@@ -23,7 +23,7 @@ export interface AddressInput {
   state?: string;
   zipCode?: string;
   apartment?: string | null;
-  ownerID?: ID | Builder<Ent<Viewer>, Viewer>;
+  ownerId?: ID | Builder<Ent<Viewer>, Viewer>;
   ownerType?: string;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -225,7 +225,7 @@ export class AddressBuilder<
     addField("State", input.state);
     addField("ZipCode", input.zipCode);
     addField("Apartment", input.apartment);
-    addField("OwnerID", input.ownerID);
+    addField("OwnerID", input.ownerId);
     addField("OwnerType", input.ownerType);
     return result;
   }
@@ -302,17 +302,17 @@ export class AddressBuilder<
   }
 
   // get value of OwnerID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOwnerIDValue(): ID | Builder<Ent<Viewer>, Viewer> {
-    if (this.input.ownerID !== undefined) {
-      return this.input.ownerID;
+  getNewOwnerIdValue(): ID | Builder<Ent<Viewer>, Viewer> {
+    if (this.input.ownerId !== undefined) {
+      return this.input.ownerId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `ownerID` since not in input and no existingEnt",
+        "no value to return for `ownerId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.ownerID;
+    return this.existingEnt.ownerId;
   }
 
   // get value of OwnerType. Retrieves it from the input if specified or takes it from existingEnt

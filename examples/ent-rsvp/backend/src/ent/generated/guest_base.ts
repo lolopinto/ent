@@ -48,9 +48,9 @@ export class GuestBase
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly name: string;
-  readonly eventID: ID;
+  readonly eventId: ID;
   readonly emailAddress: string | null;
-  readonly guestGroupID: ID;
+  readonly guestGroupId: ID;
   readonly title: string | null;
   readonly guestDataId: ID | null;
   readonly tag: GuestTag | null;
@@ -62,9 +62,9 @@ export class GuestBase
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.name = data.name;
-    this.eventID = data.event_id;
+    this.eventId = data.event_id;
     this.emailAddress = data.email_address;
-    this.guestGroupID = data.guest_group_id;
+    this.guestGroupId = data.guest_group_id;
     this.title = data.title;
     this.guestDataId = data.guest_data_id;
     this.tag = data.tag;
@@ -259,19 +259,19 @@ export class GuestBase
   }
 
   async loadEvent(): Promise<Event | null> {
-    return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
+    return loadEnt(this.viewer, this.eventId, Event.loaderOptions());
   }
 
   loadEventX(): Promise<Event> {
-    return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
+    return loadEntX(this.viewer, this.eventId, Event.loaderOptions());
   }
 
   async loadGuestGroup(): Promise<GuestGroup | null> {
-    return loadEnt(this.viewer, this.guestGroupID, GuestGroup.loaderOptions());
+    return loadEnt(this.viewer, this.guestGroupId, GuestGroup.loaderOptions());
   }
 
   loadGuestGroupX(): Promise<GuestGroup> {
-    return loadEntX(this.viewer, this.guestGroupID, GuestGroup.loaderOptions());
+    return loadEntX(this.viewer, this.guestGroupId, GuestGroup.loaderOptions());
   }
 
   async loadGuestData(): Promise<GuestData | null> {
