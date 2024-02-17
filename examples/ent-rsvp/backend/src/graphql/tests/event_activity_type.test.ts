@@ -25,7 +25,7 @@ test("create activity", async () => {
       mutation: "eventActivityCreate",
       schema,
       args: {
-        eventID: encodeGQLID(event),
+        eventId: encodeGQLID(event),
         name: "fun activity",
         location: "location",
         startTime: date,
@@ -221,7 +221,7 @@ test("canViewerDo", async () => {
 
   const group2 = await CreateGuestGroupAction.create(activity.viewer, {
     invitationName: "people",
-    eventID: activity.eventID,
+    eventId: activity.eventId,
   }).saveX();
 
   const guests2 = await createGuests(group2, 2);

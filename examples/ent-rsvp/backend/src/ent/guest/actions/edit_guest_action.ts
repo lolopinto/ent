@@ -14,7 +14,7 @@ export default class EditGuestAction extends EditGuestActionBase {
     return {
       rules: [
         // creator of event can edit guest
-        new AllowIfEventCreatorRule(this.builder.existingEnt!.eventID),
+        new AllowIfEventCreatorRule(this.builder.existingEnt.eventId),
         // guest details can be edited by guest in same guest group
         new AllowIfGuestInSameGuestGroupRule(this.builder.existingEnt!.id),
         AlwaysDenyRule,

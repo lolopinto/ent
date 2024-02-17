@@ -33,7 +33,7 @@ export class AllowIfEventCreatorRule implements PrivacyPolicyRule {
     if (!ent) {
       return Skip();
     }
-    if (ent.creatorID === viewer.viewerID) {
+    if (ent.creatorId === viewer.viewerID) {
       return Allow();
     }
     return Skip();
@@ -51,7 +51,7 @@ export class DenyIfNotEventCreatorRule implements PrivacyPolicyRule {
     if (!ent) {
       return Deny();
     }
-    if (ent.creatorID === viewer.viewerID) {
+    if (ent.creatorId === viewer.viewerID) {
       return Skip();
     }
     return Deny();
@@ -75,7 +75,7 @@ export class AllowIfEventCreatorFromActivityRule implements PrivacyPolicyRule {
       return Skip();
     }
     const event = await ent.loadEventX();
-    if (event.creatorID === viewer.viewerID) {
+    if (event.creatorId === viewer.viewerID) {
       return Allow();
     }
     return Skip();

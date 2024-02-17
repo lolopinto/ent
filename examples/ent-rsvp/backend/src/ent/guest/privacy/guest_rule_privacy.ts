@@ -24,7 +24,7 @@ export class AllowIfGuestInSameGuestGroupRule implements PrivacyPolicyRule {
     }
     //    console.log("cahce", viewer.context?.cache);
     const data = await Guest.loadRawData(viewer.viewerID, viewer.context);
-    if (data && data.guest_group_id == (ent as Guest).guestGroupID) {
+    if (data && data.guest_group_id == (ent as Guest).guestGroupId) {
       return Allow();
     }
     return Skip();

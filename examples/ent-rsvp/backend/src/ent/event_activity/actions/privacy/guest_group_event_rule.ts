@@ -4,7 +4,10 @@ import { GuestGroup } from "src/ent/";
 import { GuestGroupBuilder } from "src/ent/generated/guest_group/actions/guest_group_builder";
 
 export class AllowIfGuestGroupPartOfEventRule implements PrivacyPolicyRule {
-  constructor(private eventID: ID, private inputData: EdgeInputData[]) {}
+  constructor(
+    private eventID: ID,
+    private inputData: EdgeInputData[],
+  ) {}
 
   async apply(v: Viewer, _ent: Ent) {
     const all = await Promise.all(
@@ -22,7 +25,7 @@ export class AllowIfGuestGroupPartOfEventRule implements PrivacyPolicyRule {
           return false;
         }
         const loaded = await GuestGroup.load(v, input.id);
-        return loaded?.eventID == this.eventID;
+        return loaded?.eventId == this.eventID;
       }),
     );
     if (all.every((val) => val)) {
