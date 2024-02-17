@@ -14,7 +14,6 @@ import (
 	"sync"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/cmd"
@@ -26,6 +25,7 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/fns"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/change"
@@ -463,7 +463,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 					getFilePathForConnection(
 						processor.Config,
 						"root",
-						fmt.Sprintf("RootTo%sType", strcase.ToCamel(k)),
+						names.ToClassType("RootTo", k, "Type"),
 					),
 				),
 			)
@@ -548,19 +548,19 @@ func getFilePathForNodefromPackageName(cfg *codegen.Config, packageName string) 
 }
 
 func getFilePathForCustomInterfaceFile(cfg *codegen.Config, gqlType string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", strcase.ToSnake(gqlType)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", names.ToFilePathName(gqlType)))
 }
 
 func getFilePathForUnionInterfaceFile(cfg *codegen.Config, gqlType string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", strcase.ToSnake(gqlType)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", names.ToFilePathName(gqlType)))
 }
 
 func getFilePathForCustomInterfaceInputFile(cfg *codegen.Config, gqlType string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", strcase.ToSnake(gqlType)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", names.ToFilePathName(gqlType)))
 }
 
 func getFilePathForCustomArg(cfg *codegen.Config, gqlType string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/arg/%s_type.ts", strcase.ToSnake(gqlType)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/arg/%s_type.ts", names.ToFilePathName(gqlType)))
 }
 
 func getFilePathForEnums(cfg *codegen.Config) string {
@@ -568,7 +568,7 @@ func getFilePathForEnums(cfg *codegen.Config) string {
 }
 
 func getFilePathForOldEnum(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", base.GetSnakeCaseName(name)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", names.ToFilePathName(name)))
 }
 
 func getFilePathForEnumInput(cfg *codegen.Config) string {
@@ -576,7 +576,7 @@ func getFilePathForEnumInput(cfg *codegen.Config) string {
 }
 
 func getFilePathForConnection(cfg *codegen.Config, packageName string, connectionType string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s/%s.ts", packageName, base.GetSnakeCaseName(connectionType)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s/%s.ts", packageName, names.ToFilePathName(connectionType)))
 }
 
 func getQueryFilePath(cfg *codegen.Config) string {
@@ -624,7 +624,7 @@ func getSchemaFilePath(cfg *codegen.Config) string {
 }
 
 func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(actionName)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type.ts", nodeData.PackageName, names.ToFilePathName(actionName)))
 }
 
 func getDirectoryPathForActions(cfg *codegen.Config, packageName string) string {
@@ -632,19 +632,19 @@ func getDirectoryPathForActions(cfg *codegen.Config, packageName string) string 
 }
 
 func getImportPathForActionFromPackage(packageName string, action action.Action) string {
-	return fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type", packageName, strcase.ToSnake(action.GetGraphQLName()))
+	return fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type", packageName, names.ToFilePathName(action.GetGraphQLName()))
 }
 
 func getFilePathForCustomMutation(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s_type.ts", strcase.ToSnake(name)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s_type.ts", names.ToFilePathName(name)))
 }
 
 func getImportPathForCustomMutation(name string) string {
-	return fmt.Sprintf("src/graphql/generated/mutations/%s_type", strcase.ToSnake(name))
+	return fmt.Sprintf("src/graphql/generated/mutations/%s_type", names.ToFilePathName(name))
 }
 
 func getFilePathForCustomQuery(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_query_type.ts", strcase.ToSnake(name)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_query_type.ts", names.ToFilePathName(name)))
 }
 
 var searchFor = []string{
@@ -2304,7 +2304,7 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 
 	// add field to node
 	if err := result.addField(&fieldType{
-		Name: codegenapi.GraphQLName(processor.Config, method),
+		Name: names.ToGraphQLName(processor.Config, method),
 		FieldImports: []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewLocalGraphQLEntImportPath(canSeeViewerInfo.Name),
@@ -2772,11 +2772,11 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 }
 
 func getActionPath(nodeData *schema.NodeData, a action.Action) string {
-	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
+	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, names.ToFilePathName(a.GetActionName()))
 }
 
 func getActionPathFromAction(a action.Action) string {
-	return fmt.Sprintf("src/ent/%s/actions/%s", a.GetNodeInfo().PackageName, strcase.ToSnake(a.GetActionName()))
+	return fmt.Sprintf("src/ent/%s/actions/%s", a.GetNodeInfo().PackageName, names.ToFilePathName(a.GetActionName()))
 }
 
 func checkUnionType(cfg codegenapi.Config, nodeName string, f *field.Field, curr []string) ([]string, bool, error) {
@@ -2866,7 +2866,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			ImportPath: getActionPath(nodeData, a),
 		})
 	}
-	prefix := strcase.ToCamel(a.GetGraphQLName())
+	prefix := names.ToClassType(a.GetGraphQLName())
 	result := &fieldConfig{
 		Exported:         true,
 		Name:             fmt.Sprintf("%sType", prefix),
@@ -3074,7 +3074,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 }
 
 func getDeletedField(processor *codegen.Processor, node string) string {
-	return codegenapi.GraphQLName(processor.Config, fmt.Sprintf("deleted%sID", node))
+	return names.ToGraphQLName(processor.Config, fmt.Sprintf("deleted%sID", node))
 }
 
 func getIDField(processor *codegen.Processor, nodeData *schema.NodeData) (string, error) {
@@ -3082,12 +3082,11 @@ func getIDField(processor *codegen.Processor, nodeData *schema.NodeData) (string
 	if pkey == "" {
 		return "", fmt.Errorf("no single field primary key for %s", nodeData.Node)
 	}
-	return codegenapi.GraphQLName(processor.Config, pkey), nil
+	return names.ToGraphQLName(processor.Config, pkey), nil
 }
 
 func getEdgeField(processor *codegen.Processor, edge *edge.AssociationEdge) string {
-	field := fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular()))
-	return codegenapi.GraphQLName(processor.Config, field)
+	return names.ToGraphQLName(processor.Config, edge.Singular(), "ID")
 }
 
 type customInterfaceInfo struct {
@@ -3529,7 +3528,7 @@ func getQueryData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
 		rootFields = append(rootFields, rootField{
 			ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			Name:       query.GraphQLName,
-			Type:       fmt.Sprintf("%sQueryType", strcase.ToCamel(query.GraphQLName)),
+			Type:       names.ToClassType(query.GraphQLName, "QueryType"),
 		})
 
 		fieldTypes = append(fieldTypes, &fieldType{
@@ -3583,7 +3582,7 @@ func getMutationData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
 			gqlName := action.GetGraphQLName()
 			rootFields = append(rootFields, rootField{
 				ImportPath: trimPath(processor.Config, dep.FilePath),
-				Type:       fmt.Sprintf("%sType", strcase.ToCamel(gqlName)),
+				Type:       names.ToClassType(gqlName, "Type"),
 				Name:       gqlName,
 			})
 
@@ -3604,7 +3603,7 @@ func getMutationData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
 		rootFields = append(rootFields, rootField{
 			ImportPath: getImportPathForCustomMutation(mutation.GraphQLName),
 			Name:       mutation.GraphQLName,
-			Type:       fmt.Sprintf("%sType", strcase.ToCamel(mutation.GraphQLName)),
+			Type:       names.ToClassType(mutation.GraphQLName, "Type"),
 		})
 
 		fieldTypes = append(fieldTypes, &fieldType{

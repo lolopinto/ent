@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
 )
@@ -73,7 +73,7 @@ func NewFieldEdgeInfo(fieldName string, polymorphic *input.PolymorphicOptions, u
 		return nil, fmt.Errorf("invalid field name %s for polymorphic field", fieldName)
 	}
 
-	nodeTypeField := strcase.ToLowerCamel(edgeName + "Type")
+	nodeTypeField := names.ToTsFieldName(edgeName, "Type")
 
 	return &FieldEdgeInfo{
 		InverseEdge: &input.InverseFieldEdge{
@@ -87,43 +87,27 @@ func NewFieldEdgeInfo(fieldName string, polymorphic *input.PolymorphicOptions, u
 	}, nil
 }
 
-// returns name such as tableName or file name
-func GetSnakeCaseName(s string) string {
-	// order of operations matters here
-	// PickupLocation -> pickup_location
-	return strings.ToLower(strcase.ToSnake(s))
-}
-
-func GetCamelName(s string) string {
-	return strcase.ToCamel(s)
-}
-
-func GetNameFromParts(nameParts []string) string {
-	return strings.Join(nameParts, "_")
-}
-
-func getNameFromParts2(prefix string, parts []string, suffix string) string {
-	allParts := []string{prefix}
-	allParts = append(allParts, parts...)
-	allParts = append(allParts, suffix)
-	return GetNameFromParts(allParts)
-}
-
 // generate a name for the foreignkey of the sort contacts_user_id_fkey.
 // It takes the table name, the name of the column that references a foreign column in a foreign table and the fkey keyword to generate
 // this only applies for single column fkeys
 func GetFKeyName(tableName string, dbColNames ...string) string {
-	return getNameFromParts2(tableName, dbColNames, "fkey")
+	parts := []string{tableName}
+	parts = append(parts, dbColNames...)
+	parts = append(parts, "fkey")
+	return names.ToDBColumn(parts...)
 }
 
 func GetPrimaryKeyName(tableName string, dbColNames ...string) string {
-	return getNameFromParts2(tableName, dbColNames, "pkey")
+	parts := []string{tableName}
+	parts = append(parts, dbColNames...)
+	parts = append(parts, "pkey")
+	return names.ToDBColumn(parts...)
 }
 
 func GetUniqueKeyName(tableName string, dbColNames ...string) string {
-	allParts := []string{tableName, "unique"}
-	allParts = append(allParts, dbColNames...)
-	return GetNameFromParts(allParts)
+	parts := []string{tableName, "unique"}
+	parts = append(parts, dbColNames...)
+	return names.ToDBColumn(parts...)
 }
 
 func TranslateIDSuffix(fieldName string) (string, bool) {

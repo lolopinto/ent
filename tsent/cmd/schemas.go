@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/tsent/cmd/generateschema"
 	"github.com/pkg/errors"
@@ -57,7 +57,7 @@ cat schema.json | tsent generate schemas --force`,
 				return err
 			}
 			for k := range s.Nodes {
-				schemaName := base.GetCamelName(k)
+				schemaName := names.ToClassType(k)
 
 				if schema.NameExists(schemaName) {
 					return fmt.Errorf("cannot generate a schema for %s since schema with name already exists", schemaName)

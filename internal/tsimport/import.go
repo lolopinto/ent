@@ -9,7 +9,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codepath"
 )
 
@@ -235,7 +234,6 @@ func (imps *Imports) FuncMap() template.FuncMap {
 		"exportAllAs":                    imps.ExportAllAs,
 		"export":                         imps.Export,
 		"dict":                           dict,
-		"toCamel":                        strcase.ToCamel,
 	}
 }
 

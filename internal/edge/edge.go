@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -57,7 +57,7 @@ type EdgeInfo struct {
 func NewEdgeInfo(packageName string) *EdgeInfo {
 	ret := &EdgeInfo{}
 	ret.SourcePackageName = packageName
-	ret.SourceNodeName = strcase.ToCamel(packageName)
+	ret.SourceNodeName = names.ToClassType(packageName)
 	ret.fieldEdgeMap = make(map[string]*FieldEdge)
 	ret.assocMap = make(map[string]*AssociationEdge)
 	ret.assocGroupsMap = make(map[string]*AssociationEdgeGroup)
@@ -300,7 +300,7 @@ func GetFieldEdge(cfg codegenapi.Config,
 
 	return &FieldEdge{
 		FieldName:      fieldName,
-		TSFieldName:    strcase.ToLowerCamel(fieldName),
+		TSFieldName:    names.ToTsFieldName(fieldName),
 		commonEdgeInfo: edgeInfo,
 		InverseEdge:    fieldEdgeInfo.InverseEdge,
 		Nullable:       nullable,
@@ -370,7 +370,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromNonPolymorphicSource(cfg codegenapi.Config,
 
 func (e *EdgeInfo) addIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode, edgeConstName string) error {
 	tsEdgeName, _ := base.TranslateIDSuffix(tsFieldName)
-	tsEdgeName = strcase.ToCamel(tsEdgeName)
+	tsEdgeName = names.ToClassType(tsEdgeName)
 
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
@@ -420,7 +420,7 @@ func WithEdgeConstName(name string) IndexEdgeOpts {
 
 func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string, opts ...IndexEdgeOpts) *IndexedEdge {
 	tsEdgeName, _ := base.TranslateIDSuffix(tsFieldName)
-	tsEdgeName = strcase.ToCamel(tsEdgeName)
+	tsEdgeName = names.ToClassType(tsEdgeName)
 
 	o := IndexEdgeOptions{}
 	for _, opt := range opts {
@@ -559,7 +559,7 @@ func (e *commonEdgeInfo) GetEntConfig() *EntConfigInfo {
 }
 
 func (e *commonEdgeInfo) CamelCaseEdgeName() string {
-	return strcase.ToCamel(e.EdgeName)
+	return names.ToClassType(e.EdgeName)
 }
 
 func (e *commonEdgeInfo) GraphQLEdgeName() string {
@@ -662,15 +662,15 @@ func (e *ForeignKeyEdge) SourceIsPolymorphic() bool {
 }
 
 func (e *ForeignKeyEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sTo%sQuery", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+	return names.ToClassType(e.SourceNodeName, "To", e.EdgeName, "Query")
 }
 
 func (e *ForeignKeyEdge) GetGraphQLConnectionName() string {
-	return fmt.Sprintf("%sTo%sConnection", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+	return names.ToClassType(e.SourceNodeName, "To", e.EdgeName, "Connection")
 }
 
 func (e *ForeignKeyEdge) GetGraphQLConnectionType() string {
-	return fmt.Sprintf("%sTo%sConnectionType", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+	return names.ToClassType(e.SourceNodeName, "To", e.EdgeName, "ConnectionType")
 }
 
 func (e *ForeignKeyEdge) TsEdgeQueryEdgeName() string {
@@ -679,19 +679,19 @@ func (e *ForeignKeyEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *ForeignKeyEdge) GetGraphQLEdgePrefix() string {
-	return fmt.Sprintf("%sTo%s", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+	return names.ToClassType(e.SourceNodeName, "To", e.EdgeName)
 }
 
 func (e *ForeignKeyEdge) tsEdgeConst() string {
-	return fmt.Sprintf("%sTo%s", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+	return names.ToClassType(e.SourceNodeName, "To", e.EdgeName)
 }
 
 func (e *ForeignKeyEdge) GetCountFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sCountLoaderFactory", e.tsEdgeConst()))
+	return names.ToTsFieldName(fmt.Sprintf("%sCountLoaderFactory", e.tsEdgeConst()))
 }
 
 func (e *ForeignKeyEdge) GetDataFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
+	return names.ToTsFieldName(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
 }
 
 func (e *ForeignKeyEdge) ErrorMessage(edgeInfo *EdgeInfo) error {
@@ -808,9 +808,9 @@ func (e *IndexedEdge) TsEdgeQueryName() string {
 
 func (e *IndexedEdge) getEdgeQueryName(prefix string) string {
 	if e.edgeConstName != "" {
-		return fmt.Sprintf("%s%sQuery", prefix, e.edgeConstName)
+		return names.ToClassType(prefix, e.edgeConstName, "Query")
 	}
-	return fmt.Sprintf("%s%sTo%sQuery", prefix, e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	return names.ToClassType(prefix, e.tsEdgeName, "To", inflection.Plural(e.NodeInfo.Node), "Query")
 
 }
 
@@ -834,9 +834,9 @@ func (e *IndexedEdge) SourceIsPolymorphic() bool {
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
 	prefix := e.getPrefix()
 	if e.edgeConstName != "" {
-		return fmt.Sprintf("%s%sConnection", prefix, e.edgeConstName)
+		return names.ToClassType(prefix, e.edgeConstName, "Connection")
 	}
-	return fmt.Sprintf("%s%sTo%sConnection", prefix, e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	return names.ToClassType(prefix, e.tsEdgeName, "To", inflection.Plural(e.NodeInfo.Node), "Connection")
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionType() string {
@@ -851,21 +851,21 @@ func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
 func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
 	prefix := e.getPrefix()
 	if e.edgeConstName != "" {
-		return fmt.Sprintf("%s%s", prefix, e.edgeConstName)
+		return names.ToClassType(prefix, e.edgeConstName)
 	}
-	return fmt.Sprintf("%s%sTo%s", prefix, e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	return names.ToClassType(prefix, e.tsEdgeName, "To", inflection.Plural(e.NodeInfo.Node))
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {
-	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(inflection.Plural(e.NodeInfo.Node)))
+	return names.ToClassType(e.tsEdgeName, "To", inflection.Plural(e.NodeInfo.Node))
 }
 
 func (e *IndexedEdge) GetCountFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sCountLoaderFactory", e.tsEdgeConst()))
+	return names.ToTsFieldName(fmt.Sprintf("%sCountLoaderFactory", e.tsEdgeConst()))
 }
 
 func (e *IndexedEdge) GetDataFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
+	return names.ToTsFieldName(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
 }
 
 func (e *IndexedEdge) EdgeQueryBase() string {
@@ -1113,11 +1113,11 @@ func (e *AssociationEdge) CloneWithCommonInfo(cfg codegenapi.Config, nodeName st
 }
 
 func (e *AssociationEdge) GetCountFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sCountLoaderFactory", e.TsEdgeConst))
+	return names.ToTsFieldName(fmt.Sprintf("%sCountLoaderFactory", e.TsEdgeConst))
 }
 
 func (e *AssociationEdge) GetDataFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.TsEdgeConst))
+	return names.ToTsFieldName(fmt.Sprintf("%sDataLoaderFactory", e.TsEdgeConst))
 }
 
 func (e *AssociationEdge) UniqueEdge() bool {
@@ -1198,7 +1198,7 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusValues() []string {
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetIDArg() string {
-	return strcase.ToLowerCamel(edgeGroup.DestNodeInfo.Node + "ID")
+	return names.ToTsFieldName(edgeGroup.DestNodeInfo.Node + "ID")
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMethodReturn() string {
@@ -1211,17 +1211,17 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusMethodReturn() string {
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
 	if edgeGroup.ViewerBased {
-		return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
+		return names.ToTsFieldName("viewer", edgeGroup.GroupStatusName)
 	}
-	return strcase.ToLowerCamel(edgeGroup.GroupStatusName) + "For"
+	return names.ToTsFieldName(edgeGroup.GroupStatusName) + "For"
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetGraphQLNameForStatusMethod(cfg codegenapi.Config) string {
-	return codegenapi.GraphQLName(cfg, edgeGroup.GetStatusMethod())
+	return names.ToGraphQLName(cfg, edgeGroup.GetStatusMethod())
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
-	return fmt.Sprintf("get%sMap", strcase.ToCamel(edgeGroup.ConstType))
+	return names.ToTsFieldName("get", edgeGroup.GroupStatusName, "Map")
 }
 
 func (edgeGroup *AssociationEdgeGroup) EdgeIdentifier() string {
@@ -1343,10 +1343,10 @@ func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.A
 	if assocEdge.TableName == "" {
 		tableNameParts := []string{
 			packageName,
-			base.GetSnakeCaseName(edge.Name),
+			names.ToDBColumn(edge.Name),
 			"edges",
 		}
-		assocEdge.TableName = base.GetNameFromParts(tableNameParts)
+		assocEdge.TableName = names.ToDBColumn(tableNameParts...)
 	}
 
 	var err error
@@ -1448,7 +1448,7 @@ func AssocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *in
 	assocEdgeGroup := &AssociationEdgeGroup{
 		GroupName:         edgeGroup.Name,
 		GroupStatusName:   edgeGroup.GroupStatusName,
-		TSGroupStatusName: strcase.ToLowerCamel(edgeGroup.GroupStatusName),
+		TSGroupStatusName: names.ToTsFieldName(edgeGroup.GroupStatusName),
 		NodeInfo:          nodeinfo.GetNodeInfo(packageName),
 		StatusEnums:       edgeGroup.StatusEnums,
 		NullStateFn:       edgeGroup.NullStateFn,
@@ -1536,7 +1536,7 @@ func AssocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *in
 
 	assocEdgeGroup.AddActionEdges(edgeGroup.ActionEdges)
 
-	assocEdgeGroup.ConstType = strcase.ToCamel(assocEdgeGroup.NodeInfo.Node + strcase.ToCamel(edgeGroup.GroupStatusName))
+	assocEdgeGroup.ConstType = names.ToClassType(assocEdgeGroup.NodeInfo.Node, edgeGroup.GroupStatusName)
 
 	return assocEdgeGroup, nil
 }
@@ -1558,7 +1558,7 @@ func getCommonEdgeInfo(
 	ret := commonEdgeInfo{
 		EdgeName:        edgeName,
 		entConfig:       entConfig,
-		graphQLEdgeName: codegenapi.GraphQLName(cfg, edgeName),
+		graphQLEdgeName: names.ToGraphQLName(cfg, edgeName),
 	}
 	if entConfig != nil {
 		ret.NodeInfo = nodeinfo.GetNodeInfo(entConfig.PackageName)
@@ -1569,10 +1569,10 @@ func getCommonEdgeInfo(
 func getDefaultTableName(packageName, groupName string) string {
 	tableNameParts := []string{
 		packageName,
-		base.GetSnakeCaseName(groupName),
+		names.ToDBColumn(groupName),
 		"edges",
 	}
-	return base.GetNameFromParts(tableNameParts)
+	return names.ToDBColumn(tableNameParts...)
 }
 
 func getTypeNameActionOperationFromTypeName(op ent.ActionOperation) (string, error) {
@@ -1597,9 +1597,10 @@ func getTypeNameActionOperationFromTypeName(op ent.ActionOperation) (string, err
 
 func getEdgeConstName(packageName, edgeName string) string {
 	//don't end up with something like UserToUserTo
-	if strings.HasPrefix(strcase.ToCamel(edgeName), strcase.ToCamel(packageName)+"To") {
-		return strcase.ToCamel(edgeName) + "Edge"
+
+	if strings.HasPrefix(names.ToClassType(edgeName), names.ToClassType(packageName, "To")) {
+		return names.ToClassType(edgeName, "Edge")
 	}
 	// todo... need to support custom edges at some point...
-	return strcase.ToCamel(packageName) + "To" + strcase.ToCamel(edgeName) + "Edge"
+	return names.ToClassType(packageName, "To", edgeName, "Edge")
 }

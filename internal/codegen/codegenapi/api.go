@@ -3,7 +3,6 @@ package codegenapi
 import (
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
@@ -141,13 +140,7 @@ func (cfg DummyConfig) CustomSQLExclude() []string {
 
 var _ Config = &DummyConfig{}
 
-func GraphQLName(cfg Config, name string) string {
-	// special case id
-	if strings.ToLower(name) == "id" {
-		return "id"
-	}
-	if cfg.DefaultGraphQLFieldFormat() == LowerCamelCase {
-		return strcase.ToLowerCamel(name)
-	}
-	return strcase.ToSnake(name)
-}
+// func GraphQLName(cfg Config, name string) string {
+// 	// TODO kill this and call names.ToGraphQLName
+// 	return names.ToGraphQLName(cfg, name)
+// }

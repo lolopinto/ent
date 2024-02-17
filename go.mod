@@ -4,7 +4,7 @@ require (
 	github.com/alexflint/go-filemutex v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/google/uuid v1.3.0
-	github.com/iancoleman/strcase v0.2.0
+	github.com/iancoleman/strcase v0.3.0
 	github.com/jinzhu/inflection v1.0.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.4.0
@@ -29,4 +29,4 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
 
-go 1.21
+go 1.22

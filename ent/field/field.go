@@ -3,7 +3,7 @@ package field
 import (
 	"fmt"
 
-	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/names"
 )
 
 // Field represents a field that's available on an ent
@@ -68,7 +68,7 @@ func (f *Field) DBKey(fieldName string) string {
 		return f.db
 	}
 	// this API doesn't seem as fun here...
-	return strcase.ToSnake(fieldName)
+	return names.ToDBColumn(fieldName)
 }
 
 // Option is a function that takes a Field and modifies it in any way.
@@ -165,19 +165,18 @@ func FieldEdge(configName, edgeName string) Option {
 // F takes a datatype and 0 or more options and configures the Field
 // usage is as follows:
 //
-//  func (config *UserConfig) GetFields() ent.FieldMap {
-//	  return ent.FieldMap {
-//	  	"FirstName": field.F(
-//	 	 		field.StringType(),
-// 	  	),
-// 			"EmailAddress": field.F(
-//				field.StringType(),
-//				field.Unique(),
-//				field.DB("email"),
-//      ),
-//  	},
-//  }
-//
+//	 func (config *UserConfig) GetFields() ent.FieldMap {
+//		  return ent.FieldMap {
+//		  	"FirstName": field.F(
+//		 	 		field.StringType(),
+//		  	),
+//				"EmailAddress": field.F(
+//					field.StringType(),
+//					field.Unique(),
+//					field.DB("email"),
+//	     ),
+//	 	},
+//	 }
 func F(d DataType, opts ...Option) *Field {
 	f := &Field{dataType: d}
 	for _, opt := range opts {
