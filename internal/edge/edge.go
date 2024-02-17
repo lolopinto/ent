@@ -1343,7 +1343,7 @@ func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.A
 	if assocEdge.TableName == "" {
 		tableNameParts := []string{
 			packageName,
-			names.ToDBColumn(edge.Name),
+			edge.Name,
 			"edges",
 		}
 		assocEdge.TableName = names.ToDBColumn(tableNameParts...)
@@ -1569,7 +1569,7 @@ func getCommonEdgeInfo(
 func getDefaultTableName(packageName, groupName string) string {
 	tableNameParts := []string{
 		packageName,
-		names.ToDBColumn(groupName),
+		groupName,
 		"edges",
 	}
 	return names.ToDBColumn(tableNameParts...)

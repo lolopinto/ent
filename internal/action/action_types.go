@@ -260,7 +260,7 @@ type removeEdgeActionType struct {
 func (action *removeEdgeActionType) getDefaultActionName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge, lang base.Language) string {
 	// see addEdgeActionType up
 	if lang == base.TypeScript {
-		return names.ToClassType(nodeName, "Remove", edge.EdgeIdentifier()+"Action")
+		return names.ToClassType(nodeName, "Remove", edge.EdgeIdentifier(), "Action")
 	}
 	return names.ToClassType(nodeName, "Remove", edge.EdgeIdentifier(), "Action")
 }

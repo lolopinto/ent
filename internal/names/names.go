@@ -57,10 +57,6 @@ func ToGraphQLName(cfg codegenapi.Config, s ...string) string {
 }
 
 // ToDBColumn converts a string to a database column name
-// e.g. "FirstName" -> "first_name"
-// e.g. "firstName" -> "first_name"
-// e.g. "first_name" -> "first_name"
-// e.g. "First_Name" -> "first_name"
 func ToDBColumn(strs ...string) string {
 	var sb strings.Builder
 	for idx, s := range strs {

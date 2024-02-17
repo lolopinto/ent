@@ -102,7 +102,7 @@ func (p *PatternInfo) GetMixinName() string {
 }
 
 func (p *PatternInfo) GetPatternMethod() string {
-	return names.ToClassType("is", p.Name)
+	return names.ToTsFieldName("is", p.Name)
 }
 
 func (p *PatternInfo) ForeignImport(imp string) bool {

@@ -139,8 +139,3 @@ func (cfg DummyConfig) CustomSQLExclude() []string {
 }
 
 var _ Config = &DummyConfig{}
-
-// func GraphQLName(cfg Config, name string) string {
-// 	// TODO kill this and call names.ToGraphQLName
-// 	return names.ToGraphQLName(cfg, name)
-// }
