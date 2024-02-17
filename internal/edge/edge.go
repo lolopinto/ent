@@ -1221,7 +1221,7 @@ func (edgeGroup *AssociationEdgeGroup) GetGraphQLNameForStatusMethod(cfg codegen
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
-	return names.ToTsFieldName("get", edgeGroup.GroupStatusName, "Map")
+	return names.ToTsFieldName("get", edgeGroup.ConstType, "Map")
 }
 
 func (edgeGroup *AssociationEdgeGroup) EdgeIdentifier() string {

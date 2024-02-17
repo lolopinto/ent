@@ -242,7 +242,7 @@ export class EventActivityBase
     return EventActivityRsvpStatus.CanRsvp;
   }
 
-  getRsvpStatusMap() {
+  getEventActivityRsvpStatusMap() {
     let m: Map<EventActivityRsvpStatus, EdgeType> = new Map();
     m.set(EventActivityRsvpStatus.Attending, EdgeType.EventActivityToAttending);
     m.set(EventActivityRsvpStatus.Declined, EdgeType.EventActivityToDeclined);
