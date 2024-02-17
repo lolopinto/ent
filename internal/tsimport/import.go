@@ -262,7 +262,8 @@ func (imps *Imports) Use(impItem string) (string, error) {
 			for k := range imps.importMap {
 				imports = append(imports, k)
 			}
-			fmt.Printf("imports at path %s are %v", imps.filePath, imports)
+			sort.Strings(imports)
+			fmt.Printf("imports at path %s are %v \n", imps.filePath, imports)
 		}
 		return "", fmt.Errorf("tried to use import %s at path %s even though it was never reserved", impItem, imps.errorPath)
 	}
