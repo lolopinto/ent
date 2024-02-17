@@ -55,12 +55,16 @@ func TestToDbColumn(t *testing.T) {
 		{[]string{"foo_bar", "baz"}, "foo_bar_baz"},
 		{[]string{"userID"}, "user_id"},
 		{[]string{"userId"}, "user_id"},
+		// second strcase handles this so using it for this case
+		{[]string{"userIDs"}, "user_ids"},
 		// TODO this is still broken
-		// {[]string{"userIDs"}, "user_ids"},
 		{[]string{"userIds"}, "user_ids"},
 		{[]string{"firstName"}, "first_name"},
 		{[]string{"first_name"}, "first_name"},
 		{[]string{"FirstName"}, "first_name"},
+
+		// second strcase handles this so using it for this case
+		{[]string{"event_rsvps", "id1", "edge_type", "id2", "pkey"}, "event_rsvps_id1_edge_type_id2_pkey"},
 	}
 
 	for i, tt := range tests {

@@ -5,6 +5,8 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
+
+	strcase2 "github.com/stoewer/go-strcase"
 )
 
 // TODO even through strcase has been updated. time to own this
@@ -69,7 +71,7 @@ func ToDBColumn(strs ...string) string {
 		if s == "" {
 			continue
 		}
-		sb.WriteString(strcase.ToSnake(s))
+		sb.WriteString(strcase2.SnakeCase(s))
 
 		if idx != len(strs)-1 {
 			sb.WriteString("_")
