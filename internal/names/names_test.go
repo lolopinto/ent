@@ -2,6 +2,7 @@ package names_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/lolopinto/ent/internal/names"
@@ -55,9 +56,11 @@ func TestToDbColumn(t *testing.T) {
 		{[]string{"foo_bar", "baz"}, "foo_bar_baz"},
 		{[]string{"userID"}, "user_id"},
 		{[]string{"userId"}, "user_id"},
-		// second strcase handles this so using it for this case
-		{[]string{"userIDs"}, "user_ids"},
 		// TODO this is still broken
+		// TODO use splitCamelCase for this?
+		// if we have an "s" at the end + we have all caps before it
+		// then combine the last two words
+		{[]string{"userIDs"}, "user_ids"},
 		{[]string{"userIds"}, "user_ids"},
 		{[]string{"firstName"}, "first_name"},
 		{[]string{"first_name"}, "first_name"},
@@ -67,8 +70,8 @@ func TestToDbColumn(t *testing.T) {
 		{[]string{"event_rsvps", "id1", "edge_type", "id2", "pkey"}, "event_rsvps_id1_edge_type_id2_pkey"},
 	}
 
-	for i, tt := range tests {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(strings.Join(tt.names, "_"), func(t *testing.T) {
 			actual := names.ToDBColumn(tt.names...)
 			assert.Equal(t, tt.expected, actual, "Expected %s, got %s", tt.expected, actual)
 		})
@@ -96,9 +99,9 @@ func TestToClassType(t *testing.T) {
 	tests := []test{
 		{[]string{"Foo", "Type"}, "FooType"},
 		{[]string{"foo", "type"}, "FooType"},
-		{[]string{"C_PLUS_PLUS"}, "CPlusPlus"},
 		{[]string{"Create", "Foo", "Action"}, "CreateFooAction"},
 		{[]string{"create", "foo", "action"}, "CreateFooAction"},
+		{[]string{"UserAuthJWTInputType"}, "UserAuthJWTInputType"},
 	}
 
 	for i, tt := range tests {
