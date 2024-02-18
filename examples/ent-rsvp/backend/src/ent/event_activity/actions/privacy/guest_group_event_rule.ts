@@ -5,7 +5,7 @@ import { GuestGroupBuilder } from "src/ent/generated/guest_group/actions/guest_g
 
 export class AllowIfGuestGroupPartOfEventRule implements PrivacyPolicyRule {
   constructor(
-    private eventID: ID,
+    private eventId: ID,
     private inputData: EdgeInputData[],
   ) {}
 
@@ -17,15 +17,15 @@ export class AllowIfGuestGroupPartOfEventRule implements PrivacyPolicyRule {
           const rawInput = (b as GuestGroupBuilder).getInput();
 
           // creating a guest group and we can match the ids
-          if (rawInput && rawInput.eventID) {
-            return rawInput.eventID === this.eventID;
+          if (rawInput && rawInput.eventId) {
+            return rawInput.eventId === this.eventId;
           }
 
           // otherwise nope
           return false;
         }
         const loaded = await GuestGroup.load(v, input.id);
-        return loaded?.eventId == this.eventID;
+        return loaded?.eventId == this.eventId;
       }),
     );
     if (all.every((val) => val)) {

@@ -68,7 +68,7 @@ test("event slug available", async () => {
   );
 
   const user = await createUser();
-  let eventID: ID = "";
+  let eventId: ID = "";
 
   try {
     await expectMutation(
@@ -87,7 +87,7 @@ test("event slug available", async () => {
       [
         "event.id",
         async function (id: string) {
-          eventID = mustDecodeIDFromGQLID(id);
+          eventId = mustDecodeIDFromGQLID(id);
         },
       ],
     );
@@ -103,7 +103,7 @@ test("event slug available", async () => {
       [".", false],
     );
   } finally {
-    const evt = await Event.loadX(user.viewer, eventID);
+    const evt = await Event.loadX(user.viewer, eventId);
     await DeleteEventAction.create(user.viewer, evt).saveX();
   }
 
@@ -121,7 +121,7 @@ test("event slug available", async () => {
 
 test("query from slug", async () => {
   const user = await createUser();
-  let eventID: ID = "";
+  let eventId: ID = "";
   await expectMutation(
     {
       viewer: user.viewer,
@@ -138,7 +138,7 @@ test("query from slug", async () => {
     [
       "event.id",
       async function (id: string) {
-        eventID = mustDecodeIDFromGQLID(id);
+        eventId = mustDecodeIDFromGQLID(id);
       },
     ],
   );
@@ -155,6 +155,6 @@ test("query from slug", async () => {
     ["slug", "fun-event"],
   );
 
-  const evt = await Event.loadX(user.viewer, eventID);
+  const evt = await Event.loadX(user.viewer, eventId);
   await DeleteEventAction.create(user.viewer, evt).saveX();
 });

@@ -23,7 +23,7 @@ export class AllowIfEventCreatorRule implements PrivacyPolicyRule {
     if (typeof this.id === "object") {
       // if we're creating something with an eventID, allow this
       // e.g. creating an event while creating an activity
-      if (this.input && this.input.eventID === this.id) {
+      if (this.input && this.input.eventId === this.id) {
         return Allow();
       }
 

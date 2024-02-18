@@ -68,7 +68,7 @@ test("rsvp", async () => {
       args: {
         id: encodeGQLID(activity),
         rsvpStatus: "ATTENDING",
-        guestID: encodeGQLID(guest),
+        guestId: encodeGQLID(guest),
       },
     },
     ["eventActivity.id", encodeGQLID(activity)],
@@ -100,7 +100,7 @@ test("rsvp", async () => {
       args: {
         id: encodeGQLID(activity),
         rsvpStatus: "DECLINED",
-        guestID: encodeGQLID(guest),
+        guestId: encodeGQLID(guest),
       },
     },
     ["eventActivity.id", encodeGQLID(activity)],
@@ -122,7 +122,7 @@ test("rsvp with dietary restrictions", async () => {
       args: {
         id: encodeGQLID(activity),
         rsvpStatus: "ATTENDING",
-        guestID: encodeGQLID(guest),
+        guestId: encodeGQLID(guest),
         dietaryRestrictions: "shellfish",
       },
     },
@@ -158,7 +158,7 @@ test("rsvp for other", async () => {
       args: {
         id: encodeGQLID(activity),
         rsvpStatus: "ATTENDING",
-        guestID: encodeGQLID(other),
+        guestId: encodeGQLID(other),
       },
     },
     ["eventActivity.id", encodeGQLID(activity)],
@@ -188,7 +188,7 @@ test("rsvp for other", async () => {
       args: {
         id: encodeGQLID(activity),
         rsvpStatus: "DECLINED",
-        guestID: encodeGQLID(other),
+        guestId: encodeGQLID(other),
       },
     },
     ["eventActivity.id", encodeGQLID(activity)],
@@ -241,7 +241,7 @@ test("canViewerDo", async () => {
     ["canViewerDo.eventActivityAddInvite", false],
     // can change rsvp status for self
     [
-      `canViewerDo {self: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+      `canViewerDo {self: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestId: "${encodeGQLID(
         self,
       )}") }`,
       true,
@@ -249,7 +249,7 @@ test("canViewerDo", async () => {
     ],
     // can change rsvp status for other
     [
-      `canViewerDo {other: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+      `canViewerDo {other: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestId: "${encodeGQLID(
         other,
       )}") }`,
       true,
@@ -258,7 +258,7 @@ test("canViewerDo", async () => {
 
     // can't change rsvp status for other group
     [
-      `canViewerDo {other_guest: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+      `canViewerDo {other_guest: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestId: "${encodeGQLID(
         guests2[0],
       )}") }`,
       false,
@@ -282,7 +282,7 @@ test("canViewerDo", async () => {
     // can't change rsvp for anyone. in actual fact, should be able to do so if this was a real events system but we don't support that
 
     [
-      `canViewerDo {self: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+      `canViewerDo {self: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestId: "${encodeGQLID(
         self,
       )}") }`,
       false,
@@ -290,7 +290,7 @@ test("canViewerDo", async () => {
     ],
 
     [
-      `canViewerDo {other: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+      `canViewerDo {other: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestId: "${encodeGQLID(
         other,
       )}") }`,
       false,
@@ -298,7 +298,7 @@ test("canViewerDo", async () => {
     ],
 
     [
-      `canViewerDo {other_guest: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestID: "${encodeGQLID(
+      `canViewerDo {other_guest: eventActivityRsvpStatusEdit(rsvpStatus: ATTENDING, guestId: "${encodeGQLID(
         guests2[0],
       )}") }`,
       false,

@@ -89,8 +89,8 @@ test("event create nullable addressID", async () => {
     [
       "event.id",
       async function (id: string) {
-        const eventID = mustDecodeIDFromGQLID(id);
-        await Event.loadX(new ExampleViewer(user.id), eventID);
+        const eventId = mustDecodeIDFromGQLID(id);
+        await Event.loadX(new ExampleViewer(user.id), eventId);
       },
     ],
     ["event.creator.id", encodeGQLID(user)],
@@ -120,8 +120,8 @@ test("event create addressID passed", async () => {
     [
       "event.id",
       async function (id: string) {
-        const eventID = mustDecodeIDFromGQLID(id);
-        await Event.loadX(new ExampleViewer(user.id), eventID);
+        const eventId = mustDecodeIDFromGQLID(id);
+        await Event.loadX(new ExampleViewer(user.id), eventId);
       },
     ],
     ["event.creator.id", encodeGQLID(user)],

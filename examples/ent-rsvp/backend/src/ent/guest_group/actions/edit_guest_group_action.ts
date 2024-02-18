@@ -11,7 +11,7 @@ export default class EditGuestGroupAction extends EditGuestGroupActionBase {
   getPrivacyPolicy() {
     // only creator of event can edit guest group
     return new AllowIfEventCreatorPrivacyPolicy(
-      this.builder.existingEnt!.eventId,
+      this.builder.existingEnt.eventId,
     );
   }
 }
