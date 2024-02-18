@@ -23,16 +23,16 @@ export default class CreateContactPhoneNumberAction extends CreateContactPhoneNu
     return {
       rules: [
         // allow builder
-        new AllowIfBuilder(this.input.contactID),
+        new AllowIfBuilder(this.input.contactId),
         // if viewer can see contact
         new AllowIfConditionAppliesRule(
-          () => typeof this.input.contactID === "string",
+          () => typeof this.input.contactId === "string",
           new AllowIfEntIsVisibleRule(
-            this.input.contactID.toString(),
+            this.input.contactId.toString(),
             Contact.loaderOptions(),
           ),
         ),
-        new AllowIfViewerEqualsRule(this.input.contactID),
+        new AllowIfViewerEqualsRule(this.input.contactId),
         AlwaysDenyRule,
       ],
     };

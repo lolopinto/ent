@@ -9,7 +9,7 @@ import { AuthCodeBase } from "../ent/internal";
 export class AuthCode extends AuthCodeBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
-      rules: [new AllowIfViewerIsEntPropertyRule("userID"), AlwaysDenyRule],
+      rules: [new AllowIfViewerIsEntPropertyRule("userId"), AlwaysDenyRule],
     };
   }
 }

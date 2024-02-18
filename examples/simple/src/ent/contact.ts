@@ -12,7 +12,7 @@ import { ContactDate, ContactItemFilter, EmailInfo } from "./contact_types";
 export class Contact extends ContactBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
-      rules: [new AllowIfViewerIsEntPropertyRule("userID"), AlwaysDenyRule],
+      rules: [new AllowIfViewerIsEntPropertyRule("userId"), AlwaysDenyRule],
     };
   }
 

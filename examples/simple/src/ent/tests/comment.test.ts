@@ -26,9 +26,9 @@ const create = async () => {
 
   // comment on self
   const comment = await CreateCommentAction.create(user.viewer, {
-    authorID: user.id,
+    authorId: user.id,
     body: "sup",
-    articleID: user.id,
+    articleId: user.id,
     articleType: user.nodeType,
   }).saveX();
   expect(comment.body).toBe("sup");
@@ -50,7 +50,7 @@ test("edit", async () => {
   await userAction.saveX();
 
   const action = EditCommentAction.create(comment.viewer, comment, {});
-  action.builder.overrideAuthorID(user2.id);
+  action.builder.overrideAuthorId(user2.id);
 
   const edited = await action.saveX();
 
@@ -58,7 +58,7 @@ test("edit", async () => {
   expect(author.id).toBe(user2.id);
 });
 
-test("edit authorID incorrectly", async () => {
+test("edit authorId incorrectly", async () => {
   const comment = await create();
   const user2 = await createUser();
 
@@ -73,12 +73,12 @@ test("edit authorID incorrectly", async () => {
   try {
     action.builder.updateInput({
       body: "ss",
-      authorID: "hello",
+      authorId: "hello",
     });
     throw new Error(`should have thrown`);
   } catch (err) {
     expect((err as Error).message).toBe(
-      "authorID cannot be passed to updateInput. use overrideAuthorID instead",
+      "authorId cannot be passed to updateInput. use overrideauthorId instead",
     );
   }
 });
@@ -89,40 +89,40 @@ test("create comment and query different ways", async () => {
   const user3 = await createUser();
 
   const commentOnUser1 = await CreateCommentAction.create(user.viewer, {
-    authorID: user.id,
+    authorId: user.id,
     body: "sup",
-    articleID: user.id,
+    articleId: user.id,
     articleType: user.nodeType,
   }).saveX();
   const commentOnUser2 = await CreateCommentAction.create(user.viewer, {
-    authorID: user.id,
+    authorId: user.id,
     body: "sup",
-    articleID: user.id,
+    articleId: user.id,
     articleType: user.nodeType,
   }).saveX();
   const commentOnUser3 = await CreateCommentAction.create(user.viewer, {
-    authorID: user.id,
+    authorId: user.id,
     body: "sup",
-    articleID: user.id,
+    articleId: user.id,
     articleType: user.nodeType,
   }).saveX();
 
   const commentOnComment1 = await CreateCommentAction.create(user.viewer, {
-    authorID: user.id,
+    authorId: user.id,
     body: "sup",
-    articleID: commentOnUser1.id,
+    articleId: commentOnUser1.id,
     articleType: commentOnUser1.nodeType,
   }).saveX();
   const commentOnComment2 = await CreateCommentAction.create(user.viewer, {
-    authorID: user2.id,
+    authorId: user2.id,
     body: "sup",
-    articleID: commentOnUser1.id,
+    articleId: commentOnUser1.id,
     articleType: commentOnUser1.nodeType,
   }).saveX();
   const commentOnComment3 = await CreateCommentAction.create(user.viewer, {
-    authorID: user3.id,
+    authorId: user3.id,
     body: "sup",
-    articleID: commentOnUser1.id,
+    articleId: commentOnUser1.id,
     articleType: commentOnUser1.nodeType,
   }).saveX();
 

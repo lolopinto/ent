@@ -29,7 +29,7 @@ class NewAuthCode {
   changeset(builder: UserBuilder, input: EditEmailAddressInput) {
     return CreateAuthCodeAction.create(builder.viewer, {
       emailAddress: input.newEmail,
-      userID: builder.viewer.viewerID!,
+      userId: builder.viewer.viewerID!,
       code: this.getCode(),
     }).changeset();
   }

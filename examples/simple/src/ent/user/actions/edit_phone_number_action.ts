@@ -29,7 +29,7 @@ class NewAuthCode {
   changeset(builder: UserBuilder, input: EditPhoneNumberInput) {
     return CreateAuthCodeAction.create(builder.viewer, {
       phoneNumber: input.newPhoneNumber,
-      userID: builder.viewer.viewerID!,
+      userId: builder.viewer.viewerID!,
       code: this.getCode(),
     }).changeset();
   }

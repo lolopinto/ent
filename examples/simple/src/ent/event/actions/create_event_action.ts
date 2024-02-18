@@ -42,7 +42,7 @@ export default class CreateEventAction extends CreateEventActionBase {
           builder: EventBuilder<EventCreateInput>,
           input: EventCreateInput,
         ) {
-          builder.addHostID(input.creatorID);
+          builder.addHostID(input.creatorId);
         },
       },
     ];

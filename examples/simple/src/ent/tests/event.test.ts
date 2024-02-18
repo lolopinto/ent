@@ -31,7 +31,7 @@ async function create(
 
   return CreateEventAction.create(loggedOutViewer, {
     name: "fun event",
-    creatorID: user.id,
+    creatorId: user.id,
     startTime: startTime,
     location: "location",
     ...partial,
@@ -55,19 +55,19 @@ test("create event", async () => {
   expect(event.location).toBe("location");
   // Todo handle this better either via mock or something else
   expect(event.startTime.toDateString()).toBe(date.toDateString());
-  expect(event.creatorID).not.toBe(null);
+  expect(event.creatorId).not.toBe(null);
   expect(event.endTime).toBe(null);
 
   // reload the event from the viewer's perspective
-  const v = new ExampleViewer(event.creatorID);
+  const v = new ExampleViewer(event.creatorId);
   event = await Event.loadX(v, event.id);
   const creator = await event.loadCreatorX();
-  expect(creator.id).toBe(event.creatorID);
+  expect(creator.id).toBe(event.creatorId);
 
   // creator is added as host too
   const hosts = await event.queryHosts().queryEnts();
   expect(hosts.length).toBe(1);
-  expect(hosts[0].id).toBe(event.creatorID);
+  expect(hosts[0].id).toBe(event.creatorId);
 
   const [createdEvents, createdEventsEdges] = await Promise.all([
     creator.queryCreatedEvents().queryEnts(),
@@ -90,10 +90,10 @@ test("change creator for some reason", async () => {
   let event = await create(date);
 
   // reload the event from the viewer's perspective
-  const v = new ExampleViewer(event.creatorID);
+  const v = new ExampleViewer(event.creatorId);
   event = await Event.loadX(v, event.id);
   const creator = await event.loadCreatorX();
-  expect(creator.id).toBe(event.creatorID);
+  expect(creator.id).toBe(event.creatorId);
 
   let [createdEvents, createdEventsEdges] = await Promise.all([
     creator.queryCreatedEvents().queryEnts(),
@@ -105,13 +105,13 @@ test("change creator for some reason", async () => {
 
   let newCreator = await createUser();
   let action = EditEventAction.create(
-    new ExampleViewer(event.creatorID),
+    new ExampleViewer(event.creatorId),
     event,
     {},
   );
-  action.builder.overrideCreatorID(newCreator.id);
+  action.builder.overrideCreatorId(newCreator.id);
   const editedEvent = await action.saveX();
-  expect(editedEvent.creatorID).toBe(newCreator.id);
+  expect(editedEvent.creatorId).toBe(newCreator.id);
 
   const oldCreator = creator;
   let [createdEvents2, createdEventsEdges2] = await Promise.all([
@@ -145,13 +145,13 @@ test("change address", async () => {
   let address = await createAddress();
 
   event = await EditEventAction.create(
-    new ExampleViewer(event.creatorID),
+    new ExampleViewer(event.creatorId),
     event,
     {
-      addressID: address.id,
+      addressId: address.id,
     },
   ).saveX();
-  expect(await event.addressID()).toBe(address.id);
+  expect(await event.addressId()).toBe(address.id);
 
   let [hostedEvents, hostedEventsEdges] = await Promise.all([
     address.queryHostedEvents().queryEnts(),
@@ -163,13 +163,13 @@ test("change address", async () => {
 
   let newAddress = await createAddress();
   let editedEvent = await EditEventAction.create(
-    new ExampleViewer(event.creatorID),
+    new ExampleViewer(event.creatorId),
     event,
     {
-      addressID: newAddress.id,
+      addressId: newAddress.id,
     },
   ).saveX();
-  expect(await editedEvent.addressID()).toBe(newAddress.id);
+  expect(await editedEvent.addressId()).toBe(newAddress.id);
 
   const oldAddress = address;
   let [hostedEvents2, hostedEventsEdges2] = await Promise.all([
@@ -198,13 +198,13 @@ test("change address", async () => {
 
   // set to null
   editedEvent = await EditEventAction.create(
-    new ExampleViewer(event.creatorID),
+    new ExampleViewer(event.creatorId),
     editedEvent,
     {
-      addressID: null,
+      addressId: null,
     },
   ).saveX();
-  expect(await editedEvent.addressID()).toBe(null);
+  expect(await editedEvent.addressId()).toBe(null);
 
   let [hostedEvents4, hostedEventsEdges4] = await Promise.all([
     newAddress.queryHostedEvents().queryEnts(),
@@ -214,28 +214,28 @@ test("change address", async () => {
   expect(hostedEventsEdges4.length).toBe(0);
 });
 
-test("addressID privacy", async () => {
+test("addressId privacy", async () => {
   let date = new Date();
   let event = await create(date);
   let address = await createAddress();
 
   event = await EditEventAction.create(
-    new ExampleViewer(event.creatorID),
+    new ExampleViewer(event.creatorId),
     event,
     {
-      addressID: address.id,
+      addressId: address.id,
     },
   ).saveX();
-  expect(await event.addressID()).toBe(address.id);
+  expect(await event.addressId()).toBe(address.id);
 
   const user = await createUser();
   let eventFrom = await Event.loadX(user.viewer, event.id);
   // not connected to event so can't see address
-  expect(await eventFrom.addressID()).toBeNull();
+  expect(await eventFrom.addressId()).toBeNull();
   expect(await eventFrom.loadAddress()).toBeNull();
 
   let action = EditEventAction.create(
-    new ExampleViewer(event.creatorID),
+    new ExampleViewer(event.creatorId),
     event,
     {},
   );
@@ -244,7 +244,7 @@ test("addressID privacy", async () => {
 
   eventFrom = await Event.loadX(user.viewer, event.id);
   // can now see address id
-  expect(await eventFrom.addressID()).toBe(address.id);
+  expect(await eventFrom.addressId()).toBe(address.id);
   const addressFrom = await eventFrom.loadAddress();
   expect(addressFrom).not.toBeNull();
   expect(addressFrom?.id).toBe(address.id);
@@ -255,7 +255,7 @@ test("edit event", async () => {
   let event = await create(date);
 
   let editedEvent = await EditEventAction.create(
-    new ExampleViewer(event.creatorID),
+    new ExampleViewer(event.creatorId),
     event,
     {
       location: "fun location",
@@ -265,7 +265,7 @@ test("edit event", async () => {
   expect(editedEvent.name).toBe("fun event");
   expect(editedEvent.location).toBe("fun location");
   expect(editedEvent.startTime.toDateString()).toBe(date.toDateString());
-  expect(editedEvent.creatorID).not.toBe(null);
+  expect(editedEvent.creatorId).not.toBe(null);
   expect(editedEvent.endTime).toBe(null);
 });
 
@@ -276,7 +276,7 @@ test("edit nullable field", async () => {
   let endTime = new Date(date.getTime());
   endTime.setTime(date.getTime() + 24 * 60 * 60);
 
-  const vc = new ExampleViewer(event.creatorID);
+  const vc = new ExampleViewer(event.creatorId);
   let editedEvent = await EditEventAction.create(vc, event, {
     endTime: endTime,
   }).saveX();
@@ -284,7 +284,7 @@ test("edit nullable field", async () => {
   expect(editedEvent.name).toBe("fun event");
   expect(editedEvent.location).toBe("location");
   expect(editedEvent.startTime.toDateString()).toBe(date.toDateString());
-  expect(editedEvent.creatorID).not.toBe(null);
+  expect(editedEvent.creatorId).not.toBe(null);
   expect(editedEvent.endTime?.toDateString()).toBe(endTime.toDateString());
 
   // re-edit and clear the value
@@ -295,13 +295,13 @@ test("edit nullable field", async () => {
   expect(editedEvent.name).toBe("fun event");
   expect(editedEvent.location).toBe("location");
   expect(editedEvent.startTime.toDateString()).toBe(date.toDateString());
-  expect(editedEvent.creatorID).not.toBe(null);
+  expect(editedEvent.creatorId).not.toBe(null);
   expect(editedEvent.endTime).toBe(null);
 });
 
 test("delete event", async () => {
   let event = await create(new Date());
-  const vc = new ExampleViewer(event.creatorID);
+  const vc = new ExampleViewer(event.creatorId);
   await DeleteEventAction.create(vc, event).saveX();
 
   let loadEvent = await Event.load(vc, event.id);
@@ -324,7 +324,7 @@ describe("validators", () => {
 
     let action = CreateEventAction.create(loggedOutViewer, {
       name: "fun event",
-      creatorID: user.id,
+      creatorId: user.id,
       startTime: new Date(),
       location: "location",
     });
@@ -340,7 +340,7 @@ describe("validators", () => {
     let yesterday = new Date(now.getTime() - 86400);
     let action = CreateEventAction.create(loggedOutViewer, {
       name: "fun event",
-      creatorID: user.id,
+      creatorId: user.id,
       startTime: yesterday,
       endTime: now,
       location: "location",
@@ -357,7 +357,7 @@ describe("validators", () => {
     let yesterday = new Date(now.getTime() - 86400);
     let action = CreateEventAction.create(loggedOutViewer, {
       name: "fun event",
-      creatorID: user.id,
+      creatorId: user.id,
       startTime: now,
       endTime: yesterday,
       location: "location",
@@ -373,13 +373,13 @@ describe("validators", () => {
     let now = new Date();
     let event = await CreateEventAction.create(loggedOutViewer, {
       name: "fun event",
-      creatorID: user.id,
+      creatorId: user.id,
       startTime: now,
       location: "location",
     }).saveX();
 
     let action = EditEventAction.create(
-      new ExampleViewer(event.creatorID),
+      new ExampleViewer(event.creatorId),
       event,
       {
         name: "fun event2",
@@ -394,7 +394,7 @@ describe("validators", () => {
     let event = await create(new Date());
 
     let action = EditEventAction.create(
-      new ExampleViewer(event.creatorID),
+      new ExampleViewer(event.creatorId),
       event,
       {
         name: "fun event2",
@@ -409,7 +409,7 @@ describe("validators", () => {
     let event = await create(new Date());
 
     let action = EditEventAction.create(
-      new ExampleViewer(event.creatorID),
+      new ExampleViewer(event.creatorId),
       event,
       {
         name: "fun event2",
@@ -426,7 +426,7 @@ describe("validators", () => {
     let yesterday = new Date(event.startTime.getTime() - 86400);
 
     let action = EditEventAction.create(
-      new ExampleViewer(event.creatorID),
+      new ExampleViewer(event.creatorId),
       event,
       {
         endTime: yesterday,
@@ -444,7 +444,7 @@ describe("validators", () => {
     let yesterdayPlus = new Date(yesterday.getTime() + 3600);
 
     let action = EditEventAction.create(
-      new ExampleViewer(event.creatorID),
+      new ExampleViewer(event.creatorId),
       event,
       {
         startTime: yesterday,
@@ -463,7 +463,7 @@ describe("validators", () => {
     let yesterdayPlus = new Date(yesterday.getTime() + 3600);
 
     let action = EditEventAction.create(
-      new ExampleViewer(event.creatorID),
+      new ExampleViewer(event.creatorId),
       event,
       {
         startTime: yesterday,
@@ -474,7 +474,7 @@ describe("validators", () => {
     event = await action.saveX();
 
     // now changing startTime to be before endTime incorrect...
-    action = EditEventAction.create(new ExampleViewer(event.creatorID), event, {
+    action = EditEventAction.create(new ExampleViewer(event.creatorId), event, {
       startTime: new Date(),
     });
     let valid = await action.valid();
