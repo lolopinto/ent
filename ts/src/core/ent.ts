@@ -960,7 +960,7 @@ export function buildGroupQuery<T extends Data = Data, K = keyof T>(
         // TS doesn't understand that K can only be a string, so we need
         // for it to treat f as the object we know it is.
         const fObj = f as { alias: string; column: string };
-        return `${fObj.column}.${fObj.alias}`;
+        return `${fObj.alias}.${fObj.column}`;
       }
       return f;
     })
