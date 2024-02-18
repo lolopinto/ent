@@ -38,9 +38,9 @@ import {
 import DB, { Dialect } from "../core/db";
 import * as clause from "../core/clause";
 import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema";
-import { snakeCase } from "snake-case";
 import { v1 } from "uuid";
 import { buildQuery } from "../core/query_impl";
+import { toDBColumnOrTable } from "../names/names";
 
 const ml = new MockLogs();
 
@@ -238,7 +238,7 @@ async function createEdgeRows(edges: string[]) {
     await createRowForTest({
       tableName: "assoc_edge_config",
       fields: {
-        edge_table: `${snakeCase(edge)}_table`,
+        edge_table: toDBColumnOrTable(edge, "table"),
         symmetric_edge: false,
         inverse_edge_type: null,
         edge_type: edge,

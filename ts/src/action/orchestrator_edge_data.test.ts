@@ -1,5 +1,4 @@
 import { EntChangeset, WriteOperation } from "../action";
-import { snakeCase } from "snake-case";
 import DB, { Dialect } from "../core/db";
 import {
   assoc_edge_config_table,
@@ -30,6 +29,7 @@ import {
   testEdgeGlobalSchema,
 } from "../testutils/test_edge_global_schema";
 import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
+import { toDBColumnOrTable } from "../names/names";
 
 const UserSchema = getBuilderSchemaFromFields(
   {
@@ -76,14 +76,16 @@ function setupEdgeTables(tdb: TempDB, global = false) {
   beforeEach(async () => {
     const tables: Table[] = [];
     edges.map((edge) => {
-      const t = assoc_edge_table(`${snakeCase(edge)}_table`, global);
+      const t = assoc_edge_table(`${toDBColumnOrTable(edge, "table")}`, global);
       tables.push(t);
     });
     await tdb.create(...tables);
   });
 
   afterEach(async () => {
-    await tdb.drop(...edges.map((edge) => `${snakeCase(edge)}_table`));
+    await tdb.drop(
+      ...edges.map((edge) => `${toDBColumnOrTable(edge, "table")}`),
+    );
   });
 }
 
@@ -92,7 +94,7 @@ async function createEdgeRows() {
     await createRowForTest({
       tableName: "assoc_edge_config",
       fields: {
-        edge_table: `${snakeCase(edge)}_table`,
+        edge_table: toDBColumnOrTable(edge, "table"),
         symmetric_edge: edge == "symmetricEdge",
         inverse_edge_type: edge === "edge" ? "inverseEdge" : "edge",
         edge_type: edge,

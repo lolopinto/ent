@@ -36,7 +36,6 @@ import { IDViewer } from "./viewer";
 import { ObjectLoaderFactory } from "./loaders";
 import { loadConfig } from "./config";
 import { createRowForTest } from "../testutils/write";
-import { snakeCase } from "snake-case";
 import {
   Allow,
   Ent,
@@ -50,6 +49,7 @@ import {
 
 import email from "email-addresses";
 import { TestContext } from "../testutils/context/test_context";
+import { toDBColumnOrTable } from "../names/names";
 
 function isParsedMailbox(
   mailboxOrGroup: email.ParsedMailbox | email.ParsedGroup | null,
@@ -315,7 +315,7 @@ beforeAll(async () => {
   await createRowForTest({
     tableName: "assoc_edge_config",
     fields: {
-      edge_table: snakeCase(`friends_table`),
+      edge_table: toDBColumnOrTable(`friends_table`),
       symmetric_edge: true,
       inverse_edge_type: null,
       edge_type: "friends",

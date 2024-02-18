@@ -5,10 +5,10 @@ import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 import { loadConfig } from "../../core/config";
 import * as fs from "fs";
 import { ConstraintType, DBType, Field, getFields } from "../../schema";
-import { snakeCase } from "snake-case";
 import { BuilderSchema, getTableName } from "../builder";
 import { Ent } from "../../core/base";
 import { testEdgeGlobalSchema } from "../test_edge_global_schema";
+import { toDBColumnOrTable } from "../../names/names";
 
 interface SchemaItem {
   name: string;
@@ -946,7 +946,7 @@ function storageKey(fieldName: string, f: Field): string {
     return f.storageKey;
   }
 
-  return snakeCase(fieldName);
+  return toDBColumnOrTable(fieldName);
 }
 
 function isSyncClient(client: Client): client is SyncClient {

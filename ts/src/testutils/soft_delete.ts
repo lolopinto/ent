@@ -18,7 +18,6 @@ import {
 } from "../testutils/builder";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
-import { snakeCase } from "snake-case";
 import DB, { Dialect } from "../core/db";
 import { ObjectLoaderFactory } from "../core/loaders";
 import { TestContext } from "../testutils/context/test_context";
