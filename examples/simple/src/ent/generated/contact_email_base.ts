@@ -41,7 +41,7 @@ export class ContactEmailBase
   readonly updatedAt: Date;
   readonly emailAddress: string;
   readonly label: ContactLabel;
-  readonly contactID: ID;
+  readonly contactId: ID;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
@@ -51,7 +51,7 @@ export class ContactEmailBase
     this.updatedAt = data.updated_at;
     this.emailAddress = data.email_address;
     this.label = convertContactLabel(data.label);
-    this.contactID = data.contact_id;
+    this.contactId = data.contact_id;
     // @ts-expect-error
     this.data = data;
   }
@@ -219,10 +219,10 @@ export class ContactEmailBase
   }
 
   async loadContact(): Promise<Contact | null> {
-    return loadEnt(this.viewer, this.contactID, Contact.loaderOptions());
+    return loadEnt(this.viewer, this.contactId, Contact.loaderOptions());
   }
 
   loadContactX(): Promise<Contact> {
-    return loadEntX(this.viewer, this.contactID, Contact.loaderOptions());
+    return loadEntX(this.viewer, this.contactId, Contact.loaderOptions());
   }
 }

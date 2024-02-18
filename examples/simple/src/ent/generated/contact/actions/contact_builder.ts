@@ -27,7 +27,7 @@ export interface ContactInput {
   phoneNumberIds?: ID[];
   firstName?: string;
   lastName?: string;
-  userID?: ID | Builder<User, ExampleViewerAlias>;
+  userId?: ID | Builder<User, ExampleViewerAlias>;
   attachments?: Attachment[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -107,10 +107,10 @@ export class ContactBuilder<
     return this.input;
   }
 
-  updateInput(input: Omit<ContactInput, "userID">) {
-    if (input.userID !== undefined) {
+  updateInput(input: Omit<ContactInput, "userId">) {
+    if (input.userId !== undefined) {
       throw new Error(
-        `userID cannot be passed to updateInput. use overrideUserID instead`,
+        `userId cannot be passed to updateInput. use overrideUserId instead`,
       );
     }
 
@@ -121,9 +121,9 @@ export class ContactBuilder<
     };
   }
 
-  // override immutable field `userID`
-  overrideUserID(val: ID | Builder<User, ExampleViewerAlias>) {
-    this.input.userID = val;
+  // override immutable field `userId`
+  overrideUserId(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.input.userId = val;
   }
 
   deleteInputKey(key: keyof ContactInput) {
@@ -209,7 +209,7 @@ export class ContactBuilder<
     addField("phone_number_ids", input.phoneNumberIds);
     addField("firstName", input.firstName);
     addField("lastName", input.lastName);
-    addField("userID", input.userID);
+    addField("userID", input.userId);
     addField("attachments", input.attachments);
     return result;
   }
@@ -278,16 +278,16 @@ export class ContactBuilder<
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
   getNewUserIDValue(): ID | Builder<User, ExampleViewerAlias> {
-    if (this.input.userID !== undefined) {
-      return this.input.userID;
+    if (this.input.userId !== undefined) {
+      return this.input.userId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `userID` since not in input and no existingEnt",
+        "no value to return for `userId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.userID;
+    return this.existingEnt.userId;
   }
 
   // get value of attachments. Retrieves it from the input if specified or takes it from existingEnt

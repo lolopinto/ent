@@ -23,7 +23,7 @@ interface customFileDeleteInput {
 }
 
 interface FileDeletePayload {
-  deletedFileID: string;
+  deletedFileId: string;
 }
 
 export const FileDeleteInputType = new GraphQLInputObjectType({
@@ -42,7 +42,7 @@ export const FileDeletePayloadType = new GraphQLObjectType({
     FileDeletePayload,
     RequestContext<ExampleViewerAlias>
   > => ({
-    deletedFileID: {
+    deletedFileId: {
       type: GraphQLID,
     },
   }),
@@ -70,6 +70,6 @@ export const FileDeleteType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedFileID: input.id };
+    return { deletedFileId: input.id };
   },
 };

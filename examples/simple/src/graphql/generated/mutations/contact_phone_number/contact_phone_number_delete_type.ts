@@ -23,7 +23,7 @@ interface customContactPhoneNumberDeleteInput {
 }
 
 interface ContactPhoneNumberDeletePayload {
-  deletedContactPhoneNumberID: string;
+  deletedContactPhoneNumberId: string;
 }
 
 export const ContactPhoneNumberDeleteInputType = new GraphQLInputObjectType({
@@ -42,7 +42,7 @@ export const ContactPhoneNumberDeletePayloadType = new GraphQLObjectType({
     ContactPhoneNumberDeletePayload,
     RequestContext<ExampleViewerAlias>
   > => ({
-    deletedContactPhoneNumberID: {
+    deletedContactPhoneNumberId: {
       type: GraphQLID,
     },
   }),
@@ -70,6 +70,6 @@ export const ContactPhoneNumberDeleteType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedContactPhoneNumberID: input.id };
+    return { deletedContactPhoneNumberId: input.id };
   },
 };

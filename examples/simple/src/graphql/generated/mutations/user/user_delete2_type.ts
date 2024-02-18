@@ -4,6 +4,7 @@
  */
 
 import {
+  GraphQLBoolean,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLID,
@@ -15,55 +16,54 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { Event } from "../../../../ent";
-import EventAddHostAction from "../../../../ent/event/actions/event_add_host_action";
-import { EventType } from "../../../resolvers";
+import DeleteUserAction2, {
+  DeleteUserInput2,
+} from "../../../../ent/user/actions/delete_user_action2";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
-interface customEventAddHostInput {
+interface customDeleteUserInput2 extends DeleteUserInput2 {
   id: string;
-  hostId: string;
 }
 
-interface EventAddHostPayload {
-  event: Event;
+interface DeleteUserInput2Payload {
+  deletedUserId: string;
 }
 
-export const EventAddHostInputType = new GraphQLInputObjectType({
-  name: "EventAddHostInput",
+export const DeleteUserInput2Type = new GraphQLInputObjectType({
+  name: "DeleteUserInput2",
   fields: (): GraphQLInputFieldConfigMap => ({
     id: {
-      description: "id of Event",
+      description: "id of User",
       type: new GraphQLNonNull(GraphQLID),
     },
-    hostId: {
-      type: new GraphQLNonNull(GraphQLID),
+    log: {
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
   }),
 });
 
-export const EventAddHostPayloadType = new GraphQLObjectType({
-  name: "EventAddHostPayload",
+export const DeleteUserInput2PayloadType = new GraphQLObjectType({
+  name: "DeleteUserInput2Payload",
   fields: (): GraphQLFieldConfigMap<
-    EventAddHostPayload,
+    DeleteUserInput2Payload,
     RequestContext<ExampleViewerAlias>
   > => ({
-    event: {
-      type: new GraphQLNonNull(EventType),
+    deletedUserId: {
+      type: GraphQLID,
     },
   }),
 });
 
-export const EventAddHostType: GraphQLFieldConfig<
+export const UserDelete2Type: GraphQLFieldConfig<
   undefined,
   RequestContext<ExampleViewerAlias>,
-  { [input: string]: customEventAddHostInput }
+  { [input: string]: customDeleteUserInput2 }
 > = {
-  type: new GraphQLNonNull(EventAddHostPayloadType),
+  type: new GraphQLNonNull(DeleteUserInput2PayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(EventAddHostInputType),
+      type: new GraphQLNonNull(DeleteUserInput2Type),
     },
   },
   resolve: async (
@@ -71,12 +71,14 @@ export const EventAddHostType: GraphQLFieldConfig<
     { input },
     context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
-  ): Promise<EventAddHostPayload> => {
-    const event = await EventAddHostAction.saveXFromID(
+  ): Promise<DeleteUserInput2Payload> => {
+    await DeleteUserAction2.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
-      mustDecodeIDFromGQLID(input.hostId),
+      {
+        log: input.log,
+      },
     );
-    return { event };
+    return { deletedUserId: input.id };
   },
 };
