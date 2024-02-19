@@ -454,8 +454,11 @@ func (f *Field) QueryFromEntName() string {
 	if !f.QueryFromEnt() {
 		return ""
 	}
-	ret, _ := base.TranslateIDSuffix(f.CamelCaseName())
-	return ret
+
+	// translate the name to "queryFromFoo" or "queryFromFooId"
+	// and remove the "Id" suffix
+	ret := names.ToTsFieldName("queryFrom", f.FieldName)
+	return strings.TrimSuffix(ret, "Id")
 }
 
 func (f *Field) Nullable() bool {
@@ -490,10 +493,6 @@ func (f *Field) TSPublicAPIName() string {
 	return names.ToTsFieldName(f.FieldName)
 }
 
-func (f *Field) CamelCaseName() string {
-	return names.ToClassType(f.FieldName)
-}
-
 func (f *Field) LoadFromName() string {
 	return names.ToTsFieldName("loadFrom", f.FieldName)
 }
@@ -503,7 +502,7 @@ func (f *Field) LoadFromNameX() string {
 }
 
 func (f *Field) LoadIDFromName() string {
-	return names.ToTsFieldName("loadIDFrom", f.FieldName)
+	return names.ToTsFieldName("loadIdFrom", f.FieldName)
 }
 
 func (f *Field) LoadRawDataFromName() string {

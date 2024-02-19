@@ -37,6 +37,17 @@ func TestToTsFieldName(t *testing.T) {
 		{[]string{"create", "Foo"}, "createFoo"},
 		{[]string{"timeInMs"}, "timeInMs"},
 		{[]string{"getNewTimeInMsValue"}, "getNewTimeInMsValue"},
+		{[]string{"getNew", "timeInMs", "Value"}, "getNewTimeInMsValue"},
+		{[]string{"getNew", "UserID", "Value"}, "getNewUserIdValue"},
+		{[]string{"getNew", "userID", "Value"}, "getNewUserIdValue"},
+		{[]string{"loadID", "From", "phoneNumber"}, "loadIdFromPhoneNumber"},
+		// this is sad which is why we break up the one above or do the one directly below
+		{[]string{"loadIDFrom", "phoneNumber"}, "loadIdfromPhoneNumber"},
+		{[]string{"loadIdFrom", "phoneNumber"}, "loadIdFromPhoneNumber"},
+		{[]string{"queryFrom", "phoneNumber"}, "queryFromPhoneNumber"},
+		{[]string{"queryFrom", "userID"}, "queryFromUserId"},
+		{[]string{"queryFrom", "user_id"}, "queryFromUserId"},
+		{[]string{"queryFrom", "userId"}, "queryFromUserId"},
 	}
 
 	for i, tt := range tests {

@@ -408,7 +408,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       }
     {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}
-      static queryFrom{{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
+      static {{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
         ent: {{useImport "Ent"}}<{{$viewerType}}>,
