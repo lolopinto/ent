@@ -114,11 +114,13 @@ test("create contact with explicit attachments", async () => {
         fileId: file.id,
         date: d,
         note: "test",
+        dupeFileId: file.id,
       },
       {
         fileId: file2.id,
         date: d,
         note: "test",
+        dupeFileId: file2.id,
       },
     ],
   });
@@ -131,11 +133,13 @@ test("create contact with explicit attachments", async () => {
       fileId: file.id,
       date: d.toISOString(),
       note: "test",
+      dupeFileId: file.id,
     },
     {
       fileId: file2.id,
       date: d.toISOString(),
       note: "test",
+      dupeFileId: file2.id,
     },
   ]);
 });
