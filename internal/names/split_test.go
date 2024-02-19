@@ -38,7 +38,12 @@ func TestSplit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			actual := splitCamelCase(tt.input)
-			assert.Equal(t, tt.output, actual)
+
+			cmp := make([]string, len(actual))
+			for i, v := range actual {
+				cmp[i] = v.entry
+			}
+			assert.Equal(t, tt.output, cmp)
 		})
 	}
 }

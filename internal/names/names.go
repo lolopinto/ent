@@ -16,15 +16,6 @@ import (
 
 // TODO need a better name for this
 
-func allUpper(s string) bool {
-	for _, r := range s {
-		if !unicode.IsUpper(r) {
-			return false
-		}
-	}
-	return true
-}
-
 func ToClassType(strs ...string) string {
 	// I think what I really want here is capitalize the first letter of each word
 	// instead of this
@@ -36,13 +27,12 @@ func ToClassType(strs ...string) string {
 			// TODO instead of doing all this. we should probably just keep developer's input as is
 			// and append suffixes to it as opposed to this
 			// would need to do a better job of keeping track of where it's from as opposed to this
-			if allUpper(v) {
-				sb.WriteString(v)
+			if v.class == upper {
+				sb.WriteString(v.entry)
 			} else {
-				sb.WriteString(strcase.ToCamel(v))
+				sb.WriteString(strcase.ToCamel(v.entry))
 			}
 		}
-		// sb.WriteString(strcase2.UpperCamelCase(s))
 	}
 	return sb.String()
 }
@@ -103,15 +93,20 @@ func ToDBColumn(strs ...string) string {
 		if len(split) > 2 {
 			last := split[len(split)-1]
 			next_last := split[len(split)-2]
-			if last == "s" && allUpper(next_last) {
+			if last.entry == "s" && next_last.class == upper {
 				// get the first n-2 words
-				split = split[:len(split)-2]
-				sb.WriteString((strcase.ToSnake(strings.Join(split, ""))))
+
+				var entries []string
+				for i := 0; i < len(split)-2; i++ {
+					entries = append(entries, split[i].entry)
+				}
+
+				sb.WriteString((strcase.ToSnake(strings.Join(entries, ""))))
 				sb.WriteString("_")
 
 				// combine the last two
-				sb.WriteString(strcase2.SnakeCase(next_last))
-				sb.WriteString(last)
+				sb.WriteString(strcase2.SnakeCase(next_last.entry))
+				sb.WriteString(last.entry)
 				continue
 			}
 		}
@@ -138,32 +133,63 @@ func ToGraphQLEnumName(s string) string {
 	return strings.ToUpper(ToDBColumn(s))
 }
 
+type caseType uint
+
+const (
+	lower caseType = iota
+	upper
+	digit
+	other
+	not_returned
+)
+
+type splitResult struct {
+	entry string
+	class caseType
+}
+
+type splitTempResult struct {
+	runes []rune
+	v     caseType
+}
+
 // lifted from https://github.com/fatih/camelcase/blob/master/camelcase.go
 // and https://github.com/fatih/camelcase/pull/4/files
-func splitCamelCase(s string) []string {
+func splitCamelCase(s string) []splitResult {
 	if !utf8.ValidString(s) {
-		return []string{s}
+		return []splitResult{
+			{
+				entry: s,
+				class: other,
+			},
+		}
 	}
-	entries := []string{}
-	var runes [][]rune
-	lastClass := 0
-	class := 0
+	// var runes []struct{[]rune, caseType} = []struct{[]rune, caseType}{}
+	var temp []splitTempResult
+	// lastClass := 0
+	// class := 0
+	var lastClass caseType = not_returned
+	var class caseType = not_returned
+
 	// split into fields based on class of unicode character
 	for _, r := range s {
 		switch true {
 		case unicode.IsLower(r):
-			class = 1
+			class = lower
 		case unicode.IsUpper(r):
-			class = 2
+			class = upper
 		case unicode.IsDigit(r):
-			class = 3
+			class = digit
 		default:
-			class = 4
+			class = other
 		}
 		if class == lastClass {
-			runes[len(runes)-1] = append(runes[len(runes)-1], r)
+			temp[len(temp)-1].runes = append(temp[len(temp)-1].runes, r)
 		} else {
-			runes = append(runes, []rune{r})
+			temp = append(temp, splitTempResult{
+				runes: []rune{r},
+				v:     class,
+			})
 		}
 		lastClass = class
 	}
@@ -176,21 +202,31 @@ func splitCamelCase(s string) []string {
 	// handle upper case -> lower case, number --> lower case sequences, e.g.
 	// "PDFL", "oader" -> "PDF", "Loader"
 	// "192", "nd" -> "192nd", ""
-	for i := 0; i < len(runes)-1; i++ {
-		if unicode.IsUpper(runes[i][0]) && unicode.IsLower(runes[i+1][0]) && !isPlural(runes[i], runes[i+1]) {
-			runes[i+1] = append([]rune{runes[i][len(runes[i])-1]}, runes[i+1]...)
-			runes[i] = runes[i][:len(runes[i])-1]
-		} else if unicode.IsDigit(runes[i][0]) && unicode.IsLower(runes[i+1][0]) {
-			runes[i] = append(runes[i], runes[i+1]...)
-			runes[i+1] = nil
+	for i := 0; i < len(temp)-1; i++ {
+		if unicode.IsUpper(temp[i].runes[0]) && unicode.IsLower(temp[i+1].runes[0]) && !isPlural(temp[i].runes, temp[i+1].runes) {
+			temp[i+1].runes = append([]rune{temp[i].runes[len(temp[i].runes)-1]}, temp[i+1].runes...)
+			temp[i].runes = temp[i].runes[:len(temp[i].runes)-1]
+
+			temp[i+1].v = other
+		} else if unicode.IsDigit(temp[i].runes[0]) && unicode.IsLower(temp[i+1].runes[0]) {
+			temp[i].runes = append(temp[i].runes, temp[i+1].runes...)
+			temp[i+1].runes = nil
 			i++
+
+			temp[i].v = other
 		}
 	}
+
+	results := []splitResult{}
+
 	// construct []string from results
-	for _, s := range runes {
-		if len(s) > 0 {
-			entries = append(entries, string(s))
+	for _, s := range temp {
+		if len(s.runes) > 0 {
+			results = append(results, splitResult{
+				class: s.v,
+				entry: string(s.runes),
+			})
 		}
 	}
-	return entries
+	return results
 }
