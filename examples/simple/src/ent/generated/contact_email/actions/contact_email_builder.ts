@@ -239,7 +239,7 @@ export class ContactEmailBuilder<
   }
 
   // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewContactIDValue(): ID | Builder<Contact, ExampleViewerAlias> {
+  getNewContactIdValue(): ID | Builder<Contact, ExampleViewerAlias> {
     if (this.input.contactId !== undefined) {
       return this.input.contactId;
     }

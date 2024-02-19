@@ -21,7 +21,7 @@ export class ImportGuestResolver {
     args: [
       gqlContextType(),
       {
-        name: "eventID",
+        name: "eventId",
         type: GraphQLID,
       },
       {

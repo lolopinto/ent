@@ -277,7 +277,7 @@ export class ContactBuilder<
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewUserIDValue(): ID | Builder<User, ExampleViewerAlias> {
+  getNewUserIdValue(): ID | Builder<User, ExampleViewerAlias> {
     if (this.input.userId !== undefined) {
       return this.input.userId;
     }

@@ -37,7 +37,6 @@ func ToClassType(strs ...string) string {
 	return sb.String()
 }
 
-// TODO TranslateIDSuffix converted too
 func ToTsFieldName(strs ...string) string {
 	// use strcase to handle it for now?
 	// and then we can change it later if need be

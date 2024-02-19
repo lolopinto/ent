@@ -256,7 +256,7 @@ export class CommentBuilder<
   }
 
   // get value of AuthorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAuthorIDValue(): ID | Builder<User, ExampleViewerAlias> {
+  getNewAuthorIdValue(): ID | Builder<User, ExampleViewerAlias> {
     if (this.input.authorId !== undefined) {
       return this.input.authorId;
     }
@@ -284,7 +284,7 @@ export class CommentBuilder<
   }
 
   // get value of ArticleID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewArticleIDValue():
+  getNewArticleIdValue():
     | ID
     | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias> {
     if (this.input.articleId !== undefined) {
@@ -314,7 +314,7 @@ export class CommentBuilder<
   }
 
   // get value of AttachmentID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAttachmentIDValue():
+  getNewAttachmentIdValue():
     | ID
     | null
     | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias> {
@@ -335,7 +335,7 @@ export class CommentBuilder<
   }
 
   // get value of StickerID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewStickerIDValue():
+  getNewStickerIdValue():
     | ID
     | null
     | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias> {

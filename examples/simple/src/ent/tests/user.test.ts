@@ -652,10 +652,10 @@ test("loadFromEmailAddress", async () => {
   expect(mustJon.id).toBe(jon.id);
   expect(mustJon).toBeInstanceOf(User);
 
-  const rawID = await User.loadIDFromEmailAddress(emailAddress);
+  const rawID = await User.loadIdFromEmailAddress(emailAddress);
   expect(rawID).toBe(jon.id);
 
-  const rando = await User.loadIDFromEmailAddress(randomEmail());
+  const rando = await User.loadIdFromEmailAddress(randomEmail());
   expect(rando).toBe(undefined);
 });
 

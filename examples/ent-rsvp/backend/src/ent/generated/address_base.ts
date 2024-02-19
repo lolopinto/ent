@@ -223,7 +223,7 @@ export class AddressBase implements Ent<Viewer> {
     })) as T;
   }
 
-  static async loadIdfromOwnerId<T extends AddressBase>(
+  static async loadIdFromOwnerId<T extends AddressBase>(
     this: new (
       viewer: Viewer,
       data: Data,

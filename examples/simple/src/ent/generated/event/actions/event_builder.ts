@@ -457,7 +457,7 @@ export class EventBuilder<
   }
 
   // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreatorIDValue(): ID {
+  getNewCreatorIdValue(): ID {
     if (this.input.creatorId !== undefined) {
       return this.input.creatorId;
     }
@@ -508,7 +508,7 @@ export class EventBuilder<
   }
 
   // get value of addressID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAddressIDValue():
+  getNewAddressIdValue():
     | ID
     | null
     | Builder<Address, ExampleViewerAlias>

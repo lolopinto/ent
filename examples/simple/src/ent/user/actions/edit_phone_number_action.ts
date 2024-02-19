@@ -61,7 +61,7 @@ export default class EditPhoneNumberAction extends EditPhoneNumberActionBase {
       {
         // confirm email not being used
         async validate(builder: UserBuilder, input: EditPhoneNumberInput) {
-          const id = await User.loadIDFromPhoneNumber(input.newPhoneNumber);
+          const id = await User.loadIdFromPhoneNumber(input.newPhoneNumber);
           if (id) {
             throw new Error(
               `cannot change phoneNumber to ${input.newPhoneNumber}`,

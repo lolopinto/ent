@@ -111,13 +111,10 @@ func GetUniqueKeyName(tableName string, dbColNames ...string) string {
 }
 
 func TranslateIDSuffix(fieldName string) (string, bool) {
+	fieldName = names.ToTsFieldName(fieldName)
 	// TODO https://github.com/lolopinto/ent/issues/674
 	// TODO in GetFieldEdge in edge.go
-	if strings.HasSuffix(fieldName, "ID") {
-		return strings.TrimSuffix(fieldName, "ID"), true
-	} else if strings.HasSuffix(fieldName, "_id") {
-		return strings.TrimSuffix(fieldName, "_id"), true
-	} else if strings.HasSuffix(fieldName, "Id") {
+	if strings.HasSuffix(fieldName, "Id") {
 		return strings.TrimSuffix(fieldName, "Id"), true
 	}
 	return fieldName, false

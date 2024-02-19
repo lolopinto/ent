@@ -546,7 +546,7 @@ type Mutation {
   guestGroupCreate(input: GuestGroupCreateInput!): GuestGroupCreatePayload!
   guestGroupDelete(input: GuestGroupDeleteInput!): GuestGroupDeletePayload!
   guestGroupEdit(input: GuestGroupEditInput!): GuestGroupEditPayload!
-  importGuests(eventID: ID!, file: Upload!): Event!
+  importGuests(eventId: ID!, file: Upload!): Event!
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
 

@@ -220,7 +220,7 @@ export class EventBase implements Ent<Viewer> {
     })) as T;
   }
 
-  static async loadIdfromSlug<T extends EventBase>(
+  static async loadIdFromSlug<T extends EventBase>(
     this: new (
       viewer: Viewer,
       data: Data,

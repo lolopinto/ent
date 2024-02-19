@@ -216,7 +216,7 @@ export class AuthCodeBase implements Ent<Viewer> {
     })) as T;
   }
 
-  static async loadIdfromGuestId<T extends AuthCodeBase>(
+  static async loadIdFromGuestId<T extends AuthCodeBase>(
     this: new (
       viewer: Viewer,
       data: Data,

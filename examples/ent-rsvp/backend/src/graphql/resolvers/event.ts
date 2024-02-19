@@ -18,7 +18,7 @@ export class EventResolver {
   })
   async emailAvailable(slug: string) {
     // TODO add context here...
-    const id = await Event.loadIdfromSlug(slug);
+    const id = await Event.loadIdFromSlug(slug);
     return id === undefined;
   }
 

@@ -79,7 +79,7 @@ export class AuthResolver {
       throw new Error("could not find field EmailAddress for User");
     }
     const val = f.format(email);
-    const id = await User.loadIdfromEmailAddress(val);
+    const id = await User.loadIdFromEmailAddress(val);
     return id === undefined;
   }
 
