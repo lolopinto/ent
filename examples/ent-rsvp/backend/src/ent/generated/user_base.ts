@@ -216,7 +216,7 @@ export class UserBase implements Ent<Viewer> {
     })) as T;
   }
 
-  static async loadIDFromEmailAddress<T extends UserBase>(
+  static async loadIdfromEmailAddress<T extends UserBase>(
     this: new (
       viewer: Viewer,
       data: Data,

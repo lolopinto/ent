@@ -13,7 +13,7 @@ import { EventType } from "src/graphql/resolvers/";
 import { ImportGuestResolver } from "../../mutations/import_guests";
 
 interface ImportGuestsArgs {
-  eventId: any;
+  eventID: any;
   file: any;
 }
 
@@ -24,7 +24,7 @@ export const ImportGuestsType: GraphQLFieldConfig<
 > = {
   type: new GraphQLNonNull(EventType),
   args: {
-    eventId: {
+    eventID: {
       description: "",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -42,7 +42,7 @@ export const ImportGuestsType: GraphQLFieldConfig<
     const r = new ImportGuestResolver();
     return r.importGuests(
       context,
-      mustDecodeIDFromGQLID(args.eventId),
+      mustDecodeIDFromGQLID(args.eventID),
       args.file,
     );
   },

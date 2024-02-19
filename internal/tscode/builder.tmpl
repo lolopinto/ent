@@ -303,11 +303,11 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
     {{ if $field.Private $cfg -}}
       {{/** hmm not ideal for these accessors to not work...*/ -}}
-      getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} | undefined{
+      {{$field.GetNewFieldValueName}}(): {{$field.TsBuilderUnionType $cfg}} | undefined{
         return this.input.{{$tsFieldName}};
       }
     {{ else -}}
-      getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} {
+      {{$field.GetNewFieldValueName}}(): {{$field.TsBuilderUnionType $cfg}} {
         if (this.input.{{$tsFieldName}} !== undefined) {
           return this.input.{{$tsFieldName}}
         }

@@ -494,6 +494,26 @@ func (f *Field) CamelCaseName() string {
 	return names.ToClassType(f.FieldName)
 }
 
+func (f *Field) LoadFromName() string {
+	return names.ToTsFieldName("loadFrom", f.FieldName)
+}
+
+func (f *Field) LoadFromNameX() string {
+	return names.ToTsFieldName("loadFrom", f.FieldName, "X")
+}
+
+func (f *Field) LoadIDFromName() string {
+	return names.ToTsFieldName("loadIDFrom", f.FieldName)
+}
+
+func (f *Field) LoadRawDataFromName() string {
+	return names.ToTsFieldName("loadRawDataFrom", f.FieldName)
+}
+
+func (f *Field) GetNewFieldValueName() string {
+	return names.ToTsFieldName("getNew", f.FieldName, "Value")
+}
+
 func (f *Field) TsType() string {
 	if f.tsFieldType != nil {
 		return f.tsFieldType.GetTSType()

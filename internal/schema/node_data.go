@@ -795,11 +795,11 @@ func (nodeData *NodeData) GetExtraCustomQueryInfo() *extraCustomQueryInfo {
 }
 
 func (nodeData *NodeData) GetFieldLoaderName(field *field.Field) string {
-	return fmt.Sprintf("%s%sLoader", nodeData.NodeInstance, field.CamelCaseName())
+	return names.ToTsFieldName(nodeData.NodeInstance, field.FieldName, "Loader")
 }
 
 func (nodeData *NodeData) GetFieldLoaderNoTransformName(field *field.Field) string {
-	return fmt.Sprintf("%s%sNoTransformLoader", nodeData.NodeInstance, field.CamelCaseName())
+	return names.ToTsFieldName(nodeData.NodeInstance, field.FieldName, "NoTransformLoader")
 }
 
 func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) {
