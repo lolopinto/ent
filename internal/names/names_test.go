@@ -35,6 +35,8 @@ func TestToTsFieldName(t *testing.T) {
 		{[]string{"first_name"}, "firstName"},
 		{[]string{"FirstName"}, "firstName"},
 		{[]string{"create", "Foo"}, "createFoo"},
+		{[]string{"timeInMs"}, "timeInMs"},
+		{[]string{"getNewTimeInMsValue"}, "getNewTimeInMsValue"},
 	}
 
 	for i, tt := range tests {
@@ -77,8 +79,7 @@ func TestToDbColumn(t *testing.T) {
 		{[]string{"coverPhoto"}, "cover_photo"},
 		{[]string{"cover_photo2"}, "cover_photo2"},
 
-		// TODO foo2 etc should be foo_2 or foo2?
-		// this could be dependent on above case for edge names
+		{[]string{"timeInMs"}, "time_in_ms"},
 	}
 
 	for _, tt := range tests {
@@ -113,6 +114,8 @@ func TestToClassType(t *testing.T) {
 		{[]string{"Create", "Foo", "Action"}, "CreateFooAction"},
 		{[]string{"create", "foo", "action"}, "CreateFooAction"},
 		{[]string{"UserAuthJWTInputType"}, "UserAuthJWTInputType"},
+		{[]string{"timeInMs"}, "TimeInMs"},
+		{[]string{"timeInMs", "Type"}, "TimeInMsType"},
 	}
 
 	for i, tt := range tests {

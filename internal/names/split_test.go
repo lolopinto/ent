@@ -32,6 +32,7 @@ func TestSplit(t *testing.T) {
 		{"BadUTF8\xe2\xe2\xa1", []string{"BadUTF8\xe2\xe2\xa1"}},
 		{"192ndDay", []string{"192nd", "Day"}},
 		{"userIDs", []string{"user", "ID", "s"}},
+		{"Ms", []string{"Ms"}},
 	}
 
 	for _, tt := range tests {

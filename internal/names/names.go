@@ -169,15 +169,15 @@ func splitCamelCase(s string) []string {
 	}
 
 	// this is for handling the userIDs -> "user", "ID", "s" case
-	isPlural := func(v []rune) bool {
-		return len(v) == 1 && v[0] == 's'
+	isPlural := func(curr, next []rune) bool {
+		return len(curr) > 1 && len(next) == 1 && next[0] == 's'
 	}
 
 	// handle upper case -> lower case, number --> lower case sequences, e.g.
 	// "PDFL", "oader" -> "PDF", "Loader"
 	// "192", "nd" -> "192nd", ""
 	for i := 0; i < len(runes)-1; i++ {
-		if unicode.IsUpper(runes[i][0]) && unicode.IsLower(runes[i+1][0]) && !isPlural(runes[i+1]) {
+		if unicode.IsUpper(runes[i][0]) && unicode.IsLower(runes[i+1][0]) && !isPlural(runes[i], runes[i+1]) {
 			runes[i+1] = append([]rune{runes[i][len(runes[i])-1]}, runes[i+1]...)
 			runes[i] = runes[i][:len(runes[i])-1]
 		} else if unicode.IsDigit(runes[i][0]) && unicode.IsLower(runes[i+1][0]) {
