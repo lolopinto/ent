@@ -42,8 +42,6 @@ interface CustomViewer extends Viewer {
 export class DeletedAtPattern implements Pattern {
   name = "deleted_at";
   fields: FieldMap = {
-    // need this to be lowerCamelCase because we do this based on field name
-    // #510
     deletedAt: TimestampType({
       nullable: true,
       index: true,
@@ -108,8 +106,6 @@ export class DeletedAtSnakeCasePattern implements Pattern {
 export class DeletedAtPatternWithExtraWrites implements Pattern {
   name = "deleted_at";
   fields: FieldMap = {
-    // need this to be lowerCamelCase because we do this based on field name
-    // #510
     deletedAt: TimestampType({
       nullable: true,
       index: true,
