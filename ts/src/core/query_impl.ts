@@ -68,10 +68,20 @@ export function getJoinInfo(
 
 export function buildQuery(options: QueryableDataOptions): string {
   const fieldsAlias = options.fieldsAlias ?? options.alias;
-  const fields =
-    fieldsAlias && !options.disableFieldsAlias
-      ? options.fields.map((f) => `${fieldsAlias}.${f}`).join(", ")
-      : options.fields.join(", ");
+  const fields = options.fields
+    .map((f) => {
+      if (typeof f === "object") {
+        if (!options.disableFieldsAlias) {
+          return `${f.alias}.${f.column}`;
+        }
+        return f.column;
+      }
+      if (fieldsAlias && !options.disableFieldsAlias) {
+        return `${fieldsAlias}.${f}`;
+      }
+      return f;
+    })
+    .join(", ");
 
   // always start at 1
   const parts: string[] = [];

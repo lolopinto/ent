@@ -1,8 +1,8 @@
-import { Viewer, Data, Loader, LoaderWithLoadMany, QueryOptions } from "./base";
 import { IncomingMessage, ServerResponse } from "http";
+import { Data, Loader, LoaderWithLoadMany, QueryOptions, Viewer } from "./base";
 
-import { log } from "./logger";
 import { Context } from "./base";
+import { log } from "./logger";
 import { getJoinInfo, getOrderByPhrase } from "./query_impl";
 
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
@@ -57,7 +57,14 @@ export class ContextCache {
 
   private getkey(options: QueryOptions): string {
     let parts: string[] = [
-      options.fields.join(","),
+      options.fields
+        .map((f) => {
+          if (typeof f === "object") {
+            return `${f.alias}.${f.column}`;
+          }
+          return f;
+        })
+        .join(","),
       options.clause.instanceKey(),
     ];
     if (options.orderby) {

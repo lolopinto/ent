@@ -158,7 +158,13 @@ export interface DataOptions {
 
 export interface SelectBaseDataOptions extends DataOptions {
   // list of fields to read
-  fields: string[];
+  fields: (
+    | string
+    | {
+        alias: string;
+        column: string;
+      }
+  )[];
   // use this alias to alias the fields instead of the table name or table alias
   // takes precedence over tableName and alias
   fieldsAlias?: string;
