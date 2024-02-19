@@ -6,9 +6,12 @@ import { snakeCase } from "snake-case";
 
 export function toDBColumnOrTable(...strs: string[]): string {
   let name = "";
-  for (const s of strs) {
+  for (let i = 0; i < strs.length; i++) {
+    const s = strs[i];
     name += snakeCase(s);
-    name += "_";
+    if (i !== strs.length - 1) {
+      name += "_";
+    }
   }
   return name;
 }
