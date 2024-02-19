@@ -97,6 +97,25 @@ func ToDBColumn(strs ...string) string {
 		if s == "" {
 			continue
 		}
+
+		// this is to handle userIDs -> user_ids
+		split := splitCamelCase(s)
+		if len(split) > 2 {
+			last := split[len(split)-1]
+			next_last := split[len(split)-2]
+			if last == "s" && allUpper(next_last) {
+				// get the first n-2 words
+				split = split[:len(split)-2]
+				sb.WriteString((strcase.ToSnake(strings.Join(split, ""))))
+				sb.WriteString("_")
+
+				// combine the last two
+				sb.WriteString(strcase2.SnakeCase(next_last))
+				sb.WriteString(last)
+				continue
+			}
+		}
+
 		sb.WriteString(strcase2.SnakeCase(s))
 		// sb.WriteString(strcase.ToSnake(s))
 
@@ -148,11 +167,17 @@ func splitCamelCase(s string) []string {
 		}
 		lastClass = class
 	}
+
+	// this is for handling the userIDs -> "user", "ID", "s" case
+	isPlural := func(v []rune) bool {
+		return len(v) == 1 && v[0] == 's'
+	}
+
 	// handle upper case -> lower case, number --> lower case sequences, e.g.
 	// "PDFL", "oader" -> "PDF", "Loader"
 	// "192", "nd" -> "192nd", ""
 	for i := 0; i < len(runes)-1; i++ {
-		if unicode.IsUpper(runes[i][0]) && unicode.IsLower(runes[i+1][0]) {
+		if unicode.IsUpper(runes[i][0]) && unicode.IsLower(runes[i+1][0]) && !isPlural(runes[i+1]) {
 			runes[i+1] = append([]rune{runes[i][len(runes[i])-1]}, runes[i+1]...)
 			runes[i] = runes[i][:len(runes[i])-1]
 		} else if unicode.IsDigit(runes[i][0]) && unicode.IsLower(runes[i+1][0]) {

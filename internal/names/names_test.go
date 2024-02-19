@@ -29,6 +29,8 @@ func TestToTsFieldName(t *testing.T) {
 		{[]string{"userId"}, "userId"},
 		{[]string{"userIDs"}, "userIds"},
 		{[]string{"userIds"}, "userIds"},
+		{[]string{"user_ids"}, "userIds"},
+		{[]string{"user_id"}, "userId"},
 		{[]string{"firstName"}, "firstName"},
 		{[]string{"first_name"}, "firstName"},
 		{[]string{"FirstName"}, "firstName"},
@@ -56,10 +58,6 @@ func TestToDbColumn(t *testing.T) {
 		{[]string{"foo_bar", "baz"}, "foo_bar_baz"},
 		{[]string{"userID"}, "user_id"},
 		{[]string{"userId"}, "user_id"},
-		// TODO this is still broken
-		// TODO use splitCamelCase for this?
-		// if we have an "s" at the end + we have all caps before it
-		// then combine the last two words
 		{[]string{"userIDs"}, "user_ids"},
 		{[]string{"userIds"}, "user_ids"},
 		{[]string{"firstName"}, "first_name"},
@@ -68,6 +66,19 @@ func TestToDbColumn(t *testing.T) {
 
 		// second strcase handles this so using it for this case
 		{[]string{"event_rsvps", "id1", "edge_type", "id2", "pkey"}, "event_rsvps_id1_edge_type_id2_pkey"},
+
+		// this is a breaking change from the previous implementation
+		// fine with it because it's consistent with what JS does
+		// and is what I'd expect if writing this from scratch
+		{[]string{"new_col"}, "new_col"},
+		{[]string{"newCol"}, "new_col"},
+		{[]string{"new_col2"}, "new_col2"},
+		{[]string{"cover_photo"}, "cover_photo"},
+		{[]string{"coverPhoto"}, "cover_photo"},
+		{[]string{"cover_photo2"}, "cover_photo2"},
+
+		// TODO foo2 etc should be foo_2 or foo2?
+		// this could be dependent on above case for edge names
 	}
 
 	for _, tt := range tests {
