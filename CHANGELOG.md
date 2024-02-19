@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.26] - 2024-02-18
+
+### Added
+
+- Add an ability to specify field aliases on a per-field basis (#1753)
+
 ## [0.1.25] - 2024-02-11
 
 ### Added
