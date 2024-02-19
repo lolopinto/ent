@@ -249,7 +249,7 @@ test("event rsvp status edit", async () => {
       schema,
       args: {
         id: encodeGQLID(event),
-        userID: encodeGQLID(user),
+        userId: encodeGQLID(user),
         rsvpStatus: "MAYBE",
       },
       viewer: user.viewer,
@@ -268,7 +268,7 @@ test("event rsvp status edit", async () => {
       schema,
       args: {
         id: encodeGQLID(event),
-        userID: encodeGQLID(user),
+        userId: encodeGQLID(user),
       },
       viewer: user.viewer,
     },

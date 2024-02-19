@@ -78,7 +78,7 @@ test("edit authorId incorrectly", async () => {
     throw new Error(`should have thrown`);
   } catch (err) {
     expect((err as Error).message).toBe(
-      "authorId cannot be passed to updateInput. use overrideauthorId instead",
+      "authorId cannot be passed to updateInput. use overrideAuthorId instead",
     );
   }
 });
