@@ -1,5 +1,5 @@
 import each from "jest-each";
-import { toFieldName, toDBColumnOrTable } from "./names";
+import { toFieldName, toDBColumnOrTable, _splitCamelCase } from "./names";
 
 each([
   ["ID", "id"],
@@ -9,7 +9,7 @@ each([
   ["foo_bar", "fooBar"],
   ["userID", "userId"],
   ["userId", "userId"],
-  // ["userIDs", "userIds"], // TODO this one is broken
+  ["userIDs", "userIds"],
   ["userIds", "userIds"],
   ["user_ids", "userIds"],
   ["user_id", "userId"],
@@ -34,7 +34,7 @@ each([
   ["foo_bar", "foo_bar"],
   ["userID", "user_id"],
   ["userId", "user_id"],
-  // ["userIDs", "user_ids"], // TODO this one is broken
+  ["userIDs", "user_ids"],
   ["userIds", "user_ids"],
   ["user_ids", "user_ids"],
   ["user_id", "user_id"],
@@ -49,4 +49,28 @@ each([
   ["cover_photo2", "cover_photo2"],
 ]).test("dbColumn", (input: string, expected: string) => {
   expect(toDBColumnOrTable(input)).toBe(expected);
+});
+
+each([
+  ["", []],
+  ["lowercase", ["lowercase"]],
+  ["Class", ["Class"]],
+  ["MyClass", ["My", "Class"]],
+  ["MyC", ["My", "C"]],
+  ["HTML", ["HTML"]],
+  ["PDFLoader", ["PDF", "Loader"]],
+  ["AString", ["A", "String"]],
+  ["SimpleXMLParser", ["Simple", "XML", "Parser"]],
+  ["vimRPCPlugin", ["vim", "RPC", "Plugin"]],
+  ["GL11Version", ["GL", "11", "Version"]],
+  ["99Bottles", ["99", "Bottles"]],
+  ["May5", ["May", "5"]],
+  ["BFG9000", ["BFG", "9000"]],
+  ["Two  spaces", ["Two", "  ", "spaces"]],
+  ["192ndDay", ["192nd", "Day"]],
+  ["userIDs", ["user", "ID", "s"]],
+  ["Ms", ["Ms"]],
+]).test("splitCameCase", (input: string, expected: string[]) => {
+  // doesn't handle or test the unicode cases
+  expect(_splitCamelCase(input).map((r) => r.s)).toEqual(expected);
 });
