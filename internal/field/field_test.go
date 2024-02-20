@@ -225,7 +225,7 @@ func TestForeignKey(t *testing.T) {
 		&Field{
 			FieldName:                "UserID",
 			dbName:                   "user_id",
-			graphQLName:              "userID", // probably not exposed to gql
+			graphQLName:              "userId", // probably not exposed to gql
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			fkey: &ForeignKeyInfo{
