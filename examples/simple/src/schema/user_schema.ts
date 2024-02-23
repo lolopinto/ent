@@ -113,8 +113,6 @@ const UserSchema = new EntSchema({
     preferredShift: EnumListType({
       nullable: true,
       values: ["morning", "afternoon", "evening", "graveyard"],
-      storageKey: "preferred_shift",
-      graphqlName: "preferredShift",
     }),
     // Date.now() is too big to store in int so have to use bigint. because of how big bigint could get, have to use BigInt instead of number
     timeInMs: BigIntegerType({
