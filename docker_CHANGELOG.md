@@ -9,6 +9,19 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.1] - 2024-02-22
+
+### Breaking
+
+- make generation of names (database columns, graphql names etc) more consistent (#1757). changes names for the following field types in schemas: 
+  * `userID` field -> `userId` GraphQL field and `userId` TypeScript variable instead of `userID`
+  * `foo2` field -> `foo2` database column instead of `foo_2` database column
+  * `userIDs` field -> `userIds` GraphQL field and `userIds` TypeScript variable instead of `userIDs`
+  * and a few other related changes
+  * the existing names can be kept by using `storageKey` and `graphqlName` in the schema files so that there doesn't have to be any production impact.
+  * standardizes on `Id` instead of `ID` so functions like `User.loadIDFromEmailAddress` become `User.loadIdFromEmailAddress`
+- changes generated files for patterns to make them more customizable (#1760)
+
 ## [0.1.17] - 2024-01-21
 
 ### Added
