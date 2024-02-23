@@ -18,7 +18,6 @@ import {
 } from "../testutils/builder";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
-import { snakeCase } from "snake-case";
 import DB, { Dialect } from "../core/db";
 import { ObjectLoaderFactory } from "../core/loaders";
 import { TestContext } from "../testutils/context/test_context";
@@ -31,13 +30,13 @@ import {
   TempDB,
 } from "../testutils/db/temp_db";
 import { convertDate } from "../core/convert";
-import { FieldMap } from "../schema";
 import { loadRawEdgeCountX } from "../core/ent";
 import {
   DeletedAtSnakeCasePattern,
   DeletedAtPattern,
   DeletedAtPatternWithExtraWrites,
 } from "../testutils/soft_delete";
+import { toDBColumnOrTable } from "../names/names";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 async function createEdges() {
@@ -45,7 +44,7 @@ async function createEdges() {
     await createRowForTest({
       tableName: "assoc_edge_config",
       fields: {
-        edge_table: `${snakeCase(edge)}_table`,
+        edge_table: toDBColumnOrTable(edge, "table"),
         symmetric_edge: edge == "symmetricEdge",
         inverse_edge_type: edge === "edge" ? "inverseEdge" : "edge",
         edge_type: edge,
@@ -117,7 +116,7 @@ const AccountSchema = new EntBuilderSchema(Account, {
 const getTables = () => {
   const tables: Table[] = [assoc_edge_config_table()];
   edges.map((edge) =>
-    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+    tables.push(assoc_edge_table(toDBColumnOrTable(edge, "table"))),
   );
 
   [UserSchema, ContactSchema, AccountSchema].map((s) =>

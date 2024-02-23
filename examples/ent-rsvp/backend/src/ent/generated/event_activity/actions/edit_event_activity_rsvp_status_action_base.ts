@@ -65,7 +65,7 @@ export function convertNullableEventActivityRsvpStatusInputList(
 
 export interface EditEventActivityRsvpStatusInput {
   rsvpStatus: EventActivityRsvpStatusInput;
-  guestID: ID;
+  guestId: ID;
   dietaryRestrictions?: string | null;
 }
 
@@ -173,7 +173,7 @@ export class EditEventActivityRsvpStatusActionBase
       this.builder.orchestrator,
       this.input.rsvpStatus,
       this.eventActivity.id,
-      this.input.guestID,
+      this.input.guestId,
       NodeType.Guest,
       this.eventActivity.getEventActivityRsvpStatusMap(),
     );

@@ -25,7 +25,7 @@ export interface TagInput {
   deletedAt?: Date | null;
   displayName?: string;
   canonicalName?: string;
-  ownerID?: ID | Builder<Account, Viewer>;
+  ownerId?: ID | Builder<Account, Viewer>;
   relatedTagIds?: ID[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -222,7 +222,7 @@ export class TagBuilder<
     addField("deleted_at", input.deletedAt);
     addField("DisplayName", input.displayName);
     addField("canonicalName", input.canonicalName);
-    addField("ownerID", input.ownerID);
+    addField("ownerID", input.ownerId);
     addField("relatedTagIds", input.relatedTagIds);
     return result;
   }
@@ -309,17 +309,17 @@ export class TagBuilder<
   }
 
   // get value of ownerID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOwnerIDValue(): ID | null | Builder<Account, Viewer> {
-    if (this.input.ownerID !== undefined) {
-      return this.input.ownerID;
+  getNewOwnerIdValue(): ID | null | Builder<Account, Viewer> {
+    if (this.input.ownerId !== undefined) {
+      return this.input.ownerId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `ownerID` since not in input and no existingEnt",
+        "no value to return for `ownerId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.ownerID;
+    return this.existingEnt.ownerId;
   }
 
   // get value of relatedTagIds. Retrieves it from the input if specified or takes it from existingEnt

@@ -18,9 +18,9 @@ export class EventActivity extends EventActivityBase {
     return {
       rules: [
         // if can't see event, can see activity
-        new DenyIfEntIsNotVisibleRule(this.eventID, Event.loaderOptions()),
+        new DenyIfEntIsNotVisibleRule(this.eventId, Event.loaderOptions()),
         // creator can see
-        new AllowIfEventCreatorRule(this.eventID),
+        new AllowIfEventCreatorRule(this.eventId),
         // can see if viewer guest group is invited to activity
         new DelayedResultRule(async (v, _ent) => {
           if (!this.viewer.viewerID) {
@@ -35,7 +35,7 @@ export class EventActivity extends EventActivityBase {
 
           return new AllowIfEdgeExistsRule(
             this.id,
-            g.guestGroupID,
+            g.guestGroupId,
             EdgeType.EventActivityToInvites,
           );
         }),
@@ -59,6 +59,6 @@ export class EventActivity extends EventActivityBase {
     async: true,
   })
   async address(): Promise<Address | null> {
-    return Address.loadFromOwnerID(this.viewer, this.id);
+    return Address.loadFromOwnerId(this.viewer, this.id);
   }
 }

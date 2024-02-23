@@ -167,10 +167,7 @@ class existsQueryClause<T extends Data, K = keyof T> extends queryClause<T, K> {
 }
 
 class isNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
-  constructor(
-    protected col: K,
-    protected overrideAlias?: string,
-  ) {}
+  constructor(protected col: K, protected overrideAlias?: string) {}
 
   clause(_idx: number, alias?: string): string {
     return `${renderCol(this.col, this.overrideAlias, alias)} IS NULL`;
@@ -486,10 +483,7 @@ export class notInClause<T extends Data, K = keyof T> extends inClause<T, K> {
 class compositeClause<T extends Data, K = keyof T> implements Clause<T, K> {
   compositeOp: string;
 
-  constructor(
-    private clauses: Clause<T, K>[],
-    private sep: string,
-  ) {
+  constructor(private clauses: Clause<T, K>[], private sep: string) {
     this.compositeOp = this.sep;
   }
 
@@ -778,7 +772,7 @@ export function Eq<T extends Data, K = keyof T>(
   overrideAlias?: string,
 ): Clause<T, K> {
   return new simpleClause<T, K>(col, value, "=", {
-    handleNull: new isNullClause(col),
+    handleNull: new isNullClause(col, overrideAlias),
     overrideAlias,
   });
 }
@@ -1244,7 +1238,7 @@ export function JSONKeyExists<T extends Data, K = keyof T>(
 ): Clause<T, K> {
   return new simpleClause(dbCol, val, "?", {
     // TODO ola: does isNullClause make sense here???
-    handleNull: new isNullClause(dbCol),
+    handleNull: new isNullClause(dbCol, overrideAlias),
     overrideAlias,
   });
 }
@@ -1404,7 +1398,7 @@ export function Add<T extends Data, K = keyof T>(
   overrideAlias?: string,
 ): Clause<T, K> {
   return new simpleClause(col, value, "+", {
-    handleNull: new isNullClause(col),
+    handleNull: new isNullClause(col, overrideAlias),
     overrideAlias,
   });
 }
@@ -1415,7 +1409,7 @@ export function Subtract<T extends Data, K = keyof T>(
   overrideAlias?: string,
 ): Clause<T, K> {
   return new simpleClause(col, value, "-", {
-    handleNull: new isNullClause(col),
+    handleNull: new isNullClause(col, overrideAlias),
     overrideAlias,
   });
 }
@@ -1426,7 +1420,7 @@ export function Multiply<T extends Data, K = keyof T>(
   overrideAlias?: string,
 ): Clause<T, K> {
   return new simpleClause(col, value, "*", {
-    handleNull: new isNullClause(col),
+    handleNull: new isNullClause(col, overrideAlias),
     overrideAlias,
   });
 }
@@ -1437,7 +1431,7 @@ export function Divide<T extends Data, K = keyof T>(
   overrideAlias?: string,
 ): Clause<T, K> {
   return new simpleClause(col, value, "/", {
-    handleNull: new isNullClause(col),
+    handleNull: new isNullClause(col, overrideAlias),
     overrideAlias,
   });
 }
@@ -1448,7 +1442,7 @@ export function Modulo<T extends Data, K = keyof T>(
   overrideAlias?: string,
 ): Clause<T, K> {
   return new simpleClause(col, value, "%", {
-    handleNull: new isNullClause(col),
+    handleNull: new isNullClause(col, overrideAlias),
     overrideAlias,
   });
 }

@@ -26,7 +26,7 @@ export interface ContactEmailInput {
   extra?: ContactInfo | null;
   emailAddress?: string;
   label?: ContactLabel;
-  contactID?: ID | Builder<Contact, ExampleViewerAlias>;
+  contactId?: ID | Builder<Contact, ExampleViewerAlias>;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -116,10 +116,10 @@ export class ContactEmailBuilder<
     return this.input;
   }
 
-  updateInput(input: Omit<ContactEmailInput, "contactID">) {
-    if (input.contactID !== undefined) {
+  updateInput(input: Omit<ContactEmailInput, "contactId">) {
+    if (input.contactId !== undefined) {
       throw new Error(
-        `contactID cannot be passed to updateInput. use overrideContactID instead`,
+        `contactId cannot be passed to updateInput. use overrideContactId instead`,
       );
     }
 
@@ -130,9 +130,9 @@ export class ContactEmailBuilder<
     };
   }
 
-  // override immutable field `contactID`
-  overrideContactID(val: ID | Builder<Contact, ExampleViewerAlias>) {
-    this.input.contactID = val;
+  // override immutable field `contactId`
+  overrideContactId(val: ID | Builder<Contact, ExampleViewerAlias>) {
+    this.input.contactId = val;
   }
 
   deleteInputKey(key: keyof ContactEmailInput) {
@@ -217,7 +217,7 @@ export class ContactEmailBuilder<
     addField("extra", input.extra);
     addField("emailAddress", input.emailAddress);
     addField("label", input.label);
-    addField("contactID", input.contactID);
+    addField("contactID", input.contactId);
     return result;
   }
 
@@ -265,16 +265,16 @@ export class ContactEmailBuilder<
   }
 
   // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewContactIDValue(): ID | Builder<Contact, ExampleViewerAlias> {
-    if (this.input.contactID !== undefined) {
-      return this.input.contactID;
+  getNewContactIdValue(): ID | Builder<Contact, ExampleViewerAlias> {
+    if (this.input.contactId !== undefined) {
+      return this.input.contactId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `contactID` since not in input and no existingEnt",
+        "no value to return for `contactId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.contactID;
+    return this.existingEnt.contactId;
   }
 }

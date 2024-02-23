@@ -12,7 +12,7 @@ export { GuestCreateInput };
 export default class CreateGuestAction extends CreateGuestActionBase {
   getPrivacyPolicy() {
     // only creator of event can create guest
-    return new AllowIfEventCreatorPrivacyPolicy(this.input.eventID);
+    return new AllowIfEventCreatorPrivacyPolicy(this.input.eventId);
   }
 
   getTriggers(): CreateGuestActionTriggers {
@@ -24,7 +24,7 @@ export default class CreateGuestAction extends CreateGuestActionBase {
           }
           return CreateAuthCodeAction.create(builder.viewer, {
             code: createNewCode(),
-            guestID: builder,
+            guestId: builder,
             emailAddress: input.emailAddress,
           }).changeset();
         },

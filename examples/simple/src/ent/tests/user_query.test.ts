@@ -94,13 +94,13 @@ test("chained queries", async () => {
   const [event, event2] = await Promise.all([
     CreateEventAction.create(loggedOutViewer, {
       name: "fun event",
-      creatorID: sam.id,
+      creatorId: sam.id,
       startTime: new Date(),
       location: "location",
     }).saveX(),
     CreateEventAction.create(loggedOutViewer, {
       name: "fun event 2",
-      creatorID: dany.id,
+      creatorId: dany.id,
       startTime: new Date(),
       location: "location 2",
     }).saveX(),

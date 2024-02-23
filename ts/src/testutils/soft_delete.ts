@@ -18,7 +18,6 @@ import {
 } from "../testutils/builder";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
-import { snakeCase } from "snake-case";
 import DB, { Dialect } from "../core/db";
 import { ObjectLoaderFactory } from "../core/loaders";
 import { TestContext } from "../testutils/context/test_context";
@@ -43,8 +42,6 @@ interface CustomViewer extends Viewer {
 export class DeletedAtPattern implements Pattern {
   name = "deleted_at";
   fields: FieldMap = {
-    // need this to be lowerCamelCase because we do this based on field name
-    // #510
     deletedAt: TimestampType({
       nullable: true,
       index: true,
@@ -109,8 +106,6 @@ export class DeletedAtSnakeCasePattern implements Pattern {
 export class DeletedAtPatternWithExtraWrites implements Pattern {
   name = "deleted_at";
   fields: FieldMap = {
-    // need this to be lowerCamelCase because we do this based on field name
-    // #510
     deletedAt: TimestampType({
       nullable: true,
       index: true,

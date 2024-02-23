@@ -33,7 +33,7 @@ enum AccountTodoStatus {
 
 type AccountCanViewerSee {
   phone_number: Boolean!
-  account_prefs_3: Boolean!
+  account_prefs3: Boolean!
   credits: Boolean!
 }
 
@@ -48,7 +48,7 @@ type Account implements Node {
   name: String!
   phone_number: String
   account_prefs: AccountPrefs
-  account_prefs_3: AccountPrefs
+  account_prefs3: AccountPrefs
   account_prefs_list: [AccountPrefs!]
   credits: Int
   country_infos: [CountryInfo!]
@@ -387,7 +387,7 @@ input CreateAccountInput {
   name: String!
   phone_number: String!
   account_prefs: AccountPrefsInput
-  account_prefs_3: AccountPrefsInput
+  account_prefs3: AccountPrefsInput
   account_prefs_list: [AccountPrefsInput!]
   credits: Int
   country_infos: [CountryInfoInput!]
@@ -464,7 +464,7 @@ input EditAccountInput {
   name: String
   phone_number: String
   account_prefs: AccountPrefsInput
-  account_prefs_3: AccountPrefsInput
+  account_prefs3: AccountPrefsInput
   account_prefs_list: [AccountPrefsInput!]
   country_infos: [CountryInfoInput!]
 }

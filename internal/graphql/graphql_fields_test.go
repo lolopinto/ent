@@ -6,6 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -86,7 +87,7 @@ func verifyFieldsOverlap(t *testing.T, action action.Action, cfg *fieldConfig) {
 		found := false
 		for _, line := range cfg.FunctionContents {
 			// not the best thing but just want to verify that we have foo: blah in the response
-			if strings.HasPrefix(line, f.FieldName) {
+			if strings.HasPrefix(line, names.ToTsFieldName(f.FieldName)) {
 				found = true
 				break
 			}

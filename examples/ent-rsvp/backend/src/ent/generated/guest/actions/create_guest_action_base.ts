@@ -23,9 +23,9 @@ import { GuestTag } from "src/ent/generated/types";
 export interface GuestCreateInput {
   addressId?: ID | null | Builder<Address, Viewer>;
   name: string;
-  eventID: ID | Builder<Event, Viewer>;
+  eventId: ID | Builder<Event, Viewer>;
   emailAddress?: string | null;
-  guestGroupID: ID | Builder<GuestGroup, Viewer>;
+  guestGroupId: ID | Builder<GuestGroup, Viewer>;
   title?: string | null;
   guestDataId?: ID | null | Builder<GuestData, Viewer>;
   tag?: GuestTag | null;

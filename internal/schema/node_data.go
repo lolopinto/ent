@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -15,6 +14,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -110,7 +110,7 @@ func (nodeData *NodeData) GetTableName() string {
 }
 
 func (nodeData *NodeData) GetGraphQLTypeName() string {
-	return fmt.Sprintf("%sType", strcase.ToCamel(nodeData.Node))
+	return names.ToClassType(nodeData.Node, "Type")
 }
 
 func (nodeData *NodeData) GetQuotedTableName() string {
@@ -495,7 +495,7 @@ func (nodeData *NodeData) BuilderEdges(s *Schema) []*edge.AssociationEdge {
 }
 
 func getImportPathForMixinBuilderFile(pattern *PatternInfo) string {
-	name := strcase.ToSnake(pattern.Name)
+	name := names.ToFilePathName(pattern.Name)
 	return fmt.Sprintf("src/ent/generated/mixins/%s/actions/%s_builder", name, name)
 }
 
@@ -795,11 +795,11 @@ func (nodeData *NodeData) GetExtraCustomQueryInfo() *extraCustomQueryInfo {
 }
 
 func (nodeData *NodeData) GetFieldLoaderName(field *field.Field) string {
-	return fmt.Sprintf("%s%sLoader", nodeData.NodeInstance, field.CamelCaseName())
+	return names.ToTsFieldName(nodeData.NodeInstance, field.FieldName, "Loader")
 }
 
 func (nodeData *NodeData) GetFieldLoaderNoTransformName(field *field.Field) string {
-	return fmt.Sprintf("%s%sNoTransformLoader", nodeData.NodeInstance, field.CamelCaseName())
+	return names.ToTsFieldName(nodeData.NodeInstance, field.FieldName, "NoTransformLoader")
 }
 
 func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) {
@@ -818,8 +818,7 @@ func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) 
 	}
 
 	fieldName, _ := base.TranslateIDSuffix(field.FieldName)
-	fieldName = strcase.ToCamel(fieldName)
-	return fmt.Sprintf("%sTo%sQuery", fieldName, strcase.ToCamel(inflection.Plural(nodeData.Node))), nil
+	return names.ToClassType(fieldName, "To", inflection.Plural(nodeData.Node), "Query"), nil
 }
 
 func (nodeData *NodeData) HasMixins() bool {

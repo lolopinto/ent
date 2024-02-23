@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -484,22 +484,22 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		return &enttype.ByteaType{}, nil
 
 	case StringEnum, Enum:
-		tsType := strcase.ToCamel(typ.Type)
-		graphqlType := strcase.ToCamel(typ.GraphQLType)
+		tsType := names.ToClassType(typ.Type)
+		graphqlType := names.ToClassType(typ.GraphQLType)
 		// if tsType and graphqlType not explicitly specified,add schema prefix to generated enums
 		// if globalenumtype, set it to that and we check for it...
 		if tsType == "" {
 			if typ.GlobalType != "" {
 				tsType = typ.GlobalType
 			} else {
-				tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+				tsType = names.ToClassType(nodeName, fieldName)
 			}
 		}
 		if graphqlType == "" {
 			if typ.GlobalType != "" {
 				graphqlType = typ.GlobalType
 			} else {
-				graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+				graphqlType = names.ToClassType(nodeName, fieldName)
 			}
 		}
 		if foreignKey != nil {
@@ -528,14 +528,14 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		}, nil
 
 	case IntEnum:
-		tsType := strcase.ToCamel(typ.Type)
-		graphqlType := strcase.ToCamel(typ.GraphQLType)
+		tsType := names.ToClassType(typ.Type)
+		graphqlType := names.ToClassType(typ.GraphQLType)
 		// if tsType and graphqlType not explicitly specified,add schema prefix to generated enums
 		if tsType == "" {
-			tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+			tsType = names.ToClassType(nodeName, fieldName)
 		}
 		if graphqlType == "" {
-			graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+			graphqlType = names.ToClassType(nodeName, fieldName)
 		}
 		if nullable {
 			return &enttype.NullableIntegerEnumType{
@@ -833,8 +833,8 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 		}
 		return &enttype.TimestampType{}, nil
 	case ActionTypeObject:
-		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(inflection.Singular(f.Name)))
-		gqlType := fmt.Sprintf("%s%s", strcase.ToCamel(inflection.Singular(f.Name)), strcase.ToCamel(inputName))
+		tsType := names.ToTsFieldName("custom", inflection.Singular(f.Name), "Input")
+		gqlType := names.ToClassType(inflection.Singular(f.Name), inputName)
 
 		if f.ActionName == "" {
 			return nil, fmt.Errorf("%s Object action only field requires an action name", f.Name)

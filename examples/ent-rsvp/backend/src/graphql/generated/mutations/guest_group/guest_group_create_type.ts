@@ -21,7 +21,7 @@ import CreateGuestGroupAction, {
 import { GuestGroupType, GuestTagType } from "src/graphql/resolvers/";
 
 interface customGuestGroupCreateInput extends GuestGroupCreateInput {
-  eventID: string;
+  eventId: string;
 }
 
 interface GuestGroupCreatePayload {
@@ -58,7 +58,7 @@ export const GuestGroupCreateInputType = new GraphQLInputObjectType({
     invitationName: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    eventID: {
+    eventId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     tag: {
@@ -104,7 +104,7 @@ export const GuestGroupCreateType: GraphQLFieldConfig<
       context.getViewer(),
       {
         invitationName: input.invitationName,
-        eventID: mustDecodeIDFromGQLID(input.eventID),
+        eventId: mustDecodeIDFromGQLID(input.eventId),
         tag: input.tag,
         guests: input.guests,
       },

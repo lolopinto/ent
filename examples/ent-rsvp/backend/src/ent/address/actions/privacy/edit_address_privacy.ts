@@ -15,7 +15,7 @@ export class EditAddressPrivacy implements PrivacyPolicy<Address> {
     new AllowIfSubPolicyAllowsRule({
       rules: [
         new AllowIfEventCreatorFromActivityRule(
-          this.builder.existingEnt!.ownerID,
+          this.builder.existingEnt!.ownerId,
         ),
         AlwaysDenyRule,
       ],

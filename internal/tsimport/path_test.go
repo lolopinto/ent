@@ -121,3 +121,7 @@ func (cfg *testCfg) GetAbsPathToRoot() string {
 func (cfg *testCfg) ShouldUseRelativePaths() bool {
 	return cfg.relPaths
 }
+
+func (cfg *testCfg) DebugMode() bool {
+	return false
+}

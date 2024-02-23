@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/tsent/cmd/generateschema"
 	"github.com/spf13/cobra"
 )
@@ -37,7 +37,7 @@ tsent generate schema User "account_status;string;serverDefault:DEACTIVATED emai
 			return err
 		}
 
-		schemaName := base.GetCamelName(args[0])
+		schemaName := names.ToClassType(args[0])
 
 		if schema.NameExists(schemaName) {
 			return fmt.Errorf("cannot generate a schema for since schema with name %s already exists", schemaName)

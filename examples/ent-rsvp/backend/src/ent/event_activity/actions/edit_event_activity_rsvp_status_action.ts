@@ -31,19 +31,19 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
         new DelayedResultRule(async (_v, _ent) => {
           const guest = await Guest.load(
             this.builder.viewer,
-            this.input.guestID,
+            this.input.guestId,
           );
           if (!guest) {
             return null;
           }
           return new DenyIfEdgeDoesNotExistRule(
             this.builder.existingEnt!.id,
-            guest.guestGroupID,
+            guest.guestGroupId,
             EdgeType.EventActivityToInvites,
           );
         }),
 
-        new AllowIfGuestInSameGuestGroupRule(this.input.guestID),
+        new AllowIfGuestInSameGuestGroupRule(this.input.guestId),
         AlwaysDenyRule,
       ],
     };
@@ -73,8 +73,8 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
                 throw new Error("edge should not be a builder");
               }
               const action = CreateGuestDataAction.create(builder.viewer, {
-                guestID: edge.id,
-                eventID: ent.eventID,
+                guestId: edge.id,
+                eventId: ent.eventId,
                 dietaryRestrictions: dietaryRestrictions,
               });
               builder.addAttendingID(edge.id, {

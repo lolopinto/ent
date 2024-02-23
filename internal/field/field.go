@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -127,12 +127,12 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 			// TODO come up with a better way of handling this
 			ret.graphQLName = "id"
 		} else {
-			ret.graphQLName = codegenapi.GraphQLName(cfg, ret.FieldName)
+			ret.graphQLName = names.ToGraphQLName(cfg, ret.FieldName)
 		}
 	}
 
 	if ret.dbName == "" {
-		ret.dbName = strcase.ToSnake(ret.FieldName)
+		ret.dbName = names.ToDBColumn(ret.FieldName)
 	}
 
 	if f.Type != nil {
@@ -218,7 +218,7 @@ func (f *Field) GetQuotedDBColName() string {
 }
 
 func (f *Field) GetImmutableOverrideFieldNameInBuilder() string {
-	return fmt.Sprintf("override%s", strcase.ToCamel(f.TsBuilderFieldName()))
+	return names.ToTsFieldName("override", f.TsBuilderFieldName())
 }
 
 // We're going from field -> edge to be consistent and
@@ -344,18 +344,8 @@ func (f *Field) HasAsyncAccessor(cfg codegenapi.Config) bool {
 	return f.fetchOnDemand || (f.hasFieldPrivacy && cfg.FieldPrivacyEvaluated() == codegenapi.OnDemand)
 }
 
-// GetFieldNameInStruct returns the name of the field in the struct definition
-// with capital letter for public fields. lowercase letter for package-private
-func (f *Field) GetFieldNameInStruct() string {
-	// private fields are package-private so we lowercase the name returned here
-	if f.private {
-		return strcase.ToLowerCamel(f.FieldName)
-	}
-	return f.FieldName
-}
-
 func (f *Field) InstanceFieldName() string {
-	return strcase.ToLowerCamel(f.FieldName)
+	return names.ToTsFieldName(f.FieldName)
 }
 
 func (f *Field) ExposeToActionsByDefault() bool {
@@ -464,8 +454,11 @@ func (f *Field) QueryFromEntName() string {
 	if !f.QueryFromEnt() {
 		return ""
 	}
-	ret, _ := base.TranslateIDSuffix(f.CamelCaseName())
-	return ret
+
+	// translate the name to "queryFromFoo" or "queryFromFooId"
+	// and remove the "Id" suffix
+	ret := names.ToTsFieldName("queryFrom", f.FieldName)
+	return strings.TrimSuffix(ret, "Id")
 }
 
 func (f *Field) Nullable() bool {
@@ -485,35 +478,39 @@ func (f *Field) DefaultValue() *string {
 }
 
 func (f *Field) TsFieldName(cfg codegenapi.Config) string {
-	// TODO need to solve these id issues generally
-	if f.FieldName == "ID" {
-		return "id"
-	}
 	if f.HasAsyncAccessor(cfg) {
-		return "_" + strcase.ToLowerCamel(f.FieldName)
+		return names.ToTsFieldName("_", f.FieldName)
 	}
-	return strcase.ToLowerCamel(f.FieldName)
+	return names.ToTsFieldName(f.FieldName)
 }
 
 func (f *Field) TsBuilderFieldName() string {
-	// TODO need to solve these id issues generally
-	if f.FieldName == "ID" {
-		return "id"
-	}
-	return strcase.ToLowerCamel(f.FieldName)
+	return names.ToTsFieldName(f.FieldName)
 }
 
 // either async function name or public field
 func (f *Field) TSPublicAPIName() string {
-	// TODO need to solve these id issues generally
-	if f.FieldName == "ID" {
-		return "id"
-	}
-	return strcase.ToLowerCamel(f.FieldName)
+	return names.ToTsFieldName(f.FieldName)
 }
 
-func (f *Field) CamelCaseName() string {
-	return strcase.ToCamel(f.FieldName)
+func (f *Field) LoadFromName() string {
+	return names.ToTsFieldName("loadFrom", f.FieldName)
+}
+
+func (f *Field) LoadFromNameX() string {
+	return names.ToTsFieldName("loadFrom", f.FieldName, "X")
+}
+
+func (f *Field) LoadIDFromName() string {
+	return names.ToTsFieldName("loadIdFrom", f.FieldName)
+}
+
+func (f *Field) LoadRawDataFromName() string {
+	return names.ToTsFieldName("loadRawDataFrom", f.FieldName)
+}
+
+func (f *Field) GetNewFieldValueName() string {
+	return names.ToTsFieldName("getNew", f.FieldName, "Value")
 }
 
 func (f *Field) TsType() string {

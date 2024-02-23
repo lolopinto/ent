@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -83,11 +84,15 @@ func (p *PatternInfo) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.ImportP
 }
 
 func (p *PatternInfo) GetMixinInterfaceName() string {
-	return fmt.Sprintf("I%s", strcase.ToCamel(p.Name))
+	return names.ToClassType("I", p.Name)
 }
 
 func (p *PatternInfo) GetMixinInterfaceBaseName() string {
-	return fmt.Sprintf("I%sBase", strcase.ToCamel(p.Name))
+	return names.ToClassType("I", p.Name, "Base")
+}
+
+func (p *PatternInfo) GetMixinWithInterfaceName() string {
+	return names.ToClassType("IEntWith", p.Name)
 }
 
 func (p *PatternInfo) HasBuilder() bool {
@@ -95,15 +100,15 @@ func (p *PatternInfo) HasBuilder() bool {
 }
 
 func (p *PatternInfo) GetBuilderName() string {
-	return fmt.Sprintf("%sBuilder", strcase.ToCamel(p.Name))
+	return names.ToClassType(p.Name, "Builder")
 }
 
 func (p *PatternInfo) GetBuilderInterfaceName() string {
-	return fmt.Sprintf("I%sBuilder", strcase.ToCamel(p.Name))
+	return names.ToClassType("I", p.Name, "Builder")
 }
 
 func (p *PatternInfo) GetMixinName() string {
-	return fmt.Sprintf("%sMixin", strcase.ToCamel(p.Name))
+	return names.ToClassType(p.Name, "Mixin")
 }
 
 func (p *PatternInfo) GetMixinBaseName() string {
@@ -111,7 +116,7 @@ func (p *PatternInfo) GetMixinBaseName() string {
 }
 
 func (p *PatternInfo) GetPatternMethod() string {
-	return fmt.Sprintf("is%s", strcase.ToCamel(p.Name))
+	return names.ToTsFieldName("is", p.Name)
 }
 
 func (p *PatternInfo) ForeignImport(imp string) bool {

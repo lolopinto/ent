@@ -59,7 +59,7 @@ const EventSchema = new EntSchema({
           new AllowIfViewerInboundEdgeExistsRule(
             EdgeType.UserToEventsAttending,
           ),
-          new AllowIfViewerIsRule("creatorID"),
+          new AllowIfViewerIsRule("creatorId"),
           AlwaysDenyRule,
         ],
       },
@@ -75,7 +75,7 @@ const EventSchema = new EntSchema({
   defaultActionPrivacy: {
     rules: [
       // @ts-ignore
-      new AllowIfViewerIsEntPropertyRule("creatorID"),
+      new AllowIfViewerIsEntPropertyRule("creatorId"),
       AlwaysDenyRule,
     ],
   },

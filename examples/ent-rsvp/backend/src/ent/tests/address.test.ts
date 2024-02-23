@@ -13,7 +13,7 @@ async function createAddress() {
     city: "San Francisco",
     state: "CA",
     zipCode: "91111",
-    ownerID: activiy.id,
+    ownerId: activiy.id,
     ownerType: activiy.nodeType,
   }).saveX();
   expect(address).toBeInstanceOf(Address);
@@ -28,7 +28,7 @@ test("create activity and address", async () => {
   const event = await createEvent();
   const activity = await CreateEventActivityAction.create(event.viewer, {
     name: "fun",
-    eventID: event.id,
+    eventId: event.id,
     startTime: new Date(),
     location: "fun location",
     address: {
@@ -38,7 +38,7 @@ test("create activity and address", async () => {
       zipCode: "91111",
     },
   }).saveX();
-  const address = await Address.loadFromOwnerID(event.viewer, activity.id);
+  const address = await Address.loadFromOwnerId(event.viewer, activity.id);
   expect(address).not.toBeNull();
   expect(address).toBeInstanceOf(Address);
 });

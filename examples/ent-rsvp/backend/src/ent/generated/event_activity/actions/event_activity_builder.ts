@@ -20,7 +20,7 @@ import schema from "src/schema/event_activity_schema";
 export interface EventActivityInput {
   addressId?: ID | null | Builder<Address, Viewer>;
   name?: string;
-  eventID?: ID | Builder<Event, Viewer>;
+  eventId?: ID | Builder<Event, Viewer>;
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
@@ -326,7 +326,7 @@ export class EventActivityBuilder<
       }
     }
     addField("Name", input.name);
-    addField("eventID", input.eventID);
+    addField("eventID", input.eventId);
     addField("StartTime", input.startTime);
     addField("EndTime", input.endTime);
     addField("Location", input.location);
@@ -365,17 +365,17 @@ export class EventActivityBuilder<
   }
 
   // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEventIDValue(): ID | Builder<Event, Viewer> {
-    if (this.input.eventID !== undefined) {
-      return this.input.eventID;
+  getNewEventIdValue(): ID | Builder<Event, Viewer> {
+    if (this.input.eventId !== undefined) {
+      return this.input.eventId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `eventID` since not in input and no existingEnt",
+        "no value to return for `eventId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.eventID;
+    return this.existingEnt.eventId;
   }
 
   // get value of StartTime. Retrieves it from the input if specified or takes it from existingEnt

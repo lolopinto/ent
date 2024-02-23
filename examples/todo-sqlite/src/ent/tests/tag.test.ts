@@ -61,9 +61,9 @@ describe("tag + todo", () => {
   test("add tag to todo", async () => {
     const account = await createAccount();
 
-    const todo1 = await createTodoForSelf({ creatorID: account.id });
+    const todo1 = await createTodoForSelf({ creatorId: account.id });
     const todo2 = await createTodoForSelf({
-      creatorID: account.id,
+      creatorId: account.id,
       text: "remember to have fun",
     });
     const tag1 = await createTag("kids", account);
@@ -88,7 +88,7 @@ describe("tag + todo", () => {
   test("remove tag from todo", async () => {
     const account = await createAccount();
 
-    const todo = await createTodoForSelf({ creatorID: account.id });
+    const todo = await createTodoForSelf({ creatorId: account.id });
     const tag = await createTag("kids", account);
 
     await TodoAddTagAction.saveFromID(account.viewer, todo.id, tag.id);
@@ -106,7 +106,7 @@ describe("tag + todo", () => {
     const account = await createAccount();
 
     const todo = await createTodoForSelf({
-      creatorID: account.id,
+      creatorId: account.id,
       tags: [
         {
           displayName: "kids",

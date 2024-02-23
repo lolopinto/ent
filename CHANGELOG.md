@@ -9,6 +9,24 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.26] - 2024-02-18
+
+### Added
+
+- Add an ability to specify field aliases on a per-field basis (#1753)
+
+## [0.1.25] - 2024-02-11
+
+### Added
+
+- Forward overrideAlias to isNullClause (#1747)
+
+## [0.1.24] - 2024-02-08
+
+### Added
+
+- Add ability to remove alias from order by clause or to specify alias for order by (#1745)
+
 ## [0.1.23] - 2024-01-21
 
 ### Added

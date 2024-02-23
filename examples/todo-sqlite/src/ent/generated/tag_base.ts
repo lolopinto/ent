@@ -45,7 +45,7 @@ export class TagBase implements Ent<Viewer> {
   protected readonly deletedAt: Date | null;
   readonly displayName: string;
   readonly canonicalName: string;
-  readonly ownerID: ID | null;
+  readonly ownerId: ID | null;
   readonly relatedTagIds: ID[] | null;
 
   constructor(public viewer: Viewer, data: Data) {
@@ -55,7 +55,7 @@ export class TagBase implements Ent<Viewer> {
     this.deletedAt = convertNullableDate(data.deleted_at);
     this.displayName = data.display_name;
     this.canonicalName = data.canonical_name;
-    this.ownerID = data.owner_id;
+    this.ownerId = data.owner_id;
     this.relatedTagIds = convertNullableList(data.related_tag_ids);
     // @ts-expect-error
     this.data = data;
@@ -266,11 +266,11 @@ export class TagBase implements Ent<Viewer> {
   }
 
   async loadOwner(): Promise<Account | null> {
-    if (!this.ownerID) {
+    if (!this.ownerId) {
       return null;
     }
 
-    return loadEnt(this.viewer, this.ownerID, Account.loaderOptions());
+    return loadEnt(this.viewer, this.ownerId, Account.loaderOptions());
   }
 
   async loadRelatedTags(): Promise<Tag[] | null> {

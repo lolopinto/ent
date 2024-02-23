@@ -29,7 +29,7 @@ class NewAuthCode {
   changeset(builder: UserBuilder, input: EditEmailAddressInput) {
     return CreateAuthCodeAction.create(builder.viewer, {
       emailAddress: input.newEmail,
-      userID: builder.viewer.viewerID!,
+      userId: builder.viewer.viewerID!,
       code: this.getCode(),
     }).changeset();
   }
@@ -64,7 +64,7 @@ export default class EditEmailAddressAction extends EditEmailAddressActionBase {
       {
         // confirm email not being used
         async validate(builder: UserBuilder, input: EditEmailAddressInput) {
-          const id = await User.loadIDFromEmailAddress(input.newEmail);
+          const id = await User.loadIdFromEmailAddress(input.newEmail);
           if (id) {
             throw new Error(`cannot change email to ${input.newEmail}`);
           }

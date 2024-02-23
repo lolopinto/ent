@@ -28,7 +28,7 @@ test("bulk upload", async () => {
       schema: schema,
       mutation: "bulkUploadContact",
       args: {
-        userID: encodeGQLID(user),
+        userId: encodeGQLID(user),
         file: Buffer.from(csv),
       },
       disableInputWrapping: true,

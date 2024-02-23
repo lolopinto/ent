@@ -15,7 +15,7 @@ import { Event, EventToGuestGroupsQuery } from "src/ent";
 export default class CreateEventActivityAction extends CreateEventActivityActionBase {
   getPrivacyPolicy() {
     // only creator of event can create activity
-    return new AllowIfEventCreatorPrivacyPolicy(this.input.eventID, this.input);
+    return new AllowIfEventCreatorPrivacyPolicy(this.input.eventId, this.input);
   }
 
   getTriggers(): CreateEventActivityActionTriggers {
@@ -27,7 +27,7 @@ export default class CreateEventActivityAction extends CreateEventActivityAction
           }
           return CreateAddressAction.create(builder.viewer, {
             ...this.input.address,
-            ownerID: builder,
+            ownerId: builder,
             ownerType: NodeType.EventActivity,
           }).changeset();
         },
@@ -43,13 +43,13 @@ export default class CreateEventActivityAction extends CreateEventActivityAction
             return (v as Builder<Event, Viewer>).placeholderID !== undefined;
           };
 
-          if (isBuilder(input.eventID)) {
+          if (isBuilder(input.eventId)) {
             return;
           }
           // get all the existing ids and invite them
           const ids = await EventToGuestGroupsQuery.query(
             builder.viewer,
-            input.eventID,
+            input.eventId,
           )
             .first(10000)
             .queryIDs();

@@ -37,7 +37,7 @@ async function createContact(
     ],
     firstName: firstName,
     lastName: lastName,
-    userID: user.id,
+    userId: user.id,
     ...partial,
   }).saveX();
 }
@@ -50,7 +50,7 @@ async function createEvent(
 
   return CreateEventAction.create(loggedOutViewer, {
     name: "fun event",
-    creatorID: user.id,
+    creatorId: user.id,
     startTime: startTime,
     location: "location",
     ...partial,

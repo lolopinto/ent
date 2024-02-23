@@ -19,7 +19,7 @@ interface customAddressDeleteInput {
 }
 
 interface AddressDeletePayload {
-  deletedAddressID: string;
+  deletedAddressId: string;
 }
 
 export const AddressDeleteInputType = new GraphQLInputObjectType({
@@ -38,7 +38,7 @@ export const AddressDeletePayloadType = new GraphQLObjectType({
     AddressDeletePayload,
     RequestContext<Viewer>
   > => ({
-    deletedAddressID: {
+    deletedAddressId: {
       type: GraphQLID,
     },
   }),
@@ -66,6 +66,6 @@ export const AddressDeleteType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedAddressID: input.id };
+    return { deletedAddressId: input.id };
   },
 };
