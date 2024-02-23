@@ -30,7 +30,7 @@ async function createTodos(): Promise<[Account, Todo[]]> {
     // make deterministic
     advanceBy(-10);
     const todo = await createTodoForSelf({
-      creatorID: account.id,
+      creatorId: account.id,
       text: text,
     });
     todos.push(todo);

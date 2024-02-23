@@ -25,10 +25,10 @@ export interface TodoInput {
   deletedAt?: Date | null;
   text?: string;
   completed?: boolean;
-  creatorID?: ID | Builder<Account, Viewer>;
+  creatorId?: ID | Builder<Account, Viewer>;
   completedDate?: Date | null;
-  assigneeID?: ID | Builder<Account, Viewer>;
-  scopeID?: ID;
+  assigneeId?: ID | Builder<Account, Viewer>;
+  scopeId?: ID;
   scopeType?: string;
   bounty?: number | null;
   // allow other properties. useful for action-only fields
@@ -273,10 +273,10 @@ export class TodoBuilder<
     addField("deleted_at", input.deletedAt);
     addField("Text", input.text);
     addField("Completed", input.completed);
-    addField("creatorID", input.creatorID);
+    addField("creatorID", input.creatorId);
     addField("completedDate", input.completedDate);
-    addField("assigneeID", input.assigneeID);
-    addField("scopeID", input.scopeID);
+    addField("assigneeID", input.assigneeId);
+    addField("scopeID", input.scopeId);
     addField("scopeType", input.scopeType);
     addField("bounty", input.bounty);
     return result;
@@ -364,17 +364,17 @@ export class TodoBuilder<
   }
 
   // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreatorIDValue(): ID | Builder<Account, Viewer> {
-    if (this.input.creatorID !== undefined) {
-      return this.input.creatorID;
+  getNewCreatorIdValue(): ID | Builder<Account, Viewer> {
+    if (this.input.creatorId !== undefined) {
+      return this.input.creatorId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `creatorID` since not in input and no existingEnt",
+        "no value to return for `creatorId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.creatorID;
+    return this.existingEnt.creatorId;
   }
 
   // get value of completedDate. Retrieves it from the input if specified or takes it from existingEnt
@@ -387,31 +387,31 @@ export class TodoBuilder<
   }
 
   // get value of assigneeID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAssigneeIDValue(): ID | Builder<Account, Viewer> {
-    if (this.input.assigneeID !== undefined) {
-      return this.input.assigneeID;
+  getNewAssigneeIdValue(): ID | Builder<Account, Viewer> {
+    if (this.input.assigneeId !== undefined) {
+      return this.input.assigneeId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `assigneeID` since not in input and no existingEnt",
+        "no value to return for `assigneeId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.assigneeID;
+    return this.existingEnt.assigneeId;
   }
 
   // get value of scopeID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewScopeIDValue(): ID {
-    if (this.input.scopeID !== undefined) {
-      return this.input.scopeID;
+  getNewScopeIdValue(): ID {
+    if (this.input.scopeId !== undefined) {
+      return this.input.scopeId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `scopeID` since not in input and no existingEnt",
+        "no value to return for `scopeId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.scopeID;
+    return this.existingEnt.scopeId;
   }
 
   // get value of scopeType. Retrieves it from the input if specified or takes it from existingEnt

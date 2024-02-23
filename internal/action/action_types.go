@@ -53,9 +53,9 @@ func (action *createActionType) getDefaultActionName(cfg codegenapi.Config, node
 
 func (action *createActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string) string {
 	if nounVerb(cfg) {
-		return names.ToGraphQLName(cfg, nodeName, "Create")
+		return names.ToGraphQLNameIgnoreSettings(nodeName, "Create")
 	}
-	return names.ToGraphQLName(cfg, "create", nodeName)
+	return names.ToGraphQLNameIgnoreSettings("create", nodeName)
 }
 
 // CreateUserAction vs UserCreateInput is not consistent :(
@@ -109,9 +109,9 @@ func (action *editActionType) getDefaultActionName(cfg codegenapi.Config, nodeNa
 
 func (action *editActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string) string {
 	if nounVerb(cfg) {
-		return names.ToGraphQLName(cfg, nodeName, "Edit")
+		return names.ToGraphQLNameIgnoreSettings(nodeName, "Edit")
 	}
-	return names.ToGraphQLName(cfg, "edit", nodeName)
+	return names.ToGraphQLNameIgnoreSettings("edit", nodeName)
 }
 
 func (action *editActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string) string {
@@ -161,9 +161,9 @@ func (action *deleteActionType) getDefaultActionName(cfg codegenapi.Config, node
 
 func (action *deleteActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string) string {
 	if nounVerb(cfg) {
-		return names.ToGraphQLName(cfg, nodeName, "Delete")
+		return names.ToGraphQLNameIgnoreSettings(nodeName, "Delete")
 	}
-	return names.ToGraphQLName(cfg, "delete", nodeName)
+	return names.ToGraphQLNameIgnoreSettings("delete", nodeName)
 }
 
 func (action *deleteActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string) string {
@@ -225,10 +225,10 @@ func (action *addEdgeActionType) getDefaultActionName(cfg codegenapi.Config, nod
 func (action *addEdgeActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
 	if nounVerb(cfg) {
 		// eventAddInvitee
-		return names.ToGraphQLName(cfg, nodeName, "Add", edge.EdgeIdentifier())
+		return names.ToGraphQLNameIgnoreSettings(nodeName, "Add", edge.EdgeIdentifier())
 	}
 	// addEventInvite
-	return names.ToGraphQLName(cfg, "add", nodeName, edge.EdgeIdentifier())
+	return names.ToGraphQLNameIgnoreSettings("add", nodeName, edge.EdgeIdentifier())
 }
 
 func (action *addEdgeActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
@@ -268,9 +268,9 @@ func (action *removeEdgeActionType) getDefaultActionName(cfg codegenapi.Config, 
 func (action *removeEdgeActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
 	// do we need the node?
 	if nounVerb(cfg) {
-		return names.ToGraphQLName(cfg, nodeName, "Remove", edge.EdgeIdentifier())
+		return names.ToGraphQLNameIgnoreSettings(nodeName, "Remove", edge.EdgeIdentifier())
 	}
-	return names.ToGraphQLName(cfg, "remove", nodeName, edge.EdgeIdentifier())
+	return names.ToGraphQLNameIgnoreSettings("remove", nodeName, edge.EdgeIdentifier())
 }
 
 func (action *removeEdgeActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
@@ -313,9 +313,9 @@ func (action *groupEdgeActionType) getDefaultGraphQLInputName(cfg codegenapi.Con
 
 func (action *groupEdgeActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
 	if nounVerb(cfg) {
-		return names.ToGraphQLName(cfg, nodeName, edge.EdgeIdentifier(), "Edit")
+		return names.ToGraphQLNameIgnoreSettings(nodeName, edge.EdgeIdentifier(), "Edit")
 	}
-	return names.ToGraphQLName(cfg, edge.EdgeIdentifier(), nodeName, "Edit")
+	return names.ToGraphQLNameIgnoreSettings(edge.EdgeIdentifier(), nodeName, "Edit")
 }
 
 func (action *groupEdgeActionType) getAction(commonInfo commonActionInfo) Action {

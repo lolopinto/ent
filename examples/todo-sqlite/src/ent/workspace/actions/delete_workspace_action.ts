@@ -15,7 +15,7 @@ export class DeleteWorkspaceAction extends DeleteWorkspaceActionBase {
     Viewer<Ent<any> | null, ID | null>
   > {
     return {
-      rules: [new AllowIfViewerIsEntPropertyRule("creatorID"), AlwaysDenyRule],
+      rules: [new AllowIfViewerIsEntPropertyRule("creatorId"), AlwaysDenyRule],
     };
   }
 }

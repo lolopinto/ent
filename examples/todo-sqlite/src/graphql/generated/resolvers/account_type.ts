@@ -65,7 +65,7 @@ export const AccountType = new GraphQLObjectType({
         return obj.accountPrefs;
       },
     },
-    account_prefs_3: {
+    account_prefs3: {
       type: AccountPrefsType,
       resolve: (obj: Account, args: {}, context: RequestContext<Viewer>) => {
         return obj.accountPrefs3;
@@ -403,7 +403,7 @@ export const AccountCanViewerSeeType = new GraphQLObjectType({
         return obj.phoneNumber();
       },
     },
-    account_prefs_3: {
+    account_prefs3: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
         obj: AccountCanViewerSee,

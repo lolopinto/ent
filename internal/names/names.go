@@ -73,6 +73,14 @@ func ToGraphQLName(cfg codegenapi.Config, s ...string) string {
 	return ToDBColumn(s...)
 }
 
+func ToGraphQLNameIgnoreSettings(s ...string) string {
+	if len(s) == 1 && strings.ToLower(s[0]) == "id" {
+		return "id"
+	}
+	return ToTsFieldName(s...)
+
+}
+
 // ToDBColumn converts a string to a database column name
 func ToDBColumn(strs ...string) string {
 	var sb strings.Builder

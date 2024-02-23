@@ -18,7 +18,7 @@ export class CreateTodoAction extends CreateTodoActionBase {
     return [
       {
         changeset(builder, input) {
-          const scopeID = builder.getNewScopeIDValue();
+          const scopeID = builder.getNewScopeIdValue();
           builder.addTodoScopeID(
             scopeID,
             builder.getNewScopeTypeValue() as NodeType,
@@ -32,7 +32,7 @@ export class CreateTodoAction extends CreateTodoActionBase {
               input.tags.map(async (tagInput) => {
                 const action = CreateTagAction.create(builder.viewer, {
                   ...tagInput,
-                  ownerID: input.creatorID,
+                  ownerId: input.creatorId,
                 });
                 const tagId = await action.builder.getEntID();
                 builder.addTag(tagId);

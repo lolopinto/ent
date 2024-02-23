@@ -65,7 +65,7 @@ export function convertNullableAccountTodoStatusInputList(
 
 export interface EditAccountTodoStatusInput {
   todoStatus: AccountTodoStatusInput;
-  todoID: ID;
+  todoId: ID;
 }
 
 export type EditAccountTodoStatusActionTriggers = (
@@ -169,7 +169,7 @@ export class EditAccountTodoStatusActionBase
       this.builder.orchestrator,
       this.input.todoStatus,
       this.account.id,
-      this.input.todoID,
+      this.input.todoId,
       NodeType.Todo,
       this.account.getAccountTodoStatusMap(),
     );
