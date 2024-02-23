@@ -12,7 +12,7 @@ export class Workspace extends WorkspaceBase {
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
     return {
       rules: [
-        new AllowIfViewerIsEntPropertyRule("creatorID"),
+        new AllowIfViewerIsEntPropertyRule("creatorId"),
         new AllowIfViewerInboundEdgeExistsRule(EdgeType.AccountToWorkspaces),
         AlwaysDenyRule,
       ],

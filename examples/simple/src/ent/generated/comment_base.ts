@@ -39,26 +39,26 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly authorID: ID;
+  readonly authorId: ID;
   readonly body: string;
-  readonly articleID: ID;
+  readonly articleId: ID;
   readonly articleType: string;
-  readonly attachmentID: ID | null;
+  readonly attachmentId: ID | null;
   readonly attachmentType: string | null;
-  readonly stickerID: ID | null;
+  readonly stickerId: ID | null;
   readonly stickerType: string | null;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
-    this.authorID = data.author_id;
+    this.authorId = data.author_id;
     this.body = data.body;
-    this.articleID = data.article_id;
+    this.articleId = data.article_id;
     this.articleType = data.article_type;
-    this.attachmentID = data.attachment_id;
+    this.attachmentId = data.attachment_id;
     this.attachmentType = data.attachment_type;
-    this.stickerID = data.sticker_id;
+    this.stickerId = data.sticker_id;
     this.stickerType = data.sticker_type;
     // @ts-expect-error
     this.data = data;
@@ -260,7 +260,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     return loadEntByType(
       this.viewer,
       this.articleType as unknown as NodeType,
-      this.articleID,
+      this.articleId,
     );
   }
 
@@ -268,37 +268,37 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     return loadEntXByType(
       this.viewer,
       this.articleType as unknown as NodeType,
-      this.articleID,
+      this.articleId,
     );
   }
 
   async loadAttachment(): Promise<Ent | null> {
-    if (!this.attachmentID) {
+    if (!this.attachmentId) {
       return null;
     }
     return loadEntByType(
       this.viewer,
       this.attachmentType as unknown as NodeType,
-      this.attachmentID,
+      this.attachmentId,
     );
   }
 
   async loadAuthor(): Promise<User | null> {
-    return loadEnt(this.viewer, this.authorID, User.loaderOptions());
+    return loadEnt(this.viewer, this.authorId, User.loaderOptions());
   }
 
   loadAuthorX(): Promise<User> {
-    return loadEntX(this.viewer, this.authorID, User.loaderOptions());
+    return loadEntX(this.viewer, this.authorId, User.loaderOptions());
   }
 
   async loadSticker(): Promise<Ent | null> {
-    if (!this.stickerID) {
+    if (!this.stickerId) {
       return null;
     }
     return loadEntByType(
       this.viewer,
       this.stickerType as unknown as NodeType,
-      this.stickerID,
+      this.stickerId,
     );
   }
 }

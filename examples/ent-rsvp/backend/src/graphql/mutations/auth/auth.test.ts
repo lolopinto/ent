@@ -33,10 +33,10 @@ test("log guest in", async () => {
   const [_, guests] = await createAndInvitePlusGuests(0);
   const guest = guests[0];
 
-  const code = await AuthCode.loadFromGuestIDX(guest.viewer, guest.id);
+  const code = await AuthCode.loadFromGuestIdX(guest.viewer, guest.id);
 
   expect(code.emailAddress).toBe(guest.emailAddress);
-  expect(code.guestID).toBe(guest.id);
+  expect(code.guestId).toBe(guest.id);
 
   let jwtToken: string = "";
   let st: supertest.SuperTest<supertest.Test>;
@@ -92,10 +92,10 @@ test("incorrect guest credentials", async () => {
   const [_, guests] = await createAndInvitePlusGuests(0);
   const guest = guests[0];
 
-  const code = await AuthCode.loadFromGuestIDX(guest.viewer, guest.id);
+  const code = await AuthCode.loadFromGuestIdX(guest.viewer, guest.id);
 
   expect(code.emailAddress).toBe(guest.emailAddress);
-  expect(code.guestID).toBe(guest.id);
+  expect(code.guestId).toBe(guest.id);
 
   let st = await expectMutation(
     {

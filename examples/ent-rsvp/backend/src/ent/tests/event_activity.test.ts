@@ -38,7 +38,7 @@ describe("create event activity", () => {
         startTime: new Date(),
         location: "fun location",
         name: "welcome dinner",
-        eventID: event.id,
+        eventId: event.id,
       }).saveX();
       throw new Error("should have thrown");
     } catch (e) {
@@ -60,14 +60,14 @@ describe("create event activity", () => {
     const event = await createEvent();
     const group = await CreateGuestGroupAction.create(event.viewer, {
       invitationName: "people",
-      eventID: event.id,
+      eventId: event.id,
     }).saveX();
 
     const activity = await CreateEventActivityAction.create(event.viewer, {
       startTime: new Date(),
       location: "fun location",
       name: "welcome dinner",
-      eventID: event.id,
+      eventId: event.id,
       inviteAllGuests: true,
     }).saveX();
     expect(activity.inviteAllGuests).toEqual(true);
@@ -90,7 +90,7 @@ describe("create event activity", () => {
       apartment: "2",
       zipCode: "92323",
       city: "San Francisco",
-      ownerID: user.id,
+      ownerId: user.id,
       ownerType: user.nodeType,
     }).saveX();
 
@@ -138,7 +138,7 @@ describe("invites", () => {
     const event = await activity.loadEventX();
     const group = await CreateGuestGroupAction.create(event.viewer, {
       invitationName: "people",
-      eventID: event.id,
+      eventId: event.id,
     }).saveX();
 
     const user = await createUser();
@@ -165,7 +165,7 @@ describe("invites", () => {
     const event = await activity.loadEventX();
     const group = await CreateGuestGroupAction.create(event.viewer, {
       invitationName: "people",
-      eventID: event.id,
+      eventId: event.id,
     }).saveX();
 
     try {
@@ -226,7 +226,7 @@ describe("invites", () => {
     const event2 = await createEvent();
     const group2 = await CreateGuestGroupAction.create(event2.viewer, {
       invitationName: "people",
-      eventID: event2.id,
+      eventId: event2.id,
     }).saveX();
 
     try {
@@ -295,7 +295,7 @@ describe("rsvps", () => {
       vc,
       activity.id,
       {
-        guestID: guest.id,
+        guestId: guest.id,
         rsvpStatus: input,
         dietaryRestrictions: options?.dietaryRestrictions,
       },
@@ -362,7 +362,7 @@ describe("rsvps", () => {
       vc,
       activity.id,
       {
-        guestID: guest.id,
+        guestId: guest.id,
         rsvpStatus: input,
       },
     );
@@ -581,7 +581,7 @@ describe("rsvps", () => {
         new IDViewer(guest.id),
         activity.id,
         {
-          guestID: guest.id,
+          guestId: guest.id,
           rsvpStatus: EventActivityRsvpStatusInput.Attending,
         },
       );
@@ -598,7 +598,7 @@ describe("rsvps", () => {
 
     const group2 = await CreateGuestGroupAction.create(activity.viewer, {
       invitationName: "people",
-      eventID: activity.eventID,
+      eventId: activity.eventId,
     }).saveX();
     expect(guests.length).toBe(2);
     const guests2 = await createGuests(group2, 1);
@@ -611,7 +611,7 @@ describe("rsvps", () => {
         new IDViewer(guests2[0].id),
         activity.id,
         {
-          guestID: guest.id,
+          guestId: guest.id,
           rsvpStatus: EventActivityRsvpStatusInput.Attending,
         },
       );
@@ -632,7 +632,7 @@ describe("rsvps", () => {
       vc,
       activity,
       {
-        guestID: guest.id,
+        guestId: guest.id,
         rsvpStatus: EventActivityRsvpStatusInput.Attending,
       },
     ).saveX();
@@ -644,7 +644,7 @@ describe("rsvps", () => {
       vc,
       activity,
       {
-        guestID: guest.id,
+        guestId: guest.id,
         rsvpStatus: EventActivityRsvpStatusInput.Declined,
       },
     ).saveX();

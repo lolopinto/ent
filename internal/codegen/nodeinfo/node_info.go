@@ -3,8 +3,8 @@ package nodeinfo
 import (
 	"fmt"
 
-	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
+	"github.com/lolopinto/ent/internal/names"
 )
 
 // NodeInfo is a struct that's embedded by nodeTemplate and Edge
@@ -15,7 +15,6 @@ type NodeInfo struct {
 	NodeResult    string
 	NodesResult   string
 	NodeLoader    string
-	NewNodeLoader string
 	NodeInstance  string
 	NodesSlice    string
 	NodeType      string
@@ -27,7 +26,7 @@ type NodeInfo struct {
 // GetNodeInfo returns information about a Node for template generation
 func GetNodeInfo(packageName string) NodeInfo {
 	// convert from pacakgename to camel case
-	nodeName := strcase.ToCamel(packageName)
+	nodeName := names.ToClassType(packageName)
 
 	return NodeInfo{
 		Node:  nodeName,                    // Contact
@@ -37,16 +36,15 @@ func GetNodeInfo(packageName string) NodeInfo {
 		// TODO delete
 		NodesResult: fmt.Sprintf("%sResult", inflection.Plural(nodeName)), // ContactsResult
 		// TODO delete
-		NodeLoader:    fmt.Sprintf("%sLoader", strcase.ToLowerCamel((nodeName))), // contactLoader
-		NewNodeLoader: fmt.Sprintf("New%sLoader", strcase.ToCamel((nodeName))),   // NewContactLoader
-		NodeInstance:  strcase.ToLowerCamel(nodeName),                            // contact
+		NodeLoader:   names.ToTsFieldName(nodeName, "Loader"), // contactLoader
+		NodeInstance: names.ToTsFieldName(nodeName),           // contact
 		// TODO delete
 		NodesSlice: fmt.Sprintf("[]*%s", nodeName),  // []*Contact
 		NodeType:   fmt.Sprintf("%sType", nodeName), // ContactType
 		// TODO delete these
 		EntConfig:     fmt.Sprintf("&configs.%sConfig{}", nodeName), // &configs.ContactConfig{}
 		EntConfigName: fmt.Sprintf("%sConfig", nodeName),            // ContactConfig
-		PackageName:   strcase.ToSnake(packageName),
+		PackageName:   names.ToFilePathName(packageName),
 	}
 }
 

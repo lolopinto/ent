@@ -26,7 +26,7 @@ export interface AddressCreateInput {
   state: string;
   zipCode: string;
   apartment?: string | null;
-  ownerID: ID | Builder<Ent<Viewer>, Viewer>;
+  ownerId: ID | Builder<Ent<Viewer>, Viewer>;
   ownerType: string;
 }
 

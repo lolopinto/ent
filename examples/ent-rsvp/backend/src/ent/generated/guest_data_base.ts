@@ -37,8 +37,8 @@ export class GuestDataBase implements Ent<Viewer> {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly guestID: ID;
-  readonly eventID: ID;
+  readonly guestId: ID;
+  readonly eventId: ID;
   readonly dietaryRestrictions: string;
   readonly source: GuestDataSource | null;
 
@@ -46,8 +46,8 @@ export class GuestDataBase implements Ent<Viewer> {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
-    this.guestID = data.guest_id;
-    this.eventID = data.event_id;
+    this.guestId = data.guest_id;
+    this.eventId = data.event_id;
     this.dietaryRestrictions = data.dietary_restrictions;
     this.source = convertNullableGuestDataSource(data.source);
     // @ts-expect-error
@@ -217,18 +217,18 @@ export class GuestDataBase implements Ent<Viewer> {
   }
 
   async loadEvent(): Promise<Event | null> {
-    return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
+    return loadEnt(this.viewer, this.eventId, Event.loaderOptions());
   }
 
   loadEventX(): Promise<Event> {
-    return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
+    return loadEntX(this.viewer, this.eventId, Event.loaderOptions());
   }
 
   async loadGuest(): Promise<Guest | null> {
-    return loadEnt(this.viewer, this.guestID, Guest.loaderOptions());
+    return loadEnt(this.viewer, this.guestId, Guest.loaderOptions());
   }
 
   loadGuestX(): Promise<Guest> {
-    return loadEntX(this.viewer, this.guestID, Guest.loaderOptions());
+    return loadEntX(this.viewer, this.guestId, Guest.loaderOptions());
   }
 }

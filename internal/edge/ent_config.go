@@ -1,8 +1,6 @@
 package edge
 
-import (
-	"github.com/iancoleman/strcase"
-)
+import "github.com/lolopinto/ent/internal/names"
 
 // TODO kill this
 type EntConfigInfo struct {
@@ -12,7 +10,7 @@ type EntConfigInfo struct {
 
 // TODO kill
 func GetEntConfigFromName(packageName string) *EntConfigInfo {
-	name := strcase.ToCamel(packageName)
+	name := names.ToClassType(packageName)
 
 	return &EntConfigInfo{
 		PackageName: name,

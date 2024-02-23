@@ -18,8 +18,8 @@ import { GuestDataSource, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/guest_data_schema";
 
 export interface GuestDataInput {
-  guestID?: ID | Builder<Guest, Viewer>;
-  eventID?: ID | Builder<Event, Viewer>;
+  guestId?: ID | Builder<Guest, Viewer>;
+  eventId?: ID | Builder<Event, Viewer>;
   dietaryRestrictions?: string;
   source?: GuestDataSource | null;
   // allow other properties. useful for action-only fields
@@ -163,8 +163,8 @@ export class GuestDataBuilder<
         result.set(key, value);
       }
     };
-    addField("guestID", input.guestID);
-    addField("eventID", input.eventID);
+    addField("guestID", input.guestId);
+    addField("eventID", input.eventId);
     addField("dietaryRestrictions", input.dietaryRestrictions);
     addField("source", input.source);
     return result;
@@ -177,31 +177,31 @@ export class GuestDataBuilder<
   }
 
   // get value of guestID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewGuestIDValue(): ID | Builder<Guest, Viewer> {
-    if (this.input.guestID !== undefined) {
-      return this.input.guestID;
+  getNewGuestIdValue(): ID | Builder<Guest, Viewer> {
+    if (this.input.guestId !== undefined) {
+      return this.input.guestId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `guestID` since not in input and no existingEnt",
+        "no value to return for `guestId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.guestID;
+    return this.existingEnt.guestId;
   }
 
   // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEventIDValue(): ID | Builder<Event, Viewer> {
-    if (this.input.eventID !== undefined) {
-      return this.input.eventID;
+  getNewEventIdValue(): ID | Builder<Event, Viewer> {
+    if (this.input.eventId !== undefined) {
+      return this.input.eventId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `eventID` since not in input and no existingEnt",
+        "no value to return for `eventId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.eventID;
+    return this.existingEnt.eventId;
   }
 
   // get value of dietaryRestrictions. Retrieves it from the input if specified or takes it from existingEnt

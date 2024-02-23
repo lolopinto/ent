@@ -1,25 +1,18 @@
-import { Queryer, SyncQueryer } from "../core/db";
+import { Builder, WriteOperation } from "../action";
+import { Executor } from "../action/action";
 import {
-  Viewer,
-  Ent,
-  ID,
+  Context,
+  CreateRowOptions,
   Data,
   DataOptions,
   EditRowOptions,
+  Ent,
+  ID,
   LoadEntOptions,
-  Context,
-  CreateRowOptions,
+  Viewer,
 } from "../core/base";
-import { Executor } from "../action/action";
 import * as clause from "../core/clause";
-import { WriteOperation, Builder } from "../action";
-import { ObjectLoader } from "../core/loaders";
-import {
-  getStorageKey,
-  SQLStatementOperation,
-  TransformedEdgeUpdateOperation,
-} from "../schema/schema";
-import { __getGlobalSchema } from "../core/global_schema";
+import { Queryer, SyncQueryer } from "../core/db";
 import {
   AssocEdgeData,
   createRow,
@@ -32,7 +25,14 @@ import {
   logQuery,
   parameterizedQueryOptions,
 } from "../core/ent";
+import { __getGlobalSchema } from "../core/global_schema";
+import { ObjectLoader } from "../core/loaders";
 import { buildQuery } from "../core/query_impl";
+import {
+  SQLStatementOperation,
+  TransformedEdgeUpdateOperation,
+  getStorageKey,
+} from "../schema/schema";
 
 export interface UpdatedOperation<
   TEnt extends Ent<TViewer>,
@@ -329,7 +329,14 @@ export class EditNodeOperation<
 
   private getReturning() {
     if (this.options.loadEntOptions.fields.length) {
-      return `RETURNING ${this.options.loadEntOptions.fields.join(",")}`;
+      return `RETURNING ${this.options.loadEntOptions.fields
+        .map((f) => {
+          if (typeof f === "object") {
+            return `${f.alias}.${f.column}`;
+          }
+          return f;
+        })
+        .join(",")}`;
     }
     return `RETURNING *`;
   }

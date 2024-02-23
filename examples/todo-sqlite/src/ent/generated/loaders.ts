@@ -17,7 +17,7 @@ export interface AccountDBData {
   phone_number: string;
   account_state: AccountState | null;
   account_prefs: AccountPrefs | null;
-  account_prefs_3: AccountPrefs;
+  account_prefs3: AccountPrefs;
   account_prefs_list: AccountPrefs[] | null;
   credits: number;
   country_infos: CountryInfo[] | null;
@@ -33,7 +33,7 @@ const accountFields = [
   "phone_number",
   "account_state",
   "account_prefs",
-  "account_prefs_3",
+  "account_prefs3",
   "account_prefs_list",
   "credits",
   "country_infos",
@@ -107,7 +107,7 @@ export const accountLoaderInfo = {
       inputKey: "accountPrefs",
     },
     accountPrefs3: {
-      dbCol: "account_prefs_3",
+      dbCol: "account_prefs3",
       inputKey: "accountPrefs3",
     },
     accountPrefsList: {
@@ -200,7 +200,7 @@ export const tagLoaderInfo = {
     },
     ownerID: {
       dbCol: "owner_id",
-      inputKey: "ownerID",
+      inputKey: "ownerId",
     },
     relatedTagIds: {
       dbCol: "related_tag_ids",
@@ -286,7 +286,7 @@ export const todoLoaderInfo = {
     },
     creatorID: {
       dbCol: "creator_id",
-      inputKey: "creatorID",
+      inputKey: "creatorId",
     },
     completedDate: {
       dbCol: "completed_date",
@@ -294,11 +294,11 @@ export const todoLoaderInfo = {
     },
     assigneeID: {
       dbCol: "assignee_id",
-      inputKey: "assigneeID",
+      inputKey: "assigneeId",
     },
     scopeID: {
       dbCol: "scope_id",
-      inputKey: "scopeID",
+      inputKey: "scopeId",
     },
     scopeType: {
       dbCol: "scope_type",
@@ -392,11 +392,11 @@ export const workspaceLoaderInfo = {
     },
     creatorID: {
       dbCol: "creator_id",
-      inputKey: "creatorID",
+      inputKey: "creatorId",
     },
     viewerCreatorID: {
       dbCol: "viewer_creator_id",
-      inputKey: "viewerCreatorID",
+      inputKey: "viewerCreatorId",
     },
     slug: {
       dbCol: "slug",

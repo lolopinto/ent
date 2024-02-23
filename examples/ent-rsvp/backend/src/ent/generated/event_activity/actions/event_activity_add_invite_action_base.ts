@@ -162,9 +162,9 @@ export class EventActivityAddInviteActionBase
     ) => T,
     viewer: Viewer,
     id: ID,
-    inviteID: ID,
+    inviteId: ID,
   ): Promise<EventActivity> {
     const eventActivity = await EventActivity.loadX(viewer, id);
-    return new this(viewer, eventActivity).addInvite(inviteID).saveX();
+    return new this(viewer, eventActivity).addInvite(inviteId).saveX();
   }
 }

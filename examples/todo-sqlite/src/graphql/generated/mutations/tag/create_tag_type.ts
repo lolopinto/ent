@@ -85,7 +85,7 @@ export const CreateTagType: GraphQLFieldConfig<
   ): Promise<CreateTagPayload> => {
     const tag = await CreateTagAction.create(context.getViewer(), {
       displayName: input.display_name,
-      ownerID: input.owner_id,
+      ownerId: input.owner_id,
       relatedTagIds: input.related_tag_ids,
       canonicalName: input.canonical_name,
     }).saveX();

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/tsent/cmd/generateschema"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +30,7 @@ e.g. tsent generate enum_schema RequestStatus status open,pending,closed`,
 			return err
 		}
 
-		schemaName := base.GetCamelName(args[0])
+		schemaName := names.ToClassType(args[0])
 
 		if schema.NameExists(schemaName) {
 			return fmt.Errorf("cannot generate a schema for %s since schema with name already exists", schemaName)

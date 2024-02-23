@@ -21,7 +21,7 @@ export class ImportContactResolver {
     args: [
       gqlContextType(),
       {
-        name: "userID",
+        name: "userId",
         type: GraphQLID,
       },
       {
@@ -48,14 +48,14 @@ export class ImportContactResolver {
   })
   async bulkUploadContact(
     context: RequestContext<ExampleViewer>,
-    userID: ID,
+    userId: ID,
     file: Promise<FileUpload>,
     label?: ContactLabel,
     _label2?: ContactLabel2,
   ) {
     const file2 = await file;
 
-    const user = await User.loadX(context.getViewer(), userID);
+    const user = await User.loadX(context.getViewer(), userId);
     let actions: CreateContactAction[] = [];
 
     const parser = file2.createReadStream().pipe(
@@ -78,7 +78,7 @@ export class ImportContactResolver {
               label: label ?? ContactLabel.Default,
             },
           ],
-          userID: user.id,
+          userId: user.id,
         }),
       );
     }

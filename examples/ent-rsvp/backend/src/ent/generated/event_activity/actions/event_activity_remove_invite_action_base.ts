@@ -152,9 +152,9 @@ export class EventActivityRemoveInviteActionBase
     ) => T,
     viewer: Viewer,
     id: ID,
-    inviteID: ID,
+    inviteId: ID,
   ): Promise<EventActivity> {
     const eventActivity = await EventActivity.loadX(viewer, id);
-    return new this(viewer, eventActivity).removeInvite(inviteID).saveX();
+    return new this(viewer, eventActivity).removeInvite(inviteId).saveX();
   }
 }

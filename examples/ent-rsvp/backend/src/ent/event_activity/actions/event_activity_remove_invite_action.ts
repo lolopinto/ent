@@ -10,9 +10,9 @@ export default class EventActivityRemoveInviteAction extends EventActivityRemove
   getPrivacyPolicy() {
     return {
       rules: [
-        new DenyIfNotEventCreatorRule(this.builder.existingEnt!.eventID),
+        new DenyIfNotEventCreatorRule(this.builder.existingEnt!.eventId),
         new AllowIfGuestGroupPartOfEventRule(
-          this.builder.existingEnt!.eventID,
+          this.builder.existingEnt!.eventId,
           this.builder.getEdgeInputData(
             EdgeType.EventActivityToInvites,
             WriteOperation.Delete,

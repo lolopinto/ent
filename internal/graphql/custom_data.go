@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -295,7 +295,7 @@ type CustomField struct {
 func (cf CustomField) getArg() string {
 	if cf.hasCustomArgs() {
 		// interface has been generated for it
-		return strcase.ToCamel(cf.GraphQLName) + "Args"
+		return names.ToClassType(cf.GraphQLName, "Args")
 	}
 	return "{}"
 }

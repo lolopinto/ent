@@ -25,7 +25,7 @@ export interface EventEditInput {
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
-  addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
+  addressId?: ID | null | Builder<Address, ExampleViewerAlias>;
   coverPhoto?: Buffer | null;
   coverPhoto2?: Buffer | null;
   attachments?: Attachment[] | null;

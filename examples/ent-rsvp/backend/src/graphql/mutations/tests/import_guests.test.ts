@@ -18,7 +18,7 @@ test("bulk upload. required columns not provided", async () => {
       schema: schema,
       mutation: "importGuests",
       args: {
-        eventID: encodeGQLID(event),
+        eventId: encodeGQLID(event),
         file: Buffer.from(csv),
       },
       disableInputWrapping: true,
@@ -89,7 +89,7 @@ async function doTest(headers: guest[], gs: guestGroup[]) {
       schema: schema,
       mutation: "importGuests",
       args: {
-        eventID: encodeGQLID(event),
+        eventId: encodeGQLID(event),
         file: Buffer.from(csv),
       },
       disableInputWrapping: true,

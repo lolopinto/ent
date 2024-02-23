@@ -37,7 +37,7 @@ export const addressLoader = new ObjectLoaderFactory<AddressDBData>({
   key: "id",
 });
 
-export const addressOwnerIDLoader = new ObjectLoaderFactory<AddressDBData>({
+export const addressOwnerIdLoader = new ObjectLoaderFactory<AddressDBData>({
   tableName: addressTable,
   fields: addressFields,
   key: "owner_id",
@@ -83,7 +83,7 @@ export const addressLoaderInfo = {
     },
     OwnerID: {
       dbCol: "owner_id",
-      inputKey: "ownerID",
+      inputKey: "ownerId",
     },
     OwnerType: {
       dbCol: "owner_type",
@@ -92,8 +92,8 @@ export const addressLoaderInfo = {
   },
 };
 
-addressLoader.addToPrime(addressOwnerIDLoader);
-addressOwnerIDLoader.addToPrime(addressLoader);
+addressLoader.addToPrime(addressOwnerIdLoader);
+addressOwnerIdLoader.addToPrime(addressLoader);
 
 export interface AuthCodeDBData {
   id: ID;
@@ -122,7 +122,7 @@ export const authCodeLoader = new ObjectLoaderFactory<AuthCodeDBData>({
   key: "id",
 });
 
-export const authCodeGuestIDLoader = new ObjectLoaderFactory<AuthCodeDBData>({
+export const authCodeGuestIdLoader = new ObjectLoaderFactory<AuthCodeDBData>({
   tableName: authCodeTable,
   fields: authCodeFields,
   key: "guest_id",
@@ -152,7 +152,7 @@ export const authCodeLoaderInfo = {
     },
     guestID: {
       dbCol: "guest_id",
-      inputKey: "guestID",
+      inputKey: "guestId",
     },
     emailAddress: {
       dbCol: "email_address",
@@ -165,8 +165,8 @@ export const authCodeLoaderInfo = {
   },
 };
 
-authCodeLoader.addToPrime(authCodeGuestIDLoader);
-authCodeGuestIDLoader.addToPrime(authCodeLoader);
+authCodeLoader.addToPrime(authCodeGuestIdLoader);
+authCodeGuestIdLoader.addToPrime(authCodeLoader);
 
 export interface EventDBData {
   id: ID;
@@ -227,7 +227,7 @@ export const eventLoaderInfo = {
     },
     creatorID: {
       dbCol: "creator_id",
-      inputKey: "creatorID",
+      inputKey: "creatorId",
     },
   },
 };
@@ -300,7 +300,7 @@ export const eventActivityLoaderInfo = {
     },
     eventID: {
       dbCol: "event_id",
-      inputKey: "eventID",
+      inputKey: "eventId",
     },
     StartTime: {
       dbCol: "start_time",
@@ -388,7 +388,7 @@ export const guestLoaderInfo = {
     },
     eventID: {
       dbCol: "event_id",
-      inputKey: "eventID",
+      inputKey: "eventId",
     },
     EmailAddress: {
       dbCol: "email_address",
@@ -396,7 +396,7 @@ export const guestLoaderInfo = {
     },
     guestGroupID: {
       dbCol: "guest_group_id",
-      inputKey: "guestGroupID",
+      inputKey: "guestGroupId",
     },
     title: {
       dbCol: "title",
@@ -460,11 +460,11 @@ export const guestDataLoaderInfo = {
     },
     guestID: {
       dbCol: "guest_id",
-      inputKey: "guestID",
+      inputKey: "guestId",
     },
     eventID: {
       dbCol: "event_id",
-      inputKey: "eventID",
+      inputKey: "eventId",
     },
     dietaryRestrictions: {
       dbCol: "dietary_restrictions",
@@ -526,7 +526,7 @@ export const guestGroupLoaderInfo = {
     },
     EventID: {
       dbCol: "event_id",
-      inputKey: "eventID",
+      inputKey: "eventId",
     },
     tag: {
       dbCol: "tag",

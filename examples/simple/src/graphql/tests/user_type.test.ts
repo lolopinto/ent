@@ -349,7 +349,7 @@ test("query custom async function", async () => {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -369,7 +369,7 @@ test("query custom async function", async () => {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -397,7 +397,7 @@ test("query custom async function list", async () => {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -426,7 +426,7 @@ test("query custom async function list with domain passed in", async () => {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   const domain = "email.com";
@@ -474,7 +474,7 @@ test("query custom async function nullable contents", async () => {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -508,7 +508,7 @@ test("query custom async function nullable list contents", async () => {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -547,7 +547,7 @@ test("query custom async function nullable list and contents", async () => {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user2.id,
+    userId: user2.id,
   }).saveX();
   await expectQueryFromRoot(
     getNodeConfig(vc2, user2),
@@ -790,7 +790,7 @@ async function createMany(
       ],
       firstName: name.firstName,
       lastName: name.lastName,
-      userID: user.id,
+      userId: user.id,
     }).saveX();
     results.push(contact);
   }
@@ -1322,9 +1322,9 @@ test("custom connection. comments", async () => {
   const [user1, user2] = await Promise.all([create({}), create({})]);
 
   const comment = await CreateCommentAction.create(user2.viewer, {
-    authorID: user2.id,
+    authorId: user2.id,
     body: "sup",
-    articleID: user1.id,
+    articleId: user1.id,
     articleType: user1.nodeType,
   }).saveX();
 

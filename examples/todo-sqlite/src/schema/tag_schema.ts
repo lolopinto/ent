@@ -23,7 +23,7 @@ const TagSchema = new TodoBaseEntSchema({
       privacyPolicy: {
         // only tag owner can see this
         // @ts-ignore
-        rules: [new AllowIfViewerIsEntPropertyRule("ownerID"), AlwaysDenyRule],
+        rules: [new AllowIfViewerIsEntPropertyRule("ownerId"), AlwaysDenyRule],
       },
     }),
     // contrived field

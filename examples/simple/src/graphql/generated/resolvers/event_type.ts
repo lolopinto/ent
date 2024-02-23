@@ -299,7 +299,7 @@ export const EventCanViewerSeeType = new GraphQLObjectType({
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return obj.addressID();
+        return obj.addressId();
       },
     },
   }),

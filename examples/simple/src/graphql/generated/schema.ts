@@ -147,7 +147,7 @@ import {
 import {
   DeleteUserInput2PayloadType,
   DeleteUserInput2Type,
-} from "./mutations/user/user_delete_2_type";
+} from "./mutations/user/user_delete2_type";
 import {
   UserDeleteInputType,
   UserDeletePayloadType,

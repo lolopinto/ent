@@ -31,7 +31,7 @@ interface customGuestInput {
 
 export interface GuestGroupCreateInput {
   invitationName: string;
-  eventID: ID | Builder<Event, Viewer>;
+  eventId: ID | Builder<Event, Viewer>;
   tag?: GuestTag | null;
   guests?: customGuestInput[] | null;
 }

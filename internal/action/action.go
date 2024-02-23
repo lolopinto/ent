@@ -6,11 +6,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -219,7 +219,7 @@ func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.
 					return nil, fmt.Errorf("invalid field name `%s` passed to action `%s`", fieldName, action.CustomActionName)
 				}
 
-				return nil, fmt.Errorf("invalid field name `%s` passed to `%s` action for node `%s`", fieldName, typ.getActionVerb(), strcase.ToCamel(nodeName))
+				return nil, fmt.Errorf("invalid field name `%s` passed to `%s` action for node `%s`", fieldName, typ.getActionVerb(), names.ToClassType(nodeName))
 			}
 		}
 
@@ -364,7 +364,7 @@ func processEdgeActions(cfg codegenapi.Config, nodeName string, assocEdge *edge.
 }
 
 func getImportPathForActionBaseFile(nodeName, actionName string) string {
-	return path.Join(fmt.Sprintf("src/ent/generated/%s/actions/%s_base", strcase.ToSnake(nodeName), strcase.ToSnake(actionName)))
+	return path.Join(fmt.Sprintf("src/ent/generated/%s/actions/%s_base", names.ToFilePathName(nodeName), names.ToFilePathName(actionName)))
 }
 
 func getFilePathForEnumInputFile() string {
@@ -394,7 +394,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 		if lang == base.GoLang {
 			fields = []*field.NonEntField{
 				field.NewNonEntField(cfg, assocGroup.GroupStatusName, &enttype.StringType{}, false, false).SetFlag("Enum"),
-				field.NewNonEntField(cfg, strcase.ToCamel(assocGroup.DestNodeInfo.Node+"ID"), &enttype.StringType{}, false, false).
+				field.NewNonEntField(cfg, names.ToClassType(assocGroup.DestNodeInfo.Node+"ID"), &enttype.StringType{}, false, false).
 					SetFlag("ID").
 					SetNodeType(fmt.Sprintf("models.%sType", assocGroup.DestNodeInfo.Node)),
 			}

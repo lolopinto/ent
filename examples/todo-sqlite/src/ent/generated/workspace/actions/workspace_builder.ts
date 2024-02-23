@@ -106,22 +106,22 @@ export class WorkspaceBuilder<
   }
 
   updateInput(input: WorkspaceInput) {
-    // input.viewerCreatorID default value is being set, also set inverseEdge
-    if (input.viewerCreatorID !== undefined) {
-      if (input.viewerCreatorID) {
+    // input.viewerCreatorId default value is being set, also set inverseEdge
+    if (input.viewerCreatorId !== undefined) {
+      if (input.viewerCreatorId) {
         this.orchestrator.addInboundEdge(
-          input.viewerCreatorID,
+          input.viewerCreatorId,
           EdgeType.AccountToCreatedWorkspaces,
           NodeType.Account,
         );
       }
       if (
         this.existingEnt &&
-        this.existingEnt.viewerCreatorID &&
-        this.existingEnt.viewerCreatorID !== input.viewerCreatorID
+        this.existingEnt.viewerCreatorId &&
+        this.existingEnt.viewerCreatorId !== input.viewerCreatorId
       ) {
         this.orchestrator.removeInboundEdge(
-          this.existingEnt.viewerCreatorID,
+          this.existingEnt.viewerCreatorId,
           EdgeType.AccountToCreatedWorkspaces,
         );
       }

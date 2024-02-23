@@ -2,7 +2,6 @@ import { advanceBy, advanceTo } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
 import { Context, Data, Ent } from "../../core/base";
 import { AssocEdge, loadEdgeData } from "../../core/ent";
-import { snakeCase } from "snake-case";
 import { createRowForTest } from "../write";
 import {
   TempDB,
@@ -29,6 +28,7 @@ import { BuilderSchema, SimpleAction } from "../builder";
 import { WriteOperation } from "../../action";
 import { FakeTag } from "./fake_tag";
 import { Dialect } from "../../core/db";
+import { toDBColumnOrTable } from "../../names/names";
 
 export function getContactInput(
   user: FakeUser,
@@ -290,7 +290,7 @@ export async function createEdges() {
     await createRowForTest({
       tableName: "assoc_edge_config",
       fields: {
-        edge_table: snakeCase(`${edge}_table`),
+        edge_table: toDBColumnOrTable(edge, "table"),
         symmetric_edge: SymmetricEdges.has(edge),
         inverse_edge_type: InverseEdges.get(edge) || null,
         edge_type: edge,
@@ -306,7 +306,7 @@ export async function createEdges() {
 
 export function edgeTableNames() {
   const edges = Object.values(EdgeType);
-  return edges.map((edge) => snakeCase(`${edge}_table`));
+  return edges.map((edge) => toDBColumnOrTable(edge, "table"));
 }
 
 export async function createTestEvent(

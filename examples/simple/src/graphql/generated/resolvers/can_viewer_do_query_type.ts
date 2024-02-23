@@ -27,7 +27,7 @@ class GlobalCanViewerDo {
   async contactCreate(args: any): Promise<boolean> {
     const action = CreateContactAction.create(this.context.getViewer(), {
       ...args,
-      userID: mustDecodeIDFromGQLID(args.userID),
+      userId: mustDecodeIDFromGQLID(args.userId),
     });
     return applyPrivacyPolicy(
       this.context.getViewer(),
@@ -42,7 +42,7 @@ class GlobalCanViewerDo {
       extra: args.extra,
       emailAddress: args.emailAddress,
       label: args.label,
-      contactID: mustDecodeIDFromGQLID(args.contactID),
+      contactId: mustDecodeIDFromGQLID(args.contactId),
     });
     return applyPrivacyPolicy(
       this.context.getViewer(),
@@ -61,7 +61,7 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
     contactCreate: {
       type: new GraphQLNonNull(GraphQLBoolean),
       args: {
-        userID: {
+        userId: {
           description: "",
           type: new GraphQLNonNull(GraphQLID),
         },
@@ -89,7 +89,7 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
           description: "",
           type: new GraphQLNonNull(ContactLabelType),
         },
-        contactID: {
+        contactId: {
           description: "",
           type: new GraphQLNonNull(GraphQLID),
         },

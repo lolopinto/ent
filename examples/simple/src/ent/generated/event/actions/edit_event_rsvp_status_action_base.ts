@@ -65,7 +65,7 @@ export function convertNullableEventRsvpStatusInputList(
 
 export interface EditEventRsvpStatusInput {
   rsvpStatus: EventRsvpStatusInput;
-  userID: ID;
+  userId: ID;
 }
 
 export type EditEventRsvpStatusActionTriggers = (
@@ -177,7 +177,7 @@ export class EditEventRsvpStatusActionBase
       this.builder.orchestrator,
       this.input.rsvpStatus,
       this.event.id,
-      this.input.userID,
+      this.input.userId,
       NodeType.User,
       this.event.getEventRsvpStatusMap(),
     );

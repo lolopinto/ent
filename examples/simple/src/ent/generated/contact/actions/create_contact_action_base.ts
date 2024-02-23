@@ -38,7 +38,7 @@ interface customPhoneNumberInput {
 export interface ContactCreateInput {
   firstName: string;
   lastName: string;
-  userID: ID | Builder<User, ExampleViewerAlias>;
+  userId: ID | Builder<User, ExampleViewerAlias>;
   attachments?: Attachment[] | null;
   emails?: customEmailInput[] | null;
   phoneNumbers?: customPhoneNumberInput[] | null;

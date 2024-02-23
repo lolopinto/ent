@@ -29,16 +29,16 @@ test("create for other", async () => {
 
   const todo = await CreateTodoAction.create(creator.viewer, {
     text: "watch GOT",
-    creatorID: creator.id,
-    assigneeID: assignee.id,
-    scopeID: assignee.id,
+    creatorId: creator.id,
+    assigneeId: assignee.id,
+    scopeId: assignee.id,
     scopeType: NodeType.Account,
   }).saveX();
   expect(todo.text).toBe("watch GOT");
-  expect(todo.creatorID).toBe(creator.id);
+  expect(todo.creatorId).toBe(creator.id);
   expect(todo.completed).toBe(false);
-  expect(todo.assigneeID).toBe(assignee.id);
-  expect(todo.scopeID).toBe(assignee.id);
+  expect(todo.assigneeId).toBe(assignee.id);
+  expect(todo.scopeId).toBe(assignee.id);
   expect(todo.scopeType).toBe(NodeType.Account);
 
   const scopedEnts = await todo.queryTodoScope().queryEnts();
@@ -47,16 +47,16 @@ test("create for other", async () => {
 
   const todo2 = await CreateTodoAction.create(creator.viewer, {
     text: "watch GOT",
-    creatorID: creator.id,
-    assigneeID: assignee.id,
-    scopeID: assignee.id,
+    creatorId: creator.id,
+    assigneeId: assignee.id,
+    scopeId: assignee.id,
     scopeType: NodeType.Account,
   }).saveX();
   expect(todo2.text).toBe("watch GOT");
-  expect(todo2.creatorID).toBe(creator.id);
+  expect(todo2.creatorId).toBe(creator.id);
   expect(todo2.completed).toBe(false);
-  expect(todo2.assigneeID).toBe(assignee.id);
-  expect(todo2.scopeID).toBe(assignee.id);
+  expect(todo2.assigneeId).toBe(assignee.id);
+  expect(todo2.scopeId).toBe(assignee.id);
   expect(todo2.scopeType).toBe(NodeType.Account);
 
   const scopedEnts2 = await todo2.queryTodoScope().queryEnts();
@@ -75,9 +75,9 @@ test("assign todo other not in workspace", async () => {
 
   const todo = await CreateTodoAction.create(creator.viewer, {
     text: "watch GOT",
-    creatorID: creator.id,
-    assigneeID: assignee.id,
-    scopeID: assignee.id,
+    creatorId: creator.id,
+    assigneeId: assignee.id,
+    scopeId: assignee.id,
     scopeType: NodeType.Account,
   }).saveX();
 
@@ -174,8 +174,8 @@ test("complete with bounty", async () => {
   await changeCompleted(todo, true);
 
   const assignee = await Account.loadX(
-    new IDViewer(todo.assigneeID),
-    todo.assigneeID,
+    new IDViewer(todo.assigneeId),
+    todo.assigneeId,
   );
   const creator = await todo.loadCreatorX();
   // completing successfully transfered credits
@@ -203,12 +203,12 @@ test("complete with bounty, multiple in transaction", async () => {
   await tx.run();
 
   const assignee1 = await Account.loadX(
-    new IDViewer(todo.assigneeID),
-    todo.assigneeID,
+    new IDViewer(todo.assigneeId),
+    todo.assigneeId,
   );
   const assignee2 = await Account.loadX(
-    new IDViewer(todo2.assigneeID),
-    todo2.assigneeID,
+    new IDViewer(todo2.assigneeId),
+    todo2.assigneeId,
   );
   const creator = await todo.loadCreatorX();
   // completing successfully transfered credits
@@ -266,7 +266,7 @@ test("really delete", async () => {
 test("querying todos", async () => {
   const account = await createAccount();
   const todos = await Promise.all(
-    [1, 2, 3, 4, 5].map(() => createTodoForSelf({ creatorID: account.id })),
+    [1, 2, 3, 4, 5].map(() => createTodoForSelf({ creatorId: account.id })),
   );
   expect(todos.length).toBe(5);
 
@@ -403,10 +403,10 @@ test("tags", async () => {
 test("assignees", async () => {
   const { todo } = await createTodoOtherInWorksapce();
   const todo2 = await createTodoForSelf({
-    creatorID: todo.assigneeID,
+    creatorId: todo.assigneeId,
   });
   const todo3 = await createTodoForSelf({
-    creatorID: todo.assigneeID,
+    creatorId: todo.assigneeId,
   });
 
   const account = await todo.loadAssigneeX();

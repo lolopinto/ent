@@ -1,4 +1,3 @@
-import { camelCase } from "camel-case";
 import { BaseField, ListField } from "./field";
 import {
   FieldOptions,
@@ -13,6 +12,7 @@ import {
   __getGlobalSchemaFields,
 } from "../core/global_schema";
 import { log } from "../core/logger";
+import { toFieldName } from "../names/names";
 
 interface structFieldOptions extends FieldOptions {
   // required.
@@ -79,10 +79,14 @@ export class StructField extends BaseField implements Field {
       // check two values
       // store in dbKey format
 
-      // TODO more #510
+      // check both fieldName and dbKey and store in dbKey for
+      // serialization to db
+      // we should only have if it in fieldName format for non-tests
+      // but checking for backwards compatibility and to make
+      // sure we don't break anything
       let dbKey = getStorageKey(field, k);
-      let camelKey = camelCase(k);
-      let val = obj[camelKey];
+      let fieldName = toFieldName(k);
+      let val = obj[fieldName];
 
       if (val === undefined && obj[dbKey] !== undefined) {
         val = obj[dbKey];
@@ -157,15 +161,14 @@ export class StructField extends BaseField implements Field {
     let valid = true;
     for (const k in this.options.fields) {
       const field = this.options.fields[k];
-      // TODO more #510
       let dbKey = getStorageKey(field, k);
-      let camelKey = camelCase(k);
-      let val = obj[camelKey];
+      let fieldName = toFieldName(k);
+      let val = obj[fieldName];
 
       let uniqueKeyField = false;
       if (
         this.validateUniqueKey !== undefined &&
-        (camelKey === this.validateUniqueKey ||
+        (fieldName === this.validateUniqueKey ||
           k === this.validateUniqueKey ||
           dbKey === this.validateUniqueKey)
       ) {
@@ -174,7 +177,7 @@ export class StructField extends BaseField implements Field {
       }
 
       if (uniqueKeyField && this.checkUniqueKey) {
-        this.validateUniqueKey = camelKey;
+        this.validateUniqueKey = fieldName;
       }
 
       if (val === undefined && obj[dbKey] !== undefined) {

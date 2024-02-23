@@ -148,7 +148,7 @@ export const authCodeLoaderInfo = {
     },
     userID: {
       dbCol: "user_id",
-      inputKey: "userID",
+      inputKey: "userId",
     },
     emailAddress: {
       dbCol: "email_address",
@@ -216,7 +216,7 @@ export const commentLoaderInfo = {
     },
     AuthorID: {
       dbCol: "author_id",
-      inputKey: "authorID",
+      inputKey: "authorId",
     },
     Body: {
       dbCol: "body",
@@ -224,7 +224,7 @@ export const commentLoaderInfo = {
     },
     ArticleID: {
       dbCol: "article_id",
-      inputKey: "articleID",
+      inputKey: "articleId",
     },
     ArticleType: {
       dbCol: "article_type",
@@ -232,7 +232,7 @@ export const commentLoaderInfo = {
     },
     AttachmentID: {
       dbCol: "attachment_id",
-      inputKey: "attachmentID",
+      inputKey: "attachmentId",
     },
     AttachmentType: {
       dbCol: "attachment_type",
@@ -240,7 +240,7 @@ export const commentLoaderInfo = {
     },
     StickerID: {
       dbCol: "sticker_id",
-      inputKey: "stickerID",
+      inputKey: "stickerId",
     },
     StickerType: {
       dbCol: "sticker_type",
@@ -316,7 +316,7 @@ export const contactLoaderInfo = {
     },
     userID: {
       dbCol: "user_id",
-      inputKey: "userID",
+      inputKey: "userId",
     },
     attachments: {
       dbCol: "attachments",
@@ -384,7 +384,7 @@ export const contactEmailLoaderInfo = {
     },
     contactID: {
       dbCol: "contact_id",
-      inputKey: "contactID",
+      inputKey: "contactId",
     },
   },
 };
@@ -449,7 +449,7 @@ export const contactPhoneNumberLoaderInfo = {
     },
     contactID: {
       dbCol: "contact_id",
-      inputKey: "contactID",
+      inputKey: "contactId",
     },
   },
 };
@@ -465,7 +465,7 @@ export interface EventDBData {
   location: string;
   address_id: ID | null;
   cover_photo: Buffer | null;
-  cover_photo_2: Buffer | null;
+  cover_photo2: Buffer | null;
   attachments: Attachment[] | null;
 }
 
@@ -481,7 +481,7 @@ const eventFields = [
   "location",
   "address_id",
   "cover_photo",
-  "cover_photo_2",
+  "cover_photo2",
   "attachments",
 ];
 
@@ -515,7 +515,7 @@ export const eventLoaderInfo = {
     },
     creatorID: {
       dbCol: "user_id",
-      inputKey: "creatorID",
+      inputKey: "creatorId",
     },
     start_time: {
       dbCol: "start_time",
@@ -531,14 +531,14 @@ export const eventLoaderInfo = {
     },
     addressID: {
       dbCol: "address_id",
-      inputKey: "addressID",
+      inputKey: "addressId",
     },
     cover_photo: {
       dbCol: "cover_photo",
       inputKey: "coverPhoto",
     },
     cover_photo2: {
-      dbCol: "cover_photo_2",
+      dbCol: "cover_photo2",
       inputKey: "coverPhoto2",
     },
     attachments: {

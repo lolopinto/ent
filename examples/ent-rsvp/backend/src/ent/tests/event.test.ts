@@ -10,7 +10,7 @@ describe("create event", () => {
       name: `${user.firstName}'s wedding`,
     }).saveX();
     expect(event).toBeInstanceOf(Event);
-    expect(event.creatorID).toBe(user.id);
+    expect(event.creatorId).toBe(user.id);
   });
 
   test("invalid. logged out user", async () => {
@@ -68,11 +68,11 @@ describe("create event", () => {
     if (!activity) {
       throw new Error("impossicant");
     }
-    const address = await Address.loadFromOwnerID(activity.viewer, activity.id);
+    const address = await Address.loadFromOwnerId(activity.viewer, activity.id);
     expect(address).not.toBe(null);
     expect(address?.street).toBe("1 main street");
     expect(address?.city).toBe("San Francisco");
     expect(address?.state).toBe("CA");
-    expect(address?.ownerID).toBe(activity.id);
+    expect(address?.ownerId).toBe(activity.id);
   });
 });

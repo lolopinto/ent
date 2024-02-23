@@ -19,7 +19,7 @@ interface customGuestDeleteInput {
 }
 
 interface GuestDeletePayload {
-  deletedGuestID: string;
+  deletedGuestId: string;
 }
 
 export const GuestDeleteInputType = new GraphQLInputObjectType({
@@ -38,7 +38,7 @@ export const GuestDeletePayloadType = new GraphQLObjectType({
     GuestDeletePayload,
     RequestContext<Viewer>
   > => ({
-    deletedGuestID: {
+    deletedGuestId: {
       type: GraphQLID,
     },
   }),
@@ -66,6 +66,6 @@ export const GuestDeleteType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedGuestID: input.id };
+    return { deletedGuestId: input.id };
   },
 };

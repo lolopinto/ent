@@ -5,6 +5,7 @@ import {
   ID,
   LoadEntOptions,
   QueryDataOptions,
+  SelectBaseDataOptions,
   Viewer,
 } from "../base";
 import { AndOptional, Clause } from "../clause";
@@ -126,17 +127,19 @@ export class CustomClauseQuery<
 
   async queryRawCount(): Promise<number> {
     // sqlite needs as count otherwise it returns count(1)
-    let fields = ["count(1) as count"];
+    let fields: SelectBaseDataOptions["fields"] = ["count(1) as count"];
     if (this.options.joinBETA) {
-      const requestedFields = this.options.loadEntOptions.fields;
+      const firstRequestedField = this.options.loadEntOptions.fields[0];
       const alias =
         this.options.loadEntOptions.fieldsAlias ??
         this.options.loadEntOptions.alias;
-      if (alias) {
-        fields = [`count(distinct ${alias}.${requestedFields[0]}) as count`];
-      } else {
-        fields = [`count(distinct ${requestedFields[0]}) as count`];
-      }
+      const fieldString =
+        typeof firstRequestedField === "object"
+          ? `${firstRequestedField.alias}.${firstRequestedField.column}`
+          : alias
+          ? `${alias}.${firstRequestedField}`
+          : firstRequestedField;
+      fields = [`count(distinct ${fieldString}) as count`];
     }
     const row = await loadRow({
       ...this.options.loadEntOptions,
