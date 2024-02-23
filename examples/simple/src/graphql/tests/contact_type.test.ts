@@ -81,7 +81,7 @@ async function createContact(user?: User): Promise<Contact> {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
   // reload
   return Contact.loadX(contact.viewer, contact.id);
@@ -180,7 +180,7 @@ test("custom object added in contact", async () => {
   const email2 = await CreateContactEmailAction.create(contact.viewer, {
     emailAddress: randomEmail(),
     label: ContactLabel.Home,
-    contactID: contact.id,
+    contactId: contact.id,
   }).saveX();
 
   await EditContactAction.create(contact.viewer, contact, {
@@ -204,7 +204,7 @@ test("edit contact with new email ids", async () => {
   const email2 = await CreateContactEmailAction.create(contact.viewer, {
     emailAddress: randomEmail(),
     label: ContactLabel.Home,
-    contactID: contact.id,
+    contactId: contact.id,
   }).saveX();
 
   await expectMutation(
@@ -231,12 +231,12 @@ test("edit contact with new phone number ids", async () => {
     CreateContactPhoneNumberAction.create(contact.viewer, {
       phoneNumber: randomPhoneNumber(),
       label: ContactLabel.Home,
-      contactID: contact.id,
+      contactId: contact.id,
     }).saveX(),
     CreateContactPhoneNumberAction.create(contact.viewer, {
       phoneNumber: randomPhoneNumber(),
       label: ContactLabel.Home,
-      contactID: contact.id,
+      contactId: contact.id,
     }).saveX(),
   ]);
 
@@ -290,18 +290,18 @@ test("global canViewerDo", async () => {
       args: {},
     },
     [
-      `contactCreateSelf: contactCreate(userID: "${encodeGQLID(user)}")`,
+      `contactCreateSelf: contactCreate(userId: "${encodeGQLID(user)}")`,
       true,
       "contactCreateSelf",
     ],
     [
-      `contactCreateOther: contactCreate(userID: "${encodeGQLID(user2)}")`,
+      `contactCreateOther: contactCreate(userId: "${encodeGQLID(user2)}")`,
       false,
       "contactCreateOther",
     ],
     // can create email with given contact
     [
-      `contactEmailCreateSelf: contactEmailCreate(contactID: "${encodeGQLID(
+      `contactEmailCreateSelf: contactEmailCreate(contactId: "${encodeGQLID(
         contact,
       )}" emailAddress: "${randomEmail("hello")}" label: HOME)`,
       true,
@@ -309,7 +309,7 @@ test("global canViewerDo", async () => {
     ],
     // cannot create email with given contact
     [
-      `contactEmailCreateOther: contactEmailCreate(contactID: "${encodeGQLID(
+      `contactEmailCreateOther: contactEmailCreate(contactId: "${encodeGQLID(
         contact2,
       )}" emailAddress: "${randomEmail("hello")}" label: HOME)`,
       false,

@@ -21,7 +21,7 @@ import { AuthCodeBuilder } from "src/ent/generated/auth_code/actions/auth_code_b
 
 export interface AuthCodeCreateInput {
   code: string;
-  guestID: ID | Builder<Guest, Viewer>;
+  guestId: ID | Builder<Guest, Viewer>;
   emailAddress: string;
   sentCode?: boolean;
 }

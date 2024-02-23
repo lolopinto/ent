@@ -24,7 +24,7 @@ async function createTodos(): Promise<[Account, Todo[]]> {
     // make deterministic
     advanceBy(-10);
     const todo = await createTodoForSelf({
-      creatorID: account.id,
+      creatorId: account.id,
       text: text,
     });
     todos.push(todo);
@@ -297,7 +297,7 @@ test("create in workspace", async () => {
 test("edit", async () => {
   const account = await createAccount();
   const todo = await createTodoForSelf({
-    creatorID: account.id,
+    creatorId: account.id,
     text: "watch GOT",
   });
   await expectMutation(
@@ -320,7 +320,7 @@ test("edit", async () => {
 test("delete", async () => {
   const account = await createAccount();
   const todo = await createTodoForSelf({
-    creatorID: account.id,
+    creatorId: account.id,
     text: "watch GOT",
   });
   await expectMutation(
@@ -338,7 +338,7 @@ test("todo tag", async () => {
   const account = await createAccount();
   const tag = await createTag("sports", account);
   const todo = await createTodoForSelf({
-    creatorID: account.id,
+    creatorId: account.id,
   });
 
   await expectMutation(
@@ -359,10 +359,10 @@ test("todo tag", async () => {
 test("assignees", async () => {
   const { todo } = await createTodoOtherInWorksapce();
   const todo2 = await createTodoForSelf({
-    creatorID: todo.assigneeID,
+    creatorId: todo.assigneeId,
   });
   const todo3 = await createTodoForSelf({
-    creatorID: todo.assigneeID,
+    creatorId: todo.assigneeId,
   });
 
   const account = await todo.loadAssigneeX();

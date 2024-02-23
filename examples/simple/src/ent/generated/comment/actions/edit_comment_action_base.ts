@@ -25,14 +25,14 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface CommentEditInput {
   body?: string;
-  articleID?: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
+  articleId?: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   articleType?: string;
-  attachmentID?:
+  attachmentId?:
     | ID
     | null
     | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   attachmentType?: string | null;
-  stickerID?: ID | null | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
+  stickerId?: ID | null | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   stickerType?: string | null;
 }
 

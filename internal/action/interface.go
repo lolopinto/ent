@@ -6,13 +6,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -562,7 +562,7 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 			TSEdgeConst:  edge.TsEdgeConst,
 			//AssocEdge:    edge,
 			NodeType:             edge.NodeInfo.NodeType,
-			TSNodeID:             fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+			TSNodeID:             names.ToTsFieldName(edge.Singular(), "ID"),
 			TSAddIDMethodName:    fmt.Sprintf("add%sID", edge.Singular()),
 			TSAddMethodName:      fmt.Sprintf("add%s", edge.Singular()),
 			TSRemoveMethodName:   fmt.Sprintf("remove%s", edge.Singular()),

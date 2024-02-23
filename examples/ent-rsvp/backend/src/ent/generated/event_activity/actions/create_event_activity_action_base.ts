@@ -30,7 +30,7 @@ interface customAddressInput {
 export interface EventActivityCreateInput {
   addressId?: ID | null | Builder<Address, Viewer>;
   name: string;
-  eventID: ID | Builder<Event, Viewer>;
+  eventId: ID | Builder<Event, Viewer>;
   startTime: Date;
   endTime?: Date | null;
   location: string;

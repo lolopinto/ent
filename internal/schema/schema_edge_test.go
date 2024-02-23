@@ -381,7 +381,7 @@ func testEdgesFromConstsAndEdges(t *testing.T, s *schema.Schema) {
 		EdgeName:        "AccountToFriends2Edge",
 		SymmetricEdge:   false,
 		InverseEdgeType: sql.NullString{},
-		EdgeTable:       "account_friends_2_edges",
+		EdgeTable:       "account_friends2_edges",
 	}
 
 	testEdge(t, newEdge, expectedEdge)

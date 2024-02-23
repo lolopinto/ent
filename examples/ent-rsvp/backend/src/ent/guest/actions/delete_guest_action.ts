@@ -6,7 +6,7 @@ export default class DeleteGuestAction extends DeleteGuestActionBase {
   getPrivacyPolicy() {
     // only creator of event can delete guest
     return new AllowIfEventCreatorPrivacyPolicy(
-      this.builder.existingEnt!.eventID,
+      this.builder.existingEnt.eventId,
     );
   }
 }

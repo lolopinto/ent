@@ -130,9 +130,9 @@ export class TodoRemoveTagActionBase
     ) => T,
     viewer: Viewer,
     id: ID,
-    tagID: ID,
+    tagId: ID,
   ): Promise<Todo> {
     const todo = await Todo.loadX(viewer, id);
-    return new this(viewer, todo).removeTag(tagID).saveX();
+    return new this(viewer, todo).removeTag(tagId).saveX();
   }
 }

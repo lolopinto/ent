@@ -178,7 +178,7 @@ export class User extends UserBase {
     const res = contactInfos.filterMap((info) => {
       return {
         include:
-          this.id !== info.contact.userID &&
+          this.id !== info.contact.userId &&
           domain === this.getDomainFromEmail(info.contactInfo.email1),
         return: info.contact,
       };

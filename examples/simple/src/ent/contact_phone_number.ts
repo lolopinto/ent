@@ -9,7 +9,7 @@ import { ContactPhoneNumberBase } from "./internal";
 export class ContactPhoneNumber extends ContactPhoneNumberBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return new AllowIfEntIsVisiblePolicy(
-      this.contactID,
+      this.contactId,
       Contact.loaderOptions(),
     );
   }

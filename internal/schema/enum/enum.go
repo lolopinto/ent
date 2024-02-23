@@ -7,8 +7,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/change"
 )
 
@@ -273,7 +273,7 @@ func GetTSEnumNameForValInfo(val string) (string, bool) {
 	if all {
 		return val, all
 	}
-	return strcase.ToCamel(val), false
+	return names.ToClassType(val), false
 }
 
 type Input struct {
@@ -367,7 +367,7 @@ func (i *Input) getValuesFromValues() ([]*Data, []*Data) {
 
 		gqlVals[j] = &Data{
 			// norm for graphql enum names is all caps
-			Name:  strings.ToUpper(strcase.ToSnake(val)),
+			Name:  names.ToGraphQLEnumName(val),
 			Value: strconv.Quote(val),
 		}
 		tsVals[j] = &Data{
@@ -409,8 +409,7 @@ func (i *Input) getValuesFromEnumMap() ([]*Data, []*Data) {
 		valAllLower = valAllLower && stringAllLower(val)
 
 		gqlVals[j] = &Data{
-			// norm for graphql enums is all caps
-			Name:  strings.ToUpper(strcase.ToSnake(k)),
+			Name:  names.ToGraphQLEnumName(k),
 			Value: strconv.Quote(val),
 		}
 
@@ -453,8 +452,7 @@ func (i *Input) getValuesFromIntEnumMap(m map[string]int, addUnknown bool) ([]*D
 		allUpper = allUpper && upper
 
 		gqlVals[j] = &Data{
-			// norm for graphql enums is all caps
-			Name:  strings.ToUpper(strcase.ToSnake(k)),
+			Name:  names.ToGraphQLEnumName(k),
 			Value: val,
 		}
 

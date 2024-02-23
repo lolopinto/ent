@@ -25,7 +25,7 @@ import { ContactEmailType, ContactLabelType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactEmailCreateInput extends ContactEmailCreateInput {
-  contactID: string;
+  contactId: string;
 }
 
 interface ContactEmailCreatePayload {
@@ -44,7 +44,7 @@ export const ContactEmailCreateInputType = new GraphQLInputObjectType({
     label: {
       type: new GraphQLNonNull(ContactLabelType),
     },
-    contactID: {
+    contactId: {
       type: new GraphQLNonNull(GraphQLID),
     },
   }),
@@ -86,7 +86,7 @@ export const ContactEmailCreateType: GraphQLFieldConfig<
         extra: input.extra,
         emailAddress: input.emailAddress,
         label: input.label,
-        contactID: mustDecodeIDFromGQLID(input.contactID),
+        contactId: mustDecodeIDFromGQLID(input.contactId),
       },
     ).saveX();
     return { contactEmail: contactEmail };

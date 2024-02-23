@@ -1,9 +1,9 @@
 package field
 
 import (
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -25,7 +25,7 @@ type NonEntField struct {
 func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSType, nullable, hideFromGraphQL bool) *NonEntField {
 	return &NonEntField{
 		fieldName:       fieldName,
-		graphqlName:     codegenapi.GraphQLName(cfg, fieldName),
+		graphqlName:     names.ToGraphQLName(cfg, fieldName),
 		fieldType:       fieldType,
 		nullable:        nullable,
 		hideFromGraphQL: hideFromGraphQL,
@@ -88,15 +88,15 @@ func (f *NonEntField) GetGraphQLMutationFieldType(forceOptional bool) enttype.TS
 }
 
 func (f *NonEntField) TsFieldName(cfg codegenapi.Config) string {
-	return strcase.ToLowerCamel(f.fieldName)
+	return names.ToTsFieldName(f.fieldName)
 }
 
 func (f *NonEntField) TsBuilderFieldName() string {
-	return strcase.ToLowerCamel(f.fieldName)
+	return names.ToTsFieldName(f.fieldName)
 }
 
 func (f *NonEntField) TSPublicAPIName() string {
-	return strcase.ToLowerCamel(f.fieldName)
+	return names.ToTsFieldName(f.fieldName)
 }
 
 func (f *NonEntField) ForceRequiredInAction() bool {

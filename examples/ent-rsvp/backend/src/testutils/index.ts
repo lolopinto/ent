@@ -42,8 +42,8 @@ export async function createActivity(
 ) {
   let eventID: ID | Builder<Event>;
 
-  if (event && input?.eventID) {
-    if (event.id !== input.eventID) {
+  if (event && input?.eventId) {
+    if (event.id !== input.eventId) {
       throw new Error(`passed eventID and event that don't match`);
     }
   }
@@ -51,8 +51,8 @@ export async function createActivity(
   if (!event) {
     event = await createEvent();
     eventID = event.id;
-  } else if (input?.eventID) {
-    eventID = input.eventID;
+  } else if (input?.eventId) {
+    eventID = input.eventId;
   } else {
     eventID = event.id;
   }
@@ -61,7 +61,7 @@ export async function createActivity(
     startTime: new Date(),
     location: "fun location",
     name: "welcome dinner",
-    eventID: eventID,
+    eventId: eventID,
     ...input,
   }).saveX();
 }
@@ -104,7 +104,7 @@ export async function createActivityAndGroup(): Promise<
   const event = await activity.loadEventX();
   const group = await CreateGuestGroupAction.create(event.viewer, {
     invitationName: "people",
-    eventID: event.id,
+    eventId: event.id,
   }).saveX();
 
   return [activity, group];
@@ -153,8 +153,8 @@ export async function createGuests(
       return CreateGuestAction.create(group.viewer, {
         ...input,
         emailAddress: randomEmail(),
-        guestGroupID: group.id,
-        eventID: group.eventID,
+        guestGroupId: group.id,
+        eventId: group.eventId,
       }).saveX();
     }),
   );
@@ -165,7 +165,7 @@ export async function createGuestPlus() {
   const event = await activity.loadEventX();
   const group = await CreateGuestGroupAction.create(event.viewer, {
     invitationName: "people",
-    eventID: event.id,
+    eventId: event.id,
   }).saveX();
 
   await EventActivityAddInviteAction.saveXFromID(
@@ -177,8 +177,8 @@ export async function createGuestPlus() {
   const guest = await CreateGuestAction.create(group.viewer, {
     name: "Robb Stark",
     emailAddress: randomEmail(),
-    guestGroupID: group.id,
-    eventID: group.eventID,
+    guestGroupId: group.id,
+    eventId: group.eventId,
   }).saveX();
   return { guest, activity };
 }

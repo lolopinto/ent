@@ -20,7 +20,7 @@ import CreateAddressAction, {
 import { AddressType } from "src/graphql/resolvers/";
 
 interface customAddressCreateInput extends AddressCreateInput {
-  ownerID: string;
+  ownerId: string;
 }
 
 interface AddressCreatePayload {
@@ -45,7 +45,7 @@ export const AddressCreateInputType = new GraphQLInputObjectType({
     apartment: {
       type: GraphQLString,
     },
-    ownerID: {
+    ownerId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     ownerType: {
@@ -90,7 +90,7 @@ export const AddressCreateType: GraphQLFieldConfig<
       state: input.state,
       zipCode: input.zipCode,
       apartment: input.apartment,
-      ownerID: mustDecodeIDFromGQLID(input.ownerID),
+      ownerId: mustDecodeIDFromGQLID(input.ownerId),
       ownerType: input.ownerType,
     }).saveX();
     return { address: address };

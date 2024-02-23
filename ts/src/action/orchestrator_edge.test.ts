@@ -14,7 +14,6 @@ import { FakeComms } from "../testutils/fake_comms";
 import { edgeDirection } from "./orchestrator";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
-import { snakeCase } from "snake-case";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
@@ -25,6 +24,7 @@ import {
 } from "../testutils/db/temp_db";
 import { Dialect } from "../core/db";
 import { DataOperation, EdgeOperation } from "./operations";
+import { toDBColumnOrTable } from "../names/names";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
@@ -33,7 +33,7 @@ beforeEach(async () => {
     await createRowForTest({
       tableName: "assoc_edge_config",
       fields: {
-        edge_table: `${snakeCase(edge)}_table`,
+        edge_table: toDBColumnOrTable(edge, "table"),
         symmetric_edge: edge == "symmetricEdge",
         inverse_edge_type: edge === "edge" ? "inverseEdge" : "edge",
         edge_type: edge,
@@ -60,7 +60,7 @@ const UserSchema = getBuilderSchemaFromFields(
 const getTables = () => {
   const tables: Table[] = [assoc_edge_config_table()];
   edges.map((edge) =>
-    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+    tables.push(assoc_edge_table(toDBColumnOrTable(edge, "table"))),
   );
 
   [UserSchema].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));

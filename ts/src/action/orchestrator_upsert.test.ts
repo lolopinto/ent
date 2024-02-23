@@ -18,7 +18,6 @@ import {
 import { FakeComms, Mode } from "../testutils/fake_comms";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
-import { snakeCase } from "snake-case";
 import { clearLogLevels, setLogLevels } from "../core/logger";
 
 import { MockLogs } from "../testutils/mock_log";
@@ -30,9 +29,10 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/temp_db";
-import { ConstraintType, getStorageKey } from "../schema";
+import { ConstraintType } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 import DB, { Dialect } from "../core/db";
+import { toDBColumnOrTable } from "../names/names";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge", "uniqueEdge"];
 beforeEach(async () => {
@@ -41,7 +41,7 @@ beforeEach(async () => {
     await createRowForTest({
       tableName: "assoc_edge_config",
       fields: {
-        edge_table: `${snakeCase(edge)}_table`,
+        edge_table: toDBColumnOrTable(edge, "table"),
         symmetric_edge: edge == "symmetricEdge",
         inverse_edge_type: edge === "edge" ? "inverseEdge" : "edge",
         edge_type: edge,
@@ -119,7 +119,7 @@ const getTables = () => {
   edges.map((edge) =>
     tables.push(
       assoc_edge_table(
-        `${snakeCase(edge)}_table`,
+        toDBColumnOrTable(edge, "table"),
         false,
         edge === "uniqueEdge",
       ),

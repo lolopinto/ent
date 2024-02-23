@@ -7,7 +7,7 @@ import { NodeType } from "./generated/types";
 export class Address extends AddressBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return new AllowIfEntIsVisiblePolicy(
-      this.ownerID,
+      this.ownerId,
       getLoaderOptions(this.ownerType as NodeType),
     );
   }

@@ -122,7 +122,7 @@ CREATE TABLE events (
     location TEXT NOT NULL, 
     address_id UUID, 
     cover_photo BYTEA, 
-    cover_photo_2 TEXT, 
+    cover_photo2 TEXT, 
     attachments JSONB, 
     CONSTRAINT events_id_pkey PRIMARY KEY (id)
 );
@@ -263,7 +263,7 @@ CREATE TABLE users (
     time_in_ms BIGINT, 
     fun_uuids UUID[], 
     new_col TEXT, 
-    new_col_2 TEXT, 
+    new_col2 TEXT, 
     super_nested_object JSONB, 
     nested_list JSONB[], 
     int_enum INTEGER, 

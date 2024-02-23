@@ -34,7 +34,7 @@ interface customCreateAccountInput
   > {
   phone_number: string;
   account_prefs?: AccountPrefs | null;
-  account_prefs_3?: AccountPrefs;
+  account_prefs3?: AccountPrefs;
   account_prefs_list?: AccountPrefs[] | null;
   country_infos?: CountryInfo[] | null;
 }
@@ -55,7 +55,7 @@ export const CreateAccountInputType = new GraphQLInputObjectType({
     account_prefs: {
       type: AccountPrefsInputType,
     },
-    account_prefs_3: {
+    account_prefs3: {
       type: AccountPrefsInputType,
     },
     account_prefs_list: {
@@ -104,7 +104,7 @@ export const CreateAccountType: GraphQLFieldConfig<
       name: input.name,
       phoneNumber: input.phone_number,
       accountPrefs: input.account_prefs,
-      accountPrefs3: input.account_prefs_3,
+      accountPrefs3: input.account_prefs3,
       accountPrefsList: input.account_prefs_list,
       credits: input.credits,
       countryInfos: input.country_infos,

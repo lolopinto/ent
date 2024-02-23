@@ -24,7 +24,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface AuthCodeCreateInput {
   code: string;
-  userID: ID | Builder<User, ExampleViewerAlias>;
+  userId: ID | Builder<User, ExampleViewerAlias>;
   emailAddress?: string | null;
   phoneNumber?: string | null;
 }
