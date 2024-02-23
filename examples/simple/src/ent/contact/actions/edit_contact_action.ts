@@ -1,10 +1,10 @@
-import { ContactEmail } from "src/ent";
+import { ContactEmail } from "../../../ent";
 import {
   EditContactActionBase,
   ContactEditInput,
   EditContactActionTriggers,
 } from "../../generated/contact/actions/edit_contact_action_base";
-import EditContactEmailAction from "src/ent/contact_email/actions/edit_contact_email_action";
+import EditContactEmailAction from "../../../ent/contact_email/actions/edit_contact_email_action";
 
 export { ContactEditInput };
 
