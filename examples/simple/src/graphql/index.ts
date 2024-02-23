@@ -41,6 +41,9 @@ registerAuthHandler(
     },
     loaderOptions: User.loaderOptions(),
     reqToViewer: (context: RequestContext, id: ID) => {
+      // this shows a custom way of handling auth
+      // using `registerAuthHandler` + `reqToViewer` to create a custom viewer which is a subclass of `Viewer`
+      // indicating developer has full control over the viewer
       return new ExampleViewer(id);
     },
   }),

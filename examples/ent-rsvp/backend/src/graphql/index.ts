@@ -94,6 +94,9 @@ app.use(
         request: req,
         schema,
         contextFactory: async (executionContext: ExecutionContext) => {
+          // shows an example of doing custom auth
+          // instead of using `buildContext`, we return a custom context which handles the auth
+          // from req and res.
           return OurContext.createFromRequest(req, res);
         },
       });
