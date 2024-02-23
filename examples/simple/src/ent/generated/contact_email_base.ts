@@ -26,13 +26,23 @@ import {
   contactEmailLoaderInfo,
 } from "./loaders";
 import { ContactLabel, NodeType, convertContactLabel } from "./types";
-import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
+import {
+  Contact,
+  ContactEmailToCommentsQuery,
+  ContactEmailToLikersQuery,
+  ContactInfoMixin,
+  FeedbackMixin,
+  IContactInfo,
+  IFeedback,
+} from "../internal";
 import schema from "../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class ContactEmailBase
-  extends ContactInfoMixin(class {})
-  implements Ent<ExampleViewerAlias>, IContactInfo
+  extends ContactInfoMixin(
+    FeedbackMixin(class {} as new (...args: any[]) => IContactInfo & IFeedback),
+  )
+  implements Ent<ExampleViewerAlias>, IContactInfo, IFeedback
 {
   protected readonly data: ContactEmailDBData;
   readonly nodeType = NodeType.ContactEmail;
@@ -216,6 +226,14 @@ export class ContactEmailBase
 
   static getField(key: string): Field | undefined {
     return ContactEmailBase.getSchemaFields().get(key);
+  }
+
+  queryComments(): ContactEmailToCommentsQuery {
+    return ContactEmailToCommentsQuery.query(this.viewer, this.id);
+  }
+
+  queryLikers(): ContactEmailToLikersQuery {
+    return ContactEmailToLikersQuery.query(this.viewer, this.id);
   }
 
   async loadContact(): Promise<Contact | null> {

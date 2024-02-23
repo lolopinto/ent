@@ -1,8 +1,10 @@
 package schema
 
 import (
+	"fmt"
 	"sort"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
@@ -28,6 +30,10 @@ func (p *PatternInfo) GetNodeInstance() string {
 // marker interface
 func (p *PatternInfo) HasMixin() bool {
 	return !p.DisableMixin
+}
+
+func (p *PatternInfo) GetMixinBaseFile() string {
+	return p.Name + "Base"
 }
 
 func (p *PatternInfo) GetSortedEdges() []*edge.AssociationEdge {
@@ -81,6 +87,10 @@ func (p *PatternInfo) GetMixinInterfaceName() string {
 	return names.ToClassType("I", p.Name)
 }
 
+func (p *PatternInfo) GetMixinInterfaceBaseName() string {
+	return names.ToClassType("I", p.Name, "Base")
+}
+
 func (p *PatternInfo) GetMixinWithInterfaceName() string {
 	return names.ToClassType("IEntWith", p.Name)
 }
@@ -99,6 +109,10 @@ func (p *PatternInfo) GetBuilderInterfaceName() string {
 
 func (p *PatternInfo) GetMixinName() string {
 	return names.ToClassType(p.Name, "Mixin")
+}
+
+func (p *PatternInfo) GetMixinBaseName() string {
+	return fmt.Sprintf("%sBaseMixin", strcase.ToCamel(p.Name))
 }
 
 func (p *PatternInfo) GetPatternMethod() string {
@@ -135,3 +149,7 @@ func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*ts
 // or handle private fields in patterns and mixins...
 // or fields with fieldPrivacy
 // https://github.com/lolopinto/ent/issues/911
+
+func (p *PatternInfo) GetImportPathForMixinBase() string {
+	return fmt.Sprintf("src/ent/generated/mixins/%s", strcase.ToSnake(p.GetMixinBaseFile()))
+}

@@ -42,7 +42,7 @@ import {
 import schema from "src/schema/event_activity_schema";
 
 export class EventActivityBase
-  extends WithAddressMixin(class {})
+  extends WithAddressMixin(class {} as new (...args: any[]) => IWithAddress)
   implements Ent<Viewer>, IWithAddress
 {
   protected readonly data: EventActivityDBData;

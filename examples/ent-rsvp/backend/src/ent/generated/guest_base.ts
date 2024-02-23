@@ -39,7 +39,7 @@ import {
 import schema from "src/schema/guest_schema";
 
 export class GuestBase
-  extends WithAddressMixin(class {})
+  extends WithAddressMixin(class {} as new (...args: any[]) => IWithAddress)
   implements Ent<Viewer>, IWithAddress
 {
   protected readonly data: GuestDBData;

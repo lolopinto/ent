@@ -26,13 +26,23 @@ import {
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
 import { ContactLabel, NodeType, convertContactLabel } from "./types";
-import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
+import {
+  Contact,
+  ContactInfoMixin,
+  ContactPhoneNumberToCommentsQuery,
+  ContactPhoneNumberToLikersQuery,
+  FeedbackMixin,
+  IContactInfo,
+  IFeedback,
+} from "../internal";
 import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class ContactPhoneNumberBase
-  extends ContactInfoMixin(class {})
-  implements Ent<ExampleViewerAlias>, IContactInfo
+  extends ContactInfoMixin(
+    FeedbackMixin(class {} as new (...args: any[]) => IContactInfo & IFeedback),
+  )
+  implements Ent<ExampleViewerAlias>, IContactInfo, IFeedback
 {
   protected readonly data: ContactPhoneNumberDBData;
   readonly nodeType = NodeType.ContactPhoneNumber;
@@ -216,6 +226,14 @@ export class ContactPhoneNumberBase
 
   static getField(key: string): Field | undefined {
     return ContactPhoneNumberBase.getSchemaFields().get(key);
+  }
+
+  queryComments(): ContactPhoneNumberToCommentsQuery {
+    return ContactPhoneNumberToCommentsQuery.query(this.viewer, this.id);
+  }
+
+  queryLikers(): ContactPhoneNumberToLikersQuery {
+    return ContactPhoneNumberToLikersQuery.query(this.viewer, this.id);
   }
 
   async loadContact(): Promise<Contact | null> {

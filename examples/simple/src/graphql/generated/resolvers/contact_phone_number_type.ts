@@ -6,17 +6,28 @@
 import {
   GraphQLFieldConfigMap,
   GraphQLID,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { ContactPhoneNumber } from "../../../ent";
+import {
+  GraphQLEdgeConnection,
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+} from "@snowtop/ent/graphql";
+import {
+  ContactPhoneNumber,
+  ContactPhoneNumberToCommentsQuery,
+  ContactPhoneNumberToLikersQuery,
+} from "../../../ent";
 import {
   ContactInfoType,
   ContactItemType,
   ContactLabelType,
+  ContactPhoneNumberToCommentsConnectionType,
+  ContactPhoneNumberToLikersConnectionType,
   ContactType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -49,6 +60,74 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
     },
     label: {
       type: new GraphQLNonNull(ContactLabelType),
+    },
+    comments: {
+      type: new GraphQLNonNull(ContactPhoneNumberToCommentsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        obj: ContactPhoneNumber,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: ContactPhoneNumber) =>
+            ContactPhoneNumberToCommentsQuery.query(v, obj),
+          args,
+        );
+      },
+    },
+    likers: {
+      type: new GraphQLNonNull(ContactPhoneNumberToLikersConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        obj: ContactPhoneNumber,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: ContactPhoneNumber) =>
+            ContactPhoneNumberToLikersQuery.query(v, obj),
+          args,
+        );
+      },
     },
   }),
   interfaces: () => [GraphQLNodeInterface, ContactItemType],

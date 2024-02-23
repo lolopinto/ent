@@ -5,9 +5,7 @@ import { AssocEdgeOptions, Builder, Orchestrator } from "@snowtop/ent/action";
 import { EdgeType, NodeType } from "src/ent/generated/types";
 import { ITodoContainer, Todo } from "src/ent/internal";
 
-export interface IEntWithTodoContainer extends Ent<Viewer>, ITodoContainer {}
-
-export interface ITodoContainerBuilder<T extends IEntWithTodoContainer> {
+export interface ITodoContainerBuilder<T extends ITodoContainer> {
   addScopedTodo(...nodes: (ID | Todo | Builder<Todo, any>)[]): this;
   addScopedTodoID(
     id: ID | Builder<Todo, any>,
@@ -16,19 +14,27 @@ export interface ITodoContainerBuilder<T extends IEntWithTodoContainer> {
   removeScopedTodo(...nodes: (ID | Todo)[]): this;
 }
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-interface BuilderConstructor<T extends IEntWithTodoContainer, C = {}> {
+// come back
+type Constructor<T extends ITodoContainer<Viewer> = ITodoContainer<Viewer>> =
+  new (
+    ...args: any[]
+  ) => T;
+
+interface BuilderConstructor<T extends ITodoContainer<Viewer>, C = {}> {
   orchestrator: Orchestrator<T, any, Viewer>;
   isBuilder<T extends Ent>(
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any>;
 }
 
-export type TodoContainerBuilderIsh<T extends IEntWithTodoContainer> =
-  Constructor<BuilderConstructor<T>>;
+export type TodoContainerBuilderIsh<T extends ITodoContainer<Viewer>> =
+  Constructor<
+    // @ts-ignore TODO fix
+    BuilderConstructor<T>
+  >;
 
 export function TodoContainerBuilder<
-  TEnt extends IEntWithTodoContainer,
+  TEnt extends ITodoContainer<Viewer>,
   TBase extends TodoContainerBuilderIsh<TEnt>,
 >(BaseClass: TBase) {
   return class TodoContainerBuilder
