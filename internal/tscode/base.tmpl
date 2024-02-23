@@ -360,7 +360,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{ range $field := .FieldInfo.EntFields -}}
     {{ if $field.Unique  -}}
       {{$fieldLoader := useImport ($this.GetFieldLoaderName $field) -}}
-      static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
+      static async {{$field.LoadFromName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
@@ -375,7 +375,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         ) as T | null;
       }
 
-      static async loadFrom{{$field.CamelCaseName}}X<T extends {{$baseClass}}>(
+      static async {{$field.LoadFromNameX}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
@@ -390,7 +390,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         ) as T;
       }
 
-      static async loadIDFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
+      static async {{$field.LoadIDFromName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
         context?: {{useImport "Context"}},
@@ -399,7 +399,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         return row?.id;
       }
 
-      static async loadRawDataFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
+      static async {{$field.LoadRawDataFromName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
         context?: {{useImport "Context"}},
@@ -408,7 +408,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       }
     {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}
-      static queryFrom{{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
+      static {{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
         ent: {{useImport "Ent"}}<{{$viewerType}}>,

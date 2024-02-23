@@ -27,7 +27,7 @@ export interface ContactEmailCreateInput {
   extra?: ContactInfo | null;
   emailAddress: string;
   label: ContactLabel;
-  contactID: ID | Builder<Contact, ExampleViewerAlias>;
+  contactId: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
 export type CreateContactEmailActionTriggers = (

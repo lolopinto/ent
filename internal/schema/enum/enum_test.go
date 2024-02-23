@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -856,7 +856,7 @@ func getGQLValues(values []string, addUnknown bool) []*Data {
 	ret := make([]*Data, len(values))
 	for k, v := range values {
 		ret[k] = &Data{
-			Name:       strings.ToUpper(strcase.ToSnake(v)),
+			Name:       names.ToGraphQLEnumName(v),
 			Value:      strconv.Quote(v),
 			UnknownVal: strings.ToLower(v) == "unknown",
 		}

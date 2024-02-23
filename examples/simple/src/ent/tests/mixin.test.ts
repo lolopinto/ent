@@ -37,7 +37,7 @@ async function createContact(
     ],
     firstName: firstName,
     lastName: lastName,
-    userID: user.id,
+    userId: user.id,
     ...partial,
   }).saveX();
 }
@@ -50,7 +50,7 @@ async function createEvent(
 
   return CreateEventAction.create(loggedOutViewer, {
     name: "fun event",
-    creatorID: user.id,
+    creatorId: user.id,
     startTime: startTime,
     location: "location",
     ...partial,
@@ -60,15 +60,19 @@ async function createEvent(
 test("feedback user", async () => {
   const user = await createUser();
   expect(isFeedback(user)).toBe(true);
+  expect(await user.hasLikers()).toBe(false);
 });
 
 test("feedback contact", async () => {
   const user = await createUser();
   const contact = await createContact(user, "Jon", "Snow");
   expect(isFeedback(contact)).toBe(true);
+  expect(await user.hasLikers()).toBe(false);
 });
 
 test("feedback event", async () => {
   const event = await createEvent(new Date());
   expect(isFeedback(event)).toBe(false);
+  // can't call hasLikers on event
+  // expect(await event.hasLikers()).toBe(false);
 });

@@ -147,7 +147,7 @@ import {
 import {
   DeleteUserInput2PayloadType,
   DeleteUserInput2Type,
-} from "./mutations/user/user_delete_2_type";
+} from "./mutations/user/user_delete2_type";
 import {
   UserDeleteInputType,
   UserDeletePayloadType,
@@ -179,6 +179,8 @@ import {
   ContactDateType,
   ContactEmailCanViewerDoType,
   ContactEmailSortColumnType,
+  ContactEmailToCommentsConnectionType,
+  ContactEmailToLikersConnectionType,
   ContactEmailType,
   ContactInfoSourceType,
   ContactInfoType,
@@ -187,6 +189,8 @@ import {
   ContactItemType,
   ContactLabelType,
   ContactPhoneNumberSortColumnType,
+  ContactPhoneNumberToCommentsConnectionType,
+  ContactPhoneNumberToLikersConnectionType,
   ContactPhoneNumberType,
   ContactSortColumnType,
   ContactToCommentsConnectionType,
@@ -320,6 +324,10 @@ export default new GraphQLSchema({
     CommentArticleToCommentsConnectionType(),
     CommentToPostConnectionType(),
     ContactCommentsFromAttachmentConnectionType(),
+    ContactEmailToCommentsConnectionType(),
+    ContactEmailToLikersConnectionType(),
+    ContactPhoneNumberToCommentsConnectionType(),
+    ContactPhoneNumberToLikersConnectionType(),
     ContactToCommentsConnectionType(),
     ContactToLikersConnectionType(),
     CreatorToEventsConnectionType(),

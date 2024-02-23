@@ -20,7 +20,7 @@ export class EditWorkspaceAction extends EditWorkspaceActionBase {
     Viewer<Ent<any> | null, ID | null>
   > {
     return {
-      rules: [new AllowIfViewerIsEntPropertyRule("creatorID"), AlwaysDenyRule],
+      rules: [new AllowIfViewerIsEntPropertyRule("creatorId"), AlwaysDenyRule],
     };
   }
 }

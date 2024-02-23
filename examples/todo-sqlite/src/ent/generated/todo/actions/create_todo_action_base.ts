@@ -30,9 +30,9 @@ export interface TodoCreateInput {
   createdAt?: Date;
   updatedAt?: Date;
   text: string;
-  creatorID: ID | Builder<Account, Viewer>;
-  assigneeID: ID | Builder<Account, Viewer>;
-  scopeID: ID;
+  creatorId: ID | Builder<Account, Viewer>;
+  assigneeId: ID | Builder<Account, Viewer>;
+  scopeId: ID;
   scopeType: string;
   bounty?: number | null;
   tags?: customTagInput[];

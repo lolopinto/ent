@@ -91,6 +91,8 @@ func NewLocalGraphQLEntImportPath(typ string) *ImportPath {
 }
 
 func getImportPathForCustomInterfaceInputFile(gqlType string) string {
+	// return fmt.Sprintf("src/graphql/generated/mutations/input/%s_type", names.ToFilePathName(gqlType))
+	// keeping this one for now to deal with circular dependency issues
 	return fmt.Sprintf("src/graphql/generated/mutations/input/%s_type", strcase.ToSnake(gqlType))
 }
 

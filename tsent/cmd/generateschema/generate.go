@@ -15,7 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/kv"
-	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -561,7 +561,7 @@ func GenerateSingleSchema(cfg *codegen.Config, data *CodegenData, node string) e
 // have to call codegen.FormatTS() after since we now do the formatting at once
 // as opposed to for each file
 func generateSchema(cfg *codegen.Config, data *CodegenData, node string) error {
-	filePath := path.Join(cfg.GetRootPathToConfigs(), base.GetSnakeCaseName(node)+"_schema.ts")
+	filePath := path.Join(cfg.GetRootPathToConfigs(), names.ToFilePathName(node)+"_schema.ts")
 	tsimps := tsimport.NewImports(cfg, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{

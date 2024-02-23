@@ -24,6 +24,9 @@ export const AttachmentType = new GraphQLObjectType({
     fileId: {
       type: new GraphQLNonNull(GraphQLID),
     },
+    dupeFileId: {
+      type: GraphQLID,
+    },
     note: {
       type: GraphQLString,
     },

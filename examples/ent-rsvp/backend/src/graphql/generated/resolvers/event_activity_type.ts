@@ -61,7 +61,7 @@ class EventActivityCanViewerDo {
       {
         ...args,
         rsvpStatus: args.rsvpStatus,
-        guestID: mustDecodeIDFromGQLID(args.guestID),
+        guestId: mustDecodeIDFromGQLID(args.guestId),
         dietaryRestrictions: args.dietaryRestrictions,
       },
     );
@@ -285,7 +285,7 @@ export const EventActivityCanViewerDoType = new GraphQLObjectType({
           description: "",
           type: new GraphQLNonNull(EventActivityRsvpStatusInputType),
         },
-        guestID: {
+        guestId: {
           description: "",
           type: new GraphQLNonNull(GraphQLID),
         },

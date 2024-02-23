@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
@@ -17,6 +16,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -413,7 +413,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 	patternMap := make(map[string][]*NodeData)
 
 	for nodeName, node := range schema.Nodes {
-		packageName := base.GetSnakeCaseName(nodeName)
+		packageName := names.ToFilePathName(nodeName)
 		// user.ts, address.ts etc
 		nodeData := newNodeData(packageName)
 
@@ -1316,7 +1316,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 			}
 			for _, typ := range e.Polymorphic.Types {
 				// convert to Node type
-				typ = strcase.ToCamel(typ)
+				typ = names.ToClassType(typ)
 				foreign, ok := s.Nodes[typ]
 				if ok {
 					// only add polymorphic accessors on foreign if index or unique

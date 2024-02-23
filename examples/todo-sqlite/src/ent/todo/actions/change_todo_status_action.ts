@@ -35,7 +35,7 @@ export class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {
           //this only exists for testing the flow, not called directly
           return EditAccountTodoStatusAction.create(builder.viewer, account, {
             todoStatus: status,
-            todoID: builder.existingEnt.id,
+            todoId: builder.existingEnt.id,
           }).changeset();
         },
       },
@@ -48,7 +48,7 @@ export class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {
 
           // transfer bounty amount from creator to assignee
           return AccountTransferCreditsAction.create(builder.viewer, creator, {
-            to: builder.existingEnt.assigneeID,
+            to: builder.existingEnt.assigneeId,
             amount: builder.existingEnt.bounty,
           }).changeset();
         },

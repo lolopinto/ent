@@ -41,7 +41,7 @@ async function create(
     ],
     firstName: firstName,
     lastName: lastName,
-    userID: user.id,
+    userId: user.id,
     ...partial,
   }).saveX();
 }
@@ -64,7 +64,7 @@ async function createMany(
         ],
         firstName: name.firstName,
         lastName: name.lastName,
-        userID: user.id,
+        userId: user.id,
       },
     ).saveX();
     results.push(contact);
@@ -114,11 +114,13 @@ test("create contact with explicit attachments", async () => {
         fileId: file.id,
         date: d,
         note: "test",
+        dupeFileId: file.id,
       },
       {
         fileId: file2.id,
         date: d,
         note: "test",
+        dupeFileId: file2.id,
       },
     ],
   });
@@ -131,11 +133,13 @@ test("create contact with explicit attachments", async () => {
       fileId: file.id,
       date: d.toISOString(),
       note: "test",
+      dupeFileId: file.id,
     },
     {
       fileId: file2.id,
       date: d.toISOString(),
       note: "test",
+      dupeFileId: file2.id,
     },
   ]);
 });
@@ -168,7 +172,7 @@ test("create contacts", async () => {
   // it'll be in the initial order because it's in order of creation
   verifyContacts(contacts, inputs);
 
-  const userId = contacts[0].userID;
+  const userId = contacts[0].userId;
   const v = new ExampleViewer(userId);
   const loadedContact = await Contact.loadX(v, contacts[0].id);
   user = await loadedContact.loadUserX();
@@ -253,7 +257,7 @@ test("multiple emails", async () => {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   };
   let contact = await CreateContactAction.create(
     new ExampleViewer(user.id),
@@ -349,7 +353,7 @@ test("multiple phonenumbers", async () => {
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   };
   let contact = await CreateContactAction.create(
     new ExampleViewer(user.id),
@@ -413,12 +417,12 @@ test("transaction with different viewer type", async () => {
   const action1 = CreateContactAction.create(viewer, {
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   });
   const action2 = CreateContactAction.create(viewer, {
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   });
 
   const tx = new Transaction(viewer, [action1, action2]);

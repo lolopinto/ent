@@ -60,9 +60,9 @@ import {
 import schema from "src/schema/account_schema";
 
 interface AccountData
-  extends Omit<AccountDBData, "phone_number" | "account_prefs_3" | "credits"> {
+  extends Omit<AccountDBData, "phone_number" | "account_prefs3" | "credits"> {
   phone_number: string | null;
-  account_prefs_3: AccountPrefs | null;
+  account_prefs3: AccountPrefs | null;
   credits: number | null;
 }
 
@@ -73,7 +73,7 @@ export interface AccountCanViewerSee {
 }
 
 export class AccountBase
-  extends TodoContainerMixin(class {})
+  extends TodoContainerMixin(class {} as new (...args: any[]) => ITodoContainer)
   implements Ent<Viewer>, ITodoContainer
 {
   protected readonly data: AccountData;
@@ -106,7 +106,7 @@ export class AccountBase
       convertNullableJSON(data.account_prefs),
     );
     this.accountPrefs3 = convertNullableAccountPrefs(
-      convertNullableJSON(data.account_prefs_3),
+      convertNullableJSON(data.account_prefs3),
     );
     this.accountPrefsList = convertNullableAccountPrefsList(
       convertNullableJSONList(data.account_prefs_list),
@@ -321,7 +321,7 @@ export class AccountBase
     })) as T;
   }
 
-  static async loadIDFromPhoneNumber<T extends AccountBase>(
+  static async loadIdFromPhoneNumber<T extends AccountBase>(
     this: new (
       viewer: Viewer,
       data: Data,
@@ -439,7 +439,7 @@ export class AccountBase
       accountPrefs3: () =>
         applyPrivacyPolicy(
           this.viewer,
-          fieldPrivacy.get("account_prefs_3")!,
+          fieldPrivacy.get("account_prefs3")!,
           this,
         ),
       credits: () =>

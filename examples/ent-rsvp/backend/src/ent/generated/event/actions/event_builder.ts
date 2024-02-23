@@ -20,7 +20,7 @@ import schema from "src/schema/event_schema";
 export interface EventInput {
   name?: string;
   slug?: string | null;
-  creatorID?: ID | Builder<User, Viewer>;
+  creatorId?: ID | Builder<User, Viewer>;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -161,7 +161,7 @@ export class EventBuilder<
     };
     addField("Name", input.name);
     addField("Slug", input.slug);
-    addField("creatorID", input.creatorID);
+    addField("creatorID", input.creatorId);
     return result;
   }
 
@@ -195,16 +195,16 @@ export class EventBuilder<
   }
 
   // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreatorIDValue(): ID | Builder<User, Viewer> {
-    if (this.input.creatorID !== undefined) {
-      return this.input.creatorID;
+  getNewCreatorIdValue(): ID | Builder<User, Viewer> {
+    if (this.input.creatorId !== undefined) {
+      return this.input.creatorId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `creatorID` since not in input and no existingEnt",
+        "no value to return for `creatorId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.creatorID;
+    return this.existingEnt.creatorId;
   }
 }

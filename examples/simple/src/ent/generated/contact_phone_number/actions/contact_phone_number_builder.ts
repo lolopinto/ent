@@ -17,7 +17,8 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { contactPhoneNumberLoaderInfo } from "../../loaders";
-import { ContactInfo, ContactLabel, NodeType } from "../../types";
+import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
+import { ContactInfo, ContactLabel, EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -25,7 +26,7 @@ export interface ContactPhoneNumberInput {
   extra?: ContactInfo | null;
   phoneNumber?: string;
   label?: ContactLabel;
-  contactID?: ID | Builder<Contact, ExampleViewerAlias>;
+  contactId?: ID | Builder<Contact, ExampleViewerAlias>;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -34,13 +35,28 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+class Base {
+  // @ts-ignore not assigning. need for Mixin
+  orchestrator: Orchestrator<ContactPhoneNumber, any, ExampleViewerAlias>;
+
+  constructor() {}
+
+  isBuilder<T extends Ent>(
+    node: ID | T | Builder<T, any>,
+  ): node is Builder<T, any> {
+    return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+}
+
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export class ContactPhoneNumberBuilder<
-  TInput extends ContactPhoneNumberInput = ContactPhoneNumberInput,
-  TExistingEnt extends TMaybleNullableEnt<ContactPhoneNumber> = ContactPhoneNumber | null,
-> implements Builder<ContactPhoneNumber, ExampleViewerAlias, TExistingEnt>
+    TInput extends ContactPhoneNumberInput = ContactPhoneNumberInput,
+    TExistingEnt extends TMaybleNullableEnt<ContactPhoneNumber> = ContactPhoneNumber | null,
+  >
+  extends FeedbackBuilder(Base)
+  implements Builder<ContactPhoneNumber, ExampleViewerAlias, TExistingEnt>
 {
   orchestrator: Orchestrator<
     ContactPhoneNumber,
@@ -74,6 +90,7 @@ export class ContactPhoneNumberBuilder<
       >
     >,
   ) {
+    super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-ContactPhoneNumber`;
     this.input = action.getInput();
     const updateInput = (d: ContactPhoneNumberInput) =>
@@ -99,10 +116,10 @@ export class ContactPhoneNumberBuilder<
     return this.input;
   }
 
-  updateInput(input: Omit<ContactPhoneNumberInput, "contactID">) {
-    if (input.contactID !== undefined) {
+  updateInput(input: Omit<ContactPhoneNumberInput, "contactId">) {
+    if (input.contactId !== undefined) {
       throw new Error(
-        `contactID cannot be passed to updateInput. use overrideContactID instead`,
+        `contactId cannot be passed to updateInput. use overrideContactId instead`,
       );
     }
 
@@ -113,9 +130,9 @@ export class ContactPhoneNumberBuilder<
     };
   }
 
-  // override immutable field `contactID`
-  overrideContactID(val: ID | Builder<Contact, ExampleViewerAlias>) {
-    this.input.contactID = val;
+  // override immutable field `contactId`
+  overrideContactId(val: ID | Builder<Contact, ExampleViewerAlias>) {
+    this.input.contactId = val;
   }
 
   deleteInputKey(key: keyof ContactPhoneNumberInput) {
@@ -144,6 +161,15 @@ export class ContactPhoneNumberBuilder<
       );
     }
     return edited.id;
+  }
+  // this gets the inputs that have been written for a given edgeType and operation
+  // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
+  getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {
+    return this.orchestrator.getInputEdges(edgeType, op);
+  }
+
+  clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
+    this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
   async build(): Promise<Changeset> {
@@ -191,7 +217,7 @@ export class ContactPhoneNumberBuilder<
     addField("extra", input.extra);
     addField("phoneNumber", input.phoneNumber);
     addField("label", input.label);
-    addField("contactID", input.contactID);
+    addField("contactID", input.contactId);
     return result;
   }
 
@@ -239,16 +265,16 @@ export class ContactPhoneNumberBuilder<
   }
 
   // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewContactIDValue(): ID | Builder<Contact, ExampleViewerAlias> {
-    if (this.input.contactID !== undefined) {
-      return this.input.contactID;
+  getNewContactIdValue(): ID | Builder<Contact, ExampleViewerAlias> {
+    if (this.input.contactId !== undefined) {
+      return this.input.contactId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `contactID` since not in input and no existingEnt",
+        "no value to return for `contactId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.contactID;
+    return this.existingEnt.contactId;
   }
 }

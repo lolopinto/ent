@@ -7,15 +7,26 @@ import {
   GraphQLBoolean,
   GraphQLFieldConfigMap,
   GraphQLID,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext, applyPrivacyPolicy } from "@snowtop/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { ContactEmail } from "../../../ent";
+import {
+  GraphQLEdgeConnection,
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+} from "@snowtop/ent/graphql";
+import {
+  ContactEmail,
+  ContactEmailToCommentsQuery,
+  ContactEmailToLikersQuery,
+} from "../../../ent";
 import EditContactEmailAction from "../../../ent/contact_email/actions/edit_contact_email_action";
 import {
+  ContactEmailToCommentsConnectionType,
+  ContactEmailToLikersConnectionType,
   ContactInfoType,
   ContactItemType,
   ContactLabelType,
@@ -71,6 +82,72 @@ export const ContactEmailType = new GraphQLObjectType({
     },
     label: {
       type: new GraphQLNonNull(ContactLabelType),
+    },
+    comments: {
+      type: new GraphQLNonNull(ContactEmailToCommentsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        obj: ContactEmail,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: ContactEmail) => ContactEmailToCommentsQuery.query(v, obj),
+          args,
+        );
+      },
+    },
+    likers: {
+      type: new GraphQLNonNull(ContactEmailToLikersConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        obj: ContactEmail,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: ContactEmail) => ContactEmailToLikersQuery.query(v, obj),
+          args,
+        );
+      },
     },
     canViewerDo: {
       type: new GraphQLNonNull(ContactEmailCanViewerDoType),

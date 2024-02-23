@@ -36,7 +36,7 @@ import schema from "../../schema/contact_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class ContactBase
-  extends FeedbackMixin(class {})
+  extends FeedbackMixin(class {} as new (...args: any[]) => IFeedback)
   implements Ent<ExampleViewerAlias>, IFeedback
 {
   protected readonly data: ContactDBData;
@@ -48,7 +48,7 @@ export class ContactBase
   readonly phoneNumberIds: ID[];
   readonly firstName: string;
   readonly lastName: string;
-  readonly userID: ID;
+  readonly userId: ID;
   readonly attachments: Attachment[] | null;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
@@ -61,7 +61,7 @@ export class ContactBase
     this.phoneNumberIds = data.phone_number_ids;
     this.firstName = data.first_name;
     this.lastName = data.last_name;
-    this.userID = data.user_id;
+    this.userId = data.user_id;
     this.attachments = convertNullableAttachmentList(data.attachments);
     // @ts-expect-error
     this.data = data;
@@ -260,10 +260,10 @@ export class ContactBase
   }
 
   async loadUser(): Promise<User | null> {
-    return loadEnt(this.viewer, this.userID, User.loaderOptions());
+    return loadEnt(this.viewer, this.userId, User.loaderOptions());
   }
 
   loadUserX(): Promise<User> {
-    return loadEntX(this.viewer, this.userID, User.loaderOptions());
+    return loadEntX(this.viewer, this.userId, User.loaderOptions());
   }
 }

@@ -21,7 +21,7 @@ import { TagBuilder } from "src/ent/generated/tag/actions/tag_builder";
 
 export interface TagCreateInput {
   displayName: string;
-  ownerID: ID | Builder<Account, Viewer>;
+  ownerId: ID | Builder<Account, Viewer>;
   relatedTagIds?: ID[] | null;
   canonicalName?: string;
 }

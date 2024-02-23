@@ -31,7 +31,7 @@ export default class CreateCommentAction extends CreateCommentActionBase {
       {
         changeset(builder, input) {
           // creating the comment automatically adds the needed edges
-          builder.addPostID(input.articleID, input.articleType as NodeType);
+          builder.addPostID(input.articleId, input.articleType as NodeType);
         },
       },
     ];

@@ -56,8 +56,7 @@ export default class CreateUserAction extends CreateUserActionBase {
                 label: ContactLabel.Self,
               },
             ],
-            // this is what's confusing me. self-contact here...
-            userID: builder,
+            userId: builder,
           });
 
           builder.addSelfContactID(action.builder, {

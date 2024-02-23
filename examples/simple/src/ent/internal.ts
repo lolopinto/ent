@@ -5,9 +5,9 @@
 
 export * from "./generated/loaders";
 export * from "./generated/loadAny";
-export * from "./generated/mixins/contact_info";
-export * from "./generated/mixins/day_of_week";
-export * from "./generated/mixins/feedback";
+export * from "./mixins/contact_info";
+export * from "./mixins/day_of_week";
+export * from "./mixins/feedback";
 export * from "./generated/address_base";
 export * from "./generated/auth_code_base";
 export * from "./generated/comment_base";
@@ -46,6 +46,10 @@ export * from "./comment/query/comments_from_attachment_query";
 export * from "./contact/query/contact_comments_from_attachment_query";
 export * from "./contact/query/contact_to_comments_query";
 export * from "./contact/query/contact_to_likers_query";
+export * from "./contact_email/query/contact_email_to_comments_query";
+export * from "./contact_email/query/contact_email_to_likers_query";
+export * from "./contact_phone_number/query/contact_phone_number_to_comments_query";
+export * from "./contact_phone_number/query/contact_phone_number_to_likers_query";
 export * from "./event/query/creator_to_events_query";
 export * from "./event/query/event_to_attending_query";
 export * from "./event/query/event_to_declined_query";

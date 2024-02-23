@@ -108,7 +108,7 @@ const superNestedObjectLoader = new ObjectLoaderFactory({
 });
 
 export class UserBase
-  extends FeedbackMixin(class {})
+  extends FeedbackMixin(class {} as new (...args: any[]) => IFeedback)
   implements Ent<ExampleViewerAlias>, IFeedback
 {
   protected readonly data: UserDBData;
@@ -405,7 +405,7 @@ export class UserBase
     })) as T;
   }
 
-  static async loadIDFromEmailAddress<T extends UserBase>(
+  static async loadIdFromEmailAddress<T extends UserBase>(
     this: new (
       viewer: ExampleViewerAlias,
       data: Data,
@@ -458,7 +458,7 @@ export class UserBase
     })) as T;
   }
 
-  static async loadIDFromPhoneNumber<T extends UserBase>(
+  static async loadIdFromPhoneNumber<T extends UserBase>(
     this: new (
       viewer: ExampleViewerAlias,
       data: Data,

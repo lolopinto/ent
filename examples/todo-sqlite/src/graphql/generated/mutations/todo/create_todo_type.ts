@@ -106,9 +106,9 @@ export const CreateTodoType: GraphQLFieldConfig<
   ): Promise<CreateTodoPayload> => {
     const todo = await CreateTodoAction.create(context.getViewer(), {
       text: input.text,
-      creatorID: input.creator_id,
-      assigneeID: input.assignee_id,
-      scopeID: input.scope_id,
+      creatorId: input.creator_id,
+      assigneeId: input.assignee_id,
+      scopeId: input.scope_id,
       scopeType: input.scope_type,
       bounty: input.bounty,
       tags: input.tags,

@@ -18,6 +18,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 
@@ -235,7 +236,7 @@ func (constraint *indexConstraint) getInfo() (string, []string) {
 	idxName := constraint.name
 	if idxName == "" {
 		idxNameParts = append(idxNameParts, "idx")
-		idxName = base.GetNameFromParts(idxNameParts)
+		idxName = names.ToDBColumn(idxNameParts...)
 	}
 
 	return strconv.Quote(idxName), colNames

@@ -6,7 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/codegen/codegenapi"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -38,7 +38,7 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 
 	// add field to node
 	if err := result.addField(&fieldType{
-		Name: codegenapi.GraphQLName(processor.Config, "canViewerDo"),
+		Name: names.ToGraphQLName(processor.Config, "canViewerDo"),
 		FieldImports: []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewLocalGraphQLEntImportPath(canViewerDoName),

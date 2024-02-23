@@ -82,7 +82,7 @@ export const TodoStatusAccountEditType: GraphQLFieldConfig<
       input.id,
       {
         todoStatus: input.todo_status,
-        todoID: input.todo_id,
+        todoId: input.todo_id,
       },
     );
     return { account };

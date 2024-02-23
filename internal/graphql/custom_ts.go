@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -138,7 +138,7 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 		// should we build an interface for this custom object?
 		createInterface := false
 		intType := newInterfaceType(&interfaceType{
-			Name: strcase.ToCamel(field.GraphQLName) + "Args",
+			Name: names.ToClassType(field.GraphQLName, "Args"),
 		})
 		for _, arg := range field.Args {
 			// nothing to do with context args yet
@@ -273,7 +273,7 @@ type mutationFieldConfigBuilder struct {
 }
 
 func (mfcg *mutationFieldConfigBuilder) getName() string {
-	return fmt.Sprintf("%sType", strcase.ToCamel(mfcg.field.GraphQLName))
+	return names.ToClassType(mfcg.field.GraphQLName, "Type")
 }
 
 func (mfcg *mutationFieldConfigBuilder) build(processor *codegen.Processor, cd *CustomData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
@@ -319,11 +319,9 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Proces
 		ret = append(ret, imp)
 	} else {
 
-		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
-
 		ret = append(ret, &tsimport.ImportPath{
 			// TODO we should pass this in instead of automatically doing this
-			Import:     fmt.Sprintf("%sPayloadType", prefix),
+			Import:     names.ToClassType(mfcg.field.GraphQLName, "PayloadType"),
 			ImportPath: "",
 		})
 	}
@@ -333,7 +331,6 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Proces
 
 func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg {
 	if mfcg.inputArg != nil {
-		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
 		return []*fieldConfigArg{
 			{
 				Name: "input",
@@ -341,7 +338,7 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					// same for this about passing it in
 					{
-						Import: fmt.Sprintf("%sInputType", prefix),
+						Import: names.ToClassType(mfcg.field.GraphQLName, "InputType"),
 					},
 				},
 			},
@@ -352,8 +349,8 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 
 func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
 	if mfcg.inputArg != nil {
-		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
-		return fmt.Sprintf("Promise<%sPayload>", prefix)
+		typ := names.ToClassType(mfcg.field.GraphQLName, "Payload")
+		return fmt.Sprintf("Promise<%s>", typ)
 	}
 	return ""
 }
@@ -369,7 +366,7 @@ type queryFieldConfigBuilder struct {
 }
 
 func (qfcg *queryFieldConfigBuilder) getName() string {
-	return fmt.Sprintf("%sQueryType", strcase.ToCamel(qfcg.field.GraphQLName))
+	return names.ToClassType(qfcg.field.GraphQLName, "QueryType")
 }
 
 func (qfcg *queryFieldConfigBuilder) build(processor *codegen.Processor, cd *CustomData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
@@ -1233,8 +1230,7 @@ func (e *CustomEdge) GraphQLEdgeName() string {
 }
 
 func (e *CustomEdge) CamelCaseEdgeName() string {
-	return strcase.ToCamel(e.EdgeName)
-
+	return names.ToClassType(e.EdgeName)
 }
 
 func (e *CustomEdge) HideFromGraphQL() bool {
@@ -1253,20 +1249,19 @@ func (e *CustomEdge) PolymorphicEdge() bool {
 }
 
 func (e *CustomEdge) GetSourceNodeName() string {
-	return strcase.ToCamel(e.SourceNodeName)
+	return names.ToClassType(e.SourceNodeName)
 }
 
 func (e *CustomEdge) GetGraphQLEdgePrefix() string {
-	return fmt.Sprintf("%sTo%s", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
-
+	return names.ToClassType(e.SourceNodeName, "To", e.EdgeName)
 }
 
 func (e *CustomEdge) GetGraphQLConnectionName() string {
-	return fmt.Sprintf("%sTo%sConnection", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
+	return names.ToClassType(e.SourceNodeName, "To", e.EdgeName, "Connection")
 }
 
 func (e *CustomEdge) GetGraphQLConnectionType() string {
-	return fmt.Sprintf("%sTo%sConnectionType", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
+	return names.ToClassType(e.SourceNodeName, "To", e.EdgeName, "ConnectionType")
 }
 
 func (e *CustomEdge) TsEdgeQueryEdgeName() string {
@@ -1275,7 +1270,7 @@ func (e *CustomEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *CustomEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sTo%sQuery", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
+	return names.ToClassType(e.SourceNodeName, "To", e.EdgeName, "Query")
 }
 
 func (e *CustomEdge) UniqueEdge() bool {
@@ -1293,7 +1288,7 @@ func getGQLEdge(cfg codegenapi.Config, field CustomField, nodeName string) *Cust
 	return &CustomEdge{
 		SourceNodeName: nodeName,
 		Type:           field.Results[0].Type,
-		graphqlName:    codegenapi.GraphQLName(cfg, field.GraphQLName),
+		graphqlName:    names.ToGraphQLName(cfg, field.GraphQLName),
 		EdgeName:       edgeName,
 	}
 }

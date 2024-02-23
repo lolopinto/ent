@@ -21,7 +21,7 @@ export class ImportGuestResolver {
     args: [
       gqlContextType(),
       {
-        name: "eventID",
+        name: "eventId",
         type: GraphQLID,
       },
       {
@@ -33,12 +33,12 @@ export class ImportGuestResolver {
   })
   async importGuests(
     context: RequestContext,
-    eventID: ID,
+    eventId: ID,
     file: Promise<FileUpload>,
   ) {
     const file2 = await file;
 
-    const event = await Event.loadX(context.getViewer(), eventID);
+    const event = await Event.loadX(context.getViewer(), eventId);
 
     const parser = file2.createReadStream().pipe(
       parse({
@@ -114,13 +114,13 @@ export class ImportGuestResolver {
       // TODO this can be updated to check for duplicates but we don't care about that since not a real world program
       let groupAction = CreateGuestGroupAction.create(context.getViewer(), {
         invitationName: row.invitationName,
-        eventID,
+        eventId,
       });
       actions.push(groupAction);
       actions.push(
         CreateGuestAction.create(context.getViewer(), {
-          eventID,
-          guestGroupID: groupAction.builder,
+          eventId,
+          guestGroupId: groupAction.builder,
           name: row.name,
           emailAddress: row.emailAddress,
         }),
@@ -129,8 +129,8 @@ export class ImportGuestResolver {
       extraGuests.forEach((guest) =>
         actions.push(
           CreateGuestAction.create(context.getViewer(), {
-            eventID,
-            guestGroupID: groupAction.builder,
+            eventId,
+            guestGroupId: groupAction.builder,
             name: guest.name,
             emailAddress: guest.emailAddress,
           }),

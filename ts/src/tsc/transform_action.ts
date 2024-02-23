@@ -14,7 +14,7 @@ import { LoggedOutViewer } from "../core/viewer";
 import * as path from "path";
 import { Data } from "../core/base";
 import { TransformFile } from "./transform";
-import { snakeCase } from "snake-case";
+import { toFilePath } from "../names/names";
 
 interface baseFileInfo {
   input: string;
@@ -185,9 +185,9 @@ export class TransformAction implements TransformFile {
       }
     }
 
-    const builderPath = `src/ent/generated/${snakeCase(
+    const builderPath = `src/ent/generated/${toFilePath(
       nodeName,
-    )}/actions/${snakeCase(builder)}`;
+    )}/actions/${toFilePath(builder)}`;
 
     let imports: Map<string, string[]> = new Map([
       [

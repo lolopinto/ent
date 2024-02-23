@@ -14,7 +14,7 @@ There's 3 major runtimes we use:
 
 Here's the steps to install locally:
 
-* Install [golang](https://golang.org/doc/install#download) version of 1.21.6
+* Install [golang](https://golang.org/doc/install#download) version of 1.22.0
 * Get the latest version of the Ent CLI:
 
 ```shell

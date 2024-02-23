@@ -172,7 +172,7 @@ test("delete", async () => {
       new ExampleViewer(user.id),
     ),
     [
-      "deletedUserID",
+      "deletedUserId",
       async (id: string) => {
         expect(mustDecodeIDFromGQLID(id)).toBe(user.id);
         let deletedUser = await User.load(new ExampleViewer(user.id), user.id);
@@ -203,7 +203,7 @@ test("delete 2", async () => {
       new ExampleViewer(user.id),
     ),
     [
-      "deletedUserID",
+      "deletedUserId",
       async (id: string) => {
         expect(mustDecodeIDFromGQLID(id)).toBe(user.id);
         let deletedUser = await User.load(new ExampleViewer(user.id), user.id);
@@ -238,6 +238,6 @@ test("delete. other user no permissions", async () => {
         expectedError: /not visible for privacy reasons/,
       },
     ),
-    ["deletedUserID", null],
+    ["deletedUserId", null],
   );
 });

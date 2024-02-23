@@ -3,6 +3,7 @@ import { QueryableDataOptions } from "./base";
 export interface OrderByOption {
   column: string;
   direction: "ASC" | "DESC";
+  alias?: string;
   nullsPlacement?: "first" | "last";
   // is this column a date/time column?
   // needed to know if we create a cursor based on this column to conver to timestamp and ISO string for
@@ -25,7 +26,8 @@ export function getOrderByPhrase(orderby: OrderBy, alias?: string): string {
           nullsPlacement = " NULLS LAST";
           break;
       }
-      const col = alias ? `${alias}.${v.column}` : v.column;
+      const orderByAlias = v.alias ?? alias;
+      const col = orderByAlias ? `${orderByAlias}.${v.column}` : v.column;
       return `${col} ${v.direction}${nullsPlacement}`;
     })
     .join(", ");
@@ -66,10 +68,20 @@ export function getJoinInfo(
 
 export function buildQuery(options: QueryableDataOptions): string {
   const fieldsAlias = options.fieldsAlias ?? options.alias;
-  const fields =
-    fieldsAlias && !options.disableFieldsAlias
-      ? options.fields.map((f) => `${fieldsAlias}.${f}`).join(", ")
-      : options.fields.join(", ");
+  const fields = options.fields
+    .map((f) => {
+      if (typeof f === "object") {
+        if (!options.disableFieldsAlias) {
+          return `${f.alias}.${f.column}`;
+        }
+        return f.column;
+      }
+      if (fieldsAlias && !options.disableFieldsAlias) {
+        return `${fieldsAlias}.${f}`;
+      }
+      return f;
+    })
+    .join(", ");
 
   // always start at 1
   const parts: string[] = [];
@@ -94,7 +106,12 @@ export function buildQuery(options: QueryableDataOptions): string {
     parts.push(`GROUP BY ${options.groupby}`);
   }
   if (options.orderby) {
-    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby, fieldsAlias)}`);
+    parts.push(
+      `ORDER BY ${getOrderByPhrase(
+        options.orderby,
+        options.disableDefaultOrderByAlias ? undefined : fieldsAlias,
+      )}`,
+    );
   }
   if (options.limit) {
     parts.push(`LIMIT ${options.limit}`);

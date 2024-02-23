@@ -19,8 +19,6 @@ export class EdgeWithDeletedAt extends AssocEdge {
 
 export const testEdgeGlobalSchema = {
   extraEdgeFields: {
-    // need this to be lowerCamelCase because we do this based on field name
-    // #510
     deletedAt: TimestampType({
       nullable: true,
       index: true,

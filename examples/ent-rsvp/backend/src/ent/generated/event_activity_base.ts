@@ -42,7 +42,7 @@ import {
 import schema from "src/schema/event_activity_schema";
 
 export class EventActivityBase
-  extends WithAddressMixin(class {})
+  extends WithAddressMixin(class {} as new (...args: any[]) => IWithAddress)
   implements Ent<Viewer>, IWithAddress
 {
   protected readonly data: EventActivityDBData;
@@ -51,7 +51,7 @@ export class EventActivityBase
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly name: string;
-  readonly eventID: ID;
+  readonly eventId: ID;
   readonly startTime: Date;
   readonly endTime: Date | null;
   readonly location: string;
@@ -65,7 +65,7 @@ export class EventActivityBase
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.name = data.name;
-    this.eventID = data.event_id;
+    this.eventId = data.event_id;
     this.startTime = data.start_time;
     this.endTime = data.end_time;
     this.location = data.location;
@@ -281,10 +281,10 @@ export class EventActivityBase
   }
 
   async loadEvent(): Promise<Event | null> {
-    return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
+    return loadEnt(this.viewer, this.eventId, Event.loaderOptions());
   }
 
   loadEventX(): Promise<Event> {
-    return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
+    return loadEntX(this.viewer, this.eventId, Event.loaderOptions());
   }
 }

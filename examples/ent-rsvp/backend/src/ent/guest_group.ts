@@ -31,7 +31,7 @@ export class GuestGroup extends GuestGroupBase {
     return {
       rules: [
         // can view guest group if creator of event
-        new AllowIfEventCreatorRule(this.eventID),
+        new AllowIfEventCreatorRule(this.eventId),
         // can view guest group if guest
         new AllowIfGuestInGuestGroupRule(),
         AlwaysDenyRule,

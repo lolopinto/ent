@@ -27,7 +27,7 @@ export interface ContactPhoneNumberCreateInput {
   extra?: ContactInfo | null;
   phoneNumber: string;
   label: ContactLabel;
-  contactID: ID | Builder<Contact, ExampleViewerAlias>;
+  contactId: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
 export type CreateContactPhoneNumberActionTriggers = (

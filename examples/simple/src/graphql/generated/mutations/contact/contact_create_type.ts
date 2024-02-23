@@ -27,7 +27,7 @@ import { ContactLabelType, ContactType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactCreateInput extends ContactCreateInput {
-  userID: string;
+  userId: string;
 }
 
 interface ContactCreatePayload {
@@ -73,7 +73,7 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
     lastName: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    userID: {
+    userId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     attachments: {
@@ -121,7 +121,7 @@ export const ContactCreateType: GraphQLFieldConfig<
     const contact = await CreateContactAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,
-      userID: mustDecodeIDFromGQLID(input.userID),
+      userId: mustDecodeIDFromGQLID(input.userId),
       attachments: input.attachments,
       emails: input.emails,
       phoneNumbers: input.phoneNumbers,

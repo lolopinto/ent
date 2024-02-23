@@ -1,24 +1,24 @@
 import DataLoader from "dataloader";
+import memoizee from "memoizee";
 import {
   Context,
+  Data,
   EdgeQueryableDataOptions,
   Loader,
   LoaderFactory,
-  Data,
   PrimableLoader,
 } from "../base";
-import {
-  getDefaultLimit,
-  performRawQuery,
-  buildGroupQuery,
-  loadRows,
-} from "../ent";
 import * as clause from "../clause";
+import {
+  buildGroupQuery,
+  getDefaultLimit,
+  loadRows,
+  performRawQuery,
+} from "../ent";
 import { logEnabled } from "../logger";
-import { CacheMap, getCustomLoader, getLoader } from "./loader";
-import memoizee from "memoizee";
-import { ObjectLoaderFactory } from "./object_loader";
 import { OrderBy } from "../query_impl";
+import { CacheMap, getCustomLoader, getLoader } from "./loader";
+import { ObjectLoaderFactory } from "./object_loader";
 
 function getOrderByLocal(
   options: QueryOptions,
@@ -240,7 +240,13 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
 }
 
 interface QueryOptions {
-  fields: string[];
+  fields: (
+    | string
+    | {
+        alias: string;
+        column: string;
+      }
+  )[];
   tableName: string; // or function for assoc_edge. come back to it
   // if provided, we'll group queries to the database via this key and this will be the unique id we're querying for
   // using window functions or not

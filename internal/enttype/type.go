@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent/config"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -966,7 +966,7 @@ func (t *enumType) getDBTypeForEnumDBType(values []string, typ string) string {
 	// for now we take it from TSType if that's given since it makes sense to be consistent with that
 	// if not provided, we use the name
 	// we also need DBTypeName or something too
-	enumType := strconv.Quote(strcase.ToSnake(typ))
+	enumType := strconv.Quote(names.ToDBColumn(typ))
 	sb.WriteString(fmt.Sprintf("name=%s", enumType))
 	return fmt.Sprintf("postgresql.ENUM(%s)", sb.String())
 

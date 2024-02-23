@@ -23,7 +23,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface AuthCodeInput {
   code?: string;
-  userID?: ID | Builder<User, ExampleViewerAlias>;
+  userId?: ID | Builder<User, ExampleViewerAlias>;
   emailAddress?: string | null;
   phoneNumber?: string | null;
   // allow other properties. useful for action-only fields
@@ -93,10 +93,10 @@ export class AuthCodeBuilder<
     return this.input;
   }
 
-  updateInput(input: Omit<AuthCodeInput, "userID">) {
-    if (input.userID !== undefined) {
+  updateInput(input: Omit<AuthCodeInput, "userId">) {
+    if (input.userId !== undefined) {
       throw new Error(
-        `userID cannot be passed to updateInput. use overrideUserID instead`,
+        `userId cannot be passed to updateInput. use overrideUserId instead`,
       );
     }
 
@@ -107,9 +107,9 @@ export class AuthCodeBuilder<
     };
   }
 
-  // override immutable field `userID`
-  overrideUserID(val: ID | Builder<User, ExampleViewerAlias>) {
-    this.input.userID = val;
+  // override immutable field `userId`
+  overrideUserId(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.input.userId = val;
   }
 
   deleteInputKey(key: keyof AuthCodeInput) {
@@ -183,7 +183,7 @@ export class AuthCodeBuilder<
       }
     };
     addField("code", input.code);
-    addField("userID", input.userID);
+    addField("userID", input.userId);
     addField("emailAddress", input.emailAddress);
     addField("phoneNumber", input.phoneNumber);
     return result;
@@ -210,17 +210,17 @@ export class AuthCodeBuilder<
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewUserIDValue(): ID | Builder<User, ExampleViewerAlias> {
-    if (this.input.userID !== undefined) {
-      return this.input.userID;
+  getNewUserIdValue(): ID | Builder<User, ExampleViewerAlias> {
+    if (this.input.userId !== undefined) {
+      return this.input.userId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `userID` since not in input and no existingEnt",
+        "no value to return for `userId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.userID;
+    return this.existingEnt.userId;
   }
 
   // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt

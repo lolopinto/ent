@@ -14,7 +14,7 @@ async function createGuestGroup(event?: Event) {
 
   const group = await CreateGuestGroupAction.create(event.viewer, {
     invitationName: "people",
-    eventID: event.id,
+    eventId: event.id,
   }).saveX();
   expect(group).toBeInstanceOf(GuestGroup);
   return group;
@@ -31,7 +31,7 @@ describe("create guest group", () => {
     try {
       await CreateGuestGroupAction.create(new IDViewer(user.id), {
         invitationName: "people",
-        eventID: event.id,
+        eventId: event.id,
       }).saveX();
       throw new Error("should have thrown");
     } catch (e) {
@@ -53,10 +53,10 @@ describe("create guest group", () => {
 
   test("create group with activity flag set to invite all guests true", async () => {
     const event = await createEvent();
-    const activity1 = await createActivity({ eventID: event.id }, event);
+    const activity1 = await createActivity({ eventId: event.id }, event);
     const activity2 = await createActivity(
       {
-        eventID: event.id,
+        eventId: event.id,
         inviteAllGuests: true,
       },
       event,
@@ -79,7 +79,7 @@ describe("create guest group", () => {
     const event = await createEvent();
     const group = await CreateGuestGroupAction.create(event.viewer, {
       invitationName: "people",
-      eventID: event.id,
+      eventId: event.id,
       guests: [
         {
           name: "Arya Stark",
@@ -177,10 +177,10 @@ test("guest loading guest group", async () => {
   await Promise.all(
     inputs.map(async (input) => {
       return CreateGuestAction.create(group.viewer, {
-        guestGroupID: group.id,
+        guestGroupId: group.id,
         name: input.name,
         emailAddress: input.emailAddress,
-        eventID: group.eventID,
+        eventId: group.eventId,
       }).saveX();
     }),
   );

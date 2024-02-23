@@ -24,7 +24,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customClearEventRsvpStatusInput extends ClearEventRsvpStatusInput {
   id: string;
-  userID: string;
+  userId: string;
 }
 
 interface ClearEventRsvpStatusPayload {
@@ -38,7 +38,7 @@ export const ClearEventRsvpStatusInputType = new GraphQLInputObjectType({
       description: "id of Event",
       type: new GraphQLNonNull(GraphQLID),
     },
-    userID: {
+    userId: {
       type: new GraphQLNonNull(GraphQLID),
     },
   }),
@@ -78,7 +78,7 @@ export const EventRsvpStatusClearType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
       {
-        userID: mustDecodeIDFromGQLID(input.userID),
+        userId: mustDecodeIDFromGQLID(input.userId),
       },
     );
     return { event };

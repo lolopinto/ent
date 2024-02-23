@@ -1,43 +1,42 @@
-import DB, {
-  Dialect,
-  Queryer,
-  SyncQueryer,
-  QueryResult,
-  QueryResultRow,
-} from "./db";
 import {
-  Viewer,
-  Ent,
-  ID,
-  LoadRowsOptions,
-  LoadRowOptions,
+  Context,
+  CreateRowOptions,
   Data,
   DataOptions,
-  QueryableDataOptions,
-  EditRowOptions,
-  LoadEntOptions,
-  LoadCustomEntOptions,
   EdgeQueryableDataOptions,
-  Context,
-  SelectDataOptions,
-  CreateRowOptions,
-  QueryDataOptions,
+  EditRowOptions,
+  Ent,
   EntConstructor,
-  PrivacyPolicy,
-  SelectCustomDataOptions,
-  PrimableLoader,
+  ID,
+  LoadCustomEntOptions,
+  LoadEntOptions,
+  LoadRowOptions,
+  LoadRowsOptions,
   Loader,
   LoaderWithLoadMany,
+  PrimableLoader,
+  PrivacyPolicy,
+  QueryDataOptions,
+  SelectCustomDataOptions,
+  SelectDataOptions,
+  Viewer,
 } from "./base";
+import DB, {
+  Dialect,
+  QueryResult,
+  QueryResultRow,
+  Queryer,
+  SyncQueryer,
+} from "./db";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
 
-import * as clause from "./clause";
-import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
+import * as clause from "./clause";
 import { __getGlobalSchema } from "./global_schema";
-import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
 import { CacheMap } from "./loaders/loader";
+import { log, logEnabled, logTrace } from "./logger";
+import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   private m = new Map();
@@ -926,7 +925,13 @@ interface GroupQueryOptions<T extends Data, K = keyof T> {
   // extra clause to join
   clause?: clause.Clause<T, K>;
   groupColumn: K;
-  fields: K[];
+  fields: (
+    | K
+    | {
+        alias: string;
+        column: K;
+      }
+  )[];
   values: any[];
   orderby?: OrderBy;
   limit: number;
@@ -949,8 +954,19 @@ export function buildGroupQuery<T extends Data = Data, K = keyof T>(
 
   // window functions work in sqlite!
   //    https://www.sqlite.org/windowfunctions.html
+  const fieldString = fields
+    .map((f) => {
+      if (typeof f === "object") {
+        // TS doesn't understand that K can only be a string, so we need
+        // for it to treat f as the object we know it is.
+        const fObj = f as { alias: string; column: string };
+        return `${fObj.alias}.${fObj.column}`;
+      }
+      return f;
+    })
+    .join(",");
   return [
-    `SELECT * FROM (SELECT ${fields.join(",")} OVER (PARTITION BY ${
+    `SELECT * FROM (SELECT ${fieldString} OVER (PARTITION BY ${
       options.groupColumn
     } ${orderby}) as row_num FROM ${options.tableName} WHERE ${cls.clause(
       1,

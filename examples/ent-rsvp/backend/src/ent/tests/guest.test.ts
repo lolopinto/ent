@@ -15,10 +15,10 @@ async function createGuestGroup(guests: input[]) {
   const event = await createEvent();
 
   const group = await CreateGuestGroupAction.create(
-    new IDViewer(event.creatorID),
+    new IDViewer(event.creatorId),
     {
       invitationName: name,
-      eventID: event.id,
+      eventId: event.id,
     },
   ).saveX();
   expect(group).toBeInstanceOf(GuestGroup);
@@ -62,10 +62,10 @@ async function createGuestGroups() {
       await Promise.all(
         guests.map(async (input) => {
           return CreateGuestAction.create(group.viewer, {
-            guestGroupID: group.id,
+            guestGroupId: group.id,
             name: input.name,
             emailAddress: input.emailAddress,
-            eventID: group.eventID,
+            eventId: group.eventId,
           }).saveX();
         }),
       );
@@ -90,14 +90,14 @@ test("create guests", async () => {
     throw new Error("impossicant");
   }
 
-  const code = await AuthCode.loadFromGuestID(guest.viewer, guest.id);
+  const code = await AuthCode.loadFromGuestId(guest.viewer, guest.id);
   expect(code).toBeInstanceOf(AuthCode);
 
   if (!code) {
     throw new Error("impossicant");
   }
   expect(code.emailAddress).toBe(guest.emailAddress);
-  expect(code.guestID).toBe(guest.id);
+  expect(code.guestId).toBe(guest.id);
   expect(code.sentCode).toBe(false);
 });
 

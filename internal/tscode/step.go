@@ -11,7 +11,6 @@ import (
 	"sync"
 	"text/template"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -21,6 +20,7 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/fns"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/customtype"
@@ -46,6 +46,7 @@ type writeOptions struct {
 	// anytime any boolean is added here, need to update the
 	// else case in processNode
 	writeMixin         bool
+	writeMixinBase     bool
 	writeEnt           bool
 	writeBase          bool
 	writeAllActions    bool
@@ -200,6 +201,7 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 		opts.edgeBaseFile = true
 		if pattern.HasMixin() {
 			opts.writeMixin = true
+			opts.writeMixinBase = true
 		}
 		if pattern.HasBuilder() {
 			opts.writeBuilder = true
@@ -240,6 +242,14 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 	if opts.writeMixin {
 		ret = append(ret, func() error {
 			return writeMixinFile(processor, pattern)
+		})
+		// delete old file because path has changed and we don't want to keep it around
+		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getOldFilePathForMixin(processor.Config, pattern.Name)))
+	}
+
+	if opts.writeMixinBase {
+		ret = append(ret, func() error {
+			return writeMixinBaseFile(processor, pattern)
 		})
 	}
 
@@ -289,6 +299,10 @@ func (s *Step) processDeletedPatterns(processor *codegen.Processor) fns.Function
 		if processor.ChangeMap.ChangesExist(k, change.RemovePattern) {
 			ret = append(ret,
 				file.GetDeleteFileFunction(processor.Config, getFilePathForMixin(processor.Config, k)),
+			)
+			ret = append(ret,
+				// TODO right name
+				file.GetDeleteFileFunction(processor.Config, getFilePathForMixinBase(processor.Config, k)),
 			)
 			ret = append(ret,
 				file.GetDeleteFileFunction(processor.Config, getFilePathForMixinBuilderFile(processor.Config, k)),
@@ -538,11 +552,23 @@ func getFilePathForBaseModelFile(cfg *codegen.Config, nodeData *schema.NodeData)
 }
 
 func getFilePathForMixin(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/mixins/%s.ts", strcase.ToSnake(name)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/mixins/%s.ts", names.ToFilePathName(name)))
+}
+
+func getOldFilePathForMixin(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/mixins/%s.ts", names.ToFilePathName(name)))
+}
+
+func getFilePathForMixinBase(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/mixins/%s.ts", names.ToFilePathName(name)))
 }
 
 func getImportPathForMixin(pattern *schema.PatternInfo) string {
-	return fmt.Sprintf("src/ent/generated/mixins/%s", strcase.ToSnake(pattern.Name))
+	return fmt.Sprintf("src/ent/mixins/%s", names.ToFilePathName(pattern.Name))
+}
+
+func getImportPathForMixinBase(pattern *schema.PatternInfo) string {
+	return pattern.GetImportPathForMixinBase()
 }
 
 func getFilePathForModelFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
@@ -551,7 +577,7 @@ func getFilePathForModelFile(cfg *codegen.Config, nodeData *schema.NodeData) str
 
 // copied to field_type.go
 func getImportPathForCustomInterfaceFile(ci *customtype.CustomInterface) string {
-	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(ci.TSType))
+	return fmt.Sprintf("src/ent/generated/%s", names.ToFilePathName(ci.TSType))
 }
 
 func getFilePathForBaseQueryFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
@@ -563,14 +589,14 @@ func getFilePathForEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData,
 		fmt.Sprintf(
 			"src/ent/%s/query/%s.ts",
 			nodeData.PackageName,
-			strcase.ToSnake(edgeQueryName),
+			names.ToFilePathName(edgeQueryName),
 		),
 	)
 }
 
 func getFilePathForPatternBaseQueryFile(cfg *codegen.Config, pattern *schema.PatternInfo) string {
 	// just so it doesn't conflict with nodes of same nams
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/patterns/%s_query_base.ts", strcase.ToSnake(pattern.Name)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/patterns/%s_query_base.ts", names.ToFilePathName(pattern.Name)))
 }
 
 func getFilePathForPatternAssocEdgeQueryFile(cfg *codegen.Config, pattern *schema.PatternInfo, edgeQueryName string) string {
@@ -579,7 +605,7 @@ func getFilePathForPatternAssocEdgeQueryFile(cfg *codegen.Config, pattern *schem
 			"src/ent/%s/query/%s.ts",
 			// TODO there could be a conflict e.g. above...
 			"patterns",
-			strcase.ToSnake(edgeQueryName),
+			names.ToFilePathName(edgeQueryName),
 		),
 	)
 }
@@ -588,7 +614,7 @@ func getImportPathForAssocEdgeQueryFile(nodeData *schema.NodeData, e *edge.Assoc
 	return fmt.Sprintf(
 		"src/ent/%s/query/%s",
 		nodeData.PackageName,
-		strcase.ToSnake(e.TsEdgeQueryName()),
+		names.ToFilePathName(e.TsEdgeQueryName()),
 	)
 }
 
@@ -597,7 +623,7 @@ func getImportPathForPatternAssocEdgeQueryFile(e *edge.AssociationEdge) string {
 		"src/ent/%s/query/%s",
 		// TODO...
 		"patterns",
-		strcase.ToSnake(e.TsEdgeQueryName()),
+		names.ToFilePathName(e.TsEdgeQueryName()),
 	)
 }
 
@@ -605,12 +631,12 @@ func getImportPathForCustomEdgeQueryFile(nodeData *schema.NodeData, e edge.Conne
 	return fmt.Sprintf(
 		"src/ent/%s/query/%s",
 		nodeData.PackageName,
-		strcase.ToSnake(e.TsEdgeQueryName()),
+		names.ToFilePathName(e.TsEdgeQueryName()),
 	)
 }
 
 func getImportPathForEnumFile(info *schema.EnumInfo) string {
-	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(info.Enum.Name))
+	return fmt.Sprintf("src/ent/generated/%s", names.ToFilePathName(info.Enum.Name))
 }
 
 // duplicated in generate_ts_code.go
@@ -627,7 +653,7 @@ func getImportPathForBaseQueryFile(packageName string) string {
 }
 
 func getImportPathForPatternBaseQueryFile(name string) string {
-	return fmt.Sprintf("src/ent/generated/patterns/%s_query_base", strcase.ToSnake(name))
+	return fmt.Sprintf("src/ent/generated/patterns/%s_query_base", names.ToFilePathName(name))
 }
 
 func getFilePathForLoaderFile(cfg *codegen.Config) string {
@@ -648,7 +674,7 @@ func getFilePathForBuilderFile(cfg *codegen.Config, nodeData *schema.NodeData) s
 }
 
 func getFilePathForMixinBuilderFile(cfg *codegen.Config, name string) string {
-	name = strcase.ToSnake(name)
+	name = names.ToFilePathName(name)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/mixins/%s/actions/%s_builder.ts", name, name))
 }
 
@@ -657,17 +683,17 @@ func getImportPathForBuilderFile(nodeData *schema.NodeData) string {
 }
 
 func getFilePathForActionBaseFile(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
-	fileName := strcase.ToSnake(actionName)
+	fileName := names.ToFilePathName(actionName)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s/actions/%s_base.ts", nodeData.PackageName, fileName))
 }
 
 func getImportPathForActionBaseFile(nodeData *schema.NodeData, a action.Action) string {
-	fileName := strcase.ToSnake(a.GetActionName())
+	fileName := names.ToFilePathName(a.GetActionName())
 	return fmt.Sprintf("src/ent/generated/%s/actions/%s_base", nodeData.PackageName, fileName)
 }
 
 func getFilePathForActionFile(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
-	fileName := strcase.ToSnake(actionName)
+	fileName := names.ToFilePathName(actionName)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/%s.ts", nodeData.PackageName, fileName))
 }
 
@@ -717,6 +743,28 @@ func writeMixinFile(processor *codegen.Processor, pattern *schema.PatternInfo) e
 		},
 		AbsPathToTemplate:  util.GetAbsolutePath("mixin.tmpl"),
 		TemplateName:       "mixin.tmpl",
+		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
+		PathToFile:         filePath,
+		TsImports:          imps,
+		FuncMap:            getBaseFuncs(processor.Schema, imps),
+	}, file.WriteOnce())
+}
+
+func writeMixinBaseFile(processor *codegen.Processor, pattern *schema.PatternInfo) error {
+	cfg := processor.Config
+	filePath := getFilePathForMixinBase(cfg, pattern.GetMixinBaseFile())
+	imps := tsimport.NewImports(processor.Config, filePath)
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
+		Data: patternTemplateCodePath{
+			Pattern: pattern,
+			Config:  cfg,
+			Package: cfg.GetImportPackage(),
+			Schema:  processor.Schema,
+		},
+		AbsPathToTemplate:  util.GetAbsolutePath("mixin_base.tmpl"),
+		TemplateName:       "mixin_base.tmpl",
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		PathToFile:         filePath,
 		TsImports:          imps,

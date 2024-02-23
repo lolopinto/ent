@@ -26,13 +26,23 @@ import {
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
 import { ContactLabel, NodeType, convertContactLabel } from "./types";
-import { Contact, ContactInfoMixin, IContactInfo } from "../internal";
+import {
+  Contact,
+  ContactInfoMixin,
+  ContactPhoneNumberToCommentsQuery,
+  ContactPhoneNumberToLikersQuery,
+  FeedbackMixin,
+  IContactInfo,
+  IFeedback,
+} from "../internal";
 import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class ContactPhoneNumberBase
-  extends ContactInfoMixin(class {})
-  implements Ent<ExampleViewerAlias>, IContactInfo
+  extends ContactInfoMixin(
+    FeedbackMixin(class {} as new (...args: any[]) => IContactInfo & IFeedback),
+  )
+  implements Ent<ExampleViewerAlias>, IContactInfo, IFeedback
 {
   protected readonly data: ContactPhoneNumberDBData;
   readonly nodeType = NodeType.ContactPhoneNumber;
@@ -41,7 +51,7 @@ export class ContactPhoneNumberBase
   readonly updatedAt: Date;
   readonly phoneNumber: string;
   readonly label: ContactLabel;
-  readonly contactID: ID;
+  readonly contactId: ID;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
@@ -51,7 +61,7 @@ export class ContactPhoneNumberBase
     this.updatedAt = data.updated_at;
     this.phoneNumber = data.phone_number;
     this.label = convertContactLabel(data.label);
-    this.contactID = data.contact_id;
+    this.contactId = data.contact_id;
     // @ts-expect-error
     this.data = data;
   }
@@ -218,11 +228,19 @@ export class ContactPhoneNumberBase
     return ContactPhoneNumberBase.getSchemaFields().get(key);
   }
 
+  queryComments(): ContactPhoneNumberToCommentsQuery {
+    return ContactPhoneNumberToCommentsQuery.query(this.viewer, this.id);
+  }
+
+  queryLikers(): ContactPhoneNumberToLikersQuery {
+    return ContactPhoneNumberToLikersQuery.query(this.viewer, this.id);
+  }
+
   async loadContact(): Promise<Contact | null> {
-    return loadEnt(this.viewer, this.contactID, Contact.loaderOptions());
+    return loadEnt(this.viewer, this.contactId, Contact.loaderOptions());
   }
 
   loadContactX(): Promise<Contact> {
-    return loadEntX(this.viewer, this.contactID, Contact.loaderOptions());
+    return loadEntX(this.viewer, this.contactId, Contact.loaderOptions());
   }
 }
