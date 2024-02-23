@@ -2,17 +2,14 @@
 
 import { Data, Ent, ID, Viewer } from "@snowtop/ent";
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-
-export function isWithAddress(ent: unknown): ent is IWithAddress {
-  const o = ent as IWithAddress;
-  return (o.isWithAddress && o.isWithAddress()) ?? false;
-}
-
-export interface IWithAddress extends Ent {
-  isWithAddress(): boolean;
+export interface IWithAddressBase<TViewer extends Viewer = Viewer>
+  extends Ent<TViewer> {
   addressId: ID | null;
 }
+
+type Constructor<T extends IWithAddressBase = IWithAddressBase> = new (
+  ...args: any[]
+) => T;
 
 function extractFromArgs<TViewer extends Viewer, TData extends Data>(
   args: any[],
@@ -26,17 +23,13 @@ function extractFromArgs<TViewer extends Viewer, TData extends Data>(
   };
 }
 
-export function WithAddressMixin<T extends Constructor>(BaseClass: T) {
-  return class WithAddressMixin extends BaseClass {
+export function WithAddressBaseMixin<T extends Constructor>(BaseClass: T) {
+  return class WithAddressBaseMixin extends BaseClass {
     readonly addressId: ID | null;
     constructor(...args: any[]) {
       super(...args);
       const { data } = extractFromArgs(args);
       this.addressId = data.address_id;
-    }
-
-    isWithAddress() {
-      return true;
     }
   };
 }
