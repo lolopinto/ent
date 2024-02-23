@@ -18,6 +18,9 @@ export const AttachmentInputType = new GraphQLInputObjectType({
     fileId: {
       type: new GraphQLNonNull(GraphQLID),
     },
+    dupeFileId: {
+      type: GraphQLID,
+    },
     note: {
       type: GraphQLString,
     },

@@ -55,6 +55,10 @@ const glo: GlobalSchema = {
         file_id: UUIDType({
           foreignKey: { schema: "File", column: "ID" },
         }),
+        dupeFileID: UUIDType({
+          foreignKey: { schema: "File", column: "ID" },
+          nullable: true,
+        }),
         note: StringType({ nullable: true }),
         date: TimestampType(),
         phone_number: PhoneNumberType({ nullable: true }),
