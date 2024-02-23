@@ -225,6 +225,7 @@ type Address implements Node {
 
 type Attachment {
   fileId: ID!
+  dupeFileId: ID
   note: String
   date: Time!
   phoneNumber: String
@@ -1033,6 +1034,7 @@ type AddressCreatePayload {
 
 input AttachmentInput {
   fileId: ID!
+  dupeFileId: ID
   note: String
   date: Time!
   phoneNumber: String

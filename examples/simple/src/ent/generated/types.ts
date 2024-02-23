@@ -728,6 +728,7 @@ export function convertNullableUserPreferredShiftList(
 
 export interface Attachment {
   fileId: ID | Builder<File, ExampleViewerAlias>;
+  dupeFileId?: ID | null | Builder<File, ExampleViewerAlias>;
   note?: string | null;
   date: Date;
   phoneNumber?: string | null;
@@ -737,6 +738,7 @@ export interface Attachment {
 export function convertAttachment(input: any): Attachment {
   return {
     fileId: input.file_id,
+    dupeFileId: input.dupe_file_id,
     note: input.note,
     date: input.date,
     phoneNumber: input.phone_number,
