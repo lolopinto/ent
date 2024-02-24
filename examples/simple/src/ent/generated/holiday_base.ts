@@ -27,7 +27,7 @@ import schema from "../../schema/holiday_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class HolidayBase
-  extends DayOfWeekMixin(class {})
+  extends DayOfWeekMixin(class {} as new (...args: any[]) => IDayOfWeek)
   implements Ent<ExampleViewerAlias>, IDayOfWeek
 {
   protected readonly data: HolidayDBData;

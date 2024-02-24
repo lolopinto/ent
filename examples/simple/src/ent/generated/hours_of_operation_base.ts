@@ -31,7 +31,7 @@ import schema from "../../schema/hours_of_operation_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class HoursOfOperationBase
-  extends DayOfWeekMixin(class {})
+  extends DayOfWeekMixin(class {} as new (...args: any[]) => IDayOfWeek)
   implements Ent<ExampleViewerAlias>, IDayOfWeek
 {
   protected readonly data: HoursOfOperationDBData;

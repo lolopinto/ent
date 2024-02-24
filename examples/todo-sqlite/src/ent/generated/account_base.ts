@@ -73,7 +73,7 @@ export interface AccountCanViewerSee {
 }
 
 export class AccountBase
-  extends TodoContainerMixin(class {})
+  extends TodoContainerMixin(class {} as new (...args: any[]) => ITodoContainer)
   implements Ent<Viewer>, ITodoContainer
 {
   protected readonly data: AccountData;

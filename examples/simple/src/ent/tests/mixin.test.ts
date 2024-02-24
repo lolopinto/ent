@@ -60,15 +60,19 @@ async function createEvent(
 test("feedback user", async () => {
   const user = await createUser();
   expect(isFeedback(user)).toBe(true);
+  expect(await user.hasLikers()).toBe(false);
 });
 
 test("feedback contact", async () => {
   const user = await createUser();
   const contact = await createContact(user, "Jon", "Snow");
   expect(isFeedback(contact)).toBe(true);
+  expect(await user.hasLikers()).toBe(false);
 });
 
 test("feedback event", async () => {
   const event = await createEvent(new Date());
   expect(isFeedback(event)).toBe(false);
+  // can't call hasLikers on event
+  // expect(await event.hasLikers()).toBe(false);
 });

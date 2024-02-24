@@ -13,7 +13,7 @@ const AuthCodeSchema = new EntSchema({
     code: StringType(),
     userID: UUIDType({
       immutable: true,
-      foreignKey: { schema: "User", column: "ID" },
+      foreignKey: { schema: "User", column: "id" },
     }),
     emailAddress: EmailType({ nullable: true }),
     phoneNumber: PhoneNumberType({ nullable: true }),

@@ -10,7 +10,7 @@ const GuestGroupSchema = new EntSchema({
   fields: {
     InvitationName: StringType(),
     EventID: UUIDType({
-      foreignKey: { schema: "Event", column: "ID" },
+      foreignKey: { schema: "Event", column: "id" },
     }),
     tag: EnumType({
       globalType: "GuestTag",

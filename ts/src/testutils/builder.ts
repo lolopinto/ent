@@ -272,7 +272,7 @@ export class SimpleBuilder<
     for (const [name, f] of schemaFields) {
       dbFields.push(getStorageKey(f, name));
     }
-    if (!schemaFields.has("id") && !schemaFields.has("ID")) {
+    if (!schemaFields.has("id")) {
       if (schemaFields.size !== 1) {
         throw new Error(
           `no id field and multiple fields so can't deduce key. add an id field to schema`,

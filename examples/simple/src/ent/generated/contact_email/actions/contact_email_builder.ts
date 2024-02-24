@@ -17,7 +17,8 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
 import { contactEmailLoaderInfo } from "../../loaders";
-import { ContactInfo, ContactLabel, NodeType } from "../../types";
+import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
+import { ContactInfo, ContactLabel, EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -34,13 +35,28 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+class Base {
+  // @ts-ignore not assigning. need for Mixin
+  orchestrator: Orchestrator<ContactEmail, any, ExampleViewerAlias>;
+
+  constructor() {}
+
+  isBuilder<T extends Ent>(
+    node: ID | T | Builder<T, any>,
+  ): node is Builder<T, any> {
+    return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+}
+
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export class ContactEmailBuilder<
-  TInput extends ContactEmailInput = ContactEmailInput,
-  TExistingEnt extends TMaybleNullableEnt<ContactEmail> = ContactEmail | null,
-> implements Builder<ContactEmail, ExampleViewerAlias, TExistingEnt>
+    TInput extends ContactEmailInput = ContactEmailInput,
+    TExistingEnt extends TMaybleNullableEnt<ContactEmail> = ContactEmail | null,
+  >
+  extends FeedbackBuilder(Base)
+  implements Builder<ContactEmail, ExampleViewerAlias, TExistingEnt>
 {
   orchestrator: Orchestrator<
     ContactEmail,
@@ -74,6 +90,7 @@ export class ContactEmailBuilder<
       >
     >,
   ) {
+    super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-ContactEmail`;
     this.input = action.getInput();
     const updateInput = (d: ContactEmailInput) =>
@@ -144,6 +161,15 @@ export class ContactEmailBuilder<
       );
     }
     return edited.id;
+  }
+  // this gets the inputs that have been written for a given edgeType and operation
+  // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
+  getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {
+    return this.orchestrator.getInputEdges(edgeType, op);
+  }
+
+  clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
+    this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
   async build(): Promise<Changeset> {

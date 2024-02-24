@@ -14,7 +14,7 @@ const EventActivitySchema = new EntSchema({
   fields: {
     Name: StringType(),
     eventID: UUIDType({
-      foreignKey: { schema: "Event", column: "ID" },
+      foreignKey: { schema: "Event", column: "id" },
     }),
     StartTime: TimestampType(),
     EndTime: TimestampType({ nullable: true }),

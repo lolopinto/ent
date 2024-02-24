@@ -71,6 +71,7 @@ export class UUIDField extends BaseField implements Field {
     const polymorphic = this.options?.polymorphic;
     if (polymorphic) {
       let name = "";
+      // TODO followup to https://github.com/lolopinto/ent/pull/1757
       if (fieldName.endsWith("_id")) {
         let idx = fieldName.indexOf("_id");
         name = fieldName.substring(0, idx) + "_type";

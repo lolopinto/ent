@@ -60,7 +60,7 @@ const UserWithTimezoneSchema = getBuilderSchemaTZFromFields(
 
 class UserWithTimestampNoFormatSchema implements Schema {
   fields: FieldMap = {
-    ID: UUIDType({
+    id: UUIDType({
       primaryKey: true,
       defaultValueOnCreate: () => {
         return uuidv4();

@@ -836,6 +836,8 @@ func (nodeData *NodeData) GetMixinInfo(s *Schema) (*mixinInfo, error) {
 
 	var extends strings.Builder
 	var impls []string
+
+	var interfaces []string
 	for _, p := range nodeData.PatternsWithMixins {
 		pattern := s.Patterns[p]
 		if pattern == nil {
@@ -852,8 +854,13 @@ func (nodeData *NodeData) GetMixinInfo(s *Schema) (*mixinInfo, error) {
 		extends.WriteString(pattern.GetMixinName())
 		extends.WriteString("(")
 		impls = append(impls, pattern.GetMixinInterfaceName())
+		interfaces = append(interfaces, pattern.GetMixinInterfaceName())
 	}
-	extends.WriteString("class {}")
+	if len(interfaces) == 0 {
+		extends.WriteString("class {}")
+	} else {
+		extends.WriteString(fmt.Sprintf("class {} as new(...args: any[]) => %s", strings.Join(interfaces, " & ")))
+	}
 	extends.WriteString(strings.Repeat(")", len(nodeData.PatternsWithMixins)))
 
 	return &mixinInfo{
@@ -896,10 +903,7 @@ func (nodeData *NodeData) GetBuilderMixinInfo(s *Schema) (*mixinInfo, error) {
 
 func (nodeData *NodeData) GenerateGetIDInBuilder() bool {
 	// TODO https://github.com/lolopinto/ent/issues/1064
-	idField := nodeData.FieldInfo.GetFieldByName("ID")
-	if idField == nil {
-		idField = nodeData.FieldInfo.GetFieldByName("id")
-	}
+	idField := nodeData.FieldInfo.GetFieldByName("id")
 	if idField == nil {
 		return false
 	}

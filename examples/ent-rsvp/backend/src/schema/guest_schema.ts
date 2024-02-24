@@ -15,11 +15,11 @@ const GuestSchema = new EntSchema({
   fields: {
     Name: StringType(),
     eventID: UUIDType({
-      foreignKey: { schema: "Event", column: "ID" },
+      foreignKey: { schema: "Event", column: "id" },
     }),
     EmailAddress: EmailType({ nullable: true }),
     guestGroupID: UUIDType({
-      foreignKey: { schema: "GuestGroup", column: "ID" },
+      foreignKey: { schema: "GuestGroup", column: "id" },
     }),
     title: StringType({ nullable: true }),
     // contrived example of a field edge of a node hidden from graphql

@@ -163,7 +163,7 @@ export const FakeEventSchema = getBuilderSchemaFromFields(
       nullable: true,
     }),
     userID: UUIDType({
-      foreignKey: { schema: "User", column: "ID" },
+      foreignKey: { schema: "User", column: "id" },
     }),
   },
   FakeEvent,

@@ -112,7 +112,7 @@ func TestConstraints(t *testing.T) {
 							// this *should* be EmailType but not worth it
 							emailAddress: StringType(),
 							userID: UUIDType({
-								foreignKey: {schema:"User", column:"ID"},
+								foreignKey: {schema:"User", column:"id"},
 							}),
 						},
 
@@ -163,7 +163,7 @@ func TestConstraints(t *testing.T) {
 						field{
 							name:       "userID",
 							dbType:     input.UUID,
-							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID"},
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "id"},
 						}),
 					constraints: []constraint{
 						{
@@ -204,7 +204,7 @@ func TestConstraints(t *testing.T) {
 								columns: ["userID"],
 								fkey: {
 									tableName: "User",
-									columns: ["ID"],
+									columns: ["id"],
 								}
 							},
 						],
@@ -244,7 +244,7 @@ func TestConstraints(t *testing.T) {
 							columns: []string{"userID"},
 							fkey: &fkeyInfo{
 								tableName: "User",
-								columns:   []string{"ID"},
+								columns:   []string{"id"},
 							},
 						},
 					},
@@ -284,7 +284,7 @@ func TestConstraints(t *testing.T) {
 								fkey: {
 									tableName: "User",
 									ondelete: "CASCADE",
-									columns: ["ID", "emailAddress"],
+									columns: ["id", "emailAddress"],
 								}
 							},
 						],
@@ -334,7 +334,7 @@ func TestConstraints(t *testing.T) {
 							fkey: &fkeyInfo{
 								tableName: "User",
 								ondelete:  input.Cascade,
-								columns:   []string{"ID", "emailAddress"},
+								columns:   []string{"id", "emailAddress"},
 							},
 						},
 					},
@@ -548,7 +548,7 @@ func TestIndices(t *testing.T) {
 							// this *should* be EmailType but not worth it
 							emailAddress: StringType(),
 							userID: UUIDType({
-								foreignKey: {schema:"User", column:"ID"},
+								foreignKey: {schema:"User", column:"id"},
 							}),
 						},
 
@@ -599,7 +599,7 @@ func TestIndices(t *testing.T) {
 						field{
 							name:       "userID",
 							dbType:     input.UUID,
-							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID"},
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "id"},
 						}),
 					indices: []index{
 						{

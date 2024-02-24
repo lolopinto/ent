@@ -11,10 +11,10 @@ const GuestDataSchema = new EntSchema({
 
   fields: {
     guestID: UUIDType({
-      foreignKey: { schema: "Guest", column: "ID" },
+      foreignKey: { schema: "Guest", column: "id" },
     }),
     eventID: UUIDType({
-      foreignKey: { schema: "Event", column: "ID" },
+      foreignKey: { schema: "Event", column: "id" },
     }),
     dietaryRestrictions: StringType(),
     //really just exists for https://github.com/lolopinto/ent/issues/636

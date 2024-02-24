@@ -41,13 +41,13 @@ let nodeField = UUIDType({
 
 let nodeFields: FieldMap = {
   // inconsistent naming :(
-  ID: nodeField,
+  id: nodeField,
   ...tsFields,
 };
 
 let nodeFieldsWithTZ: FieldMap = {
   // inconsistent naming :(
-  ID: nodeField,
+  id: nodeField,
   createdAt: TimestampType({
     hideFromGraphQL: true,
     disableUserEditable: true,

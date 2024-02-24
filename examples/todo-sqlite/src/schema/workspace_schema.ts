@@ -11,7 +11,7 @@ const WorkSpaceSchema = new TodoBaseEntSchema({
     creatorID: UUIDType({
       foreignKey: {
         schema: "Account",
-        column: "ID",
+        column: "id",
         disableIndex: true,
       },
       disableUserEditable: true,
