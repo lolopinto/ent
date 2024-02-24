@@ -903,10 +903,7 @@ func (nodeData *NodeData) GetBuilderMixinInfo(s *Schema) (*mixinInfo, error) {
 
 func (nodeData *NodeData) GenerateGetIDInBuilder() bool {
 	// TODO https://github.com/lolopinto/ent/issues/1064
-	idField := nodeData.FieldInfo.GetFieldByName("ID")
-	if idField == nil {
-		idField = nodeData.FieldInfo.GetFieldByName("id")
-	}
+	idField := nodeData.FieldInfo.GetFieldByName("id")
 	if idField == nil {
 		return false
 	}

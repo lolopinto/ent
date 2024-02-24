@@ -16,7 +16,7 @@ However, to add a multi-column constraint:
 const GuestSchema = new EntSchema({
   fields: [
     eventID: UUIDType({
-      foreignKey: { schema: "Event", column: "ID" },
+      foreignKey: { schema: "Event", column: "id" },
     }),
     emailAddress: EmailType({ nullable: true }),
   ],
@@ -101,7 +101,7 @@ const UserSchema = new EntSchema({
     {
       name: "user_uniqueEmail",
       type: ConstraintType.Unique,
-      columns: ["ID", "EmailAddress"],
+      columns: ["id", "EmailAddress"],
     },
   ],
 });
@@ -125,7 +125,7 @@ const ContactSchema = new EntSchema({
       fkey: {
         tableName: "users",
         ondelete: "CASCADE",
-        columns: ["ID", "EmailAddress"],
+        columns: ["id", "EmailAddress"],
       }
     },
   ],

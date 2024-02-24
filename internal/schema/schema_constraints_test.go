@@ -61,7 +61,7 @@ func TestForeignKeyFieldConstraint(t *testing.T) {
 						firstName: StringType(),
 						lastName: StringType(),
 						ownerID: UUIDType({
-							foreignKey: {schema:"User", column:"ID"},
+							foreignKey: {schema:"User", column:"id"},
 						}),
 					},
 				});
@@ -182,7 +182,7 @@ func TestConstraints(t *testing.T) {
 						fields: {
 							emailAddress: StringType(),
 							userID: UUIDType({
-								foreignKey: {schema:"User", column:"ID"},
+								foreignKey: {schema:"User", column:"id"},
 							}),
 						},
 
@@ -260,7 +260,7 @@ func TestConstraints(t *testing.T) {
 								fkey: {
 									tableName: "users",
 									ondelete: "CASCADE",
-									columns: ["ID", "emailAddress"],
+									columns: ["id", "emailAddress"],
 								}
 							},
 						],
@@ -713,7 +713,7 @@ func TestInvalidConstraints(t *testing.T) {
 								fkey: {
 									tableName: "users",
 									ondelete: "CASCADE",
-									columns: ["ID", "emailAddress"],
+									columns: ["id", "emailAddress"],
 								}
 							},
 						],

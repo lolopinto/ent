@@ -484,7 +484,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 						unique:true,
 					}),
 					userID: UUIDType({
-						foreignKey: {schema: "User", column: "ID"},
+						foreignKey: {schema: "User", column: "id"},
 					}),
 				},
 			});

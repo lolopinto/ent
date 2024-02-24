@@ -58,7 +58,7 @@ export const addressLoaderInfo = {
   nodeType: NodeType.Address,
   loaderFactory: addressLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -130,7 +130,7 @@ export const authCodeLoaderInfo = {
   nodeType: NodeType.AuthCode,
   loaderFactory: authCodeLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -202,7 +202,7 @@ export const commentLoaderInfo = {
   nodeType: NodeType.Comment,
   loaderFactory: commentLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -286,7 +286,7 @@ export const contactLoaderInfo = {
   nodeType: NodeType.Contact,
   loaderFactory: contactLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -358,7 +358,7 @@ export const contactEmailLoaderInfo = {
   nodeType: NodeType.ContactEmail,
   loaderFactory: contactEmailLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -423,7 +423,7 @@ export const contactPhoneNumberLoaderInfo = {
   nodeType: NodeType.ContactPhoneNumber,
   loaderFactory: contactPhoneNumberLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -497,7 +497,7 @@ export const eventLoaderInfo = {
   nodeType: NodeType.Event,
   loaderFactory: eventLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -579,7 +579,7 @@ export const fileLoaderInfo = {
   nodeType: NodeType.File,
   loaderFactory: fileLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -639,7 +639,7 @@ export const holidayLoaderInfo = {
   nodeType: NodeType.Holiday,
   loaderFactory: holidayLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -704,7 +704,7 @@ export const hoursOfOperationLoaderInfo = {
   nodeType: NodeType.HoursOfOperation,
   loaderFactory: hoursOfOperationLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -809,7 +809,7 @@ export const userLoaderInfo = {
   nodeType: NodeType.User,
   loaderFactory: userLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },

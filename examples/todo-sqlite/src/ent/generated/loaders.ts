@@ -74,7 +74,7 @@ export const accountLoaderInfo = {
   nodeType: NodeType.Account,
   loaderFactory: accountLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -174,7 +174,7 @@ export const tagLoaderInfo = {
   nodeType: NodeType.Tag,
   loaderFactory: tagLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -260,7 +260,7 @@ export const todoLoaderInfo = {
   nodeType: NodeType.Todo,
   loaderFactory: todoLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -370,7 +370,7 @@ export const workspaceLoaderInfo = {
   nodeType: NodeType.Workspace,
   loaderFactory: workspaceLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },

@@ -95,7 +95,7 @@ Adds an index on this column to the database.
 Adds a foreign key to another column in another table.
 
 ```ts
-creatorID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
+creatorID: UUIDType({ foreignKey: { schema: "User", column: "id" } }),
 ```
 
 adds a foreignKey on the `creator_id` column on the source table that references the `id` column in the `users` table.
@@ -178,7 +178,7 @@ This can be used to compute a value at runtime. For example, to default to the [
 
 ```ts
   creatorID: UUIDType({
-    foreignKey: { schema: "Account", column: "ID" },
+    foreignKey: { schema: "Account", column: "id" },
     defaultValueOnCreate: (builder) => builder.viewer.viewerID,
   }),
 ```
@@ -199,14 +199,14 @@ Boolean. Shorthand to default to the viewer when creating an object if field not
 
 ```ts
   creatorID: UUIDType({
-    foreignKey: { schema: "Account", column: "ID" },
+    foreignKey: { schema: "Account", column: "id" },
     defaultToViewerOnCreate: true,
   }),
 ```
 
 ```ts
   creatorID: UUIDType({
-    foreignKey: { schema: "Account", column: "ID" },
+    foreignKey: { schema: "Account", column: "id" },
     defaultValueOnCreate: (builder) => builder.viewer.viewerID,
   }),
 ```

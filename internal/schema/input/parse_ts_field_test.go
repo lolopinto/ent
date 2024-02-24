@@ -294,7 +294,7 @@ func TestParseFields(t *testing.T) {
 				const EventSchema = new EntSchema({
 					fields: {
 						name: StringType(),
-						creator_id: UUIDType({foreignKey: {schema:"User", column:"ID"}}),
+						creator_id: UUIDType({foreignKey: {schema:"User", column:"id"}}),
 						start_time: TimestampType(),
 						end_time: TimestampType({ nullable: true}),
 						location: StringType(),
@@ -341,7 +341,7 @@ func TestParseFields(t *testing.T) {
 						field{
 							name:       "creator_id",
 							dbType:     input.UUID,
-							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID"},
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "id"},
 						},
 						field{
 							name:   "start_time",
@@ -640,7 +640,7 @@ func TestParseFields(t *testing.T) {
 				const EventSchema = new EntSchema({
 					fields: {
 						name: StringType(),
-						creator_id: UUIDType({foreignKey: {schema:"User", column:"ID", disableIndex: true}}),
+						creator_id: UUIDType({foreignKey: {schema:"User", column:"id", disableIndex: true}}),
 					},
 				});
 				export default EventSchema;`),
@@ -678,7 +678,7 @@ func TestParseFields(t *testing.T) {
 						field{
 							name:       "creator_id",
 							dbType:     input.UUID,
-							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID", DisableIndex: true},
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "id", DisableIndex: true},
 						},
 					),
 				},

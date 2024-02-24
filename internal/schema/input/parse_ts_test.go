@@ -415,7 +415,7 @@ func getCodeWithSchema(code string) string {
 func nodeFields() []field {
 	return []field{
 		{
-			name:                    "ID",
+			name:                    "id",
 			dbType:                  input.UUID,
 			primaryKey:              true,
 			disableUserEditable:     true,

@@ -49,7 +49,7 @@ export const addressLoaderInfo = {
   nodeType: NodeType.Address,
   loaderFactory: addressLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -134,7 +134,7 @@ export const authCodeLoaderInfo = {
   nodeType: NodeType.AuthCode,
   loaderFactory: authCodeLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -205,7 +205,7 @@ export const eventLoaderInfo = {
   nodeType: NodeType.Event,
   loaderFactory: eventLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -278,7 +278,7 @@ export const eventActivityLoaderInfo = {
   nodeType: NodeType.EventActivity,
   loaderFactory: eventActivityLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -366,7 +366,7 @@ export const guestLoaderInfo = {
   nodeType: NodeType.Guest,
   loaderFactory: guestLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -446,7 +446,7 @@ export const guestDataLoaderInfo = {
   nodeType: NodeType.GuestData,
   loaderFactory: guestDataLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -508,7 +508,7 @@ export const guestGroupLoaderInfo = {
   nodeType: NodeType.GuestGroup,
   loaderFactory: guestGroupLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -574,7 +574,7 @@ export const userLoaderInfo = {
   nodeType: NodeType.User,
   loaderFactory: userLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },

@@ -53,10 +53,10 @@ const glo: GlobalSchema = {
       graphQLType: "Attachment",
       fields: {
         file_id: UUIDType({
-          foreignKey: { schema: "File", column: "ID" },
+          foreignKey: { schema: "File", column: "id" },
         }),
         dupeFileID: UUIDType({
-          foreignKey: { schema: "File", column: "ID" },
+          foreignKey: { schema: "File", column: "id" },
           nullable: true,
         }),
         note: StringType({ nullable: true }),

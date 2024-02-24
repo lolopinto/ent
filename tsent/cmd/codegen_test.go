@@ -227,7 +227,7 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 				"User": {
 					Fields: []*input.Field{
 						{
-							Name: "ID",
+							Name: "id",
 							Type: &input.FieldType{
 								DBType: input.UUID,
 							},
@@ -244,7 +244,7 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 				"Contact": {
 					Fields: []*input.Field{
 						{
-							Name: "ID",
+							Name: "id",
 							Type: &input.FieldType{
 								DBType: input.UUID,
 							},
@@ -257,7 +257,7 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 							},
 							ForeignKey: &input.ForeignKey{
 								Schema: "User",
-								Column: "ID",
+								Column: "id",
 							},
 						},
 						{
@@ -267,7 +267,7 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 							},
 							ForeignKey: &input.ForeignKey{
 								Schema: "User",
-								Column: "ID",
+								Column: "id",
 								Name:   "duplicate_contacts",
 							},
 						},
@@ -313,7 +313,7 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 				"User": {
 					Fields: []*input.Field{
 						{
-							Name: "ID",
+							Name: "id",
 							Type: &input.FieldType{
 								DBType: input.UUID,
 							},
@@ -397,7 +397,7 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 				"User": {
 					Fields: []*input.Field{
 						{
-							Name: "ID",
+							Name: "id",
 							Type: &input.FieldType{
 								DBType: input.UUID,
 							},
@@ -475,7 +475,7 @@ func TestSchemaWithPattern(t *testing.T) {
 				"User": {
 					Fields: []*input.Field{
 						{
-							Name: "ID",
+							Name: "id",
 							Type: &input.FieldType{
 								DBType: input.UUID,
 							},

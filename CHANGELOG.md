@@ -9,6 +9,11 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.2] - 2024-02-23
+
+- change id in default pattern from `ID` to `id` (#1763)
+  * references to `ID` in say foreign key definitions will have to be updated
+
 ## [0.2.0-alpha.1] - 2024-02-22
 
 ### Breaking

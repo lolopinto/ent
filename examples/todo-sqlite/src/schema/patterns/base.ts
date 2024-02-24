@@ -3,7 +3,7 @@ import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
 import { v4 as uuidv4 } from "uuid";
 
 const fields = {
-  ID: UUIDType({
+  id: UUIDType({
     primaryKey: true,
     defaultValueOnCreate: () => {
       return uuidv4();

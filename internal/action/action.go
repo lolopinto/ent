@@ -395,7 +395,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 			fields = []*field.NonEntField{
 				field.NewNonEntField(cfg, assocGroup.GroupStatusName, &enttype.StringType{}, false, false).SetFlag("Enum"),
 				field.NewNonEntField(cfg, names.ToClassType(assocGroup.DestNodeInfo.Node+"ID"), &enttype.StringType{}, false, false).
-					SetFlag("ID").
+					SetFlag("id").
 					SetNodeType(fmt.Sprintf("models.%sType", assocGroup.DestNodeInfo.Node)),
 			}
 		} else {

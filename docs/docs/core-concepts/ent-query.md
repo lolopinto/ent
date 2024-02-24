@@ -143,7 +143,7 @@ For an [indexed foreign key](/docs/ent-schema/fields#foreignkey) or an [index](/
 ```ts title="src/schema/contact_schema.ts"
 const ContactSchema = new EntSchema({
   fields: {
-    userID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
+    userID: UUIDType({ foreignKey: { schema: "User", column: "id" } }),
   }, 
 }); 
 export const ContactSchema; 

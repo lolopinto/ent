@@ -15,10 +15,10 @@ func TestIDField(t *testing.T) {
 			Type: &input.FieldType{
 				DBType: input.UUID,
 			},
-			Name: "ID",
+			Name: "id",
 		},
 		&Field{
-			FieldName:                "ID",
+			FieldName:                "id",
 			dbName:                   "id",
 			graphQLName:              "id",
 			exposeToActionsByDefault: true,
@@ -219,7 +219,7 @@ func TestForeignKey(t *testing.T) {
 			Name: "UserID",
 			ForeignKey: &input.ForeignKey{
 				Schema: "User",
-				Column: "ID",
+				Column: "id",
 			},
 		},
 		&Field{
@@ -230,7 +230,7 @@ func TestForeignKey(t *testing.T) {
 			dbColumn:                 true,
 			fkey: &ForeignKeyInfo{
 				Schema: "User",
-				Field:  "ID",
+				Field:  "id",
 			},
 		},
 		"postgresql.UUID()",

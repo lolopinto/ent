@@ -1447,8 +1447,8 @@ func (s *Schema) addForeignKeyEdges(
 		return fmt.Errorf("invalid schema %s for foreign key %s", fkeyInfo.Schema, fkeyInfo.Name)
 	}
 
-	if f := foreignInfo.NodeData.GetFieldByName(fkeyInfo.Field); f == nil {
-		return fmt.Errorf("could not find field %s by name", fkeyInfo.Field)
+	if f2 := foreignInfo.NodeData.GetFieldByName(fkeyInfo.Field); f2 == nil {
+		return fmt.Errorf("could not find field %s by name in field %s in schema %s", fkeyInfo.Field, f.FieldName, nodeData.Node)
 	}
 
 	// add a field edge on current config so we can load underlying user

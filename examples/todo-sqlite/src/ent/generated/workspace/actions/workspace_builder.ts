@@ -257,7 +257,7 @@ export class WorkspaceBuilder<
         result.set(key, value);
       }
     };
-    addField("ID", input.id);
+    addField("id", input.id);
     addField("createdAt", input.createdAt);
     addField("updatedAt", input.updatedAt);
     addField("deleted_at", input.deletedAt);
@@ -272,7 +272,7 @@ export class WorkspaceBuilder<
     return (node as Builder<T, any>).placeholderID !== undefined;
   }
 
-  // get value of ID. Retrieves it from the input if specified or takes it from existingEnt
+  // get value of id. Retrieves it from the input if specified or takes it from existingEnt
   getNewIdValue(): ID {
     if (this.input.id !== undefined) {
       return this.input.id;
