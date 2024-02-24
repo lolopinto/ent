@@ -130,7 +130,7 @@ func TestForeignKey(t *testing.T) {
 					accountID: UUIDType({
 						foreignKey: {
 							schema: 'Account',
-							column: 'ID',
+							column: 'id',
 						}
 					}),
 				},

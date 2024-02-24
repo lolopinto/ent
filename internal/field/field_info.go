@@ -72,10 +72,10 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*in
 		//		sort fields
 		sort.Slice(fieldInfo.fields, func(i, j int) bool {
 			// sort lexicographically but put ID first
-			if fieldInfo.fields[i].FieldName == "ID" {
+			if fieldInfo.fields[i].FieldName == "id" {
 				return true
 			}
-			if fieldInfo.fields[j].FieldName == "ID" {
+			if fieldInfo.fields[j].FieldName == "id" {
 				return false
 			}
 

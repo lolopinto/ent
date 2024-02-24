@@ -6,7 +6,7 @@ const EventSchema = new EntSchema({
     // start nullable so as to not break existing objects
     Slug: StringType({ nullable: true, unique: true }),
     creatorID: UUIDType({
-      foreignKey: { schema: "User", column: "ID" },
+      foreignKey: { schema: "User", column: "id" },
       defaultToViewerOnCreate: true,
     }),
   },

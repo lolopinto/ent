@@ -53,7 +53,7 @@ const TodoSchema = new EntSchema({
       },
     }),
     creatorID: UUIDType({
-      foreignKey: { schema: "Account", column: "ID" },
+      foreignKey: { schema: "Account", column: "id" },
     }),
   }; 
 }); 

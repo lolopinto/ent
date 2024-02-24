@@ -12,7 +12,7 @@ const AuthCodeSchema = new EntSchema({
   fields: {
     code: StringType(),
     guestID: UUIDType({
-      foreignKey: { schema: "Guest", column: "ID" },
+      foreignKey: { schema: "Guest", column: "id" },
       unique: true,
     }),
     emailAddress: EmailType(),

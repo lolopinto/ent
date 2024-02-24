@@ -123,12 +123,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 
 	// default graphqlName
 	if ret.graphQLName == "" {
-		if ret.FieldName == "ID" {
-			// TODO come up with a better way of handling this
-			ret.graphQLName = "id"
-		} else {
-			ret.graphQLName = names.ToGraphQLName(cfg, ret.FieldName)
-		}
+		ret.graphQLName = names.ToGraphQLName(cfg, ret.FieldName)
 	}
 
 	if ret.dbName == "" {

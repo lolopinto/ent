@@ -26,7 +26,7 @@ const ContactSchema = new EntSchema({
     lastName: StringType(),
     userID: UUIDType({
       immutable: true,
-      foreignKey: { schema: "User", column: "ID" },
+      foreignKey: { schema: "User", column: "id" },
     }),
     attachments: StructTypeAsList({
       nullable: true,
