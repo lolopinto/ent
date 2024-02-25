@@ -1082,7 +1082,8 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 	if err != nil {
 		return err
 	}
-	return inverseEdgeInfo.addEdge(&AssociationEdge{
+
+	ret := &AssociationEdge{
 		EdgeConst:      inverseEdge.EdgeConst,
 		TsEdgeConst:    tsConst,
 		commonEdgeInfo: inverseEdge.commonEdgeInfo,
@@ -1090,7 +1091,13 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 		TableName:      e.TableName,
 		// if inverse is polymorphic, flag this as polymorphic too
 		// polymorphic: inverseEdge.polymorphic,
-	})
+	}
+
+	if inverseEdge.HideFromGraphQL() {
+		ret._HideFromGraphQL = true
+	}
+
+	return inverseEdgeInfo.addEdge(ret)
 }
 
 func (e *AssociationEdge) CloneWithCommonInfo(cfg codegenapi.Config, nodeName string) (*AssociationEdge, error) {
@@ -1380,6 +1387,9 @@ func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.A
 			// TODO: probably want to pass this down instead of magically configuring this
 			GetEntConfigFromName(configPkgName),
 		)
+		// after commonEdgeInfo line
+		inverseEdge._HideFromGraphQL = edge.InverseEdge.HideFromGraphQL
+
 		assocEdge.InverseEdge = inverseEdge
 	}
 

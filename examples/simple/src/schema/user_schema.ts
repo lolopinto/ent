@@ -314,6 +314,10 @@ const UserSchema = new EntSchema({
       name: "selfContact",
       unique: true,
       schemaName: "Contact",
+      inverseEdge: {
+        name: "selfContactForUser",
+        hideFromGraphQL: true,
+      },
     },
   ],
 
