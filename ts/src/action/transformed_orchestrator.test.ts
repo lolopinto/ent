@@ -1,14 +1,13 @@
 import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
-import { EntChangeset } from "../action/orchestrator";
-import { Context, Data, Ent, Viewer } from "../core/base";
+import { Context, Data, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
-import { StringType, TimestampType } from "../schema/field";
+import { BooleanType, StringListType, StringType } from "../schema/field";
 import {
-  Pattern,
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
+  StructType,
 } from "../schema";
 import {
   SimpleAction,
@@ -37,6 +36,7 @@ import {
   DeletedAtPatternWithExtraWrites,
 } from "../testutils/soft_delete";
 import { toDBColumnOrTable } from "../names/names";
+import { randomEmail, randomPhoneNumber } from "../testutils/db/value";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 async function createEdges() {
@@ -84,6 +84,14 @@ const ContactSchema = new EntBuilderSchema(Contact, {
   fields: {
     first_name: StringType(),
     last_name: StringType(),
+    contact_info: StructType({
+      fields: {
+        phoneNumbers: StringListType(),
+        emails: StringListType(),
+      },
+      tsType: "ContactInfo",
+      graphQLType: "ContactInfo",
+    }),
   },
 });
 
@@ -110,6 +118,15 @@ const AccountSchema = new EntBuilderSchema(Account, {
   fields: {
     FirstName: StringType(),
     LastName: StringType(),
+    prefs: StructType({
+      fields: {
+        notfisEnabled: BooleanType(),
+        finishedBux: BooleanType(),
+        locale: StringType(),
+      },
+      tsType: "AccountPrefs",
+      graphQLType: "AccountPrefs",
+    }),
   },
 });
 
@@ -330,27 +347,51 @@ function commonTests() {
   test("delete -> update with extra writes", async () => {
     const loader = getAccountNewLoader();
     const action = getInsertAccountAction(
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        [
+          "prefs",
+          {
+            notfisEnabled: true,
+            finishedBux: false,
+            locale: "en_US",
+          },
+        ],
       ]),
       loader.context,
     );
     const account1 = await action.saveX();
 
     const action2 = getInsertAccountAction(
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        [
+          "prefs",
+          {
+            notfisEnabled: false,
+            finishedBux: true,
+            locale: "en_US",
+          },
+        ],
       ]),
       loader.context,
     );
     const account2 = await action2.saveX();
 
     const action3 = getInsertAccountAction(
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        [
+          "prefs",
+          {
+            notfisEnabled: true,
+            finishedBux: false,
+            locale: "en_US",
+          },
+        ],
       ]),
       loader.context,
     );
@@ -574,9 +615,25 @@ function commonTests() {
   test("delete -> update. snake_case", async () => {
     const loader = getContactNewLoader();
     const action = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
+        [
+          "contact_info",
+          {
+            phoneNumbers: [
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+            ],
+            emails: [
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+            ],
+          },
+        ],
       ]),
       loader.context,
     );
@@ -619,9 +676,25 @@ function commonTests() {
   test("really delete. snake_case", async () => {
     const loader = getContactNewLoader();
     const action = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
+        [
+          "contact_info",
+          {
+            phoneNumbers: [
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+            ],
+            emails: [
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+            ],
+          },
+        ],
       ]),
       loader.context,
     );
@@ -669,9 +742,25 @@ function commonTests() {
     const loader = getContactNewLoader();
 
     const action = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
+        [
+          "contact_info",
+          {
+            phoneNumbers: [
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+            ],
+            emails: [
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+            ],
+          },
+        ],
       ]),
       loader.context,
     );
@@ -705,9 +794,25 @@ function commonTests() {
     };
 
     const action2 = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
+        [
+          "contact_info",
+          {
+            phoneNumbers: [
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+            ],
+            emails: [
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+            ],
+          },
+        ],
       ]),
       loader.context,
     );
@@ -721,9 +826,25 @@ function commonTests() {
     await verifyRows(1);
 
     const action3 = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Sansa"],
         ["last_name", "Stark"],
+        [
+          "contact_info",
+          {
+            phoneNumbers: [
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+            ],
+            emails: [
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+            ],
+          },
+        ],
       ]),
       loader.context,
     );
@@ -751,9 +872,25 @@ function commonTests() {
     await verifyRows(0);
     const loader = getContactNewLoader();
     const action = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
+        [
+          "contact_info",
+          {
+            phoneNumbers: [
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+            ],
+            emails: [
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+            ],
+          },
+        ],
       ]),
       loader.context,
     );
@@ -786,9 +923,25 @@ function commonTests() {
     };
 
     const action2 = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
+        [
+          "contact_info",
+          {
+            phoneNumbers: [
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+            ],
+            emails: [
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+            ],
+          },
+        ],
       ]),
       loader.context,
     );
@@ -813,9 +966,25 @@ function commonTests() {
     await verifyRows(0);
     const loader = getContactNewLoader();
     const action = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
+        [
+          "contact_info",
+          {
+            phoneNumbers: [
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+            ],
+            emails: [
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+            ],
+          },
+        ],
       ]),
       loader.context,
     );
@@ -837,9 +1006,25 @@ function commonTests() {
     };
 
     const action2 = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
+        [
+          "contact_info",
+          {
+            phoneNumbers: [
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+              randomPhoneNumber(),
+            ],
+            emails: [
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+              randomEmail(),
+            ],
+          },
+        ],
       ]),
       loader.context,
     );
