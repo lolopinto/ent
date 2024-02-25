@@ -9,6 +9,12 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.18] - 2024-01-25
+
+### Added
+
+- Add hideFromGraphQL to InverseAssocEdge (#1766)
+
 ## [0.1.17] - 2024-01-21
 
 ### Added
