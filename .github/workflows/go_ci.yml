@@ -2,7 +2,7 @@ name: Go CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, v0.1.x ]
     paths:
       - 'ent/**.go'
       - 'internal/**.go'

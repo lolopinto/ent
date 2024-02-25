@@ -2,7 +2,7 @@ name: Update Docs
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, v0.1.x ]
     paths:
       - 'docs/**'
 
