@@ -302,6 +302,7 @@ metadata.info["edges"] = {
   'public': {
     'AddressToHostedEventsEdge': {"edge_name":"AddressToHostedEventsEdge", "edge_type":"d1979d4b-d033-4562-b078-cc528fec25bb", "edge_table":"address_hosted_events_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'CommentToPostEdge': {"edge_name":"CommentToPostEdge", "edge_type":"f430af94-d38a-4aaa-a92f-cfc56b6f811b", "edge_table":"object_comments_edges", "symmetric_edge":False, "inverse_edge_type":"8caba9c4-8035-447f-9eb1-4dd09a2d250c"},
+    'ContactToSelfContactForUserEdge': {"edge_name":"ContactToSelfContactForUserEdge", "edge_type":"71483ce5-06f3-4468-bf05-afecd3a430e2", "edge_table":"user_self_contact_edges", "symmetric_edge":False, "inverse_edge_type":"d504201d-cf3f-4eef-b6a0-0b46a7ae186b"},
     'EventToAttendingEdge': {"edge_name":"EventToAttendingEdge", "edge_type":"6ebc0c47-ea29-4635-b991-95e44162174d", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"2a98ba02-e342-4bb4-93f6-5d7ed02f5c48"},
     'EventToDeclinedEdge': {"edge_name":"EventToDeclinedEdge", "edge_type":"db8d2454-f7b2-4147-aae1-e666daf3f3c3", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"1c7c173b-63ce-4002-b121-4a87f82047dd"},
     'EventToHostsEdge': {"edge_name":"EventToHostsEdge", "edge_type":"ebe3e709-845c-4723-ac9c-29f983f2b8ea", "edge_table":"event_hosts_edges", "symmetric_edge":False, "inverse_edge_type":"cf6542a4-8bae-427f-8a1f-01194047afb3"},
@@ -318,7 +319,7 @@ metadata.info["edges"] = {
     'UserToInvitedEventsEdge': {"edge_name":"UserToInvitedEventsEdge", "edge_type":"e439f2b2-d93a-4d1a-83f0-865bda5c8337", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"a72f5f64-3580-44fd-9bd0-d1335b803a46"},
     'UserToLikesEdge': {"edge_name":"UserToLikesEdge", "edge_type":"745a20bf-4fdc-4862-b39f-569c4451db8f", "edge_table":"object_likers_edges", "symmetric_edge":False, "inverse_edge_type":"c9ccdad9-7aff-40e4-9a69-2c29cfa19763"},
     'UserToMaybeEventsEdge': {"edge_name":"UserToMaybeEventsEdge", "edge_type":"8d5b1dee-ce65-452e-9f8d-78eca1993800", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"b0f6311b-fdab-4c26-b6bf-b751e0997735"},
-    'UserToSelfContactEdge': {"edge_name":"UserToSelfContactEdge", "edge_type":"d504201d-cf3f-4eef-b6a0-0b46a7ae186b", "edge_table":"user_self_contact_edges", "symmetric_edge":False, "inverse_edge_type":None},
+    'UserToSelfContactEdge': {"edge_name":"UserToSelfContactEdge", "edge_type":"d504201d-cf3f-4eef-b6a0-0b46a7ae186b", "edge_table":"user_self_contact_edges", "symmetric_edge":False, "inverse_edge_type":"71483ce5-06f3-4468-bf05-afecd3a430e2"},
   }
 }
 

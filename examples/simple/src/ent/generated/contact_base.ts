@@ -28,6 +28,7 @@ import {
   ContactPhoneNumber,
   ContactToCommentsQuery,
   ContactToLikersQuery,
+  ContactToSelfContactForUserQuery,
   FeedbackMixin,
   IFeedback,
   User,
@@ -235,6 +236,10 @@ export class ContactBase
 
   queryLikers(): ContactToLikersQuery {
     return ContactToLikersQuery.query(this.viewer, this.id);
+  }
+
+  querySelfContactForUser(): ContactToSelfContactForUserQuery {
+    return ContactToSelfContactForUserQuery.query(this.viewer, this.id);
   }
 
   queryAttachedComments(): ContactCommentsFromAttachmentQuery {

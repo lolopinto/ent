@@ -20,6 +20,7 @@ import {
   Contact,
   ContactToCommentsQuery,
   ContactToLikersQuery,
+  ContactToSelfContactForUserQuery,
   Event,
   EventToAttendingQuery,
   EventToDeclinedQuery,
@@ -545,6 +546,10 @@ export abstract class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
 
   queryLikers(): ContactToLikersQuery {
     return ContactToLikersQuery.query(this.viewer, this);
+  }
+
+  querySelfContactForUser(): ContactToSelfContactForUserQuery {
+    return ContactToSelfContactForUserQuery.query(this.viewer, this);
   }
 }
 
