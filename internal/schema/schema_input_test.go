@@ -856,6 +856,61 @@ func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 	//	require.NotNil(t, edgeGroup.GetAssociationByName("FriendRequestsReceived"))
 }
 
+func TestParseInputWithInverseAssocEdge(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+				AssocEdges: []*input.AssocEdge{
+					{
+						Name:       "Friends",
+						SchemaName: "User",
+						Symmetric:  true,
+					},
+					{
+						Name:       "FriendRequestsSent",
+						SchemaName: "User",
+						InverseEdge: &input.InverseAssocEdge{
+							Name:            "FriendRequestsReceived",
+							HideFromGraphQL: true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
+
+	friendsEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("Friends")
+	require.NotNil(t, friendsEdge)
+	assert.True(t, friendsEdge.Symmetric)
+
+	friendsRequestSentEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("FriendRequestsSent")
+	require.NotNil(t, friendsRequestSentEdge)
+	assert.NotNil(t, friendsRequestSentEdge.InverseEdge)
+
+	friendRequestsReceivedEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("FriendRequestsReceived")
+	require.NotNil(t, friendRequestsReceivedEdge)
+	assert.True(t, friendRequestsReceivedEdge.HideFromGraphQL())
+	// inverse edge not added to map
+	//	require.NotNil(t, edgeGroup.GetAssociationByName("FriendRequestsReceived"))
+}
+
 func TestParseInputWithPolymorphicFieldEdge(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{

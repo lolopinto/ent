@@ -998,8 +998,9 @@ type InverseAssocEdge struct {
 	// Note that anytime anything changes here, have to update inverseAssocEdgeEqual in compare.go
 	// TODO need to be able to mark this as unique
 	// this is an easy way to get 1->many
-	Name          string `json:"name,omitempty"`
-	EdgeConstName string `json:"edgeConstName,omitempty"`
+	Name            string `json:"name,omitempty"`
+	EdgeConstName   string `json:"edgeConstName,omitempty"`
+	HideFromGraphQL bool   `json:"hideFromGraphQL,omitempty"`
 }
 
 func ParseSchema(input []byte) (*Schema, error) {
