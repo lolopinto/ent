@@ -6,6 +6,7 @@ import { createAccount, createTodoForSelf } from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
 import { DB, loadConfig } from "@snowtop/ent";
 import * as fs from "fs";
+import { Interval } from "luxon";
 
 beforeAll(() => {
   const f = fs.readFileSync("src/schema/schema.sql");
@@ -19,6 +20,12 @@ beforeAll(() => {
   const sqlite = DB.getInstance().getSQLiteClient();
 
   sqlite.db.exec(f.toString());
+});
+
+afterEach(() => {
+  const client = DB.getInstance().getSQLiteClient();
+
+  client.execSync("DELETE FROM todos");
 });
 
 async function createTodos(): Promise<[Account, Todo[]]> {
@@ -39,7 +46,7 @@ async function createTodos(): Promise<[Account, Todo[]]> {
   return [account, todos];
 }
 
-test("closed todos last day", async () => {
+async function performActions() {
   const [account1, todos] = await createTodos();
   expect(todos.length).toBe(4);
 
@@ -77,6 +84,12 @@ test("closed todos last day", async () => {
   await ChangeTodoStatusAction.create(account3.viewer, todos3[1], {
     completed: true,
   }).saveX();
+
+  return account1;
+}
+
+test("closed todos last day", async () => {
+  const account1 = await performActions();
 
   await expectQueryFromRoot(
     {
@@ -116,6 +129,76 @@ test("closed todos last day", async () => {
       args: {
         first: 2,
         after: lastCursor,
+      },
+    },
+    ["rawCount", 3],
+    ["pageInfo.hasNextPage", false],
+  );
+});
+
+test("custom todos", async () => {
+  const account1 = await performActions();
+
+  await expectQueryFromRoot(
+    {
+      viewer: account1.viewer,
+      schema: schema,
+      root: "custom_todos",
+      args: {
+        completed: false,
+      },
+    },
+    ["rawCount", 7],
+  );
+
+  await expectQueryFromRoot(
+    {
+      viewer: account1.viewer,
+      schema: schema,
+      root: "custom_todos",
+      args: {
+        completed: true,
+      },
+    },
+    ["rawCount", 5],
+  );
+
+  const start = Interval.before(new Date(), { hours: 24 })
+    .start.toUTC()
+    .toISO();
+
+  let lastCursor = "";
+  await expectQueryFromRoot(
+    {
+      viewer: account1.viewer,
+      schema: schema,
+      root: "custom_todos",
+      args: {
+        first: 2,
+        completed_date: start,
+        completed: true,
+      },
+    },
+    ["rawCount", 3],
+    ["pageInfo.hasNextPage", true],
+    [
+      "pageInfo.endCursor",
+      (v: string) => {
+        lastCursor = v;
+      },
+    ],
+  );
+
+  await expectQueryFromRoot(
+    {
+      viewer: account1.viewer,
+      schema: schema,
+      root: "custom_todos",
+      args: {
+        first: 2,
+        after: lastCursor,
+        completed_date: start,
+        completed: true,
       },
     },
     ["rawCount", 3],

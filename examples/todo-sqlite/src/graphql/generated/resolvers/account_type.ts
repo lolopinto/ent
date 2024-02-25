@@ -14,6 +14,7 @@ import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
+  GraphQLTime,
 } from "@snowtop/ent/graphql";
 import {
   Account,
@@ -32,6 +33,7 @@ import {
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
   AccountToCreatedWorkspacesConnectionType,
+  AccountToCustomTodosConnectionType,
   AccountToOpenTodosConnectionType,
   AccountToOpenTodosDupConnectionType,
   AccountToScopedTodosConnectionType,
@@ -376,6 +378,44 @@ export const AccountType = new GraphQLObjectType({
           obj.viewer,
           obj,
           (v, obj: Account) => obj.openTodos(),
+          args,
+        );
+      },
+    },
+    custom_todos: {
+      type: new GraphQLNonNull(AccountToCustomTodosConnectionType()),
+      args: {
+        completed: {
+          description: "",
+          type: GraphQLBoolean,
+        },
+        completed_date: {
+          description: "",
+          type: GraphQLTime,
+        },
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: Account) =>
+            obj.customTodos(args.completed, args.completed_date),
           args,
         );
       },
