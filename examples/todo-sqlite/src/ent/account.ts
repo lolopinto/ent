@@ -1,6 +1,8 @@
+import { Interval } from "luxon";
 import {
   AlwaysAllowPrivacyPolicy,
   CustomEdgeQueryBase,
+  CustomClauseQuery,
   ID,
   query,
   Viewer,
@@ -36,6 +38,39 @@ export class Account extends AccountBase {
   })
   openTodos() {
     return new AccountToOpenTodosQuery(this.viewer, this);
+  }
+
+  // queryable connection
+  @gqlField({
+    class: "Account",
+    name: "custom_todos",
+    type: gqlConnection("Todo"),
+    args: [
+      {
+        name: "completed",
+        type: "Boolean",
+        nullable: true,
+      },
+      {
+        name: "completed_date",
+        type: "Date",
+        nullable: true,
+      },
+    ],
+  })
+  customTodos(completed: boolean | null, completedDate: Date | null) {
+    const start = Interval.before(new Date(), { hours: 24 })
+      .start.toUTC()
+      .toISO();
+
+    return new CustomClauseQuery(this.viewer, {
+      loadEntOptions: Todo.loaderOptions(),
+      clause: query.And(
+        query.Eq("completed", completed ?? true),
+        query.GreaterEq("completed_date", completedDate ?? start),
+      ),
+      name: "todos",
+    });
   }
 
   getDeletedAt() {

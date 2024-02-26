@@ -6,6 +6,7 @@ import {
   CustomClauseQuery,
   CustomEdgeQueryBase,
   Viewer,
+  Clause,
 } from "@snowtop/ent";
 import { gqlConnection, gqlContextType, gqlQuery } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
@@ -100,6 +101,48 @@ export class TodoResolver {
         query.GreaterEq("completed_date", start),
       ),
       name: "closed_todos_last_day",
+    });
+  }
+
+  @gqlQuery({
+    class: "TodoResolver",
+    name: "custom_todos",
+    type: gqlConnection("Todo"),
+    args: [
+      gqlContextType(),
+      {
+        name: "completed",
+        type: "Boolean",
+        nullable: true,
+      },
+      {
+        name: "completed_date",
+        type: "Date",
+        nullable: true,
+      },
+    ],
+  })
+  customTodos(
+    context: RequestContext,
+    completed: boolean | null,
+    completedDate: Date | null,
+  ) {
+    let completedQ = completed ?? true;
+    let clause: Clause;
+
+    if (completed && completedDate) {
+      clause = query.And(
+        query.Eq("completed", completedQ),
+        query.GreaterEq("completed_date", completedDate),
+      );
+    } else {
+      clause = query.Eq("completed", completedQ);
+    }
+
+    return new CustomClauseQuery(context.getViewer(), {
+      loadEntOptions: Todo.loaderOptions(),
+      clause: clause,
+      name: "custom_todos",
     });
   }
 }
