@@ -2,12 +2,18 @@ import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
 import { Context, Data, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
-import { BooleanType, StringListType, StringType } from "../schema/field";
+import {
+  BooleanType,
+  IntegerType,
+  StringListType,
+  StringType,
+} from "../schema/field";
 import {
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
   StructType,
+  StructTypeAsList,
 } from "../schema";
 import {
   SimpleAction,
@@ -28,7 +34,7 @@ import {
   Table,
   TempDB,
 } from "../testutils/db/temp_db";
-import { convertDate } from "../core/convert";
+import { convertDate, convertJSON } from "../core/convert";
 import { loadRawEdgeCountX } from "../core/ent";
 import {
   DeletedAtSnakeCasePattern,
@@ -112,6 +118,17 @@ class Account extends BaseEnt {
   }
 }
 
+class Country extends BaseEnt {
+  nodeType = "Country";
+
+  constructor(
+    public viewer: CustomViewer,
+    public data: Data,
+  ) {
+    super(viewer, data);
+  }
+}
+
 const AccountSchema = new EntBuilderSchema(Account, {
   patterns: [new DeletedAtPatternWithExtraWrites()],
 
@@ -130,13 +147,30 @@ const AccountSchema = new EntBuilderSchema(Account, {
   },
 });
 
+const CountrySchema = new EntBuilderSchema(Country, {
+  patterns: [new DeletedAtPatternWithExtraWrites()],
+
+  fields: {
+    name: StringType(),
+    capital: StringType(),
+    cities: StructTypeAsList({
+      fields: {
+        name: StringType(),
+        population: IntegerType(),
+      },
+      tsType: "City",
+      graphQLType: "City",
+    }),
+  },
+});
+
 const getTables = () => {
   const tables: Table[] = [assoc_edge_config_table()];
   edges.map((edge) =>
     tables.push(assoc_edge_table(toDBColumnOrTable(edge, "table"))),
   );
 
-  [UserSchema, ContactSchema, AccountSchema].map((s) =>
+  [UserSchema, ContactSchema, AccountSchema, CountrySchema].map((s) =>
     tables.push(getSchemaTable(s, Dialect.SQLite)),
   );
   return tables;
@@ -192,6 +226,13 @@ const contactsLoaderFactory = new ObjectLoaderFactory({
   clause: clause.Eq("deleted_at", null),
 });
 
+const countryLoaderFactory = new ObjectLoaderFactory({
+  tableName: "countries",
+  fields: ["id", "name", "capital", "cities", "deleted_at"],
+  key: "id",
+  clause: clause.Eq("deleted_at", null),
+});
+
 const usersLoaderFactoryNoClause = new ObjectLoaderFactory({
   tableName: "users",
   fields: ["id", "first_name", "last_name", "deleted_at"],
@@ -224,6 +265,12 @@ const getAccountNewLoader = (context: boolean = true) => {
 
 const getContactNewLoader = (context: boolean = true) => {
   return contactsLoaderFactory.createLoader(
+    context ? new TestContext() : undefined,
+  );
+};
+
+const geCountryNewLoader = (context: boolean = true) => {
+  return countryLoaderFactory.createLoader(
     context ? new TestContext() : undefined,
   );
 };
@@ -292,6 +339,21 @@ function getInsertContactAction(
   return new SimpleAction(
     viewer,
     ContactSchema,
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
+function getInsertCountryAction(
+  map: Map<string, any>,
+  context: Context | undefined,
+) {
+  const viewer = new LoggedOutViewer(context);
+
+  return new SimpleAction(
+    viewer,
+    CountrySchema,
     map,
     WriteOperation.Insert,
     null,
@@ -784,11 +846,23 @@ function commonTests() {
 
       const firstName = stmt.data.get("first_name");
       const lastName = stmt.data.get("last_name");
+      const contactInfo = stmt.data.get("contact_info");
 
       if (firstName == "Aegon" && lastName == "Targaryen") {
         return {
           op: SQLStatementOperation.Update,
           existingEnt: contact,
+          data: new Map<string, any>([
+            ["first_name", "Aegon"],
+            ["last_name", "Targaryen"],
+            [
+              "contact_info",
+              {
+                phoneNumbers: contactInfo.phoneNumbers,
+                emails: contactInfo.emails,
+              },
+            ],
+          ]),
         };
       }
     };
@@ -1033,7 +1107,126 @@ function commonTests() {
 
     await expect(action2.saveX()).rejects.toThrow(/test failure/);
   });
+
+  test.only("insert -> update  w StructAsList", async () => {
+    const verifyRows = async (ct: number) => {
+      if (Dialect.Postgres !== DB.getDialect()) {
+        return;
+      }
+      const res = await DB.getInstance()
+        .getPool()
+        .query("select count(1) from countries;");
+      expect(parseInt(res.rows[0].count)).toBe(ct);
+    };
+    await verifyRows(0);
+    const loader = geCountryNewLoader();
+
+    const action = getInsertCountryAction(
+      new Map<string, any>([
+        ["name", "USA"],
+        ["capital", "Washington DC"],
+        [
+          "cities",
+          [
+            { name: "New York", population: 8000000 },
+            { name: "Los Angeles", population: 4000000 },
+            { name: "San Francisco", population: 800000 },
+          ],
+        ],
+      ]),
+      loader.context,
+    );
+    const country = await action.saveX();
+    await verifyRows(1);
+
+    const row = await loader.load(country.id);
+    expect(row).not.toBeNull();
+    row!["cities"] = convertJSON(row!["cities"]);
+    expect(row).toMatchObject({
+      id: country.id,
+      name: "USA",
+      capital: "Washington DC",
+      cities: [
+        { name: "New York", population: 8000000 },
+        { name: "Los Angeles", population: 4000000 },
+        { name: "San Francisco", population: 800000 },
+      ],
+      deleted_at: null,
+    });
+
+    const transformUSA = (
+      stmt: UpdateOperation<Country>,
+    ): TransformedUpdateOperation<Country> | undefined => {
+      if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
+        return;
+      }
+
+      const name = stmt.data.get("name");
+
+      if (name == "USA") {
+        return {
+          op: SQLStatementOperation.Update,
+          existingEnt: country,
+          data: new Map<string, any>([
+            ["name", "USA"],
+            ["capital", "Washington DC"],
+            [
+              "cities",
+              [
+                { name: "New York", population: 8000000 },
+                { name: "Los Angeles", population: 4000000 },
+                { name: "San Francisco", population: 800000 },
+              ],
+            ],
+          ]),
+        };
+      }
+    };
+
+    const action2 = getInsertCountryAction(
+      new Map<string, any>([
+        ["name", "USA"],
+        ["capital", "Washington DC"],
+      ]),
+      loader.context,
+    );
+    // @ts-ignore
+    action2.transformWrite = transformUSA;
+
+    const country2 = await action2.saveX();
+    expect(country.id).toBe(country2.id);
+    expect(country2.data.name).toBe("USA");
+    expect(country2.data.capital).toBe("Washington DC");
+    await verifyRows(1);
+
+    const action3 = getInsertCountryAction(
+      new Map<string, any>([
+        ["name", "France"],
+        ["capital", "Paris"],
+        [
+          "cities",
+          [
+            { name: "Paris", population: 8000000 },
+            { name: "Lyon", population: 4000000 },
+            { name: "Marseille", population: 800000 },
+          ],
+        ],
+      ]),
+      loader.context,
+    );
+    // @ts-ignore
+    action3.transformWrite = transformUSA;
+
+    // new contact craeted
+    const country3 = await action3.saveX();
+    expect(country.id).not.toBe(country3.id);
+    expect(country3.data.name).toBe("France");
+    await verifyRows(2);
+  });
 }
 
 // TODO trait implemented...
 // for deleted etc to check value
+
+// TODO fix other tests with loaders etc
+// TODO try with v0.1.x
