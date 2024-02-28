@@ -167,7 +167,7 @@ func TestCustomMutation(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "AuthResolver",
-			ImportPath: "../../mutations/auth/auth",
+			ImportPath: "src/graphql/mutations/auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
@@ -309,7 +309,7 @@ func TestCustomQuery(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "AuthResolver",
-			ImportPath: "../../resolvers/auth/auth",
+			ImportPath: "src/graphql/resolvers/auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
@@ -442,7 +442,7 @@ func TestCustomListQuery(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "AuthResolver",
-			ImportPath: "../../resolvers/auth/auth",
+			ImportPath: "src/graphql/resolvers/auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
@@ -605,7 +605,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "UsernameResolver",
-			ImportPath: "../../resolvers/username/username",
+			ImportPath: "src/graphql/resolvers/username/username",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
@@ -735,7 +735,7 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "ProfilePicResolver",
-			ImportPath: "../../mutations/file/upload",
+			ImportPath: "src/graphql/mutations/file/upload",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
