@@ -68,6 +68,7 @@ import {
   UserToMaybeEventsConnectionType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import { City } from "../../resolvers/city";
 
 class UserCanViewerDo {
   constructor(
@@ -837,6 +838,16 @@ export const UserType = new GraphQLObjectType({
         );
       },
     },
+    cities: {
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(CityType))),
+      resolve: (
+        obj: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.getCities();
+      },
+    },
   }),
   interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
@@ -929,4 +940,22 @@ export const UserCanViewerDoType = new GraphQLObjectType({
       },
     },
   }),
+});
+
+export const CityType = new GraphQLObjectType({
+  name: "City",
+  fields: (): GraphQLFieldConfigMap<
+    City,
+    RequestContext<ExampleViewerAlias>
+  > => ({
+    name: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    population: {
+      type: new GraphQLNonNull(GraphQLInt),
+    },
+  }),
+  isTypeOf(obj) {
+    return obj instanceof City;
+  },
 });
