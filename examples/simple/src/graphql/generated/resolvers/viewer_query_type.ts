@@ -12,10 +12,10 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { UserPrefsStructType, UserType } from "../../resolvers/internal";
-import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import { GQLViewer } from "../../resolvers/gql_viewer";
+import { UserPrefsStructType, UserType } from "../../resolvers/internal";
 import { ViewerResolver } from "../../resolvers/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const GQLViewerType = new GraphQLObjectType({
   name: "Viewer",

@@ -8,8 +8,8 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
+import { TodosResolver } from "src/graphql/mutations/todo/todo_resolver";
 import { AccountType } from "src/graphql/resolvers/";
-import { TodosResolver } from "../../mutations/todo/todo_resolver";
 
 interface MarkAllTodosAsArgs {
   accountID: any;

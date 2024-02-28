@@ -9,8 +9,8 @@ import {
 import { GraphQLUpload } from "graphql-upload";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import { ImportGuestResolver } from "src/graphql/mutations/import_guests";
 import { EventType } from "src/graphql/resolvers/";
-import { ImportGuestResolver } from "../../mutations/import_guests";
 
 interface ImportGuestsArgs {
   eventId: any;

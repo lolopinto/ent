@@ -9,9 +9,9 @@ import {
   GraphQLNonNull,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
+import { ContactItem } from "../../../ent/contact_item";
 import { ContactLabelType, ContactType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { ContactItem } from "../../../ent/contact_item";
 
 export const ContactItemType = new GraphQLInterfaceType({
   name: "ContactItem",
