@@ -248,6 +248,22 @@ export class User extends UserBase {
     return new UserToCommentsAuthoredQuery(this.viewer, this);
   }
 
+  @gqlField({
+    class: "User",
+    name: "cities",
+    type: "[City]",
+    // TODO maybe get a path like this working?
+    // type: [
+    //   {
+    //     type: "CityType",
+    //     importPath: "src/graphql/resolvers/city",
+    //   },
+    // ],
+  })
+  getCities() {
+    return [];
+  }
+
   static async validateEmailPassword(
     email: string,
     password: string,

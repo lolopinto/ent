@@ -24,6 +24,7 @@ import {
   ContactToCommentsQuery,
   ContactToLikersQuery,
 } from "../../../ent";
+import { EmailInfo } from "../../../ent/contact_types";
 import {
   AttachmentType,
   ContactCommentsFromAttachmentConnectionType,
@@ -36,7 +37,6 @@ import {
   UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { EmailInfo } from "../../../ent/contact_types";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",

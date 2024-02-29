@@ -239,6 +239,11 @@ type CatType {
   kitten: Boolean!
 }
 
+type City {
+  name: String!
+  population: Int!
+}
+
 type Comment implements Node {
   article: Node
   attachment: Node
@@ -508,6 +513,7 @@ type User implements Node {
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
   commentsAuthored(first: Int, after: String, last: Int, before: String): UserToCommentsAuthoredConnection!
+  cities: [City!]!
 }
 
 type AddressToHostedEventsEdge implements Edge {

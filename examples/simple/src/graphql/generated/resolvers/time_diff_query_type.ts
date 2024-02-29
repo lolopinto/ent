@@ -12,8 +12,8 @@ import {
 import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLTime } from "@snowtop/ent/graphql";
-import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import { ViewerResolver } from "../../resolvers/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 interface TimeDiffArgs {
   time: Date;

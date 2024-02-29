@@ -8,7 +8,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
-import { AuthResolver } from "../../mutations/auth/auth";
+import { AuthResolver } from "src/graphql/mutations/auth/auth";
 
 interface EmailAvailableArgs {
   email: string;
