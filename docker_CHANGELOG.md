@@ -9,6 +9,23 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.19] - 2024-02-28
+
+### Added
+
+- Add support for @gqlField with gqlConnection and args (#1768)
+
+### Fixed
+
+- Fix graphql imports for custom files (#1775)
+- Fix imports for custom objects in files (#1776)
+
+## [0.1.18] - 2024-02-25
+
+### Added
+
+- Add hideFromGraphQL to InverseAssocEdge (#1766)
+
 ## [0.1.17] - 2024-01-21
 
 ### Added

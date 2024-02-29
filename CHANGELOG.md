@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.1.27] - 2024-02-25
+
+### Added
+
+- Add hideFromGraphQL to InverseAssocEdge (#1766)
+
 ## [0.1.26] - 2024-02-18
 
 ### Added

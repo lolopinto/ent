@@ -2,7 +2,7 @@ name: Docs CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, v0.1.x]
     paths:
       - 'docs/**'
 
