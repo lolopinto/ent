@@ -40,9 +40,9 @@ import {
   UserToMaybeEventsQuery,
 } from "../../../ent";
 import EditUserAction from "../../../ent/user/actions/edit_user_action";
-import { City } from "../../resolvers/city";
 import {
   AuthorToCommentsConnectionType,
+  CityType,
   ContactType,
   CreatorToEventsConnectionType,
   UserAccountStatusType,
@@ -940,22 +940,4 @@ export const UserCanViewerDoType = new GraphQLObjectType({
       },
     },
   }),
-});
-
-export const CityType = new GraphQLObjectType({
-  name: "City",
-  fields: (): GraphQLFieldConfigMap<
-    City,
-    RequestContext<ExampleViewerAlias>
-  > => ({
-    name: {
-      type: new GraphQLNonNull(GraphQLString),
-    },
-    population: {
-      type: new GraphQLNonNull(GraphQLInt),
-    },
-  }),
-  isTypeOf(obj) {
-    return obj instanceof City;
-  },
 });

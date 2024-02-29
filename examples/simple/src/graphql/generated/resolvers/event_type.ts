@@ -33,6 +33,7 @@ import {
 import {
   AddressType,
   AttachmentType,
+  CityType,
   EventRsvpStatusType,
   EventToAttendingConnectionType,
   EventToDeclinedConnectionType,
@@ -277,6 +278,16 @@ export const EventType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return obj.canViewerSeeInfo();
+      },
+    },
+    cities: {
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(CityType))),
+      resolve: (
+        obj: Event,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.getCities();
       },
     },
   }),

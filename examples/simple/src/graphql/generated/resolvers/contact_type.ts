@@ -24,7 +24,6 @@ import {
   ContactToCommentsQuery,
   ContactToLikersQuery,
 } from "../../../ent";
-import { EmailInfo } from "../../../ent/contact_types";
 import {
   AttachmentType,
   ContactCommentsFromAttachmentConnectionType,
@@ -34,6 +33,7 @@ import {
   ContactPhoneNumberType,
   ContactToCommentsConnectionType,
   ContactToLikersConnectionType,
+  EmailInfoType,
   UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -225,32 +225,5 @@ export const ContactType = new GraphQLObjectType({
   interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Contact;
-  },
-});
-
-export const EmailInfoType = new GraphQLObjectType({
-  name: "EmailInfo",
-  fields: (): GraphQLFieldConfigMap<
-    EmailInfo,
-    RequestContext<ExampleViewerAlias>
-  > => ({
-    emails: {
-      type: new GraphQLNonNull(
-        new GraphQLList(new GraphQLNonNull(ContactEmailType)),
-      ),
-    },
-    firstEmail: {
-      type: new GraphQLNonNull(GraphQLString),
-      resolve: (
-        obj: EmailInfo,
-        args: {},
-        context: RequestContext<ExampleViewerAlias>,
-      ) => {
-        return obj.email1;
-      },
-    },
-  }),
-  isTypeOf(obj) {
-    return obj instanceof EmailInfo;
   },
 });

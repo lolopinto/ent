@@ -355,6 +355,7 @@ type Event implements Node {
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
   viewerRsvpStatus: EventRsvpStatus!
   canViewerSeeInfo: EventCanViewerSee!
+  cities: [City!]!
 }
 
 type File implements Node {
