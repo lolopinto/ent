@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema"
@@ -824,12 +825,25 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 					return fmt.Errorf("custom objects not referenced in top level queries and mutations can only be referenced in ent nodes")
 				}
 
-				objType, err := buildObjectType(processor, cd, s, result, customObj, nodeInfo.FilePath, "GraphQLObjectType")
+				objFilePath := getFilePathForCustomInterfaceFile(processor.Config, customObj.NodeName)
+				objType, err := buildObjectType(processor, cd, s, result, customObj, objFilePath, "GraphQLObjectType")
 				if err != nil {
 					return err
 				}
+				gqlNode := &gqlNode{
+					ObjData: &gqlobjectData{
+						Node:     customObj.NodeName,
+						GQLNodes: []*objectType{objType},
+						Package:  processor.Config.GetImportPackage(),
+					},
+					FilePath: objFilePath,
+				}
+				s.otherObjects[customObj.NodeName] = gqlNode
 
-				nodeInfo.ObjData.GQLNodes = append(nodeInfo.ObjData.GQLNodes, objType)
+				nodeInfo.ObjData.customDependencyImports = append(nodeInfo.ObjData.customDependencyImports, &tsimport.ImportPath{
+					Import:     customObj.NodeName + "Type",
+					ImportPath: codepath.GetImportPathForInternalGQLFile(),
+				})
 			}
 		}
 	}

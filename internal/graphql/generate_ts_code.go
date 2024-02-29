@@ -954,6 +954,8 @@ type gqlobjectData struct {
 	initMap     bool
 	m           map[string]bool
 	Package     *codegen.ImportPackage
+	// hack because I'm lazy to add imports for custom dependencies here
+	customDependencyImports []*tsimport.ImportPath
 }
 
 func (obj *gqlobjectData) DefaultImports() []*tsimport.ImportPath {
@@ -980,6 +982,7 @@ func (obj *gqlobjectData) Imports() []*tsimport.ImportPath {
 			result = append(result, arg.Imports...)
 		}
 	}
+	result = append(result, obj.customDependencyImports...)
 	return result
 }
 
