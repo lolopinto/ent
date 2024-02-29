@@ -730,12 +730,10 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 }
 
 func getRelativeImportPath(processor *codegen.Processor, basepath, targetpath string) (string, error) {
-	// we get absolute paths now
-	// BONUS: instead of this, we should use the nice paths in tsconfig...
-
-	// need to do any relative imports from the directory not from the file itself
-	dir := filepath.Dir(basepath)
-	rel, err := filepath.Rel(dir, targetpath)
+	// convert from absolute path to relative path
+	// and then depend on getImportPath() in internal/tsimport/path.go to convert to relative
+	// paths if need be
+	rel, err := filepath.Rel(processor.Config.GetAbsPathToRoot(), targetpath)
 	if err != nil {
 		return "", err
 	}
