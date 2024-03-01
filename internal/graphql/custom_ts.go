@@ -450,6 +450,11 @@ func getFieldConfigArgsFrom(processor *codegen.Processor, args []CustomItem, s *
 			}
 		} else {
 			imp = knownTypes[arg.Type]
+			if imp == nil {
+				if processor.Config.DebugMode() {
+					fmt.Printf("couldn't find type for custom arg %s. maybe a bug with codegen?", arg.Type)
+				}
+			}
 		}
 
 		var imports []*tsimport.ImportPath
@@ -779,7 +784,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			if field.Connection {
 				customEdge := getGQLEdge(processor.Config, field, nodeName)
 				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
-				if err := addConnection(processor, nodeData, customEdge, obj, &field); err != nil {
+				if err := addConnection(processor, nodeData, customEdge, obj, &field, s); err != nil {
 					return err
 				}
 				continue

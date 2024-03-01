@@ -32,6 +32,7 @@ export * from "../generated/resolvers/comment/comment_article_to_comments_connec
 export * from "../generated/resolvers/comment/comment_to_post_connection_type";
 export * from "../generated/resolvers/contact/contact_comments_from_attachment_connection_type";
 export * from "../generated/resolvers/contact/contact_to_comments_connection_type";
+export * from "../generated/resolvers/contact/contact_to_filter_contact_emails_connection_type";
 export * from "../generated/resolvers/contact/contact_to_likers_connection_type";
 export * from "../generated/resolvers/contact_email/contact_email_to_comments_connection_type";
 export * from "../generated/resolvers/contact_email/contact_email_to_likers_connection_type";
