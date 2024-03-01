@@ -259,33 +259,7 @@ func GetFieldEdge(cfg codegenapi.Config,
 		return nil, nil
 
 	}
-	// TODO pass fieldType so we can check list or not...
-	// validSuffixes := map[string]string{
-	// 	"id":  "_id",
-	// 	"ID":  "ID",
-	// 	"IDs": "IDs",
-	// 	"ids": "_ids",
-	// 	"Ids": "Ids",
-	// 	"Id":  "Id",
-	// 	// another dumb thing
-	// }
-	// // well this is dumb
-	// // not an id field, do nothing
-	// // TODO we need a test for this
-	// // TODO #674
-	// foundSuffix := ""
-	// for suffix := range validSuffixes {
-	// 	if strings.HasSuffix(fieldName, suffix) {
-	// 		foundSuffix = suffix
-	// 		break
-	// 	}
-	// }
-	// if foundSuffix == "" {
-	// 	if cfg.DebugMode() {
-	// 		fmt.Println("skipping field fieldEdge", fieldName, "not an id field")
-	// 	}
-	// 	return nil, nil
-	// }
+
 	tsFieldName = strings.TrimSuffix(tsFieldName, "Id")
 	tsFieldName = strings.TrimSuffix(tsFieldName, "Ids")
 	if tsFieldName == "" {
