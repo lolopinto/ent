@@ -266,19 +266,19 @@ export class GuestBase
     return loadEntX(this.viewer, this.eventId, Event.loaderOptions());
   }
 
-  async loadGuestGroup(): Promise<GuestGroup | null> {
-    return loadEnt(this.viewer, this.guestGroupId, GuestGroup.loaderOptions());
-  }
-
-  loadGuestGroupX(): Promise<GuestGroup> {
-    return loadEntX(this.viewer, this.guestGroupId, GuestGroup.loaderOptions());
-  }
-
   async loadGuestData(): Promise<GuestData | null> {
     if (!this.guestDataId) {
       return null;
     }
 
     return loadEnt(this.viewer, this.guestDataId, GuestData.loaderOptions());
+  }
+
+  async loadGuestGroup(): Promise<GuestGroup | null> {
+    return loadEnt(this.viewer, this.guestGroupId, GuestGroup.loaderOptions());
+  }
+
+  loadGuestGroupX(): Promise<GuestGroup> {
+    return loadEntX(this.viewer, this.guestGroupId, GuestGroup.loaderOptions());
   }
 }

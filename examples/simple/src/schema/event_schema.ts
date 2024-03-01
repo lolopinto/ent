@@ -50,7 +50,7 @@ const EventSchema = new EntSchema({
     location: StringType({
       graphqlName: "eventLocation",
     }),
-    addressID: UUIDType({
+    addressId: UUIDType({
       nullable: true,
       fieldEdge: { schema: "Address", inverseEdge: "hostedEvents" },
       privacyPolicy: {
