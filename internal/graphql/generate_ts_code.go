@@ -2174,7 +2174,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		if err := addConnection(processor, nodeData, edge, result, nil); err != nil {
+		if err := addConnection(processor, nodeData, edge, result, nil, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -2342,7 +2342,7 @@ func addPluralEdge(edge edge.Edge, obj *objectType) error {
 	return obj.addField(gqlField)
 }
 
-func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge edge.ConnectionEdge, obj *objectType, customField *CustomField) error {
+func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge edge.ConnectionEdge, obj *objectType, customField *CustomField, s *gqlSchema) error {
 	// import GraphQLEdgeConnection and EdgeQuery file
 	extraImports := []*tsimport.ImportPath{
 		{
@@ -2378,7 +2378,7 @@ func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		ExtraImports:       extraImports,
-		Args:               getFieldConfigArgsFrom(processor, args, nil, false),
+		Args:               getFieldConfigArgsFrom(processor, args, s, false),
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(

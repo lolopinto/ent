@@ -32,6 +32,7 @@ import {
   ContactItemResultType,
   ContactPhoneNumberType,
   ContactToCommentsConnectionType,
+  ContactToFilterContactEmailsConnectionType,
   ContactToLikersConnectionType,
   EmailInfoType,
   UserType,
@@ -219,6 +220,43 @@ export const ContactType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return obj.queryContactItems(args.filter);
+      },
+    },
+    filterContactEmails: {
+      type: new GraphQLNonNull(ContactToFilterContactEmailsConnectionType()),
+      args: {
+        filter: {
+          description: "",
+          type: ContactItemFilterType,
+        },
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        obj: Contact,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: Contact) => obj.emailsBylabel(args.filter),
+          args,
+        );
       },
     },
   }),

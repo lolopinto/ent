@@ -318,6 +318,7 @@ type Contact implements Node {
   fullName: String!
   plusEmails: EmailInfo!
   contactItems(filter: ContactItemFilter): [ContactItemResult!]!
+  filterContactEmails(filter: ContactItemFilter, first: Int, after: String, last: Int, before: String): ContactToFilterContactEmailsConnection!
 }
 
 type DogType {
@@ -633,6 +634,18 @@ type ContactToCommentsEdge implements Edge {
 type ContactToCommentsConnection implements Connection {
   edges: [ContactToCommentsEdge!]!
   nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactToFilterContactEmailsEdge implements Edge {
+  node: ContactEmail!
+  cursor: String!
+}
+
+type ContactToFilterContactEmailsConnection implements Connection {
+  edges: [ContactToFilterContactEmailsEdge!]!
+  nodes: [ContactEmail!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

@@ -69,7 +69,7 @@ export class Account extends AccountBase {
         query.Eq("completed", completed ?? true),
         query.GreaterEq("completed_date", completedDate ?? start),
       ),
-      name: "todos",
+      name: "customTodos",
     });
   }
 
