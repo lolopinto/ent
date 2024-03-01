@@ -30,6 +30,7 @@ import { FileEditType } from "./file/file_edit_type";
 import { HolidayCreateType } from "./holiday/holiday_create_type";
 import { HolidayCustomEditType } from "./holiday/holiday_custom_edit_type";
 import { HoursOfOperationCreateType } from "./hours_of_operation/hours_of_operation_create_type";
+import { PhoneAvailableType } from "./phone_available_type";
 import { ConfirmEmailAddressEditType } from "./user/confirm_email_address_edit_type";
 import { ConfirmPhoneNumberEditType } from "./user/confirm_phone_number_edit_type";
 import { EmailAddressEditType } from "./user/email_address_edit_type";
@@ -73,6 +74,7 @@ export const MutationType = new GraphQLObjectType({
     holidayCreate: HolidayCreateType,
     holidayCustomEdit: HolidayCustomEditType,
     hoursOfOperationCreate: HoursOfOperationCreateType,
+    phoneAvailable: PhoneAvailableType,
     phoneNumberEdit: PhoneNumberEditType,
     userAuth: UserAuthType,
     userAuthJWT: UserAuthJWTType,

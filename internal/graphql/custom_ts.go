@@ -350,6 +350,12 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 
 func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
 	if mfcg.inputArg != nil {
+		// only add a type hint if we know for sure we have a type that's a custom object
+		// TODO ola 2/29/2024. should we always assume Payload?
+		obj := mfcg.field.Results[0]
+		if mfcg.cd.Objects[obj.Type] == nil {
+			return ""
+		}
 		typ := names.ToClassType(mfcg.field.GraphQLName, "Payload")
 		return fmt.Sprintf("Promise<%s>", typ)
 	}

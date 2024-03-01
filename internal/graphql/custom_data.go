@@ -35,7 +35,9 @@ type CustomData struct {
 }
 
 type CustomItem struct {
-	Name         string       `json:"name,omitempty"`
+	// TODO rename to GraphQLName
+	Name string `json:"name,omitempty"`
+	// TODO rename too
 	Type         string       `json:"type,omitempty"`
 	Nullable     NullableItem `json:"nullable,omitempty"`
 	List         bool         `json:"list,omitempty"`

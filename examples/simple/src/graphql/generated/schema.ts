@@ -124,6 +124,7 @@ import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_in
 import { UserSuperNestedObjectInputType } from "./mutations/input/user_super_nested_object_input_type";
 import { EventRsvpStatusInputType } from "./mutations/input_enums_type";
 import { MutationType } from "./mutations/mutation_type";
+import { PhoneAvailableInputType } from "./mutations/phone_available_type";
 import {
   ConfirmEditEmailAddressInputType,
   ConfirmEditEmailAddressPayloadType,
@@ -364,6 +365,7 @@ export default new GraphQLSchema({
     UserToLikesConnectionType(),
     UserToMaybeEventsConnectionType(),
     GQLViewerType,
+    PhoneAvailableInputType,
     UserAuthInputType,
     UserAuthJWTInputType,
     UserAuthJWTPayloadType,

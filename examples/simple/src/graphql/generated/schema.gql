@@ -1018,6 +1018,10 @@ type Viewer {
   defaultUserPrefs: UserPrefsStruct!
 }
 
+input PhoneAvailableArg {
+  phoneNumber: String!
+}
+
 input UserAuthInput {
   """email address of the user"""
   emailAddress: String!
@@ -1672,6 +1676,7 @@ type Mutation {
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
   holidayCustomEdit(input: CustomEditHolidayInput!): CustomEditHolidayPayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
+  phoneAvailable(input: PhoneAvailableInput!): Boolean!
   phoneNumberEdit(input: EditPhoneNumberInput!): EditPhoneNumberPayload!
   """authenticate a user"""
   userAuth(input: UserAuthInput!): UserAuthPayload!
