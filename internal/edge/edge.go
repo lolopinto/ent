@@ -265,6 +265,9 @@ func GetFieldEdge(cfg codegenapi.Config,
 	if tsFieldName == "" {
 		tsFieldName = fieldName
 	}
+	// keep the first character so we don't change the edge name too much
+	// e.g. UserID -> User, userId -> user, user_id -> user
+	tsFieldName = fieldName[:1] + tsFieldName[1:]
 
 	// pluralize if list
 	if enttype.IsListType(fieldType) {
