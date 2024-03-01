@@ -251,36 +251,50 @@ func GetFieldEdge(cfg codegenapi.Config,
 	nullable bool,
 	fieldType enttype.Type,
 ) (*FieldEdge, error) {
-	// TODO pass fieldType so we can check list or not...
-	validSuffixes := map[string]string{
-		"id":  "_id",
-		"ID":  "ID",
-		"IDs": "IDs",
-		"ids": "_ids",
-		"Ids": "Ids",
-	}
-	// well this is dumb
-	// not an id field, do nothing
-	// TODO we need a test for this
-	// TODO #674
-	foundSuffix := ""
-	for suffix := range validSuffixes {
-		if strings.HasSuffix(fieldName, suffix) {
-			foundSuffix = suffix
-			break
+	tsFieldName := names.ToTsFieldName(fieldName)
+	if !strings.HasSuffix(tsFieldName, "Id") && !strings.HasSuffix(tsFieldName, "Ids") {
+		if cfg.DebugMode() {
+			fmt.Println("skipping field fieldEdge", fieldName, "not an id field")
 		}
-	}
-	if foundSuffix == "" {
 		return nil, nil
+
 	}
-	trim := strings.TrimSuffix(fieldName, validSuffixes[foundSuffix])
-	if trim == "" {
-		trim = fieldName
+	// TODO pass fieldType so we can check list or not...
+	// validSuffixes := map[string]string{
+	// 	"id":  "_id",
+	// 	"ID":  "ID",
+	// 	"IDs": "IDs",
+	// 	"ids": "_ids",
+	// 	"Ids": "Ids",
+	// 	"Id":  "Id",
+	// 	// another dumb thing
+	// }
+	// // well this is dumb
+	// // not an id field, do nothing
+	// // TODO we need a test for this
+	// // TODO #674
+	// foundSuffix := ""
+	// for suffix := range validSuffixes {
+	// 	if strings.HasSuffix(fieldName, suffix) {
+	// 		foundSuffix = suffix
+	// 		break
+	// 	}
+	// }
+	// if foundSuffix == "" {
+	// 	if cfg.DebugMode() {
+	// 		fmt.Println("skipping field fieldEdge", fieldName, "not an id field")
+	// 	}
+	// 	return nil, nil
+	// }
+	tsFieldName = strings.TrimSuffix(tsFieldName, "Id")
+	tsFieldName = strings.TrimSuffix(tsFieldName, "Ids")
+	if tsFieldName == "" {
+		tsFieldName = fieldName
 	}
 
 	// pluralize if list
 	if enttype.IsListType(fieldType) {
-		trim = inflection.Plural(trim)
+		tsFieldName = inflection.Plural(tsFieldName)
 		if fieldEdgeInfo.Polymorphic != nil {
 			return nil, fmt.Errorf("field %s polymorphic list types not currently supported", fieldName)
 		}
@@ -294,7 +308,7 @@ func GetFieldEdge(cfg codegenapi.Config,
 	// Edge name: User from UserID field
 	edgeInfo := getCommonEdgeInfo(
 		cfg,
-		trim,
+		tsFieldName,
 		config,
 	)
 

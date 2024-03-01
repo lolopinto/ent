@@ -403,7 +403,7 @@ export class EventBuilder<
     addField("start_time", input.startTime);
     addField("end_time", input.endTime);
     addField("location", input.location);
-    addField("addressID", input.addressId);
+    addField("addressId", input.addressId);
     if (input.addressId !== undefined) {
       if (input.addressId) {
         this.orchestrator.addInboundEdge(
@@ -507,7 +507,7 @@ export class EventBuilder<
     return this.existingEnt.location;
   }
 
-  // get value of addressID. Retrieves it from the input if specified or takes it from existingEnt
+  // get value of addressId. Retrieves it from the input if specified or takes it from existingEnt
   getNewAddressIdValue():
     | ID
     | null
