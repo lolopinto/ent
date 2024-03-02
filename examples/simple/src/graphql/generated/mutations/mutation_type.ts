@@ -40,6 +40,9 @@ import { UserDeleteType } from "./user/user_delete_type";
 import { UserEditType } from "./user/user_edit_type";
 import { UserAuthJWTType } from "./user_auth_jwt_type";
 import { UserAuthType } from "./user_auth_type";
+import { UserStatisticsCreateType } from "./user_statistics/user_statistics_create_type";
+import { UserStatisticsDeleteType } from "./user_statistics/user_statistics_delete_type";
+import { UserStatisticsEditType } from "./user_statistics/user_statistics_edit_type";
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
@@ -80,5 +83,8 @@ export const MutationType = new GraphQLObjectType({
     userDelete: UserDeleteType,
     userDelete2: UserDelete2Type,
     userEdit: UserEditType,
+    userStatisticsCreate: UserStatisticsCreateType,
+    userStatisticsDelete: UserStatisticsDeleteType,
+    userStatisticsEdit: UserStatisticsEditType,
   }),
 });

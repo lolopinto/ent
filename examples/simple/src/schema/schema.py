@@ -265,6 +265,16 @@ sa.Table("user_self_contact_edges", metadata,
     sa.UniqueConstraint("id1", "edge_type", name="user_self_contact_edges_unique_id1_edge_type"),
 )
    
+sa.Table("user_statistics", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("user_id", postgresql.UUID(), nullable=False),
+    sa.Column("auth_code_emails_sent", sa.Integer(), nullable=False, server_default='0'),
+    sa.PrimaryKeyConstraint("id", name="user_statistics_id_pkey"),
+    sa.UniqueConstraint("user_id", name="user_statistics_unique_user_id"),
+)
+   
 sa.Table("users", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
