@@ -21,7 +21,7 @@ export function randomEmail(domain?: string): string {
   return `test+${random()}@${domain}`;
 }
 
-function randomPhoneNumber(): string {
+export function randomPhoneNumber(): string {
   return `+1${Math.random().toString(10).substring(2, 11)}`;
 }
 
