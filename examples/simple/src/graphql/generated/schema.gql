@@ -232,14 +232,14 @@ type Attachment {
   fileId: ID!
   dupeFileId: ID
   note: String
-  date: Date!
+  date: Time!
   phoneNumber: String
   emailAddress: String
 }
 
 type CatType {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: CatBreed!
   kitten: Boolean!
 }
@@ -263,7 +263,7 @@ type Comment implements Node {
 type ContactDate implements ContactItemType {
   contact: Contact
   label: ContactLabel!
-  date: Date!
+  date: Time!
   description: String!
 }
 
@@ -328,7 +328,7 @@ type Contact implements Node {
 
 type DogType {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: DogBreed!
   breedGroup: DogBreedGroup!
   puppy: Boolean!
@@ -348,8 +348,8 @@ type Event implements Node {
   creator: User
   id: ID!
   name: String!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   eventLocation: String!
   coverPhoto: Byte
   coverPhoto2: Byte
@@ -381,7 +381,7 @@ type Holiday implements Node {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt!
   label: String!
-  date: Date!
+  date: Time!
 }
 
 type HoursOfOperation implements Node {
@@ -396,7 +396,7 @@ union PetUnionType = CatType | DogType | RabbitType
 
 type RabbitType {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: RabbitBreed!
 }
 
@@ -1012,7 +1012,7 @@ type UserToLikersConnection implements Connection {
 type UserToLikesEdge implements Edge {
   node: Node!
   cursor: String!
-  time: Date!
+  time: Time!
 }
 
 type UserToLikesConnection implements Connection {
@@ -1079,14 +1079,14 @@ input AttachmentInput {
   fileId: ID!
   dupeFileId: ID
   note: String
-  date: Date!
+  date: Time!
   phoneNumber: String
   emailAddress: String
 }
 
 input CatTypeInput {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: CatBreed!
   kitten: Boolean!
 }
@@ -1286,7 +1286,7 @@ input CustomEditHolidayInput {
   dayOfWeek: DayOfWeek
   dayOfWeekAlt: DayOfWeekAlt
   label: String
-  date: Date
+  date: Time
 }
 
 type CustomEditHolidayPayload {
@@ -1305,7 +1305,7 @@ input DeleteUserInput2 {
 
 input DogTypeInput {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: DogBreed!
   breedGroup: DogBreedGroup!
   puppy: Boolean!
@@ -1362,8 +1362,8 @@ input EventArgInput {
 input EventCreateInput {
   name: String!
   creatorId: ID!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   eventLocation: String!
   addressId: ID
   coverPhoto: Byte
@@ -1388,8 +1388,8 @@ input EventEditInput {
   """id of Event"""
   id: ID!
   name: String
-  startTime: Date
-  endTime: Date
+  startTime: Time
+  endTime: Time
   eventLocation: String
   addressId: ID
   coverPhoto: Byte
@@ -1474,7 +1474,7 @@ input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt!
   label: String!
-  date: Date
+  date: Time
   log: JSON
 }
 
@@ -1512,7 +1512,7 @@ input PhoneNumberContactCreateInput {
 
 input RabbitTypeInput {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: RabbitBreed!
 }
 
@@ -1689,7 +1689,7 @@ type Query {
   """custom query for hours_of_operation. list"""
   hours_of_operation_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [HoursOfOperation!]!
   node(id: ID!): Node
-  timeDiff(time: Date!, log: JSON!): String!
+  timeDiff(time: Time!, log: JSON!): String!
   """custom query for user. connection"""
   user_connection(ids: [ID!], sortCol: UserSortColumn, query: UserArgInput, first: Int, after: String, last: Int, before: String): RootToUserConnection!
   """custom query for user. list"""
@@ -1751,6 +1751,9 @@ scalar Byte
 
 """The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""
 scalar JSON
+
+"""Time scalar type"""
+scalar Time
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
