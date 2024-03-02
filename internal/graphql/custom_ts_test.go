@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/file"
@@ -190,16 +189,16 @@ func TestCustomInputRenamed(t *testing.T) {
 	// simple test that just tests the entire flow.
 	// very complicated but simplest no-frills way to test things
 	m := map[string]string{
-		"contact.ts": testhelper.GetCodeWithSchema(`
+		"contact_sche,a.ts": testhelper.GetCodeWithSchema(`
 			import {EntSchema, StringType} from "{schema}";
 
-			const Contact = new EntSchema({
+			const ContactSchema = new EntSchema({
 				fields: {
 					firstName: StringType(),
 					lastName: StringType(),
 				},
 			});
-			export default Contact;
+			export default ContactSchema;
 		`),
 	}
 
@@ -296,12 +295,6 @@ func TestCustomInputRenamed(t *testing.T) {
 	assert.Equal(t, result.IsContextArg, false)
 	assert.Equal(t, result.TSType, "boolean")
 
-	for k := range s.customData.Inputs {
-		spew.Dump(k, s.customData.Inputs[k])
-		// TODO
-	}
-	t.Fail()
-
 	require.Len(t, s.customQueries, 0)
 	require.Len(t, s.customMutations, 1)
 
@@ -341,7 +334,7 @@ func TestCustomInputRenamed(t *testing.T) {
 			Name: "input",
 			Imports: []*tsimport.ImportPath{
 				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-				{Import: "EmailAvailableInputType"},
+				{Import: "StringType"},
 			},
 		},
 	})
