@@ -138,6 +138,8 @@ func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 	if processor.DisableSchemaGQL() {
 		return nil
 	}
+
+	fmt.Println("generating schema.gql...")
 	// generate schema.gql
 	return generateAlternateSchemaFile(processor, p.s)
 	//return generateSchemaFile(processor, p.s.hasMutations)
@@ -787,11 +789,12 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	cmdInfo := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), fromTest)
 
 	if cmdInfo.UseSwc {
-		_, err := os.Stat(".swcrc")
+		swcPath := filepath.Join(processor.Config.GetAbsPathToRoot(), ".swcrc")
+		_, err := os.Stat(swcPath)
 		if err != nil && os.IsNotExist(err) {
 			// temp .swcrc file to be used
 			// probably need this for parse_ts too
-			err = os.WriteFile(".swcrc", []byte(`{
+			err = os.WriteFile(swcPath, []byte(`{
 		"$schema": "http://json.schemastore.org/swcrc",
     "jsc": {
         "parser": {
@@ -3958,7 +3961,8 @@ func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) err
 		writeRenderable(scalar)
 	}
 
-	return os.WriteFile("src/graphql/generated/schema.gql", []byte(sb.String()), 0666)
+	path := path.Join(processor.Config.GetAbsPathToRoot(), "src", "graphql", "generated", "schema.gql")
+	return os.WriteFile(path, []byte(sb.String()), 0666)
 }
 
 func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {

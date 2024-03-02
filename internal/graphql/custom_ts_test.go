@@ -186,10 +186,8 @@ func TestCustomMutation(t *testing.T) {
 }
 
 func TestCustomInputRenamed(t *testing.T) {
-	// simple test that just tests the entire flow.
-	// very complicated but simplest no-frills way to test things
 	m := map[string]string{
-		"contact_sche,a.ts": testhelper.GetCodeWithSchema(`
+		"contact_schema.ts": testhelper.GetCodeWithSchema(`
 			import {EntSchema, StringType} from "{schema}";
 
 			const ContactSchema = new EntSchema({
@@ -245,7 +243,7 @@ func TestCustomInputRenamed(t *testing.T) {
 					args: [
 						{
 							name: "input",
-							type:	'String',		
+							type:	'EmailAvailableInput',		
 						},
 					],
 				})
@@ -280,11 +278,11 @@ func TestCustomInputRenamed(t *testing.T) {
 	require.Len(t, item.Args, 1)
 	arg := item.Args[0]
 	assert.Equal(t, arg.Name, "input")
-	assert.Equal(t, arg.Type, "String")
+	assert.Equal(t, arg.Type, "EmailAvailableInput")
 	assert.Equal(t, arg.Nullable, NullableItem(""))
 	assert.Equal(t, arg.List, false)
 	assert.Equal(t, arg.IsContextArg, false)
-	assert.Equal(t, arg.TSType, "string")
+	assert.Equal(t, arg.TSType, "")
 
 	require.Len(t, item.Results, 1)
 	result := item.Results[0]
@@ -309,14 +307,18 @@ func TestCustomInputRenamed(t *testing.T) {
 	assert.Nil(t, objData.NodeData)
 	assert.Equal(t, objData.Node, "AuthResolver")
 	assert.Len(t, objData.Enums, 0)
-	assert.Len(t, objData.GQLNodes, 0)
+	assert.Len(t, objData.GQLNodes, 1) // EmailAvailableInput
+
+	node := objData.GQLNodes[0]
+	assert.Equal(t, node.Node, "EmailAvailableArg")
+	assert.Equal(t, node.Type, "EmailAvailableArgType")
 
 	fcfg := objData.FieldConfig
 	require.NotNil(t, fcfg)
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailAvailableType")
-	assert.Equal(t, fcfg.Arg, "{ [input: string]: String}")
+	assert.Equal(t, fcfg.Arg, "{ [input: string]: EmailAvailableInput}")
 	assert.Equal(t, fcfg.ResolveMethodArg, "{ input }")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
@@ -324,6 +326,10 @@ func TestCustomInputRenamed(t *testing.T) {
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
+		{
+			Import:     "EmailAvailableInput",
+			ImportPath: "src/graphql/mutations/auth/auth",
+		},
 		{
 			Import:     "AuthResolver",
 			ImportPath: "src/graphql/mutations/auth/auth",
@@ -334,13 +340,13 @@ func TestCustomInputRenamed(t *testing.T) {
 			Name: "input",
 			Imports: []*tsimport.ImportPath{
 				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-				{Import: "StringType"},
+				{Import: "EmailAvailableArgType"},
 			},
 		},
 	})
 	assert.Equal(t, fcfg.FunctionContents, []string{
 		"const r = new AuthResolver();",
-		"return r.emailAvailableMutation(args.input);",
+		"return r.emailAvailableMutation({email:input.email},);",
 	})
 }
 

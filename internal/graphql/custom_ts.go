@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
@@ -607,6 +608,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 			} else {
 				fields, ok := cd.Fields[arg.Type]
 				if !ok {
+					spew.Dump(cd.Fields)
 					return nil, fmt.Errorf("type %s has no fields", arg.Type)
 				}
 				args := make([]string, len(fields))
@@ -718,6 +720,7 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 
 	fields, ok := cd.Fields[item.Type]
 	if !ok {
+		spew.Dump(cd.Fields)
 		return nil, fmt.Errorf("type %s has no fields", item.Type)
 	}
 
@@ -1120,6 +1123,7 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 
 		fields, ok := cd.Fields[inter.NodeName]
 		if !ok {
+			spew.Dump(cd.Fields)
 			return fmt.Errorf("type %s has no fields", inter.NodeName)
 		}
 
