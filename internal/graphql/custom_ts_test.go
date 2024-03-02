@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/file"
@@ -182,6 +183,171 @@ func TestCustomMutation(t *testing.T) {
 	assert.Equal(t, fcfg.FunctionContents, []string{
 		"const r = new AuthResolver();",
 		"return r.emailAvailableMutation(args.email);",
+	})
+}
+
+func TestCustomInputRenamed(t *testing.T) {
+	// simple test that just tests the entire flow.
+	// very complicated but simplest no-frills way to test things
+	m := map[string]string{
+		"contact.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType} from "{schema}";
+
+			const Contact = new EntSchema({
+				fields: {
+					firstName: StringType(),
+					lastName: StringType(),
+				},
+			});
+			export default Contact;
+		`),
+	}
+
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	dirPath, err := os.MkdirTemp(absPath, "project")
+	defer os.RemoveAll(dirPath)
+	require.NoError(t, err)
+
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
+	processor := &codegen.Processor{
+		Schema: schema,
+		Config: getConfig(t, dirPath),
+	}
+
+	schemaDir := filepath.Join(dirPath, "src", "graphql", "mutations", "auth")
+	require.NoError(t, os.MkdirAll(schemaDir, os.ModePerm))
+
+	code := testhelper.GetCodeWithSchema(`
+			import {RequestContext} from "{root}";
+			import {gqlMutation, gqlInputObjectType, gqlField} from "{graphql}";
+
+			@gqlInputObjectType({
+			  name: "EmailAvailableArg",
+			})
+			export class EmailAvailableInput {
+				@gqlField({
+					class: "EmailAvailableInput",
+					type: String,
+				})
+				email: string;
+
+				constructor(email: string) {
+					this.email = email;
+				}
+			}
+
+			export class AuthResolver {
+			  @gqlMutation({ 
+					class: "AuthResolver", 
+					name: "emailAvailable", 
+					type: Boolean, 
+					async: true, 
+					args: [
+						{
+							name: "input",
+							type:	'String',		
+						},
+					],
+				})
+			  async emailAvailableMutation(input: EmailAvailableInput) {
+					return false;
+				}
+		  }
+		`)
+
+	path := filepath.Join(schemaDir, "auth.ts")
+	require.NoError(t, os.WriteFile(path, []byte(code), os.ModePerm))
+
+	s, err := buildSchema(processor, true)
+	require.NoError(t, err)
+
+	require.Len(t, s.customData.Args, 0)
+	require.Len(t, s.customData.Inputs, 1)
+	require.Len(t, s.customData.Objects, 0)
+	require.Len(t, s.customData.Fields, 1)
+	require.Len(t, s.customData.Queries, 0)
+	require.Len(t, s.customData.Mutations, 1)
+	require.Len(t, s.customData.Classes, 2)
+	require.Len(t, s.customData.Files, 1)
+	validateDefaultCustomTypes(t, s.customData)
+
+	item := s.customData.Mutations[0]
+	assert.Equal(t, item.Node, "AuthResolver")
+	assert.Equal(t, item.GraphQLName, "emailAvailable")
+	assert.Equal(t, item.FunctionName, "emailAvailableMutation")
+	assert.Equal(t, item.FieldType, AsyncFunction)
+
+	require.Len(t, item.Args, 1)
+	arg := item.Args[0]
+	assert.Equal(t, arg.Name, "input")
+	assert.Equal(t, arg.Type, "String")
+	assert.Equal(t, arg.Nullable, NullableItem(""))
+	assert.Equal(t, arg.List, false)
+	assert.Equal(t, arg.IsContextArg, false)
+	assert.Equal(t, arg.TSType, "string")
+
+	require.Len(t, item.Results, 1)
+	result := item.Results[0]
+	assert.Equal(t, result.Name, "")
+	assert.Equal(t, result.Type, "Boolean")
+	assert.Equal(t, result.Nullable, NullableItem(""))
+	assert.Equal(t, result.List, false)
+	assert.Equal(t, result.IsContextArg, false)
+	assert.Equal(t, result.TSType, "boolean")
+
+	for k := range s.customData.Inputs {
+		spew.Dump(k, s.customData.Inputs[k])
+		// TODO
+	}
+	t.Fail()
+
+	require.Len(t, s.customQueries, 0)
+	require.Len(t, s.customMutations, 1)
+
+	gqlNode := s.customMutations[0]
+	assert.Len(t, gqlNode.connections, 0)
+	assert.Len(t, gqlNode.ActionDependents, 0)
+	assert.Equal(t, gqlNode.Field, &item)
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/mutations/email_available_type.ts"))
+
+	objData := gqlNode.ObjData
+	require.NotNil(t, objData)
+	assert.Nil(t, objData.NodeData)
+	assert.Equal(t, objData.Node, "AuthResolver")
+	assert.Len(t, objData.Enums, 0)
+	assert.Len(t, objData.GQLNodes, 0)
+
+	fcfg := objData.FieldConfig
+	require.NotNil(t, fcfg)
+
+	assert.True(t, fcfg.Exported)
+	assert.Equal(t, fcfg.Name, "EmailAvailableType")
+	assert.Equal(t, fcfg.Arg, "{ [input: string]: String}")
+	assert.Equal(t, fcfg.ResolveMethodArg, "{ input }")
+	assert.Equal(t, fcfg.ReturnTypeHint, "")
+	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewGQLImportPath("GraphQLBoolean"),
+	})
+	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
+		{
+			Import:     "AuthResolver",
+			ImportPath: "src/graphql/mutations/auth/auth",
+		},
+	})
+	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
+		{
+			Name: "input",
+			Imports: []*tsimport.ImportPath{
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				{Import: "EmailAvailableInputType"},
+			},
+		},
+	})
+	assert.Equal(t, fcfg.FunctionContents, []string{
+		"const r = new AuthResolver();",
+		"return r.emailAvailableMutation(args.input);",
 	})
 }
 

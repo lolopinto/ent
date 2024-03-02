@@ -125,7 +125,7 @@ import { UserStatisticsArgInputType } from "./mutations/input/user_statistics_ar
 import { UserSuperNestedObjectInputType } from "./mutations/input/user_super_nested_object_input_type";
 import { EventRsvpStatusInputType } from "./mutations/input_enums_type";
 import { MutationType } from "./mutations/mutation_type";
-import { PhoneAvailableInputType } from "./mutations/phone_available_type";
+import { PhoneAvailableArgType } from "./mutations/phone_available_type";
 import {
   ConfirmEditEmailAddressInputType,
   ConfirmEditEmailAddressPayloadType,
@@ -229,7 +229,6 @@ import {
   EventType,
   FileSortColumnType,
   FileType,
-  GQLViewerType,
   GlobalCanViewerDoType,
   HolidaySortColumnType,
   HolidayType,
@@ -278,6 +277,7 @@ import {
   UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
   UserType,
+  ViewerType,
 } from "../resolvers";
 import { SubscriptionType } from "../resolvers/subscription_type";
 
@@ -383,8 +383,8 @@ export default new GraphQLSchema({
     UserToLikersConnectionType(),
     UserToLikesConnectionType(),
     UserToMaybeEventsConnectionType(),
-    GQLViewerType,
-    PhoneAvailableInputType,
+    ViewerType,
+    PhoneAvailableArgType,
     UserAuthInputType,
     UserAuthJWTInputType,
     UserAuthJWTPayloadType,

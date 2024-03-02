@@ -227,6 +227,7 @@ func (item *CustomItem) getImports(processor *codegen.Processor, s *gqlSchema, c
 		}
 		item.addImport(
 			&tsimport.ImportPath{
+				// this should be obj.NodeName??
 				Import: fmt.Sprintf("%sType", item.Type),
 				// TODO same here. need to know if mutation or query
 				ImportPath: codepath.GetImportPathForInternalGQLFile(),

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
@@ -658,8 +659,16 @@ func buildObjectTypeImpl(item CustomItem, obj *CustomObject, gqlType string, isT
 	// TODO right now it depends on custom inputs and outputs being FooInput and FooPayload to work
 	// we shouldn't do that and we should be smarter
 	// maybe add PayloadType if no Payload suffix otherwise Payload. Same for InputType and Input
+	// TOODOOD
+	// spew.Dump(item)
+	// typStr := item.Name
+	// if item.Type == "" {
+	// 	typStr = item.Type
+	// }
+	// spew.Dump(item.Type, item.Name, obj.NodeName)
+	spew.Dump(item, obj)
 	typ := newObjectType(&objectType{
-		Type:     fmt.Sprintf("%sType", item.Type),
+		Type:     fmt.Sprintf("%sType", obj.NodeName),
 		Node:     obj.NodeName,
 		TSType:   item.Type,
 		Exported: true,
@@ -730,7 +739,7 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 		typ.Imports = append(typ.Imports, gqlField.FieldImports...)
 	}
 
-	err := maybeAddCustomImport(processor, cd, typ, destPath, item.Type)
+	err := maybeAddCustomImport(processor, cd, typ, destPath, obj.NodeName)
 	if err != nil {
 		return nil, err
 	}

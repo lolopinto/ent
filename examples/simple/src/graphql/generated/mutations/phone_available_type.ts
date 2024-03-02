@@ -16,7 +16,7 @@ import { RequestContext } from "@snowtop/ent";
 import { AuthResolver, PhoneAvailableInput } from "../../mutations/auth";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-export const PhoneAvailableInputType = new GraphQLInputObjectType({
+export const PhoneAvailableArgType = new GraphQLInputObjectType({
   name: "PhoneAvailableArg",
   fields: (): GraphQLInputFieldConfigMap => ({
     phoneNumber: {
