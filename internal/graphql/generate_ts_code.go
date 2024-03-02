@@ -1081,6 +1081,19 @@ type gqlSchema struct {
 	rootDatas []*gqlRootData
 }
 
+func (s *gqlSchema) getNodeNameFor(typ string) string {
+	// this is to handle renames of custom input and object types
+	obj := s.customData.Objects[typ]
+	if obj != nil {
+		return obj.NodeName
+	}
+	obj = s.customData.Inputs[typ]
+	if obj != nil {
+		return obj.NodeName
+	}
+	return typ
+}
+
 func (s *gqlSchema) getImportFor(processor *codegen.Processor, typ string, mutation bool) *tsimport.ImportPath {
 	// handle Date super special
 	typ2, ok := knownCustomTypes[typ]

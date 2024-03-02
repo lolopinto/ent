@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
@@ -333,6 +332,7 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Proces
 
 func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg {
 	if mfcg.inputArg != nil {
+		argType := s.getNodeNameFor(mfcg.inputArg.Type)
 		return []*fieldConfigArg{
 			{
 				Name: "input",
@@ -340,7 +340,7 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					// same for this about passing it in
 					{
-						Import: names.ToClassType(mfcg.field.GraphQLName, "InputType"),
+						Import: argType + "Type",
 					},
 				},
 			},
@@ -411,13 +411,14 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor
 	}
 	var ret = r.imports[:]
 
-	imp := s.getImportFor(processor, r.Type, false)
+	importType := s.getNodeNameFor(r.Type)
+	imp := s.getImportFor(processor, importType, false)
 	if imp != nil {
 		ret = append(ret, imp)
 	} else {
 		// new type
 		ret = append(ret, &tsimport.ImportPath{
-			Import: fmt.Sprintf("%sType", r.Type),
+			Import: fmt.Sprintf("%sType", importType),
 			//		ImportPath is local here
 		})
 	}
@@ -448,11 +449,12 @@ func getFieldConfigArgsFrom(processor *codegen.Processor, args []CustomItem, s *
 		var imp *tsimport.ImportPath
 
 		if s != nil {
-			imp = s.getImportFor(processor, arg.Type, mutation)
+			importType := s.getNodeNameFor(arg.Type)
+			imp = s.getImportFor(processor, importType, mutation)
 			if imp == nil {
 				// local
 				imp = &tsimport.ImportPath{
-					Import: arg.Type,
+					Import: importType,
 				}
 			}
 		} else {
@@ -659,14 +661,6 @@ func buildObjectTypeImpl(item CustomItem, obj *CustomObject, gqlType string, isT
 	// TODO right now it depends on custom inputs and outputs being FooInput and FooPayload to work
 	// we shouldn't do that and we should be smarter
 	// maybe add PayloadType if no Payload suffix otherwise Payload. Same for InputType and Input
-	// TOODOOD
-	// spew.Dump(item)
-	// typStr := item.Name
-	// if item.Type == "" {
-	// 	typStr = item.Type
-	// }
-	// spew.Dump(item.Type, item.Name, obj.NodeName)
-	spew.Dump(item, obj)
 	typ := newObjectType(&objectType{
 		Type:     fmt.Sprintf("%sType", obj.NodeName),
 		Node:     obj.NodeName,
@@ -739,7 +733,7 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 		typ.Imports = append(typ.Imports, gqlField.FieldImports...)
 	}
 
-	err := maybeAddCustomImport(processor, cd, typ, destPath, obj.NodeName)
+	err := maybeAddCustomImport(processor, cd, typ, destPath, item.Type)
 	if err != nil {
 		return nil, err
 	}

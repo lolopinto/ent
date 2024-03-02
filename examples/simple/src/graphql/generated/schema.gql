@@ -1736,7 +1736,7 @@ type Mutation {
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
   holidayCustomEdit(input: CustomEditHolidayInput!): CustomEditHolidayPayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
-  phoneAvailable(input: PhoneAvailableInput!): Boolean!
+  phoneAvailable(input: PhoneAvailableArg!): Boolean!
   phoneNumberEdit(input: EditPhoneNumberInput!): EditPhoneNumberPayload!
   """authenticate a user"""
   userAuth(input: UserAuthInput!): UserAuthPayload!

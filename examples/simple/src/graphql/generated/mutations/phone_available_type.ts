@@ -34,7 +34,7 @@ export const PhoneAvailableType: GraphQLFieldConfig<
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(PhoneAvailableInputType),
+      type: new GraphQLNonNull(PhoneAvailableArgType),
     },
   },
   resolve: async (
