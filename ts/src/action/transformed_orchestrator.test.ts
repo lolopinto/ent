@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
 import { Context, Data, Viewer } from "../core/base";
@@ -7,6 +8,7 @@ import {
   IntegerType,
   StringListType,
   StringType,
+  UUIDType,
 } from "../schema/field";
 import {
   UpdateOperation,
@@ -161,6 +163,7 @@ const CountrySchema = new EntBuilderSchema(Country, {
       tsType: "City",
       graphQLType: "City",
     }),
+    creatorId: UUIDType(),
   },
 });
 
@@ -228,7 +231,7 @@ const contactsLoaderFactory = new ObjectLoaderFactory({
 
 const countryLoaderFactory = new ObjectLoaderFactory({
   tableName: "countries",
-  fields: ["id", "name", "capital", "cities", "deleted_at"],
+  fields: ["id", "name", "capital", "cities", "creator_id", "deleted_at"],
   key: "id",
   clause: clause.Eq("deleted_at", null),
 });
@@ -1108,7 +1111,7 @@ function commonTests() {
     await expect(action2.saveX()).rejects.toThrow(/test failure/);
   });
 
-  test.only("insert -> update  w StructAsList", async () => {
+  test("insert -> update  w StructAsList", async () => {
     const verifyRows = async (ct: number) => {
       if (Dialect.Postgres !== DB.getDialect()) {
         return;
@@ -1120,6 +1123,8 @@ function commonTests() {
     };
     await verifyRows(0);
     const loader = geCountryNewLoader();
+
+    const creatorId = uuidv4();
 
     const action = getInsertCountryAction(
       new Map<string, any>([
@@ -1133,6 +1138,7 @@ function commonTests() {
             { name: "San Francisco", population: 800000 },
           ],
         ],
+        ["creatorId", creatorId],
       ]),
       loader.context,
     );
@@ -1151,6 +1157,7 @@ function commonTests() {
         { name: "Los Angeles", population: 4000000 },
         { name: "San Francisco", population: 800000 },
       ],
+      creator_id: creatorId,
       deleted_at: null,
     });
 
@@ -1178,6 +1185,7 @@ function commonTests() {
                 { name: "San Francisco", population: 800000 },
               ],
             ],
+            ["creatorId", creatorId],
           ]),
         };
       }
@@ -1211,6 +1219,7 @@ function commonTests() {
             { name: "Marseille", population: 800000 },
           ],
         ],
+        ["creatorId", creatorId],
       ]),
       loader.context,
     );
