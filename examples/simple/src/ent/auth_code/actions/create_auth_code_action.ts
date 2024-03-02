@@ -1,16 +1,20 @@
 import {
   CreateAuthCodeActionBase,
   AuthCodeCreateInput,
+  CreateAuthCodeActionTriggers,
+  CreateAuthCodeActionObservers,
 } from "../../generated/auth_code/actions/create_auth_code_action_base";
 import { AuthCodeBuilder } from "../../generated/auth_code/actions/auth_code_builder";
 
 export { AuthCodeCreateInput };
 import { ExampleViewer } from "../../../viewer/viewer";
-import { AuthCode } from "../../";
+import { AuthCode, UserStatistics } from "../../";
 import { Validator } from "@snowtop/ent/action";
 import { Data, UpdateOperation, query } from "@snowtop/ent";
 import { TransformedUpdateOperation } from "@snowtop/ent";
 import { SQLStatementOperation } from "@snowtop/ent";
+import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
+import EditUserStatisticsAction from "src/ent/user_statistics/actions/edit_user_statistics_action";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateAuthCodeAction extends CreateAuthCodeActionBase {
@@ -81,5 +85,51 @@ export default class CreateAuthCodeAction extends CreateAuthCodeActionBase {
       existingEnt: first,
       data,
     };
+  }
+
+  getTriggers(): CreateAuthCodeActionTriggers {
+    return [
+      {
+        async changeset(builder, input) {
+          const stats = await UserStatistics.loadFromUserIdX(
+            builder.viewer,
+            input.userId,
+          );
+          return EditUserStatisticsAction.create(builder.viewer, stats, {
+            authCodeEmailsSent: {
+              add: 1,
+            },
+          }).changeset();
+        },
+      },
+    ];
+  }
+
+  getObservers(): CreateAuthCodeActionObservers {
+    return [
+      {
+        observe(builder, input) {
+          if (input.emailAddress) {
+            // send email
+            FakeComms.send({
+              to: input.emailAddress,
+              mode: Mode.EMAIL,
+              from: "noreply@foo.com",
+              subject: "auth code",
+              body: `your auth code is ${input.code}`,
+            });
+          }
+          if (input.phoneNumber) {
+            // send sms
+            FakeComms.send({
+              to: input.phoneNumber,
+              mode: Mode.SMS,
+              from: "42423",
+              body: `your auth code is ${input.code}`,
+            });
+          }
+        },
+      },
+    ];
   }
 }

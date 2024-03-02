@@ -212,6 +212,11 @@ enum UserSortColumn {
   ID
 }
 
+enum UserStatisticsSortColumn {
+  ID
+  USER_ID
+}
+
 type Address implements Node {
   id: ID!
   streetName: String!
@@ -452,6 +457,12 @@ type UserPrefsStruct {
   finishedNux: Boolean
   enableNotifs: Boolean
   notifTypes: [NotifType!]!
+}
+
+type UserStatistics implements Node {
+  user: User
+  id: ID!
+  authCodeEmailsSent: Int!
 }
 
 type UserSuperNestedObject {
@@ -838,6 +849,18 @@ type RootToUserEdge implements Edge {
 type RootToUserConnection implements Connection {
   edges: [RootToUserEdge!]!
   nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToUserStatisticsEdge implements Edge {
+  node: UserStatistics!
+  cursor: String!
+}
+
+type RootToUserStatisticsConnection implements Connection {
+  edges: [RootToUserStatisticsEdge!]!
+  nodes: [UserStatistics!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -1585,6 +1608,39 @@ input UserPrefsStructInput {
   notifTypes: [NotifType!]!
 }
 
+input UserStatisticsArgInput {
+  id: ID
+  ids: [ID!]
+}
+
+input UserStatisticsCreateInput {
+  userId: ID!
+  authCodeEmailsSent: Int
+}
+
+type UserStatisticsCreatePayload {
+  userStatistics: UserStatistics!
+}
+
+input UserStatisticsDeleteInput {
+  """id of UserStatistics"""
+  id: ID!
+}
+
+type UserStatisticsDeletePayload {
+  deletedUserStatisticsId: ID
+}
+
+input UserStatisticsEditInput {
+  """id of UserStatistics"""
+  id: ID!
+  authCodeEmailsSent: Int
+}
+
+type UserStatisticsEditPayload {
+  userStatistics: UserStatistics!
+}
+
 input UserSuperNestedObjectInput {
   uuid: ID!
   int: Int!
@@ -1638,6 +1694,10 @@ type Query {
   user_connection(ids: [ID!], sortCol: UserSortColumn, query: UserArgInput, first: Int, after: String, last: Int, before: String): RootToUserConnection!
   """custom query for user. list"""
   user_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [User!]!
+  """custom query for user_statistics. connection"""
+  user_statistics_connection(ids: [ID!], sortCol: UserStatisticsSortColumn, query: UserStatisticsArgInput, first: Int, after: String, last: Int, before: String): RootToUserStatisticsConnection!
+  """custom query for user_statistics. list"""
+  user_statistics_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [UserStatistics!]!
   """the viewer query"""
   viewer: Viewer!
 }
@@ -1681,6 +1741,9 @@ type Mutation {
   userDelete(input: UserDeleteInput!): UserDeletePayload!
   userDelete2(input: DeleteUserInput2!): DeleteUserInput2Payload!
   userEdit(input: UserEditInput!): UserEditPayload!
+  userStatisticsCreate(input: UserStatisticsCreateInput!): UserStatisticsCreatePayload!
+  userStatisticsDelete(input: UserStatisticsDeleteInput!): UserStatisticsDeletePayload!
+  userStatisticsEdit(input: UserStatisticsEditInput!): UserStatisticsEditPayload!
 }
 
 """The `Byte` scalar type represents byte value as a Buffer"""

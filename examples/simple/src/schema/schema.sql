@@ -242,6 +242,16 @@ CREATE TABLE user_self_contact_edges (
 
 CREATE INDEX user_self_contact_edges_time_idx ON user_self_contact_edges (time);
 
+CREATE TABLE user_statistics (
+    id UUID NOT NULL, 
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    user_id UUID NOT NULL, 
+    auth_code_emails_sent INTEGER DEFAULT '0' NOT NULL, 
+    CONSTRAINT user_statistics_id_pkey PRIMARY KEY (id), 
+    CONSTRAINT user_statistics_unique_user_id UNIQUE (user_id)
+);
+
 CREATE TABLE users (
     id UUID NOT NULL, 
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
