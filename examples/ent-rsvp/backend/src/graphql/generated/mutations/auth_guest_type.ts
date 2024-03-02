@@ -11,12 +11,12 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
-import { ViewerTypeType } from "src/graphql/resolvers/internal";
-import { AuthResolver } from "../../mutations/auth/auth";
+import { AuthResolver } from "src/graphql/mutations/auth/auth";
 import {
   AuthGuestInput,
   AuthGuestPayload,
-} from "../../mutations/auth/auth_types";
+} from "src/graphql/mutations/auth/auth_types";
+import { ViewerTypeType } from "src/graphql/resolvers/internal";
 
 export const AuthGuestInputType = new GraphQLInputObjectType({
   name: "AuthGuestInput",

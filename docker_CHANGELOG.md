@@ -9,6 +9,23 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.3] - 2024-03-01
+
+- make it so that fooId UUID fieldEdge works (#1779)
+- fix @gqlField with gqlConnection and args with custom types (#1780)
+
+## [0.2.0-alpha.2] - 2024-02-29
+
+### Added
+
+- Add hideFromGraphQL to InverseAssocEdge (#1766)
+- Add support for @gqlField with gqlConnection and args (#1768)
+
+### Fixed
+
+- Fix graphql imports for custom files (#1775)
+- Fix imports for custom objects in files (#1776)
+
 ## [0.2.0-alpha.1] - 2024-02-22
 
 ### Breaking
@@ -21,6 +38,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
   * the existing names can be kept by using `storageKey` and `graphqlName` in the schema files so that there doesn't have to be any production impact.
   * standardizes on `Id` instead of `ID` so functions like `User.loadIDFromEmailAddress` become `User.loadIdFromEmailAddress`
 - changes generated files for patterns to make them more customizable (#1760)
+- changes enum names with numbers fro FOO_1 to FOO1
 
 ## [0.1.17] - 2024-01-21
 

@@ -8,6 +8,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/names"
@@ -449,6 +450,11 @@ func getFieldConfigArgsFrom(processor *codegen.Processor, args []CustomItem, s *
 			}
 		} else {
 			imp = knownTypes[arg.Type]
+			if imp == nil {
+				if processor.Config.DebugMode() {
+					fmt.Printf("couldn't find type for custom arg %s. maybe a bug with codegen?", arg.Type)
+				}
+			}
 		}
 
 		var imports []*tsimport.ImportPath
@@ -727,12 +733,10 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 }
 
 func getRelativeImportPath(processor *codegen.Processor, basepath, targetpath string) (string, error) {
-	// we get absolute paths now
-	// BONUS: instead of this, we should use the nice paths in tsconfig...
-
-	// need to do any relative imports from the directory not from the file itself
-	dir := filepath.Dir(basepath)
-	rel, err := filepath.Rel(dir, targetpath)
+	// convert from absolute path to relative path
+	// and then depend on getImportPath() in internal/tsimport/path.go to convert to relative
+	// paths if need be
+	rel, err := filepath.Rel(processor.Config.GetAbsPathToRoot(), targetpath)
 	if err != nil {
 		return "", err
 	}
@@ -780,7 +784,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			if field.Connection {
 				customEdge := getGQLEdge(processor.Config, field, nodeName)
 				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
-				if err := addConnection(processor, nodeData, customEdge, obj, &field); err != nil {
+				if err := addConnection(processor, nodeData, customEdge, obj, &field, s); err != nil {
 					return err
 				}
 				continue
@@ -823,12 +827,25 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 					return fmt.Errorf("custom objects not referenced in top level queries and mutations can only be referenced in ent nodes")
 				}
 
-				objType, err := buildObjectType(processor, cd, s, result, customObj, nodeInfo.FilePath, "GraphQLObjectType")
+				objFilePath := getFilePathForCustomInterfaceFile(processor.Config, customObj.NodeName)
+				objType, err := buildObjectType(processor, cd, s, result, customObj, objFilePath, "GraphQLObjectType")
 				if err != nil {
 					return err
 				}
+				gqlNode := &gqlNode{
+					ObjData: &gqlobjectData{
+						Node:     customObj.NodeName,
+						GQLNodes: []*objectType{objType},
+						Package:  processor.Config.GetImportPackage(),
+					},
+					FilePath: objFilePath,
+				}
+				s.otherObjects[customObj.NodeName] = gqlNode
 
-				nodeInfo.ObjData.GQLNodes = append(nodeInfo.ObjData.GQLNodes, objType)
+				nodeInfo.ObjData.customDependencyImports = append(nodeInfo.ObjData.customDependencyImports, &tsimport.ImportPath{
+					Import:     customObj.NodeName + "Type",
+					ImportPath: codepath.GetImportPathForInternalGQLFile(),
+				})
 			}
 		}
 	}

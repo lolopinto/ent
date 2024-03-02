@@ -529,7 +529,7 @@ export const eventLoaderInfo = {
       dbCol: "location",
       inputKey: "location",
     },
-    addressID: {
+    addressId: {
       dbCol: "address_id",
       inputKey: "addressId",
     },

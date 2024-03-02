@@ -289,7 +289,8 @@ type CustomField struct {
 	// extra imports
 	ExtraImports []*tsimport.ImportPath `json:"extraImports,omitempty"`
 	// To be used instead of calling a function...
-	FunctionContents string `json:"functionContents,omitempty"`
+	FunctionContents  string `json:"functionContents,omitempty"`
+	nonConnectionArgs []CustomItem
 }
 
 func (cf CustomField) getArg() string {
@@ -354,6 +355,19 @@ func (cf *CustomField) UnmarshalJSON(data []byte) error {
 			add = !hasConnectionArgs(cf, connArgs)
 		}
 		if add {
+			m := make(map[string]bool)
+
+			for _, v := range getConnectionArgs() {
+				m[v.Name] = true
+			}
+			for _, arg := range cf.Args {
+				if m[arg.Name] {
+					return fmt.Errorf("cannot have a connection with arg %s since that's a connection arg", arg.Name)
+				}
+				if !arg.IsContextArg && !arg.GraphQLOnlyArg {
+					cf.nonConnectionArgs = append(cf.nonConnectionArgs, arg)
+				}
+			}
 			cf.Args = append(cf.Args, connArgs...)
 		}
 	}
@@ -376,6 +390,10 @@ func (cf CustomField) getResolveMethodArg() string {
 		return "args"
 	}
 	return "{}"
+}
+
+func (cf CustomField) getNonConnectionArgs() []CustomItem {
+	return cf.nonConnectionArgs
 }
 
 func getConnectionArgs() []CustomItem {

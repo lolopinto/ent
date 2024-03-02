@@ -13,9 +13,9 @@ import { GraphQLUpload } from "graphql-upload";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { GraphQLContactLabel2 } from "../../mutations/custom_enum";
+import { ImportContactResolver } from "../../mutations/import_contact";
 import { ContactLabelType, UserType } from "../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { ImportContactResolver } from "../../mutations/import_contact";
 
 interface BulkUploadContactArgs {
   userId: any;

@@ -42,6 +42,7 @@ import {
 import EditUserAction from "../../../ent/user/actions/edit_user_action";
 import {
   AuthorToCommentsConnectionType,
+  CityType,
   ContactType,
   CreatorToEventsConnectionType,
   UserAccountStatusType,
@@ -835,6 +836,16 @@ export const UserType = new GraphQLObjectType({
           (v, obj: User) => obj.getCommentsAuthored(),
           args,
         );
+      },
+    },
+    cities: {
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(CityType))),
+      resolve: (
+        obj: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.getCities();
       },
     },
   }),

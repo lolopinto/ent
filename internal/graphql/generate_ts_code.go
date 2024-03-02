@@ -47,8 +47,8 @@ func (p *TSStep) Name() string {
 }
 
 var knownTypes = map[string]*tsimport.ImportPath{
-	"String": tsimport.NewGQLImportPath("GraphQLString"),
-	// "Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+	"String":     tsimport.NewGQLImportPath("GraphQLString"),
+	"Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 	"Int":        tsimport.NewGQLImportPath("GraphQLInt"),
 	"Float":      tsimport.NewGQLImportPath("GraphQLFloat"),
 	"Boolean":    tsimport.NewGQLImportPath("GraphQLBoolean"),
@@ -954,6 +954,8 @@ type gqlobjectData struct {
 	initMap     bool
 	m           map[string]bool
 	Package     *codegen.ImportPackage
+	// hack because I'm lazy to add imports for custom dependencies here
+	customDependencyImports []*tsimport.ImportPath
 }
 
 func (obj *gqlobjectData) DefaultImports() []*tsimport.ImportPath {
@@ -980,6 +982,7 @@ func (obj *gqlobjectData) Imports() []*tsimport.ImportPath {
 			result = append(result, arg.Imports...)
 		}
 	}
+	result = append(result, obj.customDependencyImports...)
 	return result
 }
 
@@ -2171,7 +2174,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		if err := addConnection(processor, nodeData, edge, result, nil); err != nil {
+		if err := addConnection(processor, nodeData, edge, result, nil, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -2339,7 +2342,7 @@ func addPluralEdge(edge edge.Edge, obj *objectType) error {
 	return obj.addField(gqlField)
 }
 
-func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge edge.ConnectionEdge, obj *objectType, customField *CustomField) error {
+func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge edge.ConnectionEdge, obj *objectType, customField *CustomField, s *gqlSchema) error {
 	// import GraphQLEdgeConnection and EdgeQuery file
 	extraImports := []*tsimport.ImportPath{
 		{
@@ -2349,6 +2352,7 @@ func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge
 	}
 
 	var buildQuery string
+	var args []CustomItem
 	if customField == nil {
 		// for custom fields, EntQuery is an implementation detail
 		// and may or may not be exposed so we don't depend on it here
@@ -2357,8 +2361,16 @@ func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge
 			Import:     edge.TsEdgeQueryName(),
 		})
 		buildQuery = fmt.Sprintf("%s.query(v, obj)", edge.TsEdgeQueryName())
+		args = getConnectionArgs()
 	} else {
-		buildQuery = fmt.Sprintf("%s.%s()", "obj", customField.FunctionName)
+		args = customField.Args
+		nonConnectionArgs := customField.getNonConnectionArgs()
+		var params []string
+		for _, arg := range nonConnectionArgs {
+			params = append(params, fmt.Sprintf("args.%s", arg.Name))
+
+		}
+		buildQuery = fmt.Sprintf("%s.%s(%s)", "obj", customField.FunctionName, strings.Join(params, ", "))
 	}
 
 	gqlField := &fieldType{
@@ -2366,7 +2378,7 @@ func addConnection(processor *codegen.Processor, nodeData *schema.NodeData, edge
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		ExtraImports:       extraImports,
-		Args:               getFieldConfigArgsFrom(processor, getConnectionArgs(), nil, false),
+		Args:               getFieldConfigArgsFrom(processor, args, s, false),
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(
