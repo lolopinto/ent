@@ -15,17 +15,15 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { AuthCode } from "../../..";
-import { authCodeLoaderInfo } from "../../loaders";
+import { UserStatistics } from "../../..";
+import { userStatisticsLoaderInfo } from "../../loaders";
 import { NodeType } from "../../types";
-import schema from "../../../../schema/auth_code_schema";
+import schema from "../../../../schema/user_statistics_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
-export interface AuthCodeInput {
-  code?: string;
+export interface UserStatisticsInput {
   userId?: ID;
-  emailAddress?: string | null;
-  phoneNumber?: string | null;
+  authCodeEmailsSent?: number;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -37,20 +35,20 @@ function randomNum(): string {
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
-export class AuthCodeBuilder<
-  TInput extends AuthCodeInput = AuthCodeInput,
-  TExistingEnt extends TMaybleNullableEnt<AuthCode> = AuthCode | null,
-> implements Builder<AuthCode, ExampleViewerAlias, TExistingEnt>
+export class UserStatisticsBuilder<
+  TInput extends UserStatisticsInput = UserStatisticsInput,
+  TExistingEnt extends TMaybleNullableEnt<UserStatistics> = UserStatistics | null,
+> implements Builder<UserStatistics, ExampleViewerAlias, TExistingEnt>
 {
   orchestrator: Orchestrator<
-    AuthCode,
+    UserStatistics,
     TInput,
     ExampleViewerAlias,
     TExistingEnt
   >;
   readonly placeholderID: ID;
-  readonly ent = AuthCode;
-  readonly nodeType = NodeType.AuthCode;
+  readonly ent = UserStatistics;
+  readonly nodeType = NodeType.UserStatistics;
   private input: TInput;
   private m: Map<string, any> = new Map();
 
@@ -58,33 +56,39 @@ export class AuthCodeBuilder<
     public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
-      AuthCode,
-      Builder<AuthCode, ExampleViewerAlias, TExistingEnt>,
+      UserStatistics,
+      Builder<UserStatistics, ExampleViewerAlias, TExistingEnt>,
       ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
     public readonly existingEnt: TExistingEnt,
     opts?: Partial<
-      OrchestratorOptions<AuthCode, TInput, ExampleViewerAlias, TExistingEnt>
+      OrchestratorOptions<
+        UserStatistics,
+        TInput,
+        ExampleViewerAlias,
+        TExistingEnt
+      >
     >,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-AuthCode`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-UserStatistics`;
     this.input = action.getInput();
-    const updateInput = (d: AuthCodeInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (d: UserStatisticsInput) =>
+      this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
       operation: this.operation,
-      tableName: "auth_codes",
+      tableName: "user_statistics",
       key: "id",
-      loaderOptions: AuthCode.loaderOptions(),
+      loaderOptions: UserStatistics.loaderOptions(),
       builder: this,
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
-      fieldInfo: authCodeLoaderInfo.fieldInfo,
+      fieldInfo: userStatisticsLoaderInfo.fieldInfo,
       ...opts,
     });
   }
@@ -93,7 +97,7 @@ export class AuthCodeBuilder<
     return this.input;
   }
 
-  updateInput(input: Omit<AuthCodeInput, "userId">) {
+  updateInput(input: Omit<UserStatisticsInput, "userId">) {
     if (input.userId !== undefined) {
       throw new Error(
         `userId cannot be passed to updateInput. use overrideUserId instead`,
@@ -112,7 +116,7 @@ export class AuthCodeBuilder<
     this.input.userId = val;
   }
 
-  deleteInputKey(key: keyof AuthCodeInput) {
+  deleteInputKey(key: keyof UserStatisticsInput) {
     delete this.input[key];
   }
 
@@ -164,11 +168,11 @@ export class AuthCodeBuilder<
     await saveBuilderX(this);
   }
 
-  async editedEnt(): Promise<AuthCode | null> {
+  async editedEnt(): Promise<UserStatistics | null> {
     return this.orchestrator.editedEnt();
   }
 
-  async editedEntX(): Promise<AuthCode> {
+  async editedEntX(): Promise<UserStatistics> {
     return this.orchestrator.editedEntX();
   }
 
@@ -182,10 +186,8 @@ export class AuthCodeBuilder<
         result.set(key, value);
       }
     };
-    addField("code", input.code);
     addField("userID", input.userId);
-    addField("emailAddress", input.emailAddress);
-    addField("phoneNumber", input.phoneNumber);
+    addField("authCodeEmailsSent", input.authCodeEmailsSent);
     return result;
   }
 
@@ -193,20 +195,6 @@ export class AuthCodeBuilder<
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any> {
     return (node as Builder<T, any>).placeholderID !== undefined;
-  }
-
-  // get value of code. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCodeValue(): string {
-    if (this.input.code !== undefined) {
-      return this.input.code;
-    }
-
-    if (!this.existingEnt) {
-      throw new Error(
-        "no value to return for `code` since not in input and no existingEnt",
-      );
-    }
-    return this.existingEnt.code;
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
@@ -223,21 +211,17 @@ export class AuthCodeBuilder<
     return this.existingEnt.userId;
   }
 
-  // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailAddressValue(): string | null {
-    if (this.input.emailAddress !== undefined) {
-      return this.input.emailAddress;
+  // get value of authCodeEmailsSent. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAuthCodeEmailsSentValue(): number {
+    if (this.input.authCodeEmailsSent !== undefined) {
+      return this.input.authCodeEmailsSent;
     }
 
-    return this.existingEnt?.emailAddress ?? null;
-  }
-
-  // get value of phoneNumber. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPhoneNumberValue(): string | null {
-    if (this.input.phoneNumber !== undefined) {
-      return this.input.phoneNumber;
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `authCodeEmailsSent` since not in input and no existingEnt",
+      );
     }
-
-    return this.existingEnt?.phoneNumber ?? null;
+    return this.existingEnt.authCodeEmailsSent;
   }
 }

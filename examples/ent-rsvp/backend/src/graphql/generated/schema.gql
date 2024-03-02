@@ -60,8 +60,8 @@ type EventActivity implements Node {
   event: Event
   id: ID!
   name: String!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   location: String!
   description: String
   inviteAllGuests: Boolean!
@@ -288,8 +288,8 @@ type AuthUserPayload {
 input ActivityEventCreateInput {
   addressId: ID
   name: String!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   location: String!
   description: String
   inviteAllGuests: Boolean!
@@ -357,8 +357,8 @@ input EventActivityCreateInput {
   addressId: ID
   name: String!
   eventId: ID!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   location: String!
   description: String
   inviteAllGuests: Boolean
@@ -384,8 +384,8 @@ input EventActivityEditInput {
   addressId: ID
   name: String
   eventId: ID
-  startTime: Date
-  endTime: Date
+  startTime: Time
+  endTime: Time
   location: String
   description: String
   inviteAllGuests: Boolean
@@ -549,6 +549,9 @@ type Mutation {
   importGuests(eventId: ID!, file: Upload!): Event!
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
+
+"""Time scalar type"""
+scalar Time
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload

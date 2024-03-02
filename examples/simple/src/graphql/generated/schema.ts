@@ -121,6 +121,7 @@ import { UserArgInputType } from "./mutations/input/user_arg_input_type";
 import { UserNestedObjectListInputType } from "./mutations/input/user_nested_object_list_input_type";
 import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type";
 import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_input_type";
+import { UserStatisticsArgInputType } from "./mutations/input/user_statistics_arg_input_type";
 import { UserSuperNestedObjectInputType } from "./mutations/input/user_super_nested_object_input_type";
 import { EventRsvpStatusInputType } from "./mutations/input_enums_type";
 import { MutationType } from "./mutations/mutation_type";
@@ -165,6 +166,18 @@ import {
   UserAuthInputType,
   UserAuthPayloadType,
 } from "./mutations/user_auth_type";
+import {
+  UserStatisticsCreateInputType,
+  UserStatisticsCreatePayloadType,
+} from "./mutations/user_statistics/user_statistics_create_type";
+import {
+  UserStatisticsDeleteInputType,
+  UserStatisticsDeletePayloadType,
+} from "./mutations/user_statistics/user_statistics_delete_type";
+import {
+  UserStatisticsEditInputType,
+  UserStatisticsEditPayloadType,
+} from "./mutations/user_statistics/user_statistics_edit_type";
 import { QueryType } from "./resolvers/query_type";
 import {
   AddressToHostedEventsConnectionType,
@@ -235,6 +248,7 @@ import {
   RootToHolidayConnectionType,
   RootToHoursOfOperationConnectionType,
   RootToUserConnectionType,
+  RootToUserStatisticsConnectionType,
   UserAccountStatusType,
   UserArticleToCommentsConnectionType,
   UserCanViewerDoType,
@@ -248,6 +262,8 @@ import {
   UserPrefsDiffType,
   UserPrefsStructType,
   UserSortColumnType,
+  UserStatisticsSortColumnType,
+  UserStatisticsType,
   UserSuperNestedObjectType,
   UserToCommentsAuthoredConnectionType,
   UserToCommentsConnectionType,
@@ -295,6 +311,7 @@ export default new GraphQLSchema({
     UserIntEnumType,
     UserPreferredShiftType,
     UserSortColumnType,
+    UserStatisticsSortColumnType,
     AddressType,
     AttachmentType,
     CityType,
@@ -321,6 +338,7 @@ export default new GraphQLSchema({
     UserNestedObjectListType,
     UserPrefsDiffType,
     UserPrefsStructType,
+    UserStatisticsType,
     UserSuperNestedObjectType,
     UserType,
     AddressToHostedEventsConnectionType(),
@@ -350,6 +368,7 @@ export default new GraphQLSchema({
     RootToHolidayConnectionType(),
     RootToHoursOfOperationConnectionType(),
     RootToUserConnectionType(),
+    RootToUserStatisticsConnectionType(),
     UserArticleToCommentsConnectionType(),
     UserCommentsFromAttachmentConnectionType(),
     UserToCommentsAuthoredConnectionType(),
@@ -454,6 +473,13 @@ export default new GraphQLSchema({
     UserNestedObjectListInputType,
     UserPrefsDiffInputType,
     UserPrefsStructInputType,
+    UserStatisticsArgInputType,
+    UserStatisticsCreateInputType,
+    UserStatisticsCreatePayloadType,
+    UserStatisticsDeleteInputType,
+    UserStatisticsDeletePayloadType,
+    UserStatisticsEditInputType,
+    UserStatisticsEditPayloadType,
     UserSuperNestedObjectInputType,
   ],
 });

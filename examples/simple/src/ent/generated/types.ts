@@ -31,6 +31,8 @@ export enum NodeType {
   HoursOfOperation = "hoursOfOperation",
   // User is the node type for the User object. Used to identify this node in edges and other places.
   User = "user",
+  // UserStatistics is the node type for the UserStatistics object. Used to identify this node in edges and other places.
+  UserStatistics = "userStatistics",
 }
 
 export enum EdgeType {

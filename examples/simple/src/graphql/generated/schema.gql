@@ -212,6 +212,11 @@ enum UserSortColumn {
   ID
 }
 
+enum UserStatisticsSortColumn {
+  ID
+  USER_ID
+}
+
 type Address implements Node {
   id: ID!
   streetName: String!
@@ -227,14 +232,14 @@ type Attachment {
   fileId: ID!
   dupeFileId: ID
   note: String
-  date: Date!
+  date: Time!
   phoneNumber: String
   emailAddress: String
 }
 
 type CatType {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: CatBreed!
   kitten: Boolean!
 }
@@ -258,7 +263,7 @@ type Comment implements Node {
 type ContactDate implements ContactItemType {
   contact: Contact
   label: ContactLabel!
-  date: Date!
+  date: Time!
   description: String!
 }
 
@@ -323,7 +328,7 @@ type Contact implements Node {
 
 type DogType {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: DogBreed!
   breedGroup: DogBreedGroup!
   puppy: Boolean!
@@ -343,8 +348,8 @@ type Event implements Node {
   creator: User
   id: ID!
   name: String!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   eventLocation: String!
   coverPhoto: Byte
   coverPhoto2: Byte
@@ -376,7 +381,7 @@ type Holiday implements Node {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt!
   label: String!
-  date: Date!
+  date: Time!
 }
 
 type HoursOfOperation implements Node {
@@ -391,7 +396,7 @@ union PetUnionType = CatType | DogType | RabbitType
 
 type RabbitType {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: RabbitBreed!
 }
 
@@ -452,6 +457,12 @@ type UserPrefsStruct {
   finishedNux: Boolean
   enableNotifs: Boolean
   notifTypes: [NotifType!]!
+}
+
+type UserStatistics implements Node {
+  user: User
+  id: ID!
+  authCodeEmailsSent: Int!
 }
 
 type UserSuperNestedObject {
@@ -842,6 +853,18 @@ type RootToUserConnection implements Connection {
   rawCount: Int!
 }
 
+type RootToUserStatisticsEdge implements Edge {
+  node: UserStatistics!
+  cursor: String!
+}
+
+type RootToUserStatisticsConnection implements Connection {
+  edges: [RootToUserStatisticsEdge!]!
+  nodes: [UserStatistics!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type UserArticleToCommentsEdge implements Edge {
   node: Comment!
   cursor: String!
@@ -989,7 +1012,7 @@ type UserToLikersConnection implements Connection {
 type UserToLikesEdge implements Edge {
   node: Node!
   cursor: String!
-  time: Date!
+  time: Time!
 }
 
 type UserToLikesConnection implements Connection {
@@ -1060,14 +1083,14 @@ input AttachmentInput {
   fileId: ID!
   dupeFileId: ID
   note: String
-  date: Date!
+  date: Time!
   phoneNumber: String
   emailAddress: String
 }
 
 input CatTypeInput {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: CatBreed!
   kitten: Boolean!
 }
@@ -1267,7 +1290,7 @@ input CustomEditHolidayInput {
   dayOfWeek: DayOfWeek
   dayOfWeekAlt: DayOfWeekAlt
   label: String
-  date: Date
+  date: Time
 }
 
 type CustomEditHolidayPayload {
@@ -1286,7 +1309,7 @@ input DeleteUserInput2 {
 
 input DogTypeInput {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: DogBreed!
   breedGroup: DogBreedGroup!
   puppy: Boolean!
@@ -1343,8 +1366,8 @@ input EventArgInput {
 input EventCreateInput {
   name: String!
   creatorId: ID!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   eventLocation: String!
   addressId: ID
   coverPhoto: Byte
@@ -1369,8 +1392,8 @@ input EventEditInput {
   """id of Event"""
   id: ID!
   name: String
-  startTime: Date
-  endTime: Date
+  startTime: Time
+  endTime: Time
   eventLocation: String
   addressId: ID
   coverPhoto: Byte
@@ -1455,7 +1478,7 @@ input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt!
   label: String!
-  date: Date
+  date: Time
   log: JSON
 }
 
@@ -1493,7 +1516,7 @@ input PhoneNumberContactCreateInput {
 
 input RabbitTypeInput {
   name: String!
-  birthday: Date!
+  birthday: Time!
   breed: RabbitBreed!
 }
 
@@ -1589,6 +1612,39 @@ input UserPrefsStructInput {
   notifTypes: [NotifType!]!
 }
 
+input UserStatisticsArgInput {
+  id: ID
+  ids: [ID!]
+}
+
+input UserStatisticsCreateInput {
+  userId: ID!
+  authCodeEmailsSent: Int
+}
+
+type UserStatisticsCreatePayload {
+  userStatistics: UserStatistics!
+}
+
+input UserStatisticsDeleteInput {
+  """id of UserStatistics"""
+  id: ID!
+}
+
+type UserStatisticsDeletePayload {
+  deletedUserStatisticsId: ID
+}
+
+input UserStatisticsEditInput {
+  """id of UserStatistics"""
+  id: ID!
+  authCodeEmailsSent: Int
+}
+
+type UserStatisticsEditPayload {
+  userStatistics: UserStatistics!
+}
+
 input UserSuperNestedObjectInput {
   uuid: ID!
   int: Int!
@@ -1637,11 +1693,15 @@ type Query {
   """custom query for hours_of_operation. list"""
   hours_of_operation_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [HoursOfOperation!]!
   node(id: ID!): Node
-  timeDiff(time: Date!, log: JSON!): String!
+  timeDiff(time: Time!, log: JSON!): String!
   """custom query for user. connection"""
   user_connection(ids: [ID!], sortCol: UserSortColumn, query: UserArgInput, first: Int, after: String, last: Int, before: String): RootToUserConnection!
   """custom query for user. list"""
   user_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [User!]!
+  """custom query for user_statistics. connection"""
+  user_statistics_connection(ids: [ID!], sortCol: UserStatisticsSortColumn, query: UserStatisticsArgInput, first: Int, after: String, last: Int, before: String): RootToUserStatisticsConnection!
+  """custom query for user_statistics. list"""
+  user_statistics_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [UserStatistics!]!
   """the viewer query"""
   viewer: Viewer!
 }
@@ -1686,6 +1746,9 @@ type Mutation {
   userDelete(input: UserDeleteInput!): UserDeletePayload!
   userDelete2(input: DeleteUserInput2!): DeleteUserInput2Payload!
   userEdit(input: UserEditInput!): UserEditPayload!
+  userStatisticsCreate(input: UserStatisticsCreateInput!): UserStatisticsCreatePayload!
+  userStatisticsDelete(input: UserStatisticsDeleteInput!): UserStatisticsDeletePayload!
+  userStatisticsEdit(input: UserStatisticsEditInput!): UserStatisticsEditPayload!
 }
 
 """The `Byte` scalar type represents byte value as a Buffer"""
@@ -1693,6 +1756,9 @@ scalar Byte
 
 """The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""
 scalar JSON
+
+"""Time scalar type"""
+scalar Time
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload

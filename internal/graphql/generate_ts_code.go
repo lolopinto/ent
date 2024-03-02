@@ -46,9 +46,13 @@ func (p *TSStep) Name() string {
 	return "graphql"
 }
 
+// note Date here is intentionally commented out
+// adding it to knownTypes kills the scalar Time and changes all
+// GraphQL Time to Date
+// TODO figure out exactly what's happening here...
 var knownTypes = map[string]*tsimport.ImportPath{
-	"String":     tsimport.NewGQLImportPath("GraphQLString"),
-	"Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+	"String": tsimport.NewGQLImportPath("GraphQLString"),
+	// "Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 	"Int":        tsimport.NewGQLImportPath("GraphQLInt"),
 	"Float":      tsimport.NewGQLImportPath("GraphQLFloat"),
 	"Boolean":    tsimport.NewGQLImportPath("GraphQLBoolean"),

@@ -907,6 +907,69 @@ userEmailAddressLoader.addToPrime(userPhoneNumberLoader);
 userPhoneNumberLoader.addToPrime(userLoader);
 userPhoneNumberLoader.addToPrime(userEmailAddressLoader);
 
+export interface UserStatisticsDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  user_id: ID;
+  auth_code_emails_sent: number;
+}
+
+const userStatisticsTable = "user_statistics";
+const userStatisticsFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "user_id",
+  "auth_code_emails_sent",
+];
+
+export const userStatisticsLoader =
+  new ObjectLoaderFactory<UserStatisticsDBData>({
+    tableName: userStatisticsTable,
+    fields: userStatisticsFields,
+    key: "id",
+  });
+
+export const userStatisticsUserIdLoader =
+  new ObjectLoaderFactory<UserStatisticsDBData>({
+    tableName: userStatisticsTable,
+    fields: userStatisticsFields,
+    key: "user_id",
+  });
+
+export const userStatisticsLoaderInfo = {
+  tableName: userStatisticsTable,
+  fields: userStatisticsFields,
+  nodeType: NodeType.UserStatistics,
+  loaderFactory: userStatisticsLoader,
+  fieldInfo: {
+    id: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    userID: {
+      dbCol: "user_id",
+      inputKey: "userId",
+    },
+    authCodeEmailsSent: {
+      dbCol: "auth_code_emails_sent",
+      inputKey: "authCodeEmailsSent",
+    },
+  },
+};
+
+userStatisticsLoader.addToPrime(userStatisticsUserIdLoader);
+userStatisticsUserIdLoader.addToPrime(userStatisticsLoader);
+
 export function getLoaderInfoFromSchema(schema: string) {
   switch (schema) {
     case "Address":
@@ -931,6 +994,8 @@ export function getLoaderInfoFromSchema(schema: string) {
       return hoursOfOperationLoaderInfo;
     case "User":
       return userLoaderInfo;
+    case "UserStatistics":
+      return userStatisticsLoaderInfo;
     default:
       throw new Error(
         `invalid schema ${schema} passed to getLoaderInfoFromSchema`,
@@ -962,6 +1027,8 @@ export function getLoaderInfoFromNodeType(nodeType: NodeType) {
       return hoursOfOperationLoaderInfo;
     case NodeType.User:
       return userLoaderInfo;
+    case NodeType.UserStatistics:
+      return userStatisticsLoaderInfo;
     default:
       throw new Error(
         `invalid nodeType ${nodeType} passed to getLoaderInfoFromNodeType`,

@@ -64,7 +64,7 @@ type Account implements Node {
   can_viewer_see_info: AccountCanViewerSee!
   open_todos_plural: [Todo!]!
   open_todos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
-  custom_todos(completed: Boolean, completed_date: Date, first: Int, after: String, last: Int, before: String): AccountToCustomTodosConnection!
+  custom_todos(completed: Boolean, completed_date: Time, first: Int, after: String, last: Int, before: String): AccountToCustomTodosConnection!
 }
 
 type CountryCapital {
@@ -98,7 +98,7 @@ type Todo implements Node {
   id: ID!
   text: String!
   completed: Boolean!
-  completed_date: Date
+  completed_date: Time
   bounty: Int
   tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
   todo_scope(first: Int, after: String, last: Int, before: String): TodoToTodoScopeConnection!
@@ -550,7 +550,7 @@ type TodoStatusAccountEditPayload {
 type Query {
   account(id: ID!): Account
   closed_todos_last_day(first: Int, after: String, last: Int, before: String): RootToClosedTodosLastDayConnection!
-  custom_todos(completed: Boolean, completed_date: Date, first: Int, after: String, last: Int, before: String): RootToCustomTodosConnection!
+  custom_todos(completed: Boolean, completed_date: Time, first: Int, after: String, last: Int, before: String): RootToCustomTodosConnection!
   open_todos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
   open_todos_plural(id: ID!): [Todo!]!
   tag(id: ID!): Tag
@@ -579,4 +579,7 @@ type Mutation {
   renameTodo(input: RenameTodoInput!): RenameTodoPayload!
   todoStatusAccountEdit(input: TodoStatusAccountEditInput!): TodoStatusAccountEditPayload!
 }
+
+"""Time scalar type"""
+scalar Time
 
