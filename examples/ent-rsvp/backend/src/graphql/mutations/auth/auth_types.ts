@@ -4,7 +4,7 @@ import {
   gqlField,
   gqlObjectType,
 } from "@snowtop/ent/graphql";
-import { ViewerType } from "../../resolvers/viewer_type";
+import { GraphQLViewer } from "../../resolvers/viewer_type";
 import { GraphQLString } from "graphql";
 
 @gqlInputObjectType()
@@ -30,11 +30,11 @@ export class AuthGuestPayload {
 
   @gqlField({
     class: "AuthGuestPayload",
-    type: ViewerType,
+    type: GraphQLViewer,
   })
-  viewer: ViewerType = new ViewerType(new LoggedOutViewer());
+  viewer: GraphQLViewer = new GraphQLViewer(new LoggedOutViewer());
 
-  constructor(token: string, viewer: ViewerType) {
+  constructor(token: string, viewer: GraphQLViewer) {
     this.token = token;
     this.viewer = viewer;
   }
@@ -65,11 +65,11 @@ export class AuthUserPayload {
 
   @gqlField({
     class: "AuthUserPayload",
-    type: ViewerType,
+    type: GraphQLViewer,
   })
-  viewer: ViewerType = new ViewerType(new LoggedOutViewer());
+  viewer: GraphQLViewer = new GraphQLViewer(new LoggedOutViewer());
 
-  constructor(token: string, viewer: ViewerType) {
+  constructor(token: string, viewer: GraphQLViewer) {
     this.token = token;
     this.viewer = viewer;
   }
