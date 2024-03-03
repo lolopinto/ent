@@ -2,6 +2,7 @@ import { gqlField, gqlObjectType } from "@snowtop/ent/graphql";
 import { Viewer } from "@snowtop/ent";
 import { Guest, User } from "src/ent/";
 
+// TODO we should expecially throw for "Viewer"
 @gqlObjectType({ name: "Viewer" })
 export class GraphQLViewer {
   constructor(private viewer: Viewer) {}
