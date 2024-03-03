@@ -9,6 +9,10 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.4] - 2024-03-01
+
+- fix generated date types (#1787)
+
 ## [0.2.0-alpha.3] - 2024-03-01
 
 - make it so that fooId UUID fieldEdge works (#1779)

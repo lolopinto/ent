@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.4] - 2024-03-01
+
+### Fixed
+
+- fix transformWrite formatting data incorrectly (#1783)
+
 ## [0.2.0-alpha.3] - 2024-02-29
 
 ### Added
