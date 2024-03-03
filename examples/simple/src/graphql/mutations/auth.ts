@@ -1,4 +1,10 @@
-import { gqlMutation, gqlContextType, encodeGQLID } from "@snowtop/ent/graphql";
+import {
+  gqlMutation,
+  gqlContextType,
+  encodeGQLID,
+  gqlInputObjectType,
+  gqlField,
+} from "@snowtop/ent/graphql";
 import { RequestContext } from "@snowtop/ent";
 import { useAndVerifyAuth, useAndVerifyAuthJWT } from "@snowtop/ent-passport";
 import { User } from "../../ent";
@@ -8,6 +14,22 @@ import {
   UserAuthJWTPayload,
   UserAuthPayload,
 } from "./auth_types";
+import { GraphQLString } from "graphql";
+
+@gqlInputObjectType({
+  name: "PhoneAvailableArg",
+})
+export class PhoneAvailableInput {
+  @gqlField({
+    class: "PhoneAvailableInput",
+    type: GraphQLString,
+  })
+  phoneNumber: string;
+
+  constructor(phone: string) {
+    this.phoneNumber = phone;
+  }
+}
 
 export class AuthResolver {
   @gqlMutation({
@@ -101,5 +123,27 @@ export class AuthResolver {
     }
 
     return new UserAuthJWTPayload(encodeGQLID(user), token);
+  }
+
+  @gqlMutation({
+    class: "AuthResolver",
+    name: "phoneAvailable",
+    type: Boolean,
+    args: [
+      {
+        name: "input",
+        type: "PhoneAvailableInput",
+      },
+    ],
+    async: true,
+  })
+  async phoneAvailable(input: PhoneAvailableInput) {
+    const f = User.getField("PhoneNumber");
+    if (!f || !f.format) {
+      throw new Error("could not find field PhoneNumber for User");
+    }
+    const val = f.format(input.phoneNumber);
+    const id = await User.loadIdFromPhoneNumber(val);
+    return id === undefined;
   }
 }

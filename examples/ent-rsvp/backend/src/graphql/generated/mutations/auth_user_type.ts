@@ -16,7 +16,7 @@ import {
   AuthUserInput,
   AuthUserPayload,
 } from "src/graphql/mutations/auth/auth_types";
-import { ViewerTypeType } from "src/graphql/resolvers/internal";
+import { ViewerType } from "src/graphql/resolvers/internal";
 
 export const AuthUserInputType = new GraphQLInputObjectType({
   name: "AuthUserInput",
@@ -40,7 +40,7 @@ export const AuthUserPayloadType = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     viewer: {
-      type: new GraphQLNonNull(ViewerTypeType),
+      type: new GraphQLNonNull(ViewerType),
     },
   }),
   isTypeOf(obj) {

@@ -17,7 +17,7 @@ import { UserPrefsStructType, UserType } from "../../resolvers/internal";
 import { ViewerResolver } from "../../resolvers/viewer";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-export const GQLViewerType = new GraphQLObjectType({
+export const ViewerType = new GraphQLObjectType({
   name: "Viewer",
   fields: (): GraphQLFieldConfigMap<
     GQLViewer,
@@ -65,7 +65,7 @@ export const ViewerQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   {}
 > = {
-  type: new GraphQLNonNull(GQLViewerType),
+  type: new GraphQLNonNull(ViewerType),
   description: "the viewer query",
   resolve: async (
     _source,

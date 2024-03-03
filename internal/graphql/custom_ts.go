@@ -332,6 +332,7 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Proces
 
 func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg {
 	if mfcg.inputArg != nil {
+		argType := s.getNodeNameFor(mfcg.inputArg.Type)
 		return []*fieldConfigArg{
 			{
 				Name: "input",
@@ -339,7 +340,7 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					// same for this about passing it in
 					{
-						Import: names.ToClassType(mfcg.field.GraphQLName, "InputType"),
+						Import: argType + "Type",
 					},
 				},
 			},
@@ -350,6 +351,12 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 
 func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
 	if mfcg.inputArg != nil {
+		// only add a type hint if we know for sure we have a type that's a custom object
+		// TODO ola 2/29/2024. should we always assume Payload?
+		obj := mfcg.field.Results[0]
+		if mfcg.cd.Objects[obj.Type] == nil {
+			return ""
+		}
 		typ := names.ToClassType(mfcg.field.GraphQLName, "Payload")
 		return fmt.Sprintf("Promise<%s>", typ)
 	}
@@ -404,13 +411,14 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor
 	}
 	var ret = r.imports[:]
 
-	imp := s.getImportFor(processor, r.Type, false)
+	importType := s.getNodeNameFor(r.Type)
+	imp := s.getImportFor(processor, importType, false)
 	if imp != nil {
 		ret = append(ret, imp)
 	} else {
 		// new type
 		ret = append(ret, &tsimport.ImportPath{
-			Import: fmt.Sprintf("%sType", r.Type),
+			Import: fmt.Sprintf("%sType", importType),
 			//		ImportPath is local here
 		})
 	}
@@ -441,11 +449,12 @@ func getFieldConfigArgsFrom(processor *codegen.Processor, args []CustomItem, s *
 		var imp *tsimport.ImportPath
 
 		if s != nil {
-			imp = s.getImportFor(processor, arg.Type, mutation)
+			importType := s.getNodeNameFor(arg.Type)
+			imp = s.getImportFor(processor, importType, mutation)
 			if imp == nil {
 				// local
 				imp = &tsimport.ImportPath{
-					Import: arg.Type,
+					Import: importType,
 				}
 			}
 		} else {
@@ -653,7 +662,7 @@ func buildObjectTypeImpl(item CustomItem, obj *CustomObject, gqlType string, isT
 	// we shouldn't do that and we should be smarter
 	// maybe add PayloadType if no Payload suffix otherwise Payload. Same for InputType and Input
 	typ := newObjectType(&objectType{
-		Type:     fmt.Sprintf("%sType", item.Type),
+		Type:     fmt.Sprintf("%sType", obj.NodeName),
 		Node:     obj.NodeName,
 		TSType:   item.Type,
 		Exported: true,
