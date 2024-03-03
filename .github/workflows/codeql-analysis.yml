@@ -19,7 +19,6 @@ on:
   schedule:
     - cron: '43 7 * * 4'
 
-
 jobs:
   analyze:
     name: Analyze
