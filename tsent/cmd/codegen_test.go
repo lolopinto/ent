@@ -696,7 +696,6 @@ func validateLineExistsInFile(t *testing.T, root, path, expected string) {
 		if expected == line {
 			return
 		}
-		spew.Dump(line)
 	}
 	assert.Fail(t, "line %s not found", expected)
 }

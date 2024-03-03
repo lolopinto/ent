@@ -35,9 +35,7 @@ type CustomData struct {
 }
 
 type CustomItem struct {
-	// TODO rename to GraphQLName
-	Name string `json:"name,omitempty"`
-	// TODO rename too
+	Name         string       `json:"name,omitempty"`
 	Type         string       `json:"type,omitempty"`
 	Nullable     NullableItem `json:"nullable,omitempty"`
 	List         bool         `json:"list,omitempty"`
@@ -227,7 +225,6 @@ func (item *CustomItem) getImports(processor *codegen.Processor, s *gqlSchema, c
 		}
 		item.addImport(
 			&tsimport.ImportPath{
-				// this should be obj.NodeName??
 				Import: fmt.Sprintf("%sType", item.Type),
 				// TODO same here. need to know if mutation or query
 				ImportPath: codepath.GetImportPathForInternalGQLFile(),

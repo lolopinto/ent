@@ -67,8 +67,7 @@
         {{ $tsType := $gqlNode.TSType -}}
         {{ if $tsType -}}
           {{ if $baseObj.ForeignImport $tsType -}}
-          {{/* TODO fix */ -}}
-            {{$tsType = useImportMaybe $tsType -}}
+            {{$tsType = useImport $tsType -}}
           {{ end -}}
           fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}<{{useImport $viewerType}}>> => ({
         {{ else -}}
