@@ -18,10 +18,6 @@ on:
       - '**.test.ts'
   schedule:
     - cron: '43 7 * * 4'
-  pull_request:
-    branches: [ main ]
-    paths-ignore:
-      - '**.test.ts'
 
 
 jobs:
