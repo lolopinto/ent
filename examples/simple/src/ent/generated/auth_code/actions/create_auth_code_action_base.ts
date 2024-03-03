@@ -26,6 +26,9 @@ export interface AuthCodeCreateInput {
   userId: ID;
   emailAddress?: string | null;
   phoneNumber?: string | null;
+  from?: string;
+  subject?: string;
+  body?: string;
 }
 
 export type CreateAuthCodeActionTriggers = (

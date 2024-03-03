@@ -24,6 +24,23 @@ const AuthCodeSchema = new EntSchema({
   actions: [
     {
       operation: ActionOperation.Create,
+      actionOnlyFields: [
+        {
+          name: "from",
+          type: "String",
+          optional: true,
+        },
+        {
+          name: "subject",
+          type: "String",
+          optional: true,
+        },
+        {
+          name: "body",
+          type: "String",
+          optional: true,
+        },
+      ],
     },
     {
       operation: ActionOperation.Delete,

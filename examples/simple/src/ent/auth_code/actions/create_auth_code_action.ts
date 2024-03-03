@@ -114,9 +114,9 @@ export default class CreateAuthCodeAction extends CreateAuthCodeActionBase {
             FakeComms.send({
               to: input.emailAddress,
               mode: Mode.EMAIL,
-              from: "noreply@foo.com",
-              subject: "auth code",
-              body: `your auth code is ${input.code}`,
+              from: input.from ?? "noreply@foo.com",
+              subject: input.subject ?? "auth code",
+              body: input.body ?? `your auth code is ${input.code}`,
             });
           }
           if (input.phoneNumber) {
@@ -124,8 +124,8 @@ export default class CreateAuthCodeAction extends CreateAuthCodeActionBase {
             FakeComms.send({
               to: input.phoneNumber,
               mode: Mode.SMS,
-              from: "42423",
-              body: `your auth code is ${input.code}`,
+              from: input.from ?? "42423",
+              body: input.body ?? `your auth code is ${input.code}`,
             });
           }
         },
