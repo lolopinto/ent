@@ -228,7 +228,7 @@ func (item *CustomItem) getImports(processor *codegen.Processor, s *gqlSchema, c
 			filePath := strings.TrimSuffix(tsimport.GetRelativePathForRoot(processor.Config, s.nestedCustomTypes[item.Type]), ".ts")
 			item.addImport(
 				&tsimport.ImportPath{
-					Import:     fmt.Sprintf("%sType", item.Type),
+					Import:     fmt.Sprintf("%sType", s.getNodeNameFor(item.Type)),
 					ImportPath: filePath,
 				})
 		} else {
