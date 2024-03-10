@@ -226,7 +226,6 @@ func (item *CustomItem) getImports(processor *codegen.Processor, s *gqlSchema, c
 		}
 		if s.nestedCustomTypes[item.Type] != "" {
 			filePath := strings.TrimSuffix(tsimport.GetRelativePathForRoot(processor.Config, s.nestedCustomTypes[item.Type]), ".ts")
-			// need to figure out if input or paylod type and if it has its own file...
 			item.addImport(
 				&tsimport.ImportPath{
 					Import:     fmt.Sprintf("%sType", item.Type),
