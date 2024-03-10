@@ -9,6 +9,8 @@ import {
   AuthGuestPayload,
   AuthUserInput,
   AuthUserPayload,
+  AuthAnyInput,
+  AuthAnyPayload,
 } from "./auth_types";
 
 export class AuthResolver {
@@ -142,5 +144,39 @@ export class AuthResolver {
     }
 
     return new AuthUserPayload(token, new GraphQLViewer(viewer));
+  }
+
+  @gqlMutation({
+    class: "AuthResolver",
+    name: "authAny",
+    type: AuthAnyPayload,
+    args: [
+      gqlContextType(),
+      {
+        name: "input",
+        type: AuthAnyInput,
+      },
+    ],
+    async: true,
+  })
+  async authAny(
+    context: RequestContext,
+    input: AuthAnyInput,
+  ): Promise<AuthAnyPayload> {
+    if (input.user && input.guest) {
+      throw new Error("cannot have both user and guest");
+    }
+    let userPayload: AuthUserPayload | null = null;
+    let guestPayload: AuthGuestPayload | null = null;
+    if (input.guest) {
+      guestPayload = await this.authGuest(context, input.guest);
+    }
+    if (input.user) {
+      userPayload = await this.authUser(context, input.user);
+    }
+    if (!userPayload && !guestPayload) {
+      throw new Error("no valid credentials");
+    }
+    return new AuthAnyPayload(userPayload, guestPayload);
   }
 }

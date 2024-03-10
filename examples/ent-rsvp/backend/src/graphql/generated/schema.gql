@@ -265,6 +265,16 @@ type Viewer {
   guest: Guest
 }
 
+input AuthAnyInput {
+  user: AuthUserInput
+  guest: AuthGuestInput
+}
+
+type AuthAnyPayload {
+  user: AuthUserPayload
+  guest: AuthGuestPayload
+}
+
 input AuthGuestInput {
   emailAddress: String!
   code: String!
@@ -530,6 +540,7 @@ type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   addressDelete(input: AddressDeleteInput!): AddressDeletePayload!
   addressEdit(input: AddressEditInput!): AddressEditPayload!
+  authAny(input: AuthAnyInput!): AuthAnyPayload!
   authGuest(input: AuthGuestInput!): AuthGuestPayload!
   authUser(input: AuthUserInput!): AuthUserPayload!
   emailAvailable(email: String!): Boolean!

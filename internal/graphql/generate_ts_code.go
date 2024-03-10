@@ -1080,6 +1080,9 @@ type gqlSchema struct {
 	allTypes          []typeInfo
 	otherObjects      map[string]*gqlNode
 	seenCustomObjects map[string]bool
+	// for custom inputs and output types which are (currently) defined in a different file,
+	// we need to know where they are so we can import them if referenced by other custom types
+	nestedCustomTypes map[string]string
 	// Query|Mutation|Subscription
 	rootDatas []*gqlRootData
 }
@@ -1645,6 +1648,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 			otherObjects:      otherNodes,
 			unions:            map[string]*gqlNode{},
 			seenCustomObjects: map[string]bool{},
+			nestedCustomTypes: map[string]string{},
 		}
 		result <- &buildGQLSchemaResult{
 			schema: schema,

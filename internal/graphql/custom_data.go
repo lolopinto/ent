@@ -220,15 +220,26 @@ func (item *CustomItem) getImports(processor *codegen.Processor, s *gqlSchema, c
 		_, ok := s.customData.Objects[item.Type]
 		_, ok2 := s.customData.Unions[item.Type]
 		_, ok3 := s.customData.Interfaces[item.Type]
-		if !ok && !ok2 && !ok3 {
+		_, ok4 := s.customData.Inputs[item.Type]
+		if !ok && !ok2 && !ok3 && !ok4 {
 			return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
 		}
-		item.addImport(
-			&tsimport.ImportPath{
-				Import: fmt.Sprintf("%sType", s.getNodeNameFor(item.Type)),
-				// TODO same here. need to know if mutation or query
-				ImportPath: codepath.GetImportPathForInternalGQLFile(),
-			})
+		if s.nestedCustomTypes[item.Type] != "" {
+			filePath := strings.TrimSuffix(tsimport.GetRelativePathForRoot(processor.Config, s.nestedCustomTypes[item.Type]), ".ts")
+			// need to figure out if input or paylod type and if it has its own file...
+			item.addImport(
+				&tsimport.ImportPath{
+					Import:     fmt.Sprintf("%sType", item.Type),
+					ImportPath: filePath,
+				})
+		} else {
+			item.addImport(
+				&tsimport.ImportPath{
+					Import: fmt.Sprintf("%sType", s.getNodeNameFor(item.Type)),
+					// TODO same here. need to know if mutation or query
+					ImportPath: codepath.GetImportPathForInternalGQLFile(),
+				})
+		}
 		//				s.nodes[resultre]
 		// now we need to figure out where this is from e.g.
 		// result.Type a native thing e.g. User so getUserType

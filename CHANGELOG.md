@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.5] - 2024-03-09
+
+### Fixed
+
+- Allow input objects to have nested input objects
+
 ## [0.2.0-alpha.4] - 2024-03-01
 
 ### Fixed

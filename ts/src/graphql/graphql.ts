@@ -882,6 +882,9 @@ export class GQLCapture {
           if (result.needsResolving) {
             if (
               baseObjects.has(result.type) ||
+              // allow custom input objects to be returned
+              // depend on GraphQL type complaining if we try and reference an input from a non-input object
+              this.customInputObjects.has(result.type) ||
               this.customUnions.has(result.type) ||
               this.customInterfaces.has(result.type) ||
               this.customTypes.has(result.type)

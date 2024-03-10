@@ -185,6 +185,7 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 				return nil, err
 			}
 			objTypes = append(objTypes, argType)
+			s.nestedCustomTypes[argType.Node] = filePath
 		}
 
 		for _, result := range field.Results {
@@ -217,6 +218,7 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 					})
 				}
 			}
+			s.nestedCustomTypes[payloadType.Node] = filePath
 			objTypes = append(objTypes, payloadType)
 		}
 
