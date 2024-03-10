@@ -13,7 +13,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ### Fixed
 
-- Allow input objects to have nested input objects
+- Allow input objects to have nested input objects (#1795)
 
 ## [0.2.0-alpha.4] - 2024-03-01
 
