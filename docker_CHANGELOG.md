@@ -9,11 +9,21 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.5] - 2024-03-09
+
+### Fixed
+
+- Allow input objects to have nested input objects (#1795)
+
 ## [0.2.0-alpha.4] - 2024-03-01
+
+### Fixed
 
 - fix generated date types (#1787)
 
 ## [0.2.0-alpha.3] - 2024-03-01
+
+### Fixed
 
 - make it so that fooId UUID fieldEdge works (#1779)
 - fix @gqlField with gqlConnection and args with custom types (#1780)
