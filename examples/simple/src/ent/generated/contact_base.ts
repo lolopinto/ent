@@ -38,7 +38,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class ContactBase
   extends FeedbackMixin(class {} as new (...args: any[]) => IFeedback)
-  implements Ent<ExampleViewerAlias>, IFeedback
+  implements Ent<ExampleViewerAlias>, IFeedback<ExampleViewerAlias>
 {
   protected readonly data: ContactDBData;
   readonly nodeType = NodeType.Contact;

@@ -42,7 +42,10 @@ export class ContactPhoneNumberBase
   extends ContactInfoMixin(
     FeedbackMixin(class {} as new (...args: any[]) => IContactInfo & IFeedback),
   )
-  implements Ent<ExampleViewerAlias>, IContactInfo, IFeedback
+  implements
+    Ent<ExampleViewerAlias>,
+    IContactInfo<ExampleViewerAlias>,
+    IFeedback<ExampleViewerAlias>
 {
   protected readonly data: ContactPhoneNumberDBData;
   readonly nodeType = NodeType.ContactPhoneNumber;

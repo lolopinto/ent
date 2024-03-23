@@ -42,7 +42,10 @@ export class ContactEmailBase
   extends ContactInfoMixin(
     FeedbackMixin(class {} as new (...args: any[]) => IContactInfo & IFeedback),
   )
-  implements Ent<ExampleViewerAlias>, IContactInfo, IFeedback
+  implements
+    Ent<ExampleViewerAlias>,
+    IContactInfo<ExampleViewerAlias>,
+    IFeedback<ExampleViewerAlias>
 {
   protected readonly data: ContactEmailDBData;
   readonly nodeType = NodeType.ContactEmail;

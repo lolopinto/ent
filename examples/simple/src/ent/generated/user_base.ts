@@ -109,7 +109,7 @@ const superNestedObjectLoader = new ObjectLoaderFactory({
 
 export class UserBase
   extends FeedbackMixin(class {} as new (...args: any[]) => IFeedback)
-  implements Ent<ExampleViewerAlias>, IFeedback
+  implements Ent<ExampleViewerAlias>, IFeedback<ExampleViewerAlias>
 {
   protected readonly data: UserDBData;
   readonly nodeType = NodeType.User;
