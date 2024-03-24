@@ -1270,9 +1270,17 @@ func (edgeGroup *AssociationEdgeGroup) UseEdgeInStatusAction(edgeName string) bo
 }
 
 func EdgeInfoFromInput(cfg codegenapi.Config, packageName string, node *input.Node) (*EdgeInfo, error) {
+	return edgeInfoFrom(cfg, packageName, node.AssocEdges, node.AssocEdgeGroups)
+}
+
+func EdgeInfoFromPattern(cfg codegenapi.Config, packageName string, pattern *input.Pattern) (*EdgeInfo, error) {
+	return edgeInfoFrom(cfg, packageName, pattern.AssocEdges, nil)
+}
+
+func edgeInfoFrom(cfg codegenapi.Config, packageName string, edges []*input.AssocEdge, groups []*input.AssocEdgeGroup) (*EdgeInfo, error) {
 	edgeInfo := NewEdgeInfo(packageName)
 
-	for _, edge := range node.AssocEdges {
+	for _, edge := range edges {
 		e, err := AssocEdgeFromInput(cfg, packageName, edge)
 		if err != nil {
 			return nil, err
@@ -1280,8 +1288,8 @@ func EdgeInfoFromInput(cfg codegenapi.Config, packageName string, node *input.No
 		edgeInfo.addEdge(e)
 	}
 
-	for _, edgeGroup := range node.AssocEdgeGroups {
-		group, err := AssocEdgeGroupFromInput(cfg, packageName, node, edgeGroup, edgeInfo)
+	for _, edgeGroup := range groups {
+		group, err := AssocEdgeGroupFromInput(cfg, packageName, edgeGroup, edgeInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -1445,7 +1453,7 @@ func AssocEdgeFromInput(cfg codegenapi.Config, packageName string, edge *input.A
 	return assocEdge, nil
 }
 
-func AssocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, node *input.Node, edgeGroup *input.AssocEdgeGroup, edgeInfo *EdgeInfo) (*AssociationEdgeGroup, error) {
+func AssocEdgeGroupFromInput(cfg codegenapi.Config, packageName string, edgeGroup *input.AssocEdgeGroup, edgeInfo *EdgeInfo) (*AssociationEdgeGroup, error) {
 	assocEdgeGroup := &AssociationEdgeGroup{
 		GroupName:         edgeGroup.Name,
 		GroupStatusName:   edgeGroup.GroupStatusName,

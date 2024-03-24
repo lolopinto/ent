@@ -54,6 +54,7 @@ export default class CreateContactAction extends CreateContactActionBase {
                 emailAddress: email.emailAddress,
                 label: email.label,
                 contactId: builder,
+                ownerId: input.userId,
                 extra: email.extra,
               });
               const newId = await action.builder.getEntID();
@@ -82,6 +83,7 @@ export default class CreateContactAction extends CreateContactActionBase {
                   phoneNumber: phone.phoneNumber,
                   label: phone.label,
                   contactId: builder,
+                  ownerId: input.userId,
                   extra: phone.extra,
                 },
               );

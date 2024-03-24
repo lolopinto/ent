@@ -67,6 +67,8 @@ import {
   UserCommentsFromAttachmentQuery,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
+  UserToContactEmailsQuery,
+  UserToContactPhoneNumbersQuery,
   UserToContactsQuery,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsQuery,
@@ -569,6 +571,14 @@ export class UserBase
 
   queryAuthCodes(): UserToAuthCodesQuery {
     return UserToAuthCodesQuery.query(this.viewer, this.id);
+  }
+
+  queryContactEmails(): UserToContactEmailsQuery {
+    return UserToContactEmailsQuery.query(this.viewer, this.id);
+  }
+
+  queryContactPhoneNumbers(): UserToContactPhoneNumbersQuery {
+    return UserToContactPhoneNumbersQuery.query(this.viewer, this.id);
   }
 
   queryContacts(): UserToContactsQuery {

@@ -77,6 +77,7 @@ async function createContact(user?: User): Promise<Contact> {
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Default,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
@@ -181,6 +182,7 @@ test("custom object added in contact", async () => {
     emailAddress: randomEmail(),
     label: ContactLabel.Home,
     contactId: contact.id,
+    ownerId: user.id,
   }).saveX();
 
   await EditContactAction.create(contact.viewer, contact, {
@@ -205,6 +207,7 @@ test("edit contact with new email ids", async () => {
     emailAddress: randomEmail(),
     label: ContactLabel.Home,
     contactId: contact.id,
+    ownerId: contact.userId,
   }).saveX();
 
   await expectMutation(
@@ -232,11 +235,13 @@ test("edit contact with new phone number ids", async () => {
       phoneNumber: randomPhoneNumber(),
       label: ContactLabel.Home,
       contactId: contact.id,
+      ownerId: contact.userId,
     }).saveX(),
     CreateContactPhoneNumberAction.create(contact.viewer, {
       phoneNumber: randomPhoneNumber(),
       label: ContactLabel.Home,
       contactId: contact.id,
+      ownerId: contact.userId,
     }).saveX(),
   ]);
 
@@ -303,7 +308,9 @@ test("global canViewerDo", async () => {
     [
       `contactEmailCreateSelf: contactEmailCreate(contactId: "${encodeGQLID(
         contact,
-      )}" emailAddress: "${randomEmail("hello")}" label: HOME)`,
+      )}" emailAddress: "${randomEmail(
+        "hello",
+      )}" label: HOME, ownerId: "${encodeGQLID(user)}")`,
       true,
       "contactEmailCreateSelf",
     ],
@@ -311,7 +318,9 @@ test("global canViewerDo", async () => {
     [
       `contactEmailCreateOther: contactEmailCreate(contactId: "${encodeGQLID(
         contact2,
-      )}" emailAddress: "${randomEmail("hello")}" label: HOME)`,
+      )}" emailAddress: "${randomEmail(
+        "hello",
+      )}" label: HOME, ownerId: "${encodeGQLID(user2)}")`,
       false,
       "contactEmailCreateOther",
     ],

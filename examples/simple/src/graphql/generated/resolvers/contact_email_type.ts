@@ -31,6 +31,7 @@ import {
   ContactItemType,
   ContactLabelType,
   ContactType,
+  UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
@@ -68,6 +69,16 @@ export const ContactEmailType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return obj.loadContact();
+      },
+    },
+    owner: {
+      type: UserType,
+      resolve: (
+        obj: ContactEmail,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.loadOwner();
       },
     },
     id: {

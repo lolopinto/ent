@@ -25,12 +25,14 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEmailInput {
   extra?: ContactInfo | null;
+  ownerId: ID | Builder<User, ExampleViewerAlias>;
   emailAddress: string;
   label: ContactLabel;
 }
 
 interface customPhoneNumberInput {
   extra?: ContactInfo | null;
+  ownerId: ID | Builder<User, ExampleViewerAlias>;
   phoneNumber: string;
   label: ContactLabel;
 }

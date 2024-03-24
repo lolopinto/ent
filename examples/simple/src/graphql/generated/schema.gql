@@ -273,6 +273,7 @@ type ContactEmailCanViewerDo {
 
 type ContactEmail implements Node & ContactItemType {
   contact: Contact
+  owner: User
   id: ID!
   extra: ContactInfo
   emailAddress: String!
@@ -301,6 +302,7 @@ interface ContactItem {
 
 type ContactPhoneNumber implements Node & ContactItemType {
   contact: Contact
+  owner: User
   id: ID!
   extra: ContactInfo
   phoneNumber: String!
@@ -373,7 +375,7 @@ type File implements Node {
 
 type GlobalCanViewerDo {
   contactCreate(userId: ID!): Boolean!
-  contactEmailCreate(extra: ContactInfoInput, emailAddress: String!, label: ContactLabel!, contactId: ID!): Boolean!
+  contactEmailCreate(extra: ContactInfoInput, contactId: ID!, ownerId: ID!, emailAddress: String!, label: ContactLabel!): Boolean!
 }
 
 type Holiday implements Node {
@@ -508,6 +510,8 @@ type User implements Node {
   likes(first: Int, after: String, last: Int, before: String): UserToLikesConnection!
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
+  contactEmails(first: Int, after: String, last: Int, before: String): UserToContactEmailsConnection!
+  contactPhoneNumbers(first: Int, after: String, last: Int, before: String): UserToContactPhoneNumbersConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   articles(first: Int, after: String, last: Int, before: String): UserArticleToCommentsConnection!
   attachedComments(first: Int, after: String, last: Int, before: String): UserCommentsFromAttachmentConnection!
@@ -913,6 +917,30 @@ type UserToCommentsConnection implements Connection {
   rawCount: Int!
 }
 
+type UserToContactEmailsEdge implements Edge {
+  node: ContactEmail!
+  cursor: String!
+}
+
+type UserToContactEmailsConnection implements Connection {
+  edges: [UserToContactEmailsEdge!]!
+  nodes: [ContactEmail!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToContactPhoneNumbersEdge implements Edge {
+  node: ContactPhoneNumber!
+  cursor: String!
+}
+
+type UserToContactPhoneNumbersConnection implements Connection {
+  edges: [UserToContactPhoneNumbersEdge!]!
+  nodes: [ContactPhoneNumber!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type UserToContactsEdge implements Edge {
   node: Contact!
   cursor: String!
@@ -1212,9 +1240,10 @@ input ContactEmailArgInput {
 
 input ContactEmailCreateInput {
   extra: ContactInfoInput
+  contactId: ID!
+  ownerId: ID!
   emailAddress: String!
   label: ContactLabel!
-  contactId: ID!
 }
 
 type ContactEmailCreatePayload {
@@ -1254,9 +1283,10 @@ input ContactPhoneNumberArgInput {
 
 input ContactPhoneNumberCreateInput {
   extra: ContactInfoInput
+  contactId: ID!
+  ownerId: ID!
   phoneNumber: String!
   label: ContactLabel!
-  contactId: ID!
 }
 
 type ContactPhoneNumberCreatePayload {
@@ -1337,6 +1367,7 @@ type EditPhoneNumberPayload {
 
 input EmailContactCreateInput {
   extra: ContactInfoInput
+  ownerId: ID!
   emailAddress: String!
   label: ContactLabel!
 }
@@ -1510,6 +1541,7 @@ input PetUnionTypeInput {
 
 input PhoneNumberContactCreateInput {
   extra: ContactInfoInput
+  ownerId: ID!
   phoneNumber: String!
   label: ContactLabel!
 }

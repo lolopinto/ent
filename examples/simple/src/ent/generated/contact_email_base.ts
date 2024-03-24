@@ -34,6 +34,7 @@ import {
   FeedbackMixin,
   IContactInfo,
   IFeedback,
+  User,
 } from "../internal";
 import schema from "../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
@@ -54,7 +55,6 @@ export class ContactEmailBase
   readonly updatedAt: Date;
   readonly emailAddress: string;
   readonly label: ContactLabel;
-  readonly contactId: ID;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
@@ -64,7 +64,6 @@ export class ContactEmailBase
     this.updatedAt = data.updated_at;
     this.emailAddress = data.email_address;
     this.label = convertContactLabel(data.label);
-    this.contactId = data.contact_id;
     // @ts-expect-error
     this.data = data;
   }
@@ -245,5 +244,13 @@ export class ContactEmailBase
 
   loadContactX(): Promise<Contact> {
     return loadEntX(this.viewer, this.contactId, Contact.loaderOptions());
+  }
+
+  async loadOwner(): Promise<User | null> {
+    return loadEnt(this.viewer, this.ownerId, User.loaderOptions());
+  }
+
+  loadOwnerX(): Promise<User> {
+    return loadEntX(this.viewer, this.ownerId, User.loaderOptions());
   }
 }

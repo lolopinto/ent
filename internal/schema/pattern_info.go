@@ -5,8 +5,10 @@ import (
 	"sort"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/names"
@@ -17,7 +19,9 @@ type PatternInfo struct {
 	objWithConsts
 	Name         string
 	FieldInfo    *field.FieldInfo
+	EdgeInfo     *edge.EdgeInfo
 	AssocEdges   map[string]*edge.AssociationEdge
+	depgraph     *depgraph.Depgraph
 	DisableMixin bool
 }
 
@@ -142,6 +146,15 @@ func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*ts
 	for _, f := range p.FieldInfo.EntFields() {
 		ret = append(ret, f.GetImportsForTypes(cfg, s, s)...)
 	}
+
+	for _, edge := range p.EdgeInfo.FieldEdges {
+		if edge.NonPolymorphicList() {
+			ret = append(ret, &tsimport.ImportPath{
+				Import:     edge.NodeInfo.Node,
+				ImportPath: codepath.GetInternalImportPath(),
+			})
+		}
+	}
 	return ret
 }
 
@@ -153,3 +166,25 @@ func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*ts
 func (p *PatternInfo) GetImportPathForMixinBase() string {
 	return fmt.Sprintf("src/ent/generated/mixins/%s", strcase.ToSnake(p.GetMixinBaseFile()))
 }
+
+func (p *PatternInfo) GetEdgeInfo() *edge.EdgeInfo {
+	return p.EdgeInfo
+}
+
+func (p *PatternInfo) GetFieldInfo() *field.FieldInfo {
+	return p.FieldInfo
+}
+
+func (p *PatternInfo) GetName() string {
+	return p.Name
+}
+
+func (p *PatternInfo) GetActionInfo() *action.ActionInfo {
+	return nil
+}
+
+func (p *PatternInfo) IsPattern() bool {
+	return true
+}
+
+var _ Container = &PatternInfo{}

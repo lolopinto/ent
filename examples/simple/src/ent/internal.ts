@@ -64,6 +64,8 @@ export * from "./user/query/user_article_to_comments_query";
 export * from "./user/query/user_comments_from_attachment_query";
 export * from "./user/query/user_to_auth_codes_query";
 export * from "./user/query/user_to_comments_query";
+export * from "./user/query/user_to_contact_emails_query";
+export * from "./user/query/user_to_contact_phone_numbers_query";
 export * from "./user/query/user_to_contacts_query";
 export * from "./user/query/user_to_created_events_query";
 export * from "./user/query/user_to_declined_events_query";

@@ -63,28 +63,6 @@ CREATE INDEX comments_attachment_id_idx ON comments (attachment_id);
 
 CREATE INDEX comments_author_id_idx ON comments (author_id);
 
-CREATE TABLE contact_emails (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    extra JSONB, 
-    email_address TEXT NOT NULL, 
-    label TEXT NOT NULL, 
-    contact_id UUID NOT NULL, 
-    CONSTRAINT contact_emails_id_pkey PRIMARY KEY (id)
-);
-
-CREATE TABLE contact_phone_numbers (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    extra JSONB, 
-    phone_number TEXT NOT NULL, 
-    label TEXT NOT NULL, 
-    contact_id UUID NOT NULL, 
-    CONSTRAINT contact_phone_numbers_id_pkey PRIMARY KEY (id)
-);
-
 CREATE TABLE event_hosts_edges (
     id1 UUID NOT NULL, 
     id1_type TEXT NOT NULL, 
@@ -300,6 +278,36 @@ CREATE TABLE auth_codes (
 );
 
 CREATE INDEX auth_codes_user_id_idx ON auth_codes (user_id);
+
+CREATE TABLE contact_emails (
+    id UUID NOT NULL, 
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    extra JSONB, 
+    contact_id UUID NOT NULL, 
+    owner_id UUID NOT NULL, 
+    email_address TEXT NOT NULL, 
+    label TEXT NOT NULL, 
+    CONSTRAINT contact_emails_id_pkey PRIMARY KEY (id), 
+    CONSTRAINT contact_emails_owner_id_fkey FOREIGN KEY(owner_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX contact_emails_owner_id_idx ON contact_emails (owner_id);
+
+CREATE TABLE contact_phone_numbers (
+    id UUID NOT NULL, 
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    extra JSONB, 
+    contact_id UUID NOT NULL, 
+    owner_id UUID NOT NULL, 
+    phone_number TEXT NOT NULL, 
+    label TEXT NOT NULL, 
+    CONSTRAINT contact_phone_numbers_id_pkey PRIMARY KEY (id), 
+    CONSTRAINT contact_phone_numbers_owner_id_fkey FOREIGN KEY(owner_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX contact_phone_numbers_owner_id_idx ON contact_phone_numbers (owner_id);
 
 CREATE TABLE contacts (
     id UUID NOT NULL, 

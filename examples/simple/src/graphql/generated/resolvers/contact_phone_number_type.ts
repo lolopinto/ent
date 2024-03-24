@@ -29,6 +29,7 @@ import {
   ContactPhoneNumberToCommentsConnectionType,
   ContactPhoneNumberToLikersConnectionType,
   ContactType,
+  UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
@@ -46,6 +47,16 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return obj.loadContact();
+      },
+    },
+    owner: {
+      type: UserType,
+      resolve: (
+        obj: ContactPhoneNumber,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.loadOwner();
       },
     },
     id: {

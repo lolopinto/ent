@@ -912,3 +912,25 @@ func (nodeData *NodeData) GenerateGetIDInBuilder() bool {
 	}
 	return idField.HasDefaultValueOnCreate()
 }
+
+func (nodeData *NodeData) GetEdgeInfo() *edge.EdgeInfo {
+	return nodeData.EdgeInfo
+}
+
+func (nodeData *NodeData) GetFieldInfo() *field.FieldInfo {
+	return nodeData.FieldInfo
+}
+
+func (nodeData *NodeData) GetName() string {
+	return nodeData.Node
+}
+
+func (nodeData *NodeData) GetActionInfo() *action.ActionInfo {
+	return nodeData.ActionInfo
+}
+
+func (nodeData *NodeData) IsPattern() bool {
+	return false
+}
+
+var _ Container = &NodeData{}

@@ -28,6 +28,8 @@ import {
   UserCanViewerSee,
   UserCommentsFromAttachmentQuery,
   UserToCommentsQuery,
+  UserToContactEmailsQuery,
+  UserToContactPhoneNumbersQuery,
   UserToContactsQuery,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsQuery,
@@ -57,6 +59,8 @@ import {
   UserSuperNestedObjectType,
   UserToCommentsAuthoredConnectionType,
   UserToCommentsConnectionType,
+  UserToContactEmailsConnectionType,
+  UserToContactPhoneNumbersConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
   UserToDeclinedEventsConnectionType,
@@ -522,6 +526,72 @@ export const UserType = new GraphQLObjectType({
           obj.viewer,
           obj,
           (v, obj: User) => UserToHostedEventsQuery.query(v, obj),
+          args,
+        );
+      },
+    },
+    contactEmails: {
+      type: new GraphQLNonNull(UserToContactEmailsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        obj: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToContactEmailsQuery.query(v, obj),
+          args,
+        );
+      },
+    },
+    contactPhoneNumbers: {
+      type: new GraphQLNonNull(UserToContactPhoneNumbersConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        obj: User,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: User) => UserToContactPhoneNumbersQuery.query(v, obj),
           args,
         );
       },

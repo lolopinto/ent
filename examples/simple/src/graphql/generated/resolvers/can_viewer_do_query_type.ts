@@ -40,9 +40,10 @@ class GlobalCanViewerDo {
     const action = CreateContactEmailAction.create(this.context.getViewer(), {
       ...args,
       extra: args.extra,
+      contactId: mustDecodeIDFromGQLID(args.contactId),
+      ownerId: mustDecodeIDFromGQLID(args.ownerId),
       emailAddress: args.emailAddress,
       label: args.label,
-      contactId: mustDecodeIDFromGQLID(args.contactId),
     });
     return applyPrivacyPolicy(
       this.context.getViewer(),
@@ -81,6 +82,14 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
           description: "",
           type: ContactInfoInputType,
         },
+        contactId: {
+          description: "",
+          type: new GraphQLNonNull(GraphQLID),
+        },
+        ownerId: {
+          description: "",
+          type: new GraphQLNonNull(GraphQLID),
+        },
         emailAddress: {
           description: "",
           type: new GraphQLNonNull(GraphQLString),
@@ -88,10 +97,6 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
         label: {
           description: "",
           type: new GraphQLNonNull(ContactLabelType),
-        },
-        contactId: {
-          description: "",
-          type: new GraphQLNonNull(GraphQLID),
         },
       },
       resolve: async (

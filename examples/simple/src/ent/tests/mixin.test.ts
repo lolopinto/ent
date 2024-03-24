@@ -33,6 +33,7 @@ async function createContact(
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Default,
+        ownerId: user.id,
       },
     ],
     firstName: firstName,

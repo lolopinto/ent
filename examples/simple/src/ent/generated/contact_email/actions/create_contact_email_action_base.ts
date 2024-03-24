@@ -18,16 +18,17 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Contact, ContactEmail } from "../../..";
+import { Contact, ContactEmail, User } from "../../..";
 import { ContactEmailBuilder } from "./contact_email_builder";
 import { ContactInfo, ContactLabel } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactEmailCreateInput {
   extra?: ContactInfo | null;
+  contactId: ID | Builder<Contact, ExampleViewerAlias>;
+  ownerId: ID | Builder<User, ExampleViewerAlias>;
   emailAddress: string;
   label: ContactLabel;
-  contactId: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
 export type CreateContactEmailActionTriggers = (
