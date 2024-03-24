@@ -1,4 +1,11 @@
-import { BooleanType, EnumType, Pattern, StructType } from "@snowtop/ent";
+import {
+  BooleanType,
+  EnumType,
+  Pattern,
+  StructType,
+  UUIDType,
+} from "@snowtop/ent";
+import { getLoaderInfoFromSchema } from "../../ent/generated/loaders";
 
 // contrived pattern here with struct types to be shared with email and phone
 
@@ -18,6 +25,20 @@ export default class ContactInfo implements Pattern {
           values: ["friend", "work", "online"],
         }),
       },
+    }),
+    contactID: UUIDType({
+      immutable: true,
+      fieldEdge: {
+        schema: "Contact",
+        enforceSchema: true,
+        getLoaderInfoFromSchema: getLoaderInfoFromSchema,
+      },
+    }),
+    // added to test foreign keys in patterns.
+    // normally won't have this since contact has it
+    ownerID: UUIDType({
+      immutable: true,
+      foreignKey: { schema: "User", column: "id" },
     }),
   };
 }

@@ -18,6 +18,8 @@ import { EdgeType, NodeType } from "./types";
 import {
   AuthCode,
   Contact,
+  ContactEmail,
+  ContactPhoneNumber,
   ContactToCommentsQuery,
   ContactToLikersQuery,
   ContactToSelfContactForUserQuery,
@@ -627,6 +629,80 @@ export class UserToAuthCodesQueryBase<
   }
 
   static query<T extends UserToAuthCodesQueryBase, TEnt extends User = User>(
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: TEnt | ID,
+    ) => T,
+    viewer: ExampleViewerAlias,
+    src: TEnt | ID,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  async sourceEnt(id: ID) {
+    return User.load(this.viewer, id);
+  }
+}
+
+export class UserToContactEmailsQueryBase<
+  TEnt extends User = User,
+> extends CustomEdgeQueryBase<TEnt, ContactEmail, ExampleViewerAlias> {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: TEnt | ID,
+    sortColumn?: string | OrderBy,
+  ) {
+    super(viewer, {
+      src: src,
+      groupCol: "owner_id",
+      loadEntOptions: ContactEmail.loaderOptions(),
+      name: "UserToContactEmailsQuery",
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
+    });
+  }
+
+  static query<
+    T extends UserToContactEmailsQueryBase,
+    TEnt extends User = User,
+  >(
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: TEnt | ID,
+    ) => T,
+    viewer: ExampleViewerAlias,
+    src: TEnt | ID,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  async sourceEnt(id: ID) {
+    return User.load(this.viewer, id);
+  }
+}
+
+export class UserToContactPhoneNumbersQueryBase<
+  TEnt extends User = User,
+> extends CustomEdgeQueryBase<TEnt, ContactPhoneNumber, ExampleViewerAlias> {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: TEnt | ID,
+    sortColumn?: string | OrderBy,
+  ) {
+    super(viewer, {
+      src: src,
+      groupCol: "owner_id",
+      loadEntOptions: ContactPhoneNumber.loaderOptions(),
+      name: "UserToContactPhoneNumbersQuery",
+      sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
+      orderby: typeof sortColumn === "string" ? undefined : sortColumn,
+    });
+  }
+
+  static query<
+    T extends UserToContactPhoneNumbersQueryBase,
+    TEnt extends User = User,
+  >(
     this: new (
       viewer: ExampleViewerAlias,
       src: TEnt | ID,

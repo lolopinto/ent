@@ -330,9 +330,10 @@ export interface ContactEmailDBData {
   created_at: Date;
   updated_at: Date;
   extra: ContactInfo | null;
+  contact_id: ID;
+  owner_id: ID;
   email_address: string;
   label: ContactLabel;
-  contact_id: ID;
 }
 
 const contactEmailTable = "contact_emails";
@@ -341,9 +342,10 @@ const contactEmailFields = [
   "created_at",
   "updated_at",
   "extra",
+  "contact_id",
+  "owner_id",
   "email_address",
   "label",
-  "contact_id",
 ];
 
 export const contactEmailLoader = new ObjectLoaderFactory<ContactEmailDBData>({
@@ -374,6 +376,14 @@ export const contactEmailLoaderInfo = {
       dbCol: "extra",
       inputKey: "extra",
     },
+    contactID: {
+      dbCol: "contact_id",
+      inputKey: "contactId",
+    },
+    ownerID: {
+      dbCol: "owner_id",
+      inputKey: "ownerId",
+    },
     emailAddress: {
       dbCol: "email_address",
       inputKey: "emailAddress",
@@ -381,10 +391,6 @@ export const contactEmailLoaderInfo = {
     label: {
       dbCol: "label",
       inputKey: "label",
-    },
-    contactID: {
-      dbCol: "contact_id",
-      inputKey: "contactId",
     },
   },
 };
@@ -394,9 +400,10 @@ export interface ContactPhoneNumberDBData {
   created_at: Date;
   updated_at: Date;
   extra: ContactInfo | null;
+  contact_id: ID;
+  owner_id: ID;
   phone_number: string;
   label: ContactLabel;
-  contact_id: ID;
 }
 
 const contactPhoneNumberTable = "contact_phone_numbers";
@@ -405,9 +412,10 @@ const contactPhoneNumberFields = [
   "created_at",
   "updated_at",
   "extra",
+  "contact_id",
+  "owner_id",
   "phone_number",
   "label",
-  "contact_id",
 ];
 
 export const contactPhoneNumberLoader =
@@ -439,6 +447,14 @@ export const contactPhoneNumberLoaderInfo = {
       dbCol: "extra",
       inputKey: "extra",
     },
+    contactID: {
+      dbCol: "contact_id",
+      inputKey: "contactId",
+    },
+    ownerID: {
+      dbCol: "owner_id",
+      inputKey: "ownerId",
+    },
     phoneNumber: {
       dbCol: "phone_number",
       inputKey: "phoneNumber",
@@ -446,10 +462,6 @@ export const contactPhoneNumberLoaderInfo = {
     label: {
       dbCol: "label",
       inputKey: "label",
-    },
-    contactID: {
-      dbCol: "contact_id",
-      inputKey: "contactId",
     },
   },
 };

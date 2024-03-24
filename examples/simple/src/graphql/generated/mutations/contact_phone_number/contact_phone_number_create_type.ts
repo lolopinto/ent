@@ -27,6 +27,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 interface customContactPhoneNumberCreateInput
   extends ContactPhoneNumberCreateInput {
   contactId: string;
+  ownerId: string;
 }
 
 interface ContactPhoneNumberCreatePayload {
@@ -39,14 +40,17 @@ export const ContactPhoneNumberCreateInputType = new GraphQLInputObjectType({
     extra: {
       type: ContactInfoInputType,
     },
+    contactId: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
     phoneNumber: {
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
       type: new GraphQLNonNull(ContactLabelType),
-    },
-    contactId: {
-      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -85,9 +89,10 @@ export const ContactPhoneNumberCreateType: GraphQLFieldConfig<
       context.getViewer(),
       {
         extra: input.extra,
+        contactId: mustDecodeIDFromGQLID(input.contactId),
+        ownerId: mustDecodeIDFromGQLID(input.ownerId),
         phoneNumber: input.phoneNumber,
         label: input.label,
-        contactId: mustDecodeIDFromGQLID(input.contactId),
       },
     ).saveX();
     return { contactPhoneNumber: contactPhoneNumber };

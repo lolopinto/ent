@@ -693,6 +693,7 @@ test("uniqueEdge|Node", async () => {
       {
         emailAddress: sansa.emailAddress,
         label: ContactLabel.Default,
+        ownerId: jon.id,
       },
     ],
     firstName: sansa.firstName,

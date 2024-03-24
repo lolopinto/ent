@@ -60,6 +60,8 @@ export * from "../generated/resolvers/user/user_article_to_comments_connection_t
 export * from "../generated/resolvers/user/user_comments_from_attachment_connection_type";
 export * from "../generated/resolvers/user/user_to_comments_authored_connection_type";
 export * from "../generated/resolvers/user/user_to_comments_connection_type";
+export * from "../generated/resolvers/user/user_to_contact_emails_connection_type";
+export * from "../generated/resolvers/user/user_to_contact_phone_numbers_connection_type";
 export * from "../generated/resolvers/user/user_to_contacts_connection_type";
 export * from "../generated/resolvers/user/user_to_created_events_connection_type";
 export * from "../generated/resolvers/user/user_to_declined_events_connection_type";

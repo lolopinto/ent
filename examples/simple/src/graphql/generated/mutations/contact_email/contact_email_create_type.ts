@@ -26,6 +26,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactEmailCreateInput extends ContactEmailCreateInput {
   contactId: string;
+  ownerId: string;
 }
 
 interface ContactEmailCreatePayload {
@@ -38,14 +39,17 @@ export const ContactEmailCreateInputType = new GraphQLInputObjectType({
     extra: {
       type: ContactInfoInputType,
     },
+    contactId: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
     emailAddress: {
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
       type: new GraphQLNonNull(ContactLabelType),
-    },
-    contactId: {
-      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -84,9 +88,10 @@ export const ContactEmailCreateType: GraphQLFieldConfig<
       context.getViewer(),
       {
         extra: input.extra,
+        contactId: mustDecodeIDFromGQLID(input.contactId),
+        ownerId: mustDecodeIDFromGQLID(input.ownerId),
         emailAddress: input.emailAddress,
         label: input.label,
-        contactId: mustDecodeIDFromGQLID(input.contactId),
       },
     ).saveX();
     return { contactEmail: contactEmail };

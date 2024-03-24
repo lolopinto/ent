@@ -40,6 +40,9 @@ export const EmailContactCreateInput = new GraphQLInputObjectType({
     extra: {
       type: ContactInfoInputType,
     },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
     emailAddress: {
       type: new GraphQLNonNull(GraphQLString),
     },
@@ -54,6 +57,9 @@ export const PhoneNumberContactCreateInput = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     extra: {
       type: ContactInfoInputType,
+    },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
     },
     phoneNumber: {
       type: new GraphQLNonNull(GraphQLString),

@@ -44,10 +44,11 @@ export default class CreateUserAction extends CreateUserActionBase {
     return [
       {
         // also create a contact for self when creating user
-        changeset: (
+        changeset: async (
           builder: UserBuilder,
           input: UserCreateInput,
         ): Promise<Changeset> => {
+          const id = await builder.getEntID();
           let action = CreateContactAction.create(this.builder.viewer, {
             firstName: input.firstName,
             lastName: input.lastName,
@@ -55,6 +56,7 @@ export default class CreateUserAction extends CreateUserActionBase {
               {
                 emailAddress: input.emailAddress,
                 label: ContactLabel.Self,
+                ownerId: id,
               },
             ],
             userId: builder,

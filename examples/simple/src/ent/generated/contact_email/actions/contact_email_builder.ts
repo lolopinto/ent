@@ -15,7 +15,7 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Contact, ContactEmail } from "../../..";
+import { Contact, ContactEmail, User } from "../../..";
 import { contactEmailLoaderInfo } from "../../loaders";
 import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
 import { ContactInfo, ContactLabel, EdgeType, NodeType } from "../../types";
@@ -24,9 +24,10 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactEmailInput {
   extra?: ContactInfo | null;
+  contactId?: ID | Builder<Contact, ExampleViewerAlias>;
+  ownerId?: ID | Builder<User, ExampleViewerAlias>;
   emailAddress?: string;
   label?: ContactLabel;
-  contactId?: ID | Builder<Contact, ExampleViewerAlias>;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -116,10 +117,16 @@ export class ContactEmailBuilder<
     return this.input;
   }
 
-  updateInput(input: Omit<ContactEmailInput, "contactId">) {
+  updateInput(input: Omit<ContactEmailInput, "contactId" | "ownerId">) {
     if (input.contactId !== undefined) {
       throw new Error(
         `contactId cannot be passed to updateInput. use overrideContactId instead`,
+      );
+    }
+
+    if (input.ownerId !== undefined) {
+      throw new Error(
+        `ownerId cannot be passed to updateInput. use overrideOwnerId instead`,
       );
     }
 
@@ -133,6 +140,11 @@ export class ContactEmailBuilder<
   // override immutable field `contactId`
   overrideContactId(val: ID | Builder<Contact, ExampleViewerAlias>) {
     this.input.contactId = val;
+  }
+
+  // override immutable field `ownerId`
+  overrideOwnerId(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.input.ownerId = val;
   }
 
   deleteInputKey(key: keyof ContactEmailInput) {
@@ -215,9 +227,10 @@ export class ContactEmailBuilder<
       }
     };
     addField("extra", input.extra);
+    addField("contactID", input.contactId);
+    addField("ownerID", input.ownerId);
     addField("emailAddress", input.emailAddress);
     addField("label", input.label);
-    addField("contactID", input.contactId);
     return result;
   }
 
@@ -234,6 +247,34 @@ export class ContactEmailBuilder<
     }
 
     return this.existingEnt?.extra ?? null;
+  }
+
+  // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewContactIdValue(): ID | Builder<Contact, ExampleViewerAlias> {
+    if (this.input.contactId !== undefined) {
+      return this.input.contactId;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `contactId` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.contactId;
+  }
+
+  // get value of ownerID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewOwnerIdValue(): ID | Builder<User, ExampleViewerAlias> {
+    if (this.input.ownerId !== undefined) {
+      return this.input.ownerId;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `ownerId` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.ownerId;
   }
 
   // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt
@@ -262,19 +303,5 @@ export class ContactEmailBuilder<
       );
     }
     return this.existingEnt.label;
-  }
-
-  // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewContactIdValue(): ID | Builder<Contact, ExampleViewerAlias> {
-    if (this.input.contactId !== undefined) {
-      return this.input.contactId;
-    }
-
-    if (!this.existingEnt) {
-      throw new Error(
-        "no value to return for `contactId` since not in input and no existingEnt",
-      );
-    }
-    return this.existingEnt.contactId;
   }
 }
