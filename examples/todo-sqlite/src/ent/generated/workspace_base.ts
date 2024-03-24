@@ -41,7 +41,7 @@ import schema from "src/schema/workspace_schema";
 
 export class WorkspaceBase
   extends TodoContainerMixin(class {} as new (...args: any[]) => ITodoContainer)
-  implements Ent<Viewer>, ITodoContainer
+  implements Ent<Viewer>, ITodoContainer<Viewer>
 {
   protected readonly data: WorkspaceDBData;
   readonly nodeType = NodeType.Workspace;

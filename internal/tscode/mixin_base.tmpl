@@ -4,11 +4,15 @@
 {{$cfg := .Config}}
 {{$schema := .Schema}}
 
+{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useImport $viewerInfo.GetImport -}}
+
 {{ range $p.GetImportsForMixin $schema $cfg -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 
-export interface {{$p.GetMixinInterfaceBaseName}}<TViewer extends {{useImport "Viewer"}} = Viewer> extends {{useImport "Ent" }}<TViewer> {
+export interface {{$p.GetMixinInterfaceBaseName}}<TViewer extends {{useImport $viewerType}} = {{useImport $viewerType}}> extends {{useImport "Ent" }}<TViewer> {
   {{ range $field := $p.FieldInfo.EntFields -}}
     {{ range $field.GetTsTypeImports -}}
       {{ if ($p.ForeignImport .Import) -}}

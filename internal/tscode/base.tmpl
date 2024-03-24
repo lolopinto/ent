@@ -99,7 +99,7 @@
 
 
 {{$hasMixins := .HasMixins -}}
-{{$mixinInfo := .GetMixinInfo $schema -}}
+{{$mixinInfo := .GetMixinInfo $schema $cfg -}}
 
 export class {{$baseClass}} 
 {{ if $hasMixins -}}

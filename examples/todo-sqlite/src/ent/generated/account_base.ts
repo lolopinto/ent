@@ -74,7 +74,7 @@ export interface AccountCanViewerSee {
 
 export class AccountBase
   extends TodoContainerMixin(class {} as new (...args: any[]) => ITodoContainer)
-  implements Ent<Viewer>, ITodoContainer
+  implements Ent<Viewer>, ITodoContainer<Viewer>
 {
   protected readonly data: AccountData;
   private rawDBData: AccountDBData | undefined;

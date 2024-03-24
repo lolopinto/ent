@@ -5,9 +5,11 @@
 
 import { Data, Ent, Viewer } from "@snowtop/ent";
 import { ContactInfo } from "../types";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-export interface IContactInfoBase<TViewer extends Viewer = Viewer>
-  extends Ent<TViewer> {
+export interface IContactInfoBase<
+  TViewer extends ExampleViewerAlias = ExampleViewerAlias,
+> extends Ent<TViewer> {
   extra: ContactInfo | null;
 }
 

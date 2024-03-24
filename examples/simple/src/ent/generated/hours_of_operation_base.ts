@@ -32,7 +32,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class HoursOfOperationBase
   extends DayOfWeekMixin(class {} as new (...args: any[]) => IDayOfWeek)
-  implements Ent<ExampleViewerAlias>, IDayOfWeek
+  implements Ent<ExampleViewerAlias>, IDayOfWeek<ExampleViewerAlias>
 {
   protected readonly data: HoursOfOperationDBData;
   readonly nodeType = NodeType.HoursOfOperation;

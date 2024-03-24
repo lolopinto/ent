@@ -10,9 +10,11 @@ import {
   convertDayOfWeek,
   convertNullableDayOfWeekAlt,
 } from "../types";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-export interface IDayOfWeekBase<TViewer extends Viewer = Viewer>
-  extends Ent<TViewer> {
+export interface IDayOfWeekBase<
+  TViewer extends ExampleViewerAlias = ExampleViewerAlias,
+> extends Ent<TViewer> {
   dayOfWeek: DayOfWeek;
   dayOfWeekAlt: DayOfWeekAlt | null;
 }

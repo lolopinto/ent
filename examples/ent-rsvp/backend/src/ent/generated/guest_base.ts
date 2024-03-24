@@ -40,7 +40,7 @@ import schema from "src/schema/guest_schema";
 
 export class GuestBase
   extends WithAddressMixin(class {} as new (...args: any[]) => IWithAddress)
-  implements Ent<Viewer>, IWithAddress
+  implements Ent<Viewer>, IWithAddress<Viewer>
 {
   protected readonly data: GuestDBData;
   readonly nodeType = NodeType.Guest;
