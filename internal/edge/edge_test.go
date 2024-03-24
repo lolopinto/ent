@@ -219,7 +219,6 @@ func TestViewerBasedEdgeGroupWithNoNullStates(t *testing.T) {
 	group, err := edge.AssocEdgeGroupFromInput(
 		&codegenapi.DummyConfig{},
 		"User",
-		&input.Node{},
 		&input.AssocEdgeGroup{
 			Name:            "rsvps",
 			GroupStatusName: "RsvpStatus",
@@ -246,7 +245,6 @@ func TestViewerBasedEdgeGroupWithNullStates(t *testing.T) {
 	group, err := edge.AssocEdgeGroupFromInput(
 		&codegenapi.DummyConfig{},
 		"User",
-		&input.Node{},
 		&input.AssocEdgeGroup{
 			Name:            "rsvps",
 			GroupStatusName: "RsvpStatus",
@@ -273,7 +271,6 @@ func TestNonViewerBasedEdgeGroupWithNoNullStates(t *testing.T) {
 	group, err := edge.AssocEdgeGroupFromInput(
 		&codegenapi.DummyConfig{},
 		"User",
-		&input.Node{},
 		&input.AssocEdgeGroup{
 			Name:            "rsvps",
 			GroupStatusName: "RsvpStatus",
