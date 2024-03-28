@@ -36,7 +36,7 @@
     "cors": "^2.8.5",
     "csv-parse": "^4.15.3",
     "dotenv": "^8.2.0",
-    "express": "^4.17.1",
+    "express": "^4.19.2",
     "glob": "^8.0.3",
     "graphql": "^16.8.1",
     "graphql-helix": "^1.12.0",
