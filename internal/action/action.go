@@ -280,12 +280,15 @@ func getFieldsForAction(nodeName string, action *input.Action, fieldInfo *field.
 }
 
 func getNonEntFieldsFromInput(cfg codegenapi.Config, nodeName string, action *input.Action, typ concreteNodeActionType) ([]*field.NonEntField, error) {
-	var fields []*field.NonEntField
-
 	inputName := getActionInputNameForNodeActionType(cfg, typ, nodeName, action.CustomInputName)
 
-	for _, f := range action.ActionOnlyFields {
-		// TODO we may want different names for graphql vs actions
+	return getNonEntFieldsFromActionOnlyFields(cfg, inputName, action.ActionOnlyFields)
+}
+
+func getNonEntFieldsFromActionOnlyFields(cfg codegenapi.Config, inputName string, actionOnlyFields []*input.ActionField) ([]*field.NonEntField, error) {
+	var fields []*field.NonEntField
+
+	for _, f := range actionOnlyFields {
 		typ, err := f.GetEntType(inputName)
 		if err != nil {
 			return nil, err
@@ -346,6 +349,12 @@ func processEdgeActions(cfg codegenapi.Config, nodeName string, assocEdge *edge.
 			return nil, err
 		}
 
+		inputName := getActionInputNameForEdgeActionType(cfg, typ, assocEdge, nodeName, "")
+		nonEntFields, err := getNonEntFieldsFromActionOnlyFields(cfg, inputName, edgeAction.ActionOnlyFields)
+		if err != nil {
+			return nil, err
+		}
+
 		commonInfo := getCommonInfoForEdgeAction(
 			cfg,
 			nodeName,
@@ -356,9 +365,9 @@ func processEdgeActions(cfg codegenapi.Config, nodeName string, assocEdge *edge.
 		)
 		commonInfo.canViewerDo = edgeAction.CanViewerDo
 		commonInfo.canFail = edgeAction.CanFail
+		commonInfo.NonEntFields = nonEntFields
 
 		actions[idx] = typ.getAction(commonInfo)
-
 	}
 	return actions, nil
 }

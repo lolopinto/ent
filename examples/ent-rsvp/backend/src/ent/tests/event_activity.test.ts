@@ -148,6 +148,7 @@ describe("invites", () => {
         new IDViewer(user.id),
         activity.id,
         group.id,
+        {},
       );
       throw new Error("should have thrown");
     } catch (e) {
@@ -173,6 +174,7 @@ describe("invites", () => {
         activity2.viewer,
         activity2.id,
         group.id,
+        {},
       );
       throw new Error("should have thrown");
     } catch (e) {

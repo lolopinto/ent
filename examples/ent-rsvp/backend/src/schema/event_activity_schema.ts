@@ -81,6 +81,13 @@ const EventActivitySchema = new EntSchema({
               canViewerDo: {
                 addAllFields: true,
               },
+              actionOnlyFields: [
+                {
+                  name: "test",
+                  type: "String",
+                  optional: true,
+                },
+              ],
             },
             {
               operation: ActionOperation.RemoveEdge,
