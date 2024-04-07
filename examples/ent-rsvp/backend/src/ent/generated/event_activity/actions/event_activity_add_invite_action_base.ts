@@ -18,41 +18,42 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { EventActivity, GuestGroup } from "src/ent/";
-import {
-  EventActivityBuilder,
-  EventActivityInput,
-} from "src/ent/generated/event_activity/actions/event_activity_builder";
+import { EventActivityBuilder } from "src/ent/generated/event_activity/actions/event_activity_builder";
+
+export interface EventActivityAddInviteInput {
+  test?: string;
+}
 
 export type EventActivityAddInviteActionTriggers = (
   | Trigger<
       EventActivity,
-      EventActivityBuilder<EventActivityInput, EventActivity>,
+      EventActivityBuilder<EventActivityAddInviteInput, EventActivity>,
       Viewer,
-      EventActivityInput,
+      EventActivityAddInviteInput,
       EventActivity
     >
   | Trigger<
       EventActivity,
-      EventActivityBuilder<EventActivityInput, EventActivity>,
+      EventActivityBuilder<EventActivityAddInviteInput, EventActivity>,
       Viewer,
-      EventActivityInput,
+      EventActivityAddInviteInput,
       EventActivity
     >[]
 )[];
 
 export type EventActivityAddInviteActionObservers = Observer<
   EventActivity,
-  EventActivityBuilder<EventActivityInput, EventActivity>,
+  EventActivityBuilder<EventActivityAddInviteInput, EventActivity>,
   Viewer,
-  EventActivityInput,
+  EventActivityAddInviteInput,
   EventActivity
 >[];
 
 export type EventActivityAddInviteActionValidators = Validator<
   EventActivity,
-  EventActivityBuilder<EventActivityInput, EventActivity>,
+  EventActivityBuilder<EventActivityAddInviteInput, EventActivity>,
   Viewer,
-  EventActivityInput,
+  EventActivityAddInviteInput,
   EventActivity
 >[];
 
@@ -60,21 +61,27 @@ export class EventActivityAddInviteActionBase
   implements
     Action<
       EventActivity,
-      EventActivityBuilder<EventActivityInput, EventActivity>,
+      EventActivityBuilder<EventActivityAddInviteInput, EventActivity>,
       Viewer,
-      EventActivityInput,
+      EventActivityAddInviteInput,
       EventActivity
     >
 {
   public readonly builder: EventActivityBuilder<
-    EventActivityInput,
+    EventActivityAddInviteInput,
     EventActivity
   >;
   public readonly viewer: Viewer;
+  protected input: EventActivityAddInviteInput;
   protected readonly eventActivity: EventActivity;
 
-  constructor(viewer: Viewer, eventActivity: EventActivity) {
+  constructor(
+    viewer: Viewer,
+    eventActivity: EventActivity,
+    input: EventActivityAddInviteInput,
+  ) {
     this.viewer = viewer;
+    this.input = input;
     this.builder = new EventActivityBuilder(
       this.viewer,
       WriteOperation.Edit,
@@ -100,8 +107,8 @@ export class EventActivityAddInviteActionBase
     return [];
   }
 
-  getInput(): EventActivityInput {
-    return {};
+  getInput(): EventActivityAddInviteInput {
+    return this.input;
   }
 
   addInvite(...nodes: (ID | GuestGroup | Builder<GuestGroup>)[]): this {
@@ -148,23 +155,27 @@ export class EventActivityAddInviteActionBase
     this: new (
       viewer: Viewer,
       eventActivity: EventActivity,
+      input: EventActivityAddInviteInput,
     ) => T,
     viewer: Viewer,
     eventActivity: EventActivity,
+    input: EventActivityAddInviteInput,
   ): T {
-    return new this(viewer, eventActivity);
+    return new this(viewer, eventActivity, input);
   }
 
   static async saveXFromID<T extends EventActivityAddInviteActionBase>(
     this: new (
       viewer: Viewer,
       eventActivity: EventActivity,
+      input: EventActivityAddInviteInput,
     ) => T,
     viewer: Viewer,
     id: ID,
     inviteId: ID,
+    input: EventActivityAddInviteInput,
   ): Promise<EventActivity> {
     const eventActivity = await EventActivity.loadX(viewer, id);
-    return new this(viewer, eventActivity).addInvite(inviteId).saveX();
+    return new this(viewer, eventActivity, input).addInvite(inviteId).saveX();
   }
 }

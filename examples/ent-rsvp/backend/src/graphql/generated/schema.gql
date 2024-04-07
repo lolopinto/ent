@@ -51,7 +51,7 @@ type Address implements Node {
 }
 
 type EventActivityCanViewerDo {
-  eventActivityAddInvite: Boolean!
+  eventActivityAddInvite(test: String!): Boolean!
   eventActivityRsvpStatusEdit(rsvpStatus: EventActivityRsvpStatusInput!, guestId: ID!, dietaryRestrictions: String): Boolean!
 }
 
@@ -356,6 +356,7 @@ input AddressEventActivityCreateInput {
 input EventActivityAddInviteInput {
   """id of EventActivity"""
   id: ID!
+  test: String
   inviteId: ID!
 }
 

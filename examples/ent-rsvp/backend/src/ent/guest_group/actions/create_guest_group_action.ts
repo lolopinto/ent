@@ -44,7 +44,7 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
 
           return Promise.all(
             activities.map((activity) =>
-              EventActivityAddInviteAction.create(builder.viewer, activity)
+              EventActivityAddInviteAction.create(builder.viewer, activity, {})
                 .addInviteID(builder)
                 .changeset(),
             ),

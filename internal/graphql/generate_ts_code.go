@@ -3076,7 +3076,17 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			return nil, err
 		}
 
-		if action.HasInput(a) {
+		addInputFields := func() {
+			for _, f := range a.GetGraphQLFields() {
+				addField(f)
+			}
+			for _, f := range a.GetGraphQLNonEntFields() {
+				addField(f)
+			}
+			result.FunctionContents = append(result.FunctionContents, "});")
+		}
+
+		if action.HasInput(a) && !action.IsEdgeAction(a) {
 			// have fields and therefore input
 			if !deleteAction {
 				result.FunctionContents = append(
@@ -3096,14 +3106,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 					fmt.Sprintf("await %s.%s(context.getViewer(), input.%s, {", a.GetActionName(), saveMethod, idField),
 				)
 			}
-			for _, f := range a.GetGraphQLFields() {
-				addField(f)
-			}
-			for _, f := range a.GetGraphQLNonEntFields() {
-				addField(f)
-			}
-			result.FunctionContents = append(result.FunctionContents, "});")
-
+			addInputFields()
 		} else if action.IsEdgeAction(a) {
 			edges := a.GetEdges()
 			if len(edges) != 1 {
@@ -3112,16 +3115,32 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			edge := edges[0]
 			// have fields and therefore input
 			edgeField := getEdgeField(processor, edge)
-			if base64EncodeIDs {
-				result.FunctionContents = append(
-					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.%s(context.getViewer(), mustDecodeIDFromGQLID(input.%s), mustDecodeIDFromGQLID(input.%s));", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
-				)
+			if action.HasInput(a) {
+				if base64EncodeIDs {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("const %s = await %s.%s(context.getViewer(), mustDecodeIDFromGQLID(input.%s), mustDecodeIDFromGQLID(input.%s), {", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
+					)
+				} else {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("const %s = await %s.%s(context.getViewer(), input.%s, input.%s, {", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
+					)
+				}
+
+				addInputFields()
 			} else {
-				result.FunctionContents = append(
-					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.%s(context.getViewer(), input.%s, input.%s);", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
-				)
+				if base64EncodeIDs {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("const %s = await %s.%s(context.getViewer(), mustDecodeIDFromGQLID(input.%s), mustDecodeIDFromGQLID(input.%s));", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
+					)
+				} else {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("const %s = await %s.%s(context.getViewer(), input.%s, input.%s);", nodeData.NodeInstance, a.GetActionName(), saveMethod, idField, edgeField),
+					)
+				}
 			}
 		} else {
 			if !deleteAction {

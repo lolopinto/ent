@@ -9,14 +9,18 @@ import {
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
+  GraphQLString,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { EventActivity } from "src/ent/";
-import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
+import EventActivityAddInviteAction, {
+  EventActivityAddInviteInput,
+} from "src/ent/event_activity/actions/event_activity_add_invite_action";
 import { EventActivityType } from "src/graphql/resolvers/";
 
-interface customEventActivityAddInviteInput {
+interface customEventActivityAddInviteInput
+  extends EventActivityAddInviteInput {
   id: string;
   inviteId: string;
 }
@@ -31,6 +35,9 @@ export const EventActivityAddInviteInputType = new GraphQLInputObjectType({
     id: {
       description: "id of EventActivity",
       type: new GraphQLNonNull(GraphQLID),
+    },
+    test: {
+      type: GraphQLString,
     },
     inviteId: {
       type: new GraphQLNonNull(GraphQLID),
@@ -72,6 +79,9 @@ export const EventActivityAddInviteType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
       mustDecodeIDFromGQLID(input.inviteId),
+      {
+        test: input.test,
+      },
     );
     return { eventActivity };
   },

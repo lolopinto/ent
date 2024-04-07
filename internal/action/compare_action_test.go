@@ -949,6 +949,7 @@ func createEdgeActionWithOptions(nodeName string, assocEdge *edge.AssociationEdg
 	ci.tsEnums = opt.tsEnums
 	ci.gqlEnums = opt.gqlEnums
 	ci.customInterfaces = opt.customInterfaces
+	ci.NonEntFields = opt.nonEntFields
 	return typ.getAction(ci)
 }
 
