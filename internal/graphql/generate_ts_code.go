@@ -1376,6 +1376,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 		var hasConnections bool
 		nodes := make(map[string]*gqlNode)
 		enums := make(map[string]*gqlEnum)
+		unions := make(map[string]*gqlNode)
 		actionEnums := make(map[string]*gqlEnum)
 		var rootQueries []*rootQuery
 		edgeNames := make(map[string]bool)
@@ -1414,6 +1415,8 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				}
 			}(key)
 		}
+
+		patternMap := util.NewSyncedMap[string, []string]()
 		nodeMap := processor.Schema.Nodes
 		for key := range processor.Schema.Nodes {
 			go func(key string) {
@@ -1425,6 +1428,14 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 				// nothing to do here
 				if nodeData.HideFromGraphQL {
 					return
+				}
+				for _, pattern := range nodeData.PatternsWithMixins {
+					l, ok := patternMap.Load(pattern)
+					if !ok {
+						l = []string{}
+					}
+					l = append(l, nodeData.Node)
+					patternMap.Store(pattern, l)
 				}
 
 				objectTypes, err := buildNodeForObject(processor, nodeMap, nodeData)
@@ -1636,6 +1647,52 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 		}
 
 		wg.Wait()
+
+		var wg2 sync.WaitGroup
+		patternKeys := patternMap.Keys()
+		wg2.Add(len(patternKeys))
+		for _, k := range patternKeys {
+			go func(k string) {
+				defer wg2.Done()
+				nodeNames, _ := patternMap.Load(k)
+				if len(nodeNames) < 2 {
+					return
+				}
+
+				name := names.ToClassType(k)
+				obj := newObjectType(&objectType{
+					Type:     fmt.Sprintf("%sType", name),
+					Node:     name,
+					TSType:   name, // TODO do we need this?
+					GQLType:  "GraphQLUnionType",
+					Exported: true,
+				})
+
+				unionTypes := make([]string, len(nodeNames))
+				imports := make([]*tsimport.ImportPath, len(nodeNames))
+				for i, nodeName := range nodeNames {
+					unionTypes[i] = fmt.Sprintf("%sType", nodeName)
+					imports[i] = tsimport.NewLocalGraphQLEntImportPath(nodeName)
+				}
+				obj.UnionTypes = unionTypes
+				obj.Imports = imports
+
+				node := &gqlNode{
+					ObjData: &gqlobjectData{
+						Node:     name,
+						GQLNodes: []*objectType{obj},
+						Package:  processor.Config.GetImportPackage(),
+					},
+					FilePath: getFilePathForUnionInterfaceFile(processor.Config, name),
+				}
+
+				m.Lock()
+				defer m.Unlock()
+				nodes[k] = node
+			}(k)
+		}
+		wg2.Wait()
+
 		schema := &gqlSchema{
 			nodes:             nodes,
 			rootQueries:       rootQueries,
@@ -1646,7 +1703,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 			hasConnections:    hasConnections,
 			customEdges:       make(map[string]*objectType),
 			otherObjects:      otherNodes,
-			unions:            map[string]*gqlNode{},
+			unions:            unions,
 			seenCustomObjects: map[string]bool{},
 			nestedCustomTypes: map[string]string{},
 		}

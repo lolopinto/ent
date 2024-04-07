@@ -27,7 +27,7 @@ import EditContactEmailAction from "../../../ent/contact_email/actions/edit_cont
 import {
   ContactEmailToCommentsConnectionType,
   ContactEmailToLikersConnectionType,
-  ContactInfoType,
+  ContactInfoExtraType,
   ContactItemType,
   ContactLabelType,
   ContactType,
@@ -86,7 +86,7 @@ export const ContactEmailType = new GraphQLObjectType({
       resolve: nodeIDEncoder,
     },
     extra: {
-      type: ContactInfoType,
+      type: ContactInfoExtraType,
     },
     emailAddress: {
       type: new GraphQLNonNull(GraphQLString),

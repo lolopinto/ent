@@ -6,7 +6,7 @@
 import { ID, ObjectLoaderFactory } from "@snowtop/ent";
 import {
   Attachment,
-  ContactInfo,
+  ContactInfoExtra,
   ContactLabel,
   DayOfWeek,
   DayOfWeekAlt,
@@ -329,7 +329,7 @@ export interface ContactEmailDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
-  extra: ContactInfo | null;
+  extra: ContactInfoExtra | null;
   contact_id: ID;
   owner_id: ID;
   email_address: string;
@@ -399,7 +399,7 @@ export interface ContactPhoneNumberDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
-  extra: ContactInfo | null;
+  extra: ContactInfoExtra | null;
   contact_id: ID;
   owner_id: ID;
   phone_number: string;

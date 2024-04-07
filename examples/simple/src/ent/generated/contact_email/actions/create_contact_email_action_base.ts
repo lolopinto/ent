@@ -20,11 +20,11 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail, User } from "../../..";
 import { ContactEmailBuilder } from "./contact_email_builder";
-import { ContactInfo, ContactLabel } from "../../types";
+import { ContactInfoExtra, ContactLabel } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactEmailCreateInput {
-  extra?: ContactInfo | null;
+  extra?: ContactInfoExtra | null;
   contactId: ID | Builder<Contact, ExampleViewerAlias>;
   ownerId: ID | Builder<User, ExampleViewerAlias>;
   emailAddress: string;

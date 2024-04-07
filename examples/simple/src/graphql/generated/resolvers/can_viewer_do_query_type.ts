@@ -17,7 +17,7 @@ import { RequestContext, applyPrivacyPolicy } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import CreateContactAction from "../../../ent/contact/actions/create_contact_action";
 import CreateContactEmailAction from "../../../ent/contact_email/actions/create_contact_email_action";
-import { ContactInfoInputType } from "../mutations/input/contact_info_input_type";
+import { ContactInfoExtraInputType } from "../mutations/input/contact_info_extra_input_type";
 import { ContactLabelType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
@@ -80,7 +80,7 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
       args: {
         extra: {
           description: "",
-          type: ContactInfoInputType,
+          type: ContactInfoExtraInputType,
         },
         contactId: {
           description: "",

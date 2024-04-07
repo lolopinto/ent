@@ -23,7 +23,7 @@ import {
   ContactPhoneNumberToLikersQuery,
 } from "../../../ent";
 import {
-  ContactInfoType,
+  ContactInfoExtraType,
   ContactItemType,
   ContactLabelType,
   ContactPhoneNumberToCommentsConnectionType,
@@ -64,7 +64,7 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
       resolve: nodeIDEncoder,
     },
     extra: {
-      type: ContactInfoType,
+      type: ContactInfoExtraType,
     },
     phoneNumber: {
       type: new GraphQLNonNull(GraphQLString),

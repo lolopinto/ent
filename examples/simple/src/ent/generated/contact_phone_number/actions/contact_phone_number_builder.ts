@@ -18,12 +18,17 @@ import {
 import { Contact, ContactPhoneNumber, User } from "../../..";
 import { contactPhoneNumberLoaderInfo } from "../../loaders";
 import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
-import { ContactInfo, ContactLabel, EdgeType, NodeType } from "../../types";
+import {
+  ContactInfoExtra,
+  ContactLabel,
+  EdgeType,
+  NodeType,
+} from "../../types";
 import schema from "../../../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberInput {
-  extra?: ContactInfo | null;
+  extra?: ContactInfoExtra | null;
   contactId?: ID | Builder<Contact, ExampleViewerAlias>;
   ownerId?: ID | Builder<User, ExampleViewerAlias>;
   phoneNumber?: string;
@@ -241,7 +246,7 @@ export class ContactPhoneNumberBuilder<
   }
 
   // get value of extra. Retrieves it from the input if specified or takes it from existingEnt
-  getNewExtraValue(): ContactInfo | null {
+  getNewExtraValue(): ContactInfoExtra | null {
     if (this.input.extra !== undefined) {
       return this.input.extra;
     }

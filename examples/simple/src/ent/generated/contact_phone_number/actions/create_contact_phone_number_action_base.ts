@@ -20,11 +20,11 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber, User } from "../../..";
 import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
-import { ContactInfo, ContactLabel } from "../../types";
+import { ContactInfoExtra, ContactLabel } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberCreateInput {
-  extra?: ContactInfo | null;
+  extra?: ContactInfoExtra | null;
   contactId: ID | Builder<Contact, ExampleViewerAlias>;
   ownerId: ID | Builder<User, ExampleViewerAlias>;
   phoneNumber: string;
