@@ -119,6 +119,7 @@ export async function createAndInvite(): Promise<[EventActivity, GuestGroup]> {
     activity.viewer,
     activity.id,
     group.id,
+    {},
   );
   const newCount = await reloaded.queryInvites().queryCount();
   expect(newCount).toBe(1);
@@ -172,6 +173,7 @@ export async function createGuestPlus() {
     activity.viewer,
     activity.id,
     group.id,
+    {},
   );
 
   const guest = await CreateGuestAction.create(group.viewer, {
