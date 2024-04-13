@@ -275,7 +275,7 @@ type ContactEmail implements Node & ContactItemType {
   contact: Contact
   owner: User
   id: ID!
-  extra: ContactInfo
+  extra: ContactInfoExtra
   emailAddress: String!
   label: ContactLabel!
   comments(first: Int, after: String, last: Int, before: String): ContactEmailToCommentsConnection!
@@ -283,10 +283,12 @@ type ContactEmail implements Node & ContactItemType {
   canViewerDo: ContactEmailCanViewerDo!
 }
 
-type ContactInfo {
+type ContactInfoExtra {
   default: Boolean!
   source: ContactInfoSource!
 }
+
+union ContactInfo = ContactEmail | ContactPhoneNumber
 
 input ContactItemFilter {
   emailDomain: String
@@ -304,7 +306,7 @@ type ContactPhoneNumber implements Node & ContactItemType {
   contact: Contact
   owner: User
   id: ID!
-  extra: ContactInfo
+  extra: ContactInfoExtra
   phoneNumber: String!
   label: ContactLabel!
   comments(first: Int, after: String, last: Int, before: String): ContactPhoneNumberToCommentsConnection!
@@ -366,6 +368,8 @@ type Event implements Node {
   cities: [City!]!
 }
 
+union Feedback = Contact | ContactEmail | User | ContactPhoneNumber
+
 type File implements Node {
   creator: User
   id: ID!
@@ -375,7 +379,7 @@ type File implements Node {
 
 type GlobalCanViewerDo {
   contactCreate(userId: ID!): Boolean!
-  contactEmailCreate(extra: ContactInfoInput, contactId: ID!, ownerId: ID!, emailAddress: String!, label: ContactLabel!): Boolean!
+  contactEmailCreate(extra: ContactInfoExtraInput, contactId: ID!, ownerId: ID!, emailAddress: String!, label: ContactLabel!): Boolean!
 }
 
 type Holiday implements Node {
@@ -532,6 +536,8 @@ type User implements Node {
   commentsAuthored(first: Int, after: String, last: Int, before: String): UserToCommentsAuthoredConnection!
   cities: [City!]!
 }
+
+union WithDayOfWeek = HoursOfOperation | Holiday
 
 type AddressToHostedEventsEdge implements Edge {
   node: Event!
@@ -1239,7 +1245,7 @@ input ContactEmailArgInput {
 }
 
 input ContactEmailCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   contactId: ID!
   ownerId: ID!
   emailAddress: String!
@@ -1262,7 +1268,7 @@ type ContactEmailDeletePayload {
 input ContactEmailEditInput {
   """id of ContactEmail"""
   id: ID!
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   emailAddress: String
   label: ContactLabel
 }
@@ -1271,7 +1277,7 @@ type ContactEmailEditPayload {
   contactEmail: ContactEmail!
 }
 
-input ContactInfoInput {
+input ContactInfoExtraInput {
   default: Boolean!
   source: ContactInfoSource!
 }
@@ -1282,7 +1288,7 @@ input ContactPhoneNumberArgInput {
 }
 
 input ContactPhoneNumberCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   contactId: ID!
   ownerId: ID!
   phoneNumber: String!
@@ -1305,7 +1311,7 @@ type ContactPhoneNumberDeletePayload {
 input ContactPhoneNumberEditInput {
   """id of ContactPhoneNumber"""
   id: ID!
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   phoneNumber: String
   label: ContactLabel
 }
@@ -1366,7 +1372,7 @@ type EditPhoneNumberPayload {
 }
 
 input EmailContactCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   ownerId: ID!
   emailAddress: String!
   label: ContactLabel!
@@ -1374,7 +1380,7 @@ input EmailContactCreateInput {
 
 input EmailContactEditInput {
   id: ID!
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   emailAddress: String!
   label: ContactLabel!
 }
@@ -1540,7 +1546,7 @@ input PetUnionTypeInput {
 }
 
 input PhoneNumberContactCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   ownerId: ID!
   phoneNumber: String!
   label: ContactLabel!

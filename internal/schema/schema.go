@@ -101,6 +101,11 @@ func (s *Schema) addPattern(name string, p *PatternInfo, cfg codegenapi.Config) 
 		return fmt.Errorf("pattern with name %s already exists", name)
 	}
 
+	gqlType := fmt.Sprintf("%sType", names.ToClassType(p.Name))
+	if err := s.addGQLType(gqlType); err != nil {
+		return err
+	}
+
 	p.depgraph = s.buildPostRunDepgraph(cfg)
 	s.Patterns[name] = p
 

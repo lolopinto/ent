@@ -497,7 +497,7 @@ func TestGlobalStructPlusPatternAndNodes(t *testing.T) {
 						Name: "userPrefs",
 						Type: &input.FieldType{
 							DBType:     input.JSONB,
-							GlobalType: "UserPrefs",
+							GlobalType: "UserPrefsField",
 						},
 					},
 				},
@@ -517,7 +517,7 @@ func TestGlobalStructPlusPatternAndNodes(t *testing.T) {
 						Name: "UserPrefs",
 						Type: &input.FieldType{
 							DBType:     input.JSONB,
-							GlobalType: "UserPrefs",
+							GlobalType: "UserPrefsField",
 						},
 						PatternName: "user_prefs",
 					},
@@ -536,7 +536,7 @@ func TestGlobalStructPlusPatternAndNodes(t *testing.T) {
 						Name: "UserPrefs",
 						Type: &input.FieldType{
 							DBType:     input.JSONB,
-							GlobalType: "UserPrefs",
+							GlobalType: "UserPrefsField",
 						},
 						PatternName: "user_prefs",
 					},
@@ -549,8 +549,8 @@ func TestGlobalStructPlusPatternAndNodes(t *testing.T) {
 					Name: "userPrefs",
 					Type: &input.FieldType{
 						DBType:      input.JSONB,
-						Type:        "UserPrefs",
-						GraphQLType: "UserPrefs",
+						Type:        "UserPrefsField",
+						GraphQLType: "UserPrefsField",
 						SubFields: []*input.Field{
 							{
 								Name: "finishedNux",
@@ -592,7 +592,7 @@ func TestGlobalStructPlusPatternAndNodes(t *testing.T) {
 
 	require.Len(t, schema.CustomInterfaces, 1)
 
-	ci := schema.CustomInterfaces["UserPrefs"]
+	ci := schema.CustomInterfaces["UserPrefsField"]
 	require.NotNil(t, ci)
 	require.Len(t, ci.Fields, 3)
 	require.Len(t, ci.NonEntFields, 0)

@@ -13,8 +13,8 @@ export default class ContactInfo implements Pattern {
   name = "contact_info";
   fields = {
     extra: StructType({
-      tsType: "ContactInfo",
-      graphQLType: "ContactInfo",
+      tsType: "ContactInfoExtra",
+      graphQLType: "ContactInfoExtra",
       nullable: true,
       fields: {
         // e.g. default email or phone number

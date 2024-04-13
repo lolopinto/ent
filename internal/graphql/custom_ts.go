@@ -1074,8 +1074,11 @@ func processCusomTypes(processor *codegen.Processor, cd *CustomData, s *gqlSchem
 }
 
 func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
-	unions := make(map[string]*gqlNode)
 	for _, union := range cd.Unions {
+		if s.unions[union.NodeName] != nil {
+			return fmt.Errorf("union name %s already exists", union.NodeName)
+		}
+
 		obj := newObjectType(&objectType{
 			// TODO have to make sure this is unique
 			Type:     fmt.Sprintf("%sType", union.NodeName),
@@ -1102,9 +1105,8 @@ func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			},
 			FilePath: getFilePathForUnionInterfaceFile(processor.Config, union.NodeName),
 		}
-		unions[union.NodeName] = node
+		s.unions[union.NodeName] = node
 	}
-	s.unions = unions
 	return nil
 }
 

@@ -18,12 +18,17 @@ import {
 import { Contact, ContactEmail, User } from "../../..";
 import { contactEmailLoaderInfo } from "../../loaders";
 import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
-import { ContactInfo, ContactLabel, EdgeType, NodeType } from "../../types";
+import {
+  ContactInfoExtra,
+  ContactLabel,
+  EdgeType,
+  NodeType,
+} from "../../types";
 import schema from "../../../../schema/contact_email_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactEmailInput {
-  extra?: ContactInfo | null;
+  extra?: ContactInfoExtra | null;
   contactId?: ID | Builder<Contact, ExampleViewerAlias>;
   ownerId?: ID | Builder<User, ExampleViewerAlias>;
   emailAddress?: string;
@@ -241,7 +246,7 @@ export class ContactEmailBuilder<
   }
 
   // get value of extra. Retrieves it from the input if specified or takes it from existingEnt
-  getNewExtraValue(): ContactInfo | null {
+  getNewExtraValue(): ContactInfoExtra | null {
     if (this.input.extra !== undefined) {
       return this.input.extra;
     }

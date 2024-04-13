@@ -4,14 +4,14 @@
  */
 
 import { Data, Ent, ID, Viewer } from "@snowtop/ent";
-import { ContactInfo } from "../types";
+import { ContactInfoExtra } from "../types";
 import { Contact } from "../../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export interface IContactInfoBase<
   TViewer extends ExampleViewerAlias = ExampleViewerAlias,
 > extends Ent<TViewer> {
-  extra: ContactInfo | null;
+  extra: ContactInfoExtra | null;
   contactId: ID;
   ownerId: ID;
   loadContact(): Promise<Contact | null>;
@@ -36,7 +36,7 @@ function extractFromArgs<TViewer extends Viewer, TData extends Data>(
 
 export function ContactInfoBaseMixin<T extends Constructor>(BaseClass: T) {
   return class ContactInfoBaseMixin extends BaseClass {
-    readonly extra: ContactInfo | null;
+    readonly extra: ContactInfoExtra | null;
     readonly contactId: ID;
     readonly ownerId: ID;
     constructor(...args: any[]) {

@@ -22,13 +22,13 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import { HolidayDBData, holidayLoader, holidayLoaderInfo } from "./loaders";
 import { DayOfWeekAlt, NodeType, convertDayOfWeekAlt } from "./types";
-import { DayOfWeekMixin, IDayOfWeek } from "../internal";
+import { IWithDayOfWeek, WithDayOfWeekMixin } from "../internal";
 import schema from "../../schema/holiday_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class HolidayBase
-  extends DayOfWeekMixin(class {} as new (...args: any[]) => IDayOfWeek)
-  implements Ent<ExampleViewerAlias>, IDayOfWeek<ExampleViewerAlias>
+  extends WithDayOfWeekMixin(class {} as new (...args: any[]) => IWithDayOfWeek)
+  implements Ent<ExampleViewerAlias>, IWithDayOfWeek<ExampleViewerAlias>
 {
   protected readonly data: HolidayDBData;
   readonly nodeType = NodeType.Holiday;

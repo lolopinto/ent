@@ -111,7 +111,7 @@ import { AttachmentInputType } from "./mutations/input/attachment_input_type";
 import { CommentArgInputType } from "./mutations/input/comment_arg_input_type";
 import { ContactArgInputType } from "./mutations/input/contact_arg_input_type";
 import { ContactEmailArgInputType } from "./mutations/input/contact_email_arg_input_type";
-import { ContactInfoInputType } from "./mutations/input/contact_info_input_type";
+import { ContactInfoExtraInputType } from "./mutations/input/contact_info_extra_input_type";
 import { ContactPhoneNumberArgInputType } from "./mutations/input/contact_phone_number_arg_input_type";
 import { EventArgInputType } from "./mutations/input/event_arg_input_type";
 import { FileArgInputType } from "./mutations/input/file_arg_input_type";
@@ -197,6 +197,7 @@ import {
   ContactEmailToCommentsConnectionType,
   ContactEmailToLikersConnectionType,
   ContactEmailType,
+  ContactInfoExtraType,
   ContactInfoSourceType,
   ContactInfoType,
   ContactItemFilterType,
@@ -227,6 +228,7 @@ import {
   EventToInvitedConnectionType,
   EventToMaybeConnectionType,
   EventType,
+  FeedbackType,
   FileSortColumnType,
   FileType,
   GlobalCanViewerDoType,
@@ -280,6 +282,7 @@ import {
   UserToMaybeEventsConnectionType,
   UserType,
   ViewerType,
+  WithDayOfWeekType,
 } from "../resolvers";
 import { SubscriptionType } from "../resolvers/subscription_type";
 
@@ -321,6 +324,7 @@ export default new GraphQLSchema({
     ContactDateType,
     ContactEmailCanViewerDoType,
     ContactEmailType,
+    ContactInfoExtraType,
     ContactInfoType,
     ContactItemFilterType,
     ContactItemResultType,
@@ -330,6 +334,7 @@ export default new GraphQLSchema({
     EmailInfoType,
     EventCanViewerSeeType,
     EventType,
+    FeedbackType,
     FileType,
     GlobalCanViewerDoType,
     HolidayType,
@@ -343,6 +348,7 @@ export default new GraphQLSchema({
     UserStatisticsType,
     UserSuperNestedObjectType,
     UserType,
+    WithDayOfWeekType,
     AddressToHostedEventsConnectionType(),
     AuthorToCommentsConnectionType(),
     CommentArticleToCommentsConnectionType(),
@@ -421,7 +427,7 @@ export default new GraphQLSchema({
     ContactEmailDeletePayloadType,
     ContactEmailEditInputType,
     ContactEmailEditPayloadType,
-    ContactInfoInputType,
+    ContactInfoExtraInputType,
     ContactPhoneNumberArgInputType,
     ContactPhoneNumberCreateInputType,
     ContactPhoneNumberCreatePayloadType,

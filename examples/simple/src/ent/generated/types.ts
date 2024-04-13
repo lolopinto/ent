@@ -770,7 +770,7 @@ export function convertNullableAttachmentList(
   return input.map((v) => convertAttachment(v));
 }
 
-export interface ContactInfo {
+export interface ContactInfoExtra {
   default: boolean;
   source: ContactInfoSource;
 }
