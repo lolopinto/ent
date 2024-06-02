@@ -14,7 +14,7 @@ import pprint
 import re
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
-from typing import Optional, Union, Any
+from typing import Any
 import functools
 
 
@@ -67,9 +67,8 @@ def _edges_equal(edge1, edge2):
         'edge_table',
         'inverse_edge_type'
     ]
-    for f in fields:
-        if str(edge1.get(f, None)) != str(edge2.get(f, None)):
-            return False
+    if not all(str(edge1.get(f, None)) == str(edge2.get(f, None)) for f in fields):
+        return False
 
     # sqlite stores 1 as bool. comparing as strings no bueno
     return bool(edge1.get('symmetric_edge', None)) == bool(edge2.get('symmetric_edge', None))
@@ -131,8 +130,8 @@ def _table_exists(autogen_context: AutogenContext):
 
 def _execute_postgres_dialect(connection: sa.engine.Connection):
     row = connection.execute(sa.text(
-        "SELECT to_regclass('%s') IS NOT NULL as exists" % (
-            "assoc_edge_config"))
+            "SELECT to_regclass('assoc_edge_config') IS NOT NULL as exists" 
+        )
     )
     res = row.first()._asdict()
     return res["exists"]
@@ -140,8 +139,8 @@ def _execute_postgres_dialect(connection: sa.engine.Connection):
 
 def _execute_sqlite_dialect(connection: sa.engine.Connection):
     row = connection.execute(sa.text(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" % (
-            "assoc_edge_config"))
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='assoc_edge_config'",
+        )
     )
     res = row.first()
     return res is not None
@@ -166,7 +165,7 @@ def _create_tuple_key(row, pkeys):
     l = []
     for key in pkeys:
         if not key in row:
-            raise ValueError("pkey %s was not found in row" % key)
+            raise ValueError(f"pkey {key} was not found in row")
         l.append(row[key])
     return tuple(l)
 
@@ -215,7 +214,7 @@ def compare_data(autogen_context, upgrade_ops, schemas):
 
 def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_rows):
     connection = autogen_context.connection
-    query = 'SELECT * FROM %s' % table_name
+    query = f"SELECT * FROM {table_name}"
 
     db_rows = {}
     for row in connection.execute(sa.text(query)):
@@ -443,7 +442,7 @@ def _compare_indexes(autogen_context: AutogenContext,
                      modify_table_ops: alembicops.ModifyTableOps,
                      schema,
                      tname: str,
-                     conn_table: Optional[sa.Table],
+                     conn_table: sa.Table | None,
                      metadata_table: sa.Table,
                      ):
 
@@ -556,8 +555,8 @@ def _compare_generated_column(autogen_context: AutogenContext,
                               modify_table_ops: alembicops.ModifyTableOps,
                               schema,
                               tname: str,
-                              conn_table: Optional[sa.Table],
-                              metadata_table: Optional[sa.Table],
+                              conn_table: sa.Table | None,
+                              metadata_table: sa.Table | None,
                               ) -> None:
 
     if conn_table is None or metadata_table is None:
@@ -626,12 +625,12 @@ def _compare_generated_column(autogen_context: AutogenContext,
 # sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
 # fetch these indices from pg_indices to find them
 # warning: "Skipped unsupported reflection of expression-based index accounts_full_text_idx"
-def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa.Table]):
+def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | None):
     if conn_table is None or _dialect_name(autogen_context) != 'postgresql':
         return {'missing': {}, 'all': {}}
 
     missing = {}
-    all = {}
+    all_indices = {}
     # we cache the db hit but the table seems to change across the same call and so we're
     # just paying the CPU price. can probably be fixed in some way...
     names = set([index.name for index in conn_table.indexes] +
@@ -648,7 +647,7 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa
             continue
         r = m.groups()
 
-        all[name] = {
+        all_indices[name] = {
             'postgresql_using': r[1],
             'postgresql_using_internals': r[2],
             # TODO don't have columns|column to pass to FullTextIndex
@@ -662,14 +661,14 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa
                 # TODO don't have columns|column to pass to FullTextIndex
             }
 
-    return {'missing': missing, 'all': all}
+    return {'missing': missing, 'all': all_indices}
 
 
 # use a cache so we only hit the db once for each table
 # @functools.lru_cache()
 def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
     res = connection.execute(sa.text(
-        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname))
+       f"SELECT indexname, indexdef from pg_indexes where tablename = '{tname}'"))
     return res
 
 
@@ -736,7 +735,7 @@ def _compare_server_default_nullable(
     modify_table_ops: alembicops.ModifyTableOps,
     schema,
     tname: str,
-    conn_table: Optional[sa.Table],
+    conn_table: sa.Table | None,
     metadata_table: sa.Table,
 ):
     if conn_table is None or metadata_table is None:

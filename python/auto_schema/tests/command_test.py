@@ -10,7 +10,6 @@ import sqlalchemy as sa
 
 from . import conftest
 from . import testingutils
-from typing import List
 import os
 
 
@@ -19,7 +18,7 @@ def get_stamped_alembic_versions(r: runner.Runner):
     return [row._asdict()['version_num'] for row in r.get_connection().execute(sa.text('select * from alembic_version'))]
 
 
-def stash_new_files(r: runner.Runner, l: List[String], l2: List[String]):
+def stash_new_files(r: runner.Runner, l: list[String], l2: list[String]):
     ret = {}
 
     for path in l2:
@@ -41,7 +40,7 @@ def _add_column_to_metadata(metadata: sa.MetaData, col_name: String):
     return _add_columns_to_metadata(metadata, [col_name])
 
 
-def _add_columns_to_metadata(metadata: sa.MetaData, col_names: List[String]):
+def _add_columns_to_metadata(metadata: sa.MetaData, col_names: list[String]):
     if len(testingutils.get_sorted_tables(metadata)) != 1:
         raise ValueError("only support one table at the moment")
 

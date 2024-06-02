@@ -89,10 +89,12 @@ def get_clause_text(server_default, col_type):
     if server_default is None:
         return server_default
 
-    if isinstance(server_default, TextClause):
-        return normalize_clause_text(server_default.text, col_type)
+    match server_default:
+        case TextClause():
+            return normalize_clause_text(server_default.text, col_type)
 
-    if isinstance(server_default, DefaultClause):
-        return normalize_clause_text(server_default.arg, col_type)
+        case DefaultClause():
+            return normalize_clause_text(server_default.arg, col_type)
 
-    return normalize_clause_text(server_default, col_type)
+        case _:
+            return normalize_clause_text(server_default, col_type)

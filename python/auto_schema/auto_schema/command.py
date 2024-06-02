@@ -84,9 +84,7 @@ class Command(object):
     # Simulates running the `alembic downgrade` command
 
     def downgrade(self, revision='', delete_files=True):
-        paths = []
-        if delete_files:
-            paths = self._get_paths_to_delete(revision)
+        paths = self._get_paths_to_delete(revision) if delete_files else []
         command.downgrade(self.alembic_cfg, revision)
 
         # if downgrade worked, delete files
@@ -125,9 +123,9 @@ class Command(object):
                 "cannot pass both last and rev_range. please pick one")
         if last is not None:
             revs = list(self.get_script_directory().revision_map.iterate_revisions(
-                self.get_heads(), '-%d' % int(last), select_for_downgrade=True
+                self.get_heads(), f"-{int(last)}", select_for_downgrade=True
             ))
-            rev_range = '%s:current' % revs[-1].revision
+            rev_range = f"{revs[-1].revision}:current"
 
         command.history(self.alembic_cfg,
                         indicate_current=True, verbose=verbose, rev_range=rev_range)

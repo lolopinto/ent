@@ -1,5 +1,4 @@
 import os
-from typing import List
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from auto_schema.clause_text import get_clause_text
@@ -25,7 +24,7 @@ def get_version_files(r: runner.Runner):
 
 
 # get sorted tabels not alembic_version
-def get_sorted_tables(metadata: sa.MetaData) -> List[sa.Table]:
+def get_sorted_tables(metadata: sa.MetaData) -> list[sa.Table]:
     return list(
         filter(lambda t: t.name != 'alembic_version', metadata.sorted_tables))
 

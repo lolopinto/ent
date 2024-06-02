@@ -28,7 +28,7 @@ from alembic.script import ScriptDirectory
 
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
-from typing import Optional, Dict, Any, Union, List, Tuple
+from typing import Any
 
 from . import command
 from . import config
@@ -41,7 +41,7 @@ from .util.os import delete_py_files
 
 
 class Runner(object):
-    def __init__(self, metadata, engine, connection, schema_path, args: Optional[Dict] = None):
+    def __init__(self, metadata, engine, connection, schema_path, args: dict | None = None):
         self.metadata = metadata
         self.schema_path = schema_path
         self.engine = engine
@@ -185,10 +185,10 @@ class Runner(object):
             # For some reason, the default rendering is not doing this correctly, so we need to
             # customize the rendering so that this is handled correctly and it adds the sa.text part
             if isinstance(item, TextClause):
-                return "sa.text('%s')" % (item.text)
+                return f"sa.text('{item.text}')"
             if isinstance(item, UUID):
                 # quote as string so it's rendered correctly
-                return "'%s'" % str(item)
+                return f"'{str(item)}'"
 
             return False
 
@@ -197,7 +197,7 @@ class Runner(object):
                 # render postgres with create_type=False so that the type is not automatically created
                 # we want an explicit create type and drop type
                 # which we apparently don't get by default
-                return "postgresql.ENUM(%s, name='%s', create_type=False)" % (csv.render_list_csv(item.enums), item.name)
+                return f"postgresql.ENUM({csv.render_list_csv(item.enums)}, name='{item.name}', create_type=False)"
             return False
 
         type_map = {
@@ -328,7 +328,7 @@ class Runner(object):
             revision = heads[0]
 
         # downgrade -2 and re-run upgrade
-        self.cmd.downgrade('-%d' % squash)
+        self.cmd.downgrade(f"-{squash}")
 
         # generate a new revision
         self.revision(revision=revision)
@@ -406,7 +406,7 @@ class Runner(object):
         revision_context._to_script(migration_script)
         
 
-    def _get_custom_sql(self, connection, dialect, as_buffer=False, as_ops=False) -> Union[io.StringIO, Tuple[List[alembicops.MigrateOperation], List[alembicops.MigrateOperation]]]:
+    def _get_custom_sql(self, connection, dialect, as_buffer=False, as_ops=False) -> io.StringIO | tuple[list[alembicops.MigrateOperation], list[alembicops.MigrateOperation]]:
         if not as_ops ^ as_buffer:
             raise ValueError("must specify either as_buffer or as_ops")
 
@@ -490,7 +490,7 @@ class Runner(object):
                             if as_buffer:
                                 chunk = temp_buffer.get_chunk(i)
                                 if not header_written:
-                                    custom_sql_buffer.write("-- custom sql for rev %s\n" % rev.revision)
+                                    custom_sql_buffer.write(f"-- custom sql for rev {rev.revision}\n")
                                     header_written = True
                                     
                                 # only write if chunk is custom op 
@@ -533,8 +533,7 @@ class Runner(object):
         metadata = sa.MetaData()
         metadata.reflect(bind=connection)
         if len(metadata.sorted_tables) != 0:
-            raise Exception("to compare from base tables, cannot have any tables in database. have %d" % len(
-                metadata.sorted_tables))
+            raise Exception(f"to compare from base tables, cannot have any tables in database. have {len(metadata.sorted_tables)}")
 
         mc = MigrationContext.configure(
             connection=connection,
