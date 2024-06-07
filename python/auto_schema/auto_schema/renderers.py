@@ -22,13 +22,10 @@ def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveEdgesOp) 
 @renderers.dispatch_for(ops.ModifyEdgeOp)
 def render_modify_edge(autogen_context: AutogenContext, op: ops.ModifyEdgeOp) -> str:
     return (
-        "op.modify_edge(\n"
-        "'%(edge_type)s',\n"
-        "%(edge)s\n"
-        ")" % {
-            "edge_type": op.edge_type,
-            "edge": _render_edge(op.new_edge),
-        }
+        f"op.modify_edge(\n"
+        f"'{op.edge_type}',\n"
+        f"{_render_edge(op.new_edge)}\n"
+        ")"
     )
 
 
@@ -42,11 +39,11 @@ def _render_edge(edge):
         # render as string so we don't deal with UUID missing
         if isinstance(v, postgresql.UUID) or isinstance(v, uuid.UUID):
             v = str(v)
-        kv_pairs.append("'%s': %r" % (k, v))
+        kv_pairs.append(f"'{k}': {v!r}")
 
     # get the rendering for an edge
     #     {"k": v, "k2": v2}
-    return "{%s},\n" % ", ".join(kv_pairs)
+    return f"{{{', '.join(kv_pairs)}}},\n"
 
 
 def _render_edge_from_edges(edge_dicts, edge_fn_name):
@@ -60,12 +57,9 @@ def _render_edge_from_edges(edge_dicts, edge_fn_name):
 
     # splice the edges to be rendered
     return (
-        "%(edge_fn_name)s([\n"
-        "%(edges)s"
-        "])\n" % {
-            "edge_fn_name": edge_fn_name,
-            "edges": "".join(edges),
-        }
+        f"{edge_fn_name}([\n"
+        f"{''.join(edges)}"
+        "])\n"
     )
 
 
@@ -74,14 +68,9 @@ def _render_row_from_op(row_fn_name, table_name, pkeys, rows):
 
     # splice the rows to be rendered
     return (
-        "%(row_fn_name)s('%(table_name)s', %(pkeys)s, [\n"
-        "%(rows)s"
-        "])" % {
-            "row_fn_name": row_fn_name,
-            "table_name": table_name,
-            "pkeys": csv.render_list_csv_as_list(pkeys),
-            "rows": "".join(rows),
-        }
+        f"{row_fn_name}('{table_name}', {csv.render_list_csv_as_list(pkeys)}, [\n"
+        f"{''.join(rows)}"
+        "])"
     )
 
 
@@ -89,11 +78,11 @@ def _render_row(row):
     kv_pairs = []
     # get each line for each row
     for k, v in row.items():
-        kv_pairs.append("'%s': %r" % (k, v))
+        kv_pairs.append(f"'{k}': {v!r}")
 
     # get the rendering for a row
     #     {"k": v, "k2": v2}
-    return "{%s},\n" % ", ".join(kv_pairs)
+    return f"{{{', '.join(kv_pairs)}}},\n"
 
 
 @renderers.dispatch_for(ops.AddRowsOp)
@@ -112,15 +101,10 @@ def render_modify_rows(autogen_context: AutogenContext, op: ops.ModifyRowsOp) ->
     old_rows = [_render_row(row) for row in op.old_rows]
 
     return (
-        "op.modify_rows('%(table_name)s', %(pkeys)s, [\n"
-        "%(rows)s],"
-        "[\n%(old_rows)s"
-        "])" % {
-            "table_name": op.table_name,
-            "pkeys": csv.render_list_csv_as_list(op.pkeys),
-            "rows": "".join(rows),
-            "old_rows": "".join(old_rows),
-        }
+        f"op.modify_rows('{op.table_name}', {csv.render_list_csv_as_list(op.pkeys)}, [\n"
+        f"{''.join(rows)}],"
+        f"[\n{''.join(old_rows)}"
+        "])"
     )
 
 
@@ -129,21 +113,14 @@ def render_alter_enum(autogen_context: AutogenContext, op: ops.AlterEnumOp) -> s
     if op.before is None:
         return (
             # manual indentation
-            "with op.get_context().autocommit_block():\n"
-            "    op.alter_enum('%(enum_name)s', '%(value)s')" % {
-                "enum_name": op.enum_name,
-                "value": op.value,
-            }
+            f"with op.get_context().autocommit_block():\n"
+            f"    op.alter_enum('{op.enum_name}', '{op.value}')" 
         )
     else:
         return (
             # manual indentation
             "with op.get_context().autocommit_block():\n"
-            "    op.alter_enum('%(enum_name)s', '%(value)s', before='%(before)s')" % {
-                "enum_name": op.enum_name,
-                "value": op.value,
-                "before": op.before,
-            }
+            f"    op.alter_enum('{op.enum_name}', '{op.value}', before='{op.before}')" 
         )
 
 
@@ -154,24 +131,24 @@ def render_no_downgrade_op(autogen_context: AutogenContext, op: ops.NoDowngradeO
 
 @renderers.dispatch_for(ops.AddEnumOp)
 def render_add_enum_op(autogen_context: AutogenContext, op: ops.AddEnumOp) -> str:
-    return "op.add_enum_type('%s', [%s])" % (op.enum_name, csv.render_list_csv(op.values))
+    return f"op.add_enum_type('{op.enum_name}', [{csv.render_list_csv(op.values)}])"
 
 
 @renderers.dispatch_for(ops.DropEnumOp)
 def render_drop_enum_op(autogen_context: AutogenContext, op: ops.DropEnumOp) -> str:
-    return "op.drop_enum_type('%s', [%s])" % (op.enum_name, csv.render_list_csv(op.values))
+    return f"op.drop_enum_type('{op.enum_name}', [{csv.render_list_csv(op.values)}])"
 
 
 # hmm not sure why we need this. there's probably an easier way to do this that doesn't require this...
 @renderers.dispatch_for(ops.OurCreateCheckConstraintOp)
 def render_check_constraint(autogen_context: AutogenContext, op: ops.OurCreateCheckConstraintOp) -> str:
-    return "op.create_check_constraint('%s', '%s', '%s')" % (op.constraint_name, op.table_name, op.condition)
+    return f"op.create_check_constraint('{op.constraint_name}', '{op.table_name}', '{op.condition}')"
 
 
 def _render_kw_args(d):
     kv_pairs = []
     for k, v in d.items():
-        kv_pairs.append("%s=%r" % (k, v))
+        kv_pairs.append(f"{k}={v!r}")
 
     return ", ".join(kv_pairs)
 
@@ -179,25 +156,16 @@ def _render_kw_args(d):
 @renderers.dispatch_for(ops.CreateFullTextIndexOp)
 def render_full_text_index(autogen_context: AutogenContext, op: ops.CreateFullTextIndexOp) -> str:
     return (
-        "op.create_full_text_index('%(index_name)s', '%(table_name)s', "
-        "unique=%(unique)r, %(kwargs)s)" % {
-            "index_name": op.index_name,
-            "table_name": op.table_name,
-            "unique": op.unique or False,
-            "kwargs": _render_kw_args(op.kw),
-        }
+        f"op.create_full_text_index('{op.index_name}', '{op.table_name}', "
+        f"unique={op.unique or False!r}, {_render_kw_args(op.kw)})"
     )
 
 
 @renderers.dispatch_for(ops.DropFullTextIndexOp)
 def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFullTextIndexOp) -> str:
     return (
-        "op.drop_full_text_index('%(index_name)s', '%(table_name)s', "
-        "%(kwargs)s)" % {
-            "index_name": op.index_name,
-            "table_name": op.table_name,
-            "kwargs": _render_kw_args(op.kw),
-        }
+        f"op.drop_full_text_index('{op.index_name}', '{op.table_name}', "
+        f"{_render_kw_args(op.kw)})"
     )
 
 
@@ -205,7 +173,5 @@ def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFul
 @renderers.dispatch_for(ops.ExecuteSQL)
 def render_execute_sql(autogen_context: AutogenContext, op: ops.ExecuteSQL) -> str:
     return (
-        'op.execute_sql("""%(sql)s""")' % {
-            "sql": op.sql,
-        }
+        f'op.execute_sql("""{op.sql}""")' 
     )
