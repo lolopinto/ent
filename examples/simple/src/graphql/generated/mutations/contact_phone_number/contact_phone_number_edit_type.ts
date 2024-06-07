@@ -20,7 +20,7 @@ import { ContactPhoneNumber } from "../../../../ent";
 import EditContactPhoneNumberAction, {
   ContactPhoneNumberEditInput,
 } from "../../../../ent/contact_phone_number/actions/edit_contact_phone_number_action";
-import { ContactInfoInputType } from "../input/contact_info_input_type";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
 import { ContactLabelType, ContactPhoneNumberType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -41,7 +41,7 @@ export const ContactPhoneNumberEditInputType = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLID),
     },
     extra: {
-      type: ContactInfoInputType,
+      type: ContactInfoExtraInputType,
     },
     phoneNumber: {
       type: GraphQLString,

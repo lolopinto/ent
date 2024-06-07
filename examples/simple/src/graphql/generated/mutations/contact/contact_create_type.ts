@@ -22,7 +22,7 @@ import CreateContactAction, {
   ContactCreateInput,
 } from "../../../../ent/contact/actions/create_contact_action";
 import { AttachmentInputType } from "../input/attachment_input_type";
-import { ContactInfoInputType } from "../input/contact_info_input_type";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
 import { ContactLabelType, ContactType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -38,7 +38,10 @@ export const EmailContactCreateInput = new GraphQLInputObjectType({
   name: "EmailContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     extra: {
-      type: ContactInfoInputType,
+      type: ContactInfoExtraInputType,
+    },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
     },
     emailAddress: {
       type: new GraphQLNonNull(GraphQLString),
@@ -53,7 +56,10 @@ export const PhoneNumberContactCreateInput = new GraphQLInputObjectType({
   name: "PhoneNumberContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     extra: {
-      type: ContactInfoInputType,
+      type: ContactInfoExtraInputType,
+    },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
     },
     phoneNumber: {
       type: new GraphQLNonNull(GraphQLString),

@@ -64,6 +64,7 @@ type Account implements Node {
   can_viewer_see_info: AccountCanViewerSee!
   open_todos_plural: [Todo!]!
   open_todos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
+  custom_todos(completed: Boolean, completed_date: Time, first: Int, after: String, last: Int, before: String): AccountToCustomTodosConnection!
 }
 
 type CountryCapital {
@@ -133,6 +134,18 @@ type AccountToCreatedWorkspacesEdge implements Edge {
 type AccountToCreatedWorkspacesConnection implements Connection {
   edges: [AccountToCreatedWorkspacesEdge!]!
   nodes: [Workspace!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AccountToCustomTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type AccountToCustomTodosConnection implements Connection {
+  edges: [AccountToCustomTodosEdge!]!
+  nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -228,6 +241,18 @@ type RootToClosedTodosLastDayEdge implements Edge {
 
 type RootToClosedTodosLastDayConnection implements Connection {
   edges: [RootToClosedTodosLastDayEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToCustomTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type RootToCustomTodosConnection implements Connection {
+  edges: [RootToCustomTodosEdge!]!
   nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -525,6 +550,7 @@ type TodoStatusAccountEditPayload {
 type Query {
   account(id: ID!): Account
   closed_todos_last_day(first: Int, after: String, last: Int, before: String): RootToClosedTodosLastDayConnection!
+  custom_todos(completed: Boolean, completed_date: Time, first: Int, after: String, last: Int, before: String): RootToCustomTodosConnection!
   open_todos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
   open_todos_plural(id: ID!): [Todo!]!
   tag(id: ID!): Tag

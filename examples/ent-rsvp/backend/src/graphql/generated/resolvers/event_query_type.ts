@@ -7,8 +7,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
+import { EventResolver } from "src/graphql/resolvers/event";
 import { EventType } from "src/graphql/resolvers/internal";
-import { EventResolver } from "../../resolvers/event";
 
 interface EventArgs {
   slug: string;

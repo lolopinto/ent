@@ -26,13 +26,13 @@ import {
   hoursOfOperationLoaderInfo,
 } from "./loaders";
 import { NodeType } from "./types";
-import { DayOfWeekMixin, IDayOfWeek } from "../internal";
+import { IWithDayOfWeek, WithDayOfWeekMixin } from "../internal";
 import schema from "../../schema/hours_of_operation_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class HoursOfOperationBase
-  extends DayOfWeekMixin(class {} as new (...args: any[]) => IDayOfWeek)
-  implements Ent<ExampleViewerAlias>, IDayOfWeek
+  extends WithDayOfWeekMixin(class {} as new (...args: any[]) => IWithDayOfWeek)
+  implements Ent<ExampleViewerAlias>, IWithDayOfWeek<ExampleViewerAlias>
 {
   protected readonly data: HoursOfOperationDBData;
   readonly nodeType = NodeType.HoursOfOperation;

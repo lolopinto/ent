@@ -96,11 +96,17 @@ func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData, fk
 	return s.addEnumFrom(v, nodeData, nil, exposeToGraphQL)
 }
 
-func (s *Schema) addPattern(name string, p *PatternInfo) error {
+func (s *Schema) addPattern(name string, p *PatternInfo, cfg codegenapi.Config) error {
 	if s.Patterns[name] != nil {
 		return fmt.Errorf("pattern with name %s already exists", name)
 	}
 
+	gqlType := fmt.Sprintf("%sType", names.ToClassType(p.Name))
+	if err := s.addGQLType(gqlType); err != nil {
+		return err
+	}
+
+	p.depgraph = s.buildPostRunDepgraph(cfg)
 	s.Patterns[name] = p
 
 	return nil
@@ -602,7 +608,14 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			p.FieldInfo = fieldInfo
 		}
 
-		if err := s.addPattern(name, p); err != nil {
+		edgeInfo, err := edge.EdgeInfoFromPattern(cfg, p.Name, pattern)
+		if err != nil {
+			return nil, err
+		} else {
+			p.EdgeInfo = edgeInfo
+		}
+
+		if err := s.addPattern(name, p, cfg); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -1130,24 +1143,24 @@ func (s *Schema) buildPostRunDepgraph(
 		// want all configs loaded for this.
 		// Actions depends on this.
 		// this adds the linked assoc edge to the field
-		"LinkedEdges", func(info *NodeDataInfo) error {
-			return s.addLinkedEdges(cfg, info)
+		"LinkedEdges", func(c Container) error {
+			return s.addLinkedEdges(cfg, c)
 		},
 		"EdgesFromFields",
 	)
 
-	g.AddItem("EdgesFromFields", func(info *NodeDataInfo) error {
-		return s.addEdgesFromFields(cfg, info)
+	g.AddItem("EdgesFromFields", func(c Container) error {
+		return s.addEdgesFromFields(cfg, c)
 	})
 
 	// inverse edges also require everything to be loaded
 	g.AddItem(
-		"InverseEdges", func(info *NodeDataInfo) error {
-			return s.addInverseAssocEdgesFromInfo(info)
+		"InverseEdges", func(c Container) error {
+			return s.addInverseAssocEdges(c)
 		}, "EdgesFromFields")
 
-	g.AddItem("ActionFields", func(info *NodeDataInfo) error {
-		return s.addActionFields(info)
+	g.AddItem("ActionFields", func(c Container) error {
+		return s.addActionFields(c)
 	})
 	return g
 }
@@ -1260,11 +1273,21 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 		}
 
 		// probably make this concurrent in the future
-		if err := s.runDepgraph(info); err != nil {
+		if err := s.runDepgraph(info.NodeData, info.depgraph); err != nil {
 			return nil, err
 		}
 
 		if err := s.processConstraints(info.NodeData); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, p := range s.Patterns {
+		if p.depgraph == nil {
+			continue
+		}
+
+		if err := s.runDepgraph(p, p.depgraph); err != nil {
 			return nil, err
 		}
 	}
@@ -1289,10 +1312,10 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 }
 
 // this adds the linked (assoc + index) edges to the field
-func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error {
-	nodeData := info.NodeData
-	fieldInfo := nodeData.FieldInfo
-	edgeInfo := nodeData.EdgeInfo
+func (s *Schema) addLinkedEdges(cfg codegenapi.Config, container Container) error {
+	edgeInfo := container.GetEdgeInfo()
+	fieldInfo := container.GetFieldInfo()
+	name := container.GetName()
 
 	for _, e := range edgeInfo.FieldEdges {
 		f := fieldInfo.GetFieldByName(e.FieldName)
@@ -1309,7 +1332,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 				cfg,
 				f.TsFieldName(cfg),
 				f.GetQuotedDBColName(),
-				nodeData.Node,
+				name,
 				e.Polymorphic,
 			); err != nil {
 				return err
@@ -1326,7 +1349,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 							cfg,
 							f.TsFieldName(cfg),
 							f.GetQuotedDBColName(),
-							nodeData.Node,
+							name,
 							e.Polymorphic,
 							foreign.NodeData.Node,
 						); err != nil {
@@ -1345,7 +1368,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 				cfg,
 				f.TsFieldName(cfg),
 				f.GetQuotedDBColName(),
-				nodeData.Node,
+				name,
 				e.NodeInfo.Node,
 				e.EdgeConstName,
 			); err != nil {
@@ -1362,7 +1385,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 					cfg,
 					f.TsFieldName(cfg),
 					f.GetQuotedDBColName(),
-					nodeData.Node,
+					name,
 					fNode.NodeData.Node,
 					e.EdgeConstName,
 					e.UserGivenEdgeName,
@@ -1392,7 +1415,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 		if fEdge == nil {
 			// add from inverseEdge...
 			var err error
-			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(cfg, info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge, f.GetPatternName())
+			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(cfg, name, e.NodeInfo.PackageName, e.InverseEdge, f.GetPatternName())
 			if err != nil {
 				return err
 			}
@@ -1406,16 +1429,16 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 
 func (s *Schema) addEdgesFromFields(
 	cfg codegenapi.Config,
-	info *NodeDataInfo,
+	container Container,
 ) error {
-	nodeData := info.NodeData
-	fieldInfo := nodeData.FieldInfo
-	edgeInfo := nodeData.EdgeInfo
+
+	fieldInfo := container.GetFieldInfo()
+	edgeInfo := container.GetEdgeInfo()
 
 	for _, f := range fieldInfo.EntFields() {
 		fkeyInfo := f.ForeignKeyInfo()
-		if fkeyInfo != nil {
-			if err := s.addForeignKeyEdges(cfg, nodeData, fieldInfo, edgeInfo, f, fkeyInfo); err != nil {
+		if fkeyInfo != nil && !container.IsPattern() {
+			if err := s.addForeignKeyEdges(cfg, container, edgeInfo, f, fkeyInfo); err != nil {
 				return err
 			}
 		}
@@ -1432,8 +1455,7 @@ func (s *Schema) addEdgesFromFields(
 
 func (s *Schema) addForeignKeyEdges(
 	cfg codegenapi.Config,
-	nodeData *NodeData,
-	fieldInfo *field.FieldInfo,
+	container Container,
 	edgeInfo *edge.EdgeInfo,
 	f *field.Field,
 	fkeyInfo *field.ForeignKeyInfo,
@@ -1448,7 +1470,7 @@ func (s *Schema) addForeignKeyEdges(
 	}
 
 	if f2 := foreignInfo.NodeData.GetFieldByName(fkeyInfo.Field); f2 == nil {
-		return fmt.Errorf("could not find field %s by name in field %s in schema %s", fkeyInfo.Field, f.FieldName, nodeData.Node)
+		return fmt.Errorf("could not find field %s by name in field %s in schema %s", fkeyInfo.Field, f.FieldName, container.GetName())
 	}
 
 	// add a field edge on current config so we can load underlying user
@@ -1459,7 +1481,7 @@ func (s *Schema) addForeignKeyEdges(
 
 	// TODO need to make sure this is not nil if no fields
 	foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
-	return f.AddForeignKeyEdgeToInverseEdgeInfo(cfg, foreignEdgeInfo, nodeData.Node)
+	return f.AddForeignKeyEdgeToInverseEdgeInfo(cfg, foreignEdgeInfo, container.GetName())
 }
 
 func (s *Schema) addFieldEdge(
@@ -1474,8 +1496,12 @@ func (s *Schema) addFieldEdge(
 	return f.AddFieldEdgeToEdgeInfo(cfg, edgeInfo, s.NameExists)
 }
 
-func (s *Schema) addInverseAssocEdgesFromInfo(info *NodeDataInfo) error {
-	for _, assocEdge := range info.NodeData.EdgeInfo.Associations {
+func (s *Schema) addInverseAssocEdges(container Container) error {
+	if container.IsPattern() {
+		// skip this for patterns. leads to errors
+		return nil
+	}
+	for _, assocEdge := range container.GetEdgeInfo().Associations {
 		if err := s.maybeAddInverseAssocEdge(assocEdge); err != nil {
 			return err
 		}
@@ -1646,8 +1672,15 @@ func (s *Schema) findActionByName(nodeName, actionName string) action.Action {
 	return nil
 }
 
-func (s *Schema) addActionFields(info *NodeDataInfo) error {
-	for _, a := range info.NodeData.ActionInfo.Actions {
+func (s *Schema) addActionFields(container Container) error {
+	actionInfo := container.GetActionInfo()
+	if actionInfo == nil {
+		return nil
+	}
+
+	name := container.GetName()
+
+	for _, a := range actionInfo.Actions {
 		for _, f := range a.GetNonEntFields() {
 			actionFieldsInfo := s.nonEntFieldActionInfo(f)
 			if actionFieldsInfo == nil {
@@ -1659,7 +1692,7 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 				excludedFields[v] = true
 			}
 
-			a2 := s.findActionByName(info.NodeData.Node, actionName)
+			a2 := s.findActionByName(name, actionName)
 			if a2 == nil {
 				return fmt.Errorf("invalid action only field %s. couldn't find action with name %s", f.GetFieldName(), actionName)
 			}
@@ -1892,20 +1925,20 @@ func (s *Schema) addEdgeType(c WithConst, constName, constValue string, edge edg
 	)
 }
 
-func (s *Schema) runDepgraph(info *NodeDataInfo) error {
-	return info.depgraph.Run(func(item interface{}) error {
-		execFn, ok := item.(func(*NodeDataInfo))
-		execFn2, ok2 := item.(func(*NodeDataInfo) error)
+func (s *Schema) runDepgraph(c Container, d *depgraph.Depgraph) error {
+	return d.Run(func(item interface{}) error {
+		execFn, ok := item.(func(Container))
+		execFn2, ok2 := item.(func(Container) error)
 
 		if !ok && !ok2 {
 			return fmt.Errorf("invalid function passed")
 		}
 		if ok {
-			execFn(info)
+			execFn(c)
 			return nil
 		}
 		if ok2 {
-			return execFn2(info)
+			return execFn2(c)
 		}
 		return nil
 	})

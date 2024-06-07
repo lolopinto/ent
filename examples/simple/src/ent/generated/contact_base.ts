@@ -28,6 +28,7 @@ import {
   ContactPhoneNumber,
   ContactToCommentsQuery,
   ContactToLikersQuery,
+  ContactToSelfContactForUserQuery,
   FeedbackMixin,
   IFeedback,
   User,
@@ -37,7 +38,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class ContactBase
   extends FeedbackMixin(class {} as new (...args: any[]) => IFeedback)
-  implements Ent<ExampleViewerAlias>, IFeedback
+  implements Ent<ExampleViewerAlias>, IFeedback<ExampleViewerAlias>
 {
   protected readonly data: ContactDBData;
   readonly nodeType = NodeType.Contact;
@@ -235,6 +236,10 @@ export class ContactBase
 
   queryLikers(): ContactToLikersQuery {
     return ContactToLikersQuery.query(this.viewer, this.id);
+  }
+
+  querySelfContactForUser(): ContactToSelfContactForUserQuery {
+    return ContactToSelfContactForUserQuery.query(this.viewer, this.id);
   }
 
   queryAttachedComments(): ContactCommentsFromAttachmentQuery {

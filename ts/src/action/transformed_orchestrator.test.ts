@@ -1,14 +1,22 @@
+import { v4 as uuidv4 } from "uuid";
 import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
-import { EntChangeset } from "../action/orchestrator";
-import { Context, Data, Ent, Viewer } from "../core/base";
+import { Context, Data, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
-import { StringType, TimestampType } from "../schema/field";
+import each from "jest-each";
 import {
-  Pattern,
+  BooleanType,
+  IntegerType,
+  StringListType,
+  StringType,
+  UUIDType,
+} from "../schema/field";
+import {
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
+  StructType,
+  StructTypeAsList,
 } from "../schema";
 import {
   SimpleAction,
@@ -29,7 +37,7 @@ import {
   Table,
   TempDB,
 } from "../testutils/db/temp_db";
-import { convertDate } from "../core/convert";
+import { convertDate, convertJSON } from "../core/convert";
 import { loadRawEdgeCountX } from "../core/ent";
 import {
   DeletedAtSnakeCasePattern,
@@ -37,6 +45,7 @@ import {
   DeletedAtPatternWithExtraWrites,
 } from "../testutils/soft_delete";
 import { toDBColumnOrTable } from "../names/names";
+import { randomEmail, randomPhoneNumber } from "../testutils/db/value";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 async function createEdges() {
@@ -84,6 +93,14 @@ const ContactSchema = new EntBuilderSchema(Contact, {
   fields: {
     first_name: StringType(),
     last_name: StringType(),
+    contact_info: StructType({
+      fields: {
+        phoneNumbers: StringListType(),
+        emails: StringListType(),
+      },
+      tsType: "ContactInfo",
+      graphQLType: "ContactInfo",
+    }),
   },
 });
 
@@ -104,12 +121,50 @@ class Account extends BaseEnt {
   }
 }
 
+class Country extends BaseEnt {
+  nodeType = "Country";
+
+  constructor(
+    public viewer: CustomViewer,
+    public data: Data,
+  ) {
+    super(viewer, data);
+  }
+}
+
 const AccountSchema = new EntBuilderSchema(Account, {
   patterns: [new DeletedAtPatternWithExtraWrites()],
 
   fields: {
     FirstName: StringType(),
     LastName: StringType(),
+    prefs: StructType({
+      fields: {
+        notfisEnabled: BooleanType(),
+        finishedNux: BooleanType(),
+        locale: StringType(),
+      },
+      tsType: "AccountPrefs",
+      graphQLType: "AccountPrefs",
+    }),
+  },
+});
+
+const CountrySchema = new EntBuilderSchema(Country, {
+  patterns: [new DeletedAtPatternWithExtraWrites()],
+
+  fields: {
+    name: StringType(),
+    capital: StringType(),
+    cities: StructTypeAsList({
+      fields: {
+        name: StringType(),
+        population: IntegerType(),
+      },
+      tsType: "City",
+      graphQLType: "City",
+    }),
+    creatorId: UUIDType(),
   },
 });
 
@@ -119,7 +174,7 @@ const getTables = () => {
     tables.push(assoc_edge_table(toDBColumnOrTable(edge, "table"))),
   );
 
-  [UserSchema, ContactSchema, AccountSchema].map((s) =>
+  [UserSchema, ContactSchema, AccountSchema, CountrySchema].map((s) =>
     tables.push(getSchemaTable(s, Dialect.SQLite)),
   );
   return tables;
@@ -163,14 +218,21 @@ const usersLoaderFactory = new ObjectLoaderFactory({
 
 const accountsLoaderFactory = new ObjectLoaderFactory({
   tableName: "accounts",
-  fields: ["id", "first_name", "last_name", "deleted_at"],
+  fields: ["id", "first_name", "last_name", "prefs", "deleted_at"],
   key: "id",
   clause: clause.Eq("deleted_at", null),
 });
 
 const contactsLoaderFactory = new ObjectLoaderFactory({
   tableName: "contacts",
-  fields: ["id", "first_name", "last_name", "deleted_at"],
+  fields: ["id", "first_name", "last_name", "contact_info", "deleted_at"],
+  key: "id",
+  clause: clause.Eq("deleted_at", null),
+});
+
+const countryLoaderFactory = new ObjectLoaderFactory({
+  tableName: "countries",
+  fields: ["id", "name", "capital", "cities", "creator_id", "deleted_at"],
   key: "id",
   clause: clause.Eq("deleted_at", null),
 });
@@ -183,13 +245,13 @@ const usersLoaderFactoryNoClause = new ObjectLoaderFactory({
 
 const accountsLoaderFactoryNoClause = new ObjectLoaderFactory({
   tableName: "accounts",
-  fields: ["id", "first_name", "last_name", "deleted_at"],
+  fields: ["id", "first_name", "last_name", "prefs", "deleted_at"],
   key: "id",
 });
 
 const contactsLoaderFactoryNoClause = new ObjectLoaderFactory({
   tableName: "contacts",
-  fields: ["id", "first_name", "last_name", "deleted_at"],
+  fields: ["id", "first_name", "last_name", "contact_info", "deleted_at"],
   key: "id",
 });
 
@@ -207,6 +269,12 @@ const getAccountNewLoader = (context: boolean = true) => {
 
 const getContactNewLoader = (context: boolean = true) => {
   return contactsLoaderFactory.createLoader(
+    context ? new TestContext() : undefined,
+  );
+};
+
+const geCountryNewLoader = (context: boolean = true) => {
+  return countryLoaderFactory.createLoader(
     context ? new TestContext() : undefined,
   );
 };
@@ -231,6 +299,18 @@ const getAccountNewLoaderNoCustomClause = (context: boolean = true) => {
   );
 };
 
+function transformJSONRow(row: Data | null) {
+  if (row === null) {
+    return null;
+  }
+  for (const k of ["prefs", "contact_info"]) {
+    if (row[k]) {
+      row[k] = convertJSON(row[k]);
+    }
+  }
+  return row;
+}
+
 function transformDeletedAt(row: Data | null) {
   if (row === null) {
     return null;
@@ -239,7 +319,8 @@ function transformDeletedAt(row: Data | null) {
     return row;
   }
   row.deleted_at = convertDate(row.deleted_at);
-  return row;
+
+  return transformJSONRow(row);
 }
 
 function getInsertUserAction(
@@ -275,6 +356,21 @@ function getInsertContactAction(
   return new SimpleAction(
     viewer,
     ContactSchema,
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
+function getInsertCountryAction(
+  map: Map<string, any>,
+  context: Context | undefined,
+) {
+  const viewer = new LoggedOutViewer(context);
+
+  return new SimpleAction(
+    viewer,
+    CountrySchema,
     map,
     WriteOperation.Insert,
     null,
@@ -330,27 +426,51 @@ function commonTests() {
   test("delete -> update with extra writes", async () => {
     const loader = getAccountNewLoader();
     const action = getInsertAccountAction(
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        [
+          "prefs",
+          {
+            notfisEnabled: true,
+            finishedNux: false,
+            locale: "en_US",
+          },
+        ],
       ]),
       loader.context,
     );
     const account1 = await action.saveX();
 
     const action2 = getInsertAccountAction(
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        [
+          "prefs",
+          {
+            notfisEnabled: false,
+            finishedNux: true,
+            locale: "en_US",
+          },
+        ],
       ]),
       loader.context,
     );
     const account2 = await action2.saveX();
 
     const action3 = getInsertAccountAction(
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        [
+          "prefs",
+          {
+            notfisEnabled: true,
+            finishedNux: false,
+            locale: "en_US",
+          },
+        ],
       ]),
       loader.context,
     );
@@ -374,11 +494,16 @@ function commonTests() {
     const account3 = await action3.saveX();
 
     const row = await loader.load(account3.id);
-    expect(row).toEqual({
+    expect(transformJSONRow(row)).toMatchObject({
       id: account3.id,
       first_name: "Jon",
       last_name: "Snow",
       deleted_at: null,
+      prefs: {
+        notfis_enabled: true,
+        finished_nux: false,
+        locale: "en_US",
+      },
     });
 
     const d = new Date();
@@ -424,6 +549,11 @@ function commonTests() {
       first_name: "Jon",
       last_name: "Snow",
       deleted_at: d,
+      prefs: {
+        notfis_enabled: true,
+        finished_nux: false,
+        locale: "en_US",
+      },
     });
 
     [edgeCt, inverseEdgeCt, symmetricEdgeCt] = await Promise.all([
@@ -571,22 +701,42 @@ function commonTests() {
     await verifyRows(2);
   });
 
+  function transformTODB(d: Data) {
+    const result: Data = {};
+    for (const k in d) {
+      result[toDBColumnOrTable(k)] = d[k];
+    }
+    return result;
+  }
+
   test("delete -> update. snake_case", async () => {
     const loader = getContactNewLoader();
+    const contactInfo = {
+      phoneNumbers: [
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+      ],
+      emails: [randomEmail(), randomEmail(), randomEmail(), randomEmail()],
+    };
+    const expectedContactInfo = transformTODB(contactInfo);
+
     const action = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
+        ["contact_info", contactInfo],
       ]),
       loader.context,
     );
     const contact = await action.saveX();
 
     const row = await loader.load(contact.id);
-    expect(row).toEqual({
+    expect(transformJSONRow(row)).toEqual({
       id: contact.id,
       first_name: "Jon",
       last_name: "Snow",
+      contact_info: expectedContactInfo,
       deleted_at: null,
     });
 
@@ -612,26 +762,38 @@ function commonTests() {
       id: contact.id,
       first_name: "Jon",
       last_name: "Snow",
+      contact_info: expectedContactInfo,
       deleted_at: d,
     });
   });
 
   test("really delete. snake_case", async () => {
     const loader = getContactNewLoader();
+    const contactInfo = {
+      phoneNumbers: [
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+      ],
+      emails: [randomEmail(), randomEmail(), randomEmail(), randomEmail()],
+    };
+    const expectedContactInfo = transformTODB(contactInfo);
     const action = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
+        ["contact_info", contactInfo],
       ]),
       loader.context,
     );
     const contact = await action.saveX();
 
     const row = await loader.load(contact.id);
-    expect(row).toEqual({
+    expect(transformJSONRow(row)).toEqual({
       id: contact.id,
       first_name: "Jon",
       last_name: "Snow",
+      contact_info: expectedContactInfo,
       deleted_at: null,
     });
 
@@ -655,88 +817,113 @@ function commonTests() {
     expect(row3).toBe(null);
   });
 
-  test("insert -> update 2", async () => {
-    const verifyRows = async (ct: number) => {
-      if (Dialect.Postgres !== DB.getDialect()) {
-        return;
-      }
-      const res = await DB.getInstance()
-        .getPool()
-        .query("select count(1) from contacts;");
-      expect(parseInt(res.rows[0].count)).toBe(ct);
-    };
-    await verifyRows(0);
-    const loader = getContactNewLoader();
+  each(["contact_info", "contactInfo"]).test(
+    "insert -> update with data",
+    async (contactInfoKey: string) => {
+      const verifyRows = async (ct: number) => {
+        if (Dialect.Postgres !== DB.getDialect()) {
+          return;
+        }
+        const res = await DB.getInstance()
+          .getPool()
+          .query("select count(1) from contacts;");
+        expect(parseInt(res.rows[0].count)).toBe(ct);
+      };
+      await verifyRows(0);
+      const loader = getContactNewLoader();
 
-    const action = getInsertContactAction(
-      new Map([
-        ["first_name", "Jon"],
-        ["last_name", "Snow"],
-      ]),
-      loader.context,
-    );
-    const contact = await action.saveX();
-    await verifyRows(1);
+      const contactInfo = {
+        phoneNumbers: [
+          randomPhoneNumber(),
+          randomPhoneNumber(),
+          randomPhoneNumber(),
+        ],
+        emails: [randomEmail(), randomEmail(), randomEmail(), randomEmail()],
+      };
+      const expectedContactInfo = transformTODB(contactInfo);
+      const action = getInsertContactAction(
+        new Map<string, any>([
+          ["first_name", "Jon"],
+          ["last_name", "Snow"],
+          ["contact_info", contactInfo],
+        ]),
+        loader.context,
+      );
+      const contact = await action.saveX();
+      await verifyRows(1);
 
-    const row = await loader.load(contact.id);
-    expect(row).toEqual({
-      id: contact.id,
-      first_name: "Jon",
-      last_name: "Snow",
-      deleted_at: null,
-    });
+      const row = await loader.load(contact.id);
+      expect(transformJSONRow(row)).toEqual({
+        id: contact.id,
+        first_name: "Jon",
+        last_name: "Snow",
+        contact_info: expectedContactInfo,
+        deleted_at: null,
+      });
 
-    const tranformJonToAegon = (
-      stmt: UpdateOperation<Contact>,
-    ): TransformedUpdateOperation<Contact> | undefined => {
-      if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
-        return;
-      }
+      const tranformJonToAegon = (
+        stmt: UpdateOperation<Contact>,
+      ): TransformedUpdateOperation<Contact> | undefined => {
+        if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
+          return;
+        }
 
-      const firstName = stmt.data.get("first_name");
-      const lastName = stmt.data.get("last_name");
+        const firstName = stmt.data.get("first_name");
+        const lastName = stmt.data.get("last_name");
+        const contactInfo = stmt.data.get("contact_info");
 
-      if (firstName == "Aegon" && lastName == "Targaryen") {
-        return {
-          op: SQLStatementOperation.Update,
-          existingEnt: contact,
-        };
-      }
-    };
+        if (firstName == "Aegon" && lastName == "Targaryen") {
+          return {
+            op: SQLStatementOperation.Update,
+            existingEnt: contact,
+            data: {
+              first_name: "Aegon",
+              last_name: "Targaryen",
+              [contactInfoKey]: {
+                phoneNumbers: contactInfo.phoneNumbers,
+                emails: contactInfo.emails,
+              },
+            },
+          };
+        }
+      };
 
-    const action2 = getInsertContactAction(
-      new Map([
-        ["first_name", "Aegon"],
-        ["last_name", "Targaryen"],
-      ]),
-      loader.context,
-    );
-    // @ts-ignore
-    action2.transformWrite = tranformJonToAegon;
+      const action2 = getInsertContactAction(
+        new Map<string, any>([
+          ["first_name", "Aegon"],
+          ["last_name", "Targaryen"],
+          ["contact_info", contactInfo],
+        ]),
+        loader.context,
+      );
+      // @ts-ignore
+      action2.transformWrite = tranformJonToAegon;
 
-    const contact2 = await action2.saveX();
-    expect(contact.id).toBe(contact2.id);
-    expect(contact2.data.first_name).toBe("Aegon");
-    expect(contact2.data.last_name).toBe("Targaryen");
-    await verifyRows(1);
+      const contact2 = await action2.saveX();
+      expect(contact.id).toBe(contact2.id);
+      expect(contact2.data.first_name).toBe("Aegon");
+      expect(contact2.data.last_name).toBe("Targaryen");
+      await verifyRows(1);
 
-    const action3 = getInsertContactAction(
-      new Map([
-        ["first_name", "Sansa"],
-        ["last_name", "Stark"],
-      ]),
-      loader.context,
-    );
-    // @ts-ignore
-    action3.transformWrite = tranformJonToAegon;
+      const action3 = getInsertContactAction(
+        new Map<string, any>([
+          ["first_name", "Sansa"],
+          ["last_name", "Stark"],
+          ["contact_info", contactInfo],
+        ]),
+        loader.context,
+      );
+      // @ts-ignore
+      action3.transformWrite = tranformJonToAegon;
 
-    // new contact craeted
-    const contact3 = await action3.saveX();
-    expect(contact.id).not.toBe(contact3.id);
-    expect(contact3.data.first_name).toBe("Sansa");
-    expect(contact3.data.last_name).toBe("Stark");
-    await verifyRows(2);
-  });
+      // new contact craeted
+      const contact3 = await action3.saveX();
+      expect(contact.id).not.toBe(contact3.id);
+      expect(contact3.data.first_name).toBe("Sansa");
+      expect(contact3.data.last_name).toBe("Stark");
+      await verifyRows(2);
+    },
+  );
 
   test("insert -> update no existingEnt returned", async () => {
     const verifyRows = async (ct: number) => {
@@ -750,10 +937,20 @@ function commonTests() {
     };
     await verifyRows(0);
     const loader = getContactNewLoader();
+    const contactInfo = {
+      phoneNumbers: [
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+      ],
+      emails: [randomEmail(), randomEmail(), randomEmail(), randomEmail()],
+    };
+    const expectedContactInfo = transformTODB(contactInfo);
     const action = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
+        ["contact_info", contactInfo],
       ]),
       loader.context,
     );
@@ -761,10 +958,11 @@ function commonTests() {
     await verifyRows(1);
 
     const row = await loader.load(contact.id);
-    expect(row).toEqual({
+    expect(transformJSONRow(row)).toEqual({
       id: contact.id,
       first_name: "Jon",
       last_name: "Snow",
+      contact_info: expectedContactInfo,
       deleted_at: null,
     });
 
@@ -786,9 +984,10 @@ function commonTests() {
     };
 
     const action2 = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
+        ["contact_info", contactInfo],
       ]),
       loader.context,
     );
@@ -812,10 +1011,20 @@ function commonTests() {
     };
     await verifyRows(0);
     const loader = getContactNewLoader();
+    const contactInfo = {
+      phoneNumbers: [
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+      ],
+      emails: [randomEmail(), randomEmail(), randomEmail(), randomEmail()],
+    };
+    const expectedContactInfo = transformTODB(contactInfo);
     const action = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
+        ["contact_info", contactInfo],
       ]),
       loader.context,
     );
@@ -823,10 +1032,11 @@ function commonTests() {
     await verifyRows(1);
 
     const row = await loader.load(contact.id);
-    expect(row).toEqual({
+    expect(transformJSONRow(row)).toEqual({
       id: contact.id,
       first_name: "Jon",
       last_name: "Snow",
+      contact_info: expectedContactInfo,
       deleted_at: null,
     });
 
@@ -837,9 +1047,10 @@ function commonTests() {
     };
 
     const action2 = getInsertContactAction(
-      new Map([
+      new Map<string, any>([
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
+        ["contact_info", contactInfo],
       ]),
       loader.context,
     );
@@ -848,7 +1059,125 @@ function commonTests() {
 
     await expect(action2.saveX()).rejects.toThrow(/test failure/);
   });
+
+  test("insert -> update  w StructAsList", async () => {
+    const verifyRows = async (ct: number) => {
+      if (Dialect.Postgres !== DB.getDialect()) {
+        return;
+      }
+      const res = await DB.getInstance()
+        .getPool()
+        .query("select count(1) from countries;");
+      expect(parseInt(res.rows[0].count)).toBe(ct);
+    };
+    await verifyRows(0);
+    const loader = geCountryNewLoader();
+
+    const creatorId = uuidv4();
+
+    const cities = [
+      { name: "New York", population: 8000000 },
+      { name: "Los Angeles", population: 4000000 },
+      { name: "San Francisco", population: 800000 },
+    ];
+    const action = getInsertCountryAction(
+      new Map<string, any>([
+        ["name", "USA"],
+        ["capital", "Washington DC"],
+        ["cities", cities],
+        ["creatorId", creatorId],
+      ]),
+      loader.context,
+    );
+    const country = await action.saveX();
+    await verifyRows(1);
+
+    const row = await loader.load(country.id);
+    expect(row).not.toBeNull();
+    row!["cities"] = convertJSON(row!["cities"]);
+    expect(transformJSONRow(row)).toMatchObject({
+      id: country.id,
+      name: "USA",
+      capital: "Washington DC",
+      cities: cities,
+      creator_id: creatorId,
+      deleted_at: null,
+    });
+
+    const transformUSA = (
+      stmt: UpdateOperation<Country>,
+    ): TransformedUpdateOperation<Country> | undefined => {
+      if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
+        return;
+      }
+
+      const name = stmt.data.get("name");
+
+      if (name == "USA") {
+        return {
+          op: SQLStatementOperation.Update,
+          existingEnt: country,
+          data: {
+            name: "USA",
+            capital: "Washington DC 2",
+            cities: cities,
+            creatorId: creatorId,
+          },
+        };
+      }
+    };
+
+    const action2 = getInsertCountryAction(
+      new Map<string, any>([
+        ["name", "USA"],
+        ["capital", "Washington DC"],
+      ]),
+      loader.context,
+    );
+    // @ts-ignore
+    action2.transformWrite = transformUSA;
+
+    const country2 = await action2.saveX();
+    expect(country.id).toBe(country2.id);
+    expect(country2.data.name).toBe("USA");
+    expect(country2.data.capital).toBe("Washington DC 2"); // confirm updated
+    await verifyRows(1);
+
+    const action3 = getInsertCountryAction(
+      new Map<string, any>([
+        ["name", "France"],
+        ["capital", "Paris"],
+        [
+          "cities",
+          [
+            { name: "Paris", population: 8000000 },
+            { name: "Lyon", population: 4000000 },
+            { name: "Marseille", population: 800000 },
+          ],
+        ],
+        ["creatorId", creatorId],
+      ]),
+      loader.context,
+    );
+    // @ts-ignore
+    action3.transformWrite = transformUSA;
+
+    // new contact created
+    const country3 = await action3.saveX();
+    expect(country.id).not.toBe(country3.id);
+    expect(country3.data.name).toBe("France");
+    expect(country3.data.capital).toBe("Paris");
+    expect(convertJSON(country3.data.cities)).toEqual([
+      { name: "Paris", population: 8000000 },
+      { name: "Lyon", population: 4000000 },
+      { name: "Marseille", population: 800000 },
+    ]);
+    await verifyRows(2);
+  });
 }
 
 // TODO trait implemented...
 // for deleted etc to check value
+
+// TODO fix other tests with loaders etc
+// TODO try with v0.1.x

@@ -1,4 +1,3 @@
-import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
 import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";
 import {
   EditPhoneNumberActionBase,
@@ -10,7 +9,7 @@ import { EditUserPrivacy } from "./edit_user_privacy";
 
 export { EditPhoneNumberInput };
 import { ExampleViewer } from "../../../viewer/viewer";
-import { Validator, Trigger, Observer } from "@snowtop/ent/action";
+import { Validator, Trigger } from "@snowtop/ent/action";
 
 class NewAuthCode {
   private code: string = "";
@@ -27,22 +26,15 @@ class NewAuthCode {
   }
 
   changeset(builder: UserBuilder, input: EditPhoneNumberInput) {
+    const body = `your new code is ${this.getCode()}`;
+
     return CreateAuthCodeAction.create(builder.viewer, {
       phoneNumber: input.newPhoneNumber,
       userId: builder.viewer.viewerID!,
       code: this.getCode(),
-    }).changeset();
-  }
-
-  observe(_builder: UserBuilder, input: EditPhoneNumberInput) {
-    let body = `your new code is ${this.getCode()}`;
-
-    FakeComms.send({
-      to: input.newPhoneNumber,
-      mode: Mode.SMS,
-      from: "42423",
       body,
-    });
+      from: "42423",
+    }).changeset();
   }
 }
 
@@ -72,16 +64,6 @@ export default class EditPhoneNumberAction extends EditPhoneNumberActionBase {
     ];
   }
   getTriggers(): Trigger<
-    User,
-    UserBuilder<EditPhoneNumberInput, User>,
-    ExampleViewer,
-    EditPhoneNumberInput,
-    User
-  >[] {
-    return [this.generateNewCode];
-  }
-
-  getObservers(): Observer<
     User,
     UserBuilder<EditPhoneNumberInput, User>,
     ExampleViewer,

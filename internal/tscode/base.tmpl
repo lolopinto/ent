@@ -99,7 +99,7 @@
 
 
 {{$hasMixins := .HasMixins -}}
-{{$mixinInfo := .GetMixinInfo $schema -}}
+{{$mixinInfo := .GetMixinInfo $schema $cfg -}}
 
 export class {{$baseClass}} 
 {{ if $hasMixins -}}
@@ -557,6 +557,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{end -}}
   {{end -}}
 
+  {{/* need to keep this in sync with mixin_base.tmpl */ -}}
   {{ range $edge := .EdgeInfo.FieldEdges -}}
     {{  $edgeName := .CamelCaseEdgeName -}}
     {{ if $edge.Polymorphic}}

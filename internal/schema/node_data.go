@@ -831,13 +831,16 @@ type mixinInfo struct {
 	Implements string
 }
 
-func (nodeData *NodeData) GetMixinInfo(s *Schema) (*mixinInfo, error) {
+func (nodeData *NodeData) GetMixinInfo(s *Schema, cfg codegenapi.Config) (*mixinInfo, error) {
 	var imps []*tsimport.ImportPath
 
 	var extends strings.Builder
 	var impls []string
 
 	var interfaces []string
+
+	viewerType := cfg.GetTemplatizedViewer().GetImport()
+
 	for _, p := range nodeData.PatternsWithMixins {
 		pattern := s.Patterns[p]
 		if pattern == nil {
@@ -853,7 +856,7 @@ func (nodeData *NodeData) GetMixinInfo(s *Schema) (*mixinInfo, error) {
 		})
 		extends.WriteString(pattern.GetMixinName())
 		extends.WriteString("(")
-		impls = append(impls, pattern.GetMixinInterfaceName())
+		impls = append(impls, fmt.Sprintf("%s<%s>", pattern.GetMixinInterfaceName(), viewerType))
 		interfaces = append(interfaces, pattern.GetMixinInterfaceName())
 	}
 	if len(interfaces) == 0 {
@@ -909,3 +912,25 @@ func (nodeData *NodeData) GenerateGetIDInBuilder() bool {
 	}
 	return idField.HasDefaultValueOnCreate()
 }
+
+func (nodeData *NodeData) GetEdgeInfo() *edge.EdgeInfo {
+	return nodeData.EdgeInfo
+}
+
+func (nodeData *NodeData) GetFieldInfo() *field.FieldInfo {
+	return nodeData.FieldInfo
+}
+
+func (nodeData *NodeData) GetName() string {
+	return nodeData.Node
+}
+
+func (nodeData *NodeData) GetActionInfo() *action.ActionInfo {
+	return nodeData.ActionInfo
+}
+
+func (nodeData *NodeData) IsPattern() bool {
+	return false
+}
+
+var _ Container = &NodeData{}

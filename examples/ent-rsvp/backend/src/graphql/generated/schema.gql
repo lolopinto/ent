@@ -51,7 +51,7 @@ type Address implements Node {
 }
 
 type EventActivityCanViewerDo {
-  eventActivityAddInvite: Boolean!
+  eventActivityAddInvite(test: String!): Boolean!
   eventActivityRsvpStatusEdit(rsvpStatus: EventActivityRsvpStatusInput!, guestId: ID!, dietaryRestrictions: String): Boolean!
 }
 
@@ -265,6 +265,16 @@ type Viewer {
   guest: Guest
 }
 
+input AuthAnyInput {
+  user: AuthUserInput
+  guest: AuthGuestInput
+}
+
+type AuthAnyPayload {
+  user: AuthUserPayload
+  guest: AuthGuestPayload
+}
+
 input AuthGuestInput {
   emailAddress: String!
   code: String!
@@ -346,6 +356,7 @@ input AddressEventActivityCreateInput {
 input EventActivityAddInviteInput {
   """id of EventActivity"""
   id: ID!
+  test: String
   inviteId: ID!
 }
 
@@ -530,6 +541,7 @@ type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   addressDelete(input: AddressDeleteInput!): AddressDeletePayload!
   addressEdit(input: AddressEditInput!): AddressEditPayload!
+  authAny(input: AuthAnyInput!): AuthAnyPayload!
   authGuest(input: AuthGuestInput!): AuthGuestPayload!
   authUser(input: AuthUserInput!): AuthUserPayload!
   emailAvailable(email: String!): Boolean!

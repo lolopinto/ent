@@ -9,6 +9,25 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.5] - 2024-03-09
+
+### Fixed
+
+- Allow input objects to have nested input objects (#1795)
+
+## [0.2.0-alpha.4] - 2024-03-01
+
+### Fixed
+
+- fix transformWrite formatting data incorrectly (#1783)
+
+## [0.2.0-alpha.3] - 2024-02-29
+
+### Added
+
+- Add hideFromGraphQL to InverseAssocEdge (#1766)
+
+
 ## [0.2.0-alpha.2] - 2024-02-23
 
 - change id in default pattern from `ID` to `id` (#1763)

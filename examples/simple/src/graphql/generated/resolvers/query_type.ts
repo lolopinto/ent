@@ -26,6 +26,8 @@ import {
   TimeDiffQueryType,
   UserConnectionQueryType,
   UserListDeprecatedQueryType,
+  UserStatisticsConnectionQueryType,
+  UserStatisticsListDeprecatedQueryType,
   ViewerQueryType,
 } from "../../resolvers/internal";
 
@@ -54,6 +56,8 @@ export const QueryType = new GraphQLObjectType({
     timeDiff: TimeDiffQueryType,
     user_connection: UserConnectionQueryType,
     user_list_deprecated: UserListDeprecatedQueryType,
+    user_statistics_connection: UserStatisticsConnectionQueryType,
+    user_statistics_list_deprecated: UserStatisticsListDeprecatedQueryType,
     viewer: ViewerQueryType,
   }),
 });

@@ -4,11 +4,15 @@
 {{$cfg := .Config}}
 {{$schema := .Schema}}
 
+{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useImport $viewerInfo.GetImport -}}
+
 {{ range $p.GetImportsForMixin $schema $cfg -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 
-export interface {{$p.GetMixinInterfaceBaseName}}<TViewer extends {{useImport "Viewer"}} = Viewer> extends {{useImport "Ent" }}<TViewer> {
+export interface {{$p.GetMixinInterfaceBaseName}}<TViewer extends {{useImport $viewerType}} = {{useImport $viewerType}}> extends {{useImport "Ent" }}<TViewer> {
   {{ range $field := $p.FieldInfo.EntFields -}}
     {{ range $field.GetTsTypeImports -}}
       {{ if ($p.ForeignImport .Import) -}}
@@ -24,6 +28,34 @@ export interface {{$p.GetMixinInterfaceBaseName}}<TViewer extends {{useImport "V
     {{$queryName := useImport $edge.TsEdgeQueryName -}}
     query{{$edgeName}}(): {{$queryName}};
   {{end -}}
+
+  {{ range $edge := $p.EdgeInfo.FieldEdges -}}
+    {{  $edgeName := .CamelCaseEdgeName -}}
+    {{ if $edge.Polymorphic}}
+      load{{$edgeName}}(): Promise<{{useImport "Ent"}}| null>;
+      {{ if not $edge.Nullable -}}
+        load{{$edgeName}}X(): Promise<{{useImport "Ent"}}>;
+      {{end -}}
+    {{end -}}
+
+    {{if $edge.IsList -}}
+      {{$edgeNode := .NodeInfo.Node -}}
+      {{if $edge.Nullable -}} 
+        load{{$edgeName}}(): Promise<{{useImport $edgeNode}}[]|null>;
+      {{ else -}}
+        load{{$edgeName}}(): Promise<{{useImport $edgeNode}}[]>;
+      {{end -}}
+    {{end -}}
+
+    {{ if $edge.NonPolymorphicList -}}
+      {{with .NodeInfo -}}
+        load{{$edgeName}}(): Promise<{{useImport .Node}}|null>;
+        {{if not $edge.Nullable -}}
+          load{{$edgeName}}X(): Promise<{{useImport .Node}}>;
+        {{end -}}
+      {{end -}}
+    {{end -}}
+  {{ end -}}
 }
 
 type Constructor<T extends {{$p.GetMixinInterfaceBaseName}} = {{$p.GetMixinInterfaceBaseName}}> = new (...args: any[]) => T;

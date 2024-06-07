@@ -19,12 +19,12 @@ import {
 } from "@snowtop/ent/action";
 import { Contact } from "../../..";
 import { ContactBuilder } from "./contact_builder";
-import { Attachment, ContactInfo, ContactLabel } from "../../types";
+import { Attachment, ContactInfoExtra, ContactLabel } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEmailInput {
   id: ID;
-  extra?: ContactInfo | null;
+  extra?: ContactInfoExtra | null;
   emailAddress?: string;
   label?: ContactLabel;
 }

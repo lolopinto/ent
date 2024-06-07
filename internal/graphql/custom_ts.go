@@ -8,6 +8,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/names"
@@ -184,6 +185,7 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 				return nil, err
 			}
 			objTypes = append(objTypes, argType)
+			s.nestedCustomTypes[argType.Node] = filePath
 		}
 
 		for _, result := range field.Results {
@@ -216,6 +218,7 @@ func processFields(processor *codegen.Processor, cd *CustomData, s *gqlSchema, c
 					})
 				}
 			}
+			s.nestedCustomTypes[payloadType.Node] = filePath
 			objTypes = append(objTypes, payloadType)
 		}
 
@@ -331,6 +334,7 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Proces
 
 func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg {
 	if mfcg.inputArg != nil {
+		argType := s.getNodeNameFor(mfcg.inputArg.Type)
 		return []*fieldConfigArg{
 			{
 				Name: "input",
@@ -338,7 +342,7 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					// same for this about passing it in
 					{
-						Import: names.ToClassType(mfcg.field.GraphQLName, "InputType"),
+						Import: argType + "Type",
 					},
 				},
 			},
@@ -349,6 +353,12 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 
 func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
 	if mfcg.inputArg != nil {
+		// only add a type hint if we know for sure we have a type that's a custom object
+		// TODO ola 2/29/2024. should we always assume Payload?
+		obj := mfcg.field.Results[0]
+		if mfcg.cd.Objects[obj.Type] == nil {
+			return ""
+		}
 		typ := names.ToClassType(mfcg.field.GraphQLName, "Payload")
 		return fmt.Sprintf("Promise<%s>", typ)
 	}
@@ -403,13 +413,14 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor
 	}
 	var ret = r.imports[:]
 
-	imp := s.getImportFor(processor, r.Type, false)
+	importType := s.getNodeNameFor(r.Type)
+	imp := s.getImportFor(processor, importType, false)
 	if imp != nil {
 		ret = append(ret, imp)
 	} else {
 		// new type
 		ret = append(ret, &tsimport.ImportPath{
-			Import: fmt.Sprintf("%sType", r.Type),
+			Import: fmt.Sprintf("%sType", importType),
 			//		ImportPath is local here
 		})
 	}
@@ -440,15 +451,21 @@ func getFieldConfigArgsFrom(processor *codegen.Processor, args []CustomItem, s *
 		var imp *tsimport.ImportPath
 
 		if s != nil {
-			imp = s.getImportFor(processor, arg.Type, mutation)
+			importType := s.getNodeNameFor(arg.Type)
+			imp = s.getImportFor(processor, importType, mutation)
 			if imp == nil {
 				// local
 				imp = &tsimport.ImportPath{
-					Import: arg.Type,
+					Import: importType,
 				}
 			}
 		} else {
 			imp = knownTypes[arg.Type]
+			if imp == nil {
+				if processor.Config.DebugMode() {
+					fmt.Printf("couldn't find type for custom arg %s. maybe a bug with codegen?", arg.Type)
+				}
+			}
 		}
 
 		var imports []*tsimport.ImportPath
@@ -647,7 +664,7 @@ func buildObjectTypeImpl(item CustomItem, obj *CustomObject, gqlType string, isT
 	// we shouldn't do that and we should be smarter
 	// maybe add PayloadType if no Payload suffix otherwise Payload. Same for InputType and Input
 	typ := newObjectType(&objectType{
-		Type:     fmt.Sprintf("%sType", item.Type),
+		Type:     fmt.Sprintf("%sType", obj.NodeName),
 		Node:     obj.NodeName,
 		TSType:   item.Type,
 		Exported: true,
@@ -727,12 +744,10 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 }
 
 func getRelativeImportPath(processor *codegen.Processor, basepath, targetpath string) (string, error) {
-	// we get absolute paths now
-	// BONUS: instead of this, we should use the nice paths in tsconfig...
-
-	// need to do any relative imports from the directory not from the file itself
-	dir := filepath.Dir(basepath)
-	rel, err := filepath.Rel(dir, targetpath)
+	// convert from absolute path to relative path
+	// and then depend on getImportPath() in internal/tsimport/path.go to convert to relative
+	// paths if need be
+	rel, err := filepath.Rel(processor.Config.GetAbsPathToRoot(), targetpath)
 	if err != nil {
 		return "", err
 	}
@@ -780,7 +795,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			if field.Connection {
 				customEdge := getGQLEdge(processor.Config, field, nodeName)
 				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
-				if err := addConnection(processor, nodeData, customEdge, obj, &field); err != nil {
+				if err := addConnection(processor, nodeData, customEdge, obj, &field, s); err != nil {
 					return err
 				}
 				continue
@@ -823,12 +838,25 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 					return fmt.Errorf("custom objects not referenced in top level queries and mutations can only be referenced in ent nodes")
 				}
 
-				objType, err := buildObjectType(processor, cd, s, result, customObj, nodeInfo.FilePath, "GraphQLObjectType")
+				objFilePath := getFilePathForCustomInterfaceFile(processor.Config, customObj.NodeName)
+				objType, err := buildObjectType(processor, cd, s, result, customObj, objFilePath, "GraphQLObjectType")
 				if err != nil {
 					return err
 				}
+				gqlNode := &gqlNode{
+					ObjData: &gqlobjectData{
+						Node:     customObj.NodeName,
+						GQLNodes: []*objectType{objType},
+						Package:  processor.Config.GetImportPackage(),
+					},
+					FilePath: objFilePath,
+				}
+				s.otherObjects[customObj.NodeName] = gqlNode
 
-				nodeInfo.ObjData.GQLNodes = append(nodeInfo.ObjData.GQLNodes, objType)
+				nodeInfo.ObjData.customDependencyImports = append(nodeInfo.ObjData.customDependencyImports, &tsimport.ImportPath{
+					Import:     customObj.NodeName + "Type",
+					ImportPath: codepath.GetImportPathForInternalGQLFile(),
+				})
 			}
 		}
 	}
@@ -1046,8 +1074,11 @@ func processCusomTypes(processor *codegen.Processor, cd *CustomData, s *gqlSchem
 }
 
 func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSchema) error {
-	unions := make(map[string]*gqlNode)
 	for _, union := range cd.Unions {
+		if s.unions[union.NodeName] != nil {
+			return fmt.Errorf("union name %s already exists", union.NodeName)
+		}
+
 		obj := newObjectType(&objectType{
 			// TODO have to make sure this is unique
 			Type:     fmt.Sprintf("%sType", union.NodeName),
@@ -1074,9 +1105,8 @@ func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSch
 			},
 			FilePath: getFilePathForUnionInterfaceFile(processor.Config, union.NodeName),
 		}
-		unions[union.NodeName] = node
+		s.unions[union.NodeName] = node
 	}
-	s.unions = unions
 	return nil
 }
 

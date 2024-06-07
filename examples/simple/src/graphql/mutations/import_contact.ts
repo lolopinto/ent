@@ -76,6 +76,7 @@ export class ImportContactResolver {
             {
               emailAddress: record.emailAddress,
               label: label ?? ContactLabel.Default,
+              ownerId: user.id,
             },
           ],
           userId: user.id,

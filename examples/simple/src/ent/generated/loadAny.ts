@@ -24,6 +24,7 @@ import {
   Holiday,
   HoursOfOperation,
   User,
+  UserStatistics,
 } from "../internal";
 
 export async function loadEntByType(
@@ -66,6 +67,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent, any> {
       return HoursOfOperation.loaderOptions();
     case NodeType.User:
       return User.loaderOptions();
+    case NodeType.UserStatistics:
+      return UserStatistics.loaderOptions();
     default:
       throw new Error(`invalid nodeType ${type} passed to getLoaderOptions`);
   }

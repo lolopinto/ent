@@ -212,6 +212,11 @@ enum UserSortColumn {
   ID
 }
 
+enum UserStatisticsSortColumn {
+  ID
+  USER_ID
+}
+
 type Address implements Node {
   id: ID!
   streetName: String!
@@ -239,6 +244,11 @@ type CatType {
   kitten: Boolean!
 }
 
+type City {
+  name: String!
+  population: Int!
+}
+
 type Comment implements Node {
   article: Node
   attachment: Node
@@ -263,8 +273,9 @@ type ContactEmailCanViewerDo {
 
 type ContactEmail implements Node & ContactItemType {
   contact: Contact
+  owner: User
   id: ID!
-  extra: ContactInfo
+  extra: ContactInfoExtra
   emailAddress: String!
   label: ContactLabel!
   comments(first: Int, after: String, last: Int, before: String): ContactEmailToCommentsConnection!
@@ -272,10 +283,12 @@ type ContactEmail implements Node & ContactItemType {
   canViewerDo: ContactEmailCanViewerDo!
 }
 
-type ContactInfo {
+type ContactInfoExtra {
   default: Boolean!
   source: ContactInfoSource!
 }
+
+union ContactInfo = ContactEmail | ContactPhoneNumber
 
 input ContactItemFilter {
   emailDomain: String
@@ -291,8 +304,9 @@ interface ContactItem {
 
 type ContactPhoneNumber implements Node & ContactItemType {
   contact: Contact
+  owner: User
   id: ID!
-  extra: ContactInfo
+  extra: ContactInfoExtra
   phoneNumber: String!
   label: ContactLabel!
   comments(first: Int, after: String, last: Int, before: String): ContactPhoneNumberToCommentsConnection!
@@ -313,6 +327,7 @@ type Contact implements Node {
   fullName: String!
   plusEmails: EmailInfo!
   contactItems(filter: ContactItemFilter): [ContactItemResult!]!
+  filterContactEmails(filter: ContactItemFilter, first: Int, after: String, last: Int, before: String): ContactToFilterContactEmailsConnection!
 }
 
 type DogType {
@@ -350,7 +365,10 @@ type Event implements Node {
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
   viewerRsvpStatus: EventRsvpStatus!
   canViewerSeeInfo: EventCanViewerSee!
+  cities: [City!]!
 }
+
+union Feedback = Contact | ContactEmail | User | ContactPhoneNumber
 
 type File implements Node {
   creator: User
@@ -361,7 +379,7 @@ type File implements Node {
 
 type GlobalCanViewerDo {
   contactCreate(userId: ID!): Boolean!
-  contactEmailCreate(extra: ContactInfoInput, emailAddress: String!, label: ContactLabel!, contactId: ID!): Boolean!
+  contactEmailCreate(extra: ContactInfoExtraInput, contactId: ID!, ownerId: ID!, emailAddress: String!, label: ContactLabel!): Boolean!
 }
 
 type Holiday implements Node {
@@ -447,6 +465,12 @@ type UserPrefsStruct {
   notifTypes: [NotifType!]!
 }
 
+type UserStatistics implements Node {
+  user: User
+  id: ID!
+  authCodeEmailsSent: Int!
+}
+
 type UserSuperNestedObject {
   uuid: ID!
   int: Int!
@@ -490,6 +514,8 @@ type User implements Node {
   likes(first: Int, after: String, last: Int, before: String): UserToLikesConnection!
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
+  contactEmails(first: Int, after: String, last: Int, before: String): UserToContactEmailsConnection!
+  contactPhoneNumbers(first: Int, after: String, last: Int, before: String): UserToContactPhoneNumbersConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   articles(first: Int, after: String, last: Int, before: String): UserArticleToCommentsConnection!
   attachedComments(first: Int, after: String, last: Int, before: String): UserCommentsFromAttachmentConnection!
@@ -508,7 +534,10 @@ type User implements Node {
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
   commentsAuthored(first: Int, after: String, last: Int, before: String): UserToCommentsAuthoredConnection!
+  cities: [City!]!
 }
+
+union WithDayOfWeek = HoursOfOperation | Holiday
 
 type AddressToHostedEventsEdge implements Edge {
   node: Event!
@@ -626,6 +655,18 @@ type ContactToCommentsEdge implements Edge {
 type ContactToCommentsConnection implements Connection {
   edges: [ContactToCommentsEdge!]!
   nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactToFilterContactEmailsEdge implements Edge {
+  node: ContactEmail!
+  cursor: String!
+}
+
+type ContactToFilterContactEmailsConnection implements Connection {
+  edges: [ContactToFilterContactEmailsEdge!]!
+  nodes: [ContactEmail!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -822,6 +863,18 @@ type RootToUserConnection implements Connection {
   rawCount: Int!
 }
 
+type RootToUserStatisticsEdge implements Edge {
+  node: UserStatistics!
+  cursor: String!
+}
+
+type RootToUserStatisticsConnection implements Connection {
+  edges: [RootToUserStatisticsEdge!]!
+  nodes: [UserStatistics!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type UserArticleToCommentsEdge implements Edge {
   node: Comment!
   cursor: String!
@@ -866,6 +919,30 @@ type UserToCommentsEdge implements Edge {
 type UserToCommentsConnection implements Connection {
   edges: [UserToCommentsEdge!]!
   nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToContactEmailsEdge implements Edge {
+  node: ContactEmail!
+  cursor: String!
+}
+
+type UserToContactEmailsConnection implements Connection {
+  edges: [UserToContactEmailsEdge!]!
+  nodes: [ContactEmail!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToContactPhoneNumbersEdge implements Edge {
+  node: ContactPhoneNumber!
+  cursor: String!
+}
+
+type UserToContactPhoneNumbersConnection implements Connection {
+  edges: [UserToContactPhoneNumbersEdge!]!
+  nodes: [ContactPhoneNumber!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -996,6 +1073,10 @@ type Viewer {
   viewerID: ID
   user: User
   defaultUserPrefs: UserPrefsStruct!
+}
+
+input PhoneAvailableArg {
+  phoneNumber: String!
 }
 
 input UserAuthInput {
@@ -1164,10 +1245,11 @@ input ContactEmailArgInput {
 }
 
 input ContactEmailCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
+  contactId: ID!
+  ownerId: ID!
   emailAddress: String!
   label: ContactLabel!
-  contactId: ID!
 }
 
 type ContactEmailCreatePayload {
@@ -1186,7 +1268,7 @@ type ContactEmailDeletePayload {
 input ContactEmailEditInput {
   """id of ContactEmail"""
   id: ID!
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   emailAddress: String
   label: ContactLabel
 }
@@ -1195,7 +1277,7 @@ type ContactEmailEditPayload {
   contactEmail: ContactEmail!
 }
 
-input ContactInfoInput {
+input ContactInfoExtraInput {
   default: Boolean!
   source: ContactInfoSource!
 }
@@ -1206,10 +1288,11 @@ input ContactPhoneNumberArgInput {
 }
 
 input ContactPhoneNumberCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
+  contactId: ID!
+  ownerId: ID!
   phoneNumber: String!
   label: ContactLabel!
-  contactId: ID!
 }
 
 type ContactPhoneNumberCreatePayload {
@@ -1228,7 +1311,7 @@ type ContactPhoneNumberDeletePayload {
 input ContactPhoneNumberEditInput {
   """id of ContactPhoneNumber"""
   id: ID!
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   phoneNumber: String
   label: ContactLabel
 }
@@ -1289,14 +1372,15 @@ type EditPhoneNumberPayload {
 }
 
 input EmailContactCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
+  ownerId: ID!
   emailAddress: String!
   label: ContactLabel!
 }
 
 input EmailContactEditInput {
   id: ID!
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   emailAddress: String!
   label: ContactLabel!
 }
@@ -1462,7 +1546,8 @@ input PetUnionTypeInput {
 }
 
 input PhoneNumberContactCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
+  ownerId: ID!
   phoneNumber: String!
   label: ContactLabel!
 }
@@ -1565,6 +1650,39 @@ input UserPrefsStructInput {
   notifTypes: [NotifType!]!
 }
 
+input UserStatisticsArgInput {
+  id: ID
+  ids: [ID!]
+}
+
+input UserStatisticsCreateInput {
+  userId: ID!
+  authCodeEmailsSent: Int
+}
+
+type UserStatisticsCreatePayload {
+  userStatistics: UserStatistics!
+}
+
+input UserStatisticsDeleteInput {
+  """id of UserStatistics"""
+  id: ID!
+}
+
+type UserStatisticsDeletePayload {
+  deletedUserStatisticsId: ID
+}
+
+input UserStatisticsEditInput {
+  """id of UserStatistics"""
+  id: ID!
+  authCodeEmailsSent: Int
+}
+
+type UserStatisticsEditPayload {
+  userStatistics: UserStatistics!
+}
+
 input UserSuperNestedObjectInput {
   uuid: ID!
   int: Int!
@@ -1618,6 +1736,10 @@ type Query {
   user_connection(ids: [ID!], sortCol: UserSortColumn, query: UserArgInput, first: Int, after: String, last: Int, before: String): RootToUserConnection!
   """custom query for user. list"""
   user_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [User!]!
+  """custom query for user_statistics. connection"""
+  user_statistics_connection(ids: [ID!], sortCol: UserStatisticsSortColumn, query: UserStatisticsArgInput, first: Int, after: String, last: Int, before: String): RootToUserStatisticsConnection!
+  """custom query for user_statistics. list"""
+  user_statistics_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [UserStatistics!]!
   """the viewer query"""
   viewer: Viewer!
 }
@@ -1652,6 +1774,7 @@ type Mutation {
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
   holidayCustomEdit(input: CustomEditHolidayInput!): CustomEditHolidayPayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
+  phoneAvailable(input: PhoneAvailableArg!): Boolean!
   phoneNumberEdit(input: EditPhoneNumberInput!): EditPhoneNumberPayload!
   """authenticate a user"""
   userAuth(input: UserAuthInput!): UserAuthPayload!
@@ -1661,6 +1784,9 @@ type Mutation {
   userDelete(input: UserDeleteInput!): UserDeletePayload!
   userDelete2(input: DeleteUserInput2!): DeleteUserInput2Payload!
   userEdit(input: UserEditInput!): UserEditPayload!
+  userStatisticsCreate(input: UserStatisticsCreateInput!): UserStatisticsCreatePayload!
+  userStatisticsDelete(input: UserStatisticsDeleteInput!): UserStatisticsDeletePayload!
+  userStatisticsEdit(input: UserStatisticsEditInput!): UserStatisticsEditPayload!
 }
 
 """The `Byte` scalar type represents byte value as a Buffer"""

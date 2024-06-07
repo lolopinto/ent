@@ -15,7 +15,7 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { AuthCode, User } from "../../..";
+import { AuthCode } from "../../..";
 import { authCodeLoaderInfo } from "../../loaders";
 import { NodeType } from "../../types";
 import schema from "../../../../schema/auth_code_schema";
@@ -23,7 +23,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface AuthCodeInput {
   code?: string;
-  userId?: ID | Builder<User, ExampleViewerAlias>;
+  userId?: ID;
   emailAddress?: string | null;
   phoneNumber?: string | null;
   // allow other properties. useful for action-only fields
@@ -108,7 +108,7 @@ export class AuthCodeBuilder<
   }
 
   // override immutable field `userId`
-  overrideUserId(val: ID | Builder<User, ExampleViewerAlias>) {
+  overrideUserId(val: ID) {
     this.input.userId = val;
   }
 
@@ -210,7 +210,7 @@ export class AuthCodeBuilder<
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewUserIdValue(): ID | Builder<User, ExampleViewerAlias> {
+  getNewUserIdValue(): ID {
     if (this.input.userId !== undefined) {
       return this.input.userId;
     }

@@ -177,6 +177,7 @@ export interface InverseAssocEdge {
   name: string;
   // same as in AssocEdge
   edgeConstName?: string;
+  hideFromGraphQL?: boolean;
 }
 
 export interface EdgeGroupAction {

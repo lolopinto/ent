@@ -10,7 +10,6 @@ import {
 } from "@snowtop/ent";
 import {
   Action,
-  Builder,
   Changeset,
   ChangesetOptions,
   Observer,
@@ -18,15 +17,18 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { AuthCode, User } from "../../..";
+import { AuthCode } from "../../..";
 import { AuthCodeBuilder } from "./auth_code_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface AuthCodeCreateInput {
   code: string;
-  userId: ID | Builder<User, ExampleViewerAlias>;
+  userId: ID;
   emailAddress?: string | null;
   phoneNumber?: string | null;
+  from?: string;
+  subject?: string;
+  body?: string;
 }
 
 export type CreateAuthCodeActionTriggers = (

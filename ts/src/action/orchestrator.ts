@@ -1004,17 +1004,23 @@ export class Orchestrator<
       }
       if (transformed.data) {
         updateInput = true;
-        for (const k in transformed.data) {
-          let field = schemaFields.get(k);
-          if (!field) {
-            throw new Error(`tried to transform field with unknown field ${k}`);
+        for (const [k, field] of schemaFields) {
+          const inputKey = this.getInputKey(k);
+          const storageKey = this.getStorageKey(k);
+          let val = transformed.data[inputKey];
+          if (val === undefined) {
+            val = transformed.data[storageKey];
           }
-          let val = transformed.data[k];
+          if (val === undefined) {
+            continue;
+          }
           if (field.format) {
-            val = field.format(transformed.data[k]);
+            val = field.format(transformed.data[k], true);
           }
           data[this.getStorageKey(k)] = val;
-          this.defaultFieldsByTSName[this.getInputKey(k)] = val;
+          if (!field.immutable) {
+            this.defaultFieldsByTSName[this.getInputKey(k)] = val;
+          }
           // hmm do we need this?
           // TODO how to do this for local tests?
           // this.defaultFieldsByFieldName[k] = val;

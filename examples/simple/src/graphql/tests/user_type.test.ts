@@ -345,6 +345,7 @@ test("query custom async function", async () => {
       {
         emailAddress: randomEmail("foo.com"),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
@@ -365,6 +366,7 @@ test("query custom async function", async () => {
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
@@ -393,6 +395,7 @@ test("query custom async function list", async () => {
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
@@ -422,6 +425,7 @@ test("query custom async function list with domain passed in", async () => {
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
@@ -470,6 +474,7 @@ test("query custom async function nullable contents", async () => {
       {
         emailAddress: randomEmail("foo.com"),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
@@ -504,6 +509,7 @@ test("query custom async function nullable list contents", async () => {
       {
         emailAddress: randomEmail("foo.com"),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
@@ -543,6 +549,7 @@ test("query custom async function nullable list and contents", async () => {
       {
         emailAddress: randomEmail("foo.com"),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
@@ -786,6 +793,7 @@ async function createMany(
         {
           emailAddress: randomEmail(),
           label: ContactLabel.Unknown,
+          ownerId: user.id,
         },
       ],
       firstName: name.firstName,

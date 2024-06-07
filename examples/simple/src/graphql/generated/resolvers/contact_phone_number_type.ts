@@ -23,12 +23,13 @@ import {
   ContactPhoneNumberToLikersQuery,
 } from "../../../ent";
 import {
-  ContactInfoType,
+  ContactInfoExtraType,
   ContactItemType,
   ContactLabelType,
   ContactPhoneNumberToCommentsConnectionType,
   ContactPhoneNumberToLikersConnectionType,
   ContactType,
+  UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
@@ -48,12 +49,22 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
         return obj.loadContact();
       },
     },
+    owner: {
+      type: UserType,
+      resolve: (
+        obj: ContactPhoneNumber,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.loadOwner();
+      },
+    },
     id: {
       type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     extra: {
-      type: ContactInfoType,
+      type: ContactInfoExtraType,
     },
     phoneNumber: {
       type: new GraphQLNonNull(GraphQLString),

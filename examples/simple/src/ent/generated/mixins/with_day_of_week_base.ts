@@ -10,14 +10,16 @@ import {
   convertDayOfWeek,
   convertNullableDayOfWeekAlt,
 } from "../types";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
-export interface IDayOfWeekBase<TViewer extends Viewer = Viewer>
-  extends Ent<TViewer> {
+export interface IWithDayOfWeekBase<
+  TViewer extends ExampleViewerAlias = ExampleViewerAlias,
+> extends Ent<TViewer> {
   dayOfWeek: DayOfWeek;
   dayOfWeekAlt: DayOfWeekAlt | null;
 }
 
-type Constructor<T extends IDayOfWeekBase = IDayOfWeekBase> = new (
+type Constructor<T extends IWithDayOfWeekBase = IWithDayOfWeekBase> = new (
   ...args: any[]
 ) => T;
 
@@ -33,8 +35,8 @@ function extractFromArgs<TViewer extends Viewer, TData extends Data>(
   };
 }
 
-export function DayOfWeekBaseMixin<T extends Constructor>(BaseClass: T) {
-  return class DayOfWeekBaseMixin extends BaseClass {
+export function WithDayOfWeekBaseMixin<T extends Constructor>(BaseClass: T) {
+  return class WithDayOfWeekBaseMixin extends BaseClass {
     readonly dayOfWeek: DayOfWeek;
     readonly dayOfWeekAlt: DayOfWeekAlt | null;
     constructor(...args: any[]) {

@@ -6,7 +6,7 @@
 import { ID, ObjectLoaderFactory } from "@snowtop/ent";
 import {
   Attachment,
-  ContactInfo,
+  ContactInfoExtra,
   ContactLabel,
   DayOfWeek,
   DayOfWeekAlt,
@@ -329,10 +329,11 @@ export interface ContactEmailDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
-  extra: ContactInfo | null;
+  extra: ContactInfoExtra | null;
+  contact_id: ID;
+  owner_id: ID;
   email_address: string;
   label: ContactLabel;
-  contact_id: ID;
 }
 
 const contactEmailTable = "contact_emails";
@@ -341,9 +342,10 @@ const contactEmailFields = [
   "created_at",
   "updated_at",
   "extra",
+  "contact_id",
+  "owner_id",
   "email_address",
   "label",
-  "contact_id",
 ];
 
 export const contactEmailLoader = new ObjectLoaderFactory<ContactEmailDBData>({
@@ -374,6 +376,14 @@ export const contactEmailLoaderInfo = {
       dbCol: "extra",
       inputKey: "extra",
     },
+    contactID: {
+      dbCol: "contact_id",
+      inputKey: "contactId",
+    },
+    ownerID: {
+      dbCol: "owner_id",
+      inputKey: "ownerId",
+    },
     emailAddress: {
       dbCol: "email_address",
       inputKey: "emailAddress",
@@ -382,10 +392,6 @@ export const contactEmailLoaderInfo = {
       dbCol: "label",
       inputKey: "label",
     },
-    contactID: {
-      dbCol: "contact_id",
-      inputKey: "contactId",
-    },
   },
 };
 
@@ -393,10 +399,11 @@ export interface ContactPhoneNumberDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
-  extra: ContactInfo | null;
+  extra: ContactInfoExtra | null;
+  contact_id: ID;
+  owner_id: ID;
   phone_number: string;
   label: ContactLabel;
-  contact_id: ID;
 }
 
 const contactPhoneNumberTable = "contact_phone_numbers";
@@ -405,9 +412,10 @@ const contactPhoneNumberFields = [
   "created_at",
   "updated_at",
   "extra",
+  "contact_id",
+  "owner_id",
   "phone_number",
   "label",
-  "contact_id",
 ];
 
 export const contactPhoneNumberLoader =
@@ -439,6 +447,14 @@ export const contactPhoneNumberLoaderInfo = {
       dbCol: "extra",
       inputKey: "extra",
     },
+    contactID: {
+      dbCol: "contact_id",
+      inputKey: "contactId",
+    },
+    ownerID: {
+      dbCol: "owner_id",
+      inputKey: "ownerId",
+    },
     phoneNumber: {
       dbCol: "phone_number",
       inputKey: "phoneNumber",
@@ -446,10 +462,6 @@ export const contactPhoneNumberLoaderInfo = {
     label: {
       dbCol: "label",
       inputKey: "label",
-    },
-    contactID: {
-      dbCol: "contact_id",
-      inputKey: "contactId",
     },
   },
 };
@@ -529,7 +541,7 @@ export const eventLoaderInfo = {
       dbCol: "location",
       inputKey: "location",
     },
-    addressID: {
+    addressId: {
       dbCol: "address_id",
       inputKey: "addressId",
     },
@@ -907,6 +919,69 @@ userEmailAddressLoader.addToPrime(userPhoneNumberLoader);
 userPhoneNumberLoader.addToPrime(userLoader);
 userPhoneNumberLoader.addToPrime(userEmailAddressLoader);
 
+export interface UserStatisticsDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  user_id: ID;
+  auth_code_emails_sent: number;
+}
+
+const userStatisticsTable = "user_statistics";
+const userStatisticsFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "user_id",
+  "auth_code_emails_sent",
+];
+
+export const userStatisticsLoader =
+  new ObjectLoaderFactory<UserStatisticsDBData>({
+    tableName: userStatisticsTable,
+    fields: userStatisticsFields,
+    key: "id",
+  });
+
+export const userStatisticsUserIdLoader =
+  new ObjectLoaderFactory<UserStatisticsDBData>({
+    tableName: userStatisticsTable,
+    fields: userStatisticsFields,
+    key: "user_id",
+  });
+
+export const userStatisticsLoaderInfo = {
+  tableName: userStatisticsTable,
+  fields: userStatisticsFields,
+  nodeType: NodeType.UserStatistics,
+  loaderFactory: userStatisticsLoader,
+  fieldInfo: {
+    id: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    userID: {
+      dbCol: "user_id",
+      inputKey: "userId",
+    },
+    authCodeEmailsSent: {
+      dbCol: "auth_code_emails_sent",
+      inputKey: "authCodeEmailsSent",
+    },
+  },
+};
+
+userStatisticsLoader.addToPrime(userStatisticsUserIdLoader);
+userStatisticsUserIdLoader.addToPrime(userStatisticsLoader);
+
 export function getLoaderInfoFromSchema(schema: string) {
   switch (schema) {
     case "Address":
@@ -931,6 +1006,8 @@ export function getLoaderInfoFromSchema(schema: string) {
       return hoursOfOperationLoaderInfo;
     case "User":
       return userLoaderInfo;
+    case "UserStatistics":
+      return userStatisticsLoaderInfo;
     default:
       throw new Error(
         `invalid schema ${schema} passed to getLoaderInfoFromSchema`,
@@ -962,6 +1039,8 @@ export function getLoaderInfoFromNodeType(nodeType: NodeType) {
       return hoursOfOperationLoaderInfo;
     case NodeType.User:
       return userLoaderInfo;
+    case NodeType.UserStatistics:
+      return userStatisticsLoaderInfo;
     default:
       throw new Error(
         `invalid nodeType ${nodeType} passed to getLoaderInfoFromNodeType`,

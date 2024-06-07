@@ -27,10 +27,11 @@ import EditContactEmailAction from "../../../ent/contact_email/actions/edit_cont
 import {
   ContactEmailToCommentsConnectionType,
   ContactEmailToLikersConnectionType,
-  ContactInfoType,
+  ContactInfoExtraType,
   ContactItemType,
   ContactLabelType,
   ContactType,
+  UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
@@ -70,12 +71,22 @@ export const ContactEmailType = new GraphQLObjectType({
         return obj.loadContact();
       },
     },
+    owner: {
+      type: UserType,
+      resolve: (
+        obj: ContactEmail,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.loadOwner();
+      },
+    },
     id: {
       type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     extra: {
-      type: ContactInfoType,
+      type: ContactInfoExtraType,
     },
     emailAddress: {
       type: new GraphQLNonNull(GraphQLString),

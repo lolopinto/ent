@@ -46,6 +46,10 @@ class EventActivityCanViewerDo {
     const action = EventActivityAddInviteAction.create(
       this.context.getViewer(),
       this.ent,
+      {
+        ...args,
+        test: args.test,
+      },
     );
     return applyPrivacyPolicy(
       this.context.getViewer(),
@@ -270,9 +274,15 @@ export const EventActivityCanViewerDoType = new GraphQLObjectType({
   > => ({
     eventActivityAddInvite: {
       type: new GraphQLNonNull(GraphQLBoolean),
+      args: {
+        test: {
+          description: "",
+          type: new GraphQLNonNull(GraphQLString),
+        },
+      },
       resolve: async (
         obj: EventActivityCanViewerDo,
-        args: {},
+        args: any,
         context: RequestContext<Viewer>,
       ) => {
         return obj.eventActivityAddInvite(args);

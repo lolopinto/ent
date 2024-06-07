@@ -490,3 +490,15 @@ export const UserSortColumnType = new GraphQLEnumType({
     },
   },
 });
+
+export const UserStatisticsSortColumnType = new GraphQLEnumType({
+  name: "UserStatisticsSortColumn",
+  values: {
+    ID: {
+      value: "id",
+    },
+    USER_ID: {
+      value: "user_id",
+    },
+  },
+});

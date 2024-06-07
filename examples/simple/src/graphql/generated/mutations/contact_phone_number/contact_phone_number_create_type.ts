@@ -20,13 +20,14 @@ import { ContactPhoneNumber } from "../../../../ent";
 import CreateContactPhoneNumberAction, {
   ContactPhoneNumberCreateInput,
 } from "../../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
-import { ContactInfoInputType } from "../input/contact_info_input_type";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
 import { ContactLabelType, ContactPhoneNumberType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactPhoneNumberCreateInput
   extends ContactPhoneNumberCreateInput {
   contactId: string;
+  ownerId: string;
 }
 
 interface ContactPhoneNumberCreatePayload {
@@ -37,16 +38,19 @@ export const ContactPhoneNumberCreateInputType = new GraphQLInputObjectType({
   name: "ContactPhoneNumberCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     extra: {
-      type: ContactInfoInputType,
+      type: ContactInfoExtraInputType,
+    },
+    contactId: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
     },
     phoneNumber: {
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
       type: new GraphQLNonNull(ContactLabelType),
-    },
-    contactId: {
-      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -85,9 +89,10 @@ export const ContactPhoneNumberCreateType: GraphQLFieldConfig<
       context.getViewer(),
       {
         extra: input.extra,
+        contactId: mustDecodeIDFromGQLID(input.contactId),
+        ownerId: mustDecodeIDFromGQLID(input.ownerId),
         phoneNumber: input.phoneNumber,
         label: input.label,
-        contactId: mustDecodeIDFromGQLID(input.contactId),
       },
     ).saveX();
     return { contactPhoneNumber: contactPhoneNumber };

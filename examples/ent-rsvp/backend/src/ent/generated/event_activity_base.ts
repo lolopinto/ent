@@ -43,7 +43,7 @@ import schema from "src/schema/event_activity_schema";
 
 export class EventActivityBase
   extends WithAddressMixin(class {} as new (...args: any[]) => IWithAddress)
-  implements Ent<Viewer>, IWithAddress
+  implements Ent<Viewer>, IWithAddress<Viewer>
 {
   protected readonly data: EventActivityDBData;
   readonly nodeType = NodeType.EventActivity;

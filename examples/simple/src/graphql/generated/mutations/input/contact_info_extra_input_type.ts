@@ -11,8 +11,8 @@ import {
 } from "graphql";
 import { ContactInfoSourceType } from "../../../resolvers";
 
-export const ContactInfoInputType = new GraphQLInputObjectType({
-  name: "ContactInfoInput",
+export const ContactInfoExtraInputType = new GraphQLInputObjectType({
+  name: "ContactInfoExtraInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     default: {
       type: new GraphQLNonNull(GraphQLBoolean),

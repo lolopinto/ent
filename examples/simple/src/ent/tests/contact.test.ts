@@ -37,6 +37,7 @@ async function create(
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Default,
+        ownerId: user.id,
       },
     ],
     firstName: firstName,
@@ -60,6 +61,7 @@ async function createMany(
           {
             emailAddress: randomEmail(),
             label: ContactLabel.Default,
+            ownerId: user.id,
           },
         ],
         firstName: name.firstName,
@@ -247,10 +249,12 @@ test("multiple emails", async () => {
           default: true,
           source: ContactInfoSource.Online,
         },
+        ownerId: user.id,
       },
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Work,
+        ownerId: user.id,
         // set to make test easier
         extra: null,
       },
@@ -279,6 +283,7 @@ test("multiple emails", async () => {
           emailAddress: email.emailAddress,
           label: email.label,
           extra: email.extra,
+          ownerId: email.ownerId,
         };
       })
       .sort(sortFn),
@@ -340,6 +345,7 @@ test("multiple phonenumbers", async () => {
       {
         phoneNumber: randomPhoneNumber(),
         label: ContactLabel.Default,
+        ownerId: user.id,
         extra: {
           default: true,
           source: ContactInfoSource.Friend,
@@ -348,6 +354,7 @@ test("multiple phonenumbers", async () => {
       {
         phoneNumber: randomPhoneNumber(),
         label: ContactLabel.Default,
+        ownerId: user.id,
         extra: null,
       },
     ],
@@ -375,6 +382,7 @@ test("multiple phonenumbers", async () => {
           phoneNumber: phoneNumber.phoneNumber,
           label: phoneNumber.label,
           extra: phoneNumber.extra,
+          ownerId: phoneNumber.ownerId,
         };
       })
       .sort(sortFn),

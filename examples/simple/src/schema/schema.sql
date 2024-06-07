@@ -63,28 +63,6 @@ CREATE INDEX comments_attachment_id_idx ON comments (attachment_id);
 
 CREATE INDEX comments_author_id_idx ON comments (author_id);
 
-CREATE TABLE contact_emails (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    extra JSONB, 
-    email_address TEXT NOT NULL, 
-    label TEXT NOT NULL, 
-    contact_id UUID NOT NULL, 
-    CONSTRAINT contact_emails_id_pkey PRIMARY KEY (id)
-);
-
-CREATE TABLE contact_phone_numbers (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    extra JSONB, 
-    phone_number TEXT NOT NULL, 
-    label TEXT NOT NULL, 
-    contact_id UUID NOT NULL, 
-    CONSTRAINT contact_phone_numbers_id_pkey PRIMARY KEY (id)
-);
-
 CREATE TABLE event_hosts_edges (
     id1 UUID NOT NULL, 
     id1_type TEXT NOT NULL, 
@@ -242,6 +220,16 @@ CREATE TABLE user_self_contact_edges (
 
 CREATE INDEX user_self_contact_edges_time_idx ON user_self_contact_edges (time);
 
+CREATE TABLE user_statistics (
+    id UUID NOT NULL, 
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    user_id UUID NOT NULL, 
+    auth_code_emails_sent INTEGER DEFAULT '0' NOT NULL, 
+    CONSTRAINT user_statistics_id_pkey PRIMARY KEY (id), 
+    CONSTRAINT user_statistics_unique_user_id UNIQUE (user_id)
+);
+
 CREATE TABLE users (
     id UUID NOT NULL, 
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
@@ -291,6 +279,36 @@ CREATE TABLE auth_codes (
 
 CREATE INDEX auth_codes_user_id_idx ON auth_codes (user_id);
 
+CREATE TABLE contact_emails (
+    id UUID NOT NULL, 
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    extra JSONB, 
+    contact_id UUID NOT NULL, 
+    owner_id UUID NOT NULL, 
+    email_address TEXT NOT NULL, 
+    label TEXT NOT NULL, 
+    CONSTRAINT contact_emails_id_pkey PRIMARY KEY (id), 
+    CONSTRAINT contact_emails_owner_id_fkey FOREIGN KEY(owner_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX contact_emails_owner_id_idx ON contact_emails (owner_id);
+
+CREATE TABLE contact_phone_numbers (
+    id UUID NOT NULL, 
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    extra JSONB, 
+    contact_id UUID NOT NULL, 
+    owner_id UUID NOT NULL, 
+    phone_number TEXT NOT NULL, 
+    label TEXT NOT NULL, 
+    CONSTRAINT contact_phone_numbers_id_pkey PRIMARY KEY (id), 
+    CONSTRAINT contact_phone_numbers_owner_id_fkey FOREIGN KEY(owner_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX contact_phone_numbers_owner_id_idx ON contact_phone_numbers (owner_id);
+
 CREATE TABLE contacts (
     id UUID NOT NULL, 
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
@@ -315,6 +333,7 @@ CREATE INDEX contacts_user_id_idx ON contacts (user_id);
 
 INSERT INTO assoc_edge_config(edge_name, edge_type, edge_table, symmetric_edge, inverse_edge_type, created_at, updated_at) VALUES('AddressToHostedEventsEdge', 'd1979d4b-d033-4562-b078-cc528fec25bb', 'address_hosted_events_edges', false, NULL, now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('CommentToPostEdge', 'f430af94-d38a-4aaa-a92f-cfc56b6f811b', 'object_comments_edges', false, '8caba9c4-8035-447f-9eb1-4dd09a2d250c', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
+('ContactToSelfContactForUserEdge', '71483ce5-06f3-4468-bf05-afecd3a430e2', 'user_self_contact_edges', false, 'd504201d-cf3f-4eef-b6a0-0b46a7ae186b', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('EventToAttendingEdge', '6ebc0c47-ea29-4635-b991-95e44162174d', 'event_rsvps_edges', false, '2a98ba02-e342-4bb4-93f6-5d7ed02f5c48', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('EventToDeclinedEdge', 'db8d2454-f7b2-4147-aae1-e666daf3f3c3', 'event_rsvps_edges', false, '1c7c173b-63ce-4002-b121-4a87f82047dd', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('EventToHostsEdge', 'ebe3e709-845c-4723-ac9c-29f983f2b8ea', 'event_hosts_edges', false, 'cf6542a4-8bae-427f-8a1f-01194047afb3', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
@@ -331,7 +350,7 @@ INSERT INTO assoc_edge_config(edge_name, edge_type, edge_table, symmetric_edge, 
 ('UserToInvitedEventsEdge', 'e439f2b2-d93a-4d1a-83f0-865bda5c8337', 'event_rsvps_edges', false, 'a72f5f64-3580-44fd-9bd0-d1335b803a46', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('UserToLikesEdge', '745a20bf-4fdc-4862-b39f-569c4451db8f', 'object_likers_edges', false, 'c9ccdad9-7aff-40e4-9a69-2c29cfa19763', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('UserToMaybeEventsEdge', '8d5b1dee-ce65-452e-9f8d-78eca1993800', 'event_rsvps_edges', false, 'b0f6311b-fdab-4c26-b6bf-b751e0997735', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
-('UserToSelfContactEdge', 'd504201d-cf3f-4eef-b6a0-0b46a7ae186b', 'user_self_contact_edges', false, NULL, now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC') ON CONFLICT DO NOTHING;
+('UserToSelfContactEdge', 'd504201d-cf3f-4eef-b6a0-0b46a7ae186b', 'user_self_contact_edges', false, '71483ce5-06f3-4468-bf05-afecd3a430e2', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC') ON CONFLICT DO NOTHING;
 
 -- custom sql for rev 63ec20382c27
 CREATE OR REPLACE FUNCTION users_notify()

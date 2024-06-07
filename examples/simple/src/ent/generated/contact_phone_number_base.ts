@@ -34,6 +34,7 @@ import {
   FeedbackMixin,
   IContactInfo,
   IFeedback,
+  User,
 } from "../internal";
 import schema from "../../schema/contact_phone_number_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
@@ -42,7 +43,10 @@ export class ContactPhoneNumberBase
   extends ContactInfoMixin(
     FeedbackMixin(class {} as new (...args: any[]) => IContactInfo & IFeedback),
   )
-  implements Ent<ExampleViewerAlias>, IContactInfo, IFeedback
+  implements
+    Ent<ExampleViewerAlias>,
+    IContactInfo<ExampleViewerAlias>,
+    IFeedback<ExampleViewerAlias>
 {
   protected readonly data: ContactPhoneNumberDBData;
   readonly nodeType = NodeType.ContactPhoneNumber;
@@ -51,7 +55,6 @@ export class ContactPhoneNumberBase
   readonly updatedAt: Date;
   readonly phoneNumber: string;
   readonly label: ContactLabel;
-  readonly contactId: ID;
 
   constructor(public viewer: ExampleViewerAlias, data: Data) {
     // @ts-ignore pass to mixin
@@ -61,7 +64,6 @@ export class ContactPhoneNumberBase
     this.updatedAt = data.updated_at;
     this.phoneNumber = data.phone_number;
     this.label = convertContactLabel(data.label);
-    this.contactId = data.contact_id;
     // @ts-expect-error
     this.data = data;
   }
@@ -242,5 +244,13 @@ export class ContactPhoneNumberBase
 
   loadContactX(): Promise<Contact> {
     return loadEntX(this.viewer, this.contactId, Contact.loaderOptions());
+  }
+
+  async loadOwner(): Promise<User | null> {
+    return loadEnt(this.viewer, this.ownerId, User.loaderOptions());
+  }
+
+  loadOwnerX(): Promise<User> {
+    return loadEntX(this.viewer, this.ownerId, User.loaderOptions());
   }
 }
