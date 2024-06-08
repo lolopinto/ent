@@ -9,6 +9,20 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.6] - 2024-06-06
+
+### Added
+
+- add viewer to generated pattern types (#1800)
+- add query methods to patterns for fieldEdge and foreignKeys defined in pattern (#1801)
+- union type for patterns (#1810)
+
+
+### Fixed
+
+- stop ignoring actionOnlyFields in edge actions (#1811)
+
+
 ## [0.2.0-alpha.5] - 2024-03-09
 
 ### Fixed
