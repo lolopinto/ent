@@ -35,6 +35,9 @@ export function readCompilerOptions(filePath: string) {
   if (options.moduleResolution === "node") {
     options.moduleResolution = ts.ModuleResolutionKind.NodeJs;
   }
+  if (this.options.target) {
+    options.target = getTarget(this.options.target);
+  }
   return options;
 }
 
@@ -67,7 +70,7 @@ export function getTarget(target?: string): ts.ScriptTarget {
 
 export function getTargetFromCurrentDir(): ts.ScriptTarget {
   const options = readCompilerOptions(".");
-  return getTarget(options.target?.toString());
+  return options.target ?? ts.ScriptTarget.ESNext;
 }
 
 export function createSourceFile(target: ts.ScriptTarget, file: string) {
