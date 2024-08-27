@@ -35,8 +35,8 @@ export function readCompilerOptions(filePath: string) {
   if (options.moduleResolution === "node") {
     options.moduleResolution = ts.ModuleResolutionKind.NodeJs;
   }
-  if (this.options.target) {
-    options.target = getTarget(this.options.target);
+  if (options.target) {
+    options.target = getTarget(options.target.toString());
   }
   return options;
 }
