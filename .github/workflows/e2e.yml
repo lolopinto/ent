@@ -3,7 +3,7 @@ name: End to end codegen
 on:
   pull_request:
     # disable e2e tests on PRs to the main branch until fixed
-    branches: []
+    branches: [main2]
 
     
 jobs:
