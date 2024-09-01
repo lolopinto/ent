@@ -85,7 +85,8 @@ jobs:
           # clone ent-starter
           git clone https://github.com/lolopinto/ent-starter.git 
           cd ent-starter
-          npm install @snowtop/ent '@snowtop/ent-email@0.1.0-alpha1'
+          # TODO ola clean this all up
+          npm install @snowtop/ent '@snowtop/ent-email@0.1.0' --force
           mkdir -p src/schema
           cat ../.github/testdata/schema1.json | tsent generate schemas 
           tsent codegen
@@ -102,7 +103,7 @@ jobs:
       - name: add new field
         run: |
           cd ent-starter
-          npm install @snowtop/ent-phonenumber@0.1.0-alpha1
+          npm install @snowtop/ent-phonenumber@0.1.0 --force
           cat ../.github/testdata/schema2.json | tsent generate schemas --force
           tsent codegen
         env:
@@ -116,7 +117,7 @@ jobs:
           tsent codegen
           cp ../.github/testdata/jest.config.js.example jest.config.js
           cp ../.github/testdata/verify_graphql_schema.test.ts.example src/verify_graphql_schema.test.ts
-          npm install ts-jest jest @types/jest
+          npm install ts-jest jest @types/jest --force
           jest
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
