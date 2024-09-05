@@ -67,7 +67,7 @@ var knownTsTypes = map[string]string{
 	"String":  "string",
 	"Date":    "Date",
 	"Int":     "number",
-	"Float":   "float",
+	"Float":   "number",
 	"Boolean": "boolean",
 	// "ID":         "ID",
 	"BigInt": "bigint",
