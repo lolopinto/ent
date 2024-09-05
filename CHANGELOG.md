@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.6] - 2024-09-05
+
+### Added
+
+- Allow async edge connections (#1829)
+
 ## [0.2.0-alpha.5] - 2024-03-09
 
 ### Fixed
