@@ -32,7 +32,7 @@ export class GraphQLEdgeConnection<
   TEdge extends Data,
   TViewer extends Viewer = Viewer,
 > {
-  query: MaybePromise<EdgeQuery<TSource, Ent, TEdge>>;
+  query: Promise<EdgeQuery<TSource, Ent, TEdge>>;
   private results: GraphQLEdge<TEdge>[] = [];
   private viewer: TViewer;
   private source?: TSource;
@@ -57,12 +57,12 @@ export class GraphQLEdgeConnection<
   ) {
     this.viewer = viewer;
     if (typeof arg2 === "function") {
-      this.query = arg2(this.viewer);
+      this.query = Promise.resolve(arg2(this.viewer));
     } else {
       this.source = arg2;
     }
     if (typeof arg3 === "function") {
-      this.query = arg3(this.viewer, this.source!);
+      this.query = Promise.resolve(arg3(this.viewer, this.source!));
     } else {
       this.args = arg3;
     }
@@ -80,14 +80,10 @@ export class GraphQLEdgeConnection<
       const argLast = this.args.last;
       const argCursor = this.args.cursor;
       if (this.args.first) {
-        this.query = Promise.resolve(this.query).then((query) =>
-          query.first(argFirst, argLast),
-        );
+        this.query = this.query.then((query) => query.first(argFirst, argLast));
       }
       if (this.args.last) {
-        this.query = Promise.resolve(this.query).then((query) =>
-          query.last(argLast, argCursor),
-        );
+        this.query = this.query.then((query) => query.last(argLast, argCursor));
       }
       // TODO custom args
       // how to proceed
@@ -95,15 +91,11 @@ export class GraphQLEdgeConnection<
   }
 
   first(limit: number, cursor?: string) {
-    this.query = Promise.resolve(this.query).then((query) =>
-      query.first(limit, cursor),
-    );
+    this.query = this.query.then((query) => query.first(limit, cursor));
   }
 
   last(limit: number, cursor?: string) {
-    this.query = Promise.resolve(this.query).then((query) =>
-      query.last(limit, cursor),
-    );
+    this.query = this.query.then((query) => query.last(limit, cursor));
   }
 
   // any custom filters can be applied here...
@@ -112,7 +104,7 @@ export class GraphQLEdgeConnection<
       query: EdgeQuery<TSource, Ent, TEdge>,
     ) => EdgeQuery<TSource, Ent, TEdge>,
   ) {
-    this.query = Promise.resolve(this.query).then((query) => fn(query));
+    this.query = this.query.then((query) => fn(query));
   }
 
   async queryTotalCount() {
