@@ -9,6 +9,12 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.8] - 2024-09-05
+
+### Fixed
+
+- Fix invalid generated TS "float" type (#1828)
+
 ## [0.2.0-alpha.6] - 2024-06-06
 
 ### Added
