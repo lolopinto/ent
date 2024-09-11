@@ -76,14 +76,17 @@ export class GraphQLEdgeConnection<
       if (this.args.before && !this.args.before) {
         throw new Error("cannot process before without last");
       }
-      const argFirst = this.args.first;
-      const argLast = this.args.last;
-      const argCursor = this.args.cursor;
       if (this.args.first) {
-        this.query = this.query.then((query) => query.first(argFirst, argLast));
+        const argFirst = this.args.first;
+        const argAfter = this.args.after;
+        this.query = this.query.then((query) =>
+          query.first(argFirst, argAfter),
+        );
       }
       if (this.args.last) {
-        this.query = this.query.then((query) => query.last(argLast, argCursor));
+        const argLast = this.args.last;
+        const argBefore = this.args.before;
+        this.query = this.query.then((query) => query.last(argLast, argBefore));
       }
       // TODO custom args
       // how to proceed
