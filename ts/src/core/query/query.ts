@@ -131,7 +131,7 @@ function translateCursorToKeyValues(
   const values: [key: string, value: string | number | null][] = [];
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    let keyPart = parts[i * 2];
+    const keyPart = parts[i * 2];
     if (key !== keyPart) {
       throw new Error(
         `invalid cursor ${cursor} passed. expected ${key}. got ${keyPart} as key of field`,
@@ -359,6 +359,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
       column: this.options.cursorCol,
       direction: this.options.orderby[0].direction,
     });
+    this.options.orderby = reverseOrderBy(this.options.orderby);
 
     if (this.offset) {
       if (this.offset) {
@@ -369,7 +370,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
         options.clause = clause.AndOptional(
           options.clause,
           clause.PaginationUnboundColsQuery(
-            reverseOrderBy(this.options.orderby).map((orderBy) => ({
+            this.options.orderby.map((orderBy) => ({
               sortCol: orderBy.column,
               sortValue: keyValuePairs[orderBy.column],
               direction: orderBy.direction,

@@ -1398,30 +1398,30 @@ export function PaginationUnboundColsQuery<T extends Data, K = keyof T>(
     .reverse()
     .forEach(
       ({ sortCol, direction, sortValue, nullsPlacement, overrideAlias }) => {
+        const nullsOrder =
+          nullsPlacement ?? direction === "DESC" ? "first" : "last";
         const clauseFn = direction === "DESC" ? Less : Greater;
         const baseClause = clauseFn(sortCol, sortValue, overrideAlias);
         const withNullsClause =
-          sortValue != null
-            ? nullsPlacement === "last"
+          sortValue !== null
+            ? nullsOrder === "last"
               ? Or(baseClause, Eq(sortCol, null, overrideAlias))
-              : nullsPlacement === "first"
-              ? And(baseClause, NotEq(sortCol, null, overrideAlias))
-              : baseClause
-            : nullsPlacement === "last"
+              : And(baseClause, NotEq(sortCol, null, overrideAlias))
+            : nullsOrder === "last"
             ? Eq(sortCol, null, overrideAlias)
             : undefined; // If nulls first and value is null, can't filter here
 
         if (withNullsClause) {
-          nesting = nesting
-            ? Or(
-                withNullsClause,
-                And(Eq(sortCol, sortValue, overrideAlias), nesting),
-              )
-            : withNullsClause;
-        } else if (nesting) {
-          nesting = And(Eq(sortCol, sortValue, overrideAlias), nesting);
-        } else {
-          nesting = baseClause;
+          if (sortValue !== null) {
+            nesting = nesting
+              ? Or(
+                  withNullsClause,
+                  And(Eq(sortCol, sortValue, overrideAlias), nesting),
+                )
+              : withNullsClause;
+          } else {
+            nesting = nesting ? And(withNullsClause, nesting) : withNullsClause;
+          }
         }
       },
     );

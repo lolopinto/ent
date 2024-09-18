@@ -9,6 +9,7 @@ export interface OrderByOption {
   // needed to know if we create a cursor based on this column to conver to timestamp and ISO string for
   // comparison
   // maybe eventually want a more generic version of this but for now this suffices
+  // @deprecated You no longer need to specify if a column is a date column
   dateColumn?: boolean;
 }
 
