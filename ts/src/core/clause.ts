@@ -1371,6 +1371,63 @@ export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
   );
 }
 
+/**
+ * When paginating over multiple ordered columns, we need to construct a nested
+ * set of clauses to correctly filter. The resulting query will be structured as
+ * a group of nested ANDs and ORs.
+ *
+ * For example, given a set of ordering [{col1, less1}, {col2, greater2}], the
+ * function will construct a query that looks like:
+ *
+ * (col1 < $1 OR (col1 = $1 AND col2 > $2))
+ */
+export function PaginationUnboundColsQuery<T extends Data, K = keyof T>(
+  ordering: {
+    sortCol: K;
+    direction: "ASC" | "DESC";
+    sortValue: string | number | null;
+    nullsPlacement?: "first" | "last";
+    overrideAlias?: string;
+  }[],
+): Clause<T, K> | undefined {
+  if (ordering.length === 0) {
+    throw new Error("Must provide at least one ordering.");
+  }
+  let nesting: Clause<T, K> | undefined;
+  ordering
+    .reverse()
+    .forEach(
+      ({ sortCol, direction, sortValue, nullsPlacement, overrideAlias }) => {
+        const clauseFn = direction === "DESC" ? Less : Greater;
+        const baseClause = clauseFn(sortCol, sortValue, overrideAlias);
+        const withNullsClause =
+          sortValue != null
+            ? nullsPlacement === "last"
+              ? Or(baseClause, Eq(sortCol, null, overrideAlias))
+              : nullsPlacement === "first"
+              ? And(baseClause, NotEq(sortCol, null, overrideAlias))
+              : baseClause
+            : nullsPlacement === "last"
+            ? Eq(sortCol, null, overrideAlias)
+            : undefined; // If nulls first and value is null, can't filter here
+
+        if (withNullsClause) {
+          nesting = nesting
+            ? Or(
+                withNullsClause,
+                And(Eq(sortCol, sortValue, overrideAlias), nesting),
+              )
+            : withNullsClause;
+        } else if (nesting) {
+          nesting = And(Eq(sortCol, sortValue, overrideAlias), nesting);
+        } else {
+          nesting = baseClause;
+        }
+      },
+    );
+  return nesting;
+}
+
 export function PaginationMultipleColsQuery<T extends Data, K = keyof T>(
   sortCol: K,
   cursorCol: K,

@@ -1,16 +1,15 @@
 import {
-  ID,
-  Ent,
-  Viewer,
-  LoadEntOptions,
   EdgeQueryableDataOptions,
-  QueryableDataOptions,
+  Ent,
+  ID,
+  LoadEntOptions,
+  Viewer,
 } from "../base";
+import * as clause from "../clause";
 import { AssocEdge, loadEdgeData, loadEntsList } from "../ent";
 import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
-import { EdgeQuery, BaseEdgeQuery, IDInfo, EdgeQueryFilter } from "./query";
-import * as clause from "../clause";
+import { BaseEdgeQuery, EdgeQuery, EdgeQueryFilter, IDInfo } from "./query";
 
 // TODO no more plurals for privacy reasons?
 export type EdgeQuerySource<
@@ -51,7 +50,15 @@ export abstract class AssocEdgeQueryBase<
       | LoadEntOptions<TDest, TViewer>
       | loaderOptionsFunc<TViewer>,
   ) {
-    super(viewer, "time", "id2");
+    super(viewer, {
+      cursorCol: "id2",
+      orderby: [
+        {
+          column: "time",
+          direction: "DESC",
+        },
+      ],
+    });
   }
 
   private isEdgeQuery(

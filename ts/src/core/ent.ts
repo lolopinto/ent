@@ -1284,7 +1284,7 @@ export function getCursor(opts: cursorOptions) {
   }
   const convert = (d: any) => {
     if (d instanceof Date) {
-      return d.getTime();
+      return d.toISOString();
     }
     return d;
   };
