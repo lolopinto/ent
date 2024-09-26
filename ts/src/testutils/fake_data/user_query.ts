@@ -1,32 +1,32 @@
+import { clear } from "jest-date-mock";
+import { Interval } from "luxon";
+import { getLoaderOptions } from ".";
 import { Data, Ent, ID, Viewer } from "../../core/base";
-import { CustomEdgeQueryBase } from "../../core/query/custom_query";
-import { AssocEdge } from "../../core/ent";
 import * as clause from "../../core/clause";
+import { AssocEdge } from "../../core/ent";
+import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
+import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
+import { QueryLoaderFactory } from "../../core/loaders/query_loader";
+import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader";
+import { AllowIfViewerPrivacyPolicy } from "../../core/privacy";
 import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
 } from "../../core/query/assoc_query";
+import { CustomEdgeQueryBase } from "../../core/query/custom_query";
+import { MockDate } from "./../mock_date";
+import { contactLoader } from "./fake_contact";
 import {
   EdgeType,
-  FakeUser,
-  FakeEvent,
-  FakeContact,
   EventToAttendeesQuery,
   EventToDeclinedQuery,
   EventToHostsQuery,
   EventToInvitedQuery,
   EventToMaybeQuery,
+  FakeContact,
+  FakeEvent,
+  FakeUser,
 } from "./internal";
-import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader";
-import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
-import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
-import { contactLoader } from "./fake_contact";
-import { clear } from "jest-date-mock";
-import { Interval } from "luxon";
-import { QueryLoaderFactory } from "../../core/loaders/query_loader";
-import { MockDate } from "./../mock_date";
-import { getLoaderOptions } from ".";
-import { AllowIfViewerPrivacyPolicy } from "../../core/privacy";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
@@ -503,9 +503,7 @@ export const getNextWeekClause = (): clause.Clause => {
   clear();
   const start = MockDate.getDate();
   // 7 days
-  const end = Interval.after(start, 86400 * 1000 * 7)
-    .end.toUTC()
-    .toISO();
+  const end = Interval.after(start, 86400 * 1000 * 7)?.end?.toUTC();
 
   return clause.And(
     clause.GreaterEq("start_time", start.toISOString()),

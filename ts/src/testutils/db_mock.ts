@@ -1,11 +1,11 @@
-import { v4 as uuidv4 } from "uuid";
-import { Pool, PoolClient } from "pg";
 import { mocked } from "jest-mock";
-import { ID, Data } from "../core/base";
+import { Pool, PoolClient } from "pg";
+import { v4 as uuidv4 } from "uuid";
+import { Data, ID } from "../core/base";
 import { Clause } from "../core/clause";
 
-import { performQuery, queryResult, getDataToReturn } from "./parse_sql";
 import { MockLogs } from "./mock_log";
+import { getDataToReturn, performQuery, queryResult } from "./parse_sql";
 
 const eventEmitter = {
   on: jest.fn(),
@@ -320,6 +320,16 @@ export class QueryRecorder {
         totalCount: 1,
         idleCount: 1,
         waitingCount: 1,
+        expiredCount: 1,
+        ending: false,
+        ended: false,
+        options: {
+          max: 10,
+          maxUses: 10,
+          allowExitOnIdle: false,
+          maxLifetimeSeconds: 100,
+          idleTimeoutMillis: 100,
+        },
         connect: async (): Promise<PoolClient> => {
           return {
             connect: jest.fn(),
@@ -335,6 +345,8 @@ export class QueryRecorder {
             resumeDrain: jest.fn(),
             escapeIdentifier: jest.fn(),
             escapeLiteral: jest.fn(),
+            setTypeParser: jest.fn(),
+            getTypeParser: jest.fn(),
 
             // EventEmitter
             ...eventEmitter,
