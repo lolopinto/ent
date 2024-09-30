@@ -320,16 +320,6 @@ export class QueryRecorder {
         totalCount: 1,
         idleCount: 1,
         waitingCount: 1,
-        expiredCount: 1,
-        ending: false,
-        ended: false,
-        options: {
-          max: 10,
-          maxUses: 10,
-          allowExitOnIdle: false,
-          maxLifetimeSeconds: 100,
-          idleTimeoutMillis: 100,
-        },
         connect: async (): Promise<PoolClient> => {
           return {
             connect: jest.fn(),
@@ -345,8 +335,6 @@ export class QueryRecorder {
             resumeDrain: jest.fn(),
             escapeIdentifier: jest.fn(),
             escapeLiteral: jest.fn(),
-            setTypeParser: jest.fn(),
-            getTypeParser: jest.fn(),
 
             // EventEmitter
             ...eventEmitter,
