@@ -1377,6 +1377,14 @@ export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
   );
 }
 
+export type PaginationUnboundColsQueryOrdering<T extends Data, K = keyof T> = {
+  sortCol: K;
+  direction: "ASC" | "DESC";
+  sortValue: string | number | null;
+  nullsPlacement?: "first" | "last";
+  overrideAlias?: string;
+};
+
 /**
  * When paginating over multiple ordered columns, we need to construct a nested
  * set of clauses to correctly filter. The resulting query will be structured as
@@ -1388,13 +1396,7 @@ export function PaginationMultipleColsSubQuery<T extends Data, K = keyof T>(
  * (col1 < $1 OR (col1 = $1 AND col2 > $2))
  */
 export function PaginationUnboundColsQuery<T extends Data, K = keyof T>(
-  ordering: {
-    sortCol: K;
-    direction: "ASC" | "DESC";
-    sortValue: string | number | null;
-    nullsPlacement?: "first" | "last";
-    overrideAlias?: string;
-  }[],
+  ordering: PaginationUnboundColsQueryOrdering<T, K>[],
 ): Clause<T, K> | undefined {
   if (ordering.length === 0) {
     throw new Error("Must provide at least one ordering.");
