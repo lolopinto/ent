@@ -1,6 +1,5 @@
 import memoize from "memoizee";
 import { isPromise } from "util/types";
-import { validate } from "uuid";
 import {
   Data,
   EdgeQueryableDataOptions,
@@ -98,59 +97,24 @@ interface validCursorOptions {
   keys: string[];
 }
 
-function convertToIntMaybe(val: string) {
-  // TODO handle both cases... (time vs not) better
-  // TODO change this to only do the parseInt part if time...
-  // pass flag indicating if time?
-
-  // handle non-integers for which the first part is an int
-  // @ts-ignore
-  if (isNaN(val)) {
-    return val;
-  }
-  const time = parseInt(val, 10);
-  if (isNaN(time)) {
-    return val;
-  }
-  return time;
-}
-
 function translateCursorToKeyValues(
   cursor: string,
   opts: validCursorOptions,
 ): [key: string, value: string | number | null][] {
-  let decoded = Buffer.from(cursor, "base64").toString("ascii");
-  let parts = decoded.split(":");
-
   const { keys } = opts;
+  const decoded = atob(cursor);
+  let cursorData: [string, string | number | null][] = [];
+  try {
+    cursorData = JSON.parse(decoded);
+  } catch (error) {
+    throw new Error(`Bad cursor format ${cursor} passed`);
+  }
   // invalid or unknown cursor. nothing to do here.
-  // we should have the same number of parts as keys * 2
-  if (parts.length !== keys.length * 2) {
+  // we should have the same number of parts as keys
+  if (cursorData.length !== keys.length) {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
-  const values: [key: string, value: string | number | null][] = [];
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    const keyPart = parts[i * 2];
-    if (key !== keyPart) {
-      throw new Error(
-        `invalid cursor ${cursor} passed. expected ${key}. got ${keyPart} as key of field`,
-      );
-    }
-    const val = parts[i * 2 + 1];
-    if (val === "") {
-      values.push([key, null]);
-      continue;
-    }
-    // uuid, don't parse int since it tries to validate just first part
-    if (validate(val)) {
-      values.push([key, val]);
-      continue;
-    }
-
-    values.push([key, convertToIntMaybe(val)]);
-  }
-  return values;
+  return cursorData;
 }
 
 interface FilterOptions<T extends Data> {
@@ -266,11 +230,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     // we fetch an extra one to see if we're at the end
     options.limit = this.options.limit + 1;
 
-    // we also sort cursor col in same direction. (direction doesn't matter)
-    this.options.orderby.push({
-      column: this.options.cursorCol,
-      direction: this.options.orderby[0].direction,
-    });
+    const orderBy = this.options.orderby;
 
     if (this.offset) {
       const keyValuePairs: { [key: string]: string | number | null } = {};
@@ -280,17 +240,18 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
       options.clause = clause.AndOptional(
         options.clause,
         clause.PaginationUnboundColsQuery(
-          this.options.orderby.map((orderBy) => ({
+          orderBy.map((orderBy) => ({
             sortCol: orderBy.column,
             sortValue: keyValuePairs[orderBy.column],
             direction: orderBy.direction,
             nullsPlacement: orderBy.nullsPlacement,
-            override: orderBy.alias,
+            overrideAlias: orderBy.alias,
           })),
         ),
       );
     }
 
+    options.orderby = orderBy;
     return options;
   }
 
@@ -355,32 +316,27 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     options.limit = this.options.limit + 1;
 
     // we also sort cursor col in same direction. (direction doesn't matter)
-    this.options.orderby.push({
-      column: this.options.cursorCol,
-      direction: this.options.orderby[0].direction,
-    });
-    this.options.orderby = reverseOrderBy(this.options.orderby);
+    const orderBy = reverseOrderBy(this.options.orderby);
 
     if (this.offset) {
-      if (this.offset) {
-        const keyValuePairs: { [key: string]: string | number | null } = {};
-        for (const [key, value] of this.cursorKeyValues) {
-          keyValuePairs[key] = value;
-        }
-        options.clause = clause.AndOptional(
-          options.clause,
-          clause.PaginationUnboundColsQuery(
-            this.options.orderby.map((orderBy) => ({
-              sortCol: orderBy.column,
-              sortValue: keyValuePairs[orderBy.column],
-              direction: orderBy.direction,
-              nullsPlacement: orderBy.nullsPlacement,
-              override: orderBy.alias,
-            })),
-          ),
-        );
+      const keyValuePairs: { [key: string]: string | number | null } = {};
+      for (const [key, value] of this.cursorKeyValues) {
+        keyValuePairs[key] = value;
       }
+      options.clause = clause.AndOptional(
+        options.clause,
+        clause.PaginationUnboundColsQuery(
+          orderBy.map((orderBy) => ({
+            sortCol: orderBy.column,
+            sortValue: keyValuePairs[orderBy.column],
+            direction: orderBy.direction,
+            nullsPlacement: orderBy.nullsPlacement,
+            overrideAlias: orderBy.alias,
+          })),
+        ),
+      );
     }
+    options.orderby = orderBy;
 
     return options;
   }
@@ -421,15 +377,30 @@ export abstract class BaseEdgeQuery<
   private limitAdded = false;
   private cursorKeys: string[] = [];
 
-  constructor(viewer: Viewer, options: EdgeQueryOptions);
-
-  constructor(public viewer: Viewer, options: EdgeQueryOptions) {
-    this.edgeQueryOptions = options;
+  constructor(
+    public viewer: Viewer,
+    options: EdgeQueryOptions,
+  ) {
+    // we also sort cursor col in same direction. (direction doesn't matter)
+    const orderBy = [...options.orderby];
+    if (
+      !options.orderby.some((orderBy) => orderBy.column === options.cursorCol)
+    ) {
+      orderBy.push({
+        column: options.cursorCol,
+        direction: orderBy?.[0].direction || "DESC",
+      });
+    }
+    orderBy.forEach((o) => {
+      o.alias =
+        o.alias ??
+        (options.fieldOptions?.disableFieldsAlias
+          ? undefined
+          : (options.fieldOptions?.fieldsAlias ?? options.fieldOptions?.alias));
+    });
+    this.edgeQueryOptions = { ...options, orderby: orderBy };
     this.cursorCol = options.cursorCol;
-    this.cursorKeys = [
-      ...options.orderby.map((orderBy) => orderBy.column),
-      this.cursorCol,
-    ];
+    this.cursorKeys = orderBy.map((orderBy) => orderBy.column);
 
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
     this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
@@ -723,7 +694,7 @@ export abstract class BaseEdgeQuery<
   getCursor(row: TEdge): string {
     return getCursor({
       row,
-      keys: this.cursorKeys,
+      cursorKeys: this.cursorKeys,
     });
   }
 }

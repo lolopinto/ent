@@ -1,12 +1,12 @@
-import { Viewer } from "../base";
 import {
   FakeUser,
   UserToContactsFkeyQuery,
   UserToContactsFkeyQueryAsc,
 } from "../../testutils/fake_data/index";
-import { commonTests } from "./shared_test";
 import { MockLogs } from "../../testutils/mock_log";
+import { Viewer } from "../base";
 import { Eq } from "../clause";
+import { commonTests } from "./shared_test";
 
 const ml = new MockLogs();
 ml.mock();
@@ -23,7 +23,10 @@ describe("custom query", () => {
     orderby: [
       {
         column: "created_at",
-        // dateColumn: true,
+        direction: "DESC",
+      },
+      {
+        column: "id",
         direction: "DESC",
       },
     ],
@@ -43,7 +46,10 @@ describe("custom query asc", () => {
     orderby: [
       {
         column: "created_at",
-        dateColumn: true,
+        direction: "ASC",
+      },
+      {
+        column: "id",
         direction: "ASC",
       },
     ],

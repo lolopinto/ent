@@ -167,7 +167,10 @@ class existsQueryClause<T extends Data, K = keyof T> extends queryClause<T, K> {
 }
 
 class isNullClause<T extends Data, K = keyof T> implements Clause<T, K> {
-  constructor(protected col: K, protected overrideAlias?: string) {}
+  constructor(
+    protected col: K,
+    protected overrideAlias?: string,
+  ) {}
 
   clause(_idx: number, alias?: string): string {
     return `${renderCol(this.col, this.overrideAlias, alias)} IS NULL`;
@@ -483,7 +486,10 @@ export class notInClause<T extends Data, K = keyof T> extends inClause<T, K> {
 class compositeClause<T extends Data, K = keyof T> implements Clause<T, K> {
   compositeOp: string;
 
-  constructor(private clauses: Clause<T, K>[], private sep: string) {
+  constructor(
+    private clauses: Clause<T, K>[],
+    private sep: string,
+  ) {
     this.compositeOp = this.sep;
   }
 
@@ -841,7 +847,7 @@ export function NotEq<T extends Data, K = keyof T>(
   overrideAlias?: string,
 ): Clause<T, K> {
   return new simpleClause<T, K>(col, value, "!=", {
-    handleNull: new isNotNullClause(col),
+    handleNull: new isNotNullClause(col, overrideAlias),
     overrideAlias,
   });
 }
@@ -1399,7 +1405,7 @@ export function PaginationUnboundColsQuery<T extends Data, K = keyof T>(
     .forEach(
       ({ sortCol, direction, sortValue, nullsPlacement, overrideAlias }) => {
         const nullsOrder =
-          nullsPlacement ?? direction === "DESC" ? "first" : "last";
+          (nullsPlacement ?? direction === "DESC") ? "first" : "last";
         const clauseFn = direction === "DESC" ? Less : Greater;
         const baseClause = clauseFn(sortCol, sortValue, overrideAlias);
         const withNullsClause =
@@ -1408,8 +1414,8 @@ export function PaginationUnboundColsQuery<T extends Data, K = keyof T>(
               ? Or(baseClause, Eq(sortCol, null, overrideAlias))
               : And(baseClause, NotEq(sortCol, null, overrideAlias))
             : nullsOrder === "last"
-            ? Eq(sortCol, null, overrideAlias)
-            : undefined; // If nulls first and value is null, can't filter here
+              ? Eq(sortCol, null, overrideAlias)
+              : undefined; // If nulls first and value is null, can't filter here
 
         if (withNullsClause) {
           if (sortValue !== null) {
@@ -1555,4 +1561,35 @@ export function Expression<T extends Data, K = keyof T>(
   expression: string,
 ): Clause<T, K> {
   return new simpleExpression(expression);
+}
+
+export function ClauseGroup<T extends Data, K = keyof T>(
+  clause: Clause<T, K>,
+): Clause<T, K> {
+  return new groupClause(clause);
+}
+
+class groupClause<T extends Data, K = keyof T> implements Clause<T, K> {
+  constructor(protected clauseToGroup: Clause<T, K>) {}
+
+  clause(idx: number, alias?: string): string {
+    return `(${this.clauseToGroup.clause(idx, alias)})`;
+  }
+
+  columns(): K[] {
+    // @ts-ignore
+    return this.clauseToGroup.columns();
+  }
+
+  values(): any[] {
+    return this.clauseToGroup.values();
+  }
+
+  logValues(): any[] {
+    return this.clauseToGroup.logValues();
+  }
+
+  instanceKey(): string {
+    return `group:${this.clauseToGroup.instanceKey()}`;
+  }
 }

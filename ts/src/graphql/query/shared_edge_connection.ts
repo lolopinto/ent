@@ -121,15 +121,16 @@ export const commonTests = <TEdge extends Data>(
     if (isCustomQuery(q)) {
       opts = {
         row: contacts[idx],
-        keys: ["id"],
+        cursorKeys: ["created_at", "id"],
+        rowKeys: ["createdAt", "id"],
       };
     } else {
       // for assoc queries, we're getting the value from 'id' field but the edge
       // is from assoc_edge table id2 field and so cursor takes it from there
       opts = {
         row: contacts[idx],
-        keys: ["id2"],
-        cursorKeys: ["id"],
+        cursorKeys: ["time", "id2"],
+        rowKeys: ["createdAt", "id"],
       };
     }
     return getCursor(opts);

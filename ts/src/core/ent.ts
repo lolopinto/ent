@@ -1261,43 +1261,44 @@ export class AssocEdge {
   getCursor(): string {
     return getCursor({
       row: this,
-      keys: ["id2"],
+      cursorKeys: ["time", "id2"],
     });
   }
 }
 
 export interface cursorOptions {
   row: Data;
-  keys: string[];
-  cursorKeys?: string[]; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
+  /**
+   * The keys that will be stored in the cursor. This should be the DB columns.
+   */
+  cursorKeys: string[];
+  /**
+   * The keys that will be used to get the values from the row. This should be
+   * the row object keys. If not provided, the cursorKeys will be used. This is
+   * only used for tests internally.
+   */
+  rowKeys?: string[];
 }
 
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
-  const { row, keys, cursorKeys } = opts;
+  const { row, cursorKeys, rowKeys } = opts;
   //  row: Data, col: string, conv?: (any) => any) {
   if (!row) {
     throw new Error(`no row passed to getCursor`);
   }
-  if (cursorKeys?.length && cursorKeys.length !== keys.length) {
-    throw new Error("length of cursorKeys should match keys");
+  if (rowKeys?.length && rowKeys.length !== cursorKeys.length) {
+    throw new Error("length of cursorKeys should match rowKeys");
   }
-  const convert = (d: any) => {
-    if (d instanceof Date) {
-      return d.toISOString();
-    }
-    return d;
-  };
+  const convert = (d: any) => (d instanceof Date ? d.toISOString() : d);
 
-  const parts: string[] = [];
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    const cursorKey = cursorKeys?.[i] || key;
-    parts.push(key);
-    parts.push(convert(row[cursorKey]));
+  const parts: [string, string | number | null][] = [];
+  for (let i = 0; i < cursorKeys.length; i++) {
+    const key = cursorKeys[i];
+    const cursorKey = rowKeys?.[i] || key;
+    parts.push([key, convert(row[cursorKey])]);
   }
-  const str = parts.join(":");
-  return Buffer.from(str, "ascii").toString("base64");
+  return btoa(JSON.stringify(parts));
 }
 
 export class AssocEdgeData {

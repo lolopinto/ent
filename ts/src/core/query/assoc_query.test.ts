@@ -1,9 +1,9 @@
-import { Viewer } from "../base";
 import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index";
-import { commonTests } from "./shared_test";
-import { assocTests } from "./shared_assoc_test";
 import { MockLogs } from "../../testutils/mock_log";
+import { Viewer } from "../base";
 import { And, Eq } from "../clause";
+import { assocTests } from "./shared_assoc_test";
+import { commonTests } from "./shared_test";
 
 // shared mock across tests
 // should this be global?
@@ -22,6 +22,10 @@ commonTests({
   orderby: [
     {
       column: "time",
+      direction: "DESC",
+    },
+    {
+      column: "id2",
       direction: "DESC",
     },
   ],

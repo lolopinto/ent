@@ -1,5 +1,4 @@
 import { clear } from "jest-date-mock";
-import { Interval } from "luxon";
 import { getLoaderOptions } from ".";
 import { Data, Ent, ID, Viewer } from "../../core/base";
 import * as clause from "../../core/clause";
@@ -503,11 +502,11 @@ export const getNextWeekClause = (): clause.Clause => {
   clear();
   const start = MockDate.getDate();
   // 7 days
-  const end = Interval.after(start, 86400 * 1000 * 7)?.end?.toUTC();
+  const end = new Date(start.getTime() + 86400 * 1000 * 7);
 
   return clause.And(
     clause.GreaterEq("start_time", start.toISOString()),
-    clause.LessEq("start_time", end),
+    clause.LessEq("start_time", end.toISOString()),
   );
 };
 

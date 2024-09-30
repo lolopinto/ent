@@ -1,10 +1,4 @@
-import { MockLogs } from "../../testutils/mock_log";
 import { TempDB } from "../../testutils/db/temp_db";
-import { setLogLevels } from "../logger";
-import {
-  createTestUser,
-  setupTempDB,
-} from "../../testutils/fake_data/test_helpers";
 import {
   createTag,
   FakeTag,
@@ -12,10 +6,25 @@ import {
   UserToTagsFkeyQuery,
   UserToTagsFkeyQueryAsc,
 } from "../../testutils/fake_data";
+import {
+  createTestUser,
+  setupTempDB,
+} from "../../testutils/fake_data/test_helpers";
+import { MockLogs } from "../../testutils/mock_log";
 import { Viewer } from "../base";
+import {
+  And,
+  AndOptional,
+  ClauseGroup,
+  Eq,
+  Greater,
+  Less,
+  NotEq,
+  Or,
+} from "../clause";
 import { getDefaultLimit } from "../ent";
+import { setLogLevels } from "../logger";
 import { buildQuery } from "../query_impl";
-import { AndOptional, Eq, Greater, Less } from "../clause";
 import { EdgeQuery } from "./query";
 
 let tdb: TempDB;
@@ -87,10 +96,10 @@ function tests(
     const limit = opts?.limit || getDefaultLimit();
     const canonicalName = opts?.canonicalName;
     let orderby = dir;
-    let fn = dir === "DESC" ? Less : Greater;
+    let lessThan = dir === "DESC";
     if (opts?.last) {
       orderby = dir === "ASC" ? "DESC" : "ASC";
-      fn = dir === "DESC" ? Greater : Less;
+      lessThan = !lessThan;
     }
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
@@ -99,7 +108,19 @@ function tests(
         fields: FakeTag.loaderOptions().fields,
         clause: AndOptional(
           Eq("owner_id", user.id),
-          canonicalName ? fn("canonical_name", canonicalName) : undefined,
+          canonicalName
+            ? lessThan
+              ? And(
+                  Less("canonical_name", canonicalName),
+                  NotEq("canonical_name", null),
+                )
+              : ClauseGroup(
+                  Or(
+                    Greater("canonical_name", canonicalName),
+                    Eq("canonical_name", null),
+                  ),
+                )
+            : undefined,
         ),
         orderby: [
           {

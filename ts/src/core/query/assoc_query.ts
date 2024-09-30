@@ -57,6 +57,10 @@ export abstract class AssocEdgeQueryBase<
           column: "time",
           direction: "DESC",
         },
+        {
+          column: "id2",
+          direction: "DESC",
+        },
       ],
     });
   }
@@ -306,11 +310,10 @@ export interface EdgeQueryCtr<
   TDest extends Ent,
   TEdge extends AssocEdge,
 > {
-  new (viewer: Viewer, src: EdgeQuerySource<TSource>): EdgeQuery<
-    TSource,
-    TDest,
-    TEdge
-  >;
+  new (
+    viewer: Viewer,
+    src: EdgeQuerySource<TSource>,
+  ): EdgeQuery<TSource, TDest, TEdge>;
 }
 
 class BeforeFilter implements EdgeQueryFilter<AssocEdge> {
@@ -338,7 +341,10 @@ class AfterFilter implements EdgeQueryFilter<AssocEdge> {
 }
 
 class WithinFilter implements EdgeQueryFilter<AssocEdge> {
-  constructor(private start: Date, private end: Date) {}
+  constructor(
+    private start: Date,
+    private end: Date,
+  ) {}
 
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
     const cls = clause.And(
