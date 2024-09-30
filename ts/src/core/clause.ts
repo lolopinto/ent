@@ -1405,7 +1405,7 @@ export function PaginationUnboundColsQuery<T extends Data, K = keyof T>(
     .forEach(
       ({ sortCol, direction, sortValue, nullsPlacement, overrideAlias }) => {
         const nullsOrder =
-          (nullsPlacement ?? direction === "DESC") ? "first" : "last";
+          nullsPlacement ?? (direction === "DESC" ? "first" : "last");
         const clauseFn = direction === "DESC" ? Less : Greater;
         const baseClause = clauseFn(sortCol, sortValue, overrideAlias);
         const withNullsClause =
