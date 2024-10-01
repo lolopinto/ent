@@ -5,12 +5,6 @@ export interface OrderByOption {
   direction: "ASC" | "DESC";
   alias?: string;
   nullsPlacement?: "first" | "last";
-  // is this column a date/time column?
-  // needed to know if we create a cursor based on this column to conver to timestamp and ISO string for
-  // comparison
-  // maybe eventually want a more generic version of this but for now this suffices
-  // @deprecated You no longer need to specify if a column is a date column
-  dateColumn?: boolean;
 }
 
 export type OrderBy = OrderByOption[];
