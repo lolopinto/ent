@@ -1294,9 +1294,9 @@ export function getCursor(opts: cursorOptions) {
 
   const parts: [string, string | number | null][] = [];
   for (let i = 0; i < cursorKeys.length; i++) {
-    const key = cursorKeys[i];
-    const cursorKey = rowKeys?.[i] || key;
-    parts.push([key, convert(row[cursorKey])]);
+    const cursorKey = cursorKeys[i];
+    const rowKey = rowKeys?.[i] || cursorKey;
+    parts.push([cursorKey, convert(row[rowKey])]);
   }
   return btoa(JSON.stringify(parts));
 }

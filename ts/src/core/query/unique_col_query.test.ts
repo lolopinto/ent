@@ -12,16 +12,7 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 import { MockLogs } from "../../testutils/mock_log";
 import { Viewer } from "../base";
-import {
-  And,
-  AndOptional,
-  ClauseGroup,
-  Eq,
-  Greater,
-  Less,
-  NotEq,
-  Or,
-} from "../clause";
+import { And, AndOptional, Eq, Greater, Less, NotEq, Or } from "../clause";
 import { getDefaultLimit } from "../ent";
 import { setLogLevels } from "../logger";
 import { buildQuery } from "../query_impl";
@@ -114,11 +105,9 @@ function tests(
                   Less("canonical_name", canonicalName),
                   NotEq("canonical_name", null),
                 )
-              : ClauseGroup(
-                  Or(
-                    Greater("canonical_name", canonicalName),
-                    Eq("canonical_name", null),
-                  ),
+              : Or(
+                  Greater("canonical_name", canonicalName),
+                  Eq("canonical_name", null),
                 )
             : undefined,
         ),

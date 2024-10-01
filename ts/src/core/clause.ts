@@ -1390,10 +1390,36 @@ export type PaginationUnboundColsQueryOrdering<T extends Data, K = keyof T> = {
  * set of clauses to correctly filter. The resulting query will be structured as
  * a group of nested ANDs and ORs.
  *
- * For example, given a set of ordering [{col1, less1}, {col2, greater2}], the
- * function will construct a query that looks like:
+ * The four cases for each ordering entry are:
  *
- * (col1 < $1 OR (col1 = $1 AND col2 > $2))
+ * 1) When sorting in ASC order with null placement LAST (e.g., [1,2,3,null,null])
+ *    a) If the sort value is not null, then it needs to check for values greater than the
+ *       sort value OR null values.
+ *    b) If the sort value is null, then it needs to check for null values only.
+ * 2) When sorting in ASC order with null placement FIRST (e.g., [null,null,1,2,3])
+ *    a) If the sort value is not null, then it needs to check for values greater than the
+ *       sort value.
+ *    b) If the sort value is null, then there will be no check for this value since all
+ *       possible values are greater than or equal to null.
+ * 3) When sorting in DESC order with null placement LAST (e.g., [1,2,3,null,null])
+ *    a) If the sort value is not null, then it needs to check for values less than the
+ *       sort value OR null values.
+ *    b) If the sort value is null, then it needs to check for null values only.
+ * 4) When sorting in DESC order with null placement FIRST (e.g., [null,null,1,2,3])
+ *    a) If the sort value is not null, then it needs to check for values less than the
+ *       sort value.
+ *    b) If the sort value is null, then there will be no check for this value since all
+ *       possible values are less than or equal to null.
+ *
+ * Each ordering entry will do the above check OR'ed with the following ordering entry and
+ * an equals check. For instance, given a set of ordering [{col1, less1}, {col2, greater2}],
+ * the function will construct a query that looks like:
+ *
+ * col1 < $1 OR (col1 = $1 AND col2 > $2)
+ *
+ * In english: each ordering entry will check for values lesser/greater than the supplied value,
+ * OR equal to the supplied value AND matching the next ordering entry. For the last ordering entry,
+ * it will not check for values equal to the supplied value.
  */
 export function PaginationUnboundColsQuery<T extends Data, K = keyof T>(
   ordering: PaginationUnboundColsQueryOrdering<T, K>[],
@@ -1402,6 +1428,8 @@ export function PaginationUnboundColsQuery<T extends Data, K = keyof T>(
     throw new Error("Must provide at least one ordering.");
   }
   let nesting: Clause<T, K> | undefined;
+  // We reverse the order of the ordering array so that we can build the query from the inner-most
+  // clause and work our way outwards
   ordering
     .reverse()
     .forEach(
@@ -1410,25 +1438,28 @@ export function PaginationUnboundColsQuery<T extends Data, K = keyof T>(
           nullsPlacement ?? (direction === "DESC" ? "first" : "last");
         const clauseFn = direction === "DESC" ? Less : Greater;
         const baseClause = clauseFn(sortCol, sortValue, overrideAlias);
-        const withNullsClause =
+        const compoundClause =
           sortValue !== null
-            ? nullsOrder === "last"
-              ? Or(baseClause, Eq(sortCol, null, overrideAlias))
-              : And(baseClause, NotEq(sortCol, null, overrideAlias))
-            : nullsOrder === "last"
-              ? Eq(sortCol, null, overrideAlias)
-              : undefined; // If nulls first and value is null, can't filter here
+            ? nullsOrder === "last" // There is a non-null value to compare against
+              ? Or(baseClause, Eq(sortCol, null, overrideAlias)) // If nulls are last, then we need to compare the value and accept nulls
+              : And(baseClause, NotEq(sortCol, null, overrideAlias)) // If nulls are first, then we need to compare the value and reject nulls
+            : nullsOrder === "last" // The value to compare against is null
+              ? Eq(sortCol, null, overrideAlias) // If nulls are last, then we only accept nulls
+              : undefined; // If nulls first then any all values are accepted
 
-        if (withNullsClause) {
+        // This will connect the compound clause to the previous clause for when the matching DB value equals the sort value
+        // E.g. if compoundClause is `col1 < $1` and nesting is `col2 < $2`, then the result will be
+        // `col1 < $1 OR (col1 = $1 AND col2 < $2)`
+        if (compoundClause) {
           if (sortValue !== null) {
             nesting = nesting
               ? Or(
-                  withNullsClause,
+                  compoundClause,
                   And(Eq(sortCol, sortValue, overrideAlias), nesting),
                 )
-              : withNullsClause;
+              : compoundClause;
           } else {
-            nesting = nesting ? And(withNullsClause, nesting) : withNullsClause;
+            nesting = nesting ? And(compoundClause, nesting) : compoundClause;
           }
         }
       },
@@ -1563,35 +1594,4 @@ export function Expression<T extends Data, K = keyof T>(
   expression: string,
 ): Clause<T, K> {
   return new simpleExpression(expression);
-}
-
-export function ClauseGroup<T extends Data, K = keyof T>(
-  clause: Clause<T, K>,
-): Clause<T, K> {
-  return new groupClause(clause);
-}
-
-class groupClause<T extends Data, K = keyof T> implements Clause<T, K> {
-  constructor(protected clauseToGroup: Clause<T, K>) {}
-
-  clause(idx: number, alias?: string): string {
-    return `(${this.clauseToGroup.clause(idx, alias)})`;
-  }
-
-  columns(): K[] {
-    // @ts-ignore
-    return this.clauseToGroup.columns();
-  }
-
-  values(): any[] {
-    return this.clauseToGroup.values();
-  }
-
-  logValues(): any[] {
-    return this.clauseToGroup.logValues();
-  }
-
-  instanceKey(): string {
-    return `group:${this.clauseToGroup.instanceKey()}`;
-  }
 }
