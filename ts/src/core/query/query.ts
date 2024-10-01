@@ -143,6 +143,9 @@ interface LastFilterOptions<T extends Data> extends FilterOptions<T> {
 const orderbyRegex = new RegExp(/([0-9a-z_]+)[ ]?([0-9a-z_]+)?/i);
 
 class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
+  /**
+   * The offset is the value of the last key in the cursor, which is the primary key for the table
+   */
   private offset: string | number | undefined;
   private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
   private pageMap: Map<ID, PaginationInfo> = new Map();
@@ -156,7 +159,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
       this.cursorKeyValues = translateCursorToKeyValues(options.after, {
         keys: options.cursorKeys,
       });
-      // The offset is the value of the last key in the cursor, which is the primary key for the table
       this.offset =
         this.cursorKeyValues[this.cursorKeyValues.length - 1][1] ?? undefined;
     }
@@ -267,6 +269,9 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
 // TODO LastFilter same behavior as FirstFilter
 // TODO can we share so we don't keep needing to change in both
 class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
+  /**
+   * The offset is the value of the last key in the cursor, which is the primary key for the table
+   */
   private offset: string | number | undefined;
   private pageMap: Map<ID, PaginationInfo> = new Map();
   private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
