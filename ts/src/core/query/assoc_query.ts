@@ -1,16 +1,15 @@
 import {
-  ID,
-  Ent,
-  Viewer,
-  LoadEntOptions,
   EdgeQueryableDataOptions,
-  QueryableDataOptions,
+  Ent,
+  ID,
+  LoadEntOptions,
+  Viewer,
 } from "../base";
+import * as clause from "../clause";
 import { AssocEdge, loadEdgeData, loadEntsList } from "../ent";
 import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
-import { EdgeQuery, BaseEdgeQuery, IDInfo, EdgeQueryFilter } from "./query";
-import * as clause from "../clause";
+import { BaseEdgeQuery, EdgeQuery, EdgeQueryFilter, IDInfo } from "./query";
 
 // TODO no more plurals for privacy reasons?
 export type EdgeQuerySource<
@@ -51,7 +50,19 @@ export abstract class AssocEdgeQueryBase<
       | LoadEntOptions<TDest, TViewer>
       | loaderOptionsFunc<TViewer>,
   ) {
-    super(viewer, "time", "id2");
+    super(viewer, {
+      cursorCol: "id2",
+      orderby: [
+        {
+          column: "time",
+          direction: "DESC",
+        },
+        {
+          column: "id2",
+          direction: "DESC",
+        },
+      ],
+    });
   }
 
   private isEdgeQuery(
@@ -299,11 +310,10 @@ export interface EdgeQueryCtr<
   TDest extends Ent,
   TEdge extends AssocEdge,
 > {
-  new (viewer: Viewer, src: EdgeQuerySource<TSource>): EdgeQuery<
-    TSource,
-    TDest,
-    TEdge
-  >;
+  new (
+    viewer: Viewer,
+    src: EdgeQuerySource<TSource>,
+  ): EdgeQuery<TSource, TDest, TEdge>;
 }
 
 class BeforeFilter implements EdgeQueryFilter<AssocEdge> {
@@ -331,7 +341,10 @@ class AfterFilter implements EdgeQueryFilter<AssocEdge> {
 }
 
 class WithinFilter implements EdgeQueryFilter<AssocEdge> {
-  constructor(private start: Date, private end: Date) {}
+  constructor(
+    private start: Date,
+    private end: Date,
+  ) {}
 
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
     const cls = clause.And(

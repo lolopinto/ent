@@ -1,28 +1,28 @@
 import DataLoader from "dataloader";
+import memoizee from "memoizee";
 import {
   Context,
-  ID,
   EdgeQueryableDataOptions,
+  ID,
   Loader,
   LoaderFactory,
 } from "../base";
+import * as clause from "../clause";
 import {
   AssocEdge,
-  loadCustomEdges,
   AssocEdgeConstructor,
-  loadEdgeData,
-  getDefaultLimit,
-  performRawQuery,
-  loadEdgeForID2,
-  buildGroupQuery,
   AssocEdgeData,
+  buildGroupQuery,
+  getDefaultLimit,
   getEdgeClauseAndFields,
+  loadCustomEdges,
+  loadEdgeData,
+  loadEdgeForID2,
   loadTwoWayEdges,
+  performRawQuery,
 } from "../ent";
-import * as clause from "../clause";
 import { logEnabled } from "../logger";
 import { CacheMap, getCustomLoader } from "./loader";
-import memoizee from "memoizee";
 
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
@@ -263,7 +263,7 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     }
 
     // we create a loader which can combine first X queries in the same fetch
-    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}:disableTransformations:${options.disableTransformations}`;
+    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby?.map((orderBy) => JSON.stringify(orderBy))}:disableTransformations:${options.disableTransformations}`;
     return getCustomLoader(
       key,
       () => new AssocEdgeLoader(this.edgeType, ctr, options, context),

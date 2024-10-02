@@ -1,50 +1,49 @@
-import { Data, ID, Viewer } from "../base";
+import { WriteOperation } from "../../action";
+import { BuilderSchema, SimpleAction } from "../../testutils/builder";
+import { TestContext } from "../../testutils/context/test_context";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import {
-  getDefaultLimit,
-  AssocEdge,
-  getCursor,
-  setDefaultLimit,
-  cursorOptions,
-} from "../ent";
-import { setGlobalSchema } from "../global_schema";
-import { IDViewer, LoggedOutViewer } from "../viewer";
-import {
-  FakeUser,
-  FakeContact,
-  UserToContactsFkeyQueryDeprecated,
-  FakeUserSchema,
   EdgeType,
+  FakeContact,
   FakeContactSchema,
+  FakeUser,
+  FakeUserSchema,
   UserToContactsFkeyQuery,
   UserToContactsFkeyQueryAsc,
-  FakeContactSchemaWithDeletedAt,
   UserToContactsFkeyQueryDeletedAt,
   UserToContactsFkeyQueryDeletedAtAsc,
+  UserToContactsFkeyQueryDeprecated,
 } from "../../testutils/fake_data/index";
 import {
-  inputs,
   createAllContacts,
-  verifyUserToContactRawData,
-  verifyUserToContactEdges,
-  verifyUserToContacts,
   createEdges,
+  inputs,
   setupTempDB,
   tempDBTables,
+  verifyUserToContactEdges,
+  verifyUserToContactRawData,
+  verifyUserToContacts,
 } from "../../testutils/fake_data/test_helpers";
-import { EdgeQuery } from "./query";
-import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
-import { TestContext } from "../../testutils/context/test_context";
-import { setLogLevels } from "../logger";
-import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
-import { BuilderSchema, SimpleAction } from "../../testutils/builder";
-import { WriteOperation } from "../../action";
 import { MockLogs } from "../../testutils/mock_log";
-import { Clause, PaginationMultipleColsSubQuery } from "../clause";
-import { OrderBy, getOrderByPhrase, reverseOrderBy } from "../query_impl";
 import {
   getVerifyAfterEachCursorGeneric,
   getWhereClause,
 } from "../../testutils/query";
+import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
+import { Data, ID, Viewer } from "../base";
+import { Clause, PaginationUnboundColsQuery } from "../clause";
+import {
+  AssocEdge,
+  cursorOptions,
+  getCursor,
+  getDefaultLimit,
+  setDefaultLimit,
+} from "../ent";
+import { setGlobalSchema } from "../global_schema";
+import { setLogLevels } from "../logger";
+import { getOrderByPhrase, OrderBy, reverseOrderBy } from "../query_impl";
+import { IDViewer, LoggedOutViewer } from "../viewer";
+import { EdgeQuery } from "./query";
 
 interface options<TData extends Data> {
   newQuery: (
@@ -275,7 +274,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         // default limit
         `${opts.clause.clause(1)} ORDER BY ${getOrderByPhrase(
           orderby,
-        )}, ${uniqCol} ${orderby[0].direction} LIMIT ${expLimit}`,
+        )} LIMIT ${expLimit}`,
       );
     }
   }
@@ -296,30 +295,28 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     // cache showing up in a few because of cross runs...
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
-    const uniqCol = isCustomQuery(filter) ? "id" : "id2";
     let parts = opts.clause.clause(1).split(" AND ");
-    const cmp = PaginationMultipleColsSubQuery(
-      opts.orderby[0].column,
-      opts.orderby[0].direction === "DESC" ? "<" : ">",
-      opts.tableName,
-      uniqCol,
-      "",
-    ).clause(opts.clause.values().length + 1);
+    const cmp = PaginationUnboundColsQuery(
+      opts.orderby.map((orderBy) => ({
+        direction: orderBy.direction,
+        sortCol: orderBy.column,
+        sortValue: "_",
+      })),
+    )!.clause(opts.clause.values().length + 1);
 
     // order of parts is different in custom query seemingly
     const customQuery = isCustomQuery(filter);
     if (!customQuery && parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)
-        .concat([cmp, "deleted_at IS NULL"]);
+        .concat([`(${cmp})`, "deleted_at IS NULL"]);
     } else {
-      parts.push(cmp);
+      parts.push(`(${cmp})`);
     }
-
     expect(getWhereClause(ml.logs[0])).toBe(
       `${parts.join(" AND ")} ORDER BY ${getOrderByPhrase(
         opts.orderby,
-      )}, ${uniqCol} ${opts.orderby[0].direction} LIMIT ${limit + 1}`,
+      )} LIMIT ${limit + 1}`,
     );
   }
 
@@ -330,32 +327,31 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     // cache showing up in a few because of cross runs...
     expect(ml.logs.length).toBeGreaterThanOrEqual(length);
 
-    const uniqCol = isCustomQuery(filter) ? "id" : "id2";
-
     let parts = opts.clause.clause(1).split(" AND ");
-    const cmp = PaginationMultipleColsSubQuery(
-      orderby[0].column,
-      orderby[0].direction === "ASC" ? ">" : "<",
-      opts.tableName,
-      uniqCol,
-      "",
-    ).clause(opts.clause.values().length + 1);
+    const cmp = PaginationUnboundColsQuery(
+      opts.orderby.map((orderBy) => ({
+        // Reverse order for "last" cursor
+        direction: orderBy.direction === "DESC" ? "ASC" : "DESC",
+        sortCol: orderBy.column,
+        sortValue: "_",
+      })),
+    )!.clause(opts.clause.values().length + 1);
 
     // order of parts is different in custom query seemingly
     const customQuery = isCustomQuery(filter);
     if (!customQuery && parts[parts.length - 1] === "deleted_at IS NULL") {
       parts = parts
         .slice(0, parts.length - 1)
-        .concat([cmp, "deleted_at IS NULL"]);
+        .concat([`(${cmp})`, "deleted_at IS NULL"]);
     } else {
-      parts.push(cmp);
+      parts.push(`(${cmp})`);
     }
 
     expect(getWhereClause(ml.logs[0])).toBe(
       // extra fetched for pagination
       `${parts.join(" AND ")} ORDER BY ${getOrderByPhrase(
         orderby,
-      )}, ${uniqCol} ${orderby[0].direction} LIMIT ${limit + 1}`,
+      )} LIMIT ${limit + 1}`,
     );
   }
 
@@ -372,15 +368,16 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     if (isCustomQuery(q)) {
       opts = {
         row: contacts[idx],
-        keys: ["id"],
+        cursorKeys: ["created_at", "id"],
+        rowKeys: ["createdAt", "id"],
       };
     } else {
       // for assoc queries, we're getting the value from 'id' field but the edge
       // is from assoc_edge table id2 field and so cursor takes it from there
       opts = {
         row: contacts[idx],
-        keys: ["id2"],
-        cursorKeys: ["id"],
+        cursorKeys: ["time", "id2"],
+        rowKeys: ["createdAt", "id"],
       };
     }
     return getCursor(opts);

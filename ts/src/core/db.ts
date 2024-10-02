@@ -1,8 +1,8 @@
-import pg, { Pool, PoolClient, PoolConfig } from "pg";
 import * as fs from "fs";
 import { load } from "js-yaml";
-import { log } from "./logger";
 import { DateTime } from "luxon";
+import pg, { Pool, PoolClient, PoolConfig } from "pg";
+import { log } from "./logger";
 
 export interface Database extends PoolConfig {
   database?: string;
@@ -232,9 +232,8 @@ export default class DB {
   }
 }
 
-export const defaultTimestampParser = pg.types.getTypeParser(
-  pg.types.builtins.TIMESTAMP,
-);
+export const defaultTimestampParser: (value: string) => string =
+  pg.types.getTypeParser(pg.types.builtins.TIMESTAMP);
 
 // this is stored in the db without timezone but we want to make sure
 // it's parsed as UTC time as opposed to the local time
@@ -441,7 +440,7 @@ export class Postgres implements Connection {
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
     const r = await this.pool.query(query, values);
-    return r;
+    return r as QueryResult<QueryResultRow>;
   }
 
   async queryAll(
@@ -449,7 +448,7 @@ export class Postgres implements Connection {
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
     const r = await this.pool.query(query, values);
-    return r;
+    return r as QueryResult<QueryResultRow>;
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {
@@ -473,7 +472,7 @@ export class PostgresClient implements Client {
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
     const r = await this.client.query(query, values);
-    return r;
+    return r as QueryResult<QueryResultRow>;
   }
 
   async queryAll(
@@ -481,7 +480,7 @@ export class PostgresClient implements Client {
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
     const r = await this.client.query(query, values);
-    return r;
+    return r as QueryResult<QueryResultRow>;
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {

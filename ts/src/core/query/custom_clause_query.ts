@@ -17,7 +17,7 @@ import {
 } from "../ent";
 import { OrderBy } from "../query_impl";
 
-import { BaseEdgeQuery, EdgeQueryOptions, IDInfo } from "./query";
+import { BaseEdgeQuery, IDInfo } from "./query";
 
 export interface CustomClauseQueryOptions<
   TDest extends Ent<TViewer>,
@@ -120,11 +120,6 @@ export class CustomClauseQuery<
     return this.options.loadEntOptions.tableName;
   }
 
-  protected includeSortColInCursor(options: EdgeQueryOptions) {
-    // TODO maybe we should just always do this?
-    return options.joinBETA !== undefined && this.sortCol !== this.cursorCol;
-  }
-
   async queryRawCount(): Promise<number> {
     // sqlite needs as count otherwise it returns count(1)
     let fields: SelectBaseDataOptions["fields"] = ["count(1) as count"];
@@ -167,7 +162,7 @@ export class CustomClauseQuery<
     if (!options.orderby) {
       options.orderby = [
         {
-          column: this.getSortCol(),
+          column: this.getCursorCol(),
           direction: this.options.orderByDirection ?? "DESC",
           nullsPlacement: this.options.nullsPlacement,
         },
