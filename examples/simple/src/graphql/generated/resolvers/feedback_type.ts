@@ -7,10 +7,16 @@ import { GraphQLUnionType } from "graphql";
 import {
   ContactEmailType,
   ContactPhoneNumberType,
+  ContactType,
   UserType,
 } from "../../resolvers/internal";
 
 export const FeedbackType = new GraphQLUnionType({
   name: "Feedback",
-  types: () => [UserType, ContactEmailType, ContactPhoneNumberType],
+  types: () => [
+    ContactPhoneNumberType,
+    ContactType,
+    UserType,
+    ContactEmailType,
+  ],
 });

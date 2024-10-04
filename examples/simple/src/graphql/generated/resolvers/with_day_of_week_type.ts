@@ -8,5 +8,5 @@ import { HolidayType, HoursOfOperationType } from "../../resolvers/internal";
 
 export const WithDayOfWeekType = new GraphQLUnionType({
   name: "WithDayOfWeek",
-  types: () => [HoursOfOperationType, HolidayType],
+  types: () => [HolidayType, HoursOfOperationType],
 });

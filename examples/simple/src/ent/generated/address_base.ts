@@ -39,7 +39,10 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
   readonly apartment: string | null;
   readonly country: string;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
