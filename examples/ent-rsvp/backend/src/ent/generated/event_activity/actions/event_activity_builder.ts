@@ -306,7 +306,10 @@ export class EventActivityBuilder<
       }
     };
     addField("address_id", input.addressId);
-    if (input.addressId !== undefined) {
+    if (
+      input.addressId !== undefined ||
+      this.operation === WriteOperation.Delete
+    ) {
       if (input.addressId) {
         this.orchestrator.addInboundEdge(
           input.addressId,
