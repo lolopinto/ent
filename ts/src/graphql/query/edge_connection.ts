@@ -1,3 +1,4 @@
+import { CustomClauseQuery } from "../../core/query";
 import { Data, Ent, ID, Viewer } from "../../core/base";
 import { EdgeQuery, PaginationInfo } from "../../core/query/query";
 
@@ -56,16 +57,37 @@ export class GraphQLEdgeConnection<
     args?: Data,
   ) {
     this.viewer = viewer;
+
+    async function resolveQuery(
+      query: MaybePromise<EdgeQuery<TSource, Ent, TEdge>>,
+      source: TSource | undefined,
+    ) {
+      const resolved = await query;
+
+      // https://github.com/lolopinto/ent/issues/1836
+      if (resolved instanceof CustomClauseQuery && source !== undefined) {
+        resolved.__setSource(source);
+      }
+      return resolved;
+    }
+
+    let maybeQuery: MaybePromise<EdgeQuery<TSource, Ent, TEdge>>;
+    let source: TSource | undefined;
+
     if (typeof arg2 === "function") {
-      this.query = Promise.resolve(arg2(this.viewer));
+      maybeQuery = arg2(this.viewer);
     } else {
       this.source = arg2;
+      source = arg2;
     }
     if (typeof arg3 === "function") {
-      this.query = Promise.resolve(arg3(this.viewer, this.source!));
+      maybeQuery = arg3(this.viewer, this.source!);
     } else {
       this.args = arg3;
     }
+
+    this.query = Promise.resolve(resolveQuery(maybeQuery!, source));
+
     if (args !== undefined) {
       this.args = args;
     }
