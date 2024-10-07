@@ -118,11 +118,21 @@ export class CustomClauseQuery<
     this.source = options.source;
   }
 
-  __setSource(src: TSource) {
-    this.source = src;
+  __maybeSetSource(src: TSource) {
+    if (this.source && this.source !== src) {
+      console.warn("source already set to something else");
+    } else {
+      this.source = src;
+    }
   }
 
   async sourceEnt(_id: ID) {
+    // The sourceEnt is used for privacy checks and if we have the source we already know
+    // the privacy checks have been done or will be done
+    // This is being set for completeness but we don't really care about this.
+
+    // See https://github.com/lolopinto/ent/blob/15af0165f83458acc1d1c9f934f4534dca6154ff/ts/src/core/query/query.ts#L729-L739 for how sourceEnt is
+    // used in the codebase
     return this.source ?? null;
   }
 
