@@ -1,3 +1,4 @@
+import { CustomClauseQuery } from "../../core/query";
 import { Data, Ent, ID, Viewer } from "../../core/base";
 import { EdgeQuery, PaginationInfo } from "../../core/query/query";
 
@@ -56,16 +57,39 @@ export class GraphQLEdgeConnection<
     args?: Data,
   ) {
     this.viewer = viewer;
+
+    async function resolveQuery(
+      query: MaybePromise<EdgeQuery<TSource, Ent, TEdge>>,
+      source: TSource | undefined,
+    ) {
+      const resolved = await query;
+
+      // To have pagination correctly work with CustomClauseQuery in GraphQL contexts, we need to
+      // pass the source to the query so that we can set the page info correctly
+      // See https://github.com/lolopinto/ent/issues/1836 for full details of how this breaks down
+      if (resolved instanceof CustomClauseQuery && source !== undefined) {
+        resolved.__maybeSetSource(source);
+      }
+      return resolved;
+    }
+
+    let query: MaybePromise<EdgeQuery<TSource, Ent, TEdge>>;
+    let source: TSource | undefined;
+
     if (typeof arg2 === "function") {
-      this.query = Promise.resolve(arg2(this.viewer));
+      query = arg2(this.viewer);
     } else {
       this.source = arg2;
+      source = arg2;
     }
     if (typeof arg3 === "function") {
-      this.query = Promise.resolve(arg3(this.viewer, this.source!));
+      query = arg3(this.viewer, this.source!);
     } else {
       this.args = arg3;
     }
+
+    this.query = Promise.resolve(resolveQuery(query!, source));
+
     if (args !== undefined) {
       this.args = args;
     }
