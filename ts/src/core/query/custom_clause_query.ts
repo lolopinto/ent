@@ -22,8 +22,11 @@ import { BaseEdgeQuery, IDInfo } from "./query";
 export interface CustomClauseQueryOptions<
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
+  TSource extends Ent<TViewer> | undefined = undefined,
 > {
   loadEntOptions: LoadEntOptions<TDest, TViewer>;
+
+  source?: TSource;
   clause: Clause;
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
@@ -68,8 +71,10 @@ function getClause<TDest extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
 export class CustomClauseQuery<
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
+  TSource extends Ent<TViewer> | undefined = undefined,
 > extends BaseEdgeQuery<any, TDest, Data> {
   private clause: Clause;
+  private source?: TSource;
 
   constructor(
     public viewer: TViewer,
@@ -110,10 +115,25 @@ export class CustomClauseQuery<
       fieldOptions: options.loadEntOptions,
     });
     this.clause = getClause(options);
+    this.source = options.source;
+  }
+
+  __maybeSetSource(src: TSource) {
+    if (this.source && this.source !== src) {
+      console.warn("source already set to something else");
+    } else {
+      this.source = src;
+    }
   }
 
   async sourceEnt(_id: ID) {
-    return null;
+    // The sourceEnt is used for privacy checks and if we have the source we already know
+    // the privacy checks have been done or will be done
+    // This is being set for completeness but we don't really care about this.
+
+    // See https://github.com/lolopinto/ent/blob/15af0165f83458acc1d1c9f934f4534dca6154ff/ts/src/core/query/query.ts#L729-L739 for how sourceEnt is
+    // used in the codebase
+    return this.source ?? null;
   }
 
   getTableName() {
@@ -132,8 +152,8 @@ export class CustomClauseQuery<
         typeof firstRequestedField === "object"
           ? `${firstRequestedField.alias}.${firstRequestedField.column}`
           : alias
-          ? `${alias}.${firstRequestedField}`
-          : firstRequestedField;
+            ? `${alias}.${firstRequestedField}`
+            : firstRequestedField;
       fields = [`count(distinct ${fieldString}) as count`];
     }
     const row = await loadRow({
@@ -183,7 +203,11 @@ export class CustomClauseQuery<
       distinct: this.options.joinBETA !== undefined,
     });
 
-    this.edges.set(1, rows);
+    if (this.source) {
+      this.edges.set(this.source.id, rows);
+    } else {
+      this.edges.set(1, rows);
+    }
   }
 
   dataToID(edge: Data): ID {

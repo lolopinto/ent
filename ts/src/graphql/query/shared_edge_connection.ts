@@ -1,3 +1,4 @@
+import { CustomClauseQuery } from "../../core/query";
 import { Data, Ent, Viewer } from "../../core/base";
 import { cursorOptions, getCursor } from "../../core/ent";
 import { EdgeQuery } from "../../core/query/query";
@@ -108,7 +109,8 @@ export const commonTests = <TEdge extends Data>(
       q instanceof UserToContactsFkeyQueryDeprecated ||
       q instanceof UserToContactsFkeyQueryAsc ||
       q instanceof UserToContactsFkeyQueryDeletedAt ||
-      q instanceof UserToContactsFkeyQueryDeletedAtAsc
+      q instanceof UserToContactsFkeyQueryDeletedAtAsc ||
+      q instanceof CustomClauseQuery
     );
   }
 
