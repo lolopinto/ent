@@ -338,14 +338,14 @@ export class QueryRecorder {
 
             // EventEmitter
             ...eventEmitter,
-          } as any;
+          };
         },
         end: jest.fn(),
         query: jest.fn().mockImplementation(QueryRecorder.recordQuery),
 
         // EventEmitter
         ...eventEmitter,
-      } as any;
+      };
     });
   }
 }
