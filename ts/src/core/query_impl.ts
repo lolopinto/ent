@@ -52,7 +52,17 @@ export function getJoinInfo(
         ? `${join.tableName} ${join.alias}`
         : join.tableName;
       valuesUsed += join.clause.values().length;
-      return `JOIN ${joinTable} ON ${join.clause.clause(clauseIdx)}`;
+      const joinType =
+        join.type === "left"
+          ? "LEFT JOIN"
+          : join.type === "right"
+            ? "RIGHT JOIN"
+            : join.type === "outer"
+              ? "FULL OUTER JOIN"
+              : join.type === "inner"
+                ? "INNER JOIN"
+                : "JOIN";
+      return `${joinType} ${joinTable} ON ${join.clause.clause(clauseIdx)}`;
     })
     .join(" ");
   return {

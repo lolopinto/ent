@@ -196,6 +196,7 @@ interface JoinOptions<T2 extends Data = Data, K2 = keyof T2> {
   tableName: string;
   alias?: string;
   clause: clause.Clause<T2, K2>;
+  type?: "inner" | "outer" | "left" | "right";
 }
 
 export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
