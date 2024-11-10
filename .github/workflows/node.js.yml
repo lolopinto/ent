@@ -9,7 +9,6 @@ on:
     paths-ignore:
       - python/**
       - /examples/**
-      - .github/**
       - docs/**
 
 defaults: 
