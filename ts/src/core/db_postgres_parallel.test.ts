@@ -29,7 +29,7 @@ test("lots of writes at once", async () => {
       user,
       password,
       database: tdb.getDB(),
-      max: 100,
+      max: 1000,
       host: "localhost",
     },
   });
