@@ -180,7 +180,7 @@ func (f *NonEntField) Clone(opts ...NonEntFieldOption) (*NonEntField, error) {
 	if ret.nullable && ret.nullable != f.nullable {
 		nullableType, ok := ret.fieldType.(enttype.NullableType)
 		if !ok {
-			return nil, fmt.Errorf("can't make non-nullable field %s nullable %v", ret.fieldName)
+			return nil, fmt.Errorf("can't make non-nullable field %s nullable", ret.fieldName)
 		}
 		ret.fieldType = nullableType.GetNullableType()
 	}
