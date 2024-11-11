@@ -6,7 +6,6 @@ export * from "src/graphql/generated/resolvers/country_info_type";
 export * from "src/graphql/generated/resolvers/country_type";
 export * from "src/graphql/generated/resolvers/account_type";
 export * from "src/graphql/generated/resolvers/tag_type";
-export * from "src/graphql/generated/resolvers/todo_container_type";
 export * from "src/graphql/generated/resolvers/todo_type";
 export * from "src/graphql/generated/resolvers/workspace_type";
 export * from "src/graphql/generated/resolvers/account/account_to_closed_todos_dup_connection_type";

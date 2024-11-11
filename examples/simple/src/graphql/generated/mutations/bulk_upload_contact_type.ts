@@ -57,7 +57,7 @@ export const BulkUploadContactType: GraphQLFieldConfig<
     const r = new ImportContactResolver();
     return r.bulkUploadContact(
       context,
-      mustDecodeIDFromGQLID(args.userId),
+      mustDecodeIDFromGQLID(args.userId.toString()),
       args.file,
       args.defaultLabel,
       args.defaultLabel2,

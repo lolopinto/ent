@@ -88,8 +88,8 @@ export const ContactEmailCreateType: GraphQLFieldConfig<
       context.getViewer(),
       {
         extra: input.extra,
-        contactId: mustDecodeIDFromGQLID(input.contactId),
-        ownerId: mustDecodeIDFromGQLID(input.ownerId),
+        contactId: mustDecodeIDFromGQLID(input.contactId.toString()),
+        ownerId: mustDecodeIDFromGQLID(input.ownerId.toString()),
         emailAddress: input.emailAddress,
         label: input.label,
       },

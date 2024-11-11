@@ -20,6 +20,7 @@ export * from "../generated/resolvers/user_super_nested_object_type";
 export * from "../generated/resolvers/address_type";
 export * from "../generated/resolvers/comment_type";
 export * from "../generated/resolvers/contact_email_type";
+export * from "../generated/resolvers/contact_info_type";
 export * from "../generated/resolvers/contact_phone_number_type";
 export * from "../generated/resolvers/contact_type";
 export * from "../generated/resolvers/event_type";

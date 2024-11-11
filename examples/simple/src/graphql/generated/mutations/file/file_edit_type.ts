@@ -90,7 +90,9 @@ export const FileEditType: GraphQLFieldConfig<
       {
         name: input.name,
         path: input.path,
-        creatorId: mustDecodeNullableIDFromGQLID(input.creatorId),
+        creatorId: mustDecodeNullableIDFromGQLID(
+          input.creatorId?.toString() ?? input.creatorId,
+        ),
       },
     );
     return { file };

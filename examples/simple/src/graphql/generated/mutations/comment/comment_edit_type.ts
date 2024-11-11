@@ -103,11 +103,17 @@ export const CommentEditType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.id),
       {
         body: input.body,
-        articleId: mustDecodeNullableIDFromGQLID(input.articleId),
+        articleId: mustDecodeNullableIDFromGQLID(
+          input.articleId?.toString() ?? input.articleId,
+        ),
         articleType: input.articleType,
-        attachmentId: mustDecodeNullableIDFromGQLID(input.attachmentId),
+        attachmentId: mustDecodeNullableIDFromGQLID(
+          input.attachmentId?.toString() ?? input.attachmentId,
+        ),
         attachmentType: input.attachmentType,
-        stickerId: mustDecodeNullableIDFromGQLID(input.stickerId),
+        stickerId: mustDecodeNullableIDFromGQLID(
+          input.stickerId?.toString() ?? input.stickerId,
+        ),
         stickerType: input.stickerType,
       },
     );

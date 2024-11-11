@@ -83,7 +83,7 @@ export const EventRsvpStatusEditType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.id),
       {
         rsvpStatus: input.rsvpStatus,
-        userId: mustDecodeIDFromGQLID(input.userId),
+        userId: mustDecodeIDFromGQLID(input.userId.toString()),
       },
     );
     return { event };

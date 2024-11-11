@@ -10,6 +10,7 @@ import {
   UUIDType,
   StringType,
   TimestampType,
+  UUIDListType,
 } from "@snowtop/ent/schema/";
 
 const glo: GlobalSchema = {
@@ -39,6 +40,18 @@ const glo: GlobalSchema = {
           values: ["MOBILE", "WEB", "EMAIL"],
           tsType: "NotifType",
           graphQLType: "NotifType",
+        }),
+        homeAddressId: UUIDType({
+          nullable: true,
+          fieldEdge: {
+            schema: "Address",
+          },
+        }),
+        allAddressIds: UUIDListType({
+          fieldEdge: {
+            schema: "Address",
+          },
+          nullable: true,
         }),
       },
     }),

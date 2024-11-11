@@ -120,9 +120,11 @@ export const EventActivityCreateType: GraphQLFieldConfig<
     const eventActivity = await CreateEventActivityAction.create(
       context.getViewer(),
       {
-        addressId: mustDecodeNullableIDFromGQLID(input.addressId),
+        addressId: mustDecodeNullableIDFromGQLID(
+          input.addressId?.toString() ?? input.addressId,
+        ),
         name: input.name,
-        eventId: mustDecodeIDFromGQLID(input.eventId),
+        eventId: mustDecodeIDFromGQLID(input.eventId.toString()),
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.location,

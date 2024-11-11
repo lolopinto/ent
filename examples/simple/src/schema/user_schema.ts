@@ -133,7 +133,9 @@ const UserSchema = new EntSchema({
         function: "convertSuperNestedObject",
       },
       fields: {
-        uuid: UUIDType(),
+        uuid: UUIDType({
+          disableBase64Encode: true,
+        }),
         int: IntegerType(),
         string: StringType(),
         bool: BooleanType(),
@@ -147,7 +149,9 @@ const UserSchema = new EntSchema({
           nullable: true,
           tsType: "UserNestedObject",
           fields: {
-            nested_uuid: UUIDType(),
+            nested_uuid: UUIDType({
+              disableBase64Encode: true,
+            }),
             nested_int: IntegerType(),
             nested_string: StringType(),
             nested_bool: BooleanType(),
@@ -161,7 +165,9 @@ const UserSchema = new EntSchema({
               nullable: true,
               tsType: "UserNestedNestedObject",
               fields: {
-                nested_nested_uuid: UUIDType(),
+                nested_nested_uuid: UUIDType({
+                  disableBase64Encode: true,
+                }),
                 nested_nested_int: IntegerType(),
                 nested_nested_string: StringType(),
                 nested_nested_bool: BooleanType({ nullable: true }),

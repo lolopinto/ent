@@ -102,9 +102,13 @@ export const EventActivityEditType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
       {
-        addressId: mustDecodeNullableIDFromGQLID(input.addressId),
+        addressId: mustDecodeNullableIDFromGQLID(
+          input.addressId?.toString() ?? input.addressId,
+        ),
         name: input.name,
-        eventId: mustDecodeNullableIDFromGQLID(input.eventId),
+        eventId: mustDecodeNullableIDFromGQLID(
+          input.eventId?.toString() ?? input.eventId,
+        ),
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.location,

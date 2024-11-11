@@ -16,7 +16,10 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { Contact } from "../../../../ent";
 import CreateContactAction, {
   ContactCreateInput,
@@ -127,8 +130,16 @@ export const ContactCreateType: GraphQLFieldConfig<
     const contact = await CreateContactAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,
-      userId: mustDecodeIDFromGQLID(input.userId),
-      attachments: input.attachments,
+      userId: mustDecodeIDFromGQLID(input.userId.toString()),
+      attachments: input.attachments?.map((item: any) => ({
+        ...item,
+        fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+        dupeFileId: item.dupeFileId
+          ? mustDecodeNullableIDFromGQLID(
+              item.dupeFileId?.toString() ?? item.dupeFileId,
+            )
+          : undefined,
+      })),
       emails: input.emails,
       phoneNumbers: input.phoneNumbers,
     }).saveX();

@@ -18,6 +18,7 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import {
   mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
   transformUnionTypes,
 } from "@snowtop/ent/graphql";
 import { User } from "../../../../ent";
@@ -132,14 +133,45 @@ export const UserCreateType: GraphQLFieldConfig<
       phoneNumber: input.phoneNumber,
       password: input.password,
       nicknames: input.nicknames,
-      prefs: input.prefs,
+      prefs: input.prefs
+        ? {
+            ...input.prefs,
+            homeAddressId: input.prefs.homeAddressId
+              ? mustDecodeNullableIDFromGQLID(
+                  input.prefs.homeAddressId?.toString() ??
+                    input.prefs.homeAddressId,
+                )
+              : undefined,
+            allAddressIds: input.prefs.allAddressIds
+              ? input.prefs.allAddressIds
+                ? input.prefs.allAddressIds.map((i: any) =>
+                    mustDecodeIDFromGQLID(i.toString()),
+                  )
+                : undefined
+              : undefined,
+          }
+        : undefined,
       prefsDiff: input.prefsDiff,
       daysOff: input.daysOff,
       preferredShift: input.preferredShift,
       funUuids: input.funUuids
-        ? input.funUuids.map((i: any) => mustDecodeIDFromGQLID(i))
+        ? input.funUuids.map((i: any) => mustDecodeIDFromGQLID(i.toString()))
         : undefined,
-      prefsList: input.prefsList,
+      prefsList: input.prefsList?.map((item: any) => ({
+        ...item,
+        homeAddressId: item.homeAddressId
+          ? mustDecodeNullableIDFromGQLID(
+              item.homeAddressId?.toString() ?? item.homeAddressId,
+            )
+          : undefined,
+        allAddressIds: item.allAddressIds
+          ? item.allAddressIds
+            ? item.allAddressIds.map((i: any) =>
+                mustDecodeIDFromGQLID(i.toString()),
+              )
+            : undefined
+          : undefined,
+      })),
       superNestedObject: input.superNestedObject,
       nestedList: input.nestedList,
       intEnum: input.intEnum,

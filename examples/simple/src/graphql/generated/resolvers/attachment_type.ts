@@ -5,14 +5,15 @@
 
 import {
   GraphQLFieldConfigMap,
-  GraphQLID,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLTime } from "@snowtop/ent/graphql";
+import { File } from "../../../ent";
 import { Attachment } from "../../../ent/generated/types";
+import { FileType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const AttachmentType = new GraphQLObjectType({
@@ -21,11 +22,28 @@ export const AttachmentType = new GraphQLObjectType({
     Attachment,
     RequestContext<ExampleViewerAlias>
   > => ({
-    fileId: {
-      type: new GraphQLNonNull(GraphQLID),
+    file: {
+      type: FileType,
+      resolve: (
+        obj: Attachment,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return File.load(context.getViewer(), obj.fileId);
+      },
     },
-    dupeFileId: {
-      type: GraphQLID,
+    dupeFile: {
+      type: FileType,
+      resolve: (
+        obj: Attachment,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        if (obj.dupeFileId === null || obj.dupeFileId === undefined) {
+          return null;
+        }
+        return File.load(context.getViewer(), obj.dupeFileId);
+      },
     },
     note: {
       type: GraphQLString,

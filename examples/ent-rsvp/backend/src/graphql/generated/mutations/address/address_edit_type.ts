@@ -101,7 +101,9 @@ export const AddressEditType: GraphQLFieldConfig<
         state: input.state,
         zipCode: input.zipCode,
         apartment: input.apartment,
-        ownerId: mustDecodeNullableIDFromGQLID(input.ownerId),
+        ownerId: mustDecodeNullableIDFromGQLID(
+          input.ownerId?.toString() ?? input.ownerId,
+        ),
         ownerType: input.ownerType,
       },
     );

@@ -76,7 +76,7 @@ export const UserStatisticsCreateType: GraphQLFieldConfig<
     const userStatistics = await CreateUserStatisticsAction.create(
       context.getViewer(),
       {
-        userId: mustDecodeIDFromGQLID(input.userId),
+        userId: mustDecodeIDFromGQLID(input.userId.toString()),
         authCodeEmailsSent: input.authCodeEmailsSent,
       },
     ).saveX();
