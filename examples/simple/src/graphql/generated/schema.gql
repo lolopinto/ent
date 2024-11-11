@@ -366,7 +366,7 @@ type Event implements Node {
   cities: [City!]!
 }
 
-union Feedback = ContactPhoneNumber | Contact | User | ContactEmail
+union Feedback = ContactPhoneNumber | ContactEmail | Contact | User
 
 type File implements Node {
   creator: User
@@ -535,7 +535,7 @@ type User implements Node {
   cities: [City!]!
 }
 
-union WithDayOfWeek = Holiday | HoursOfOperation
+union WithDayOfWeek = HoursOfOperation | Holiday
 
 type AddressToHostedEventsEdge implements Edge {
   node: Event!

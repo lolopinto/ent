@@ -51,7 +51,7 @@ type Address implements Node {
 }
 
 type EventActivityCanViewerDo {
-  eventActivityAddInvite(test: String!): Boolean!
+  eventActivityAddInvite(test: String): Boolean!
   eventActivityRsvpStatusEdit(rsvpStatus: EventActivityRsvpStatusInput!, guestId: ID!, dietaryRestrictions: String): Boolean!
 }
 
@@ -114,7 +114,7 @@ type User implements Node {
   events(first: Int, after: String, last: Int, before: String): UserToEventsConnection!
 }
 
-union WithAddress = EventActivity | Guest
+union WithAddress = Guest | EventActivity
 
 type AddressToLocatedAtEdge implements Edge {
   node: Node!

@@ -1,6 +1,8 @@
 package field
 
 import (
+	"fmt"
+
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/names"
@@ -148,4 +150,40 @@ func (f *NonEntField) GetTSGraphQLTypeForFieldImports(input bool) []*tsimport.Im
 
 func (f *NonEntField) SingleFieldPrimaryKey() bool {
 	return false
+}
+
+type NonEntFieldOption func(*NonEntField)
+
+func OptionalField() NonEntFieldOption {
+	return func(f *NonEntField) {
+		f.optional = true
+		f.nullable = true
+	}
+}
+
+func (f *NonEntField) Clone(opts ...NonEntFieldOption) (*NonEntField, error) {
+	ret := &NonEntField{
+		fieldName:       f.fieldName,
+		graphqlName:     f.graphqlName,
+		fieldType:       f.fieldType,
+		nullable:        f.nullable,
+		optional:        f.optional,
+		Flag:            f.Flag,
+		NodeType:        f.NodeType,
+		hideFromGraphQL: f.hideFromGraphQL,
+	}
+
+	for _, opt := range opts {
+		opt(ret)
+	}
+
+	if ret.nullable && ret.nullable != f.nullable {
+		nullableType, ok := ret.fieldType.(enttype.NullableType)
+		if !ok {
+			return nil, fmt.Errorf("can't make non-nullable field %s nullable %v", ret.fieldName)
+		}
+		ret.fieldType = nullableType.GetNullableType()
+	}
+
+	return ret, nil
 }

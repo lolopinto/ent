@@ -48,7 +48,10 @@ export class TagBase implements Ent<Viewer> {
   readonly ownerId: ID | null;
   readonly relatedTagIds: ID[] | null;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);

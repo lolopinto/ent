@@ -92,7 +92,10 @@ export class AccountBase
   readonly credits: number | null;
   readonly countryInfos: CountryInfo[] | null;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;

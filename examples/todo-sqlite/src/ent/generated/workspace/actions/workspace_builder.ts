@@ -107,7 +107,10 @@ export class WorkspaceBuilder<
 
   updateInput(input: WorkspaceInput) {
     // input.viewerCreatorId default value is being set, also set inverseEdge
-    if (input.viewerCreatorId !== undefined) {
+    if (
+      input.viewerCreatorId !== undefined ||
+      this.operation === WriteOperation.Delete
+    ) {
       if (input.viewerCreatorId) {
         this.orchestrator.addInboundEdge(
           input.viewerCreatorId,
