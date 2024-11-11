@@ -114,7 +114,7 @@ type User implements Node {
   events(first: Int, after: String, last: Int, before: String): UserToEventsConnection!
 }
 
-union WithAddress = Guest | EventActivity
+union WithAddress = EventActivity | Guest
 
 type AddressToLocatedAtEdge implements Edge {
   node: Node!
