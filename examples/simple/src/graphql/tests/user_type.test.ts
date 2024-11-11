@@ -940,12 +940,12 @@ test("create with prefs+prefsList", async () => {
       async function (id: string) {
         const entID = mustDecodeIDFromGQLID(id);
         const user = await User.loadX(new ExampleViewer(entID), entID);
-        expect(await user.prefs()).toStrictEqual({
+        expect(await user.prefs()).toMatchObject({
           enableNotifs: undefined,
           finishedNux: true,
           notifTypes: [NotifType.EMAIL],
         });
-        expect(await user.prefsList()).toStrictEqual([
+        expect(await user.prefsList()).toMatchObject([
           {
             enableNotifs: undefined,
             finishedNux: true,

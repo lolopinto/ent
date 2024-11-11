@@ -94,13 +94,17 @@ export const GuestCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<GuestCreatePayload> => {
     const guest = await CreateGuestAction.create(context.getViewer(), {
-      addressId: mustDecodeNullableIDFromGQLID(input.addressId),
+      addressId: mustDecodeNullableIDFromGQLID(
+        input.addressId?.toString() ?? input.addressId,
+      ),
       name: input.name,
-      eventId: mustDecodeIDFromGQLID(input.eventId),
+      eventId: mustDecodeIDFromGQLID(input.eventId.toString()),
       emailAddress: input.emailAddress,
-      guestGroupId: mustDecodeIDFromGQLID(input.guestGroupId),
+      guestGroupId: mustDecodeIDFromGQLID(input.guestGroupId.toString()),
       title: input.title,
-      guestDataId: mustDecodeNullableIDFromGQLID(input.guestDataId),
+      guestDataId: mustDecodeNullableIDFromGQLID(
+        input.guestDataId?.toString() ?? input.guestDataId,
+      ),
       tag: input.tag,
     }).saveX();
     return { guest: guest };

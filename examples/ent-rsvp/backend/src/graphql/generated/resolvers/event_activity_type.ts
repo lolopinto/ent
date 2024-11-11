@@ -65,7 +65,7 @@ class EventActivityCanViewerDo {
       {
         ...args,
         rsvpStatus: args.rsvpStatus,
-        guestId: mustDecodeIDFromGQLID(args.guestId),
+        guestId: mustDecodeIDFromGQLID(args.guestId.toString()),
         dietaryRestrictions: args.dietaryRestrictions,
       },
     );

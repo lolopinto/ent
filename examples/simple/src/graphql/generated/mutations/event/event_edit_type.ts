@@ -112,10 +112,20 @@ export const EventEditType: GraphQLFieldConfig<
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.eventLocation,
-        addressId: mustDecodeNullableIDFromGQLID(input.addressId),
+        addressId: mustDecodeNullableIDFromGQLID(
+          input.addressId?.toString() ?? input.addressId,
+        ),
         coverPhoto: input.coverPhoto,
         coverPhoto2: input.coverPhoto2,
-        attachments: input.attachments,
+        attachments: input.attachments?.map((item: any) => ({
+          ...item,
+          fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+          dupeFileId: item.dupeFileId
+            ? mustDecodeNullableIDFromGQLID(
+                item.dupeFileId?.toString() ?? item.dupeFileId,
+              )
+            : undefined,
+        })),
       },
     );
     return { event };

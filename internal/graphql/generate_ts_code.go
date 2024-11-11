@@ -2403,23 +2403,62 @@ func getCanViewerSeeInfoObject(processor *codegen.Processor, result *objectType,
 	return canViewerSee, nil
 }
 
-func addSingularEdge(edge edge.Edge, obj *objectType) error {
-	gqlField := &fieldType{
+func createFieldTypeForSingularEdge(edge edge.Edge) *fieldType {
+	return &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		FunctionContents:   []string{fmt.Sprintf("return obj.load%s();", edge.CamelCaseEdgeName())},
 	}
+}
+
+func addSingularEdge(edge edge.Edge, obj *objectType) error {
+	gqlField := createFieldTypeForSingularEdge(edge)
 	return obj.addField(gqlField)
 }
 
-func addPluralEdge(edge edge.Edge, obj *objectType) error {
-	gqlField := &fieldType{
+func addSingularEdgeFromExternal(processor *codegen.Processor, edge edge.Edge, f *field.Field, obj *objectType) error {
+	gqlField := createFieldTypeForSingularEdge(edge)
+	var contents []string
+
+	tsFieldName := f.TsFieldName(processor.Config)
+	if f.Nullable() {
+		contents = append(contents, fmt.Sprintf("if (obj.%s === null || obj.%s === undefined)	{ return null;}", tsFieldName, tsFieldName))
+	}
+	contents = append(contents, fmt.Sprintf("return %s.load(context.getViewer(), obj.%s);", edge.GetNodeInfo().Node, tsFieldName))
+	gqlField.ExtraImports = append(gqlField.ExtraImports, tsimport.NewLocalEntImportPath(edge.GetNodeInfo().Node))
+	gqlField.FunctionContents = contents
+	return obj.addField(gqlField)
+}
+
+func createFieldTypeForPluralEdge(edge edge.Edge) *fieldType {
+	return &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		FunctionContents:   []string{fmt.Sprintf("return obj.load%s();", edge.CamelCaseEdgeName())},
 	}
+}
+
+func addPluralEdge(edge edge.Edge, obj *objectType) error {
+	gqlField := createFieldTypeForPluralEdge(edge)
+	return obj.addField(gqlField)
+}
+
+func addPluralEdgeFromExternal(processor *codegen.Processor, edge edge.Edge, f *field.Field, obj *objectType) error {
+	gqlField := createFieldTypeForPluralEdge(edge)
+	gqlField.HasAsyncModifier = true
+
+	var contents []string
+	tsFieldName := f.TsFieldName(processor.Config)
+	if f.Nullable() {
+		contents = append(contents, fmt.Sprintf("if (obj.%s === null || obj.%s === undefined)	{ return null;}", tsFieldName, tsFieldName))
+	}
+	contents = append(contents, fmt.Sprintf("const objs = await %s.loadMany(context.getViewer(), ...obj.%s);", edge.GetNodeInfo().Node, tsFieldName))
+	contents = append(contents, "return Array.from(objs.values());")
+
+	gqlField.ExtraImports = append(gqlField.ExtraImports, tsimport.NewLocalEntImportPath(edge.GetNodeInfo().Node))
+	gqlField.FunctionContents = contents
 	return obj.addField(gqlField)
 }
 
@@ -2932,6 +2971,74 @@ func processActionField(processor *codegen.Processor, a action.Action, f action.
 		argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(processor.Config), true)...)
 	}
 
+	var customList []string
+	var listType bool
+
+	customType, ok := f.GetFieldType().(enttype.TSTypeWithCustomType)
+	if ok {
+		cti := customType.GetCustomTypeInfo()
+		if cti != nil {
+
+			ci, ok := processor.Schema.CustomInterfaces[cti.TSInterface]
+			if ok {
+
+				for _, f := range ci.Fields {
+					nestedType := f.GetFieldType()
+
+					customRenderer, ok := nestedType.(enttype.CustomGQLRenderer)
+					if !ok {
+						continue
+					}
+					listType = enttype.IsListType(typ)
+					nestedInputField := fmt.Sprintf("%s.%s", inputField, f.GetGraphQLName())
+
+					if listType {
+						// if list type, operate on "item in a loop"
+						nestedInputField = fmt.Sprintf("item.%s", f.GetGraphQLName())
+					}
+					nestedInputFieldPrefix := nestedInputField
+					nestedInputField = customRenderer.CustomGQLRender(processor.Config, nestedInputField)
+					if nestedInputField == nestedInputFieldPrefix {
+						// nothing changed here
+						continue
+					}
+					argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(processor.Config), true)...)
+
+					if f.Nullable() {
+						nestedInputField = fmt.Sprintf("%s: %s ? %s: undefined",
+							f.GetGraphQLName(),
+							nestedInputFieldPrefix,
+							nestedInputField,
+						)
+					} else {
+						nestedInputField = fmt.Sprintf("%s: %s", f.GetGraphQLName(), nestedInputField)
+					}
+
+					customList = append(customList, nestedInputField)
+				}
+			}
+		}
+	}
+
+	resPrefix := inputField
+	res := resPrefix
+
+	if len(customList) > 0 {
+		if listType {
+			res = fmt.Sprintf("{...item,  %s}", strings.Join(customList, ","))
+
+		} else {
+			res = fmt.Sprintf("{...%s,  %s}", resPrefix, strings.Join(customList, ","))
+		}
+
+		if listType {
+			res = fmt.Sprintf("%s?.map((item: any) =>  ( %s ))", resPrefix, res)
+		} else if f.Nullable() {
+			res = fmt.Sprintf("%s ? %s: undefined", resPrefix, res)
+		}
+		inputField = res
+	}
+
 	return fmt.Sprintf(
 		"%s: %s,",
 		f.TSPublicAPIName(),
@@ -3246,10 +3353,61 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(ciInfo.input), ciInfo.input),
 		}
+
+		fieldName := fmt.Sprintf("obj.%s", f.TsFieldName(processor.Config))
+
+		if !ciInfo.input {
+			fieldEdge := f.FieldEdgeInfo()
+
+			if fieldEdge == nil {
+				if fkey := f.ForeignKeyInfo(); fkey != nil {
+					// handle types declared with foreignKey
+					// TODO should probably throw since this doesn't actually make sense since the foreignKey won't be respected
+					fieldEdge = &base.FieldEdgeInfo{
+						Schema: fkey.Schema,
+					}
+				}
+			}
+
+			// should exist for id fields...
+			if fieldEdge != nil {
+
+				e, err := edge.GetFieldEdge(
+					processor.Config,
+					f.FieldName,
+					fieldEdge,
+					f.Nullable(),
+					f.GetFieldType(),
+				)
+
+				if err != nil {
+					return nil, err
+				}
+
+				if e != nil {
+					// these 2 should change to loading via the constructor instead of this way
+					// i.e. Foo.loadEnt or whatever the API is
+					if e.IsList() {
+						if err := addPluralEdgeFromExternal(processor, e, f, result); err != nil {
+							return nil, err
+						}
+
+					} else {
+						if err := addSingularEdgeFromExternal(processor, e, f, result); err != nil {
+							return nil, err
+						}
+					}
+
+					continue
+				}
+			}
+		}
+
 		if !ciInfo.input && f.TsFieldName(processor.Config) != f.GetGraphQLName() {
 			ft.HasResolveFunction = true
-			ft.FunctionContents = []string{fmt.Sprintf("return obj.%s", f.TsFieldName(processor.Config))}
+			ft.FunctionContents = []string{fmt.Sprintf("return %s", fieldName)}
 		}
+		// }
 		if err := result.addField(ft); err != nil {
 			return nil, err
 		}
