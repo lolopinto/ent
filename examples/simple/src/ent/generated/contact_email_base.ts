@@ -56,7 +56,10 @@ export class ContactEmailBase
   readonly emailAddress: string;
   readonly label: ContactLabel;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;

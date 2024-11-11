@@ -41,7 +41,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   readonly emailAddress: string;
   readonly sentCode: boolean;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

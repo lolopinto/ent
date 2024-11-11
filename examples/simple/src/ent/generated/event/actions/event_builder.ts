@@ -381,7 +381,10 @@ export class EventBuilder<
     };
     addField("name", input.name);
     addField("creatorID", input.creatorId);
-    if (input.creatorId !== undefined) {
+    if (
+      input.creatorId !== undefined ||
+      this.operation === WriteOperation.Delete
+    ) {
       if (input.creatorId) {
         this.orchestrator.addInboundEdge(
           input.creatorId,
@@ -404,7 +407,10 @@ export class EventBuilder<
     addField("end_time", input.endTime);
     addField("location", input.location);
     addField("addressId", input.addressId);
-    if (input.addressId !== undefined) {
+    if (
+      input.addressId !== undefined ||
+      this.operation === WriteOperation.Delete
+    ) {
       if (input.addressId) {
         this.orchestrator.addInboundEdge(
           input.addressId,

@@ -63,7 +63,10 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   readonly coverPhoto2: Buffer | null;
   readonly attachments: Attachment[] | null;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

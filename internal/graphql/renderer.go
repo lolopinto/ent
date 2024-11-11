@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -36,6 +37,8 @@ func (r *elemRenderer) render(s *gqlSchema) string {
 		sb.WriteString("union ")
 		sb.WriteString(r.name)
 		sb.WriteString(" = ")
+		// sort list so deterministic
+		sort.Strings(r.unionTypes)
 		sb.WriteString(strings.Join(r.unionTypes, " | "))
 		sb.WriteString("\n")
 		return sb.String()

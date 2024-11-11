@@ -277,7 +277,7 @@ export const EventActivityCanViewerDoType = new GraphQLObjectType({
       args: {
         test: {
           description: "",
-          type: new GraphQLNonNull(GraphQLString),
+          type: GraphQLString,
         },
       },
       resolve: async (

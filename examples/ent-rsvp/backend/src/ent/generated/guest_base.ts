@@ -55,7 +55,10 @@ export class GuestBase
   readonly guestDataId: ID | null;
   readonly tag: GuestTag | null;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;

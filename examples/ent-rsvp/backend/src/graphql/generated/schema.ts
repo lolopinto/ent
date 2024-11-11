@@ -110,6 +110,7 @@ import {
   UserToEventsConnectionType,
   UserType,
   ViewerType,
+  WithAddressType,
 } from "src/graphql/resolvers";
 
 export default new GraphQLSchema({
@@ -125,6 +126,7 @@ export default new GraphQLSchema({
     GuestGroupType,
     GuestType,
     UserType,
+    WithAddressType,
     AddressToLocatedAtConnectionType(),
     EventActivityToAttendingConnectionType(),
     EventActivityToDeclinedConnectionType(),

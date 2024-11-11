@@ -288,8 +288,6 @@ type ContactInfoExtra {
   source: ContactInfoSource!
 }
 
-union ContactInfo = ContactEmail | ContactPhoneNumber
-
 input ContactItemFilter {
   emailDomain: String
   phoneNumberAreaCode: String
@@ -368,7 +366,7 @@ type Event implements Node {
   cities: [City!]!
 }
 
-union Feedback = Contact | ContactEmail | User | ContactPhoneNumber
+union Feedback = ContactPhoneNumber | ContactEmail | Contact | User
 
 type File implements Node {
   creator: User

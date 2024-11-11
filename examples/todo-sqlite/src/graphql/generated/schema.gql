@@ -91,6 +91,8 @@ type Tag implements Node {
   todos(first: Int, after: String, last: Int, before: String): TagToTodosConnection!
 }
 
+union TodoContainer = Workspace | Account
+
 type Todo implements Node {
   assignee: Account
   creator: Account
