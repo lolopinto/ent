@@ -9,6 +9,13 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.9] - 2024-11-11
+
+### Added
+
+- join types (#1840)
+- disableBase64Encode for uuid types (#1843)
+
 ## [0.2.0-alpha.8] - 2024-10-07
 
 ### Fixed

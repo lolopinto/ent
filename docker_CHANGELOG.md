@@ -9,6 +9,12 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.9] - 2024-11-11
+
+### Fixed
+
+- Fix UUID fields in struct fields (#1843)
+
 ## [0.2.0-alpha.8] - 2024-09-05
 
 ### Fixed
