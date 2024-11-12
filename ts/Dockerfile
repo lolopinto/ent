@@ -1,10 +1,10 @@
-ARG GOLANG_VERSION=v0.1.11
+ARG GOLANG_VERSION=v0.2.0-alpha.9
 ARG AUTO_SCHEMA_VERSION=0.0.32
 ARG NODE_VERSION=18
-ARG DOCKER_TAG=v0.1.12
+ARG DOCKER_TAG=v0.2.0-alpha.9
 
 # get and install tsent
-FROM --platform=$BUILDPLATFORM golang:1.22.0-bullseye As golang-image
+FROM --platform=$BUILDPLATFORM golang:1.23.3-bullseye As golang-image
 ARG GOLANG_VERSION
 ARG DOCKER_TAG
 ENV GOPATH=$HOME/go
