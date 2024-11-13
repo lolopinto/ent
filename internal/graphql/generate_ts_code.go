@@ -2417,7 +2417,7 @@ func addSingularEdge(edge edge.Edge, obj *objectType) error {
 	return obj.addField(gqlField)
 }
 
-func addSingularEdgeFromExternal(processor *codegen.Processor, edge edge.Edge, f *field.Field, obj *objectType) error {
+func addSingularEdgeFromExternal(processor *codegen.Processor, edge *edge.FieldEdge, f *field.Field, obj *objectType) error {
 	gqlField := createFieldTypeForSingularEdge(edge)
 	var contents []string
 
@@ -2425,8 +2425,14 @@ func addSingularEdgeFromExternal(processor *codegen.Processor, edge edge.Edge, f
 	if f.Nullable() {
 		contents = append(contents, fmt.Sprintf("if (obj.%s === null || obj.%s === undefined)	{ return null;}", tsFieldName, tsFieldName))
 	}
-	contents = append(contents, fmt.Sprintf("return %s.load(context.getViewer(), obj.%s);", edge.GetNodeInfo().Node, tsFieldName))
-	gqlField.ExtraImports = append(gqlField.ExtraImports, tsimport.NewLocalEntImportPath(edge.GetNodeInfo().Node))
+	// TODO make this easier to do. shouldn't have to remember this
+	if edge.Polymorphic != nil {
+		contents = append(contents, fmt.Sprintf("return loadEntByType(context.getViewer(), obj.%s as unknown as NodeType, obj.%s);", edge.Polymorphic.NodeTypeField, edge.TSFieldName))
+		gqlField.ExtraImports = append(gqlField.ExtraImports, tsimport.NewTypesEntImportPath("NodeType"), tsimport.NewLocalEntImportPath("loadEntByType"))
+	} else {
+		contents = append(contents, fmt.Sprintf("return %s.load(context.getViewer(), obj.%s);", edge.GetNodeInfo().Node, tsFieldName))
+		gqlField.ExtraImports = append(gqlField.ExtraImports, tsimport.NewLocalEntImportPath(edge.GetNodeInfo().Node))
+	}
 	gqlField.FunctionContents = contents
 	return obj.addField(gqlField)
 }
@@ -2445,7 +2451,7 @@ func addPluralEdge(edge edge.Edge, obj *objectType) error {
 	return obj.addField(gqlField)
 }
 
-func addPluralEdgeFromExternal(processor *codegen.Processor, edge edge.Edge, f *field.Field, obj *objectType) error {
+func addPluralEdgeFromExternal(processor *codegen.Processor, edge *edge.FieldEdge, f *field.Field, obj *objectType) error {
 	gqlField := createFieldTypeForPluralEdge(edge)
 	gqlField.HasAsyncModifier = true
 
@@ -2454,10 +2460,17 @@ func addPluralEdgeFromExternal(processor *codegen.Processor, edge edge.Edge, f *
 	if f.Nullable() {
 		contents = append(contents, fmt.Sprintf("if (obj.%s === null || obj.%s === undefined)	{ return null;}", tsFieldName, tsFieldName))
 	}
-	contents = append(contents, fmt.Sprintf("const objs = await %s.loadMany(context.getViewer(), ...obj.%s);", edge.GetNodeInfo().Node, tsFieldName))
-	contents = append(contents, "return Array.from(objs.values());")
+	if edge.Polymorphic != nil {
+		// PS: doesn't seem like we support this. see examples/simple/src/schema/__global__schema.ts
+		contents = append(contents, fmt.Sprintf("const objs = await Promise.all(obj.%s.map((id, idx) => loadEntByType(context.getViewer(), obj.%s[idx] as unknown as NodeType, id));", edge.Polymorphic.NodeTypeField, edge.TSFieldName))
+		contents = append(contents, "return objs.filter((obj) => obj !== null);")
+		gqlField.ExtraImports = append(gqlField.ExtraImports, tsimport.NewTypesEntImportPath("NodeType"), tsimport.NewLocalEntImportPath("loadEntByType"))
 
-	gqlField.ExtraImports = append(gqlField.ExtraImports, tsimport.NewLocalEntImportPath(edge.GetNodeInfo().Node))
+	} else {
+		contents = append(contents, fmt.Sprintf("const objs = await %s.loadMany(context.getViewer(), ...obj.%s);", edge.GetNodeInfo().Node, tsFieldName))
+		contents = append(contents, "return Array.from(objs.values());")
+		gqlField.ExtraImports = append(gqlField.ExtraImports, tsimport.NewLocalEntImportPath(edge.GetNodeInfo().Node))
+	}
 	gqlField.FunctionContents = contents
 	return obj.addField(gqlField)
 }

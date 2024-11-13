@@ -122,6 +122,11 @@ export const EventCreateType: GraphQLFieldConfig<
               item.dupeFileId?.toString() ?? item.dupeFileId,
             )
           : undefined,
+        creatorId: item.creatorId
+          ? mustDecodeNullableIDFromGQLID(
+              item.creatorId?.toString() ?? item.creatorId,
+            )
+          : undefined,
       })),
     }).saveX();
     return { event: event };

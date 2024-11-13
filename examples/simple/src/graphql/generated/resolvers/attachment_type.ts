@@ -10,9 +10,9 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLTime } from "@snowtop/ent/graphql";
-import { File } from "../../../ent";
-import { Attachment } from "../../../ent/generated/types";
+import { GraphQLNodeInterface, GraphQLTime } from "@snowtop/ent/graphql";
+import { File, loadEntByType } from "../../../ent";
+import { Attachment, NodeType } from "../../../ent/generated/types";
 import { FileType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
@@ -55,6 +55,26 @@ export const AttachmentType = new GraphQLObjectType({
       type: GraphQLString,
     },
     emailAddress: {
+      type: GraphQLString,
+    },
+    creator: {
+      type: GraphQLNodeInterface,
+      resolve: (
+        obj: Attachment,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        if (obj.creatorId === null || obj.creatorId === undefined) {
+          return null;
+        }
+        return loadEntByType(
+          context.getViewer(),
+          obj.creatorType as unknown as NodeType,
+          obj.creatorId,
+        );
+      },
+    },
+    creatorType: {
       type: GraphQLString,
     },
   }),

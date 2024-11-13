@@ -76,6 +76,19 @@ const glo: GlobalSchema = {
         date: TimestampType(),
         phone_number: PhoneNumberType({ nullable: true }),
         email_address: EmailType({ nullable: true }),
+        creator_id: UUIDType({
+          polymorphic: {
+            types: ["User"],
+          },
+          nullable: true,
+        }),
+        // doesn't seem like we support this...
+        // owner_ids: UUIDListType({
+        //   polymorphic: {
+        //     types: ["User"],
+        //   },
+        //   nullable: true,
+        // }),
       },
     }),
   },
