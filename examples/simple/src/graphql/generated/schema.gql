@@ -235,6 +235,8 @@ type Attachment {
   date: Time!
   phoneNumber: String
   emailAddress: String
+  creator: Node
+  creatorType: String
 }
 
 type CatType {
@@ -287,8 +289,6 @@ type ContactInfoExtra {
   default: Boolean!
   source: ContactInfoSource!
 }
-
-union ContactInfo = ContactEmail | ContactPhoneNumber
 
 input ContactItemFilter {
   emailDomain: String
@@ -1122,6 +1122,8 @@ input AttachmentInput {
   date: Time!
   phoneNumber: String
   emailAddress: String
+  creatorId: ID
+  creatorType: String
 }
 
 input CatTypeInput {

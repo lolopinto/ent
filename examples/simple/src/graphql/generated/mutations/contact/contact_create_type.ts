@@ -139,6 +139,11 @@ export const ContactCreateType: GraphQLFieldConfig<
               item.dupeFileId?.toString() ?? item.dupeFileId,
             )
           : undefined,
+        creatorId: item.creatorId
+          ? mustDecodeNullableIDFromGQLID(
+              item.creatorId?.toString() ?? item.creatorId,
+            )
+          : undefined,
       })),
       emails: input.emails,
       phoneNumbers: input.phoneNumbers,

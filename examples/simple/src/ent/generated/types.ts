@@ -734,6 +734,8 @@ export interface Attachment {
   date: Date;
   phoneNumber?: string | null;
   emailAddress?: string | null;
+  creatorId?: ID | null;
+  creatorType?: string | null;
 }
 
 export function convertAttachment(input: any): Attachment {
@@ -744,6 +746,8 @@ export function convertAttachment(input: any): Attachment {
     date: input.date,
     phoneNumber: input.phone_number,
     emailAddress: input.email_address,
+    creatorId: input.creator_id,
+    creatorType: input.creator_type,
   };
 }
 

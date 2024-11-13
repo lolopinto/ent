@@ -15,8 +15,8 @@ export const FeedbackType = new GraphQLUnionType({
   name: "Feedback",
   types: () => [
     UserType,
-    ContactType,
     ContactPhoneNumberType,
     ContactEmailType,
+    ContactType,
   ],
 });
