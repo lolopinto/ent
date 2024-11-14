@@ -74,8 +74,5 @@ export const AttachmentType = new GraphQLObjectType({
         );
       },
     },
-    creatorType: {
-      type: GraphQLString,
-    },
   }),
 });

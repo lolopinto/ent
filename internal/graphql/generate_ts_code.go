@@ -3362,6 +3362,9 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 	}
 
 	for _, f := range ci.Fields {
+		if !f.ExposeToGraphQL() {
+			continue
+		}
 		ft := &fieldType{
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(ciInfo.input), ciInfo.input),
