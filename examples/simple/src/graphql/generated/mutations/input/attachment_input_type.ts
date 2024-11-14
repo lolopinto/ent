@@ -36,8 +36,5 @@ export const AttachmentInputType = new GraphQLInputObjectType({
     creatorId: {
       type: GraphQLID,
     },
-    creatorType: {
-      type: GraphQLString,
-    },
   }),
 });
