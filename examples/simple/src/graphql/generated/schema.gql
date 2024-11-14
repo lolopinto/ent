@@ -1124,6 +1124,7 @@ input AttachmentInput {
   phoneNumber: String
   emailAddress: String
   creatorId: ID
+  creatorType: String
 }
 
 input CatTypeInput {

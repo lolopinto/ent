@@ -11,5 +11,5 @@ import {
 
 export const ContactInfoType = new GraphQLUnionType({
   name: "ContactInfo",
-  types: () => [ContactPhoneNumberType, ContactEmailType],
+  types: () => [ContactEmailType, ContactPhoneNumberType],
 });
