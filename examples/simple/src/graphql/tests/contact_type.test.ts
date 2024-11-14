@@ -6,7 +6,7 @@ import {
   queryRootConfig,
 } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
-import { encodeGQLID } from "@snowtop/ent/graphql";
+import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import schema from "../generated/schema";
 import CreateUserAction from "../../ent/user/actions/create_user_action";
 import { Contact, User } from "../../ent";
@@ -14,7 +14,7 @@ import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
-import { ContactLabel } from "src/ent/generated/types";
+import { ContactLabel, NodeType } from "src/ent/generated/types";
 import EditContactAction from "src/ent/contact/actions/edit_contact_action";
 import CreateContactEmailAction from "src/ent/contact_email/actions/create_contact_email_action";
 import CreateContactPhoneNumberAction from "src/ent/contact_phone_number/actions/create_contact_phone_number_action";
@@ -368,6 +368,8 @@ test("create contact with attachments", async () => {
             note: "note",
             date: d.toISOString(),
             dupeFileId: encodeGQLID(file),
+            creatorId: encodeGQLID(user),
+            creatorType: "User",
           },
           {
             fileId: encodeGQLID(file2),
@@ -378,12 +380,24 @@ test("create contact with attachments", async () => {
         ],
       },
     },
+    [
+      "contact.id",
+      async function name(id: string) {
+        const entId = mustDecodeIDFromGQLID(id);
+        const contact = await Contact.loadX(user.viewer, entId);
+        expect(contact.attachments).toHaveLength(2);
+        expect(contact.attachments?.[0].creatorType).toBe(NodeType.User);
+      },
+    ],
     ["contact.firstName", "Jon"],
     ["contact.lastName", "Snow"],
     ["contact.emails[0].emailAddress", email],
     ["contact.attachments[0].file.id", encodeGQLID(file)],
     ["contact.attachments[0].dupeFile.id", encodeGQLID(file)],
     ["contact.attachments[0].note", "note"],
+    ["contact.attachments[0].creator.id", encodeGQLID(user)],
+    // TODO we should have a way to query nested graphql fragments...
+    // ["contact.attachments[0].creator....on User.type", "User"],
     ["contact.attachments[1].dupeFile.id", encodeGQLID(file2)],
     ["contact.attachments[1].file.id", encodeGQLID(file2)],
     ["contact.attachments[1].note", "note2"],

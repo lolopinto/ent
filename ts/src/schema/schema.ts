@@ -592,9 +592,6 @@ export interface FieldOptions {
 
   fetchOnDemand?: boolean;
 
-  // on uuid types, provides the ability to disable base 64 encoding of the uuid if for example this is a raw uuid not associated with an ent/object in the db
-  disableBase64Encode?: boolean;
-
   // if dbOnly, field isn't exposed in ent and graphql
   // will still exit in the db and not be removed
   // allows keeping the field in the db and avoid data loss if we still want the field for some reason

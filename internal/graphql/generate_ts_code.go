@@ -3362,8 +3362,14 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 	}
 
 	for _, f := range ci.Fields {
-		if !f.ExposeToGraphQL() {
-			continue
+		if ciInfo.input {
+			if !f.EditableGraphQLField() {
+				continue
+			}
+		} else {
+			if !f.ExposeToGraphQL() {
+				continue
+			}
 		}
 		ft := &fieldType{
 			Name:         f.GetGraphQLName(),
