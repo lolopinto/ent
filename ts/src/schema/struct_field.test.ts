@@ -860,3 +860,42 @@ describe("struct as list global type", () => {
     expect(f.format(val)).toBe(JSON.stringify(formatted));
   });
 });
+
+test("struct with polymorphic field", async () => {
+  const f = structTypeF({
+    user_id: UUIDType({
+      polymorphic: {
+        types: ["User"],
+      },
+    }),
+    value: StringType(),
+  });
+
+  const val = {
+    user_id: v1(),
+    user_type: "user",
+    value: "string",
+  };
+
+  expect(await f.valid(val)).toBe(true);
+  expect(f.format(val)).toBe(JSON.stringify(val));
+});
+
+test("struct with invalid polymorphic field", async () => {
+  const f = structTypeF({
+    user_id: UUIDType({
+      polymorphic: {
+        types: ["User"],
+      },
+    }),
+    value: StringType(),
+  });
+
+  const val = {
+    user_id: v1(),
+    user_type: "hello",
+    value: "string",
+  };
+
+  expect(await f.valid(val)).toBe(false);
+});
