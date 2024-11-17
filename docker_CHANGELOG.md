@@ -9,6 +9,10 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- Updated error when there's duplicate names in generated GraphQL Schema (#1857)
+
 ## [0.2.0-alpha.9] - 2024-11-11
 
 ### Fixed
