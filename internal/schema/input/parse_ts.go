@@ -50,9 +50,14 @@ func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 	execCmd.Stderr = os.Stderr
 	execCmd.Env = cmdInfo.Env
 
+	if cmdInfo.UseSwc {
+		cleanup := cmdInfo.MaybeSetupSwcrc(dirPath)
+		defer cleanup()
+	}
+
 	// flags not showing up in command but my guess is it's function of what's passed to process.argv
 	if err := execCmd.Run(); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error getting raw schema")
 	}
 
 	return out.Bytes(), nil
