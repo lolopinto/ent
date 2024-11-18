@@ -1084,7 +1084,7 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 // ExposeToGraphQL() bool
 func (s *Schema) addGQLType(name string) error {
 	if s.gqlTypeMap[name] {
-		return fmt.Errorf("there's already an entity with GraphQL name %s", name)
+		return fmt.Errorf("there's already an entity with GraphQL name %s. Maybe Node and Pattern with the same name?", name)
 	}
 	s.gqlTypeMap[name] = true
 	return nil
