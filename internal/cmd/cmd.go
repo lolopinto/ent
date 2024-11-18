@@ -39,6 +39,45 @@ type CommandInfo struct {
 	UseSwc bool
 }
 
+func (cmdInfo *CommandInfo) MaybeSetupSwcrc(dirPath string) func() {
+	swcPath := filepath.Join(dirPath, ".swcrc")
+	_, err := os.Stat(swcPath)
+
+	shouldCleanup := false
+	cleanup := func() {
+		if shouldCleanup {
+			os.Remove(swcPath)
+		}
+	}
+	if err != nil && os.IsNotExist(err) {
+		// temp .swcrc file to be used
+		// probably need this for parse_ts too
+		err = os.WriteFile(swcPath, []byte(`{
+		"$schema": "http://json.schemastore.org/swcrc",
+    "jsc": {
+        "parser": {
+            "syntax": "typescript",
+            "decorators": true
+        },
+        "target": "es2020",
+        "keepClassNames":true,
+        "transform": {
+            "decoratorVersion": "2022-03"
+        }
+    },
+		"module": {
+			"type": "commonjs",
+		}
+}
+				`), os.ModePerm)
+
+		if err == nil {
+			shouldCleanup = true
+		}
+	}
+	return cleanup
+}
+
 func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 	env := os.Environ()
 	cmdName := "ts-node"
