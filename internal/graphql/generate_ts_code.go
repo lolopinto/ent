@@ -1670,6 +1670,8 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 				unionTypes := make([]string, len(nodeNames))
 				imports := make([]*tsimport.ImportPath, len(nodeNames))
+				// sort for deterministic output
+				sort.Strings(nodeNames)
 				for i, nodeName := range nodeNames {
 					unionTypes[i] = fmt.Sprintf("%sType", nodeName)
 					imports[i] = tsimport.NewLocalGraphQLEntImportPath(nodeName)

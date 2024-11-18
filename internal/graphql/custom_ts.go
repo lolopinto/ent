@@ -3,6 +3,7 @@ package graphql
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/lolopinto/ent/internal/codegen"
@@ -1090,6 +1091,8 @@ func processCustomUnions(processor *codegen.Processor, cd *CustomData, s *gqlSch
 
 		unionTypes := make([]string, len(union.UnionTypes))
 		imports := make([]*tsimport.ImportPath, len(union.UnionTypes))
+		// sort to make sure it's deterministic
+		sort.Strings(union.UnionTypes)
 		for i, unionType := range union.UnionTypes {
 			unionTypes[i] = fmt.Sprintf("%sType", unionType)
 			imports[i] = tsimport.NewLocalGraphQLEntImportPath(unionType)
