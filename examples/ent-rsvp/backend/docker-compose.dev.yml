@@ -13,3 +13,4 @@ services:
       - .:/app:rw,delegated
     environment:
       - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/ent-rsvp
+      - ENABLE_SWC=true
