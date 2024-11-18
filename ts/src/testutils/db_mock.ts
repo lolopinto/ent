@@ -313,15 +313,52 @@ export class QueryRecorder {
 
   static mockPool(pool: typeof Pool) {
     const mockedPool = mocked(pool);
-    // @ts-ignore
-    // TODO what changed in mockImplementation?
-    mockedPool.mockImplementation((): Pool => {
+    // changed to any but seems off
+    mockedPool.mockImplementation((): any => {
       return {
         totalCount: 1,
         idleCount: 1,
         waitingCount: 1,
-        connect: async (): Promise<PoolClient> => {
-          return {
+        ending: false,
+        ended: false,
+        expiredCount: 1,
+        options: {
+          max: 1,
+          maxUses: 1,
+          allowExitOnIdle: true,
+          maxLifetimeSeconds: 1,
+          idleTimeoutMillis: 1,
+        },
+        connect: function (
+          callback?: (
+            err: Error,
+            client: PoolClient,
+            done: (release?: any) => void,
+          ) => void,
+        ): Promise<PoolClient> {
+          if (callback) {
+            // return;
+            // const client = {
+            //   connect: jest.fn(),
+            //   release: jest.fn(),
+            //   query: jest
+            //     .fn()
+            //     .mockImplementation((query: string, values: any[]) => {
+            //       return QueryRecorder.recordQuery(query, values);
+            //     }),
+            //   copyFrom: jest.fn(),
+            //   copyTo: jest.fn(),
+            //   pauseDrain: jest.fn(),
+            //   resumeDrain: jest.fn(),
+            //   escapeIdentifier: jest.fn(),
+            //   escapeLiteral: jest.fn(),
+            //   setTypeParser: jest.fn(),
+            //   getTypeParser: jest.fn(),
+            //   ...eventEmitter,
+            // };
+            // callback(null as unknown as Error, client, jest.fn());
+          }
+          return Promise.resolve({
             connect: jest.fn(),
             release: jest.fn(),
             query: jest
@@ -335,10 +372,10 @@ export class QueryRecorder {
             resumeDrain: jest.fn(),
             escapeIdentifier: jest.fn(),
             escapeLiteral: jest.fn(),
-
-            // EventEmitter
+            setTypeParser: jest.fn(),
+            getTypeParser: jest.fn(),
             ...eventEmitter,
-          };
+          });
         },
         end: jest.fn(),
         query: jest.fn().mockImplementation(QueryRecorder.recordQuery),

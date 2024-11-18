@@ -5,5 +5,5 @@ import { AccountType, WorkspaceType } from "src/graphql/resolvers/internal";
 
 export const TodoContainerType = new GraphQLUnionType({
   name: "TodoContainer",
-  types: () => [WorkspaceType, AccountType],
+  types: () => [AccountType, WorkspaceType],
 });

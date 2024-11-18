@@ -32,13 +32,13 @@ python3 -m pip install auto_schema==0.0.26
 * Install the following TypeScript packages globally:
 
 ```shell
-npm install -g typescript@5.3.2 prettier@3.1.0 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@1.4.1
+npm install -g typescript@5.6.3 prettier@3.3.3 ts-node@11.0.0-beta.1 @swc/core@1.9.2 @swc/cli@0.5.0 @biomejs/biome@1.9.4
 ```
 
 * Install `tsconfig-paths` and `@swc-node/register` locally:
 
 ```shell
-npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.6.8
+npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.10.9
 ```
 
 * Install `rg`
