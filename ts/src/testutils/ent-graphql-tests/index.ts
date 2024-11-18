@@ -1,30 +1,31 @@
 // NB: this is copied from ent-graphql-tests package until I have time to figure out how to share code here effectively
 // the circular dependencies btw this package and ent-graphql-tests seems to imply something needs to change
 import express, { Express, RequestHandler } from "express";
+import * as fs from "fs";
 import {
-  getGraphQLParameters,
-  processRequest,
-  ExecutionContext,
-  sendResult,
-} from "graphql-helix";
-import { Viewer } from "../../core/base";
-import {
-  GraphQLSchema,
+  GraphQLArgument,
+  GraphQLField,
+  GraphQLFieldMap,
+  GraphQLList,
   GraphQLObjectType,
   GraphQLScalarType,
-  isWrappingType,
-  GraphQLArgument,
-  GraphQLList,
-  isScalarType,
+  GraphQLSchema,
   GraphQLType,
-  GraphQLFieldMap,
-  GraphQLField,
   isEnumType,
+  isScalarType,
+  isWrappingType,
 } from "graphql";
-import { buildContext, registerAuthHandler } from "../../auth";
+import {
+  ExecutionContext,
+  getGraphQLParameters,
+  processRequest,
+  sendResult,
+} from "graphql-helix";
+import { IncomingHttpHeaders } from "http";
 import supertest from "supertest";
-import * as fs from "fs";
 import { inspect } from "util";
+import { buildContext, registerAuthHandler } from "../../auth";
+import { Viewer } from "../../core/base";
 
 function server(config: queryConfig): Express {
   const viewer = config.viewer;
@@ -127,7 +128,7 @@ function makeGraphQLRequest(
   if (files.size) {
     let ret = test
       .post(config.graphQLPath || "/graphql")
-      .set(config.headers || {});
+      .set((config.headers || {}) as IncomingHttpHeaders);
 
     ret.field(
       "operations",
@@ -161,7 +162,7 @@ function makeGraphQLRequest(
       test,
       test
         .post(config.graphQLPath || "/graphql")
-        .set(config.headers || {})
+        .set((config.headers || {}) as IncomingHttpHeaders)
         .send({
           query: query,
           variables: JSON.stringify(variables),

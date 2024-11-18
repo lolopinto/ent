@@ -73,9 +73,8 @@ export class StructField extends BaseField implements Field {
       throw new Error("valid was not called");
     }
     let ret: Object = {};
-    for (const k in this.options.fields) {
-      const field = this.options.fields[k];
 
+    const processField = (k: string, field: Field) => {
       // check two values
       // store in dbKey format
 
@@ -93,13 +92,26 @@ export class StructField extends BaseField implements Field {
       }
 
       if (val === undefined) {
-        continue;
+        return;
       }
       if (field.format) {
         // indicate nested so this isn't JSON stringified
         ret[dbKey] = field.format(val, true);
       } else {
         ret[dbKey] = val;
+      }
+    };
+
+    for (const k in this.options.fields) {
+      const field = this.options.fields[k];
+
+      processField(k, field);
+
+      if (field.getDerivedFields) {
+        const derivedFields = field.getDerivedFields(k);
+        for (const k in derivedFields) {
+          processField(k, derivedFields[k]);
+        }
       }
     }
     // don't json.stringify if nested or list
@@ -157,11 +169,12 @@ export class StructField extends BaseField implements Field {
     }
 
     let promises: (boolean | Promise<boolean>)[] = [];
-    // TODO probably need to support optional fields...
-    let valid = true;
-    for (const k in this.options.fields) {
-      const field = this.options.fields[k];
-      let dbKey = getStorageKey(field, k);
+
+    const processField = (
+      k: string,
+      dbKey: string,
+      field: Field,
+    ): boolean | undefined => {
       let fieldName = toFieldName(k);
       let val = obj[fieldName];
 
@@ -193,15 +206,36 @@ export class StructField extends BaseField implements Field {
       if (val === undefined || val === null) {
         // nullable, nothing to do here
         if (field.nullable) {
-          continue;
+          return;
         }
         valid = false;
-        break;
+        return false;
       }
       if (!field.valid) {
-        continue;
+        return;
       }
       promises.push(field.valid(val));
+    };
+    // TODO probably need to support optional fields...
+    let valid = true;
+    for (const k in this.options.fields) {
+      const field = this.options.fields[k];
+      let dbKey = getStorageKey(field, k);
+
+      if (processField(k, dbKey, field) === false) {
+        valid = false;
+      }
+
+      if (field.getDerivedFields) {
+        const derivedFields = field.getDerivedFields(k);
+        for (const k in derivedFields) {
+          const derivedField = derivedFields[k];
+          let dbKey = getStorageKey(derivedField, k);
+          if (processField(k, dbKey, derivedField) === false) {
+            valid = false;
+          }
+        }
+      }
     }
     if (!valid) {
       return valid;

@@ -90,7 +90,7 @@ export const AddressCreateType: GraphQLFieldConfig<
       state: input.state,
       zipCode: input.zipCode,
       apartment: input.apartment,
-      ownerId: mustDecodeIDFromGQLID(input.ownerId),
+      ownerId: mustDecodeIDFromGQLID(input.ownerId.toString()),
       ownerType: input.ownerType,
     }).saveX();
     return { address: address };

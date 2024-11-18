@@ -1092,12 +1092,12 @@ test("jsonb types", async () => {
       },
     ],
   }).saveX();
-  expect(await user.prefs()).toStrictEqual({
+  expect(await user.prefs()).toMatchObject({
     enableNotifs: undefined,
     finishedNux: true,
     notifTypes: [NotifType.EMAIL],
   });
-  expect(await user.prefsList()).toStrictEqual([
+  expect(await user.prefsList()).toMatchObject([
     {
       enableNotifs: undefined,
       finishedNux: true,

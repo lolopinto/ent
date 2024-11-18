@@ -902,7 +902,10 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 	}
 	actualSubFields := subFields.([]*input.Field)
 	// use the parent of the field to determine or just nest it all the way based on parent
-	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, actualSubFields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, actualSubFields, &field.Options{
+		// no builder type on sub-fields
+		ForceDisableBuilderType: true,
+	})
 	if err != nil {
 		return err
 	}
@@ -959,7 +962,9 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 		root.Children = append(root.Children, ci)
 	}
 
-	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, subFields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, subFields, &field.Options{
+		ForceDisableBuilderType: true,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -1015,7 +1020,9 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field, globalTyp
 	}
 
 	actualSubFields := unionFields.([]*input.Field)
-	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, actualSubFields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, actualSubFields, &field.Options{
+		ForceDisableBuilderType: true,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -1027,7 +1034,9 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field, globalTyp
 		ci.GraphQLFieldName = f2.GetGraphQLName()
 
 		// get the fields and add to custom interface
-		fi2, err := field.NewFieldInfoFromInputs(cfg, f2.FieldName, subFields, &field.Options{})
+		fi2, err := field.NewFieldInfoFromInputs(cfg, f2.FieldName, subFields, &field.Options{
+			ForceDisableBuilderType: true,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -1075,7 +1084,7 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 // ExposeToGraphQL() bool
 func (s *Schema) addGQLType(name string) error {
 	if s.gqlTypeMap[name] {
-		return fmt.Errorf("there's already an entity with GraphQL name %s", name)
+		return fmt.Errorf("there's already an entity with GraphQL name %s. Maybe Node and Pattern with the same name?", name)
 	}
 	s.gqlTypeMap[name] = true
 	return nil

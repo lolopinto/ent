@@ -1,4 +1,4 @@
-import { advanceBy } from "jest-date-mock";
+import { advanceBy, advanceTo } from "jest-date-mock";
 import { Viewer } from "@snowtop/ent";
 import {
   expectMutation,
@@ -6,7 +6,7 @@ import {
   queryRootConfig,
 } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
-import { encodeGQLID } from "@snowtop/ent/graphql";
+import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import schema from "../generated/schema";
 import CreateUserAction from "../../ent/user/actions/create_user_action";
 import { Contact, User } from "../../ent";
@@ -14,10 +14,11 @@ import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
-import { ContactLabel } from "src/ent/generated/types";
+import { ContactLabel, NodeType } from "src/ent/generated/types";
 import EditContactAction from "src/ent/contact/actions/edit_contact_action";
 import CreateContactEmailAction from "src/ent/contact_email/actions/create_contact_email_action";
 import CreateContactPhoneNumberAction from "src/ent/contact_phone_number/actions/create_contact_phone_number_action";
+import CreateFileAction from "src/ent/file/actions/create_file_action";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -68,6 +69,7 @@ async function createUser(): Promise<User> {
     password: "pa$$w0rd",
   }).saveX();
 }
+
 async function createContact(user?: User): Promise<Contact> {
   if (!user) {
     user = await createUser();
@@ -324,5 +326,80 @@ test("global canViewerDo", async () => {
       false,
       "contactEmailCreateOther",
     ],
+  );
+});
+
+test("create contact with attachments", async () => {
+  let user = await createUser();
+  const file = await CreateFileAction.create(user.viewer, {
+    creatorId: user.id,
+    name: "test.png",
+    path: "/tmp/test.png",
+  }).saveX();
+  const file2 = await CreateFileAction.create(user.viewer, {
+    creatorId: user.id,
+    name: "test.png2",
+    path: "/tmp/test.png2",
+  }).saveX();
+  const d = new Date();
+  advanceTo(d);
+
+  const email = randomEmail();
+
+  await expectMutation(
+    {
+      mutation: "contactCreate",
+      viewer: user.viewer,
+      schema,
+      args: {
+        firstName: "Jon",
+        lastName: "Snow",
+        userId: encodeGQLID(user),
+        emails: [
+          {
+            emailAddress: email,
+            label: ContactLabel.Home.toUpperCase(),
+            ownerId: encodeGQLID(user),
+          },
+        ],
+        attachments: [
+          {
+            fileId: encodeGQLID(file),
+            note: "note",
+            date: d.toISOString(),
+            dupeFileId: encodeGQLID(file),
+            creatorId: encodeGQLID(user),
+            creatorType: "User",
+          },
+          {
+            fileId: encodeGQLID(file2),
+            note: "note2",
+            date: d.toISOString(),
+            dupeFileId: encodeGQLID(file2),
+          },
+        ],
+      },
+    },
+    [
+      "contact.id",
+      async function name(id: string) {
+        const entId = mustDecodeIDFromGQLID(id);
+        const contact = await Contact.loadX(user.viewer, entId);
+        expect(contact.attachments).toHaveLength(2);
+        expect(contact.attachments?.[0].creatorType).toBe(NodeType.User);
+      },
+    ],
+    ["contact.firstName", "Jon"],
+    ["contact.lastName", "Snow"],
+    ["contact.emails[0].emailAddress", email],
+    ["contact.attachments[0].file.id", encodeGQLID(file)],
+    ["contact.attachments[0].dupeFile.id", encodeGQLID(file)],
+    ["contact.attachments[0].note", "note"],
+    ["contact.attachments[0].creator.id", encodeGQLID(user)],
+    // TODO we should have a way to query nested graphql fragments...
+    // ["contact.attachments[0].creator....on User.type", "User"],
+    ["contact.attachments[1].dupeFile.id", encodeGQLID(file2)],
+    ["contact.attachments[1].file.id", encodeGQLID(file2)],
+    ["contact.attachments[1].note", "note2"],
   );
 });

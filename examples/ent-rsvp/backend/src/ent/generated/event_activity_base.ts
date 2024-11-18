@@ -58,7 +58,10 @@ export class EventActivityBase
   readonly description: string | null;
   readonly inviteAllGuests: boolean;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;

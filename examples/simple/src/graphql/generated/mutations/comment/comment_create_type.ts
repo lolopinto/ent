@@ -98,13 +98,17 @@ export const CommentCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<CommentCreatePayload> => {
     const comment = await CreateCommentAction.create(context.getViewer(), {
-      authorId: mustDecodeIDFromGQLID(input.authorId),
+      authorId: mustDecodeIDFromGQLID(input.authorId.toString()),
       body: input.body,
-      articleId: mustDecodeIDFromGQLID(input.articleId),
+      articleId: mustDecodeIDFromGQLID(input.articleId.toString()),
       articleType: input.articleType,
-      attachmentId: mustDecodeNullableIDFromGQLID(input.attachmentId),
+      attachmentId: mustDecodeNullableIDFromGQLID(
+        input.attachmentId?.toString() ?? input.attachmentId,
+      ),
       attachmentType: input.attachmentType,
-      stickerId: mustDecodeNullableIDFromGQLID(input.stickerId),
+      stickerId: mustDecodeNullableIDFromGQLID(
+        input.stickerId?.toString() ?? input.stickerId,
+      ),
       stickerType: input.stickerType,
     }).saveX();
     return { comment: comment };

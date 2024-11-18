@@ -11,11 +11,6 @@ services:
       - 9229:9229 # for debugger 
     volumes: 
       - .:/app:rw,delegated
-      # - simple-sync:/app/:nocopy #  nocopy is important
     environment:
       - DB_CONNECTION_STRING=postgres://$USER:@host.docker.internal/tsent_test
       # - ENABLE_SWC=true
-
-volumes:
-  simple-sync:
-    external: true

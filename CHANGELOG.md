@@ -9,6 +9,31 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.9] - 2024-11-11
+
+### Added
+
+- join types (#1840)
+- disableBase64Encode for uuid types (#1843)
+
+## [0.2.0-alpha.8] - 2024-10-07
+
+### Fixed
+
+- fix CustomClauseQuery in GraphQL ent fields (#1837)
+
+## [0.2.0-alpha.7] - 2024-10-01
+
+### Added
+
+- Adjust edge queries to support multiple sort columns (#1834)
+
+## [0.2.0-alpha.6] - 2024-09-05
+
+### Added
+
+- Allow async edge connections (#1829)
+
 ## [0.2.0-alpha.5] - 2024-03-09
 
 ### Fixed

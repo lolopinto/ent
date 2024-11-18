@@ -41,7 +41,10 @@ export class UserBase implements Ent<Viewer> {
   readonly emailAddress: string;
   protected readonly password: string;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

@@ -78,7 +78,7 @@ export const EventRsvpStatusClearType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
       {
-        userId: mustDecodeIDFromGQLID(input.userId),
+        userId: mustDecodeIDFromGQLID(input.userId.toString()),
       },
     );
     return { event };

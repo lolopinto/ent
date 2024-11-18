@@ -1,16 +1,14 @@
-import { Context, Viewer } from "../base";
 import {
   FakeContact,
   FakeContactSchemaWithDeletedAt,
   FakeUser,
-  UserToContactsFkeyQuery,
-  UserToContactsFkeyQueryAsc,
   UserToContactsFkeyQueryDeletedAt,
   UserToContactsFkeyQueryDeletedAtAsc,
 } from "../../testutils/fake_data/index";
-import { commonTests } from "./shared_test";
 import { MockLogs } from "../../testutils/mock_log";
+import { Context, Viewer } from "../base";
 import * as clause from "../clause";
+import { commonTests } from "./shared_test";
 
 const ml = new MockLogs();
 ml.mock();
@@ -28,6 +26,10 @@ describe("custom query", () => {
     orderby: [
       {
         column: "created_at",
+        direction: "DESC",
+      },
+      {
+        column: "id",
         direction: "DESC",
       },
     ],
@@ -52,6 +54,10 @@ describe("custom query ASC", () => {
     orderby: [
       {
         column: "created_at",
+        direction: "ASC",
+      },
+      {
+        column: "id",
         direction: "ASC",
       },
     ],

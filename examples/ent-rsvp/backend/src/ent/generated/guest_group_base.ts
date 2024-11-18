@@ -41,7 +41,10 @@ export class GuestGroupBase implements Ent<Viewer> {
   readonly eventId: ID;
   readonly tag: GuestTag | null;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

@@ -42,7 +42,7 @@ export const ImportGuestsType: GraphQLFieldConfig<
     const r = new ImportGuestResolver();
     return r.importGuests(
       context,
-      mustDecodeIDFromGQLID(args.eventId),
+      mustDecodeIDFromGQLID(args.eventId.toString()),
       args.file,
     );
   },

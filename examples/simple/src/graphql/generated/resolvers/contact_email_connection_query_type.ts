@@ -77,7 +77,7 @@ export const ContactEmailConnectionQueryType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ) => {
     args.ids = args.ids
-      ? args.ids.map((i: any) => mustDecodeIDFromGQLID(i))
+      ? args.ids.map((i: any) => mustDecodeIDFromGQLID(i.toString()))
       : undefined;
     return new GraphQLEdgeConnection(
       context.getViewer(),

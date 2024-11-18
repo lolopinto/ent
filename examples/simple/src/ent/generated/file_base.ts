@@ -36,7 +36,10 @@ export class FileBase implements Ent<ExampleViewerAlias> {
   readonly path: string;
   readonly creatorId: ID;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

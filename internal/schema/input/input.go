@@ -226,6 +226,7 @@ type Field struct {
 	UserConvert         *UserConvertType    `json:"convert,omitempty"`
 	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
 	DBOnly              bool                `json:"dbOnly,omitempty"`
+	DisableBase64Encode bool                `json:"disableBase64Encode,omitempty"`
 
 	Immutable bool `json:"immutable,omitempty"`
 
@@ -377,13 +378,13 @@ func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSType {
 	}
 }
 
-func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSType, error) {
+func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey, disableBase64Encode bool) (enttype.TSType, error) {
 	switch typ.DBType {
 	case UUID:
 		if nullable {
-			return &enttype.NullableIDType{}, nil
+			return &enttype.NullableIDType{DisableBase64Encode: disableBase64Encode}, nil
 		}
-		return &enttype.IDType{}, nil
+		return &enttype.IDType{DisableBase64Encode: disableBase64Encode}, nil
 	case Int64ID:
 		return nil, fmt.Errorf("unsupported Int64ID type")
 		//		return &enttype.IntegerType{}, nil
@@ -583,7 +584,7 @@ func (f *Field) GetEntType(nodeName string) (enttype.TSType, error) {
 		if f.Type.ListElemType == nil {
 			return nil, fmt.Errorf("list elem type for list is nil")
 		}
-		elemType, err := getTypeFor(nodeName, f.Name, f.Type.ListElemType, false, nil)
+		elemType, err := getTypeFor(nodeName, f.Name, f.Type.ListElemType, false, nil, f.DisableBase64Encode)
 		if err != nil {
 			return nil, err
 		}
@@ -596,7 +597,7 @@ func (f *Field) GetEntType(nodeName string) (enttype.TSType, error) {
 			ElemType: elemType,
 		}, nil
 	} else {
-		return getTypeFor(nodeName, f.Name, f.Type, f.Nullable, f.ForeignKey)
+		return getTypeFor(nodeName, f.Name, f.Type, f.Nullable, f.ForeignKey, f.DisableBase64Encode)
 	}
 }
 

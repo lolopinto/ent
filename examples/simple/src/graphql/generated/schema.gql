@@ -229,12 +229,13 @@ type Address implements Node {
 }
 
 type Attachment {
-  fileId: ID!
-  dupeFileId: ID
+  file: File
+  dupeFile: File
   note: String
   date: Time!
   phoneNumber: String
   emailAddress: String
+  creator: Node
 }
 
 type CatType {
@@ -295,7 +296,7 @@ input ContactItemFilter {
   phoneNumberAreaCode: String
 }
 
-union ContactItemResult = ContactEmail | ContactPhoneNumber | ContactDate
+union ContactItemResult = ContactDate | ContactEmail | ContactPhoneNumber
 
 interface ContactItem {
   contact: Contact
@@ -368,7 +369,7 @@ type Event implements Node {
   cities: [City!]!
 }
 
-union Feedback = Contact | ContactEmail | User | ContactPhoneNumber
+union Feedback = Contact | ContactEmail | ContactPhoneNumber | User
 
 type File implements Node {
   creator: User
@@ -463,6 +464,8 @@ type UserPrefsStruct {
   finishedNux: Boolean
   enableNotifs: Boolean
   notifTypes: [NotifType!]!
+  homeAddress: Address
+  allAddresses: [Address!]
 }
 
 type UserStatistics implements Node {
@@ -537,7 +540,7 @@ type User implements Node {
   cities: [City!]!
 }
 
-union WithDayOfWeek = HoursOfOperation | Holiday
+union WithDayOfWeek = Holiday | HoursOfOperation
 
 type AddressToHostedEventsEdge implements Edge {
   node: Event!
@@ -1120,6 +1123,8 @@ input AttachmentInput {
   date: Time!
   phoneNumber: String
   emailAddress: String
+  creatorId: ID
+  creatorType: String
 }
 
 input CatTypeInput {
@@ -1648,6 +1653,8 @@ input UserPrefsStructInput {
   finishedNux: Boolean
   enableNotifs: Boolean
   notifTypes: [NotifType!]!
+  homeAddressId: ID
+  allAddressIds: [ID!]
 }
 
 input UserStatisticsArgInput {

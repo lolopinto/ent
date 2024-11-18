@@ -104,7 +104,7 @@ export const GuestGroupCreateType: GraphQLFieldConfig<
       context.getViewer(),
       {
         invitationName: input.invitationName,
-        eventId: mustDecodeIDFromGQLID(input.eventId),
+        eventId: mustDecodeIDFromGQLID(input.eventId.toString()),
         tag: input.tag,
         guests: input.guests,
       },

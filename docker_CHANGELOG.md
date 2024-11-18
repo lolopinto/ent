@@ -9,6 +9,36 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- Updated error when there's duplicate names in generated GraphQL Schema (#1857)
+
+## [0.2.0-alpha.9] - 2024-11-11
+
+### Fixed
+
+- Fix UUID fields in struct fields (#1843)
+
+## [0.2.0-alpha.8] - 2024-09-05
+
+### Fixed
+
+- Fix invalid generated TS "float" type (#1828)
+
+## [0.2.0-alpha.6] - 2024-06-06
+
+### Added
+
+- add viewer to generated pattern types (#1800)
+- add query methods to patterns for fieldEdge and foreignKeys defined in pattern (#1801)
+- union type for patterns (#1810)
+
+
+### Fixed
+
+- stop ignoring actionOnlyFields in edge actions (#1811)
+
+
 ## [0.2.0-alpha.5] - 2024-03-09
 
 ### Fixed

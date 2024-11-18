@@ -79,7 +79,7 @@ export const FileCreateType: GraphQLFieldConfig<
     const file = await CreateFileAction.create(context.getViewer(), {
       name: input.name,
       path: input.path,
-      creatorId: mustDecodeIDFromGQLID(input.creatorId),
+      creatorId: mustDecodeIDFromGQLID(input.creatorId.toString()),
     }).saveX();
     return { file: file };
   },

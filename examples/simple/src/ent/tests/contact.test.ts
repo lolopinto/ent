@@ -9,7 +9,7 @@ import EditContactAction from "../contact/actions/edit_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import { query } from "@snowtop/ent";
 import { v4 } from "uuid";
-import { ContactLabel, ContactInfoSource } from "../generated/types";
+import { ContactLabel, ContactInfoSource, NodeType } from "../generated/types";
 import { Transaction } from "@snowtop/ent/action";
 import CreateFileAction from "../file/actions/create_file_action";
 import { advanceTo } from "jest-date-mock";
@@ -117,6 +117,8 @@ test("create contact with explicit attachments", async () => {
         date: d,
         note: "test",
         dupeFileId: file.id,
+        creatorId: user.id,
+        creatorType: NodeType.User,
       },
       {
         fileId: file2.id,
@@ -136,6 +138,8 @@ test("create contact with explicit attachments", async () => {
       date: d.toISOString(),
       note: "test",
       dupeFileId: file.id,
+      creatorId: user.id,
+      creatorType: NodeType.User,
     },
     {
       fileId: file2.id,

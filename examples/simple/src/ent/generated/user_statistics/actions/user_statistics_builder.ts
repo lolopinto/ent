@@ -37,7 +37,8 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export class UserStatisticsBuilder<
   TInput extends UserStatisticsInput = UserStatisticsInput,
-  TExistingEnt extends TMaybleNullableEnt<UserStatistics> = UserStatistics | null,
+  TExistingEnt extends
+    TMaybleNullableEnt<UserStatistics> = UserStatistics | null,
 > implements Builder<UserStatistics, ExampleViewerAlias, TExistingEnt>
 {
   orchestrator: Orchestrator<

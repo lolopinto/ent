@@ -5,6 +5,7 @@
 
 import {
   GraphQLBoolean,
+  GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
   GraphQLList,
@@ -25,6 +26,12 @@ export const UserPrefsStructInputType = new GraphQLInputObjectType({
       type: new GraphQLNonNull(
         new GraphQLList(new GraphQLNonNull(NotifTypeType)),
       ),
+    },
+    homeAddressId: {
+      type: GraphQLID,
+    },
+    allAddressIds: {
+      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
     },
   }),
 });

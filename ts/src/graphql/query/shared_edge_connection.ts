@@ -1,21 +1,22 @@
-import { IDViewer } from "../../core/viewer";
-import { Viewer, Data, Ent } from "../../core/base";
+import { CustomClauseQuery } from "../../core/query";
+import { Data, Ent, Viewer } from "../../core/base";
 import { cursorOptions, getCursor } from "../../core/ent";
-import { GraphQLEdgeConnection } from "./edge_connection";
+import { EdgeQuery } from "../../core/query/query";
+import { IDViewer } from "../../core/viewer";
 import {
-  FakeUser,
   FakeContact,
+  FakeUser,
   UserToContactsFkeyQuery,
-  UserToContactsFkeyQueryDeprecated,
   UserToContactsFkeyQueryAsc,
   UserToContactsFkeyQueryDeletedAt,
   UserToContactsFkeyQueryDeletedAtAsc,
+  UserToContactsFkeyQueryDeprecated,
 } from "../../testutils/fake_data/index";
 import {
-  inputs,
   createAllContacts,
+  inputs,
 } from "../../testutils/fake_data/test_helpers";
-import { EdgeQuery } from "../../core/query/query";
+import { GraphQLEdgeConnection } from "./edge_connection";
 
 class TestConnection<TEdge extends Data> {
   private user: FakeUser;
@@ -33,7 +34,7 @@ class TestConnection<TEdge extends Data> {
       conn: GraphQLEdgeConnection<Ent, TEdge>,
       user: FakeUser,
       contacts: FakeContact[],
-    ) => void,
+    ) => Promise<void>,
   ) {}
 
   async beforeEach() {
@@ -45,9 +46,25 @@ class TestConnection<TEdge extends Data> {
       (v, user: FakeUser) => this.getQuery(v, user),
     );
     if (this.filter) {
-      this.filter(this.conn, this.user, this.allContacts);
+      await this.filter(this.conn, this.user, this.allContacts);
     }
     this.filteredContacts = this.ents(this.allContacts);
+  }
+
+  async testAsyncConn() {
+    const asyncConn = new GraphQLEdgeConnection<Ent, TEdge>(
+      new IDViewer(this.user.id),
+      this.user,
+      (v, user: FakeUser) =>
+        new Promise((resolve) => {
+          setTimeout(() => resolve(this.getQuery(v, user)), 0);
+        }),
+    );
+    if (this.filter) {
+      await this.filter(asyncConn, this.user, this.allContacts);
+    }
+    const count = await asyncConn.queryTotalCount();
+    expect(count).toBe(inputs.length);
   }
 
   async testTotalCount() {
@@ -69,7 +86,7 @@ class TestConnection<TEdge extends Data> {
     for (let i = 0; i < this.filteredContacts.length; i++) {
       const edge = edges[i];
       expect(edge.node.id).toBe(this.filteredContacts[i].id);
-      expect(this.conn.query.dataToID(edge.edge)).toBe(
+      expect((await this.conn.query).dataToID(edge.edge)).toBe(
         this.filteredContacts[i].id,
       );
     }
@@ -92,7 +109,8 @@ export const commonTests = <TEdge extends Data>(
       q instanceof UserToContactsFkeyQueryDeprecated ||
       q instanceof UserToContactsFkeyQueryAsc ||
       q instanceof UserToContactsFkeyQueryDeletedAt ||
-      q instanceof UserToContactsFkeyQueryDeletedAtAsc
+      q instanceof UserToContactsFkeyQueryDeletedAtAsc ||
+      q instanceof CustomClauseQuery
     );
   }
 
@@ -105,15 +123,16 @@ export const commonTests = <TEdge extends Data>(
     if (isCustomQuery(q)) {
       opts = {
         row: contacts[idx],
-        keys: ["id"],
+        cursorKeys: ["created_at", "id"],
+        rowKeys: ["createdAt", "id"],
       };
     } else {
       // for assoc queries, we're getting the value from 'id' field but the edge
       // is from assoc_edge table id2 field and so cursor takes it from there
       opts = {
         row: contacts[idx],
-        keys: ["id2"],
-        cursorKeys: ["id"],
+        cursorKeys: ["time", "id2"],
+        rowKeys: ["createdAt", "id"],
       };
     }
     return getCursor(opts);
@@ -152,7 +171,7 @@ export const commonTests = <TEdge extends Data>(
     const filter = new TestConnection(
       (v, user: FakeUser) => opts.getQuery(v, user),
       (contacts) => contacts.slice(0, 2),
-      (conn: GraphQLEdgeConnection<Ent, TEdge>) => {
+      async (conn: GraphQLEdgeConnection<Ent, TEdge>) => {
         conn.first(2);
       },
     );
@@ -193,12 +212,12 @@ export const commonTests = <TEdge extends Data>(
       (v, user: FakeUser) => opts.getQuery(v, user),
       // get the next 2
       (contacts) => contacts.slice(idx + 1, idx + N),
-      (
+      async (
         conn: GraphQLEdgeConnection<Ent, TEdge>,
         user: FakeUser,
         contacts: FakeContact[],
       ) => {
-        const cursor = getCursorFrom(conn.query, contacts, idx);
+        const cursor = getCursorFrom(await conn.query, contacts, idx);
         conn.first(2, cursor);
       },
     );
@@ -236,13 +255,13 @@ export const commonTests = <TEdge extends Data>(
     const filter = new TestConnection(
       (v, user: FakeUser) => opts.getQuery(v, user),
       (contacts) => contacts.slice(2, 4).reverse(),
-      (
+      async (
         conn: GraphQLEdgeConnection<Ent, TEdge>,
         user: FakeUser,
         contacts: FakeContact[],
       ) => {
         // get the 2 before it
-        const cursor = getCursorFrom(conn.query, contacts, 4);
+        const cursor = getCursorFrom(await conn.query, contacts, 4);
 
         conn.last(2, cursor);
       },

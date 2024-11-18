@@ -42,7 +42,10 @@ export class UserStatisticsBase implements Ent<ExampleViewerAlias> {
   readonly userId: ID;
   readonly authCodeEmailsSent: number;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

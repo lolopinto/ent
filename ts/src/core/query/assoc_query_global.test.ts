@@ -1,17 +1,17 @@
-import { Viewer } from "../base";
 import {
   EdgeType,
   FakeUser,
   UserToContactsQuery,
 } from "../../testutils/fake_data/index";
 import { inputs } from "../../testutils/fake_data/test_helpers";
-import { commonTests } from "./shared_test";
-import { assocTests } from "./shared_assoc_test";
-import { loadCustomEdges } from "../ent";
-import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
-import { convertDate } from "../convert";
 import { MockLogs } from "../../testutils/mock_log";
+import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
+import { Viewer } from "../base";
 import { And, Eq } from "../clause";
+import { convertDate } from "../convert";
+import { loadCustomEdges } from "../ent";
+import { assocTests } from "./shared_assoc_test";
+import { commonTests } from "./shared_test";
 
 const ml = new MockLogs();
 ml.mock();
@@ -53,6 +53,10 @@ commonTests({
   orderby: [
     {
       column: "time",
+      direction: "DESC",
+    },
+    {
+      column: "id2",
       direction: "DESC",
     },
   ],

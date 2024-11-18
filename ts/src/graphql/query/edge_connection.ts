@@ -1,5 +1,6 @@
-import { EdgeQuery, PaginationInfo } from "../../core/query/query";
+import { CustomClauseQuery } from "../../core/query";
 import { Data, Ent, ID, Viewer } from "../../core/base";
+import { EdgeQuery, PaginationInfo } from "../../core/query/query";
 
 // TODO getCursor...
 export interface GraphQLEdge<T extends Data> {
@@ -8,12 +9,14 @@ export interface GraphQLEdge<T extends Data> {
   cursor: string;
 }
 
+type MaybePromise<T> = T | Promise<T>;
+
 interface edgeQueryCtr<
   T extends Ent,
   TEdge extends Data,
   TViewer extends Viewer,
 > {
-  (v: TViewer, src: T): EdgeQuery<T, Ent, TEdge>;
+  (v: TViewer, src: T): MaybePromise<EdgeQuery<T, Ent, TEdge>>;
 }
 
 interface edgeQueryCtr2<
@@ -21,7 +24,7 @@ interface edgeQueryCtr2<
   TEdge extends Data,
   TViewer extends Viewer,
 > {
-  (v: TViewer): EdgeQuery<T, Ent, TEdge>;
+  (v: TViewer): MaybePromise<EdgeQuery<T, Ent, TEdge>>;
 }
 
 // TODO probably need to template Ent. maybe 2 ents?
@@ -30,7 +33,7 @@ export class GraphQLEdgeConnection<
   TEdge extends Data,
   TViewer extends Viewer = Viewer,
 > {
-  query: EdgeQuery<TSource, Ent, TEdge>;
+  query: Promise<EdgeQuery<TSource, Ent, TEdge>>;
   private results: GraphQLEdge<TEdge>[] = [];
   private viewer: TViewer;
   private source?: TSource;
@@ -54,16 +57,39 @@ export class GraphQLEdgeConnection<
     args?: Data,
   ) {
     this.viewer = viewer;
+
+    async function resolveQuery(
+      query: MaybePromise<EdgeQuery<TSource, Ent, TEdge>>,
+      source: TSource | undefined,
+    ) {
+      const resolved = await query;
+
+      // To have pagination correctly work with CustomClauseQuery in GraphQL contexts, we need to
+      // pass the source to the query so that we can set the page info correctly
+      // See https://github.com/lolopinto/ent/issues/1836 for full details of how this breaks down
+      if (resolved instanceof CustomClauseQuery && source !== undefined) {
+        resolved.__maybeSetSource(source);
+      }
+      return resolved;
+    }
+
+    let query: MaybePromise<EdgeQuery<TSource, Ent, TEdge>>;
+    let source: TSource | undefined;
+
     if (typeof arg2 === "function") {
-      this.query = arg2(this.viewer);
+      query = arg2(this.viewer);
     } else {
       this.source = arg2;
+      source = arg2;
     }
     if (typeof arg3 === "function") {
-      this.query = arg3(this.viewer, this.source!);
+      query = arg3(this.viewer, this.source!);
     } else {
       this.args = arg3;
     }
+
+    this.query = Promise.resolve(resolveQuery(query!, source));
+
     if (args !== undefined) {
       this.args = args;
     }
@@ -75,10 +101,16 @@ export class GraphQLEdgeConnection<
         throw new Error("cannot process before without last");
       }
       if (this.args.first) {
-        this.query = this.query.first(this.args.first, this.args.after);
+        const argFirst = this.args.first;
+        const argAfter = this.args.after;
+        this.query = this.query.then((query) =>
+          query.first(argFirst, argAfter),
+        );
       }
       if (this.args.last) {
-        this.query = this.query.last(this.args.last, this.args.cursor);
+        const argLast = this.args.last;
+        const argBefore = this.args.before;
+        this.query = this.query.then((query) => query.last(argLast, argBefore));
       }
       // TODO custom args
       // how to proceed
@@ -86,11 +118,11 @@ export class GraphQLEdgeConnection<
   }
 
   first(limit: number, cursor?: string) {
-    this.query = this.query.first(limit, cursor);
+    this.query = this.query.then((query) => query.first(limit, cursor));
   }
 
   last(limit: number, cursor?: string) {
-    this.query = this.query.last(limit, cursor);
+    this.query = this.query.then((query) => query.last(limit, cursor));
   }
 
   // any custom filters can be applied here...
@@ -99,11 +131,11 @@ export class GraphQLEdgeConnection<
       query: EdgeQuery<TSource, Ent, TEdge>,
     ) => EdgeQuery<TSource, Ent, TEdge>,
   ) {
-    this.query = fn(this.query);
+    this.query = this.query.then((query) => fn(query));
   }
 
   async queryTotalCount() {
-    return this.query.queryRawCount();
+    return (await this.query).queryRawCount();
   }
 
   async queryEdges() {
@@ -116,7 +148,7 @@ export class GraphQLEdgeConnection<
   // if nodes queried just return ents
   // unlikely to query nodes and pageInfo so we just load this separately for now
   async queryNodes() {
-    return this.query.queryEnts();
+    return (await this.query).queryEnts();
   }
 
   private defaultPageInfo() {
@@ -130,7 +162,7 @@ export class GraphQLEdgeConnection<
 
   async queryPageInfo(): Promise<PaginationInfo> {
     await this.queryData();
-    const paginationInfo = this.query.paginationInfo();
+    const paginationInfo = (await this.query).paginationInfo();
     if (this.source !== undefined) {
       return paginationInfo.get(this.source.id) || this.defaultPageInfo();
     }
@@ -144,11 +176,12 @@ export class GraphQLEdgeConnection<
   }
 
   private async queryData() {
+    const query = await this.query;
     const [edges, ents] = await Promise.all([
       // TODO need a test that this will only fetch edges once
       // and then fetch ents afterward
-      this.query.queryEdges(),
-      this.query.queryEnts(),
+      query.queryEdges(),
+      query.queryEnts(),
     ]);
 
     let entsMap = new Map<ID, Ent>();
@@ -156,14 +189,14 @@ export class GraphQLEdgeConnection<
 
     let results: GraphQLEdge<TEdge>[] = [];
     for (const edge of edges) {
-      const node = entsMap.get(this.query.dataToID(edge));
+      const node = entsMap.get(query.dataToID(edge));
       if (!node) {
         continue;
       }
       results.push({
         edge,
         node,
-        cursor: this.query.getCursor(edge),
+        cursor: query.getCursor(edge),
       });
     }
     this.results = results;

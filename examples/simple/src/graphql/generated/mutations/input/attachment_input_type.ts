@@ -33,5 +33,11 @@ export const AttachmentInputType = new GraphQLInputObjectType({
     emailAddress: {
       type: GraphQLString,
     },
+    creatorId: {
+      type: GraphQLID,
+    },
+    creatorType: {
+      type: GraphQLString,
+    },
   }),
 });

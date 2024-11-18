@@ -89,8 +89,8 @@ export const ContactPhoneNumberCreateType: GraphQLFieldConfig<
       context.getViewer(),
       {
         extra: input.extra,
-        contactId: mustDecodeIDFromGQLID(input.contactId),
-        ownerId: mustDecodeIDFromGQLID(input.ownerId),
+        contactId: mustDecodeIDFromGQLID(input.contactId.toString()),
+        ownerId: mustDecodeIDFromGQLID(input.ownerId.toString()),
         phoneNumber: input.phoneNumber,
         label: input.label,
       },

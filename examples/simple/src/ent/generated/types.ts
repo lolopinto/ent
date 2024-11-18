@@ -4,9 +4,6 @@
  */
 
 import { ID } from "@snowtop/ent";
-import { Builder } from "@snowtop/ent/action";
-import { File } from "..";
-import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export enum NodeType {
   // Address is the node type for the Address object. Used to identify this node in edges and other places.
@@ -731,12 +728,14 @@ export function convertNullableUserPreferredShiftList(
 }
 
 export interface Attachment {
-  fileId: ID | Builder<File, ExampleViewerAlias>;
-  dupeFileId?: ID | null | Builder<File, ExampleViewerAlias>;
+  fileId: ID;
+  dupeFileId?: ID | null;
   note?: string | null;
   date: Date;
   phoneNumber?: string | null;
   emailAddress?: string | null;
+  creatorId?: ID | null;
+  creatorType?: string | null;
 }
 
 export function convertAttachment(input: any): Attachment {
@@ -747,6 +746,8 @@ export function convertAttachment(input: any): Attachment {
     date: input.date,
     phoneNumber: input.phone_number,
     emailAddress: input.email_address,
+    creatorId: input.creator_id,
+    creatorType: input.creator_type,
   };
 }
 
@@ -827,6 +828,8 @@ export interface UserPrefsStruct {
   finishedNux?: boolean | null;
   enableNotifs?: boolean | null;
   notifTypes: NotifType[];
+  homeAddressId?: ID | null;
+  allAddressIds?: ID[] | null;
 }
 
 export function convertUserPrefsStruct(input: any): UserPrefsStruct {
@@ -834,6 +837,8 @@ export function convertUserPrefsStruct(input: any): UserPrefsStruct {
     finishedNux: input.finished_nux,
     enableNotifs: input.enable_notifs,
     notifTypes: input.notif_types,
+    homeAddressId: input.home_address_id,
+    allAddressIds: input.all_address_ids,
   };
 }
 

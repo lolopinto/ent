@@ -31,7 +31,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           name: 'PGOPTIONS'
-          value: '-c max_connections=200'
+          value: '-c max_connections=1000'
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -44,7 +44,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x, 18.x, 20.x]
+        node-version: [18.x, 20.x, 22.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:

@@ -5,11 +5,6 @@ export interface OrderByOption {
   direction: "ASC" | "DESC";
   alias?: string;
   nullsPlacement?: "first" | "last";
-  // is this column a date/time column?
-  // needed to know if we create a cursor based on this column to conver to timestamp and ISO string for
-  // comparison
-  // maybe eventually want a more generic version of this but for now this suffices
-  dateColumn?: boolean;
 }
 
 export type OrderBy = OrderByOption[];
@@ -57,7 +52,24 @@ export function getJoinInfo(
         ? `${join.tableName} ${join.alias}`
         : join.tableName;
       valuesUsed += join.clause.values().length;
-      return `JOIN ${joinTable} ON ${join.clause.clause(clauseIdx)}`;
+      let joinType;
+      switch (join.type) {
+        case "left":
+          joinType = "LEFT JOIN";
+          break;
+        case "right":
+          joinType = "RIGHT JOIN";
+          break;
+        case "outer":
+          joinType = "FULL OUTER JOIN";
+          break;
+        case "inner":
+          joinType = "INNER JOIN";
+          break;
+        default:
+          joinType = "JOIN";
+      }
+      return `${joinType} ${joinTable} ON ${join.clause.clause(clauseIdx)}`;
     })
     .join(" ");
   return {

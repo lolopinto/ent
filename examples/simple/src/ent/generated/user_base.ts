@@ -138,7 +138,10 @@ export class UserBase
   readonly nestedList: UserNestedObjectList[] | null;
   readonly intEnum: UserIntEnum | null;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;

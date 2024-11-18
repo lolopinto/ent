@@ -27,7 +27,7 @@ class GlobalCanViewerDo {
   async contactCreate(args: any): Promise<boolean> {
     const action = CreateContactAction.create(this.context.getViewer(), {
       ...args,
-      userId: mustDecodeIDFromGQLID(args.userId),
+      userId: mustDecodeIDFromGQLID(args.userId.toString()),
     });
     return applyPrivacyPolicy(
       this.context.getViewer(),
@@ -40,8 +40,8 @@ class GlobalCanViewerDo {
     const action = CreateContactEmailAction.create(this.context.getViewer(), {
       ...args,
       extra: args.extra,
-      contactId: mustDecodeIDFromGQLID(args.contactId),
-      ownerId: mustDecodeIDFromGQLID(args.ownerId),
+      contactId: mustDecodeIDFromGQLID(args.contactId.toString()),
+      ownerId: mustDecodeIDFromGQLID(args.ownerId.toString()),
       emailAddress: args.emailAddress,
       label: args.label,
     });

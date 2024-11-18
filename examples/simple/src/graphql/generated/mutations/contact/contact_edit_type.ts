@@ -16,7 +16,10 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { Contact } from "../../../../ent";
 import EditContactAction, {
   ContactEditInput,
@@ -115,14 +118,29 @@ export const ContactEditType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.id),
       {
         emailIds: input.emailIds
-          ? input.emailIds.map((i: any) => mustDecodeIDFromGQLID(i))
+          ? input.emailIds.map((i: any) => mustDecodeIDFromGQLID(i.toString()))
           : undefined,
         phoneNumberIds: input.phoneNumberIds
-          ? input.phoneNumberIds.map((i: any) => mustDecodeIDFromGQLID(i))
+          ? input.phoneNumberIds.map((i: any) =>
+              mustDecodeIDFromGQLID(i.toString()),
+            )
           : undefined,
         firstName: input.firstName,
         lastName: input.lastName,
-        attachments: input.attachments,
+        attachments: input.attachments?.map((item: any) => ({
+          ...item,
+          fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+          dupeFileId: item.dupeFileId
+            ? mustDecodeNullableIDFromGQLID(
+                item.dupeFileId?.toString() ?? item.dupeFileId,
+              )
+            : undefined,
+          creatorId: item.creatorId
+            ? mustDecodeNullableIDFromGQLID(
+                item.creatorId?.toString() ?? item.creatorId,
+              )
+            : undefined,
+        })),
         emails: input.emails,
       },
     );

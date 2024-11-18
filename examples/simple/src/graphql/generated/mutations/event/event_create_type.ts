@@ -105,14 +105,29 @@ export const EventCreateType: GraphQLFieldConfig<
   ): Promise<EventCreatePayload> => {
     const event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
-      creatorId: mustDecodeIDFromGQLID(input.creatorId),
+      creatorId: mustDecodeIDFromGQLID(input.creatorId.toString()),
       startTime: input.startTime,
       endTime: input.endTime,
       location: input.eventLocation,
-      addressId: mustDecodeNullableIDFromGQLID(input.addressId),
+      addressId: mustDecodeNullableIDFromGQLID(
+        input.addressId?.toString() ?? input.addressId,
+      ),
       coverPhoto: input.coverPhoto,
       coverPhoto2: input.coverPhoto2,
-      attachments: input.attachments,
+      attachments: input.attachments?.map((item: any) => ({
+        ...item,
+        fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+        dupeFileId: item.dupeFileId
+          ? mustDecodeNullableIDFromGQLID(
+              item.dupeFileId?.toString() ?? item.dupeFileId,
+            )
+          : undefined,
+        creatorId: item.creatorId
+          ? mustDecodeNullableIDFromGQLID(
+              item.creatorId?.toString() ?? item.creatorId,
+            )
+          : undefined,
+      })),
     }).saveX();
     return { event: event };
   },

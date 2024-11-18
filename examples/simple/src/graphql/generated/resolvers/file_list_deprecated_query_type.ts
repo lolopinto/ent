@@ -53,9 +53,9 @@ export const FileListDeprecatedQueryType: GraphQLFieldConfig<
     context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ) => {
-    args.id = mustDecodeNullableIDFromGQLID(args.id);
+    args.id = mustDecodeNullableIDFromGQLID(args.id?.toString() ?? args.id);
     args.ids = args.ids
-      ? args.ids.map((i: any) => mustDecodeIDFromGQLID(i))
+      ? args.ids.map((i: any) => mustDecodeIDFromGQLID(i.toString()))
       : undefined;
 
     const whereQueries = [

@@ -1,22 +1,22 @@
-import DB, { Dialect } from "./db";
+import { v1 } from "uuid";
 import {
-  table,
-  text,
-  uuidList,
-  TempDB,
-  uuid,
-  jsonb,
-  integer,
   assoc_edge_config_table,
   assoc_edge_table,
+  integer,
+  jsonb,
+  table,
+  TempDB,
+  text,
+  uuid,
+  uuidList,
 } from "../testutils/db/temp_db";
-import { createRowForTest } from "../testutils/write";
-import { loadConfig } from "./config";
-import { AssocEdge, loadEdges, loadRows, loadTwoWayEdges } from "./ent";
-import * as clause from "./clause";
-import { Data, ID, LoadRowsOptions } from "./base";
-import { v1 } from "uuid";
 import { MockLogs } from "../testutils/mock_log";
+import { createRowForTest } from "../testutils/write";
+import { Data, ID, LoadRowsOptions } from "./base";
+import * as clause from "./clause";
+import { loadConfig } from "./config";
+import DB, { Dialect } from "./db";
+import { AssocEdge, loadEdges, loadRows, loadTwoWayEdges } from "./ent";
 import { setLogLevels } from "./logger";
 
 const tableName = "contacts";
@@ -981,6 +981,7 @@ test("join on multiple", async () => {
         tableName: tableName3,
         alias: "ci",
         clause: clause.Expression(`et1.id2 = ci.contact_id`),
+        type: "left",
       },
     ],
     clause: clause.Eq("id1", row.id),
@@ -994,7 +995,7 @@ test("join on multiple", async () => {
   const r = await DB.getInstance()
     .getPool()
     .query(
-      "select ci.id, ci.name, ci.contact_id from edge_table t1 join edge_table t2 on t1.id1 = t2.id2 and t2.id1 = t1.id2 join contact_infos ci on t1.id2 = ci.contact_id where t1.id1 = $1",
+      "select ci.id, ci.name, ci.contact_id from edge_table t1 join edge_table t2 on t1.id1 = t2.id2 and t2.id1 = t1.id2 left join contact_infos ci on t1.id2 = ci.contact_id where t1.id1 = $1",
       [row.id],
     );
   const contact_infos2 = r.rows;
