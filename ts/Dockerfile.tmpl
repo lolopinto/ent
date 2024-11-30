@@ -65,7 +65,6 @@ RUN apt update && apt --assume-yes install zsh && \
 RUN npm install -g --platform=$BUILDPLATFORM typescript@5.6.3 prettier@3.3.3 ts-node@11.0.0-beta.1 @biomejs/biome@1.9.4
 
 WORKDIR /app
-RUN npm install
 RUN npm install -D --platform=$BUILDPLATFORM tsconfig-paths@4.2.0 @swc-node/register@1.6.8 @swc/core@1.9.2 @swc/cli@0.5.0
 
 {{ end -}}
