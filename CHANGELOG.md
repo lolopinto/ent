@@ -9,6 +9,43 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0] - 2024-11-17
+
+### Breaking
+
+- make generation of names (database columns, graphql names etc) more consistent (#1757). changes names for the following field types in schemas: 
+  * `userID` field -> `userId` GraphQL field and `userId` TypeScript variable instead of `userID`
+  * `foo2` field -> `foo2` database column instead of `foo_2` database column
+  * `userIDs` field -> `userIds` GraphQL field and `userIds` TypeScript variable instead of `userIDs`
+  * and a few other related changes
+  * the existing names can be kept by using `storageKey` and `graphqlName` in the schema files so that there doesn't have to be any production impact.
+  * standardizes on `Id` instead of `ID` so functions like `User.loadIDFromEmailAddress` become `User.loadIdFromEmailAddress`
+- changes generated files for patterns to make them more customizable (#1760)
+
+### Added
+
+- join types (#1840)
+- disableBase64Encode for uuid types (#1843)
+- Adjust edge queries to support multiple sort columns (#1834)
+- Allow async edge connections (#1829)
+- Add hideFromGraphQL to InverseAssocEdge (#1766)
+- change id in default pattern from `ID` to `id` (#1763)
+  * references to `ID` in say foreign key definitions will have to be updated
+
+### Fixed
+
+- Save polymorphic types in structs (#1852)
+- fix CustomClauseQuery in GraphQL ent fields (#1837)
+- Allow input objects to have nested input objects (#1795)
+- fix transformWrite formatting data incorrectly (#1783)
+
+
+## [0.2.0-alpha.10] - 2024-11-13
+
+### Fixed
+
+- Save polymorphic types in structs (#1852)
+
 ## [0.2.0-alpha.9] - 2024-11-11
 
 ### Added
