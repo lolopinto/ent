@@ -31,7 +31,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           name: 'PGOPTIONS'
-          value: '-c max_connections=500'
+          value: '-c max_connections=200'
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -65,7 +65,7 @@ jobs:
 
     - run: npm ci 
     - run: npm run build --if-present 
-    - run: npm test
+    - run: npm test -- --runInBand
       env:
         POSTGRES_PASSWORD: 'postgres'
         POSTGRES_USER: 'postgres'    

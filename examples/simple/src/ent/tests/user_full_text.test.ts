@@ -27,7 +27,7 @@ beforeAll(async () => {
       password,
       port: 5432,
       sslmode: "disable",
-      max: 500,
+      max: 200,
     },
     //    log: ["query"],
   });
