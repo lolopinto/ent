@@ -98,6 +98,9 @@ beforeEach(async () => {
         created_at: new Date(),
         updated_at: new Date(),
       },
+      onConflict: {
+        onConflictCols: ["edge_type"],
+      },
     });
   }
 });
