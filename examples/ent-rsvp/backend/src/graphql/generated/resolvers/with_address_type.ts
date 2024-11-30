@@ -5,5 +5,5 @@ import { EventActivityType, GuestType } from "src/graphql/resolvers/internal";
 
 export const WithAddressType = new GraphQLUnionType({
   name: "WithAddress",
-  types: () => [GuestType, EventActivityType],
+  types: () => [EventActivityType, GuestType],
 });

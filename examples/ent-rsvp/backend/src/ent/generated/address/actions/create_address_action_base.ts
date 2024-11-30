@@ -52,7 +52,7 @@ export type CreateAddressActionObservers = Observer<
   AddressBuilder<AddressCreateInput, Address | null>,
   Viewer,
   AddressCreateInput,
-  Address | null  
+  Address | null
 >[];
 
 export type CreateAddressActionValidators = Validator<

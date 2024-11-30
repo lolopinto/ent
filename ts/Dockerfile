@@ -1,7 +1,7 @@
-ARG GOLANG_VERSION=v0.2.0-alpha.9
+ARG GOLANG_VERSION=v0.2.0-alpha.12-test
 ARG AUTO_SCHEMA_VERSION=0.0.32
 ARG NODE_VERSION=18
-ARG DOCKER_TAG=v0.2.0-alpha.9
+ARG DOCKER_TAG=v0.2.0-alpha.12-test
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.23.3-bullseye As golang-image
@@ -61,10 +61,11 @@ RUN \
 
 RUN apt update && apt --assume-yes install zsh && \
   rm -rf /var/lib/apt/lists/*
-RUN npm install -g typescript@5.3.2 prettier@3.1.0 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@1.4.1
+
+RUN npm install -g --platform=$BUILDPLATFORM typescript@5.6.3 prettier@3.3.3 ts-node@11.0.0-beta.1 @biomejs/biome@1.9.4
 
 WORKDIR /app
-RUN npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.6.8
+RUN npm install -D --platform=$BUILDPLATFORM tsconfig-paths@4.2.0 @swc-node/register@1.6.8 @swc/core@1.9.2 @swc/cli@0.5.0
 
 COPY --from=golang-image /go/bin/tsent /go/bin/tsent
 # NOTE: if ever debugging in docker image, code is at 
