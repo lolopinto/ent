@@ -510,7 +510,7 @@ export class TempDB {
         DB.initDB({
           connectionString: connStr,
           cfg: {
-            max: 100,
+            max: 200,
             idleTimeoutMillis: 100,
           },
         });
