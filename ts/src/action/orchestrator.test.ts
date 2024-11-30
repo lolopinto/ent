@@ -84,30 +84,6 @@ import { randomEmail } from "../testutils/db/value";
 import { toDBColumnOrTable } from "../names/names";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
-beforeEach(async () => {
-  // does assoc_edge_config loader need to be cleared?
-  for (const edge of edges) {
-    await createRowForTest({
-      tableName: "assoc_edge_config",
-      fields: {
-        edge_table: toDBColumnOrTable(edge, "table"),
-        symmetric_edge: edge == "symmetricEdge",
-        inverse_edge_type: edge === "edge" ? "inverseEdge" : "edge",
-        edge_type: edge,
-        edge_name: "name",
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      onConflict: {
-        onConflictCols: ["edge_type"],
-      },
-    });
-  }
-});
-
-afterEach(() => {
-  FakeComms.clear();
-});
 
 const UserSchema = getBuilderSchemaFromFields(
   {
@@ -529,6 +505,31 @@ function getInsertUserBuilder(
 }
 
 function commonTests() {
+  beforeAll(async () => {
+    // does assoc_edge_config loader need to be cleared?
+    for (const edge of edges) {
+      await createRowForTest({
+        tableName: "assoc_edge_config",
+        fields: {
+          edge_table: toDBColumnOrTable(edge, "table"),
+          symmetric_edge: edge == "symmetricEdge",
+          inverse_edge_type: edge === "edge" ? "inverseEdge" : "edge",
+          edge_type: edge,
+          edge_name: "name",
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+        onConflict: {
+          onConflictCols: ["edge_type"],
+        },
+      });
+    }
+  });
+
+  afterEach(() => {
+    FakeComms.clear();
+  });
+
   test("schema on create", async () => {
     const builder = getInsertUserBuilder(
       new Map([
