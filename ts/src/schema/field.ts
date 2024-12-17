@@ -1,9 +1,12 @@
 import { DateTime } from "luxon";
 import { isPromise } from "util/types";
 import { validate } from "uuid";
-import { Ent, WriteOperation } from "../core/base";
 import { Builder } from "../action/action";
+import { Ent, WriteOperation } from "../core/base";
 import DB, { Dialect } from "../core/db";
+import { __getGlobalSchemaField } from "../core/global_schema";
+import { log } from "../core/logger";
+import { toFieldName } from "../names/names";
 import {
   DBType,
   Field,
@@ -13,9 +16,6 @@ import {
   PolymorphicOptions,
   Type,
 } from "./schema";
-import { __getGlobalSchemaField } from "../core/global_schema";
-import { log } from "../core/logger";
-import { toFieldName } from "../names/names";
 
 export abstract class BaseField {
   name: string;
@@ -584,7 +584,7 @@ export class DateField extends BaseField implements Field {
   type: Type = { dbType: DBType.Date };
 
   format(val: any): any {
-    if (typeof val === "string") {
+    if (typeof val === "string" || val === null || val === undefined) {
       return val;
     }
     val = new Date(val);
