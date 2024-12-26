@@ -15,13 +15,17 @@ interface loadEnt {
   (v: Viewer, nodeType: string, id: ID): Promise<Ent | null>;
 }
 
+function encodeHelper(nodeType: string, id: ID): string {
+  const str = `node:${nodeType}:${id}`;
+  return Buffer.from(str, "ascii").toString("base64");
+}
+
 export class EntNodeResolver implements NodeResolver {
   constructor(private loader: loadEnt) {}
 
   encode(node: Ent): string {
     // let's do 3 parts. we take the "node" prefix
-    const str = `node:${node.nodeType}:${node.id}`;
-    return Buffer.from(str, "ascii").toString("base64");
+    return encodeHelper(node.nodeType, node.id);
   }
 
   static decode(id: string): ID | null {
