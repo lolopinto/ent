@@ -20,8 +20,17 @@ import {
   AllowIfEntIsVisiblePolicy,
   DenyIfEntIsVisiblePolicy,
   AllowIfEdgeExistsRule,
+  AllowIfEdgeDoesNotExistRule,
   DenyIfEdgeExistsRule,
   DenyIfEdgeDoesNotExistRule,
+  AllowIfEdgeExistsFromViewerToEntRule,
+  AllowIfEdgeExistsFromEntToViewerRule,
+  AllowIfEdgeExistsFromViewerToEntPropertyRule,
+  AllowIfEdgeExistsFromEntPropertyToViewerRule,
+  DenyIfEdgeExistsFromViewerToEntRule,
+  DenyIfEdgeExistsFromEntToViewerRule,
+  DenyIfEdgeExistsFromViewerToEntPropertyRule,
+  DenyIfEdgeExistsFromEntPropertyToViewerRule,
 } from "./privacy";
 
 import { LoggedOutViewer, IDViewer } from "./viewer";
@@ -289,7 +298,7 @@ describe("AllowIfViewerIsRule", () => {
 
 async function addEdge(user: User, id2: ID) {
   const builder = new SimpleBuilder(
-    loggedOutViewer,
+    user.viewer,
     getBuilderSchemaFromFields({}, User),
     new Map(),
     WriteOperation.Edit,
@@ -299,9 +308,21 @@ async function addEdge(user: User, id2: ID) {
   await builder.saveX();
 }
 
+async function addInboundEdge(user: User, id2: ID) {
+  const builder = new SimpleBuilder(
+    user.viewer,
+    getBuilderSchemaFromFields({}, User),
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
+  builder.orchestrator.addInboundEdge(id2, "edge", "User");
+  await builder.saveX();
+}
+
 async function softDeleteEdge(user: User, id2: ID) {
   const builder = new SimpleBuilder(
-    loggedOutViewer,
+    user.viewer,
     getBuilderSchemaFromFields({}, User),
     new Map(),
     WriteOperation.Edit,
@@ -311,15 +332,41 @@ async function softDeleteEdge(user: User, id2: ID) {
   await builder.saveX();
 }
 
+async function softDeleteInboundEdge(user: User, id2: ID) {
+  const builder = new SimpleBuilder(
+    user.viewer,
+    getBuilderSchemaFromFields({}, User),
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
+  builder.orchestrator.removeInboundEdge(id2, "edge");
+  await builder.saveX();
+}
+
 async function reallyDeleteEdge(user: User, id2: ID) {
   const builder = new SimpleBuilder(
-    loggedOutViewer,
+    user.viewer,
     getBuilderSchemaFromFields({}, User),
     new Map(),
     WriteOperation.Edit,
     user,
   );
   builder.orchestrator.removeOutboundEdge(id2, "edge", {
+    disableTransformations: true,
+  });
+  await builder.saveX();
+}
+
+async function reallyDeleteInboundEdge(user: User, id2: ID) {
+  const builder = new SimpleBuilder(
+    user.viewer,
+    getBuilderSchemaFromFields({}, User),
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
+  builder.orchestrator.removeInboundEdge(id2, "edge", {
     disableTransformations: true,
   });
   await builder.saveX();
@@ -378,6 +425,330 @@ describe("AllowIfEdgeExistsRule", () => {
     expect(bool).toBe(false);
 
     const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+});
+
+describe("AllowIfEdgeDoesNotExistRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const policy = {
+    rules: [new AllowIfEdgeDoesNotExistRule(id1, id2, "edge"), AlwaysDenyRule],
+  };
+  const policy2 = {
+    rules: [
+      new AllowIfEdgeDoesNotExistRule(id1, id2, "edge", {
+        disableTransformations: true,
+      }),
+      AlwaysDenyRule,
+    ],
+  };
+  const user = getUser(loggedOutViewer, id1, policy);
+  const user2 = getUser(loggedOutViewer, id1, policy2);
+
+  test("edge exists", async () => {
+    await addEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user, id2);
+    await softDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user, id2);
+    await reallyDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(user.viewer, policy, user);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(user2.viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+});
+
+describe("AllowIfEdgeExistsFromViewerToEntRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const policy = {
+    rules: [new AllowIfEdgeExistsFromViewerToEntRule("edge")],
+  };
+  const policy2 = {
+    rules: [
+      new AllowIfEdgeExistsFromViewerToEntRule("edge", {
+        disableTransformations: true,
+      }),
+    ],
+  };
+  const id1Viewer = new IDViewer(id1);
+  const user = getUser(id1Viewer, id1, policy);
+  const user2 = getUser(id1Viewer, id2, policy2);
+
+  test("edge exists", async () => {
+    await addEdge(user, id2);
+
+    // edge exists for user -> user2
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    // edge exists
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user, id2);
+    await softDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user, id2);
+    await reallyDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+});
+
+describe("AllowIfEdgeExistsFromEntToViewerRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const policy = {
+    rules: [new AllowIfEdgeExistsFromEntToViewerRule("edge")],
+  };
+  const policy2 = {
+    rules: [
+      new AllowIfEdgeExistsFromEntToViewerRule("edge", {
+        disableTransformations: true,
+      }),
+    ],
+  };
+  const id1Viewer = new IDViewer(id1);
+  const user = getUser(id1Viewer, id1, policy);
+  const user2 = getUser(id1Viewer, id2, policy2);
+
+  test("edge exists", async () => {
+    await addEdge(user2, id1);
+
+    // edge exists for user2 -> user
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    // edge exists
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user2, id1);
+    await softDeleteEdge(user2, id1);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user2, id1);
+    await reallyDeleteEdge(user2, id1);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+});
+
+describe("AllowIfEdgeExistsFromViewerToEntPropertyRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const id1AccountId = v1();
+  const id2AccountId = v1();
+  const policy = {
+    rules: [
+      new AllowIfEdgeExistsFromViewerToEntPropertyRule<User>(
+        "accountID",
+        "edge",
+      ),
+    ],
+  };
+  const policy2 = {
+    rules: [
+      new AllowIfEdgeExistsFromViewerToEntPropertyRule<User>(
+        "accountID",
+        "edge",
+        {
+          disableTransformations: true,
+        },
+      ),
+    ],
+  };
+  const id1Viewer = new IDViewer(id1);
+  const user = getUser(id1Viewer, id1, policy, id1AccountId);
+  const user2 = getUser(id1Viewer, id2, policy2, id2AccountId);
+
+  test("edge exists", async () => {
+    await addEdge(user, id2AccountId);
+
+    // edge exists for user -> id1AccountId
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    // edge exists
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user, id2AccountId);
+    await softDeleteEdge(user, id2AccountId);
+
+    // edge exists for user -> id1AccountId
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    // edge exists
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user, id2AccountId);
+    await reallyDeleteEdge(user, id2AccountId);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+});
+
+describe("AllowIfEdgeExistsFromEntPropertyToViewerRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const id1AccountId = v1();
+  const id2AccountId = v1();
+  const policy = {
+    rules: [
+      new AllowIfEdgeExistsFromEntPropertyToViewerRule<User>(
+        "accountID",
+        "edge",
+      ),
+    ],
+  };
+  const policy2 = {
+    rules: [
+      new AllowIfEdgeExistsFromEntPropertyToViewerRule<User>(
+        "accountID",
+        "edge",
+        {
+          disableTransformations: true,
+        },
+      ),
+    ],
+  };
+  const id1Viewer = new IDViewer(id1);
+  const user = getUser(id1Viewer, id1, policy, id1AccountId);
+  const user2 = getUser(id1Viewer, id2, policy2, id2AccountId);
+
+  test("edge exists", async () => {
+    await addInboundEdge(user, id2AccountId);
+
+    // edge exists for user -> id1AccountId
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    // edge exists
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge soft deleted", async () => {
+    await addInboundEdge(user, id2AccountId);
+    await softDeleteInboundEdge(user, id2AccountId);
+
+    // edge exists for user -> id1AccountId
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    // edge exists
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user, id2AccountId);
+    await reallyDeleteInboundEdge(user, id2AccountId);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
     expect(bool2).toBe(false);
   });
 });
@@ -498,6 +869,266 @@ describe("DenyIfEdgeDoesNotExistRule", () => {
   });
 });
 
+describe("DenyIfEdgeExistsFromViewerToEntRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const policy = {
+    rules: [new DenyIfEdgeExistsFromViewerToEntRule("edge"), AlwaysAllowRule],
+  };
+  const policy2 = {
+    rules: [
+      new DenyIfEdgeExistsFromViewerToEntRule("edge", {
+        disableTransformations: true,
+      }),
+      AlwaysAllowRule,
+    ],
+  };
+  const id1Viewer = new IDViewer(id1);
+  const user = getUser(id1Viewer, id1, policy);
+  const user2 = getUser(id1Viewer, id2, policy2);
+
+  test("edge exists", async () => {
+    await addEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user, id2);
+    await softDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user, id2);
+    await reallyDeleteEdge(user, id2);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+});
+
+describe("DenyIfEdgeExistsFromEntToViewerRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const policy = {
+    rules: [new DenyIfEdgeExistsFromEntToViewerRule("edge"), AlwaysAllowRule],
+  };
+  const policy2 = {
+    rules: [
+      new DenyIfEdgeExistsFromEntToViewerRule("edge", {
+        disableTransformations: true,
+      }),
+      AlwaysAllowRule,
+    ],
+  };
+  const id1Viewer = new IDViewer(id1);
+  const user = getUser(id1Viewer, id1, policy);
+  const user2 = getUser(id1Viewer, id2, policy2);
+
+  test("edge exists", async () => {
+    await addEdge(user2, id1);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user2, id1);
+    await softDeleteEdge(user2, id1);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user2, id1);
+    await reallyDeleteEdge(user2, id1);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+});
+
+describe("DenyIfEdgeExistsFromViewerToEntPropertyRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const id1AccountId = v1();
+  const id2AccountId = v1();
+  const policy = {
+    rules: [
+      new DenyIfEdgeExistsFromViewerToEntPropertyRule<User>(
+        "accountID",
+        "edge",
+      ),
+      AlwaysAllowRule,
+    ],
+  };
+  const policy2 = {
+    rules: [
+      new DenyIfEdgeExistsFromViewerToEntPropertyRule<User>(
+        "accountID",
+        "edge",
+        {
+          disableTransformations: true,
+        },
+      ),
+      AlwaysAllowRule,
+    ],
+  };
+  const id1Viewer = new IDViewer(id1);
+  const user = getUser(id1Viewer, id1, policy, id1AccountId);
+  const user2 = getUser(id1Viewer, id2, policy2, id2AccountId);
+
+  test("edge exists", async () => {
+    await addEdge(user, id2AccountId);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge soft deleted", async () => {
+    await addEdge(user, id2AccountId);
+    await softDeleteEdge(user, id2AccountId);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge really deleted", async () => {
+    await addEdge(user, id2AccountId);
+    await reallyDeleteEdge(user, id2AccountId);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+});
+
+describe("DenyIfEdgeExistsFromEntPropertyToViewerRule", () => {
+  const id1 = v1();
+  const id2 = v1();
+  const id1AccountId = v1();
+  const id2AccountId = v1();
+  const policy = {
+    rules: [
+      new DenyIfEdgeExistsFromEntPropertyToViewerRule<User>(
+        "accountID",
+        "edge",
+      ),
+      AlwaysAllowRule,
+    ],
+  };
+  const policy2 = {
+    rules: [
+      new DenyIfEdgeExistsFromEntPropertyToViewerRule<User>(
+        "accountID",
+        "edge",
+        {
+          disableTransformations: true,
+        },
+      ),
+      AlwaysAllowRule,
+    ],
+  };
+  const id1Viewer = new IDViewer(id1);
+  const user = getUser(id1Viewer, id1, policy, id1AccountId);
+  const user2 = getUser(id1Viewer, id2, policy2, id2AccountId);
+
+  test("edge exists", async () => {
+    await addInboundEdge(user, id2AccountId);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(false);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge does not exist", async () => {
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+
+  test("edge soft deleted", async () => {
+    await addInboundEdge(user, id2AccountId);
+    await softDeleteInboundEdge(user, id2AccountId);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(false);
+  });
+
+  test("edge really deleted", async () => {
+    await addInboundEdge(user, id2AccountId);
+    await reallyDeleteInboundEdge(user, id2AccountId);
+
+    const bool = await applyPrivacyPolicy(id1Viewer, policy, user2);
+    expect(bool).toBe(true);
+
+    const bool2 = await applyPrivacyPolicy(id1Viewer, policy2, user2);
+    expect(bool2).toBe(true);
+  });
+});
+
 describe("applyPrivacyPolicyX", () => {
   const policy = {
     rules: [DenyIfLoggedOutRule, AlwaysAllowRule],
@@ -614,7 +1245,10 @@ describe("DenyIfEntIsVisibleRule", () => {
 });
 
 class BlockedEntError extends Error {
-  constructor(public privacyPolicy: PrivacyPolicy, public entID: ID) {
+  constructor(
+    public privacyPolicy: PrivacyPolicy,
+    public entID: ID,
+  ) {
     super(`blocked privacy!`);
   }
 }

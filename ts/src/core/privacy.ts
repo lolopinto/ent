@@ -197,7 +197,10 @@ export class AllowIfViewerIsEntPropertyRule<T extends Ent>
 export class AllowIfEntPropertyIsRule<T extends Ent>
   implements PrivacyPolicyRule
 {
-  constructor(private property: keyof T, private val: any) {}
+  constructor(
+    private property: keyof T,
+    private val: any,
+  ) {}
 
   async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
     const result: any = ent && ent[this.property];
@@ -211,7 +214,10 @@ export class AllowIfEntPropertyIsRule<T extends Ent>
 export class DenyIfEntPropertyIsRule<T extends Ent>
   implements PrivacyPolicyRule
 {
-  constructor(private property: keyof T, private val: any) {}
+  constructor(
+    private property: keyof T,
+    private val: any,
+  ) {}
 
   async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
     const result: any = ent && ent[this.property];
@@ -227,7 +233,10 @@ export class AllowIfEntIsVisibleRule<
   TViewer extends Viewer,
 > implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(
+    private id: ID,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {}
 
   async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
@@ -243,7 +252,10 @@ export class AllowIfEntIsNotVisibleRule<
   TViewer extends Viewer,
 > implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(
+    private id: ID,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {}
 
   async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
@@ -259,7 +271,10 @@ export class AllowIfEntIsVisiblePolicy<
   TViewer extends Viewer,
 > implements PrivacyPolicy<TEnt, TViewer>
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(
+    private id: ID,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {}
 
   rules = [new AllowIfEntIsVisibleRule(this.id, this.options), AlwaysDenyRule];
 }
@@ -269,7 +284,10 @@ export class DenyIfEntIsVisiblePolicy<
   TViewer extends Viewer,
 > implements PrivacyPolicy<TEnt, TViewer>
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(
+    private id: ID,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {}
 
   rules = [new DenyIfEntIsVisibleRule(this.id, this.options), AlwaysAllowRule];
 }
@@ -279,7 +297,10 @@ export class DenyIfEntIsVisibleRule<
   TViewer extends Viewer,
 > implements PrivacyPolicyRule<TEnt, TViewer>
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(
+    private id: ID,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {}
 
   async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
@@ -295,7 +316,10 @@ export class DenyIfEntIsNotVisibleRule<
   TViewer extends Viewer,
 > implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(
+    private id: ID,
+    private options: LoadEntOptions<TEnt, TViewer>,
+  ) {}
 
   async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
@@ -329,6 +353,30 @@ async function allowIfEdgeExistsRule(
   return Skip();
 }
 
+async function allowIfEdgeDoesNotExistRule(
+  id1: ID | null | undefined,
+  id2: ID | null | undefined,
+  edgeType: string,
+  context?: Context,
+  options?: EdgeQueryableDataOptionsConfigureLoader,
+): Promise<PrivacyResult> {
+  if (!id1 || !id2) {
+    return Allow();
+  }
+  const edge = await loadEdgeForID2({
+    id1,
+    edgeType,
+    id2,
+    context,
+    ctr: AssocEdge,
+    queryOptions: options,
+  });
+  if (!edge) {
+    return Allow();
+  }
+  return Skip();
+}
+
 export class AllowIfEdgeExistsRule implements PrivacyPolicyRule {
   constructor(
     private id1: ID,
@@ -348,6 +396,30 @@ export class AllowIfEdgeExistsRule implements PrivacyPolicyRule {
   }
 }
 
+export class AllowIfEdgeDoesNotExistRule implements PrivacyPolicyRule {
+  constructor(
+    private id1: ID,
+    private id2: ID,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
+
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
+    return allowIfEdgeDoesNotExistRule(
+      this.id1,
+      this.id2,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
+  }
+}
+
+/**
+ * @deprecated use AllowIfEdgeExistsFromViewerToEntRule
+ * This is a privacy policy rule that checks if the viewer has an inbound edge to the ent.
+ * e.g. does edge exist from viewer's id to ent's id
+ */
 export class AllowIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(
     private edgeType: string,
@@ -365,6 +437,17 @@ export class AllowIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
   }
 }
 
+/**
+ * This is a privacy policy rule that checks if edge exists from viewer's id to ent's id
+ * Allows the viewer to see the ent if the edge exists
+ */
+export class AllowIfEdgeExistsFromViewerToEntRule extends AllowIfViewerInboundEdgeExistsRule {}
+
+/**
+ * @deprecated use AllowIfEdgeExistsFromEntToViewerRule
+ * This is a privacy policy rule that checks if the viewer has an outbound edge to the ent.
+ * e.g. does edge exist from ent's id to viewer's id
+ */
 export class AllowIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(
     private edgeType: string,
@@ -374,6 +457,56 @@ export class AllowIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     return allowIfEdgeExistsRule(
       ent?.id,
+      v.viewerID,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
+  }
+}
+
+/**
+ * This is a privacy policy rule that checks if edge exists from ent's id to viewer's id
+ */
+export class AllowIfEdgeExistsFromEntToViewerRule extends AllowIfViewerOutboundEdgeExistsRule {}
+
+/**
+ * This is a privacy policy rule that checks if edge exists from viewer to id of given ent property
+ */
+export class AllowIfEdgeExistsFromViewerToEntPropertyRule<T extends Ent>
+  implements PrivacyPolicyRule
+{
+  constructor(
+    private property: keyof T,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
+
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    const result: any = ent && ent[this.property];
+    return allowIfEdgeExistsRule(
+      v.viewerID,
+      result,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
+  }
+}
+
+export class AllowIfEdgeExistsFromEntPropertyToViewerRule<T extends Ent>
+  implements PrivacyPolicyRule
+{
+  constructor(
+    private property: keyof T,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
+
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    const result: any = ent && ent[this.property];
+    return allowIfEdgeExistsRule(
+      result,
       v.viewerID,
       this.edgeType,
       v.context,
@@ -450,6 +583,9 @@ export class DenyIfEdgeExistsRule implements PrivacyPolicyRule {
   }
 }
 
+/**
+ * @deprecated use DenyIfEdgeExistsFromViewerToEntRule
+ */
 export class DenyIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(
     private edgeType: string,
@@ -467,6 +603,15 @@ export class DenyIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
   }
 }
 
+/**
+ * This is a privacy policy rule that checks if edge exists from viewer's id to ent's id
+ * Denies the viewer from seeing the ent if the edge exists
+ */
+export class DenyIfEdgeExistsFromViewerToEntRule extends DenyIfViewerInboundEdgeExistsRule {}
+
+/**
+ * @deprecated use DenyIfEdgeExistsFromEntToViewerRule
+ */
 export class DenyIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(
     private edgeType: string,
@@ -483,6 +628,75 @@ export class DenyIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
     );
   }
 }
+
+/**
+ * This is a privacy policy rule that checks if edge exists from ent's id to viewer's id
+ */
+export class DenyIfEdgeExistsFromEntToViewerRule extends DenyIfViewerOutboundEdgeExistsRule {}
+
+/**
+ * @deprecated use DenyIfEdgeExistsFromViewerToEntPropertyRule
+ */
+export class DenyIfViewerInboundEdgeToEntPropertyExistsRule<T extends Ent>
+  implements PrivacyPolicyRule
+{
+  constructor(
+    private property: keyof T,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
+
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    const result: any = ent && ent[this.property];
+    return denyIfEdgeExistsRule(
+      v.viewerID,
+      result,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
+  }
+}
+
+/**
+ * This is a privacy policy rule that checks if edge exists from viewer's id to ent's id
+ * Denies the viewer from seeing the ent if the edge exists
+ */
+export class DenyIfEdgeExistsFromViewerToEntPropertyRule<
+  T extends Ent,
+> extends DenyIfViewerInboundEdgeToEntPropertyExistsRule<T> {}
+
+/**
+ * @deprecated use DenyIfEdgeExistsFromEntToViewerPropertyRule
+ */
+export class DenyIfViewerOutboundEdgeToEntPropertyExistsRule<T extends Ent>
+  implements PrivacyPolicyRule
+{
+  constructor(
+    private property: keyof T,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
+
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    const result: any = ent && ent[this.property];
+    return denyIfEdgeExistsRule(
+      result,
+      v.viewerID,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
+  }
+}
+
+/**
+ * This is a privacy policy rule that checks if edge exists from ent's id to viewer's id
+ * Denies the viewer from seeing the ent if the edge exists
+ */
+export class DenyIfEdgeExistsFromEntPropertyToViewerRule<
+  T extends Ent,
+> extends DenyIfViewerOutboundEdgeToEntPropertyExistsRule<T> {}
 
 export class DenyIfEdgeDoesNotExistRule implements PrivacyPolicyRule {
   constructor(
@@ -541,9 +755,55 @@ export class DenyIfViewerOutboundEdgeDoesNotExistRule
   }
 }
 
+export class DenyIfViewerInboundEdgeToEntPropertyDoesNotExistRule<T extends Ent>
+  implements PrivacyPolicyRule
+{
+  constructor(
+    private property: keyof T,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
+
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    const result: any = ent && ent[this.property];
+    return denyIfEdgeDoesNotExistRule(
+      v.viewerID,
+      result,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
+  }
+}
+
+export class DenyIfViewerOutboundEdgeToEntPropertyDoesNotExistRule<
+  T extends Ent,
+> implements PrivacyPolicyRule
+{
+  constructor(
+    private property: keyof T,
+    private edgeType: string,
+    private options?: EdgeQueryableDataOptionsConfigureLoader,
+  ) {}
+
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    const result: any = ent && ent[this.property];
+    return denyIfEdgeDoesNotExistRule(
+      result,
+      v.viewerID,
+      this.edgeType,
+      v.context,
+      this.options,
+    );
+  }
+}
+
 // need a Deny version of this too
 export class AllowIfConditionAppliesRule implements PrivacyPolicyRule {
-  constructor(private fn: FuncRule, private rule: PrivacyPolicyRule) {}
+  constructor(
+    private fn: FuncRule,
+    private rule: PrivacyPolicyRule,
+  ) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     const result = await this.fn(v, ent);
@@ -556,10 +816,10 @@ export class AllowIfConditionAppliesRule implements PrivacyPolicyRule {
 }
 
 interface DelayedFuncRule {
-  (v: Viewer, ent?: Ent):
-    | null
-    | PrivacyPolicyRule
-    | Promise<PrivacyPolicyRule | null>;
+  (
+    v: Viewer,
+    ent?: Ent,
+  ): null | PrivacyPolicyRule | Promise<PrivacyPolicyRule | null>;
 }
 
 // use this when there's a computation needed to get the rule and then the privacy is applied on said rule
