@@ -14,6 +14,7 @@ import { RequestContext, Viewer } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
+  GraphQLTime,
 } from "@snowtop/ent/graphql";
 import {
   Account,
@@ -32,6 +33,7 @@ import {
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
   AccountToCreatedWorkspacesConnectionType,
+  AccountToCustomTodosConnectionType,
   AccountToOpenTodosConnectionType,
   AccountToOpenTodosDupConnectionType,
   AccountToScopedTodosConnectionType,
@@ -65,7 +67,7 @@ export const AccountType = new GraphQLObjectType({
         return obj.accountPrefs;
       },
     },
-    account_prefs_3: {
+    account_prefs3: {
       type: AccountPrefsType,
       resolve: (obj: Account, args: {}, context: RequestContext<Viewer>) => {
         return obj.accountPrefs3;
@@ -380,6 +382,44 @@ export const AccountType = new GraphQLObjectType({
         );
       },
     },
+    custom_todos: {
+      type: new GraphQLNonNull(AccountToCustomTodosConnectionType()),
+      args: {
+        completed: {
+          description: "",
+          type: GraphQLBoolean,
+        },
+        completed_date: {
+          description: "",
+          type: GraphQLTime,
+        },
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (obj: Account, args: any, context: RequestContext<Viewer>) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: Account) =>
+            obj.customTodos(args.completed, args.completed_date),
+          args,
+        );
+      },
+    },
   }),
   interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
@@ -403,7 +443,7 @@ export const AccountCanViewerSeeType = new GraphQLObjectType({
         return obj.phoneNumber();
       },
     },
-    account_prefs_3: {
+    account_prefs3: {
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: async (
         obj: AccountCanViewerSee,

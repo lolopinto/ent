@@ -11,13 +11,13 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLTime } from "@snowtop/ent/graphql";
+import { ContactDate } from "../../../ent/contact_types";
 import {
   ContactItemType,
   ContactLabelType,
   ContactType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { ContactDate } from "../../../ent/contact_types";
 
 export const ContactDateType = new GraphQLObjectType({
   name: "ContactDate",

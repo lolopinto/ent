@@ -33,7 +33,7 @@ enum AccountTodoStatus {
 
 type AccountCanViewerSee {
   phone_number: Boolean!
-  account_prefs_3: Boolean!
+  account_prefs3: Boolean!
   credits: Boolean!
 }
 
@@ -48,7 +48,7 @@ type Account implements Node {
   name: String!
   phone_number: String
   account_prefs: AccountPrefs
-  account_prefs_3: AccountPrefs
+  account_prefs3: AccountPrefs
   account_prefs_list: [AccountPrefs!]
   credits: Int
   country_infos: [CountryInfo!]
@@ -64,6 +64,7 @@ type Account implements Node {
   can_viewer_see_info: AccountCanViewerSee!
   open_todos_plural: [Todo!]!
   open_todos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
+  custom_todos(completed: Boolean, completed_date: Time, first: Int, after: String, last: Int, before: String): AccountToCustomTodosConnection!
 }
 
 type CountryCapital {
@@ -133,6 +134,18 @@ type AccountToCreatedWorkspacesEdge implements Edge {
 type AccountToCreatedWorkspacesConnection implements Connection {
   edges: [AccountToCreatedWorkspacesEdge!]!
   nodes: [Workspace!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AccountToCustomTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type AccountToCustomTodosConnection implements Connection {
+  edges: [AccountToCustomTodosEdge!]!
+  nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -228,6 +241,18 @@ type RootToClosedTodosLastDayEdge implements Edge {
 
 type RootToClosedTodosLastDayConnection implements Connection {
   edges: [RootToClosedTodosLastDayEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToCustomTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type RootToCustomTodosConnection implements Connection {
+  edges: [RootToCustomTodosEdge!]!
   nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
@@ -387,7 +412,7 @@ input CreateAccountInput {
   name: String!
   phone_number: String!
   account_prefs: AccountPrefsInput
-  account_prefs_3: AccountPrefsInput
+  account_prefs3: AccountPrefsInput
   account_prefs_list: [AccountPrefsInput!]
   credits: Int
   country_infos: [CountryInfoInput!]
@@ -415,6 +440,7 @@ input CreateTodoInput {
   scope_id: ID!
   scope_type: String!
   bounty: Int
+  tags: [TagTodoCreateInput!]
 }
 
 type CreateTodoPayload {
@@ -463,7 +489,7 @@ input EditAccountInput {
   name: String
   phone_number: String
   account_prefs: AccountPrefsInput
-  account_prefs_3: AccountPrefsInput
+  account_prefs3: AccountPrefsInput
   account_prefs_list: [AccountPrefsInput!]
   country_infos: [CountryInfoInput!]
 }
@@ -504,6 +530,12 @@ type RenameTodoPayload {
   todo: Todo!
 }
 
+input TagTodoCreateInput {
+  display_name: String!
+  related_tag_ids: [ID!]
+  canonical_name: String
+}
+
 input TodoStatusAccountEditInput {
   """id of Account"""
   id: ID!
@@ -518,6 +550,7 @@ type TodoStatusAccountEditPayload {
 type Query {
   account(id: ID!): Account
   closed_todos_last_day(first: Int, after: String, last: Int, before: String): RootToClosedTodosLastDayConnection!
+  custom_todos(completed: Boolean, completed_date: Time, first: Int, after: String, last: Int, before: String): RootToCustomTodosConnection!
   open_todos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
   open_todos_plural(id: ID!): [Todo!]!
   tag(id: ID!): Tag

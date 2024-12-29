@@ -20,9 +20,11 @@ import {
   ContactEmail,
   ContactPhoneNumber,
   Event,
+  File,
   Holiday,
   HoursOfOperation,
   User,
+  UserStatistics,
 } from "../internal";
 
 export async function loadEntByType(
@@ -57,12 +59,16 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent, any> {
       return ContactPhoneNumber.loaderOptions();
     case NodeType.Event:
       return Event.loaderOptions();
+    case NodeType.File:
+      return File.loaderOptions();
     case NodeType.Holiday:
       return Holiday.loaderOptions();
     case NodeType.HoursOfOperation:
       return HoursOfOperation.loaderOptions();
     case NodeType.User:
       return User.loaderOptions();
+    case NodeType.UserStatistics:
+      return UserStatistics.loaderOptions();
     default:
       throw new Error(`invalid nodeType ${type} passed to getLoaderOptions`);
   }

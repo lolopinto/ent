@@ -19,7 +19,7 @@ import schema from "../../../../schema/event_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ClearEventRsvpStatusInput {
-  userID: ID;
+  userId: ID;
   whatever?: boolean | null;
 }
 

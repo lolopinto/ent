@@ -13,7 +13,7 @@ import { Workspace } from "src/ent/workspace";
 
 export { WorkspaceCreateInput };
 
-export default class CreateWorkspaceAction extends CreateWorkspaceActionBase {
+export class CreateWorkspaceAction extends CreateWorkspaceActionBase {
   getPrivacyPolicy(): PrivacyPolicy<
     Workspace,
     Viewer<Ent<any> | null, ID | null>

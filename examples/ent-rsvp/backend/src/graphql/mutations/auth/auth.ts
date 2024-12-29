@@ -2,13 +2,15 @@ import { RequestContext, loadRow, query } from "@snowtop/ent";
 import { gqlContextType, gqlMutation, gqlQuery } from "@snowtop/ent/graphql";
 import { useAndVerifyAuthJWT } from "@snowtop/ent-passport";
 import { Guest, User } from "src/ent";
-import { ViewerType } from "../../resolvers/viewer_type";
+import { GraphQLViewer } from "../../resolvers/viewer_type";
 import { GraphQLString } from "graphql";
 import {
   AuthGuestInput,
   AuthGuestPayload,
   AuthUserInput,
   AuthUserPayload,
+  AuthAnyInput,
+  AuthAnyPayload,
 } from "./auth_types";
 
 export class AuthResolver {
@@ -58,7 +60,7 @@ export class AuthResolver {
     if (!viewer) {
       throw new Error(`could not log user in with given credentials`);
     }
-    return new AuthGuestPayload(token, new ViewerType(viewer));
+    return new AuthGuestPayload(token, new GraphQLViewer(viewer));
   }
 
   @gqlQuery({
@@ -79,7 +81,7 @@ export class AuthResolver {
       throw new Error("could not find field EmailAddress for User");
     }
     const val = f.format(email);
-    const id = await User.loadIDFromEmailAddress(val);
+    const id = await User.loadIdFromEmailAddress(val);
     return id === undefined;
   }
 
@@ -141,6 +143,40 @@ export class AuthResolver {
       throw new Error(`not the right credentials`);
     }
 
-    return new AuthUserPayload(token, new ViewerType(viewer));
+    return new AuthUserPayload(token, new GraphQLViewer(viewer));
+  }
+
+  @gqlMutation({
+    class: "AuthResolver",
+    name: "authAny",
+    type: AuthAnyPayload,
+    args: [
+      gqlContextType(),
+      {
+        name: "input",
+        type: AuthAnyInput,
+      },
+    ],
+    async: true,
+  })
+  async authAny(
+    context: RequestContext,
+    input: AuthAnyInput,
+  ): Promise<AuthAnyPayload> {
+    if (input.user && input.guest) {
+      throw new Error("cannot have both user and guest");
+    }
+    let userPayload: AuthUserPayload | null = null;
+    let guestPayload: AuthGuestPayload | null = null;
+    if (input.guest) {
+      guestPayload = await this.authGuest(context, input.guest);
+    }
+    if (input.user) {
+      userPayload = await this.authUser(context, input.user);
+    }
+    if (!userPayload && !guestPayload) {
+      throw new Error("no valid credentials");
+    }
+    return new AuthAnyPayload(userPayload, guestPayload);
   }
 }

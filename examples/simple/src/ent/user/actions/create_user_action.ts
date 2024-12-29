@@ -18,6 +18,7 @@ import { User } from "../../";
 export { UserCreateInput };
 import { ExampleViewer } from "../../../viewer/viewer";
 import { ContactLabel, UserAccountStatus } from "../../../ent/generated/types";
+import CreateUserStatisticsAction from "src/ent/user_statistics/actions/create_user_statistics_action";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateUserAction extends CreateUserActionBase {
@@ -43,10 +44,11 @@ export default class CreateUserAction extends CreateUserActionBase {
     return [
       {
         // also create a contact for self when creating user
-        changeset: (
+        changeset: async (
           builder: UserBuilder,
           input: UserCreateInput,
         ): Promise<Changeset> => {
+          const id = await builder.getEntID();
           let action = CreateContactAction.create(this.builder.viewer, {
             firstName: input.firstName,
             lastName: input.lastName,
@@ -54,9 +56,10 @@ export default class CreateUserAction extends CreateUserActionBase {
               {
                 emailAddress: input.emailAddress,
                 label: ContactLabel.Self,
+                ownerId: id,
               },
             ],
-            userID: builder,
+            userId: builder,
           });
 
           builder.addSelfContactID(action.builder, {
@@ -83,6 +86,17 @@ export default class CreateUserAction extends CreateUserActionBase {
                 input.accountStatusOverride as unknown as UserAccountStatus,
             });
           }
+        },
+      },
+      {
+        async changeset(builder, input) {
+          const id = await builder.getEntID();
+
+          // create a new viewer for privacy purposes
+          const viewer = new ExampleViewer(id);
+          return CreateUserStatisticsAction.create(viewer, {
+            userId: id, // need id for privacy purposes
+          }).changeset();
         },
       },
     ];

@@ -13,7 +13,7 @@ const AuthCodeSchema = new EntSchema({
     code: StringType(),
     userID: UUIDType({
       immutable: true,
-      foreignKey: { schema: "User", column: "ID" },
+      foreignKey: { schema: "User", column: "id", disableBuilderType: true },
     }),
     emailAddress: EmailType({ nullable: true }),
     phoneNumber: PhoneNumberType({ nullable: true }),
@@ -24,6 +24,23 @@ const AuthCodeSchema = new EntSchema({
   actions: [
     {
       operation: ActionOperation.Create,
+      actionOnlyFields: [
+        {
+          name: "from",
+          type: "String",
+          optional: true,
+        },
+        {
+          name: "subject",
+          type: "String",
+          optional: true,
+        },
+        {
+          name: "body",
+          type: "String",
+          optional: true,
+        },
+      ],
     },
     {
       operation: ActionOperation.Delete,

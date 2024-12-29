@@ -3,7 +3,6 @@ package action
 import (
 	"testing"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
@@ -816,7 +815,7 @@ func TestCompareEdgeGroupAction(t *testing.T) {
 	assocEdgeGroup := &edge.AssociationEdgeGroup{
 		GroupName:         "rsvps",
 		GroupStatusName:   "rsvpStatus",
-		TSGroupStatusName: strcase.ToLowerCamel("rsvpStatus"),
+		TSGroupStatusName: "rsvpStatus",
 		ConstType:         "EventRsvpStatus",
 		NodeInfo:          nodeinfo.GetNodeInfo("event"),
 		DestNodeInfo:      nodeinfo.GetNodeInfo("user"),
@@ -870,7 +869,7 @@ func TestCompareUnequalEdgeGroupAction(t *testing.T) {
 	assocEdgeGroup := &edge.AssociationEdgeGroup{
 		GroupName:         "rsvps",
 		GroupStatusName:   "rsvpStatus",
-		TSGroupStatusName: strcase.ToLowerCamel("rsvpStatus"),
+		TSGroupStatusName: "rsvpStatus",
 		ConstType:         "EventRsvpStatus",
 		NodeInfo:          nodeinfo.GetNodeInfo("event"),
 		DestNodeInfo:      nodeinfo.GetNodeInfo("user"),
@@ -950,6 +949,7 @@ func createEdgeActionWithOptions(nodeName string, assocEdge *edge.AssociationEdg
 	ci.tsEnums = opt.tsEnums
 	ci.gqlEnums = opt.gqlEnums
 	ci.customInterfaces = opt.customInterfaces
+	ci.NonEntFields = opt.nonEntFields
 	return typ.getAction(ci)
 }
 

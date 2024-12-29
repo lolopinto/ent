@@ -21,7 +21,7 @@ const TodoSchema = new TodoBaseEntSchema({
     }),
     // TODO remove foreignKey here?? https://github.com/lolopinto/ent/issues/1185
     creatorID: UUIDType({
-      foreignKey: { schema: "Account", column: "ID" },
+      foreignKey: { schema: "Account", column: "id" },
     }),
     completedDate: TimestampType({ index: true, nullable: true }),
     // moving away from creatorID to assigneeID to indicate who the todo is assigned to
@@ -78,6 +78,17 @@ const TodoSchema = new TodoBaseEntSchema({
     {
       operation: ActionOperation.Create,
       excludedFields: ["Completed", "completedDate"],
+      actionOnlyFields: [
+        {
+          name: "tags",
+          list: true,
+          optional: true,
+          type: "Object",
+          actionName: "CreateTagAction",
+          // TODO excludedFields should verify that all fields are valid
+          excludedFields: ["ownerID"],
+        },
+      ],
     },
     {
       operation: ActionOperation.Edit,

@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent/config"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -250,6 +250,8 @@ func (t *idType) GetImportType() Import {
 // UUIDType
 type IDType struct {
 	idType
+	// uuid types that are not backed by id fields in the db shouldn't be base64 encoded
+	DisableBase64Encode bool
 }
 
 func (t *IDType) GetGraphQLType() string {
@@ -272,15 +274,15 @@ func (t *IDType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 }
 
 func (t *IDType) CustomGQLRender(cfg Config, v string) string {
-	if !cfg.Base64EncodeIDs() {
+	if !cfg.Base64EncodeIDs() || t.DisableBase64Encode {
 		return v
 	}
 
-	return fmt.Sprintf("mustDecodeIDFromGQLID(%s)", v)
+	return fmt.Sprintf("mustDecodeIDFromGQLID(%s.toString())", v)
 }
 
 func (t *IDType) ArgImports(cfg Config) []*tsimport.ImportPath {
-	if !cfg.Base64EncodeIDs() {
+	if !cfg.Base64EncodeIDs() || t.DisableBase64Encode {
 		return []*tsimport.ImportPath{}
 	}
 	return []*tsimport.ImportPath{
@@ -290,6 +292,7 @@ func (t *IDType) ArgImports(cfg Config) []*tsimport.ImportPath {
 
 type NullableIDType struct {
 	idType
+	DisableBase64Encode bool
 }
 
 func (t *NullableIDType) GetGraphQLType() string {
@@ -311,15 +314,16 @@ func (t *NullableIDType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath 
 }
 
 func (t *NullableIDType) CustomGQLRender(cfg Config, v string) string {
-	if !cfg.Base64EncodeIDs() {
+	if !cfg.Base64EncodeIDs() || t.DisableBase64Encode {
 		return v
 	}
 
-	return fmt.Sprintf("mustDecodeNullableIDFromGQLID(%s)", v)
+	// account for null and undefined and keeping null as null
+	return fmt.Sprintf("mustDecodeNullableIDFromGQLID(%s?.toString() ?? %s)", v, v)
 }
 
 func (t *NullableIDType) ArgImports(cfg Config) []*tsimport.ImportPath {
-	if !cfg.Base64EncodeIDs() {
+	if !cfg.Base64EncodeIDs() || t.DisableBase64Encode {
 		return []*tsimport.ImportPath{}
 	}
 
@@ -966,7 +970,7 @@ func (t *enumType) getDBTypeForEnumDBType(values []string, typ string) string {
 	// for now we take it from TSType if that's given since it makes sense to be consistent with that
 	// if not provided, we use the name
 	// we also need DBTypeName or something too
-	enumType := strconv.Quote(strcase.ToSnake(typ))
+	enumType := strconv.Quote(names.ToDBColumn(typ))
 	sb.WriteString(fmt.Sprintf("name=%s", enumType))
 	return fmt.Sprintf("postgresql.ENUM(%s)", sb.String())
 

@@ -178,7 +178,7 @@ export class User extends UserBase {
     const res = contactInfos.filterMap((info) => {
       return {
         include:
-          this.id !== info.contact.userID &&
+          this.id !== info.contact.userId &&
           domain === this.getDomainFromEmail(info.contactInfo.email1),
         return: info.contact,
       };
@@ -246,6 +246,22 @@ export class User extends UserBase {
   })
   getCommentsAuthored(): UserToCommentsAuthoredQuery {
     return new UserToCommentsAuthoredQuery(this.viewer, this);
+  }
+
+  @gqlField({
+    class: "User",
+    name: "cities",
+    type: "[City]",
+    // TODO maybe get a path like this working?
+    // type: [
+    //   {
+    //     type: "CityType",
+    //     importPath: "src/graphql/resolvers/city",
+    //   },
+    // ],
+  })
+  getCities() {
+    return [];
   }
 
   static async validateEmailPassword(

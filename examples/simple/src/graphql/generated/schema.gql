@@ -130,6 +130,10 @@ enum EventSortColumn {
   ID
 }
 
+enum FileSortColumn {
+  ID
+}
+
 enum HolidaySortColumn {
   ID
 }
@@ -208,6 +212,11 @@ enum UserSortColumn {
   ID
 }
 
+enum UserStatisticsSortColumn {
+  ID
+  USER_ID
+}
+
 type Address implements Node {
   id: ID!
   streetName: String!
@@ -219,11 +228,26 @@ type Address implements Node {
   hostedEvents(first: Int, after: String, last: Int, before: String): AddressToHostedEventsConnection!
 }
 
+type Attachment {
+  file: File
+  dupeFile: File
+  note: String
+  date: Time!
+  phoneNumber: String
+  emailAddress: String
+  creator: Node
+}
+
 type CatType {
   name: String!
   birthday: Time!
   breed: CatBreed!
   kitten: Boolean!
+}
+
+type City {
+  name: String!
+  population: Int!
 }
 
 type Comment implements Node {
@@ -250,24 +274,29 @@ type ContactEmailCanViewerDo {
 
 type ContactEmail implements Node & ContactItemType {
   contact: Contact
+  owner: User
   id: ID!
-  extra: ContactInfo
+  extra: ContactInfoExtra
   emailAddress: String!
   label: ContactLabel!
+  comments(first: Int, after: String, last: Int, before: String): ContactEmailToCommentsConnection!
+  likers(first: Int, after: String, last: Int, before: String): ContactEmailToLikersConnection!
   canViewerDo: ContactEmailCanViewerDo!
 }
 
-type ContactInfo {
+type ContactInfoExtra {
   default: Boolean!
   source: ContactInfoSource!
 }
+
+union ContactInfo = ContactEmail | ContactPhoneNumber
 
 input ContactItemFilter {
   emailDomain: String
   phoneNumberAreaCode: String
 }
 
-union ContactItemResult = ContactEmail | ContactPhoneNumber | ContactDate
+union ContactItemResult = ContactDate | ContactEmail | ContactPhoneNumber
 
 interface ContactItem {
   contact: Contact
@@ -276,10 +305,13 @@ interface ContactItem {
 
 type ContactPhoneNumber implements Node & ContactItemType {
   contact: Contact
+  owner: User
   id: ID!
-  extra: ContactInfo
+  extra: ContactInfoExtra
   phoneNumber: String!
   label: ContactLabel!
+  comments(first: Int, after: String, last: Int, before: String): ContactPhoneNumberToCommentsConnection!
+  likers(first: Int, after: String, last: Int, before: String): ContactPhoneNumberToLikersConnection!
 }
 
 type Contact implements Node {
@@ -289,12 +321,14 @@ type Contact implements Node {
   id: ID!
   firstName: String!
   lastName: String!
+  attachments: [Attachment!]
   comments(first: Int, after: String, last: Int, before: String): ContactToCommentsConnection!
   likers(first: Int, after: String, last: Int, before: String): ContactToLikersConnection!
   attachedComments(first: Int, after: String, last: Int, before: String): ContactCommentsFromAttachmentConnection!
   fullName: String!
   plusEmails: EmailInfo!
   contactItems(filter: ContactItemFilter): [ContactItemResult!]!
+  filterContactEmails(filter: ContactItemFilter, first: Int, after: String, last: Int, before: String): ContactToFilterContactEmailsConnection!
 }
 
 type DogType {
@@ -324,6 +358,7 @@ type Event implements Node {
   eventLocation: String!
   coverPhoto: Byte
   coverPhoto2: Byte
+  attachments: [Attachment!]
   attending(first: Int, after: String, last: Int, before: String): EventToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventToDeclinedConnection!
   hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
@@ -331,11 +366,21 @@ type Event implements Node {
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
   viewerRsvpStatus: EventRsvpStatus!
   canViewerSeeInfo: EventCanViewerSee!
+  cities: [City!]!
+}
+
+union Feedback = Contact | ContactEmail | ContactPhoneNumber | User
+
+type File implements Node {
+  creator: User
+  id: ID!
+  name: String!
+  path: String!
 }
 
 type GlobalCanViewerDo {
-  contactCreate(userID: ID!): Boolean!
-  contactEmailCreate(extra: ContactInfoInput, emailAddress: String!, label: ContactLabel!, contactID: ID!): Boolean!
+  contactCreate(userId: ID!): Boolean!
+  contactEmailCreate(extra: ContactInfoExtraInput, contactId: ID!, ownerId: ID!, emailAddress: String!, label: ContactLabel!): Boolean!
 }
 
 type Holiday implements Node {
@@ -419,6 +464,14 @@ type UserPrefsStruct {
   finishedNux: Boolean
   enableNotifs: Boolean
   notifTypes: [NotifType!]!
+  homeAddress: Address
+  allAddresses: [Address!]
+}
+
+type UserStatistics implements Node {
+  user: User
+  id: ID!
+  authCodeEmailsSent: Int!
 }
 
 type UserSuperNestedObject {
@@ -464,6 +517,8 @@ type User implements Node {
   likes(first: Int, after: String, last: Int, before: String): UserToLikesConnection!
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
+  contactEmails(first: Int, after: String, last: Int, before: String): UserToContactEmailsConnection!
+  contactPhoneNumbers(first: Int, after: String, last: Int, before: String): UserToContactPhoneNumbersConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   articles(first: Int, after: String, last: Int, before: String): UserArticleToCommentsConnection!
   attachedComments(first: Int, after: String, last: Int, before: String): UserCommentsFromAttachmentConnection!
@@ -482,7 +537,10 @@ type User implements Node {
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
   commentsAuthored(first: Int, after: String, last: Int, before: String): UserToCommentsAuthoredConnection!
+  cities: [City!]!
 }
+
+union WithDayOfWeek = Holiday | HoursOfOperation
 
 type AddressToHostedEventsEdge implements Edge {
   node: Event!
@@ -544,6 +602,54 @@ type ContactCommentsFromAttachmentConnection implements Connection {
   rawCount: Int!
 }
 
+type ContactEmailToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ContactEmailToCommentsConnection implements Connection {
+  edges: [ContactEmailToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactEmailToLikersEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type ContactEmailToLikersConnection implements Connection {
+  edges: [ContactEmailToLikersEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactPhoneNumberToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ContactPhoneNumberToCommentsConnection implements Connection {
+  edges: [ContactPhoneNumberToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactPhoneNumberToLikersEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type ContactPhoneNumberToLikersConnection implements Connection {
+  edges: [ContactPhoneNumberToLikersEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type ContactToCommentsEdge implements Edge {
   node: Comment!
   cursor: String!
@@ -552,6 +658,18 @@ type ContactToCommentsEdge implements Edge {
 type ContactToCommentsConnection implements Connection {
   edges: [ContactToCommentsEdge!]!
   nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactToFilterContactEmailsEdge implements Edge {
+  node: ContactEmail!
+  cursor: String!
+}
+
+type ContactToFilterContactEmailsConnection implements Connection {
+  edges: [ContactToFilterContactEmailsEdge!]!
+  nodes: [ContactEmail!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -700,6 +818,18 @@ type RootToEventConnection implements Connection {
   rawCount: Int!
 }
 
+type RootToFileEdge implements Edge {
+  node: File!
+  cursor: String!
+}
+
+type RootToFileConnection implements Connection {
+  edges: [RootToFileEdge!]!
+  nodes: [File!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type RootToHolidayEdge implements Edge {
   node: Holiday!
   cursor: String!
@@ -732,6 +862,18 @@ type RootToUserEdge implements Edge {
 type RootToUserConnection implements Connection {
   edges: [RootToUserEdge!]!
   nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToUserStatisticsEdge implements Edge {
+  node: UserStatistics!
+  cursor: String!
+}
+
+type RootToUserStatisticsConnection implements Connection {
+  edges: [RootToUserStatisticsEdge!]!
+  nodes: [UserStatistics!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -780,6 +922,30 @@ type UserToCommentsEdge implements Edge {
 type UserToCommentsConnection implements Connection {
   edges: [UserToCommentsEdge!]!
   nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToContactEmailsEdge implements Edge {
+  node: ContactEmail!
+  cursor: String!
+}
+
+type UserToContactEmailsConnection implements Connection {
+  edges: [UserToContactEmailsEdge!]!
+  nodes: [ContactEmail!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToContactPhoneNumbersEdge implements Edge {
+  node: ContactPhoneNumber!
+  cursor: String!
+}
+
+type UserToContactPhoneNumbersConnection implements Connection {
+  edges: [UserToContactPhoneNumbersEdge!]!
+  nodes: [ContactPhoneNumber!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -912,6 +1078,10 @@ type Viewer {
   defaultUserPrefs: UserPrefsStruct!
 }
 
+input PhoneAvailableArg {
+  phoneNumber: String!
+}
+
 input UserAuthInput {
   """email address of the user"""
   emailAddress: String!
@@ -946,6 +1116,17 @@ type AddressCreatePayload {
   address: Address!
 }
 
+input AttachmentInput {
+  fileId: ID!
+  dupeFileId: ID
+  note: String
+  date: Time!
+  phoneNumber: String
+  emailAddress: String
+  creatorId: ID
+  creatorType: String
+}
+
 input CatTypeInput {
   name: String!
   birthday: Time!
@@ -956,7 +1137,7 @@ input CatTypeInput {
 input ClearEventRsvpStatusInput {
   """id of Event"""
   id: ID!
-  userID: ID!
+  userId: ID!
 }
 
 type ClearEventRsvpStatusPayload {
@@ -969,13 +1150,13 @@ input CommentArgInput {
 }
 
 input CommentCreateInput {
-  authorID: ID!
+  authorId: ID!
   body: String!
-  articleID: ID!
+  articleId: ID!
   articleType: String!
-  attachmentID: ID
+  attachmentId: ID
   attachmentType: String
-  stickerID: ID
+  stickerId: ID
   stickerType: String
 }
 
@@ -987,11 +1168,11 @@ input CommentEditInput {
   """id of Comment"""
   id: ID!
   body: String
-  articleID: ID
+  articleId: ID
   articleType: String
-  attachmentID: ID
+  attachmentId: ID
   attachmentType: String
-  stickerID: ID
+  stickerId: ID
   stickerType: String
 }
 
@@ -1029,7 +1210,8 @@ input ContactArgInput {
 input ContactCreateInput {
   firstName: String!
   lastName: String!
-  userID: ID!
+  userId: ID!
+  attachments: [AttachmentInput!]
   emails: [EmailContactCreateInput!]
   phoneNumbers: [PhoneNumberContactCreateInput!]
 }
@@ -1044,7 +1226,7 @@ input ContactDeleteInput {
 }
 
 type ContactDeletePayload {
-  deletedContactID: ID
+  deletedContactId: ID
 }
 
 input ContactEditInput {
@@ -1054,6 +1236,8 @@ input ContactEditInput {
   phoneNumberIds: [ID!]
   firstName: String
   lastName: String
+  attachments: [AttachmentInput!]
+  emails: [EmailContactEditInput!]
 }
 
 type ContactEditPayload {
@@ -1066,10 +1250,11 @@ input ContactEmailArgInput {
 }
 
 input ContactEmailCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
+  contactId: ID!
+  ownerId: ID!
   emailAddress: String!
   label: ContactLabel!
-  contactID: ID!
 }
 
 type ContactEmailCreatePayload {
@@ -1082,13 +1267,13 @@ input ContactEmailDeleteInput {
 }
 
 type ContactEmailDeletePayload {
-  deletedContactEmailID: ID
+  deletedContactEmailId: ID
 }
 
 input ContactEmailEditInput {
   """id of ContactEmail"""
   id: ID!
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   emailAddress: String
   label: ContactLabel
 }
@@ -1097,7 +1282,7 @@ type ContactEmailEditPayload {
   contactEmail: ContactEmail!
 }
 
-input ContactInfoInput {
+input ContactInfoExtraInput {
   default: Boolean!
   source: ContactInfoSource!
 }
@@ -1108,10 +1293,11 @@ input ContactPhoneNumberArgInput {
 }
 
 input ContactPhoneNumberCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
+  contactId: ID!
+  ownerId: ID!
   phoneNumber: String!
   label: ContactLabel!
-  contactID: ID!
 }
 
 type ContactPhoneNumberCreatePayload {
@@ -1124,13 +1310,13 @@ input ContactPhoneNumberDeleteInput {
 }
 
 type ContactPhoneNumberDeletePayload {
-  deletedContactPhoneNumberID: ID
+  deletedContactPhoneNumberId: ID
 }
 
 input ContactPhoneNumberEditInput {
   """id of ContactPhoneNumber"""
   id: ID!
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
   phoneNumber: String
   label: ContactLabel
 }
@@ -1153,7 +1339,7 @@ type CustomEditHolidayPayload {
 }
 
 type DeleteUserInput2Payload {
-  deletedUserID: ID
+  deletedUserId: ID
 }
 
 input DeleteUserInput2 {
@@ -1191,7 +1377,15 @@ type EditPhoneNumberPayload {
 }
 
 input EmailContactCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
+  ownerId: ID!
+  emailAddress: String!
+  label: ContactLabel!
+}
+
+input EmailContactEditInput {
+  id: ID!
+  extra: ContactInfoExtraInput
   emailAddress: String!
   label: ContactLabel!
 }
@@ -1199,7 +1393,7 @@ input EmailContactCreateInput {
 input EventAddHostInput {
   """id of Event"""
   id: ID!
-  hostID: ID!
+  hostId: ID!
 }
 
 type EventAddHostPayload {
@@ -1213,13 +1407,14 @@ input EventArgInput {
 
 input EventCreateInput {
   name: String!
-  creatorID: ID!
+  creatorId: ID!
   startTime: Time!
   endTime: Time
   eventLocation: String!
-  addressID: ID
+  addressId: ID
   coverPhoto: Byte
   coverPhoto2: Byte
+  attachments: [AttachmentInput!]
 }
 
 type EventCreatePayload {
@@ -1232,7 +1427,7 @@ input EventDeleteInput {
 }
 
 type EventDeletePayload {
-  deletedEventID: ID
+  deletedEventId: ID
 }
 
 input EventEditInput {
@@ -1242,9 +1437,10 @@ input EventEditInput {
   startTime: Time
   endTime: Time
   eventLocation: String
-  addressID: ID
+  addressId: ID
   coverPhoto: Byte
   coverPhoto2: Byte
+  attachments: [AttachmentInput!]
 }
 
 type EventEditPayload {
@@ -1254,7 +1450,7 @@ type EventEditPayload {
 input EventRemoveHostInput {
   """id of Event"""
   id: ID!
-  hostID: ID!
+  hostId: ID!
 }
 
 type EventRemoveHostPayload {
@@ -1265,7 +1461,7 @@ input EventRsvpStatusEditInput {
   """id of Event"""
   id: ID!
   rsvpStatus: EventRsvpStatusInput!
-  userID: ID!
+  userId: ID!
 }
 
 type EventRsvpStatusEditPayload {
@@ -1277,6 +1473,42 @@ enum EventRsvpStatusInput {
   DECLINED
   MAYBE
   UNKNOWN
+}
+
+input FileArgInput {
+  id: ID
+  ids: [ID!]
+}
+
+input FileCreateInput {
+  name: String!
+  path: String!
+  creatorId: ID!
+}
+
+type FileCreatePayload {
+  file: File!
+}
+
+input FileDeleteInput {
+  """id of File"""
+  id: ID!
+}
+
+type FileDeletePayload {
+  deletedFileId: ID
+}
+
+input FileEditInput {
+  """id of File"""
+  id: ID!
+  name: String
+  path: String
+  creatorId: ID
+}
+
+type FileEditPayload {
+  file: File!
 }
 
 input HolidayArgInput {
@@ -1319,7 +1551,8 @@ input PetUnionTypeInput {
 }
 
 input PhoneNumberContactCreateInput {
-  extra: ContactInfoInput
+  extra: ContactInfoExtraInput
+  ownerId: ID!
   phoneNumber: String!
   label: ContactLabel!
 }
@@ -1364,7 +1597,7 @@ input UserDeleteInput {
 }
 
 type UserDeletePayload {
-  deletedUserID: ID
+  deletedUserId: ID
 }
 
 input UserEditInput {
@@ -1420,6 +1653,41 @@ input UserPrefsStructInput {
   finishedNux: Boolean
   enableNotifs: Boolean
   notifTypes: [NotifType!]!
+  homeAddressId: ID
+  allAddressIds: [ID!]
+}
+
+input UserStatisticsArgInput {
+  id: ID
+  ids: [ID!]
+}
+
+input UserStatisticsCreateInput {
+  userId: ID!
+  authCodeEmailsSent: Int
+}
+
+type UserStatisticsCreatePayload {
+  userStatistics: UserStatistics!
+}
+
+input UserStatisticsDeleteInput {
+  """id of UserStatistics"""
+  id: ID!
+}
+
+type UserStatisticsDeletePayload {
+  deletedUserStatisticsId: ID
+}
+
+input UserStatisticsEditInput {
+  """id of UserStatistics"""
+  id: ID!
+  authCodeEmailsSent: Int
+}
+
+type UserStatisticsEditPayload {
+  userStatistics: UserStatistics!
 }
 
 input UserSuperNestedObjectInput {
@@ -1457,6 +1725,10 @@ type Query {
   event_connection(ids: [ID!], sortCol: EventSortColumn, query: EventArgInput, first: Int, after: String, last: Int, before: String): RootToEventConnection!
   """custom query for event. list"""
   event_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [Event!]!
+  """custom query for file. connection"""
+  file_connection(ids: [ID!], sortCol: FileSortColumn, query: FileArgInput, first: Int, after: String, last: Int, before: String): RootToFileConnection!
+  """custom query for file. list"""
+  file_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [File!]!
   """custom query for holiday. connection"""
   holiday_connection(ids: [ID!], sortCol: HolidaySortColumn, query: HolidayArgInput, first: Int, after: String, last: Int, before: String): RootToHolidayConnection!
   """custom query for holiday. list"""
@@ -1471,13 +1743,17 @@ type Query {
   user_connection(ids: [ID!], sortCol: UserSortColumn, query: UserArgInput, first: Int, after: String, last: Int, before: String): RootToUserConnection!
   """custom query for user. list"""
   user_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [User!]!
+  """custom query for user_statistics. connection"""
+  user_statistics_connection(ids: [ID!], sortCol: UserStatisticsSortColumn, query: UserStatisticsArgInput, first: Int, after: String, last: Int, before: String): RootToUserStatisticsConnection!
+  """custom query for user_statistics. list"""
+  user_statistics_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [UserStatistics!]!
   """the viewer query"""
   viewer: Viewer!
 }
 
 type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
-  bulkUploadContact(userID: ID!, file: Upload!, defaultLabel: ContactLabel, defaultLabel2: ContactLabel2): User!
+  bulkUploadContact(userId: ID!, file: Upload!, defaultLabel: ContactLabel, defaultLabel2: ContactLabel2): User!
   commentCreate(input: CommentCreateInput!): CommentCreatePayload!
   commentEdit(input: CommentEditInput!): CommentEditPayload!
   confirmEmailAddressEdit(input: ConfirmEditEmailAddressInput!): ConfirmEditEmailAddressPayload!
@@ -1499,9 +1775,13 @@ type Mutation {
   eventRemoveHost(input: EventRemoveHostInput!): EventRemoveHostPayload!
   eventRsvpStatusClear(input: ClearEventRsvpStatusInput!): ClearEventRsvpStatusPayload!
   eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
+  fileCreate(input: FileCreateInput!): FileCreatePayload!
+  fileDelete(input: FileDeleteInput!): FileDeletePayload!
+  fileEdit(input: FileEditInput!): FileEditPayload!
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
   holidayCustomEdit(input: CustomEditHolidayInput!): CustomEditHolidayPayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
+  phoneAvailable(input: PhoneAvailableArg!): Boolean!
   phoneNumberEdit(input: EditPhoneNumberInput!): EditPhoneNumberPayload!
   """authenticate a user"""
   userAuth(input: UserAuthInput!): UserAuthPayload!
@@ -1511,6 +1791,9 @@ type Mutation {
   userDelete(input: UserDeleteInput!): UserDeletePayload!
   userDelete2(input: DeleteUserInput2!): DeleteUserInput2Payload!
   userEdit(input: UserEditInput!): UserEditPayload!
+  userStatisticsCreate(input: UserStatisticsCreateInput!): UserStatisticsCreatePayload!
+  userStatisticsDelete(input: UserStatisticsDeleteInput!): UserStatisticsDeletePayload!
+  userStatisticsEdit(input: UserStatisticsEditInput!): UserStatisticsEditPayload!
 }
 
 """The `Byte` scalar type represents byte value as a Buffer"""

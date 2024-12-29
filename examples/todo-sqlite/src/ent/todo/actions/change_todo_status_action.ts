@@ -1,7 +1,6 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import { access } from "fs";
-import AccountTransferCreditsAction from "src/ent/account/actions/account_transfer_credits_action";
-import EditAccountTodoStatusAction from "src/ent/account/actions/edit_account_todo_status_action";
+import { AccountTransferCreditsAction } from "src/ent/account/actions/account_transfer_credits_action";
+import { EditAccountTodoStatusAction } from "src/ent/account/actions/edit_account_todo_status_action";
 import { AccountTodoStatusInput } from "src/ent/generated/account/actions/edit_account_todo_status_action_base";
 import {
   ChangeTodoStatusActionBase,
@@ -10,7 +9,7 @@ import {
 } from "src/ent/generated/todo/actions/change_todo_status_action_base";
 export { ChangeTodoStatusInput };
 
-export default class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {
+export class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }
@@ -36,7 +35,7 @@ export default class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {
           //this only exists for testing the flow, not called directly
           return EditAccountTodoStatusAction.create(builder.viewer, account, {
             todoStatus: status,
-            todoID: builder.existingEnt.id,
+            todoId: builder.existingEnt.id,
           }).changeset();
         },
       },
@@ -49,7 +48,7 @@ export default class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {
 
           // transfer bounty amount from creator to assignee
           return AccountTransferCreditsAction.create(builder.viewer, creator, {
-            to: builder.existingEnt.assigneeID,
+            to: builder.existingEnt.assigneeId,
             amount: builder.existingEnt.bounty,
           }).changeset();
         },

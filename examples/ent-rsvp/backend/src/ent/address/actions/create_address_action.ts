@@ -18,19 +18,22 @@ export default class CreateAddressAction extends CreateAddressActionBase {
   getPrivacyPolicy() {
     return {
       rules: [
-        new AllowIfBuilder(this.input.ownerID),
+        new AllowIfBuilder(this.input.ownerId),
         // TODO this is too complicated.
         // change AllowIfEntIsVisibleRule to take Builder and discard it
         // need a better conditional check?
         // and/or a sub rule that somehow enforces types in some kind of chaining
-        new AllowIfConditionAppliesRule(() => {
-          return (
-            (this.input.ownerID as Builder<Ent>).placeholderID === undefined
-          );
-        }, new AllowIfEntIsVisibleRule(
-          this.input.ownerID as ID,
-          getLoaderOptions(this.input.ownerType as unknown as NodeType),
-        )),
+        new AllowIfConditionAppliesRule(
+          () => {
+            return (
+              (this.input.ownerId as Builder<Ent>).placeholderID === undefined
+            );
+          },
+          new AllowIfEntIsVisibleRule(
+            this.input.ownerId as ID,
+            getLoaderOptions(this.input.ownerType as unknown as NodeType),
+          ),
+        ),
         AlwaysDenyRule,
       ],
     };

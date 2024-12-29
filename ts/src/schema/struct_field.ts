@@ -1,4 +1,3 @@
-import { camelCase } from "camel-case";
 import { BaseField, ListField } from "./field";
 import {
   FieldOptions,
@@ -13,6 +12,7 @@ import {
   __getGlobalSchemaFields,
 } from "../core/global_schema";
 import { log } from "../core/logger";
+import { toFieldName } from "../names/names";
 
 interface structFieldOptions extends FieldOptions {
   // required.
@@ -45,7 +45,10 @@ export class StructField extends BaseField implements Field {
   private validateUniqueKey?: string | undefined;
   private checkUniqueKey: boolean;
 
-  constructor(private options: StructOptions, private jsonAsList?: boolean) {
+  constructor(
+    private options: StructOptions,
+    private jsonAsList?: boolean,
+  ) {
     super();
     this.type.subFields = options.fields;
     this.type.type = options.tsType;
@@ -70,29 +73,45 @@ export class StructField extends BaseField implements Field {
       throw new Error("valid was not called");
     }
     let ret: Object = {};
-    for (const k in this.options.fields) {
-      const field = this.options.fields[k];
 
+    const processField = (k: string, field: Field) => {
       // check two values
       // store in dbKey format
 
-      // TODO more #510
+      // check both fieldName and dbKey and store in dbKey for
+      // serialization to db
+      // we should only have if it in fieldName format for non-tests
+      // but checking for backwards compatibility and to make
+      // sure we don't break anything
       let dbKey = getStorageKey(field, k);
-      let camelKey = camelCase(k);
-      let val = obj[camelKey];
+      let fieldName = toFieldName(k);
+      let val = obj[fieldName];
 
       if (val === undefined && obj[dbKey] !== undefined) {
         val = obj[dbKey];
       }
 
       if (val === undefined) {
-        continue;
+        return;
       }
       if (field.format) {
         // indicate nested so this isn't JSON stringified
         ret[dbKey] = field.format(val, true);
       } else {
         ret[dbKey] = val;
+      }
+    };
+
+    for (const k in this.options.fields) {
+      const field = this.options.fields[k];
+
+      processField(k, field);
+
+      if (field.getDerivedFields) {
+        const derivedFields = field.getDerivedFields(k);
+        for (const k in derivedFields) {
+          processField(k, derivedFields[k]);
+        }
       }
     }
     // don't json.stringify if nested or list
@@ -130,7 +149,8 @@ export class StructField extends BaseField implements Field {
         }
 
         // TODO handle format code
-        return f.format(obj);
+        // ola 1/20/24 don't know what this TODO means lol
+        return f.format(obj, nested);
       }
     }
     if (Array.isArray(obj) && this.jsonAsList) {
@@ -149,19 +169,19 @@ export class StructField extends BaseField implements Field {
     }
 
     let promises: (boolean | Promise<boolean>)[] = [];
-    // TODO probably need to support optional fields...
-    let valid = true;
-    for (const k in this.options.fields) {
-      const field = this.options.fields[k];
-      // TODO more #510
-      let dbKey = getStorageKey(field, k);
-      let camelKey = camelCase(k);
-      let val = obj[camelKey];
+
+    const processField = (
+      k: string,
+      dbKey: string,
+      field: Field,
+    ): boolean | undefined => {
+      let fieldName = toFieldName(k);
+      let val = obj[fieldName];
 
       let uniqueKeyField = false;
       if (
         this.validateUniqueKey !== undefined &&
-        (camelKey === this.validateUniqueKey ||
+        (fieldName === this.validateUniqueKey ||
           k === this.validateUniqueKey ||
           dbKey === this.validateUniqueKey)
       ) {
@@ -170,7 +190,7 @@ export class StructField extends BaseField implements Field {
       }
 
       if (uniqueKeyField && this.checkUniqueKey) {
-        this.validateUniqueKey = camelKey;
+        this.validateUniqueKey = fieldName;
       }
 
       if (val === undefined && obj[dbKey] !== undefined) {
@@ -186,15 +206,36 @@ export class StructField extends BaseField implements Field {
       if (val === undefined || val === null) {
         // nullable, nothing to do here
         if (field.nullable) {
-          continue;
+          return;
         }
         valid = false;
-        break;
+        return false;
       }
       if (!field.valid) {
-        continue;
+        return;
       }
       promises.push(field.valid(val));
+    };
+    // TODO probably need to support optional fields...
+    let valid = true;
+    for (const k in this.options.fields) {
+      const field = this.options.fields[k];
+      let dbKey = getStorageKey(field, k);
+
+      if (processField(k, dbKey, field) === false) {
+        valid = false;
+      }
+
+      if (field.getDerivedFields) {
+        const derivedFields = field.getDerivedFields(k);
+        for (const k in derivedFields) {
+          const derivedField = derivedFields[k];
+          let dbKey = getStorageKey(derivedField, k);
+          if (processField(k, dbKey, derivedField) === false) {
+            valid = false;
+          }
+        }
+      }
     }
     if (!valid) {
       return valid;

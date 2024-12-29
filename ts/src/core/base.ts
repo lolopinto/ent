@@ -158,13 +158,22 @@ export interface DataOptions {
 
 export interface SelectBaseDataOptions extends DataOptions {
   // list of fields to read
-  fields: string[];
+  fields: (
+    | string
+    | {
+        alias: string;
+        column: string;
+      }
+  )[];
   // use this alias to alias the fields instead of the table name or table alias
   // takes precedence over tableName and alias
   fieldsAlias?: string;
   // don't use either alias for this query.
   // possible reason in when doing aggregate queries and may have already aliased what we're querying
   disableFieldsAlias?: boolean;
+  // don't use the alias for the order by clause
+  // this is useful when doing a join and the order by clause is not on the main table
+  disableDefaultOrderByAlias?: boolean;
 }
 
 export interface SelectDataOptions extends SelectBaseDataOptions {
@@ -187,10 +196,13 @@ interface JoinOptions<T2 extends Data = Data, K2 = keyof T2> {
   tableName: string;
   alias?: string;
   clause: clause.Clause<T2, K2>;
+  type?: "inner" | "outer" | "left" | "right";
 }
 
 export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   distinct?: boolean;
+  // To alias the main table's query when doing joins.
+  alias?: string;
   clause: clause.Clause<T, K>;
   orderby?: OrderBy; // this technically doesn't make sense when querying just one row but whatevs
   groupby?: K;

@@ -19,7 +19,7 @@ export default class ClearEventRsvpStatusAction extends ClearEventRsvpStatusActi
           await clearEdgeTypeInGroup(
             builder.orchestrator,
             builder.existingEnt.id,
-            input.userID,
+            input.userId,
             builder.existingEnt.getEventRsvpStatusMap(),
           );
         },

@@ -4,10 +4,10 @@ import {
   DateType,
   ActionOperation,
 } from "@snowtop/ent";
-import DayOfWeek from "./patterns/day_of_week";
+import WithDayOfWeek from "./patterns/day_of_week";
 
 const HolidaySchema = new EntSchemaWithTZ({
-  patterns: [new DayOfWeek()],
+  patterns: [new WithDayOfWeek()],
 
   fields: {
     label: StringType(),

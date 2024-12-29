@@ -45,24 +45,27 @@ export class TodoBase implements Ent<Viewer> {
   protected readonly deletedAt: Date | null;
   readonly text: string;
   readonly completed: boolean;
-  readonly creatorID: ID;
+  readonly creatorId: ID;
   readonly completedDate: Date | null;
-  readonly assigneeID: ID;
-  readonly scopeID: ID;
+  readonly assigneeId: ID;
+  readonly scopeId: ID;
   readonly scopeType: string;
   readonly bounty: number | null;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
     this.deletedAt = convertNullableDate(data.deleted_at);
     this.text = data.text;
     this.completed = convertBool(data.completed);
-    this.creatorID = data.creator_id;
+    this.creatorId = data.creator_id;
     this.completedDate = convertNullableDate(data.completed_date);
-    this.assigneeID = data.assignee_id;
-    this.scopeID = data.scope_id;
+    this.assigneeId = data.assignee_id;
+    this.scopeId = data.scope_id;
     this.scopeType = data.scope_type;
     this.bounty = data.bounty;
     // @ts-expect-error
@@ -275,26 +278,26 @@ export class TodoBase implements Ent<Viewer> {
   }
 
   async loadAssignee(): Promise<Account | null> {
-    return loadEnt(this.viewer, this.assigneeID, Account.loaderOptions());
+    return loadEnt(this.viewer, this.assigneeId, Account.loaderOptions());
   }
 
   loadAssigneeX(): Promise<Account> {
-    return loadEntX(this.viewer, this.assigneeID, Account.loaderOptions());
+    return loadEntX(this.viewer, this.assigneeId, Account.loaderOptions());
   }
 
   async loadCreator(): Promise<Account | null> {
-    return loadEnt(this.viewer, this.creatorID, Account.loaderOptions());
+    return loadEnt(this.viewer, this.creatorId, Account.loaderOptions());
   }
 
   loadCreatorX(): Promise<Account> {
-    return loadEntX(this.viewer, this.creatorID, Account.loaderOptions());
+    return loadEntX(this.viewer, this.creatorId, Account.loaderOptions());
   }
 
   async loadScope(): Promise<Ent | null> {
     return loadEntByType(
       this.viewer,
       this.scopeType as unknown as NodeType,
-      this.scopeID,
+      this.scopeId,
     );
   }
 
@@ -302,7 +305,7 @@ export class TodoBase implements Ent<Viewer> {
     return loadEntXByType(
       this.viewer,
       this.scopeType as unknown as NodeType,
-      this.scopeID,
+      this.scopeId,
     );
   }
 }

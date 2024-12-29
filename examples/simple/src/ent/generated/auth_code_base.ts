@@ -33,16 +33,19 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly code: string;
-  readonly userID: ID;
+  readonly userId: ID;
   readonly emailAddress: string | null;
   readonly phoneNumber: string | null;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.code = data.code;
-    this.userID = data.user_id;
+    this.userId = data.user_id;
     this.emailAddress = data.email_address;
     this.phoneNumber = data.phone_number;
     // @ts-expect-error
@@ -212,10 +215,10 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
   }
 
   async loadUser(): Promise<User | null> {
-    return loadEnt(this.viewer, this.userID, User.loaderOptions());
+    return loadEnt(this.viewer, this.userId, User.loaderOptions());
   }
 
   loadUserX(): Promise<User> {
-    return loadEntX(this.viewer, this.userID, User.loaderOptions());
+    return loadEntX(this.viewer, this.userId, User.loaderOptions());
   }
 }

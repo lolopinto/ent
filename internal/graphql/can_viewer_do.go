@@ -6,7 +6,8 @@ import (
 
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/codegen/codegenapi"
+	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -38,7 +39,7 @@ func getCanViewerDoObject(processor *codegen.Processor, result *objectType, node
 
 	// add field to node
 	if err := result.addField(&fieldType{
-		Name: codegenapi.GraphQLName(processor.Config, "canViewerDo"),
+		Name: names.ToGraphQLName(processor.Config, "canViewerDo"),
 		FieldImports: []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewLocalGraphQLEntImportPath(canViewerDoName),
@@ -95,7 +96,12 @@ func getCanViewerDoObjectImpl(processor *codegen.Processor, ctx *canViewerDoCont
 			},
 		}
 
-		for _, field := range getActionCanViewerDoFields(action, actionCanViewerDo) {
+		fields, err := getActionCanViewerDoFields(action, actionCanViewerDo)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, field := range fields {
 
 			arg := &fieldConfigArg{
 				Name:    field.GetGraphQLName(),
@@ -144,7 +150,10 @@ func getNewCanViewerDoClass(processor *codegen.Processor, ctx *canViewerDoContex
 			Import:        a.GetActionName(),
 		})
 		args := "args"
-		fields := getActionCanViewerDoFields(a, a.GetCanViewerDo())
+		fields, err := getActionCanViewerDoFields(a, a.GetCanViewerDo())
+		if err != nil {
+			return nil, err
+		}
 		if len(fields) > 0 {
 			var changedFields []string
 			for _, field := range fields {
@@ -238,7 +247,7 @@ func getNewCanViewerDoClass(processor *codegen.Processor, ctx *canViewerDoContex
 	}, nil
 }
 
-func getActionCanViewerDoFields(a action.Action, actionCanViewerDo *input.CanViewerDo) []action.ActionField {
+func getActionCanViewerDoFields(a action.Action, actionCanViewerDo *input.CanViewerDo) ([]action.ActionField, error) {
 	var fields []action.ActionField
 	if actionCanViewerDo.AddAllFields || len(actionCanViewerDo.InputFields) > 0 {
 		m := map[string]bool{}
@@ -246,17 +255,35 @@ func getActionCanViewerDoFields(a action.Action, actionCanViewerDo *input.CanVie
 			m[name] = true
 		}
 
-		for _, field := range a.GetGraphQLFields() {
-			if actionCanViewerDo.AddAllFields || m[field.FieldName] {
-				fields = append(fields, field)
+		for _, f := range a.GetGraphQLFields() {
+			if !actionCanViewerDo.AddAllFields && !m[f.FieldName] {
+				continue
 			}
+			required := action.IsRequiredField(a, f)
+			if !required {
+				f2, err := f.Clone(field.Optional())
+				if err != nil {
+					return nil, err
+				}
+				f = f2
+			}
+			fields = append(fields, f)
 		}
 
-		for _, field := range a.GetGraphQLNonEntFields() {
-			if actionCanViewerDo.AddAllFields || m[field.GetFieldName()] {
-				fields = append(fields, field)
+		for _, f := range a.GetGraphQLNonEntFields() {
+			if !actionCanViewerDo.AddAllFields && !m[f.GetFieldName()] {
+				continue
 			}
+			required := action.IsRequiredField(a, f)
+			if !required {
+				f2, err := f.Clone(field.OptionalField())
+				if err != nil {
+					return nil, err
+				}
+				f = f2
+			}
+			fields = append(fields, f)
 		}
 	}
-	return fields
+	return fields, nil
 }

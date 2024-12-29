@@ -266,7 +266,7 @@ async function modifyEdgeSet<T extends string>(
   inputEnumValue: string,
   enumValue: string,
   edgeType: T,
-  nodeType: string,
+  id2NodeType: string,
 ) {
   let edge = await loadEdgeForID2({
     id1: id1,
@@ -280,7 +280,7 @@ async function modifyEdgeSet<T extends string>(
   // TODO: can save a write here by checking in EdgeOperation and not doing this write if nothing
   // has changed.
   if (inputEnumValue === enumValue) {
-    orchestrator.addOutboundEdge(id2, edgeType, nodeType);
+    orchestrator.addOutboundEdge(id2, edgeType, id2NodeType);
   }
   if (edge) {
     if (enumValue !== inputEnumValue) {
@@ -308,13 +308,13 @@ export async function setEdgeTypeInGroup<T extends string>(
   inputEnumValue: string,
   id1: ID,
   id2: ID,
-  nodeType: string,
+  id2NodeType: string,
   m: Map<T, string>,
 ) {
   let promises: Promise<void>[] = [];
   for (const [k, v] of m) {
     promises.push(
-      modifyEdgeSet(orchestrator, id1, id2, inputEnumValue, k, v, nodeType),
+      modifyEdgeSet(orchestrator, id1, id2, inputEnumValue, k, v, id2NodeType),
     );
   }
   await Promise.all(promises);

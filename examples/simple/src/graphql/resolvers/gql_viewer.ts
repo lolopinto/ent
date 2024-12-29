@@ -3,7 +3,7 @@ import { GraphQLID } from "graphql";
 
 import { User } from "../../ent";
 import { ExampleViewer } from "../../viewer/viewer";
-import { UserPrefsStruct, NotifType } from "src/ent/generated/types";
+import { UserPrefsStruct, NotifType } from "../../ent/generated/types";
 
 @gqlObjectType({ name: "Viewer" })
 // TODO when this wasn't exported, it didn't work...

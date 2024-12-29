@@ -27,9 +27,9 @@ import schema from "src/schema/guest_schema";
 export interface GuestInput {
   addressId?: ID | null | Builder<Address, Viewer>;
   name?: string;
-  eventID?: ID | Builder<Event, Viewer>;
+  eventId?: ID | Builder<Event, Viewer>;
   emailAddress?: string | null;
-  guestGroupID?: ID | Builder<GuestGroup, Viewer>;
+  guestGroupId?: ID | Builder<GuestGroup, Viewer>;
   title?: string | null;
   guestDataId?: ID | null | Builder<GuestData, Viewer>;
   tag?: GuestTag | null;
@@ -271,7 +271,10 @@ export class GuestBuilder<
       }
     };
     addField("address_id", input.addressId);
-    if (input.addressId !== undefined) {
+    if (
+      input.addressId !== undefined ||
+      this.operation === WriteOperation.Delete
+    ) {
       if (input.addressId) {
         this.orchestrator.addInboundEdge(
           input.addressId,
@@ -291,9 +294,9 @@ export class GuestBuilder<
       }
     }
     addField("Name", input.name);
-    addField("eventID", input.eventID);
+    addField("eventID", input.eventId);
     addField("EmailAddress", input.emailAddress);
-    addField("guestGroupID", input.guestGroupID);
+    addField("guestGroupID", input.guestGroupId);
     addField("title", input.title);
     addField("guest_data_id", input.guestDataId);
     addField("tag", input.tag);
@@ -330,17 +333,17 @@ export class GuestBuilder<
   }
 
   // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEventIDValue(): ID | Builder<Event, Viewer> {
-    if (this.input.eventID !== undefined) {
-      return this.input.eventID;
+  getNewEventIdValue(): ID | Builder<Event, Viewer> {
+    if (this.input.eventId !== undefined) {
+      return this.input.eventId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `eventID` since not in input and no existingEnt",
+        "no value to return for `eventId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.eventID;
+    return this.existingEnt.eventId;
   }
 
   // get value of EmailAddress. Retrieves it from the input if specified or takes it from existingEnt
@@ -353,17 +356,17 @@ export class GuestBuilder<
   }
 
   // get value of guestGroupID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewGuestGroupIDValue(): ID | Builder<GuestGroup, Viewer> {
-    if (this.input.guestGroupID !== undefined) {
-      return this.input.guestGroupID;
+  getNewGuestGroupIdValue(): ID | Builder<GuestGroup, Viewer> {
+    if (this.input.guestGroupId !== undefined) {
+      return this.input.guestGroupId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `guestGroupID` since not in input and no existingEnt",
+        "no value to return for `guestGroupId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.guestGroupID;
+    return this.existingEnt.guestGroupId;
   }
 
   // get value of title. Retrieves it from the input if specified or takes it from existingEnt

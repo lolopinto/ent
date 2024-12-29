@@ -14,7 +14,8 @@ import {
 } from "graphql";
 import { ID, RequestContext, Viewer } from "@snowtop/ent";
 import { Tag } from "src/ent/";
-import CreateTagAction, {
+import {
+  CreateTagAction,
   TagCreateInput,
 } from "src/ent/tag/actions/create_tag_action";
 import { TagType } from "src/graphql/resolvers/";
@@ -84,7 +85,7 @@ export const CreateTagType: GraphQLFieldConfig<
   ): Promise<CreateTagPayload> => {
     const tag = await CreateTagAction.create(context.getViewer(), {
       displayName: input.display_name,
-      ownerID: input.owner_id,
+      ownerId: input.owner_id,
       relatedTagIds: input.related_tag_ids,
       canonicalName: input.canonical_name,
     }).saveX();

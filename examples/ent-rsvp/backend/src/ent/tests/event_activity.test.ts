@@ -5,7 +5,7 @@ import {
   GuestToAttendingEventsQuery,
   AddressToLocatedAtQuery,
 } from "src/ent";
-import { IDViewer } from "@snowtop/ent";
+import { AssocEdge, EdgeQuery, IDViewer } from "@snowtop/ent";
 import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
 import EventActivityAddInviteAction from "../event_activity/actions/event_activity_add_invite_action";
@@ -38,7 +38,7 @@ describe("create event activity", () => {
         startTime: new Date(),
         location: "fun location",
         name: "welcome dinner",
-        eventID: event.id,
+        eventId: event.id,
       }).saveX();
       throw new Error("should have thrown");
     } catch (e) {
@@ -60,14 +60,14 @@ describe("create event activity", () => {
     const event = await createEvent();
     const group = await CreateGuestGroupAction.create(event.viewer, {
       invitationName: "people",
-      eventID: event.id,
+      eventId: event.id,
     }).saveX();
 
     const activity = await CreateEventActivityAction.create(event.viewer, {
       startTime: new Date(),
       location: "fun location",
       name: "welcome dinner",
-      eventID: event.id,
+      eventId: event.id,
       inviteAllGuests: true,
     }).saveX();
     expect(activity.inviteAllGuests).toEqual(true);
@@ -90,7 +90,7 @@ describe("create event activity", () => {
       apartment: "2",
       zipCode: "92323",
       city: "San Francisco",
-      ownerID: user.id,
+      ownerId: user.id,
       ownerType: user.nodeType,
     }).saveX();
 
@@ -138,7 +138,7 @@ describe("invites", () => {
     const event = await activity.loadEventX();
     const group = await CreateGuestGroupAction.create(event.viewer, {
       invitationName: "people",
-      eventID: event.id,
+      eventId: event.id,
     }).saveX();
 
     const user = await createUser();
@@ -148,6 +148,7 @@ describe("invites", () => {
         new IDViewer(user.id),
         activity.id,
         group.id,
+        {},
       );
       throw new Error("should have thrown");
     } catch (e) {
@@ -165,7 +166,7 @@ describe("invites", () => {
     const event = await activity.loadEventX();
     const group = await CreateGuestGroupAction.create(event.viewer, {
       invitationName: "people",
-      eventID: event.id,
+      eventId: event.id,
     }).saveX();
 
     try {
@@ -173,6 +174,7 @@ describe("invites", () => {
         activity2.viewer,
         activity2.id,
         group.id,
+        {},
       );
       throw new Error("should have thrown");
     } catch (e) {
@@ -226,7 +228,7 @@ describe("invites", () => {
     const event2 = await createEvent();
     const group2 = await CreateGuestGroupAction.create(event2.viewer, {
       invitationName: "people",
-      eventID: event2.id,
+      eventId: event2.id,
     }).saveX();
 
     try {
@@ -248,8 +250,10 @@ describe("rsvps", () => {
   async function doRsvpForSelf(
     input: EventActivityRsvpStatusInput,
     output: EventActivityRsvpStatus,
-    activityCount: (activity: EventActivity) => Promise<number>,
-    guestCount: (guest: Guest) => Promise<number>,
+    activityEdge: (
+      activity: EventActivity,
+    ) => EdgeQuery<EventActivity, Guest, AssocEdge>,
+    guestEdge: (guest: Guest) => EdgeQuery<Guest, EventActivity, AssocEdge>,
     options?: {
       // must provide both eventActivity and
       eventActivity?: EventActivity;
@@ -273,6 +277,11 @@ describe("rsvps", () => {
     } else {
       [activity, guests] = await createAndInvitePlusGuests(0);
     }
+    const activityCount = (activity: EventActivity) =>
+      activityEdge(activity).queryCount();
+    const guestCount = (guest: Guest) => guestEdge(guest).queryCount();
+    const activityEdges = (activity: EventActivity) =>
+      activityEdge(activity).queryEdges();
 
     expect(guests.length).toBe(2);
     let guest = guests[0];
@@ -280,13 +289,15 @@ describe("rsvps", () => {
     expect(count).toBe(0);
     count = await guestCount(guest);
     expect(count).toBe(0);
+    let edges = await activityEdges(activity);
+    expect(edges.length).toBe(0);
 
     const vc = new IDViewer(guest.id);
     const activity2 = await EditEventActivityRsvpStatusAction.saveXFromID(
       vc,
       activity.id,
       {
-        guestID: guest.id,
+        guestId: guest.id,
         rsvpStatus: input,
         dietaryRestrictions: options?.dietaryRestrictions,
       },
@@ -294,13 +305,28 @@ describe("rsvps", () => {
 
     count = await activityCount(activity2);
     expect(count).toBe(1);
+    edges = await activityEdges(activity);
+    expect(edges.length).toBe(1);
+    expect(edges[0]).toMatchObject({
+      id1: activity.id,
+      id2: guest.id,
+      id1Type: activity.nodeType,
+      id2Type: guest.nodeType,
+    });
 
     // reload guest
     guest = await Guest.loadX(vc, guest.id);
 
     count = await guestCount(guest);
     expect(count).toBe(1);
-
+    edges = await guestEdge(guest).queryEdges();
+    expect(edges.length).toBe(1);
+    expect(edges[0]).toMatchObject({
+      id1: guest.id,
+      id2: activity.id,
+      id1Type: guest.nodeType,
+      id2Type: activity.nodeType,
+    });
     // rsvp status is as expected
     const rsvpStatus = await activity2.rsvpStatusFor(guest);
     expect(rsvpStatus).toBe(output);
@@ -311,10 +337,17 @@ describe("rsvps", () => {
   async function doRsvpForOther(
     input: EventActivityRsvpStatusInput,
     output: EventActivityRsvpStatus,
-    activityCount: (activity: EventActivity) => Promise<number>,
-    guestCount: (guest: Guest) => Promise<number>,
+    activityEdge: (
+      activity: EventActivity,
+    ) => EdgeQuery<EventActivity, Guest, AssocEdge>,
+    guestEdge: (guest: Guest) => EdgeQuery<Guest, EventActivity, AssocEdge>,
   ) {
     const [activity, guests] = await createAndInvitePlusGuests(0);
+    const activityCount = (activity: EventActivity) =>
+      activityEdge(activity).queryCount();
+    const guestCount = (guest: Guest) => guestEdge(guest).queryCount();
+    const activityEdges = (activity: EventActivity) =>
+      activityEdge(activity).queryEdges();
 
     expect(guests.length).toBe(2);
     let guest = guests[0];
@@ -324,24 +357,42 @@ describe("rsvps", () => {
     const vc = new IDViewer(guests[1].id);
     count = await guestCount(guest);
     expect(count).toBe(0);
+    let edges = await activityEdges(activity);
+    expect(edges.length).toBe(0);
 
     const activity2 = await EditEventActivityRsvpStatusAction.saveXFromID(
       vc,
       activity.id,
       {
-        guestID: guest.id,
+        guestId: guest.id,
         rsvpStatus: input,
       },
     );
 
     count = await activityCount(activity2);
     expect(count).toBe(1);
+    edges = await activityEdges(activity);
+    expect(edges.length).toBe(1);
+    expect(edges[0]).toMatchObject({
+      id1: activity.id,
+      id2: guest.id,
+      id1Type: activity.nodeType,
+      id2Type: guest.nodeType,
+    });
 
     // reload guest
     guest = await Guest.loadX(vc, guest.id);
 
     count = await guestCount(guest);
     expect(count).toBe(1);
+    edges = await guestEdge(guest).queryEdges();
+    expect(edges.length).toBe(1);
+    expect(edges[0]).toMatchObject({
+      id1: guest.id,
+      id2: activity.id,
+      id1Type: guest.nodeType,
+      id2Type: activity.nodeType,
+    });
 
     // self rsvp is still can rsvp since didn't rsvp for self
     const rsvpStatus = await activity2.rsvpStatusFor(guests[1]);
@@ -355,8 +406,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.queryAttending().queryCount(),
-      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
+      (activity: EventActivity) => activity.queryAttending(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents(),
     );
   });
 
@@ -364,8 +415,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.queryDeclined().queryCount(),
-      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
+      (activity: EventActivity) => activity.queryDeclined(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents(),
     );
   });
 
@@ -374,8 +425,8 @@ describe("rsvps", () => {
     let [activity, guests] = await doRsvpForSelf(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.queryDeclined().queryCount(),
-      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
+      (activity: EventActivity) => activity.queryDeclined(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents(),
     );
 
     // switch to attending
@@ -383,8 +434,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.queryAttending().queryCount(),
-      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
+      (activity: EventActivity) => activity.queryAttending(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents(),
       {
         eventActivity: activity,
         guests,
@@ -399,8 +450,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.queryDeclined().queryCount(),
-      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
+      (activity: EventActivity) => activity.queryDeclined(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents(),
       {
         eventActivity: activity,
         guests,
@@ -417,8 +468,8 @@ describe("rsvps", () => {
     let [activity, guests] = await doRsvpForSelf(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.queryAttending().queryCount(),
-      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
+      (activity: EventActivity) => activity.queryAttending(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents(),
       {
         dietaryRestrictions: "shellfish",
       },
@@ -465,8 +516,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.queryDeclined().queryCount(),
-      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
+      (activity: EventActivity) => activity.queryDeclined(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents(),
       {
         eventActivity: activity,
         guests: guests,
@@ -481,8 +532,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.queryAttending().queryCount(),
-      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
+      (activity: EventActivity) => activity.queryAttending(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents(),
       {
         eventActivity: activity,
         guests: guests,
@@ -506,8 +557,8 @@ describe("rsvps", () => {
     await doRsvpForOther(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.queryAttending().queryCount(),
-      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
+      (activity: EventActivity) => activity.queryAttending(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents(),
     );
   });
 
@@ -515,8 +566,8 @@ describe("rsvps", () => {
     await doRsvpForOther(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.queryDeclined().queryCount(),
-      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
+      (activity: EventActivity) => activity.queryDeclined(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents(),
     );
   });
 
@@ -532,7 +583,7 @@ describe("rsvps", () => {
         new IDViewer(guest.id),
         activity.id,
         {
-          guestID: guest.id,
+          guestId: guest.id,
           rsvpStatus: EventActivityRsvpStatusInput.Attending,
         },
       );
@@ -549,7 +600,7 @@ describe("rsvps", () => {
 
     const group2 = await CreateGuestGroupAction.create(activity.viewer, {
       invitationName: "people",
-      eventID: activity.eventID,
+      eventId: activity.eventId,
     }).saveX();
     expect(guests.length).toBe(2);
     const guests2 = await createGuests(group2, 1);
@@ -562,7 +613,7 @@ describe("rsvps", () => {
         new IDViewer(guests2[0].id),
         activity.id,
         {
-          guestID: guest.id,
+          guestId: guest.id,
           rsvpStatus: EventActivityRsvpStatusInput.Attending,
         },
       );
@@ -583,7 +634,7 @@ describe("rsvps", () => {
       vc,
       activity,
       {
-        guestID: guest.id,
+        guestId: guest.id,
         rsvpStatus: EventActivityRsvpStatusInput.Attending,
       },
     ).saveX();
@@ -595,7 +646,7 @@ describe("rsvps", () => {
       vc,
       activity,
       {
-        guestID: guest.id,
+        guestId: guest.id,
         rsvpStatus: EventActivityRsvpStatusInput.Declined,
       },
     ).saveX();

@@ -8,6 +8,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLInt,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -31,6 +32,8 @@ import {
 } from "../../../ent";
 import {
   AddressType,
+  AttachmentType,
+  CityType,
   EventRsvpStatusType,
   EventToAttendingConnectionType,
   EventToDeclinedConnectionType,
@@ -95,6 +98,9 @@ export const EventType = new GraphQLObjectType({
     },
     coverPhoto2: {
       type: GraphQLByte,
+    },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentType)),
     },
     attending: {
       type: new GraphQLNonNull(EventToAttendingConnectionType()),
@@ -274,6 +280,16 @@ export const EventType = new GraphQLObjectType({
         return obj.canViewerSeeInfo();
       },
     },
+    cities: {
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(CityType))),
+      resolve: (
+        obj: Event,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.getCities();
+      },
+    },
   }),
   interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
@@ -294,7 +310,7 @@ export const EventCanViewerSeeType = new GraphQLObjectType({
         args: {},
         context: RequestContext<ExampleViewerAlias>,
       ) => {
-        return obj.addressID();
+        return obj.addressId();
       },
     },
   }),

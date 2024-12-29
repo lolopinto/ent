@@ -1,10 +1,10 @@
 import * as glob from "glob";
 import * as path from "path";
-import { pascalCase } from "pascal-case";
 import minimist from "minimist";
 import { parseSchema } from "../parse_schema/parse";
 import { getCustomInfo } from "../tsc/ast";
 import { GlobalSchema } from "../schema/schema";
+import { toClassName } from "../names/names";
 
 function main() {
   const options = minimist(process.argv.slice(2));
@@ -48,7 +48,7 @@ function main() {
     if (relativePath !== undefined) {
       s.schemaPath = relativePath;
     }
-    potentialSchemas[pascalCase(schema)] = s;
+    potentialSchemas[toClassName(schema)] = s;
   }
   //  console.log(potentialSchemas);
 

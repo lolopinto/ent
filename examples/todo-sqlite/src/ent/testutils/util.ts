@@ -1,15 +1,17 @@
 import { LoggedOutViewer, ID, IDViewer, Viewer } from "@snowtop/ent";
-import CreateAccountAction, {
+import {
+  CreateAccountAction,
   AccountCreateInput,
 } from "src/ent/account/actions/create_account_action";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { validate } from "uuid";
-import CreateTodoAction, {
+import {
+  CreateTodoAction,
   TodoCreateInput,
 } from "src/ent/todo/actions/create_todo_action";
-import CreateTagAction from "../tag/actions/create_tag_action";
+import { CreateTagAction } from "../tag/actions/create_tag_action";
 import { Account } from "src/ent";
-import CreateWorkspaceAction from "../workspace/actions/create_workspace_action";
+import { CreateWorkspaceAction } from "../workspace/actions/create_workspace_action";
 import { randomInt } from "crypto";
 import { NodeType } from "../generated/types";
 
@@ -44,8 +46,8 @@ export async function createWorkspace(account?: Account) {
     name: "test",
     slug: `fun-workspace-${randomInt(1000000000000)}`,
   }).saveX();
-  expect(workspace.creatorID).toBe(account.id);
-  expect(workspace.viewerCreatorID).toBe(account.id);
+  expect(workspace.creatorId).toBe(account.id);
+  expect(workspace.viewerCreatorId).toBe(account.id);
   expect(workspace.name).toBe("test");
 
   const createdWorkspaces = await account.queryCreatedWorkspaces().queryEnts();
@@ -56,27 +58,27 @@ export async function createWorkspace(account?: Account) {
 }
 
 export async function createTodoForSelf(opts?: Partial<TodoCreateInput>) {
-  let creatorID: ID;
-  if (opts?.creatorID) {
-    creatorID = opts.creatorID as ID;
+  let creatorId: ID;
+  if (opts?.creatorId) {
+    creatorId = opts.creatorId as ID;
   } else {
     const account = await createAccount();
-    creatorID = account.id;
+    creatorId = account.id;
   }
   const text = opts?.text || "watch Game of Thrones";
-  const todo = await CreateTodoAction.create(new IDViewer(creatorID), {
+  const todo = await CreateTodoAction.create(new IDViewer(creatorId), {
     text,
-    creatorID: creatorID,
-    assigneeID: creatorID,
-    scopeID: creatorID,
+    creatorId: creatorId,
+    assigneeId: creatorId,
+    scopeId: creatorId,
     scopeType: NodeType.Account,
     ...opts,
   }).saveX();
   expect(todo.text).toBe(text);
-  expect(todo.creatorID).toBe(creatorID);
+  expect(todo.creatorId).toBe(creatorId);
   expect(todo.completed).toBe(false);
-  expect(todo.assigneeID).toBe(creatorID);
-  expect(todo.scopeID).toBe(creatorID);
+  expect(todo.assigneeId).toBe(creatorId);
+  expect(todo.scopeId).toBe(creatorId);
   expect(todo.scopeType).toBe(NodeType.Account);
 
   const creator = await todo.loadCreatorX();
@@ -85,7 +87,7 @@ export async function createTodoForSelf(opts?: Partial<TodoCreateInput>) {
 
   const scopedEnts = await todo.queryTodoScope().queryEnts();
   expect(scopedEnts.length).toBe(1);
-  expect(scopedEnts[0].id).toBe(creatorID);
+  expect(scopedEnts[0].id).toBe(creatorId);
   return todo;
 }
 
@@ -99,16 +101,16 @@ export async function createTodoSelfInWorkspace() {
   const text = "watch Game of Thrones";
   const todo = await CreateTodoAction.create(creator.viewer, {
     text,
-    creatorID: creator.id,
-    assigneeID: creator.id,
-    scopeID: workspace.id,
+    creatorId: creator.id,
+    assigneeId: creator.id,
+    scopeId: workspace.id,
     scopeType: NodeType.Workspace,
   }).saveX();
   expect(todo.text).toBe(text);
-  expect(todo.creatorID).toBe(creator.id);
+  expect(todo.creatorId).toBe(creator.id);
   expect(todo.completed).toBe(false);
-  expect(todo.assigneeID).toBe(creator.id);
-  expect(todo.scopeID).toBe(workspace.id);
+  expect(todo.assigneeId).toBe(creator.id);
+  expect(todo.scopeId).toBe(workspace.id);
   expect(todo.scopeType).toBe(NodeType.Workspace);
 
   const status = await creator.todoStatusFor(todo);
@@ -127,12 +129,12 @@ export async function createTag(displayName: string, account?: Account) {
   }
 
   const tag = await CreateTagAction.create(account.viewer, {
-    ownerID: account.id,
+    ownerId: account.id,
     displayName,
   }).saveX();
   expect(tag.displayName).toBe(displayName);
   expect(tag.canonicalName).toBe(displayName.trim().toLowerCase());
-  expect(tag.ownerID).toBe(account.id);
+  expect(tag.ownerId).toBe(account.id);
   return tag;
 }
 
@@ -143,16 +145,16 @@ export async function createTodoOtherInWorksapce() {
 
   const todo = await CreateTodoAction.create(creator.viewer, {
     text: "watch GOT",
-    creatorID: creator.id,
-    assigneeID: assignee.id,
-    scopeID: workspace.id,
+    creatorId: creator.id,
+    assigneeId: assignee.id,
+    scopeId: workspace.id,
     scopeType: NodeType.Workspace,
   }).saveX();
   expect(todo.text).toBe("watch GOT");
-  expect(todo.creatorID).toBe(creator.id);
+  expect(todo.creatorId).toBe(creator.id);
   expect(todo.completed).toBe(false);
-  expect(todo.assigneeID).toBe(assignee.id);
-  expect(todo.scopeID).toBe(workspace.id);
+  expect(todo.assigneeId).toBe(assignee.id);
+  expect(todo.scopeId).toBe(workspace.id);
   expect(todo.scopeType).toBe(NodeType.Workspace);
 
   const scopedEnts = await todo.queryTodoScope().queryEnts();
@@ -163,16 +165,16 @@ export async function createTodoOtherInWorksapce() {
 
   const todo2 = await CreateTodoAction.create(creator.viewer, {
     text: "watch GOT",
-    creatorID: creator.id,
-    assigneeID: assignee2.id,
-    scopeID: workspace.id,
+    creatorId: creator.id,
+    assigneeId: assignee2.id,
+    scopeId: workspace.id,
     scopeType: NodeType.Workspace,
   }).saveX();
   expect(todo2.text).toBe("watch GOT");
-  expect(todo2.creatorID).toBe(creator.id);
+  expect(todo2.creatorId).toBe(creator.id);
   expect(todo2.completed).toBe(false);
-  expect(todo2.assigneeID).toBe(assignee2.id);
-  expect(todo2.scopeID).toBe(workspace.id);
+  expect(todo2.assigneeId).toBe(assignee2.id);
+  expect(todo2.scopeId).toBe(workspace.id);
   expect(todo2.scopeType).toBe(NodeType.Workspace);
 
   const scopedEnts2 = await todo2.queryTodoScope().queryEnts();

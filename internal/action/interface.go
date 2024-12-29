@@ -6,13 +6,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -28,6 +28,8 @@ import (
 
 type Action interface {
 	GetFields() []*field.Field
+	// get public fields. this is GetFields() + id for editable fields
+	GetPublicAPIFields() []*field.Field
 	GetGraphQLFields() []*field.Field
 	GetNonEntFields() []*field.NonEntField
 	GetGraphQLNonEntFields() []*field.NonEntField
@@ -60,6 +62,7 @@ type Action interface {
 }
 
 type ActionField interface {
+	SingleFieldPrimaryKey() bool
 	GetFieldType() enttype.Type
 	TsFieldName(cfg codegenapi.Config) string
 	TsBuilderType(cfg codegenapi.Config) string
@@ -139,6 +142,7 @@ type commonActionInfo struct {
 	gqlEnums         []*enum.GQLEnum
 	nodeinfo.NodeInfo
 	tranformsDelete bool
+	primaryKeyField *field.Field
 	canViewerDo     *input.CanViewerDo
 	canFail         bool
 }
@@ -184,7 +188,18 @@ func (action *commonActionInfo) GetFields() []*field.Field {
 	return action.Fields
 }
 
+func (action *commonActionInfo) GetPublicAPIFields() []*field.Field {
+	var ret []*field.Field
+	if action.primaryKeyField != nil {
+		ret = append(ret, action.primaryKeyField)
+	}
+	ret = append(ret, action.Fields...)
+
+	return ret
+}
+
 func (action *commonActionInfo) GetGraphQLFields() []*field.Field {
+	// TODO update this to use GetPublicAPIFields?
 	var ret []*field.Field
 	for _, f := range action.Fields {
 		if f.EditableGraphQLField() {
@@ -380,6 +395,7 @@ type EdgeGroupAction struct {
 
 type option struct {
 	transformsDelete bool
+	primaryKeyField  *field.Field
 }
 
 type Option func(*option)
@@ -546,7 +562,7 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 			TSEdgeConst:  edge.TsEdgeConst,
 			//AssocEdge:    edge,
 			NodeType:             edge.NodeInfo.NodeType,
-			TSNodeID:             fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+			TSNodeID:             names.ToTsFieldName(edge.Singular(), "ID"),
 			TSAddIDMethodName:    fmt.Sprintf("add%sID", edge.Singular()),
 			TSAddMethodName:      fmt.Sprintf("add%s", edge.Singular()),
 			TSRemoveMethodName:   fmt.Sprintf("remove%s", edge.Singular()),
@@ -563,6 +579,10 @@ func IsRequiredField(action Action, field ActionField) bool {
 	}
 	if field.ForceOptionalInAction() {
 		return false
+	}
+
+	if field.SingleFieldPrimaryKey() {
+		return true
 	}
 
 	// for non-create actions, not required

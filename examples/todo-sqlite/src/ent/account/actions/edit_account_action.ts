@@ -6,7 +6,7 @@ import {
 
 export { AccountEditInput };
 
-export default class EditAccountAction extends EditAccountActionBase {
+export class EditAccountAction extends EditAccountActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }

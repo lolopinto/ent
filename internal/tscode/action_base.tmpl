@@ -287,7 +287,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
         this.input.{{$edgeGroup.TSGroupStatusName}},
         this.{{$instance}}.id,
         this.input.{{$edgeGroup.GetIDArg}},
-        {{useImport "NodeType"}}.{{$edgeGroup.NodeInfo.Node}},
+        {{useImport "NodeType"}}.{{$edgeGroup.DestNodeInfo.Node}},
         this.{{$instance}}.{{$edgeGroup.GetStatusMapMethod}}(),
       );
     }
@@ -409,13 +409,14 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
       this: new ({{$constructor}}) => T,
       viewer: {{$viewerType}},
       id: {{useImport "ID"}},
-      {{if $hasInput -}}
-        input: {{$inputName}},
-      {{else if edgeAction $action -}}
+      {{if edgeAction $action -}}
         {{ range $edge := $edges -}}
           {{/* TODO this assumes there is only one edge */ -}}
           {{$edge.TSNodeID}}: {{useImport "ID"}},
         {{end -}}
+      {{ end -}}
+      {{if $hasInput -}}
+        input: {{$inputName}},
       {{ end -}}
       ): Promise<{{$returnType}}> {
       {{ if $action.CanFail -}}
@@ -426,22 +427,24 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
       {{ else -}}
         const {{$instance}} = await {{$node}}.loadX(viewer, id);
       {{ end -}}
-      {{if $hasInput -}}
-        {{ if $action.CanFail -}}
-          return new this(viewer, {{$instance}}, input).save();
-        {{else -}}
-          return new this(viewer, {{$instance}}, input).saveX();
-        {{end -}}
-      {{else if edgeAction $action -}}
-        return new this(viewer, {{$instance}})
-        {{ range $edge := $edges -}}
-          {{/* TODO this assumes there is only one edge */ -}}
-          {{if removeEdgeAction $action -}}
-            .{{$edge.TSRemoveMethodName}}({{$edge.TSNodeID}})
-          {{else -}}
-            .{{$edge.TSAddMethodName}}({{$edge.TSNodeID}})
+      {{if or (edgeAction $action) $hasInput -}}
+        return new this(
+          viewer, 
+          {{$instance}},
+          {{ if $hasInput -}}
+            input,
           {{end -}}
-        {{end -}}
+        )
+        {{ if edgeAction $action -}}
+          {{ range $edge := $edges -}}
+            {{/* TODO this assumes there is only one edge */ -}}
+            {{if removeEdgeAction $action -}}
+              .{{$edge.TSRemoveMethodName}}({{$edge.TSNodeID}})
+            {{else -}}
+              .{{$edge.TSAddMethodName}}({{$edge.TSNodeID}})
+            {{end -}}
+          {{end -}}
+        {{ end -}}
         {{ if $action.CanFail -}}
           .save();
         {{else -}}

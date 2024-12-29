@@ -29,6 +29,7 @@ import {
 import {
   ContactEditInputType,
   ContactEditPayloadType,
+  EmailContactEditInput,
 } from "./mutations/contact/contact_edit_type";
 import {
   ContactEmailCreateInputType,
@@ -83,6 +84,18 @@ import {
   EventRsvpStatusEditPayloadType,
 } from "./mutations/event/event_rsvp_status_edit_type";
 import {
+  FileCreateInputType,
+  FileCreatePayloadType,
+} from "./mutations/file/file_create_type";
+import {
+  FileDeleteInputType,
+  FileDeletePayloadType,
+} from "./mutations/file/file_delete_type";
+import {
+  FileEditInputType,
+  FileEditPayloadType,
+} from "./mutations/file/file_edit_type";
+import {
   HolidayCreateInputType,
   HolidayCreatePayloadType,
 } from "./mutations/holiday/holiday_create_type";
@@ -94,21 +107,25 @@ import {
   HoursOfOperationCreateInputType,
   HoursOfOperationCreatePayloadType,
 } from "./mutations/hours_of_operation/hours_of_operation_create_type";
+import { AttachmentInputType } from "./mutations/input/attachment_input_type";
 import { CommentArgInputType } from "./mutations/input/comment_arg_input_type";
 import { ContactArgInputType } from "./mutations/input/contact_arg_input_type";
 import { ContactEmailArgInputType } from "./mutations/input/contact_email_arg_input_type";
-import { ContactInfoInputType } from "./mutations/input/contact_info_input_type";
+import { ContactInfoExtraInputType } from "./mutations/input/contact_info_extra_input_type";
 import { ContactPhoneNumberArgInputType } from "./mutations/input/contact_phone_number_arg_input_type";
 import { EventArgInputType } from "./mutations/input/event_arg_input_type";
+import { FileArgInputType } from "./mutations/input/file_arg_input_type";
 import { HolidayArgInputType } from "./mutations/input/holiday_arg_input_type";
 import { HoursOfOperationArgInputType } from "./mutations/input/hours_of_operation_arg_input_type";
 import { UserArgInputType } from "./mutations/input/user_arg_input_type";
 import { UserNestedObjectListInputType } from "./mutations/input/user_nested_object_list_input_type";
 import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type";
 import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_input_type";
+import { UserStatisticsArgInputType } from "./mutations/input/user_statistics_arg_input_type";
 import { UserSuperNestedObjectInputType } from "./mutations/input/user_super_nested_object_input_type";
 import { EventRsvpStatusInputType } from "./mutations/input_enums_type";
 import { MutationType } from "./mutations/mutation_type";
+import { PhoneAvailableArgType } from "./mutations/phone_available_type";
 import {
   ConfirmEditEmailAddressInputType,
   ConfirmEditEmailAddressPayloadType,
@@ -132,7 +149,7 @@ import {
 import {
   DeleteUserInput2PayloadType,
   DeleteUserInput2Type,
-} from "./mutations/user/user_delete_2_type";
+} from "./mutations/user/user_delete2_type";
 import {
   UserDeleteInputType,
   UserDeletePayloadType,
@@ -149,12 +166,26 @@ import {
   UserAuthInputType,
   UserAuthPayloadType,
 } from "./mutations/user_auth_type";
+import {
+  UserStatisticsCreateInputType,
+  UserStatisticsCreatePayloadType,
+} from "./mutations/user_statistics/user_statistics_create_type";
+import {
+  UserStatisticsDeleteInputType,
+  UserStatisticsDeletePayloadType,
+} from "./mutations/user_statistics/user_statistics_delete_type";
+import {
+  UserStatisticsEditInputType,
+  UserStatisticsEditPayloadType,
+} from "./mutations/user_statistics/user_statistics_edit_type";
 import { QueryType } from "./resolvers/query_type";
 import {
   AddressToHostedEventsConnectionType,
   AddressType,
+  AttachmentType,
   AuthorToCommentsConnectionType,
   CatBreedType,
+  CityType,
   CommentArticleToCommentsConnectionType,
   CommentSortColumnType,
   CommentToPostConnectionType,
@@ -163,7 +194,10 @@ import {
   ContactDateType,
   ContactEmailCanViewerDoType,
   ContactEmailSortColumnType,
+  ContactEmailToCommentsConnectionType,
+  ContactEmailToLikersConnectionType,
   ContactEmailType,
+  ContactInfoExtraType,
   ContactInfoSourceType,
   ContactInfoType,
   ContactItemFilterType,
@@ -171,9 +205,12 @@ import {
   ContactItemType,
   ContactLabelType,
   ContactPhoneNumberSortColumnType,
+  ContactPhoneNumberToCommentsConnectionType,
+  ContactPhoneNumberToLikersConnectionType,
   ContactPhoneNumberType,
   ContactSortColumnType,
   ContactToCommentsConnectionType,
+  ContactToFilterContactEmailsConnectionType,
   ContactToLikersConnectionType,
   ContactType,
   CreatorToEventsConnectionType,
@@ -191,7 +228,9 @@ import {
   EventToInvitedConnectionType,
   EventToMaybeConnectionType,
   EventType,
-  GQLViewerType,
+  FeedbackType,
+  FileSortColumnType,
+  FileType,
   GlobalCanViewerDoType,
   HolidaySortColumnType,
   HolidayType,
@@ -206,9 +245,11 @@ import {
   RootToContactEmailConnectionType,
   RootToContactPhoneNumberConnectionType,
   RootToEventConnectionType,
+  RootToFileConnectionType,
   RootToHolidayConnectionType,
   RootToHoursOfOperationConnectionType,
   RootToUserConnectionType,
+  RootToUserStatisticsConnectionType,
   UserAccountStatusType,
   UserArticleToCommentsConnectionType,
   UserCanViewerDoType,
@@ -222,9 +263,13 @@ import {
   UserPrefsDiffType,
   UserPrefsStructType,
   UserSortColumnType,
+  UserStatisticsSortColumnType,
+  UserStatisticsType,
   UserSuperNestedObjectType,
   UserToCommentsAuthoredConnectionType,
   UserToCommentsConnectionType,
+  UserToContactEmailsConnectionType,
+  UserToContactPhoneNumbersConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
   UserToDeclinedEventsConnectionType,
@@ -236,6 +281,8 @@ import {
   UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
   UserType,
+  ViewerType,
+  WithDayOfWeekType,
 } from "../resolvers";
 import { SubscriptionType } from "../resolvers/subscription_type";
 
@@ -257,6 +304,7 @@ export default new GraphQLSchema({
     DogBreedType,
     EventRsvpStatusType,
     EventSortColumnType,
+    FileSortColumnType,
     HolidaySortColumnType,
     HoursOfOperationSortColumnType,
     IntEnumUsedInListType,
@@ -268,11 +316,15 @@ export default new GraphQLSchema({
     UserIntEnumType,
     UserPreferredShiftType,
     UserSortColumnType,
+    UserStatisticsSortColumnType,
     AddressType,
+    AttachmentType,
+    CityType,
     CommentType,
     ContactDateType,
     ContactEmailCanViewerDoType,
     ContactEmailType,
+    ContactInfoExtraType,
     ContactInfoType,
     ContactItemFilterType,
     ContactItemResultType,
@@ -282,6 +334,8 @@ export default new GraphQLSchema({
     EmailInfoType,
     EventCanViewerSeeType,
     EventType,
+    FeedbackType,
+    FileType,
     GlobalCanViewerDoType,
     HolidayType,
     HoursOfOperationType,
@@ -291,14 +345,21 @@ export default new GraphQLSchema({
     UserNestedObjectListType,
     UserPrefsDiffType,
     UserPrefsStructType,
+    UserStatisticsType,
     UserSuperNestedObjectType,
     UserType,
+    WithDayOfWeekType,
     AddressToHostedEventsConnectionType(),
     AuthorToCommentsConnectionType(),
     CommentArticleToCommentsConnectionType(),
     CommentToPostConnectionType(),
     ContactCommentsFromAttachmentConnectionType(),
+    ContactEmailToCommentsConnectionType(),
+    ContactEmailToLikersConnectionType(),
+    ContactPhoneNumberToCommentsConnectionType(),
+    ContactPhoneNumberToLikersConnectionType(),
     ContactToCommentsConnectionType(),
+    ContactToFilterContactEmailsConnectionType(),
     ContactToLikersConnectionType(),
     CreatorToEventsConnectionType(),
     EventToAttendingConnectionType(),
@@ -311,13 +372,17 @@ export default new GraphQLSchema({
     RootToContactEmailConnectionType(),
     RootToContactPhoneNumberConnectionType(),
     RootToEventConnectionType(),
+    RootToFileConnectionType(),
     RootToHolidayConnectionType(),
     RootToHoursOfOperationConnectionType(),
     RootToUserConnectionType(),
+    RootToUserStatisticsConnectionType(),
     UserArticleToCommentsConnectionType(),
     UserCommentsFromAttachmentConnectionType(),
     UserToCommentsAuthoredConnectionType(),
     UserToCommentsConnectionType(),
+    UserToContactEmailsConnectionType(),
+    UserToContactPhoneNumbersConnectionType(),
     UserToContactsConnectionType(),
     UserToCreatedEventsConnectionType(),
     UserToDeclinedEventsConnectionType(),
@@ -328,13 +393,15 @@ export default new GraphQLSchema({
     UserToLikersConnectionType(),
     UserToLikesConnectionType(),
     UserToMaybeEventsConnectionType(),
-    GQLViewerType,
+    ViewerType,
+    PhoneAvailableArgType,
     UserAuthInputType,
     UserAuthJWTInputType,
     UserAuthJWTPayloadType,
     UserAuthPayloadType,
     AddressCreateInputType,
     AddressCreatePayloadType,
+    AttachmentInputType,
     ClearEventRsvpStatusInputType,
     ClearEventRsvpStatusPayloadType,
     CommentArgInputType,
@@ -360,7 +427,7 @@ export default new GraphQLSchema({
     ContactEmailDeletePayloadType,
     ContactEmailEditInputType,
     ContactEmailEditPayloadType,
-    ContactInfoInputType,
+    ContactInfoExtraInputType,
     ContactPhoneNumberArgInputType,
     ContactPhoneNumberCreateInputType,
     ContactPhoneNumberCreatePayloadType,
@@ -377,6 +444,7 @@ export default new GraphQLSchema({
     EditPhoneNumberInputType,
     EditPhoneNumberPayloadType,
     EmailContactCreateInput,
+    EmailContactEditInput,
     EventAddHostInputType,
     EventAddHostPayloadType,
     EventArgInputType,
@@ -391,6 +459,13 @@ export default new GraphQLSchema({
     EventRsvpStatusEditInputType,
     EventRsvpStatusEditPayloadType,
     EventRsvpStatusInputType,
+    FileArgInputType,
+    FileCreateInputType,
+    FileCreatePayloadType,
+    FileDeleteInputType,
+    FileDeletePayloadType,
+    FileEditInputType,
+    FileEditPayloadType,
     HolidayArgInputType,
     HolidayCreateInputType,
     HolidayCreatePayloadType,
@@ -408,6 +483,13 @@ export default new GraphQLSchema({
     UserNestedObjectListInputType,
     UserPrefsDiffInputType,
     UserPrefsStructInputType,
+    UserStatisticsArgInputType,
+    UserStatisticsCreateInputType,
+    UserStatisticsCreatePayloadType,
+    UserStatisticsDeleteInputType,
+    UserStatisticsDeletePayloadType,
+    UserStatisticsEditInputType,
+    UserStatisticsEditPayloadType,
     UserSuperNestedObjectInputType,
   ],
 });

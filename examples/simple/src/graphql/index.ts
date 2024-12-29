@@ -10,7 +10,7 @@ import {
 import schema from "./generated/schema";
 import passport from "passport";
 import session from "express-session";
-import { DB } from "@snowtop/ent";
+import { DB, ID, RequestContext } from "@snowtop/ent";
 import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
 import {
   PassportAuthHandler,
@@ -18,6 +18,7 @@ import {
 } from "@snowtop/ent-passport";
 import { graphqlUploadExpress } from "graphql-upload";
 import { User } from "../ent";
+import { ExampleViewer } from "../viewer/viewer";
 
 let app = express();
 app.use(express.json());
@@ -39,6 +40,12 @@ registerAuthHandler(
       session: false,
     },
     loaderOptions: User.loaderOptions(),
+    reqToViewer: (context: RequestContext, id: ID) => {
+      // this shows a custom way of handling auth
+      // using `registerAuthHandler` + `reqToViewer` to create a custom viewer which is a subclass of `Viewer`
+      // indicating developer has full control over the viewer
+      return new ExampleViewer(id);
+    },
   }),
 );
 

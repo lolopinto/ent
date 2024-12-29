@@ -160,9 +160,9 @@ export class EventAddHostActionBase
     ) => T,
     viewer: ExampleViewerAlias,
     id: ID,
-    hostID: ID,
+    hostId: ID,
   ): Promise<Event> {
     const event = await Event.loadX(viewer, id);
-    return new this(viewer, event).addHost(hostID).saveX();
+    return new this(viewer, event).addHost(hostId).saveX();
   }
 }

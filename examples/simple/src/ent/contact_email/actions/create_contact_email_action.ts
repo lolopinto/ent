@@ -22,12 +22,12 @@ export default class CreateContactEmailAction extends CreateContactEmailActionBa
     return {
       rules: [
         // allow builder
-        new AllowIfBuilder(this.input.contactID),
+        new AllowIfBuilder(this.input.contactId),
         // if viewer can see contact
         new AllowIfConditionAppliesRule(
-          () => typeof this.input.contactID === "string",
+          () => typeof this.input.contactId === "string",
           new AllowIfEntIsVisibleRule(
-            this.input.contactID.toString(),
+            this.input.contactId.toString(),
             Contact.loaderOptions(),
           ),
         ),

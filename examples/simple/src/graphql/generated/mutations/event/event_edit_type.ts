@@ -9,6 +9,7 @@ import {
   GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -25,13 +26,14 @@ import { Event } from "../../../../ent";
 import EditEventAction, {
   EventEditInput,
 } from "../../../../ent/event/actions/edit_event_action";
+import { AttachmentInputType } from "../input/attachment_input_type";
 import { EventType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEventEditInput extends Omit<EventEditInput, "location"> {
   id: string;
   eventLocation?: string;
-  addressID?: string;
+  addressId?: string;
 }
 
 interface EventEditPayload {
@@ -57,7 +59,7 @@ export const EventEditInputType = new GraphQLInputObjectType({
     eventLocation: {
       type: GraphQLString,
     },
-    addressID: {
+    addressId: {
       type: GraphQLID,
     },
     coverPhoto: {
@@ -65,6 +67,9 @@ export const EventEditInputType = new GraphQLInputObjectType({
     },
     coverPhoto2: {
       type: GraphQLByte,
+    },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentInputType)),
     },
   }),
 });
@@ -107,9 +112,25 @@ export const EventEditType: GraphQLFieldConfig<
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.eventLocation,
-        addressID: mustDecodeNullableIDFromGQLID(input.addressID),
+        addressId: mustDecodeNullableIDFromGQLID(
+          input.addressId?.toString() ?? input.addressId,
+        ),
         coverPhoto: input.coverPhoto,
         coverPhoto2: input.coverPhoto2,
+        attachments: input.attachments?.map((item: any) => ({
+          ...item,
+          fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+          dupeFileId: item.dupeFileId
+            ? mustDecodeNullableIDFromGQLID(
+                item.dupeFileId?.toString() ?? item.dupeFileId,
+              )
+            : undefined,
+          creatorId: item.creatorId
+            ? mustDecodeNullableIDFromGQLID(
+                item.creatorId?.toString() ?? item.creatorId,
+              )
+            : undefined,
+        })),
       },
     );
     return { event };

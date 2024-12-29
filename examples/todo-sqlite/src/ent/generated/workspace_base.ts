@@ -40,8 +40,8 @@ import {
 import schema from "src/schema/workspace_schema";
 
 export class WorkspaceBase
-  extends TodoContainerMixin(class {})
-  implements Ent<Viewer>, ITodoContainer
+  extends TodoContainerMixin(class {} as new (...args: any[]) => ITodoContainer)
+  implements Ent<Viewer>, ITodoContainer<Viewer>
 {
   protected readonly data: WorkspaceDBData;
   readonly nodeType = NodeType.Workspace;
@@ -50,11 +50,14 @@ export class WorkspaceBase
   readonly updatedAt: Date;
   protected readonly deletedAt: Date | null;
   readonly name: string;
-  readonly creatorID: ID;
-  readonly viewerCreatorID: ID;
+  readonly creatorId: ID;
+  readonly viewerCreatorId: ID;
   readonly slug: string;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -62,8 +65,8 @@ export class WorkspaceBase
     this.updatedAt = convertDate(data.updated_at);
     this.deletedAt = convertNullableDate(data.deleted_at);
     this.name = data.name;
-    this.creatorID = data.creator_id;
-    this.viewerCreatorID = data.viewer_creator_id;
+    this.creatorId = data.creator_id;
+    this.viewerCreatorId = data.viewer_creator_id;
     this.slug = data.slug;
     // @ts-expect-error
     this.data = data;
@@ -267,7 +270,7 @@ export class WorkspaceBase
     })) as T;
   }
 
-  static async loadIDFromSlug<T extends WorkspaceBase>(
+  static async loadIdFromSlug<T extends WorkspaceBase>(
     this: new (
       viewer: Viewer,
       data: Data,
@@ -326,18 +329,18 @@ export class WorkspaceBase
   }
 
   async loadCreator(): Promise<Account | null> {
-    return loadEnt(this.viewer, this.creatorID, Account.loaderOptions());
+    return loadEnt(this.viewer, this.creatorId, Account.loaderOptions());
   }
 
   loadCreatorX(): Promise<Account> {
-    return loadEntX(this.viewer, this.creatorID, Account.loaderOptions());
+    return loadEntX(this.viewer, this.creatorId, Account.loaderOptions());
   }
 
   async loadViewerCreator(): Promise<Account | null> {
-    return loadEnt(this.viewer, this.viewerCreatorID, Account.loaderOptions());
+    return loadEnt(this.viewer, this.viewerCreatorId, Account.loaderOptions());
   }
 
   loadViewerCreatorX(): Promise<Account> {
-    return loadEntX(this.viewer, this.viewerCreatorID, Account.loaderOptions());
+    return loadEntX(this.viewer, this.viewerCreatorId, Account.loaderOptions());
   }
 }

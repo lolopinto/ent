@@ -13,7 +13,6 @@ from dateutil import parser
 import sqlalchemy as sa
 
 from auto_schema import runner
-from typing import List, Optional
 
 from auto_schema import schema_item
 from auto_schema import compare
@@ -24,7 +23,7 @@ from dataclasses import dataclass
 class ConnInfo:
     engine: sa.engine.Engine
     url: str
-    connection: Optional[sa.engine.Connection]
+    connection: sa.engine.Connection | None
 
 def randomDB() -> str:
     return random.choice(string.ascii_lowercase) + ''.join(random.SystemRandom().choice(
@@ -235,7 +234,7 @@ def metadata_with_cols_added_to_table(metadata):
     )
 
 
-def metadata_with_given_cols_added_to_table(metadata: sa.MetaData, cols: List[sa.Column]):
+def metadata_with_given_cols_added_to_table(metadata: sa.MetaData, cols: list[sa.Column]):
     changes = default_children_of_table()
 
     [changes.append(col) for col in cols]

@@ -17,7 +17,7 @@ import { RequestContext, applyPrivacyPolicy } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import CreateContactAction from "../../../ent/contact/actions/create_contact_action";
 import CreateContactEmailAction from "../../../ent/contact_email/actions/create_contact_email_action";
-import { ContactInfoInputType } from "../mutations/input/contact_info_input_type";
+import { ContactInfoExtraInputType } from "../mutations/input/contact_info_extra_input_type";
 import { ContactLabelType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
@@ -27,7 +27,7 @@ class GlobalCanViewerDo {
   async contactCreate(args: any): Promise<boolean> {
     const action = CreateContactAction.create(this.context.getViewer(), {
       ...args,
-      userID: mustDecodeIDFromGQLID(args.userID),
+      userId: mustDecodeIDFromGQLID(args.userId.toString()),
     });
     return applyPrivacyPolicy(
       this.context.getViewer(),
@@ -40,9 +40,10 @@ class GlobalCanViewerDo {
     const action = CreateContactEmailAction.create(this.context.getViewer(), {
       ...args,
       extra: args.extra,
+      contactId: mustDecodeIDFromGQLID(args.contactId.toString()),
+      ownerId: mustDecodeIDFromGQLID(args.ownerId.toString()),
       emailAddress: args.emailAddress,
       label: args.label,
-      contactID: mustDecodeIDFromGQLID(args.contactID),
     });
     return applyPrivacyPolicy(
       this.context.getViewer(),
@@ -61,7 +62,7 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
     contactCreate: {
       type: new GraphQLNonNull(GraphQLBoolean),
       args: {
-        userID: {
+        userId: {
           description: "",
           type: new GraphQLNonNull(GraphQLID),
         },
@@ -79,7 +80,15 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
       args: {
         extra: {
           description: "",
-          type: ContactInfoInputType,
+          type: ContactInfoExtraInputType,
+        },
+        contactId: {
+          description: "",
+          type: new GraphQLNonNull(GraphQLID),
+        },
+        ownerId: {
+          description: "",
+          type: new GraphQLNonNull(GraphQLID),
         },
         emailAddress: {
           description: "",
@@ -88,10 +97,6 @@ export const GlobalCanViewerDoType = new GraphQLObjectType({
         label: {
           description: "",
           type: new GraphQLNonNull(ContactLabelType),
-        },
-        contactID: {
-          description: "",
-          type: new GraphQLNonNull(GraphQLID),
         },
       },
       resolve: async (

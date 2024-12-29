@@ -25,7 +25,7 @@ import {
   AddressDBData,
   addressLoader,
   addressLoaderInfo,
-  addressOwnerIDLoader,
+  addressOwnerIdLoader,
 } from "src/ent/generated/loaders";
 import { NodeType } from "src/ent/generated/types";
 import { AddressToLocatedAtQuery } from "src/ent/internal";
@@ -42,10 +42,13 @@ export class AddressBase implements Ent<Viewer> {
   readonly state: string;
   readonly zipCode: string;
   readonly apartment: string | null;
-  readonly ownerID: ID;
+  readonly ownerId: ID;
   readonly ownerType: string;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -54,7 +57,7 @@ export class AddressBase implements Ent<Viewer> {
     this.state = data.state;
     this.zipCode = data.zip_code;
     this.apartment = data.apartment;
-    this.ownerID = data.owner_id;
+    this.ownerId = data.owner_id;
     this.ownerType = data.owner_type;
     // @ts-expect-error
     this.data = data;
@@ -195,55 +198,55 @@ export class AddressBase implements Ent<Viewer> {
     return row;
   }
 
-  static async loadFromOwnerID<T extends AddressBase>(
+  static async loadFromOwnerId<T extends AddressBase>(
     this: new (
       viewer: Viewer,
       data: Data,
     ) => T,
     viewer: Viewer,
-    ownerID: ID,
+    ownerId: ID,
   ): Promise<T | null> {
-    return (await loadEntViaKey(viewer, ownerID, {
+    return (await loadEntViaKey(viewer, ownerId, {
       ...AddressBase.loaderOptions.apply(this),
-      loaderFactory: addressOwnerIDLoader,
+      loaderFactory: addressOwnerIdLoader,
     })) as T | null;
   }
 
-  static async loadFromOwnerIDX<T extends AddressBase>(
+  static async loadFromOwnerIdX<T extends AddressBase>(
     this: new (
       viewer: Viewer,
       data: Data,
     ) => T,
     viewer: Viewer,
-    ownerID: ID,
+    ownerId: ID,
   ): Promise<T> {
-    return (await loadEntXViaKey(viewer, ownerID, {
+    return (await loadEntXViaKey(viewer, ownerId, {
       ...AddressBase.loaderOptions.apply(this),
-      loaderFactory: addressOwnerIDLoader,
+      loaderFactory: addressOwnerIdLoader,
     })) as T;
   }
 
-  static async loadIDFromOwnerID<T extends AddressBase>(
+  static async loadIdFromOwnerId<T extends AddressBase>(
     this: new (
       viewer: Viewer,
       data: Data,
     ) => T,
-    ownerID: ID,
+    ownerId: ID,
     context?: Context,
   ): Promise<ID | undefined> {
-    const row = await addressOwnerIDLoader.createLoader(context).load(ownerID);
+    const row = await addressOwnerIdLoader.createLoader(context).load(ownerId);
     return row?.id;
   }
 
-  static async loadRawDataFromOwnerID<T extends AddressBase>(
+  static async loadRawDataFromOwnerId<T extends AddressBase>(
     this: new (
       viewer: Viewer,
       data: Data,
     ) => T,
-    ownerID: ID,
+    ownerId: ID,
     context?: Context,
   ): Promise<AddressDBData | null> {
-    return addressOwnerIDLoader.createLoader(context).load(ownerID);
+    return addressOwnerIdLoader.createLoader(context).load(ownerId);
   }
 
   static loaderOptions<T extends AddressBase>(
@@ -281,7 +284,7 @@ export class AddressBase implements Ent<Viewer> {
     return loadEntByType(
       this.viewer,
       this.ownerType as unknown as NodeType,
-      this.ownerID,
+      this.ownerId,
     );
   }
 
@@ -289,7 +292,7 @@ export class AddressBase implements Ent<Viewer> {
     return loadEntXByType(
       this.viewer,
       this.ownerType as unknown as NodeType,
-      this.ownerID,
+      this.ownerId,
     );
   }
 }

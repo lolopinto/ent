@@ -5,7 +5,8 @@
 
 import { ID, ObjectLoaderFactory } from "@snowtop/ent";
 import {
-  ContactInfo,
+  Attachment,
+  ContactInfoExtra,
   ContactLabel,
   DayOfWeek,
   DayOfWeekAlt,
@@ -57,7 +58,7 @@ export const addressLoaderInfo = {
   nodeType: NodeType.Address,
   loaderFactory: addressLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -129,7 +130,7 @@ export const authCodeLoaderInfo = {
   nodeType: NodeType.AuthCode,
   loaderFactory: authCodeLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -147,7 +148,7 @@ export const authCodeLoaderInfo = {
     },
     userID: {
       dbCol: "user_id",
-      inputKey: "userID",
+      inputKey: "userId",
     },
     emailAddress: {
       dbCol: "email_address",
@@ -201,7 +202,7 @@ export const commentLoaderInfo = {
   nodeType: NodeType.Comment,
   loaderFactory: commentLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -215,7 +216,7 @@ export const commentLoaderInfo = {
     },
     AuthorID: {
       dbCol: "author_id",
-      inputKey: "authorID",
+      inputKey: "authorId",
     },
     Body: {
       dbCol: "body",
@@ -223,7 +224,7 @@ export const commentLoaderInfo = {
     },
     ArticleID: {
       dbCol: "article_id",
-      inputKey: "articleID",
+      inputKey: "articleId",
     },
     ArticleType: {
       dbCol: "article_type",
@@ -231,7 +232,7 @@ export const commentLoaderInfo = {
     },
     AttachmentID: {
       dbCol: "attachment_id",
-      inputKey: "attachmentID",
+      inputKey: "attachmentId",
     },
     AttachmentType: {
       dbCol: "attachment_type",
@@ -239,7 +240,7 @@ export const commentLoaderInfo = {
     },
     StickerID: {
       dbCol: "sticker_id",
-      inputKey: "stickerID",
+      inputKey: "stickerId",
     },
     StickerType: {
       dbCol: "sticker_type",
@@ -257,6 +258,7 @@ export interface ContactDBData {
   first_name: string;
   last_name: string;
   user_id: ID;
+  attachments: Attachment[] | null;
 }
 
 const contactTable = "contacts";
@@ -269,6 +271,7 @@ const contactFields = [
   "first_name",
   "last_name",
   "user_id",
+  "attachments",
 ];
 
 export const contactLoader = new ObjectLoaderFactory<ContactDBData>({
@@ -283,7 +286,7 @@ export const contactLoaderInfo = {
   nodeType: NodeType.Contact,
   loaderFactory: contactLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -313,7 +316,11 @@ export const contactLoaderInfo = {
     },
     userID: {
       dbCol: "user_id",
-      inputKey: "userID",
+      inputKey: "userId",
+    },
+    attachments: {
+      dbCol: "attachments",
+      inputKey: "attachments",
     },
   },
 };
@@ -322,10 +329,11 @@ export interface ContactEmailDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
-  extra: ContactInfo | null;
+  extra: ContactInfoExtra | null;
+  contact_id: ID;
+  owner_id: ID;
   email_address: string;
   label: ContactLabel;
-  contact_id: ID;
 }
 
 const contactEmailTable = "contact_emails";
@@ -334,9 +342,10 @@ const contactEmailFields = [
   "created_at",
   "updated_at",
   "extra",
+  "contact_id",
+  "owner_id",
   "email_address",
   "label",
-  "contact_id",
 ];
 
 export const contactEmailLoader = new ObjectLoaderFactory<ContactEmailDBData>({
@@ -351,7 +360,7 @@ export const contactEmailLoaderInfo = {
   nodeType: NodeType.ContactEmail,
   loaderFactory: contactEmailLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -367,6 +376,14 @@ export const contactEmailLoaderInfo = {
       dbCol: "extra",
       inputKey: "extra",
     },
+    contactID: {
+      dbCol: "contact_id",
+      inputKey: "contactId",
+    },
+    ownerID: {
+      dbCol: "owner_id",
+      inputKey: "ownerId",
+    },
     emailAddress: {
       dbCol: "email_address",
       inputKey: "emailAddress",
@@ -375,10 +392,6 @@ export const contactEmailLoaderInfo = {
       dbCol: "label",
       inputKey: "label",
     },
-    contactID: {
-      dbCol: "contact_id",
-      inputKey: "contactID",
-    },
   },
 };
 
@@ -386,10 +399,11 @@ export interface ContactPhoneNumberDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
-  extra: ContactInfo | null;
+  extra: ContactInfoExtra | null;
+  contact_id: ID;
+  owner_id: ID;
   phone_number: string;
   label: ContactLabel;
-  contact_id: ID;
 }
 
 const contactPhoneNumberTable = "contact_phone_numbers";
@@ -398,9 +412,10 @@ const contactPhoneNumberFields = [
   "created_at",
   "updated_at",
   "extra",
+  "contact_id",
+  "owner_id",
   "phone_number",
   "label",
-  "contact_id",
 ];
 
 export const contactPhoneNumberLoader =
@@ -416,7 +431,7 @@ export const contactPhoneNumberLoaderInfo = {
   nodeType: NodeType.ContactPhoneNumber,
   loaderFactory: contactPhoneNumberLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -432,6 +447,14 @@ export const contactPhoneNumberLoaderInfo = {
       dbCol: "extra",
       inputKey: "extra",
     },
+    contactID: {
+      dbCol: "contact_id",
+      inputKey: "contactId",
+    },
+    ownerID: {
+      dbCol: "owner_id",
+      inputKey: "ownerId",
+    },
     phoneNumber: {
       dbCol: "phone_number",
       inputKey: "phoneNumber",
@@ -439,10 +462,6 @@ export const contactPhoneNumberLoaderInfo = {
     label: {
       dbCol: "label",
       inputKey: "label",
-    },
-    contactID: {
-      dbCol: "contact_id",
-      inputKey: "contactID",
     },
   },
 };
@@ -458,7 +477,8 @@ export interface EventDBData {
   location: string;
   address_id: ID | null;
   cover_photo: Buffer | null;
-  cover_photo_2: Buffer | null;
+  cover_photo2: Buffer | null;
+  attachments: Attachment[] | null;
 }
 
 const eventTable = "events";
@@ -473,7 +493,8 @@ const eventFields = [
   "location",
   "address_id",
   "cover_photo",
-  "cover_photo_2",
+  "cover_photo2",
+  "attachments",
 ];
 
 export const eventLoader = new ObjectLoaderFactory<EventDBData>({
@@ -488,7 +509,7 @@ export const eventLoaderInfo = {
   nodeType: NodeType.Event,
   loaderFactory: eventLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -506,7 +527,7 @@ export const eventLoaderInfo = {
     },
     creatorID: {
       dbCol: "user_id",
-      inputKey: "creatorID",
+      inputKey: "creatorId",
     },
     start_time: {
       dbCol: "start_time",
@@ -520,17 +541,79 @@ export const eventLoaderInfo = {
       dbCol: "location",
       inputKey: "location",
     },
-    addressID: {
+    addressId: {
       dbCol: "address_id",
-      inputKey: "addressID",
+      inputKey: "addressId",
     },
     cover_photo: {
       dbCol: "cover_photo",
       inputKey: "coverPhoto",
     },
     cover_photo2: {
-      dbCol: "cover_photo_2",
+      dbCol: "cover_photo2",
       inputKey: "coverPhoto2",
+    },
+    attachments: {
+      dbCol: "attachments",
+      inputKey: "attachments",
+    },
+  },
+};
+
+export interface FileDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  name: string;
+  path: string;
+  creator_id: ID;
+}
+
+const fileTable = "files";
+const fileFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "name",
+  "path",
+  "creator_id",
+];
+
+export const fileLoader = new ObjectLoaderFactory<FileDBData>({
+  tableName: fileTable,
+  fields: fileFields,
+  key: "id",
+});
+
+export const fileLoaderInfo = {
+  tableName: fileTable,
+  fields: fileFields,
+  nodeType: NodeType.File,
+  loaderFactory: fileLoader,
+  fieldInfo: {
+    id: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    path: {
+      dbCol: "path",
+      inputKey: "path",
+    },
+    creator_id: {
+      dbCol: "creator_id",
+      inputKey: "creatorId",
     },
   },
 };
@@ -568,7 +651,7 @@ export const holidayLoaderInfo = {
   nodeType: NodeType.Holiday,
   loaderFactory: holidayLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -633,7 +716,7 @@ export const hoursOfOperationLoaderInfo = {
   nodeType: NodeType.HoursOfOperation,
   loaderFactory: hoursOfOperationLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -738,7 +821,7 @@ export const userLoaderInfo = {
   nodeType: NodeType.User,
   loaderFactory: userLoader,
   fieldInfo: {
-    ID: {
+    id: {
       dbCol: "id",
       inputKey: "id",
     },
@@ -836,6 +919,69 @@ userEmailAddressLoader.addToPrime(userPhoneNumberLoader);
 userPhoneNumberLoader.addToPrime(userLoader);
 userPhoneNumberLoader.addToPrime(userEmailAddressLoader);
 
+export interface UserStatisticsDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  user_id: ID;
+  auth_code_emails_sent: number;
+}
+
+const userStatisticsTable = "user_statistics";
+const userStatisticsFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "user_id",
+  "auth_code_emails_sent",
+];
+
+export const userStatisticsLoader =
+  new ObjectLoaderFactory<UserStatisticsDBData>({
+    tableName: userStatisticsTable,
+    fields: userStatisticsFields,
+    key: "id",
+  });
+
+export const userStatisticsUserIdLoader =
+  new ObjectLoaderFactory<UserStatisticsDBData>({
+    tableName: userStatisticsTable,
+    fields: userStatisticsFields,
+    key: "user_id",
+  });
+
+export const userStatisticsLoaderInfo = {
+  tableName: userStatisticsTable,
+  fields: userStatisticsFields,
+  nodeType: NodeType.UserStatistics,
+  loaderFactory: userStatisticsLoader,
+  fieldInfo: {
+    id: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    userID: {
+      dbCol: "user_id",
+      inputKey: "userId",
+    },
+    authCodeEmailsSent: {
+      dbCol: "auth_code_emails_sent",
+      inputKey: "authCodeEmailsSent",
+    },
+  },
+};
+
+userStatisticsLoader.addToPrime(userStatisticsUserIdLoader);
+userStatisticsUserIdLoader.addToPrime(userStatisticsLoader);
+
 export function getLoaderInfoFromSchema(schema: string) {
   switch (schema) {
     case "Address":
@@ -852,12 +998,16 @@ export function getLoaderInfoFromSchema(schema: string) {
       return contactPhoneNumberLoaderInfo;
     case "Event":
       return eventLoaderInfo;
+    case "File":
+      return fileLoaderInfo;
     case "Holiday":
       return holidayLoaderInfo;
     case "HoursOfOperation":
       return hoursOfOperationLoaderInfo;
     case "User":
       return userLoaderInfo;
+    case "UserStatistics":
+      return userStatisticsLoaderInfo;
     default:
       throw new Error(
         `invalid schema ${schema} passed to getLoaderInfoFromSchema`,
@@ -881,12 +1031,16 @@ export function getLoaderInfoFromNodeType(nodeType: NodeType) {
       return contactPhoneNumberLoaderInfo;
     case NodeType.Event:
       return eventLoaderInfo;
+    case NodeType.File:
+      return fileLoaderInfo;
     case NodeType.Holiday:
       return holidayLoaderInfo;
     case NodeType.HoursOfOperation:
       return hoursOfOperationLoaderInfo;
     case NodeType.User:
       return userLoaderInfo;
+    case NodeType.UserStatistics:
+      return userStatisticsLoaderInfo;
     default:
       throw new Error(
         `invalid nodeType ${nodeType} passed to getLoaderInfoFromNodeType`,

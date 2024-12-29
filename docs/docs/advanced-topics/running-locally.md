@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 5
 ---
 
 # Running Locally
@@ -14,7 +14,7 @@ There's 3 major runtimes we use:
 
 Here's the steps to install locally:
 
-* Install [golang](https://golang.org/doc/install#download) version of 1.21
+* Install [golang](https://golang.org/doc/install#download) version of 1.22.0
 * Get the latest version of the Ent CLI:
 
 ```shell
@@ -32,13 +32,13 @@ python3 -m pip install auto_schema==0.0.26
 * Install the following TypeScript packages globally:
 
 ```shell
-npm install -g typescript@4.4.2 prettier@3.0.3 ts-node@10.7 @swc/core@1.3.57 @swc/cli@0.1.62 @biomejs/biome@1.0.0
+npm install -g typescript@5.3.2 prettier@3.1.0 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@1.4.1
 ```
 
 * Install `tsconfig-paths` and `@swc-node/register` locally:
 
 ```shell
-npm install --save-dev tsconfig-paths@3.11.0 @swc-node/register@1.6.5
+npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.6.8
 ```
 
 * Install `rg`

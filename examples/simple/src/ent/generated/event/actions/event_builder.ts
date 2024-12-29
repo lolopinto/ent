@@ -17,19 +17,20 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event, User } from "../../..";
 import { eventLoaderInfo } from "../../loaders";
-import { EdgeType, NodeType } from "../../types";
+import { Attachment, EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/event_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface EventInput {
   name?: string;
-  creatorID?: ID;
+  creatorId?: ID;
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
-  addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
+  addressId?: ID | null | Builder<Address, ExampleViewerAlias>;
   coverPhoto?: Buffer | null;
   coverPhoto2?: Buffer | null;
+  attachments?: Attachment[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -92,10 +93,10 @@ export class EventBuilder<
     return this.input;
   }
 
-  updateInput(input: Omit<EventInput, "creatorID">) {
-    if (input.creatorID !== undefined) {
+  updateInput(input: Omit<EventInput, "creatorId">) {
+    if (input.creatorId !== undefined) {
       throw new Error(
-        `creatorID cannot be passed to updateInput. use overrideCreatorID instead`,
+        `creatorId cannot be passed to updateInput. use overrideCreatorId instead`,
       );
     }
 
@@ -106,9 +107,9 @@ export class EventBuilder<
     };
   }
 
-  // override immutable field `creatorID`
-  overrideCreatorID(val: ID) {
-    this.input.creatorID = val;
+  // override immutable field `creatorId`
+  overrideCreatorId(val: ID) {
+    this.input.creatorId = val;
   }
 
   deleteInputKey(key: keyof EventInput) {
@@ -379,22 +380,25 @@ export class EventBuilder<
       }
     };
     addField("name", input.name);
-    addField("creatorID", input.creatorID);
-    if (input.creatorID !== undefined) {
-      if (input.creatorID) {
+    addField("creatorID", input.creatorId);
+    if (
+      input.creatorId !== undefined ||
+      this.operation === WriteOperation.Delete
+    ) {
+      if (input.creatorId) {
         this.orchestrator.addInboundEdge(
-          input.creatorID,
+          input.creatorId,
           EdgeType.UserToCreatedEvents,
           NodeType.User,
         );
       }
       if (
         this.existingEnt &&
-        this.existingEnt.creatorID &&
-        this.existingEnt.creatorID !== input.creatorID
+        this.existingEnt.creatorId &&
+        this.existingEnt.creatorId !== input.creatorId
       ) {
         this.orchestrator.removeInboundEdge(
-          this.existingEnt.creatorID,
+          this.existingEnt.creatorId,
           EdgeType.UserToCreatedEvents,
         );
       }
@@ -402,11 +406,14 @@ export class EventBuilder<
     addField("start_time", input.startTime);
     addField("end_time", input.endTime);
     addField("location", input.location);
-    addField("addressID", input.addressID);
-    if (input.addressID !== undefined) {
-      if (input.addressID) {
+    addField("addressId", input.addressId);
+    if (
+      input.addressId !== undefined ||
+      this.operation === WriteOperation.Delete
+    ) {
+      if (input.addressId) {
         this.orchestrator.addInboundEdge(
-          input.addressID,
+          input.addressId,
           EdgeType.AddressToHostedEvents,
           NodeType.Address,
         );
@@ -431,6 +438,7 @@ export class EventBuilder<
     }
     addField("cover_photo", input.coverPhoto);
     addField("cover_photo2", input.coverPhoto2);
+    addField("attachments", input.attachments);
     return result;
   }
 
@@ -455,17 +463,17 @@ export class EventBuilder<
   }
 
   // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreatorIDValue(): ID {
-    if (this.input.creatorID !== undefined) {
-      return this.input.creatorID;
+  getNewCreatorIdValue(): ID {
+    if (this.input.creatorId !== undefined) {
+      return this.input.creatorId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `creatorID` since not in input and no existingEnt",
+        "no value to return for `creatorId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.creatorID;
+    return this.existingEnt.creatorId;
   }
 
   // get value of start_time. Retrieves it from the input if specified or takes it from existingEnt
@@ -505,13 +513,13 @@ export class EventBuilder<
     return this.existingEnt.location;
   }
 
-  // get value of addressID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAddressIDValue():
+  // get value of addressId. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAddressIdValue():
     | ID
     | null
     | Builder<Address, ExampleViewerAlias>
     | undefined {
-    return this.input.addressID;
+    return this.input.addressId;
   }
 
   // get value of cover_photo. Retrieves it from the input if specified or takes it from existingEnt
@@ -530,5 +538,14 @@ export class EventBuilder<
     }
 
     return this.existingEnt?.coverPhoto2 ?? null;
+  }
+
+  // get value of attachments. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAttachmentsValue(): Attachment[] | null {
+    if (this.input.attachments !== undefined) {
+      return this.input.attachments;
+    }
+
+    return this.existingEnt?.attachments ?? null;
   }
 }

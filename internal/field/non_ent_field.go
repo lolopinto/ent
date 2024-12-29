@@ -1,9 +1,11 @@
 package field
 
 import (
-	"github.com/iancoleman/strcase"
+	"fmt"
+
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -25,7 +27,7 @@ type NonEntField struct {
 func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSType, nullable, hideFromGraphQL bool) *NonEntField {
 	return &NonEntField{
 		fieldName:       fieldName,
-		graphqlName:     codegenapi.GraphQLName(cfg, fieldName),
+		graphqlName:     names.ToGraphQLName(cfg, fieldName),
 		fieldType:       fieldType,
 		nullable:        nullable,
 		hideFromGraphQL: hideFromGraphQL,
@@ -88,15 +90,15 @@ func (f *NonEntField) GetGraphQLMutationFieldType(forceOptional bool) enttype.TS
 }
 
 func (f *NonEntField) TsFieldName(cfg codegenapi.Config) string {
-	return strcase.ToLowerCamel(f.fieldName)
+	return names.ToTsFieldName(f.fieldName)
 }
 
 func (f *NonEntField) TsBuilderFieldName() string {
-	return strcase.ToLowerCamel(f.fieldName)
+	return names.ToTsFieldName(f.fieldName)
 }
 
 func (f *NonEntField) TSPublicAPIName() string {
-	return strcase.ToLowerCamel(f.fieldName)
+	return names.ToTsFieldName(f.fieldName)
 }
 
 func (f *NonEntField) ForceRequiredInAction() bool {
@@ -144,4 +146,44 @@ func (f *NonEntField) GetTsTypeImports() []*tsimport.ImportPath {
 
 func (f *NonEntField) GetTSGraphQLTypeForFieldImports(input bool) []*tsimport.ImportPath {
 	return f.fieldType.GetTSGraphQLImports(input)
+}
+
+func (f *NonEntField) SingleFieldPrimaryKey() bool {
+	return false
+}
+
+type NonEntFieldOption func(*NonEntField)
+
+func OptionalField() NonEntFieldOption {
+	return func(f *NonEntField) {
+		f.optional = true
+		f.nullable = true
+	}
+}
+
+func (f *NonEntField) Clone(opts ...NonEntFieldOption) (*NonEntField, error) {
+	ret := &NonEntField{
+		fieldName:       f.fieldName,
+		graphqlName:     f.graphqlName,
+		fieldType:       f.fieldType,
+		nullable:        f.nullable,
+		optional:        f.optional,
+		Flag:            f.Flag,
+		NodeType:        f.NodeType,
+		hideFromGraphQL: f.hideFromGraphQL,
+	}
+
+	for _, opt := range opts {
+		opt(ret)
+	}
+
+	if ret.nullable && ret.nullable != f.nullable {
+		nullableType, ok := ret.fieldType.(enttype.NullableType)
+		if !ok {
+			return nil, fmt.Errorf("can't make non-nullable field %s nullable", ret.fieldName)
+		}
+		ret.fieldType = nullableType.GetNullableType()
+	}
+
+	return ret, nil
 }

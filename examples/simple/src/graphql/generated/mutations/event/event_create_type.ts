@@ -9,6 +9,7 @@ import {
   GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -25,13 +26,14 @@ import { Event } from "../../../../ent";
 import CreateEventAction, {
   EventCreateInput,
 } from "../../../../ent/event/actions/create_event_action";
+import { AttachmentInputType } from "../input/attachment_input_type";
 import { EventType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEventCreateInput extends Omit<EventCreateInput, "location"> {
-  creatorID: string;
+  creatorId: string;
   eventLocation: string;
-  addressID?: string;
+  addressId?: string;
 }
 
 interface EventCreatePayload {
@@ -44,7 +46,7 @@ export const EventCreateInputType = new GraphQLInputObjectType({
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    creatorID: {
+    creatorId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     startTime: {
@@ -56,7 +58,7 @@ export const EventCreateInputType = new GraphQLInputObjectType({
     eventLocation: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    addressID: {
+    addressId: {
       type: GraphQLID,
     },
     coverPhoto: {
@@ -64,6 +66,9 @@ export const EventCreateInputType = new GraphQLInputObjectType({
     },
     coverPhoto2: {
       type: GraphQLByte,
+    },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentInputType)),
     },
   }),
 });
@@ -100,13 +105,29 @@ export const EventCreateType: GraphQLFieldConfig<
   ): Promise<EventCreatePayload> => {
     const event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
-      creatorID: mustDecodeIDFromGQLID(input.creatorID),
+      creatorId: mustDecodeIDFromGQLID(input.creatorId.toString()),
       startTime: input.startTime,
       endTime: input.endTime,
       location: input.eventLocation,
-      addressID: mustDecodeNullableIDFromGQLID(input.addressID),
+      addressId: mustDecodeNullableIDFromGQLID(
+        input.addressId?.toString() ?? input.addressId,
+      ),
       coverPhoto: input.coverPhoto,
       coverPhoto2: input.coverPhoto2,
+      attachments: input.attachments?.map((item: any) => ({
+        ...item,
+        fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+        dupeFileId: item.dupeFileId
+          ? mustDecodeNullableIDFromGQLID(
+              item.dupeFileId?.toString() ?? item.dupeFileId,
+            )
+          : undefined,
+        creatorId: item.creatorId
+          ? mustDecodeNullableIDFromGQLID(
+              item.creatorId?.toString() ?? item.creatorId,
+            )
+          : undefined,
+      })),
     }).saveX();
     return { event: event };
   },

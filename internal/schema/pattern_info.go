@@ -5,10 +5,13 @@ import (
 	"sort"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -16,7 +19,9 @@ type PatternInfo struct {
 	objWithConsts
 	Name         string
 	FieldInfo    *field.FieldInfo
+	EdgeInfo     *edge.EdgeInfo
 	AssocEdges   map[string]*edge.AssociationEdge
+	depgraph     *depgraph.Depgraph
 	DisableMixin bool
 }
 
@@ -29,6 +34,10 @@ func (p *PatternInfo) GetNodeInstance() string {
 // marker interface
 func (p *PatternInfo) HasMixin() bool {
 	return !p.DisableMixin
+}
+
+func (p *PatternInfo) GetMixinBaseFile() string {
+	return p.Name + "Base"
 }
 
 func (p *PatternInfo) GetSortedEdges() []*edge.AssociationEdge {
@@ -79,11 +88,15 @@ func (p *PatternInfo) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.ImportP
 }
 
 func (p *PatternInfo) GetMixinInterfaceName() string {
-	return fmt.Sprintf("I%s", strcase.ToCamel(p.Name))
+	return names.ToClassType("I", p.Name)
+}
+
+func (p *PatternInfo) GetMixinInterfaceBaseName() string {
+	return names.ToClassType("I", p.Name, "Base")
 }
 
 func (p *PatternInfo) GetMixinWithInterfaceName() string {
-	return fmt.Sprintf("IEntWith%s", strcase.ToCamel(p.Name))
+	return names.ToClassType("IEntWith", p.Name)
 }
 
 func (p *PatternInfo) HasBuilder() bool {
@@ -91,19 +104,23 @@ func (p *PatternInfo) HasBuilder() bool {
 }
 
 func (p *PatternInfo) GetBuilderName() string {
-	return fmt.Sprintf("%sBuilder", strcase.ToCamel(p.Name))
+	return names.ToClassType(p.Name, "Builder")
 }
 
 func (p *PatternInfo) GetBuilderInterfaceName() string {
-	return fmt.Sprintf("I%sBuilder", strcase.ToCamel(p.Name))
+	return names.ToClassType("I", p.Name, "Builder")
 }
 
 func (p *PatternInfo) GetMixinName() string {
-	return fmt.Sprintf("%sMixin", strcase.ToCamel(p.Name))
+	return names.ToClassType(p.Name, "Mixin")
+}
+
+func (p *PatternInfo) GetMixinBaseName() string {
+	return fmt.Sprintf("%sBaseMixin", strcase.ToCamel(p.Name))
 }
 
 func (p *PatternInfo) GetPatternMethod() string {
-	return fmt.Sprintf("is%s", strcase.ToCamel(p.Name))
+	return names.ToTsFieldName("is", p.Name)
 }
 
 func (p *PatternInfo) ForeignImport(imp string) bool {
@@ -129,6 +146,15 @@ func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*ts
 	for _, f := range p.FieldInfo.EntFields() {
 		ret = append(ret, f.GetImportsForTypes(cfg, s, s)...)
 	}
+
+	for _, edge := range p.EdgeInfo.FieldEdges {
+		if edge.NonPolymorphicList() {
+			ret = append(ret, &tsimport.ImportPath{
+				Import:     edge.NodeInfo.Node,
+				ImportPath: codepath.GetInternalImportPath(),
+			})
+		}
+	}
 	return ret
 }
 
@@ -136,3 +162,29 @@ func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*ts
 // or handle private fields in patterns and mixins...
 // or fields with fieldPrivacy
 // https://github.com/lolopinto/ent/issues/911
+
+func (p *PatternInfo) GetImportPathForMixinBase() string {
+	return fmt.Sprintf("src/ent/generated/mixins/%s", strcase.ToSnake(p.GetMixinBaseFile()))
+}
+
+func (p *PatternInfo) GetEdgeInfo() *edge.EdgeInfo {
+	return p.EdgeInfo
+}
+
+func (p *PatternInfo) GetFieldInfo() *field.FieldInfo {
+	return p.FieldInfo
+}
+
+func (p *PatternInfo) GetName() string {
+	return p.Name
+}
+
+func (p *PatternInfo) GetActionInfo() *action.ActionInfo {
+	return nil
+}
+
+func (p *PatternInfo) IsPattern() bool {
+	return true
+}
+
+var _ Container = &PatternInfo{}

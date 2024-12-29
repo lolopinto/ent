@@ -137,12 +137,12 @@ export class TodoAddTagActionBase
     ) => T,
     viewer: Viewer,
     id: ID,
-    tagID: ID,
+    tagId: ID,
   ): Promise<Todo | null> {
     const todo = await Todo.load(viewer, id);
     if (todo === null) {
       return null;
     }
-    return new this(viewer, todo).addTag(tagID).save();
+    return new this(viewer, todo).addTag(tagId).save();
   }
 }

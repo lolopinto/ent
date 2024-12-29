@@ -1,15 +1,17 @@
-import { v1 } from "uuid";
 import { DateTime } from "luxon";
-import { MockLogs } from "../../testutils/mock_log";
+import { v1 } from "uuid";
+import { AnyEnt, SimpleBuilder } from "../../testutils/builder";
+import { TempDB, integer, table, text, uuid } from "../../testutils/db/temp_db";
+import { randomEmail } from "../../testutils/db/value";
 import {
-  FakeEvent,
-  FakeUser,
-  UserToEventsInNextWeekQuery,
   EdgeType,
-  FakeUserSchema,
-  getNextWeekClause,
+  FakeEvent,
   FakeEventSchema,
+  FakeUser,
+  FakeUserSchema,
+  UserToEventsInNextWeekQuery,
   ViewerWithAccessToken,
+  getNextWeekClause,
 } from "../../testutils/fake_data";
 import {
   addEdge,
@@ -18,18 +20,16 @@ import {
   inputs,
   setupTempDB,
 } from "../../testutils/fake_data/test_helpers";
-import { setLogLevels } from "../logger";
-import { TempDB, integer, table, text, uuid } from "../../testutils/db/temp_db";
-import { buildQuery, reverseOrderBy } from "../query_impl";
-import * as clause from "../clause";
-import { Data, Ent, Viewer, WriteOperation } from "../base";
-import { CustomClauseQuery } from "./custom_clause_query";
-import { AnyEnt, SimpleBuilder } from "../../testutils/builder";
-import { OrderByOption } from "../query_impl";
+import { MockLogs } from "../../testutils/mock_log";
 import { createRowForTest } from "../../testutils/write";
-import { randomEmail } from "../../testutils/db/value";
+import { Data, Ent, Viewer, WriteOperation } from "../base";
+import * as clause from "../clause";
 import DB from "../db";
+import { loadCustomEnts } from "../ent";
+import { setLogLevels } from "../logger";
+import { OrderByOption, buildQuery, reverseOrderBy } from "../query_impl";
 import { LoggedOutViewer } from "../viewer";
+import { CustomClauseQuery } from "./custom_clause_query";
 
 const INTERVAL = 24 * 60 * 60 * 1000;
 
@@ -121,7 +121,11 @@ const getGlobalQuery = (viewer?: Viewer, opts?: Partial<OrderByOption>) => {
       {
         column: "start_time",
         direction: "DESC",
-        dateColumn: true,
+        ...opts,
+      },
+      {
+        column: "id",
+        direction: "DESC",
         ...opts,
       },
     ],
@@ -151,7 +155,11 @@ const getCreatorsOfGlobalEventsInNextWeek = (opts?: Partial<OrderByOption>) => {
       {
         column: "created_at",
         direction: "DESC",
-        dateColumn: true,
+        ...opts,
+      },
+      {
+        column: "id",
+        direction: "DESC",
         ...opts,
       },
     ],
@@ -178,6 +186,10 @@ const getEndTimeGlobalQuery = (
         column: "end_time",
         direction: "DESC",
         ...opts,
+      },
+      {
+        column: "id",
+        direction: opts?.direction ?? "DESC",
       },
     ],
   });
@@ -270,18 +282,23 @@ describe("query for user", () => {
         },
       ],
       limit: 3,
-      clause: clause.And(
+      clause: clause.AndOptional(
         clause.Eq("user_id", user.id),
         clause.GreaterEq("start_time", 1),
         clause.LessEq("start_time", 2),
         // the cursor check
-        clause.PaginationMultipleColsSubQuery(
-          "start_time",
-          "<",
-          FakeEvent.loaderOptions().tableName,
-          "id",
-          4,
-        ),
+        clause.PaginationUnboundColsQuery([
+          {
+            sortCol: "start_time",
+            direction: "DESC",
+            sortValue: 1,
+          },
+          {
+            sortCol: "id",
+            direction: "DESC",
+            sortValue: 4,
+          },
+        ]),
       ),
     });
     expect(query).toEqual(ml.logs[ml.logs.length - 1].query);
@@ -439,13 +456,18 @@ describe("global query", () => {
           clause.LessEq("start_time", 2),
           // the cursor check
           cursor
-            ? clause.PaginationMultipleColsSubQuery(
-                "start_time",
-                "<",
-                FakeEvent.loaderOptions().tableName,
-                "id",
-                4,
-              )
+            ? clause.PaginationUnboundColsQuery([
+                {
+                  sortCol: "start_time",
+                  direction: "DESC",
+                  sortValue: 1,
+                },
+                {
+                  sortCol: "id",
+                  direction: "DESC",
+                  sortValue: 4,
+                },
+              ])
             : undefined,
         ),
       });
@@ -535,13 +557,18 @@ describe("global query", () => {
           clause.LessEq("start_time", 2),
           // the cursor check
           cursor
-            ? clause.PaginationMultipleColsSubQuery(
-                "start_time",
-                ">",
-                FakeEvent.loaderOptions().tableName,
-                "id",
-                4,
-              )
+            ? clause.PaginationUnboundColsQuery([
+                {
+                  sortCol: "start_time",
+                  direction: "ASC",
+                  sortValue: 1,
+                },
+                {
+                  sortCol: "id",
+                  direction: "ASC",
+                  sortValue: 4,
+                },
+              ])
             : undefined,
         ),
       });
@@ -1149,13 +1176,13 @@ describe("joins - products", () => {
           SELECT
       p.id,
           COUNT(DISTINCT o.user_id) AS num_users
-      FROM 
+      FROM
           orders o
-      JOIN 
+      JOIN
           products p ON p.id = o.product_id
-      GROUP BY 
+      GROUP BY
           p.id
-      ORDER BY 
+      ORDER BY
           num_users DESC
       LIMIT 1;
 `);
@@ -1182,7 +1209,6 @@ describe("joins - products", () => {
         `,
         [productId],
       );
-
     expect(r2.rows.length).toEqual(expCount);
 
     // now let's do an ent query for it and the results should be the same
@@ -1195,6 +1221,10 @@ describe("joins - products", () => {
         orderby: [
           {
             column: "name",
+            direction: "DESC",
+          },
+          {
+            column: "id",
             direction: "DESC",
           },
         ],
@@ -1232,6 +1262,56 @@ describe("joins - products", () => {
     );
 
     await paginateAndVerifyClauseWithJoin(getQuery, edges);
+
+    ml.clear();
+
+    // can perform same query Foo.loadCustom if CustomClauseQuery is overkill
+    // maybe loadCustom should wrap CustomClauseQuery with a limit intentionally disabled
+    // so logic isn't duplicated?
+    const loaderOptions = AnyEnt.loaderOptions("users", [
+      "id",
+      "name",
+      "email",
+    ]);
+    delete loaderOptions.alias;
+    const customEnts = await loadCustomEnts(
+      new LoggedOutViewer(),
+      loaderOptions,
+      {
+        // intentionally different alias than what AnyEnt.loaderOptions would have done
+        alias: "u2",
+        clause: clause.Eq("id", productId, "p"),
+        orderby: [
+          {
+            column: "name",
+            direction: "DESC",
+          },
+          // have to add this manually since not a query and this isn't done for us because no pagination is happening
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
+        join: [
+          {
+            tableName: "orders",
+            alias: "o",
+            clause: clause.Expression("u2.id = o.user_id"),
+          },
+          {
+            tableName: "products",
+            alias: "p",
+            clause: clause.Expression("o.product_id = p.id"),
+          },
+        ],
+      },
+    );
+    // can construct a query with loadCustomEnts e.g. Foo.loadCustom and still do joins with an alias and
+    // get the same result
+    expect(ents.length).toBe(customEnts.length);
+    expect(ents.map((ent) => ent.id)).toStrictEqual(
+      customEnts.map((row) => row.id),
+    );
   });
 
   // ~147
@@ -1241,13 +1321,13 @@ describe("joins - products", () => {
           SELECT
       u.id,
           COUNT(DISTINCT o.product_id) AS num_products
-      FROM 
+      FROM
           users u
-      JOIN 
+      JOIN
           orders o ON u.id = o.user_id
-      GROUP BY 
+      GROUP BY
           u.id
-      ORDER BY 
+      ORDER BY
           num_products DESC
       LIMIT 1;
 `);
@@ -1320,6 +1400,10 @@ describe("joins - products", () => {
             column: "product_name",
             direction: "DESC",
           },
+          {
+            column: "id",
+            direction: "DESC",
+          },
         ],
         joinBETA: [
           {
@@ -1374,6 +1458,10 @@ describe("joins - products", () => {
             column: "product_name",
             direction: "DESC",
           },
+          {
+            column: "id",
+            direction: "DESC",
+          },
         ],
         joinBETA: [
           {
@@ -1412,29 +1500,29 @@ describe("joins - products", () => {
   test("query products for user in given category", async () => {
     const r = await DB.getInstance().getPool().query(`
 WITH UserCategoryOrders AS (
-    SELECT 
+    SELECT
         u.id as uid,
         c.id as cid,
         COUNT(DISTINCT o.product_id) AS num_products
-    FROM 
+    FROM
         users u
-    JOIN 
+    JOIN
         orders o ON u.id = o.user_id
-    JOIN 
+    JOIN
         products p ON o.product_id = p.id
-    JOIN 
+    JOIN
         categories c ON p.category_id = c.id
-    GROUP BY 
+    GROUP BY
         u.id, c.id
 )
 
-SELECT 
+SELECT
     uid,
     cid,
     num_products
-FROM 
+FROM
     UserCategoryOrders
-ORDER BY 
+ORDER BY
     num_products DESC
 LIMIT 1;
 `);
@@ -1483,6 +1571,10 @@ LIMIT 1;
           {
             // orderby will get the fields alias by default since ordering by column we're selecting from
             column: "product_name",
+            direction: "DESC",
+          },
+          {
+            column: "id",
             direction: "DESC",
           },
         ],
@@ -1540,25 +1632,26 @@ function getPaginationVerifyClauseWithJoin<T extends Ent>(
     const options = q2.__getOptions();
 
     const orderBy = options.orderby!;
-    expect(orderBy.length).toBe(1);
-    const less = orderBy[0].direction === "DESC";
-    orderBy.push({
-      column: "id",
-      direction: orderBy[0].direction,
+    orderBy.forEach((o) => {
+      o.alias =
+        o.alias ??
+        (options.loadEntOptions.disableFieldsAlias
+          ? undefined
+          : options.loadEntOptions.fieldsAlias);
     });
+    expect(orderBy.length).toBe(2);
     let cls = options.clause;
     if (cursor) {
       cls = clause.AndOptional(
         cls,
-        clause.PaginationMultipleColsQuery(
-          // same column from orderBy
-          orderBy[0].column,
-          "id",
-          less,
-          // these 2 values don't matter so just putting whatever
-          new Date().getTime(),
-          4,
-          options.loadEntOptions.fieldsAlias ?? options.loadEntOptions.alias,
+        clause.PaginationUnboundColsQuery(
+          orderBy.map((o) => ({
+            sortCol: o.column,
+            direction: o.direction,
+            // This value doesn't matter so just putting whatever
+            sortValue: "_",
+            overrideAlias: o.alias,
+          })),
         ),
       );
     }

@@ -1,12 +1,12 @@
 import {
+  ConfigurableLoaderFactory,
   Data,
+  EdgeQueryableDataOptions,
   Ent,
   ID,
-  EdgeQueryableDataOptions,
   LoadEntOptions,
-  Viewer,
   LoaderFactory,
-  ConfigurableLoaderFactory,
+  Viewer,
 } from "../base";
 import { Clause, getCombinedClause } from "../clause";
 import { applyPrivacyPolicyForRows, getDefaultLimit } from "../ent";
@@ -16,7 +16,7 @@ import {
   RawCountLoader,
 } from "../loaders";
 import { OrderBy } from "../query_impl";
-import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
+import { BaseEdgeQuery, EdgeQuery, IDInfo } from "./query";
 
 // TODO kill this. only used in graphql tests
 export interface CustomEdgeQueryOptionsDeprecated<
@@ -272,7 +272,7 @@ export abstract class CustomEdgeQueryBase<
     if (!options.orderby) {
       options.orderby = [
         {
-          column: this.getSortCol(),
+          column: this.getCursorCol(),
           direction: "DESC",
         },
       ];

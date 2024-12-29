@@ -22,16 +22,16 @@ import schema from "../../../../schema/comment_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface CommentInput {
-  authorID?: ID | Builder<User, ExampleViewerAlias>;
+  authorId?: ID | Builder<User, ExampleViewerAlias>;
   body?: string;
-  articleID?: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
+  articleId?: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   articleType?: string;
-  attachmentID?:
+  attachmentId?:
     | ID
     | null
     | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   attachmentType?: string | null;
-  stickerID?: ID | null | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
+  stickerId?: ID | null | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   stickerType?: string | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -95,10 +95,10 @@ export class CommentBuilder<
     return this.input;
   }
 
-  updateInput(input: Omit<CommentInput, "authorID">) {
-    if (input.authorID !== undefined) {
+  updateInput(input: Omit<CommentInput, "authorId">) {
+    if (input.authorId !== undefined) {
       throw new Error(
-        `authorID cannot be passed to updateInput. use overrideAuthorID instead`,
+        `authorId cannot be passed to updateInput. use overrideAuthorId instead`,
       );
     }
 
@@ -109,9 +109,9 @@ export class CommentBuilder<
     };
   }
 
-  // override immutable field `authorID`
-  overrideAuthorID(val: ID | Builder<User, ExampleViewerAlias>) {
-    this.input.authorID = val;
+  // override immutable field `authorId`
+  overrideAuthorId(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.input.authorId = val;
   }
 
   deleteInputKey(key: keyof CommentInput) {
@@ -238,13 +238,13 @@ export class CommentBuilder<
         result.set(key, value);
       }
     };
-    addField("AuthorID", input.authorID);
+    addField("AuthorID", input.authorId);
     addField("Body", input.body);
-    addField("ArticleID", input.articleID);
+    addField("ArticleID", input.articleId);
     addField("ArticleType", input.articleType);
-    addField("AttachmentID", input.attachmentID);
+    addField("AttachmentID", input.attachmentId);
     addField("AttachmentType", input.attachmentType);
-    addField("StickerID", input.stickerID);
+    addField("StickerID", input.stickerId);
     addField("StickerType", input.stickerType);
     return result;
   }
@@ -256,17 +256,17 @@ export class CommentBuilder<
   }
 
   // get value of AuthorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAuthorIDValue(): ID | Builder<User, ExampleViewerAlias> {
-    if (this.input.authorID !== undefined) {
-      return this.input.authorID;
+  getNewAuthorIdValue(): ID | Builder<User, ExampleViewerAlias> {
+    if (this.input.authorId !== undefined) {
+      return this.input.authorId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `authorID` since not in input and no existingEnt",
+        "no value to return for `authorId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.authorID;
+    return this.existingEnt.authorId;
   }
 
   // get value of Body. Retrieves it from the input if specified or takes it from existingEnt
@@ -284,19 +284,19 @@ export class CommentBuilder<
   }
 
   // get value of ArticleID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewArticleIDValue():
+  getNewArticleIdValue():
     | ID
     | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias> {
-    if (this.input.articleID !== undefined) {
-      return this.input.articleID;
+    if (this.input.articleId !== undefined) {
+      return this.input.articleId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `articleID` since not in input and no existingEnt",
+        "no value to return for `articleId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.articleID;
+    return this.existingEnt.articleId;
   }
 
   // get value of ArticleType. Retrieves it from the input if specified or takes it from existingEnt
@@ -314,15 +314,15 @@ export class CommentBuilder<
   }
 
   // get value of AttachmentID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAttachmentIDValue():
+  getNewAttachmentIdValue():
     | ID
     | null
     | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias> {
-    if (this.input.attachmentID !== undefined) {
-      return this.input.attachmentID;
+    if (this.input.attachmentId !== undefined) {
+      return this.input.attachmentId;
     }
 
-    return this.existingEnt?.attachmentID ?? null;
+    return this.existingEnt?.attachmentId ?? null;
   }
 
   // get value of AttachmentType. Retrieves it from the input if specified or takes it from existingEnt
@@ -335,15 +335,15 @@ export class CommentBuilder<
   }
 
   // get value of StickerID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewStickerIDValue():
+  getNewStickerIdValue():
     | ID
     | null
     | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias> {
-    if (this.input.stickerID !== undefined) {
-      return this.input.stickerID;
+    if (this.input.stickerId !== undefined) {
+      return this.input.stickerId;
     }
 
-    return this.existingEnt?.stickerID ?? null;
+    return this.existingEnt?.stickerId ?? null;
   }
 
   // get value of StickerType. Retrieves it from the input if specified or takes it from existingEnt

@@ -170,3 +170,45 @@ func TestCustomFieldMarshall(t *testing.T) {
 		})
 	}
 }
+
+func TestConnnectionWithConnectionArg(t *testing.T) {
+	cf := CustomField{
+		Node:         "User",
+		GraphQLName:  "contactsSameDomain",
+		FunctionName: "getContactsSameDomain",
+		FieldType:    AsyncFunction,
+		// ignored by json
+		Connection: true,
+		Args: []CustomItem{
+			{
+				Name:         "context",
+				Type:         "Context",
+				IsContextArg: true,
+			},
+			{
+				Name:     "id",
+				Type:     "string",
+				Nullable: NullableTrue,
+				List:     true,
+			},
+			{
+				Name: "first",
+				Type: "string",
+			},
+		},
+		Results: []CustomItem{
+			{
+				Name:       "",
+				Type:       "UserConnection",
+				Connection: true,
+			},
+		},
+	}
+	b, err := json.Marshal(cf)
+	require.Nil(t, err)
+
+	var cf2 CustomField
+	err = json.Unmarshal(b, &cf2)
+	require.NotNil(t, err)
+	require.Equal(t, "cannot have a connection with arg first since that's a connection arg", err.Error())
+}

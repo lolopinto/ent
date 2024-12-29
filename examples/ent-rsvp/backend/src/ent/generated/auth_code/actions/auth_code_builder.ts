@@ -19,7 +19,7 @@ import schema from "src/schema/auth_code_schema";
 
 export interface AuthCodeInput {
   code?: string;
-  guestID?: ID | Builder<Guest, Viewer>;
+  guestId?: ID | Builder<Guest, Viewer>;
   emailAddress?: string;
   sentCode?: boolean;
   // allow other properties. useful for action-only fields
@@ -161,7 +161,7 @@ export class AuthCodeBuilder<
       }
     };
     addField("code", input.code);
-    addField("guestID", input.guestID);
+    addField("guestID", input.guestId);
     addField("emailAddress", input.emailAddress);
     addField("sentCode", input.sentCode);
     return result;
@@ -188,17 +188,17 @@ export class AuthCodeBuilder<
   }
 
   // get value of guestID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewGuestIDValue(): ID | Builder<Guest, Viewer> {
-    if (this.input.guestID !== undefined) {
-      return this.input.guestID;
+  getNewGuestIdValue(): ID | Builder<Guest, Viewer> {
+    if (this.input.guestId !== undefined) {
+      return this.input.guestId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `guestID` since not in input and no existingEnt",
+        "no value to return for `guestId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.guestID;
+    return this.existingEnt.guestId;
   }
 
   // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt

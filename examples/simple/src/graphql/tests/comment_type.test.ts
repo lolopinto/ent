@@ -59,40 +59,40 @@ test("query and fetch all accessors", async () => {
   const user3 = await createUser();
 
   const commentOnUser1 = await CreateCommentAction.create(user.viewer, {
-    authorID: user.id,
+    authorId: user.id,
     body: "sup",
-    articleID: user.id,
+    articleId: user.id,
     articleType: user.nodeType,
   }).saveX();
   const commentOnUser2 = await CreateCommentAction.create(user.viewer, {
-    authorID: user.id,
+    authorId: user.id,
     body: "sup",
-    articleID: user.id,
+    articleId: user.id,
     articleType: user.nodeType,
   }).saveX();
   const commentOnUser3 = await CreateCommentAction.create(user.viewer, {
-    authorID: user.id,
+    authorId: user.id,
     body: "sup",
-    articleID: user.id,
+    articleId: user.id,
     articleType: user.nodeType,
   }).saveX();
 
   const commentOnComment1 = await CreateCommentAction.create(user.viewer, {
-    authorID: user.id,
+    authorId: user.id,
     body: "sup",
-    articleID: commentOnUser1.id,
+    articleId: commentOnUser1.id,
     articleType: commentOnUser1.nodeType,
   }).saveX();
   const commentOnComment2 = await CreateCommentAction.create(user.viewer, {
-    authorID: user2.id,
+    authorId: user2.id,
     body: "sup",
-    articleID: commentOnUser1.id,
+    articleId: commentOnUser1.id,
     articleType: commentOnUser1.nodeType,
   }).saveX();
   const commentOnComment3 = await CreateCommentAction.create(user.viewer, {
-    authorID: user3.id,
+    authorId: user3.id,
     body: "sup",
-    articleID: commentOnUser1.id,
+    articleId: commentOnUser1.id,
     articleType: commentOnUser1.nodeType,
   }).saveX();
 

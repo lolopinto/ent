@@ -21,8 +21,8 @@ import { GuestDataBuilder } from "src/ent/generated/guest_data/actions/guest_dat
 import { GuestDataSource } from "src/ent/generated/types";
 
 export interface GuestDataEditInput {
-  guestID?: ID | Builder<Guest, Viewer>;
-  eventID?: ID | Builder<Event, Viewer>;
+  guestId?: ID | Builder<Guest, Viewer>;
+  eventId?: ID | Builder<Event, Viewer>;
   dietaryRestrictions?: string;
   source?: GuestDataSource | null;
 }

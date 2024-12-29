@@ -20,7 +20,7 @@ import { ContactEmail } from "../../../../ent";
 import EditContactEmailAction, {
   ContactEmailEditInput,
 } from "../../../../ent/contact_email/actions/edit_contact_email_action";
-import { ContactInfoInputType } from "../input/contact_info_input_type";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
 import { ContactEmailType, ContactLabelType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -40,7 +40,7 @@ export const ContactEmailEditInputType = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLID),
     },
     extra: {
-      type: ContactInfoInputType,
+      type: ContactInfoExtraInputType,
     },
     emailAddress: {
       type: GraphQLString,

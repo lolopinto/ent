@@ -46,6 +46,10 @@ class EventActivityCanViewerDo {
     const action = EventActivityAddInviteAction.create(
       this.context.getViewer(),
       this.ent,
+      {
+        ...args,
+        test: args.test,
+      },
     );
     return applyPrivacyPolicy(
       this.context.getViewer(),
@@ -61,7 +65,7 @@ class EventActivityCanViewerDo {
       {
         ...args,
         rsvpStatus: args.rsvpStatus,
-        guestID: mustDecodeIDFromGQLID(args.guestID),
+        guestId: mustDecodeIDFromGQLID(args.guestId.toString()),
         dietaryRestrictions: args.dietaryRestrictions,
       },
     );
@@ -270,9 +274,15 @@ export const EventActivityCanViewerDoType = new GraphQLObjectType({
   > => ({
     eventActivityAddInvite: {
       type: new GraphQLNonNull(GraphQLBoolean),
+      args: {
+        test: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: async (
         obj: EventActivityCanViewerDo,
-        args: {},
+        args: any,
         context: RequestContext<Viewer>,
       ) => {
         return obj.eventActivityAddInvite(args);
@@ -285,7 +295,7 @@ export const EventActivityCanViewerDoType = new GraphQLObjectType({
           description: "",
           type: new GraphQLNonNull(EventActivityRsvpStatusInputType),
         },
-        guestID: {
+        guestId: {
           description: "",
           type: new GraphQLNonNull(GraphQLID),
         },

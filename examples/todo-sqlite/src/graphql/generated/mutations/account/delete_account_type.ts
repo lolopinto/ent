@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
-import DeleteAccountAction from "src/ent/account/actions/delete_account_action";
+import { DeleteAccountAction } from "src/ent/account/actions/delete_account_action";
 
 interface customDeleteAccountInput {
   id: string;

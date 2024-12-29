@@ -16,17 +16,21 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { Contact } from "../../../../ent";
 import CreateContactAction, {
   ContactCreateInput,
 } from "../../../../ent/contact/actions/create_contact_action";
-import { ContactInfoInputType } from "../input/contact_info_input_type";
+import { AttachmentInputType } from "../input/attachment_input_type";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
 import { ContactLabelType, ContactType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactCreateInput extends ContactCreateInput {
-  userID: string;
+  userId: string;
 }
 
 interface ContactCreatePayload {
@@ -37,7 +41,10 @@ export const EmailContactCreateInput = new GraphQLInputObjectType({
   name: "EmailContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     extra: {
-      type: ContactInfoInputType,
+      type: ContactInfoExtraInputType,
+    },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
     },
     emailAddress: {
       type: new GraphQLNonNull(GraphQLString),
@@ -52,7 +59,10 @@ export const PhoneNumberContactCreateInput = new GraphQLInputObjectType({
   name: "PhoneNumberContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     extra: {
-      type: ContactInfoInputType,
+      type: ContactInfoExtraInputType,
+    },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
     },
     phoneNumber: {
       type: new GraphQLNonNull(GraphQLString),
@@ -72,8 +82,11 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
     lastName: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    userID: {
+    userId: {
       type: new GraphQLNonNull(GraphQLID),
+    },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentInputType)),
     },
     emails: {
       type: new GraphQLList(new GraphQLNonNull(EmailContactCreateInput)),
@@ -117,7 +130,21 @@ export const ContactCreateType: GraphQLFieldConfig<
     const contact = await CreateContactAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,
-      userID: mustDecodeIDFromGQLID(input.userID),
+      userId: mustDecodeIDFromGQLID(input.userId.toString()),
+      attachments: input.attachments?.map((item: any) => ({
+        ...item,
+        fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+        dupeFileId: item.dupeFileId
+          ? mustDecodeNullableIDFromGQLID(
+              item.dupeFileId?.toString() ?? item.dupeFileId,
+            )
+          : undefined,
+        creatorId: item.creatorId
+          ? mustDecodeNullableIDFromGQLID(
+              item.creatorId?.toString() ?? item.creatorId,
+            )
+          : undefined,
+      })),
       emails: input.emails,
       phoneNumbers: input.phoneNumbers,
     }).saveX();

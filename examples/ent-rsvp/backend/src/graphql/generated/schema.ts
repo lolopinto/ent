@@ -14,6 +14,10 @@ import {
   AddressEditPayloadType,
 } from "src/graphql/generated/mutations/address/address_edit_type";
 import {
+  AuthAnyInputType,
+  AuthAnyPayloadType,
+} from "src/graphql/generated/mutations/auth_any_type";
+import {
   AuthGuestInputType,
   AuthGuestPayloadType,
 } from "src/graphql/generated/mutations/auth_guest_type";
@@ -105,7 +109,8 @@ import {
   GuestType,
   UserToEventsConnectionType,
   UserType,
-  ViewerTypeType,
+  ViewerType,
+  WithAddressType,
 } from "src/graphql/resolvers";
 
 export default new GraphQLSchema({
@@ -121,6 +126,7 @@ export default new GraphQLSchema({
     GuestGroupType,
     GuestType,
     UserType,
+    WithAddressType,
     AddressToLocatedAtConnectionType(),
     EventActivityToAttendingConnectionType(),
     EventActivityToDeclinedConnectionType(),
@@ -133,7 +139,9 @@ export default new GraphQLSchema({
     GuestToAttendingEventsConnectionType(),
     GuestToDeclinedEventsConnectionType(),
     UserToEventsConnectionType(),
-    ViewerTypeType,
+    ViewerType,
+    AuthAnyInputType,
+    AuthAnyPayloadType,
     AuthGuestInputType,
     AuthGuestPayloadType,
     AuthUserInputType,

@@ -14,7 +14,7 @@
   {{$tsFieldName := $field.TsBuilderFieldName -}}
 
   {{/* we magically expect a local variable input to be defined when this is used */ -}}
-  if (input.{{$tsFieldName}} !== undefined) {
+  if (input.{{$tsFieldName}} !== undefined || this.operation === WriteOperation.Delete) {
     if (input.{{$tsFieldName}}) {
       this.orchestrator.addInboundEdge(
         input.{{$tsFieldName}},
@@ -109,7 +109,7 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class {{$builder}}<
   TInput extends {{$input}} = {{$input}},
   TExistingEnt extends TMaybleNullableEnt<{{$node}}> = {{$node}} | null,
-> 
+>
 
 {{ if $hasBuilderMixin }}
   {{ range $mixinInfo.Imports -}}
@@ -143,7 +143,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     this.orchestrator = new {{useImport "Orchestrator"}}({
       viewer,
       operation: this.operation,
-      tableName: "{{.TableName}}", 
+      tableName: "{{.TableName}}",
       key: "id",
       loaderOptions: {{$node}}.loaderOptions(),
       builder: this,
@@ -186,14 +186,14 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     };
   }
 
-  {{ if $immutableFields}} 
+  {{ if $immutableFields}}
     {{ range $f := $immutableFields }}
       // override immutable field `{{$f.TsBuilderFieldName}}`
       {{$f.GetImmutableOverrideFieldNameInBuilder}}(val: {{$f.TsBuilderType $cfg}}) {
       this.input.{{$f.TsBuilderFieldName}} = val;
       }
     {{end }}
-  {{ end }} 
+  {{ end }}
 
 
   deleteInputKey(key: keyof {{.Node}}Input) {
@@ -303,11 +303,11 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
     {{ if $field.Private $cfg -}}
       {{/** hmm not ideal for these accessors to not work...*/ -}}
-      getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} | undefined{
+      {{$field.GetNewFieldValueName}}(): {{$field.TsBuilderUnionType $cfg}} | undefined{
         return this.input.{{$tsFieldName}};
       }
     {{ else -}}
-      getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} {
+      {{$field.GetNewFieldValueName}}(): {{$field.TsBuilderUnionType $cfg}} {
         if (this.input.{{$tsFieldName}} !== undefined) {
           return this.input.{{$tsFieldName}}
         }

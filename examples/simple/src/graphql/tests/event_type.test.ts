@@ -63,7 +63,7 @@ async function createEvent(options: Partial<EventCreateInput>): Promise<Event> {
   let vc = new ExampleViewer(user.id);
   return CreateEventAction.create(vc, {
     name: "event",
-    creatorID: user.id,
+    creatorId: user.id,
     startTime: new Date(),
     endTime: null,
     location: "location",
@@ -71,7 +71,7 @@ async function createEvent(options: Partial<EventCreateInput>): Promise<Event> {
   }).saveX();
 }
 
-test("event create nullable addressID", async () => {
+test("event create nullable addressId", async () => {
   const user = await createUser();
   await expectMutation(
     {
@@ -80,7 +80,7 @@ test("event create nullable addressID", async () => {
       mutation: "eventCreate",
       nullQueryPaths: ["event.address"],
       args: {
-        creatorID: encodeGQLID(user),
+        creatorId: encodeGQLID(user),
         startTime: new Date().toISOString(),
         name: "event",
         eventLocation: "location",
@@ -89,8 +89,8 @@ test("event create nullable addressID", async () => {
     [
       "event.id",
       async function (id: string) {
-        const eventID = mustDecodeIDFromGQLID(id);
-        await Event.loadX(new ExampleViewer(user.id), eventID);
+        const eventId = mustDecodeIDFromGQLID(id);
+        await Event.loadX(new ExampleViewer(user.id), eventId);
       },
     ],
     ["event.creator.id", encodeGQLID(user)],
@@ -100,7 +100,7 @@ test("event create nullable addressID", async () => {
   );
 });
 
-test("event create addressID passed", async () => {
+test("event create addressId passed", async () => {
   const user = await createUser();
   const address = await createAddress();
 
@@ -110,18 +110,18 @@ test("event create addressID passed", async () => {
       schema,
       mutation: "eventCreate",
       args: {
-        creatorID: encodeGQLID(user),
+        creatorId: encodeGQLID(user),
         startTime: new Date().toISOString(),
         name: "event",
         eventLocation: "location",
-        addressID: encodeGQLID(address),
+        addressId: encodeGQLID(address),
       },
     },
     [
       "event.id",
       async function (id: string) {
-        const eventID = mustDecodeIDFromGQLID(id);
-        await Event.loadX(new ExampleViewer(user.id), eventID);
+        const eventId = mustDecodeIDFromGQLID(id);
+        await Event.loadX(new ExampleViewer(user.id), eventId);
       },
     ],
     ["event.creator.id", encodeGQLID(user)],
@@ -156,7 +156,7 @@ test("event edit", async () => {
       mutation: "eventEdit",
       args: {
         id: encodeGQLID(event),
-        addressID: encodeGQLID(address),
+        addressId: encodeGQLID(address),
       },
     },
     ["event.id", encodeGQLID(event)],
@@ -171,7 +171,7 @@ test("event edit", async () => {
       nullQueryPaths: ["event.address"],
       args: {
         id: encodeGQLID(event),
-        addressID: null,
+        addressId: null,
       },
     },
     ["event.id", encodeGQLID(event)],
@@ -249,7 +249,7 @@ test("event rsvp status edit", async () => {
       schema,
       args: {
         id: encodeGQLID(event),
-        userID: encodeGQLID(user),
+        userId: encodeGQLID(user),
         rsvpStatus: "MAYBE",
       },
       viewer: user.viewer,
@@ -268,7 +268,7 @@ test("event rsvp status edit", async () => {
       schema,
       args: {
         id: encodeGQLID(event),
-        userID: encodeGQLID(user),
+        userId: encodeGQLID(user),
       },
       viewer: user.viewer,
     },
@@ -285,7 +285,7 @@ test("can_viewer_see", async () => {
   const address = await createAddress();
   const event = await createEvent({
     endTime: new Date(Date.now() + 86400),
-    addressID: address.id,
+    addressId: address.id,
   });
   const user = await event.loadCreatorX();
   const user2 = await createUser();

@@ -166,7 +166,7 @@ export const FakeContactSchema = getBuilderSchemaFromFields(
     lastName: StringType(),
     emailAddress: StringType(),
     userID: UUIDType({
-      foreignKey: { schema: "User", column: "ID" },
+      foreignKey: { schema: "User", column: "id" },
     }),
   },
   FakeContact,
@@ -178,7 +178,7 @@ export const FakeContactSchemaWithDeletedAt = getBuilderSchemaFromFields(
     lastName: StringType(),
     emailAddress: StringType(),
     userID: UUIDType({
-      foreignKey: { schema: "User", column: "ID" },
+      foreignKey: { schema: "User", column: "id" },
     }),
   },
   FakeContact,

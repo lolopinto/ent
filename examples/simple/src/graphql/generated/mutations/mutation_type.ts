@@ -24,19 +24,26 @@ import { EventEditType } from "./event/event_edit_type";
 import { EventRemoveHostType } from "./event/event_remove_host_type";
 import { EventRsvpStatusClearType } from "./event/event_rsvp_status_clear_type";
 import { EventRsvpStatusEditType } from "./event/event_rsvp_status_edit_type";
+import { FileCreateType } from "./file/file_create_type";
+import { FileDeleteType } from "./file/file_delete_type";
+import { FileEditType } from "./file/file_edit_type";
 import { HolidayCreateType } from "./holiday/holiday_create_type";
 import { HolidayCustomEditType } from "./holiday/holiday_custom_edit_type";
 import { HoursOfOperationCreateType } from "./hours_of_operation/hours_of_operation_create_type";
+import { PhoneAvailableType } from "./phone_available_type";
 import { ConfirmEmailAddressEditType } from "./user/confirm_email_address_edit_type";
 import { ConfirmPhoneNumberEditType } from "./user/confirm_phone_number_edit_type";
 import { EmailAddressEditType } from "./user/email_address_edit_type";
 import { PhoneNumberEditType } from "./user/phone_number_edit_type";
 import { UserCreateType } from "./user/user_create_type";
-import { UserDelete2Type } from "./user/user_delete_2_type";
+import { UserDelete2Type } from "./user/user_delete2_type";
 import { UserDeleteType } from "./user/user_delete_type";
 import { UserEditType } from "./user/user_edit_type";
 import { UserAuthJWTType } from "./user_auth_jwt_type";
 import { UserAuthType } from "./user_auth_type";
+import { UserStatisticsCreateType } from "./user_statistics/user_statistics_create_type";
+import { UserStatisticsDeleteType } from "./user_statistics/user_statistics_delete_type";
+import { UserStatisticsEditType } from "./user_statistics/user_statistics_edit_type";
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
@@ -64,9 +71,13 @@ export const MutationType = new GraphQLObjectType({
     eventRemoveHost: EventRemoveHostType,
     eventRsvpStatusClear: EventRsvpStatusClearType,
     eventRsvpStatusEdit: EventRsvpStatusEditType,
+    fileCreate: FileCreateType,
+    fileDelete: FileDeleteType,
+    fileEdit: FileEditType,
     holidayCreate: HolidayCreateType,
     holidayCustomEdit: HolidayCustomEditType,
     hoursOfOperationCreate: HoursOfOperationCreateType,
+    phoneAvailable: PhoneAvailableType,
     phoneNumberEdit: PhoneNumberEditType,
     userAuth: UserAuthType,
     userAuthJWT: UserAuthJWTType,
@@ -74,5 +85,8 @@ export const MutationType = new GraphQLObjectType({
     userDelete: UserDeleteType,
     userDelete2: UserDelete2Type,
     userEdit: UserEditType,
+    userStatisticsCreate: UserStatisticsCreateType,
+    userStatisticsDelete: UserStatisticsDeleteType,
+    userStatisticsEdit: UserStatisticsEditType,
   }),
 });

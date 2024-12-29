@@ -17,10 +17,7 @@
   {{reserveImportPath . false}}
 {{ end}}
 
-
-interface {{$p.GetMixinWithInterfaceName}} extends {{useImport "Ent"}}<{{$viewerType}}>, {{useImport $p.GetMixinInterfaceName}} {}
-
-interface {{$p.GetBuilderInterfaceName}}<T extends {{$p.GetMixinWithInterfaceName}}> {
+export interface {{$p.GetBuilderInterfaceName}}<T extends {{useImport $p.GetMixinInterfaceName}}> {
   {{/* if the logic in here changes, also have to update edge_builder.tmpl */ -}}
   {{ $edgeInfos := edgeInfos $p.GetSortedEdges -}}
   {{ range $edge := $edgeInfos -}}  
@@ -45,8 +42,10 @@ interface {{$p.GetBuilderInterfaceName}}<T extends {{$p.GetMixinWithInterfaceNam
 
 {{$builderName := printf "%sIsh" $p.GetBuilderName }}
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-interface BuilderConstructor<T extends {{$p.GetMixinWithInterfaceName}} , C = {}> {
+// come back
+type Constructor<T extends {{$p.GetMixinInterfaceName}}<{{$viewerType}}> = {{$p.GetMixinInterfaceName}}<{{$viewerType}}>> = new (...args: any[]) => T;
+
+interface BuilderConstructor<T extends {{$p.GetMixinInterfaceName}}<{{$viewerType}}>, C = {}> {
   orchestrator: {{useImport "Orchestrator"}}<T, any, {{$viewerType}}>;
   isBuilder<T extends {{useImport "Ent"}}>(
     node: {{useImport "ID"}} | T | {{useImport "Builder"}}<T, any>,
@@ -55,13 +54,14 @@ interface BuilderConstructor<T extends {{$p.GetMixinWithInterfaceName}} , C = {}
 
 {{$ishName := printf "%sIsh" $p.GetBuilderName -}} 
 
-type {{$ishName}}<T extends {{$p.GetMixinWithInterfaceName}} > = Constructor<
+export type {{$ishName}}<T extends {{$p.GetMixinInterfaceName}}<{{$viewerType}}>> = Constructor<
+  // @ts-ignore TODO fix
   BuilderConstructor<T>
 >;
 
 
 export function {{$p.GetBuilderName}}<
-  TEnt extends {{$p.GetMixinWithInterfaceName}},
+  TEnt extends {{$p.GetMixinInterfaceName}}<{{$viewerType}}>,
   TBase extends {{$ishName}}<TEnt>,
 >(BaseClass: TBase) {
   return class {{$p.GetBuilderName}}

@@ -20,12 +20,16 @@ export enum NodeType {
   ContactPhoneNumber = "contactPhoneNumber",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
   Event = "event",
+  // File is the node type for the File object. Used to identify this node in edges and other places.
+  File = "file",
   // Holiday is the node type for the Holiday object. Used to identify this node in edges and other places.
   Holiday = "holiday",
   // HoursOfOperation is the node type for the HoursOfOperation object. Used to identify this node in edges and other places.
   HoursOfOperation = "hoursOfOperation",
   // User is the node type for the User object. Used to identify this node in edges and other places.
   User = "user",
+  // UserStatistics is the node type for the UserStatistics object. Used to identify this node in edges and other places.
+  UserStatistics = "userStatistics",
 }
 
 export enum EdgeType {
@@ -33,6 +37,8 @@ export enum EdgeType {
   AddressToHostedEvents = "d1979d4b-d033-4562-b078-cc528fec25bb",
   // CommentToPost is the edgeType for the comment to post edge.
   CommentToPost = "f430af94-d38a-4aaa-a92f-cfc56b6f811b",
+  // ContactToSelfContactForUser is the edgeType for the contact to selfcontactforuser edge.
+  ContactToSelfContactForUser = "71483ce5-06f3-4468-bf05-afecd3a430e2",
   // EventToAttending is the edgeType for the event to attending edge.
   EventToAttending = "6ebc0c47-ea29-4635-b991-95e44162174d",
   // EventToDeclined is the edgeType for the event to declined edge.
@@ -721,7 +727,51 @@ export function convertNullableUserPreferredShiftList(
   return convertUserPreferredShiftList(val);
 }
 
-export interface ContactInfo {
+export interface Attachment {
+  fileId: ID;
+  dupeFileId?: ID | null;
+  note?: string | null;
+  date: Date;
+  phoneNumber?: string | null;
+  emailAddress?: string | null;
+  creatorId?: ID | null;
+  creatorType?: string | null;
+}
+
+export function convertAttachment(input: any): Attachment {
+  return {
+    fileId: input.file_id,
+    dupeFileId: input.dupe_file_id,
+    note: input.note,
+    date: input.date,
+    phoneNumber: input.phone_number,
+    emailAddress: input.email_address,
+    creatorId: input.creator_id,
+    creatorType: input.creator_type,
+  };
+}
+
+export function convertNullableAttachment(input: any): Attachment | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertAttachment(input);
+}
+
+export function convertAttachmentList(input: any[]): Attachment[] {
+  return input.map((v) => convertAttachment(v));
+}
+
+export function convertNullableAttachmentList(
+  input: any[] | null,
+): Attachment[] | null {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  return input.map((v) => convertAttachment(v));
+}
+
+export interface ContactInfoExtra {
   default: boolean;
   source: ContactInfoSource;
 }
@@ -778,6 +828,8 @@ export interface UserPrefsStruct {
   finishedNux?: boolean | null;
   enableNotifs?: boolean | null;
   notifTypes: NotifType[];
+  homeAddressId?: ID | null;
+  allAddressIds?: ID[] | null;
 }
 
 export function convertUserPrefsStruct(input: any): UserPrefsStruct {
@@ -785,6 +837,8 @@ export function convertUserPrefsStruct(input: any): UserPrefsStruct {
     finishedNux: input.finished_nux,
     enableNotifs: input.enable_notifs,
     notifTypes: input.notif_types,
+    homeAddressId: input.home_address_id,
+    allAddressIds: input.all_address_ids,
   };
 }
 

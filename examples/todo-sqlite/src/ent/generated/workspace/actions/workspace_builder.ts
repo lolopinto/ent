@@ -20,6 +20,9 @@ import { EdgeType, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/workspace_schema";
 
 export interface WorkspaceInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   deletedAt?: Date | null;
   name?: string;
   slug?: string;
@@ -103,22 +106,25 @@ export class WorkspaceBuilder<
   }
 
   updateInput(input: WorkspaceInput) {
-    // input.viewerCreatorID default value is being set, also set inverseEdge
-    if (input.viewerCreatorID !== undefined) {
-      if (input.viewerCreatorID) {
+    // input.viewerCreatorId default value is being set, also set inverseEdge
+    if (
+      input.viewerCreatorId !== undefined ||
+      this.operation === WriteOperation.Delete
+    ) {
+      if (input.viewerCreatorId) {
         this.orchestrator.addInboundEdge(
-          input.viewerCreatorID,
+          input.viewerCreatorId,
           EdgeType.AccountToCreatedWorkspaces,
           NodeType.Account,
         );
       }
       if (
         this.existingEnt &&
-        this.existingEnt.viewerCreatorID &&
-        this.existingEnt.viewerCreatorID !== input.viewerCreatorID
+        this.existingEnt.viewerCreatorId &&
+        this.existingEnt.viewerCreatorId !== input.viewerCreatorId
       ) {
         this.orchestrator.removeInboundEdge(
-          this.existingEnt.viewerCreatorID,
+          this.existingEnt.viewerCreatorId,
           EdgeType.AccountToCreatedWorkspaces,
         );
       }
@@ -254,6 +260,9 @@ export class WorkspaceBuilder<
         result.set(key, value);
       }
     };
+    addField("id", input.id);
+    addField("createdAt", input.createdAt);
+    addField("updatedAt", input.updatedAt);
     addField("deleted_at", input.deletedAt);
     addField("name", input.name);
     addField("slug", input.slug);
@@ -264,6 +273,48 @@ export class WorkspaceBuilder<
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any> {
     return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+
+  // get value of id. Retrieves it from the input if specified or takes it from existingEnt
+  getNewIdValue(): ID {
+    if (this.input.id !== undefined) {
+      return this.input.id;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `id` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.id;
+  }
+
+  // get value of createdAt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCreatedAtValue(): Date {
+    if (this.input.createdAt !== undefined) {
+      return this.input.createdAt;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `createdAt` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.createdAt;
+  }
+
+  // get value of updatedAt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewUpdatedAtValue(): Date {
+    if (this.input.updatedAt !== undefined) {
+      return this.input.updatedAt;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `updatedAt` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.updatedAt;
   }
 
   // get value of deleted_at. Retrieves it from the input if specified or takes it from existingEnt

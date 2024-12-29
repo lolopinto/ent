@@ -226,6 +226,10 @@ func TestParseEdges(t *testing.T) {
 							edgeActions: [
 								{
 									operation: ActionOperation.AddEdge,
+									actionOnlyFields: [{
+										name: "blah",
+										type: "String",
+									}],
 								},
 								{
 									operation: ActionOperation.RemoveEdge,
@@ -246,6 +250,12 @@ func TestParseEdges(t *testing.T) {
 							edgeActions: []action{
 								{
 									operation: ent.AddEdgeAction,
+									actionOnlyFields: []actionField{
+										{
+											name: "blah",
+											typ:  input.ActionTypeString,
+										},
+									},
 								},
 								{
 									operation:   ent.RemoveEdgeAction,

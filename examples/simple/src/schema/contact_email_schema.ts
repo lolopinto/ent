@@ -1,28 +1,15 @@
-import {
-  ActionOperation,
-  EntSchema,
-  EnumType,
-  UUIDType,
-} from "@snowtop/ent/schema/";
+import { ActionOperation, EntSchema, EnumType } from "@snowtop/ent/schema/";
 import { EmailType } from "@snowtop/ent-email";
-import { getLoaderInfoFromSchema } from "../ent/generated/loaders";
 import ContactInfo from "./patterns/contact_info";
+import Feedback from "./patterns/feedback";
 
 const ContactEmailSchema = new EntSchema({
-  patterns: [new ContactInfo()],
+  patterns: [new ContactInfo(), new Feedback()],
 
   fields: {
     emailAddress: EmailType(),
     label: EnumType({
       globalType: "ContactLabel",
-    }),
-    contactID: UUIDType({
-      immutable: true,
-      fieldEdge: {
-        schema: "Contact",
-        enforceSchema: true,
-        getLoaderInfoFromSchema: getLoaderInfoFromSchema,
-      },
     }),
   },
 

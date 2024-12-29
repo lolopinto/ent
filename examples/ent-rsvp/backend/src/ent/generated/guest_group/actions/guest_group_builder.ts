@@ -19,7 +19,7 @@ import schema from "src/schema/guest_group_schema";
 
 export interface GuestGroupInput {
   invitationName?: string;
-  eventID?: ID | Builder<Event, Viewer>;
+  eventId?: ID | Builder<Event, Viewer>;
   tag?: GuestTag | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -217,7 +217,7 @@ export class GuestGroupBuilder<
       }
     };
     addField("InvitationName", input.invitationName);
-    addField("EventID", input.eventID);
+    addField("EventID", input.eventId);
     addField("tag", input.tag);
     return result;
   }
@@ -243,17 +243,17 @@ export class GuestGroupBuilder<
   }
 
   // get value of EventID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEventIDValue(): ID | Builder<Event, Viewer> {
-    if (this.input.eventID !== undefined) {
-      return this.input.eventID;
+  getNewEventIdValue(): ID | Builder<Event, Viewer> {
+    if (this.input.eventId !== undefined) {
+      return this.input.eventId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `eventID` since not in input and no existingEnt",
+        "no value to return for `eventId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.eventID;
+    return this.existingEnt.eventId;
   }
 
   // get value of tag. Retrieves it from the input if specified or takes it from existingEnt

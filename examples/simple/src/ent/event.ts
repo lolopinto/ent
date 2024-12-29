@@ -1,3 +1,4 @@
+import { gqlField } from "@snowtop/ent/graphql";
 import { EventBase } from "./internal";
 import { PrivacyPolicy, AlwaysAllowRule } from "@snowtop/ent";
 
@@ -7,5 +8,14 @@ export class Event extends EventBase {
     return {
       rules: [AlwaysAllowRule],
     };
+  }
+
+  @gqlField({
+    class: "Event",
+    name: "cities",
+    type: "[City]",
+  })
+  getCities() {
+    return [];
   }
 }

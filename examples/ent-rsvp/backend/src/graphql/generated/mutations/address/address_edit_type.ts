@@ -24,7 +24,7 @@ import { AddressType } from "src/graphql/resolvers/";
 
 interface customAddressEditInput extends AddressEditInput {
   id: string;
-  ownerID?: string;
+  ownerId?: string;
 }
 
 interface AddressEditPayload {
@@ -53,7 +53,7 @@ export const AddressEditInputType = new GraphQLInputObjectType({
     apartment: {
       type: GraphQLString,
     },
-    ownerID: {
+    ownerId: {
       type: GraphQLID,
     },
     ownerType: {
@@ -101,7 +101,9 @@ export const AddressEditType: GraphQLFieldConfig<
         state: input.state,
         zipCode: input.zipCode,
         apartment: input.apartment,
-        ownerID: mustDecodeNullableIDFromGQLID(input.ownerID),
+        ownerId: mustDecodeNullableIDFromGQLID(
+          input.ownerId?.toString() ?? input.ownerId,
+        ),
         ownerType: input.ownerType,
       },
     );

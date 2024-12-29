@@ -27,8 +27,8 @@ export default class CreateContactAction extends CreateContactActionBase {
     return {
       rules: [
         AllowIfViewerRule,
-        new AllowIfViewerEqualsRule(this.input.userID),
-        new AllowIfBuilder(this.input.userID),
+        new AllowIfViewerEqualsRule(this.input.userId),
+        new AllowIfBuilder(this.input.userId),
         AlwaysDenyRule,
       ],
     };
@@ -53,7 +53,8 @@ export default class CreateContactAction extends CreateContactActionBase {
               const action = CreateContactEmailAction.create(builder.viewer, {
                 emailAddress: email.emailAddress,
                 label: email.label,
-                contactID: builder,
+                contactId: builder,
+                ownerId: input.userId,
                 extra: email.extra,
               });
               const newId = await action.builder.getEntID();
@@ -81,7 +82,8 @@ export default class CreateContactAction extends CreateContactActionBase {
                 {
                   phoneNumber: phone.phoneNumber,
                   label: phone.label,
-                  contactID: builder,
+                  contactId: builder,
+                  ownerId: input.userId,
                   extra: phone.extra,
                 },
               );

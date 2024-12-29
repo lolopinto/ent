@@ -20,17 +20,19 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, User } from "../../..";
 import { ContactBuilder } from "./contact_builder";
-import { ContactInfo, ContactLabel } from "../../types";
+import { Attachment, ContactInfoExtra, ContactLabel } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEmailInput {
-  extra?: ContactInfo | null;
+  extra?: ContactInfoExtra | null;
+  ownerId: ID | Builder<User, ExampleViewerAlias>;
   emailAddress: string;
   label: ContactLabel;
 }
 
 interface customPhoneNumberInput {
-  extra?: ContactInfo | null;
+  extra?: ContactInfoExtra | null;
+  ownerId: ID | Builder<User, ExampleViewerAlias>;
   phoneNumber: string;
   label: ContactLabel;
 }
@@ -38,7 +40,8 @@ interface customPhoneNumberInput {
 export interface ContactCreateInput {
   firstName: string;
   lastName: string;
-  userID: ID | Builder<User, ExampleViewerAlias>;
+  userId: ID | Builder<User, ExampleViewerAlias>;
+  attachments?: Attachment[] | null;
   emails?: customEmailInput[] | null;
   phoneNumbers?: customPhoneNumberInput[] | null;
 }

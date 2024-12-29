@@ -25,17 +25,19 @@ import {
   ContactToLikersQuery,
 } from "../../../ent";
 import {
+  AttachmentType,
   ContactCommentsFromAttachmentConnectionType,
   ContactEmailType,
   ContactItemFilterType,
   ContactItemResultType,
   ContactPhoneNumberType,
   ContactToCommentsConnectionType,
+  ContactToFilterContactEmailsConnectionType,
   ContactToLikersConnectionType,
+  EmailInfoType,
   UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { EmailInfo } from "../../../ent/contact_types";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
@@ -86,6 +88,9 @@ export const ContactType = new GraphQLObjectType({
     },
     lastName: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentType)),
     },
     comments: {
       type: new GraphQLNonNull(ContactToCommentsConnectionType()),
@@ -217,36 +222,46 @@ export const ContactType = new GraphQLObjectType({
         return obj.queryContactItems(args.filter);
       },
     },
+    filterContactEmails: {
+      type: new GraphQLNonNull(ContactToFilterContactEmailsConnectionType()),
+      args: {
+        filter: {
+          description: "",
+          type: ContactItemFilterType,
+        },
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        obj: Contact,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: Contact) => obj.emailsBylabel(args.filter),
+          args,
+        );
+      },
+    },
   }),
   interfaces: () => [GraphQLNodeInterface],
   isTypeOf(obj) {
     return obj instanceof Contact;
-  },
-});
-
-export const EmailInfoType = new GraphQLObjectType({
-  name: "EmailInfo",
-  fields: (): GraphQLFieldConfigMap<
-    EmailInfo,
-    RequestContext<ExampleViewerAlias>
-  > => ({
-    emails: {
-      type: new GraphQLNonNull(
-        new GraphQLList(new GraphQLNonNull(ContactEmailType)),
-      ),
-    },
-    firstEmail: {
-      type: new GraphQLNonNull(GraphQLString),
-      resolve: (
-        obj: EmailInfo,
-        args: {},
-        context: RequestContext<ExampleViewerAlias>,
-      ) => {
-        return obj.email1;
-      },
-    },
-  }),
-  isTypeOf(obj) {
-    return obj instanceof EmailInfo;
   },
 });

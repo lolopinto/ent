@@ -11,8 +11,8 @@ import {
 import { AllowIfEventCreatorRule } from "src/ent/event/privacy/event_creator";
 
 class AllowIfGuestInGuestGroupRule implements PrivacyPolicyRule {
-  async apply(viewer: Viewer, ent: Ent) {
-    if (!viewer.viewerID) {
+  async apply(viewer: Viewer, ent: GuestGroup | undefined) {
+    if (!viewer.viewerID || !ent) {
       return Skip();
     }
     const data = await Guest.loadRawData(viewer.viewerID, viewer.context);
@@ -31,7 +31,7 @@ export class GuestGroup extends GuestGroupBase {
     return {
       rules: [
         // can view guest group if creator of event
-        new AllowIfEventCreatorRule(this.eventID),
+        new AllowIfEventCreatorRule(this.eventId),
         // can view guest group if guest
         new AllowIfGuestInGuestGroupRule(),
         AlwaysDenyRule,

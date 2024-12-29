@@ -22,7 +22,7 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
   AuthCodeDBData,
-  authCodeGuestIDLoader,
+  authCodeGuestIdLoader,
   authCodeLoader,
   authCodeLoaderInfo,
 } from "src/ent/generated/loaders";
@@ -37,16 +37,19 @@ export class AuthCodeBase implements Ent<Viewer> {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly code: string;
-  readonly guestID: ID;
+  readonly guestId: ID;
   readonly emailAddress: string;
   readonly sentCode: boolean;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.code = data.code;
-    this.guestID = data.guest_id;
+    this.guestId = data.guest_id;
     this.emailAddress = data.email_address;
     this.sentCode = data.sent_code;
     // @ts-expect-error
@@ -188,55 +191,55 @@ export class AuthCodeBase implements Ent<Viewer> {
     return row;
   }
 
-  static async loadFromGuestID<T extends AuthCodeBase>(
+  static async loadFromGuestId<T extends AuthCodeBase>(
     this: new (
       viewer: Viewer,
       data: Data,
     ) => T,
     viewer: Viewer,
-    guestID: ID,
+    guestId: ID,
   ): Promise<T | null> {
-    return (await loadEntViaKey(viewer, guestID, {
+    return (await loadEntViaKey(viewer, guestId, {
       ...AuthCodeBase.loaderOptions.apply(this),
-      loaderFactory: authCodeGuestIDLoader,
+      loaderFactory: authCodeGuestIdLoader,
     })) as T | null;
   }
 
-  static async loadFromGuestIDX<T extends AuthCodeBase>(
+  static async loadFromGuestIdX<T extends AuthCodeBase>(
     this: new (
       viewer: Viewer,
       data: Data,
     ) => T,
     viewer: Viewer,
-    guestID: ID,
+    guestId: ID,
   ): Promise<T> {
-    return (await loadEntXViaKey(viewer, guestID, {
+    return (await loadEntXViaKey(viewer, guestId, {
       ...AuthCodeBase.loaderOptions.apply(this),
-      loaderFactory: authCodeGuestIDLoader,
+      loaderFactory: authCodeGuestIdLoader,
     })) as T;
   }
 
-  static async loadIDFromGuestID<T extends AuthCodeBase>(
+  static async loadIdFromGuestId<T extends AuthCodeBase>(
     this: new (
       viewer: Viewer,
       data: Data,
     ) => T,
-    guestID: ID,
+    guestId: ID,
     context?: Context,
   ): Promise<ID | undefined> {
-    const row = await authCodeGuestIDLoader.createLoader(context).load(guestID);
+    const row = await authCodeGuestIdLoader.createLoader(context).load(guestId);
     return row?.id;
   }
 
-  static async loadRawDataFromGuestID<T extends AuthCodeBase>(
+  static async loadRawDataFromGuestId<T extends AuthCodeBase>(
     this: new (
       viewer: Viewer,
       data: Data,
     ) => T,
-    guestID: ID,
+    guestId: ID,
     context?: Context,
   ): Promise<AuthCodeDBData | null> {
-    return authCodeGuestIDLoader.createLoader(context).load(guestID);
+    return authCodeGuestIdLoader.createLoader(context).load(guestId);
   }
 
   static loaderOptions<T extends AuthCodeBase>(
@@ -267,10 +270,10 @@ export class AuthCodeBase implements Ent<Viewer> {
   }
 
   async loadGuest(): Promise<Guest | null> {
-    return loadEnt(this.viewer, this.guestID, Guest.loaderOptions());
+    return loadEnt(this.viewer, this.guestId, Guest.loaderOptions());
   }
 
   loadGuestX(): Promise<Guest> {
-    return loadEntX(this.viewer, this.guestID, Guest.loaderOptions());
+    return loadEntX(this.viewer, this.guestId, Guest.loaderOptions());
   }
 }

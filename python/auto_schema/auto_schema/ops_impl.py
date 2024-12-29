@@ -1,4 +1,4 @@
-from typing import Any, List, Union
+from typing import Any
 
 from . import ops
 import uuid
@@ -23,22 +23,24 @@ class exact(object):
 
 def _sql_version(val):
     # for sql mode, need to convert to values that can run from sql script
-    if val is None:
-        return 'NULL'
-    if val is True:
-        return 'true'
-    if val is False:
-        return 'false'
-    if isinstance(val, exact):
-        return val.val
-    return "%r" % val
+    match val:
+        case None:
+            return 'NULL'
+        case True:
+            return 'true'
+        case False:
+            return 'false'
+        case exact():
+            return val.val
+        case _:
+            return f"{val!r}"
 
 
 # need to use manual insert statement because of sql mode
 def _exec_insert_statement(
     operations: ops.Operations,
     table: sa.Table,
-    data: Union[List[dict], dict],
+    data: list[dict] | dict,
     modify_fn=None,
     on_conflict_do_nothing=False,
 ):
@@ -60,10 +62,11 @@ def _exec_insert_statement(
             curr_values.append(_sql_version(v))
 
         keys_init = True
-        values.append("(%s)" % ", ".join(curr_values))
+        values.append(f"({', '.join(curr_values)})")
 
-    stmt = "INSERT INTO %s(%s) VALUES%s" % (
-        table.name, ", ".join(keys), ",\n".join(values))
+    keys_val = ", ".join(keys)
+    vals = ",\n".join(values)
+    stmt = f"INSERT INTO {table.name}({keys_val}) VALUES{vals}" 
 
     connection = operations.get_bind()
     dialect = connection.dialect.name
@@ -85,8 +88,8 @@ def date(operations: ops.Operations):
 
 def _exec_delete_statement(operations: ops.Operations,
                            table: sa.Table,
-                           pkeys: List[str],
-                           data: List[Any],
+                           pkeys: list[str],
+                           data: list[Any],
                            ):
 
     connection = operations.get_bind()
@@ -95,11 +98,10 @@ def _exec_delete_statement(operations: ops.Operations,
         pkey = pkeys[0]
         keys = [row[pkey] for row in data]
         if len(keys) == 1:
-            stmt = 'DELETE FROM %s WHERE %s = %s' % (
-                table.name, pkey, _sql_version(keys[0]))
+            stmt = f"DELETE FROM {table.name} WHERE {pkey} = {_sql_version(keys[0])}"
         else:
-            stmt = 'DELETE FROM %s WHERE %s IN (%s)' % (table.name, pkey, ", ".join(
-                [_sql_version(key) for key in keys]))
+            vals = ", ".join([_sql_version(key) for key in keys])
+            stmt = f"DELETE FROM {table.name} WHERE {pkey} IN ({vals})"
 
         connection.execute(
             sa.text(stmt),
@@ -110,17 +112,16 @@ def _exec_delete_statement(operations: ops.Operations,
         for row in data:
             clauses = []
             for pkey in pkeys:
-                clauses.append('%s = %s' % (pkey, _sql_version(row[pkey])))
+                clauses.append(f"{pkey} = {_sql_version(row[pkey])}")
 
-            stmt = 'DELETE FROM %s WHERE %s ' % (
-                table.name, ' AND '.join(clauses))
+            stmt = f"DELETE FROM {table.name} WHERE {' AND '.join(clauses)}"
             connection.execute(sa.text(stmt))
 
 
 def _exec_update_statement(operations: ops.Operations,
                            table: sa.Table,
-                           pkeys: List[str],
-                           data: List[Any],
+                           pkeys: list[str],
+                           data: list[Any],
                            ):
     connection = operations.get_bind()
 
@@ -128,13 +129,12 @@ def _exec_update_statement(operations: ops.Operations,
         clauses = []
         values = []
         for pkey in pkeys:
-            clauses.append('%s = %s' % (pkey, _sql_version(row[pkey])))
+            clauses.append(f"{pkey} = {_sql_version(row[pkey])}")
 
         for k, v in row.items():
-            values.append('%s = %s' % (k, _sql_version(v)))
+            values.append(f"{k} = {_sql_version(v)}")
 
-        stmt = 'UPDATE %s SET %s WHERE %s' % (
-            table.name, ", ".join(values), ' AND '.join(clauses))
+        stmt = f"UPDATE {table.name} SET {', '.join(values)} WHERE {' AND '.join(clauses)}"
 
         connection.execute(
             sa.text(stmt),
@@ -215,30 +215,28 @@ def alter_enum(operations: ops.Operations, operation: ops.AlterEnumOp):
     if operation.before is None:
         connection.execute(
             sa.text(
-                "ALTER TYPE %s ADD VALUE '%s'" % (
-                    operation.enum_name, operation.value)
+                f"ALTER TYPE {operation.enum_name} ADD VALUE '{operation.value}'"
             )
         )
     else:
         connection.execute(
             sa.text(
-                "ALTER TYPE %s ADD VALUE '%s' BEFORE '%s'" % (
-                    operation.enum_name, operation.value, operation.before)
+                f"ALTER TYPE {operation.enum_name} ADD VALUE '{operation.value}' BEFORE '{operation.before}'"
             )
         )
 
 
 @ Operations.implementation_for(ops.AddEnumOp)
 def add_enum_type(operations: ops.Operations, operation: ops.AddEnumOp):
-    stmt = 'CREATE TYPE %s AS ENUM (%s)' % (
-        operation.enum_name, ', '.join([_sql_version(v) for v in operation.values]))
+    values = ', '.join([_sql_version(v) for v in operation.values])
+    stmt = f"CREATE TYPE {operation.enum_name} AS ENUM ({values})"
     connection = operations.get_bind()
     connection.execute(sa.text(stmt))
 
 
 @ Operations.implementation_for(ops.DropEnumOp)
 def drop_enum_type(operations: ops.Operations, operation: ops.DropEnumOp):
-    stmt = 'DROP TYPE %s' % operation.enum_name
+    stmt = f"DROP TYPE {operation.enum_name}"
     connection = operations.get_bind()
     connection.execute(sa.text(stmt))
 
@@ -246,15 +244,13 @@ def drop_enum_type(operations: ops.Operations, operation: ops.DropEnumOp):
 @ Operations.implementation_for(ops.CreateFullTextIndexOp)
 def create_full_text_index(operations: ops.Operations, operation: ops.CreateFullTextIndexOp):
     connection = operations.get_bind()
+    index_name = operation.index_name
+    table_name = operation.table_name
+    using = operation.kw.get('info').get('postgresql_using')
+    using_internals = operation.kw.get('info').get('postgresql_using_internals')
     connection.execute(
         sa.text(
-            "CREATE INDEX %(index_name)s ON %(table_name)s USING %(using)s (%(using_internals)s)" % {
-                'index_name': operation.index_name,
-                'table_name': operation.table_name,
-                'using': operation.kw.get('info').get('postgresql_using'),
-                # TODO should this work if empty?
-                'using_internals': operation.kw.get('info').get('postgresql_using_internals'),
-            }
+            f"CREATE INDEX {index_name} ON {table_name} USING {using} ({using_internals})"
         )
     )
 
@@ -264,7 +260,7 @@ def create_full_text_index(operations: ops.Operations, operation: ops.DropFullTe
     connection = operations.get_bind()
     connection.execute(
         sa.text(
-            "DROP INDEX %s" % operation.index_name
+            f"DROP INDEX {operation.index_name}"
         )
     )
 

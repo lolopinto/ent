@@ -8,16 +8,16 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { GuestType, UserType } from "src/graphql/resolvers/internal";
-import ViewerResolver from "../../resolvers/viewer";
-import { ViewerType } from "../../resolvers/viewer_type";
+import ViewerResolver from "src/graphql/resolvers/viewer";
+import { GraphQLViewer } from "src/graphql/resolvers/viewer_type";
 
-export const ViewerTypeType = new GraphQLObjectType({
+export const ViewerType = new GraphQLObjectType({
   name: "Viewer",
-  fields: (): GraphQLFieldConfigMap<ViewerType, RequestContext<Viewer>> => ({
+  fields: (): GraphQLFieldConfigMap<GraphQLViewer, RequestContext<Viewer>> => ({
     user: {
       type: UserType,
       resolve: async (
-        obj: ViewerType,
+        obj: GraphQLViewer,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
@@ -27,7 +27,7 @@ export const ViewerTypeType = new GraphQLObjectType({
     guest: {
       type: GuestType,
       resolve: async (
-        obj: ViewerType,
+        obj: GraphQLViewer,
         args: {},
         context: RequestContext<Viewer>,
       ) => {
@@ -36,7 +36,7 @@ export const ViewerTypeType = new GraphQLObjectType({
     },
   }),
   isTypeOf(obj) {
-    return obj instanceof ViewerType;
+    return obj instanceof GraphQLViewer;
   },
 });
 
@@ -45,7 +45,7 @@ export const ViewerQueryType: GraphQLFieldConfig<
   RequestContext<Viewer>,
   {}
 > = {
-  type: ViewerTypeType,
+  type: ViewerType,
   resolve: async (
     _source,
     {},

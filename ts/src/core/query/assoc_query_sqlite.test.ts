@@ -1,17 +1,17 @@
-import { Viewer } from "../base";
+import { setupSqlite } from "../../testutils/db/temp_db";
 import {
   EdgeType,
   FakeUser,
   UserToContactsQuery,
 } from "../../testutils/fake_data/index";
-import { commonTests } from "./shared_test";
-import { assocTests } from "./shared_assoc_test";
-import { loadCustomEdges } from "../ent";
-import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
-import { MockLogs } from "../../testutils/mock_log";
-import { And, Eq } from "../clause";
-import { setupSqlite } from "../../testutils/db/temp_db";
 import { tempDBTables } from "../../testutils/fake_data/test_helpers";
+import { MockLogs } from "../../testutils/mock_log";
+import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
+import { Viewer } from "../base";
+import { And, Eq } from "../clause";
+import { loadCustomEdges } from "../ent";
+import { assocTests } from "./shared_assoc_test";
+import { commonTests } from "./shared_test";
 
 const ml = new MockLogs();
 ml.mock();
@@ -49,6 +49,10 @@ describe("assoc query desc", () => {
     orderby: [
       {
         column: "time",
+        direction: "DESC",
+      },
+      {
+        column: "id2",
         direction: "DESC",
       },
     ],

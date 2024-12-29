@@ -1928,6 +1928,577 @@ describe("postgres", () => {
     });
   });
 
+  describe("pagination unbound cols query", () => {
+    test("All DESC", () => {
+      const cls = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          sortValue: "idValue",
+        },
+      ])!;
+      expect(cls.clause(1)).toBe(
+        "(start_time < $1 AND start_time IS NOT NULL) OR (start_time = $2 AND id < $3 AND id IS NOT NULL)",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time < $1 AND t.start_time IS NOT NULL) OR (t.start_time = $2 AND t.id < $3 AND t.id IS NOT NULL)",
+      );
+      expect(cls.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls.values()).toStrictEqual(["timeValue", "timeValue", "idValue"]);
+      expect(cls.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls.instanceKey()).toEqual(
+        "(start_time<timeValue AND start_time IS NOT NULL) OR (start_time=timeValue AND id<idValue AND id IS NOT NULL)",
+      );
+
+      const cls2 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          sortValue: "timeValue",
+          overrideAlias: "t2",
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          sortValue: "idValue",
+          overrideAlias: "t2",
+        },
+      ])!;
+      expect(cls2.clause(1)).toBe(
+        "(t2.start_time < $1 AND t2.start_time IS NOT NULL) OR (t2.start_time = $2 AND t2.id < $3 AND t2.id IS NOT NULL)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "(t2.start_time < $1 AND t2.start_time IS NOT NULL) OR (t2.start_time = $2 AND t2.id < $3 AND t2.id IS NOT NULL)",
+      );
+      expect(cls2.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls2.values()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.instanceKey()).toEqual(
+        "(t2.start_time<timeValue AND start_timet2 IS NOT NULL) OR (t2.start_time=timeValue AND t2.id<idValue AND idt2 IS NOT NULL)",
+      );
+    });
+
+    test("All DESC clause 3", () => {
+      const cls = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          sortValue: "idValue",
+        },
+      ])!;
+      expect(cls.clause(3)).toBe(
+        "(start_time < $3 AND start_time IS NOT NULL) OR (start_time = $4 AND id < $5 AND id IS NOT NULL)",
+      );
+      expect(cls.clause(3, "t")).toBe(
+        "(t.start_time < $3 AND t.start_time IS NOT NULL) OR (t.start_time = $4 AND t.id < $5 AND t.id IS NOT NULL)",
+      );
+      expect(cls.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls.values()).toStrictEqual(["timeValue", "timeValue", "idValue"]);
+      expect(cls.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls.instanceKey()).toEqual(
+        "(start_time<timeValue AND start_time IS NOT NULL) OR (start_time=timeValue AND id<idValue AND id IS NOT NULL)",
+      );
+
+      const cls2 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          sortValue: "timeValue",
+          overrideAlias: "t2",
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          sortValue: "idValue",
+          overrideAlias: "t2",
+        },
+      ])!;
+      expect(cls2.clause(3)).toBe(
+        "(t2.start_time < $3 AND t2.start_time IS NOT NULL) OR (t2.start_time = $4 AND t2.id < $5 AND t2.id IS NOT NULL)",
+      );
+      expect(cls2.clause(3, "t")).toBe(
+        "(t2.start_time < $3 AND t2.start_time IS NOT NULL) OR (t2.start_time = $4 AND t2.id < $5 AND t2.id IS NOT NULL)",
+      );
+      expect(cls2.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls2.values()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.instanceKey()).toEqual(
+        "(t2.start_time<timeValue AND start_timet2 IS NOT NULL) OR (t2.start_time=timeValue AND t2.id<idValue AND idt2 IS NOT NULL)",
+      );
+    });
+
+    test("All ASC", () => {
+      const cls = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "ASC",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          sortValue: "idValue",
+        },
+      ])!;
+      expect(cls.clause(1)).toBe(
+        "start_time > $1 OR start_time IS NULL OR (start_time = $2 AND (id > $3 OR id IS NULL))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "t.start_time > $1 OR t.start_time IS NULL OR (t.start_time = $2 AND (t.id > $3 OR t.id IS NULL))",
+      );
+      expect(cls.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls.values()).toStrictEqual(["timeValue", "timeValue", "idValue"]);
+      expect(cls.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls.instanceKey()).toEqual(
+        "start_time>timeValue OR start_time IS NULL OR (start_time=timeValue AND (id>idValue OR id IS NULL))",
+      );
+
+      const cls2 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "ASC",
+          sortValue: "timeValue",
+          overrideAlias: "t2",
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          sortValue: "idValue",
+          overrideAlias: "t2",
+        },
+      ])!;
+      expect(cls2.clause(1)).toBe(
+        "t2.start_time > $1 OR t2.start_time IS NULL OR (t2.start_time = $2 AND (t2.id > $3 OR t2.id IS NULL))",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.start_time > $1 OR t2.start_time IS NULL OR (t2.start_time = $2 AND (t2.id > $3 OR t2.id IS NULL))",
+      );
+      expect(cls2.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls2.values()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.start_time>timeValue OR start_timet2 IS NULL OR (t2.start_time=timeValue AND (t2.id>idValue OR idt2 IS NULL))",
+      );
+    });
+
+    test("DESC NULLS LAST", () => {
+      const cls = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          nullsPlacement: "last",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          nullsPlacement: "last",
+          sortValue: "idValue",
+        },
+      ])!;
+      expect(cls.clause(1)).toBe(
+        "start_time < $1 OR start_time IS NULL OR (start_time = $2 AND (id < $3 OR id IS NULL))",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "t.start_time < $1 OR t.start_time IS NULL OR (t.start_time = $2 AND (t.id < $3 OR t.id IS NULL))",
+      );
+      expect(cls.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls.values()).toStrictEqual(["timeValue", "timeValue", "idValue"]);
+      expect(cls.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls.instanceKey()).toEqual(
+        "start_time<timeValue OR start_time IS NULL OR (start_time=timeValue AND (id<idValue OR id IS NULL))",
+      );
+
+      const cls2 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          nullsPlacement: "last",
+          sortValue: "timeValue",
+          overrideAlias: "t2",
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          nullsPlacement: "last",
+          sortValue: "idValue",
+          overrideAlias: "t2",
+        },
+      ])!;
+      expect(cls2.clause(1)).toBe(
+        "t2.start_time < $1 OR t2.start_time IS NULL OR (t2.start_time = $2 AND (t2.id < $3 OR t2.id IS NULL))",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "t2.start_time < $1 OR t2.start_time IS NULL OR (t2.start_time = $2 AND (t2.id < $3 OR t2.id IS NULL))",
+      );
+      expect(cls2.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls2.values()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.instanceKey()).toEqual(
+        "t2.start_time<timeValue OR start_timet2 IS NULL OR (t2.start_time=timeValue AND (t2.id<idValue OR idt2 IS NULL))",
+      );
+    });
+
+    test("ASC NULLS FIRST", () => {
+      const cls = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "ASC",
+          nullsPlacement: "first",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          nullsPlacement: "first",
+          sortValue: "idValue",
+        },
+      ])!;
+      expect(cls.clause(1)).toBe(
+        "(start_time > $1 AND start_time IS NOT NULL) OR (start_time = $2 AND id > $3 AND id IS NOT NULL)",
+      );
+      expect(cls.clause(1, "t")).toBe(
+        "(t.start_time > $1 AND t.start_time IS NOT NULL) OR (t.start_time = $2 AND t.id > $3 AND t.id IS NOT NULL)",
+      );
+      expect(cls.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls.values()).toStrictEqual(["timeValue", "timeValue", "idValue"]);
+      expect(cls.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls.instanceKey()).toEqual(
+        "(start_time>timeValue AND start_time IS NOT NULL) OR (start_time=timeValue AND id>idValue AND id IS NOT NULL)",
+      );
+
+      const cls2 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "ASC",
+          nullsPlacement: "first",
+          sortValue: "timeValue",
+          overrideAlias: "t2",
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          nullsPlacement: "first",
+          sortValue: "idValue",
+          overrideAlias: "t2",
+        },
+      ])!;
+      expect(cls2.clause(1)).toBe(
+        "(t2.start_time > $1 AND t2.start_time IS NOT NULL) OR (t2.start_time = $2 AND t2.id > $3 AND t2.id IS NOT NULL)",
+      );
+      expect(cls2.clause(1, "t")).toBe(
+        "(t2.start_time > $1 AND t2.start_time IS NOT NULL) OR (t2.start_time = $2 AND t2.id > $3 AND t2.id IS NOT NULL)",
+      );
+      expect(cls2.columns()).toStrictEqual([
+        "start_time",
+        "start_time",
+        "start_time",
+        "id",
+        "id",
+      ]);
+      expect(cls2.values()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.logValues()).toStrictEqual([
+        "timeValue",
+        "timeValue",
+        "idValue",
+      ]);
+      expect(cls2.instanceKey()).toEqual(
+        "(t2.start_time>timeValue AND start_timet2 IS NOT NULL) OR (t2.start_time=timeValue AND t2.id>idValue AND idt2 IS NOT NULL)",
+      );
+    });
+
+    test("DESC defaults to NULLS FIRST", () => {
+      const cls = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          sortValue: "idValue",
+        },
+      ])!;
+      const cls2 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          nullsPlacement: "first",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          nullsPlacement: "first",
+          sortValue: "idValue",
+        },
+      ])!;
+      expect(cls.clause(1)).toEqual(cls2.clause(1));
+    });
+
+    test("ASC defaults to NULLS LAST", () => {
+      const cls = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "ASC",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          sortValue: "idValue",
+        },
+      ])!;
+      const cls2 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "ASC",
+          nullsPlacement: "last",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          nullsPlacement: "last",
+          sortValue: "idValue",
+        },
+      ])!;
+      expect(cls.clause(1)).toEqual(cls2.clause(1));
+    });
+
+    test("DESC with NULL", () => {
+      const cls = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          sortValue: null,
+        },
+      ])!;
+      expect(cls.clause(1)).toBe("start_time < $1 AND start_time IS NOT NULL");
+      const cls2 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          sortValue: null,
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          sortValue: "idValue",
+        },
+      ])!;
+      expect(cls2.clause(1)).toBe("id < $1 AND id IS NOT NULL");
+      const cls3 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "DESC",
+          sortValue: null,
+        },
+        {
+          sortCol: "id",
+          direction: "DESC",
+          sortValue: null,
+        },
+      ]);
+      expect(cls3).toBeUndefined();
+    });
+
+    test("ASC with NULL", () => {
+      const cls = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "ASC",
+          sortValue: "timeValue",
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          sortValue: null,
+        },
+      ])!;
+      expect(cls.clause(1)).toBe(
+        "start_time > $1 OR start_time IS NULL OR (start_time = $2 AND id IS NULL)",
+      );
+      const cls2 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "ASC",
+          sortValue: null,
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          sortValue: "idValue",
+        },
+      ])!;
+      expect(cls2.clause(1)).toBe(
+        "start_time IS NULL AND (id > $1 OR id IS NULL)",
+      );
+      const cls3 = clause.PaginationUnboundColsQuery<EventData>([
+        {
+          sortCol: "start_time",
+          direction: "ASC",
+          sortValue: null,
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          sortValue: null,
+        },
+      ])!;
+      expect(cls3.clause(1)).toBe("start_time IS NULL AND id IS NULL");
+    });
+
+    test("3 level multi-directional", () => {
+      const cls = clause.PaginationUnboundColsQuery<any>([
+        {
+          sortCol: "first_name",
+          direction: "ASC",
+          sortValue: "Stefan",
+        },
+        {
+          sortCol: "last_name",
+          direction: "DESC",
+          sortValue: "Parker",
+        },
+        {
+          sortCol: "id",
+          direction: "ASC",
+          sortValue: "24900783",
+        },
+      ])!;
+      expect(cls.clause(1)).toBe(
+        "first_name > $1 OR first_name IS NULL OR (first_name = $2 AND ((last_name < $3 AND last_name IS NOT NULL) OR (last_name = $4 AND (id > $5 OR id IS NULL))))",
+      );
+    });
+  });
+
   describe("rhs", () => {
     test("add", () => {
       const cls = clause.Add<BalanceData>("balance", 4);

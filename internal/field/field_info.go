@@ -11,8 +11,9 @@ import (
 )
 
 type Options struct {
-	SortFields     bool
-	FieldOverrides map[string]*input.FieldOverride
+	SortFields              bool
+	FieldOverrides          map[string]*input.FieldOverride
+	ForceDisableBuilderType bool
 }
 
 // NewFieldInfoFromInputs generates Fields based on FieldInputs
@@ -51,6 +52,9 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*in
 		if err := fieldInfo.addField(f); err != nil {
 			errs = append(errs, err)
 		}
+		if options.ForceDisableBuilderType {
+			f.disableBuilderType = true
+		}
 		for _, derivedField := range field.DerivedFields {
 			f2, err := newFieldFromInput(cfg, nodeName, derivedField)
 			if err != nil {
@@ -72,10 +76,10 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*in
 		//		sort fields
 		sort.Slice(fieldInfo.fields, func(i, j int) bool {
 			// sort lexicographically but put ID first
-			if fieldInfo.fields[i].FieldName == "ID" {
+			if fieldInfo.fields[i].FieldName == "id" {
 				return true
 			}
-			if fieldInfo.fields[j].FieldName == "ID" {
+			if fieldInfo.fields[j].FieldName == "id" {
 				return false
 			}
 
@@ -93,7 +97,6 @@ type FieldInfo struct {
 	NonEntFields []*NonEntField
 	// keep track of computed fields just to know they exist
 	computedFields map[string]bool
-	getFieldsFn    bool
 
 	primaryKeys []string
 

@@ -23,10 +23,8 @@ import {
 import { getFields, getFieldsWithPrivacy, FieldMap, Schema } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
-import { snakeCase } from "snake-case";
 import { ObjectLoaderFactory } from "../core/loaders";
 import { convertDate } from "../core/convert";
-import { camelCase } from "camel-case";
 import {
   SchemaConfig,
   EntSchema,
@@ -35,6 +33,7 @@ import {
 import { FieldInfoMap, getStorageKey } from "../schema/schema";
 import { Clause } from "../core/clause";
 import { ChangesetOptions } from "../action/action";
+import { toDBColumnOrTable, toFieldName } from "../names/names";
 
 export class BaseEnt {
   readonly id: ID;
@@ -196,7 +195,7 @@ export function getSchemaName(value: BuilderSchema<Ent>) {
 }
 
 export function getTableName(value: BuilderSchema<Ent>) {
-  return pluralize(snakeCase(value.ent.name)).toLowerCase();
+  return pluralize(toDBColumnOrTable(value.ent.name)).toLowerCase();
 }
 
 export const getDbFields = (schema: BuilderSchema<Ent>) => {
@@ -273,19 +272,19 @@ export class SimpleBuilder<
     for (const [name, f] of schemaFields) {
       dbFields.push(getStorageKey(f, name));
     }
-    if (!schemaFields.has("id") && !schemaFields.has("ID")) {
+    if (!schemaFields.has("id")) {
       if (schemaFields.size !== 1) {
         throw new Error(
           `no id field and multiple fields so can't deduce key. add an id field to schema`,
         );
       }
       for (const [name, _] of fields) {
-        key = snakeCase(name);
+        key = toDBColumnOrTable(name);
       }
     }
     this.ent = schema.ent;
     const tableName = getTableName(schema);
-    this.nodeType = camelCase(schema.ent.name);
+    this.nodeType = toFieldName(schema.ent.name);
     const fieldInfo = getFieldInfo(schema);
     this.orchestrator = new Orchestrator<T, Data, Viewer, TExistingEnt>({
       viewer: this.viewer,
@@ -333,9 +332,8 @@ export class SimpleBuilder<
       if (knownFields.has(k)) {
         this.fields.set(k, input[k]);
       } else {
-        // related to #510. we do camelCase to pass fields in here but fields may be snakeCase and we want that to pass in tests
-        // we do camelCase in
-        const sc = snakeCase(k);
+        // TODO: ola 2/18/2024. we may not need both anymore?
+        const sc = toDBColumnOrTable(k);
         if (knownFields.has(sc)) {
           this.fields.set(sc, input[k]);
         }

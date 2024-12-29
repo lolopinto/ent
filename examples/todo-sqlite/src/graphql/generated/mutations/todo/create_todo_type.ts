@@ -7,6 +7,7 @@ import {
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
   GraphQLInt,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -14,7 +15,8 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Todo } from "src/ent/";
-import CreateTodoAction, {
+import {
+  CreateTodoAction,
   TodoCreateInput,
 } from "src/ent/todo/actions/create_todo_action";
 import { TodoType } from "src/graphql/resolvers/";
@@ -29,6 +31,21 @@ interface customCreateTodoInput extends Omit<TodoCreateInput, "scopeType"> {
 interface CreateTodoPayload {
   todo: Todo;
 }
+
+export const TagTodoCreateInput = new GraphQLInputObjectType({
+  name: "TagTodoCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    display_name: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    related_tag_ids: {
+      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
+    },
+    canonical_name: {
+      type: GraphQLString,
+    },
+  }),
+});
 
 export const CreateTodoInputType = new GraphQLInputObjectType({
   name: "CreateTodoInput",
@@ -50,6 +67,9 @@ export const CreateTodoInputType = new GraphQLInputObjectType({
     },
     bounty: {
       type: GraphQLInt,
+    },
+    tags: {
+      type: new GraphQLList(new GraphQLNonNull(TagTodoCreateInput)),
     },
   }),
 });
@@ -86,11 +106,12 @@ export const CreateTodoType: GraphQLFieldConfig<
   ): Promise<CreateTodoPayload> => {
     const todo = await CreateTodoAction.create(context.getViewer(), {
       text: input.text,
-      creatorID: input.creator_id,
-      assigneeID: input.assignee_id,
-      scopeID: input.scope_id,
+      creatorId: input.creator_id,
+      assigneeId: input.assignee_id,
+      scopeId: input.scope_id,
       scopeType: input.scope_type,
       bounty: input.bounty,
+      tags: input.tags,
     }).saveX();
     return { todo: todo };
   },

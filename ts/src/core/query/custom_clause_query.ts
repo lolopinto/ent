@@ -5,6 +5,7 @@ import {
   ID,
   LoadEntOptions,
   QueryDataOptions,
+  SelectBaseDataOptions,
   Viewer,
 } from "../base";
 import { AndOptional, Clause } from "../clause";
@@ -16,13 +17,16 @@ import {
 } from "../ent";
 import { OrderBy } from "../query_impl";
 
-import { BaseEdgeQuery, EdgeQueryOptions, IDInfo } from "./query";
+import { BaseEdgeQuery, IDInfo } from "./query";
 
 export interface CustomClauseQueryOptions<
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
+  TSource extends Ent<TViewer> | undefined = undefined,
 > {
   loadEntOptions: LoadEntOptions<TDest, TViewer>;
+
+  source?: TSource;
   clause: Clause;
   // query-name used to create loaders...
   // and then from there it does what it needs to do to do the right thing...
@@ -67,8 +71,10 @@ function getClause<TDest extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
 export class CustomClauseQuery<
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
+  TSource extends Ent<TViewer> | undefined = undefined,
 > extends BaseEdgeQuery<any, TDest, Data> {
   private clause: Clause;
+  private source?: TSource;
 
   constructor(
     public viewer: TViewer,
@@ -109,34 +115,46 @@ export class CustomClauseQuery<
       fieldOptions: options.loadEntOptions,
     });
     this.clause = getClause(options);
+    this.source = options.source;
+  }
+
+  __maybeSetSource(src: TSource) {
+    if (this.source && this.source !== src) {
+      console.warn("source already set to something else");
+    } else {
+      this.source = src;
+    }
   }
 
   async sourceEnt(_id: ID) {
-    return null;
+    // The sourceEnt is used for privacy checks and if we have the source we already know
+    // the privacy checks have been done or will be done
+    // This is being set for completeness but we don't really care about this.
+
+    // See https://github.com/lolopinto/ent/blob/15af0165f83458acc1d1c9f934f4534dca6154ff/ts/src/core/query/query.ts#L729-L739 for how sourceEnt is
+    // used in the codebase
+    return this.source ?? null;
   }
 
   getTableName() {
     return this.options.loadEntOptions.tableName;
   }
 
-  protected includeSortColInCursor(options: EdgeQueryOptions) {
-    // TODO maybe we should just always do this?
-    return options.joinBETA !== undefined && this.sortCol !== this.cursorCol;
-  }
-
   async queryRawCount(): Promise<number> {
     // sqlite needs as count otherwise it returns count(1)
-    let fields = ["count(1) as count"];
+    let fields: SelectBaseDataOptions["fields"] = ["count(1) as count"];
     if (this.options.joinBETA) {
-      const requestedFields = this.options.loadEntOptions.fields;
+      const firstRequestedField = this.options.loadEntOptions.fields[0];
       const alias =
         this.options.loadEntOptions.fieldsAlias ??
         this.options.loadEntOptions.alias;
-      if (alias) {
-        fields = [`count(distinct ${alias}.${requestedFields[0]}) as count`];
-      } else {
-        fields = [`count(distinct ${requestedFields[0]}) as count`];
-      }
+      const fieldString =
+        typeof firstRequestedField === "object"
+          ? `${firstRequestedField.alias}.${firstRequestedField.column}`
+          : alias
+            ? `${alias}.${firstRequestedField}`
+            : firstRequestedField;
+      fields = [`count(distinct ${fieldString}) as count`];
     }
     const row = await loadRow({
       ...this.options.loadEntOptions,
@@ -164,7 +182,7 @@ export class CustomClauseQuery<
     if (!options.orderby) {
       options.orderby = [
         {
-          column: this.getSortCol(),
+          column: this.getCursorCol(),
           direction: this.options.orderByDirection ?? "DESC",
           nullsPlacement: this.options.nullsPlacement,
         },
@@ -185,7 +203,11 @@ export class CustomClauseQuery<
       distinct: this.options.joinBETA !== undefined,
     });
 
-    this.edges.set(1, rows);
+    if (this.source) {
+      this.edges.set(this.source.id, rows);
+    } else {
+      this.edges.set(1, rows);
+    }
   }
 
   dataToID(edge: Data): ID {

@@ -9,11 +9,11 @@ import {
 import { GraphQLUpload } from "graphql-upload";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import { ImportGuestResolver } from "src/graphql/mutations/import_guests";
 import { EventType } from "src/graphql/resolvers/";
-import { ImportGuestResolver } from "../../mutations/import_guests";
 
 interface ImportGuestsArgs {
-  eventID: any;
+  eventId: any;
   file: any;
 }
 
@@ -24,7 +24,7 @@ export const ImportGuestsType: GraphQLFieldConfig<
 > = {
   type: new GraphQLNonNull(EventType),
   args: {
-    eventID: {
+    eventId: {
       description: "",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -42,7 +42,7 @@ export const ImportGuestsType: GraphQLFieldConfig<
     const r = new ImportGuestResolver();
     return r.importGuests(
       context,
-      mustDecodeIDFromGQLID(args.eventID),
+      mustDecodeIDFromGQLID(args.eventId.toString()),
       args.file,
     );
   },

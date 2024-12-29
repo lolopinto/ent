@@ -1,8 +1,8 @@
-import { snakeCase } from "snake-case";
 import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
 import { Builder, Changeset } from "../action/action";
 import { Clause } from "../core/clause";
 import { AssocEdgeInput } from "../action/operations";
+import { toDBColumnOrTable } from "../names/names";
 
 export declare type FieldMap = {
   [key: string]: Field;
@@ -177,6 +177,7 @@ export interface InverseAssocEdge {
   name: string;
   // same as in AssocEdge
   edgeConstName?: string;
+  hideFromGraphQL?: boolean;
 }
 
 export interface EdgeGroupAction {
@@ -715,11 +716,8 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
   return m;
 }
 
-/**
- * @deprecated should only be used by tests
- */
 export function getStorageKey(field: Field, fieldName: string): string {
-  return field.storageKey || snakeCase(fieldName);
+  return field.storageKey || toDBColumnOrTable(fieldName);
 }
 
 // returns a mapping of storage key to field privacy

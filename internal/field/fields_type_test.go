@@ -122,7 +122,7 @@ func TestNonNullableIDField(t *testing.T) {
 		},
 		ForeignKey: &input.ForeignKey{
 			Schema: "User",
-			Column: "ID",
+			Column: "id",
 		},
 	})
 	require.Nil(t, err)

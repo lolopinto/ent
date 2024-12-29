@@ -26,13 +26,13 @@ import {
   hoursOfOperationLoaderInfo,
 } from "./loaders";
 import { NodeType } from "./types";
-import { DayOfWeekMixin, IDayOfWeek } from "../internal";
+import { IWithDayOfWeek, WithDayOfWeekMixin } from "../internal";
 import schema from "../../schema/hours_of_operation_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class HoursOfOperationBase
-  extends DayOfWeekMixin(class {})
-  implements Ent<ExampleViewerAlias>, IDayOfWeek
+  extends WithDayOfWeekMixin(class {} as new (...args: any[]) => IWithDayOfWeek)
+  implements Ent<ExampleViewerAlias>, IWithDayOfWeek<ExampleViewerAlias>
 {
   protected readonly data: HoursOfOperationDBData;
   readonly nodeType = NodeType.HoursOfOperation;
@@ -42,7 +42,10 @@ export class HoursOfOperationBase
   readonly open: string;
   readonly close: string;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;

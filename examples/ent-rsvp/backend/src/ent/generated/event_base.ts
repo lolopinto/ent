@@ -44,15 +44,18 @@ export class EventBase implements Ent<Viewer> {
   readonly updatedAt: Date;
   readonly name: string;
   readonly slug: string | null;
-  readonly creatorID: ID;
+  readonly creatorId: ID;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.name = data.name;
     this.slug = data.slug;
-    this.creatorID = data.creator_id;
+    this.creatorId = data.creator_id;
     // @ts-expect-error
     this.data = data;
   }
@@ -220,7 +223,7 @@ export class EventBase implements Ent<Viewer> {
     })) as T;
   }
 
-  static async loadIDFromSlug<T extends EventBase>(
+  static async loadIdFromSlug<T extends EventBase>(
     this: new (
       viewer: Viewer,
       data: Data,
@@ -287,10 +290,10 @@ export class EventBase implements Ent<Viewer> {
   }
 
   async loadCreator(): Promise<User | null> {
-    return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
+    return loadEnt(this.viewer, this.creatorId, User.loaderOptions());
   }
 
   loadCreatorX(): Promise<User> {
-    return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
+    return loadEntX(this.viewer, this.creatorId, User.loaderOptions());
   }
 }

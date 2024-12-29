@@ -12,6 +12,7 @@ import {
   UUIDType,
   ByteaType,
   BinaryTextType,
+  StructTypeAsList,
 } from "@snowtop/ent/schema/";
 import { EdgeType } from "../ent/generated/types";
 
@@ -49,7 +50,7 @@ const EventSchema = new EntSchema({
     location: StringType({
       graphqlName: "eventLocation",
     }),
-    addressID: UUIDType({
+    addressId: UUIDType({
       nullable: true,
       fieldEdge: { schema: "Address", inverseEdge: "hostedEvents" },
       privacyPolicy: {
@@ -58,19 +59,23 @@ const EventSchema = new EntSchema({
           new AllowIfViewerInboundEdgeExistsRule(
             EdgeType.UserToEventsAttending,
           ),
-          new AllowIfViewerIsRule("creatorID"),
+          new AllowIfViewerIsRule("creatorId"),
           AlwaysDenyRule,
         ],
       },
     }),
     cover_photo: ByteaType({ nullable: true }),
     cover_photo2: BinaryTextType({ nullable: true }),
+    attachments: StructTypeAsList({
+      nullable: true,
+      globalType: "Attachment",
+    }),
   },
 
   defaultActionPrivacy: {
     rules: [
       // @ts-ignore
-      new AllowIfViewerIsEntPropertyRule("creatorID"),
+      new AllowIfViewerIsEntPropertyRule("creatorId"),
       AlwaysDenyRule,
     ],
   },

@@ -1,9 +1,16 @@
+import { EmailType } from "@snowtop/ent-email";
+import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import {
   BooleanType,
   EnumType,
   GlobalSchema,
   EnumListType,
   StructType,
+  StructTypeAsList,
+  UUIDType,
+  StringType,
+  TimestampType,
+  UUIDListType,
 } from "@snowtop/ent/schema/";
 
 const glo: GlobalSchema = {
@@ -34,12 +41,55 @@ const glo: GlobalSchema = {
           tsType: "NotifType",
           graphQLType: "NotifType",
         }),
+        homeAddressId: UUIDType({
+          nullable: true,
+          fieldEdge: {
+            schema: "Address",
+          },
+        }),
+        allAddressIds: UUIDListType({
+          fieldEdge: {
+            schema: "Address",
+          },
+          nullable: true,
+        }),
       },
     }),
     responses: EnumType({
       values: ["yes", "no", "maybe"],
       tsType: "ResponseType",
       graphQLType: "ResponseType",
+    }),
+    attachments: StructTypeAsList({
+      tsType: "Attachment",
+      nullable: true,
+      graphQLType: "Attachment",
+      fields: {
+        file_id: UUIDType({
+          foreignKey: { schema: "File", column: "id" },
+        }),
+        dupeFileID: UUIDType({
+          foreignKey: { schema: "File", column: "id" },
+          nullable: true,
+        }),
+        note: StringType({ nullable: true }),
+        date: TimestampType(),
+        phone_number: PhoneNumberType({ nullable: true }),
+        email_address: EmailType({ nullable: true }),
+        creator_id: UUIDType({
+          polymorphic: {
+            types: ["User"],
+          },
+          nullable: true,
+        }),
+        // doesn't seem like we support this...
+        // owner_ids: UUIDListType({
+        //   polymorphic: {
+        //     types: ["User"],
+        //   },
+        //   nullable: true,
+        // }),
+      },
     }),
   },
 };

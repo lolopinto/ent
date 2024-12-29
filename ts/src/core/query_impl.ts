@@ -3,12 +3,8 @@ import { QueryableDataOptions } from "./base";
 export interface OrderByOption {
   column: string;
   direction: "ASC" | "DESC";
+  alias?: string;
   nullsPlacement?: "first" | "last";
-  // is this column a date/time column?
-  // needed to know if we create a cursor based on this column to conver to timestamp and ISO string for
-  // comparison
-  // maybe eventually want a more generic version of this but for now this suffices
-  dateColumn?: boolean;
 }
 
 export type OrderBy = OrderByOption[];
@@ -25,7 +21,8 @@ export function getOrderByPhrase(orderby: OrderBy, alias?: string): string {
           nullsPlacement = " NULLS LAST";
           break;
       }
-      const col = alias ? `${alias}.${v.column}` : v.column;
+      const orderByAlias = v.alias ?? alias;
+      const col = orderByAlias ? `${orderByAlias}.${v.column}` : v.column;
       return `${col} ${v.direction}${nullsPlacement}`;
     })
     .join(", ");
@@ -55,7 +52,24 @@ export function getJoinInfo(
         ? `${join.tableName} ${join.alias}`
         : join.tableName;
       valuesUsed += join.clause.values().length;
-      return `JOIN ${joinTable} ON ${join.clause.clause(clauseIdx)}`;
+      let joinType;
+      switch (join.type) {
+        case "left":
+          joinType = "LEFT JOIN";
+          break;
+        case "right":
+          joinType = "RIGHT JOIN";
+          break;
+        case "outer":
+          joinType = "FULL OUTER JOIN";
+          break;
+        case "inner":
+          joinType = "INNER JOIN";
+          break;
+        default:
+          joinType = "JOIN";
+      }
+      return `${joinType} ${joinTable} ON ${join.clause.clause(clauseIdx)}`;
     })
     .join(" ");
   return {
@@ -66,10 +80,20 @@ export function getJoinInfo(
 
 export function buildQuery(options: QueryableDataOptions): string {
   const fieldsAlias = options.fieldsAlias ?? options.alias;
-  const fields =
-    fieldsAlias && !options.disableFieldsAlias
-      ? options.fields.map((f) => `${fieldsAlias}.${f}`).join(", ")
-      : options.fields.join(", ");
+  const fields = options.fields
+    .map((f) => {
+      if (typeof f === "object") {
+        if (!options.disableFieldsAlias) {
+          return `${f.alias}.${f.column}`;
+        }
+        return f.column;
+      }
+      if (fieldsAlias && !options.disableFieldsAlias) {
+        return `${fieldsAlias}.${f}`;
+      }
+      return f;
+    })
+    .join(", ");
 
   // always start at 1
   const parts: string[] = [];
@@ -94,7 +118,12 @@ export function buildQuery(options: QueryableDataOptions): string {
     parts.push(`GROUP BY ${options.groupby}`);
   }
   if (options.orderby) {
-    parts.push(`ORDER BY ${getOrderByPhrase(options.orderby, fieldsAlias)}`);
+    parts.push(
+      `ORDER BY ${getOrderByPhrase(
+        options.orderby,
+        options.disableDefaultOrderByAlias ? undefined : fieldsAlias,
+      )}`,
+    );
   }
   if (options.limit) {
     parts.push(`LIMIT ${options.limit}`);

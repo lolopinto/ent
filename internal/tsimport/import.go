@@ -9,7 +9,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codepath"
 )
 
@@ -28,6 +27,7 @@ type Imports struct {
 type Config interface {
 	GetAbsPathToRoot() string
 	ShouldUseRelativePaths() bool
+	DebugMode() bool
 }
 
 // NewImports is the constructor for Imports
@@ -235,7 +235,6 @@ func (imps *Imports) FuncMap() template.FuncMap {
 		"exportAllAs":                    imps.ExportAllAs,
 		"export":                         imps.Export,
 		"dict":                           dict,
-		"toCamel":                        strcase.ToCamel,
 	}
 }
 
@@ -258,6 +257,14 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 // Use makes use of an export and ensures that's imported
 func (imps *Imports) Use(impItem string) (string, error) {
 	if imps.importMap[impItem] == nil {
+		if imps.cfg.DebugMode() {
+			var imports []string
+			for k := range imps.importMap {
+				imports = append(imports, k)
+			}
+			sort.Strings(imports)
+			fmt.Printf("imports at path %s are %v \n", imps.filePath, imports)
+		}
 		return "", fmt.Errorf("tried to use import %s at path %s even though it was never reserved", impItem, imps.errorPath)
 	}
 

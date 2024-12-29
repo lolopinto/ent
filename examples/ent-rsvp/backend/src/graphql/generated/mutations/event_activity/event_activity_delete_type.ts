@@ -19,7 +19,7 @@ interface customEventActivityDeleteInput {
 }
 
 interface EventActivityDeletePayload {
-  deletedEventActivityID: string;
+  deletedEventActivityId: string;
 }
 
 export const EventActivityDeleteInputType = new GraphQLInputObjectType({
@@ -38,7 +38,7 @@ export const EventActivityDeletePayloadType = new GraphQLObjectType({
     EventActivityDeletePayload,
     RequestContext<Viewer>
   > => ({
-    deletedEventActivityID: {
+    deletedEventActivityId: {
       type: GraphQLID,
     },
   }),
@@ -66,6 +66,6 @@ export const EventActivityDeleteType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedEventActivityID: input.id };
+    return { deletedEventActivityId: input.id };
   },
 };

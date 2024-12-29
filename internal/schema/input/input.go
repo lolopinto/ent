@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -226,6 +226,7 @@ type Field struct {
 	UserConvert         *UserConvertType    `json:"convert,omitempty"`
 	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
 	DBOnly              bool                `json:"dbOnly,omitempty"`
+	DisableBase64Encode bool                `json:"disableBase64Encode,omitempty"`
 
 	Immutable bool `json:"immutable,omitempty"`
 
@@ -377,13 +378,13 @@ func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSType {
 	}
 }
 
-func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSType, error) {
+func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey, disableBase64Encode bool) (enttype.TSType, error) {
 	switch typ.DBType {
 	case UUID:
 		if nullable {
-			return &enttype.NullableIDType{}, nil
+			return &enttype.NullableIDType{DisableBase64Encode: disableBase64Encode}, nil
 		}
-		return &enttype.IDType{}, nil
+		return &enttype.IDType{DisableBase64Encode: disableBase64Encode}, nil
 	case Int64ID:
 		return nil, fmt.Errorf("unsupported Int64ID type")
 		//		return &enttype.IntegerType{}, nil
@@ -484,22 +485,22 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		return &enttype.ByteaType{}, nil
 
 	case StringEnum, Enum:
-		tsType := strcase.ToCamel(typ.Type)
-		graphqlType := strcase.ToCamel(typ.GraphQLType)
+		tsType := names.ToClassType(typ.Type)
+		graphqlType := names.ToClassType(typ.GraphQLType)
 		// if tsType and graphqlType not explicitly specified,add schema prefix to generated enums
 		// if globalenumtype, set it to that and we check for it...
 		if tsType == "" {
 			if typ.GlobalType != "" {
 				tsType = typ.GlobalType
 			} else {
-				tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+				tsType = names.ToClassType(nodeName, fieldName)
 			}
 		}
 		if graphqlType == "" {
 			if typ.GlobalType != "" {
 				graphqlType = typ.GlobalType
 			} else {
-				graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+				graphqlType = names.ToClassType(nodeName, fieldName)
 			}
 		}
 		if foreignKey != nil {
@@ -528,14 +529,14 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		}, nil
 
 	case IntEnum:
-		tsType := strcase.ToCamel(typ.Type)
-		graphqlType := strcase.ToCamel(typ.GraphQLType)
+		tsType := names.ToClassType(typ.Type)
+		graphqlType := names.ToClassType(typ.GraphQLType)
 		// if tsType and graphqlType not explicitly specified,add schema prefix to generated enums
 		if tsType == "" {
-			tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+			tsType = names.ToClassType(nodeName, fieldName)
 		}
 		if graphqlType == "" {
-			graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+			graphqlType = names.ToClassType(nodeName, fieldName)
 		}
 		if nullable {
 			return &enttype.NullableIntegerEnumType{
@@ -583,7 +584,7 @@ func (f *Field) GetEntType(nodeName string) (enttype.TSType, error) {
 		if f.Type.ListElemType == nil {
 			return nil, fmt.Errorf("list elem type for list is nil")
 		}
-		elemType, err := getTypeFor(nodeName, f.Name, f.Type.ListElemType, false, nil)
+		elemType, err := getTypeFor(nodeName, f.Name, f.Type.ListElemType, false, nil, f.DisableBase64Encode)
 		if err != nil {
 			return nil, err
 		}
@@ -596,7 +597,7 @@ func (f *Field) GetEntType(nodeName string) (enttype.TSType, error) {
 			ElemType: elemType,
 		}, nil
 	} else {
-		return getTypeFor(nodeName, f.Name, f.Type, f.Nullable, f.ForeignKey)
+		return getTypeFor(nodeName, f.Name, f.Type, f.Nullable, f.ForeignKey, f.DisableBase64Encode)
 	}
 }
 
@@ -833,8 +834,8 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 		}
 		return &enttype.TimestampType{}, nil
 	case ActionTypeObject:
-		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(inflection.Singular(f.Name)))
-		gqlType := fmt.Sprintf("%s%s", strcase.ToCamel(inflection.Singular(f.Name)), strcase.ToCamel(inputName))
+		tsType := names.ToTsFieldName("custom", inflection.Singular(f.Name), "Input")
+		gqlType := names.ToClassType(inflection.Singular(f.Name), inputName)
 
 		if f.ActionName == "" {
 			return nil, fmt.Errorf("%s Object action only field requires an action name", f.Name)
@@ -998,8 +999,9 @@ type InverseAssocEdge struct {
 	// Note that anytime anything changes here, have to update inverseAssocEdgeEqual in compare.go
 	// TODO need to be able to mark this as unique
 	// this is an easy way to get 1->many
-	Name          string `json:"name,omitempty"`
-	EdgeConstName string `json:"edgeConstName,omitempty"`
+	Name            string `json:"name,omitempty"`
+	EdgeConstName   string `json:"edgeConstName,omitempty"`
+	HideFromGraphQL bool   `json:"hideFromGraphQL,omitempty"`
 }
 
 func ParseSchema(input []byte) (*Schema, error) {

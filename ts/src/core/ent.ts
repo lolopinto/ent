@@ -1,43 +1,42 @@
-import DB, {
-  Dialect,
-  Queryer,
-  SyncQueryer,
-  QueryResult,
-  QueryResultRow,
-} from "./db";
 import {
-  Viewer,
-  Ent,
-  ID,
-  LoadRowsOptions,
-  LoadRowOptions,
+  Context,
+  CreateRowOptions,
   Data,
   DataOptions,
-  QueryableDataOptions,
-  EditRowOptions,
-  LoadEntOptions,
-  LoadCustomEntOptions,
   EdgeQueryableDataOptions,
-  Context,
-  SelectDataOptions,
-  CreateRowOptions,
-  QueryDataOptions,
+  EditRowOptions,
+  Ent,
   EntConstructor,
-  PrivacyPolicy,
-  SelectCustomDataOptions,
-  PrimableLoader,
+  ID,
+  LoadCustomEntOptions,
+  LoadEntOptions,
+  LoadRowOptions,
+  LoadRowsOptions,
   Loader,
   LoaderWithLoadMany,
+  PrimableLoader,
+  PrivacyPolicy,
+  QueryDataOptions,
+  SelectCustomDataOptions,
+  SelectDataOptions,
+  Viewer,
 } from "./base";
+import DB, {
+  Dialect,
+  QueryResult,
+  QueryResultRow,
+  Queryer,
+  SyncQueryer,
+} from "./db";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
 
-import * as clause from "./clause";
-import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
+import * as clause from "./clause";
 import { __getGlobalSchema } from "./global_schema";
-import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
 import { CacheMap } from "./loaders/loader";
+import { log, logEnabled, logTrace } from "./logger";
+import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   private m = new Map();
@@ -662,12 +661,20 @@ async function loadCustomDataImpl<
   } else {
     // this will have rudimentary caching but nothing crazy
     let cls = query.clause;
+    let opts = options.loaderFactory.options;
+    if (query.alias) {
+      if (opts.alias) {
+        throw new Error(
+          `cannot have an alias in LoaderOptions and QueryOptions. can only pass one`,
+        );
+      }
+      opts = {
+        ...opts,
+        alias: query.alias,
+      };
+    }
     if (!query.disableTransformations) {
-      cls = clause.getCombinedClause(
-        options.loaderFactory.options,
-        query.clause,
-        true,
-      );
+      cls = clause.getCombinedClause(opts, query.clause, true);
     }
     return loadRows({
       ...query,
@@ -918,7 +925,13 @@ interface GroupQueryOptions<T extends Data, K = keyof T> {
   // extra clause to join
   clause?: clause.Clause<T, K>;
   groupColumn: K;
-  fields: K[];
+  fields: (
+    | K
+    | {
+        alias: string;
+        column: K;
+      }
+  )[];
   values: any[];
   orderby?: OrderBy;
   limit: number;
@@ -941,8 +954,19 @@ export function buildGroupQuery<T extends Data = Data, K = keyof T>(
 
   // window functions work in sqlite!
   //    https://www.sqlite.org/windowfunctions.html
+  const fieldString = fields
+    .map((f) => {
+      if (typeof f === "object") {
+        // TS doesn't understand that K can only be a string, so we need
+        // for it to treat f as the object we know it is.
+        const fObj = f as { alias: string; column: string };
+        return `${fObj.alias}.${fObj.column}`;
+      }
+      return f;
+    })
+    .join(",");
   return [
-    `SELECT * FROM (SELECT ${fields.join(",")} OVER (PARTITION BY ${
+    `SELECT * FROM (SELECT ${fieldString} OVER (PARTITION BY ${
       options.groupColumn
     } ${orderby}) as row_num FROM ${options.tableName} WHERE ${cls.clause(
       1,
@@ -1237,43 +1261,44 @@ export class AssocEdge {
   getCursor(): string {
     return getCursor({
       row: this,
-      keys: ["id2"],
+      cursorKeys: ["time", "id2"],
     });
   }
 }
 
 export interface cursorOptions {
   row: Data;
-  keys: string[];
-  cursorKeys?: string[]; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
+  /**
+   * The keys that will be stored in the cursor. This should be the DB columns.
+   */
+  cursorKeys: string[];
+  /**
+   * The keys that will be used to get the values from the row. This should be
+   * the row object keys. If not provided, the cursorKeys will be used. This is
+   * only used for tests internally.
+   */
+  rowKeys?: string[];
 }
 
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
-  const { row, keys, cursorKeys } = opts;
+  const { row, cursorKeys, rowKeys } = opts;
   //  row: Data, col: string, conv?: (any) => any) {
   if (!row) {
     throw new Error(`no row passed to getCursor`);
   }
-  if (cursorKeys?.length && cursorKeys.length !== keys.length) {
-    throw new Error("length of cursorKeys should match keys");
+  if (rowKeys?.length && rowKeys.length !== cursorKeys.length) {
+    throw new Error("length of cursorKeys should match rowKeys");
   }
-  const convert = (d: any) => {
-    if (d instanceof Date) {
-      return d.getTime();
-    }
-    return d;
-  };
+  const convert = (d: any) => (d instanceof Date ? d.toISOString() : d);
 
-  const parts: string[] = [];
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    const cursorKey = cursorKeys?.[i] || key;
-    parts.push(key);
-    parts.push(convert(row[cursorKey]));
+  const parts: [string, string | number | null][] = [];
+  for (let i = 0; i < cursorKeys.length; i++) {
+    const cursorKey = cursorKeys[i];
+    const rowKey = rowKeys?.[i] || cursorKey;
+    parts.push([cursorKey, convert(row[rowKey])]);
   }
-  const str = parts.join(":");
-  return Buffer.from(str, "ascii").toString("base64");
+  return btoa(JSON.stringify(parts));
 }
 
 export class AssocEdgeData {

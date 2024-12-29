@@ -26,7 +26,7 @@ export interface AddressCreateInput {
   state: string;
   zipCode: string;
   apartment?: string | null;
-  ownerID: ID | Builder<Ent<Viewer>, Viewer>;
+  ownerId: ID | Builder<Ent<Viewer>, Viewer>;
   ownerType: string;
 }
 
@@ -52,7 +52,7 @@ export type CreateAddressActionObservers = Observer<
   AddressBuilder<AddressCreateInput, Address | null>,
   Viewer,
   AddressCreateInput,
-  Address | null
+  Address | null  
 >[];
 
 export type CreateAddressActionValidators = Validator<

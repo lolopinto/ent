@@ -12,6 +12,7 @@ import CreateGuestAction, {
 } from "src/ent/guest/actions/create_guest_action";
 import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
 import { Builder } from "@snowtop/ent/action";
+import { NodeType } from "src/ent/generated/types";
 
 export async function createUser() {
   const user = await CreateUserAction.create(new LoggedOutViewer(), {
@@ -41,8 +42,8 @@ export async function createActivity(
 ) {
   let eventID: ID | Builder<Event>;
 
-  if (event && input?.eventID) {
-    if (event.id !== input.eventID) {
+  if (event && input?.eventId) {
+    if (event.id !== input.eventId) {
       throw new Error(`passed eventID and event that don't match`);
     }
   }
@@ -50,8 +51,8 @@ export async function createActivity(
   if (!event) {
     event = await createEvent();
     eventID = event.id;
-  } else if (input?.eventID) {
-    eventID = input.eventID;
+  } else if (input?.eventId) {
+    eventID = input.eventId;
   } else {
     eventID = event.id;
   }
@@ -60,7 +61,7 @@ export async function createActivity(
     startTime: new Date(),
     location: "fun location",
     name: "welcome dinner",
-    eventID: eventID,
+    eventId: eventID,
     ...input,
   }).saveX();
 }
@@ -103,7 +104,7 @@ export async function createActivityAndGroup(): Promise<
   const event = await activity.loadEventX();
   const group = await CreateGuestGroupAction.create(event.viewer, {
     invitationName: "people",
-    eventID: event.id,
+    eventId: event.id,
   }).saveX();
 
   return [activity, group];
@@ -118,9 +119,15 @@ export async function createAndInvite(): Promise<[EventActivity, GuestGroup]> {
     activity.viewer,
     activity.id,
     group.id,
+    {},
   );
   const newCount = await reloaded.queryInvites().queryCount();
   expect(newCount).toBe(1);
+
+  const edges = await reloaded.queryInvites().queryEdges();
+  expect(edges.length).toBe(1);
+  expect(edges[0].id1Type).toBe(NodeType.EventActivity);
+  expect(edges[0].id2Type).toBe(NodeType.GuestGroup);
 
   return [activity, group];
 }
@@ -147,8 +154,8 @@ export async function createGuests(
       return CreateGuestAction.create(group.viewer, {
         ...input,
         emailAddress: randomEmail(),
-        guestGroupID: group.id,
-        eventID: group.eventID,
+        guestGroupId: group.id,
+        eventId: group.eventId,
       }).saveX();
     }),
   );
@@ -159,20 +166,21 @@ export async function createGuestPlus() {
   const event = await activity.loadEventX();
   const group = await CreateGuestGroupAction.create(event.viewer, {
     invitationName: "people",
-    eventID: event.id,
+    eventId: event.id,
   }).saveX();
 
   await EventActivityAddInviteAction.saveXFromID(
     activity.viewer,
     activity.id,
     group.id,
+    {},
   );
 
   const guest = await CreateGuestAction.create(group.viewer, {
     name: "Robb Stark",
     emailAddress: randomEmail(),
-    guestGroupID: group.id,
-    eventID: group.eventID,
+    guestGroupId: group.id,
+    eventId: group.eventId,
   }).saveX();
   return { guest, activity };
 }

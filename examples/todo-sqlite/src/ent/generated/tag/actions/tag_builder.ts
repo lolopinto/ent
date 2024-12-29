@@ -19,10 +19,13 @@ import { EdgeType, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/tag_schema";
 
 export interface TagInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   deletedAt?: Date | null;
   displayName?: string;
   canonicalName?: string;
-  ownerID?: ID | Builder<Account, Viewer>;
+  ownerId?: ID | Builder<Account, Viewer>;
   relatedTagIds?: ID[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -213,10 +216,13 @@ export class TagBuilder<
         result.set(key, value);
       }
     };
+    addField("id", input.id);
+    addField("createdAt", input.createdAt);
+    addField("updatedAt", input.updatedAt);
     addField("deleted_at", input.deletedAt);
     addField("DisplayName", input.displayName);
     addField("canonicalName", input.canonicalName);
-    addField("ownerID", input.ownerID);
+    addField("ownerID", input.ownerId);
     addField("relatedTagIds", input.relatedTagIds);
     return result;
   }
@@ -225,6 +231,48 @@ export class TagBuilder<
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any> {
     return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+
+  // get value of id. Retrieves it from the input if specified or takes it from existingEnt
+  getNewIdValue(): ID {
+    if (this.input.id !== undefined) {
+      return this.input.id;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `id` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.id;
+  }
+
+  // get value of createdAt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCreatedAtValue(): Date {
+    if (this.input.createdAt !== undefined) {
+      return this.input.createdAt;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `createdAt` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.createdAt;
+  }
+
+  // get value of updatedAt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewUpdatedAtValue(): Date {
+    if (this.input.updatedAt !== undefined) {
+      return this.input.updatedAt;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `updatedAt` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.updatedAt;
   }
 
   // get value of deleted_at. Retrieves it from the input if specified or takes it from existingEnt
@@ -261,17 +309,17 @@ export class TagBuilder<
   }
 
   // get value of ownerID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOwnerIDValue(): ID | null | Builder<Account, Viewer> {
-    if (this.input.ownerID !== undefined) {
-      return this.input.ownerID;
+  getNewOwnerIdValue(): ID | null | Builder<Account, Viewer> {
+    if (this.input.ownerId !== undefined) {
+      return this.input.ownerId;
     }
 
     if (!this.existingEnt) {
       throw new Error(
-        "no value to return for `ownerID` since not in input and no existingEnt",
+        "no value to return for `ownerId` since not in input and no existingEnt",
       );
     }
-    return this.existingEnt.ownerID;
+    return this.existingEnt.ownerId;
   }
 
   // get value of relatedTagIds. Retrieves it from the input if specified or takes it from existingEnt

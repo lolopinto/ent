@@ -1,5 +1,4 @@
 import { DateTime } from "luxon";
-import { camelCase } from "camel-case";
 import { isPromise } from "util/types";
 import { validate } from "uuid";
 import { Ent, WriteOperation } from "../core/base";
@@ -16,6 +15,7 @@ import {
 } from "./schema";
 import { __getGlobalSchemaField } from "../core/global_schema";
 import { log } from "../core/logger";
+import { toFieldName } from "../names/names";
 
 export abstract class BaseField {
   name: string;
@@ -71,6 +71,7 @@ export class UUIDField extends BaseField implements Field {
     const polymorphic = this.options?.polymorphic;
     if (polymorphic) {
       let name = "";
+      // TODO followup to https://github.com/lolopinto/ent/pull/1757
       if (fieldName.endsWith("_id")) {
         let idx = fieldName.indexOf("_id");
         name = fieldName.substring(0, idx) + "_type";
@@ -389,11 +390,11 @@ interface PolymorphicStringOptions extends StringOptions {
 }
 
 export class PolymorphicStringField extends StringField {
-  private camelCaseVals: string[] | undefined;
+  private fieldNameValues: string[] | undefined;
   constructor(private opts: PolymorphicStringOptions) {
     super(opts);
     if (opts.types) {
-      this.camelCaseVals = opts.types.map((v) => camelCase(v));
+      this.fieldNameValues = opts.types.map((v) => toFieldName(v));
     }
   }
 
@@ -417,23 +418,23 @@ export class PolymorphicStringField extends StringField {
   }
 
   valid(val: any): boolean {
-    if (!this.camelCaseVals) {
+    if (!this.fieldNameValues) {
       return true;
     }
 
-    let str = camelCase(String(val));
+    let str = toFieldName(String(val));
     // allow different cases because it could be coming from different clients who don't have strong typing
-    return this.camelCaseVals.some((value) => value === str);
+    return this.fieldNameValues.some((value) => value === str);
   }
 
   format(val: any) {
-    if (!this.camelCaseVals) {
+    if (!this.fieldNameValues) {
       return val;
     }
 
-    const converted = camelCase(String(val));
+    const converted = toFieldName(String(val));
 
-    for (const v of this.camelCaseVals) {
+    for (const v of this.fieldNameValues) {
       if (v === val) {
         return val;
       }
@@ -881,7 +882,10 @@ export class ListField extends BaseField {
   type: Type;
   private validators: { (val: any[]): boolean }[] = [];
 
-  constructor(private field: Field, private options?: ListOptions) {
+  constructor(
+    private field: Field,
+    private options?: ListOptions,
+  ) {
     super();
     if (field.type.dbType === DBType.List) {
       throw new Error(`nested lists not currently supported`);

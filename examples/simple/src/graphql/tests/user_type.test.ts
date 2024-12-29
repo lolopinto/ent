@@ -345,11 +345,12 @@ test("query custom async function", async () => {
       {
         emailAddress: randomEmail("foo.com"),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -365,11 +366,12 @@ test("query custom async function", async () => {
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -393,11 +395,12 @@ test("query custom async function list", async () => {
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -422,11 +425,12 @@ test("query custom async function list with domain passed in", async () => {
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   const domain = "email.com";
@@ -470,11 +474,12 @@ test("query custom async function nullable contents", async () => {
       {
         emailAddress: randomEmail("foo.com"),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -504,11 +509,12 @@ test("query custom async function nullable list contents", async () => {
       {
         emailAddress: randomEmail("foo.com"),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   }).saveX();
 
   await expectQueryFromRoot(
@@ -543,11 +549,12 @@ test("query custom async function nullable list and contents", async () => {
       {
         emailAddress: randomEmail("foo.com"),
         label: ContactLabel.Unknown,
+        ownerId: user.id,
       },
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user2.id,
+    userId: user2.id,
   }).saveX();
   await expectQueryFromRoot(
     getNodeConfig(vc2, user2),
@@ -786,11 +793,12 @@ async function createMany(
         {
           emailAddress: randomEmail(),
           label: ContactLabel.Unknown,
+          ownerId: user.id,
         },
       ],
       firstName: name.firstName,
       lastName: name.lastName,
-      userID: user.id,
+      userId: user.id,
     }).saveX();
     results.push(contact);
   }
@@ -932,12 +940,12 @@ test("create with prefs+prefsList", async () => {
       async function (id: string) {
         const entID = mustDecodeIDFromGQLID(id);
         const user = await User.loadX(new ExampleViewer(entID), entID);
-        expect(await user.prefs()).toStrictEqual({
+        expect(await user.prefs()).toMatchObject({
           enableNotifs: undefined,
           finishedNux: true,
           notifTypes: [NotifType.EMAIL],
         });
-        expect(await user.prefsList()).toStrictEqual([
+        expect(await user.prefsList()).toMatchObject([
           {
             enableNotifs: undefined,
             finishedNux: true,
@@ -1322,9 +1330,9 @@ test("custom connection. comments", async () => {
   const [user1, user2] = await Promise.all([create({}), create({})]);
 
   const comment = await CreateCommentAction.create(user2.viewer, {
-    authorID: user2.id,
+    authorId: user2.id,
     body: "sup",
-    articleID: user1.id,
+    articleId: user1.id,
     articleType: user1.nodeType,
   }).saveX();
 

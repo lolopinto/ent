@@ -15,7 +15,7 @@ import { Account } from "src/ent/internal";
 
 export { ChangeTodoBountyInput };
 
-export default class ChangeTodoBountyAction extends ChangeTodoBountyActionBase {
+export class ChangeTodoBountyAction extends ChangeTodoBountyActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }
@@ -27,7 +27,7 @@ export default class ChangeTodoBountyAction extends ChangeTodoBountyActionBase {
             return;
           }
           const creatorData = await Account.loadRawDataX(
-            builder.existingEnt.creatorID,
+            builder.existingEnt.creatorId,
             builder.viewer.context,
           );
           const bounty = input.bounty;
@@ -46,7 +46,7 @@ export default class ChangeTodoBountyAction extends ChangeTodoBountyActionBase {
           }
 
           if (
-            builder.getNewAssigneeIDValue() === builder.getNewCreatorIDValue()
+            builder.getNewAssigneeIdValue() === builder.getNewCreatorIdValue()
           ) {
             throw new Error(`cannot assign bounty when you're the assignee`);
           }

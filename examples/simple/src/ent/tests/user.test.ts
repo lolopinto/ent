@@ -91,7 +91,7 @@ test("create user", async () => {
   expect(contact.firstName).toBe("Jon");
   expect(contact.lastName).toBe("Snow");
   //  expect(contact.emailAddress).toBe(user.emailAddress);
-  expect(contact.userID).toBe(user.id);
+  expect(contact.userId).toBe(user.id);
 
   // confirm contact was indicated as a self-contact
   let selfContact = await user.loadSelfContact();
@@ -512,7 +512,7 @@ test("inverse edge", async () => {
     lastName: "Snow",
   });
   const action = CreateEventAction.create(new LoggedOutExampleViewer(), {
-    creatorID: user.id,
+    creatorId: user.id,
     startTime: new Date(),
     name: "fun event",
     location: "location",
@@ -562,7 +562,7 @@ test("one-way + inverse edge", async () => {
     lastName: "Snow",
   });
   const event = await CreateEventAction.create(new LoggedOutExampleViewer(), {
-    creatorID: user.id,
+    creatorId: user.id,
     startTime: new Date(),
     name: "fun event",
     location: "location",
@@ -652,10 +652,10 @@ test("loadFromEmailAddress", async () => {
   expect(mustJon.id).toBe(jon.id);
   expect(mustJon).toBeInstanceOf(User);
 
-  const rawID = await User.loadIDFromEmailAddress(emailAddress);
+  const rawID = await User.loadIdFromEmailAddress(emailAddress);
   expect(rawID).toBe(jon.id);
 
-  const rando = await User.loadIDFromEmailAddress(randomEmail());
+  const rando = await User.loadIdFromEmailAddress(randomEmail());
   expect(rando).toBe(undefined);
 });
 
@@ -693,11 +693,12 @@ test("uniqueEdge|Node", async () => {
       {
         emailAddress: sansa.emailAddress,
         label: ContactLabel.Default,
+        ownerId: jon.id,
       },
     ],
     firstName: sansa.firstName,
     lastName: sansa.lastName,
-    userID: jon.id,
+    userId: jon.id,
   }).saveX();
 
   expect(contact2).toBeInstanceOf(Contact);
@@ -1022,9 +1023,9 @@ test("comments", async () => {
   const [user1, user2] = await Promise.all([create({}), create({})]);
 
   const comment = await CreateCommentAction.create(user2.viewer, {
-    authorID: user2.id,
+    authorId: user2.id,
     body: "sup",
-    articleID: user1.id,
+    articleId: user1.id,
     articleType: user1.nodeType,
   }).saveX();
 
@@ -1091,12 +1092,12 @@ test("jsonb types", async () => {
       },
     ],
   }).saveX();
-  expect(await user.prefs()).toStrictEqual({
+  expect(await user.prefs()).toMatchObject({
     enableNotifs: undefined,
     finishedNux: true,
     notifTypes: [NotifType.EMAIL],
   });
-  expect(await user.prefsList()).toStrictEqual([
+  expect(await user.prefsList()).toMatchObject([
     {
       enableNotifs: undefined,
       finishedNux: true,
@@ -1492,7 +1493,7 @@ test("upsert email address", async () => {
   expect(u1.phoneNumber).toBe(u2.phoneNumber);
   const contact = await u1.loadSelfContact();
   expect(contact).not.toBe(null);
-  expect(contact!.userID).toBe(u1.id);
+  expect(contact!.userId).toBe(u1.id);
 
   const comms = FakeComms.getSent(u1.emailAddress, Mode.EMAIL);
   expect(comms.length).toBe(1);
@@ -1526,7 +1527,7 @@ test("upsert phone number", async () => {
   expect(u1.emailAddress).toBe(u2.emailAddress);
   const contact = await u1.loadSelfContact();
   expect(contact).not.toBe(null);
-  expect(contact!.userID).toBe(u1.id);
+  expect(contact!.userId).toBe(u1.id);
 
   const comms = FakeComms.getSent(u1.emailAddress, Mode.EMAIL);
   expect(comms.length).toBe(1);

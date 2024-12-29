@@ -16,7 +16,7 @@ export { GuestGroupCreateInput };
 export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
   getPrivacyPolicy() {
     // only creator of event can create guest group
-    return new AllowIfEventCreatorPrivacyPolicy(this.input.eventID);
+    return new AllowIfEventCreatorPrivacyPolicy(this.input.eventId);
   }
 
   getTriggers(): CreateGuestGroupActionTriggers {
@@ -28,7 +28,7 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
           ): v is Builder<Event, Viewer> => {
             return (v as Builder<Event, Viewer>).placeholderID !== undefined;
           };
-          if (isBuilder(input.eventID)) {
+          if (isBuilder(input.eventId)) {
             return;
           }
 
@@ -36,7 +36,7 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
           // TODO EntQuery should support this natively
           let activities = await EventToEventActivitiesQuery.query(
             builder.viewer,
-            input.eventID,
+            input.eventId,
           ).queryEnts();
           activities = activities.filter(
             (activity) => activity.inviteAllGuests,
@@ -44,7 +44,7 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
 
           return Promise.all(
             activities.map((activity) =>
-              EventActivityAddInviteAction.create(builder.viewer, activity)
+              EventActivityAddInviteAction.create(builder.viewer, activity, {})
                 .addInviteID(builder)
                 .changeset(),
             ),
@@ -60,8 +60,8 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
           return Promise.all(
             input.guests.map(async (guest) => {
               return CreateGuestAction.create(builder.viewer, {
-                eventID: input.eventID,
-                guestGroupID: builder,
+                eventId: input.eventId,
+                guestGroupId: builder,
                 ...guest,
               }).changeset();
             }),

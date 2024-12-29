@@ -11,7 +11,7 @@ from . import testingutils
 from auto_schema import runner
 from auto_schema import ops
 
-from typing import Any, Optional, Callable
+from typing import Any, Callable
 
 
 class BaseTestRunner(object):
@@ -1143,7 +1143,7 @@ class TestPostgresRunner(BaseTestRunner):
             (conftest.metadata_with_multiple_new_values_before, 2),
         ]
     )
-    def test_enum_additions(self, new_test_runner: Callable[[Any, Optional[Any]], runner.Runner], metadata_with_enum_type, new_metadata_func, expected_diff):
+    def test_enum_additions(self, new_test_runner: Callable[[Any, Any | None], runner.Runner], metadata_with_enum_type, new_metadata_func, expected_diff):
         r = new_test_runner(metadata_with_enum_type)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_enum_type)

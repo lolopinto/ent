@@ -12,7 +12,8 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Account } from "src/ent/";
-import EditAccountTodoStatusAction, {
+import {
+  EditAccountTodoStatusAction,
   EditAccountTodoStatusInput,
 } from "src/ent/account/actions/edit_account_todo_status_action";
 import { AccountTodoStatusInput } from "src/ent/generated/account/actions/edit_account_todo_status_action_base";
@@ -81,7 +82,7 @@ export const TodoStatusAccountEditType: GraphQLFieldConfig<
       input.id,
       {
         todoStatus: input.todo_status,
-        todoID: input.todo_id,
+        todoId: input.todo_id,
       },
     );
     return { account };

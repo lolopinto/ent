@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any
 import alembic.operations.ops as alembicops
 from alembic.operations import Operations, MigrateOperation
 import abc
@@ -49,7 +49,7 @@ class AddEdgesOp(MigrateOpInterface):
         return RemoveEdgesOp(self.edges, schema=self.schema)
 
     def get_revision_message(self) -> String:
-        return _get_revision_message_for_edges(self.edges, "add edge %s", "add edges %s")
+        return _get_revision_message_for_edges(self.edges, lambda edge_name: f"add edge {edge_name}", lambda edge_names: f"add edges {edge_names}")
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.ADD_EDGES
@@ -84,7 +84,7 @@ class RemoveEdgesOp(MigrateOpInterface):
         return AddEdgesOp(self.edges, schema=self.schema)
 
     def get_revision_message(self) -> String:
-        return _get_revision_message_for_edges(self.edges, "remove edge %s", "remove edges %s")
+        return _get_revision_message_for_edges(self.edges, lambda edge_name: f"remove edge {edge_name}", lambda edge_names: f"remove edges {edge_names}")
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.REMOVE_EDGES
@@ -99,19 +99,19 @@ class RemoveEdgesOp(MigrateOpInterface):
         }
 
 
-def _get_revision_message_for_edges(edges, single_edge_msg, multi_edge_msg):
+def _get_revision_message_for_edges(edges, single_edge_msg_lambda, multi_edge_msg_lambda):
     if len(edges) == 1:
-        return single_edge_msg % (edges[0]['edge_name'])
+        return single_edge_msg_lambda(edges[0]['edge_name'])
 
     edge_names = [edge['edge_name'] for edge in edges]
-    return multi_edge_msg % (", ".join(sorted(edge_names)))
+    return multi_edge_msg_lambda(", ".join(sorted(edge_names)))
 
 
-def _get_revision_message_for_rows(rows, table_name, single_row_msg, multi_row_msg):
+def _get_revision_message_for_rows(rows, table_name, single_row_msg_lmabda, multi_row_msg_lambda):
     if len(rows) == 1:
-        return single_row_msg % (table_name)
+        return single_row_msg_lmabda(table_name)
 
-    return multi_row_msg % (table_name)
+    return multi_row_msg_lambda(table_name)
 
 
 @Operations.register_operation("modify_edge")
@@ -137,7 +137,7 @@ class ModifyEdgeOp(MigrateOpInterface):
 
     def get_revision_message(self) -> String:
         # assume name is not changing. if this is changing, this needs to be smarter
-        return "modify edge %s" % (self.old_edge['edge_name'])
+        return f"modify edge {self.old_edge['edge_name']}"
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.MODIFY_EDGE
@@ -175,7 +175,7 @@ class AddRowsOp(MigrateOpInterface):
         return RemoveRowsOp(self.table_name, self.pkeys, self.rows, schema=self.schema)
 
     def get_revision_message(self) -> String:
-        return _get_revision_message_for_rows(self.rows, self.table_name, "add row to %s", "add rows to %s")
+        return _get_revision_message_for_rows(self.rows, self.table_name, lambda table_name: f"add row to {table_name}", lambda table_name: f"add rows to {table_name}")
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.ADD_ROWS
@@ -212,7 +212,7 @@ class RemoveRowsOp(MigrateOpInterface):
         return AddRowsOp(self.table_name, self.pkeys, self.rows, schema=self.schema)
 
     def get_revision_message(self) -> String:
-        return _get_revision_message_for_rows(self.rows, self.table_name, "remove row from %s", "remove rows from %s")
+        return _get_revision_message_for_rows(self.rows, self.table_name, lambda table_name: f"remove row from {table_name}", lambda table_name: f"remove rows from {table_name}")
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.REMOVE_ROWS
@@ -250,7 +250,7 @@ class ModifyRowsOp(MigrateOpInterface):
         return ModifyRowsOp(self.table_name, self.pkeys, self.old_rows, self.rows, schema=self.schema)
 
     def get_revision_message(self) -> String:
-        return "modify rows in %s" % self.table_name
+        return f"modify rows in {self.table_name}"
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.MODIFY_ROWS
@@ -287,7 +287,7 @@ class AlterEnumOp(MigrateOpInterface):
         return NoDowngradeOp()
 
     def get_revision_message(self) -> String:
-        return 'alter enum %s, add value %s' % (self.enum_name, self.value)
+        return f"alter enum {self.enum_name}, add value {self.value}"
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.ALTER_ENUM
@@ -333,7 +333,7 @@ class AddEnumOp(MigrateOpInterface):
         return DropEnumOp(self.enum_name, self.values)
 
     def get_revision_message(self) -> String:
-        return 'add enum %s' % (self.enum_name)
+        return f"add enum {self.enum_name}"
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.ADD_ENUM
@@ -369,7 +369,7 @@ class DropEnumOp(MigrateOpInterface):
         return AddEnumOp(self.enum_name, self.values)
 
     def get_revision_message(self) -> String:
-        return 'drop enum %s' % (self.enum_name)
+        return f"drop enum {self.enum_name}"
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.DROP_ENUM
@@ -391,7 +391,7 @@ class DropEnumOp(MigrateOpInterface):
 class OurCreateCheckConstraintOp(MigrateOpInterface, alembicops.CreateCheckConstraintOp):
 
     def get_revision_message(self) -> String:
-        return 'add constraint %s to %s' % (self.constraint_name, self.table_name)
+        return f"add constraint {self.constraint_name} to {self.table_name}"
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.CREATE_CHECK_CONSTRAINT
@@ -421,7 +421,7 @@ class OurDropConstraintOp(MigrateOpInterface, alembicops.DropConstraintOp):
         return OurCreateCheckConstraintOp.from_constraint(constraint)
 
     def get_revision_message(self) -> String:
-        return 'drop constraint %s from %s' % (self.constraint_name, self.table_name)
+        return f"drop constraint {self.constraint_name} from {self.table_name}"
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.DROP_CHECK_CONSTRAINT
@@ -443,9 +443,9 @@ class CreateFullTextIndexOp(MigrateOpInterface):
         self,
         index_name: str,
         table_name: str,
-        schema: Optional[Any] = None,
+        schema: Any | None = None,
         unique: bool = False,
-        table: Optional[sa.Table] = None,
+        table: sa.Table | None = None,
         **kw
     ) -> None:
 
@@ -457,7 +457,7 @@ class CreateFullTextIndexOp(MigrateOpInterface):
         self.table = table
 
     def get_revision_message(self) -> String:
-        return 'add full text index %s to %s' % (self.index_name, self.table_name)
+        return f"add full text index {self.index_name} to {self.table_name}"
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.CREATE_FULL_TEXT_INDEX
@@ -474,7 +474,7 @@ class CreateFullTextIndexOp(MigrateOpInterface):
     def reverse(self):
         return DropFullTextIndexOp.from_index(self.to_index())
 
-    def to_diff_tuple(self) -> Tuple[str, FullTextIndex]:
+    def to_diff_tuple(self) -> tuple[str, FullTextIndex]:
         return ("add_full_text_index", self.to_index())
 
     @classmethod
@@ -524,9 +524,9 @@ class DropFullTextIndexOp(MigrateOpInterface):
     def __init__(
         self,
         index_name: str,
-        table_name: Optional[str] = None,
-        schema: Optional[Any] = None,
-        table: Optional[sa.Table] = None,
+        table_name: str | None = None,
+        schema: Any | None = None,
+        table: sa.Table | None = None,
         **kw
     ) -> None:
         self.index_name = index_name
@@ -535,11 +535,11 @@ class DropFullTextIndexOp(MigrateOpInterface):
         self.table = table
         self.kw = kw
 
-    def to_diff_tuple(self) -> Tuple[str, FullTextIndex]:
+    def to_diff_tuple(self) -> tuple[str, FullTextIndex]:
         return ("remove_full_text_index", self.to_index())
 
     def get_revision_message(self) -> String:
-        return 'drop full text index %s from %s' % (self.index_name, self.table_name)
+        return f"drop full text index {self.index_name} from {self.table_name}"
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.DROP_FULL_TEXT_INDEX
@@ -596,7 +596,7 @@ class DropFullTextIndexOp(MigrateOpInterface):
 class ExecuteSQL(MigrateOpInterface):
 
     def __init__(self, sql,
-                 schema: Optional[Any] = None,
+                 schema: Any | None = None,
                  **kw
                  ):
         self.sql = sql

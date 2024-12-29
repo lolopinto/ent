@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -15,6 +14,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -110,7 +110,7 @@ func (nodeData *NodeData) GetTableName() string {
 }
 
 func (nodeData *NodeData) GetGraphQLTypeName() string {
-	return fmt.Sprintf("%sType", strcase.ToCamel(nodeData.Node))
+	return names.ToClassType(nodeData.Node, "Type")
 }
 
 func (nodeData *NodeData) GetQuotedTableName() string {
@@ -495,7 +495,7 @@ func (nodeData *NodeData) BuilderEdges(s *Schema) []*edge.AssociationEdge {
 }
 
 func getImportPathForMixinBuilderFile(pattern *PatternInfo) string {
-	name := strcase.ToSnake(pattern.Name)
+	name := names.ToFilePathName(pattern.Name)
 	return fmt.Sprintf("src/ent/generated/mixins/%s/actions/%s_builder", name, name)
 }
 
@@ -795,11 +795,11 @@ func (nodeData *NodeData) GetExtraCustomQueryInfo() *extraCustomQueryInfo {
 }
 
 func (nodeData *NodeData) GetFieldLoaderName(field *field.Field) string {
-	return fmt.Sprintf("%s%sLoader", nodeData.NodeInstance, field.CamelCaseName())
+	return names.ToTsFieldName(nodeData.NodeInstance, field.FieldName, "Loader")
 }
 
 func (nodeData *NodeData) GetFieldLoaderNoTransformName(field *field.Field) string {
-	return fmt.Sprintf("%s%sNoTransformLoader", nodeData.NodeInstance, field.CamelCaseName())
+	return names.ToTsFieldName(nodeData.NodeInstance, field.FieldName, "NoTransformLoader")
 }
 
 func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) {
@@ -818,8 +818,7 @@ func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) 
 	}
 
 	fieldName, _ := base.TranslateIDSuffix(field.FieldName)
-	fieldName = strcase.ToCamel(fieldName)
-	return fmt.Sprintf("%sTo%sQuery", fieldName, strcase.ToCamel(inflection.Plural(nodeData.Node))), nil
+	return names.ToClassType(fieldName, "To", inflection.Plural(nodeData.Node), "Query"), nil
 }
 
 func (nodeData *NodeData) HasMixins() bool {
@@ -832,11 +831,16 @@ type mixinInfo struct {
 	Implements string
 }
 
-func (nodeData *NodeData) GetMixinInfo(s *Schema) (*mixinInfo, error) {
+func (nodeData *NodeData) GetMixinInfo(s *Schema, cfg codegenapi.Config) (*mixinInfo, error) {
 	var imps []*tsimport.ImportPath
 
 	var extends strings.Builder
 	var impls []string
+
+	var interfaces []string
+
+	viewerType := cfg.GetTemplatizedViewer().GetImport()
+
 	for _, p := range nodeData.PatternsWithMixins {
 		pattern := s.Patterns[p]
 		if pattern == nil {
@@ -852,9 +856,14 @@ func (nodeData *NodeData) GetMixinInfo(s *Schema) (*mixinInfo, error) {
 		})
 		extends.WriteString(pattern.GetMixinName())
 		extends.WriteString("(")
-		impls = append(impls, pattern.GetMixinInterfaceName())
+		impls = append(impls, fmt.Sprintf("%s<%s>", pattern.GetMixinInterfaceName(), viewerType))
+		interfaces = append(interfaces, pattern.GetMixinInterfaceName())
 	}
-	extends.WriteString("class {}")
+	if len(interfaces) == 0 {
+		extends.WriteString("class {}")
+	} else {
+		extends.WriteString(fmt.Sprintf("class {} as new(...args: any[]) => %s", strings.Join(interfaces, " & ")))
+	}
 	extends.WriteString(strings.Repeat(")", len(nodeData.PatternsWithMixins)))
 
 	return &mixinInfo{
@@ -897,12 +906,31 @@ func (nodeData *NodeData) GetBuilderMixinInfo(s *Schema) (*mixinInfo, error) {
 
 func (nodeData *NodeData) GenerateGetIDInBuilder() bool {
 	// TODO https://github.com/lolopinto/ent/issues/1064
-	idField := nodeData.FieldInfo.GetFieldByName("ID")
-	if idField == nil {
-		idField = nodeData.FieldInfo.GetFieldByName("id")
-	}
+	idField := nodeData.FieldInfo.GetFieldByName("id")
 	if idField == nil {
 		return false
 	}
 	return idField.HasDefaultValueOnCreate()
 }
+
+func (nodeData *NodeData) GetEdgeInfo() *edge.EdgeInfo {
+	return nodeData.EdgeInfo
+}
+
+func (nodeData *NodeData) GetFieldInfo() *field.FieldInfo {
+	return nodeData.FieldInfo
+}
+
+func (nodeData *NodeData) GetName() string {
+	return nodeData.Node
+}
+
+func (nodeData *NodeData) GetActionInfo() *action.ActionInfo {
+	return nodeData.ActionInfo
+}
+
+func (nodeData *NodeData) IsPattern() bool {
+	return false
+}
+
+var _ Container = &NodeData{}

@@ -14,13 +14,13 @@ import { Workspace } from "src/ent/workspace";
 
 export { WorkspaceEditInput };
 
-export default class EditWorkspaceAction extends EditWorkspaceActionBase {
+export class EditWorkspaceAction extends EditWorkspaceActionBase {
   getPrivacyPolicy(): PrivacyPolicy<
     Workspace,
     Viewer<Ent<any> | null, ID | null>
   > {
     return {
-      rules: [new AllowIfViewerIsEntPropertyRule("creatorID"), AlwaysDenyRule],
+      rules: [new AllowIfViewerIsEntPropertyRule("creatorId"), AlwaysDenyRule],
     };
   }
 }

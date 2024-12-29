@@ -150,6 +150,8 @@ interface CodegenConfig {
 
   // if set, overrides the saveWithoutTransform(X) methods to be this instead of the default saveWithoutTransform(X)
   transformDeleteMethod?: string;
+
+  disableDefaultExportForActions?: boolean;
 }
 
 interface PrettierConfig {

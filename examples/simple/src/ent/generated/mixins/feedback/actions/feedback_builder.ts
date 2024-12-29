@@ -9,9 +9,7 @@ import { EdgeType, NodeType } from "../../../types";
 import { Comment, IFeedback, User } from "../../../../internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../../viewer/viewer";
 
-interface IEntWithFeedback extends Ent<ExampleViewerAlias>, IFeedback {}
-
-interface IFeedbackBuilder<T extends IEntWithFeedback> {
+export interface IFeedbackBuilder<T extends IFeedback> {
   addComment(...nodes: (ID | Comment | Builder<Comment, any>)[]): this;
   addCommentID(
     id: ID | Builder<Comment, any>,
@@ -27,20 +25,28 @@ interface IFeedbackBuilder<T extends IEntWithFeedback> {
   removeLiker(...nodes: (ID | User)[]): this;
 }
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-interface BuilderConstructor<T extends IEntWithFeedback, C = {}> {
+// come back
+type Constructor<
+  T extends IFeedback<ExampleViewerAlias> = IFeedback<ExampleViewerAlias>,
+> = new (
+  ...args: any[]
+) => T;
+
+interface BuilderConstructor<T extends IFeedback<ExampleViewerAlias>, C = {}> {
   orchestrator: Orchestrator<T, any, ExampleViewerAlias>;
   isBuilder<T extends Ent>(
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any>;
 }
 
-type FeedbackBuilderIsh<T extends IEntWithFeedback> = Constructor<
-  BuilderConstructor<T>
->;
+export type FeedbackBuilderIsh<T extends IFeedback<ExampleViewerAlias>> =
+  Constructor<
+    // @ts-ignore TODO fix
+    BuilderConstructor<T>
+  >;
 
 export function FeedbackBuilder<
-  TEnt extends IEntWithFeedback,
+  TEnt extends IFeedback<ExampleViewerAlias>,
   TBase extends FeedbackBuilderIsh<TEnt>,
 >(BaseClass: TBase) {
   return class FeedbackBuilder

@@ -26,7 +26,7 @@ import { EventActivityType } from "src/graphql/resolvers/";
 
 interface customEventActivityCreateInput extends EventActivityCreateInput {
   addressId?: string;
-  eventID: string;
+  eventId: string;
 }
 
 interface EventActivityCreatePayload {
@@ -63,7 +63,7 @@ export const EventActivityCreateInputType = new GraphQLInputObjectType({
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    eventID: {
+    eventId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     startTime: {
@@ -120,9 +120,11 @@ export const EventActivityCreateType: GraphQLFieldConfig<
     const eventActivity = await CreateEventActivityAction.create(
       context.getViewer(),
       {
-        addressId: mustDecodeNullableIDFromGQLID(input.addressId),
+        addressId: mustDecodeNullableIDFromGQLID(
+          input.addressId?.toString() ?? input.addressId,
+        ),
         name: input.name,
-        eventID: mustDecodeIDFromGQLID(input.eventID),
+        eventId: mustDecodeIDFromGQLID(input.eventId.toString()),
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.location,

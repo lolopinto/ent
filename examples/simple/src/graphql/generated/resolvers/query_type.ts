@@ -16,6 +16,8 @@ import {
   ContactPhoneNumberListDeprecatedQueryType,
   EventConnectionQueryType,
   EventListDeprecatedQueryType,
+  FileConnectionQueryType,
+  FileListDeprecatedQueryType,
   HolidayConnectionQueryType,
   HolidayListDeprecatedQueryType,
   HoursOfOperationConnectionQueryType,
@@ -24,6 +26,8 @@ import {
   TimeDiffQueryType,
   UserConnectionQueryType,
   UserListDeprecatedQueryType,
+  UserStatisticsConnectionQueryType,
+  UserStatisticsListDeprecatedQueryType,
   ViewerQueryType,
 } from "../../resolvers/internal";
 
@@ -42,6 +46,8 @@ export const QueryType = new GraphQLObjectType({
       ContactPhoneNumberListDeprecatedQueryType,
     event_connection: EventConnectionQueryType,
     event_list_deprecated: EventListDeprecatedQueryType,
+    file_connection: FileConnectionQueryType,
+    file_list_deprecated: FileListDeprecatedQueryType,
     holiday_connection: HolidayConnectionQueryType,
     holiday_list_deprecated: HolidayListDeprecatedQueryType,
     hours_of_operation_connection: HoursOfOperationConnectionQueryType,
@@ -50,6 +56,8 @@ export const QueryType = new GraphQLObjectType({
     timeDiff: TimeDiffQueryType,
     user_connection: UserConnectionQueryType,
     user_list_deprecated: UserListDeprecatedQueryType,
+    user_statistics_connection: UserStatisticsConnectionQueryType,
+    user_statistics_list_deprecated: UserStatisticsListDeprecatedQueryType,
     viewer: ViewerQueryType,
   }),
 });

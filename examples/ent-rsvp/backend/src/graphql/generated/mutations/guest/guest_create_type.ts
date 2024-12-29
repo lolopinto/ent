@@ -24,8 +24,8 @@ import { GuestTagType, GuestType } from "src/graphql/resolvers/";
 
 interface customGuestCreateInput extends GuestCreateInput {
   addressId?: string;
-  eventID: string;
-  guestGroupID: string;
+  eventId: string;
+  guestGroupId: string;
   guestDataId?: string;
 }
 
@@ -42,13 +42,13 @@ export const GuestCreateInputType = new GraphQLInputObjectType({
     name: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    eventID: {
+    eventId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     emailAddress: {
       type: GraphQLString,
     },
-    guestGroupID: {
+    guestGroupId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     title: {
@@ -94,13 +94,17 @@ export const GuestCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<GuestCreatePayload> => {
     const guest = await CreateGuestAction.create(context.getViewer(), {
-      addressId: mustDecodeNullableIDFromGQLID(input.addressId),
+      addressId: mustDecodeNullableIDFromGQLID(
+        input.addressId?.toString() ?? input.addressId,
+      ),
       name: input.name,
-      eventID: mustDecodeIDFromGQLID(input.eventID),
+      eventId: mustDecodeIDFromGQLID(input.eventId.toString()),
       emailAddress: input.emailAddress,
-      guestGroupID: mustDecodeIDFromGQLID(input.guestGroupID),
+      guestGroupId: mustDecodeIDFromGQLID(input.guestGroupId.toString()),
       title: input.title,
-      guestDataId: mustDecodeNullableIDFromGQLID(input.guestDataId),
+      guestDataId: mustDecodeNullableIDFromGQLID(
+        input.guestDataId?.toString() ?? input.guestDataId,
+      ),
       tag: input.tag,
     }).saveX();
     return { guest: guest };

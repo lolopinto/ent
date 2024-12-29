@@ -16,12 +16,17 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { Contact } from "../../../../ent";
 import EditContactAction, {
   ContactEditInput,
 } from "../../../../ent/contact/actions/edit_contact_action";
-import { ContactType } from "../../../resolvers";
+import { AttachmentInputType } from "../input/attachment_input_type";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
+import { ContactLabelType, ContactType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactEditInput extends ContactEditInput {
@@ -31,6 +36,24 @@ interface customContactEditInput extends ContactEditInput {
 interface ContactEditPayload {
   contact: Contact;
 }
+
+export const EmailContactEditInput = new GraphQLInputObjectType({
+  name: "EmailContactEditInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    id: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    extra: {
+      type: ContactInfoExtraInputType,
+    },
+    emailAddress: {
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    label: {
+      type: new GraphQLNonNull(ContactLabelType),
+    },
+  }),
+});
 
 export const ContactEditInputType = new GraphQLInputObjectType({
   name: "ContactEditInput",
@@ -50,6 +73,12 @@ export const ContactEditInputType = new GraphQLInputObjectType({
     },
     lastName: {
       type: GraphQLString,
+    },
+    attachments: {
+      type: new GraphQLList(new GraphQLNonNull(AttachmentInputType)),
+    },
+    emails: {
+      type: new GraphQLList(new GraphQLNonNull(EmailContactEditInput)),
     },
   }),
 });
@@ -89,13 +118,30 @@ export const ContactEditType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.id),
       {
         emailIds: input.emailIds
-          ? input.emailIds.map((i: any) => mustDecodeIDFromGQLID(i))
+          ? input.emailIds.map((i: any) => mustDecodeIDFromGQLID(i.toString()))
           : undefined,
         phoneNumberIds: input.phoneNumberIds
-          ? input.phoneNumberIds.map((i: any) => mustDecodeIDFromGQLID(i))
+          ? input.phoneNumberIds.map((i: any) =>
+              mustDecodeIDFromGQLID(i.toString()),
+            )
           : undefined,
         firstName: input.firstName,
         lastName: input.lastName,
+        attachments: input.attachments?.map((item: any) => ({
+          ...item,
+          fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+          dupeFileId: item.dupeFileId
+            ? mustDecodeNullableIDFromGQLID(
+                item.dupeFileId?.toString() ?? item.dupeFileId,
+              )
+            : undefined,
+          creatorId: item.creatorId
+            ? mustDecodeNullableIDFromGQLID(
+                item.creatorId?.toString() ?? item.creatorId,
+              )
+            : undefined,
+        })),
+        emails: input.emails,
       },
     );
     return { contact };

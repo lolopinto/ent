@@ -2,7 +2,7 @@
 
 export * from "src/ent/generated/loaders";
 export * from "src/ent/generated/loadAny";
-export * from "src/ent/generated/mixins/todo_container";
+export * from "src/ent/mixins/todo_container";
 export * from "src/ent/generated/account_base";
 export * from "src/ent/generated/patterns/todo_container_query_base";
 export * from "src/ent/generated/tag_base";

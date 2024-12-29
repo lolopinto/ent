@@ -497,6 +497,13 @@ func (cfg *Config) CustomSQLExclude() []string {
 	return nil
 }
 
+func (cfg *Config) DisableDefaultExportForActions() bool {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.DisableDefaultExportForActions
+	}
+	return false
+}
+
 const DEFAULT_PRETTIER_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -649,27 +656,28 @@ func cloneConfig(cfg *ConfigurableConfig) *ConfigurableConfig {
 }
 
 type CodegenConfig struct {
-	DefaultEntPolicy           *PrivacyConfig                   `yaml:"defaultEntPolicy"`
-	DefaultActionPolicy        *PrivacyConfig                   `yaml:"defaultActionPolicy"`
-	Prettier                   *PrettierConfig                  `yaml:"prettier"`
-	RelativeImports            bool                             `yaml:"relativeImports"`
-	DisableGraphQLRoot         bool                             `yaml:"disableGraphQLRoot"`
-	GeneratedHeader            string                           `yaml:"generatedHeader"`
-	DisableBase64Encoding      bool                             `yaml:"disableBase64Encoding"`
-	GenerateRootResolvers      bool                             `yaml:"generateRootResolvers"`
-	DefaultGraphQLMutationName codegenapi.GraphQLMutationName   `yaml:"defaultGraphQLMutationName"`
-	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat    `yaml:"defaultGraphQLFieldFormat"`
-	SchemaSQLFilePath          string                           `yaml:"schemaSQLFilePath"`
-	SubscriptionType           *codegenapi.ImportedObject       `yaml:"subscriptionType"`
-	DatabaseToCompareTo        string                           `yaml:"databaseToCompareTo"`
-	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
-	TemplatizedViewer          *codegenapi.ImportedObject       `yaml:"templatizedViewer"`
-	CustomAssocEdgePath        *codegenapi.ImportedObject       `yaml:"customAssocEdgePath"`
-	GlobalImportPath           string                           `yaml:"globalImportPath"`
-	UserOverridenFiles         []string                         `yaml:"userOverridenFiles"`
-	userOverridenFiles         map[string]bool
-	TransformDeleteMethod      string `yaml:"transformDeleteMethod"`
-	TransformLoadMethod        string `yaml:"transformLoadMethod"`
+	DefaultEntPolicy               *PrivacyConfig                   `yaml:"defaultEntPolicy"`
+	DefaultActionPolicy            *PrivacyConfig                   `yaml:"defaultActionPolicy"`
+	Prettier                       *PrettierConfig                  `yaml:"prettier"`
+	RelativeImports                bool                             `yaml:"relativeImports"`
+	DisableGraphQLRoot             bool                             `yaml:"disableGraphQLRoot"`
+	GeneratedHeader                string                           `yaml:"generatedHeader"`
+	DisableBase64Encoding          bool                             `yaml:"disableBase64Encoding"`
+	GenerateRootResolvers          bool                             `yaml:"generateRootResolvers"`
+	DefaultGraphQLMutationName     codegenapi.GraphQLMutationName   `yaml:"defaultGraphQLMutationName"`
+	DefaultGraphQLFieldFormat      codegenapi.GraphQLFieldFormat    `yaml:"defaultGraphQLFieldFormat"`
+	SchemaSQLFilePath              string                           `yaml:"schemaSQLFilePath"`
+	SubscriptionType               *codegenapi.ImportedObject       `yaml:"subscriptionType"`
+	DatabaseToCompareTo            string                           `yaml:"databaseToCompareTo"`
+	FieldPrivacyEvaluated          codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
+	TemplatizedViewer              *codegenapi.ImportedObject       `yaml:"templatizedViewer"`
+	CustomAssocEdgePath            *codegenapi.ImportedObject       `yaml:"customAssocEdgePath"`
+	GlobalImportPath               string                           `yaml:"globalImportPath"`
+	UserOverridenFiles             []string                         `yaml:"userOverridenFiles"`
+	userOverridenFiles             map[string]bool
+	TransformDeleteMethod          string `yaml:"transformDeleteMethod"`
+	TransformLoadMethod            string `yaml:"transformLoadMethod"`
+	DisableDefaultExportForActions bool   `yaml:"disableDefaultExportForActions"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -688,27 +696,28 @@ func cloneDatabaseMigration(cfg *DatabaseMigrationConfig) *DatabaseMigrationConf
 
 func (cfg *CodegenConfig) Clone() *CodegenConfig {
 	return &CodegenConfig{
-		DefaultEntPolicy:           clonePrivacyConfig(cfg.DefaultEntPolicy),
-		DefaultActionPolicy:        clonePrivacyConfig(cfg.DefaultActionPolicy),
-		Prettier:                   clonePrettierConfig(cfg.Prettier),
-		RelativeImports:            cfg.RelativeImports,
-		DisableGraphQLRoot:         cfg.DisableGraphQLRoot,
-		GeneratedHeader:            cfg.GeneratedHeader,
-		DisableBase64Encoding:      cfg.DisableBase64Encoding,
-		GenerateRootResolvers:      cfg.GenerateRootResolvers,
-		DefaultGraphQLMutationName: cfg.DefaultGraphQLMutationName,
-		DefaultGraphQLFieldFormat:  cfg.DefaultGraphQLFieldFormat,
-		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
-		SubscriptionType:           cfg.SubscriptionType,
-		DatabaseToCompareTo:        cfg.DatabaseToCompareTo,
-		FieldPrivacyEvaluated:      cfg.FieldPrivacyEvaluated,
-		TemplatizedViewer:          cloneImportedObject(cfg.TemplatizedViewer),
-		CustomAssocEdgePath:        cloneImportedObject(cfg.CustomAssocEdgePath),
-		GlobalImportPath:           cfg.GlobalImportPath,
-		UserOverridenFiles:         cfg.UserOverridenFiles,
-		userOverridenFiles:         cfg.userOverridenFiles,
-		TransformDeleteMethod:      cfg.TransformDeleteMethod,
-		TransformLoadMethod:        cfg.TransformLoadMethod,
+		DefaultEntPolicy:               clonePrivacyConfig(cfg.DefaultEntPolicy),
+		DefaultActionPolicy:            clonePrivacyConfig(cfg.DefaultActionPolicy),
+		Prettier:                       clonePrettierConfig(cfg.Prettier),
+		RelativeImports:                cfg.RelativeImports,
+		DisableGraphQLRoot:             cfg.DisableGraphQLRoot,
+		GeneratedHeader:                cfg.GeneratedHeader,
+		DisableBase64Encoding:          cfg.DisableBase64Encoding,
+		GenerateRootResolvers:          cfg.GenerateRootResolvers,
+		DefaultGraphQLMutationName:     cfg.DefaultGraphQLMutationName,
+		DefaultGraphQLFieldFormat:      cfg.DefaultGraphQLFieldFormat,
+		SchemaSQLFilePath:              cfg.SchemaSQLFilePath,
+		SubscriptionType:               cfg.SubscriptionType,
+		DatabaseToCompareTo:            cfg.DatabaseToCompareTo,
+		FieldPrivacyEvaluated:          cfg.FieldPrivacyEvaluated,
+		TemplatizedViewer:              cloneImportedObject(cfg.TemplatizedViewer),
+		CustomAssocEdgePath:            cloneImportedObject(cfg.CustomAssocEdgePath),
+		GlobalImportPath:               cfg.GlobalImportPath,
+		UserOverridenFiles:             cfg.UserOverridenFiles,
+		userOverridenFiles:             cfg.userOverridenFiles,
+		TransformDeleteMethod:          cfg.TransformDeleteMethod,
+		TransformLoadMethod:            cfg.TransformLoadMethod,
+		DisableDefaultExportForActions: cfg.DisableDefaultExportForActions,
 	}
 }
 

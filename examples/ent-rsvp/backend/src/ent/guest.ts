@@ -11,7 +11,7 @@ export class Guest extends GuestBase {
         // guest can view self
         AllowIfViewerRule,
         // can view guest group if creator of event
-        new AllowIfEventCreatorRule(this.eventID),
+        new AllowIfEventCreatorRule(this.eventId),
         new AllowIfGuestInSameGuestGroupRule(),
         AlwaysDenyRule,
       ],

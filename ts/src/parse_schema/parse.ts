@@ -186,7 +186,7 @@ function processEdgeGroups(
 }
 
 async function processPattern(
-  patterns: patternsDict,
+  patterns: ProcessPatterns,
   pattern: Pattern,
   processedSchema: ProcessedSchema,
 ): Promise<TransformFlags> {
@@ -223,20 +223,152 @@ async function processPattern(
     }
   }
 
-  if (patterns[name] === undefined) {
+  if (!patterns.hasPattern(name)) {
     // intentionally processing separately and not passing pattern.name
     const edges = processEdges(pattern.edges || []);
-    patterns[name] = {
+    const processed = {
       name: pattern.name,
       assocEdges: edges,
       fields: fields,
       disableMixin: pattern.disableMixin,
     };
+    patterns.addPattern(pattern, processed);
   } else {
-    // TODO ideally we want to make sure that different patterns don't have the same name
     // can't do a deepEqual check because function calls and therefore different instances in fields
+    // so compare as best we can
+    const cmp = comparePatterns(pattern, patterns);
+    if (typeof cmp !== "boolean") {
+      if (cmp.field) {
+        throw new Error(
+          `pattern '${pattern.name}' in schema ${processedSchema.schemaPath} has different field ${cmp.field.name} from another pattern with the same name`,
+        );
+      } else if (cmp.edge) {
+        throw new Error(
+          `pattern '${pattern.name}' in schema ${processedSchema.schemaPath} has different field ${cmp.edge.name} from another pattern with the same name`,
+        );
+      } else {
+        throw new Error(
+          `pattern '${pattern.name}' in schema ${processedSchema.schemaPath} has different ${cmp.difference} from another pattern with the same name`,
+        );
+      }
+    }
   }
   return ret;
+}
+
+interface ComparePatternResult {
+  difference?: "name" | "disableMixin" | "field" | "edges" | "edge";
+  field?: {
+    name: string;
+  };
+  edge?: {
+    name: string;
+  };
+}
+
+function comparePatterns(
+  pattern: Pattern,
+  patterns: ProcessPatterns,
+): true | ComparePatternResult {
+  const processedPattern = patterns.getProcessedPattern(pattern.name);
+  if (pattern.name !== processedPattern.name) {
+    return {
+      difference: "name",
+    };
+  }
+  if (pattern.disableMixin !== processedPattern.disableMixin) {
+    return {
+      difference: "disableMixin",
+    };
+  }
+  const processedFields = patterns.getPatternFields(pattern.name);
+  for (const k in pattern.fields) {
+    if (!processedFields[k]) {
+      return {
+        difference: "field",
+        field: {
+          name: k,
+        },
+      };
+    }
+    if (!compareField(pattern.fields[k], processedFields[k])) {
+      return {
+        difference: "field",
+        field: {
+          name: k,
+        },
+      };
+    }
+  }
+  for (const k in processedFields) {
+    if (!pattern.fields[k]) {
+      return {
+        difference: "field",
+        field: {
+          name: k,
+        },
+      };
+    }
+  }
+  if (
+    (pattern.edges?.length ?? 0) !== (processedPattern.assocEdges.length ?? 0)
+  ) {
+    return {
+      difference: "edges",
+    };
+  }
+  if (!pattern.edges?.length) {
+    return true;
+  }
+  for (let i = 0; i < pattern.edges?.length; i++) {
+    if (!compareEdge(pattern.edges[i], processedPattern.assocEdges[i])) {
+      return {
+        difference: "edge",
+        edge: {
+          name: pattern.edges[i].name,
+        },
+      };
+    }
+  }
+  return true;
+}
+
+function compareObject(o1: Object, o2: Object): boolean {
+  for (const k in o1) {
+    const v = o1[k];
+    if (
+      typeof v === "function" ||
+      typeof v === "symbol" ||
+      (typeof v === "object" && v !== null)
+    ) {
+      continue;
+    }
+    if (v !== o2[k]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function compareField(field: Field, procesedField: Field): boolean {
+  for (const k in field) {
+    if (!compareObject(field[k], procesedField[k])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function compareEdge(
+  edge: AssocEdge,
+  processedEdge: ProcessedAssocEdge,
+): boolean {
+  for (const k in edge) {
+    if (!compareObject(edge[k], processedEdge[k])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 enum NullableResult {
@@ -405,12 +537,45 @@ interface InputSchema extends Schema {
   schemaPath?: string;
 }
 
+class ProcessPatterns {
+  patternsDict: patternsDict = {};
+  originalPatterns: {
+    [key: string]: Pattern;
+  } = {};
+  constructor() {}
+
+  addPattern(pattern: Pattern, processed: ProcessedPattern) {
+    this.originalPatterns[pattern.name] = pattern;
+    this.patternsDict[pattern.name] = processed;
+  }
+
+  getProcessedPattern(name: string): ProcessedPattern {
+    const pattern = this.patternsDict[name];
+    if (!pattern) {
+      throw new Error(`no pattern ${name}`);
+    }
+    return pattern;
+  }
+
+  getPatternFields(name: string): FieldMap {
+    const pattern = this.originalPatterns[name];
+    if (!pattern) {
+      throw new Error(`no pattern ${name}`);
+    }
+    return pattern.fields;
+  }
+
+  hasPattern(name: string): boolean {
+    return !!this.patternsDict[name];
+  }
+}
+
 export async function parseSchema(
   potentialSchemas: PotentialSchemas,
   globalSchema?: GlobalSchema,
 ): Promise<Result> {
-  let schemas: schemasDict = {};
-  let patterns: patternsDict = {};
+  const schemas: schemasDict = {};
+  const processPatterns = new ProcessPatterns();
   let parsedGlobalSchema: ProcessedGlobalSchema | undefined;
 
   if (globalSchema) {
@@ -456,7 +621,11 @@ export async function parseSchema(
     let patternNames: string[] = [];
     if (schema.patterns) {
       for (const pattern of schema.patterns) {
-        const ret = await processPattern(patterns, pattern, processedSchema);
+        const ret = await processPattern(
+          processPatterns,
+          pattern,
+          processedSchema,
+        );
         patternNames.push(pattern.name);
         if (ret.transformsSelect) {
           if (processedSchema.transformsSelect) {
@@ -498,7 +667,7 @@ export async function parseSchema(
 
   return {
     schemas,
-    patterns,
+    patterns: processPatterns.patternsDict,
     globalSchema: parsedGlobalSchema,
     config: {
       rome: biome,

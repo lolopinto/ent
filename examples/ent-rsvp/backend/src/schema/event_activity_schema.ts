@@ -14,7 +14,7 @@ const EventActivitySchema = new EntSchema({
   fields: {
     Name: StringType(),
     eventID: UUIDType({
-      foreignKey: { schema: "Event", column: "ID" },
+      foreignKey: { schema: "Event", column: "id" },
     }),
     StartTime: TimestampType(),
     EndTime: TimestampType({ nullable: true }),
@@ -81,6 +81,13 @@ const EventActivitySchema = new EntSchema({
               canViewerDo: {
                 addAllFields: true,
               },
+              actionOnlyFields: [
+                {
+                  name: "test",
+                  type: "String",
+                  optional: true,
+                },
+              ],
             },
             {
               operation: ActionOperation.RemoveEdge,

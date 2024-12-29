@@ -4,6 +4,7 @@ import {
   StringType,
   UUIDType,
   UUIDListType,
+  StructTypeAsList,
 } from "@snowtop/ent/schema/";
 import Feedback from "./patterns/feedback";
 
@@ -25,7 +26,11 @@ const ContactSchema = new EntSchema({
     lastName: StringType(),
     userID: UUIDType({
       immutable: true,
-      foreignKey: { schema: "User", column: "ID" },
+      foreignKey: { schema: "User", column: "id" },
+    }),
+    attachments: StructTypeAsList({
+      nullable: true,
+      globalType: "Attachment",
     }),
   },
 
@@ -64,6 +69,15 @@ const ContactSchema = new EntSchema({
     },
     {
       operation: ActionOperation.Edit,
+      actionOnlyFields: [
+        {
+          name: "emails",
+          list: true,
+          nullable: true,
+          type: "Object",
+          actionName: "EditContactEmailAction",
+        },
+      ],
     },
     {
       operation: ActionOperation.Delete,

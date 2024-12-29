@@ -2,6 +2,7 @@ import { Data } from "@snowtop/ent";
 import {
   expectMutation,
   expectQueryFromRoot,
+  Option,
 } from "@snowtop/ent-graphql-tests";
 import { createUser, createAndInvitePlusGuests } from "src/testutils";
 import schema from "src/graphql/generated/schema";
@@ -10,6 +11,7 @@ import { encodeGQLID } from "@snowtop/ent/graphql";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import supertest from "supertest";
 import { Guest, User } from "src/ent";
+import each from "jest-each";
 
 async function confirmNoViewer(st?: supertest.SuperTest<supertest.Test>) {
   await expectQueryFromRoot(
@@ -29,34 +31,24 @@ test("logged out viewer", async () => {
   await confirmNoViewer();
 });
 
-test("log guest in", async () => {
+each([[true], [false]]).test("log guest in. any: %s", async (any: boolean) => {
   const [_, guests] = await createAndInvitePlusGuests(0);
   const guest = guests[0];
 
-  const code = await AuthCode.loadFromGuestIDX(guest.viewer, guest.id);
+  const code = await AuthCode.loadFromGuestIdX(guest.viewer, guest.id);
 
   expect(code.emailAddress).toBe(guest.emailAddress);
-  expect(code.guestID).toBe(guest.id);
+  expect(code.guestId).toBe(guest.id);
 
   let jwtToken: string = "";
   let st: supertest.SuperTest<supertest.Test>;
 
-  st = await expectMutation(
-    {
-      mutation: "authGuest",
-      schema,
-      args: {
-        emailAddress: code.emailAddress,
-        code: code.code,
-      },
-      init: PassportStrategyHandler.testInitJWTFunction({
-        secretOrKey: "secret",
-        loaderOptions: Guest.loaderOptions(),
-        authOptions: {
-          session: false,
-        },
-      }),
-    },
+  let mutation = "authGuest";
+  let args: Data = {
+    emailAddress: code.emailAddress,
+    code: code.code,
+  };
+  let tests: Option[] = [
     // guest is returned as viewer
     ["viewer.guest.id", encodeGQLID(guest)],
     [
@@ -65,6 +57,31 @@ test("log guest in", async () => {
         jwtToken = token;
       },
     ],
+  ];
+  if (any) {
+    mutation = "authAny";
+    args = {
+      guest: args,
+    };
+    tests = tests.map((t) => {
+      t[0] = `guest.${t[0]}`;
+      return t;
+    });
+  }
+  st = await expectMutation(
+    {
+      mutation,
+      schema,
+      args,
+      init: PassportStrategyHandler.testInitJWTFunction({
+        secretOrKey: "secret",
+        loaderOptions: Guest.loaderOptions(),
+        authOptions: {
+          session: false,
+        },
+      }),
+    },
+    ...tests,
   );
 
   let headers: Data = {};
@@ -92,10 +109,10 @@ test("incorrect guest credentials", async () => {
   const [_, guests] = await createAndInvitePlusGuests(0);
   const guest = guests[0];
 
-  const code = await AuthCode.loadFromGuestIDX(guest.viewer, guest.id);
+  const code = await AuthCode.loadFromGuestIdX(guest.viewer, guest.id);
 
   expect(code.emailAddress).toBe(guest.emailAddress);
-  expect(code.guestID).toBe(guest.id);
+  expect(code.guestId).toBe(guest.id);
 
   let st = await expectMutation(
     {
@@ -113,28 +130,18 @@ test("incorrect guest credentials", async () => {
   await confirmNoViewer(st);
 });
 
-test("log user in", async () => {
+each([[true], [false]]).test("log user in. any: %s", async (any: boolean) => {
   const user = await createUser();
 
   let jwtToken: string = "";
   let st: supertest.SuperTest<supertest.Test>;
 
-  st = await expectMutation(
-    {
-      mutation: "authUser",
-      schema,
-      args: {
-        emailAddress: user.emailAddress,
-        password: "pa$$w0rd",
-      },
-      init: PassportStrategyHandler.testInitJWTFunction({
-        secretOrKey: "secret",
-        loaderOptions: User.loaderOptions(),
-        authOptions: {
-          session: false,
-        },
-      }),
-    },
+  let mutation = "authUser";
+  let args: Data = {
+    emailAddress: user.emailAddress,
+    password: "pa$$w0rd",
+  };
+  let tests: Option[] = [
     // user is returned as viewer
     ["viewer.user.id", encodeGQLID(user)],
     [
@@ -143,6 +150,31 @@ test("log user in", async () => {
         jwtToken = token;
       },
     ],
+  ];
+  if (any) {
+    mutation = "authAny";
+    args = {
+      user: args,
+    };
+    tests = tests.map((t) => {
+      t[0] = `user.${t[0]}`;
+      return t;
+    });
+  }
+  st = await expectMutation(
+    {
+      mutation,
+      schema,
+      args,
+      init: PassportStrategyHandler.testInitJWTFunction({
+        secretOrKey: "secret",
+        loaderOptions: User.loaderOptions(),
+        authOptions: {
+          session: false,
+        },
+      }),
+    },
+    ...tests,
   );
 
   let headers: Data = {};

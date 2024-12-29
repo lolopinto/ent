@@ -1,4 +1,4 @@
-import { User, Contact } from "../../ent";
+import { User, Contact, ContactEmail } from "../../ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction from "../user/actions/create_user_action";
 import CreateContactAction, {
@@ -9,8 +9,10 @@ import EditContactAction from "../contact/actions/edit_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import { query } from "@snowtop/ent";
 import { v4 } from "uuid";
-import { ContactLabel, ContactInfoSource } from "../generated/types";
+import { ContactLabel, ContactInfoSource, NodeType } from "../generated/types";
 import { Transaction } from "@snowtop/ent/action";
+import CreateFileAction from "../file/actions/create_file_action";
+import { advanceTo } from "jest-date-mock";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -28,17 +30,20 @@ async function create(
   user: User,
   firstName: string,
   lastName: string,
+  partial?: Partial<ContactCreateInput>,
 ): Promise<Contact> {
   return CreateContactAction.create(new ExampleViewer(user.id), {
     emails: [
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Default,
+        ownerId: user.id,
       },
     ],
     firstName: firstName,
     lastName: lastName,
-    userID: user.id,
+    userId: user.id,
+    ...partial,
   }).saveX();
 }
 
@@ -49,17 +54,21 @@ async function createMany(
   let results: Contact[] = [];
   for (const name of names) {
     // TODO eventually a multi-create API
-    let contact = await CreateContactAction.create(new ExampleViewer(user.id), {
-      emails: [
-        {
-          emailAddress: randomEmail(),
-          label: ContactLabel.Default,
-        },
-      ],
-      firstName: name.firstName,
-      lastName: name.lastName,
-      userID: user.id,
-    }).saveX();
+    const contact = await CreateContactAction.create(
+      new ExampleViewer(user.id),
+      {
+        emails: [
+          {
+            emailAddress: randomEmail(),
+            label: ContactLabel.Default,
+            ownerId: user.id,
+          },
+        ],
+        firstName: name.firstName,
+        lastName: name.lastName,
+        userId: user.id,
+      },
+    ).saveX();
     results.push(contact);
   }
 
@@ -75,21 +84,89 @@ test("create contact", async () => {
   expect(contact.lastName).toBe("Stark");
 });
 
+test("create contact with explicit empty attachments", async () => {
+  let user = await createUser();
+  const contact = await create(user, "Sansa", "Stark", {
+    attachments: [],
+  });
+
+  expect(contact).toBeInstanceOf(Contact);
+  expect(contact.firstName).toBe("Sansa");
+  expect(contact.lastName).toBe("Stark");
+  expect(contact.attachments).toStrictEqual([]);
+});
+
+test("create contact with explicit attachments", async () => {
+  let user = await createUser();
+  const file = await CreateFileAction.create(user.viewer, {
+    creatorId: user.id,
+    name: "test.png",
+    path: "/tmp/test.png",
+  }).saveX();
+  const file2 = await CreateFileAction.create(user.viewer, {
+    creatorId: user.id,
+    name: "test.png2",
+    path: "/tmp/test.png2",
+  }).saveX();
+  const d = new Date();
+  advanceTo(d);
+  const contact = await create(user, "Sansa", "Stark", {
+    attachments: [
+      {
+        fileId: file.id,
+        date: d,
+        note: "test",
+        dupeFileId: file.id,
+        creatorId: user.id,
+        creatorType: NodeType.User,
+      },
+      {
+        fileId: file2.id,
+        date: d,
+        note: "test",
+        dupeFileId: file2.id,
+      },
+    ],
+  });
+
+  expect(contact).toBeInstanceOf(Contact);
+  expect(contact.firstName).toBe("Sansa");
+  expect(contact.lastName).toBe("Stark");
+  expect(contact.attachments).toMatchObject([
+    {
+      fileId: file.id,
+      date: d.toISOString(),
+      note: "test",
+      dupeFileId: file.id,
+      creatorId: user.id,
+      creatorType: NodeType.User,
+    },
+    {
+      fileId: file2.id,
+      date: d.toISOString(),
+      note: "test",
+      dupeFileId: file2.id,
+    },
+  ]);
+});
+
 test("create contacts", async () => {
   function verifyContacts(
     contacts: Contact[],
     inputs: Pick<ContactCreateInput, "firstName" | "lastName">[],
   ) {
     expect(contacts.length).toBe(inputs.length);
-    let idx = 0;
-    for (const input of inputs) {
-      let contact = contacts[idx];
-      expect(contact.firstName).toBe(input.firstName);
-      expect(contact.lastName).toBe(input.lastName);
-      idx++;
+    // order is not always as expected so just sort them
+    contacts.sort((a, b) => a.firstName.localeCompare(b.firstName));
+    inputs.sort((a, b) => a.firstName.localeCompare(b.firstName));
+    for (let i = 0; i < inputs.length; i++) {
+      const input = inputs[i];
+      const contact = contacts[i];
+      expect(contact.firstName, `${i}`).toBe(input.firstName);
+      expect(contact.lastName, `${i}`).toBe(input.lastName);
     }
   }
-  let inputs = [
+  const inputs = [
     { firstName: "Robb", lastName: "Stark" },
     { firstName: "Sansa", lastName: "Stark" },
     { firstName: "Arya", lastName: "Stark" },
@@ -101,7 +178,7 @@ test("create contacts", async () => {
   // it'll be in the initial order because it's in order of creation
   verifyContacts(contacts, inputs);
 
-  const userId = contacts[0].userID;
+  const userId = contacts[0].userId;
   const v = new ExampleViewer(userId);
   const loadedContact = await Contact.loadX(v, contacts[0].id);
   user = await loadedContact.loadUserX();
@@ -120,7 +197,7 @@ test("create contacts", async () => {
   verifyContacts(loadedContacts, inputs2);
 
   // ygritte can't see jon snow's contacts
-  let action = CreateUserAction.create(loggedOutViewer, {
+  const action = CreateUserAction.create(loggedOutViewer, {
     firstName: "Ygritte",
     lastName: "",
     emailAddress: randomEmail(),
@@ -176,17 +253,19 @@ test("multiple emails", async () => {
           default: true,
           source: ContactInfoSource.Online,
         },
+        ownerId: user.id,
       },
       {
         emailAddress: randomEmail(),
         label: ContactLabel.Work,
+        ownerId: user.id,
         // set to make test easier
         extra: null,
       },
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   };
   let contact = await CreateContactAction.create(
     new ExampleViewer(user.id),
@@ -208,6 +287,7 @@ test("multiple emails", async () => {
           emailAddress: email.emailAddress,
           label: email.label,
           extra: email.extra,
+          ownerId: email.ownerId,
         };
       })
       .sort(sortFn),
@@ -238,6 +318,28 @@ test("multiple emails", async () => {
   );
   expect(r3.length).toBe(1);
   expect(r3[0].id).toBe(contact.id);
+
+  const email1 = emails[0];
+  const newEmail = randomEmail();
+  const editedContact = await EditContactAction.create(
+    contact.viewer,
+    contact,
+    {
+      firstName: "Aegon",
+      lastName: "Targaryen",
+      emails: [
+        {
+          id: email1.id,
+          emailAddress: newEmail,
+        },
+      ],
+    },
+  ).saveX();
+  expect(editedContact.firstName).toBe("Aegon");
+  expect(editedContact.lastName).toBe("Targaryen");
+
+  const email1Reloaded = await ContactEmail.loadX(contact.viewer, email1.id);
+  expect(email1Reloaded.emailAddress).toBe(newEmail);
 });
 
 test("multiple phonenumbers", async () => {
@@ -247,6 +349,7 @@ test("multiple phonenumbers", async () => {
       {
         phoneNumber: randomPhoneNumber(),
         label: ContactLabel.Default,
+        ownerId: user.id,
         extra: {
           default: true,
           source: ContactInfoSource.Friend,
@@ -255,12 +358,13 @@ test("multiple phonenumbers", async () => {
       {
         phoneNumber: randomPhoneNumber(),
         label: ContactLabel.Default,
+        ownerId: user.id,
         extra: null,
       },
     ],
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   };
   let contact = await CreateContactAction.create(
     new ExampleViewer(user.id),
@@ -282,6 +386,7 @@ test("multiple phonenumbers", async () => {
           phoneNumber: phoneNumber.phoneNumber,
           label: phoneNumber.label,
           extra: phoneNumber.extra,
+          ownerId: phoneNumber.ownerId,
         };
       })
       .sort(sortFn),
@@ -324,12 +429,12 @@ test("transaction with different viewer type", async () => {
   const action1 = CreateContactAction.create(viewer, {
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   });
   const action2 = CreateContactAction.create(viewer, {
     firstName: "Jon",
     lastName: "Snow",
-    userID: user.id,
+    userId: user.id,
   });
 
   const tx = new Transaction(viewer, [action1, action2]);

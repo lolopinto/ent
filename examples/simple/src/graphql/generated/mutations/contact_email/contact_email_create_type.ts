@@ -20,12 +20,13 @@ import { ContactEmail } from "../../../../ent";
 import CreateContactEmailAction, {
   ContactEmailCreateInput,
 } from "../../../../ent/contact_email/actions/create_contact_email_action";
-import { ContactInfoInputType } from "../input/contact_info_input_type";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
 import { ContactEmailType, ContactLabelType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactEmailCreateInput extends ContactEmailCreateInput {
-  contactID: string;
+  contactId: string;
+  ownerId: string;
 }
 
 interface ContactEmailCreatePayload {
@@ -36,16 +37,19 @@ export const ContactEmailCreateInputType = new GraphQLInputObjectType({
   name: "ContactEmailCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     extra: {
-      type: ContactInfoInputType,
+      type: ContactInfoExtraInputType,
+    },
+    contactId: {
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    ownerId: {
+      type: new GraphQLNonNull(GraphQLID),
     },
     emailAddress: {
       type: new GraphQLNonNull(GraphQLString),
     },
     label: {
       type: new GraphQLNonNull(ContactLabelType),
-    },
-    contactID: {
-      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -84,9 +88,10 @@ export const ContactEmailCreateType: GraphQLFieldConfig<
       context.getViewer(),
       {
         extra: input.extra,
+        contactId: mustDecodeIDFromGQLID(input.contactId.toString()),
+        ownerId: mustDecodeIDFromGQLID(input.ownerId.toString()),
         emailAddress: input.emailAddress,
         label: input.label,
-        contactID: mustDecodeIDFromGQLID(input.contactID),
       },
     ).saveX();
     return { contactEmail: contactEmail };

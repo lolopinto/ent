@@ -38,15 +38,18 @@ export class GuestGroupBase implements Ent<Viewer> {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly invitationName: string;
-  readonly eventID: ID;
+  readonly eventId: ID;
   readonly tag: GuestTag | null;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.invitationName = data.invitation_name;
-    this.eventID = data.event_id;
+    this.eventId = data.event_id;
     this.tag = data.tag;
     // @ts-expect-error
     this.data = data;
@@ -223,10 +226,10 @@ export class GuestGroupBase implements Ent<Viewer> {
   }
 
   async loadEvent(): Promise<Event | null> {
-    return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
+    return loadEnt(this.viewer, this.eventId, Event.loaderOptions());
   }
 
   loadEventX(): Promise<Event> {
-    return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
+    return loadEntX(this.viewer, this.eventId, Event.loaderOptions());
   }
 }

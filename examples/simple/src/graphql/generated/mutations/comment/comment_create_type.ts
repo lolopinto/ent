@@ -27,10 +27,10 @@ import { CommentType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customCommentCreateInput extends CommentCreateInput {
-  authorID: string;
-  articleID: string;
-  attachmentID?: string;
-  stickerID?: string;
+  authorId: string;
+  articleId: string;
+  attachmentId?: string;
+  stickerId?: string;
 }
 
 interface CommentCreatePayload {
@@ -40,25 +40,25 @@ interface CommentCreatePayload {
 export const CommentCreateInputType = new GraphQLInputObjectType({
   name: "CommentCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    authorID: {
+    authorId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     body: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    articleID: {
+    articleId: {
       type: new GraphQLNonNull(GraphQLID),
     },
     articleType: {
       type: new GraphQLNonNull(GraphQLString),
     },
-    attachmentID: {
+    attachmentId: {
       type: GraphQLID,
     },
     attachmentType: {
       type: GraphQLString,
     },
-    stickerID: {
+    stickerId: {
       type: GraphQLID,
     },
     stickerType: {
@@ -98,13 +98,17 @@ export const CommentCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<CommentCreatePayload> => {
     const comment = await CreateCommentAction.create(context.getViewer(), {
-      authorID: mustDecodeIDFromGQLID(input.authorID),
+      authorId: mustDecodeIDFromGQLID(input.authorId.toString()),
       body: input.body,
-      articleID: mustDecodeIDFromGQLID(input.articleID),
+      articleId: mustDecodeIDFromGQLID(input.articleId.toString()),
       articleType: input.articleType,
-      attachmentID: mustDecodeNullableIDFromGQLID(input.attachmentID),
+      attachmentId: mustDecodeNullableIDFromGQLID(
+        input.attachmentId?.toString() ?? input.attachmentId,
+      ),
       attachmentType: input.attachmentType,
-      stickerID: mustDecodeNullableIDFromGQLID(input.stickerID),
+      stickerId: mustDecodeNullableIDFromGQLID(
+        input.stickerId?.toString() ?? input.stickerId,
+      ),
       stickerType: input.stickerType,
     }).saveX();
     return { comment: comment };

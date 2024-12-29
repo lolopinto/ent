@@ -21,13 +21,14 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { ContactDBData, contactLoader, contactLoaderInfo } from "./loaders";
-import { NodeType } from "./types";
+import { Attachment, NodeType, convertNullableAttachmentList } from "./types";
 import {
   ContactCommentsFromAttachmentQuery,
   ContactEmail,
   ContactPhoneNumber,
   ContactToCommentsQuery,
   ContactToLikersQuery,
+  ContactToSelfContactForUserQuery,
   FeedbackMixin,
   IFeedback,
   User,
@@ -36,8 +37,8 @@ import schema from "../../schema/contact_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export class ContactBase
-  extends FeedbackMixin(class {})
-  implements Ent<ExampleViewerAlias>, IFeedback
+  extends FeedbackMixin(class {} as new (...args: any[]) => IFeedback)
+  implements Ent<ExampleViewerAlias>, IFeedback<ExampleViewerAlias>
 {
   protected readonly data: ContactDBData;
   readonly nodeType = NodeType.Contact;
@@ -48,9 +49,13 @@ export class ContactBase
   readonly phoneNumberIds: ID[];
   readonly firstName: string;
   readonly lastName: string;
-  readonly userID: ID;
+  readonly userId: ID;
+  readonly attachments: Attachment[] | null;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
@@ -60,7 +65,8 @@ export class ContactBase
     this.phoneNumberIds = data.phone_number_ids;
     this.firstName = data.first_name;
     this.lastName = data.last_name;
-    this.userID = data.user_id;
+    this.userId = data.user_id;
+    this.attachments = convertNullableAttachmentList(data.attachments);
     // @ts-expect-error
     this.data = data;
   }
@@ -235,6 +241,10 @@ export class ContactBase
     return ContactToLikersQuery.query(this.viewer, this.id);
   }
 
+  querySelfContactForUser(): ContactToSelfContactForUserQuery {
+    return ContactToSelfContactForUserQuery.query(this.viewer, this.id);
+  }
+
   queryAttachedComments(): ContactCommentsFromAttachmentQuery {
     return ContactCommentsFromAttachmentQuery.query(this.viewer, this);
   }
@@ -258,10 +268,10 @@ export class ContactBase
   }
 
   async loadUser(): Promise<User | null> {
-    return loadEnt(this.viewer, this.userID, User.loaderOptions());
+    return loadEnt(this.viewer, this.userId, User.loaderOptions());
   }
 
   loadUserX(): Promise<User> {
-    return loadEntX(this.viewer, this.userID, User.loaderOptions());
+    return loadEntX(this.viewer, this.userId, User.loaderOptions());
   }
 }

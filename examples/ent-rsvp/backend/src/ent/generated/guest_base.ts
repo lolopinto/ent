@@ -39,8 +39,8 @@ import {
 import schema from "src/schema/guest_schema";
 
 export class GuestBase
-  extends WithAddressMixin(class {})
-  implements Ent<Viewer>, IWithAddress
+  extends WithAddressMixin(class {} as new (...args: any[]) => IWithAddress)
+  implements Ent<Viewer>, IWithAddress<Viewer>
 {
   protected readonly data: GuestDBData;
   readonly nodeType = NodeType.Guest;
@@ -48,23 +48,26 @@ export class GuestBase
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly name: string;
-  readonly eventID: ID;
+  readonly eventId: ID;
   readonly emailAddress: string | null;
-  readonly guestGroupID: ID;
+  readonly guestGroupId: ID;
   readonly title: string | null;
   readonly guestDataId: ID | null;
   readonly tag: GuestTag | null;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(
+    public viewer: Viewer,
+    data: Data,
+  ) {
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.name = data.name;
-    this.eventID = data.event_id;
+    this.eventId = data.event_id;
     this.emailAddress = data.email_address;
-    this.guestGroupID = data.guest_group_id;
+    this.guestGroupId = data.guest_group_id;
     this.title = data.title;
     this.guestDataId = data.guest_data_id;
     this.tag = data.tag;
@@ -259,19 +262,11 @@ export class GuestBase
   }
 
   async loadEvent(): Promise<Event | null> {
-    return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
+    return loadEnt(this.viewer, this.eventId, Event.loaderOptions());
   }
 
   loadEventX(): Promise<Event> {
-    return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
-  }
-
-  async loadGuestGroup(): Promise<GuestGroup | null> {
-    return loadEnt(this.viewer, this.guestGroupID, GuestGroup.loaderOptions());
-  }
-
-  loadGuestGroupX(): Promise<GuestGroup> {
-    return loadEntX(this.viewer, this.guestGroupID, GuestGroup.loaderOptions());
+    return loadEntX(this.viewer, this.eventId, Event.loaderOptions());
   }
 
   async loadGuestData(): Promise<GuestData | null> {
@@ -280,5 +275,13 @@ export class GuestBase
     }
 
     return loadEnt(this.viewer, this.guestDataId, GuestData.loaderOptions());
+  }
+
+  async loadGuestGroup(): Promise<GuestGroup | null> {
+    return loadEnt(this.viewer, this.guestGroupId, GuestGroup.loaderOptions());
+  }
+
+  loadGuestGroupX(): Promise<GuestGroup> {
+    return loadEntX(this.viewer, this.guestGroupId, GuestGroup.loaderOptions());
   }
 }

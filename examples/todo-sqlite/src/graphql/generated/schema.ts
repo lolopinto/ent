@@ -49,6 +49,7 @@ import {
 import {
   CreateTodoInputType,
   CreateTodoPayloadType,
+  TagTodoCreateInput,
 } from "src/graphql/generated/mutations/todo/create_todo_type";
 import {
   DeleteTodoInputType,
@@ -80,6 +81,7 @@ import {
   AccountPrefsType,
   AccountToClosedTodosDupConnectionType,
   AccountToCreatedWorkspacesConnectionType,
+  AccountToCustomTodosConnectionType,
   AccountToOpenTodosConnectionType,
   AccountToOpenTodosDupConnectionType,
   AccountToScopedTodosConnectionType,
@@ -92,6 +94,7 @@ import {
   CountryInfoType,
   CountryType,
   RootToClosedTodosLastDayConnectionType,
+  RootToCustomTodosConnectionType,
   RootToOpenTodosConnectionType,
   TagToTodosConnectionType,
   TagType,
@@ -118,6 +121,7 @@ export default new GraphQLSchema({
     WorkspaceType,
     AccountToClosedTodosDupConnectionType(),
     AccountToCreatedWorkspacesConnectionType(),
+    AccountToCustomTodosConnectionType(),
     AccountToOpenTodosConnectionType(),
     AccountToOpenTodosDupConnectionType(),
     AccountToScopedTodosConnectionType(),
@@ -126,6 +130,7 @@ export default new GraphQLSchema({
     AccountToWorkspacesConnectionType(),
     AssigneeToTodosConnectionType(),
     RootToClosedTodosLastDayConnectionType(),
+    RootToCustomTodosConnectionType(),
     RootToOpenTodosConnectionType(),
     TagToTodosConnectionType(),
     TodoToTagsConnectionType(),
@@ -168,6 +173,7 @@ export default new GraphQLSchema({
     RemoveTodoTagPayloadType,
     RenameTodoInputType,
     RenameTodoPayloadType,
+    TagTodoCreateInput,
     TodoStatusAccountEditInputType,
     TodoStatusAccountEditPayloadType,
   ],

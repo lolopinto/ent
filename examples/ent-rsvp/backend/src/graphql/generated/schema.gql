@@ -51,8 +51,8 @@ type Address implements Node {
 }
 
 type EventActivityCanViewerDo {
-  eventActivityAddInvite: Boolean!
-  eventActivityRsvpStatusEdit(rsvpStatus: EventActivityRsvpStatusInput!, guestID: ID!, dietaryRestrictions: String): Boolean!
+  eventActivityAddInvite(test: String): Boolean!
+  eventActivityRsvpStatusEdit(rsvpStatus: EventActivityRsvpStatusInput!, guestId: ID!, dietaryRestrictions: String): Boolean!
 }
 
 type EventActivity implements Node {
@@ -113,6 +113,8 @@ type User implements Node {
   emailAddress: String!
   events(first: Int, after: String, last: Int, before: String): UserToEventsConnection!
 }
+
+union WithAddress = EventActivity | Guest
 
 type AddressToLocatedAtEdge implements Edge {
   node: Node!
@@ -265,6 +267,16 @@ type Viewer {
   guest: Guest
 }
 
+input AuthAnyInput {
+  user: AuthUserInput
+  guest: AuthGuestInput
+}
+
+type AuthAnyPayload {
+  user: AuthUserPayload
+  guest: AuthGuestPayload
+}
+
 input AuthGuestInput {
   emailAddress: String!
   code: String!
@@ -302,7 +314,7 @@ input AddressCreateInput {
   state: String!
   zipCode: String!
   apartment: String
-  ownerID: ID!
+  ownerId: ID!
   ownerType: String!
 }
 
@@ -316,7 +328,7 @@ input AddressDeleteInput {
 }
 
 type AddressDeletePayload {
-  deletedAddressID: ID
+  deletedAddressId: ID
 }
 
 input AddressEditInput {
@@ -327,7 +339,7 @@ input AddressEditInput {
   state: String
   zipCode: String
   apartment: String
-  ownerID: ID
+  ownerId: ID
   ownerType: String
 }
 
@@ -346,7 +358,8 @@ input AddressEventActivityCreateInput {
 input EventActivityAddInviteInput {
   """id of EventActivity"""
   id: ID!
-  inviteID: ID!
+  test: String
+  inviteId: ID!
 }
 
 type EventActivityAddInvitePayload {
@@ -356,7 +369,7 @@ type EventActivityAddInvitePayload {
 input EventActivityCreateInput {
   addressId: ID
   name: String!
-  eventID: ID!
+  eventId: ID!
   startTime: Time!
   endTime: Time
   location: String!
@@ -375,7 +388,7 @@ input EventActivityDeleteInput {
 }
 
 type EventActivityDeletePayload {
-  deletedEventActivityID: ID
+  deletedEventActivityId: ID
 }
 
 input EventActivityEditInput {
@@ -383,7 +396,7 @@ input EventActivityEditInput {
   id: ID!
   addressId: ID
   name: String
-  eventID: ID
+  eventId: ID
   startTime: Time
   endTime: Time
   location: String
@@ -398,7 +411,7 @@ type EventActivityEditPayload {
 input EventActivityRemoveInviteInput {
   """id of EventActivity"""
   id: ID!
-  inviteID: ID!
+  inviteId: ID!
 }
 
 type EventActivityRemoveInvitePayload {
@@ -409,7 +422,7 @@ input EventActivityRsvpStatusEditInput {
   """id of EventActivity"""
   id: ID!
   rsvpStatus: EventActivityRsvpStatusInput!
-  guestID: ID!
+  guestId: ID!
   dietaryRestrictions: String
 }
 
@@ -436,9 +449,9 @@ type EventCreatePayload {
 input GuestCreateInput {
   addressId: ID
   name: String!
-  eventID: ID!
+  eventId: ID!
   emailAddress: String
-  guestGroupID: ID!
+  guestGroupId: ID!
   title: String
   guestDataId: ID
   tag: GuestTag
@@ -454,7 +467,7 @@ input GuestDeleteInput {
 }
 
 type GuestDeletePayload {
-  deletedGuestID: ID
+  deletedGuestId: ID
 }
 
 input GuestEditInput {
@@ -470,7 +483,7 @@ type GuestEditPayload {
 
 input GuestGroupCreateInput {
   invitationName: String!
-  eventID: ID!
+  eventId: ID!
   tag: GuestTag
   guests: [GuestGuestGroupCreateInput!]
 }
@@ -485,7 +498,7 @@ input GuestGroupDeleteInput {
 }
 
 type GuestGroupDeletePayload {
-  deletedGuestGroupID: ID
+  deletedGuestGroupId: ID
 }
 
 input GuestGroupEditInput {
@@ -530,6 +543,7 @@ type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   addressDelete(input: AddressDeleteInput!): AddressDeletePayload!
   addressEdit(input: AddressEditInput!): AddressEditPayload!
+  authAny(input: AuthAnyInput!): AuthAnyPayload!
   authGuest(input: AuthGuestInput!): AuthGuestPayload!
   authUser(input: AuthUserInput!): AuthUserPayload!
   emailAvailable(email: String!): Boolean!
@@ -546,7 +560,7 @@ type Mutation {
   guestGroupCreate(input: GuestGroupCreateInput!): GuestGroupCreatePayload!
   guestGroupDelete(input: GuestGroupDeleteInput!): GuestGroupDeletePayload!
   guestGroupEdit(input: GuestGroupEditInput!): GuestGroupEditPayload!
-  importGuests(eventID: ID!, file: Upload!): Event!
+  importGuests(eventId: ID!, file: Upload!): Event!
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
 

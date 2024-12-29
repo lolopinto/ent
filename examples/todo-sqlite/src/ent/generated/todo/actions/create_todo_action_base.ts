@@ -19,13 +19,23 @@ import {
 import { Account, Todo } from "src/ent/";
 import { TodoBuilder } from "src/ent/generated/todo/actions/todo_builder";
 
+interface customTagInput {
+  displayName: string;
+  relatedTagIds?: ID[] | null;
+  canonicalName?: string;
+}
+
 export interface TodoCreateInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   text: string;
-  creatorID: ID | Builder<Account, Viewer>;
-  assigneeID: ID | Builder<Account, Viewer>;
-  scopeID: ID;
+  creatorId: ID | Builder<Account, Viewer>;
+  assigneeId: ID | Builder<Account, Viewer>;
+  scopeId: ID;
   scopeType: string;
   bounty?: number | null;
+  tags?: customTagInput[];
 }
 
 export type CreateTodoActionTriggers = (

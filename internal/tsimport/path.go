@@ -61,3 +61,7 @@ func getErrorPath(cfg Config, filePath string) string {
 	return p
 
 }
+
+func GetRelativePathForRoot(cfg Config, filePath string) string {
+	return getErrorPath(cfg, filePath)
+}

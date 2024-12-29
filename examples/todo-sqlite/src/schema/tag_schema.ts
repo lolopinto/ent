@@ -19,11 +19,11 @@ const TagSchema = new TodoBaseEntSchema({
     // similar to what we're doing in Todo
     // TODO https://github.com/lolopinto/ent/issues/1185
     ownerID: UUIDType({
-      foreignKey: { schema: "Account", column: "ID" },
+      foreignKey: { schema: "Account", column: "id" },
       privacyPolicy: {
         // only tag owner can see this
         // @ts-ignore
-        rules: [new AllowIfViewerIsEntPropertyRule("ownerID"), AlwaysDenyRule],
+        rules: [new AllowIfViewerIsEntPropertyRule("ownerId"), AlwaysDenyRule],
       },
     }),
     // contrived field

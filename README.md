@@ -4,8 +4,17 @@ See [ent starter](https://github.com/lolopinto/ent-starter) and start by clickin
 
 See [docs](https://ent.dev).
 
-## v0.1 migration
+## Releases
 
-To learn more on migrating to the [alpha v0.1](https://ent.dev/docs/migration-v01/migration-guide).
+v0.2.0 is currently in beta. Changelogs:
 
-And for old [v0.x docs](https://ent-docs-v0-0-x.onrender.com/).
+* [Snowtop](https://github.com/lolopinto/ent/blob/main/CHANGELOG.md)
+
+* [Docker](https://github.com/lolopinto/ent/blob/main/docker_CHANGELOG.md)
+
+
+For v0.1.x releases, check out the changelogs:
+
+* [Snowtop](https://github.com/lolopinto/ent/blob/v0.1.x/CHANGELOG.md)
+
+* [Docker](https://github.com/lolopinto/ent/blob/v0.1.x/docker_CHANGELOG.md)

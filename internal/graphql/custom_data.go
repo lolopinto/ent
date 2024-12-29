@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -220,15 +220,25 @@ func (item *CustomItem) getImports(processor *codegen.Processor, s *gqlSchema, c
 		_, ok := s.customData.Objects[item.Type]
 		_, ok2 := s.customData.Unions[item.Type]
 		_, ok3 := s.customData.Interfaces[item.Type]
-		if !ok && !ok2 && !ok3 {
+		_, ok4 := s.customData.Inputs[item.Type]
+		if !ok && !ok2 && !ok3 && !ok4 {
 			return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
 		}
-		item.addImport(
-			&tsimport.ImportPath{
-				Import: fmt.Sprintf("%sType", item.Type),
-				// TODO same here. need to know if mutation or query
-				ImportPath: codepath.GetImportPathForInternalGQLFile(),
-			})
+		if s.nestedCustomTypes[item.Type] != "" {
+			filePath := strings.TrimSuffix(tsimport.GetRelativePathForRoot(processor.Config, s.nestedCustomTypes[item.Type]), ".ts")
+			item.addImport(
+				&tsimport.ImportPath{
+					Import:     fmt.Sprintf("%sType", s.getNodeNameFor(item.Type)),
+					ImportPath: filePath,
+				})
+		} else {
+			item.addImport(
+				&tsimport.ImportPath{
+					Import: fmt.Sprintf("%sType", s.getNodeNameFor(item.Type)),
+					// TODO same here. need to know if mutation or query
+					ImportPath: codepath.GetImportPathForInternalGQLFile(),
+				})
+		}
 		//				s.nodes[resultre]
 		// now we need to figure out where this is from e.g.
 		// result.Type a native thing e.g. User so getUserType
@@ -289,13 +299,14 @@ type CustomField struct {
 	// extra imports
 	ExtraImports []*tsimport.ImportPath `json:"extraImports,omitempty"`
 	// To be used instead of calling a function...
-	FunctionContents string `json:"functionContents,omitempty"`
+	FunctionContents  string `json:"functionContents,omitempty"`
+	nonConnectionArgs []CustomItem
 }
 
 func (cf CustomField) getArg() string {
 	if cf.hasCustomArgs() {
 		// interface has been generated for it
-		return strcase.ToCamel(cf.GraphQLName) + "Args"
+		return names.ToClassType(cf.GraphQLName, "Args")
 	}
 	return "{}"
 }
@@ -354,6 +365,19 @@ func (cf *CustomField) UnmarshalJSON(data []byte) error {
 			add = !hasConnectionArgs(cf, connArgs)
 		}
 		if add {
+			m := make(map[string]bool)
+
+			for _, v := range getConnectionArgs() {
+				m[v.Name] = true
+			}
+			for _, arg := range cf.Args {
+				if m[arg.Name] {
+					return fmt.Errorf("cannot have a connection with arg %s since that's a connection arg", arg.Name)
+				}
+				if !arg.IsContextArg && !arg.GraphQLOnlyArg {
+					cf.nonConnectionArgs = append(cf.nonConnectionArgs, arg)
+				}
+			}
 			cf.Args = append(cf.Args, connArgs...)
 		}
 	}
@@ -376,6 +400,10 @@ func (cf CustomField) getResolveMethodArg() string {
 		return "args"
 	}
 	return "{}"
+}
+
+func (cf CustomField) getNonConnectionArgs() []CustomItem {
+	return cf.nonConnectionArgs
 }
 
 func getConnectionArgs() []CustomItem {

@@ -1,18 +1,20 @@
 import { GraphQLString } from "graphql";
-import { ContactBase } from "./internal";
+import { ContactBase, ContactEmail } from "./internal";
 import {
   PrivacyPolicy,
   AllowIfViewerIsEntPropertyRule,
   AlwaysDenyRule,
+  query,
 } from "@snowtop/ent";
-import { gqlField } from "@snowtop/ent/graphql";
+import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import { ContactLabel } from "./generated/types";
 import { ContactDate, ContactItemFilter, EmailInfo } from "./contact_types";
+import { CustomClauseQuery } from "@snowtop/ent";
 
 export class Contact extends ContactBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
-      rules: [new AllowIfViewerIsEntPropertyRule("userID"), AlwaysDenyRule],
+      rules: [new AllowIfViewerIsEntPropertyRule("userId"), AlwaysDenyRule],
     };
   }
 
@@ -59,5 +61,28 @@ export class Contact extends ContactBase {
       ...phoneNumbers,
       new ContactDate(ContactLabel.Self, this, this.createdAt, "created_at"),
     ];
+  }
+
+  @gqlField({
+    class: "Contact",
+    type: gqlConnection("ContactEmail"),
+    name: "filterContactEmails",
+    args: [
+      {
+        name: "filter",
+        type: "ContactItemFilter",
+        nullable: true,
+      },
+    ],
+  })
+  emailsBylabel(label: ContactLabel) {
+    return new CustomClauseQuery(this.viewer, {
+      loadEntOptions: ContactEmail.loaderOptions(),
+      clause: query.And(
+        query.Eq("contact_id", this.id),
+        query.GreaterEq("label", label),
+      ),
+      name: "emailsByLabel",
+    });
   }
 }

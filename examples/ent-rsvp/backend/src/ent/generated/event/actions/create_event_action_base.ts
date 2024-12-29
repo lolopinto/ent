@@ -26,7 +26,7 @@ interface customActivityInput {
   endTime?: Date | null;
   location: string;
   description?: string | null;
-  inviteAllGuests: boolean;
+  inviteAllGuests?: boolean;
   address?: customAddressInput | null;
 }
 

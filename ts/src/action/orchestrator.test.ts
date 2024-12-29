@@ -59,7 +59,6 @@ import {
 } from "../core/privacy";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
-import { snakeCase } from "snake-case";
 import { clearLogLevels, setLogLevels } from "../core/logger";
 
 import { MockLogs } from "../testutils/mock_log";
@@ -82,29 +81,9 @@ import { v4 } from "uuid";
 import { NumberOps } from "./relative_value";
 import { StructType, BooleanType } from "../schema";
 import { randomEmail } from "../testutils/db/value";
+import { toDBColumnOrTable } from "../names/names";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
-beforeEach(async () => {
-  // does assoc_edge_config loader need to be cleared?
-  for (const edge of edges) {
-    await createRowForTest({
-      tableName: "assoc_edge_config",
-      fields: {
-        edge_table: `${snakeCase(edge)}_table`,
-        symmetric_edge: edge == "symmetricEdge",
-        inverse_edge_type: edge === "edge" ? "inverseEdge" : "edge",
-        edge_type: edge,
-        edge_name: "name",
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    });
-  }
-});
-
-afterEach(() => {
-  FakeComms.clear();
-});
 
 const UserSchema = getBuilderSchemaFromFields(
   {
@@ -465,7 +444,7 @@ const EventWithEditPrivacySchema = getBuilderSchemaFromFields(
 const getTables = () => {
   const tables: Table[] = [assoc_edge_config_table()];
   edges.map((edge) =>
-    tables.push(assoc_edge_table(`${snakeCase(edge)}_table`, false)),
+    tables.push(assoc_edge_table(toDBColumnOrTable(edge, "table"), false)),
   );
 
   [
@@ -526,6 +505,28 @@ function getInsertUserBuilder(
 }
 
 function commonTests() {
+  beforeAll(async () => {
+    // does assoc_edge_config loader need to be cleared?
+    for (const edge of edges) {
+      await createRowForTest({
+        tableName: "assoc_edge_config",
+        fields: {
+          edge_table: toDBColumnOrTable(edge, "table"),
+          symmetric_edge: edge == "symmetricEdge",
+          inverse_edge_type: edge === "edge" ? "inverseEdge" : "edge",
+          edge_type: edge,
+          edge_name: "name",
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
+    }
+  });
+
+  afterEach(() => {
+    FakeComms.clear();
+  });
+
   test("schema on create", async () => {
     const builder = getInsertUserBuilder(
       new Map([

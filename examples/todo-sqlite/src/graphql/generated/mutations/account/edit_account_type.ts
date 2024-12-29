@@ -14,8 +14,9 @@ import {
 } from "graphql";
 import { RequestContext, Viewer } from "@snowtop/ent";
 import { Account } from "src/ent/";
-import EditAccountAction, {
+import {
   AccountEditInput,
+  EditAccountAction,
 } from "src/ent/account/actions/edit_account_action";
 import { AccountPrefs, CountryInfo } from "src/ent/generated/types";
 import { AccountPrefsInputType } from "src/graphql/generated/mutations/input/account_prefs_input_type";
@@ -34,7 +35,7 @@ interface customEditAccountInput
   id: string;
   phone_number?: string;
   account_prefs?: AccountPrefs | null;
-  account_prefs_3?: AccountPrefs;
+  account_prefs3?: AccountPrefs;
   account_prefs_list?: AccountPrefs[] | null;
   country_infos?: CountryInfo[] | null;
 }
@@ -59,7 +60,7 @@ export const EditAccountInputType = new GraphQLInputObjectType({
     account_prefs: {
       type: AccountPrefsInputType,
     },
-    account_prefs_3: {
+    account_prefs3: {
       type: AccountPrefsInputType,
     },
     account_prefs_list: {
@@ -108,7 +109,7 @@ export const EditAccountType: GraphQLFieldConfig<
         name: input.name,
         phoneNumber: input.phone_number,
         accountPrefs: input.account_prefs,
-        accountPrefs3: input.account_prefs_3,
+        accountPrefs3: input.account_prefs3,
         accountPrefsList: input.account_prefs_list,
         countryInfos: input.country_infos,
       },

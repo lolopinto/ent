@@ -28,9 +28,9 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customCommentEditInput extends CommentEditInput {
   id: string;
-  articleID?: string;
-  attachmentID?: string;
-  stickerID?: string;
+  articleId?: string;
+  attachmentId?: string;
+  stickerId?: string;
 }
 
 interface CommentEditPayload {
@@ -47,19 +47,19 @@ export const CommentEditInputType = new GraphQLInputObjectType({
     body: {
       type: GraphQLString,
     },
-    articleID: {
+    articleId: {
       type: GraphQLID,
     },
     articleType: {
       type: GraphQLString,
     },
-    attachmentID: {
+    attachmentId: {
       type: GraphQLID,
     },
     attachmentType: {
       type: GraphQLString,
     },
-    stickerID: {
+    stickerId: {
       type: GraphQLID,
     },
     stickerType: {
@@ -103,11 +103,17 @@ export const CommentEditType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.id),
       {
         body: input.body,
-        articleID: mustDecodeNullableIDFromGQLID(input.articleID),
+        articleId: mustDecodeNullableIDFromGQLID(
+          input.articleId?.toString() ?? input.articleId,
+        ),
         articleType: input.articleType,
-        attachmentID: mustDecodeNullableIDFromGQLID(input.attachmentID),
+        attachmentId: mustDecodeNullableIDFromGQLID(
+          input.attachmentId?.toString() ?? input.attachmentId,
+        ),
         attachmentType: input.attachmentType,
-        stickerID: mustDecodeNullableIDFromGQLID(input.stickerID),
+        stickerId: mustDecodeNullableIDFromGQLID(
+          input.stickerId?.toString() ?? input.stickerId,
+        ),
         stickerType: input.stickerType,
       },
     );

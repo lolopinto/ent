@@ -23,7 +23,7 @@ interface customEventDeleteInput {
 }
 
 interface EventDeletePayload {
-  deletedEventID: string;
+  deletedEventId: string;
 }
 
 export const EventDeleteInputType = new GraphQLInputObjectType({
@@ -42,7 +42,7 @@ export const EventDeletePayloadType = new GraphQLObjectType({
     EventDeletePayload,
     RequestContext<ExampleViewerAlias>
   > => ({
-    deletedEventID: {
+    deletedEventId: {
       type: GraphQLID,
     },
   }),
@@ -70,6 +70,6 @@ export const EventDeleteType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedEventID: input.id };
+    return { deletedEventId: input.id };
   },
 };

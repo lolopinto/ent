@@ -24,7 +24,13 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import { EventDBData, eventLoader, eventLoaderInfo } from "./loaders";
-import { EdgeType, EventRsvpStatus, NodeType } from "./types";
+import {
+  Attachment,
+  EdgeType,
+  EventRsvpStatus,
+  NodeType,
+  convertNullableAttachmentList,
+} from "./types";
 import {
   Address,
   EventToAttendingQuery,
@@ -38,7 +44,7 @@ import schema from "../../schema/event_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export interface EventCanViewerSee {
-  addressID: () => Promise<boolean>;
+  addressId: () => Promise<boolean>;
 }
 
 export class EventBase implements Ent<ExampleViewerAlias> {
@@ -48,26 +54,31 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly name: string;
-  readonly creatorID: ID;
+  readonly creatorId: ID;
   readonly startTime: Date;
   readonly endTime: Date | null;
   readonly location: string;
-  protected readonly _addressID: ID | null;
+  protected readonly _addressId: ID | null;
   readonly coverPhoto: Buffer | null;
   readonly coverPhoto2: Buffer | null;
+  readonly attachments: Attachment[] | null;
 
-  constructor(public viewer: ExampleViewerAlias, data: Data) {
+  constructor(
+    public viewer: ExampleViewerAlias,
+    data: Data,
+  ) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.name = data.name;
-    this.creatorID = data.user_id;
+    this.creatorId = data.user_id;
     this.startTime = data.start_time;
     this.endTime = data.end_time;
     this.location = data.location;
-    this._addressID = data.address_id;
+    this._addressId = data.address_id;
     this.coverPhoto = data.cover_photo;
-    this.coverPhoto2 = convertNullableTextToBuffer(data.cover_photo_2);
+    this.coverPhoto2 = convertNullableTextToBuffer(data.cover_photo2);
+    this.attachments = convertNullableAttachmentList(data.attachments);
     // @ts-expect-error
     this.data = data;
   }
@@ -83,17 +94,17 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     return AllowIfViewerPrivacyPolicy;
   }
 
-  async addressID(): Promise<ID | null> {
-    if (this._addressID === null) {
+  async addressId(): Promise<ID | null> {
+    if (this._addressId === null) {
       return null;
     }
     const m = getFieldsWithPrivacy(schema, eventLoaderInfo.fieldInfo);
     const p = m.get("address_id");
     if (!p) {
-      throw new Error(`couldn't get field privacy policy for addressID`);
+      throw new Error(`couldn't get field privacy policy for addressId`);
     }
     const v = await applyPrivacyPolicy(this.viewer, p, this);
-    return v ? this._addressID : null;
+    return v ? this._addressId : null;
   }
 
   static async load<T extends EventBase>(
@@ -290,20 +301,20 @@ export class EventBase implements Ent<ExampleViewerAlias> {
   }
 
   async loadAddress(): Promise<Address | null> {
-    const addressID = await this.addressID();
-    if (!addressID) {
+    const addressId = await this.addressId();
+    if (!addressId) {
       return null;
     }
 
-    return loadEnt(this.viewer, addressID, Address.loaderOptions());
+    return loadEnt(this.viewer, addressId, Address.loaderOptions());
   }
 
   async loadCreator(): Promise<User | null> {
-    return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
+    return loadEnt(this.viewer, this.creatorId, User.loaderOptions());
   }
 
   loadCreatorX(): Promise<User> {
-    return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
+    return loadEntX(this.viewer, this.creatorId, User.loaderOptions());
   }
 
   canViewerSeeInfo(): EventCanViewerSee {
@@ -312,7 +323,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
       eventLoaderInfo.fieldInfo,
     );
     return {
-      addressID: () =>
+      addressId: () =>
         applyPrivacyPolicy(this.viewer, fieldPrivacy.get("address_id")!, this),
     };
   }

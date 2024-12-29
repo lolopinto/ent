@@ -19,13 +19,23 @@ import {
 } from "@snowtop/ent/action";
 import { Contact } from "../../..";
 import { ContactBuilder } from "./contact_builder";
+import { Attachment, ContactInfoExtra, ContactLabel } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+
+interface customEmailInput {
+  id: ID;
+  extra?: ContactInfoExtra | null;
+  emailAddress?: string;
+  label?: ContactLabel;
+}
 
 export interface ContactEditInput {
   emailIds?: ID[];
   phoneNumberIds?: ID[];
   firstName?: string;
   lastName?: string;
+  attachments?: Attachment[] | null;
+  emails?: customEmailInput[] | null;
 }
 
 export type EditContactActionTriggers = (

@@ -1,7 +1,7 @@
 import { createAccount, createTodoForSelf, createTag } from "../testutils/util";
 import { AccountToTagsQuery } from "../account/query/account_to_tags_query";
-import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
-import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
+import { TodoAddTagAction } from "../todo/actions/todo_add_tag_action";
+import { TodoRemoveTagAction } from "../todo/actions/todo_remove_tag_action";
 
 test("create", async () => {
   await createTag("SPORTS");
@@ -61,9 +61,9 @@ describe("tag + todo", () => {
   test("add tag to todo", async () => {
     const account = await createAccount();
 
-    const todo1 = await createTodoForSelf({ creatorID: account.id });
+    const todo1 = await createTodoForSelf({ creatorId: account.id });
     const todo2 = await createTodoForSelf({
-      creatorID: account.id,
+      creatorId: account.id,
       text: "remember to have fun",
     });
     const tag1 = await createTag("kids", account);
@@ -88,7 +88,7 @@ describe("tag + todo", () => {
   test("remove tag from todo", async () => {
     const account = await createAccount();
 
-    const todo = await createTodoForSelf({ creatorID: account.id });
+    const todo = await createTodoForSelf({ creatorId: account.id });
     const tag = await createTag("kids", account);
 
     await TodoAddTagAction.saveFromID(account.viewer, todo.id, tag.id);
@@ -100,5 +100,37 @@ describe("tag + todo", () => {
 
     const count2 = await todo.queryTags().queryRawCount();
     expect(count2).toBe(0);
+  });
+
+  test("add tag while creating todo", async () => {
+    const account = await createAccount();
+
+    const todo = await createTodoForSelf({
+      creatorId: account.id,
+      tags: [
+        {
+          displayName: "kids",
+        },
+        {
+          displayName: "WORK",
+          canonicalName: "work",
+        },
+      ],
+    });
+
+    const count = await todo.queryTags().queryRawCount();
+    expect(count).toBe(2);
+
+    const ents = await todo.queryTags().queryEnts();
+    expect(ents.map((ent) => ent.displayName).sort()).toEqual(["WORK", "kids"]);
+    expect(ents.map((ent) => ent.canonicalName).sort()).toEqual([
+      "kids",
+      "work",
+    ]);
+
+    const count2 = await ents[0].queryTodos().queryRawCount();
+    const count3 = await ents[1].queryTodos().queryRawCount();
+    expect(count2).toBe(1);
+    expect(count3).toBe(1);
   });
 });
