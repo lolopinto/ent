@@ -16,8 +16,7 @@ interface loadEnt {
 }
 
 function encodeHelper(nodeType: string, id: ID): string {
-  const str = `node:${nodeType}:${id}`;
-  return Buffer.from(str, "ascii").toString("base64");
+  return btoa(`node:${nodeType}:${id}`);
 }
 
 export class EntNodeResolver implements NodeResolver {
@@ -29,7 +28,7 @@ export class EntNodeResolver implements NodeResolver {
   }
 
   static decode(id: string): ID | null {
-    const decoded = Buffer.from(id, "base64").toString("ascii");
+    const decoded = atob(id);
     let parts = decoded.split(":");
     if (parts.length != 3) {
       return null;
@@ -38,7 +37,7 @@ export class EntNodeResolver implements NodeResolver {
   }
 
   mustDecode(id: string): [ID, string] {
-    const decoded = Buffer.from(id, "base64").toString("ascii");
+    const decoded = atob(id);
     let parts = decoded.split(":");
     if (parts.length != 3) {
       throw new Error(`invalid id ${id} passed to EntNodeResolver`);
@@ -47,7 +46,7 @@ export class EntNodeResolver implements NodeResolver {
   }
 
   async decodeObj(viewer: Viewer, id: string): Promise<Node | null> {
-    const decoded = Buffer.from(id, "base64").toString("ascii");
+    const decoded = atob(id);
     let parts = decoded.split(":");
     if (parts.length != 3 || parts[0] != "node") {
       return null;
@@ -121,6 +120,5 @@ export function mustDecodeNullableIDFromGQLID(
 // This takes an ent and returns the graphql id
 export function encodeGQLID(node: Ent): string {
   // let's do 3 parts. we take the "node" prefix
-  const str = `node:${node.nodeType}:${node.id}`;
-  return Buffer.from(str, "ascii").toString("base64");
+  return btoa(`node:${node.nodeType}:${node.id}`);
 }
