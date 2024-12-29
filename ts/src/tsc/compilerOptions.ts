@@ -91,8 +91,6 @@ export function getModule(module?: string): ts.ModuleKind {
       return ts.ModuleKind.Node16;
     case "nodenext":
       return ts.ModuleKind.NodeNext;
-    case "preserve":
-      return ts.ModuleKind.Preserve;
     default:
       return ts.ModuleKind.CommonJS;
   }
