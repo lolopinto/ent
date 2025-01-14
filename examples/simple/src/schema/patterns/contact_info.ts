@@ -16,6 +16,11 @@ export default class ContactInfo implements Pattern {
       tsType: "ContactInfoExtra",
       graphQLType: "ContactInfoExtra",
       nullable: true,
+      // privacyPolicy: {
+      //   // To test generation of privacy policies in patterns
+      //   rules: [AlwaysAllowRule],
+      // this is disabled because there's a bug with custom inputs exposing `_extra` instead of `extra`
+      // },
       fields: {
         // e.g. default email or phone number
         default: BooleanType(),
