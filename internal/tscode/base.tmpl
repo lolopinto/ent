@@ -183,6 +183,9 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{$node := .Node}}
   {{range $field := .FieldInfo.EntFields -}}
     {{ if $field.HasAsyncAccessor $cfg -}}
+      {{ range $field.GetTsTypeImports -}}
+        {{$typ := useImportMaybe .Import -}}
+      {{end -}}
       async {{$field.TSPublicAPIName}}(): Promise<{{$field.TsType}}> {
         {{ $fieldName := $field.TsFieldName $cfg -}}
         {{ if $field.FetchOnDemand -}}
