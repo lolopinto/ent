@@ -261,7 +261,7 @@ type fieldConfigBuilder interface {
 	getArg() string
 	getName() string
 	getResolveMethodArg() string
-	getTypeImports(processor *codegen.Processor, s *gqlSchema) []*tsimport.ImportPath
+	getTypeImports(processor *codegen.Processor, cd *CustomData, s *gqlSchema) []*tsimport.ImportPath
 	getArgs(s *gqlSchema) []*fieldConfigArg
 	getReturnTypeHint() string
 	getArgMap(cd *CustomData) map[string]*CustomObject
@@ -305,7 +305,7 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 	return mfcg.field.getResolveMethodArg()
 }
 
-func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Processor, s *gqlSchema) []*tsimport.ImportPath {
+func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Processor, cd *CustomData, s *gqlSchema) []*tsimport.ImportPath {
 	if len(mfcg.field.Results) != 1 {
 		panic(fmt.Errorf("invalid number of results for custom field %s", mfcg.field.FunctionName))
 	}
@@ -322,10 +322,11 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Proces
 	if imp != nil {
 		ret = append(ret, imp)
 	} else {
-
 		ret = append(ret, &tsimport.ImportPath{
-			// TODO we should pass this in instead of automatically doing this
-			Import:     names.ToClassType(mfcg.field.GraphQLName, "PayloadType"),
+			// local import file which exists in the same file
+			// i.e. UserAuthPayload -> UserAuthPayloadType
+			// UserAuthLogin -> UserAuthLoginType
+			Import:     names.ToClassType(r.Type, "Type"),
 			ImportPath: "",
 		})
 	}
@@ -396,7 +397,7 @@ func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
 	return qfcg.field.getResolveMethodArg()
 }
 
-func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor, s *gqlSchema) []*tsimport.ImportPath {
+func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor, cd *CustomData, s *gqlSchema) []*tsimport.ImportPath {
 	if len(qfcg.field.Results) != 1 {
 		panic("invalid number of results for custom field")
 	}
@@ -647,7 +648,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		Description:      field.Description,
 		Arg:              builder.getArg(),
 		ResolveMethodArg: builder.getResolveMethodArg(),
-		TypeImports:      builder.getTypeImports(processor, s),
+		TypeImports:      builder.getTypeImports(processor, cd, s),
 		ArgImports:       argImports,
 		// reserve and use them. no questions asked
 		ReserveAndUseImports: field.ExtraImports,

@@ -80,3 +80,23 @@ export class UserAuthJWTPayload {
     this.viewerID = viewerID;
   }
 }
+
+@gqlObjectType()
+export class UserAuthJWTLogin {
+  @gqlField({
+    class: "UserAuthJWTLogin",
+    type: GraphQLString,
+  })
+  token: string;
+
+  @gqlField({
+    class: "UserAuthJWTLogin",
+    type: GraphQLID,
+  })
+  viewerID: ID;
+
+  constructor(viewerID: ID, token: string) {
+    this.token = token;
+    this.viewerID = viewerID;
+  }
+}
