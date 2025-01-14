@@ -158,6 +158,7 @@ import {
   UserEditInputType,
   UserEditPayloadType,
 } from "./mutations/user/user_edit_type";
+import { UserAuthJWTLoginType } from "./mutations/user_auth_jwt2_type";
 import {
   UserAuthJWTInputType,
   UserAuthJWTPayloadType,
@@ -397,6 +398,7 @@ export default new GraphQLSchema({
     PhoneAvailableArgType,
     UserAuthInputType,
     UserAuthJWTInputType,
+    UserAuthJWTLoginType,
     UserAuthJWTPayloadType,
     UserAuthPayloadType,
     AddressCreateInputType,
