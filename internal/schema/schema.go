@@ -1380,6 +1380,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, container Container) erro
 				name,
 				e.NodeInfo.Node,
 				e.EdgeConstName,
+				e.OrderBy,
 			); err != nil {
 				return err
 			}
@@ -1398,6 +1399,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, container Container) erro
 					fNode.NodeData.Node,
 					e.EdgeConstName,
 					e.UserGivenEdgeName,
+					e.OrderBy,
 				); err != nil {
 					return err
 				}
