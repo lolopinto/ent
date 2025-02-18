@@ -3,6 +3,7 @@ import { Builder, Changeset } from "../action/action";
 import { Clause } from "../core/clause";
 import { AssocEdgeInput } from "../action/operations";
 import { toDBColumnOrTable } from "../names/names";
+import { OrderBy } from "../core/query_impl";
 
 export declare type FieldMap = {
   [key: string]: Field;
@@ -459,6 +460,8 @@ export interface InverseFieldEdge {
 
 export interface IndexEdgeOptions {
   name: string;
+  // default ordering of this edge
+  orderby?: OrderBy;
 }
 
 export interface FieldEdge {

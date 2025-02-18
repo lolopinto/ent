@@ -303,8 +303,30 @@ type InverseFieldEdge struct {
 	EdgeConstName   string `json:"edgeConstName,omitempty"`
 }
 
+type OrderByDirection string
+
+const (
+	Ascending  OrderByDirection = "ASC"
+	Descending OrderByDirection = "DESC"
+)
+
+type NullsPlacement string
+
+const (
+	First NullsPlacement = "first"
+	Last  NullsPlacement = "last"
+)
+
+type OrderByOption struct {
+	Column         string           `json:"column,omitempty"`
+	Direction      OrderByDirection `json:"direction,omitempty"`
+	Alias          string           `json:"alias,omitempty"`
+	NullsPlacement NullsPlacement   `json:"nullsPlacement,omitempty"`
+}
+
 type IndexEdgeOptions struct {
-	Name string `json:"name,omitempty"`
+	Name    string          `json:"name,omitempty"`
+	OrderBy []OrderByOption `json:"orderBy,omitempty"`
 }
 
 type PolymorphicOptions struct {
