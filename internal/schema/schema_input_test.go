@@ -3103,6 +3103,8 @@ func TestParseInputWithSnakeCaseIndexedFieldEdgeAndIndexEdge(t *testing.T) {
 }
 
 func TestParseInputWithIndexedFieldEdgeAndDefaultOrdering(t *testing.T) {
+	// PS:  this is adapated from above and updated with the default ordering test-case
+
 	// TODO this should fail
 	// related to https://github.com/lolopinto/ent/issues/1451
 	// we should have global list of typescript types generated and there should be no conflicts
