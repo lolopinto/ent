@@ -9,6 +9,16 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-02-22
+- ability to customize default ordering for an indexed edge (#1878)
+- add ondelete option to fkey so it's customizable #1879
+
+## [0.2.1] - 2025-01-01
+
+### Added
+
+- New privacy rules (#1869)
+
 ## [0.2.0] - 2024-11-17
 
 ### Breaking
