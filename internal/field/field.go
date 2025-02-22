@@ -155,6 +155,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 			Field:        f.ForeignKey.Column,
 			Name:         f.ForeignKey.Name,
 			DisableIndex: f.ForeignKey.DisableIndex,
+			OnDelete:     f.ForeignKey.OnDelete,
 		}
 		ret.disableBuilderType = f.ForeignKey.DisableBuilderType
 	}

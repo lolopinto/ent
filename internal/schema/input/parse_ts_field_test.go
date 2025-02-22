@@ -684,6 +684,69 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
+		"foreign key ondelete restrict": {
+			code: map[string]string{
+				"user_schema.ts": getCodeWithSchema(`
+				import {EntSchema, UUIDType, StringType } from "{schema}"
+
+				const UserSchema = new EntSchema({
+					fields: {
+						first_name: StringType(),
+						last_name: StringType(),
+						email: StringType({ unique: true}),
+					},
+				});
+				export default UserSchema;`),
+				"event_schema.ts": getCodeWithSchema(`
+				import {EntSchema, TimestampType, StringType, UUIDType} from "{schema}"
+
+				const EventSchema = new EntSchema({
+					fields: {
+						name: StringType(),
+						creator_id: UUIDType({foreignKey: {schema:"User", column:"id", ondelete: "RESTRICT"}}),
+					},
+				});
+				export default EventSchema;`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name:   "node",
+					fields: nodeFields(),
+				},
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "first_name",
+							dbType: input.String,
+						},
+						field{
+							name:   "last_name",
+							dbType: input.String,
+						},
+						field{
+							name:   "email",
+							dbType: input.String,
+							unique: true,
+						},
+					),
+				},
+				"Event": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "name",
+							dbType: input.String,
+						},
+						field{
+							name:       "creator_id",
+							dbType:     input.UUID,
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "id", OnDelete: input.Restrict},
+						},
+					),
+				},
+			},
+		},
 		"jsonb import type": {
 			code: map[string]string{
 				"user_schema.ts": getCodeWithSchema(`

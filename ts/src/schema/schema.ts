@@ -430,6 +430,13 @@ export interface Type {
   [x: string]: any;
 }
 
+type OnDeleteFkey =
+  | "CASCADE"
+  | "RESTRICT"
+  | "SET NULL"
+  | "SET DEFAULT"
+  | "NO ACTION";
+
 export interface ForeignKey {
   schema: string;
   column: string;
@@ -440,6 +447,7 @@ export interface ForeignKey {
   // to simplify the code when it's known that the object here
   // would always have been previously created. simplifies validation
   disableBuilderType?: boolean;
+  ondelete?: OnDeleteFkey;
 
   // allow other keys
   [x: string]: any;
@@ -1032,7 +1040,7 @@ export interface Index {
 
 export interface ForeignKeyInfo {
   tableName: string;
-  ondelete?: "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT" | "NO ACTION";
+  ondelete?: OnDeleteFkey;
   columns: string[];
   // no on update, match full etc
 

@@ -176,6 +176,72 @@ func TestParseInputWithForeignKey(t *testing.T) {
 	userEdge := event.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.NotNil(t, userEdge)
 
+	userID := event.NodeData.FieldInfo.GetFieldByName("UserID")
+	assert.NotNil(t, userID)
+	fkey := userID.ForeignKeyInfo()
+	assert.NotNil(t, fkey)
+	assert.Equal(t, fkey.OnDelete, input.OnDeleteFkey(""))
+
+	user := schema.Nodes["User"]
+	assert.NotNil(t, user)
+
+	eventsEdge := user.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Events")
+	assert.NotNil(t, eventsEdge)
+}
+
+func TestParseInputWithForeignKeyCustomOnDelete(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id", OnDelete: input.Restrict},
+						Index:      true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	event := schema.Nodes["Event"]
+	assert.NotNil(t, event)
+
+	userID := event.NodeData.FieldInfo.GetFieldByName("UserID")
+	assert.NotNil(t, userID)
+	fkey := userID.ForeignKeyInfo()
+	assert.NotNil(t, fkey)
+	assert.Equal(t, fkey.OnDelete, input.Restrict)
+
+	userEdge := event.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	assert.NotNil(t, userEdge)
+
 	user := schema.Nodes["User"]
 	assert.NotNil(t, user)
 

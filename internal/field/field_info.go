@@ -239,4 +239,5 @@ type ForeignKeyInfo struct {
 	Field        string
 	Name         string
 	DisableIndex bool
+	OnDelete     input.OnDeleteFkey
 }
