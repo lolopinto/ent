@@ -129,10 +129,46 @@
       export class {{$name}}<TEnt extends {{$srcNode}} = {{$srcNode}}> extends {{useImport "CustomEdgeQueryBase"}}<TEnt, {{$node}}, {{$viewerType}}> {
       {{ if $srcPoly -}}
         constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string | {{useImport "OrderBy"}}) {
+          {{ if $edge.GetOrderBy }}
+              if (sortColumn === undefined) {
+              sortColumn = [
+                {{range $order := $edge.GetOrderBy}}
+                  {
+                    column: "{{$order.Column}}",
+                    direction: "{{$order.Direction}}",
+                    {{ if $order.Alias -}}
+                      alias: "{{$order.Alias}}",
+                    {{ end -}}
+                    {{ if $order.NullsPlacement -}}
+                      nullsPlacement: "{{$order.NullsPlacement}}",
+                    {{ end -}}
+                  },
+                {{end}}
+              ];
+            }
+          {{ end -}}
           super(viewer, {
             src: srcEnt, 
       {{ else -}}
         constructor(viewer: {{$viewerType}}, src: {{$srcType }}, sortColumn?: string | {{useImport "OrderBy"}}) {
+          {{ if $edge.GetOrderBy }}
+              if (sortColumn === undefined) {
+              sortColumn = [
+                {{range $order := $edge.GetOrderBy}}
+                  {
+                    column: {{$order.Column}},
+                    direction: {{$order.Direction}},
+                    {{ if $order.Alias -}}
+                      alias: "{{$order.Alias}}",
+                    {{ end -}}
+                    {{ if $order.NullsPlacement -}}
+                      nullsPlacement: "{{$order.NullsPlacement}}",
+                    {{ end -}}                  
+                  },
+                {{end}}
+              ];
+            }
+          {{ end -}}
           super(viewer, {
             src: src, 
       {{ end -}}

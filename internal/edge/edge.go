@@ -323,6 +323,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 		// set the name based on this...
 		// and generate the edge based on this
 		edge.UserGivenEdgeName = fieldEdgeInfo.IndexEdge.Name
+		edge.OrderBy = fieldEdgeInfo.IndexEdge.OrderBy
 	}
 
 	return e.addEdge(edge)
@@ -352,14 +353,14 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(cfg codegenapi.Config, dbColName, 
 }
 
 func (e *EdgeInfo) AddIndexedEdgeFromSource(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) error {
-	return e.addIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, polymorphic, "", "")
+	return e.addIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, polymorphic, "", "", nil)
 }
 
-func (e *EdgeInfo) AddIndexedEdgeFromNonPolymorphicSource(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName, foreignNode, edgeConstName string) error {
-	return e.addIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, nil, foreignNode, edgeConstName)
+func (e *EdgeInfo) AddIndexedEdgeFromNonPolymorphicSource(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName, foreignNode, edgeConstName string, orderby []input.OrderByOption) error {
+	return e.addIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, nil, foreignNode, edgeConstName, orderby)
 }
 
-func (e *EdgeInfo) addIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode, edgeConstName string) error {
+func (e *EdgeInfo) addIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode, edgeConstName string, orderby []input.OrderByOption) error {
 	tsEdgeName, _ := base.TranslateIDSuffix(tsFieldName)
 	tsEdgeName = names.ToClassType(tsEdgeName)
 
@@ -375,6 +376,7 @@ func (e *EdgeInfo) addIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBCo
 		},
 		sourceNodeName: foreignNode,
 		edgeConstName:  edgeConstName,
+		orderby:        orderby,
 	}
 	if polymorphic != nil {
 		edge.destinationEdge.unique = polymorphic.Unique
@@ -393,6 +395,7 @@ func (e *EdgeInfo) addIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBCo
 type IndexEdgeOptions struct {
 	DefaultEdgeName string
 	EdgeConstName   string
+	OrderBy         []input.OrderByOption
 }
 
 type IndexEdgeOpts func(*IndexEdgeOptions)
@@ -406,6 +409,12 @@ func WithDefaultEdgeName(name string) IndexEdgeOpts {
 func WithEdgeConstName(name string) IndexEdgeOpts {
 	return func(o *IndexEdgeOptions) {
 		o.EdgeConstName = name
+	}
+}
+
+func WithOrderBy(orderby []input.OrderByOption) IndexEdgeOpts {
+	return func(o *IndexEdgeOptions) {
+		o.OrderBy = orderby
 	}
 }
 
@@ -437,6 +446,7 @@ func GetIndexedEdge(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeNam
 		foreignNode:   foreignNode,
 		polymorphic:   polymorphic,
 		edgeConstName: o.EdgeConstName,
+		orderby:       o.OrderBy,
 	}
 
 	if polymorphic != nil {
@@ -457,10 +467,11 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(cfg codegenapi.Confi
 	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddDestinationEdgeFromNonPolymorphicOptions(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, foreignNode, edgeConstName, userGivenEdgeName string) error {
+func (e *EdgeInfo) AddDestinationEdgeFromNonPolymorphicOptions(cfg codegenapi.Config, tsFieldName, quotedDBColName, nodeName string, foreignNode, edgeConstName, userGivenEdgeName string, orderby []input.OrderByOption) error {
 	opts := []IndexEdgeOpts{
 		WithDefaultEdgeName(userGivenEdgeName),
 		WithEdgeConstName(edgeConstName),
+		WithOrderBy(orderby),
 	}
 	edge := GetIndexedEdge(cfg, tsFieldName, quotedDBColName, nodeName, nil, foreignNode, opts...)
 	edgeName := edge.GetEdgeName()
@@ -517,6 +528,7 @@ type IndexedConnectionEdge interface {
 	QuotedDBColName() string
 	GenerateBaseClass() bool
 	EdgeQueryBase() string
+	GetOrderBy() []input.OrderByOption
 	// OverwriteConstructor so that we can have strong types for class
 	GetOverwriteConstructorInfo() *OverwriteConstructorInfo
 }
@@ -578,6 +590,8 @@ type FieldEdge struct {
 	UserGivenEdgeName string
 
 	EdgeConstName string
+
+	OrderBy []input.OrderByOption
 }
 
 func (edge *FieldEdge) PolymorphicEdge() bool {
@@ -714,6 +728,10 @@ func (e *ForeignKeyEdge) GetOverwriteConstructorInfo() *OverwriteConstructorInfo
 	return nil
 }
 
+func (e *ForeignKeyEdge) GetOrderBy() []input.OrderByOption {
+	return nil
+}
+
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
 var _ ConnectionEdge = &ForeignKeyEdge{}
@@ -763,6 +781,7 @@ type IndexedEdge struct {
 
 	foreignNode string
 	polymorphic *base.PolymorphicOptions
+	orderby     []input.OrderByOption
 	destinationEdge
 }
 
@@ -886,6 +905,10 @@ func (e *IndexedEdge) GetOverwriteConstructorInfo() *OverwriteConstructorInfo {
 		}
 	}
 	return nil
+}
+
+func (e *IndexedEdge) GetOrderBy() []input.OrderByOption {
+	return e.orderby
 }
 
 var _ Edge = &IndexedEdge{}
