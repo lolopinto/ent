@@ -9,6 +9,28 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.0-alpha.13]
+
+### Added
+
+- ability to customize default ordering for an indexed edge #1878
+- add ondelete option to fkey so it's customizable #1879
+
+## [0.2.0-alpha.12] 
+
+### Added
+
+- port .swcrc logic into central location and reuse #1862
+
+### Fixes
+
+- don't hardcode return type of custom mutations #1872
+- ensure that custom imports are indicated as used so that we keep the import
+
+
+
+## [0.2.0-alpha.10]
+
 ### Added
 
 - Updated error when there's duplicate names in generated GraphQL Schema (#1857)
