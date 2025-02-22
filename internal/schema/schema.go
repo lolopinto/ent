@@ -1819,6 +1819,11 @@ func (s *Schema) processConstraints(nodeData *NodeData) error {
 			if foreignField == nil {
 				return fmt.Errorf("invalid foreign key field %s", fkey.Field)
 			}
+			// default based on what we were previously doing
+			onDelete := input.Cascade
+			if fkey.OnDelete != "" {
+				onDelete = fkey.OnDelete
+			}
 			constraints = append(constraints, &input.Constraint{
 				Name:    base.GetFKeyName(nodeData.TableName, f.GetDbColName()),
 				Type:    input.ForeignKeyConstraint,
@@ -1826,7 +1831,7 @@ func (s *Schema) processConstraints(nodeData *NodeData) error {
 				ForeignKey: &input.ForeignKeyInfo{
 					TableName: foreignNodeData.TableName,
 					Columns:   []string{foreignField.GetDbColName()},
-					OnDelete:  "CASCADE", // default based on what we were previously doing
+					OnDelete:  onDelete,
 				},
 			})
 		}

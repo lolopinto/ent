@@ -996,6 +996,103 @@ func TestMultiColumnForeignKey(t *testing.T) {
 	)
 }
 
+func TestSchemaWithForeignKeyOnDelete(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "emailAddress",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+							Unique: true,
+						},
+					},
+				},
+				"Contact": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "emailAddress",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "userID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							ForeignKey: &input.ForeignKey{
+								Schema:   "User",
+								Column:   "id",
+								OnDelete: input.Restrict,
+							},
+						},
+					},
+				},
+			},
+		})
+
+	table := getTestTableFromSchema("Contact", dbSchema, t)
+	constraints := table.Constraints
+	// primary, index, foreign key
+	require.Len(t, constraints, 3)
+
+	constraint := getTestForeignKeyConstraintFromTable(t, table, "userID")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.ForeignKeyConstraint([%s], [%s], name=%s, ondelete=%s)",
+			strconv.Quote("user_id"),
+			strconv.Quote("users.id"),
+			strconv.Quote("contacts_user_id_fkey"),
+			strconv.Quote("RESTRICT"),
+		),
+	)
+}
+
 func TestCheckConstraint(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,

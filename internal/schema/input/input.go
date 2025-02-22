@@ -272,11 +272,12 @@ type FieldOverride struct {
 
 type ForeignKey struct {
 	// Note that anytime anything changes here, have to update foreignKeyEqual in compare.go
-	Schema             string `json:"schema,omitempty"`
-	Column             string `json:"column,omitempty"`
-	Name               string `json:"name,omitempty"`
-	DisableIndex       bool   `json:"disableIndex,omitempty"`
-	DisableBuilderType bool   `json:"disableBuilderType,omitempty"`
+	Schema             string       `json:"schema,omitempty"`
+	Column             string       `json:"column,omitempty"`
+	Name               string       `json:"name,omitempty"`
+	DisableIndex       bool         `json:"disableIndex,omitempty"`
+	DisableBuilderType bool         `json:"disableBuilderType,omitempty"`
+	OnDelete           OnDeleteFkey `json:"onDelete,omitempty"`
 }
 
 type FieldEdge struct {
@@ -1005,7 +1006,7 @@ type ForeignKeyInfo struct {
 type OnDeleteFkey string
 
 const (
-	// Note that these type should match enum ForeignKeyInfo.ondelete in schema.ts
+	// Note that these type should match enum OnDeleteFkey in schema.ts
 	Restrict   OnDeleteFkey = "RESTRICT"
 	Cascade    OnDeleteFkey = "CASCADE"
 	SetNull    OnDeleteFkey = "SET NULL"
