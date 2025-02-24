@@ -43,7 +43,10 @@ LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
 RUN apt-get update 
 # wget and gnupg are dependencies needed below
 # libpq-dev for libpq
-RUN apt-get install -yqq wget gnupg libpq-dev curl
+RUN apt-get install -yqq wget 
+RUN apt-get install -yqq gnupg 
+RUN apt-get install -yqq libpq-dev 
+RUN apt-get install -yqq curl
 RUN  apt-get install ripgrep -yqq
 RUN  apt-get install -y ca-certificates curl gnupg
 RUN  mkdir -p /etc/apt/keyrings
