@@ -45,9 +45,7 @@ RUN \
   # wget and gnupg are dependencies needed below
   # libpq-dev for libpq
   apt-get install -yqq wget gnupg libpq-dev curl && \
-  # add architecture needed for arm64 builds
-  dpkg --add-architecture amd64 && \
-  curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && dpkg -i ripgrep_13.0.0_amd64.deb && \
+  apt-get install ripgrep -yqq && \
   apt-get install -y ca-certificates curl gnupg && \
   mkdir -p /etc/apt/keyrings && \
   curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
