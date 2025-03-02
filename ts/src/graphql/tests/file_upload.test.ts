@@ -68,6 +68,8 @@ const schema = new GraphQLSchema({
 
           const data = await readStream(file);
           if (data !== fileContents) {
+            console.log(data);
+            console.log(fileContents);
             throw new Error(`invalid file sent`);
           }
 
