@@ -13,7 +13,7 @@ import { expectMutation } from "../../testutils/ent-graphql-tests";
 const fileContents = ["col1,col2", "data1,data2"].join("\n");
 const paths = ["foo.csv", "foo2.csv"];
 
-beforeAll(() => {
+beforeEach(() => {
   paths.forEach((path) => {
     fs.writeFileSync(path, fileContents, {
       encoding: "utf-8",
@@ -21,7 +21,7 @@ beforeAll(() => {
   });
 });
 
-afterAll(() => {
+afterEach(() => {
   paths.forEach((path) => {
     fs.unlinkSync(path);
   });
