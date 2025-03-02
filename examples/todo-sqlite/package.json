@@ -43,7 +43,7 @@
     "@types/node": "^15.0.3",
     "@types/pg": "^8.6.1",
     "better-sqlite3": "^9.2.2",
-    "express": "^4.17.1",
+    "express": "^4.19.2",
     "graphql": "^16.8.1",
     "graphql-helix": "^1.12.0",
     "libphonenumber-js": "^1.7.56",
