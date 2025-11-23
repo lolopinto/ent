@@ -176,6 +176,72 @@ func TestParseInputWithForeignKey(t *testing.T) {
 	userEdge := event.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.NotNil(t, userEdge)
 
+	userID := event.NodeData.FieldInfo.GetFieldByName("UserID")
+	assert.NotNil(t, userID)
+	fkey := userID.ForeignKeyInfo()
+	assert.NotNil(t, fkey)
+	assert.Equal(t, fkey.OnDelete, input.OnDeleteFkey(""))
+
+	user := schema.Nodes["User"]
+	assert.NotNil(t, user)
+
+	eventsEdge := user.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Events")
+	assert.NotNil(t, eventsEdge)
+}
+
+func TestParseInputWithForeignKeyCustomOnDelete(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id", OnDelete: input.Restrict},
+						Index:      true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	event := schema.Nodes["Event"]
+	assert.NotNil(t, event)
+
+	userID := event.NodeData.FieldInfo.GetFieldByName("UserID")
+	assert.NotNil(t, userID)
+	fkey := userID.ForeignKeyInfo()
+	assert.NotNil(t, fkey)
+	assert.Equal(t, fkey.OnDelete, input.Restrict)
+
+	userEdge := event.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	assert.NotNil(t, userEdge)
+
 	user := schema.Nodes["User"]
 	assert.NotNil(t, user)
 
@@ -3100,4 +3166,119 @@ func TestParseInputWithSnakeCaseIndexedFieldEdgeAndIndexEdge(t *testing.T) {
 	assert.Equal(t, eventsEdge2.TsEdgeQueryName(), "UserToEventsQuery")
 	assert.Equal(t, "UserToEventsConnection", eventsEdge2.GetGraphQLConnectionName())
 	assert.Equal(t, "UserToEvents", eventsEdge2.GetGraphQLEdgePrefix())
+}
+
+func TestParseInputWithIndexedFieldEdgeAndDefaultOrdering(t *testing.T) {
+	// PS:  this is adapated from above and updated with the default ordering test-case
+
+	// TODO this should fail
+	// related to https://github.com/lolopinto/ent/issues/1451
+	// we should have global list of typescript types generated and there should be no conflicts
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name:  "StartTime",
+						Index: true,
+						Type: &input.FieldType{
+							DBType: input.Timestamp,
+						},
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						FieldEdge: &input.FieldEdge{
+							Schema: "User",
+							// when the name is the plural, we have a problem and have conflicts.
+							// createdEvents here is fine. events is not...
+							InverseEdge: &input.InverseFieldEdge{Name: "events"},
+							IndexEdge: &input.IndexEdgeOptions{
+								Name: "createdEvents2",
+								OrderBy: []input.OrderByOption{
+									{
+										// order createdEvents by startTime with most recent first
+										Column:    "start_time",
+										Direction: input.Descending,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	eventInfo := schema.Nodes["Event"]
+	assert.NotNil(t, eventInfo)
+
+	userEdge := eventInfo.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	assert.NotNil(t, userEdge)
+	assert.Equal(t, userEdge.NodeInfo.Node, "User")
+	assert.Equal(t, userEdge.InverseEdge.Name, "events")
+
+	userInfo := schema.Nodes["User"]
+	assert.NotNil(t, userInfo)
+
+	eventsEdge := userInfo.NodeData.EdgeInfo.GetAssociationEdgeByName("events")
+	assert.NotNil(t, eventsEdge)
+	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
+	assert.Equal(t, "UserToEventsQuery", eventsEdge.TsEdgeQueryName())
+	assert.Equal(t, "UserToEventsQuery", eventsEdge.TsEdgeQueryName())
+
+	// 2 nodes, 1 edge
+	testConsts(t, eventInfo.NodeData.ConstantGroups, 1, 0)
+	testConsts(t, userInfo.NodeData.ConstantGroups, 1, 1)
+
+	eventsEdge2 := userInfo.NodeData.EdgeInfo.GetIndexedEdgeByName("createdEvents2")
+	require.NotNil(t, eventsEdge2)
+	// considering we have a name, we should use it here.
+	// UserToCreatedEvents2Query
+	assert.Equal(t, eventsEdge2.TsEdgeQueryName(), "UserToEventsQuery")
+	assert.Equal(t, "UserToEventsConnection", eventsEdge2.GetGraphQLConnectionName())
+	assert.Equal(t, "UserToEventsQuery", eventsEdge2.TsEdgeQueryName())
+	assert.Equal(t, "UserToEvents", eventsEdge2.GetGraphQLEdgePrefix())
+
+	assert.Equal(t, eventsEdge2.GetOrderBy(), []input.OrderByOption{
+		{
+			Column:         "start_time",
+			Direction:      input.Descending,
+			Alias:          "",
+			NullsPlacement: input.NullsPlacement(""),
+		},
+	})
+
+	// so many duplicates here...
+	usersEdge := eventInfo.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("userIds")
+	assert.NotNil(t, usersEdge)
+	assert.Equal(t, "UserToEventsQuery", usersEdge.TsEdgeQueryName())
+	assert.Equal(t, "UserToEventsConnection", usersEdge.GetGraphQLConnectionName())
+	assert.Equal(t, "UserToEvents", usersEdge.GetGraphQLEdgePrefix())
 }

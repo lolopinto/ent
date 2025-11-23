@@ -18,7 +18,7 @@ import (
 )
 
 // next tag to use
-const TAG = "v0.2.0-alpha.11"
+const TAG = "v0.2.0-alpha.13"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 18
@@ -33,7 +33,7 @@ var NODE_VERSIONS = []int{
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.32"
-const TSENT_VERSION = "v0.2.0-alpha.11"
+const TSENT_VERSION = "v0.2.0-alpha.13"
 
 // TODO release notes
 

@@ -11,6 +11,7 @@ import { User } from "../../ent";
 import {
   UserAuthInput,
   UserAuthJWTInput,
+  UserAuthJWTLogin,
   UserAuthJWTPayload,
   UserAuthPayload,
 } from "./auth_types";
@@ -123,6 +124,61 @@ export class AuthResolver {
     }
 
     return new UserAuthJWTPayload(encodeGQLID(user), token);
+  }
+
+  @gqlMutation({
+    class: "AuthResolver",
+    name: "userAuthJWT2",
+    type: "UserAuthJWTLogin",
+    description: "authenticate a user with JWT",
+    async: true,
+    args: [
+      gqlContextType(),
+      {
+        name: "emailAddress",
+        type: "String",
+      },
+      {
+        name: "password",
+        type: "String",
+      },
+    ],
+  })
+  async userAuthJWT2(
+    context: RequestContext,
+    emailAddress: string,
+    password: string,
+  ): Promise<UserAuthJWTLogin> {
+    const [viewer, token] = await useAndVerifyAuthJWT(
+      context,
+      async () => {
+        const data = await User.validateEmailPassword(emailAddress, password);
+        return data?.id;
+      },
+      {
+        secretOrKey: "secret",
+        signInOptions: {
+          algorithm: "HS256",
+          audience: "https://foo.com/website",
+          issuer: "https://foo.com",
+          expiresIn: "1h",
+        },
+      },
+      User.loaderOptions(),
+      // don't store this in session since we're using JWT here
+      {
+        session: false,
+      },
+    );
+    if (!viewer) {
+      throw new Error("not the right credentials");
+    }
+    const user = await viewer?.viewer();
+    if (!user) {
+      throw new Error("not the right credentials");
+    }
+
+    return new UserAuthJWTLogin(encodeGQLID(user), token);
   }
 
   @gqlMutation({

@@ -1094,6 +1094,11 @@ input UserAuthJWTInput {
   password: String!
 }
 
+type UserAuthJWTLogin {
+  token: String!
+  viewerID: ID!
+}
+
 type UserAuthJWTPayload {
   token: String!
   viewerID: ID!
@@ -1787,6 +1792,8 @@ type Mutation {
   userAuth(input: UserAuthInput!): UserAuthPayload!
   """authenticate a user with JWT"""
   userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTPayload!
+  """authenticate a user with JWT"""
+  userAuthJWT2(emailAddress: String!, password: String!): UserAuthJWTLogin!
   userCreate(input: UserCreateInput!): UserCreatePayload!
   userDelete(input: UserDeleteInput!): UserDeletePayload!
   userDelete2(input: DeleteUserInput2!): DeleteUserInput2Payload!

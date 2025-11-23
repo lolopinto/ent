@@ -116,7 +116,8 @@ func foreignKeyInfoEqual(existing, fkey *ForeignKeyInfo) bool {
 	return existing.Schema == fkey.Schema &&
 		existing.Field == fkey.Field &&
 		existing.Name == fkey.Name &&
-		existing.DisableIndex == fkey.DisableIndex
+		existing.DisableIndex == fkey.DisableIndex &&
+		existing.OnDelete == fkey.OnDelete
 }
 
 func compareFieldMap(m1, m2 map[string]*Field) ([]change.Change, error) {

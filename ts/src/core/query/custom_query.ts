@@ -85,7 +85,6 @@ function getRawCountLoader<
     });
   }
   const name = `custom_query_count_loader:${opts.name}`;
-  console.debug(opts.name);
   return viewer.context.cache.getLoader(
     name,
     () =>

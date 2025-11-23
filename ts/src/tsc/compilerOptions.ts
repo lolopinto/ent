@@ -35,6 +35,8 @@ export function readCompilerOptions(filePath: string) {
   if (options.moduleResolution === "node") {
     options.moduleResolution = ts.ModuleResolutionKind.NodeJs;
   }
+  options.target = getTarget(options.target as string | undefined);
+  options.module = getModule(options.module as string | undefined);
   return options;
 }
 
@@ -62,6 +64,35 @@ export function getTarget(target?: string): ts.ScriptTarget {
       return ts.ScriptTarget.ESNext;
     default:
       return ts.ScriptTarget.ESNext;
+  }
+}
+
+export function getModule(module?: string): ts.ModuleKind {
+  switch (module?.toLowerCase()) {
+    case "none":
+      return ts.ModuleKind.None;
+    case "commonjs":
+      return ts.ModuleKind.CommonJS;
+    case "amd":
+      return ts.ModuleKind.AMD;
+    case "umd":
+      return ts.ModuleKind.UMD;
+    case "system":
+      return ts.ModuleKind.System;
+    case "es2015":
+      return ts.ModuleKind.ES2015;
+    case "es2020":
+      return ts.ModuleKind.ES2020;
+    case "es2022":
+      return ts.ModuleKind.ES2022;
+    case "esnext":
+      return ts.ModuleKind.ESNext;
+    case "node16":
+      return ts.ModuleKind.Node16;
+    case "nodenext":
+      return ts.ModuleKind.NodeNext;
+    default:
+      return ts.ModuleKind.CommonJS;
   }
 }
 

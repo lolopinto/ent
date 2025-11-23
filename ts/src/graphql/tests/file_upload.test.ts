@@ -1,3 +1,7 @@
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -7,25 +11,23 @@ import {
   GraphQLList,
 } from "graphql";
 import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
-import * as fs from "fs";
 import { expectMutation } from "../../testutils/ent-graphql-tests";
 
 const fileContents = ["col1,col2", "data1,data2"].join("\n");
-const paths = ["foo.csv", "foo2.csv"];
 
-beforeAll(() => {
-  paths.forEach((path) => {
-    fs.writeFileSync(path, fileContents, {
-      encoding: "utf-8",
-    });
-  });
-});
+function createTempFile() {
+  // Generate a unique file name
+  const tempDir = os.tmpdir();
+  const tempFilePath = path.join(
+    tempDir,
+    `tempfile-${crypto.randomUUID()}.txt`,
+  );
 
-afterAll(() => {
-  paths.forEach((path) => {
-    fs.unlinkSync(path);
-  });
-});
+  // Write content to the newly created file
+  fs.writeFileSync(tempFilePath, fileContents, "utf8");
+
+  return tempFilePath;
+}
 
 async function readStream(file): Promise<string> {
   return new Promise((resolve) => {
@@ -103,12 +105,14 @@ const schema = new GraphQLSchema({
 });
 
 test("file upload", async () => {
+  const file = createTempFile();
+
   await expectMutation(
     {
       schema: schema,
       mutation: "fileUpload",
       args: {
-        file: paths[0],
+        file,
       },
       disableInputWrapping: true,
       customHandlers: [
@@ -120,12 +124,14 @@ test("file upload", async () => {
 });
 
 test("file upload. with stream", async () => {
+  const file = createTempFile();
+
   await expectMutation(
     {
       schema: schema,
       mutation: "fileUpload",
       args: {
-        file: fs.createReadStream(paths[0]),
+        file,
       },
       disableInputWrapping: true,
       customHandlers: [
@@ -137,12 +143,14 @@ test("file upload. with stream", async () => {
 });
 
 test("file upload. with buffer", async () => {
+  const file = createTempFile();
+
   await expectMutation(
     {
       schema: schema,
       mutation: "fileUpload",
       args: {
-        file: fs.readFileSync(paths[0]),
+        file: fs.readFileSync(file),
       },
       disableInputWrapping: true,
       customHandlers: [
@@ -154,12 +162,14 @@ test("file upload. with buffer", async () => {
 });
 
 test("file upload. no graphqlUploadExpress", async () => {
+  const file = createTempFile();
+
   await expectMutation(
     {
       schema: schema,
       mutation: "fileUpload",
       args: {
-        file: paths[0],
+        file,
       },
       disableInputWrapping: true,
       expectedStatus: 400,
@@ -171,12 +181,15 @@ test("file upload. no graphqlUploadExpress", async () => {
 });
 
 test("file upload multiple", async () => {
+  const file = createTempFile();
+  const file2 = createTempFile();
+
   await expectMutation(
     {
       schema: schema,
       mutation: "fileUploadMultiple",
       args: {
-        files: paths,
+        files: [file, file2],
       },
       disableInputWrapping: true,
       customHandlers: [

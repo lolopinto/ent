@@ -39,6 +39,7 @@ import { UserCreateType } from "./user/user_create_type";
 import { UserDelete2Type } from "./user/user_delete2_type";
 import { UserDeleteType } from "./user/user_delete_type";
 import { UserEditType } from "./user/user_edit_type";
+import { UserAuthJWT2Type } from "./user_auth_jwt2_type";
 import { UserAuthJWTType } from "./user_auth_jwt_type";
 import { UserAuthType } from "./user_auth_type";
 import { UserStatisticsCreateType } from "./user_statistics/user_statistics_create_type";
@@ -81,6 +82,7 @@ export const MutationType = new GraphQLObjectType({
     phoneNumberEdit: PhoneNumberEditType,
     userAuth: UserAuthType,
     userAuthJWT: UserAuthJWTType,
+    userAuthJWT2: UserAuthJWT2Type,
     userCreate: UserCreateType,
     userDelete: UserDeleteType,
     userDelete2: UserDelete2Type,

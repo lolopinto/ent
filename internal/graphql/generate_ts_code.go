@@ -789,34 +789,8 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	cmdInfo := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), fromTest)
 
 	if cmdInfo.UseSwc {
-		swcPath := filepath.Join(processor.Config.GetAbsPathToRoot(), ".swcrc")
-		_, err := os.Stat(swcPath)
-		if err != nil && os.IsNotExist(err) {
-			// temp .swcrc file to be used
-			// probably need this for parse_ts too
-			err = os.WriteFile(swcPath, []byte(`{
-		"$schema": "http://json.schemastore.org/swcrc",
-    "jsc": {
-        "parser": {
-            "syntax": "typescript",
-            "decorators": true
-        },
-        "target": "es2020",
-        "keepClassNames":true,
-        "transform": {
-            "decoratorVersion": "2022-03"
-        }
-    },
-		"module": {
-			"type": "commonjs",
-		}
-}
-				`), os.ModePerm)
-
-			if err == nil {
-				defer os.Remove(".swcrc")
-			}
-		}
+		cleanup := cmdInfo.MaybeSetupSwcrc(processor.Config.GetAbsPathToRoot())
+		defer cleanup()
 	}
 
 	if fromTest {

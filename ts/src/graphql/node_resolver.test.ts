@@ -144,11 +144,11 @@ class SearchResult {
 class SearchResultResolver implements NodeResolver {
   encode(result: SearchResult) {
     const str = `searchResult:${result.data.context}:${result.id}`;
-    return Buffer.from(str, "ascii").toString("base64");
+    return btoa(str);
   }
 
   async decodeObj(viewer: Viewer, id: string) {
-    const decoded = Buffer.from(id, "base64").toString("ascii");
+    const decoded = atob(id);
     let parts = decoded.split(":");
     if (parts.length != 3) {
       return null;
