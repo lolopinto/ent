@@ -15,6 +15,8 @@ The schema of the application should be in `src/schema` relative to the root of 
 * By convention, what's exported is the pascalCase version of the file e.g. `UserSchema`,              `EventSchema`, and `PickupLocationSchema` respectively for the above files.
 Since it's a default export, the actual name doesn't matter but that's the current convention.
 
+If you have structs, enums, or edge behaviors that need to be shared across multiple schemas, define them once via a [global schema](/docs/ent-schema/global-schema) and reference them via `globalType` inside each schema.
+
 ## Schema interface
 
 The `Schema` interface referenced above:
