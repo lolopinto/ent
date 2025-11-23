@@ -8,11 +8,11 @@ build-backend = "setuptools.build_meta"
 # version = "0.0.36"
 # production https://pypi.org/project/auto-schema/
 name = "auto_schema"
-version = "0.0.32"
+version = "0.0.33"
 authors = [{ name = "Ola Okelola", email = "email@email.com" }]
 description = "auto schema for a db"
 readme = "README.md"
-requires-python = "==3.11"
+requires-python = ">=3.11"
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
