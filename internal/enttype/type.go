@@ -560,23 +560,23 @@ type dateType struct {
 	timestampType
 }
 
-func (t *dateType) Convert(s SchemaType) ConvertDataTypeRet {
+func (t dateType) Convert(s SchemaType) ConvertDataTypeRet {
 	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertDate"))
 }
 
-func (t *dateType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
+func (t dateType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertDateList"))
 }
 
-func (t *dateType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
+func (t dateType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
 	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertNullableDateList"))
 }
 
-func (t *dateType) GetTSType() string {
+func (t dateType) GetTSType() string {
 	return "Date"
 }
 
-func (t *dateType) GetImportType() Import {
+func (t dateType) GetImportType() Import {
 	return &DateImport{}
 }
 
