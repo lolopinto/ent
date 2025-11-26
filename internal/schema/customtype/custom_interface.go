@@ -143,7 +143,7 @@ func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
 			return true
 		}
 
-		// field requires conversion at runtime e.g. Date => string
+		// field requires conversion at runtime e.g. string => Date
 		if enttype.ConvertImportPaths(f.GetTSFieldType(cfg), ci) != nil {
 			return true
 		}
