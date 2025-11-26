@@ -193,7 +193,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.DateType{},
 				},
-				convertSqliteFns: []string{"convertDateList"},
+				convertSqliteFns:   []string{"convertDateList"},
+				convertPostgresFns: []string{"convertDateList"},
 			},
 		},
 		"nullable date list": {
@@ -213,7 +214,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.DateType{},
 				},
-				convertSqliteFns: []string{"convertNullableDateList"},
+				convertSqliteFns:   []string{"convertNullableDateList"},
+				convertPostgresFns: []string{"convertNullableDateList"},
 			},
 		},
 		"time list": {
@@ -316,7 +318,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimestampType{},
 				},
-				convertSqliteFns: []string{"convertDateList"},
+				convertSqliteFns:   []string{"convertDateList"},
+				convertPostgresFns: []string{"convertDateList"},
 			},
 		},
 		"nullable timestamp list": {
@@ -336,7 +339,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimestampType{},
 				},
-				convertSqliteFns: []string{"convertNullableDateList"},
+				convertSqliteFns:   []string{"convertNullableDateList"},
+				convertPostgresFns: []string{"convertNullableDateList"},
 			},
 		},
 		"timestamptz list": {
@@ -357,7 +361,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimestamptzType{},
 				},
-				convertSqliteFns: []string{"convertDateList"},
+				convertSqliteFns:   []string{"convertDateList"},
+				convertPostgresFns: []string{"convertDateList"},
 			},
 		},
 		"nullable timestamptz list": {
@@ -377,7 +382,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimestamptzType{},
 				},
-				convertSqliteFns: []string{"convertNullableDateList"},
+				convertSqliteFns:   []string{"convertNullableDateList"},
+				convertPostgresFns: []string{"convertNullableDateList"},
 			},
 		},
 		"enum list": {
