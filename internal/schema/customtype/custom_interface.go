@@ -2,6 +2,7 @@ package customtype
 
 import (
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -141,10 +142,25 @@ func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
 		if f.TsFieldName(cfg) != f.GetDbColName() {
 			return true
 		}
+
+		// field requires conversion at runtime e.g. Date => string
+		if enttype.ConvertImportPaths(f.GetTSFieldType(cfg), ci) != nil {
+			return true
+		}
+
+		if f.GetUserConvert() != nil {
+			return true
+		}
 	}
 
 	// this is (currently) only used in actions and should not apply. but to be safe, if exists, have a convert function
 	return len(ci.NonEntFields) > 0
+}
+
+// IsGlobalEnumWithDisableUnknownType is only relevant for Schema objects.
+// Returning false here helps custom interfaces satisfy enttype.SchemaType without needing extra state.
+func (ci *CustomInterface) IsGlobalEnumWithDisableUnknownType(string) bool {
+	return false
 }
 
 // note the logic for these 4 duplicated in Field.GetConvertMethod() in field_type.go

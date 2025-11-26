@@ -1017,7 +1017,7 @@ func writeTypesFile(processor *codegen.Processor, nodeData []*enum.Data, edgeDat
 		TemplateName: "types.tmpl",
 		PathToFile:   filePath,
 		TsImports:    imps,
-		FuncMap:      imps.FuncMap(),
+		FuncMap:      getBaseFuncs(processor.Schema, imps),
 	})
 }
 
@@ -1237,9 +1237,23 @@ func getBaseFuncs(s *schema.Schema, imps *tsimport.Imports) template.FuncMap {
 		// there's type convert
 		// user convert
 		// custom type convert...
-		convs := enttype.ConvertFuncs(f.GetTSFieldType(cfg), s)
+		t := f.GetTSFieldType(cfg)
+		convPaths := enttype.ConvertImportPaths(t, s)
+		for _, imp := range convPaths {
+			if imp == nil {
+				continue
+			}
+			if _, err := imps.ConditionallyReserveImportPath(imp, true); err != nil {
+				return "", err
+			}
+		}
+
+		convs := enttype.ConvertFuncs(t, s)
 		convImp := f.GetConvertImport(cfg, s)
 		if convImp != nil {
+			if _, err := imps.ConditionallyReserveImportPath(convImp, true); err != nil {
+				return "", err
+			}
 			convs = append(convs, convImp.Import)
 		}
 		userConv := f.GetUserConvert()

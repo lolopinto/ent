@@ -561,15 +561,15 @@ type dateType struct {
 }
 
 func (t *dateType) Convert(s SchemaType) ConvertDataTypeRet {
-	return getSqliteImportMap(tsimport.NewEntImportPath("convertDate"))
+	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertDate"))
 }
 
 func (t *dateType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
-	return getSqliteImportMap(tsimport.NewEntImportPath("convertDateList"))
+	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertDateList"))
 }
 
 func (t *dateType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
-	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableDateList"))
+	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertNullableDateList"))
 }
 
 func (t *dateType) GetTSType() string {

@@ -22,11 +22,7 @@
       {{ end -}}
         return {
           {{range $field := .Fields -}}
-            {{ if $field.HasConvertFunction $cfg $schema -}}
-              {{$field.TsFieldName $cfg}}: {{$field.GetConvertMethod $cfg}}(input.{{$field.GetDbColName}}),
-            {{else -}}
-              {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}},
-            {{end -}}
+            {{$field.TsFieldName $cfg}}: {{callAndConvertFunc $field $cfg (printf "input.%s" ($field.GetDbColName)) }},
           {{end -}}
         };
       }
