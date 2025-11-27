@@ -14,6 +14,8 @@ import {
   ContactListDeprecatedQueryType,
   ContactPhoneNumberConnectionQueryType,
   ContactPhoneNumberListDeprecatedQueryType,
+  DefaultsExampleConnectionQueryType,
+  DefaultsExampleListDeprecatedQueryType,
   EventConnectionQueryType,
   EventListDeprecatedQueryType,
   FileConnectionQueryType,
@@ -44,6 +46,8 @@ export const QueryType = new GraphQLObjectType({
     contact_phone_number_connection: ContactPhoneNumberConnectionQueryType,
     contact_phone_number_list_deprecated:
       ContactPhoneNumberListDeprecatedQueryType,
+    defaults_example_connection: DefaultsExampleConnectionQueryType,
+    defaults_example_list_deprecated: DefaultsExampleListDeprecatedQueryType,
     event_connection: EventConnectionQueryType,
     event_list_deprecated: EventListDeprecatedQueryType,
     file_connection: FileConnectionQueryType,

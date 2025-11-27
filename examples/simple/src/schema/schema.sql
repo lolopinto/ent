@@ -63,6 +63,17 @@ CREATE INDEX comments_attachment_id_idx ON comments (attachment_id);
 
 CREATE INDEX comments_author_id_idx ON comments (author_id);
 
+CREATE TABLE defaults_examples (
+    id UUID NOT NULL, 
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    creator_id UUID NOT NULL, 
+    name TEXT NOT NULL, 
+    per_hour INTEGER DEFAULT '1' NOT NULL, 
+    hourly_limit INTEGER NOT NULL, 
+    CONSTRAINT defaults_examples_id_pkey PRIMARY KEY (id)
+);
+
 CREATE TABLE event_hosts_edges (
     id1 UUID NOT NULL, 
     id1_type TEXT NOT NULL, 

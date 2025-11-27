@@ -109,6 +109,10 @@ func (f *NonEntField) ForceOptionalInAction() bool {
 	return f.optional
 }
 
+func (f *NonEntField) DefaultToViewerOnCreate() bool {
+	return false
+}
+
 func (f *NonEntField) DefaultValue() *string {
 	return nil
 }

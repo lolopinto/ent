@@ -473,6 +473,71 @@ export const contactPhoneNumberLoaderInfo = {
   },
 };
 
+export interface DefaultsExampleDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  creator_id: ID;
+  name: string;
+  per_hour: number;
+  hourly_limit: number;
+}
+
+const defaultsExampleTable = "defaults_examples";
+const defaultsExampleFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "creator_id",
+  "name",
+  "per_hour",
+  "hourly_limit",
+];
+
+export const defaultsExampleLoader =
+  new ObjectLoaderFactory<DefaultsExampleDBData>({
+    tableName: defaultsExampleTable,
+    fields: defaultsExampleFields,
+    key: "id",
+  });
+
+export const defaultsExampleLoaderInfo = {
+  tableName: defaultsExampleTable,
+  fields: defaultsExampleFields,
+  nodeType: NodeType.DefaultsExample,
+  loaderFactory: defaultsExampleLoader,
+  fieldInfo: {
+    id: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    creatorId: {
+      dbCol: "creator_id",
+      inputKey: "creatorId",
+    },
+    name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    perHour: {
+      dbCol: "per_hour",
+      inputKey: "perHour",
+    },
+    hourlyLimit: {
+      dbCol: "hourly_limit",
+      inputKey: "hourlyLimit",
+    },
+  },
+};
+
 export interface EventDBData {
   id: ID;
   created_at: Date;
@@ -1003,6 +1068,8 @@ export function getLoaderInfoFromSchema(schema: string) {
       return contactEmailLoaderInfo;
     case "ContactPhoneNumber":
       return contactPhoneNumberLoaderInfo;
+    case "DefaultsExample":
+      return defaultsExampleLoaderInfo;
     case "Event":
       return eventLoaderInfo;
     case "File":
@@ -1036,6 +1103,8 @@ export function getLoaderInfoFromNodeType(nodeType: NodeType) {
       return contactEmailLoaderInfo;
     case NodeType.ContactPhoneNumber:
       return contactPhoneNumberLoaderInfo;
+    case NodeType.DefaultsExample:
+      return defaultsExampleLoaderInfo;
     case NodeType.Event:
       return eventLoaderInfo;
     case NodeType.File:
