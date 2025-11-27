@@ -17,7 +17,7 @@ test("create and edit holiday", async () => {
       schema,
       args: {
         label: "Inauguration",
-        date: dt.toMillis(),
+        date: dt.toISODate(),
         dayOfWeek: "WEDNESDAY",
         dayOfWeekAlt: "WEDNESDAY",
         log: {
