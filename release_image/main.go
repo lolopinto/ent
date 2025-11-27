@@ -33,7 +33,7 @@ var NODE_VERSIONS = []int{
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.32"
-const TSENT_VERSION = "v0.2.0-alpha.13"
+const TSENT_VERSION = "v0.2.0"
 
 // TODO release notes
 
