@@ -269,7 +269,6 @@ function commonTests() {
     await createTables(new HolidaySchema());
 
     const hol = await action.saveX();
-    console.log(hol.data.holidays, expected);
     expect(convertList(hol.data.holidays)).toEqual(expected);
   });
 

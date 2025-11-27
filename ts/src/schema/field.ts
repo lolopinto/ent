@@ -589,12 +589,14 @@ export class DateField extends BaseField implements Field {
     }
     val = new Date(val);
 
-    let yy = leftPad(val.getFullYear());
+    // interpret as UTC to avoid timezone drift when the Date
+    // represents a midnight UTC value
+    let yy = leftPad(val.getUTCFullYear());
 
     // lol this API
     // for some reason this is 0-index
-    let mm = leftPad(val.getMonth() + 1);
-    let dd = leftPad(val.getDate());
+    let mm = leftPad(val.getUTCMonth() + 1);
+    let dd = leftPad(val.getUTCDate());
     let ret = `${yy}-${mm}-${dd}`;
 
     return ret;

@@ -12,6 +12,7 @@ import {
   StringType,
   BooleanType,
   TimestampType,
+  DateType,
 } from "./field";
 import { StructOptions, StructType, StructTypeAsList } from "./struct_field";
 import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
@@ -196,6 +197,33 @@ test("formatted list fields", async () => {
   };
   expect(await f.valid(val)).toBe(true);
   expect(f.format(val)).toBe(JSON.stringify(expected));
+});
+
+test("struct with nested date field", async () => {
+  const nested = StructType({
+    tsType: "HolidayDate",
+    fields: {
+      date: DateType(),
+    },
+  });
+  const f = structTypeF({
+    data: nested,
+  });
+
+  const val = {
+    data: {
+      date: new Date(Date.UTC(2021, 0, 20)),
+    },
+  };
+
+  expect(await f.valid(val)).toBe(true);
+  expect(f.format(val)).toBe(
+    JSON.stringify({
+      data: {
+        date: "2021-01-20",
+      },
+    }),
+  );
 });
 
 test("struct", async () => {

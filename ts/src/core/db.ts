@@ -244,6 +244,20 @@ pg.types.setTypeParser(pg.types.builtins.DATE, function (val: string) {
   return val;
 });
 
+// pg-types only exposes scalar OIDs, so we have to hard-code the array
+// OIDs we care about (DATE[] and TEXT[]). If these ever change upstream,
+// update the constants below.
+const TEXT_ARRAY_OID = 1009;
+const DATE_ARRAY_OID = 1182;
+// TEXT[] already parses to string[], so reuse that parser for DATE[]
+const parseTextArray = pg.types.getTypeParser(TEXT_ARRAY_OID as any);
+pg.types.setTypeParser(DATE_ARRAY_OID as any, function (val: string | null) {
+  if (val === null) {
+    return null;
+  }
+  return parseTextArray(val);
+});
+
 export interface Queryer {
   query(query: string, values?: any[]): Promise<QueryResult<QueryResultRow>>;
   queryAll(query: string, values?: any[]): Promise<QueryResult<QueryResultRow>>;
