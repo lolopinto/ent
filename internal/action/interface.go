@@ -71,6 +71,7 @@ type ActionField interface {
 	GetGraphQLName() string
 	ForceRequiredInAction() bool
 	ForceOptionalInAction() bool
+	DefaultToViewerOnCreate() bool
 	DefaultValue() *string
 	Nullable() bool
 	HasDefaultValueOnCreate() bool
@@ -587,6 +588,9 @@ func IsRequiredField(action Action, field ActionField) bool {
 
 	// for non-create actions, not required
 	if action.GetOperation() != ent.CreateAction {
+		return false
+	}
+	if field.DefaultToViewerOnCreate() {
 		return false
 	}
 	// for a nullable field or something with a default value, don't make it required...
