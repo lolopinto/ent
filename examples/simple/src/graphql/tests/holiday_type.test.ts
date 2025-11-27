@@ -27,7 +27,7 @@ test("create and edit holiday", async () => {
       },
     },
     ["holiday.label", "Inauguration"],
-    ["holiday.date", dt.toUTC().toISO()],
+    ["holiday.date", "2021-01-20"],
     ["holiday.dayOfWeek", "WEDNESDAY"],
     ["holiday.dayOfWeekAlt", "WEDNESDAY"],
     [

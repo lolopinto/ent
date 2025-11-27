@@ -26,7 +26,7 @@ export interface CustomEditHolidayInput {
   dayOfWeek?: DayOfWeek;
   dayOfWeekAlt?: DayOfWeekAlt;
   label?: string;
-  date?: Date;
+  date?: string;
 }
 
 export type CustomEditHolidayActionTriggers = (

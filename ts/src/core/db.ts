@@ -240,6 +240,9 @@ export const defaultTimestampParser: (value: string) => string =
 pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, function (val: string) {
   return DateTime.fromSQL(val + "Z").toJSDate();
 });
+pg.types.setTypeParser(pg.types.builtins.DATE, function (val: string) {
+  return val;
+});
 
 export interface Queryer {
   query(query: string, values?: any[]): Promise<QueryResult<QueryResultRow>>;

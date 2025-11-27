@@ -182,18 +182,17 @@ func TestArrayListType(t *testing.T) {
 			expType{
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Date())",
-				graphql:    "[Time!]!",
+				graphql:    "[Date!]!",
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLClassImportPath("GraphQLList"),
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+					tsimport.NewEntGraphQLImportPath("GraphQLDate"),
 				},
-				tsType: "Date[]",
+				tsType: "string[]",
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.DateType{},
 				},
-				convertSqliteFns: []string{"convertDateList"},
 			},
 		},
 		"nullable date list": {
@@ -203,17 +202,16 @@ func TestArrayListType(t *testing.T) {
 			expType{
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Date())",
-				graphql:    "[Time!]",
+				graphql:    "[Date!]",
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLClassImportPath("GraphQLList"),
 					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+					tsimport.NewEntGraphQLImportPath("GraphQLDate"),
 				},
-				tsType: "Date[] | null",
+				tsType: "string[] | null",
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.DateType{},
 				},
-				convertSqliteFns: []string{"convertNullableDateList"},
 			},
 		},
 		"time list": {

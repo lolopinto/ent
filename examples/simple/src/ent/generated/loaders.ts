@@ -625,7 +625,7 @@ export interface HolidayDBData {
   day_of_week: DayOfWeek;
   day_of_week_alt: DayOfWeekAlt;
   label: string;
-  date: Date;
+  date: string;
 }
 
 const holidayTable = "holidays";

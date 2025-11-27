@@ -15,7 +15,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLTime, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import { GraphQLDate, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Holiday } from "../../../../ent";
 import CustomEditHolidayAction, {
   CustomEditHolidayInput,
@@ -52,7 +52,7 @@ export const CustomEditHolidayInputType = new GraphQLInputObjectType({
       type: GraphQLString,
     },
     date: {
-      type: GraphQLTime,
+      type: GraphQLDate,
     },
   }),
 });

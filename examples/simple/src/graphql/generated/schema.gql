@@ -388,7 +388,7 @@ type Holiday implements Node {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt!
   label: String!
-  date: Time!
+  date: Date!
 }
 
 type HoursOfOperation implements Node {
@@ -1336,7 +1336,7 @@ input CustomEditHolidayInput {
   dayOfWeek: DayOfWeek
   dayOfWeekAlt: DayOfWeekAlt
   label: String
-  date: Time
+  date: Date
 }
 
 type CustomEditHolidayPayload {
@@ -1525,7 +1525,7 @@ input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt!
   label: String!
-  date: Time
+  date: Date
   log: JSON
 }
 

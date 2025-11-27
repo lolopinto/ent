@@ -37,7 +37,7 @@ export class HolidayBase
   readonly updatedAt: Date;
   readonly dayOfWeekAlt: DayOfWeekAlt;
   readonly label: string;
-  readonly date: Date;
+  readonly date: string;
 
   constructor(
     public viewer: ExampleViewerAlias,

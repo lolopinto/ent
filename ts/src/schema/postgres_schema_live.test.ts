@@ -480,15 +480,14 @@ describe("date", () => {
     await tdb.create(getSchemaTable(HolidaySchema, Dialect.Postgres));
   }
 
-  // for some reason, a Date object is returned here and it accounts for timezone
-  // parsing in this format seems to work consistently
-  // parsing with "2021-01-20" doesn't...
+  // parsing this format consistently gives us the same JS Date regardless of timezone
   const getInaugauration = () => {
     return new Date(Date.parse("January 20, 2021"));
   };
 
   const expectedValue = () => {
-    return getInaugauration();
+    // dates are returned from Postgres as YYYY-MM-DD strings
+    return "2021-01-20";
   };
 
   test("date object", async () => {
