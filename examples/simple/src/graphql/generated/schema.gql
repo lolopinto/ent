@@ -289,8 +289,6 @@ type ContactInfoExtra {
   source: ContactInfoSource!
 }
 
-union ContactInfo = ContactEmail | ContactPhoneNumber
-
 input ContactItemFilter {
   emailDomain: String
   phoneNumberAreaCode: String
@@ -321,6 +319,7 @@ type Contact implements Node {
   id: ID!
   firstName: String!
   lastName: String!
+  importantDates: ImportantDates
   attachments: [Attachment!]
   comments(first: Int, after: String, last: Int, before: String): ContactToCommentsConnection!
   likers(first: Int, after: String, last: Int, before: String): ContactToLikersConnection!
@@ -397,6 +396,11 @@ type HoursOfOperation implements Node {
   dayOfWeekAlt: DayOfWeekAlt
   open: String!
   close: String!
+}
+
+type ImportantDates {
+  firstMet: Date!
+  lastSpoken: Date
 }
 
 union PetUnionType = CatType | DogType | RabbitType
@@ -1216,6 +1220,7 @@ input ContactCreateInput {
   firstName: String!
   lastName: String!
   userId: ID!
+  importantDates: ImportantDatesInput
   attachments: [AttachmentInput!]
   emails: [EmailContactCreateInput!]
   phoneNumbers: [PhoneNumberContactCreateInput!]
@@ -1241,6 +1246,7 @@ input ContactEditInput {
   phoneNumberIds: [ID!]
   firstName: String
   lastName: String
+  importantDates: ImportantDatesInput
   attachments: [AttachmentInput!]
   emails: [EmailContactEditInput!]
 }
@@ -1549,6 +1555,11 @@ type HoursOfOperationCreatePayload {
   hoursOfOperation: HoursOfOperation!
 }
 
+input ImportantDatesInput {
+  firstMet: Date!
+  lastSpoken: Date
+}
+
 input PetUnionTypeInput {
   cat: CatTypeInput
   dog: DogTypeInput
@@ -1805,6 +1816,9 @@ type Mutation {
 
 """The `Byte` scalar type represents byte value as a Buffer"""
 scalar Byte
+
+"""Date scalar type with format YYYY-MM-DD"""
+scalar Date
 
 """The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""
 scalar JSON

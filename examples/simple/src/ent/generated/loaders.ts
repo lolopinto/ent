@@ -10,6 +10,7 @@ import {
   ContactLabel,
   DayOfWeek,
   DayOfWeekAlt,
+  ImportantDates,
   UserAccountStatus,
   UserDaysOff,
   UserIntEnum,
@@ -258,6 +259,7 @@ export interface ContactDBData {
   first_name: string;
   last_name: string;
   user_id: ID;
+  important_dates: ImportantDates | null;
   attachments: Attachment[] | null;
 }
 
@@ -271,6 +273,7 @@ const contactFields = [
   "first_name",
   "last_name",
   "user_id",
+  "important_dates",
   "attachments",
 ];
 
@@ -317,6 +320,10 @@ export const contactLoaderInfo = {
     userID: {
       dbCol: "user_id",
       inputKey: "userId",
+    },
+    importantDates: {
+      dbCol: "important_dates",
+      inputKey: "importantDates",
     },
     attachments: {
       dbCol: "attachments",

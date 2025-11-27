@@ -26,6 +26,7 @@ import EditContactAction, {
 } from "../../../../ent/contact/actions/edit_contact_action";
 import { AttachmentInputType } from "../input/attachment_input_type";
 import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
+import { ImportantDatesInputType } from "../input/important_dates_input_type";
 import { ContactLabelType, ContactType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -73,6 +74,9 @@ export const ContactEditInputType = new GraphQLInputObjectType({
     },
     lastName: {
       type: GraphQLString,
+    },
+    importantDates: {
+      type: ImportantDatesInputType,
     },
     attachments: {
       type: new GraphQLList(new GraphQLNonNull(AttachmentInputType)),
@@ -127,6 +131,7 @@ export const ContactEditType: GraphQLFieldConfig<
           : undefined,
         firstName: input.firstName,
         lastName: input.lastName,
+        importantDates: input.importantDates,
         attachments: input.attachments?.map((item: any) => ({
           ...item,
           fileId: mustDecodeIDFromGQLID(item.fileId.toString()),

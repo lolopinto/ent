@@ -5,6 +5,8 @@ import {
   UUIDType,
   UUIDListType,
   StructTypeAsList,
+  StructType,
+  DateType,
 } from "@snowtop/ent/schema/";
 import Feedback from "./patterns/feedback";
 
@@ -27,6 +29,15 @@ const ContactSchema = new EntSchema({
     userID: UUIDType({
       immutable: true,
       foreignKey: { schema: "User", column: "id" },
+    }),
+    // example struct that nests date fields for manual testing
+    importantDates: StructType({
+      nullable: true,
+      tsType: "ImportantDates",
+      fields: {
+        firstMet: DateType(),
+        lastSpoken: DateType({ nullable: true }),
+      },
     }),
     attachments: StructTypeAsList({
       nullable: true,

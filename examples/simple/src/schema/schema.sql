@@ -318,6 +318,7 @@ CREATE TABLE contacts (
     first_name TEXT NOT NULL, 
     last_name TEXT NOT NULL, 
     user_id UUID NOT NULL, 
+    important_dates JSONB, 
     attachments JSONB, 
     CONSTRAINT contacts_id_pkey PRIMARY KEY (id), 
     CONSTRAINT contacts_user_id_fkey FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE

@@ -117,6 +117,7 @@ import { EventArgInputType } from "./mutations/input/event_arg_input_type";
 import { FileArgInputType } from "./mutations/input/file_arg_input_type";
 import { HolidayArgInputType } from "./mutations/input/holiday_arg_input_type";
 import { HoursOfOperationArgInputType } from "./mutations/input/hours_of_operation_arg_input_type";
+import { ImportantDatesInputType } from "./mutations/input/important_dates_input_type";
 import { UserArgInputType } from "./mutations/input/user_arg_input_type";
 import { UserNestedObjectListInputType } from "./mutations/input/user_nested_object_list_input_type";
 import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type";
@@ -200,7 +201,6 @@ import {
   ContactEmailType,
   ContactInfoExtraType,
   ContactInfoSourceType,
-  ContactInfoType,
   ContactItemFilterType,
   ContactItemResultType,
   ContactItemType,
@@ -237,6 +237,7 @@ import {
   HolidayType,
   HoursOfOperationSortColumnType,
   HoursOfOperationType,
+  ImportantDatesType,
   IntEnumUsedInListType,
   NotifTypeType,
   RabbitBreedType,
@@ -326,7 +327,6 @@ export default new GraphQLSchema({
     ContactEmailCanViewerDoType,
     ContactEmailType,
     ContactInfoExtraType,
-    ContactInfoType,
     ContactItemFilterType,
     ContactItemResultType,
     ContactItemType,
@@ -340,6 +340,7 @@ export default new GraphQLSchema({
     GlobalCanViewerDoType,
     HolidayType,
     HoursOfOperationType,
+    ImportantDatesType,
     UserCanViewerDoType,
     UserCanViewerEditType,
     UserCanViewerSeeType,
@@ -474,6 +475,7 @@ export default new GraphQLSchema({
     HoursOfOperationArgInputType,
     HoursOfOperationCreateInputType,
     HoursOfOperationCreatePayloadType,
+    ImportantDatesInputType,
     PhoneNumberContactCreateInput,
     UserArgInputType,
     UserCreateInputType,

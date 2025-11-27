@@ -35,6 +35,7 @@ import {
   ContactToFilterContactEmailsConnectionType,
   ContactToLikersConnectionType,
   EmailInfoType,
+  ImportantDatesType,
   UserType,
 } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
@@ -88,6 +89,9 @@ export const ContactType = new GraphQLObjectType({
     },
     lastName: {
       type: new GraphQLNonNull(GraphQLString),
+    },
+    importantDates: {
+      type: ImportantDatesType,
     },
     attachments: {
       type: new GraphQLList(new GraphQLNonNull(AttachmentType)),
