@@ -26,6 +26,50 @@ func TestRequiredField(t *testing.T) {
 	assert.False(t, action.IsRequiredField(a2, f2), "Bio field required in EditAction not expected")
 }
 
+func TestRequiredFieldDefaults(t *testing.T) {
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		map[string]string{
+			"event.ts": testhelper.GetCodeWithSchema(`
+                        import {ActionOperation, EntSchema, IntegerType, StringType, UUIDType} from "{schema}";
+
+                        const EventSchema = new EntSchema({
+                                fields: {
+                                        creatorId: UUIDType({defaultToViewerOnCreate: true}),
+                                        name: StringType(),
+                                        perHour: IntegerType({serverDefault: "1"}),
+                                        hourlyLimit: IntegerType({defaultValueOnCreate: () => 5}),
+                                },
+                                actions: [
+                                        {
+                                                operation: ActionOperation.Create,
+                                        },
+                                ],
+                        });
+                        export default EventSchema;
+                        `),
+		},
+		"Event",
+	)
+
+	createAction := actionInfo.GetByName("CreateEventAction")
+	require.NotNil(t, createAction)
+
+	getField := func(name string) action.ActionField {
+		for _, f := range createAction.GetFields() {
+			if f.TsBuilderFieldName() == name {
+				return f
+			}
+		}
+		return nil
+	}
+
+	require.False(t, action.IsRequiredField(createAction, getField("creatorId")))
+	require.False(t, action.IsRequiredField(createAction, getField("perHour")))
+	require.False(t, action.IsRequiredField(createAction, getField("hourlyLimit")))
+	require.True(t, action.IsRequiredField(createAction, getField("name")))
+}
+
 func TestEdgeActions(t *testing.T) {
 	edge := testmodel.GetEdgeFromSchema(t, "Account", "Folders")
 	// 2 actions!
