@@ -3,7 +3,7 @@ import { ActionOperation, EntSchema, IntegerType, StringType, UUIDType } from "{
 // This schema demonstrates how create-time fields with defaults provided by
 // the viewer or the server are treated as optional inputs when generating
 // create actions.
-const EventSchema = new EntSchema({
+const DefaultsExampleSchema = new EntSchema({
   fields: {
     // The viewer provides this automatically during creation.
     creatorId: UUIDType({ defaultToViewerOnCreate: true }),
@@ -20,4 +20,4 @@ const EventSchema = new EntSchema({
   ],
 });
 
-export default EventSchema;
+export default DefaultsExampleSchema;

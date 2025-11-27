@@ -1,4 +1,4 @@
-package actiondefaults
+package simple
 
 import (
 	"os"
@@ -11,19 +11,19 @@ import (
 )
 
 func TestCreateActionDefaultsMakeFieldsOptional(t *testing.T) {
-	eventSchemaPath := filepath.Join("src", "schema", "event.ts")
-	code, err := os.ReadFile(eventSchemaPath)
+	schemaPath := filepath.Join("src", "schema", "defaults_example_schema.ts")
+	code, err := os.ReadFile(schemaPath)
 	require.NoError(t, err)
 
 	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
 		map[string]string{
-			"event.ts": testhelper.GetCodeWithSchema(string(code)),
+			"defaults_example_schema.ts": testhelper.GetCodeWithSchema(string(code)),
 		},
-		"Event",
+		"DefaultsExample",
 	)
 
-	createAction := actionInfo.GetByName("CreateEventAction")
+	createAction := actionInfo.GetByName("CreateDefaultsExampleAction")
 	require.NotNil(t, createAction)
 
 	getField := func(name string) action.ActionField {
