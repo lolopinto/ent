@@ -21,7 +21,13 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { ContactDBData, contactLoader, contactLoaderInfo } from "./loaders";
-import { Attachment, NodeType, convertNullableAttachmentList } from "./types";
+import {
+  Attachment,
+  ImportantDates,
+  NodeType,
+  convertNullableAttachmentList,
+  convertNullableImportantDates,
+} from "./types";
 import {
   ContactCommentsFromAttachmentQuery,
   ContactEmail,
@@ -50,6 +56,7 @@ export class ContactBase
   readonly firstName: string;
   readonly lastName: string;
   readonly userId: ID;
+  readonly importantDates: ImportantDates | null;
   readonly attachments: Attachment[] | null;
 
   constructor(
@@ -66,6 +73,7 @@ export class ContactBase
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.userId = data.user_id;
+    this.importantDates = convertNullableImportantDates(data.important_dates);
     this.attachments = convertNullableAttachmentList(data.attachments);
     // @ts-expect-error
     this.data = data;

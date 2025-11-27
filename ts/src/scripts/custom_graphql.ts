@@ -436,6 +436,14 @@ async function main() {
   );
   addCustomType(
     {
+      importPath: MODULE_PATH,
+      secondaryImportPath: "../graphql/scalars/date",
+      type: "GraphQLDate",
+    },
+    gqlCapture,
+  );
+  addCustomType(
+    {
       importPath: "graphql-type-json",
       type: "GraphQLJSON",
     },

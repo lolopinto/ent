@@ -15,7 +15,7 @@ import {
 } from "graphql";
 import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLTime } from "@snowtop/ent/graphql";
+import { GraphQLDate } from "@snowtop/ent/graphql";
 import { Holiday } from "../../../../ent";
 import CreateHolidayAction, {
   HolidayCreateInput,
@@ -44,7 +44,7 @@ export const HolidayCreateInputType = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     date: {
-      type: GraphQLTime,
+      type: GraphQLDate,
     },
     log: {
       type: GraphQLJSON,

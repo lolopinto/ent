@@ -26,7 +26,7 @@ export interface CustomCreateHolidayInput {
   dayOfWeek: DayOfWeek;
   dayOfWeekAlt: DayOfWeekAlt;
   label: string;
-  date?: Date;
+  date?: string;
   fakeId?: ID | null;
 }
 

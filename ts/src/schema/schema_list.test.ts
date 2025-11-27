@@ -256,7 +256,7 @@ function commonTests() {
     }
 
     const holidays = ["2020-12-25", "2020-12-26", "2021-01-01"];
-    const expected = holidays.map(convertDate);
+    const expected = holidays;
 
     const action = getInsertAction(
       new HolidaySchema(),
@@ -269,7 +269,7 @@ function commonTests() {
     await createTables(new HolidaySchema());
 
     const hol = await action.saveX();
-    expect(convertList(hol.data.holidays, convertDate)).toEqual(expected);
+    expect(convertList(hol.data.holidays)).toEqual(expected);
   });
 
   test("time list", async () => {

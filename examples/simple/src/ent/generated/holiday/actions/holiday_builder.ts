@@ -25,7 +25,7 @@ export interface HolidayInput {
   dayOfWeek?: DayOfWeek;
   dayOfWeekAlt?: DayOfWeekAlt;
   label?: string;
-  date?: Date;
+  date?: string;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -222,7 +222,7 @@ export class HolidayBuilder<
   }
 
   // get value of date. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDateValue(): Date {
+  getNewDateValue(): string {
     if (this.input.date !== undefined) {
       return this.input.date;
     }

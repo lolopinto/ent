@@ -26,6 +26,7 @@ import CreateContactAction, {
 } from "../../../../ent/contact/actions/create_contact_action";
 import { AttachmentInputType } from "../input/attachment_input_type";
 import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
+import { ImportantDatesInputType } from "../input/important_dates_input_type";
 import { ContactLabelType, ContactType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -85,6 +86,9 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
     userId: {
       type: new GraphQLNonNull(GraphQLID),
     },
+    importantDates: {
+      type: ImportantDatesInputType,
+    },
     attachments: {
       type: new GraphQLList(new GraphQLNonNull(AttachmentInputType)),
     },
@@ -131,6 +135,7 @@ export const ContactCreateType: GraphQLFieldConfig<
       firstName: input.firstName,
       lastName: input.lastName,
       userId: mustDecodeIDFromGQLID(input.userId.toString()),
+      importantDates: input.importantDates,
       attachments: input.attachments?.map((item: any) => ({
         ...item,
         fileId: mustDecodeIDFromGQLID(item.fileId.toString()),

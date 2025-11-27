@@ -776,6 +776,27 @@ export interface ContactInfoExtra {
   source: ContactInfoSource;
 }
 
+export interface ImportantDates {
+  firstMet: string;
+  lastSpoken?: string | null;
+}
+
+export function convertImportantDates(input: any): ImportantDates {
+  return {
+    firstMet: input.first_met,
+    lastSpoken: input.last_spoken,
+  };
+}
+
+export function convertNullableImportantDates(
+  input: any,
+): ImportantDates | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertImportantDates(input);
+}
+
 export interface UserNestedNestedObjectList {
   int: number;
 }
