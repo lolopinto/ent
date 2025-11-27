@@ -188,6 +188,15 @@ export const DayOfWeekAltType = new GraphQLEnumType({
   },
 });
 
+export const DefaultsExampleSortColumnType = new GraphQLEnumType({
+  name: "DefaultsExampleSortColumn",
+  values: {
+    ID: {
+      value: "id",
+    },
+  },
+});
+
 export const DogBreedType = new GraphQLEnumType({
   name: "DogBreed",
   values: {

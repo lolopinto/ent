@@ -17,6 +17,7 @@ import { ContactEmailEditType } from "./contact_email/contact_email_edit_type";
 import { ContactPhoneNumberCreateType } from "./contact_phone_number/contact_phone_number_create_type";
 import { ContactPhoneNumberDeleteType } from "./contact_phone_number/contact_phone_number_delete_type";
 import { ContactPhoneNumberEditType } from "./contact_phone_number/contact_phone_number_edit_type";
+import { DefaultsExampleCreateType } from "./defaults_example/defaults_example_create_type";
 import { EventAddHostType } from "./event/event_add_host_type";
 import { EventCreateType } from "./event/event_create_type";
 import { EventDeleteType } from "./event/event_delete_type";
@@ -64,6 +65,7 @@ export const MutationType = new GraphQLObjectType({
     contactPhoneNumberCreate: ContactPhoneNumberCreateType,
     contactPhoneNumberDelete: ContactPhoneNumberDeleteType,
     contactPhoneNumberEdit: ContactPhoneNumberEditType,
+    defaultsExampleCreate: DefaultsExampleCreateType,
     emailAddressEdit: EmailAddressEditType,
     eventAddHost: EventAddHostType,
     eventCreate: EventCreateType,

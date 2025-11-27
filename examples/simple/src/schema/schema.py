@@ -125,6 +125,17 @@ sa.Table("contacts", metadata,
     sa.ForeignKeyConstraint(["user_id"], ["users.id"], name="contacts_user_id_fkey", ondelete="CASCADE"),
 )
    
+sa.Table("defaults_examples", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("creator_id", postgresql.UUID(), nullable=False),
+    sa.Column("name", sa.Text(), nullable=False),
+    sa.Column("per_hour", sa.Integer(), nullable=False, server_default='1'),
+    sa.Column("hourly_limit", sa.Integer(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="defaults_examples_id_pkey"),
+)
+   
 sa.Table("event_hosts_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),

@@ -95,6 +95,10 @@ enum DayOfWeek {
   UNKNOWN
 }
 
+enum DefaultsExampleSortColumn {
+  ID
+}
+
 enum DogBreedGroup {
   SPORTING
   HOUND
@@ -289,6 +293,8 @@ type ContactInfoExtra {
   source: ContactInfoSource!
 }
 
+union ContactInfo = ContactEmail | ContactPhoneNumber
+
 input ContactItemFilter {
   emailDomain: String
   phoneNumberAreaCode: String
@@ -328,6 +334,14 @@ type Contact implements Node {
   plusEmails: EmailInfo!
   contactItems(filter: ContactItemFilter): [ContactItemResult!]!
   filterContactEmails(filter: ContactItemFilter, first: Int, after: String, last: Int, before: String): ContactToFilterContactEmailsConnection!
+}
+
+type DefaultsExample implements Node {
+  id: ID!
+  creatorId: ID!
+  name: String!
+  perHour: Int!
+  hourlyLimit: Int!
 }
 
 type DogType {
@@ -806,6 +820,18 @@ type RootToContactPhoneNumberEdge implements Edge {
 type RootToContactPhoneNumberConnection implements Connection {
   edges: [RootToContactPhoneNumberEdge!]!
   nodes: [ContactPhoneNumber!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToDefaultsExampleEdge implements Edge {
+  node: DefaultsExample!
+  cursor: String!
+}
+
+type RootToDefaultsExampleConnection implements Connection {
+  edges: [RootToDefaultsExampleEdge!]!
+  nodes: [DefaultsExample!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -1349,6 +1375,22 @@ type CustomEditHolidayPayload {
   holiday: Holiday
 }
 
+input DefaultsExampleArgInput {
+  id: ID
+  ids: [ID!]
+}
+
+input DefaultsExampleCreateInput {
+  creatorId: ID
+  name: String!
+  perHour: Int
+  hourlyLimit: Int
+}
+
+type DefaultsExampleCreatePayload {
+  defaultsExample: DefaultsExample!
+}
+
 type DeleteUserInput2Payload {
   deletedUserId: ID
 }
@@ -1737,6 +1779,10 @@ type Query {
   contact_phone_number_connection(ids: [ID!], sortCol: ContactPhoneNumberSortColumn, query: ContactPhoneNumberArgInput, first: Int, after: String, last: Int, before: String): RootToContactPhoneNumberConnection!
   """custom query for contact_phone_number. list"""
   contact_phone_number_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [ContactPhoneNumber!]!
+  """custom query for defaults_example. connection"""
+  defaults_example_connection(ids: [ID!], sortCol: DefaultsExampleSortColumn, query: DefaultsExampleArgInput, first: Int, after: String, last: Int, before: String): RootToDefaultsExampleConnection!
+  """custom query for defaults_example. list"""
+  defaults_example_list_deprecated(id: ID, ids: [ID!], extra: Boolean): [DefaultsExample!]!
   """custom query for event. connection"""
   event_connection(ids: [ID!], sortCol: EventSortColumn, query: EventArgInput, first: Int, after: String, last: Int, before: String): RootToEventConnection!
   """custom query for event. list"""
@@ -1783,6 +1829,7 @@ type Mutation {
   contactPhoneNumberCreate(input: ContactPhoneNumberCreateInput!): ContactPhoneNumberCreatePayload!
   contactPhoneNumberDelete(input: ContactPhoneNumberDeleteInput!): ContactPhoneNumberDeletePayload!
   contactPhoneNumberEdit(input: ContactPhoneNumberEditInput!): ContactPhoneNumberEditPayload!
+  defaultsExampleCreate(input: DefaultsExampleCreateInput!): DefaultsExampleCreatePayload!
   emailAddressEdit(input: EditEmailAddressInput!): EditEmailAddressPayload!
   eventAddHost(input: EventAddHostInput!): EventAddHostPayload!
   eventCreate(input: EventCreateInput!): EventCreatePayload!

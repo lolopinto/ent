@@ -18,6 +18,8 @@ export enum NodeType {
   ContactEmail = "contactEmail",
   // ContactPhoneNumber is the node type for the ContactPhoneNumber object. Used to identify this node in edges and other places.
   ContactPhoneNumber = "contactPhoneNumber",
+  // DefaultsExample is the node type for the DefaultsExample object. Used to identify this node in edges and other places.
+  DefaultsExample = "defaultsExample",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
   Event = "event",
   // File is the node type for the File object. Used to identify this node in edges and other places.

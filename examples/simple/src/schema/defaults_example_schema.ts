@@ -1,4 +1,10 @@
-import { ActionOperation, EntSchema, IntegerType, StringType, UUIDType } from "{schema}";
+import {
+  ActionOperation,
+  EntSchema,
+  IntegerType,
+  StringType,
+  UUIDType,
+} from "@snowtop/ent";
 
 // This schema demonstrates how create-time fields with defaults provided by
 // the viewer or the server are treated as optional inputs when generating

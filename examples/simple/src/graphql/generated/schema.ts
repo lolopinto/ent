@@ -56,6 +56,10 @@ import {
   ContactPhoneNumberEditPayloadType,
 } from "./mutations/contact_phone_number/contact_phone_number_edit_type";
 import {
+  DefaultsExampleCreateInputType,
+  DefaultsExampleCreatePayloadType,
+} from "./mutations/defaults_example/defaults_example_create_type";
+import {
   EventAddHostInputType,
   EventAddHostPayloadType,
 } from "./mutations/event/event_add_host_type";
@@ -113,6 +117,7 @@ import { ContactArgInputType } from "./mutations/input/contact_arg_input_type";
 import { ContactEmailArgInputType } from "./mutations/input/contact_email_arg_input_type";
 import { ContactInfoExtraInputType } from "./mutations/input/contact_info_extra_input_type";
 import { ContactPhoneNumberArgInputType } from "./mutations/input/contact_phone_number_arg_input_type";
+import { DefaultsExampleArgInputType } from "./mutations/input/defaults_example_arg_input_type";
 import { EventArgInputType } from "./mutations/input/event_arg_input_type";
 import { FileArgInputType } from "./mutations/input/file_arg_input_type";
 import { HolidayArgInputType } from "./mutations/input/holiday_arg_input_type";
@@ -201,6 +206,7 @@ import {
   ContactEmailType,
   ContactInfoExtraType,
   ContactInfoSourceType,
+  ContactInfoType,
   ContactItemFilterType,
   ContactItemResultType,
   ContactItemType,
@@ -217,6 +223,8 @@ import {
   CreatorToEventsConnectionType,
   DayOfWeekAltType,
   DayOfWeekType,
+  DefaultsExampleSortColumnType,
+  DefaultsExampleType,
   DogBreedGroupType,
   DogBreedType,
   EmailInfoType,
@@ -246,6 +254,7 @@ import {
   RootToContactConnectionType,
   RootToContactEmailConnectionType,
   RootToContactPhoneNumberConnectionType,
+  RootToDefaultsExampleConnectionType,
   RootToEventConnectionType,
   RootToFileConnectionType,
   RootToHolidayConnectionType,
@@ -302,6 +311,7 @@ export default new GraphQLSchema({
     ContactSortColumnType,
     DayOfWeekAltType,
     DayOfWeekType,
+    DefaultsExampleSortColumnType,
     DogBreedGroupType,
     DogBreedType,
     EventRsvpStatusType,
@@ -327,11 +337,13 @@ export default new GraphQLSchema({
     ContactEmailCanViewerDoType,
     ContactEmailType,
     ContactInfoExtraType,
+    ContactInfoType,
     ContactItemFilterType,
     ContactItemResultType,
     ContactItemType,
     ContactPhoneNumberType,
     ContactType,
+    DefaultsExampleType,
     EmailInfoType,
     EventCanViewerSeeType,
     EventType,
@@ -373,6 +385,7 @@ export default new GraphQLSchema({
     RootToContactConnectionType(),
     RootToContactEmailConnectionType(),
     RootToContactPhoneNumberConnectionType(),
+    RootToDefaultsExampleConnectionType(),
     RootToEventConnectionType(),
     RootToFileConnectionType(),
     RootToHolidayConnectionType(),
@@ -440,6 +453,9 @@ export default new GraphQLSchema({
     ContactPhoneNumberEditPayloadType,
     CustomEditHolidayInputType,
     CustomEditHolidayPayloadType,
+    DefaultsExampleArgInputType,
+    DefaultsExampleCreateInputType,
+    DefaultsExampleCreatePayloadType,
     DeleteUserInput2PayloadType,
     DeleteUserInput2Type,
     EditEmailAddressInputType,
