@@ -4,7 +4,7 @@ import {
   IntegerType,
   StringType,
   UUIDType,
-} from "@snowtop/ent";
+} from "@snowtop/ent/schema/";
 
 // This schema demonstrates how create-time fields with defaults provided by
 // the viewer or the server are treated as optional inputs when generating
