@@ -418,6 +418,23 @@ describe("global query", () => {
     expect(edges.length).toBe(7 * infos.length);
   });
 
+  test("overrideAlias null skips table alias in clause", async () => {
+    const loaderOptions = {
+      ...FakeEvent.loaderOptions(),
+      alias: "fe",
+    };
+    const q = new CustomClauseQuery<FakeEvent>(user.viewer, {
+      clause: clause.Eq<Data>("LOWER(title)", "title", null),
+      loadEntOptions: loaderOptions,
+      name: "events_by_lower_title",
+    });
+
+    await q.queryEdges();
+    const query = ml.logs[ml.logs.length - 1].query;
+    expect(query).toContain("WHERE LOWER(title) = $1");
+    expect(query).not.toContain("fe.LOWER(title)");
+  });
+
   test("first N. after each cursor", async () => {
     const q = getGlobalQuery();
 
