@@ -60,6 +60,8 @@ const (
 	ModifyEdgeData ChangeType = "modify_edge_data"
 	RemoveEdgeData ChangeType = "remove_edge_data"
 
+	ModifyGlobalSchema ChangeType = "modify_global_schema"
+
 	CreateUniqueConstraint ChangeType = "create_unique_constraint"
 	CreateCheckConstraint  ChangeType = "create_check_constraint"
 	DropCheckConstraint    ChangeType = "drop_check_constraint"
@@ -79,6 +81,8 @@ type Change struct {
 }
 
 type ChangeMap map[string][]Change
+
+const GlobalSchemaChangeKey = "__global_schema__"
 
 // TODO this needs to care about TSOnly and GraphQLOnly...
 func (cm ChangeMap) ChangesExist(key string, l ...ChangeType) bool {
