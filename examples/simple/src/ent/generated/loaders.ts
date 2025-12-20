@@ -15,6 +15,7 @@ import {
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
+  UserOnDemandWithPrivacy,
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
@@ -840,6 +841,7 @@ export interface UserDBData {
   time_in_ms: BigInt | null;
   fun_uuids: ID[] | null;
   super_nested_object: UserSuperNestedObject | null;
+  on_demand_with_privacy: UserOnDemandWithPrivacy | null;
   nested_list: UserNestedObjectList[] | null;
   int_enum: UserIntEnum | null;
 }
@@ -972,6 +974,10 @@ export const userLoaderInfo = {
     superNestedObject: {
       dbCol: "super_nested_object",
       inputKey: "superNestedObject",
+    },
+    onDemandWithPrivacy: {
+      dbCol: "on_demand_with_privacy",
+      inputKey: "onDemandWithPrivacy",
     },
     nestedList: {
       dbCol: "nested_list",

@@ -270,6 +270,17 @@ const UserSchema = new EntSchema({
         }),
       },
     }),
+    onDemandWithPrivacy: StructType({
+      fetchOnDemand: true,
+      nullable: true,
+      tsType: "UserOnDemandWithPrivacy",
+      graphQLType: "UserOnDemandWithPrivacy",
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
+      fields: {
+        secret: StringType(),
+        phoneNumber: PhoneNumberType(),
+      },
+    }),
     nestedList: StructListType({
       nullable: true,
       tsType: "UserNestedObjectList",
