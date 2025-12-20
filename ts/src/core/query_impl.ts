@@ -125,8 +125,11 @@ export function buildQuery(options: QueryableDataOptions): string {
       )}`,
     );
   }
-  if (options.limit) {
+  if (options.limit !== undefined) {
     parts.push(`LIMIT ${options.limit}`);
+  }
+  if (options.offset !== undefined) {
+    parts.push(`OFFSET ${options.offset}`);
   }
   return parts.join(" ");
 }

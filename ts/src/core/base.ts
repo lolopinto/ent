@@ -207,6 +207,7 @@ export interface QueryDataOptions<T extends Data = Data, K = keyof T> {
   orderby?: OrderBy; // this technically doesn't make sense when querying just one row but whatevs
   groupby?: K;
   limit?: number;
+  offset?: number;
   disableTransformations?: boolean;
   join?: JoinOptions[];
 }

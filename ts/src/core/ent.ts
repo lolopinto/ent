@@ -559,6 +559,7 @@ function isParameterizedQuery<T extends Data = Data, K = keyof T>(
  * Foo.loadCustom(opts, {
  *   clause:  query.LessEq('time', Date.now()),
  *   limit: 100,
+ *   offset: 200,
  *   orderby: 'time',
  *  }) // changes the query
  * Foo.loadCustom(opts, {
@@ -573,6 +574,8 @@ function isParameterizedQuery<T extends Data = Data, K = keyof T>(
  *
  * If a raw or parameterized query is passed in, we don't attempt to batch them together and they're executed as is.
  * If you end up with a scenario where you may need to coalesce or batch (non-clause) queries here, you should use some kind of memoization here.
+ *
+ * Note: QueryDataOptions limit/offset are applied before privacy filtering, so the final ent list may be shorter.
  */
 export async function loadCustomData<
   TQueryData extends Data = Data,
