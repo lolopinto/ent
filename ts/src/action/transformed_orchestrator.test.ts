@@ -132,6 +132,17 @@ class Country extends BaseEnt {
   }
 }
 
+class Competition extends BaseEnt {
+  nodeType = "Competition";
+
+  constructor(
+    public viewer: CustomViewer,
+    public data: Data,
+  ) {
+    super(viewer, data);
+  }
+}
+
 const AccountSchema = new EntBuilderSchema(Account, {
   patterns: [new DeletedAtPatternWithExtraWrites()],
 
@@ -146,6 +157,26 @@ const AccountSchema = new EntBuilderSchema(Account, {
       },
       tsType: "AccountPrefs",
       graphQLType: "AccountPrefs",
+    }),
+  },
+});
+
+const CompetitionSchema = new EntBuilderSchema(Competition, {
+  fields: {
+    horses: StructTypeAsList({
+      fields: {
+        horseID: UUIDType({
+          nullable: true,
+        }),
+        horseName: StringType({
+          nullable: true,
+        }),
+        backNumber: IntegerType({
+          nullable: true,
+          min: 1,
+        }),
+      },
+      tsType: "CompetitionEventHorseEntry",
     }),
   },
 });
@@ -378,6 +409,67 @@ function getInsertCountryAction(
 }
 
 function commonTests() {
+  test("builder.getInput keeps struct field camelCase after transformWrite", async () => {
+    const horses = [
+      {
+        horseId: uuidv4(),
+        horseName: "Quality Time",
+        backNumber: 3396,
+      },
+    ];
+
+    class CompetitionAction extends SimpleAction<Competition> {
+      getValidators() {
+        return [
+          {
+            validate: (builder) => {
+              const input = builder.getInput() as Data;
+              const list = (input as any).horses;
+              if (!Array.isArray(list) || list.length !== 1) {
+                return new Error("expected horses list in builder input");
+              }
+              const horse = list[0] as any;
+              if (
+                horse.horseId !== horses[0].horseId ||
+                horse.horseName !== horses[0].horseName ||
+                horse.backNumber !== horses[0].backNumber
+              ) {
+                return new Error("expected camelCase horse fields in input");
+              }
+              if (
+                horse.horse_id !== undefined ||
+                horse.horse_name !== undefined ||
+                horse.back_number !== undefined
+              ) {
+                return new Error("unexpected snake_case horse fields in input");
+              }
+            },
+          },
+        ];
+      }
+    }
+
+    const action = new CompetitionAction(
+      new LoggedOutViewer(),
+      CompetitionSchema,
+      new Map([["horses", horses]]),
+      WriteOperation.Insert,
+      null,
+    );
+
+    // @ts-ignore
+    action.transformWrite = () => {
+      return {
+        op: SQLStatementOperation.Insert,
+        data: {
+          horses,
+        },
+      };
+    };
+
+    await action.validX();
+  });
+
   test("delete -> update", async () => {
     const loader = getNewLoader();
     const action = getInsertUserAction(

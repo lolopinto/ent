@@ -52,6 +52,8 @@ import memoize from "memoizee";
 import * as clause from "../core/clause";
 import { isPromise } from "util/types";
 import { RawQueryOperation } from "./operations";
+import { StructField } from "../schema/struct_field";
+import { ListField } from "../schema/field";
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
@@ -1014,12 +1016,25 @@ export class Orchestrator<
           if (val === undefined) {
             continue;
           }
+          let inputVal = val;
           if (field.format) {
             val = field.format(transformed.data[k], true);
           }
           data[this.getStorageKey(k)] = val;
           if (!field.immutable) {
-            this.defaultFieldsByTSName[this.getInputKey(k)] = val;
+            if (field instanceof StructField) {
+              inputVal = field.formatInput(inputVal);
+            } else if (field instanceof ListField) {
+              const elemField = field.__getElemField();
+              if (elemField instanceof StructField && Array.isArray(inputVal)) {
+                inputVal = inputVal.map((elem) =>
+                  elemField.formatInput(elem),
+                );
+              }
+            } else if (field.format) {
+              inputVal = val;
+            }
+            this.defaultFieldsByTSName[this.getInputKey(k)] = inputVal;
           }
           // hmm do we need this?
           // TODO how to do this for local tests?
