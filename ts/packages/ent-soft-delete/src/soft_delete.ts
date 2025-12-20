@@ -61,6 +61,11 @@ export const GlobalDeletedEdge = {
       defaultValueOnCreate: () => null,
     }),
   },
+  edgeIndices: [
+    {
+      columns: ["id1", "edge_type", "deleted_at"],
+    },
+  ],
 
   transformEdgeRead(): Clause {
     return query.Eq("deleted_at", null);

@@ -9,6 +9,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 - support offset in QueryDataOptions for loadCustomData/loadCustomEnts (#1895)
+- add global edge composite indices for extra edge fields (#1896)
 
 ## [0.2.2] - 2025-02-22
 - ability to customize default ordering for an indexed edge (#1878)

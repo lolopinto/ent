@@ -33,6 +33,7 @@ type Schema struct {
 	globalEnums                 map[string]*EnumInfo
 	globalConsts                *objWithConsts
 	extraEdgeFields             []*field.Field
+	edgeIndices                 []*input.Index
 	initGlobalSchema            bool
 	globalSchemaTransformsEdges bool
 	tables                      NodeMapInfo
@@ -68,6 +69,10 @@ func (s *Schema) GlobalSchemaTransformsEdges() bool {
 
 func (s *Schema) ExtraEdgeFields() []*field.Field {
 	return s.extraEdgeFields
+}
+
+func (s *Schema) EdgeIndices() []*input.Index {
+	return s.edgeIndices
 }
 
 func (s *Schema) GetGlobalConsts() WithConst {
@@ -699,10 +704,62 @@ func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema
 		s.extraEdgeFields = fi.AllFields()
 	}
 
+	if len(gs.EdgeIndices) > 0 {
+		s.edgeIndices = gs.EdgeIndices
+		if err := s.validateEdgeIndices(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	s.initGlobalSchema = gs.Init
 	s.globalSchemaTransformsEdges = gs.TransformsEdges
 
 	return errs
+}
+
+func (s *Schema) validateEdgeIndices() error {
+	if len(s.edgeIndices) == 0 {
+		return nil
+	}
+
+	validColumns := map[string]bool{
+		"id1":      true,
+		"id1_type": true,
+		"edge_type": true,
+		"id2":      true,
+		"id2_type": true,
+		"time":     true,
+		"data":     true,
+		"ID1":      true,
+		"ID1Type":  true,
+		"EdgeType": true,
+		"ID2":      true,
+		"ID2Type":  true,
+		"Time":     true,
+		"Data":     true,
+	}
+
+	for _, f := range s.extraEdgeFields {
+		validColumns[f.FieldName] = true
+		validColumns[f.GetDbColName()] = true
+	}
+
+	for _, index := range s.edgeIndices {
+		for _, col := range index.Columns {
+			if !validColumns[col] {
+				return fmt.Errorf("invalid edge column %s passed as col for edge index %s", col, index.Name)
+			}
+		}
+
+		if index.IndexType == input.Gist {
+			return fmt.Errorf("gist index currently only supported for full text indexes")
+		}
+		if index.FullText != nil {
+			return fmt.Errorf("full text indexes not supported for edge index %s", index.Name)
+		}
+	}
+
+	return nil
 }
 
 func (s *Schema) validateIndices(nodeData *NodeData) error {

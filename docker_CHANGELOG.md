@@ -9,6 +9,10 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- add global edge composite indices for extra edge fields (#1896)
+
 ### Fixed
 
 - fix struct fields that are fetchOnDemand and have a privacy policy (#1893)
