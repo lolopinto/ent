@@ -150,6 +150,50 @@ test("create contact with explicit attachments", async () => {
   ]);
 });
 
+test("create contact with important dates struct", async () => {
+  const user = await createUser();
+  const firstMet = new Date(Date.UTC(2022, 5, 15));
+  const lastSpoken = new Date(Date.UTC(2023, 0, 1));
+  const firstMetStr = firstMet.toISOString().slice(0, 10);
+  const lastSpokenStr = lastSpoken.toISOString().slice(0, 10);
+
+  const contact = await create(user, "Brienne", "Tarth", {
+    importantDates: {
+      firstMet: firstMetStr,
+      lastSpoken: lastSpokenStr,
+    },
+  });
+
+  expect(contact.importantDates).toEqual({
+    firstMet: firstMetStr,
+    lastSpoken: lastSpokenStr,
+  });
+});
+
+test("edit contact with important dates strings", async () => {
+  const user = await createUser();
+  let contact = await create(user, "Jaime", "Lannister");
+  const viewer = new ExampleViewer(user.id);
+
+  contact = await EditContactAction.create(viewer, contact, {
+    importantDates: {
+      firstMet: "2010-10-10",
+      lastSpoken: null,
+    },
+  }).saveX();
+
+  expect(contact.importantDates).toEqual({
+    firstMet: "2010-10-10",
+    lastSpoken: null,
+  });
+
+  const reloaded = await Contact.loadX(viewer, contact.id);
+  expect(reloaded.importantDates).toEqual({
+    firstMet: "2010-10-10",
+    lastSpoken: null,
+  });
+});
+
 test("create contacts", async () => {
   function verifyContacts(
     contacts: Contact[],

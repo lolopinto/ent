@@ -62,6 +62,14 @@ describe("postgres", () => {
       expect(cls2.values()).toStrictEqual([4]);
       expect(cls2.logValues()).toStrictEqual([4]);
       expect(cls2.instanceKey()).toEqual("t2.id=4");
+
+      const cls3 = clause.Eq<ExampleData>("id", 4, null);
+      expect(cls3.clause(1)).toBe("id = $1");
+      expect(cls3.clause(1, "t")).toBe("id = $1");
+      expect(cls3.columns()).toStrictEqual(["id"]);
+      expect(cls3.values()).toStrictEqual([4]);
+      expect(cls3.logValues()).toStrictEqual([4]);
+      expect(cls3.instanceKey()).toEqual("id=4");
     });
 
     test("sensitive value", () => {
@@ -2774,6 +2782,14 @@ describe("sqlite", () => {
       expect(cls2.values()).toStrictEqual([4]);
       expect(cls2.logValues()).toStrictEqual([4]);
       expect(cls2.instanceKey()).toEqual("t2.id=4");
+
+      const cls3 = clause.Eq<ExampleData>("id", 4, null);
+      expect(cls3.clause(1)).toBe("id = ?");
+      expect(cls3.clause(1, "t")).toBe("id = ?");
+      expect(cls3.columns()).toStrictEqual(["id"]);
+      expect(cls3.values()).toStrictEqual([4]);
+      expect(cls3.logValues()).toStrictEqual([4]);
+      expect(cls3.instanceKey()).toEqual("id=4");
     });
 
     test("sensitive value", () => {

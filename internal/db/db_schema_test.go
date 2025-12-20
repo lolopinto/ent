@@ -2332,6 +2332,11 @@ func TestExtraEdgeCols(t *testing.T) {
 						},
 					},
 				},
+				EdgeIndices: []*input.Index{
+					{
+						Columns: []string{"id1", "edge_type", "deleted_at"},
+					},
+				},
 				GlobalEdges: []*input.AssocEdge{
 					{
 						Name:       "external_info",
@@ -2367,6 +2372,19 @@ func TestExtraEdgeCols(t *testing.T) {
 				}
 			}
 			assert.True(t, found, "couldn't find deleted_at column")
+
+			constraint := getTestIndexedConstraintFromTable(t, table, "ID1", "EdgeType", "deleted_at")
+			testConstraint(
+				t,
+				constraint,
+				fmt.Sprintf(
+					"sa.Index(%s, %s, %s, %s)",
+					strconv.Quote(fmt.Sprintf("%s_id1_edge_type_deleted_at_idx", table.TableName)),
+					strconv.Quote("id1"),
+					strconv.Quote("edge_type"),
+					strconv.Quote("deleted_at"),
+				),
+			)
 		}
 	}
 }

@@ -10,10 +10,12 @@ import {
   ContactLabel,
   DayOfWeek,
   DayOfWeekAlt,
+  ImportantDates,
   UserAccountStatus,
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
+  UserOnDemandWithPrivacy,
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
@@ -258,6 +260,7 @@ export interface ContactDBData {
   first_name: string;
   last_name: string;
   user_id: ID;
+  important_dates: ImportantDates | null;
   attachments: Attachment[] | null;
 }
 
@@ -271,6 +274,7 @@ const contactFields = [
   "first_name",
   "last_name",
   "user_id",
+  "important_dates",
   "attachments",
 ];
 
@@ -317,6 +321,10 @@ export const contactLoaderInfo = {
     userID: {
       dbCol: "user_id",
       inputKey: "userId",
+    },
+    importantDates: {
+      dbCol: "important_dates",
+      inputKey: "importantDates",
     },
     attachments: {
       dbCol: "attachments",
@@ -462,6 +470,71 @@ export const contactPhoneNumberLoaderInfo = {
     label: {
       dbCol: "label",
       inputKey: "label",
+    },
+  },
+};
+
+export interface DefaultsExampleDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  creator_id: ID;
+  name: string;
+  per_hour: number;
+  hourly_limit: number;
+}
+
+const defaultsExampleTable = "defaults_examples";
+const defaultsExampleFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "creator_id",
+  "name",
+  "per_hour",
+  "hourly_limit",
+];
+
+export const defaultsExampleLoader =
+  new ObjectLoaderFactory<DefaultsExampleDBData>({
+    tableName: defaultsExampleTable,
+    fields: defaultsExampleFields,
+    key: "id",
+  });
+
+export const defaultsExampleLoaderInfo = {
+  tableName: defaultsExampleTable,
+  fields: defaultsExampleFields,
+  nodeType: NodeType.DefaultsExample,
+  loaderFactory: defaultsExampleLoader,
+  fieldInfo: {
+    id: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    creatorId: {
+      dbCol: "creator_id",
+      inputKey: "creatorId",
+    },
+    name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    perHour: {
+      dbCol: "per_hour",
+      inputKey: "perHour",
+    },
+    hourlyLimit: {
+      dbCol: "hourly_limit",
+      inputKey: "hourlyLimit",
     },
   },
 };
@@ -625,7 +698,7 @@ export interface HolidayDBData {
   day_of_week: DayOfWeek;
   day_of_week_alt: DayOfWeekAlt;
   label: string;
-  date: Date;
+  date: string;
 }
 
 const holidayTable = "holidays";
@@ -768,6 +841,7 @@ export interface UserDBData {
   time_in_ms: BigInt | null;
   fun_uuids: ID[] | null;
   super_nested_object: UserSuperNestedObject | null;
+  on_demand_with_privacy: UserOnDemandWithPrivacy | null;
   nested_list: UserNestedObjectList[] | null;
   int_enum: UserIntEnum | null;
 }
@@ -901,6 +975,10 @@ export const userLoaderInfo = {
       dbCol: "super_nested_object",
       inputKey: "superNestedObject",
     },
+    onDemandWithPrivacy: {
+      dbCol: "on_demand_with_privacy",
+      inputKey: "onDemandWithPrivacy",
+    },
     nestedList: {
       dbCol: "nested_list",
       inputKey: "nestedList",
@@ -996,6 +1074,8 @@ export function getLoaderInfoFromSchema(schema: string) {
       return contactEmailLoaderInfo;
     case "ContactPhoneNumber":
       return contactPhoneNumberLoaderInfo;
+    case "DefaultsExample":
+      return defaultsExampleLoaderInfo;
     case "Event":
       return eventLoaderInfo;
     case "File":
@@ -1029,6 +1109,8 @@ export function getLoaderInfoFromNodeType(nodeType: NodeType) {
       return contactEmailLoaderInfo;
     case NodeType.ContactPhoneNumber:
       return contactPhoneNumberLoaderInfo;
+    case NodeType.DefaultsExample:
+      return defaultsExampleLoaderInfo;
     case NodeType.Event:
       return eventLoaderInfo;
     case NodeType.File:

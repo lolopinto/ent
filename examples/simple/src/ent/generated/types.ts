@@ -18,6 +18,8 @@ export enum NodeType {
   ContactEmail = "contactEmail",
   // ContactPhoneNumber is the node type for the ContactPhoneNumber object. Used to identify this node in edges and other places.
   ContactPhoneNumber = "contactPhoneNumber",
+  // DefaultsExample is the node type for the DefaultsExample object. Used to identify this node in edges and other places.
+  DefaultsExample = "defaultsExample",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
   Event = "event",
   // File is the node type for the File object. Used to identify this node in edges and other places.
@@ -776,6 +778,27 @@ export interface ContactInfoExtra {
   source: ContactInfoSource;
 }
 
+export interface ImportantDates {
+  firstMet: string;
+  lastSpoken?: string | null;
+}
+
+export function convertImportantDates(input: any): ImportantDates {
+  return {
+    firstMet: input.first_met,
+    lastSpoken: input.last_spoken,
+  };
+}
+
+export function convertNullableImportantDates(
+  input: any,
+): ImportantDates | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertImportantDates(input);
+}
+
 export interface UserNestedNestedObjectList {
   int: number;
 }
@@ -818,6 +841,29 @@ export function convertNullableUserNestedObjectListList(
     return null;
   }
   return input.map((v) => convertUserNestedObjectList(v));
+}
+
+export interface UserOnDemandWithPrivacy {
+  secret: string;
+  phoneNumber: string;
+}
+
+export function convertUserOnDemandWithPrivacy(
+  input: any,
+): UserOnDemandWithPrivacy {
+  return {
+    secret: input.secret,
+    phoneNumber: input.phone_number,
+  };
+}
+
+export function convertNullableUserOnDemandWithPrivacy(
+  input: any,
+): UserOnDemandWithPrivacy | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserOnDemandWithPrivacy(input);
 }
 
 export interface UserPrefsDiff {

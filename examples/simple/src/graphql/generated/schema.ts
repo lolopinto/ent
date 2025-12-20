@@ -56,6 +56,10 @@ import {
   ContactPhoneNumberEditPayloadType,
 } from "./mutations/contact_phone_number/contact_phone_number_edit_type";
 import {
+  DefaultsExampleCreateInputType,
+  DefaultsExampleCreatePayloadType,
+} from "./mutations/defaults_example/defaults_example_create_type";
+import {
   EventAddHostInputType,
   EventAddHostPayloadType,
 } from "./mutations/event/event_add_host_type";
@@ -113,12 +117,15 @@ import { ContactArgInputType } from "./mutations/input/contact_arg_input_type";
 import { ContactEmailArgInputType } from "./mutations/input/contact_email_arg_input_type";
 import { ContactInfoExtraInputType } from "./mutations/input/contact_info_extra_input_type";
 import { ContactPhoneNumberArgInputType } from "./mutations/input/contact_phone_number_arg_input_type";
+import { DefaultsExampleArgInputType } from "./mutations/input/defaults_example_arg_input_type";
 import { EventArgInputType } from "./mutations/input/event_arg_input_type";
 import { FileArgInputType } from "./mutations/input/file_arg_input_type";
 import { HolidayArgInputType } from "./mutations/input/holiday_arg_input_type";
 import { HoursOfOperationArgInputType } from "./mutations/input/hours_of_operation_arg_input_type";
+import { ImportantDatesInputType } from "./mutations/input/important_dates_input_type";
 import { UserArgInputType } from "./mutations/input/user_arg_input_type";
 import { UserNestedObjectListInputType } from "./mutations/input/user_nested_object_list_input_type";
+import { UserOnDemandWithPrivacyInputType } from "./mutations/input/user_on_demand_with_privacy_input_type";
 import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type";
 import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_input_type";
 import { UserStatisticsArgInputType } from "./mutations/input/user_statistics_arg_input_type";
@@ -217,6 +224,8 @@ import {
   CreatorToEventsConnectionType,
   DayOfWeekAltType,
   DayOfWeekType,
+  DefaultsExampleSortColumnType,
+  DefaultsExampleType,
   DogBreedGroupType,
   DogBreedType,
   EmailInfoType,
@@ -237,6 +246,7 @@ import {
   HolidayType,
   HoursOfOperationSortColumnType,
   HoursOfOperationType,
+  ImportantDatesType,
   IntEnumUsedInListType,
   NotifTypeType,
   RabbitBreedType,
@@ -245,6 +255,7 @@ import {
   RootToContactConnectionType,
   RootToContactEmailConnectionType,
   RootToContactPhoneNumberConnectionType,
+  RootToDefaultsExampleConnectionType,
   RootToEventConnectionType,
   RootToFileConnectionType,
   RootToHolidayConnectionType,
@@ -260,6 +271,7 @@ import {
   UserDaysOffType,
   UserIntEnumType,
   UserNestedObjectListType,
+  UserOnDemandWithPrivacyType,
   UserPreferredShiftType,
   UserPrefsDiffType,
   UserPrefsStructType,
@@ -283,7 +295,6 @@ import {
   UserToMaybeEventsConnectionType,
   UserType,
   ViewerType,
-  WithDayOfWeekType,
 } from "../resolvers";
 import { SubscriptionType } from "../resolvers/subscription_type";
 
@@ -301,6 +312,7 @@ export default new GraphQLSchema({
     ContactSortColumnType,
     DayOfWeekAltType,
     DayOfWeekType,
+    DefaultsExampleSortColumnType,
     DogBreedGroupType,
     DogBreedType,
     EventRsvpStatusType,
@@ -332,6 +344,7 @@ export default new GraphQLSchema({
     ContactItemType,
     ContactPhoneNumberType,
     ContactType,
+    DefaultsExampleType,
     EmailInfoType,
     EventCanViewerSeeType,
     EventType,
@@ -340,16 +353,17 @@ export default new GraphQLSchema({
     GlobalCanViewerDoType,
     HolidayType,
     HoursOfOperationType,
+    ImportantDatesType,
     UserCanViewerDoType,
     UserCanViewerEditType,
     UserCanViewerSeeType,
     UserNestedObjectListType,
+    UserOnDemandWithPrivacyType,
     UserPrefsDiffType,
     UserPrefsStructType,
     UserStatisticsType,
     UserSuperNestedObjectType,
     UserType,
-    WithDayOfWeekType,
     AddressToHostedEventsConnectionType(),
     AuthorToCommentsConnectionType(),
     CommentArticleToCommentsConnectionType(),
@@ -372,6 +386,7 @@ export default new GraphQLSchema({
     RootToContactConnectionType(),
     RootToContactEmailConnectionType(),
     RootToContactPhoneNumberConnectionType(),
+    RootToDefaultsExampleConnectionType(),
     RootToEventConnectionType(),
     RootToFileConnectionType(),
     RootToHolidayConnectionType(),
@@ -439,6 +454,9 @@ export default new GraphQLSchema({
     ContactPhoneNumberEditPayloadType,
     CustomEditHolidayInputType,
     CustomEditHolidayPayloadType,
+    DefaultsExampleArgInputType,
+    DefaultsExampleCreateInputType,
+    DefaultsExampleCreatePayloadType,
     DeleteUserInput2PayloadType,
     DeleteUserInput2Type,
     EditEmailAddressInputType,
@@ -474,6 +492,7 @@ export default new GraphQLSchema({
     HoursOfOperationArgInputType,
     HoursOfOperationCreateInputType,
     HoursOfOperationCreatePayloadType,
+    ImportantDatesInputType,
     PhoneNumberContactCreateInput,
     UserArgInputType,
     UserCreateInputType,
@@ -483,6 +502,7 @@ export default new GraphQLSchema({
     UserEditInputType,
     UserEditPayloadType,
     UserNestedObjectListInputType,
+    UserOnDemandWithPrivacyInputType,
     UserPrefsDiffInputType,
     UserPrefsStructInputType,
     UserStatisticsArgInputType,

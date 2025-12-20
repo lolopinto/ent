@@ -18,7 +18,7 @@ import {
 import { Contact, User } from "../../..";
 import { contactLoaderInfo } from "../../loaders";
 import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
-import { Attachment, EdgeType, NodeType } from "../../types";
+import { Attachment, EdgeType, ImportantDates, NodeType } from "../../types";
 import schema from "../../../../schema/contact_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -28,6 +28,7 @@ export interface ContactInput {
   firstName?: string;
   lastName?: string;
   userId?: ID | Builder<User, ExampleViewerAlias>;
+  importantDates?: ImportantDates | null;
   attachments?: Attachment[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -253,6 +254,7 @@ export class ContactBuilder<
     addField("firstName", input.firstName);
     addField("lastName", input.lastName);
     addField("userID", input.userId);
+    addField("importantDates", input.importantDates);
     addField("attachments", input.attachments);
     return result;
   }
@@ -331,6 +333,15 @@ export class ContactBuilder<
       );
     }
     return this.existingEnt.userId;
+  }
+
+  // get value of importantDates. Retrieves it from the input if specified or takes it from existingEnt
+  getNewImportantDatesValue(): ImportantDates | null {
+    if (this.input.importantDates !== undefined) {
+      return this.input.importantDates;
+    }
+
+    return this.existingEnt?.importantDates ?? null;
   }
 
   // get value of attachments. Retrieves it from the input if specified or takes it from existingEnt

@@ -63,6 +63,17 @@ CREATE INDEX comments_attachment_id_idx ON comments (attachment_id);
 
 CREATE INDEX comments_author_id_idx ON comments (author_id);
 
+CREATE TABLE defaults_examples (
+    id UUID NOT NULL, 
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    creator_id UUID NOT NULL, 
+    name TEXT NOT NULL, 
+    per_hour INTEGER DEFAULT '1' NOT NULL, 
+    hourly_limit INTEGER NOT NULL, 
+    CONSTRAINT defaults_examples_id_pkey PRIMARY KEY (id)
+);
+
 CREATE TABLE event_hosts_edges (
     id1 UUID NOT NULL, 
     id1_type TEXT NOT NULL, 
@@ -253,6 +264,7 @@ CREATE TABLE users (
     new_col TEXT, 
     new_col2 TEXT, 
     super_nested_object JSONB, 
+    on_demand_with_privacy JSONB, 
     nested_list JSONB[], 
     int_enum INTEGER, 
     name_idx TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))) STORED, 
@@ -318,6 +330,7 @@ CREATE TABLE contacts (
     first_name TEXT NOT NULL, 
     last_name TEXT NOT NULL, 
     user_id UUID NOT NULL, 
+    important_dates JSONB, 
     attachments JSONB, 
     CONSTRAINT contacts_id_pkey PRIMARY KEY (id), 
     CONSTRAINT contacts_user_id_fkey FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE

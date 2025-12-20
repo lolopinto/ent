@@ -6,6 +6,7 @@ on:
     paths:
       - 'ent/**.go'
       - 'internal/**.go'
+      - 'internal/**.tmpl'
       - 'ts/src/**'
       - .github/workflows/go_ci.yml
 

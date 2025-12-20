@@ -640,6 +640,33 @@ func (t *DateType) GetImportType() Import {
 	return &DateImport{}
 }
 
+func (t *DateType) GetGraphQLType() string {
+	return "Date!"
+}
+
+func (t *DateType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewEntGraphQLImportPath("GraphQLDate"),
+	}
+}
+
+func (t *DateType) GetTSType() string {
+	return "string"
+}
+
+func (t *DateType) Convert(s SchemaType) ConvertDataTypeRet {
+	return nil
+}
+
+func (t *DateType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
+	return nil
+}
+
+func (t *DateType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
+	return nil
+}
+
 type NullableTimestampType struct {
 	timestampType
 }
@@ -696,6 +723,24 @@ func (t *NullableDateType) GetNonNullableType() TSType {
 
 func (t *NullableDateType) GetImportType() Import {
 	return &DateImport{}
+}
+
+func (t *NullableDateType) GetGraphQLType() string {
+	return "Date"
+}
+
+func (t *NullableDateType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewEntGraphQLImportPath("GraphQLDate"),
+	}
+}
+
+func (t *NullableDateType) GetTSType() string {
+	return "string | null"
+}
+
+func (t *NullableDateType) Convert(s SchemaType) ConvertDataTypeRet {
+	return nil
 }
 
 type TimeType struct {

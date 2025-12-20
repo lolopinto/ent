@@ -225,6 +225,20 @@ describe("select", () => {
     expect(rows).toStrictEqual([{ id: 2, bar: "bar", name: "Jane" }]);
   });
 
+  test("select limit offset", async () => {
+    const rows = await loadRows({
+      tableName: "t",
+      fields: ["id", "bar", "name"],
+      clause: clause.Eq("name", "Jane"),
+      limit: 2,
+      offset: 1,
+    });
+    expect(rows).toStrictEqual([
+      { id: 4, bar: "bar", name: "Jane" },
+      { id: 6, bar: "bar", name: "Jane" },
+    ]);
+  });
+
   test("select count(1) + limit", async () => {
     const rows = await loadRows({
       tableName: "t",

@@ -1532,3 +1532,22 @@ test("upsert phone number", async () => {
   const comms = FakeComms.getSent(u1.emailAddress, Mode.EMAIL);
   expect(comms.length).toBe(1);
 });
+
+test("on demand + privacy policy struct", async () => {
+  const user = await create({});
+  expect(await user.onDemandWithPrivacy()).toBe(null);
+
+  const phoneNumber = randomPhoneNumber();
+
+  const edited = await EditUserAllFieldsAction.create(user.viewer, user, {
+    onDemandWithPrivacy: {
+      secret: "my secret",
+      phoneNumber,
+    },
+  }).saveX();
+
+  expect(await edited.onDemandWithPrivacy()).toStrictEqual({
+    secret: "my secret",
+    phoneNumber,
+  });
+});

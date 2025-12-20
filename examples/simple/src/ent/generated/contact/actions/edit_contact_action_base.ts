@@ -19,7 +19,12 @@ import {
 } from "@snowtop/ent/action";
 import { Contact } from "../../..";
 import { ContactBuilder } from "./contact_builder";
-import { Attachment, ContactInfoExtra, ContactLabel } from "../../types";
+import {
+  Attachment,
+  ContactInfoExtra,
+  ContactLabel,
+  ImportantDates,
+} from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEmailInput {
@@ -34,6 +39,7 @@ export interface ContactEditInput {
   phoneNumberIds?: ID[];
   firstName?: string;
   lastName?: string;
+  importantDates?: ImportantDates | null;
   attachments?: Attachment[] | null;
   emails?: customEmailInput[] | null;
 }

@@ -26,6 +26,7 @@ import {
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
+  UserOnDemandWithPrivacy,
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
@@ -51,6 +52,7 @@ export interface EditUserAllFieldsRelativeInput {
   timeInMs?: BigInt | null | RelativeNumberValue<BigInt>;
   funUuids?: ID[] | null;
   superNestedObject?: UserSuperNestedObject | null;
+  onDemandWithPrivacy?: UserOnDemandWithPrivacy | null;
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;
 }

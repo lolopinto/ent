@@ -25,6 +25,7 @@ import {
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
+  UserOnDemandWithPrivacy,
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
@@ -51,6 +52,7 @@ export interface UserInput {
   timeInMs?: BigInt | null;
   funUuids?: ID[] | null;
   superNestedObject?: UserSuperNestedObject | null;
+  onDemandWithPrivacy?: UserOnDemandWithPrivacy | null;
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;
   // allow other properties. useful for action-only fields
@@ -609,6 +611,7 @@ export class UserBuilder<
     addField("timeInMs", input.timeInMs);
     addField("fun_uuids", input.funUuids);
     addField("superNestedObject", input.superNestedObject);
+    addField("onDemandWithPrivacy", input.onDemandWithPrivacy);
     addField("nestedList", input.nestedList);
     addField("int_enum", input.intEnum);
     return result;
@@ -758,6 +761,11 @@ export class UserBuilder<
   // get value of superNestedObject. Retrieves it from the input if specified or takes it from existingEnt
   getNewSuperNestedObjectValue(): UserSuperNestedObject | null | undefined {
     return this.input.superNestedObject;
+  }
+
+  // get value of onDemandWithPrivacy. Retrieves it from the input if specified or takes it from existingEnt
+  getNewOnDemandWithPrivacyValue(): UserOnDemandWithPrivacy | null | undefined {
+    return this.input.onDemandWithPrivacy;
   }
 
   // get value of nestedList. Retrieves it from the input if specified or takes it from existingEnt

@@ -641,6 +641,29 @@ async function queryViaOptions(
   );
 }
 
+async function queryViaOptionsWithOffset(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+  expIds?: number[],
+) {
+  return queryViaOptionsImpl(
+    opts,
+    ctx,
+    {
+      clause: clause.Greater("id", 5),
+      orderby: [
+        {
+          column: "id",
+          direction: "DESC",
+        },
+      ],
+      limit: 2,
+      offset: 1,
+    },
+    expIds || reversed.slice(0, 5).slice(1, 3),
+  );
+}
+
 async function queryViaOptionsPlusDeletedAt(
   opts: LoadCustomEntOptions<User>,
   ctx: Context | undefined,
@@ -879,6 +902,14 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
       await queryViaOptions(opts, undefined);
     });
 
+    test("options with offset with context", async () => {
+      await queryViaOptionsWithOffset(opts, getCtx(undefined));
+    });
+
+    test("options with offset without context", async () => {
+      await queryViaOptionsWithOffset(opts, undefined);
+    });
+
     test("options with order by nullable column desc, default with context", async () => {
       await queryViaOptionsWithComplexOrderBy(
         opts,
@@ -1040,6 +1071,24 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
       await queryCountViaOptions(opts, undefined);
     });
 
+    test("count options with alias does not prefix count field", async () => {
+      await loadCustomCount(
+        opts,
+        {
+          alias: "foo",
+          clause: clause.Eq("bar", "bar2"),
+        },
+        getCtx(undefined),
+      );
+
+      expect(ml.logs.length).toBe(1);
+      const log = ml.logs[0];
+      expect(log.query).toContain("SELECT count(1) as count");
+      expect(log.query).toContain("FROM users AS foo");
+      expect(log.query).toContain("WHERE foo.bar");
+      expect(log.query).not.toContain("foo.count(1)");
+    });
+
     test("query via parameterized query with context", async () => {
       await queryCountViaParameterizedQuery(opts, getCtx(undefined));
     });
@@ -1101,6 +1150,25 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
 
       // only even numbers visible
       expect(sortedEntIds(ents)).toEqual([5, 3, 1]);
+    });
+
+    test("options with offset", async () => {
+      const v = getIDViewer(2, getCtx());
+
+      const ents = await loadCustomEnts(v, opts, {
+        ...options,
+        clause: clause.Eq("bar", "bar2"),
+        orderby: [
+          {
+            column: "id",
+            direction: "DESC",
+          },
+        ],
+        limit: 2,
+        offset: 1,
+      });
+      expect(ents.length).toBe(2);
+      expect(sortedEntIds(ents)).toEqual([8, 6]);
     });
 
     test("with prime", async () => {
