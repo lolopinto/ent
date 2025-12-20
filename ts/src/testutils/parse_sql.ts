@@ -413,11 +413,47 @@ function parseSelectStatement(
   //  console.log(tableName, columns, allColumns);
 
   let limit: number | null = null;
+  let offset: number | null = null;
   if (ast.limit !== null) {
-    assert(ast.limit.seperator == "", "ast limit separator not as expected");
-    assert(ast.limit.value.length == 1, "ast limit not as expected");
-    assert(ast.limit.value[0].type == "number", "limit type was not 0");
-    limit = ast.limit.value[0].value;
+    const limitInfo = ast.limit as {
+      seperator?: string;
+      value?: { type: string; value: number }[];
+    };
+    const values = limitInfo.value || [];
+    assert(
+      values.length >= 1 && values.length <= 2,
+      "ast limit not as expected",
+    );
+    const parsedValues = values.map((value) => {
+      assert(value.type == "number", "limit type was not 0");
+      return value.value;
+    });
+    const separator = limitInfo.seperator || "";
+    if (parsedValues.length === 1) {
+      limit = parsedValues[0];
+    } else if (separator === ",") {
+      offset = parsedValues[0];
+      limit = parsedValues[1];
+    } else if (separator === "offset") {
+      limit = parsedValues[0];
+      offset = parsedValues[1];
+    } else {
+      throw new Error(`unsupported limit separator: ${separator}`);
+    }
+  }
+  const astOffset = (ast as { offset?: any }).offset;
+  if (astOffset !== undefined && astOffset !== null && offset === null) {
+    if (typeof astOffset === "number") {
+      offset = astOffset;
+    } else if (typeof astOffset === "object") {
+      const offsetValue = astOffset.value ?? astOffset;
+      if (typeof offsetValue === "number") {
+        offset = offsetValue;
+      } else if (Array.isArray(offsetValue) && offsetValue.length) {
+        assert(offsetValue[0].type == "number", "offset type was not 0");
+        offset = offsetValue[0].value;
+      }
+    }
   }
   let orderings: [string, string][] = [];
   if (ast.orderby !== null) {
@@ -435,10 +471,17 @@ function parseSelectStatement(
   const list = map.get(tableName) || [];
 
   let results: Data[] = [];
+  const canLimitEarly = orderings.length === 0 && !colsInfo.count;
   let limitApplied = false;
+  const offsetAppliedEarly = canLimitEarly && offset !== null;
+  let offsetRemaining = offsetAppliedEarly ? offset || 0 : 0;
 
   for (const data of list) {
     if (where && !where.apply(data)) {
+      continue;
+    }
+    if (canLimitEarly && offsetRemaining > 0) {
+      offsetRemaining--;
       continue;
     }
     if (colsInfo.allCols) {
@@ -451,13 +494,7 @@ function parseSelectStatement(
       results.push(getDataToReturn(data, cols));
     }
 
-    // don't apply limit early if there's an ordering or count
-    if (
-      orderings.length === 0 &&
-      !colsInfo.count &&
-      limit !== null &&
-      limit == results.length
-    ) {
+    if (canLimitEarly && limit !== null && limit == results.length) {
       limitApplied = true;
       break;
     }
@@ -492,9 +529,11 @@ function parseSelectStatement(
     });
   }
 
-  // apply limit after if not applied e.g. there was an ordering or no where clause
-  if (limit !== null && !limitApplied) {
-    results = results.slice(0, limit);
+  // apply limit/offset after if not applied e.g. there was an ordering or no where clause
+  if (!limitApplied && (limit !== null || offset !== null)) {
+    const start = offsetAppliedEarly ? 0 : offset || 0;
+    const end = limit !== null ? start + limit : undefined;
+    results = results.slice(start, end);
   }
 
   return results;
