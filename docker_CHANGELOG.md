@@ -16,6 +16,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 ### Fixed
 
 - fix struct fields that are fetchOnDemand and have a privacy policy (#1893)
+- treat global schema changes as full codegen changes (#1898)
 
 ## [0.2.0-alpha.13]
 
