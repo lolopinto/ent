@@ -43,6 +43,7 @@ type Field struct {
 	fkey                     *ForeignKeyInfo
 	fieldEdge                *base.FieldEdgeInfo
 	index                    bool
+	indexConcurrently        bool
 	dbName                   string // storage key/column name for the field
 	graphQLName              string
 	exposeToActionsByDefault bool
@@ -100,6 +101,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		private:                    f.Private != nil,
 		polymorphic:                f.Polymorphic,
 		index:                      f.Index,
+		indexConcurrently:          f.IndexConcurrently,
 		graphQLName:                f.GraphQLName,
 		defaultValue:               f.ServerDefault,
 		unique:                     f.Unique,
@@ -315,6 +317,10 @@ func (f *Field) Unique() bool {
 
 func (f *Field) Index() bool {
 	return f.index
+}
+
+func (f *Field) IndexConcurrently() bool {
+	return f.indexConcurrently
 }
 
 func (f *Field) ForeignKeyInfo() *ForeignKeyInfo {

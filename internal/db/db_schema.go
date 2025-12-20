@@ -221,6 +221,7 @@ type indexConstraint struct {
 	unique    bool
 	name      string
 	indexType input.IndexType
+	concurrently bool
 }
 
 func (constraint *indexConstraint) getInfo() (string, []string) {
@@ -252,6 +253,9 @@ func (constraint *indexConstraint) getConstraintString() string {
 	}
 	if constraint.indexType != "" {
 		args = append(args, fmt.Sprintf("postgresql_using=%s", strconv.Quote(string(constraint.indexType))))
+	}
+	if constraint.concurrently {
+		args = append(args, "postgresql_concurrently=True")
 	}
 
 	return fmt.Sprintf(
@@ -344,6 +348,9 @@ func (constraint *fullTextConstraint) getConstraintString() string {
 			strconv.Quote(fullText.GeneratedColumnName),
 			fmt.Sprintf("postgresql_using='%s'", postgresql_using),
 		}
+		if constraint.concurrently {
+			args = append(args, "postgresql_concurrently=True")
+		}
 		return fmt.Sprintf(
 			"sa.Index(%s)", strings.Join(args, ", "),
 		)
@@ -371,6 +378,9 @@ func (constraint *fullTextConstraint) getConstraintString() string {
 	} else {
 		kvPairs = append(kvPairs,
 			getKVPair("columns", fmt.Sprintf("[%s]", strings.Join(quotedColNames, ", "))))
+	}
+	if constraint.concurrently {
+		kvPairs = append(kvPairs, getKVPair("postgresql_concurrently", "True"))
 	}
 	return fmt.Sprintf("FullTextIndex(%s, info=%s)", quotedName, getKVDict(kvPairs))
 }
@@ -496,6 +506,7 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 			unique:    index.Unique,
 			name:      index.Name,
 			indexType: index.IndexType,
+			concurrently: index.Concurrently,
 		}
 		if index.IndexType == "" {
 			if len(cols) == 1 {
@@ -1097,6 +1108,7 @@ func (s *dbSchema) addEdgeIndices(tableName string, columns []*dbColumn, constra
 			unique:    index.Unique,
 			name:      name,
 			indexType: index.IndexType,
+			concurrently: index.Concurrently,
 		}
 		if index.FullText != nil {
 			panic("full text indexes not supported for edge tables")
@@ -1288,6 +1300,7 @@ func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbC
 	constraint := &indexConstraint{
 		dbColumns: []*dbColumn{col},
 		tableName: tableName,
+		concurrently: f.IndexConcurrently(),
 	}
 	// default index type for lists when not specified is gin type
 	idxType := s.getDefaultIndexType(f)

@@ -247,6 +247,7 @@ func TestIndex(t *testing.T) {
 	i := &Index{
 		Name:    "contacts_name_index",
 		Columns: []string{"first_name", "last_name"},
+		Concurrently: true,
 	}
 
 	b, err := json.Marshal(i)
@@ -262,6 +263,7 @@ func TestDiffIndexType(t *testing.T) {
 	i := &Index{
 		Name:    "contacts_name_index",
 		Columns: []string{"first_name", "last_name"},
+		Concurrently: true,
 	}
 
 	b, err := json.Marshal(i)

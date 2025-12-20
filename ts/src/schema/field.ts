@@ -28,6 +28,7 @@ export abstract class BaseField {
   sensitive?: boolean;
   graphqlName?: string;
   index?: boolean;
+  indexConcurrently?: boolean;
   foreignKey?: ForeignKey;
 
   // this should only be set on id fields. if set on other fields, it's currently ignored
