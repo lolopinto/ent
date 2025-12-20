@@ -208,6 +208,7 @@ type Field struct {
 	GraphQLName             string          `json:"graphqlName,omitempty"`
 	Index                   bool            `json:"index,omitempty"`
 	IndexConcurrently       bool            `json:"indexConcurrently,omitempty"`
+	IndexWhere              string          `json:"indexWhere,omitempty"`
 	PrimaryKey              bool            `json:"primaryKey,omitempty"`
 	DefaultToViewerOnCreate bool            `json:"defaultToViewerOnCreate,omitempty"`
 
@@ -257,6 +258,9 @@ func (f *Field) ApplyOverride(override *FieldOverride) {
 	if override.IndexConcurrently != nil {
 		f.IndexConcurrently = *override.IndexConcurrently
 	}
+	if override.IndexWhere != nil {
+		f.IndexWhere = *override.IndexWhere
+	}
 	if override.Unique != nil {
 		f.Unique = *override.Unique
 	}
@@ -273,6 +277,7 @@ type FieldOverride struct {
 	GraphQLName     string  `json:"graphqlName,omitempty"`
 	Index           *bool   `json:"index,omitempty"`
 	IndexConcurrently *bool `json:"indexConcurrently,omitempty"`
+	IndexWhere        *string `json:"indexWhere,omitempty"`
 	ServerDefault   *string `json:"serverDefault,omitempty"`
 }
 
@@ -948,6 +953,7 @@ type Index struct {
 	// for regular indices. doesn't apply for full text...
 	IndexType IndexType `json:"indexType,omitempty"`
 	Concurrently bool   `json:"concurrently,omitempty"`
+	Where       string `json:"where,omitempty"`
 }
 
 type FullTextLanguage string

@@ -25,3 +25,7 @@ If we ever want concurrent drops, options include:
 - Per-index `dropConcurrently` in schema.
 - A global Postgres-only config flag to drop indexes concurrently (with warnings).
 - A migration helper users can call explicitly when needed.
+
+## Partial indexes
+
+Partial indexes are supported via `postgresql_where=sa.text(...)` and `sqlite_where=sa.text(...)` in SQLAlchemy. In ent schema, use `indices: [{ ..., where: "place = 1" }]` or `indexWhere: "place = 1"` for `index: true`. The clause is a raw SQL string and should reference DB column names.

@@ -250,10 +250,12 @@ def create_full_text_index(operations: ops.Operations, operation: ops.CreateFull
     using = info.get('postgresql_using')
     using_internals = info.get('postgresql_using_internals')
     concurrently = info.get('postgresql_concurrently') is True
+    where = info.get('postgresql_where')
     concurrently_sql = " CONCURRENTLY" if concurrently else ""
+    where_sql = f" WHERE {where}" if where else ""
     connection.execute(
         sa.text(
-            f"CREATE INDEX{concurrently_sql} {index_name} ON {table_name} USING {using} ({using_internals})"
+            f"CREATE INDEX{concurrently_sql} {index_name} ON {table_name} USING {using} ({using_internals}){where_sql}"
         )
     )
 

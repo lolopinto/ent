@@ -14,6 +14,13 @@ from auto_schema import ops
 from typing import Any, Callable
 
 
+def _get_revision_file(r, rev="head"):
+    revisions = r.cmd.get_revisions(rev)
+    assert revisions is not None
+    assert len(revisions) == 1
+    return testingutils.find_file_by_revision(r, revisions[0])
+
+
 class BaseTestRunner(object):
 
     @pytest.mark.usefixtures("empty_metadata")
@@ -41,12 +48,6 @@ class BaseTestRunner(object):
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_index_added_and_removed_concurrently(self, new_test_runner, metadata_with_table):
-        def get_revision_file(r, rev="head"):
-            revisions = r.cmd.get_revisions(rev)
-            assert revisions is not None
-            assert len(revisions) == 1
-            return testingutils.find_file_by_revision(r, revisions[0])
-
         r = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_table)
@@ -58,7 +59,7 @@ class BaseTestRunner(object):
         r2.run()
 
         add_contents = ""
-        with open(get_revision_file(r2), "r") as f:
+        with open(_get_revision_file(r2), "r") as f:
             add_contents = f.read()
         assert "autocommit_block" in add_contents
         assert "create_index" in add_contents
@@ -71,7 +72,40 @@ class BaseTestRunner(object):
         r3.run()
 
         drop_contents = ""
-        with open(get_revision_file(r3), "r") as f:
+        with open(_get_revision_file(r3), "r") as f:
+            drop_contents = f.read()
+        assert "drop_index" in drop_contents
+        assert "accounts_first_name_idx" in drop_contents
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_index_added_and_removed_where(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_table)
+
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, conftest.metadata_with_table_with_index_where)
+        message = r2.revision_message()
+        assert message == "add index accounts_first_name_idx to accounts"
+        r2.run()
+
+        add_contents = ""
+        with open(_get_revision_file(r2), "r") as f:
+            add_contents = f.read()
+        assert "create_index" in add_contents
+        assert (
+            "postgresql_where=sa.text('first_name IS NOT NULL')" in add_contents
+            or "sqlite_where=sa.text('first_name IS NOT NULL')" in add_contents
+        )
+
+        r3 = testingutils.recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
+        message = r3.revision_message()
+        assert message == "drop index accounts_first_name_idx from accounts"
+        r3.run()
+
+        drop_contents = ""
+        with open(_get_revision_file(r3), "r") as f:
             drop_contents = f.read()
         assert "drop_index" in drop_contents
         assert "accounts_first_name_idx" in drop_contents

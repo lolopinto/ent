@@ -78,6 +78,7 @@ func fieldEqual(existingField, field *Field) bool {
 		existingField.GraphQLName == field.GraphQLName &&
 		existingField.Index == field.Index &&
 		existingField.IndexConcurrently == field.IndexConcurrently &&
+		existingField.IndexWhere == field.IndexWhere &&
 		existingField.PrimaryKey == field.PrimaryKey &&
 
 		existingField.DefaultToViewerOnCreate == field.DefaultToViewerOnCreate &&
@@ -471,7 +472,8 @@ func indexEqual(existing, index *Index) bool {
 		existing.Unique == index.Unique &&
 		fullTextEqual(existing.FullText, index.FullText) &&
 		existing.IndexType == index.IndexType &&
-		existing.Concurrently == index.Concurrently
+		existing.Concurrently == index.Concurrently &&
+		existing.Where == index.Where
 }
 
 func fullTextEqual(existing, fullText *FullText) bool {

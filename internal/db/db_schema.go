@@ -222,6 +222,7 @@ type indexConstraint struct {
 	name      string
 	indexType input.IndexType
 	concurrently bool
+	where     string
 }
 
 func (constraint *indexConstraint) getInfo() (string, []string) {
@@ -256,6 +257,10 @@ func (constraint *indexConstraint) getConstraintString() string {
 	}
 	if constraint.concurrently {
 		args = append(args, "postgresql_concurrently=True")
+	}
+	if constraint.where != "" {
+		args = append(args, fmt.Sprintf("postgresql_where=sa.text(%s)", strconv.Quote(constraint.where)))
+		args = append(args, fmt.Sprintf("sqlite_where=sa.text(%s)", strconv.Quote(constraint.where)))
 	}
 
 	return fmt.Sprintf(
@@ -351,6 +356,10 @@ func (constraint *fullTextConstraint) getConstraintString() string {
 		if constraint.concurrently {
 			args = append(args, "postgresql_concurrently=True")
 		}
+		if constraint.where != "" {
+			args = append(args, fmt.Sprintf("postgresql_where=sa.text(%s)", strconv.Quote(constraint.where)))
+			args = append(args, fmt.Sprintf("sqlite_where=sa.text(%s)", strconv.Quote(constraint.where)))
+		}
 		return fmt.Sprintf(
 			"sa.Index(%s)", strings.Join(args, ", "),
 		)
@@ -381,6 +390,9 @@ func (constraint *fullTextConstraint) getConstraintString() string {
 	}
 	if constraint.concurrently {
 		kvPairs = append(kvPairs, getKVPair("postgresql_concurrently", "True"))
+	}
+	if constraint.where != "" {
+		kvPairs = append(kvPairs, getKVPair("postgresql_where", strconv.Quote(constraint.where)))
 	}
 	return fmt.Sprintf("FullTextIndex(%s, info=%s)", quotedName, getKVDict(kvPairs))
 }
@@ -507,6 +519,7 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 			name:      index.Name,
 			indexType: index.IndexType,
 			concurrently: index.Concurrently,
+			where:     index.Where,
 		}
 		if index.IndexType == "" {
 			if len(cols) == 1 {
@@ -1109,6 +1122,7 @@ func (s *dbSchema) addEdgeIndices(tableName string, columns []*dbColumn, constra
 			name:      name,
 			indexType: index.IndexType,
 			concurrently: index.Concurrently,
+			where:     index.Where,
 		}
 		if index.FullText != nil {
 			panic("full text indexes not supported for edge tables")
@@ -1301,6 +1315,7 @@ func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbC
 		dbColumns: []*dbColumn{col},
 		tableName: tableName,
 		concurrently: f.IndexConcurrently(),
+		where:     f.IndexWhere(),
 	}
 	// default index type for lists when not specified is gin type
 	idxType := s.getDefaultIndexType(f)
