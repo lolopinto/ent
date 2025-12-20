@@ -1,6 +1,7 @@
 import uuid
 from alembic.autogenerate import renderers
 from alembic.autogenerate.api import AutogenContext
+import alembic.operations.ops as alembicops
 from sqlalchemy.dialects import postgresql
 from . import ops
 from . import csv
@@ -153,20 +154,111 @@ def _render_kw_args(d):
     return ", ".join(kv_pairs)
 
 
+def _wrap_autocommit(op_text: str) -> str:
+    indented = "\n".join([f"    {line}" for line in op_text.splitlines()])
+    return (
+        "with op.get_context().autocommit_block():\n"
+        f"{indented}"
+    )
+
+
+def _render_index_columns(cols) -> str:
+    rendered = []
+    for col in cols:
+        if isinstance(col, str):
+            rendered.append(repr(col))
+        elif hasattr(col, "name"):
+            rendered.append(repr(col.name))
+        else:
+            rendered.append(repr(str(col)))
+    return f"[{', '.join(rendered)}]"
+
+
+def _get_index_kw(op) -> dict:
+    if hasattr(op, "kw"):
+        if op.kw is None:
+            return {}
+        return dict(op.kw)
+    if hasattr(op, "kwargs"):
+        if op.kwargs is None:
+            return {}
+        return dict(op.kwargs)
+    return {}
+
+
+def _render_index_kw(kw: dict) -> list[str]:
+    items = []
+    for key in sorted(kw.keys()):
+        val = kw[key]
+        if val is None or val is False:
+            continue
+        items.append(f"{key}={val!r}")
+    return items
+
+
+def _render_create_index(op) -> str:
+    args = [
+        repr(op.index_name),
+        repr(op.table_name),
+        _render_index_columns(op.columns),
+    ]
+    if op.unique:
+        args.append("unique=True")
+    if op.schema is not None:
+        args.append(f"schema={op.schema!r}")
+    args.extend(_render_index_kw(_get_index_kw(op)))
+    return f"op.create_index({', '.join(args)})"
+
+
+def _render_drop_index(op) -> str:
+    args = [repr(op.index_name)]
+    kw = {}
+    if getattr(op, "table_name", None):
+        args.append(f"table_name={op.table_name!r}")
+    if getattr(op, "schema", None):
+        args.append(f"schema={op.schema!r}")
+    kw.update(_get_index_kw(op))
+    args.extend(_render_index_kw(kw))
+    return f"op.drop_index({', '.join(args)})"
+
+
+@renderers.dispatch_for(alembicops.CreateIndexOp)
+def render_create_index(autogen_context: AutogenContext, op: alembicops.CreateIndexOp) -> str:
+    kw = _get_index_kw(op)
+    op_text = _render_create_index(op)
+    if kw.get("postgresql_concurrently") is True:
+        return _wrap_autocommit(op_text)
+    return op_text
+
+
+@renderers.dispatch_for(alembicops.DropIndexOp)
+def render_drop_index(autogen_context: AutogenContext, op: alembicops.DropIndexOp) -> str:
+    kw = _get_index_kw(op)
+    op_text = _render_drop_index(op)
+    if kw.get("postgresql_concurrently") is True:
+        return _wrap_autocommit(op_text)
+    return op_text
+
 @renderers.dispatch_for(ops.CreateFullTextIndexOp)
 def render_full_text_index(autogen_context: AutogenContext, op: ops.CreateFullTextIndexOp) -> str:
-    return (
+    op_text = (
         f"op.create_full_text_index('{op.index_name}', '{op.table_name}', "
         f"unique={op.unique or False!r}, {_render_kw_args(op.kw)})"
     )
+    if op.kw.get("info", {}).get("postgresql_concurrently") is True:
+        return _wrap_autocommit(op_text)
+    return op_text
 
 
 @renderers.dispatch_for(ops.DropFullTextIndexOp)
 def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFullTextIndexOp) -> str:
-    return (
+    op_text = (
         f"op.drop_full_text_index('{op.index_name}', '{op.table_name}', "
         f"{_render_kw_args(op.kw)})"
     )
+    if op.kw.get("info", {}).get("postgresql_concurrently") is True:
+        return _wrap_autocommit(op_text)
+    return op_text
 
 
 # i don't think this is every used since the way it works is that this is called
