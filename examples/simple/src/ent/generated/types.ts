@@ -843,6 +843,29 @@ export function convertNullableUserNestedObjectListList(
   return input.map((v) => convertUserNestedObjectList(v));
 }
 
+export interface UserOnDemandWithPrivacy {
+  secret: string;
+  phoneNumber: string;
+}
+
+export function convertUserOnDemandWithPrivacy(
+  input: any,
+): UserOnDemandWithPrivacy {
+  return {
+    secret: input.secret,
+    phoneNumber: input.phone_number,
+  };
+}
+
+export function convertNullableUserOnDemandWithPrivacy(
+  input: any,
+): UserOnDemandWithPrivacy | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserOnDemandWithPrivacy(input);
+}
+
 export interface UserPrefsDiff {
   type: string;
 }

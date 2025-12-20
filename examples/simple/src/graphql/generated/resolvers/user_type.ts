@@ -53,6 +53,7 @@ import {
   UserDaysOffType,
   UserIntEnumType,
   UserNestedObjectListType,
+  UserOnDemandWithPrivacyType,
   UserPreferredShiftType,
   UserPrefsDiffType,
   UserPrefsStructType,
@@ -182,6 +183,16 @@ export const UserType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return obj.superNestedObject();
+      },
+    },
+    onDemandWithPrivacy: {
+      type: UserOnDemandWithPrivacyType,
+      resolve: async (
+        obj: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.onDemandWithPrivacy();
       },
     },
     nestedList: {
@@ -969,6 +980,16 @@ export const UserCanViewerSeeType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return obj.prefsDiff();
+      },
+    },
+    onDemandWithPrivacy: {
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: async (
+        obj: UserCanViewerSee,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.onDemandWithPrivacy();
       },
     },
   }),

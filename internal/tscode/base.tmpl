@@ -208,7 +208,12 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
             throw new Error(`couldn't get field privacy policy for {{$field.TSPublicAPIName}}`);
           }
           const v = await {{useImport "applyPrivacyPolicy"}}(this.viewer, p, this);
-          return v ? this.{{$fieldName}} : null;
+          {{ if $field.FetchOnDemand -}}
+            {{$val := printf "this.%s ?? null" $fieldName -}}
+            return v ? {{callAndConvertFunc $field $cfg $val }} : null;
+          {{ else -}}
+            return v ? this.{{$fieldName}} : null;
+          {{ end -}}
         {{ else -}}
           {{$val := printf "this.%s ?? null" $fieldName -}}
           return {{callAndConvertFunc $field $cfg $val }};

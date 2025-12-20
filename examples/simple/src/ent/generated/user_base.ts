@@ -46,12 +46,14 @@ import {
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
+  UserOnDemandWithPrivacy,
   UserPreferredShift,
   UserPrefsDiff,
   UserPrefsStruct,
   UserSuperNestedObject,
   convertNullableUserAccountStatus,
   convertNullableUserNestedObjectListList,
+  convertNullableUserOnDemandWithPrivacy,
   convertNullableUserPreferredShiftList,
   convertNullableUserPrefsStruct,
   convertNullableUserPrefsStructList,
@@ -92,6 +94,7 @@ export interface UserCanViewerSee {
   prefs: () => Promise<boolean>;
   prefsList: () => Promise<boolean>;
   prefsDiff: () => Promise<boolean>;
+  onDemandWithPrivacy: () => Promise<boolean>;
 }
 
 export interface UserCanViewerEdit {
@@ -107,6 +110,12 @@ const superNestedObjectLoader = new ObjectLoaderFactory({
   fields: ["id", "super_nested_object"],
   key: "id",
   instanceKey: `${userLoaderInfo.tableName}-super_nested_object`,
+});
+const onDemandWithPrivacyLoader = new ObjectLoaderFactory({
+  tableName: userLoaderInfo.tableName,
+  fields: ["id", "on_demand_with_privacy"],
+  key: "id",
+  instanceKey: `${userLoaderInfo.tableName}-on_demand_with_privacy`,
 });
 
 export class UserBase
@@ -135,6 +144,7 @@ export class UserBase
   readonly timeInMs: BigInt | null;
   readonly funUuids: ID[] | null;
   protected _superNestedObject: UserSuperNestedObject | null | undefined;
+  protected _onDemandWithPrivacy: UserOnDemandWithPrivacy | null | undefined;
   readonly nestedList: UserNestedObjectList[] | null;
   readonly intEnum: UserIntEnum | null;
 
@@ -256,6 +266,32 @@ export class UserBase
     return convertSuperNestedObject(
       convertNullableUserSuperNestedObject(this._superNestedObject ?? null),
     );
+  }
+
+  async onDemandWithPrivacy(): Promise<UserOnDemandWithPrivacy | null> {
+    if (this._onDemandWithPrivacy === undefined) {
+      const row = await onDemandWithPrivacyLoader
+        .createLoader(this.viewer.context)
+        .load(this.id);
+      this._onDemandWithPrivacy = row?.on_demand_with_privacy ?? null;
+    }
+
+    if (this._onDemandWithPrivacy === null) {
+      return null;
+    }
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
+    const p = m.get("on_demand_with_privacy");
+    if (!p) {
+      throw new Error(
+        `couldn't get field privacy policy for onDemandWithPrivacy`,
+      );
+    }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v
+      ? convertNullableUserOnDemandWithPrivacy(
+          this._onDemandWithPrivacy ?? null,
+        )
+      : null;
   }
 
   static async load<T extends UserBase>(
@@ -619,6 +655,12 @@ export class UserBase
         applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs_list")!, this),
       prefsDiff: () =>
         applyPrivacyPolicy(this.viewer, fieldPrivacy.get("prefs_diff")!, this),
+      onDemandWithPrivacy: () =>
+        applyPrivacyPolicy(
+          this.viewer,
+          fieldPrivacy.get("on_demand_with_privacy")!,
+          this,
+        ),
     };
   }
 
