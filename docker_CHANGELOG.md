@@ -11,7 +11,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ### Added
 
-- add global edge composite indices for extra edge fields (#1896)
+- add global edge composite indices for extra edge fields (#1897)
 
 ### Fixed
 

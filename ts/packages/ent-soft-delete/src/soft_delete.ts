@@ -21,6 +21,7 @@ export class DeletedAtPattern implements Pattern {
   fields: FieldMap = {
     deleted_at: TimestampType({
       nullable: true,
+      // Node table index for soft delete reads on ents.
       index: true,
       defaultValueOnCreate: () => null,
       hideFromGraphQL: true,
@@ -63,6 +64,7 @@ export const GlobalDeletedEdge = {
   },
   edgeIndices: [
     {
+      // Edge table composite index for edge queries with soft delete.
       columns: ["id1", "edge_type", "deleted_at"],
     },
   ],
