@@ -9,6 +9,10 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- fix struct fields that are fetchOnDemand and have a privacy policy (#1893)
+
 ## [0.2.0-alpha.13]
 
 ### Added
