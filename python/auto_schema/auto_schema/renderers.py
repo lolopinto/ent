@@ -162,18 +162,6 @@ def _wrap_autocommit(op_text: str) -> str:
     )
 
 
-def _render_index_columns(cols) -> str:
-    rendered = []
-    for col in cols:
-        if isinstance(col, str):
-            rendered.append(repr(col))
-        elif hasattr(col, "name"):
-            rendered.append(repr(col.name))
-        else:
-            rendered.append(repr(str(col)))
-    return f"[{', '.join(rendered)}]"
-
-
 def _get_index_kw(op) -> dict:
     if hasattr(op, "kw"):
         if op.kw is None:
@@ -196,48 +184,32 @@ def _render_index_kw(kw: dict) -> list[str]:
     return items
 
 
-def _render_create_index(op) -> str:
-    args = [
-        repr(op.index_name),
-        repr(op.table_name),
-        _render_index_columns(op.columns),
-    ]
-    if op.unique:
-        args.append("unique=True")
-    if op.schema is not None:
-        args.append(f"schema={op.schema!r}")
-    args.extend(_render_index_kw(_get_index_kw(op)))
-    return f"op.create_index({', '.join(args)})"
+_orig_render_create_index = renderers._registry[(alembicops.CreateIndexOp, "default")]
+_orig_render_drop_index = renderers._registry[(alembicops.DropIndexOp, "default")]
 
 
-def _render_drop_index(op) -> str:
-    args = [repr(op.index_name)]
-    kw = {}
-    if getattr(op, "table_name", None):
-        args.append(f"table_name={op.table_name!r}")
-    if getattr(op, "schema", None):
-        args.append(f"schema={op.schema!r}")
-    kw.update(_get_index_kw(op))
-    args.extend(_render_index_kw(kw))
-    return f"op.drop_index({', '.join(args)})"
-
-
-@renderers.dispatch_for(alembicops.CreateIndexOp)
-def render_create_index(autogen_context: AutogenContext, op: alembicops.CreateIndexOp) -> str:
+def _render_create_index_with_concurrently(
+    autogen_context: AutogenContext, op
+) -> str:
+    rendered = _orig_render_create_index(autogen_context, op)
     kw = _get_index_kw(op)
-    op_text = _render_create_index(op)
     if kw.get("postgresql_concurrently") is True:
-        return _wrap_autocommit(op_text)
-    return op_text
+        return _wrap_autocommit(rendered)
+    return rendered
 
 
-@renderers.dispatch_for(alembicops.DropIndexOp)
-def render_drop_index(autogen_context: AutogenContext, op: alembicops.DropIndexOp) -> str:
+def _render_drop_index_with_concurrently(
+    autogen_context: AutogenContext, op
+) -> str:
+    rendered = _orig_render_drop_index(autogen_context, op)
     kw = _get_index_kw(op)
-    op_text = _render_drop_index(op)
     if kw.get("postgresql_concurrently") is True:
-        return _wrap_autocommit(op_text)
-    return op_text
+        return _wrap_autocommit(rendered)
+    return rendered
+
+
+renderers._registry[(alembicops.CreateIndexOp, "default")] = _render_create_index_with_concurrently
+renderers._registry[(alembicops.DropIndexOp, "default")] = _render_drop_index_with_concurrently
 
 @renderers.dispatch_for(ops.CreateFullTextIndexOp)
 def render_full_text_index(autogen_context: AutogenContext, op: ops.CreateFullTextIndexOp) -> str:
