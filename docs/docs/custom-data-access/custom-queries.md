@@ -254,3 +254,10 @@ To fetch a query that isn't source based or that's global to your database e.g. 
     });
   }
 ```
+
+If you need to use a SQL expression in a clause and want to avoid the table alias that
+`CustomClauseQuery` applies by default, pass `overrideAlias: null` to the clause:
+
+```ts
+const cls = query.Eq<Data>("LOWER(name)", name, null);
+```
