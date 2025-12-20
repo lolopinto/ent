@@ -111,7 +111,7 @@ def render_modify_rows(autogen_context: AutogenContext, op: ops.ModifyRowsOp) ->
 
 @renderers.dispatch_for(ops.AlterEnumOp)
 def render_alter_enum(autogen_context: AutogenContext, op: ops.AlterEnumOp) -> str:
-    if op.before is None:
+    if (before := op.before) is None:
         return (
             # manual indentation
             f"with op.get_context().autocommit_block():\n"
@@ -121,7 +121,7 @@ def render_alter_enum(autogen_context: AutogenContext, op: ops.AlterEnumOp) -> s
         return (
             # manual indentation
             "with op.get_context().autocommit_block():\n"
-            f"    op.alter_enum('{op.enum_name}', '{op.value}', before='{op.before}')" 
+            f"    op.alter_enum('{op.enum_name}', '{op.value}', before='{before}')" 
         )
 
 
@@ -163,14 +163,10 @@ def _wrap_autocommit(op_text: str) -> str:
 
 
 def _get_index_kw(op) -> dict:
-    if hasattr(op, "kw"):
-        if op.kw is None:
-            return {}
-        return dict(op.kw)
-    if hasattr(op, "kwargs"):
-        if op.kwargs is None:
-            return {}
-        return dict(op.kwargs)
+    if hasattr(op, "kw") and (kw := op.kw) is not None:
+        return dict(kw)
+    if hasattr(op, "kwargs") and (kwargs := op.kwargs) is not None:
+        return dict(kwargs)
     return {}
 
 
@@ -192,8 +188,7 @@ def _render_create_index_with_concurrently(
     autogen_context: AutogenContext, op
 ) -> str:
     rendered = _orig_render_create_index(autogen_context, op)
-    kw = _get_index_kw(op)
-    if kw.get("postgresql_concurrently") is True:
+    if (kw := _get_index_kw(op)).get("postgresql_concurrently") is True:
         return _wrap_autocommit(rendered)
     return rendered
 
@@ -202,8 +197,7 @@ def _render_drop_index_with_concurrently(
     autogen_context: AutogenContext, op
 ) -> str:
     rendered = _orig_render_drop_index(autogen_context, op)
-    kw = _get_index_kw(op)
-    if kw.get("postgresql_concurrently") is True:
+    if (kw := _get_index_kw(op)).get("postgresql_concurrently") is True:
         return _wrap_autocommit(rendered)
     return rendered
 
@@ -217,7 +211,7 @@ def render_full_text_index(autogen_context: AutogenContext, op: ops.CreateFullTe
         f"op.create_full_text_index('{op.index_name}', '{op.table_name}', "
         f"unique={op.unique or False!r}, {_render_kw_args(op.kw)})"
     )
-    if op.kw.get("info", {}).get("postgresql_concurrently") is True:
+    if (info := op.kw.get("info", {})).get("postgresql_concurrently") is True:
         return _wrap_autocommit(op_text)
     return op_text
 
@@ -228,7 +222,7 @@ def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFul
         f"op.drop_full_text_index('{op.index_name}', '{op.table_name}', "
         f"{_render_kw_args(op.kw)})"
     )
-    if op.kw.get("info", {}).get("postgresql_concurrently") is True:
+    if (info := op.kw.get("info", {})).get("postgresql_concurrently") is True:
         return _wrap_autocommit(op_text)
     return op_text
 
