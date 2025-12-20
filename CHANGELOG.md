@@ -10,6 +10,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ## [Unreleased]
 - support offset in QueryDataOptions for loadCustomData/loadCustomEnts (#1895)
 - add global edge composite indices for extra edge fields (#1897)
+- fix loadCustomCount custom clause query field aliasing (#1899)
 - allow overrideAlias to be null to skip aliasing in clauses (#1901)
 
 ## [0.2.2] - 2025-02-22

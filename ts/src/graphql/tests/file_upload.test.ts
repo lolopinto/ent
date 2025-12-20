@@ -30,15 +30,18 @@ function createTempFile() {
 }
 
 async function readStream(file): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const stream = file.createReadStream();
     let data: string[] = [];
     stream.on("data", function (chunk) {
       data.push(chunk.toString());
     });
 
-    stream.on("close", function () {
+    stream.on("end", function () {
       return resolve(data.join(""));
+    });
+    stream.on("error", function (err) {
+      return reject(err);
     });
   });
 }

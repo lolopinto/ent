@@ -1071,6 +1071,24 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
       await queryCountViaOptions(opts, undefined);
     });
 
+    test("count options with alias does not prefix count field", async () => {
+      await loadCustomCount(
+        opts,
+        {
+          alias: "foo",
+          clause: clause.Eq("bar", "bar2"),
+        },
+        getCtx(undefined),
+      );
+
+      expect(ml.logs.length).toBe(1);
+      const log = ml.logs[0];
+      expect(log.query).toContain("SELECT count(1) as count");
+      expect(log.query).toContain("FROM users AS foo");
+      expect(log.query).toContain("WHERE foo.bar");
+      expect(log.query).not.toContain("foo.count(1)");
+    });
+
     test("query via parameterized query with context", async () => {
       await queryCountViaParameterizedQuery(opts, getCtx(undefined));
     });
