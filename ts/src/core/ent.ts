@@ -620,6 +620,7 @@ export async function loadCustomCount<T extends Data = Data, K = keyof T>(
     {
       ...options,
       fields: ["count(1) as count"],
+      disableFieldsAlias: true,
     },
     query,
     context,
