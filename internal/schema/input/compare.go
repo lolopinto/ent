@@ -41,6 +41,19 @@ func PatternEqual(existing, pattern *Pattern) bool {
 		existing.DisableMixin == pattern.DisableMixin
 }
 
+func GlobalSchemaEqual(existing, schema *GlobalSchema) bool {
+	ret := change.CompareNilVals(existing == nil, schema == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return fieldsEqual(existing.ExtraEdgeFields, schema.ExtraEdgeFields) &&
+		assocEdgesEqual(existing.GlobalEdges, schema.GlobalEdges) &&
+		existing.Init == schema.Init &&
+		existing.TransformsEdges == schema.TransformsEdges &&
+		fieldsEqual(existing.GlobalFields, schema.GlobalFields)
+}
+
 func fieldsEqual(existing, fields []*Field) bool {
 	if len(existing) != len(fields) {
 		return false

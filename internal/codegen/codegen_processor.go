@@ -465,6 +465,9 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 		changes = make(change.ChangeMap)
 	}
 	writeAll := !useChanges
+	if useChanges && changes.ChangesExist(change.GlobalSchemaChangeKey, change.ModifyGlobalSchema) {
+		writeAll = true
+	}
 	// this is different
 	if opt.writeAll {
 		writeAll = true

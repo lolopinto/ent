@@ -89,6 +89,13 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 		writeAll()
 	}
 
+	globalSchemaChanged := processor.Config.UseChanges() &&
+		processor.ChangeMap.ChangesExist(change.GlobalSchemaChangeKey, change.ModifyGlobalSchema)
+	if globalSchemaChanged {
+		opts.edgeBaseFile = true
+		opts.writeBuilder = true
+	}
+
 	if processor.Config.UseChanges() {
 		changes := processor.ChangeMap
 		nodeChanges := changes[info.NodeData.Node]
@@ -203,6 +210,15 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 			opts.writeMixin = true
 			opts.writeMixinBase = true
 		}
+		if pattern.HasBuilder() {
+			opts.writeBuilder = true
+		}
+	}
+
+	globalSchemaChanged := processor.Config.UseChanges() &&
+		processor.ChangeMap.ChangesExist(change.GlobalSchemaChangeKey, change.ModifyGlobalSchema)
+	if globalSchemaChanged {
+		opts.edgeBaseFile = true
 		if pattern.HasBuilder() {
 			opts.writeBuilder = true
 		}

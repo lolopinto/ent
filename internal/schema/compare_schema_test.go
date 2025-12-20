@@ -63,6 +63,60 @@ func TestComparePatternsNoChange(t *testing.T) {
 	require.Len(t, m, 0)
 }
 
+func TestCompareGlobalSchemaChange(t *testing.T) {
+	inputSchema1 := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+		},
+		GlobalSchema: &input.GlobalSchema{
+			TransformsEdges: false,
+		},
+	}
+
+	inputSchema2 := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+		},
+		GlobalSchema: &input.GlobalSchema{
+			TransformsEdges: true,
+		},
+	}
+
+	s1, err := parseFromInputSchema(inputSchema1, base.TypeScript)
+	require.NoError(t, err)
+
+	s2, err := parseFromInputSchema(inputSchema2, base.TypeScript)
+	require.NoError(t, err)
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.NoError(t, err)
+	require.Len(t, m, 1)
+
+	changes := m[change.GlobalSchemaChangeKey]
+	require.Len(t, changes, 1)
+	assert.Equal(t, change.ModifyGlobalSchema, changes[0].Change)
+}
+
 func TestCompareAddedPattern(t *testing.T) {
 	s1 := &schema.Schema{}
 	s2 := &schema.Schema{

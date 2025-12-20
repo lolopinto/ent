@@ -35,6 +35,10 @@ func CompareSchemas(s1, s2 *Schema) (change.ChangeMap, error) {
 		return nil, err
 	}
 
+	if err := compareGlobalSchema(s1, s2, &m); err != nil {
+		return nil, err
+	}
+
 	if err := getEdgeChanges(s2, &m); err != nil {
 		return nil, err
 	}
@@ -97,6 +101,27 @@ func comparePatterns(m1, m2 map[string]*PatternInfo, m *change.ChangeMap) error 
 				},
 			}
 		}
+	}
+	return nil
+}
+
+func compareGlobalSchema(s1, s2 *Schema, m *change.ChangeMap) error {
+	input1 := s1.GetInputSchema()
+	input2 := s2.GetInputSchema()
+	if input1 == nil || input2 == nil {
+		return nil
+	}
+
+	if input.GlobalSchemaEqual(input1.GlobalSchema, input2.GlobalSchema) {
+		return nil
+	}
+
+	ret := *m
+	ret[change.GlobalSchemaChangeKey] = []change.Change{
+		{
+			Change: change.ModifyGlobalSchema,
+			Name:   change.GlobalSchemaChangeKey,
+		},
 	}
 	return nil
 }
