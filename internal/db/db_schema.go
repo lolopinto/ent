@@ -1052,6 +1052,8 @@ func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 		columns = append(columns, s.getColumnInfoForFieldWithTable(f, tableName, &constraints))
 	}
 
+	s.addEdgeIndices(tableName, columns, &constraints)
+
 	// add unique constraint for edge
 	// TODO this only works when it's one table per edge
 	// we need to add logic to deal with this
@@ -1070,6 +1072,36 @@ func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 		QuotedTableName: strconv.Quote(tableName),
 		Columns:         columns,
 		Constraints:     constraints,
+	}
+}
+
+func (s *dbSchema) addEdgeIndices(tableName string, columns []*dbColumn, constraints *[]dbConstraint) {
+	edgeIndices := s.schema.EdgeIndices()
+	if len(edgeIndices) == 0 {
+		return
+	}
+
+	for _, index := range edgeIndices {
+		cols, err := findConstraintDBColumns(index.Columns, columns)
+		if err != nil {
+			panic(err)
+		}
+		name := index.Name
+		if name != "" {
+			name = names.ToDBColumn(tableName, name)
+		}
+
+		constraint := &indexConstraint{
+			dbColumns: cols,
+			tableName: tableName,
+			unique:    index.Unique,
+			name:      name,
+			indexType: index.IndexType,
+		}
+		if index.FullText != nil {
+			panic("full text indexes not supported for edge tables")
+		}
+		*constraints = append(*constraints, constraint)
 	}
 }
 

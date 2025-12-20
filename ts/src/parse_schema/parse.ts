@@ -14,6 +14,7 @@ import {
   Type,
   FieldMap,
   GlobalSchema,
+  EdgeIndex,
   TransformReadBetaResult,
   CanViewerDo,
   EdgeGroupAction,
@@ -723,6 +724,7 @@ function translatePrettier(): BiomeConfig | undefined {
 interface ProcessedGlobalSchema {
   globalEdges: ProcessedAssocEdge[];
   extraEdgeFields: ProcessedField[];
+  edgeIndices?: EdgeIndex[];
   init?: boolean;
   transformsEdges?: boolean;
   globalFields?: ProcessedField[];
@@ -736,6 +738,7 @@ async function parseGlobalSchema(
     extraEdgeFields: [],
     init:
       !!s.extraEdgeFields ||
+      !!s.edgeIndices ||
       s.transformEdgeRead !== undefined ||
       s.transformEdgeWrite !== undefined ||
       s.fields !== undefined,
@@ -744,6 +747,10 @@ async function parseGlobalSchema(
 
   if (s.extraEdgeFields) {
     ret.extraEdgeFields = await processFields(s.extraEdgeFields);
+  }
+
+  if (s.edgeIndices) {
+    ret.edgeIndices = s.edgeIndices;
   }
 
   if (s.edges) {

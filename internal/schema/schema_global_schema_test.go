@@ -139,6 +139,11 @@ func TestExtraEdgeCols(t *testing.T) {
 					},
 				},
 			},
+			EdgeIndices: []*input.Index{
+				{
+					Columns: []string{"id1", "edge_type", "deleted_at"},
+				},
+			},
 			GlobalEdges: []*input.AssocEdge{
 				{
 					Name:       "external_info",
@@ -158,6 +163,10 @@ func TestExtraEdgeCols(t *testing.T) {
 	extraFields := schema.ExtraEdgeFields()
 	require.Len(t, extraFields, 1)
 	require.Equal(t, extraFields[0].FieldName, "deleted_at")
+
+	edgeIndices := schema.EdgeIndices()
+	require.Len(t, edgeIndices, 1)
+	require.Equal(t, []string{"id1", "edge_type", "deleted_at"}, edgeIndices[0].Columns)
 }
 
 // TODO AssocEdgeBaseImport test based on what we do in ent.yml??

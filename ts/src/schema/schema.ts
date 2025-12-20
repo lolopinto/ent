@@ -27,6 +27,8 @@ export interface GlobalSchema {
 
   // e.g. deleted_at for edges
   extraEdgeFields?: FieldMap;
+  // indices for edge tables. name is optional and treated as a suffix per edge table
+  edgeIndices?: EdgeIndex[];
 
   transformEdgeRead?: () => Clause;
   transformEdgeWrite?: (
@@ -1036,6 +1038,11 @@ export interface Index {
 
   // allow other keys
   [x: string]: any;
+}
+
+// like Index but name is optional since edge indices are namespaced per edge table
+export interface EdgeIndex extends Omit<Index, "name"> {
+  name?: string;
 }
 
 export interface ForeignKeyInfo {
