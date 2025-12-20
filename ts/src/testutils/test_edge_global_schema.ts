@@ -21,10 +21,14 @@ export const testEdgeGlobalSchema = {
   extraEdgeFields: {
     deletedAt: TimestampType({
       nullable: true,
-      index: true,
       defaultValueOnCreate: () => null,
     }),
   },
+  edgeIndices: [
+    {
+      columns: ["id1", "edge_type", "deleted_at"],
+    },
+  ],
 
   transformEdgeRead(): clause.Clause {
     return clause.Eq("deleted_at", null);

@@ -23,6 +23,7 @@ export {
   FieldMap,
   Constraint,
   Index,
+  EdgeIndex,
   ConstraintType,
   ForeignKeyInfo,
   requiredField,
