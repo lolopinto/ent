@@ -45,6 +45,7 @@ type field struct {
 	graphqlName                string
 	index                      bool
 	indexConcurrently          bool
+	indexWhere                 string
 	primaryKey                 bool
 	foreignKey                 *input.ForeignKey
 	fieldEdge                  *input.FieldEdge
@@ -116,6 +117,7 @@ type index struct {
 	columns []string
 	unique  bool
 	concurrently bool
+	where   string
 }
 
 type fkeyInfo struct {
@@ -224,6 +226,7 @@ func verifyFieldOverride(t *testing.T, exp, actual *input.FieldOverride) {
 	assert.Equal(t, exp.GraphQLName, actual.GraphQLName)
 	assert.Equal(t, exp.Index, actual.Index)
 	assert.Equal(t, exp.IndexConcurrently, actual.IndexConcurrently)
+	assert.Equal(t, exp.IndexWhere, actual.IndexWhere)
 	assert.Equal(t, exp.Unique, actual.Unique)
 	assert.Equal(t, exp.ServerDefault, actual.ServerDefault)
 	assert.Equal(t, exp.StorageKey, actual.StorageKey)
@@ -254,6 +257,7 @@ func verifyField(t *testing.T, expField field, field *input.Field) {
 	assert.Equal(t, expField.graphqlName, field.GraphQLName)
 	assert.Equal(t, expField.index, field.Index)
 	assert.Equal(t, expField.indexConcurrently, field.IndexConcurrently)
+	assert.Equal(t, expField.indexWhere, field.IndexWhere)
 	assert.Equal(t, expField.primaryKey, field.PrimaryKey)
 	assert.Equal(t, expField.disableUserEditable, field.DisableUserEditable)
 	assert.Equal(t, expField.disableUserGraphQLEditable, field.DisableUserGraphQLEditable)
@@ -410,6 +414,7 @@ func verifyIndices(t *testing.T, expIndices []index, indices []*input.Index) {
 		assert.Equal(t, expIndex.columns, index.Columns)
 		assert.Equal(t, expIndex.unique, index.Unique)
 		assert.Equal(t, expIndex.concurrently, index.Concurrently)
+		assert.Equal(t, expIndex.where, index.Where)
 	}
 }
 

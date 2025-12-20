@@ -548,6 +548,8 @@ def _compare_indexes(autogen_context: AutogenContext,
                         index.columns,
                         postgresql_using=index.kwargs.get('postgresql_using'),
                         postgresql_concurrently=index.kwargs.get('postgresql_concurrently'),
+                        postgresql_where=index.kwargs.get('postgresql_where'),
+                        sqlite_where=index.kwargs.get('sqlite_where'),
                     ))
 
 
@@ -601,6 +603,8 @@ def _compare_generated_column(autogen_context: AutogenContext,
                         index.columns,
                         postgresql_using=index_type,
                         postgresql_concurrently=index.kwargs.get('postgresql_concurrently'),
+                        postgresql_where=index.kwargs.get('postgresql_where'),
+                        sqlite_where=index.kwargs.get('sqlite_where'),
                     )
 
                     modify_table_ops.ops.append(

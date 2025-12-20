@@ -574,6 +574,56 @@ func TestIndices(t *testing.T) {
 				},
 			},
 		},
+		"multi-column index with where": {
+			code: map[string]string{
+				"contact.ts": getCodeWithSchema(`
+					import {EntSchema, StringType} from "{schema}";
+
+					const ContactSchema = new EntSchema({
+						fields: {
+							firstName: StringType(),
+							lastName: StringType(),
+						},
+
+						indices: [
+							{
+								name: "contacts_name_index",
+								columns: ["firstName", "lastName"],
+								where: "last_name IS NOT NULL",
+							},
+						],
+					});
+					export default ContactSchema;
+				`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name:   "node",
+					fields: nodeFields(),
+				},
+			},
+			expectedNodes: map[string]node{
+				"Contact": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "firstName",
+							dbType: input.String,
+						},
+						field{
+							name:   "lastName",
+							dbType: input.String,
+						},
+					),
+					indices: []index{
+						{
+							name:    "contacts_name_index",
+							columns: []string{"firstName", "lastName"},
+							where:   "last_name IS NOT NULL",
+						},
+					},
+				},
+			},
+		},
 		// same example from above can also be represented as unique index
 		"multi-column unique index": {
 			code: map[string]string{

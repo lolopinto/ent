@@ -802,6 +802,17 @@ def metadata_with_table_with_index_concurrently(metadata_with_table):
     return metadata_with_table
 
 
+def metadata_with_table_with_index_where(metadata_with_table):
+    sa.Table('accounts',
+             metadata_with_table,
+             sa.Index("accounts_first_name_idx", "first_name",
+                      postgresql_where=sa.text("first_name IS NOT NULL"),
+                      sqlite_where=sa.text("first_name IS NOT NULL")),
+             extend_existing=True
+             )
+    return metadata_with_table
+
+
 def metadata_with_multi_column_index(metadata_with_table):
     sa.Table('accounts',
              metadata_with_table,

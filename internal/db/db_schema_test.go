@@ -1583,6 +1583,63 @@ func TestMultiColumnIndexConcurrently(t *testing.T) {
 	)
 }
 
+func TestMultiColumnIndexWhere(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Contact": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "contacts_name_index",
+							Columns: []string{"firstName", "lastName"},
+							Where:   "last_name IS NOT NULL",
+						},
+					},
+				},
+			},
+		})
+
+	table := getTestTableFromSchema("Contact", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "firstName", "lastName")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, %s, postgresql_where=sa.text(%s), sqlite_where=sa.text(%s))",
+			strconv.Quote("contacts_name_index"),
+			strconv.Quote("first_name"),
+			strconv.Quote("last_name"),
+			strconv.Quote("last_name IS NOT NULL"),
+			strconv.Quote("last_name IS NOT NULL"),
+		),
+	)
+}
+
 func TestMultiColumnUniqueIndex(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,
@@ -1850,6 +1907,63 @@ func TestFullTextIndexSingleColConcurrently(t *testing.T) {
 				getKVPair("postgresql_using_internals", strconv.Quote("to_tsvector('english', coalesce(first_name, ''))")),
 				getKVPair("column", strconv.Quote("first_name")),
 				getKVPair("postgresql_concurrently", "True"),
+			}),
+		),
+	)
+}
+
+func TestFullTextIndexSingleColWhere(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_first_name_idx",
+							Columns: []string{"firstName"},
+							Where:   "first_name IS NOT NULL",
+							FullText: &input.FullText{
+								Language: "english",
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("User", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("FullTextIndex(%s, info=%s)",
+			strconv.Quote("users_first_name_idx"),
+			getKVDict([]string{
+				getKVPair("postgresql_using", strconv.Quote("gin")),
+				getKVPair("postgresql_using_internals", strconv.Quote("to_tsvector('english', coalesce(first_name, ''))")),
+				getKVPair("column", strconv.Quote("first_name")),
+				getKVPair("postgresql_where", strconv.Quote("first_name IS NOT NULL")),
 			}),
 		),
 	)
@@ -2687,6 +2801,52 @@ func TestImplicitScalarIndexConcurrently(t *testing.T) {
 		fmt.Sprintf("sa.Index(%s, %s, postgresql_concurrently=True)",
 			strconv.Quote("users_email_idx"),
 			strconv.Quote("email"),
+		),
+	)
+}
+
+func TestImplicitScalarIndexWhere(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "place",
+							Type: &input.FieldType{
+								DBType: input.Int,
+							},
+							Index:      true,
+							IndexWhere: "place = 1",
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("User", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "place")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_where=sa.text(%s), sqlite_where=sa.text(%s))",
+			strconv.Quote("users_place_idx"),
+			strconv.Quote("place"),
+			strconv.Quote("place = 1"),
+			strconv.Quote("place = 1"),
 		),
 	)
 }
