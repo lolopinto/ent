@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from "uuid";
-import { SQLStatementOperation } from "@snowtop/ent/schema";
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction from "../user/actions/create_user_action";
@@ -81,17 +80,8 @@ test("builder.getInput keeps struct list camelCase after transformWrite", async 
     creatorId: creatorId,
     startTime: new Date(),
     location: "location",
+    attachments,
   });
-
-  // @ts-expect-error transformWrite exists on Action interface
-  action.transformWrite = () => {
-    return {
-      op: SQLStatementOperation.Insert,
-      data: {
-        attachments,
-      },
-    };
-  };
 
   await action.validX();
 });
