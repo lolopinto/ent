@@ -246,11 +246,16 @@ def create_full_text_index(operations: ops.Operations, operation: ops.CreateFull
     connection = operations.get_bind()
     index_name = operation.index_name
     table_name = operation.table_name
-    using = operation.kw.get('info').get('postgresql_using')
-    using_internals = operation.kw.get('info').get('postgresql_using_internals')
+    info = operation.kw.get('info') or {}
+    using = info.get('postgresql_using')
+    using_internals = info.get('postgresql_using_internals')
+    concurrently = info.get('postgresql_concurrently') is True
+    where = info.get('postgresql_where')
+    concurrently_sql = " CONCURRENTLY" if concurrently else ""
+    where_sql = f" WHERE {where}" if where else ""
     connection.execute(
         sa.text(
-            f"CREATE INDEX {index_name} ON {table_name} USING {using} ({using_internals})"
+            f"CREATE INDEX{concurrently_sql} {index_name} ON {table_name} USING {using} ({using_internals}){where_sql}"
         )
     )
 
@@ -258,9 +263,12 @@ def create_full_text_index(operations: ops.Operations, operation: ops.CreateFull
 @ Operations.implementation_for(ops.DropFullTextIndexOp)
 def create_full_text_index(operations: ops.Operations, operation: ops.DropFullTextIndexOp):
     connection = operations.get_bind()
+    info = operation.kw.get('info') or {}
+    concurrently = info.get('postgresql_concurrently') is True
+    concurrently_sql = " CONCURRENTLY" if concurrently else ""
     connection.execute(
         sa.text(
-            f"DROP INDEX {operation.index_name}"
+            f"DROP INDEX{concurrently_sql} {operation.index_name}"
         )
     )
 

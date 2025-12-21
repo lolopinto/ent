@@ -1,6 +1,7 @@
 import uuid
 from alembic.autogenerate import renderers
 from alembic.autogenerate.api import AutogenContext
+import alembic.operations.ops as alembicops
 from sqlalchemy.dialects import postgresql
 from . import ops
 from . import csv
@@ -110,7 +111,7 @@ def render_modify_rows(autogen_context: AutogenContext, op: ops.ModifyRowsOp) ->
 
 @renderers.dispatch_for(ops.AlterEnumOp)
 def render_alter_enum(autogen_context: AutogenContext, op: ops.AlterEnumOp) -> str:
-    if op.before is None:
+    if (before := op.before) is None:
         return (
             # manual indentation
             f"with op.get_context().autocommit_block():\n"
@@ -120,7 +121,7 @@ def render_alter_enum(autogen_context: AutogenContext, op: ops.AlterEnumOp) -> s
         return (
             # manual indentation
             "with op.get_context().autocommit_block():\n"
-            f"    op.alter_enum('{op.enum_name}', '{op.value}', before='{op.before}')" 
+            f"    op.alter_enum('{op.enum_name}', '{op.value}', before='{before}')" 
         )
 
 
@@ -153,20 +154,77 @@ def _render_kw_args(d):
     return ", ".join(kv_pairs)
 
 
+def _wrap_autocommit(op_text: str) -> str:
+    indented = "\n".join([f"    {line}" for line in op_text.splitlines()])
+    return (
+        "with op.get_context().autocommit_block():\n"
+        f"{indented}"
+    )
+
+
+def _get_index_kw(op) -> dict:
+    if hasattr(op, "kw") and (kw := op.kw) is not None:
+        return dict(kw)
+    if hasattr(op, "kwargs") and (kwargs := op.kwargs) is not None:
+        return dict(kwargs)
+    return {}
+
+
+def _render_index_kw(kw: dict) -> list[str]:
+    items = []
+    for key in sorted(kw.keys()):
+        val = kw[key]
+        if val is None or val is False:
+            continue
+        items.append(f"{key}={val!r}")
+    return items
+
+
+_orig_render_create_index = renderers._registry[(alembicops.CreateIndexOp, "default")]
+_orig_render_drop_index = renderers._registry[(alembicops.DropIndexOp, "default")]
+
+
+def _render_create_index_with_concurrently(
+    autogen_context: AutogenContext, op
+) -> str:
+    rendered = _orig_render_create_index(autogen_context, op)
+    if (kw := _get_index_kw(op)).get("postgresql_concurrently") is True:
+        return _wrap_autocommit(rendered)
+    return rendered
+
+
+def _render_drop_index_with_concurrently(
+    autogen_context: AutogenContext, op
+) -> str:
+    rendered = _orig_render_drop_index(autogen_context, op)
+    if (kw := _get_index_kw(op)).get("postgresql_concurrently") is True:
+        return _wrap_autocommit(rendered)
+    return rendered
+
+
+renderers._registry[(alembicops.CreateIndexOp, "default")] = _render_create_index_with_concurrently
+renderers._registry[(alembicops.DropIndexOp, "default")] = _render_drop_index_with_concurrently
+
 @renderers.dispatch_for(ops.CreateFullTextIndexOp)
 def render_full_text_index(autogen_context: AutogenContext, op: ops.CreateFullTextIndexOp) -> str:
-    return (
+    op_text = (
         f"op.create_full_text_index('{op.index_name}', '{op.table_name}', "
         f"unique={op.unique or False!r}, {_render_kw_args(op.kw)})"
     )
+    if (info := op.kw.get("info", {})).get("postgresql_concurrently") is True:
+        return _wrap_autocommit(op_text)
+    return op_text
 
 
 @renderers.dispatch_for(ops.DropFullTextIndexOp)
 def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFullTextIndexOp) -> str:
-    return (
+    op_text = (
         f"op.drop_full_text_index('{op.index_name}', '{op.table_name}', "
         f"{_render_kw_args(op.kw)})"
     )
+    if (info := op.kw.get("info", {})).get("postgresql_concurrently") is True:
+        return _wrap_autocommit(op_text)
+    return op_text
 
 
 # i don't think this is every used since the way it works is that this is called

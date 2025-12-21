@@ -247,6 +247,8 @@ func TestIndex(t *testing.T) {
 	i := &Index{
 		Name:    "contacts_name_index",
 		Columns: []string{"first_name", "last_name"},
+		Concurrently: true,
+		Where:   "place = 1",
 	}
 
 	b, err := json.Marshal(i)
@@ -262,6 +264,8 @@ func TestDiffIndexType(t *testing.T) {
 	i := &Index{
 		Name:    "contacts_name_index",
 		Columns: []string{"first_name", "last_name"},
+		Concurrently: true,
+		Where:   "place = 1",
 	}
 
 	b, err := json.Marshal(i)
@@ -270,6 +274,22 @@ func TestDiffIndexType(t *testing.T) {
 	i2 := &Index{}
 	err = json.Unmarshal(b, i2)
 	i2.IndexType = "gin"
+	require.Nil(t, err)
+	require.False(t, indexEqual(i, i2))
+}
+
+func TestDiffIndexWhere(t *testing.T) {
+	i := &Index{
+		Name:    "contacts_name_index",
+		Columns: []string{"first_name", "last_name"},
+	}
+
+	b, err := json.Marshal(i)
+	require.Nil(t, err)
+
+	i2 := &Index{}
+	err = json.Unmarshal(b, i2)
+	i2.Where = "place = 1"
 	require.Nil(t, err)
 	require.False(t, indexEqual(i, i2))
 }
