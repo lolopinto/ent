@@ -37,7 +37,7 @@ We'll dive into each of these in the following sections.
 
 ## Default Privacy Policy
 
-The default [privacy policy](/docs/core-concepts/privacy-policy) is that any logged in user i.e. Viewer's [viewerID](/docs/core-concepts/Viewer#viewerID) is not `null` can perform the action.
+The default [privacy policy](/docs/core-concepts/privacy-policy) is that any logged in user i.e. Viewer's [viewerID](/docs/core-concepts/viewer#viewerid) is not `null` can perform the action.
 
 ## Schema
 
