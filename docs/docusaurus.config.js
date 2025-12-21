@@ -6,7 +6,11 @@ module.exports = {
   url: "https://ent.dev/",
   baseUrl: "/",
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "warn",
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: "warn",
+    },
+  },
   favicon: "img/favicon.ico",
   organizationName: "lolopinto", // Usually your GitHub org/user name.
   projectName: "ent", // Usually your repo name.
