@@ -62,7 +62,7 @@ jobs:
     - name: Set up python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9' 
+        python-version: '3.12' 
       
     - name: Install auto_schema
       run: python3 -m pip install wheel auto_schema==0.0.34
