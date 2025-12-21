@@ -7,14 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the npm version are [here](/CHANGELOG.md).
 
-## [Unreleased]
+## [0.3.0]
 
 ### Added
 
+- DateType as string (#1887)
 - add global edge composite indices for extra edge fields (#1897)
+- concurrent index support (#1901)
+- add partial indices (#1903)
 
 ### Fixed
 
+- Fix optionality for default-provided action fields #1890
 - fix struct fields that are fetchOnDemand and have a privacy policy (#1893)
 - treat global schema changes as full codegen changes (#1898)
 
