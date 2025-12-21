@@ -16,7 +16,7 @@ async function createUser() {
   }).saveX();
 }
 
-test("builder.getInput keeps struct list camelCase after transformWrite", async () => {
+test("builder.getInput keeps struct list camelCase with transform pattern", async () => {
   const creator = await createUser();
   const creatorId = creator.id;
   const attachments = [

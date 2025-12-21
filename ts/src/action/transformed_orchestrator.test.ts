@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
-import { Context, Data, Viewer } from "../core/base";
+import { Context, Data, Ent, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
 import each from "jest-each";
 import {
@@ -17,6 +17,7 @@ import {
   SQLStatementOperation,
   StructType,
   StructTypeAsList,
+  Pattern,
 } from "../schema";
 import {
   SimpleAction,
@@ -143,6 +144,30 @@ class Competition extends BaseEnt {
   }
 }
 
+class StructListTransformPattern implements Pattern {
+  name = "struct_list_transform";
+  fields = {};
+
+  transformWrite<
+    T extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
+  >(stmt: UpdateOperation<T, TViewer>): TransformedUpdateOperation<T, TViewer> | null {
+    if (stmt.op !== SQLStatementOperation.Insert) {
+      return null;
+    }
+    const horses = stmt.input["horses"];
+    if (!horses) {
+      return null;
+    }
+    return {
+      op: SQLStatementOperation.Insert,
+      data: {
+        horses,
+      },
+    } as TransformedUpdateOperation<T, TViewer>;
+  }
+}
+
 const AccountSchema = new EntBuilderSchema(Account, {
   patterns: [new DeletedAtPatternWithExtraWrites()],
 
@@ -162,6 +187,27 @@ const AccountSchema = new EntBuilderSchema(Account, {
 });
 
 const CompetitionSchema = new EntBuilderSchema(Competition, {
+  fields: {
+    horses: StructTypeAsList({
+      fields: {
+        horseID: UUIDType({
+          nullable: true,
+        }),
+        horseName: StringType({
+          nullable: true,
+        }),
+        backNumber: IntegerType({
+          nullable: true,
+          min: 1,
+        }),
+      },
+      tsType: "CompetitionEventHorseEntry",
+    }),
+  },
+});
+
+const CompetitionSchemaWithPattern = new EntBuilderSchema(Competition, {
+  patterns: [new StructListTransformPattern()],
   fields: {
     horses: StructTypeAsList({
       fields: {
@@ -409,7 +455,7 @@ function getInsertCountryAction(
 }
 
 function commonTests() {
-  test("builder.getInput keeps struct field camelCase after transformWrite", async () => {
+  test("builder.getInput keeps struct field camelCase without pattern", async () => {
     const horses = [
       {
         horseId: uuidv4(),
@@ -457,15 +503,56 @@ function commonTests() {
       null,
     );
 
-    // @ts-ignore
-    action.transformWrite = () => {
-      return {
-        op: SQLStatementOperation.Insert,
-        data: {
-          horses,
-        },
-      };
-    };
+    await action.validX();
+  });
+
+  test("builder.getInput keeps struct field camelCase with transform pattern", async () => {
+    const horses = [
+      {
+        horseId: uuidv4(),
+        horseName: "Quality Time",
+        backNumber: 3396,
+      },
+    ];
+
+    class CompetitionAction extends SimpleAction<Competition> {
+      getValidators() {
+        return [
+          {
+            validate: (builder) => {
+              const input = builder.getInput() as Data;
+              const list = (input as any).horses;
+              if (!Array.isArray(list) || list.length !== 1) {
+                return new Error("expected horses list in builder input");
+              }
+              const horse = list[0] as any;
+              if (
+                horse.horseId !== horses[0].horseId ||
+                horse.horseName !== horses[0].horseName ||
+                horse.backNumber !== horses[0].backNumber
+              ) {
+                return new Error("expected camelCase horse fields in input");
+              }
+              if (
+                horse.horse_id !== undefined ||
+                horse.horse_name !== undefined ||
+                horse.back_number !== undefined
+              ) {
+                return new Error("unexpected snake_case horse fields in input");
+              }
+            },
+          },
+        ];
+      }
+    }
+
+    const action = new CompetitionAction(
+      new LoggedOutViewer(),
+      CompetitionSchemaWithPattern,
+      new Map([["horses", horses]]),
+      WriteOperation.Insert,
+      null,
+    );
 
     await action.validX();
   });

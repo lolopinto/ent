@@ -181,12 +181,10 @@ export class StructField extends BaseField implements Field {
       if (val === undefined) {
         return;
       }
-      if (field.format) {
-        if (field instanceof StructField) {
-          val = field.formatInput(val);
-        } else {
-          val = field.format(val, true);
-        }
+      if (field.formatInput) {
+        val = field.formatInput(val);
+      } else if (field.format) {
+        val = field.format(val, true);
       }
       ret[fieldName] = val;
     };
@@ -209,7 +207,7 @@ export class StructField extends BaseField implements Field {
   formatInput(obj: any) {
     if (this.type.globalType) {
       const f = __getGlobalSchemaField(this.type.globalType);
-      if (f instanceof StructField) {
+      if (f && f.formatInput) {
         return f.formatInput(obj);
       }
       if (f && f.format) {
