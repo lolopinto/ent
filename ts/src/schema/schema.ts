@@ -50,6 +50,8 @@ type FieldOverride = Pick<
   | "hideFromGraphQL"
   | "graphqlName"
   | "index"
+  | "indexConcurrently"
+  | "indexWhere"
 >;
 
 export type FieldOverrideMap = {
@@ -545,6 +547,10 @@ export interface FieldOptions {
   sensitive?: boolean;
   graphqlName?: string;
   index?: boolean;
+  // only used when index: true
+  indexConcurrently?: boolean;
+  // only used when index: true
+  indexWhere?: string;
   foreignKey?: ForeignKey;
   fieldEdge?: FieldEdge;
   primaryKey?: boolean; // can only have one in a schema. Node provides id as default primary key in a schema
@@ -1035,6 +1041,8 @@ export interface Index {
   // need operator class too
   // TODO https://github.com/lolopinto/ent/issues/1029
   indexType?: "gin" | "btree";
+  concurrently?: boolean;
+  where?: string;
 
   // allow other keys
   [x: string]: any;

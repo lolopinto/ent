@@ -12,6 +12,8 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 ### Added
 
 - add global edge composite indices for extra edge fields (#1897)
+- support concurrent index creation in auto_schema migrations (#1901)
+- support partial indexes with WHERE clauses in schema indices (#1903)
 
 ### Fixed
 

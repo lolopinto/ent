@@ -15,16 +15,9 @@ Can get the latest of each via the following command: `python3 -m pip install --
 
 Steps to release new version:
 
-* Run `python -m pytest` (in pipenv shell maybe) to ensure all tests are passing
 * Bump version in `pyproject.toml`
-* Run the following command from `python/auto_schema` (where `pyproject.toml` is located): `python3 -m build`.
-* Run `python3 -m twine upload --repository pypi dist/*` to upload to pypi OR `python3 -m twine upload --repository testpypi dist/*`. You need to be added to the project and have a [token](https://pypi.org/help/#apitoken) (or [test token](https://test.pypi.org/help/#apitoken))  in `~/.pypirc` or equivalent location.
-* Recommend cleaning up after by running the following:
-
- 1. `rm -rf dist/`
- 2. `rm -rf build/`
- 3. `rm -rf auto_schema.egg-info`
- 4. `rm -rf auto_schema_test.egg-info`
+* Run `./release.sh` from `python/auto_schema` to run tests, build, upload, and clean.
+* For testpypi, run `./release.sh testpypi` instead.
 
 ## Testing
 

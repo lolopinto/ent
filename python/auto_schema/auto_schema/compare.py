@@ -542,7 +542,15 @@ def _compare_indexes(autogen_context: AutogenContext,
                     alembicops.DropIndexOp.from_index(conn_index))
 
                 modify_table_ops.ops.append(
-                    alembicops.CreateIndexOp(name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
+                    alembicops.CreateIndexOp(
+                        name,
+                        index.table.name,
+                        index.columns,
+                        postgresql_using=index.kwargs.get('postgresql_using'),
+                        postgresql_concurrently=index.kwargs.get('postgresql_concurrently'),
+                        postgresql_where=index.kwargs.get('postgresql_where'),
+                        sqlite_where=index.kwargs.get('sqlite_where'),
+                    ))
 
 
 index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
@@ -590,7 +598,14 @@ def _compare_generated_column(autogen_context: AutogenContext,
                 if conn_info['columns'] != meta_info['columns']:
                     # we'll have to change the entire beh
                     create_index = alembicops.CreateIndexOp(
-                        index.name, index.table.name, index.columns, postgresql_using=index_type)
+                        index.name,
+                        index.table.name,
+                        index.columns,
+                        postgresql_using=index_type,
+                        postgresql_concurrently=index.kwargs.get('postgresql_concurrently'),
+                        postgresql_where=index.kwargs.get('postgresql_where'),
+                        sqlite_where=index.kwargs.get('sqlite_where'),
+                    )
 
                     modify_table_ops.ops.append(
                         alembicops.DropIndexOp(
