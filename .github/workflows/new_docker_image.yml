@@ -33,6 +33,13 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
+    # Use the GitHub Actions cache for Docker layers to avoid repeatedly
+    # pushing/pulling cache data from the registry during CI runs.
+    - name: Configure Build Cache
+      env:
+        CACHE_TYPE: gha
+      run: echo "CACHE_TYPE=${CACHE_TYPE}" >> $GITHUB_ENV
+
     - name: docker login
       env:
         DOCKER_TOKEN: ${{secrets.DOCKER_TOKEN}}
