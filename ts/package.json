@@ -36,7 +36,7 @@
   },
   "peerDependencies": {
     "@swc-node/register": "^1.6.8",
-    "better-sqlite3": "^9.2.2",
+    "better-sqlite3": "^12.5.0",
     "graphql": "^16.8.1"
   },
   "peerDependenciesMeta": {
@@ -48,7 +48,7 @@
     }
   },
   "engines": {
-    "node": ">=18.18.0"
+    "node": ">=20.9.0"
   },
   "devDependencies": {
     "@swc/core": "^1.15.7",
