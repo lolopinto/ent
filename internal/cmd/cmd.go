@@ -88,26 +88,32 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 	// we'll always use ts-node
 	if fromTest {
 		cmdArgs = []string{
+			"--esm",
 			"--compiler-options",
 			testingutils.DefaultCompilerOptions(),
 			"--transpileOnly",
 		}
 	} else {
-		cmdName = "ts-node-script"
+		cmdName = "ts-node"
 
 		if useSwc {
 			// if using swc, skip ts-node and use node directly
-			// we're going to do: node -r @swc-node/register -r tsconfig-paths/register
+			// we're going to do: node --loader @swc-node/register/esm -r tsconfig-paths/register
 			cmdName = "node"
 			cmdArgs = append(
 				cmdArgs,
-				"-r",
-				"@swc-node/register",
+				"--loader",
+				"@swc-node/register/esm",
 			)
 
 			env = append(env, "SWCRC=true")
 		} else {
-			cmdArgs = append(cmdArgs, GetArgsForTsNodeScript(dirPath)...)
+			cmdArgs = append(cmdArgs,
+				"--esm",
+				"--project",
+				filepath.Join(dirPath, "tsconfig.json"),
+				"--transpileOnly",
+			)
 		}
 
 		// for paths like src/ent/generated/types.ts
