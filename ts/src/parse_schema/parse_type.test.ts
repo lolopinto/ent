@@ -1,7 +1,7 @@
-import { DBType } from "../schema/schema";
-import { EntSchema } from "../schema/base_schema";
-import { parseSchema } from "./parse";
-import { JSONBType, JSONBListType } from "../schema/json_field";
+import { DBType } from "../schema/schema.js";
+import { EntSchema } from "../schema/base_schema.js";
+import { parseSchema } from "./parse.js";
+import { JSONBType, JSONBListType } from "../schema/json_field.js";
 
 test("importType", async () => {
   const Bar = new EntSchema({

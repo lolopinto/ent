@@ -1,4 +1,4 @@
-import { BaseField, ListField } from "./field";
+import { BaseField, ListField } from "./field.js";
 import {
   FieldOptions,
   Field,
@@ -6,13 +6,13 @@ import {
   DBType,
   FieldMap,
   getStorageKey,
-} from "./schema";
+} from "./schema.js";
 import {
   __getGlobalSchemaField,
   __getGlobalSchemaFields,
-} from "../core/global_schema";
-import { log } from "../core/logger";
-import { toFieldName } from "../names/names";
+} from "../core/global_schema.js";
+import { log } from "../core/logger.js";
+import { toFieldName } from "../names/names.js";
 
 interface structFieldOptions extends FieldOptions {
   // required.

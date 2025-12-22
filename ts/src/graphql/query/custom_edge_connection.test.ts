@@ -1,11 +1,11 @@
-import { TempDB } from "../../testutils/db/temp_db";
+import { TempDB } from "../../testutils/db/temp_db.js";
 
 import {
   FakeUser,
   UserToContactsFkeyQueryDeprecated,
-} from "../../testutils/fake_data/index";
-import { setupTempDB } from "../../testutils/fake_data/test_helpers";
-import { commonTests } from "./shared_edge_connection";
+} from "../../testutils/fake_data/index.js";
+import { setupTempDB } from "../../testutils/fake_data/test_helpers.js";
+import { commonTests } from "./shared_edge_connection.js";
 
 let tdb: TempDB;
 

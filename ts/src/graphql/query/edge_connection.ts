@@ -1,6 +1,6 @@
-import { CustomClauseQuery } from "../../core/query";
-import { Data, Ent, ID, Viewer } from "../../core/base";
-import { EdgeQuery, PaginationInfo } from "../../core/query/query";
+import { CustomClauseQuery } from "../../core/query/index.js";
+import { Data, Ent, ID, Viewer } from "../../core/base.js";
+import { EdgeQuery, PaginationInfo } from "../../core/query/query.js";
 
 // TODO getCursor...
 export interface GraphQLEdge<T extends Data> {

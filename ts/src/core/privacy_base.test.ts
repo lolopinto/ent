@@ -1,11 +1,10 @@
-import each from "jest-each";
-import { Allow, Skip, Deny, PrivacyResult } from "./base";
+import { Allow, Skip, Deny, PrivacyResult } from "./base.js";
 
-each([
+test.each([
   ["Allow", Allow],
   ["Deny", Deny],
   ["Skip", Skip],
-]).test(`equality %s`, (name, fn: () => PrivacyResult) => {
+])(`equality %s`, (name, fn: () => PrivacyResult) => {
   expect(fn() == fn()).toBe(true);
   expect(fn() === fn()).toBe(true);
 });

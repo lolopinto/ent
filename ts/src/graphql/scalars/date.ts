@@ -16,13 +16,21 @@ function normalizeDate(input: any, throwErr: (msg: string) => GraphQLError): str
     return dt.toISODate();
   }
   if (input instanceof Date) {
-    return DateTime.fromJSDate(input).toISODate();
+    const result = DateTime.fromJSDate(input).toISODate();
+    if (!result) {
+      throw throwErr(`Invalid Date value ${input}`);
+    }
+    return result;
   }
   if (input instanceof DateTime) {
     if (!input.isValid) {
       throw throwErr(`Invalid Date value ${input.toISO()}`);
     }
-    return input.toISODate();
+    const result = input.toISODate();
+    if (!result) {
+      throw throwErr(`Invalid Date value ${input.toISO()}`);
+    }
+    return result;
   }
   throw throwErr(`Date cannot represent value: ${input}`);
 }

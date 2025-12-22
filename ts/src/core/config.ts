@@ -1,9 +1,9 @@
 import * as fs from "fs";
 import { load } from "js-yaml";
-import DB, { Database, DBDict } from "./db";
+import DB, { Database, DBDict } from "./db.js";
 import * as path from "path";
-import { setLogLevels } from "./logger";
-import { ___setLogQueryErrorWithError, setDefaultLimit } from "./ent";
+import { setLogLevels } from "./logger.js";
+import { ___setLogQueryErrorWithError, setDefaultLimit } from "./ent.js";
 
 type logType = "query" | "warn" | "info" | "error" | "debug";
 

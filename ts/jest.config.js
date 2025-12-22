@@ -1,11 +1,24 @@
-module.exports = {
-  preset: "ts-jest",
+export default {
+  preset: "ts-jest/presets/default-esm",
   testEnvironment: "node",
   transform: {
-    "^.+\\.tsx?$": "ts-jest",
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        useESM: true,
+        tsconfig: {
+          module: "nodenext",
+          isolatedModules: true,
+        },
+      },
+    ],
   },
+  extensionsToTreatAsEsm: [".ts"],
   testRegex: "(/tests/.*|(\\.|/)(test|spec))\\.(tsx?)$",
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+  moduleNameMapper: {
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+  },
   //  projects: ["<rootDir>", "<rootDir>/examples/simple/"],
   // ignore subdirectories until I figure out how to get projects and root files/module name mapper working correctly
   testPathIgnorePatterns: [

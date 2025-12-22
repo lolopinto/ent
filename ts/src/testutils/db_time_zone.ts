@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
-import { leftPad } from "../schema";
-import DB from "../core/db";
+import { leftPad } from "../schema/index.js";
+import DB from "../core/db.js";
 
 let dbCurrentZone: string | null | undefined = undefined;
 export class DBTimeZone {

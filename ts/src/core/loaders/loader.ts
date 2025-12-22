@@ -1,5 +1,5 @@
-import { Loader, LoaderFactory, Context, DataOptions } from "../base";
-import { log } from "../logger";
+import { Loader, LoaderFactory, Context, DataOptions } from "../base.js";
+import { log } from "../logger.js";
 
 // this is like factory factory FML
 // helper function to handle context vs not

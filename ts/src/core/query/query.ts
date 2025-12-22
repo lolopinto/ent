@@ -10,11 +10,11 @@ import {
   QueryableDataOptions,
   SelectBaseDataOptions,
   Viewer,
-} from "../base";
-import * as clause from "../clause";
-import { getCursor, getDefaultLimit } from "../ent";
-import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
-import { OrderBy, reverseOrderBy } from "../query_impl";
+} from "../base.js";
+import * as clause from "../clause.js";
+import { getCursor, getDefaultLimit } from "../ent.js";
+import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy.js";
+import { OrderBy, reverseOrderBy } from "../query_impl.js";
 
 export interface EdgeQuery<
   TSource extends Ent,

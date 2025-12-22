@@ -1,8 +1,8 @@
-import { Viewer } from "../core/base";
-import { LoggedOutViewer } from "../core/viewer";
-import { RequestContext, ContextCache } from "../core/context";
+import { Viewer } from "../core/base.js";
+import { LoggedOutViewer } from "../core/viewer.js";
+import { RequestContext, ContextCache } from "../core/context.js";
 import { IncomingMessage, ServerResponse } from "http";
-import { log } from "../core/logger";
+import { log } from "../core/logger.js";
 
 export type AuthViewer = Viewer | null;
 export interface AuthHandler {

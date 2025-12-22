@@ -1,23 +1,23 @@
-import { RawCountLoader, RawCountLoaderFactory } from "./raw_count_loader";
+import { RawCountLoader, RawCountLoaderFactory } from "./raw_count_loader.js";
 import { v4 as uuidv4 } from "uuid";
 
-import { TestContext } from "../../testutils/context/test_context";
-import { setLogLevels } from "../logger";
-import { MockLogs } from "../../testutils/mock_log";
-import { ID } from "../base";
-import { buildQuery } from "../query_impl";
-import * as clause from "../clause";
-import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
+import { TestContext } from "../../testutils/context/test_context.js";
+import { setLogLevels } from "../logger.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { ID } from "../base.js";
+import { buildQuery } from "../query_impl.js";
+import * as clause from "../clause.js";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db.js";
 import {
   FakeContact,
   getCompleteClause,
-} from "../../testutils/fake_data/index";
+} from "../../testutils/fake_data/index.js";
 import {
   createAllContacts,
   createAllEvents,
   setupTempDB,
   tempDBTables,
-} from "../../testutils/fake_data/test_helpers";
+} from "../../testutils/fake_data/test_helpers.js";
 import { clear } from "jest-date-mock";
 
 const ml = new MockLogs();

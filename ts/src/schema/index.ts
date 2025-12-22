@@ -1,43 +1,44 @@
-import Schema from "./schema";
-export { Schema };
-export {
+export type { default as Schema } from "./schema.js";
+export type {
   Field,
   AssocEdge,
   AssocEdgeGroup,
   InverseAssocEdge,
   Edge,
   Pattern,
-  DBType,
   Type,
   FieldOptions,
   SchemaConstructor,
   SchemaInputType,
-  getFields,
-  getFieldsWithPrivacy,
-  getFieldsWithEditPrivacy,
-  getStorageKey,
-  ActionOperation,
   Action,
   EdgeAction,
-  NoFields,
   FieldMap,
   Constraint,
   Index,
   EdgeIndex,
-  ConstraintType,
   ForeignKeyInfo,
-  requiredField,
-  optionalField,
   UpdateOperation,
   TransformedUpdateOperation,
-  SQLStatementOperation,
   EdgeUpdateOperation,
   TransformedEdgeUpdateOperation,
-  getTransformedReadClause,
-  getObjectLoaderProperties,
   GlobalSchema,
   ActionField,
-} from "./schema";
+} from "./schema.js";
+export {
+  DBType,
+  SQLStatementOperation,
+  ActionOperation,
+  ConstraintType,
+  NoFields,
+  getFields,
+  getFieldsWithPrivacy,
+  getFieldsWithEditPrivacy,
+  getStorageKey,
+  requiredField,
+  optionalField,
+  getTransformedReadClause,
+  getObjectLoaderProperties,
+} from "./schema.js";
 export {
   Timestamps,
   Node,
@@ -45,11 +46,11 @@ export {
   BaseEntSchemaWithTZ,
   EntSchema,
   EntSchemaWithTZ,
-  SchemaConfig,
-} from "./base_schema";
+} from "./base_schema.js";
+export type { SchemaConfig } from "./base_schema.js";
 
-export * from "./field";
-export * from "./json_field";
-export * from "./struct_field";
-export * from "./union_field";
-export * from "./binary_field";
+export * from "./field.js";
+export * from "./json_field.js";
+export * from "./struct_field.js";
+export * from "./union_field.js";
+export * from "./binary_field.js";

@@ -1,26 +1,26 @@
 import { advanceTo } from "jest-date-mock";
-import { WriteOperation } from "../action";
-import { EntChangeset } from "../action/orchestrator";
-import { Context, Data, Ent, Viewer } from "../core/base";
-import { LoggedOutViewer } from "../core/viewer";
-import { StringType, TimestampType } from "../schema/field";
+import { WriteOperation } from "../action/index.js";
+import { EntChangeset } from "../action/orchestrator.js";
+import { Context, Data, Ent, Viewer } from "../core/base.js";
+import { LoggedOutViewer } from "../core/viewer.js";
+import { StringType, TimestampType } from "../schema/field.js";
 import {
   Pattern,
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
-} from "../schema";
+} from "../schema/index.js";
 import {
   SimpleAction,
   Contact,
   EntBuilderSchema,
   BaseEnt,
-} from "../testutils/builder";
-import { createRowForTest } from "../testutils/write";
-import * as clause from "../core/clause";
-import DB, { Dialect } from "../core/db";
-import { ObjectLoaderFactory } from "../core/loaders";
-import { TestContext } from "../testutils/context/test_context";
+} from "../testutils/builder.js";
+import { createRowForTest } from "../testutils/write.js";
+import * as clause from "../core/clause.js";
+import DB, { Dialect } from "../core/db.js";
+import { ObjectLoaderFactory } from "../core/loaders/index.js";
+import { TestContext } from "../testutils/context/test_context.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
@@ -28,10 +28,10 @@ import {
   setupSqlite,
   Table,
   TempDB,
-} from "../testutils/db/temp_db";
-import { convertDate } from "../core/convert";
-import { FieldMap } from "../schema";
-import { loadRawEdgeCountX } from "../core/ent";
+} from "../testutils/db/temp_db.js";
+import { convertDate } from "../core/convert.js";
+import { FieldMap } from "../schema/index.js";
+import { loadRawEdgeCountX } from "../core/ent.js";
 
 // custom Viewer interface
 // IDViewer and LoggedOutViewer implicitly implement this

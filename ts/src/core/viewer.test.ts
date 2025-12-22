@@ -1,5 +1,5 @@
-import { User } from "../testutils/builder";
-import { ID, Viewer } from "./base";
+import { User } from "../testutils/builder.js";
+import { ID, Viewer } from "./base.js";
 
 class LoggedInViewer implements Viewer<User, ID> {
   constructor(public viewerID: ID) {}

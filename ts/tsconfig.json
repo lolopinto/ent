@@ -2,13 +2,14 @@
   // TODO
   "compilerOptions": {
     "lib": ["es2018", "esnext.asynciterable", "ES2020.String"],
-    "module": "commonjs",
+    "module": "nodenext",
     "rootDir": "src",
     "outDir": "./dist",
     "target": "es2020",
     "strictNullChecks": true,
     "downlevelIteration": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
+    "moduleDetection": "force",
     "baseUrl": ".",
     "esModuleInterop": true,
     "declaration": true,

@@ -11,9 +11,9 @@ import {
   gqlConnection,
   gqlInterfaceType,
   gqlUnionType,
-} from "./graphql";
+} from "./graphql.js";
 import { GraphQLBoolean, GraphQLID, GraphQLString } from "graphql";
-import { ID, Viewer } from "../core/base";
+import { ID, Viewer } from "../core/base.js";
 
 import {
   validateCustomFields,
@@ -28,8 +28,8 @@ import {
   validateCustomTypes,
   validateCustomInterfaces,
   validateCustomUnions,
-} from "./graphql_field_helpers";
-import { RequestContext } from "../core/context";
+} from "./graphql_field_helpers.js";
+import { RequestContext } from "../core/context.js";
 
 beforeEach(() => {
   GQLCapture.clear();

@@ -7,12 +7,12 @@ import {
   GraphQLInterfaceType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "../../core/context";
-import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
-import { GraphQLPageInfo } from "./page_info";
-import { GraphQLEdgeInterface } from "../builtins/edge";
-import { GraphQLConnectionInterface } from "../builtins/connection";
-import { Data, Ent, Viewer } from "../../core/base";
+import { RequestContext } from "../../core/context.js";
+import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection.js";
+import { GraphQLPageInfo } from "./page_info.js";
+import { GraphQLEdgeInterface } from "../builtins/edge.js";
+import { GraphQLConnectionInterface } from "../builtins/connection.js";
+import { Data, Ent, Viewer } from "../../core/base.js";
 
 type nodeType = GraphQLObjectType | GraphQLInterfaceType;
 export class GraphQLEdgeType<

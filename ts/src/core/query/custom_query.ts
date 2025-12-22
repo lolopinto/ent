@@ -7,16 +7,16 @@ import {
   LoadEntOptions,
   LoaderFactory,
   Viewer,
-} from "../base";
-import { Clause, getCombinedClause } from "../clause";
-import { applyPrivacyPolicyForRows, getDefaultLimit } from "../ent";
+} from "../base.js";
+import { Clause, getCombinedClause } from "../clause.js";
+import { applyPrivacyPolicyForRows, getDefaultLimit } from "../ent.js";
 import {
   ObjectLoaderFactory,
   QueryLoaderFactory,
   RawCountLoader,
-} from "../loaders";
-import { OrderBy } from "../query_impl";
-import { BaseEdgeQuery, EdgeQuery, IDInfo } from "./query";
+} from "../loaders/index.js";
+import { OrderBy } from "../query_impl.js";
+import { BaseEdgeQuery, EdgeQuery, IDInfo } from "./query.js";
 
 // TODO kill this. only used in graphql tests
 export interface CustomEdgeQueryOptionsDeprecated<

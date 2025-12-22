@@ -1,8 +1,8 @@
-import { ID, Ent, Viewer, WriteOperation } from "../base";
-import { AssocEdge, getDefaultLimit } from "../ent";
-import { EdgeQuery } from "./query";
-import { EdgeQueryCtr } from "./assoc_query";
-import { IDViewer, LoggedOutViewer } from "../viewer";
+import { ID, Ent, Viewer, WriteOperation } from "../base.js";
+import { AssocEdge, getDefaultLimit } from "../ent.js";
+import { EdgeQuery } from "./query.js";
+import { EdgeQueryCtr } from "./assoc_query.js";
+import { IDViewer, LoggedOutViewer } from "../viewer.js";
 import { advanceBy } from "jest-date-mock";
 import {
   FakeUser,
@@ -24,7 +24,7 @@ import {
   FakeUserSchema,
   FakeEventSchema,
   EventToAttendeesQuery,
-} from "../../testutils/fake_data/index";
+} from "../../testutils/fake_data/index.js";
 import {
   inputs,
   getUserInput,
@@ -37,14 +37,14 @@ import {
   createUserPlusFriendRequests,
   addEdge,
   createEdges,
-} from "../../testutils/fake_data/test_helpers";
-import { MockLogs } from "../../testutils/mock_log";
-import { And, Clause, Eq, Greater, GreaterEq, Less } from "../clause";
-import { SimpleAction } from "../../testutils/builder";
+} from "../../testutils/fake_data/test_helpers.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { And, Clause, Eq, Greater, GreaterEq, Less } from "../clause.js";
+import { SimpleAction } from "../../testutils/builder.js";
 import { DateTime } from "luxon";
-import { convertDate } from "../convert";
-import { TestContext } from "../../testutils/context/test_context";
-import { getVerifyAfterEachCursorGeneric } from "../../testutils/query";
+import { convertDate } from "../convert.js";
+import { TestContext } from "../../testutils/context/test_context.js";
+import { getVerifyAfterEachCursorGeneric } from "../../testutils/query.js";
 
 export function assocTests(ml: MockLogs, global = false) {
   ml.mock();

@@ -2,7 +2,7 @@ import * as glob from "glob";
 import ts from "typescript";
 import * as fs from "fs";
 import * as path from "path";
-import { readCompilerOptions } from "../tsc/compilerOptions";
+import { readCompilerOptions } from "../tsc/compilerOptions.js";
 
 function getFiles(filePath: string, opts?: Options): string[] {
   if (!path.isAbsolute(filePath)) {

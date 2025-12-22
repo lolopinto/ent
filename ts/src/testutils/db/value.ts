@@ -1,5 +1,5 @@
 import { v4 } from "uuid";
-import { DBType, Field, Schema, Type } from "../../schema";
+import { DBType, Field, Schema, Type } from "../../schema/index.js";
 import {
   DateType,
   TimeType,
@@ -9,7 +9,7 @@ import {
   JSONBType,
   JSONType,
   StringType,
-} from "../../schema";
+} from "../../schema/index.js";
 import { randomBytes } from "crypto";
 
 function random(): string {

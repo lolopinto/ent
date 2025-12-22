@@ -1,12 +1,13 @@
-import { Viewer } from "../core/base";
-import { loadRows } from "../core/ent";
-import * as clause from "../core/clause";
-import { WriteOperation } from "../action/action";
+import { Viewer } from "../core/base.js";
+import { loadRows } from "../core/ent.js";
+import * as clause from "../core/clause.js";
+import { WriteOperation } from "../action/action.js";
 
-import { User, Group, SimpleAction, BuilderSchema } from "../testutils/builder";
-import { LoggedOutViewer } from "../core/viewer";
+import { User, Group, SimpleAction, BuilderSchema } from "../testutils/builder.js";
+import { LoggedOutViewer } from "../core/viewer.js";
+import { jest } from "@jest/globals";
 
-import { setupPostgres } from "../testutils/db/temp_db";
+import { setupPostgres } from "../testutils/db/temp_db.js";
 import {
   createGroup,
   createUser,
@@ -14,7 +15,7 @@ import {
   GroupSchema,
   MessageAction,
   setupTest,
-} from "../testutils/action/complex_schemas";
+} from "../testutils/action/complex_schemas.js";
 
 setupTest();
 
@@ -55,24 +56,28 @@ test("nested + Promise.all with lots of actions", async () => {
           const host = builder.getStoredData("host") as User;
           const users = builder.getStoredData("users") as User[];
 
-          await Promise.all(
-            users.map(async (user) => {
-              // create welcome message to each user from host
-              const action = new CreateMessageAction(
-                builder.viewer,
-                new Map<string, any>([
-                  ["sender", host.id],
-                  ["recipient", user.id],
-                  ["message", "Welcome to the group!"],
-                  ["transient", false],
-                  ["expiresAt", new Date()],
-                ]),
-                WriteOperation.Insert,
-                null,
-              );
-              await action.saveX();
-            }),
-          );
+          const batchSize = 50;
+          for (let i = 0; i < users.length; i += batchSize) {
+            const batch = users.slice(i, i + batchSize);
+            await Promise.all(
+              batch.map(async (user) => {
+                // create welcome message to each user from host
+                const action = new CreateMessageAction(
+                  builder.viewer,
+                  new Map<string, any>([
+                    ["sender", host.id],
+                    ["recipient", user.id],
+                    ["message", "Welcome to the group!"],
+                    ["transient", false],
+                    ["expiresAt", new Date()],
+                  ]),
+                  WriteOperation.Insert,
+                  null,
+                );
+                await action.saveX();
+              }),
+            );
+          }
         },
       },
     ];

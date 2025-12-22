@@ -1,10 +1,13 @@
 import * as glob from "glob";
 import * as path from "path";
 import minimist from "minimist";
-import { parseSchema } from "../parse_schema/parse";
-import { getCustomInfo } from "../tsc/ast";
-import { GlobalSchema } from "../schema/schema";
-import { toClassName } from "../names/names";
+import { createRequire } from "node:module";
+import { parseSchema } from "../parse_schema/parse.js";
+import { getCustomInfo } from "../tsc/ast.js";
+import { GlobalSchema } from "../schema/schema.js";
+import { toClassName } from "../names/names.js";
+
+const nodeRequire = createRequire(import.meta.url);
 
 function main() {
   const options = minimist(process.argv.slice(2));
@@ -26,7 +29,7 @@ function main() {
   for (const p of paths) {
     const basename = path.basename(p);
     if (basename === globalSchemaPath) {
-      globalSchema = require(p).default;
+      globalSchema = nodeRequire(p).default;
       continue;
     }
 
@@ -44,7 +47,7 @@ function main() {
     if (index !== -1) {
       relativePath = p.substring(index);
     }
-    const s = require(p).default;
+    const s = nodeRequire(p).default;
     if (relativePath !== undefined) {
       s.schemaPath = relativePath;
     }

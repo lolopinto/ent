@@ -4,7 +4,7 @@ import {
   gqlArgType,
   CustomFieldType,
   gqlConnection,
-} from "./graphql";
+} from "./graphql.js";
 import {
   GraphQLInt,
   GraphQLFloat,
@@ -23,7 +23,7 @@ import {
   validateNoCustom,
   validateCustomArgs,
   validateCustomTypes,
-} from "./graphql_field_helpers";
+} from "./graphql_field_helpers.js";
 
 beforeEach(() => {
   GQLCapture.clear();

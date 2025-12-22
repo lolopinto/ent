@@ -6,9 +6,9 @@ import {
   EntConstructor,
   PrivacyPolicy,
   LoadEntOptions,
-} from "../core/base";
-import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
-import { Orchestrator } from "../action/orchestrator";
+} from "../core/base.js";
+import { AlwaysAllowPrivacyPolicy } from "../core/privacy.js";
+import { Orchestrator } from "../action/orchestrator.js";
 import {
   Action,
   Builder,
@@ -19,21 +19,21 @@ import {
   saveBuilder,
   saveBuilderX,
   Observer,
-} from "../action";
-import { getFields, getFieldsWithPrivacy, FieldMap, Schema } from "../schema";
-import { QueryRecorder } from "./db_mock";
+} from "../action/index.js";
+import { getFields, getFieldsWithPrivacy, FieldMap, Schema } from "../schema/index.js";
+import { QueryRecorder } from "./db_mock.js";
 import pluralize from "pluralize";
-import { ObjectLoaderFactory } from "../core/loaders";
-import { convertDate } from "../core/convert";
+import { ObjectLoaderFactory } from "../core/loaders/index.js";
+import { convertDate } from "../core/convert.js";
 import {
   SchemaConfig,
   EntSchema,
   EntSchemaWithTZ,
-} from "../schema/base_schema";
-import { FieldInfoMap, getStorageKey } from "../schema/schema";
-import { Clause } from "../core/clause";
-import { ChangesetOptions } from "../action/action";
-import { toDBColumnOrTable, toFieldName } from "../names/names";
+} from "../schema/base_schema.js";
+import { FieldInfoMap, getStorageKey } from "../schema/schema.js";
+import { Clause } from "../core/clause.js";
+import { ChangesetOptions } from "../action/action.js";
+import { toDBColumnOrTable, toFieldName } from "../names/names.js";
 
 export class BaseEnt {
   readonly id: ID;

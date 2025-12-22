@@ -2,16 +2,16 @@ import {
   EdgeType,
   FakeUser,
   UserToContactsQuery,
-} from "../../testutils/fake_data/index";
-import { inputs } from "../../testutils/fake_data/test_helpers";
-import { MockLogs } from "../../testutils/mock_log";
-import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
-import { Viewer } from "../base";
-import { And, Eq } from "../clause";
-import { convertDate } from "../convert";
-import { loadCustomEdges } from "../ent";
-import { assocTests } from "./shared_assoc_test";
-import { commonTests } from "./shared_test";
+} from "../../testutils/fake_data/index.js";
+import { inputs } from "../../testutils/fake_data/test_helpers.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema.js";
+import { Viewer } from "../base.js";
+import { And, Eq } from "../clause.js";
+import { convertDate } from "../convert.js";
+import { loadCustomEdges } from "../ent.js";
+import { assocTests } from "./shared_assoc_test.js";
+import { commonTests } from "./shared_test.js";
 
 const ml = new MockLogs();
 ml.mock();

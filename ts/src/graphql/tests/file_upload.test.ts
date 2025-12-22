@@ -10,43 +10,12 @@ import {
   GraphQLBoolean,
   GraphQLList,
 } from "graphql";
-import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
-import { expectMutation } from "../../testutils/ent-graphql-tests";
+import GraphQLUpload from "graphql-upload/GraphQLUpload.mjs";
+import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
+import { expectMutation } from "../../testutils/ent-graphql-tests/index.js";
 
 const fileContents = ["col1,col2", "data1,data2"].join("\n");
-
-function createTempFile() {
-  // Generate a unique file name
-  const tempDir = os.tmpdir();
-  const tempFilePath = path.join(
-    tempDir,
-    `tempfile-${crypto.randomUUID()}.txt`,
-  );
-
-  // Write content to the newly created file
-  fs.writeFileSync(tempFilePath, fileContents, "utf8");
-
-  return tempFilePath;
-}
-
-async function readStream(file): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const stream = file.createReadStream();
-    let data: string[] = [];
-    stream.on("data", function (chunk) {
-      data.push(chunk.toString());
-    });
-
-    stream.on("end", function () {
-      return resolve(data.join(""));
-    });
-    stream.on("error", function (err) {
-      return reject(err);
-    });
-  });
-}
-
-const schema = new GraphQLSchema({
+const schema: GraphQLSchema = new GraphQLSchema({
   query: new GraphQLObjectType({
     name: "RootQueryType",
     fields: {
@@ -106,6 +75,38 @@ const schema = new GraphQLSchema({
     },
   }),
 });
+
+function createTempFile() {
+  // Generate a unique file name
+  const tempDir = os.tmpdir();
+  const tempFilePath = path.join(
+    tempDir,
+    `tempfile-${crypto.randomUUID()}.txt`,
+  );
+
+  // Write content to the newly created file
+  fs.writeFileSync(tempFilePath, fileContents, "utf8");
+
+  return tempFilePath;
+}
+
+async function readStream(file): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const stream = file.createReadStream();
+    let data: string[] = [];
+    stream.on("data", function (chunk) {
+      data.push(chunk.toString());
+    });
+
+    stream.on("end", function () {
+      return resolve(data.join(""));
+    });
+    stream.on("error", function (err) {
+      return reject(err);
+    });
+  });
+}
+
 
 test("file upload", async () => {
   const file = createTempFile();

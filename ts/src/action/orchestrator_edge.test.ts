@@ -1,19 +1,19 @@
-import { Builder, WriteOperation } from "../action";
-import { Ent, Viewer } from "../core/base";
-import { loadEdges, loadRow } from "../core/ent";
-import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { Changeset } from "../action";
-import { StringType } from "../schema/field";
+import { Builder, WriteOperation } from "../action/index.js";
+import { Ent, Viewer } from "../core/base.js";
+import { loadEdges, loadRow } from "../core/ent.js";
+import { LoggedOutViewer, IDViewer } from "../core/viewer.js";
+import { Changeset } from "../action/index.js";
+import { StringType } from "../schema/field.js";
 import {
   User,
   SimpleBuilder,
   SimpleAction,
   getBuilderSchemaFromFields,
-} from "../testutils/builder";
-import { FakeComms } from "../testutils/fake_comms";
-import { edgeDirection } from "./orchestrator";
-import { createRowForTest } from "../testutils/write";
-import * as clause from "../core/clause";
+} from "../testutils/builder.js";
+import { FakeComms } from "../testutils/fake_comms.js";
+import { edgeDirection } from "./orchestrator.js";
+import { createRowForTest } from "../testutils/write.js";
+import * as clause from "../core/clause.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
@@ -21,10 +21,10 @@ import {
   setupPostgres,
   setupSqlite,
   Table,
-} from "../testutils/db/temp_db";
-import { Dialect } from "../core/db";
-import { DataOperation, EdgeOperation } from "./operations";
-import { toDBColumnOrTable } from "../names/names";
+} from "../testutils/db/temp_db.js";
+import { Dialect } from "../core/db.js";
+import { DataOperation, EdgeOperation } from "./operations.js";
+import { toDBColumnOrTable } from "../names/names.js";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {

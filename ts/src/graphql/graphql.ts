@@ -4,13 +4,31 @@ import {
   isEnumType,
   isScalarType,
 } from "graphql";
-import { Data } from "../core/base";
-import type { FieldMap } from "../schema";
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
+import { Data } from "../core/base.js";
+import type { FieldMap } from "../schema/index.js";
 import {
   processFields,
   ProcessedField as ParsedProcessedField,
-} from "../parse_schema/parse";
-import { ImportPath } from "../schema/schema";
+} from "../parse_schema/parse.js";
+import { ImportPath } from "../schema/schema.js";
+
+const nodeRequire = createRequire(import.meta.url);
+
+async function importModule(specifier: string) {
+  try {
+    if (specifier.startsWith(".")) {
+      return await import(new URL(specifier, import.meta.url).href);
+    }
+    if (specifier.startsWith("/")) {
+      return await import(pathToFileURL(specifier).href);
+    }
+    return await import(specifier);
+  } catch (err) {
+    return nodeRequire(specifier);
+  }
+}
 
 interface ClassType<T = any> {
   new (...args: any[]): T;
@@ -303,9 +321,13 @@ export const addCustomType = async (
 ) => {
   // TODO these should return ReadOnly objects...
   const customTypes = gqlCapture.getCustomTypes();
+  const hadExisting = customTypes.has(type.type);
   const customType = customTypes.get(type.type);
 
-  if (customType && customType === type) {
+  if (!hadExisting) {
+    // Register immediately so sync callers see the type.
+    customTypes.set(type.type, { ...type });
+  } else if (customType && customType === type) {
     return;
   }
 
@@ -323,8 +345,8 @@ export const addCustomType = async (
   }
   if (type.importPath) {
     try {
-      const r = require(type.importPath);
-      const ct = r[type.type];
+      const r = await importModule(type.importPath);
+      const ct = r[type.type] ?? r.default?.[type.type];
       // this gets us the information needed for scalars
       if (ct && isGraphQLScalarType(ct)) {
         type.scalarInfo = {
@@ -349,8 +371,9 @@ export const addCustomType = async (
     }
   }
 
-  if (customType) {
-    if (JSON.stringify(customType) !== JSON.stringify(type)) {
+  if (hadExisting) {
+    const currentType = customTypes.get(type.type);
+    if (JSON.stringify(currentType) !== JSON.stringify(type)) {
       throw new Error(`cannot add multiple custom types of name ${type.type}`);
     }
     return;
@@ -392,6 +415,7 @@ const getType = (
   }
   if (isCustomType(typ)) {
     result.type = typ.type;
+    result.tsType = typ.tsType;
     // TODO???
     addCustomType(typ, GQLCapture);
     return;
@@ -529,15 +553,16 @@ export class GQLCapture {
     let connection: boolean | undefined;
     let type = "";
     let enumType = false;
+    let typeInfoResult: typeInfo | undefined;
 
     if (field?.type) {
-      let r: typeInfo = { type: "" };
-      getType(field.type, r);
-      list = r.list;
-      scalarType = r.scalarType || false;
-      enumType = r.enumType || false;
-      connection = r.connection;
-      type = r.type;
+      typeInfoResult = { type: "" };
+      getType(field.type, typeInfoResult);
+      list = typeInfoResult.list;
+      scalarType = typeInfoResult.scalarType || false;
+      enumType = typeInfoResult.enumType || false;
+      connection = typeInfoResult.connection;
+      type = typeInfoResult.type;
     }
 
     if (!type) {
@@ -552,7 +577,10 @@ export class GQLCapture {
     let result: Field = {
       name: field?.name || "",
       type: type,
-      tsType: knownAllowedNames.get(type) || this.customTypes.get(type)?.tsType,
+      tsType:
+        typeInfoResult?.tsType ||
+        knownAllowedNames.get(type) ||
+        this.customTypes.get(type)?.tsType,
       nullable: field?.nullable,
       list: list,
       connection: connection,
@@ -924,9 +952,9 @@ export const gqlConnection = GQLCapture.gqlConnection;
 // this requires the developer to npm-install "graphql-upload on their own"
 const gqlFileUpload: CustomTypeInput = {
   type: "GraphQLUpload",
-  importPath: "graphql-upload",
+  importPath: "graphql-upload/GraphQLUpload.mjs",
   tsType: "FileUpload",
-  tsImportPath: "graphql-upload",
+  tsImportPath: "graphql-upload/processRequest.mjs",
 };
 
 export { gqlFileUpload };

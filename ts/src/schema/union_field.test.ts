@@ -1,6 +1,6 @@
 import { v1 } from "uuid";
-import { UnionType } from "./union_field";
-import { StructField, StructType } from "./struct_field";
+import { UnionType } from "./union_field.js";
+import { StructField, StructType } from "./struct_field.js";
 import {
   UUIDType,
   IntegerType,
@@ -9,7 +9,7 @@ import {
   TimestampType,
   FloatType,
   EnumType,
-} from "./field";
+} from "./field.js";
 
 declare type StructMap = {
   [key: string]: StructField;

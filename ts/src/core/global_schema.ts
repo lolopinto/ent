@@ -1,4 +1,4 @@
-import { DBType, Field, GlobalSchema } from "../schema/schema";
+import { DBType, Field, GlobalSchema } from "../schema/schema.js";
 
 let globalSchema: GlobalSchema | undefined;
 let globalSchemaFields: Map<string, Field> = new Map();

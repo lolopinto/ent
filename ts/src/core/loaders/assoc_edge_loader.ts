@@ -6,8 +6,8 @@ import {
   ID,
   Loader,
   LoaderFactory,
-} from "../base";
-import * as clause from "../clause";
+} from "../base.js";
+import * as clause from "../clause.js";
 import {
   AssocEdge,
   AssocEdgeConstructor,
@@ -20,9 +20,9 @@ import {
   loadEdgeForID2,
   loadTwoWayEdges,
   performRawQuery,
-} from "../ent";
-import { logEnabled } from "../logger";
-import { CacheMap, getCustomLoader } from "./loader";
+} from "../ent.js";
+import { logEnabled } from "../logger.js";
+import { CacheMap, getCustomLoader } from "./loader.js";
 
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,

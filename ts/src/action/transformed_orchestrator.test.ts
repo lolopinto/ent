@@ -1,34 +1,33 @@
 import { v4 as uuidv4 } from "uuid";
 import { advanceTo } from "jest-date-mock";
-import { WriteOperation } from "../action";
-import { Context, Data, Viewer } from "../core/base";
-import { LoggedOutViewer } from "../core/viewer";
-import each from "jest-each";
+import { WriteOperation } from "../action/index.js";
+import { Context, Data, Viewer } from "../core/base.js";
+import { LoggedOutViewer } from "../core/viewer.js";
 import {
   BooleanType,
   IntegerType,
   StringListType,
   StringType,
   UUIDType,
-} from "../schema/field";
+} from "../schema/field.js";
 import {
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
   StructType,
   StructTypeAsList,
-} from "../schema";
+} from "../schema/index.js";
 import {
   SimpleAction,
   Contact,
   EntBuilderSchema,
   BaseEnt,
-} from "../testutils/builder";
-import { createRowForTest } from "../testutils/write";
-import * as clause from "../core/clause";
-import DB, { Dialect } from "../core/db";
-import { ObjectLoaderFactory } from "../core/loaders";
-import { TestContext } from "../testutils/context/test_context";
+} from "../testutils/builder.js";
+import { createRowForTest } from "../testutils/write.js";
+import * as clause from "../core/clause.js";
+import DB, { Dialect } from "../core/db.js";
+import { ObjectLoaderFactory } from "../core/loaders/index.js";
+import { TestContext } from "../testutils/context/test_context.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
@@ -36,16 +35,16 @@ import {
   setupSqlite,
   Table,
   TempDB,
-} from "../testutils/db/temp_db";
-import { convertDate, convertJSON } from "../core/convert";
-import { loadRawEdgeCountX } from "../core/ent";
+} from "../testutils/db/temp_db.js";
+import { convertDate, convertJSON } from "../core/convert.js";
+import { loadRawEdgeCountX } from "../core/ent.js";
 import {
   DeletedAtSnakeCasePattern,
   DeletedAtPattern,
   DeletedAtPatternWithExtraWrites,
-} from "../testutils/soft_delete";
-import { toDBColumnOrTable } from "../names/names";
-import { randomEmail, randomPhoneNumber } from "../testutils/db/value";
+} from "../testutils/soft_delete.js";
+import { toDBColumnOrTable } from "../names/names.js";
+import { randomEmail, randomPhoneNumber } from "../testutils/db/value.js";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 async function createEdges() {
@@ -817,7 +816,7 @@ function commonTests() {
     expect(row3).toBe(null);
   });
 
-  each(["contact_info", "contactInfo"]).test(
+  test.each(["contact_info", "contactInfo"])(
     "insert -> update with data",
     async (contactInfoKey: string) => {
       const verifyRows = async (ct: number) => {

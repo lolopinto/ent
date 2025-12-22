@@ -1,16 +1,16 @@
-import { Graph } from "graph-data-structure";
-import { ID, Ent, Viewer, Context, Data } from "../core/base";
-import { logQuery } from "../core/ent";
-import { Changeset, Executor } from "../action/action";
-import { Builder, WriteOperation } from "../action";
-import { OrchestratorOptions } from "./orchestrator";
-import DB, { Client, Queryer, SyncClient } from "../core/db";
-import { log } from "../core/logger";
+import { Graph, topologicalSort } from "graph-data-structure";
+import { ID, Ent, Viewer, Context, Data } from "../core/base.js";
+import { logQuery } from "../core/ent.js";
+import { Changeset, Executor } from "../action/action.js";
+import { Builder, WriteOperation } from "../action/index.js";
+import { OrchestratorOptions } from "./orchestrator.js";
+import DB, { Client, Queryer, SyncClient } from "../core/db.js";
+import { log } from "../core/logger.js";
 import {
   ConditionalNodeOperation,
   ConditionalOperation,
   DataOperation,
-} from "./operations";
+} from "./operations.js";
 
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor {
@@ -167,7 +167,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   ) {
     this.builder = options?.builder;
 
-    let graph = Graph();
+    const graph = new Graph();
 
     const changesetMap: Map<string, Changeset> = new Map();
 
@@ -216,7 +216,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     let nodeOps: Set<DataOperation<Ent>> = new Set();
     let remainOps: Set<DataOperation<Ent>> = new Set();
 
-    let sorted = graph.topologicalSort(graph.nodes());
+    let sorted = topologicalSort(graph);
     sorted.forEach((node) => {
       let c = changesetMap.get(node);
 

@@ -1,9 +1,9 @@
 import { IncomingMessage, ServerResponse } from "http";
-import { Data, Loader, LoaderWithLoadMany, QueryOptions, Viewer } from "./base";
+import { Data, Loader, LoaderWithLoadMany, QueryOptions, Viewer } from "./base.js";
 
-import { Context } from "./base";
-import { log } from "./logger";
-import { getJoinInfo, getOrderByPhrase } from "./query_impl";
+import { Context } from "./base.js";
+import { log } from "./logger.js";
+import { getJoinInfo, getOrderByPhrase } from "./query_impl.js";
 
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext<TViewer extends Viewer = Viewer>

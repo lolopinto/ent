@@ -9,13 +9,13 @@ import {
   LoaderFactory,
   PrimableLoader,
   DataOptions,
-} from "../base";
-import { loadRow, loadRows } from "../ent";
-import * as clause from "../clause";
-import { log, logEnabled } from "../logger";
-import { getCombinedClause } from "../clause";
+} from "../base.js";
+import { loadRow, loadRows } from "../ent.js";
+import * as clause from "../clause.js";
+import { log, logEnabled } from "../logger.js";
+import { getCombinedClause } from "../clause.js";
 
-import { getLoader, CacheMap, getCustomLoader } from "./loader";
+import { getLoader, CacheMap, getCustomLoader } from "./loader.js";
 import memoizee from "memoizee";
 
 async function loadRowsForIDLoader<K, V = Data>(

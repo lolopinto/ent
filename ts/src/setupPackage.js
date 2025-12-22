@@ -1,6 +1,6 @@
-const fs = require("fs");
-const path = require("path");
-const minimist = require("minimist");
+import * as fs from "fs";
+import * as path from "path";
+import minimist from "minimist";
 
 // root is "ts/"
 const root = path.resolve();

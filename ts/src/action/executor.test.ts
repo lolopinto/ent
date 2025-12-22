@@ -1,9 +1,9 @@
-import { Viewer } from "../core/base";
-import { loadRows } from "../core/ent";
-import * as clause from "../core/clause";
-import { Changeset, WriteOperation } from "../action/action";
+import { Viewer } from "../core/base.js";
+import { loadRows } from "../core/ent.js";
+import * as clause from "../core/clause.js";
+import { Changeset, WriteOperation } from "../action/action.js";
 
-import { QueryRecorder, queryType } from "../testutils/db_mock";
+import { QueryRecorder, queryType } from "../testutils/db_mock.js";
 import {
   User,
   Group,
@@ -11,14 +11,14 @@ import {
   Contact,
   SimpleBuilder,
   SimpleAction,
-} from "../testutils/builder";
-import { LoggedOutViewer, IDViewer } from "../core/viewer";
+} from "../testutils/builder.js";
+import { LoggedOutViewer, IDViewer } from "../core/viewer.js";
 
-import { ListBasedExecutor, ComplexExecutor } from "./executor";
-import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
-import { createRowForTest } from "../testutils/write";
-import { setupPostgres, setupSqlite } from "../testutils/db/temp_db";
-import { convertJSON } from "../core/convert";
+import { ListBasedExecutor, ComplexExecutor } from "./executor.js";
+import { FakeLogger, EntCreationObserver } from "../testutils/fake_log.js";
+import { createRowForTest } from "../testutils/write.js";
+import { setupPostgres, setupSqlite } from "../testutils/db/temp_db.js";
+import { convertJSON } from "../core/convert.js";
 import { v4 } from "uuid";
 import {
   Changelog,
@@ -42,7 +42,7 @@ import {
   UserSchema,
   verifyChangelogFromMeberships,
   verifyGroupMembers,
-} from "../testutils/action/complex_schemas";
+} from "../testutils/action/complex_schemas.js";
 
 setupTest();
 const ml = getML();

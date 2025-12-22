@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 import * as fs from "fs";
-import { LoggedOutViewer } from "../core/viewer";
+import { LoggedOutViewer } from "../core/viewer.js";
 import {
   BooleanListType,
   DateListType,
@@ -15,27 +15,27 @@ import {
   UUIDType,
   IntegerType,
   BooleanType,
-} from "./field";
+} from "./field.js";
 import {
   JSONBListType,
   JSONBTypeAsList,
   JSONListType,
   JSONTypeAsList,
-} from "./json_field";
-import Schema from "./schema";
-import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
-import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
-import DB, { Dialect } from "../core/db";
-import { Ent } from "../core/base";
-import { loadConfig } from "../core/config";
+} from "./json_field.js";
+import type Schema from "./schema.js";
+import { User, SimpleAction, BuilderSchema } from "../testutils/builder.js";
+import { TempDB, getSchemaTable } from "../testutils/db/temp_db.js";
+import DB, { Dialect } from "../core/db.js";
+import { Ent } from "../core/base.js";
+import { loadConfig } from "../core/config.js";
 import {
   convertBool,
   convertDate,
   convertList,
   convertJSON,
-} from "../core/convert";
-import { WriteOperation } from "../action";
-import { StructTypeAsList } from "./struct_field";
+} from "../core/convert.js";
+import { WriteOperation } from "../action/index.js";
+import { StructTypeAsList } from "./struct_field.js";
 let tdb: TempDB;
 
 async function setupTempDB(dialect: Dialect, connString?: string) {

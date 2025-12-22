@@ -1,10 +1,10 @@
-import { TransformFile, transform } from "../tsc/transform";
+import { TransformFile, transform } from "../tsc/transform.js";
 import {
   getImportInfo,
   getCustomInfo,
   transformRelative,
   transformImport,
-} from "../tsc/ast";
+} from "../tsc/ast.js";
 import ts, { isImportDeclaration } from "typescript";
 import path from "path";
 

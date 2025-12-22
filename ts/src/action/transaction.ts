@@ -1,7 +1,7 @@
-import { Ent, Viewer, Data } from "../core/base";
-import { Action, Changeset } from "./action";
-import { ComplexExecutor } from "./executor";
-import { EntBuilder } from "./experimental_action";
+import { Ent, Viewer, Data } from "../core/base.js";
+import { Action, Changeset } from "./action.js";
+import { ComplexExecutor } from "./executor.js";
+import { EntBuilder } from "./experimental_action.js";
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;

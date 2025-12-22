@@ -1,12 +1,11 @@
 import { v1, v4 as uuidv4 } from "uuid";
 import { DateTime } from "luxon";
 import pg from "pg";
-import DB from "../core/db";
+import DB from "../core/db.js";
 import * as fs from "fs";
 import * as path from "path";
-import each from "jest-each";
 import { pipeline } from "node:stream/promises";
-import { LoggedOutViewer } from "../core/viewer";
+import { LoggedOutViewer } from "../core/viewer.js";
 import {
   StringType,
   TimeType,
@@ -15,8 +14,8 @@ import {
   DateType,
   TimestamptzType,
   UUIDListType,
-} from "./field";
-import Schema from "./schema";
+} from "./field.js";
+import type Schema from "./schema.js";
 import {
   User,
   SimpleAction,
@@ -24,7 +23,7 @@ import {
   getBuilderSchemaTZFromFields,
   BuilderSchema,
   BaseEnt,
-} from "../testutils/builder";
+} from "../testutils/builder.js";
 import {
   table,
   TempDB,
@@ -34,12 +33,12 @@ import {
   uuid,
   getSchemaTable,
   uuidList,
-} from "../testutils/db/temp_db";
-import { defaultTimestampParser, Dialect } from "../core/db";
-import { DBType, FieldMap } from "./schema";
-import { Ent } from "../core/base";
-import { WriteOperation } from "../action";
-import { DBTimeZone } from "../testutils/db_time_zone";
+} from "../testutils/db/temp_db.js";
+import { defaultTimestampParser, Dialect } from "../core/db.js";
+import { DBType, FieldMap } from "./schema.js";
+import { Ent } from "../core/base.js";
+import { WriteOperation } from "../action/index.js";
+import { DBTimeZone } from "../testutils/db_time_zone.js";
 import { from as copyFrom } from "pg-copy-streams";
 
 const UserSchema = getBuilderSchemaFromFields(
@@ -577,10 +576,10 @@ test("timestamptz copy", async () => {
   }
 });
 
-each([
+test.each([
   ["v1", v1],
   ["v4", uuidv4],
-]).test("uuid list %s", async (name: string, fn: () => string) => {
+])("uuid list %s", async (name: string, fn: () => string) => {
   await tdb.create(
     table(
       "tables",

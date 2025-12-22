@@ -1,7 +1,7 @@
 import { GraphQLScalarType, GraphQLError } from "graphql";
 import { Kind, ValueNode } from "graphql/language";
 import { DateTime } from "luxon";
-import { parseDate } from "../../core/date";
+import { parseDate } from "../../core/date.js";
 
 // Time refers to a Timestamp or Date scalar
 

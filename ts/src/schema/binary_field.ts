@@ -1,5 +1,5 @@
-import { BaseField } from "./field";
-import { Type, DBType, Field, FieldOptions } from "./schema";
+import { BaseField } from "./field.js";
+import { Type, DBType, Field, FieldOptions } from "./schema.js";
 
 export class ByteaField extends BaseField implements Field {
   type: Type = {

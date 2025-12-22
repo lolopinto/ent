@@ -5,15 +5,15 @@ import {
   Loader,
   LoaderFactory,
   EdgeQueryableDataOptionsConfigureLoader,
-} from "../base";
+} from "../base.js";
 import {
   getEdgeClauseAndFields,
   loadEdgeData,
   loadRawEdgeCountX,
-} from "../ent";
-import * as clause from "../clause";
-import { getCustomLoader, getLoader } from "./loader";
-import { createCountDataLoader } from "./raw_count_loader";
+} from "../ent.js";
+import * as clause from "../clause.js";
+import { getCustomLoader, getLoader } from "./loader.js";
+import { createCountDataLoader } from "./raw_count_loader.js";
 import memoize from "memoizee";
 
 export class AssocEdgeCountLoader implements Loader<ID, number> {

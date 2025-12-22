@@ -1,15 +1,15 @@
-import { WriteOperation } from "../action";
+import { WriteOperation } from "../action/index.js";
 import {
   User,
   BuilderSchema,
   SimpleBuilder,
   SimpleAction,
   BaseEnt,
-} from "../testutils/builder";
-import { IDViewer, LoggedOutViewer } from "./viewer";
-import { FieldMap, StringType, UUIDType } from "../schema";
-import { createRowForTest } from "../testutils/write";
-import { Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
+} from "../testutils/builder.js";
+import { IDViewer, LoggedOutViewer } from "./viewer.js";
+import { FieldMap, StringType, UUIDType } from "../schema/index.js";
+import { createRowForTest } from "../testutils/write.js";
+import { Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base.js";
 import {
   AssocEdge,
   getEdgeTypeInGroup,
@@ -21,10 +21,10 @@ import {
   loadEntX,
   loadEntViaKey,
   loadEntXViaKey,
-} from "./ent";
-import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
-import { TestContext } from "../testutils/context/test_context";
-import { ObjectLoaderFactory } from "./loaders";
+} from "./ent.js";
+import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy.js";
+import { TestContext } from "../testutils/context/test_context.js";
+import { ObjectLoaderFactory } from "./loaders/index.js";
 import { validate as validatev4 } from "uuid";
 import {
   table,
@@ -33,10 +33,10 @@ import {
   assoc_edge_config_table,
   assoc_edge_table,
   TempDB,
-} from "../testutils/db/temp_db";
-import { setLogLevels } from "./logger";
-import { MockLogs } from "../testutils/mock_log";
-import DB, { Dialect } from "./db";
+} from "../testutils/db/temp_db.js";
+import { setLogLevels } from "./logger.js";
+import { MockLogs } from "../testutils/mock_log.js";
+import DB, { Dialect } from "./db.js";
 
 class UserSchema implements BuilderSchema<User> {
   ent = User;

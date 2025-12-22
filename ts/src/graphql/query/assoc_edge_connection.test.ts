@@ -1,8 +1,8 @@
-import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index";
-import { commonTests } from "./shared_edge_connection";
-import { sharedAssocTests } from "./shared_assoc_test";
-import { TempDB } from "../../testutils/db/temp_db";
-import { setupTempDB } from "../../testutils/fake_data/test_helpers";
+import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index.js";
+import { commonTests } from "./shared_edge_connection.js";
+import { sharedAssocTests } from "./shared_assoc_test.js";
+import { TempDB } from "../../testutils/db/temp_db.js";
+import { setupTempDB } from "../../testutils/fake_data/test_helpers.js";
 
 let tdb: TempDB;
 

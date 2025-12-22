@@ -1,13 +1,13 @@
-import { setupSqlite } from "../../testutils/db/temp_db";
+import { setupSqlite } from "../../testutils/db/temp_db.js";
 import {
   FakeUser,
   UserToContactsFkeyQueryDeprecated,
-} from "../../testutils/fake_data/index";
+} from "../../testutils/fake_data/index.js";
 import {
   createEdges,
   tempDBTables,
-} from "../../testutils/fake_data/test_helpers";
-import { commonTests } from "./shared_edge_connection";
+} from "../../testutils/fake_data/test_helpers.js";
+import { commonTests } from "./shared_edge_connection.js";
 
 beforeEach(async () => {
   await createEdges();

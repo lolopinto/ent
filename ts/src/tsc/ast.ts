@@ -1,10 +1,10 @@
-import { Data } from "../core/base";
+import { Data } from "../core/base.js";
 import ts from "typescript";
 import * as path from "path";
 import { load } from "js-yaml";
-import { ConfigWithCodegen } from "../core/config";
+import { ConfigWithCodegen } from "../core/config.js";
 import * as fs from "fs";
-import { PACKAGE } from "../core/const";
+import { PACKAGE } from "../core/const.js";
 
 export function getPreText(
   fileContents: string,
@@ -303,7 +303,8 @@ export function transformRelative(
   const fileFullPath = path.join(process.cwd(), file);
   const impFullPath = path.join(process.cwd(), importPath);
   // relative path is from directory
-  return normalizePath(path.relative(path.dirname(fileFullPath), impFullPath));
+  const relPath = path.relative(path.dirname(fileFullPath), impFullPath);
+  return ensureJsSpecifier(normalizePath(relPath), impFullPath);
 }
 
 function normalizePath(p: string) {
@@ -314,6 +315,39 @@ function normalizePath(p: string) {
     return "./" + p;
   }
   return p;
+}
+
+function ensureJsSpecifier(specifier: string, importPath: string) {
+  if (/\.(js|mjs|cjs|json|node)$/.test(specifier)) {
+    return specifier;
+  }
+
+  if (/\.(ts|tsx)$/.test(specifier)) {
+    return specifier.replace(/\.(ts|tsx)$/, ".js");
+  }
+
+  try {
+    const stat = fs.statSync(importPath);
+    if (stat.isDirectory()) {
+      return specifier.replace(/\/?$/, "/") + "index.js";
+    }
+  } catch (err) {
+    // ignore missing path
+  }
+
+  if (
+    fs.existsSync(importPath + ".ts") ||
+    fs.existsSync(importPath + ".tsx") ||
+    fs.existsSync(importPath + ".d.ts")
+  ) {
+    return specifier + ".js";
+  }
+
+  if (fs.existsSync(importPath + ".json")) {
+    return specifier + ".json";
+  }
+
+  return specifier;
 }
 
 export interface customInfo {

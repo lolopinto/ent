@@ -16,23 +16,40 @@ import {
   knownAllowedNames,
   isCustomType,
   CustomFieldType,
-} from "../graphql/graphql";
+} from "../graphql/graphql.js";
 import type {
   CustomFieldTypeInput,
   CustomGraphQLInput,
   GQLCapture,
-} from "../graphql/graphql";
+} from "../graphql/graphql.js";
 import * as readline from "readline";
-import { parseCustomImports, file } from "../imports";
+import { parseCustomImports, file } from "../imports/index.js";
 import { exit } from "process";
-import { Data } from "../core/base";
+import { Data } from "../core/base.js";
 import { spawn } from "child_process";
-import { GRAPHQL_PATH } from "../core/const";
+import { GRAPHQL_PATH } from "../core/const.js";
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
 // life is hard
 const MODULE_PATH = GRAPHQL_PATH;
+const nodeRequire = createRequire(import.meta.url);
+
+async function loadModule(specifier: string) {
+  try {
+    if (specifier.startsWith(".")) {
+      return await import(new URL(specifier, import.meta.url).href);
+    }
+    if (path.isAbsolute(specifier)) {
+      return await import(pathToFileURL(specifier).href);
+    }
+    return await import(specifier);
+  } catch (err) {
+    return nodeRequire(specifier);
+  }
+}
 
 async function readInputs(): Promise<{
   nodes: string[];
@@ -189,6 +206,7 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
     } else {
       cmd = "ts-node";
       args.push("--transpileOnly");
+      args.push("--esm");
     }
     args.push(filePath);
     const r = spawn(cmd, args, {
@@ -334,7 +352,7 @@ async function requireFiles(files: string[]) {
     files.map(async (file) => {
       if (fs.existsSync(file)) {
         try {
-          await require(file);
+          await loadModule(file);
         } catch (e) {
           throw new Error(`${(e as Error).message} loading ${file}`);
         }
@@ -405,10 +423,10 @@ async function main() {
   // from node_modules
   let gqlCapture: typeof GQLCapture;
   if (process.env.LOCAL_SCRIPT_PATH) {
-    const r = require("../graphql/graphql");
+    const r = await loadModule("../graphql/graphql.js");
     gqlCapture = r.GQLCapture;
   } else {
-    const r = require(gqlPath);
+    const r = await loadModule(gqlPath);
     if (!r.GQLCapture) {
       throw new Error("could not find GQLCapture in module");
     }

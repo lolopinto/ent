@@ -7,18 +7,18 @@ import {
   Loader,
   LoaderFactory,
   PrimableLoader,
-} from "../base";
-import * as clause from "../clause";
+} from "../base.js";
+import * as clause from "../clause.js";
 import {
   buildGroupQuery,
   getDefaultLimit,
   loadRows,
   performRawQuery,
-} from "../ent";
-import { logEnabled } from "../logger";
-import { OrderBy } from "../query_impl";
-import { CacheMap, getCustomLoader, getLoader } from "./loader";
-import { ObjectLoaderFactory } from "./object_loader";
+} from "../ent.js";
+import { logEnabled } from "../logger.js";
+import { OrderBy } from "../query_impl.js";
+import { CacheMap, getCustomLoader, getLoader } from "./loader.js";
+import { ObjectLoaderFactory } from "./object_loader.js";
 
 function getOrderByLocal(
   options: QueryOptions,

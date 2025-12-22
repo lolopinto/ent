@@ -7,13 +7,13 @@ import {
   PrivacyPolicy,
   Context,
   WriteOperation,
-} from "../core/base";
-import { loadEdgeForID2, AssocEdge } from "../core/ent";
-import { DataOperation, AssocEdgeInputOptions } from "./operations";
-import { Queryer } from "../core/db";
-import { log } from "../core/logger";
-import { TransformedUpdateOperation, UpdateOperation } from "../schema";
-import { FieldInfoMap } from "../schema/schema";
+} from "../core/base.js";
+import { loadEdgeForID2, AssocEdge } from "../core/ent.js";
+import { DataOperation, AssocEdgeInputOptions } from "./operations.js";
+import { Queryer } from "../core/db.js";
+import { log } from "../core/logger.js";
+import { TransformedUpdateOperation, UpdateOperation } from "../schema/index.js";
+import { FieldInfoMap } from "../schema/schema.js";
 
 export { WriteOperation };
 
@@ -207,6 +207,9 @@ export async function saveBuilder<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
 >(builder: Builder<TEnt, TViewer>): Promise<void> {
+  if (saveBuilderOverride) {
+    return saveBuilderOverride(builder);
+  }
   await saveBuilderImpl(builder, false);
 }
 
@@ -214,7 +217,29 @@ export async function saveBuilderX<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
 >(builder: Builder<TEnt, TViewer>): Promise<void> {
+  if (saveBuilderXOverride) {
+    return saveBuilderXOverride(builder);
+  }
   await saveBuilderImpl(builder, true);
+}
+
+type SaveBuilderOverride = <TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+  builder: Builder<TEnt, TViewer>,
+) => Promise<void>;
+
+let saveBuilderOverride: SaveBuilderOverride | null = null;
+let saveBuilderXOverride: SaveBuilderOverride | null = null;
+
+export function __setSaveBuilderOverridesForTests(
+  saveBuilderFn?: SaveBuilderOverride | null,
+  saveBuilderXFn?: SaveBuilderOverride | null,
+): void {
+  if (saveBuilderFn !== undefined) {
+    saveBuilderOverride = saveBuilderFn;
+  }
+  if (saveBuilderXFn !== undefined) {
+    saveBuilderXOverride = saveBuilderXFn;
+  }
 }
 
 async function saveBuilderImpl<

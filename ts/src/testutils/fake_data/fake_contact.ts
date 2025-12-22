@@ -6,18 +6,18 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Context,
-} from "../../core/base";
-import { loadEnt, loadEntX } from "../../core/ent";
-import * as clause from "../../core/clause";
-import { AllowIfViewerIsRule, AlwaysDenyRule } from "../../core/privacy";
-import { getBuilderSchemaFromFields, SimpleBuilder } from "../builder";
-import { StringType, UUIDType } from "../../schema";
-import { NodeType } from "./const";
-import { table, uuid, text, timestamptz } from "../db/temp_db";
-import { ObjectLoaderFactory } from "../../core/loaders";
-import { convertDate } from "../../core/convert";
-import { WriteOperation } from "../../action";
-import { DeletedAtPattern } from "../soft_delete";
+} from "../../core/base.js";
+import { loadEnt, loadEntX } from "../../core/ent.js";
+import * as clause from "../../core/clause.js";
+import { AllowIfViewerIsRule, AlwaysDenyRule } from "../../core/privacy.js";
+import { getBuilderSchemaFromFields, SimpleBuilder } from "../builder.js";
+import { StringType, UUIDType } from "../../schema/index.js";
+import { NodeType } from "./const.js";
+import { table, uuid, text, timestamptz } from "../db/temp_db.js";
+import { ObjectLoaderFactory } from "../../core/loaders/index.js";
+import { convertDate } from "../../core/convert.js";
+import { WriteOperation } from "../../action/index.js";
+import { DeletedAtPattern } from "../soft_delete.js";
 
 export class FakeContact implements Ent {
   readonly id: ID;

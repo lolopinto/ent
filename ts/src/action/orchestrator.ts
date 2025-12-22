@@ -7,13 +7,13 @@ import {
   PrivacyError,
   PrivacyPolicy,
   CreateRowOptions,
-} from "../core/base";
+} from "../core/base.js";
 import {
   loadEdgeDatas,
   applyPrivacyPolicyForRow,
   parameterizedQueryOptions,
   loadEdgeData,
-} from "../core/ent";
+} from "../core/ent.js";
 import {
   getFields,
   SchemaInputType,
@@ -24,13 +24,13 @@ import {
   FieldInfoMap,
   getFieldsWithEditPrivacy,
   getFieldsForCreateAction,
-} from "../schema/schema";
+} from "../schema/schema.js";
 import {
   Changeset,
   ChangesetOptions,
   Executor,
   Validator,
-} from "../action/action";
+} from "../action/action.js";
 import {
   AssocEdgeInputOptions,
   DataOperation,
@@ -42,16 +42,16 @@ import {
   ConditionalOperation,
   ConditionalNodeOperation,
   NoOperation,
-} from "./operations";
-import { WriteOperation, Builder, Action } from "../action";
-import { applyPrivacyPolicy, applyPrivacyPolicyX } from "../core/privacy";
-import { ListBasedExecutor, ComplexExecutor } from "./executor";
-import { log } from "../core/logger";
-import { Trigger } from "./action";
+} from "./operations.js";
+import { WriteOperation, Builder, Action } from "../action/index.js";
+import { applyPrivacyPolicy, applyPrivacyPolicyX } from "../core/privacy.js";
+import { ListBasedExecutor, ComplexExecutor } from "./executor.js";
+import { log } from "../core/logger.js";
+import { Trigger } from "./action.js";
 import memoize from "memoizee";
-import * as clause from "../core/clause";
+import * as clause from "../core/clause.js";
 import { isPromise } from "util/types";
-import { RawQueryOperation } from "./operations";
+import { RawQueryOperation } from "./operations.js";
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
