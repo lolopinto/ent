@@ -5,19 +5,14 @@ import JSON5 from "json5";
 import minimist from "minimist";
 import * as path from "path";
 import * as fs from "fs";
-import {
+import type {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
   ProcessedCustomField,
-  addCustomType,
   CustomObject,
   CustomQuery,
   CustomField,
-  knownAllowedNames,
-  isCustomType,
   CustomFieldType,
-} from "../graphql/graphql.js";
-import type {
   CustomFieldTypeInput,
   CustomGraphQLInput,
   GQLCapture,
@@ -37,6 +32,13 @@ import { pathToFileURL } from "node:url";
 const MODULE_PATH = GRAPHQL_PATH;
 const nodeRequire = createRequire(import.meta.url);
 
+type GraphqlModule = typeof import("../graphql/graphql.js");
+let graphqlModulePromise: Promise<GraphqlModule> | null = null;
+let addCustomType: GraphqlModule["addCustomType"];
+let knownAllowedNames: GraphqlModule["knownAllowedNames"];
+let isCustomType: GraphqlModule["isCustomType"];
+let CustomFieldType: GraphqlModule["CustomFieldType"];
+
 async function loadModule(specifier: string) {
   try {
     if (specifier.startsWith(".")) {
@@ -49,6 +51,24 @@ async function loadModule(specifier: string) {
   } catch (err) {
     return nodeRequire(specifier);
   }
+}
+
+async function loadLocalGraphqlModule(): Promise<GraphqlModule> {
+  if (!graphqlModulePromise) {
+    graphqlModulePromise = import(
+      new URL("../graphql/graphql.js", import.meta.url).href,
+    ).catch(() => import(new URL("../graphql/graphql.ts", import.meta.url).href));
+  }
+  return graphqlModulePromise;
+}
+
+async function initGraphqlHelpers(): Promise<GraphqlModule> {
+  const mod = await loadLocalGraphqlModule();
+  addCustomType = mod.addCustomType;
+  knownAllowedNames = mod.knownAllowedNames;
+  isCustomType = mod.isCustomType;
+  CustomFieldType = mod.CustomFieldType;
+  return mod;
 }
 
 async function readInputs(): Promise<{
@@ -407,6 +427,7 @@ function findGraphQLPath(filePath: string): string | undefined {
 // also, there should be a way to get the list of objects here that's not manual
 //echo "User\nContact\nContactEmail\nComment" | ts-node-script --log-error --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/custom_graphql.ts --path ~/code/ent/examples/simple/src/
 async function main() {
+  const graphqlModule = await initGraphqlHelpers();
   const options = minimist(process.argv.slice(2));
 
   if (!options.path) {
@@ -423,8 +444,7 @@ async function main() {
   // from node_modules
   let gqlCapture: typeof GQLCapture;
   if (process.env.LOCAL_SCRIPT_PATH) {
-    const r = await loadModule("../graphql/graphql.js");
-    gqlCapture = r.GQLCapture;
+    gqlCapture = graphqlModule.GQLCapture;
   } else {
     const r = await loadModule(gqlPath);
     if (!r.GQLCapture) {
