@@ -89,6 +89,7 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 	if fromTest {
 		cmdArgs = []string{
 			"--esm",
+			"--preferTsExts",
 			"--compiler-options",
 			testingutils.DefaultCompilerOptions(),
 			"--transpileOnly",
@@ -110,6 +111,7 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 		} else {
 			cmdArgs = append(cmdArgs,
 				"--esm",
+				"--preferTsExts",
 				"--project",
 				filepath.Join(dirPath, "tsconfig.json"),
 				"--transpileOnly",
