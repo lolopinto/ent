@@ -53,6 +53,8 @@ import {
   UserDaysOffType,
   UserIntEnumType,
   UserNestedObjectListType,
+  UserOnDemandNonNullableListType,
+  UserOnDemandNonNullableType,
   UserOnDemandWithPrivacyType,
   UserPreferredShiftType,
   UserPrefsDiffType,
@@ -193,6 +195,28 @@ export const UserType = new GraphQLObjectType({
         context: RequestContext<ExampleViewerAlias>,
       ) => {
         return obj.onDemandWithPrivacy();
+      },
+    },
+    onDemandNonNullable: {
+      type: UserOnDemandNonNullableType,
+      resolve: async (
+        obj: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.onDemandNonNullable();
+      },
+    },
+    onDemandNonNullableList: {
+      type: new GraphQLList(
+        new GraphQLNonNull(UserOnDemandNonNullableListType),
+      ),
+      resolve: async (
+        obj: User,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.onDemandNonNullableList();
       },
     },
     nestedList: {

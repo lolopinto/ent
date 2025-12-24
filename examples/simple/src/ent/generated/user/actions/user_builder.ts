@@ -25,6 +25,8 @@ import {
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
+  UserOnDemandNonNullable,
+  UserOnDemandNonNullableList,
   UserOnDemandWithPrivacy,
   UserPreferredShift,
   UserPrefsDiff,
@@ -53,6 +55,8 @@ export interface UserInput {
   funUuids?: ID[] | null;
   superNestedObject?: UserSuperNestedObject | null;
   onDemandWithPrivacy?: UserOnDemandWithPrivacy | null;
+  onDemandNonNullable?: UserOnDemandNonNullable;
+  onDemandNonNullableList?: UserOnDemandNonNullableList[];
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;
   // allow other properties. useful for action-only fields
@@ -612,6 +616,8 @@ export class UserBuilder<
     addField("fun_uuids", input.funUuids);
     addField("superNestedObject", input.superNestedObject);
     addField("onDemandWithPrivacy", input.onDemandWithPrivacy);
+    addField("onDemandNonNullable", input.onDemandNonNullable);
+    addField("onDemandNonNullableList", input.onDemandNonNullableList);
     addField("nestedList", input.nestedList);
     addField("int_enum", input.intEnum);
     return result;
@@ -766,6 +772,19 @@ export class UserBuilder<
   // get value of onDemandWithPrivacy. Retrieves it from the input if specified or takes it from existingEnt
   getNewOnDemandWithPrivacyValue(): UserOnDemandWithPrivacy | null | undefined {
     return this.input.onDemandWithPrivacy;
+  }
+
+  // get value of onDemandNonNullable. Retrieves it from the input if specified or takes it from existingEnt
+  getNewOnDemandNonNullableValue(): UserOnDemandNonNullable | null | undefined {
+    return this.input.onDemandNonNullable;
+  }
+
+  // get value of onDemandNonNullableList. Retrieves it from the input if specified or takes it from existingEnt
+  getNewOnDemandNonNullableListValue():
+    | UserOnDemandNonNullableList[]
+    | null
+    | undefined {
+    return this.input.onDemandNonNullableList;
   }
 
   // get value of nestedList. Retrieves it from the input if specified or takes it from existingEnt

@@ -382,7 +382,7 @@ type Event implements Node {
   cities: [City!]!
 }
 
-union Feedback = Contact | ContactEmail | User
+union Feedback = ContactEmail | User
 
 type File implements Node {
   creator: User
@@ -475,6 +475,16 @@ type UserNestedObject {
   nestedObj: UserNestedNestedObject
 }
 
+type UserOnDemandNonNullableList {
+  secret: String!
+  phoneNumber: String!
+}
+
+type UserOnDemandNonNullable {
+  secret: String!
+  phoneNumber: String!
+}
+
 type UserOnDemandWithPrivacy {
   secret: String!
   phoneNumber: String!
@@ -529,6 +539,8 @@ type User implements Node {
   funUuids: [ID!]
   superNestedObject: UserSuperNestedObject
   onDemandWithPrivacy: UserOnDemandWithPrivacy
+  onDemandNonNullable: UserOnDemandNonNullable
+  onDemandNonNullableList: [UserOnDemandNonNullableList!]
   nestedList: [UserNestedObjectList!]
   intEnum: UserIntEnum
   selfContact: Contact
@@ -564,6 +576,8 @@ type User implements Node {
   commentsAuthored(first: Int, after: String, last: Int, before: String): UserToCommentsAuthoredConnection!
   cities: [City!]!
 }
+
+union WithDayOfWeek = Holiday | HoursOfOperation
 
 type AddressToHostedEventsEdge implements Edge {
   node: Event!
@@ -1706,6 +1720,16 @@ input UserNestedObjectListInput {
   enum: ResponseType!
   objects: [UserNestedNestedObjectListInput!]!
   enumList: [IntEnumUsedInList!]!
+}
+
+input UserOnDemandNonNullableInput {
+  secret: String!
+  phoneNumber: String!
+}
+
+input UserOnDemandNonNullableListInput {
+  secret: String!
+  phoneNumber: String!
 }
 
 input UserOnDemandWithPrivacyInput {

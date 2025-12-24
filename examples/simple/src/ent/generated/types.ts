@@ -843,6 +843,67 @@ export function convertNullableUserNestedObjectListList(
   return input.map((v) => convertUserNestedObjectList(v));
 }
 
+export interface UserOnDemandNonNullable {
+  secret: string;
+  phoneNumber: string;
+}
+
+export function convertUserOnDemandNonNullable(
+  input: any,
+): UserOnDemandNonNullable {
+  return {
+    secret: input.secret,
+    phoneNumber: input.phone_number,
+  };
+}
+
+export function convertNullableUserOnDemandNonNullable(
+  input: any,
+): UserOnDemandNonNullable | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserOnDemandNonNullable(input);
+}
+
+export interface UserOnDemandNonNullableList {
+  secret: string;
+  phoneNumber: string;
+}
+
+export function convertUserOnDemandNonNullableList(
+  input: any,
+): UserOnDemandNonNullableList {
+  return {
+    secret: input.secret,
+    phoneNumber: input.phone_number,
+  };
+}
+
+export function convertNullableUserOnDemandNonNullableList(
+  input: any,
+): UserOnDemandNonNullableList | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserOnDemandNonNullableList(input);
+}
+
+export function convertUserOnDemandNonNullableListList(
+  input: any[],
+): UserOnDemandNonNullableList[] {
+  return input.map((v) => convertUserOnDemandNonNullableList(v));
+}
+
+export function convertNullableUserOnDemandNonNullableListList(
+  input: any[] | null,
+): UserOnDemandNonNullableList[] | null {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  return input.map((v) => convertUserOnDemandNonNullableList(v));
+}
+
 export interface UserOnDemandWithPrivacy {
   secret: string;
   phoneNumber: string;

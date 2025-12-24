@@ -209,13 +209,19 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
           }
           const v = await {{useImport "applyPrivacyPolicy"}}(this.viewer, p, this);
           {{ if $field.FetchOnDemand -}}
-            {{$val := printf "this.%s ?? null" $fieldName -}}
+            if (this.{{$fieldName}} === null || this.{{$fieldName}} === undefined) {
+              return null;
+            }
+            {{$val := printf "this.%s" $fieldName -}}
             return v ? {{callAndConvertFunc $field $cfg $val }} : null;
           {{ else -}}
             return v ? this.{{$fieldName}} : null;
           {{ end -}}
         {{ else -}}
-          {{$val := printf "this.%s ?? null" $fieldName -}}
+          if (this.{{$fieldName}} === null || this.{{$fieldName}} === undefined) {
+            return null;
+          }
+          {{$val := printf "this.%s" $fieldName -}}
           return {{callAndConvertFunc $field $cfg $val }};
         {{ end -}}
       }

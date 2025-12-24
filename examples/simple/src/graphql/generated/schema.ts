@@ -125,6 +125,8 @@ import { HoursOfOperationArgInputType } from "./mutations/input/hours_of_operati
 import { ImportantDatesInputType } from "./mutations/input/important_dates_input_type";
 import { UserArgInputType } from "./mutations/input/user_arg_input_type";
 import { UserNestedObjectListInputType } from "./mutations/input/user_nested_object_list_input_type";
+import { UserOnDemandNonNullableInputType } from "./mutations/input/user_on_demand_non_nullable_input_type";
+import { UserOnDemandNonNullableListInputType } from "./mutations/input/user_on_demand_non_nullable_list_input_type";
 import { UserOnDemandWithPrivacyInputType } from "./mutations/input/user_on_demand_with_privacy_input_type";
 import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type";
 import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_input_type";
@@ -271,6 +273,8 @@ import {
   UserDaysOffType,
   UserIntEnumType,
   UserNestedObjectListType,
+  UserOnDemandNonNullableListType,
+  UserOnDemandNonNullableType,
   UserOnDemandWithPrivacyType,
   UserPreferredShiftType,
   UserPrefsDiffType,
@@ -295,6 +299,7 @@ import {
   UserToMaybeEventsConnectionType,
   UserType,
   ViewerType,
+  WithDayOfWeekType,
 } from "../resolvers";
 import { SubscriptionType } from "../resolvers/subscription_type";
 
@@ -358,12 +363,15 @@ export default new GraphQLSchema({
     UserCanViewerEditType,
     UserCanViewerSeeType,
     UserNestedObjectListType,
+    UserOnDemandNonNullableListType,
+    UserOnDemandNonNullableType,
     UserOnDemandWithPrivacyType,
     UserPrefsDiffType,
     UserPrefsStructType,
     UserStatisticsType,
     UserSuperNestedObjectType,
     UserType,
+    WithDayOfWeekType,
     AddressToHostedEventsConnectionType(),
     AuthorToCommentsConnectionType(),
     CommentArticleToCommentsConnectionType(),
@@ -502,6 +510,8 @@ export default new GraphQLSchema({
     UserEditInputType,
     UserEditPayloadType,
     UserNestedObjectListInputType,
+    UserOnDemandNonNullableInputType,
+    UserOnDemandNonNullableListInputType,
     UserOnDemandWithPrivacyInputType,
     UserPrefsDiffInputType,
     UserPrefsStructInputType,

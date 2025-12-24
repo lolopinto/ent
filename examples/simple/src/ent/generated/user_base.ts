@@ -46,6 +46,8 @@ import {
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
+  UserOnDemandNonNullable,
+  UserOnDemandNonNullableList,
   UserOnDemandWithPrivacy,
   UserPreferredShift,
   UserPrefsDiff,
@@ -58,6 +60,8 @@ import {
   convertNullableUserPrefsStruct,
   convertNullableUserPrefsStructList,
   convertNullableUserSuperNestedObject,
+  convertUserOnDemandNonNullable,
+  convertUserOnDemandNonNullableListList,
 } from "./types";
 import {
   AuthorToCommentsQuery,
@@ -84,6 +88,7 @@ import {
 } from "../internal";
 import schema from "../../schema/user_schema";
 import {
+  convertOnDemandNonNullable,
   convertSuperNestedObject,
   userConvertAccountStatus,
 } from "../../util/convert_user_fields";
@@ -117,6 +122,18 @@ const onDemandWithPrivacyLoader = new ObjectLoaderFactory({
   key: "id",
   instanceKey: `${userLoaderInfo.tableName}-on_demand_with_privacy`,
 });
+const onDemandNonNullableLoader = new ObjectLoaderFactory({
+  tableName: userLoaderInfo.tableName,
+  fields: ["id", "on_demand_non_nullable"],
+  key: "id",
+  instanceKey: `${userLoaderInfo.tableName}-on_demand_non_nullable`,
+});
+const onDemandNonNullableListLoader = new ObjectLoaderFactory({
+  tableName: userLoaderInfo.tableName,
+  fields: ["id", "on_demand_non_nullable_list"],
+  key: "id",
+  instanceKey: `${userLoaderInfo.tableName}-on_demand_non_nullable_list`,
+});
 
 export class UserBase
   extends FeedbackMixin(class {} as new (...args: any[]) => IFeedback)
@@ -145,6 +162,11 @@ export class UserBase
   readonly funUuids: ID[] | null;
   protected _superNestedObject: UserSuperNestedObject | null | undefined;
   protected _onDemandWithPrivacy: UserOnDemandWithPrivacy | null | undefined;
+  protected _onDemandNonNullable: UserOnDemandNonNullable | null | undefined;
+  protected _onDemandNonNullableList:
+    | UserOnDemandNonNullableList[]
+    | null
+    | undefined;
   readonly nestedList: UserNestedObjectList[] | null;
   readonly intEnum: UserIntEnum | null;
 
@@ -263,8 +285,14 @@ export class UserBase
         .load(this.id);
       this._superNestedObject = row?.super_nested_object ?? null;
     }
+    if (
+      this._superNestedObject === null ||
+      this._superNestedObject === undefined
+    ) {
+      return null;
+    }
     return convertSuperNestedObject(
-      convertNullableUserSuperNestedObject(this._superNestedObject ?? null),
+      convertNullableUserSuperNestedObject(this._superNestedObject),
     );
   }
 
@@ -287,11 +315,53 @@ export class UserBase
       );
     }
     const v = await applyPrivacyPolicy(this.viewer, p, this);
+    if (
+      this._onDemandWithPrivacy === null ||
+      this._onDemandWithPrivacy === undefined
+    ) {
+      return null;
+    }
     return v
-      ? convertNullableUserOnDemandWithPrivacy(
-          this._onDemandWithPrivacy ?? null,
-        )
+      ? convertNullableUserOnDemandWithPrivacy(this._onDemandWithPrivacy)
       : null;
+  }
+
+  async onDemandNonNullable(): Promise<UserOnDemandNonNullable | null> {
+    if (this._onDemandNonNullable === undefined) {
+      const row = await onDemandNonNullableLoader
+        .createLoader(this.viewer.context)
+        .load(this.id);
+      this._onDemandNonNullable = row?.on_demand_non_nullable ?? null;
+    }
+    if (
+      this._onDemandNonNullable === null ||
+      this._onDemandNonNullable === undefined
+    ) {
+      return null;
+    }
+    return convertOnDemandNonNullable(
+      convertUserOnDemandNonNullable(this._onDemandNonNullable),
+    );
+  }
+
+  async onDemandNonNullableList(): Promise<
+    UserOnDemandNonNullableList[] | null
+  > {
+    if (this._onDemandNonNullableList === undefined) {
+      const row = await onDemandNonNullableListLoader
+        .createLoader(this.viewer.context)
+        .load(this.id);
+      this._onDemandNonNullableList = row?.on_demand_non_nullable_list ?? null;
+    }
+    if (
+      this._onDemandNonNullableList === null ||
+      this._onDemandNonNullableList === undefined
+    ) {
+      return null;
+    }
+    return convertOnDemandNonNullable(
+      convertUserOnDemandNonNullableListList(this._onDemandNonNullableList),
+    );
   }
 
   static async load<T extends UserBase>(

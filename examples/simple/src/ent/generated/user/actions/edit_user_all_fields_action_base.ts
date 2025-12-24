@@ -26,6 +26,8 @@ import {
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
+  UserOnDemandNonNullable,
+  UserOnDemandNonNullableList,
   UserOnDemandWithPrivacy,
   UserPreferredShift,
   UserPrefsDiff,
@@ -53,6 +55,8 @@ export interface EditUserAllFieldsRelativeInput {
   funUuids?: ID[] | null;
   superNestedObject?: UserSuperNestedObject | null;
   onDemandWithPrivacy?: UserOnDemandWithPrivacy | null;
+  onDemandNonNullable?: UserOnDemandNonNullable;
+  onDemandNonNullableList?: UserOnDemandNonNullableList[];
   nestedList?: UserNestedObjectList[] | null;
   intEnum?: UserIntEnum | null;
 }

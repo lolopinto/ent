@@ -15,6 +15,8 @@ import {
   UserDaysOff,
   UserIntEnum,
   UserNestedObjectList,
+  UserOnDemandNonNullable,
+  UserOnDemandNonNullableList,
   UserOnDemandWithPrivacy,
   UserPreferredShift,
   UserPrefsDiff,
@@ -842,6 +844,8 @@ export interface UserDBData {
   fun_uuids: ID[] | null;
   super_nested_object: UserSuperNestedObject | null;
   on_demand_with_privacy: UserOnDemandWithPrivacy | null;
+  on_demand_non_nullable: UserOnDemandNonNullable;
+  on_demand_non_nullable_list: UserOnDemandNonNullableList[];
   nested_list: UserNestedObjectList[] | null;
   int_enum: UserIntEnum | null;
 }
@@ -978,6 +982,14 @@ export const userLoaderInfo = {
     onDemandWithPrivacy: {
       dbCol: "on_demand_with_privacy",
       inputKey: "onDemandWithPrivacy",
+    },
+    onDemandNonNullable: {
+      dbCol: "on_demand_non_nullable",
+      inputKey: "onDemandNonNullable",
+    },
+    onDemandNonNullableList: {
+      dbCol: "on_demand_non_nullable_list",
+      inputKey: "onDemandNonNullableList",
     },
     nestedList: {
       dbCol: "nested_list",
