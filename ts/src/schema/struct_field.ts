@@ -163,6 +163,63 @@ export class StructField extends BaseField implements Field {
     return this.formatImpl(obj, nested);
   }
 
+  private formatInputImpl(obj: any) {
+    if (!(obj instanceof Object)) {
+      return obj;
+    }
+    let ret: Object = {};
+
+    const processField = (k: string, field: Field) => {
+      const fieldName = toFieldName(k);
+      const dbKey = getStorageKey(field, k);
+      let val = obj[fieldName];
+
+      if (val === undefined && obj[dbKey] !== undefined) {
+        val = obj[dbKey];
+      }
+
+      if (val === undefined) {
+        return;
+      }
+      if (field.formatInput) {
+        val = field.formatInput(val);
+      } else if (field.format) {
+        val = field.format(val, true);
+      }
+      ret[fieldName] = val;
+    };
+
+    for (const k in this.options.fields) {
+      const field = this.options.fields[k];
+
+      processField(k, field);
+
+      if (field.getDerivedFields) {
+        const derivedFields = field.getDerivedFields(k);
+        for (const k in derivedFields) {
+          processField(k, derivedFields[k]);
+        }
+      }
+    }
+    return ret;
+  }
+
+  formatInput(obj: any) {
+    if (this.type.globalType) {
+      const f = __getGlobalSchemaField(this.type.globalType);
+      if (f && f.formatInput) {
+        return f.formatInput(obj);
+      }
+      if (f && f.format) {
+        return f.format(obj, true);
+      }
+    }
+    if (Array.isArray(obj) && this.jsonAsList) {
+      return obj.map((v) => this.formatInputImpl(v));
+    }
+    return this.formatInputImpl(obj);
+  }
+
   private async validImpl(obj: any) {
     if (!(obj instanceof Object)) {
       return false;
