@@ -35,6 +35,10 @@ There are different ways to customize the action after the code has been generat
 
 We'll dive into each of these in the following sections.
 
+## Transactions
+
+If you need to coordinate multiple actions at the call site, use a [Transaction](/docs/actions/transactions) to run them together. For action-internal work, use [Triggers](/docs/actions/triggers) since they run inside the action's own transaction.
+
 ## Default Privacy Policy
 
 The default [privacy policy](/docs/core-concepts/privacy-policy) is that any logged in user i.e. Viewer's [viewerID](/docs/core-concepts/viewer#viewerid) is not `null` can perform the action.
