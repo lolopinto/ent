@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the npm version are [here](/CHANGELOG.md).
 
+## [Unreleased]
+
+### Fixed
+
+- fix types for struct list for on demand types (#1911)
+
 ## [0.3.0]
 
 ### Added

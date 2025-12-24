@@ -265,6 +265,8 @@ CREATE TABLE users (
     new_col2 TEXT, 
     super_nested_object JSONB, 
     on_demand_with_privacy JSONB, 
+    on_demand_non_nullable JSONB NOT NULL, 
+    on_demand_non_nullable_list JSONB NOT NULL, 
     nested_list JSONB[], 
     int_enum INTEGER, 
     name_idx TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))) STORED, 
