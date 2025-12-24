@@ -2,8 +2,8 @@ import * as glob from "glob";
 import ts from "typescript";
 import { spawnSync } from "child_process";
 import * as fs from "fs";
-import { getImportInfo, transformImport } from "./ast";
-import { createSourceFile, getTargetFromCurrentDir } from "./compilerOptions";
+import { getImportInfo, transformImport } from "./ast.js";
+import { createSourceFile, getTargetFromCurrentDir } from "./compilerOptions.js";
 
 interface TraverseChildResponse {
   // keep this node, nothing to do here

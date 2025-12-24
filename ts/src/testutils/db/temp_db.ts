@@ -1,14 +1,14 @@
 import { Client as PGClient } from "pg";
-import DB, { Sqlite, Dialect, Client, SyncClient } from "../../core/db";
+import DB, { Sqlite, Dialect, Client, SyncClient } from "../../core/db.js";
 // this should only be used in tests so we expect to be able to import without shenanigans
 import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
-import { loadConfig } from "../../core/config";
+import { loadConfig } from "../../core/config.js";
 import * as fs from "fs";
-import { ConstraintType, DBType, Field, getFields } from "../../schema";
-import { BuilderSchema, getTableName } from "../builder";
-import { Ent } from "../../core/base";
-import { testEdgeGlobalSchema } from "../test_edge_global_schema";
-import { toDBColumnOrTable } from "../../names/names";
+import { ConstraintType, DBType, Field, getFields } from "../../schema/index.js";
+import { BuilderSchema, getTableName } from "../builder.js";
+import { Ent } from "../../core/base.js";
+import { testEdgeGlobalSchema } from "../test_edge_global_schema.js";
+import { toDBColumnOrTable } from "../../names/names.js";
 
 interface SchemaItem {
   name: string;

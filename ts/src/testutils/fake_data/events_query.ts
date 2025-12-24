@@ -1,13 +1,13 @@
-import { ID, Viewer } from "../../core/base";
-import { AssocEdge } from "../../core/ent";
+import { ID, Viewer } from "../../core/base.js";
+import { AssocEdge } from "../../core/ent.js";
 import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
-} from "../../core/query/assoc_query";
-import { FakeUser } from "./fake_user";
-import { EdgeType, FakeEvent } from "./internal";
-import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
-import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
+} from "../../core/query/assoc_query.js";
+import { FakeUser } from "./fake_user.js";
+import { EdgeType, FakeEvent } from "./internal.js";
+import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader.js";
+import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader.js";
 
 export class EventToAttendeesQuery extends AssocEdgeQueryBase<
   FakeEvent,

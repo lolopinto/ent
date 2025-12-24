@@ -5,7 +5,7 @@ import {
   FloatType,
   IntegerListType,
   StringListType,
-} from ".";
+} from "./index.js";
 import {
   UUIDType,
   IntegerType,
@@ -13,11 +13,11 @@ import {
   BooleanType,
   TimestampType,
   DateType,
-} from "./field";
-import { StructOptions, StructType, StructTypeAsList } from "./struct_field";
-import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
-import { MockLogs } from "../testutils/mock_log";
-import { clearLogLevels, setLogLevels } from "../core/logger";
+} from "./field.js";
+import { StructOptions, StructType, StructTypeAsList } from "./struct_field.js";
+import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema.js";
+import { MockLogs } from "../testutils/mock_log.js";
+import { clearLogLevels, setLogLevels } from "../core/logger.js";
 
 function structTypeF(fields: FieldMap) {
   return StructType({

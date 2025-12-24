@@ -1,11 +1,11 @@
-import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index";
+import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index.js";
 import {
   createEdges,
   tempDBTables,
-} from "../../testutils/fake_data/test_helpers";
-import { commonTests } from "./shared_edge_connection";
-import { sharedAssocTests } from "./shared_assoc_test";
-import { setupSqlite } from "../../testutils/db/temp_db";
+} from "../../testutils/fake_data/test_helpers.js";
+import { commonTests } from "./shared_edge_connection.js";
+import { sharedAssocTests } from "./shared_assoc_test.js";
+import { setupSqlite } from "../../testutils/db/temp_db.js";
 
 beforeEach(async () => {
   await createEdges();

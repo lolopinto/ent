@@ -1,4 +1,4 @@
-import { Builder } from "./action";
+import { Builder } from "./action.js";
 import {
   Viewer,
   ID,
@@ -8,7 +8,7 @@ import {
   Deny,
   Allow,
   Skip,
-} from "../core/base";
+} from "../core/base.js";
 
 function isBuilder(node: ID | Builder<Ent, any>): node is Builder<Ent, any> {
   return (node as Builder<Ent>).placeholderID !== undefined;

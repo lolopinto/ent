@@ -1,4 +1,4 @@
-import { ID, Ent, Viewer, Context } from "./base";
+import { ID, Ent, Viewer, Context } from "./base.js";
 
 export class LoggedOutViewer implements Viewer {
   marker = "loggedout";

@@ -3,10 +3,10 @@ import {
   TimestampType,
   EdgeUpdateOperation,
   TransformedEdgeUpdateOperation,
-} from "../schema";
-import * as clause from "../core/clause";
-import { AssocEdge } from "../core/ent";
-import { Data } from "../core/base";
+} from "../schema/index.js";
+import * as clause from "../core/clause.js";
+import { AssocEdge } from "../core/ent.js";
+import { Data } from "../core/base.js";
 
 export class EdgeWithDeletedAt extends AssocEdge {
   deletedAt: Date | null;

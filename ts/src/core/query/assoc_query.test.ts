@@ -1,9 +1,9 @@
-import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index";
-import { MockLogs } from "../../testutils/mock_log";
-import { Viewer } from "../base";
-import { And, Eq } from "../clause";
-import { assocTests } from "./shared_assoc_test";
-import { commonTests } from "./shared_test";
+import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { Viewer } from "../base.js";
+import { And, Eq } from "../clause.js";
+import { assocTests } from "./shared_assoc_test.js";
+import { commonTests } from "./shared_test.js";
 
 // shared mock across tests
 // should this be global?

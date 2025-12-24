@@ -6,11 +6,11 @@ import {
   Loader,
   LoaderFactory,
   SelectBaseDataOptions,
-} from "../base";
-import { loadRow, loadRows } from "../ent";
-import * as clause from "../clause";
-import { logEnabled } from "../logger";
-import { CacheMap, getLoader } from "./loader";
+} from "../base.js";
+import { loadRow, loadRows } from "../ent.js";
+import * as clause from "../clause.js";
+import { logEnabled } from "../logger.js";
+import { CacheMap, getLoader } from "./loader.js";
 
 interface QueryCountOptions {
   tableName: string;

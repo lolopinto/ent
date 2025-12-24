@@ -50,14 +50,14 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: '1.22'
+          go-version: '1.25'
           check-latest: true
           cache: true
 
       - name: Set up python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: setup auto_schema dependencies
         run: |
@@ -68,7 +68,7 @@ jobs:
       - name: Setup nodejs
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 24.x
       - run: npm install -g ts-node@11.0.0-beta.1 prettier@3.1.0 typescript@5.3.2 @swc/core@1.3.100 @swc/cli@0.1.63 jest @biomejs/biome@1.4.1
       - run: |
           cd ts 
@@ -117,7 +117,7 @@ jobs:
           cp ../.github/testdata/jest.config.js.example jest.config.js
           cp ../.github/testdata/verify_graphql_schema.test.ts.example src/verify_graphql_schema.test.ts
           npm install ts-jest jest @types/jest
-          jest
+          NODE_OPTIONS=--experimental-vm-modules jest
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
           LOCAL_AUTO_SCHEMA: 'true'

@@ -1,4 +1,4 @@
-import { QueryableDataOptions } from "./base";
+import { QueryableDataOptions } from "./base.js";
 
 export interface OrderByOption {
   column: string;

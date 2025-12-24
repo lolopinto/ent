@@ -1,6 +1,6 @@
-import { NumberOps } from "../action/relative_value";
-import { Eq, Clause } from "./clause";
-import { buildUpdateQuery } from "./ent";
+import { NumberOps } from "../action/relative_value.js";
+import { Eq, Clause } from "./clause.js";
+import { buildUpdateQuery } from "./ent.js";
 
 // for now, simplifying tests and assuming all postgres
 test("simple update", () => {

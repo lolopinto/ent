@@ -1,9 +1,9 @@
-import { Dialect } from "./db";
-import { integer, table, text, TempDB } from "../testutils/db/temp_db";
-import { createRowForTest } from "../testutils/write";
-import { loadConfig } from "./config";
-import { loadRow } from "./ent";
-import * as clause from "./clause";
+import { Dialect } from "./db.js";
+import { integer, table, text, TempDB } from "../testutils/db/temp_db.js";
+import { createRowForTest } from "../testutils/write.js";
+import { loadConfig } from "./config.js";
+import { loadRow } from "./ent.js";
+import * as clause from "./clause.js";
 
 const tdb = new TempDB(Dialect.Postgres, [
   table(

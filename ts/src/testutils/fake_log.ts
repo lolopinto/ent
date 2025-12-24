@@ -1,5 +1,5 @@
-import { Ent, Viewer } from "../core/base";
-import { Builder } from "./../action";
+import { Ent, Viewer } from "../core/base.js";
+import { Builder } from "../action/index.js";
 
 export class FakeLogger {
   // todo this is quick and ideal.

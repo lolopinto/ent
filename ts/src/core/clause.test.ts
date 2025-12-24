@@ -1,6 +1,7 @@
 import { v1 } from "uuid";
-import * as clause from "./clause";
-import { loadConfig } from "./config";
+import { jest } from "@jest/globals";
+import * as clause from "./clause.js";
+import { loadConfig } from "./config.js";
 
 interface ExampleData {
   id: string;

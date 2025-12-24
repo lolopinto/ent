@@ -6,10 +6,10 @@ import {
   getImportInfo,
   getPreText,
   transformRelative,
-} from "../tsc/ast";
-import { TransformFile } from "./transform";
-import { Data } from "../core/base";
-import { PACKAGE, SCHEMA_PATH } from "../core/const";
+} from "../tsc/ast.js";
+import { TransformFile } from "./transform.js";
+import { Data } from "../core/base.js";
+import { PACKAGE, SCHEMA_PATH } from "../core/const.js";
 
 interface traverseInfo {
   rawString: string;

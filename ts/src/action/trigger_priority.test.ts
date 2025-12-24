@@ -1,20 +1,20 @@
-import { WriteOperation } from "../action";
-import { Viewer } from "../core/base";
-import { LoggedOutViewer } from "../core/viewer";
-import { StringType } from "../schema/field";
+import { WriteOperation } from "../action/index.js";
+import { Viewer } from "../core/base.js";
+import { LoggedOutViewer } from "../core/viewer.js";
+import { StringType } from "../schema/field.js";
 import {
   User,
   SimpleAction,
   SimpleBuilder,
   EntBuilderSchema,
-} from "../testutils/builder";
-import { Dialect } from "../core/db";
+} from "../testutils/builder.js";
+import { Dialect } from "../core/db.js";
 import {
   getSchemaTable,
   setupPostgres,
   setupSqlite,
   Table,
-} from "../testutils/db/temp_db";
+} from "../testutils/db/temp_db.js";
 
 const UserSchema = new EntBuilderSchema(User, {
   fields: {

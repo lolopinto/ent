@@ -1,16 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { TestContext } from "../../testutils/context/test_context";
-import { setLogLevels } from "../logger";
-import { MockLogs } from "../../testutils/mock_log";
-import { AssocEdge, getDefaultLimit } from "../ent";
-import { buildQuery } from "../query_impl";
+import { TestContext } from "../../testutils/context/test_context.js";
+import { setLogLevels } from "../logger.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { AssocEdge, getDefaultLimit } from "../ent.js";
+import { buildQuery } from "../query_impl.js";
 import {
   clearGlobalSchema,
   setGlobalSchema,
   __hasGlobalSchema,
-} from "../global_schema";
-import * as clause from "../clause";
+} from "../global_schema.js";
+import * as clause from "../clause.js";
 
 import {
   Context,
@@ -18,15 +18,15 @@ import {
   ID,
   Loader,
   WriteOperation,
-} from "../base";
-import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
+} from "../base.js";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db.js";
 import {
   FakeUser,
   FakeContact,
   EdgeType,
   FakeUserSchema,
   CustomEdge,
-} from "../../testutils/fake_data/index";
+} from "../../testutils/fake_data/index.js";
 import {
   createAllContacts,
   setupTempDB,
@@ -35,12 +35,12 @@ import {
   createEdges,
   createTestUser,
   addEdge,
-} from "../../testutils/fake_data/test_helpers";
+} from "../../testutils/fake_data/test_helpers.js";
 
-import { AssocEdgeLoaderFactory, AssocLoader } from "./assoc_edge_loader";
-import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
-import { SimpleAction } from "../../testutils/builder";
-import { convertDate } from "../convert";
+import { AssocEdgeLoaderFactory, AssocLoader } from "./assoc_edge_loader.js";
+import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema.js";
+import { SimpleAction } from "../../testutils/builder.js";
+import { convertDate } from "../convert.js";
 import { DateTime } from "luxon";
 
 const ml = new MockLogs();

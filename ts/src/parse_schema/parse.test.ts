@@ -1,7 +1,7 @@
-import { FieldMap, Schema } from "../schema";
-import { StringType } from "../schema/field";
-import { BaseEntSchema, EntSchema } from "../schema/base_schema";
-import { parseSchema } from "./parse";
+import { FieldMap, Schema } from "../schema/index.js";
+import { StringType } from "../schema/field.js";
+import { BaseEntSchema, EntSchema } from "../schema/base_schema.js";
+import { parseSchema } from "./parse.js";
 
 test("legacy class", async () => {
   class Foo extends BaseEntSchema {

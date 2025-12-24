@@ -5,34 +5,71 @@ import JSON5 from "json5";
 import minimist from "minimist";
 import * as path from "path";
 import * as fs from "fs";
-import {
+import type {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
   ProcessedCustomField,
-  addCustomType,
   CustomObject,
   CustomQuery,
   CustomField,
-  knownAllowedNames,
-  isCustomType,
   CustomFieldType,
-} from "../graphql/graphql";
-import type {
   CustomFieldTypeInput,
   CustomGraphQLInput,
   GQLCapture,
-} from "../graphql/graphql";
+} from "../graphql/graphql.js";
 import * as readline from "readline";
-import { parseCustomImports, file } from "../imports";
+import { parseCustomImports, file } from "../imports/index.js";
 import { exit } from "process";
-import { Data } from "../core/base";
+import { Data } from "../core/base.js";
 import { spawn } from "child_process";
-import { GRAPHQL_PATH } from "../core/const";
+import { GRAPHQL_PATH } from "../core/const.js";
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
 // life is hard
 const MODULE_PATH = GRAPHQL_PATH;
+const nodeRequire = createRequire(import.meta.url);
+
+type GraphqlModule = typeof import("../graphql/graphql.js");
+let graphqlModulePromise: Promise<GraphqlModule> | null = null;
+let addCustomType: GraphqlModule["addCustomType"];
+let knownAllowedNames: GraphqlModule["knownAllowedNames"];
+let isCustomType: GraphqlModule["isCustomType"];
+let CustomFieldType: GraphqlModule["CustomFieldType"];
+
+async function loadModule(specifier: string) {
+  try {
+    if (specifier.startsWith(".")) {
+      return await import(new URL(specifier, import.meta.url).href);
+    }
+    if (path.isAbsolute(specifier)) {
+      return await import(pathToFileURL(specifier).href);
+    }
+    return await import(specifier);
+  } catch (err) {
+    return nodeRequire(specifier);
+  }
+}
+
+async function loadLocalGraphqlModule(): Promise<GraphqlModule> {
+  if (!graphqlModulePromise) {
+    graphqlModulePromise = import(
+      new URL("../graphql/graphql.js", import.meta.url).href,
+    ).catch(() => import(new URL("../graphql/graphql.ts", import.meta.url).href));
+  }
+  return graphqlModulePromise;
+}
+
+async function initGraphqlHelpers(): Promise<GraphqlModule> {
+  const mod = await loadLocalGraphqlModule();
+  addCustomType = mod.addCustomType;
+  knownAllowedNames = mod.knownAllowedNames;
+  isCustomType = mod.isCustomType;
+  CustomFieldType = mod.CustomFieldType;
+  return mod;
+}
 
 async function readInputs(): Promise<{
   nodes: string[];
@@ -189,6 +226,7 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
     } else {
       cmd = "ts-node";
       args.push("--transpileOnly");
+      args.push("--esm");
     }
     args.push(filePath);
     const r = spawn(cmd, args, {
@@ -334,7 +372,7 @@ async function requireFiles(files: string[]) {
     files.map(async (file) => {
       if (fs.existsSync(file)) {
         try {
-          await require(file);
+          await loadModule(file);
         } catch (e) {
           throw new Error(`${(e as Error).message} loading ${file}`);
         }
@@ -389,6 +427,7 @@ function findGraphQLPath(filePath: string): string | undefined {
 // also, there should be a way to get the list of objects here that's not manual
 //echo "User\nContact\nContactEmail\nComment" | ts-node-script --log-error --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/custom_graphql.ts --path ~/code/ent/examples/simple/src/
 async function main() {
+  const graphqlModule = await initGraphqlHelpers();
   const options = minimist(process.argv.slice(2));
 
   if (!options.path) {
@@ -405,10 +444,9 @@ async function main() {
   // from node_modules
   let gqlCapture: typeof GQLCapture;
   if (process.env.LOCAL_SCRIPT_PATH) {
-    const r = require("../graphql/graphql");
-    gqlCapture = r.GQLCapture;
+    gqlCapture = graphqlModule.GQLCapture;
   } else {
-    const r = require(gqlPath);
+    const r = await loadModule(gqlPath);
     if (!r.GQLCapture) {
       throw new Error("could not find GQLCapture in module");
     }

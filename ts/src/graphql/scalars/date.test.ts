@@ -4,8 +4,8 @@ import {
   GraphQLString,
   GraphQLNonNull,
 } from "graphql";
-import { expectMutation } from "../../testutils/ent-graphql-tests";
-import { GraphQLDate } from "./date";
+import { expectMutation } from "../../testutils/ent-graphql-tests/index.js";
+import { GraphQLDate } from "./date.js";
 
 const schema = new GraphQLSchema({
   query: new GraphQLObjectType({

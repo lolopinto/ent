@@ -7,8 +7,8 @@ import {
   isRelativeImport,
   isSrcGeneratedImport,
   updateImportPath,
-} from "./ast";
-import { transform, TransformFile } from "./transform";
+} from "./ast.js";
+import { transform, TransformFile } from "./transform.js";
 
 class MoveFiles {
   constructor(private globPath: string) {}

@@ -1,28 +1,28 @@
-import { TestContext } from "../../testutils/context/test_context";
-import { setLogLevels } from "../logger";
-import { MockLogs } from "../../testutils/mock_log";
-import { getDefaultLimit } from "../ent";
-import { buildQuery } from "../query_impl";
-import * as clause from "../clause";
-import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
-import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
+import { TestContext } from "../../testutils/context/test_context.js";
+import { setLogLevels } from "../logger.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { getDefaultLimit } from "../ent.js";
+import { buildQuery } from "../query_impl.js";
+import * as clause from "../clause.js";
+import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base.js";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db.js";
 import {
   FakeUser,
   FakeEvent,
   EventCreateInput,
   getNextWeekClause,
   getCompleteClause,
-} from "../../testutils/fake_data/index";
+} from "../../testutils/fake_data/index.js";
 import {
   createAllEvents,
   createTestUser,
   setupTempDB,
   tempDBTables,
-} from "../../testutils/fake_data/test_helpers";
+} from "../../testutils/fake_data/test_helpers.js";
 
-import { QueryLoaderFactory } from "./query_loader";
+import { QueryLoaderFactory } from "./query_loader.js";
 import { advanceBy, advanceTo } from "jest-date-mock";
-import { MockDate } from "../../testutils/mock_date";
+import { MockDate } from "../../testutils/mock_date.js";
 
 const ml = new MockLogs();
 let tdb: TempDB;

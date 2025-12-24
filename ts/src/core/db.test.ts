@@ -1,4 +1,4 @@
-import DB, { Client, Sqlite, SyncClient } from "./db";
+import DB, { Client, Sqlite, SyncClient } from "./db.js";
 import {
   integer,
   table,
@@ -6,14 +6,14 @@ import {
   setupSqlite,
   timestamp,
   bool,
-} from "../testutils/db/temp_db";
+} from "../testutils/db/temp_db.js";
 import {
   createRowForTest,
   deleteRowsForTest,
   editRowForTest,
-} from "../testutils/write";
-import * as clause from "./clause";
-import { loadConfig } from "./config";
+} from "../testutils/write.js";
+import * as clause from "./clause.js";
+import { loadConfig } from "./config.js";
 
 describe("sqlite", () => {
   setupSqlite(`sqlite:///db.test.db`, () => [

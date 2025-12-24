@@ -1,10 +1,10 @@
 import minimist from "minimist";
-import { transform } from "../tsc/transform";
-import { TransformSchema } from "../tsc/transform_schema";
-import { TransformEnt } from "../tsc/transform_ent";
-import { moveGenerated } from "../tsc/move_generated";
-import { TransformAction } from "../tsc/transform_action";
-import { getCustomInfo } from "../tsc/ast";
+import { transform } from "../tsc/transform.js";
+import { TransformSchema } from "../tsc/transform_schema.js";
+import { TransformEnt } from "../tsc/transform_ent.js";
+import { moveGenerated } from "../tsc/move_generated.js";
+import { TransformAction } from "../tsc/transform_action.js";
+import { getCustomInfo } from "../tsc/ast.js";
 
 // todo-sqlite
 //  ts-node-script --swc --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/migrate_v0.1.ts --transform_schema --old_base_class BaseEntTodoSchema --new_schema_class TodoEntSchema  --transform_path src/schema/patterns/base

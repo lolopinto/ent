@@ -5,20 +5,20 @@ import {
   Data,
   LoadEntOptions,
   PrivacyPolicy,
-} from "../../core/base";
-import { loadEnt, loadEntX } from "../../core/ent";
-import * as clause from "../../core/clause";
+} from "../../core/base.js";
+import { loadEnt, loadEntX } from "../../core/ent.js";
+import * as clause from "../../core/clause.js";
 import {
   AlwaysDenyRule,
   AllowIfViewerIsEntPropertyRule,
-} from "../../core/privacy";
-import { getBuilderSchemaFromFields, SimpleAction } from "../builder";
-import { StringType, UUIDType } from "../../schema";
-import { NodeType } from "./const";
-import { table, uuid, text, timestamptz, index } from "../db/temp_db";
-import { ObjectLoaderFactory } from "../../core/loaders";
-import { convertDate } from "../../core/convert";
-import { WriteOperation } from "../../action";
+} from "../../core/privacy.js";
+import { getBuilderSchemaFromFields, SimpleAction } from "../builder.js";
+import { StringType, UUIDType } from "../../schema/index.js";
+import { NodeType } from "./const.js";
+import { table, uuid, text, timestamptz, index } from "../db/temp_db.js";
+import { ObjectLoaderFactory } from "../../core/loaders/index.js";
+import { convertDate } from "../../core/convert.js";
+import { WriteOperation } from "../../action/index.js";
 
 export class FakeTag implements Ent {
   readonly id: ID;

@@ -1,6 +1,6 @@
-import { Orchestrator } from "./orchestrator";
-import { Viewer, Ent, Data } from "../core/base";
-import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
+import { Orchestrator } from "./orchestrator.js";
+import { Viewer, Ent, Data } from "../core/base.js";
+import { AlwaysAllowPrivacyPolicy } from "../core/privacy.js";
 import {
   Action,
   WriteOperation,
@@ -9,7 +9,7 @@ import {
   Observer,
   Changeset,
   Validator,
-} from "./action";
+} from "./action.js";
 
 export interface ActionOptions<
   TEnt extends Ent<TViewer>,

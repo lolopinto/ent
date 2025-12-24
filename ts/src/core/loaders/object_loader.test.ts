@@ -1,22 +1,22 @@
-import { ObjectLoader, ObjectLoaderFactory } from "./object_loader";
-import { createRowForTest, editRowForTest } from "../../testutils/write";
-import { TestContext } from "../../testutils/context/test_context";
-import { setLogLevels } from "../logger";
-import { MockLogs } from "../../testutils/mock_log";
-import { Data, ID } from "../base";
-import { buildQuery } from "../query_impl";
-import * as clause from "../clause";
+import { ObjectLoader, ObjectLoaderFactory } from "./object_loader.js";
+import { createRowForTest, editRowForTest } from "../../testutils/write.js";
+import { TestContext } from "../../testutils/context/test_context.js";
+import { setLogLevels } from "../logger.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { Data, ID } from "../base.js";
+import { buildQuery } from "../query_impl.js";
+import * as clause from "../clause.js";
 import {
   createTestUser,
   createEdges,
   tempDBTables,
-} from "../../testutils/fake_data/test_helpers";
+} from "../../testutils/fake_data/test_helpers.js";
 import {
   userLoader,
   userEmailLoader,
   userPhoneNumberLoader,
   FakeUser,
-} from "../../testutils/fake_data/";
+} from "../../testutils/fake_data/index.js";
 import {
   integer,
   setupPostgres,
@@ -24,9 +24,9 @@ import {
   table,
   text,
   timestamp,
-} from "../../testutils/db/temp_db";
+} from "../../testutils/db/temp_db.js";
 import { advanceTo } from "jest-date-mock";
-import { convertDate } from "../convert";
+import { convertDate } from "../convert.js";
 
 const ml = new MockLogs();
 

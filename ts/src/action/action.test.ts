@@ -3,30 +3,30 @@ import {
   BuilderSchema,
   SimpleBuilder,
   getDbFields,
-} from "../testutils/builder";
-import { IDViewer, LoggedOutViewer } from "../core/viewer";
-import { StringType, UUIDType, FieldMap } from "../schema";
-import { createRowForTest } from "../testutils/write";
+} from "../testutils/builder.js";
+import { IDViewer, LoggedOutViewer } from "../core/viewer.js";
+import { StringType, UUIDType, FieldMap } from "../schema/index.js";
+import { createRowForTest } from "../testutils/write.js";
 import {
   AssocEdge,
   buildInsertQuery,
   buildUpdateQuery,
   loadEdgeForID2,
   assocEdgeLoader,
-} from "../core/ent";
+} from "../core/ent.js";
 import {
   setGlobalSchema,
   clearGlobalSchema,
   __hasGlobalSchema,
-} from "../core/global_schema";
+} from "../core/global_schema.js";
 import {
   clearEdgeTypeInGroup,
   setEdgeTypeInGroup,
   WriteOperation,
-} from "./action";
-import { MockLogs } from "../testutils/mock_log";
-import { setLogLevels } from "../core/logger";
-import { Data, ID } from "../core/base";
+} from "./action.js";
+import { MockLogs } from "../testutils/mock_log.js";
+import { setLogLevels } from "../core/logger.js";
+import { Data, ID } from "../core/base.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
@@ -34,13 +34,13 @@ import {
   table,
   TempDB,
   text,
-} from "../testutils/db/temp_db";
-import DB, { Dialect } from "../core/db";
-import * as clause from "../core/clause";
-import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema";
+} from "../testutils/db/temp_db.js";
+import DB, { Dialect } from "../core/db.js";
+import * as clause from "../core/clause.js";
+import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema.js";
 import { v1 } from "uuid";
-import { buildQuery } from "../core/query_impl";
-import { toDBColumnOrTable } from "../names/names";
+import { buildQuery } from "../core/query_impl.js";
+import { toDBColumnOrTable } from "../names/names.js";
 
 const ml = new MockLogs();
 

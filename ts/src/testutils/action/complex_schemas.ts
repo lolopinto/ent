@@ -1,7 +1,7 @@
-import { Ent, ID, Viewer, Data } from "../../core/base";
-import { loadEdges, loadEnts } from "../../core/ent";
-import { DataOperation } from "../../action/operations";
-import { ObjectLoaderFactory } from "../../core/loaders/object_loader";
+import { Ent, ID, Viewer, Data } from "../../core/base.js";
+import { loadEdges, loadEnts } from "../../core/ent.js";
+import { DataOperation } from "../../action/operations.js";
+import { ObjectLoaderFactory } from "../../core/loaders/object_loader.js";
 import {
   Action,
   Builder,
@@ -11,9 +11,9 @@ import {
   Trigger,
   Observer,
   TriggerReturn,
-} from "../../action/action";
-import { executeOperations } from "../../action/executor";
-import { EdgeInputData } from "../../action/orchestrator";
+} from "../../action/action.js";
+import { executeOperations } from "../../action/executor.js";
+import { EdgeInputData } from "../../action/orchestrator.js";
 import {
   User,
   Group,
@@ -25,32 +25,33 @@ import {
   getTableName,
   getBuilderSchemaFromFields,
   BaseEnt,
-} from "../../testutils/builder";
-import { LoggedOutViewer, IDViewer } from "../../core/viewer";
+} from "../../testutils/builder.js";
+import { LoggedOutViewer, IDViewer } from "../../core/viewer.js";
 import {
   StringType,
   TimestampType,
   BooleanType,
   UUIDType,
   FloatType,
-} from "../../schema/field";
-import { JSONBType } from "../../schema/json_field";
-import { FakeLogger, EntCreationObserver } from "../../testutils/fake_log";
-import { createRowForTest } from "../../testutils/write";
-import { AlwaysAllowPrivacyPolicy } from "../../core/privacy";
-import { MockLogs } from "../../testutils/mock_log";
-import { setLogLevels } from "../../core/logger";
-import * as action from "../../action";
-import { convertJSON } from "../../core/convert";
+} from "../../schema/field.js";
+import { JSONBType } from "../../schema/json_field.js";
+import { jest } from "@jest/globals";
+import { FakeLogger, EntCreationObserver } from "../../testutils/fake_log.js";
+import { createRowForTest } from "../../testutils/write.js";
+import { AlwaysAllowPrivacyPolicy } from "../../core/privacy.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { setLogLevels } from "../../core/logger.js";
+import * as action from "../../action/index.js";
+import { convertJSON } from "../../core/convert.js";
 import { v4 } from "uuid";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
   getSchemaTable,
   Table,
-} from "../db/temp_db";
-import { Dialect } from "../../core/db";
-import { ConstraintType } from "../../schema";
+} from "../db/temp_db.js";
+import { Dialect } from "../../core/db.js";
+import { ConstraintType } from "../../schema/index.js";
 
 const ml = new MockLogs();
 let operations: DataOperation<any, Viewer>[] = [];
@@ -221,8 +222,7 @@ export const MessageSchema = getBuilderSchemaFromFields(
   Message,
 );
 
-jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
-jest.spyOn(action, "saveBuilderX").mockImplementation(saveBuilderX);
+action.__setSaveBuilderOverridesForTests(saveBuilder, saveBuilderX);
 
 async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
   const changeset = await builder.build();

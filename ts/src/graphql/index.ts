@@ -15,20 +15,20 @@ export {
   CustomType,
   gqlInterfaceType,
   gqlUnionType,
-} from "./graphql";
+} from "./graphql.js";
 
-export { GraphQLTime } from "./scalars/time";
-export { GraphQLDate } from "./scalars/date";
-export { GraphQLOrderByDirection } from "./scalars/orderby_direction";
-export { GraphQLPageInfo } from "./query/page_info";
-export { GraphQLEdge, GraphQLEdgeConnection } from "./query/edge_connection";
+export { GraphQLTime } from "./scalars/time.js";
+export { GraphQLDate } from "./scalars/date.js";
+export { GraphQLOrderByDirection } from "./scalars/orderby_direction.js";
+export { GraphQLPageInfo } from "./query/page_info.js";
+export { GraphQLEdge, GraphQLEdgeConnection } from "./query/edge_connection.js";
 export {
   GraphQLEdgeType,
   GraphQLConnectionType,
-} from "./query/connection_type";
-export { GraphQLNodeInterface } from "./builtins/node";
-export { GraphQLConnectionInterface } from "./builtins/connection";
-export { GraphQLEdgeInterface } from "./builtins/edge";
+} from "./query/connection_type.js";
+export { GraphQLNodeInterface } from "./builtins/node.js";
+export { GraphQLConnectionInterface } from "./builtins/connection.js";
+export { GraphQLEdgeInterface } from "./builtins/edge.js";
 export {
   NodeResolver,
   EntNodeResolver,
@@ -39,5 +39,5 @@ export {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
   encodeGQLID,
-} from "./node_resolver";
-export { transformUnionTypes } from "./mutations/union";
+} from "./node_resolver.js";
+export { transformUnionTypes } from "./mutations/union.js";

@@ -20,23 +20,23 @@ import {
   SelectCustomDataOptions,
   SelectDataOptions,
   Viewer,
-} from "./base";
+} from "./base.js";
 import DB, {
   Dialect,
   QueryResult,
   QueryResultRow,
   Queryer,
   SyncQueryer,
-} from "./db";
+} from "./db.js";
 
-import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
+import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy.js";
 
 import DataLoader from "dataloader";
-import * as clause from "./clause";
-import { __getGlobalSchema } from "./global_schema";
-import { CacheMap } from "./loaders/loader";
-import { log, logEnabled, logTrace } from "./logger";
-import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
+import * as clause from "./clause.js";
+import { __getGlobalSchema } from "./global_schema.js";
+import { CacheMap } from "./loaders/loader.js";
+import { log, logEnabled, logTrace } from "./logger.js";
+import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl.js";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   private m = new Map();

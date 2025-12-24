@@ -4,12 +4,12 @@ import {
   ID,
   LoadEntOptions,
   Viewer,
-} from "../base";
-import * as clause from "../clause";
-import { AssocEdge, loadEdgeData, loadEntsList } from "../ent";
-import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader";
-import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
-import { BaseEdgeQuery, EdgeQuery, EdgeQueryFilter, IDInfo } from "./query";
+} from "../base.js";
+import * as clause from "../clause.js";
+import { AssocEdge, loadEdgeData, loadEntsList } from "../ent.js";
+import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader.js";
+import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader.js";
+import { BaseEdgeQuery, EdgeQuery, EdgeQueryFilter, IDInfo } from "./query.js";
 
 // TODO no more plurals for privacy reasons?
 export type EdgeQuerySource<

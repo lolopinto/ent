@@ -1,8 +1,8 @@
 import { DateTime } from "luxon";
 import { v1 } from "uuid";
-import { AnyEnt, SimpleBuilder } from "../../testutils/builder";
-import { TempDB, integer, table, text, uuid } from "../../testutils/db/temp_db";
-import { randomEmail } from "../../testutils/db/value";
+import { AnyEnt, SimpleBuilder } from "../../testutils/builder.js";
+import { TempDB, integer, table, text, uuid } from "../../testutils/db/temp_db.js";
+import { randomEmail } from "../../testutils/db/value.js";
 import {
   EdgeType,
   FakeEvent,
@@ -12,24 +12,24 @@ import {
   UserToEventsInNextWeekQuery,
   ViewerWithAccessToken,
   getNextWeekClause,
-} from "../../testutils/fake_data";
+} from "../../testutils/fake_data/index.js";
 import {
   addEdge,
   createAllEvents,
   createTestUser,
   inputs,
   setupTempDB,
-} from "../../testutils/fake_data/test_helpers";
-import { MockLogs } from "../../testutils/mock_log";
-import { createRowForTest } from "../../testutils/write";
-import { Data, Ent, Viewer, WriteOperation } from "../base";
-import * as clause from "../clause";
-import DB from "../db";
-import { loadCustomEnts } from "../ent";
-import { setLogLevels } from "../logger";
-import { OrderByOption, buildQuery, reverseOrderBy } from "../query_impl";
-import { LoggedOutViewer } from "../viewer";
-import { CustomClauseQuery } from "./custom_clause_query";
+} from "../../testutils/fake_data/test_helpers.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { createRowForTest } from "../../testutils/write.js";
+import { Data, Ent, Viewer, WriteOperation } from "../base.js";
+import * as clause from "../clause.js";
+import DB from "../db.js";
+import { loadCustomEnts } from "../ent.js";
+import { setLogLevels } from "../logger.js";
+import { OrderByOption, buildQuery, reverseOrderBy } from "../query_impl.js";
+import { LoggedOutViewer } from "../viewer.js";
+import { CustomClauseQuery } from "./custom_clause_query.js";
 
 const INTERVAL = 24 * 60 * 60 * 1000;
 

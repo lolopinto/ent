@@ -1,6 +1,6 @@
-import { StructField } from "./struct_field";
-import { FieldOptions, DBType, Type } from "./schema";
-import { BaseField, ListField } from "./field";
+import { StructField } from "./struct_field.js";
+import { FieldOptions, DBType, Type } from "./schema.js";
+import { BaseField, ListField } from "./field.js";
 
 export declare type StructMap = {
   [key: string]: StructField;

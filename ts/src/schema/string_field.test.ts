@@ -1,4 +1,4 @@
-import { ListField, StringField, StringType } from "./field";
+import { ListField, StringField, StringType } from "./field.js";
 
 interface testCase {
   fn: () => StringField;

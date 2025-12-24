@@ -1,17 +1,54 @@
-import { QueryRecorder } from "./db_mock";
-import { Pool } from "pg";
-import { createRowForTest, deleteRowsForTest, editRowForTest } from "./write";
-import { Data, ID } from "../core/base";
-import { loadRow, loadRows } from "../core/ent";
-import DB from "../core/db";
-import * as clause from "../core/clause";
-import { Where, EqOp } from "./parse_sql";
-import { setLogLevels } from "../core/logger";
+import { jest } from "@jest/globals";
+import type { Data, ID } from "../core/base.js";
+import type { Where } from "./parse_sql.js";
 
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
+jest.unstable_mockModule("pg", () => ({
+  __esModule: true,
+  default: {
+    types: {
+      builtins: {
+        TIMESTAMP: 1114,
+        DATE: 1082,
+      },
+      getTypeParser: jest.fn().mockReturnValue((val: string) => val),
+      setTypeParser: jest.fn(),
+    },
+  },
+  Pool: jest.fn(),
+}));
 
-beforeAll(() => {
+let Pool: typeof import("pg").Pool;
+let QueryRecorder: typeof import("./db_mock.js").QueryRecorder;
+let createRowForTest: typeof import("./write.js").createRowForTest;
+let deleteRowsForTest: typeof import("./write.js").deleteRowsForTest;
+let editRowForTest: typeof import("./write.js").editRowForTest;
+let loadRow: typeof import("../core/ent.js").loadRow;
+let loadRows: typeof import("../core/ent.js").loadRows;
+let DB: typeof import("../core/db.js").default;
+let clause: typeof import("../core/clause.js");
+let EqOp: typeof import("./parse_sql.js").EqOp;
+let setLogLevels: typeof import("../core/logger.js").setLogLevels;
+
+beforeAll(async () => {
+  const pg = await import("pg");
+  Pool = pg.Pool;
+  const dbMock = await import("./db_mock.js");
+  QueryRecorder = dbMock.QueryRecorder;
+  QueryRecorder.mockPool(Pool);
+  const write = await import("./write.js");
+  createRowForTest = write.createRowForTest;
+  deleteRowsForTest = write.deleteRowsForTest;
+  editRowForTest = write.editRowForTest;
+  const ent = await import("../core/ent.js");
+  loadRow = ent.loadRow;
+  loadRows = ent.loadRows;
+  const dbModule = await import("../core/db.js");
+  DB = dbModule.default;
+  clause = await import("../core/clause.js");
+  const parseSql = await import("./parse_sql.js");
+  EqOp = parseSql.EqOp;
+  const logger = await import("../core/logger.js");
+  setLogLevels = logger.setLogLevels;
   process.env.DB_CONNECTION_STRING = "INVALID DATABASE";
   setLogLevels("error");
 });

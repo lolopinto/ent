@@ -1,17 +1,17 @@
-import { Ent } from "../core/base";
-import { WriteOperation } from "../action/action";
-import DB from "../core/db";
-import { QueryRecorder, queryType } from "../testutils/db_mock";
+import { Ent } from "../core/base.js";
+import { WriteOperation } from "../action/action.js";
+import DB from "../core/db.js";
+import { QueryRecorder, queryType } from "../testutils/db_mock.js";
 import {
   User,
   Message,
   SimpleAction,
   getTableName,
   BuilderSchema,
-} from "../testutils/builder";
-import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { setupPostgres, setupSqlite } from "../testutils/db/temp_db";
-import { Transaction } from "./transaction";
+} from "../testutils/builder.js";
+import { LoggedOutViewer, IDViewer } from "../core/viewer.js";
+import { setupPostgres, setupSqlite } from "../testutils/db/temp_db.js";
+import { Transaction } from "./transaction.js";
 import {
   Account,
   AccountSchema,
@@ -28,12 +28,12 @@ import {
   UserBalanceSchema,
   UserBalanceWithCheckSchema,
   UserWithBalance,
-} from "../testutils/action/complex_schemas";
-import { randomEmail } from "../testutils/db/value";
-import { Clause } from "../core/clause";
-import { loadEntX } from "../core/ent";
-import { ObjectLoaderFactory } from "../core/loaders";
-import { NumberOps } from "./relative_value";
+} from "../testutils/action/complex_schemas.js";
+import { randomEmail } from "../testutils/db/value.js";
+import { Clause } from "../core/clause.js";
+import { loadEntX } from "../core/ent.js";
+import { ObjectLoaderFactory } from "../core/loaders/index.js";
+import { NumberOps } from "./relative_value.js";
 
 setupTest();
 const ml = getML();

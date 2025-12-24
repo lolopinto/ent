@@ -1,7 +1,7 @@
-import { PACKAGE } from "../core/const";
+import { PACKAGE } from "../core/const.js";
 import ts from "typescript";
-import { getClassInfo, getPreText } from "./ast";
-import { TransformFile } from "./transform";
+import { getClassInfo, getPreText } from "./ast.js";
+import { TransformFile } from "./transform.js";
 
 function isPrivacyPolicy(mm: ts.ClassElement) {
   return (

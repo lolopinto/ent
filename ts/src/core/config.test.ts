@@ -1,7 +1,7 @@
-import { loadConfig } from "./config";
-import DB, { Dialect } from "./db";
-import { logEnabled, logIf } from "./logger";
-import { MockLogs } from "../testutils/mock_log";
+import { loadConfig } from "./config.js";
+import DB, { Dialect } from "./db.js";
+import { logEnabled, logIf } from "./logger.js";
+import { MockLogs } from "../testutils/mock_log.js";
 
 afterEach(() => {
   delete process.env.DB_CONNECTION_STRING;

@@ -7,7 +7,7 @@ import {
   ListField,
   NumberField,
   NumberOptions,
-} from "./field";
+} from "./field.js";
 
 interface testCase {
   fn: () => NumberField<any>;

@@ -5,7 +5,7 @@ import {
   Trigger,
   Validator,
   Observer,
-} from "../action";
+} from "../action/index.js";
 import {
   Ent,
   Viewer,
@@ -15,15 +15,15 @@ import {
   DenyWithReason,
   Skip,
   Allow,
-} from "../core/base";
-import { loadRows } from "../core/ent";
+} from "../core/base.js";
+import { loadRows } from "../core/ent.js";
 import {
   EditNodeOperation,
   DeleteNodeOperation,
   DataOperation,
-} from "./operations";
-import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { Changeset } from "../action";
+} from "./operations.js";
+import { LoggedOutViewer, IDViewer } from "../core/viewer.js";
+import { Changeset } from "../action/index.js";
 import {
   EnumField,
   EnumOptions,
@@ -33,8 +33,8 @@ import {
   TimestampType,
   UUIDListType,
   UUIDType,
-} from "../schema/field";
-import { JSONBType } from "../schema/json_field";
+} from "../schema/field.js";
+import { JSONBType } from "../schema/json_field.js";
 import {
   User,
   Event,
@@ -44,8 +44,8 @@ import {
   SimpleAction,
   getBuilderSchemaFromFields,
   BaseEnt,
-} from "../testutils/builder";
-import { FakeComms, Mode } from "../testutils/fake_comms";
+} from "../testutils/builder.js";
+import { FakeComms, Mode } from "../testutils/fake_comms.js";
 import {
   AllowIfViewerRule,
   AlwaysAllowRule,
@@ -56,12 +56,12 @@ import {
   AlwaysDenyPrivacyPolicy,
   AlwaysAllowPrivacyPolicy,
   AllowIfViewerIsEntPropertyRule,
-} from "../core/privacy";
-import { createRowForTest } from "../testutils/write";
-import * as clause from "../core/clause";
-import { clearLogLevels, setLogLevels } from "../core/logger";
+} from "../core/privacy.js";
+import { createRowForTest } from "../testutils/write.js";
+import * as clause from "../core/clause.js";
+import { clearLogLevels, setLogLevels } from "../core/logger.js";
 
-import { MockLogs } from "../testutils/mock_log";
+import { MockLogs } from "../testutils/mock_log.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
@@ -69,19 +69,19 @@ import {
   setupPostgres,
   setupSqlite,
   Table,
-} from "../testutils/db/temp_db";
-import DB, { Dialect } from "../core/db";
+} from "../testutils/db/temp_db.js";
+import DB, { Dialect } from "../core/db.js";
 import {
   convertBool,
   convertDate,
   convertJSON,
   convertList,
-} from "../core/convert";
+} from "../core/convert.js";
 import { v4 } from "uuid";
-import { NumberOps } from "./relative_value";
-import { StructType, BooleanType } from "../schema";
-import { randomEmail } from "../testutils/db/value";
-import { toDBColumnOrTable } from "../names/names";
+import { NumberOps } from "./relative_value.js";
+import { StructType, BooleanType } from "../schema/index.js";
+import { randomEmail } from "../testutils/db/value.js";
+import { toDBColumnOrTable } from "../names/names.js";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 
@@ -1299,7 +1299,7 @@ function commonTests() {
         return AlwaysDenyPrivacyPolicy;
       };
 
-      await expect(action.saveX()).rejects.toThrowError(
+      await expect(action.saveX()).rejects.toThrow(
         "Logged out Viewer does not have permission to create DenyAllUser",
       );
     });
@@ -1385,7 +1385,7 @@ function commonTests() {
         },
       ];
 
-      await expect(action.saveX()).rejects.toThrowError(
+      await expect(action.saveX()).rejects.toThrow(
         "thou shall not pass. DenyUser",
       );
     });
@@ -1462,7 +1462,7 @@ function commonTests() {
         },
       ];
 
-      await expect(action.saveX()).rejects.toThrowError(
+      await expect(action.saveX()).rejects.toThrow(
         "thou shall not pass. DenyAccount",
       );
     });
@@ -1622,7 +1622,7 @@ function commonTests() {
             };
           },
         ),
-      ).rejects.toThrowError(
+      ).rejects.toThrow(
         /does not have permission to create EventWithEditPrivacy/,
       );
     });
@@ -1654,7 +1654,7 @@ function commonTests() {
             delete action.viewerForEntLoad;
           },
         ),
-      ).rejects.toThrowError(/host_ids/);
+      ).rejects.toThrow(/host_ids/);
     });
 
     // works on either field
@@ -1685,7 +1685,7 @@ function commonTests() {
             delete action.viewerForEntLoad;
           },
         ),
-      ).rejects.toThrowError(/slug/);
+      ).rejects.toThrow(/slug/);
     });
 
     test("host_ids and slug set. non-owner cannot create", async () => {
@@ -1717,7 +1717,7 @@ function commonTests() {
           },
         ),
         // fails with one of them
-      ).rejects.toThrowError(/slug|host_ids/);
+      ).rejects.toThrow(/slug|host_ids/);
     });
 
     test("host_ids set in trigger by person who can't edit. goes through", async () => {
@@ -1833,7 +1833,7 @@ function commonTests() {
         WriteOperation.Edit,
         event,
       );
-      await expect(action2.saveX()).rejects.toThrowError(/host_ids/);
+      await expect(action2.saveX()).rejects.toThrow(/host_ids/);
     });
 
     test("host_ids set in trigger by host who cannot edit. goes through", async () => {
@@ -1916,7 +1916,7 @@ function commonTests() {
         WriteOperation.Edit,
         event,
       );
-      await expect(action2.saveX()).rejects.toThrowError(/show_guest_list/);
+      await expect(action2.saveX()).rejects.toThrow(/show_guest_list/);
     });
   });
 

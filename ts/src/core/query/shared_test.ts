@@ -1,7 +1,7 @@
-import { WriteOperation } from "../../action";
-import { BuilderSchema, SimpleAction } from "../../testutils/builder";
-import { TestContext } from "../../testutils/context/test_context";
-import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
+import { WriteOperation } from "../../action/index.js";
+import { BuilderSchema, SimpleAction } from "../../testutils/builder.js";
+import { TestContext } from "../../testutils/context/test_context.js";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db.js";
 import {
   EdgeType,
   FakeContact,
@@ -13,7 +13,7 @@ import {
   UserToContactsFkeyQueryDeletedAt,
   UserToContactsFkeyQueryDeletedAtAsc,
   UserToContactsFkeyQueryDeprecated,
-} from "../../testutils/fake_data/index";
+} from "../../testutils/fake_data/index.js";
 import {
   createAllContacts,
   createEdges,
@@ -23,27 +23,27 @@ import {
   verifyUserToContactEdges,
   verifyUserToContactRawData,
   verifyUserToContacts,
-} from "../../testutils/fake_data/test_helpers";
-import { MockLogs } from "../../testutils/mock_log";
+} from "../../testutils/fake_data/test_helpers.js";
+import { MockLogs } from "../../testutils/mock_log.js";
 import {
   getVerifyAfterEachCursorGeneric,
   getWhereClause,
-} from "../../testutils/query";
-import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
-import { Data, ID, Viewer } from "../base";
-import { Clause, PaginationUnboundColsQuery } from "../clause";
+} from "../../testutils/query.js";
+import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema.js";
+import { Data, ID, Viewer } from "../base.js";
+import { Clause, PaginationUnboundColsQuery } from "../clause.js";
 import {
   AssocEdge,
   cursorOptions,
   getCursor,
   getDefaultLimit,
   setDefaultLimit,
-} from "../ent";
-import { setGlobalSchema } from "../global_schema";
-import { setLogLevels } from "../logger";
-import { getOrderByPhrase, OrderBy, reverseOrderBy } from "../query_impl";
-import { IDViewer, LoggedOutViewer } from "../viewer";
-import { EdgeQuery } from "./query";
+} from "../ent.js";
+import { setGlobalSchema } from "../global_schema.js";
+import { setLogLevels } from "../logger.js";
+import { getOrderByPhrase, OrderBy, reverseOrderBy } from "../query_impl.js";
+import { IDViewer, LoggedOutViewer } from "../viewer.js";
+import { EdgeQuery } from "./query.js";
 
 interface options<TData extends Data> {
   newQuery: (

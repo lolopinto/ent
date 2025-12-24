@@ -1,15 +1,15 @@
-import { LoggedOutViewer } from "../core/viewer";
+import { LoggedOutViewer } from "../core/viewer.js";
 
-import { IntegerType, Schema, StructType } from ".";
-import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
-import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
-import DB, { Dialect } from "../core/db";
-import { Ent } from "../core/base";
-import { loadConfig } from "../core/config";
-import { convertJSON } from "../core/convert";
-import { JSONType, JSONBType } from "./json_field";
-import { FieldMap } from "./schema";
-import { WriteOperation } from "../action";
+import { IntegerType, Schema, StructType } from "./index.js";
+import { User, SimpleAction, BuilderSchema } from "../testutils/builder.js";
+import { TempDB, getSchemaTable } from "../testutils/db/temp_db.js";
+import DB, { Dialect } from "../core/db.js";
+import { Ent } from "../core/base.js";
+import { loadConfig } from "../core/config.js";
+import { convertJSON } from "../core/convert.js";
+import { JSONType, JSONBType } from "./json_field.js";
+import { FieldMap } from "./schema.js";
+import { WriteOperation } from "../action/index.js";
 
 let tdb: TempDB;
 

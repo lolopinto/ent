@@ -5,7 +5,7 @@ import {
   GraphQLSchema,
   GraphQLString,
 } from "graphql";
-import { expectQueryFromRoot } from "../testutils/ent-graphql-tests/";
+import { expectQueryFromRoot } from "../testutils/ent-graphql-tests/index.js";
 
 const LangDifferentKVType = new GraphQLEnumType({
   name: "langDiffKV",

@@ -1,10 +1,17 @@
 import * as glob from "glob";
 import * as path from "path";
 import minimist from "minimist";
-import { parseSchema } from "../parse_schema/parse";
-import { getCustomInfo } from "../tsc/ast";
-import { GlobalSchema } from "../schema/schema";
-import { toClassName } from "../names/names";
+import { createRequire } from "node:module";
+import { getCustomInfo } from "../tsc/ast.js";
+import { GlobalSchema } from "../schema/schema.js";
+import { toClassName } from "../names/names.js";
+
+const nodeRequire = createRequire(import.meta.url);
+const parseSchemaModule = import(
+  new URL("../parse_schema/parse.js", import.meta.url).href,
+).catch(() =>
+  import(new URL("../parse_schema/parse.ts", import.meta.url).href),
+);
 
 function main() {
   const options = minimist(process.argv.slice(2));
@@ -26,7 +33,7 @@ function main() {
   for (const p of paths) {
     const basename = path.basename(p);
     if (basename === globalSchemaPath) {
-      globalSchema = require(p).default;
+      globalSchema = nodeRequire(p).default;
       continue;
     }
 
@@ -44,7 +51,7 @@ function main() {
     if (index !== -1) {
       relativePath = p.substring(index);
     }
-    const s = require(p).default;
+    const s = nodeRequire(p).default;
     if (relativePath !== undefined) {
       s.schemaPath = relativePath;
     }
@@ -54,9 +61,15 @@ function main() {
 
   // NB: do not change this to async/await
   // doing so runs it buffer limit on linux (65536 bytes) and we lose data reading in go
-  parseSchema(potentialSchemas, globalSchema).then((result) => {
-    console.log(JSON.stringify(result));
-  });
+  parseSchemaModule
+    .then(({ parseSchema }) => parseSchema(potentialSchemas, globalSchema))
+    .then((result) => {
+      console.log(JSON.stringify(result));
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
 }
 
 try {

@@ -1,41 +1,41 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { TestContext } from "../../testutils/context/test_context";
-import { setLogLevels } from "../logger";
-import { MockLogs } from "../../testutils/mock_log";
+import { TestContext } from "../../testutils/context/test_context.js";
+import { setLogLevels } from "../logger.js";
+import { MockLogs } from "../../testutils/mock_log.js";
 import {
   EdgeQueryableDataOptions,
   EdgeQueryableDataOptionsConfigureLoader,
   ID,
   WriteOperation,
-} from "../base";
-import { buildQuery } from "../query_impl";
+} from "../base.js";
+import { buildQuery } from "../query_impl.js";
 import {
   clearGlobalSchema,
   setGlobalSchema,
   __hasGlobalSchema,
-} from "../global_schema";
+} from "../global_schema.js";
 
-import * as clause from "../clause";
+import * as clause from "../clause.js";
 
-import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db.js";
 import {
   EdgeType,
   FakeContact,
   FakeUser,
   FakeUserSchema,
-} from "../../testutils/fake_data/index";
+} from "../../testutils/fake_data/index.js";
 import {
   createAllContacts,
   setupTempDB,
   tempDBTables,
-} from "../../testutils/fake_data/test_helpers";
+} from "../../testutils/fake_data/test_helpers.js";
 import {
   AssocEdgeCountLoader,
   AssocEdgeCountLoaderFactory,
-} from "./assoc_count_loader";
-import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
-import { SimpleAction } from "../../testutils/builder";
+} from "./assoc_count_loader.js";
+import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema.js";
+import { SimpleAction } from "../../testutils/builder.js";
 
 const ml = new MockLogs();
 

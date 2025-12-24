@@ -1,6 +1,6 @@
-import { Data, ID, QueryableDataOptions, SelectDataOptions } from "./base";
-import DB, { Dialect } from "./db";
-import { buildQuery } from "./query_impl";
+import { Data, ID, QueryableDataOptions, SelectDataOptions } from "./base.js";
+import DB, { Dialect } from "./db.js";
+import { buildQuery } from "./query_impl.js";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
 

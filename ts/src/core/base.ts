@@ -1,6 +1,6 @@
-import * as clause from "./clause";
-import { ObjectLoaderFactory } from "./loaders";
-import { OrderBy } from "./query_impl";
+import * as clause from "./clause.js";
+import { ObjectLoaderFactory } from "./loaders/index.js";
+import { OrderBy } from "./query_impl.js";
 
 // Loader is the primitive data fetching abstraction in the framework
 // implementation details up to each instance

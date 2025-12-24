@@ -8,13 +8,16 @@ import {
   isSrcGeneratedImport,
   transformRelative,
   customInfo,
-} from "../tsc/ast";
-import { Action } from "../action";
-import { LoggedOutViewer } from "../core/viewer";
+} from "../tsc/ast.js";
+import { Action } from "../action/index.js";
+import { LoggedOutViewer } from "../core/viewer.js";
 import * as path from "path";
-import { Data } from "../core/base";
-import { TransformFile } from "./transform";
-import { toFilePath } from "../names/names";
+import { createRequire } from "node:module";
+import { Data } from "../core/base.js";
+import { TransformFile } from "./transform.js";
+import { toFilePath } from "../names/names.js";
+
+const nodeRequire = createRequire(import.meta.url);
 
 interface baseFileInfo {
   input: string;
@@ -146,7 +149,7 @@ export class TransformAction implements TransformFile {
     }
 
     // require action
-    const p = require(path.join(process.cwd(), "./" + file.slice(0, -3)));
+    const p = nodeRequire(path.join(process.cwd(), "./" + file.slice(0, -3)));
     const action: Action<any, any> = new p.default(new LoggedOutViewer(), {});
     const actionName = action.constructor.name;
 

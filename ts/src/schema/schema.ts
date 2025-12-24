@@ -1,9 +1,9 @@
-import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
-import { Builder, Changeset } from "../action/action";
-import { Clause } from "../core/clause";
-import { AssocEdgeInput } from "../action/operations";
-import { toDBColumnOrTable } from "../names/names";
-import { OrderBy } from "../core/query_impl";
+import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base.js";
+import { Builder, Changeset } from "../action/action.js";
+import { Clause } from "../core/clause.js";
+import { AssocEdgeInput } from "../action/operations.js";
+import { toDBColumnOrTable } from "../names/names.js";
+import { OrderBy } from "../core/query_impl.js";
 
 export declare type FieldMap = {
   [key: string]: Field;

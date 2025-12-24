@@ -7,7 +7,7 @@ import {
   CustomQuery,
   CustomType,
   CustomTypeInput,
-} from "./graphql";
+} from "./graphql.js";
 
 export function validateOneCustomField(expected: CustomField) {
   let customFields = GQLCapture.getCustomFields();

@@ -1,8 +1,8 @@
 import { Client } from "pg";
-import { Data } from "../../core/base";
-import { getFields, getStorageKey, Schema } from "../../schema";
-import { getDefaultValue } from "./value";
-import { buildInsertQuery } from "../../core/ent";
+import { Data } from "../../core/base.js";
+import { getFields, getStorageKey, Schema } from "../../schema/index.js";
+import { getDefaultValue } from "./value.js";
+import { buildInsertQuery } from "../../core/ent.js";
 
 interface Options {
   overrides?: Data;
