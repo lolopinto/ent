@@ -79,7 +79,7 @@ import {
 } from "../core/convert";
 import { v4 } from "uuid";
 import { NumberOps } from "./relative_value";
-import { StructType, BooleanType } from "../schema";
+import { StructType, StructTypeAsList, BooleanType } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 import { toDBColumnOrTable } from "../names/names";
 
@@ -151,6 +151,27 @@ const UserSchemaDefaultValueOnCreateJSON = getBuilderSchemaFromFields(
     }),
   },
   UserDefaultValueOnCreate,
+);
+
+class UserDefaultStructList extends User {}
+
+const UserSchemaDefaultStructList = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+    prefsList: StructTypeAsList({
+      tsType: "PrefsList",
+      fields: {
+        foo: StringType(),
+        bar: StringType(),
+      },
+      defaultValueOnCreate: () => [
+        { foo: "hello", bar: "world" },
+        { foo: "hi", bar: "there" },
+      ],
+    }),
+  },
+  UserDefaultStructList,
 );
 
 const UserSchemaDefaultValueOnCreateInvalidJSON = getBuilderSchemaFromFields(
@@ -454,6 +475,7 @@ const getTables = () => {
     UserSchemaServerDefault,
     UserSchemaDefaultValueOnCreate,
     UserSchemaDefaultValueOnCreateJSON,
+    UserSchemaDefaultStructList,
     UserSchemaDefaultValueOnCreateInvalidJSON,
     UserWithPrefsSchema,
     UserWithBalanceSchema,
@@ -634,6 +656,26 @@ function commonTests() {
     );
 
     await builder.build();
+  });
+
+  test("default struct list formatted in edited data", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      UserSchemaDefaultStructList,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+
+    const data = await builder.orchestrator.getEditedData();
+    expect(typeof data.prefs_list).toBe("string");
+    expect(JSON.parse(data.prefs_list)).toStrictEqual([
+      { foo: "hello", bar: "world" },
+      { foo: "hi", bar: "there" },
+    ]);
   });
 
   test("required field when default value on create json wrong", async () => {
