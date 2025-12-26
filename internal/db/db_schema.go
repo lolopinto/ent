@@ -216,13 +216,13 @@ func (constraint *uniqueConstraint) getColumns() []*dbColumn {
 }
 
 type indexConstraint struct {
-	dbColumns []*dbColumn
-	tableName string
-	unique    bool
-	name      string
-	indexType input.IndexType
+	dbColumns    []*dbColumn
+	tableName    string
+	unique       bool
+	name         string
+	indexType    input.IndexType
 	concurrently bool
-	where     string
+	where        string
 }
 
 func (constraint *indexConstraint) getInfo() (string, []string) {
@@ -236,10 +236,10 @@ func (constraint *indexConstraint) getInfo() (string, []string) {
 	}
 
 	idxName := constraint.name
-		if idxName == "" {
-			idxNameParts = append(idxNameParts, "idx")
-			idxName = names.ToDBColumn(idxNameParts...)
-		}
+	if idxName == "" {
+		idxNameParts = append(idxNameParts, "idx")
+		idxName = names.ToDBColumn(idxNameParts...)
+	}
 
 	return strconv.Quote(idxName), colNames
 }
@@ -558,13 +558,13 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 		}
 
 		constraint := &indexConstraint{
-			dbColumns: cols,
-			tableName: nodeData.GetTableName(),
-			unique:    index.Unique,
-			name:      index.Name,
-			indexType: index.IndexType,
+			dbColumns:    cols,
+			tableName:    nodeData.GetTableName(),
+			unique:       index.Unique,
+			name:         index.Name,
+			indexType:    index.IndexType,
 			concurrently: index.Concurrently,
-			where:     index.Where,
+			where:        index.Where,
 		}
 		if index.IndexType == "" {
 			if len(cols) == 1 {
@@ -1169,13 +1169,13 @@ func (s *dbSchema) addEdgeIndices(tableName string, columns []*dbColumn, constra
 		}
 
 		constraint := &indexConstraint{
-			dbColumns: cols,
-			tableName: tableName,
-			unique:    index.Unique,
-			name:      name,
-			indexType: index.IndexType,
+			dbColumns:    cols,
+			tableName:    tableName,
+			unique:       index.Unique,
+			name:         name,
+			indexType:    index.IndexType,
 			concurrently: index.Concurrently,
-			where:     index.Where,
+			where:        index.Where,
 		}
 		if index.FullText != nil {
 			panic("full text indexes not supported for edge tables")
@@ -1365,10 +1365,10 @@ func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbC
 		return
 	}
 	constraint := &indexConstraint{
-		dbColumns: []*dbColumn{col},
-		tableName: tableName,
+		dbColumns:    []*dbColumn{col},
+		tableName:    tableName,
 		concurrently: f.IndexConcurrently(),
-		where:     f.IndexWhere(),
+		where:        f.IndexWhere(),
 	}
 	// default index type for lists when not specified is gin type
 	idxType := s.getDefaultIndexType(f)

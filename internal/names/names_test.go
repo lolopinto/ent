@@ -118,7 +118,6 @@ func TestGraphQLEnumName(t *testing.T) {
 	}
 }
 
-
 func TestToClassType(t *testing.T) {
 	tests := []test{
 		{[]string{"Foo", "Type"}, "FooType"},
