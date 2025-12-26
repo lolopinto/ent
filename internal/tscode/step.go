@@ -1235,6 +1235,9 @@ func writeMixinBuilderFile(processor *codegen.Processor, pattern *schema.Pattern
 func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["edgeInfos"] = action.GetEdgesFromEdges
+	m["isListField"] = func(f *field.Field) bool {
+		return enttype.IsListType(f.GetFieldType())
+	}
 	m["excludedFieldsType"] = func(inputName string, excludedFields []*field.Field) string {
 		var excluded []string
 		for _, f := range excludedFields {

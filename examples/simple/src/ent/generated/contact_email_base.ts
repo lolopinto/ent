@@ -29,6 +29,7 @@ import { ContactLabel, NodeType, convertContactLabel } from "./types";
 import {
   Contact,
   ContactEmailToCommentsQuery,
+  ContactEmailToEmailsForContactsQuery,
   ContactEmailToLikersQuery,
   ContactInfoMixin,
   FeedbackMixin,
@@ -235,6 +236,10 @@ export class ContactEmailBase
 
   queryComments(): ContactEmailToCommentsQuery {
     return ContactEmailToCommentsQuery.query(this.viewer, this.id);
+  }
+
+  queryEmailsForContacts(): ContactEmailToEmailsForContactsQuery {
+    return ContactEmailToEmailsForContactsQuery.query(this.viewer, this.id);
   }
 
   queryLikers(): ContactEmailToLikersQuery {

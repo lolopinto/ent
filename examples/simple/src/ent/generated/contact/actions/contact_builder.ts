@@ -250,6 +250,31 @@ export class ContactBuilder<
       }
     };
     addField("email_ids", input.emailIds);
+    if (
+      input.emailIds !== undefined ||
+      this.operation === WriteOperation.Delete
+    ) {
+      const inputemailIds = input.emailIds;
+      if (inputemailIds) {
+        inputemailIds.forEach((id) =>
+          this.orchestrator.addInboundEdge(
+            id,
+            EdgeType.ContactEmailToEmailsForContacts,
+            NodeType.ContactEmail,
+          ),
+        );
+      }
+      if (this.existingEnt && this.existingEnt.emailIds) {
+        this.existingEnt.emailIds.forEach((id) => {
+          if (!inputemailIds || !inputemailIds.includes(id)) {
+            this.orchestrator.removeInboundEdge(
+              id,
+              EdgeType.ContactEmailToEmailsForContacts,
+            );
+          }
+        });
+      }
+    }
     addField("phone_number_ids", input.phoneNumberIds);
     addField("firstName", input.firstName);
     addField("lastName", input.lastName);

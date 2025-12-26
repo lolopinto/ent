@@ -12,6 +12,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 ### Fixed
 
 - fix types for struct list for on demand types (#1911)
+- fix builder codegen for list inverse edges
 
 ## [0.3.0]
 

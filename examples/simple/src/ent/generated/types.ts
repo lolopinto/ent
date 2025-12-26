@@ -39,6 +39,8 @@ export enum EdgeType {
   AddressToHostedEvents = "d1979d4b-d033-4562-b078-cc528fec25bb",
   // CommentToPost is the edgeType for the comment to post edge.
   CommentToPost = "f430af94-d38a-4aaa-a92f-cfc56b6f811b",
+  // ContactEmailToEmailsForContacts is the edgeType for the contactEmail to emailsforcontacts edge.
+  ContactEmailToEmailsForContacts = "daee7f0d-264f-44da-b2ff-5481e4143b22",
   // ContactToSelfContactForUser is the edgeType for the contact to selfcontactforuser edge.
   ContactToSelfContactForUser = "71483ce5-06f3-4468-bf05-afecd3a430e2",
   // EventToAttending is the edgeType for the event to attending edge.

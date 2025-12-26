@@ -386,6 +386,57 @@ test("multiple emails", async () => {
   expect(email1Reloaded.emailAddress).toBe(newEmail);
 });
 
+test("email_ids inverse edge updates", async () => {
+  const user = await createUser();
+  const contact = await CreateContactAction.create(new ExampleViewer(user.id), {
+    emails: [
+      {
+        emailAddress: randomEmail(),
+        label: ContactLabel.Default,
+        ownerId: user.id,
+      },
+      {
+        emailAddress: randomEmail(),
+        label: ContactLabel.Work,
+        ownerId: user.id,
+      },
+    ],
+    firstName: "Arya",
+    lastName: "Stark",
+    userId: user.id,
+  }).saveX();
+
+  const emails = await contact.loadEmails();
+  expect(emails.length).toBe(2);
+  const email1 = emails[0];
+  const email2 = emails[1];
+
+  const email1Loaded = await ContactEmail.loadX(contact.viewer, email1.id);
+  const email2Loaded = await ContactEmail.loadX(contact.viewer, email2.id);
+
+  const [email1Contacts, email2Contacts] = await Promise.all([
+    email1Loaded.queryEmailsForContacts().queryEnts(),
+    email2Loaded.queryEmailsForContacts().queryEnts(),
+  ]);
+  expect(email1Contacts.length).toBe(1);
+  expect(email2Contacts.length).toBe(1);
+  expect(email1Contacts[0].id).toBe(contact.id);
+  expect(email2Contacts[0].id).toBe(contact.id);
+
+  await EditContactAction.create(contact.viewer, contact, {
+    emailIds: [email1.id],
+  }).saveX();
+
+  const email2Reloaded = await ContactEmail.loadX(contact.viewer, email2.id);
+  const [email1ContactsAfter, email2ContactsAfter] = await Promise.all([
+    email1Loaded.queryEmailsForContacts().queryEnts(),
+    email2Reloaded.queryEmailsForContacts().queryEnts(),
+  ]);
+  expect(email1ContactsAfter.length).toBe(1);
+  expect(email1ContactsAfter[0].id).toBe(contact.id);
+  expect(email2ContactsAfter.length).toBe(0);
+});
+
 test("multiple phonenumbers", async () => {
   const user = await createUser();
   const input = {
