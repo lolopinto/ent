@@ -78,6 +78,18 @@ sa.Table("comments", metadata,
     sa.PrimaryKeyConstraint("id", name="comments_id_pkey"),
 )
    
+sa.Table("contact_email_emails_for_contacts_edges", metadata,
+    sa.Column("id1", postgresql.UUID(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", postgresql.UUID(), nullable=False),
+    sa.Column("id2", postgresql.UUID(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="contact_email_emails_for_contacts_edges_id1_edge_type_id2_pkey"),
+    sa.Index("contact_email_emails_for_contacts_edges_time_idx", "time"),
+)
+   
 sa.Table("contact_emails", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -333,6 +345,7 @@ metadata.info["edges"] = {
   'public': {
     'AddressToHostedEventsEdge': {"edge_name":"AddressToHostedEventsEdge", "edge_type":"d1979d4b-d033-4562-b078-cc528fec25bb", "edge_table":"address_hosted_events_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'CommentToPostEdge': {"edge_name":"CommentToPostEdge", "edge_type":"f430af94-d38a-4aaa-a92f-cfc56b6f811b", "edge_table":"object_comments_edges", "symmetric_edge":False, "inverse_edge_type":"8caba9c4-8035-447f-9eb1-4dd09a2d250c"},
+    'ContactEmailToEmailsForContactsEdge': {"edge_name":"ContactEmailToEmailsForContactsEdge", "edge_type":"daee7f0d-264f-44da-b2ff-5481e4143b22", "edge_table":"contact_email_emails_for_contacts_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'ContactToSelfContactForUserEdge': {"edge_name":"ContactToSelfContactForUserEdge", "edge_type":"71483ce5-06f3-4468-bf05-afecd3a430e2", "edge_table":"user_self_contact_edges", "symmetric_edge":False, "inverse_edge_type":"d504201d-cf3f-4eef-b6a0-0b46a7ae186b"},
     'EventToAttendingEdge': {"edge_name":"EventToAttendingEdge", "edge_type":"6ebc0c47-ea29-4635-b991-95e44162174d", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"2a98ba02-e342-4bb4-93f6-5d7ed02f5c48"},
     'EventToDeclinedEdge': {"edge_name":"EventToDeclinedEdge", "edge_type":"db8d2454-f7b2-4147-aae1-e666daf3f3c3", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"1c7c173b-63ce-4002-b121-4a87f82047dd"},
