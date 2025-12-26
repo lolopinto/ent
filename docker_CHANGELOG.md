@@ -12,6 +12,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 ### Fixed
 
 - fix types for struct list for on demand types (#1911)
+- exclude action-only fields when embedding action inputs
 
 ## [0.3.0]
 

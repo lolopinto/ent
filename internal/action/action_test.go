@@ -1126,6 +1126,98 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 	)
 }
 
+func TestEmbeddedActionOnlyFieldsExcluded(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		map[string]string{
+			"first_ent.ts": testhelper.GetCodeWithSchema(
+				`
+				import {EntSchema, ActionOperation, StringType} from "{schema}";
+
+				const FirstEnt = new EntSchema({
+					fields: {
+						name: StringType(),
+					},
+					actions: [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "specialActionOnlyField",
+								type: "Boolean",
+								optional: true,
+							}],
+						},
+					],
+				});
+				export default FirstEnt;`),
+			"second_ent.ts": testhelper.GetCodeWithSchema(
+				`
+				import {EntSchema, ActionOperation, StringType} from "{schema}";
+
+				const SecondEnt = new EntSchema({
+					fields: {
+						name: StringType(),
+					},
+					actions: [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "actionReference",
+								type: "Object",
+								actionName: "CreateFirstEntAction",
+								excludedFields: ["specialActionOnlyField"],
+							}],
+						},
+					],
+				});
+				export default SecondEnt;`),
+		},
+	)
+
+	actionInfo := schema.Nodes["SecondEnt"].NodeData.ActionInfo
+	require.NotNil(t, actionInfo)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name: "CreateSecondEntAction",
+				fields: []expectedField{
+					{
+						name:    "name",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+				},
+				actionOnlyFields: []actionOnlyField{
+					{
+						name: "actionReference",
+						typ: fieldType{
+							tsType:      "customActionReferenceInput",
+							graphqlType: "ActionReferenceSecondEntCreateInput!",
+						},
+					},
+				},
+				customInterfaces: []customInterface{
+					{
+						fields: []expectedField{
+							{
+								name:    "name",
+								tsType:  "string",
+								gqlType: "String!",
+							},
+						},
+						tsType:     "customActionReferenceInput",
+						gqlType:    "ActionReferenceSecondEntCreateInput",
+						actionName: "CreateFirstEntAction",
+					},
+				},
+			},
+		},
+	)
+}
+
 func TestFieldEdgeFields(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(
 		t,
