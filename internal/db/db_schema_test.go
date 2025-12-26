@@ -341,6 +341,25 @@ func TestGeneratedTableForEdge(t *testing.T) {
 	testEdgeTable(t, table)
 }
 
+func TestGeneratedTableForExistingEdge(t *testing.T) {
+	schema := getTestSchema(t)
+	schema.schema.AddExistingEdgeTable("account_folders_edges")
+	require.Nil(t, schema.generateShemaTables())
+
+	table := getTestTableByNameFromSchema(t, schema, "account_folders_edges")
+	constraint := getTestPrimaryKeyConstraintFromTable(t, table, "ID1", "EdgeType", "ID2")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.PrimaryKeyConstraint(%s, %s, %s, name=%s)",
+			strconv.Quote("id1"),
+			strconv.Quote("edge_type"),
+			strconv.Quote("id2"),
+			strconv.Quote(fmt.Sprintf("%s_id1_edge_type_id2_pkey", table.TableName)),
+		),
+	)
+}
+
 func TestGeneratedTableForUniqueEdge(t *testing.T) {
 	table := getTestTableByName("event_creator_edges", t)
 	testEdgeTable(t, table)
@@ -3122,7 +3141,7 @@ func testEdgeTable(t *testing.T, table *dbTable) {
 			strconv.Quote("id1"),
 			strconv.Quote("edge_type"),
 			strconv.Quote("id2"),
-			strconv.Quote(fmt.Sprintf("%s_id1_edge_type_id2_pkey", table.TableName)),
+			strconv.Quote(fmt.Sprintf("%s_pkey", table.TableName)),
 		),
 	)
 }
@@ -3344,6 +3363,18 @@ func getTestTableByName(tableName string, t *testing.T) *dbTable {
 	tableName = strconv.Quote(tableName)
 	schema := getTestSchema(t)
 	require.Nil(t, schema.generateShemaTables())
+
+	for _, table := range schema.Tables {
+		if table.QuotedTableName == tableName {
+			return table
+		}
+	}
+	require.Fail(t, "no dbtable info for table %s", tableName)
+	return nil
+}
+
+func getTestTableByNameFromSchema(t *testing.T, schema *dbSchema, tableName string) *dbTable {
+	tableName = strconv.Quote(tableName)
 
 	for _, table := range schema.Tables {
 		if table.QuotedTableName == tableName {

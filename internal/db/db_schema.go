@@ -236,12 +236,27 @@ func (constraint *indexConstraint) getInfo() (string, []string) {
 	}
 
 	idxName := constraint.name
-	if idxName == "" {
-		idxNameParts = append(idxNameParts, "idx")
-		idxName = names.ToDBColumn(idxNameParts...)
-	}
+		if idxName == "" {
+			idxNameParts = append(idxNameParts, "idx")
+			idxName = names.ToDBColumn(idxNameParts...)
+		}
 
 	return strconv.Quote(idxName), colNames
+}
+
+func (constraint *indexConstraint) getNameForValidation() string {
+	idxName := constraint.name
+	if idxName != "" {
+		return idxName
+	}
+	idxNameParts := []string{
+		constraint.tableName,
+	}
+	for _, col := range constraint.dbColumns {
+		idxNameParts = append(idxNameParts, col.DBColName)
+	}
+	idxNameParts = append(idxNameParts, "idx")
+	return names.ToDBColumn(idxNameParts...)
 }
 
 func (constraint *indexConstraint) getConstraintString() string {
@@ -424,6 +439,36 @@ type dbSchema struct {
 	tableMap       map[string]*dbTable
 	cfg            codegenapi.Config
 	before         *dbFileInfo
+}
+
+func (s *dbSchema) validateConstraintName(tableName string, constraint dbConstraint) error {
+	var name string
+	switch c := constraint.(type) {
+	case *primaryKeyConstraint:
+		name = c.getName()
+	case *uniqueConstraint:
+		name = c.getName()
+	case *foreignKeyConstraint:
+		name = c.name
+	case *indexConstraint:
+		name = c.getNameForValidation()
+	case *fullTextConstraint:
+		name = c.indexConstraint.getNameForValidation()
+	case *checkConstraint:
+		name = c.name
+	}
+	if name == "" {
+		return nil
+	}
+	if len(name) > names.PostgresIdentifierMaxLen {
+		return fmt.Errorf(
+			"identifier %q exceeds maximum length of %d characters (table %s)",
+			name,
+			names.PostgresIdentifierMaxLen,
+			tableName,
+		)
+	}
+	return nil
 }
 
 func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
@@ -821,6 +866,9 @@ func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplat
 		}
 		// then constraints
 		for _, constraint := range table.Constraints {
+			if err := s.validateConstraintName(table.TableName, constraint); err != nil {
+				return nil, err
+			}
 			lines = append(lines, constraint.getConstraintString())
 		}
 
@@ -1061,10 +1109,15 @@ func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 	columns = append(columns, timeCol)
 	columns = append(columns, s.getDataColumn())
 
+	pkeyName := ""
+	if !s.schema.EdgeTableExists(tableName) {
+		pkeyName = base.GetPrimaryKeyName(tableName)
+	}
 	constraints := []dbConstraint{
 		&primaryKeyConstraint{
 			dbColumns: []*dbColumn{id1Col, edgeTypeCol, id2Col},
 			tableName: tableName,
+			name:      pkeyName,
 		},
 		&indexConstraint{
 			dbColumns: []*dbColumn{timeCol},
