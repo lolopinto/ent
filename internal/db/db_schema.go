@@ -216,13 +216,13 @@ func (constraint *uniqueConstraint) getColumns() []*dbColumn {
 }
 
 type indexConstraint struct {
-	dbColumns []*dbColumn
-	tableName string
-	unique    bool
-	name      string
-	indexType input.IndexType
+	dbColumns    []*dbColumn
+	tableName    string
+	unique       bool
+	name         string
+	indexType    input.IndexType
 	concurrently bool
-	where     string
+	where        string
 }
 
 func (constraint *indexConstraint) getInfo() (string, []string) {
@@ -242,6 +242,21 @@ func (constraint *indexConstraint) getInfo() (string, []string) {
 	}
 
 	return strconv.Quote(idxName), colNames
+}
+
+func (constraint *indexConstraint) getNameForValidation() string {
+	idxName := constraint.name
+	if idxName != "" {
+		return idxName
+	}
+	idxNameParts := []string{
+		constraint.tableName,
+	}
+	for _, col := range constraint.dbColumns {
+		idxNameParts = append(idxNameParts, col.DBColName)
+	}
+	idxNameParts = append(idxNameParts, "idx")
+	return names.ToDBColumn(idxNameParts...)
 }
 
 func (constraint *indexConstraint) getConstraintString() string {
@@ -426,6 +441,36 @@ type dbSchema struct {
 	before         *dbFileInfo
 }
 
+func (s *dbSchema) validateConstraintName(tableName string, constraint dbConstraint) error {
+	var name string
+	switch c := constraint.(type) {
+	case *primaryKeyConstraint:
+		name = c.getName()
+	case *uniqueConstraint:
+		name = c.getName()
+	case *foreignKeyConstraint:
+		name = c.name
+	case *indexConstraint:
+		name = c.getNameForValidation()
+	case *fullTextConstraint:
+		name = c.indexConstraint.getNameForValidation()
+	case *checkConstraint:
+		name = c.name
+	}
+	if name == "" {
+		return nil
+	}
+	if len(name) > names.PostgresIdentifierMaxLen {
+		return fmt.Errorf(
+			"identifier %q exceeds maximum length of %d characters (table %s)",
+			name,
+			names.PostgresIdentifierMaxLen,
+			tableName,
+		)
+	}
+	return nil
+}
+
 func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
 	table := s.configTableMap[nodeData.EntConfigName]
 	if table != nil {
@@ -513,13 +558,13 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 		}
 
 		constraint := &indexConstraint{
-			dbColumns: cols,
-			tableName: nodeData.GetTableName(),
-			unique:    index.Unique,
-			name:      index.Name,
-			indexType: index.IndexType,
+			dbColumns:    cols,
+			tableName:    nodeData.GetTableName(),
+			unique:       index.Unique,
+			name:         index.Name,
+			indexType:    index.IndexType,
 			concurrently: index.Concurrently,
-			where:     index.Where,
+			where:        index.Where,
 		}
 		if index.IndexType == "" {
 			if len(cols) == 1 {
@@ -821,6 +866,9 @@ func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplat
 		}
 		// then constraints
 		for _, constraint := range table.Constraints {
+			if err := s.validateConstraintName(table.TableName, constraint); err != nil {
+				return nil, err
+			}
 			lines = append(lines, constraint.getConstraintString())
 		}
 
@@ -1061,10 +1109,15 @@ func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 	columns = append(columns, timeCol)
 	columns = append(columns, s.getDataColumn())
 
+	pkeyName := ""
+	if !s.schema.EdgeTableExists(tableName) {
+		pkeyName = base.GetPrimaryKeyName(tableName)
+	}
 	constraints := []dbConstraint{
 		&primaryKeyConstraint{
 			dbColumns: []*dbColumn{id1Col, edgeTypeCol, id2Col},
 			tableName: tableName,
+			name:      pkeyName,
 		},
 		&indexConstraint{
 			dbColumns: []*dbColumn{timeCol},
@@ -1116,13 +1169,13 @@ func (s *dbSchema) addEdgeIndices(tableName string, columns []*dbColumn, constra
 		}
 
 		constraint := &indexConstraint{
-			dbColumns: cols,
-			tableName: tableName,
-			unique:    index.Unique,
-			name:      name,
-			indexType: index.IndexType,
+			dbColumns:    cols,
+			tableName:    tableName,
+			unique:       index.Unique,
+			name:         name,
+			indexType:    index.IndexType,
 			concurrently: index.Concurrently,
-			where:     index.Where,
+			where:        index.Where,
 		}
 		if index.FullText != nil {
 			panic("full text indexes not supported for edge tables")
@@ -1312,10 +1365,10 @@ func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbC
 		return
 	}
 	constraint := &indexConstraint{
-		dbColumns: []*dbColumn{col},
-		tableName: tableName,
+		dbColumns:    []*dbColumn{col},
+		tableName:    tableName,
 		concurrently: f.IndexConcurrently(),
-		where:     f.IndexWhere(),
+		where:        f.IndexWhere(),
 	}
 	// default index type for lists when not specified is gin type
 	idxType := s.getDefaultIndexType(f)

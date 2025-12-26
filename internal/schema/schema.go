@@ -40,6 +40,7 @@ type Schema struct {
 	edges                       map[string]*ent.AssocEdgeData
 	newEdges                    []*ent.AssocEdgeData
 	edgesToUpdate               []*ent.AssocEdgeData
+	existingEdgeTables          map[string]bool
 	Enums                       map[string]*EnumInfo
 	enumTables                  map[string]*EnumInfo
 	CustomInterfaces            map[string]*customtype.CustomInterface
@@ -316,6 +317,7 @@ func ParseFromInputSchema(cfg codegenapi.Config, schema *input.Schema, lang base
 	s.edges = edgeData.getEdgesToRender()
 	s.newEdges = edgeData.newEdges
 	s.edgesToUpdate = edgeData.edgesToUpdate
+	s.existingEdgeTables = edgeData.dbEdgeTables
 	return s, nil
 }
 
@@ -336,6 +338,7 @@ func (s *Schema) init() {
 	}
 	s.globalCanViewerDo = map[string]action.Action{}
 	s.globalConsts = &objWithConsts{}
+	s.existingEdgeTables = map[string]bool{}
 }
 
 func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
@@ -403,6 +406,19 @@ func (s *Schema) GetEdges() map[string]*ent.AssocEdgeData {
 // GetEdgesToUpdate returns edges in the schema that have changed which need to be updated
 func (s *Schema) GetEdgesToUpdate() []*ent.AssocEdgeData {
 	return s.edgesToUpdate
+}
+
+// EdgeTableExists returns true if an edge table already exists in the DB.
+func (s *Schema) EdgeTableExists(tableName string) bool {
+	return s.existingEdgeTables[tableName]
+}
+
+// AddExistingEdgeTable is used in tests to mark an edge table as already existing.
+func (s *Schema) AddExistingEdgeTable(tableName string) {
+	if s.existingEdgeTables == nil {
+		s.existingEdgeTables = map[string]bool{}
+	}
+	s.existingEdgeTables[tableName] = true
 }
 
 func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
@@ -1123,11 +1139,14 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	}
 
 	edgeMap := make(map[string]*ent.AssocEdgeData)
+	edgeTables := make(map[string]bool)
 	for _, assocEdgeData := range result.Edges {
 		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
+		edgeTables[assocEdgeData.EdgeTable] = true
 	}
 	return &assocEdgeData{
 		dbEdgeMap:     edgeMap,
+		dbEdgeTables:  edgeTables,
 		edgesToRender: map[string]*ent.AssocEdgeData{},
 	}, nil
 }
