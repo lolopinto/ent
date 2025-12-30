@@ -778,6 +778,42 @@ export interface ContactInfoExtra {
   source: ContactInfoSource;
 }
 
+export interface DefaultsPayload {
+  data?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}
+
+export function convertDefaultsPayload(input: any): DefaultsPayload {
+  return {
+    data: input.data,
+    firstName: input.first_name,
+    lastName: input.last_name,
+  };
+}
+
+export function convertNullableDefaultsPayload(
+  input: any,
+): DefaultsPayload | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertDefaultsPayload(input);
+}
+
+export function convertDefaultsPayloadList(input: any[]): DefaultsPayload[] {
+  return input.map((v) => convertDefaultsPayload(v));
+}
+
+export function convertNullableDefaultsPayloadList(
+  input: any[] | null,
+): DefaultsPayload[] | null {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  return input.map((v) => convertDefaultsPayload(v));
+}
+
 export interface ImportantDates {
   firstMet: string;
   lastSpoken?: string | null;

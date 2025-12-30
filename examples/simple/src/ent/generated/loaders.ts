@@ -10,6 +10,7 @@ import {
   ContactLabel,
   DayOfWeek,
   DayOfWeekAlt,
+  DefaultsPayload,
   ImportantDates,
   UserAccountStatus,
   UserDaysOff,
@@ -484,6 +485,7 @@ export interface DefaultsExampleDBData {
   name: string;
   per_hour: number;
   hourly_limit: number;
+  payloads: DefaultsPayload[];
 }
 
 const defaultsExampleTable = "defaults_examples";
@@ -495,6 +497,7 @@ const defaultsExampleFields = [
   "name",
   "per_hour",
   "hourly_limit",
+  "payloads",
 ];
 
 export const defaultsExampleLoader =
@@ -537,6 +540,10 @@ export const defaultsExampleLoaderInfo = {
     hourlyLimit: {
       dbCol: "hourly_limit",
       inputKey: "hourlyLimit",
+    },
+    payloads: {
+      dbCol: "payloads",
+      inputKey: "payloads",
     },
   },
 };

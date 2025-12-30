@@ -342,6 +342,13 @@ type DefaultsExample implements Node {
   name: String!
   perHour: Int!
   hourlyLimit: Int!
+  payloads: [DefaultsPayload!]!
+}
+
+type DefaultsPayload {
+  data: String
+  firstName: String
+  lastName: String
 }
 
 type DogType {
@@ -382,7 +389,7 @@ type Event implements Node {
   cities: [City!]!
 }
 
-union Feedback = ContactEmail | User
+union Feedback = Contact | ContactEmail | ContactPhoneNumber | User
 
 type File implements Node {
   creator: User
@@ -1404,10 +1411,17 @@ input DefaultsExampleCreateInput {
   name: String!
   perHour: Int
   hourlyLimit: Int
+  payloads: [DefaultsPayloadInput!]
 }
 
 type DefaultsExampleCreatePayload {
   defaultsExample: DefaultsExample!
+}
+
+input DefaultsPayloadInput {
+  data: String
+  firstName: String
+  lastName: String
 }
 
 type DeleteUserInput2Payload {

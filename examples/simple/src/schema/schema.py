@@ -133,6 +133,7 @@ sa.Table("defaults_examples", metadata,
     sa.Column("name", sa.Text(), nullable=False),
     sa.Column("per_hour", sa.Integer(), nullable=False, server_default='1'),
     sa.Column("hourly_limit", sa.Integer(), nullable=False),
+    sa.Column("payloads", postgresql.JSONB, nullable=False),
     sa.PrimaryKeyConstraint("id", name="defaults_examples_id_pkey"),
 )
    

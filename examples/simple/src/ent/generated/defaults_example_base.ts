@@ -25,7 +25,7 @@ import {
   defaultsExampleLoader,
   defaultsExampleLoaderInfo,
 } from "./loaders";
-import { NodeType } from "./types";
+import { DefaultsPayload, NodeType, convertDefaultsPayloadList } from "./types";
 import schema from "../../schema/defaults_example_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
@@ -39,6 +39,7 @@ export class DefaultsExampleBase implements Ent<ExampleViewerAlias> {
   readonly name: string;
   readonly perHour: number;
   readonly hourlyLimit: number;
+  readonly payloads: DefaultsPayload[];
 
   constructor(
     public viewer: ExampleViewerAlias,
@@ -51,6 +52,7 @@ export class DefaultsExampleBase implements Ent<ExampleViewerAlias> {
     this.name = data.name;
     this.perHour = data.per_hour;
     this.hourlyLimit = data.hourly_limit;
+    this.payloads = convertDefaultsPayloadList(data.payloads);
     // @ts-expect-error
     this.data = data;
   }

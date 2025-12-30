@@ -174,6 +174,22 @@ const UserSchemaDefaultStructList = getBuilderSchemaFromFields(
   UserDefaultStructList,
 );
 
+const UserSchemaDefaultStructEmptyList = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+    prefsList: StructTypeAsList({
+      tsType: "PrefsList",
+      fields: {
+        foo: StringType(),
+        bar: StringType(),
+      },
+      defaultValueOnCreate: () => [],
+    }),
+  },
+  UserDefaultStructList,
+);
+
 const UserSchemaDefaultValueOnCreateInvalidJSON = getBuilderSchemaFromFields(
   {
     FirstName: StringType(),
@@ -476,6 +492,7 @@ const getTables = () => {
     UserSchemaDefaultValueOnCreate,
     UserSchemaDefaultValueOnCreateJSON,
     UserSchemaDefaultStructList,
+    UserSchemaDefaultStructEmptyList,
     UserSchemaDefaultValueOnCreateInvalidJSON,
     UserWithPrefsSchema,
     UserWithBalanceSchema,
@@ -676,6 +693,23 @@ function commonTests() {
       { foo: "hello", bar: "world" },
       { foo: "hi", bar: "there" },
     ]);
+  });
+
+  test("default struct list formatted empty list", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      UserSchemaDefaultStructEmptyList,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+
+    const data = await builder.orchestrator.getEditedData();
+    expect(typeof data.prefs_list).toBe("string");
+    expect(JSON.parse(data.prefs_list)).toStrictEqual([]);
   });
 
   test("required field when default value on create json wrong", async () => {

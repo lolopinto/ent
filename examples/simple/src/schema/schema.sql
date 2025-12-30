@@ -71,6 +71,7 @@ CREATE TABLE defaults_examples (
     name TEXT NOT NULL, 
     per_hour INTEGER DEFAULT '1' NOT NULL, 
     hourly_limit INTEGER NOT NULL, 
+    payloads JSONB NOT NULL, 
     CONSTRAINT defaults_examples_id_pkey PRIMARY KEY (id)
 );
 
