@@ -174,20 +174,60 @@ const UserSchemaDefaultStructList = getBuilderSchemaFromFields(
   UserDefaultStructList,
 );
 
-const UserSchemaDefaultStructEmptyList = getBuilderSchemaFromFields(
+function convertPref({ foo, bar, hello_world }: any) {
+  return {
+    foo: foo ?? null,
+    bar: bar ?? null,
+    helloWorld: hello_world ?? null,
+  };
+}
+
+function convertPrefList(val) {
+  return val.map((item) => convertPref(item));
+}
+
+class UserWithConvertableEmptyList extends User {
+  prefsList: Array<{
+    foo: string | null;
+    bar: string | null;
+    helloWorld: number | null;
+  }>;
+
+  constructor(viewer: Viewer, data: Data) {
+    super(viewer, data);
+    // this is similar to what generated code does.
+    // TODO why doesn't generated (postgres) code use convertList lol?
+    if (DB.getDialect() === Dialect.Postgres) {
+      this.prefsList = convertPrefList(data.prefs_list);
+    } else {
+      // convertList needed because it doesn't come back as array from sqlite
+      // see account_base constructor for examples of this...
+      this.prefsList = convertPrefList(convertList(data.prefs_list));
+    }
+  }
+}
+
+const UserSchemaWithConvertableEmptyList = getBuilderSchemaFromFields(
   {
     FirstName: StringType(),
     LastName: StringType(),
     prefsList: StructTypeAsList({
       tsType: "PrefsList",
       fields: {
-        foo: StringType(),
-        bar: StringType(),
+        foo: StringType({
+          nullable: true,
+        }),
+        bar: StringType({
+          nullable: true,
+        }),
+        helloWorld: IntegerType({
+          nullable: true,
+        }),
       },
       defaultValueOnCreate: () => [],
     }),
   },
-  UserDefaultStructList,
+  UserWithConvertableEmptyList,
 );
 
 const UserSchemaDefaultValueOnCreateInvalidJSON = getBuilderSchemaFromFields(
@@ -492,7 +532,7 @@ const getTables = () => {
     UserSchemaDefaultValueOnCreate,
     UserSchemaDefaultValueOnCreateJSON,
     UserSchemaDefaultStructList,
-    UserSchemaDefaultStructEmptyList,
+    UserSchemaWithConvertableEmptyList,
     UserSchemaDefaultValueOnCreateInvalidJSON,
     UserWithPrefsSchema,
     UserWithBalanceSchema,
@@ -675,7 +715,7 @@ function commonTests() {
     await builder.build();
   });
 
-  test("default struct list formatted in edited data", async () => {
+  test("default struct list formatted", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
       UserSchemaDefaultStructList,
@@ -687,18 +727,30 @@ function commonTests() {
       null,
     );
 
-    const data = await builder.orchestrator.getEditedData();
-    expect(typeof data.prefs_list).toBe("string");
-    expect(JSON.parse(data.prefs_list)).toStrictEqual([
+    const orchestrator = builder.orchestrator;
+
+    await builder.validX();
+
+    const data = await orchestrator.getEditedData();
+    expect(typeof data.prefs_list).toBe("object");
+    expect(data.prefs_list).toStrictEqual([
+      { foo: "hello", bar: "world" },
+      { foo: "hi", bar: "there" },
+    ]);
+
+    const validated = orchestrator.getValidatedFields();
+
+    expect(typeof validated.prefs_list).toBe("string");
+    expect(JSON.parse(validated.prefs_list)).toStrictEqual([
       { foo: "hello", bar: "world" },
       { foo: "hi", bar: "there" },
     ]);
   });
 
-  test("default struct list formatted empty list", async () => {
-    const builder = new SimpleBuilder(
+  test("default struct list empty list converted properly", async () => {
+    const action = new SimpleAction(
       new LoggedOutViewer(),
-      UserSchemaDefaultStructEmptyList,
+      UserSchemaWithConvertableEmptyList,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -707,9 +759,8 @@ function commonTests() {
       null,
     );
 
-    const data = await builder.orchestrator.getEditedData();
-    expect(typeof data.prefs_list).toBe("string");
-    expect(JSON.parse(data.prefs_list)).toStrictEqual([]);
+    const user = await action.saveX();
+    expect(user.prefsList).toStrictEqual([]);
   });
 
   test("required field when default value on create json wrong", async () => {
