@@ -1096,28 +1096,6 @@ export class Orchestrator<
       }
 
       if (defaultValue !== undefined) {
-        // Format defaults early so JSON/list defaults are DB-ready in edited data.
-        // let formattedDefaultValue = defaultValue;
-        // if (
-        //   defaultValue !== null &&
-        //   !this.isBuilder(defaultValue) &&
-        //   field.format
-        // ) {
-        //   let valid: boolean | Promise<boolean> = true;
-        //   if (field.valid) {
-        //     valid = field.valid(defaultValue);
-        //     if (isPromise(valid)) {
-        //       valid = await valid;
-        //     }
-        //   }
-        //   if (valid) {
-        //     formattedDefaultValue = field.format(defaultValue);
-        //     if (isPromise(formattedDefaultValue)) {
-        //       formattedDefaultValue = await formattedDefaultValue;
-        //     }
-        //   }
-        // }
-
         updateInput = true;
 
         if (updateOnlyIfOther) {
