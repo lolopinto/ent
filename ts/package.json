@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -89,7 +89,7 @@
     "clean": "rm -rf dist",
     "prepare-code": "npm run clean && npm run compile && node src/setupPackage.js",
     "prepare-code-legacy": "npm run clean && npm run compile && node src/setupPackage.js --legacy",
-    "actual-publish": "npm run prepare-code && npm publish ./dist --verbose --access public",
+    "actual-publish": "npm login && npm run prepare-code && npm publish ./dist --verbose --access public",
     "legacy-publish": "npm run prepare-code-legacy && npm publish ./dist --verbose --registry https://npm.pkg.github.com/"
   },
   "bin": {

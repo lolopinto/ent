@@ -7,15 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
+## [0.2.5]
+
+### Fixed
+
+- fix bug from format default values before saving (#1917)
+
 ## [0.2.4]
+
+### Added
+
 - DateType as string (#1887)
 - support offset in QueryDataOptions for loadCustomData/loadCustomEnts (#1895)
 - add global edge composite indices for extra edge fields (#1897)
-- fix loadCustomCount custom clause query field aliasing (#1899)
 - allow overrideAlias to be null to skip aliasing in clauses (#1901)
 - concurrent index support (#1901)
 - add partial indices (#1903)
 - format default values before saving (#1912)
+
+### Fixed 
+- fix loadCustomCount custom clause query field aliasing (#1899)
 
 ## [0.2.2] - 2025-02-22
 - ability to customize default ordering for an indexed edge (#1878)
