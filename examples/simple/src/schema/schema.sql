@@ -63,6 +63,19 @@ CREATE INDEX comments_attachment_id_idx ON comments (attachment_id);
 
 CREATE INDEX comments_author_id_idx ON comments (author_id);
 
+CREATE TABLE contact_email_emails_for_contacts_edges (
+    id1 UUID NOT NULL, 
+    id1_type TEXT NOT NULL, 
+    edge_type UUID NOT NULL, 
+    id2 UUID NOT NULL, 
+    id2_type TEXT NOT NULL, 
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+    data TEXT, 
+    CONSTRAINT contact_email_emails_for_contacts_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
+);
+
+CREATE INDEX contact_email_emails_for_contacts_edges_time_idx ON contact_email_emails_for_contacts_edges (time);
+
 CREATE TABLE defaults_examples (
     id UUID NOT NULL, 
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
@@ -349,6 +362,7 @@ CREATE INDEX contacts_user_id_idx ON contacts (user_id);
 
 INSERT INTO assoc_edge_config(edge_name, edge_type, edge_table, symmetric_edge, inverse_edge_type, created_at, updated_at) VALUES('AddressToHostedEventsEdge', 'd1979d4b-d033-4562-b078-cc528fec25bb', 'address_hosted_events_edges', false, NULL, now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('CommentToPostEdge', 'f430af94-d38a-4aaa-a92f-cfc56b6f811b', 'object_comments_edges', false, '8caba9c4-8035-447f-9eb1-4dd09a2d250c', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
+('ContactEmailToEmailsForContactsEdge', 'daee7f0d-264f-44da-b2ff-5481e4143b22', 'contact_email_emails_for_contacts_edges', false, NULL, now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('ContactToSelfContactForUserEdge', '71483ce5-06f3-4468-bf05-afecd3a430e2', 'user_self_contact_edges', false, 'd504201d-cf3f-4eef-b6a0-0b46a7ae186b', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('EventToAttendingEdge', '6ebc0c47-ea29-4635-b991-95e44162174d', 'event_rsvps_edges', false, '2a98ba02-e342-4bb4-93f6-5d7ed02f5c48', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),
 ('EventToDeclinedEdge', 'db8d2454-f7b2-4147-aae1-e666daf3f3c3', 'event_rsvps_edges', false, '1c7c173b-63ce-4002-b121-4a87f82047dd', now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC'),

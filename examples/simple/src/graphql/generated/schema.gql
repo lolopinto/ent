@@ -284,6 +284,7 @@ type ContactEmail implements Node & ContactItemType {
   emailAddress: String!
   label: ContactLabel!
   comments(first: Int, after: String, last: Int, before: String): ContactEmailToCommentsConnection!
+  emailsForContacts(first: Int, after: String, last: Int, before: String): ContactEmailToEmailsForContactsConnection!
   likers(first: Int, after: String, last: Int, before: String): ContactEmailToLikersConnection!
   canViewerDo: ContactEmailCanViewerDo!
 }
@@ -654,6 +655,18 @@ type ContactEmailToCommentsEdge implements Edge {
 type ContactEmailToCommentsConnection implements Connection {
   edges: [ContactEmailToCommentsEdge!]!
   nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactEmailToEmailsForContactsEdge implements Edge {
+  node: Contact!
+  cursor: String!
+}
+
+type ContactEmailToEmailsForContactsConnection implements Connection {
+  edges: [ContactEmailToEmailsForContactsEdge!]!
+  nodes: [Contact!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }

@@ -45,6 +45,7 @@ export * from "../generated/resolvers/contact/contact_to_comments_connection_typ
 export * from "../generated/resolvers/contact/contact_to_filter_contact_emails_connection_type";
 export * from "../generated/resolvers/contact/contact_to_likers_connection_type";
 export * from "../generated/resolvers/contact_email/contact_email_to_comments_connection_type";
+export * from "../generated/resolvers/contact_email/contact_email_to_emails_for_contacts_connection_type";
 export * from "../generated/resolvers/contact_email/contact_email_to_likers_connection_type";
 export * from "../generated/resolvers/contact_phone_number/contact_phone_number_to_comments_connection_type";
 export * from "../generated/resolvers/contact_phone_number/contact_phone_number_to_likers_connection_type";
