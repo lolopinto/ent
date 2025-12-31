@@ -12,6 +12,7 @@ export * from "../generated/resolvers/contact_date_type";
 export * from "../generated/resolvers/contact_info_extra_type";
 export * from "../generated/resolvers/contact_item_result_type";
 export * from "../generated/resolvers/contact_item_type";
+export * from "../generated/resolvers/defaults_payload_type";
 export * from "../generated/resolvers/email_info_type";
 export * from "../generated/resolvers/important_dates_type";
 export * from "../generated/resolvers/user_nested_object_list_type";

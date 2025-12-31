@@ -17,7 +17,7 @@ import {
 } from "@snowtop/ent/action";
 import { DefaultsExample } from "../../..";
 import { defaultsExampleLoaderInfo } from "../../loaders";
-import { NodeType } from "../../types";
+import { DefaultsPayload, NodeType } from "../../types";
 import schema from "../../../../schema/defaults_example_schema";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -26,6 +26,7 @@ export interface DefaultsExampleInput {
   name?: string;
   perHour?: number;
   hourlyLimit?: number;
+  payloads?: DefaultsPayload[];
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -182,6 +183,7 @@ export class DefaultsExampleBuilder<
     addField("name", input.name);
     addField("perHour", input.perHour);
     addField("hourlyLimit", input.hourlyLimit);
+    addField("payloads", input.payloads);
     return result;
   }
 
@@ -245,5 +247,19 @@ export class DefaultsExampleBuilder<
       );
     }
     return this.existingEnt.hourlyLimit;
+  }
+
+  // get value of payloads. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPayloadsValue(): DefaultsPayload[] {
+    if (this.input.payloads !== undefined) {
+      return this.input.payloads;
+    }
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `payloads` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.payloads;
   }
 }

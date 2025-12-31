@@ -19,6 +19,7 @@ import {
 } from "@snowtop/ent/action";
 import { DefaultsExample } from "../../..";
 import { DefaultsExampleBuilder } from "./defaults_example_builder";
+import { DefaultsPayload } from "../../types";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface DefaultsExampleCreateInput {
@@ -26,6 +27,7 @@ export interface DefaultsExampleCreateInput {
   name: string;
   perHour?: number;
   hourlyLimit?: number;
+  payloads?: DefaultsPayload[];
 }
 
 export type CreateDefaultsExampleActionTriggers = (
