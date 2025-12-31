@@ -11,6 +11,7 @@ import (
 type assocEdgeData struct {
 	// differentiate between new edges and existing edges for tests
 	dbEdgeMap map[string]*ent.AssocEdgeData
+	dbEdgeTables map[string]bool
 	// now that we run upgade before codegen,
 	// it should be safe to drop what's not in the schema...
 	// so we have 2 different pieces of info. what's in the db and what's seen in the schema
