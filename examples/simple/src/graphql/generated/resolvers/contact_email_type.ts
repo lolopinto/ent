@@ -89,6 +89,13 @@ export const ContactEmailType = new GraphQLObjectType({
     },
     extra: {
       type: ContactInfoExtraType,
+      resolve: async (
+        obj: ContactEmail,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.extra();
+      },
     },
     emailAddress: {
       type: new GraphQLNonNull(GraphQLString),

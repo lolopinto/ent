@@ -324,18 +324,17 @@ test("multiple emails", async () => {
   const emails = await contact.loadEmails();
   const sortFn = (a: emailInfo, b: emailInfo) =>
     a.emailAddress < b.emailAddress ? -1 : 1;
-  expect(input.emails.sort(sortFn)).toStrictEqual(
-    emails
-      .map((email) => {
-        return {
-          emailAddress: email.emailAddress,
-          label: email.label,
-          extra: email.extra,
-          ownerId: email.ownerId,
-        };
-      })
-      .sort(sortFn),
+  const emailsInfo = await Promise.all(
+    emails.map(async (email) => {
+      return {
+        emailAddress: email.emailAddress,
+        label: email.label,
+        extra: await email.extra(),
+        ownerId: email.ownerId,
+      };
+    }),
   );
+  expect(input.emails.sort(sortFn)).toStrictEqual(emailsInfo.sort(sortFn));
 
   const r = await Contact.loadCustom(
     contact.viewer,
@@ -474,17 +473,18 @@ test("multiple phonenumbers", async () => {
     a.phoneNumber < b.phoneNumber ? -1 : 1;
 
   const phoneNumbers = await contact.loadPhoneNumbers();
+  const phoneNumbersInfo = await Promise.all(
+    phoneNumbers.map(async (phoneNumber) => {
+      return {
+        phoneNumber: phoneNumber.phoneNumber,
+        label: phoneNumber.label,
+        extra: await phoneNumber.extra(),
+        ownerId: phoneNumber.ownerId,
+      };
+    }),
+  );
   expect(input.phoneNumbers.sort(sortFn)).toStrictEqual(
-    phoneNumbers
-      .map((phoneNumber) => {
-        return {
-          phoneNumber: phoneNumber.phoneNumber,
-          label: phoneNumber.label,
-          extra: phoneNumber.extra,
-          ownerId: phoneNumber.ownerId,
-        };
-      })
-      .sort(sortFn),
+    phoneNumbersInfo.sort(sortFn),
   );
 
   const r = await Contact.loadCustom(

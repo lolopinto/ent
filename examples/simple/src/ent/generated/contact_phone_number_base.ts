@@ -12,6 +12,7 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
+  applyPrivacyPolicy,
   loadCustomCount,
   loadCustomData,
   loadCustomEnts,
@@ -19,13 +20,18 @@ import {
   loadEntX,
   loadEnts,
 } from "@snowtop/ent";
-import { Field, getFields } from "@snowtop/ent/schema";
+import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
   ContactPhoneNumberDBData,
   contactPhoneNumberLoader,
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
-import { ContactLabel, NodeType, convertContactLabel } from "./types";
+import {
+  ContactInfoExtra,
+  ContactLabel,
+  NodeType,
+  convertContactLabel,
+} from "./types";
 import {
   Contact,
   ContactInfoMixin,
@@ -80,6 +86,22 @@ export class ContactPhoneNumberBase
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
     return AllowIfViewerPrivacyPolicy;
+  }
+
+  async extra(): Promise<ContactInfoExtra | null> {
+    if (this._extra === null) {
+      return null;
+    }
+    const m = getFieldsWithPrivacy(
+      schema,
+      contactPhoneNumberLoaderInfo.fieldInfo,
+    );
+    const p = m.get("extra");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for extra`);
+    }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._extra : null;
   }
 
   static async load<T extends ContactPhoneNumberBase>(

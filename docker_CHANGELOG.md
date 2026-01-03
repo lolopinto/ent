@@ -14,6 +14,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 - fix types for struct list for on demand types (#1911)
 - exclude action-only fields when embedding action inputs (#1914)
 - fix builder codegen for list inverse edges (#1915)
+- fix action custom inputs to use public field names when field privacy is enabled (#1874)
 
 ## [0.3.0]
 

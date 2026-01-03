@@ -26,7 +26,7 @@
   
 {{$pkg := .Package -}}
 {{ range $action.GetCustomInterfaces -}}
-  {{template "interface.tmpl" (dict "RootInterface" . "Interface" . "Package" $pkg "Config" $cfg) }}  
+  {{template "interface.tmpl" (dict "RootInterface" . "Interface" . "Package" $pkg "Config" $cfg "UseBuilderFieldName" true) }}  
 {{end -}}
 
 {{ $node := useImport .NodeData.Node -}}

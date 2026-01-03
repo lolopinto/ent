@@ -291,12 +291,8 @@ export class ContactEmailBuilder<
   }
 
   // get value of extra. Retrieves it from the input if specified or takes it from existingEnt
-  getNewExtraValue(): ContactInfoExtra | null {
-    if (this.input.extra !== undefined) {
-      return this.input.extra;
-    }
-
-    return this.existingEnt?.extra ?? null;
+  getNewExtraValue(): ContactInfoExtra | null | undefined {
+    return this.input.extra;
   }
 
   // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
