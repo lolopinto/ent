@@ -22,7 +22,7 @@ jobs:
       PIPENV_PYTHON: '3.14'
     strategy:
       matrix:
-        postgresql-version: [14.6, 15.4, "16rc1"]
+        postgresql-version: [14.20, 15.15, 16.11, 17.7, 18.1]
 
     services:
       # Label used to access the service container
