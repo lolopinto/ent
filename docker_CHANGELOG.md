@@ -16,6 +16,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 - fix builder codegen for list inverse edges (#1915)
 - fix action custom inputs to use public field names when field privacy is enabled (#1874)
 - fix generation of union types to be deterministic (#1919)
+- fix bug which lead to union types to be missing sometimes (#1920)
 
 ## [0.3.0]
 
