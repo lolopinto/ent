@@ -390,7 +390,7 @@ type Event implements Node {
   cities: [City!]!
 }
 
-union Feedback = Contact | ContactPhoneNumber | User
+union Feedback = Contact | ContactEmail | ContactPhoneNumber | User
 
 type File implements Node {
   creator: User
