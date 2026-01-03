@@ -30,20 +30,16 @@ function createTempFile() {
 }
 
 async function readStream(file): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const stream = file.createReadStream();
-    let data: string[] = [];
-    stream.on("data", function (chunk) {
-      data.push(chunk.toString());
-    });
-
-    stream.on("end", function () {
-      return resolve(data.join(""));
-    });
-    stream.on("error", function (err) {
-      return reject(err);
-    });
-  });
+  const stream = file.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    if (Buffer.isBuffer(chunk)) {
+      chunks.push(chunk);
+    } else {
+      chunks.push(Buffer.from(chunk));
+    }
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 const schema = new GraphQLSchema({
@@ -89,16 +85,13 @@ const schema = new GraphQLSchema({
           },
         },
         async resolve(src, args) {
-          await Promise.all(
-            args.files.map(async (f) => {
-              const file = await f;
-              const data = await readStream(file);
-              if (data !== fileContents) {
-                throw new Error(`invalid file sent`);
-              }
-              return data;
-            }),
-          );
+          for (const f of args.files) {
+            const file = await f;
+            const data = await readStream(file);
+            if (data !== fileContents) {
+              throw new Error(`invalid file sent`);
+            }
+          }
 
           return true;
         },
