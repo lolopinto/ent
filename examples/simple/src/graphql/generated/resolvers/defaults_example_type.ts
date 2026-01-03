@@ -7,6 +7,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLInt,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -14,6 +15,7 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { DefaultsExample } from "../../../ent";
+import { DefaultsPayloadType } from "../../resolvers/internal";
 import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 
 export const DefaultsExampleType = new GraphQLObjectType({
@@ -38,6 +40,11 @@ export const DefaultsExampleType = new GraphQLObjectType({
     },
     hourlyLimit: {
       type: new GraphQLNonNull(GraphQLInt),
+    },
+    payloads: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(DefaultsPayloadType)),
+      ),
     },
   }),
   interfaces: () => [GraphQLNodeInterface],

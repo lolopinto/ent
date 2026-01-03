@@ -10,6 +10,7 @@ import {
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
   GraphQLInt,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -21,6 +22,7 @@ import { DefaultsExample } from "../../../../ent";
 import CreateDefaultsExampleAction, {
   DefaultsExampleCreateInput,
 } from "../../../../ent/defaults_example/actions/create_defaults_example_action";
+import { DefaultsPayloadInputType } from "../input/defaults_payload_input_type";
 import { DefaultsExampleType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
@@ -46,6 +48,9 @@ export const DefaultsExampleCreateInputType = new GraphQLInputObjectType({
     },
     hourlyLimit: {
       type: GraphQLInt,
+    },
+    payloads: {
+      type: new GraphQLList(new GraphQLNonNull(DefaultsPayloadInputType)),
     },
   }),
 });
@@ -89,6 +94,7 @@ export const DefaultsExampleCreateType: GraphQLFieldConfig<
         name: input.name,
         perHour: input.perHour,
         hourlyLimit: input.hourlyLimit,
+        payloads: input.payloads,
       },
     ).saveX();
     return { defaultsExample: defaultsExample };

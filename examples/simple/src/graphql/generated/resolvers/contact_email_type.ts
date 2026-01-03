@@ -21,11 +21,13 @@ import {
 import {
   ContactEmail,
   ContactEmailToCommentsQuery,
+  ContactEmailToEmailsForContactsQuery,
   ContactEmailToLikersQuery,
 } from "../../../ent";
 import EditContactEmailAction from "../../../ent/contact_email/actions/edit_contact_email_action";
 import {
   ContactEmailToCommentsConnectionType,
+  ContactEmailToEmailsForContactsConnectionType,
   ContactEmailToLikersConnectionType,
   ContactInfoExtraType,
   ContactItemType,
@@ -123,6 +125,40 @@ export const ContactEmailType = new GraphQLObjectType({
           obj.viewer,
           obj,
           (v, obj: ContactEmail) => ContactEmailToCommentsQuery.query(v, obj),
+          args,
+        );
+      },
+    },
+    emailsForContacts: {
+      type: new GraphQLNonNull(ContactEmailToEmailsForContactsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (
+        obj: ContactEmail,
+        args: any,
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return new GraphQLEdgeConnection(
+          obj.viewer,
+          obj,
+          (v, obj: ContactEmail) =>
+            ContactEmailToEmailsForContactsQuery.query(v, obj),
           args,
         );
       },

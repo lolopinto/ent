@@ -118,6 +118,7 @@ import { ContactEmailArgInputType } from "./mutations/input/contact_email_arg_in
 import { ContactInfoExtraInputType } from "./mutations/input/contact_info_extra_input_type";
 import { ContactPhoneNumberArgInputType } from "./mutations/input/contact_phone_number_arg_input_type";
 import { DefaultsExampleArgInputType } from "./mutations/input/defaults_example_arg_input_type";
+import { DefaultsPayloadInputType } from "./mutations/input/defaults_payload_input_type";
 import { EventArgInputType } from "./mutations/input/event_arg_input_type";
 import { FileArgInputType } from "./mutations/input/file_arg_input_type";
 import { HolidayArgInputType } from "./mutations/input/holiday_arg_input_type";
@@ -205,6 +206,7 @@ import {
   ContactEmailCanViewerDoType,
   ContactEmailSortColumnType,
   ContactEmailToCommentsConnectionType,
+  ContactEmailToEmailsForContactsConnectionType,
   ContactEmailToLikersConnectionType,
   ContactEmailType,
   ContactInfoExtraType,
@@ -228,6 +230,7 @@ import {
   DayOfWeekType,
   DefaultsExampleSortColumnType,
   DefaultsExampleType,
+  DefaultsPayloadType,
   DogBreedGroupType,
   DogBreedType,
   EmailInfoType,
@@ -350,6 +353,7 @@ export default new GraphQLSchema({
     ContactPhoneNumberType,
     ContactType,
     DefaultsExampleType,
+    DefaultsPayloadType,
     EmailInfoType,
     EventCanViewerSeeType,
     EventType,
@@ -378,6 +382,7 @@ export default new GraphQLSchema({
     CommentToPostConnectionType(),
     ContactCommentsFromAttachmentConnectionType(),
     ContactEmailToCommentsConnectionType(),
+    ContactEmailToEmailsForContactsConnectionType(),
     ContactEmailToLikersConnectionType(),
     ContactPhoneNumberToCommentsConnectionType(),
     ContactPhoneNumberToLikersConnectionType(),
@@ -465,6 +470,7 @@ export default new GraphQLSchema({
     DefaultsExampleArgInputType,
     DefaultsExampleCreateInputType,
     DefaultsExampleCreatePayloadType,
+    DefaultsPayloadInputType,
     DeleteUserInput2PayloadType,
     DeleteUserInput2Type,
     EditEmailAddressInputType,

@@ -284,6 +284,7 @@ type ContactEmail implements Node & ContactItemType {
   emailAddress: String!
   label: ContactLabel!
   comments(first: Int, after: String, last: Int, before: String): ContactEmailToCommentsConnection!
+  emailsForContacts(first: Int, after: String, last: Int, before: String): ContactEmailToEmailsForContactsConnection!
   likers(first: Int, after: String, last: Int, before: String): ContactEmailToLikersConnection!
   canViewerDo: ContactEmailCanViewerDo!
 }
@@ -342,6 +343,13 @@ type DefaultsExample implements Node {
   name: String!
   perHour: Int!
   hourlyLimit: Int!
+  payloads: [DefaultsPayload!]!
+}
+
+type DefaultsPayload {
+  data: String
+  firstName: String
+  lastName: String
 }
 
 type DogType {
@@ -382,7 +390,7 @@ type Event implements Node {
   cities: [City!]!
 }
 
-union Feedback = ContactEmail | User
+union Feedback = Contact | ContactEmail | ContactPhoneNumber | User
 
 type File implements Node {
   creator: User
@@ -647,6 +655,18 @@ type ContactEmailToCommentsEdge implements Edge {
 type ContactEmailToCommentsConnection implements Connection {
   edges: [ContactEmailToCommentsEdge!]!
   nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactEmailToEmailsForContactsEdge implements Edge {
+  node: Contact!
+  cursor: String!
+}
+
+type ContactEmailToEmailsForContactsConnection implements Connection {
+  edges: [ContactEmailToEmailsForContactsEdge!]!
+  nodes: [Contact!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -1404,10 +1424,17 @@ input DefaultsExampleCreateInput {
   name: String!
   perHour: Int
   hourlyLimit: Int
+  payloads: [DefaultsPayloadInput!]
 }
 
 type DefaultsExampleCreatePayload {
   defaultsExample: DefaultsExample!
+}
+
+input DefaultsPayloadInput {
+  data: String
+  firstName: String
+  lastName: String
 }
 
 type DeleteUserInput2Payload {

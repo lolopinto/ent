@@ -12,6 +12,7 @@ export * from "../generated/resolvers/contact_date_type";
 export * from "../generated/resolvers/contact_info_extra_type";
 export * from "../generated/resolvers/contact_item_result_type";
 export * from "../generated/resolvers/contact_item_type";
+export * from "../generated/resolvers/defaults_payload_type";
 export * from "../generated/resolvers/email_info_type";
 export * from "../generated/resolvers/important_dates_type";
 export * from "../generated/resolvers/user_nested_object_list_type";
@@ -44,6 +45,7 @@ export * from "../generated/resolvers/contact/contact_to_comments_connection_typ
 export * from "../generated/resolvers/contact/contact_to_filter_contact_emails_connection_type";
 export * from "../generated/resolvers/contact/contact_to_likers_connection_type";
 export * from "../generated/resolvers/contact_email/contact_email_to_comments_connection_type";
+export * from "../generated/resolvers/contact_email/contact_email_to_emails_for_contacts_connection_type";
 export * from "../generated/resolvers/contact_email/contact_email_to_likers_connection_type";
 export * from "../generated/resolvers/contact_phone_number/contact_phone_number_to_comments_connection_type";
 export * from "../generated/resolvers/contact_phone_number/contact_phone_number_to_likers_connection_type";
