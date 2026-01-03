@@ -1624,6 +1624,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 
 		var wg2 sync.WaitGroup
 		patternKeys := patternMap.Keys()
+		sort.Strings(patternKeys)
 		wg2.Add(len(patternKeys))
 		for _, k := range patternKeys {
 			go func(k string) {
@@ -3431,8 +3432,13 @@ func buildCustomUnionNode(processor *codegen.Processor, cu *customtype.CustomUni
 		GQLType: "GraphQLUnionType",
 	})
 
-	unionTypes := make([]string, len(cu.Interfaces))
-	for i, ci := range cu.Interfaces {
+	interfaces := append([]*customtype.CustomInterface(nil), cu.Interfaces...)
+	sort.Slice(interfaces, func(i, j int) bool {
+		return interfaces[i].GQLName < interfaces[j].GQLName
+	})
+
+	unionTypes := make([]string, len(interfaces))
+	for i, ci := range interfaces {
 		unionTypes[i] = fmt.Sprintf("%sType", ci.GQLName)
 	}
 	result.UnionTypes = unionTypes
@@ -3448,7 +3454,12 @@ func buildCustomUnionInputNode(processor *codegen.Processor, cu *customtype.Cust
 		GQLType: "GraphQLInputObjectType",
 	})
 
-	for _, ci := range cu.Interfaces {
+	interfaces := append([]*customtype.CustomInterface(nil), cu.Interfaces...)
+	sort.Slice(interfaces, func(i, j int) bool {
+		return interfaces[i].GQLName < interfaces[j].GQLName
+	})
+
+	for _, ci := range interfaces {
 		if ci.GraphQLFieldName == "" {
 			return nil, fmt.Errorf("invalid field name for interface %s", ci.GQLName)
 		}
