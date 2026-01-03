@@ -1404,12 +1404,9 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 					return
 				}
 				for _, pattern := range nodeData.PatternsWithMixins {
-					l, ok := patternMap.Load(pattern)
-					if !ok {
-						l = []string{}
-					}
-					l = append(l, nodeData.Node)
-					patternMap.Store(pattern, l)
+					patternMap.Update(pattern, func(value []string, ok bool) []string {
+						return append(value, nodeData.Node)
+					})
 				}
 
 				objectTypes, err := buildNodeForObject(processor, nodeMap, nodeData)
