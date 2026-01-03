@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PIPENV_PYTHON: '3.14'
 
 
     # Service containers to run with `build`
@@ -53,8 +55,6 @@ jobs:
           pip3 install pipenv==2026.0.3 
           cd python
           pipenv install --dev
-        env:
-          PIPENV_PYTHON: '3.14'
           
       - name: Setup nodejs
         uses: actions/setup-node@v6
