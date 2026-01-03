@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v5
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
@@ -23,7 +23,7 @@ jobs:
           ${{ runner.os }}-go-
   
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v6
       with:
         go-version: '1.25'
 
@@ -43,4 +43,3 @@ jobs:
         # hack to avoid hitting the db
         DB_CONNECTION_STRING: sqlite:///
       run: cd release_image && go run .
-

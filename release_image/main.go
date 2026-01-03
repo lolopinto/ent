@@ -18,7 +18,8 @@ import (
 )
 
 // next tag to use
-const TAG = "v0.3.1"
+// testing changes. nothing to be used here...
+const TAG = "v0.3.2--test-test"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 22
