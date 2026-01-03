@@ -1813,6 +1813,9 @@ func (s *Schema) addActionFields(container Container) error {
 			}
 
 			for _, f2 := range a2.GetNonEntFields() {
+				if excludedFields[f2.GetFieldName()] {
+					continue
+				}
 				a.AddCustomNonEntField(t, f2)
 			}
 		}
