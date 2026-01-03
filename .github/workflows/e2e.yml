@@ -33,19 +33,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/cache@v5
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: '1.25'
           check-latest: true
           cache: true
+          cache-dependency-path: go.sum
 
       - name: Set up python
         uses: actions/setup-python@v6
@@ -56,7 +50,7 @@ jobs:
 
       - name: setup auto_schema dependencies
         run: |
-          pip3 install pipenv 
+          pip3 install pipenv==2026.0.3 
           cd python
           pipenv install --dev
           

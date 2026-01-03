@@ -38,24 +38,20 @@ jobs:
     steps:
     - uses: actions/checkout@v6
       
-    - uses: actions/cache@v5
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
     - name: Set up Go
       uses: actions/setup-go@v6
       with:
         go-version: '1.25'
         check-latest: true
         cache: true
+        cache-dependency-path: go.sum
         
     - name: Set up python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.14' 
+        python-version: '3.14'
+        cache: pip
+        cache-dependency-path: python/Pipfile.lock
       
     - name: Install auto_schema
       run: python3 -m pip install wheel auto_schema==0.0.34
