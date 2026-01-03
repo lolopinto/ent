@@ -60,6 +60,8 @@ jobs:
     - name: Install dependencies
       run: |
         pipenv install --deploy --dev
+      env:
+        PIPENV_PYTHON: '3.14'
 
     - name: run test suite
       run: |
