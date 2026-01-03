@@ -11,7 +11,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 export interface IContactInfoBase<
   TViewer extends ExampleViewerAlias = ExampleViewerAlias,
 > extends Ent<TViewer> {
-  extra: ContactInfoExtra | null;
+  _extra: ContactInfoExtra | null;
   contactId: ID;
   ownerId: ID;
   loadContact(): Promise<Contact | null>;
@@ -36,13 +36,13 @@ function extractFromArgs<TViewer extends Viewer, TData extends Data>(
 
 export function ContactInfoBaseMixin<T extends Constructor>(BaseClass: T) {
   return class ContactInfoBaseMixin extends BaseClass {
-    readonly extra: ContactInfoExtra | null;
+    readonly _extra: ContactInfoExtra | null;
     readonly contactId: ID;
     readonly ownerId: ID;
     constructor(...args: any[]) {
       super(...args);
       const { data } = extractFromArgs(args);
-      this.extra = data.extra;
+      this._extra = data.extra;
       this.contactId = data.contact_id;
       this.ownerId = data.owner_id;
     }

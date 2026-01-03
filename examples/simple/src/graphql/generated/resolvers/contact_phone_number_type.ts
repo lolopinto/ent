@@ -65,6 +65,13 @@ export const ContactPhoneNumberType = new GraphQLObjectType({
     },
     extra: {
       type: ContactInfoExtraType,
+      resolve: async (
+        obj: ContactPhoneNumber,
+        args: {},
+        context: RequestContext<ExampleViewerAlias>,
+      ) => {
+        return obj.extra();
+      },
     },
     phoneNumber: {
       type: new GraphQLNonNull(GraphQLString),

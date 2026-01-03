@@ -5,7 +5,6 @@
 
 import { GraphQLUnionType } from "graphql";
 import {
-  ContactEmailType,
   ContactPhoneNumberType,
   ContactType,
   UserType,
@@ -13,10 +12,5 @@ import {
 
 export const FeedbackType = new GraphQLUnionType({
   name: "Feedback",
-  types: () => [
-    ContactType,
-    ContactEmailType,
-    ContactPhoneNumberType,
-    UserType,
-  ],
+  types: () => [ContactType, ContactPhoneNumberType, UserType],
 });
