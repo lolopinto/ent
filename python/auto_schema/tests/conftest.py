@@ -1131,14 +1131,12 @@ def metadata_with_foreign_key_to_same_table(request):
 
 
 @ pytest.fixture
-@ pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_two_tables(metadata_with_table):
     messages_table(metadata_with_table)
     return metadata_with_table
 
 
 @ pytest.fixture
-@ pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_foreign_key(metadata_with_table):
     contacts_table(metadata_with_table)
     return metadata_with_table
