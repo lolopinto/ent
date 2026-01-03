@@ -1210,7 +1210,6 @@ func TestEmbeddedActionOnlyFieldsExcluded(t *testing.T) {
 						},
 						tsType:     "customActionReferenceInput",
 						gqlType:    "ActionReferenceSecondEntCreateInput",
-						actionName: "CreateFirstEntAction",
 					},
 				},
 			},
