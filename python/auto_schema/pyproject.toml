@@ -20,8 +20,7 @@ classifiers = [
 ]
 dependencies = [
   "sqlalchemy==2.0.18",
-  #   "alembic @ git+https://github.com/sqlalchemy/alembic.git@dbdec2661b8a01132ea3f7a027f85fed2eaf5e54#egg=alembic",
-  "lolopinto-alembic-fork==0.0.1.dev0",
+  "alembic==1.12.0",
   "datetime==4.3",
   "psycopg2==2.9.6",
   "ruff==0.0.285",

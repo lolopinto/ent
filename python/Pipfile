@@ -7,10 +7,7 @@ verify_ssl = true
 pytest = ">=8"
 
 [packages]
-#alembic = "==1.12.0"
-# use a fork until alembic 1.12.0 is released and can use that
-# needed for ruff support
-lolopinto-alembic-fork = "==0.0.1.dev0"
+alembic = "==1.12.0"
 datetime = "==4.3"
 sqlalchemy = "==2.0.45"
 psycopg2 = "==2.9.11"

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "19b5bc2edb6a42addd9c7024448fa8f09ef1cd45fe575e6f0ca6a3fc733059d0"
+            "sha256": "b56c0c67e3427415bdd482246192b5cd5f23b47091c9bf803237478b517c938f"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -14,6 +14,15 @@
         ]
     },
     "default": {
+        "alembic": {
+            "hashes": [
+                "sha256:03226222f1cf943deee6c85d9464261a6c710cd19b4fe867a3ad1f25afda610f",
+                "sha256:8e7645c32e4f200675e69f0745415335eb59a3663f5feb487abfa0b30c45888b"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.7'",
+            "version": "==1.12.0"
+        },
         "datetime": {
             "hashes": [
                 "sha256:371dba07417b929a4fa685c2f7a3eaa6a62d60c02947831f97d4df9a9e70dfd0",
@@ -21,15 +30,6 @@
             ],
             "index": "pypi",
             "version": "==4.3"
-        },
-        "lolopinto-alembic-fork": {
-            "hashes": [
-                "sha256:6d95de0b1f2165da5049dbdd7d91631853f2b579531607cc6bcd1616754efef1",
-                "sha256:cecb23a7cbcaee806aa2994337bd1afc4ab6a5688d80944353dbe06854c499db"
-            ],
-            "index": "pypi",
-            "markers": "python_version >= '3.7'",
-            "version": "==0.0.1.dev0"
         },
         "mako": {
             "hashes": [
