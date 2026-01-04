@@ -1,14 +1,14 @@
 import { Data } from "../core/base";
 
-import {
+import type {
   AST,
   Column,
   Delete,
   Insert_Replace,
-  Parser,
   Select,
   Update,
 } from "node-sql-parser";
+import nodeSqlParser from "node-sql-parser";
 //import { assert } from "console";
 interface InsertReplace extends Insert_Replace {
   returning: any;
@@ -66,19 +66,54 @@ function getColumns(cols: string[] | null | any[] | Column[] | "*"): ColsInfo {
   }
   let result: string[] = [];
   let count: boolean | undefined;
+  let allCols = false;
   for (let col of cols) {
     if (typeof col === "string") {
       result.push(col);
     } else {
+      if (col.expr?.type === "column_ref") {
+        const colName = getColumnFromRef(col.expr);
+        if (colName === "*") {
+          allCols = true;
+          continue;
+        }
+        result.push(colName);
+        continue;
+      }
+      if (typeof col.column === "string") {
+        result.push(col.column);
+        continue;
+      }
+      if (col.type === "column_ref") {
+        const colName = getColumnFromRef(col);
+        if (colName === "*") {
+          allCols = true;
+          continue;
+        }
+        result.push(colName);
+        continue;
+      }
+      if (col.type === "column" && typeof col.value === "string") {
+        result.push(col.value);
+        continue;
+      }
+      if (col.type === "default" && typeof col.value === "string") {
+        result.push(col.value);
+        continue;
+      }
       assert(col.type === "expr", "invalid col type");
       if (col.as !== "count") {
         // count supported as function below...
         assert(col.as === null, "column as not-null"); // TODO support this
       }
       assert(col.expr !== null, "null col expr");
-      if (col.expr.column) {
-        // regular column
-        result.push(col.expr.column);
+      if (col.expr.type === "column_ref") {
+        const colName = getColumnFromRef(col.expr);
+        if (colName === "*") {
+          allCols = true;
+        } else {
+          result.push(colName);
+        }
       } else if (col.expr.type === "function") {
         assert(
           col.expr.name === "count",
@@ -101,33 +136,68 @@ function getColumns(cols: string[] | null | any[] | Column[] | "*"): ColsInfo {
           col.expr.name === "COUNT",
           "count is the only supported function for now",
         );
-        if (col.expr.args?.expr?.type !== "star") {
+        if (col.expr.args?.expr?.type === "star") {
+          count = true;
+        } else if (
+          col.expr.args?.expr?.type === "number" &&
+          col.expr.args.expr.value === 1
+        ) {
+          count = true;
+        } else {
           throw new Error("unsupported count expr");
         }
-        count = true;
       } else {
         throw new Error("unsupported expr type");
       }
     }
+  }
+  if (allCols) {
+    return { allCols: true, count };
   }
   return { columns: result, count };
 }
 
 function getColumnFromRef(col: any): string {
   assert(col !== null, "null column ref");
+  if (col.expr?.type === "column_ref") {
+    return getColumnFromRef(col.expr);
+  }
+  if (col.expr?.type === "default") {
+    return col.expr.value;
+  }
+  if (col.type === "expr" && col.expr?.type === "column_ref") {
+    return getColumnFromRef(col.expr);
+  }
+  if (col.type === "column" && typeof col.value === "string") {
+    return col.value;
+  }
+  if (col.type === "default" && typeof col.value === "string") {
+    return col.value;
+  }
   assert(col.type === "column_ref", "column type column_ref");
   assert(col.table === null, "column table not null");
-  return col.column;
+  if (typeof col.column === "string") {
+    return col.column;
+  }
+  if (col.column?.expr?.type === "default") {
+    return col.column.expr.value;
+  }
+  if (col.column?.value) {
+    return col.column.value;
+  }
+  throw new Error("unsupported column ref");
 }
 
 function isPreparedStatementValue(val: any) {
-  if (val.type !== "origin") {
-    return false;
+  if (val.type === "origin") {
+    let str = val.value as string;
+    // TODO this should work for not-postgres
+    return str.startsWith("$");
   }
-  let str = val.value as string;
-
-  // TODO this should work for not-postgres
-  return str.startsWith("$");
+  if (val.type === "var") {
+    return val.prefix === "$";
+  }
+  return false;
 }
 
 // regex from https://www.regextester.com/97766
@@ -187,10 +257,13 @@ function parseInsertStatement(
   const colInfo = getColumns(ast.columns);
 
   let data: Data = {};
-  if (ast.values.length !== 1) {
-    throw new Error(`unexpected number of values ${ast.values}`);
+  if (ast.values.type !== "values") {
+    throw new Error(`unexpected insert values type ${ast.values.type}`);
   }
-  const val = ast.values[0];
+  if (ast.values.values.length !== 1) {
+    throw new Error(`unexpected number of values ${ast.values.values}`);
+  }
+  const val = ast.values.values[0];
   for (const val2 of val.value) {
     assert(isPreparedStatementValue(val2), "prepared statement");
   }
@@ -227,7 +300,10 @@ export interface Where {
 }
 
 export class EqOp {
-  constructor(private col: string, private value: any) {}
+  constructor(
+    private col: string,
+    private value: any,
+  ) {}
 
   apply(data: Data): boolean {
     return data[this.col] === this.value;
@@ -235,7 +311,10 @@ export class EqOp {
 }
 
 export class NotEqOp {
-  constructor(private col: string, private value: any) {}
+  constructor(
+    private col: string,
+    private value: any,
+  ) {}
 
   apply(data: Data): boolean {
     return data[this.col] !== this.value;
@@ -243,7 +322,10 @@ export class NotEqOp {
 }
 
 export class GreaterOp {
-  constructor(private col: string, private value: any) {}
+  constructor(
+    private col: string,
+    private value: any,
+  ) {}
 
   apply(data: Data): boolean {
     return data[this.col] > this.value;
@@ -251,7 +333,10 @@ export class GreaterOp {
 }
 
 export class LessOp {
-  constructor(private col: string, private value: any) {}
+  constructor(
+    private col: string,
+    private value: any,
+  ) {}
 
   apply(data: Data): boolean {
     return data[this.col] < this.value;
@@ -259,7 +344,10 @@ export class LessOp {
 }
 
 export class GreaterEqOp {
-  constructor(private col: string, private value: any) {}
+  constructor(
+    private col: string,
+    private value: any,
+  ) {}
 
   apply(data: Data): boolean {
     return data[this.col] >= this.value;
@@ -267,7 +355,10 @@ export class GreaterEqOp {
 }
 
 export class LessEqOp {
-  constructor(private col: string, private value: any) {}
+  constructor(
+    private col: string,
+    private value: any,
+  ) {}
 
   apply(data: Data): boolean {
     return data[this.col] <= this.value;
@@ -275,7 +366,10 @@ export class LessEqOp {
 }
 
 export class InOp {
-  constructor(private col: string, private values: any[]) {}
+  constructor(
+    private col: string,
+    private values: any[],
+  ) {}
 
   apply(data: Data): boolean {
     for (const val of this.values) {
@@ -315,6 +409,10 @@ const preparedRegex = new RegExp(/\$(\d+)/);
 function getValueFromRegex(val: any, values: any[]): any {
   // TODO support non-prepared statements
   assert(isPreparedStatementValue(val), "prepared statement");
+
+  if (val.type === "var" && val.prefix === "$") {
+    return values[val.name - 1];
+  }
 
   const result = preparedRegex.exec(val.value);
   assert(result !== null);
@@ -405,7 +503,9 @@ function parseSelectStatement(
   assert(ast.groupby === null, "non-null groupby");
   assert(ast.having === null, "non-null having");
   assert(ast.with === null, "non-null with");
-  assert(ast.distinct == null, "non-null distinct");
+  const distinct = (ast as { distinct?: { type?: any } | null }).distinct;
+  const hasDistinct = distinct != null && distinct.type != null;
+  assert(!hasDistinct, "non-null distinct");
   assert(ast.options === null, "non-null options");
 
   const tableName = getTableName(ast.from);
@@ -417,28 +517,42 @@ function parseSelectStatement(
   if (ast.limit !== null) {
     const limitInfo = ast.limit as {
       seperator?: string;
-      value?: { type: string; value: number }[];
+      value?: {
+        type: string;
+        value?: number;
+        name?: number;
+        prefix?: string;
+      }[];
     };
-    const values = limitInfo.value || [];
-    assert(
-      values.length >= 1 && values.length <= 2,
-      "ast limit not as expected",
-    );
-    const parsedValues = values.map((value) => {
-      assert(value.type == "number", "limit type was not 0");
-      return value.value;
-    });
-    const separator = limitInfo.seperator || "";
-    if (parsedValues.length === 1) {
-      limit = parsedValues[0];
-    } else if (separator === ",") {
-      offset = parsedValues[0];
-      limit = parsedValues[1];
-    } else if (separator === "offset") {
-      limit = parsedValues[0];
-      offset = parsedValues[1];
+    const limitValues = limitInfo.value || [];
+    if (limitValues.length === 0) {
+      // no limit
     } else {
-      throw new Error(`unsupported limit separator: ${separator}`);
+      assert(
+        limitValues.length >= 1 && limitValues.length <= 2,
+        "ast limit not as expected",
+      );
+      const parsedValues = limitValues.map((value) => {
+        if (value.type === "number") {
+          return value.value as number;
+        }
+        if (isPreparedStatementValue(value)) {
+          return getValueFromRegex(value, values);
+        }
+        throw new Error("limit type was not 0");
+      });
+      const separator = limitInfo.seperator || "";
+      if (parsedValues.length === 1) {
+        limit = parsedValues[0];
+      } else if (separator === ",") {
+        offset = parsedValues[0];
+        limit = parsedValues[1];
+      } else if (separator === "offset") {
+        limit = parsedValues[0];
+        offset = parsedValues[1];
+      } else {
+        throw new Error(`unsupported limit separator: ${separator}`);
+      }
     }
   }
   const astOffset = (ast as { offset?: any }).offset;
@@ -450,8 +564,13 @@ function parseSelectStatement(
       if (typeof offsetValue === "number") {
         offset = offsetValue;
       } else if (Array.isArray(offsetValue) && offsetValue.length) {
-        assert(offsetValue[0].type == "number", "offset type was not 0");
-        offset = offsetValue[0].value;
+        if (offsetValue[0].type === "number") {
+          offset = offsetValue[0].value;
+        } else if (isPreparedStatementValue(offsetValue[0])) {
+          offset = getValueFromRegex(offsetValue[0], values);
+        } else {
+          throw new Error("offset type was not 0");
+        }
       }
     }
   }
@@ -459,7 +578,7 @@ function parseSelectStatement(
   if (ast.orderby !== null) {
     for (const order of ast.orderby) {
       const col = getColumnFromRef(order.expr);
-      orderings.push([col, order.type]);
+      orderings.push([col, order.type ?? "ASC"]);
     }
     // TODO fix this
     if (colsInfo.count) {
@@ -553,9 +672,17 @@ function parseUpdateStatement(
   assert(Array.isArray(ast.set));
   let overwrite: Data = {};
   for (const set of ast.set) {
-    let col = set.column;
+    const setAny = set as any;
+    const colRef =
+      "type" in setAny
+        ? setAny
+        : "column" in setAny
+          ? setAny.column ?? setAny
+          : setAny;
+    const colName =
+      typeof colRef === "string" ? colRef : getColumnFromRef(colRef);
     let value = getValueFromRegex(set.value, values);
-    overwrite[col] = processBeforeStoring(value);
+    overwrite[colName] = processBeforeStoring(value);
   }
 
   let columns = new Set<string>();
@@ -722,3 +849,5 @@ export function performQuery(
     parseDeleteStatement(ast, values, map);
   }
 }
+const Parser = (nodeSqlParser as { Parser: new (...args: any[]) => any })
+  .Parser;

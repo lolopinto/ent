@@ -1,8 +1,59 @@
-import { camelCase } from "camel-case";
-import { pascalCase } from "pascal-case";
-import { snakeCase } from "snake-case";
-
 // TODO tests and update functionality to match golang
+function splitWords(input: string): string[] {
+  if (!input) {
+    return [];
+  }
+
+  const parts = input.split(/[^A-Za-z0-9]+/).filter(Boolean);
+  const words: string[] = [];
+
+  for (const part of parts) {
+    const split = _splitCamelCase(part);
+    for (const piece of split) {
+      if (!piece.s) {
+        continue;
+      }
+      if (piece.type === "digit" && words.length > 0) {
+        words[words.length - 1] += piece.s;
+      } else {
+        words.push(piece.s);
+      }
+    }
+  }
+
+  return words;
+}
+
+function upperFirst(input: string): string {
+  if (!input) {
+    return "";
+  }
+  return input[0].toUpperCase() + input.slice(1);
+}
+
+function camelCase(input: string): string {
+  const words = splitWords(input);
+  if (words.length === 0) {
+    return "";
+  }
+  const [first, ...rest] = words;
+  return (
+    first.toLowerCase() +
+    rest.map((word) => upperFirst(word.toLowerCase())).join("")
+  );
+}
+
+function pascalCase(input: string): string {
+  return splitWords(input)
+    .map((word) => upperFirst(word.toLowerCase()))
+    .join("");
+}
+
+function snakeCase(input: string): string {
+  return splitWords(input)
+    .map((word) => word.toLowerCase())
+    .join("_");
+}
 
 export function toDBColumnOrTable(...strs: string[]): string {
   let name = "";

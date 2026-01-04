@@ -1426,7 +1426,7 @@ function commonTests() {
         return AlwaysDenyPrivacyPolicy;
       };
 
-      await expect(action.saveX()).rejects.toThrowError(
+      await expect(action.saveX()).rejects.toThrow(
         "Logged out Viewer does not have permission to create DenyAllUser",
       );
     });
@@ -1512,7 +1512,7 @@ function commonTests() {
         },
       ];
 
-      await expect(action.saveX()).rejects.toThrowError(
+      await expect(action.saveX()).rejects.toThrow(
         "thou shall not pass. DenyUser",
       );
     });
@@ -1589,7 +1589,7 @@ function commonTests() {
         },
       ];
 
-      await expect(action.saveX()).rejects.toThrowError(
+      await expect(action.saveX()).rejects.toThrow(
         "thou shall not pass. DenyAccount",
       );
     });
@@ -1749,7 +1749,7 @@ function commonTests() {
             };
           },
         ),
-      ).rejects.toThrowError(
+      ).rejects.toThrow(
         /does not have permission to create EventWithEditPrivacy/,
       );
     });
@@ -1781,7 +1781,7 @@ function commonTests() {
             delete action.viewerForEntLoad;
           },
         ),
-      ).rejects.toThrowError(/host_ids/);
+      ).rejects.toThrow(/host_ids/);
     });
 
     // works on either field
@@ -1812,7 +1812,7 @@ function commonTests() {
             delete action.viewerForEntLoad;
           },
         ),
-      ).rejects.toThrowError(/slug/);
+      ).rejects.toThrow(/slug/);
     });
 
     test("host_ids and slug set. non-owner cannot create", async () => {
@@ -1844,7 +1844,7 @@ function commonTests() {
           },
         ),
         // fails with one of them
-      ).rejects.toThrowError(/slug|host_ids/);
+      ).rejects.toThrow(/slug|host_ids/);
     });
 
     test("host_ids set in trigger by person who can't edit. goes through", async () => {
@@ -1960,7 +1960,7 @@ function commonTests() {
         WriteOperation.Edit,
         event,
       );
-      await expect(action2.saveX()).rejects.toThrowError(/host_ids/);
+      await expect(action2.saveX()).rejects.toThrow(/host_ids/);
     });
 
     test("host_ids set in trigger by host who cannot edit. goes through", async () => {
@@ -2043,7 +2043,7 @@ function commonTests() {
         WriteOperation.Edit,
         event,
       );
-      await expect(action2.saveX()).rejects.toThrowError(/show_guest_list/);
+      await expect(action2.saveX()).rejects.toThrow(/show_guest_list/);
     });
   });
 

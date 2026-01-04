@@ -1,4 +1,4 @@
-import { Graph } from "graph-data-structure";
+import { Graph, topologicalSort } from "graph-data-structure";
 import { ID, Ent, Viewer, Context, Data } from "../core/base";
 import { logQuery } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
@@ -167,7 +167,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   ) {
     this.builder = options?.builder;
 
-    let graph = Graph();
+    const graph = new Graph();
 
     const changesetMap: Map<string, Changeset> = new Map();
 
@@ -216,7 +216,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     let nodeOps: Set<DataOperation<Ent>> = new Set();
     let remainOps: Set<DataOperation<Ent>> = new Set();
 
-    let sorted = graph.topologicalSort(graph.nodes());
+    const sorted = topologicalSort(graph);
     sorted.forEach((node) => {
       let c = changesetMap.get(node);
 
