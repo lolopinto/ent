@@ -1018,12 +1018,16 @@ export class Orchestrator<
           if (val === undefined) {
             continue;
           }
+          let inputVal = val;
           if (field.format) {
             val = field.format(transformed.data[k], true);
           }
           data[this.getStorageKey(k)] = val;
           if (!field.immutable) {
-            this.defaultFieldsByTSName[this.getInputKey(k)] = val;
+            if (field.formatInput) {
+              inputVal = field.formatInput(inputVal);
+            }
+            this.defaultFieldsByTSName[this.getInputKey(k)] = inputVal;
           }
           // hmm do we need this?
           // TODO how to do this for local tests?
