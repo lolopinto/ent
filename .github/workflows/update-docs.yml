@@ -10,7 +10,7 @@ jobs:
   merge-branch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
 
       - name: Merge to docs
         uses: devmasx/merge-branch@v1.4.0

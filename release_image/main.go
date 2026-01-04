@@ -18,18 +18,19 @@ import (
 )
 
 // next tag to use
-const TAG = "v0.3.1"
+// testing changes. nothing to be used here...
+const TAG = "v0.3.2--test-test"
 
 // current node gets latest tag...
-const CURRENT_NODE_VERSION = 18
+const CURRENT_NODE_VERSION = 22
 const REPO = "ghcr.io/lolopinto/ent"
 
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	// 18,
 	// 20,
-	22,
+	// 22,
+	24,
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.34"
