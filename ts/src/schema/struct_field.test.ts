@@ -407,14 +407,12 @@ describe("struct as list", () => {
       ...val,
       ts: d.toISOString(),
     };
-    // @ts-expect-error
     delete formatted1["uuidUnique"];
     const formatted2 = {
       uuid_unique: val2.uuidUnique,
       ...val2,
       ts: d2.toISOString(),
     };
-    // @ts-expect-error
     delete formatted2["uuidUnique"];
 
     const data = [val, val2];

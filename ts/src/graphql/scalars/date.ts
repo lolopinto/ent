@@ -4,7 +4,10 @@ import { DateTime } from "luxon";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-function normalizeDate(input: any, throwErr: (msg: string) => GraphQLError): string {
+function normalizeDate(
+  input: any,
+  throwErr: (msg: string) => GraphQLError,
+): string {
   if (typeof input === "string") {
     if (!DATE_REGEX.test(input)) {
       throw throwErr(`Date must be in YYYY-MM-DD format: ${input}`);
@@ -16,13 +19,18 @@ function normalizeDate(input: any, throwErr: (msg: string) => GraphQLError): str
     return dt.toISODate();
   }
   if (input instanceof Date) {
-    return DateTime.fromJSDate(input).toISODate();
+    const result = DateTime.fromJSDate(input).toISODate();
+    if (!result) {
+      throw throwErr(`Invalid Date value ${input}`);
+    }
+    return result;
   }
   if (input instanceof DateTime) {
-    if (!input.isValid) {
+    const result = input.toISODate();
+    if (!result) {
       throw throwErr(`Invalid Date value ${input.toISO()}`);
     }
-    return input.toISODate();
+    return result;
   }
   throw throwErr(`Date cannot represent value: ${input}`);
 }
