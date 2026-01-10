@@ -11,7 +11,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Added
 
-- parallelize ent loader per-row privacy checks with a configurable concurrency cap
+- parallelize ent loader per-row privacy checks with a configurable concurrency cap (#1930)
 
 ## [0.2.5]
 
