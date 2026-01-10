@@ -22,7 +22,29 @@ import {
   performRawQuery,
 } from "../ent";
 import { logEnabled } from "../logger";
+import { OrderBy } from "../query_impl";
+import { stableStringify } from "./cache_utils";
 import { CacheMap, getCustomLoader } from "./loader";
+
+function getDefaultOrderBy(): OrderBy {
+  return [
+    {
+      column: "time",
+      direction: "DESC",
+    },
+  ];
+}
+
+function getEffectiveOptions(
+  options: EdgeQueryableDataOptions,
+): EdgeQueryableDataOptions {
+  return {
+    ...options,
+    orderby: options.orderby ?? getDefaultOrderBy(),
+    limit: options.limit || getDefaultLimit(),
+    disableTransformations: options.disableTransformations ?? false,
+  };
+}
 
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
@@ -59,14 +81,9 @@ function createLoader<T extends AssocEdge>(
       m.set(keys[i], i);
     }
 
-    options.orderby = options.orderby || [
-      {
-        column: "time",
-        direction: "DESC",
-      },
-    ];
+    const orderby = options.orderby ?? getDefaultOrderBy();
     // TODO defaultEdgeQueryOptions
-    options.limit = options.limit || getDefaultLimit();
+    const limit = options.limit || getDefaultLimit();
 
     const tableName = edgeData.edgeTable;
     const { cls: cls1, fields } = getEdgeClauseAndFields(
@@ -79,8 +96,8 @@ function createLoader<T extends AssocEdge>(
       tableName: tableName,
       fields,
       values: keys,
-      orderby: options.orderby,
-      limit: options.limit || getDefaultLimit(),
+      orderby,
+      limit,
       groupColumn: "id1",
       clause: cls1,
     });
@@ -262,11 +279,13 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
       );
     }
 
-    // we create a loader which can combine first X queries in the same fetch
-    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby?.map((orderBy) => JSON.stringify(orderBy))}:disableTransformations:${options.disableTransformations}`;
+    const effectiveOptions = getEffectiveOptions(options);
+    const key = `${this.name}:limit:${effectiveOptions.limit}:orderby:${stableStringify(
+      effectiveOptions.orderby,
+    )}:disableTransformations:${effectiveOptions.disableTransformations}`;
     return getCustomLoader(
       key,
-      () => new AssocEdgeLoader(this.edgeType, ctr, options, context),
+      () => new AssocEdgeLoader(this.edgeType, ctr, effectiveOptions, context),
       context,
     ) as AssocEdgeLoader<T>;
   }
