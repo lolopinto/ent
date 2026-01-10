@@ -119,6 +119,59 @@ describe("sqlite", () => {
 // index_loader.test.ts tests a lof of things that this tests so we don't test every path here
 // just the "complex" ones
 function commonTests() {
+  describe("configurable loader cache keys", () => {
+    const factory = new QueryLoaderFactory({
+      groupCol: "user_id",
+      ...FakeEvent.loaderOptions(),
+    });
+
+    test("different orderby objects create different loaders", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "start_time",
+              direction: "DESC",
+            },
+          ],
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+    });
+
+    test("disableTransformations changes cache keys", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          disableTransformations: true,
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          disableTransformations: false,
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+    });
+  });
+
   describe("groupCol passed", () => {
     test("single id. with context", async () => {
       await verifySingleIDWithContextCacheHit((id) => getNewLoader());

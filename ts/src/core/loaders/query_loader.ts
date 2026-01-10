@@ -17,6 +17,7 @@ import {
 } from "../ent";
 import { logEnabled } from "../logger";
 import { OrderBy } from "../query_impl";
+import { stableStringify } from "./cache_utils";
 import { CacheMap, getCustomLoader, getLoader } from "./loader";
 import { ObjectLoaderFactory } from "./object_loader";
 
@@ -310,7 +311,12 @@ export class QueryLoaderFactory<K extends any>
       return new QueryDirectLoader(queryOptions, options, context);
     }
 
-    const key = `${name}:limit:${options.limit}:orderby:${options.orderby}`;
+    const effectiveOrderBy = getOrderByLocal(queryOptions, options);
+    const effectiveLimit = options.limit || getDefaultLimit();
+    const disableTransformations = options.disableTransformations ?? false;
+    const key = `${name}:limit:${effectiveLimit}:orderby:${stableStringify(
+      effectiveOrderBy,
+    )}:disableTransformations:${disableTransformations}`;
     return getCustomLoader(
       key,
       () => new QueryLoader(queryOptions, context, options),
