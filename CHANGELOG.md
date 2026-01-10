@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
+## [Unreleased]
+
+### Added
+
+- parallelize ent loader per-row privacy checks with a configurable concurrency cap
+
 ## [0.2.5]
 
 ### Fixed
