@@ -17,7 +17,12 @@ import {
 } from "../ent";
 import { logEnabled } from "../logger";
 import { OrderBy } from "../query_impl";
-import { CacheMap, getCustomLoader, getLoader } from "./loader";
+import {
+  CacheMap,
+  getCustomLoader,
+  getLoader,
+  getLoaderMaxBatchSize,
+} from "./loader";
 import { ObjectLoaderFactory } from "./object_loader";
 
 function getOrderByLocal(
@@ -68,7 +73,9 @@ function createLoader<K extends any>(
   options: QueryOptions,
   queryOptions?: EdgeQueryableDataOptions,
 ): DataLoader<K, Data[]> {
-  const loaderOptions: DataLoader.Options<K, Data[]> = {};
+  const loaderOptions: DataLoader.Options<K, Data[]> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+  };
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {

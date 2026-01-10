@@ -1,6 +1,24 @@
 import { Loader, LoaderFactory, Context, DataOptions } from "../base";
 import { log } from "../logger";
 
+const DEFAULT_MAX_BATCH_SIZE = 1000;
+let loaderMaxBatchSize = DEFAULT_MAX_BATCH_SIZE;
+
+export function getLoaderMaxBatchSize(): number {
+  return loaderMaxBatchSize;
+}
+
+export function setLoaderMaxBatchSize(size?: number | null) {
+  if (size === undefined || size === null) {
+    loaderMaxBatchSize = DEFAULT_MAX_BATCH_SIZE;
+    return;
+  }
+  if (!Number.isFinite(size) || size <= 0) {
+    throw new Error(`maxBatchSize must be a positive number`);
+  }
+  loaderMaxBatchSize = Math.floor(size);
+}
+
 // this is like factory factory FML
 // helper function to handle context vs not
 // and to keep the API clean for clients who shouldn't have to worry about this

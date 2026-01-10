@@ -22,7 +22,7 @@ import {
   performRawQuery,
 } from "../ent";
 import { logEnabled } from "../logger";
-import { CacheMap, getCustomLoader } from "./loader";
+import { CacheMap, getCustomLoader, getLoaderMaxBatchSize } from "./loader";
 
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
@@ -30,7 +30,9 @@ function createLoader<T extends AssocEdge>(
   edgeCtr: AssocEdgeConstructor<T>,
   edgeData: AssocEdgeData,
 ) {
-  const loaderOptions: DataLoader.Options<ID, T[]> = {};
+  const loaderOptions: DataLoader.Options<ID, T[]> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+  };
 
   if (logEnabled("query")) {
     loaderOptions.cacheMap = new CacheMap({

@@ -1,4 +1,5 @@
 import { ObjectLoader, ObjectLoaderFactory } from "./object_loader";
+import { getLoaderMaxBatchSize, setLoaderMaxBatchSize } from "./loader";
 import { createRowForTest, editRowForTest } from "../../testutils/write";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
@@ -659,6 +660,39 @@ function commonTests() {
       verifyMultiIDsCacheHit,
       createWithNullDeletedAt,
     );
+  });
+
+  test("loadMany chunks by maxBatchSize", async () => {
+    const prevMaxBatchSize = getLoaderMaxBatchSize();
+    const batchSize = 2;
+    setLoaderMaxBatchSize(batchSize);
+    try {
+      const ids = [1, 2, 3, 4, 5];
+      for (const id of ids) {
+        await createRowForTest({
+          tableName: "users",
+          fields: {
+            id,
+            first_name: `Jon${id}`,
+          },
+        });
+      }
+
+      const orderedIds = [5, 1, 3, 2, 4];
+      for (const useContext of [true, false]) {
+        ml.clear();
+        const loader = getNewLoader(useContext);
+        const rows = await loader.loadMany(orderedIds);
+        expect(rows.map((row) => row?.id)).toEqual(orderedIds);
+
+        const queryLogs = ml.logs.filter((log) => log?.query);
+        expect(queryLogs.length).toBe(
+          Math.ceil(orderedIds.length / batchSize),
+        );
+      }
+    } finally {
+      setLoaderMaxBatchSize(prevMaxBatchSize);
+    }
   });
 
   test("multi-ids. without context", async () => {

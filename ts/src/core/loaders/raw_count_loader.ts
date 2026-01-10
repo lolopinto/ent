@@ -10,7 +10,7 @@ import {
 import { loadRow, loadRows } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
-import { CacheMap, getLoader } from "./loader";
+import { CacheMap, getLoader, getLoaderMaxBatchSize } from "./loader";
 
 interface QueryCountOptions {
   tableName: string;
@@ -55,7 +55,9 @@ async function simpleCase<K extends any>(
 export function createCountDataLoader<K extends any>(
   options: QueryCountOptions,
 ) {
-  const loaderOptions: DataLoader.Options<K, number> = {};
+  const loaderOptions: DataLoader.Options<K, number> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+  };
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
