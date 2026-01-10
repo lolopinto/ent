@@ -12,6 +12,7 @@ import { createRowForTest } from "../testutils/write";
 import { Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
 import {
   AssocEdge,
+  assocEdgeLoader,
   getEdgeTypeInGroup,
   loadCustomEdges,
   loadEdges,
@@ -118,6 +119,23 @@ class DerivedUser extends BaseEnt {
 }
 
 function commonTests() {
+  test("assocEdgeLoader loadMany preserves order and nulls", async () => {
+    assocEdgeLoader.clearAll();
+    await createEdgeRows(["edge_order_a", "edge_order_b"]);
+
+    const [row1, missingRow, row2] = await assocEdgeLoader.loadMany([
+      "edge_order_a",
+      "missing_edge_order",
+      "edge_order_b",
+    ]);
+    expect(row1).not.toBeNull();
+    expect((row1 as Data).edge_type).toBe("edge_order_a");
+    expect(missingRow).toBeNull();
+    expect(row2).not.toBeNull();
+    expect((row2 as Data).edge_type).toBe("edge_order_b");
+    assocEdgeLoader.clearAll();
+  });
+
   describe("loadDerivedEnt", () => {
     test("loggedout", async () => {
       const user = await DerivedUser.load(loggedOutViewer, { id: "1" });

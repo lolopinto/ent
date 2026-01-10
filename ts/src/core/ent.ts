@@ -97,16 +97,15 @@ function createAssocEdgeConfigLoader(options: SelectDataOptions) {
     // TODO is there a better way of doing this?
     // context not needed because we're creating a loader which has its own cache which is being used here
     const nodes = await loadRows(rowOptions);
-    let result: (Data | null)[] = ids.map((id) => {
-      for (const node of nodes) {
-        if (node[col] === id) {
-          return node;
-        }
+    const rowMap = new Map<ID, Data>();
+    for (const node of nodes) {
+      const key = node[col] as ID;
+      if (!rowMap.has(key)) {
+        rowMap.set(key, node);
       }
-      return null;
-    });
+    }
 
-    return result;
+    return ids.map((id) => rowMap.get(id) ?? null);
   }, loaderOptions);
 }
 
