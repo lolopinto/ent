@@ -1387,6 +1387,34 @@ function commonTests() {
         ]);
       }
     });
+
+    test("ent loader loadMany preserves order and errors", async () => {
+      const vc = getIDViewer(1);
+      const loader = ent.getEntLoader(vc, User.loaderOptions());
+      const prevLimit = ent.getEntLoaderPrivacyConcurrencyLimit();
+      ent.setEntLoaderPrivacyConcurrencyLimit(2);
+
+      try {
+        const results = await loader.loadMany([2, 4, 1]);
+        const privacyError = results[0] as any;
+        expect(privacyError).not.toBeInstanceOf(Error);
+        expect(privacyError.error).toBeInstanceOf(Error);
+        expect(privacyError.error.message).toBe(
+          "ent 2 of type User is not visible for privacy reasons",
+        );
+
+        const missingError = results[1] as any;
+        expect(missingError.error).toBeInstanceOf(Error);
+        expect(missingError.error.message).toBe(
+          "couldn't find row for value 4 in table users",
+        );
+
+        const entResult = results[2] as User;
+        expect(entResult.id).toBe(1);
+      } finally {
+        ent.setEntLoaderPrivacyConcurrencyLimit(prevLimit);
+      }
+    });
   });
 
   describe("loadEnts with field privacy", () => {

@@ -124,6 +124,51 @@ export function rowIsError(row: any): row is Error {
   return row instanceof Error || row?.constructor?.name === "SqliteError";
 }
 
+let entLoaderPrivacyConcurrencyLimit = 20;
+
+export function setEntLoaderPrivacyConcurrencyLimit(limit: number) {
+  entLoaderPrivacyConcurrencyLimit = limit;
+}
+
+export function getEntLoaderPrivacyConcurrencyLimit() {
+  return entLoaderPrivacyConcurrencyLimit;
+}
+
+async function mapWithConcurrency<T, U>(
+  items: T[],
+  limit: number,
+  mapper: (item: T, index: number) => Promise<U>,
+): Promise<U[]> {
+  if (!items.length) {
+    return [];
+  }
+
+  const results = new Array<U>(items.length);
+  const concurrency =
+    limit === Infinity
+      ? items.length
+      : Number.isFinite(limit) && limit > 0
+        ? Math.floor(limit)
+        : 1;
+  let nextIndex = 0;
+
+  const workers = new Array(Math.min(concurrency, items.length))
+    .fill(null)
+    .map(async () => {
+      while (true) {
+        const currentIndex = nextIndex;
+        if (currentIndex >= items.length) {
+          return;
+        }
+        nextIndex += 1;
+        results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+      }
+    });
+
+  await Promise.all(workers);
+  return results;
+}
+
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: Viewer,
   options: LoadEntOptions<TEnt, TViewer>,
@@ -140,49 +185,44 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       return [];
     }
 
-    let result: (TEnt | ErrorWrapper | Error)[] = [];
-
     const tableName = options.loaderFactory.options?.tableName;
     const loader = options.loaderFactory.createLoader(viewer.context);
     const rows = await loader.loadMany(ids);
     // this is a loader which should return the same order based on passed-in ids
     // so let's depend on that...
 
-    for (let idx = 0; idx < rows.length; idx++) {
-      const row = rows[idx];
-
-      // db error
-      if (rowIsError(row)) {
-        if (row instanceof Error) {
-          result[idx] = row;
-        } else {
+    return mapWithConcurrency(
+      rows,
+      getEntLoaderPrivacyConcurrencyLimit(),
+      async (row, idx) => {
+        // db error
+        if (rowIsError(row)) {
+          if (row instanceof Error) {
+            return row;
+          }
           // @ts-ignore SqliteError
-          result[idx] = new Error(row.message);
+          return new Error(row.message);
         }
-        continue;
-      } else if (!row) {
-        if (tableName) {
-          result[idx] = new ErrorWrapper(
-            new Error(
-              `couldn't find row for value ${ids[idx]} in table ${tableName}`,
-            ),
-          );
-        } else {
-          result[idx] = new ErrorWrapper(
+        if (!row) {
+          if (tableName) {
+            return new ErrorWrapper(
+              new Error(
+                `couldn't find row for value ${ids[idx]} in table ${tableName}`,
+              ),
+            );
+          }
+          return new ErrorWrapper(
             new Error(`couldn't find row for value ${ids[idx]}`),
           );
         }
-      } else {
+
         const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
         if (rowIsError(r)) {
-          result[idx] = new ErrorWrapper(r);
-        } else {
-          result[idx] = r;
+          return new ErrorWrapper(r);
         }
-      }
-    }
-
-    return result;
+        return r;
+      },
+    );
   }, loaderOptions);
 }
 
