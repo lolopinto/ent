@@ -22,10 +22,11 @@ import {
   performRawQuery,
 } from "../ent";
 import { logEnabled } from "../logger";
+import { OrderBy } from "../query_impl";
 import { stableStringify } from "./cache_utils";
 import { CacheMap, getCustomLoader } from "./loader";
 
-function getDefaultOrderBy() {
+function getDefaultOrderBy(): OrderBy {
   return [
     {
       column: "time",
