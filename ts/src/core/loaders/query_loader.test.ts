@@ -153,6 +153,34 @@ function commonTests() {
       expect(loader1).not.toBe(loader2);
     });
 
+    test("same logical orderby reuses the same loader", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              direction: "ASC",
+              column: "start_time",
+            },
+          ],
+        },
+        localCtx,
+      );
+
+      expect(loader1).toBe(loader2);
+    });
+
     test("disableTransformations changes cache keys", () => {
       const localCtx = new TestContext();
       const loader1 = factory.createConfigurableLoader(
