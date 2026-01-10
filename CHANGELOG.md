@@ -12,6 +12,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - fix bug from format default values before saving (#1917)
+- load clause loaders concurrently with a configurable limit (#1928)
 
 ## [0.2.4]
 
