@@ -11,6 +11,7 @@ import {
   DataOptions,
 } from "../base";
 import { loadRow, loadRows } from "../ent";
+import { mapWithConcurrency } from "../async_utils";
 import * as clause from "../clause";
 import { log, logEnabled } from "../logger";
 import { getCombinedClause } from "../clause";
@@ -34,32 +35,7 @@ export function setClauseLoaderConcurrency(limit: number) {
   clauseLoaderConcurrency = Math.floor(limit);
 }
 
-export async function mapWithConcurrency<T, R>(
-  items: T[],
-  limit: number,
-  mapper: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
-  if (!items.length) {
-    return [];
-  }
-  const results = new Array<R>(items.length);
-  const workerCount = Math.min(items.length, Math.max(1, limit));
-  let nextIndex = 0;
-
-  const workers = Array.from({ length: workerCount }, async () => {
-    while (true) {
-      const currentIndex = nextIndex;
-      nextIndex += 1;
-      if (currentIndex >= items.length) {
-        return;
-      }
-      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
-    }
-  });
-
-  await Promise.all(workers);
-  return results;
-}
+export { mapWithConcurrency };
 
 async function loadRowsForIDLoader<K, V = Data>(
   options: SelectDataOptions,
