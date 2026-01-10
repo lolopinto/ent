@@ -18,6 +18,9 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - fix bug from format default values before saving (#1917)
+- load clause loaders concurrently with a configurable limit (#1928)
+- avoid O(N^2) scan in assoc edge config loader (#1926)
+- stabilize loader cache keys for orderby objects (#1927)
 
 ## [0.2.4]
 
