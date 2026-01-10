@@ -12,6 +12,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - fix bug from format default values before saving (#1917)
+- stabilize loader cache keys for orderby objects (#1927)
 
 ## [0.2.4]
 
