@@ -15,7 +15,12 @@ import * as clause from "../clause";
 import { log, logEnabled } from "../logger";
 import { getCombinedClause } from "../clause";
 
-import { getLoader, CacheMap, getCustomLoader } from "./loader";
+import {
+  getLoader,
+  CacheMap,
+  getCustomLoader,
+  getLoaderMaxBatchSize,
+} from "./loader";
 import memoizee from "memoizee";
 
 const DEFAULT_CLAUSE_LOADER_CONCURRENCY = 10;
@@ -62,16 +67,16 @@ async function loadRowsForIDLoader<K, V = Data>(
   context?: Context,
 ) {
   let col = options.key;
-  const cls = getCombinedClause(
-    options,
-    clause.DBTypeIn(col, ids, options.keyType || "uuid"),
-  );
-
-  const rowOptions: LoadRowOptions = {
-    ...options,
-    clause: cls,
-    context,
-  };
+  const typ = options.keyType || "uuid";
+  const maxBatchSize = getLoaderMaxBatchSize();
+  const batches: K[][] = [];
+  if (maxBatchSize > 0 && ids.length > maxBatchSize) {
+    for (let i = 0; i < ids.length; i += maxBatchSize) {
+      batches.push(ids.slice(i, i + maxBatchSize));
+    }
+  } else {
+    batches.push(ids);
+  }
 
   let m = new Map<K, number>();
   let result: (V | null)[] = [];
@@ -81,21 +86,33 @@ async function loadRowsForIDLoader<K, V = Data>(
     m.set(ids[i], i);
   }
 
-  const rows = (await loadRows(rowOptions)) as V[];
-  for (const row of rows) {
-    const id = row[col];
-    if (id === undefined) {
-      throw new Error(
-        `need to query for column ${col} when using an object loader because the query may not be sorted and we need the id to maintain sort order`,
-      );
+  for (const batch of batches) {
+    const cls = getCombinedClause(
+      options,
+      clause.DBTypeIn(col, batch, typ),
+    );
+    const rowOptions: LoadRowOptions = {
+      ...options,
+      clause: cls,
+      context,
+    };
+
+    const rows = (await loadRows(rowOptions)) as V[];
+    for (const row of rows) {
+      const id = row[col];
+      if (id === undefined) {
+        throw new Error(
+          `need to query for column ${col} when using an object loader because the query may not be sorted and we need the id to maintain sort order`,
+        );
+      }
+      const idx = m.get(id);
+      if (idx === undefined) {
+        throw new Error(
+          `malformed query. got ${id} back but didn't query for it`,
+        );
+      }
+      result[idx] = row;
     }
-    const idx = m.get(id);
-    if (idx === undefined) {
-      throw new Error(
-        `malformed query. got ${id} back but didn't query for it`,
-      );
-    }
-    result[idx] = row;
   }
   return result;
 }
@@ -141,7 +158,9 @@ async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
 // so ObjectLoaderFactory and createDataLoader need to take a new optional field which is a clause that's always added here
 // and we need a disableTransform which skips loader completely and uses loadRow...
 function createDataLoader(options: SelectDataOptions) {
-  const loaderOptions: DataLoader.Options<any, any> = {};
+  const loaderOptions: DataLoader.Options<any, any> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+  };
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
@@ -213,6 +232,7 @@ function createClauseDataLoder<
     },
     {
       cacheMap: new clauseCacheMap(options),
+      maxBatchSize: getLoaderMaxBatchSize(),
     },
   );
 }
@@ -231,6 +251,7 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
     },
     {
       cacheMap: new clauseCacheMap(options, true),
+      maxBatchSize: getLoaderMaxBatchSize(),
     },
   );
 }

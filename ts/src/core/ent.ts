@@ -34,7 +34,7 @@ import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
 import DataLoader from "dataloader";
 import * as clause from "./clause";
 import { __getGlobalSchema } from "./global_schema";
-import { CacheMap } from "./loaders/loader";
+import { CacheMap, getLoaderMaxBatchSize } from "./loaders/loader";
 import { log, logEnabled, logTrace } from "./logger";
 import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
 
@@ -73,7 +73,9 @@ class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
 }
 
 function createAssocEdgeConfigLoader(options: SelectDataOptions) {
-  const loaderOptions: DataLoader.Options<ID, Data | null> = {};
+  const loaderOptions: DataLoader.Options<ID, Data | null> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+  };
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
@@ -173,7 +175,9 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   map: entCacheMap<TViewer, TEnt>,
 ): DataLoader<ID, TEnt | ErrorWrapper> {
   // share the cache across loaders even if we create a new instance
-  const loaderOptions: DataLoader.Options<any, any> = {};
+  const loaderOptions: DataLoader.Options<any, any> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+  };
   loaderOptions.cacheMap = map;
 
   return new DataLoader(async (ids: ID[]) => {

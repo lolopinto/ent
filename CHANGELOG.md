@@ -11,16 +11,21 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Added
 
+- avoid O(N^2) scan in assoc edge config loader (#1926)
+- stabilize loader cache keys for orderby objects (#1927)
+- load clause loaders concurrently with a configurable limit (#1928)
+- support configuring DataLoader max batch size via `loaderMaxBatchSize` (#1929)
 - parallelize ent loader per-row privacy checks with a configurable concurrency cap (#1930)
+
+### Fixed
+
+- cap DataLoader batches and chunk large loadMany ID queries to avoid oversized IN clauses
 
 ## [0.2.5]
 
 ### Fixed
 
 - fix bug from format default values before saving (#1917)
-- load clause loaders concurrently with a configurable limit (#1928)
-- avoid O(N^2) scan in assoc edge config loader (#1926)
-- stabilize loader cache keys for orderby objects (#1927)
 
 ## [0.2.4]
 
