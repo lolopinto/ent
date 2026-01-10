@@ -24,7 +24,7 @@ import {
 import { logEnabled } from "../logger";
 import { OrderBy } from "../query_impl";
 import { stableStringify } from "./cache_utils";
-import { CacheMap, getCustomLoader } from "./loader";
+import { CacheMap, getCustomLoader, getLoaderMaxBatchSize } from "./loader";
 
 function getDefaultOrderBy(): OrderBy {
   return [
@@ -52,7 +52,9 @@ function createLoader<T extends AssocEdge>(
   edgeCtr: AssocEdgeConstructor<T>,
   edgeData: AssocEdgeData,
 ) {
-  const loaderOptions: DataLoader.Options<ID, T[]> = {};
+  const loaderOptions: DataLoader.Options<ID, T[]> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+  };
 
   if (logEnabled("query")) {
     loaderOptions.cacheMap = new CacheMap({

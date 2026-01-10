@@ -4,6 +4,7 @@ import DB, { Database, DBDict } from "./db";
 import * as path from "path";
 import { setLogLevels } from "./logger";
 import { ___setLogQueryErrorWithError, setDefaultLimit } from "./ent";
+import { setLoaderMaxBatchSize } from "./loaders/loader";
 
 type logType = "query" | "warn" | "info" | "error" | "debug";
 
@@ -41,6 +42,9 @@ export interface Config {
   // override the default limit for edges and connections.
   // right now, it's 1000 but can be overriden to set a higher or lower limit
   defaultConnectionLimit?: number;
+
+  // cap DataLoader batch size to avoid huge queries/memory spikes
+  loaderMaxBatchSize?: number;
 }
 
 // things that can be set in ent.yml
@@ -191,6 +195,10 @@ function setConfig(cfg: Config) {
 
   if (cfg.defaultConnectionLimit) {
     setDefaultLimit(cfg.defaultConnectionLimit);
+  }
+
+  if (cfg.loaderMaxBatchSize !== undefined) {
+    setLoaderMaxBatchSize(cfg.loaderMaxBatchSize);
   }
 }
 
