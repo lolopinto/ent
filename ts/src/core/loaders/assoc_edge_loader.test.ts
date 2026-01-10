@@ -198,6 +198,58 @@ describe("sqlite global ", () => {
 });
 
 function commonTests() {
+  describe("configurable loader cache keys", () => {
+    test("defaulted options reuse the same loader", () => {
+      const localCtx = new TestContext();
+      const loader1 = userToContactsCustomLoader.createConfigurableLoader(
+        {},
+        localCtx,
+      );
+      const loader2 = userToContactsCustomLoader.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              direction: "DESC",
+              column: "time",
+            },
+          ],
+          limit: getDefaultLimit(),
+        },
+        localCtx,
+      );
+
+      expect(loader1).toBe(loader2);
+    });
+
+    test("different orderby objects create different loaders", () => {
+      const localCtx = new TestContext();
+      const loader1 = userToContactsCustomLoader.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "time",
+              direction: "DESC",
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader2 = userToContactsCustomLoader.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "time",
+              direction: "ASC",
+            },
+          ],
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+    });
+  });
+
   test("multi-ids. with context", async () => {
     await testMultiQueryDataAvail(
       (opts) => getConfigurableContactsLoader(true, opts),

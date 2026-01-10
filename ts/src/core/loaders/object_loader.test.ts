@@ -1,4 +1,8 @@
-import { ObjectLoader, ObjectLoaderFactory } from "./object_loader";
+import {
+  mapWithConcurrency,
+  ObjectLoader,
+  ObjectLoaderFactory,
+} from "./object_loader";
 import { getLoaderMaxBatchSize, setLoaderMaxBatchSize } from "./loader";
 import { createRowForTest, editRowForTest } from "../../testutils/write";
 import { TestContext } from "../../testutils/context/test_context";
@@ -203,6 +207,38 @@ const getTables = () => {
   );
   return tables;
 };
+
+describe("mapWithConcurrency", () => {
+  const delays = [30, 10, 25, 5, 20];
+
+  async function runWithLimit(limit: number) {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const items = [1, 2, 3, 4, 5];
+
+    const results = await mapWithConcurrency(items, limit, async (item, idx) => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, delays[idx]));
+      inFlight -= 1;
+      return item * 2;
+    });
+
+    return { maxInFlight, results };
+  }
+
+  test("runs sequentially with limit 1", async () => {
+    const { maxInFlight, results } = await runWithLimit(1);
+    expect(maxInFlight).toBe(1);
+    expect(results).toStrictEqual([2, 4, 6, 8, 10]);
+  });
+
+  test("runs concurrently with limit 2", async () => {
+    const { maxInFlight, results } = await runWithLimit(2);
+    expect(maxInFlight).toBe(2);
+    expect(results).toStrictEqual([2, 4, 6, 8, 10]);
+  });
+});
 
 describe("postgres", () => {
   setupPostgres(getTables);
@@ -1169,6 +1205,43 @@ function commonTests() {
           values: clause.values(),
         });
       }
+    });
+
+    test("loadMany preserves clause order with counts", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) => create(idx + 1)),
+      );
+
+      ml.clear();
+
+      const loader = getNewLoader(true);
+      const countLoader = getNewCountLoader(true);
+
+      const clauses: clause.Clause<LoaderRow>[] = [
+        clause.Greater("id", 10),
+        clause.LessEq("id", 5),
+        clause.Greater("id", 20),
+      ];
+
+      const [rows, counts] = await Promise.all([
+        loader.loadMany(clauses),
+        countLoader.loadMany(clauses),
+      ]);
+
+      expect(rows.map((rowSet) => rowSet?.length ?? 0)).toStrictEqual([
+        20,
+        5,
+        10,
+      ]);
+      expect(counts).toStrictEqual([20, 5, 10]);
+
+      const first = rows[0] as LoaderRow[];
+      const second = rows[1] as LoaderRow[];
+      const third = rows[2] as LoaderRow[];
+
+      expect(first.every((row) => Number(row.id) > 10)).toBe(true);
+      expect(second.every((row) => Number(row.id) <= 5)).toBe(true);
+      expect(third.every((row) => Number(row.id) > 20)).toBe(true);
     });
 
     test("cache hit with custom clause", async () => {

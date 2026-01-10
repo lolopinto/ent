@@ -23,6 +23,44 @@ import {
 } from "./loader";
 import memoizee from "memoizee";
 
+const DEFAULT_CLAUSE_LOADER_CONCURRENCY = 10;
+let clauseLoaderConcurrency = DEFAULT_CLAUSE_LOADER_CONCURRENCY;
+
+export function setClauseLoaderConcurrency(limit: number) {
+  if (!Number.isFinite(limit) || limit < 1) {
+    clauseLoaderConcurrency = DEFAULT_CLAUSE_LOADER_CONCURRENCY;
+    return;
+  }
+  clauseLoaderConcurrency = Math.floor(limit);
+}
+
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (!items.length) {
+    return [];
+  }
+  const results = new Array<R>(items.length);
+  const workerCount = Math.min(items.length, Math.max(1, limit));
+  let nextIndex = 0;
+
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (true) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      if (currentIndex >= items.length) {
+        return;
+      }
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
+
 async function loadRowsForIDLoader<K, V = Data>(
   options: SelectDataOptions,
   ids: K[],
@@ -182,15 +220,15 @@ function createClauseDataLoder<
       if (!clauses.length) {
         return [];
       }
-      const ret: TResultData[][] = [];
-      for await (const clause of clauses) {
-        const data = await loadRowsForClauseLoader<TQueryData, TResultData, K>(
-          options,
-          clause,
-        );
-        ret.push(data);
-      }
-      return ret;
+      return mapWithConcurrency(
+        clauses,
+        clauseLoaderConcurrency,
+        (clauseItem) =>
+          loadRowsForClauseLoader<TQueryData, TResultData, K>(
+            options,
+            clauseItem,
+          ),
+      );
     },
     {
       cacheMap: new clauseCacheMap(options),
@@ -207,12 +245,9 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
       if (!clauses.length) {
         return [];
       }
-      const ret: number[] = [];
-      for await (const clause of clauses) {
-        const data = await loadCountForClauseLoader(options, clause);
-        ret.push(data);
-      }
-      return ret;
+      return mapWithConcurrency(clauses, clauseLoaderConcurrency, (clauseItem) =>
+        loadCountForClauseLoader(options, clauseItem),
+      );
     },
     {
       cacheMap: new clauseCacheMap(options, true),
@@ -366,16 +401,9 @@ export class ObjectLoader<
       return this.clauseLoader.loadMany(keys);
     }
 
-    const res: TResultData[][] = [];
-    for await (const key of keys) {
-      const rows = await loadRowsForClauseLoader<TQueryData, TResultData, K>(
-        this.options,
-        key,
-      );
-      res.push(rows);
-    }
-
-    return res;
+    return mapWithConcurrency(keys, clauseLoaderConcurrency, (key) =>
+      loadRowsForClauseLoader<TQueryData, TResultData, K>(this.options, key),
+    );
   }
 
   prime(data: TResultData) {
@@ -439,13 +467,9 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
       return this.loader.loadMany(keys);
     }
 
-    const res: number[] = [];
-    for await (const key of keys) {
-      const r = await loadCountForClauseLoader(this.options, key);
-      res.push(r);
-    }
-
-    return res;
+    return mapWithConcurrency(keys, clauseLoaderConcurrency, (key) =>
+      loadCountForClauseLoader(this.options, key),
+    );
   }
 }
 
