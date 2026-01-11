@@ -11,7 +11,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Added
 
-- allow configuring clause loader and ent loader privacy concurrency limits
+- allow configuring clause loader and ent loader privacy concurrency limits (#TBD)
 
 ## [0.2.6]
 
