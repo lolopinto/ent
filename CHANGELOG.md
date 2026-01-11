@@ -9,6 +9,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.2.6]
+
 ### Added
 
 - avoid O(N^2) scan in assoc edge config loader (#1926)
