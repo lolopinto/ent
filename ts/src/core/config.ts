@@ -3,7 +3,12 @@ import { load } from "js-yaml";
 import DB, { Database, DBDict } from "./db";
 import * as path from "path";
 import { setLogLevels } from "./logger";
-import { ___setLogQueryErrorWithError, setDefaultLimit } from "./ent";
+import {
+  ___setLogQueryErrorWithError,
+  setDefaultLimit,
+  setEntLoaderPrivacyConcurrencyLimit,
+} from "./ent";
+import { setClauseLoaderConcurrency } from "./loaders/object_loader";
 import { setLoaderMaxBatchSize } from "./loaders/loader";
 
 type logType = "query" | "warn" | "info" | "error" | "debug";
@@ -45,6 +50,12 @@ export interface Config {
 
   // cap DataLoader batch size to avoid huge queries/memory spikes
   loaderMaxBatchSize?: number;
+
+  // limit concurrency for clause loaders
+  clauseLoaderConcurrency?: number;
+
+  // limit concurrency for ent loader privacy checks
+  entLoaderPrivacyConcurrencyLimit?: number;
 }
 
 // things that can be set in ent.yml
@@ -199,6 +210,14 @@ function setConfig(cfg: Config) {
 
   if (cfg.loaderMaxBatchSize !== undefined) {
     setLoaderMaxBatchSize(cfg.loaderMaxBatchSize);
+  }
+
+  if (cfg.clauseLoaderConcurrency !== undefined) {
+    setClauseLoaderConcurrency(cfg.clauseLoaderConcurrency);
+  }
+
+  if (cfg.entLoaderPrivacyConcurrencyLimit !== undefined) {
+    setEntLoaderPrivacyConcurrencyLimit(cfg.entLoaderPrivacyConcurrencyLimit);
   }
 }
 

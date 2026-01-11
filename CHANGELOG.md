@@ -9,6 +9,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- allow configuring clause loader and ent loader privacy concurrency limits
+
 ## [0.2.6]
 
 ### Added

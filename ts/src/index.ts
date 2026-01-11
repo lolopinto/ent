@@ -27,6 +27,8 @@ export {
   loadEdgeForID2,
   loadNodesByEdge,
   getEdgeTypeInGroup,
+  setEntLoaderPrivacyConcurrencyLimit,
+  getEntLoaderPrivacyConcurrencyLimit,
 } from "./core/ent";
 // TODO should these even be exported from the root?
 export {

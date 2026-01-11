@@ -11,3 +11,4 @@ export {
 } from "./assoc_edge_loader";
 export { QueryLoaderFactory } from "./query_loader";
 export { getLoaderMaxBatchSize, setLoaderMaxBatchSize } from "./loader";
+export { setClauseLoaderConcurrency } from "./object_loader";
