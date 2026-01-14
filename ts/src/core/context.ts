@@ -3,7 +3,7 @@ import { Data, Loader, LoaderWithLoadMany, QueryOptions, Viewer } from "./base";
 
 import { Context } from "./base";
 import { log } from "./logger";
-import { getJoinInfo, getOrderByPhrase } from "./query_impl";
+import { stableStringify } from "./cache_utils";
 
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext<TViewer extends Viewer = Viewer>
@@ -56,22 +56,55 @@ export class ContextCache {
   // maybe we just want to store sql queries???
 
   private getkey(options: QueryOptions): string {
-    let parts: string[] = [
-      options.fields
-        .map((f) => {
-          if (typeof f === "object") {
-            return `${f.alias}.${f.column}`;
-          }
-          return f;
-        })
-        .join(","),
-      options.clause.instanceKey(),
+    const fields = options.fields
+      .map((f) => {
+        if (typeof f === "object") {
+          return `${f.alias}.${f.column}`;
+        }
+        return f;
+      })
+      .join(",");
+    const parts: string[] = [
+      `fields:${fields}`,
+      `clause:${options.clause.instanceKey()}`,
     ];
+    if (options.distinct !== undefined) {
+      parts.push(`distinct:${options.distinct}`);
+    }
+    if (options.alias !== undefined) {
+      parts.push(`alias:${options.alias}`);
+    }
+    if (options.fieldsAlias !== undefined) {
+      parts.push(`fieldsAlias:${options.fieldsAlias}`);
+    }
+    if (options.disableFieldsAlias !== undefined) {
+      parts.push(`disableFieldsAlias:${options.disableFieldsAlias}`);
+    }
+    if (options.disableDefaultOrderByAlias !== undefined) {
+      parts.push(
+        `disableDefaultOrderByAlias:${options.disableDefaultOrderByAlias}`,
+      );
+    }
+    if (options.groupby !== undefined) {
+      parts.push(`groupby:${options.groupby}`);
+    }
     if (options.orderby) {
-      parts.push(getOrderByPhrase(options.orderby));
+      parts.push(`orderby:${stableStringify(options.orderby)}`);
     }
     if (options.join) {
-      parts.push(getJoinInfo(options.join).phrase);
+      const joinKey = options.join.map((join) => ({
+        type: join.type ?? "inner",
+        tableName: join.tableName,
+        alias: join.alias,
+        clause: join.clause.instanceKey(),
+      }));
+      parts.push(`join:${stableStringify(joinKey)}`);
+    }
+    if (options.limit !== undefined) {
+      parts.push(`limit:${options.limit}`);
+    }
+    if (options.offset !== undefined) {
+      parts.push(`offset:${options.offset}`);
     }
     return parts.join(",");
   }

@@ -71,7 +71,19 @@ export interface PrimableLoader<K, V> extends Loader<K, V> {
 export type QueryOptions = Required<
   Pick<LoadRowsOptions, "clause" | "fields" | "tableName">
 > &
-  Pick<LoadRowsOptions, "orderby" | "join">;
+  Pick<
+    LoadRowsOptions,
+    | "distinct"
+    | "alias"
+    | "fieldsAlias"
+    | "disableFieldsAlias"
+    | "disableDefaultOrderByAlias"
+    | "groupby"
+    | "orderby"
+    | "join"
+    | "limit"
+    | "offset"
+  >;
 
 interface cache {
   getLoader<K, V>(name: string, create: () => Loader<K, V>): Loader<K, V>;
