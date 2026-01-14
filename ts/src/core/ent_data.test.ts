@@ -464,7 +464,7 @@ async function testLoadRow(addCtx?: boolean, disableWrite?: boolean) {
             queryOption,
             // cache hit on 2nd query
             {
-              "cache-hit": "bar,baz,foo,bar=1",
+              "cache-hit": "fields:bar,baz,foo,clause:bar=1",
               "tableName": options.tableName,
             },
           ],
@@ -506,7 +506,7 @@ function commonTests() {
               qOption,
               {
                 // cache hit on 2nd query
-                "cache-hit": "bar,baz,foo,in:bar:1,2,3",
+                "cache-hit": "fields:bar,baz,foo,clause:in:bar:1,2,3",
                 "tableName": options.tableName,
               },
             ],
@@ -1156,7 +1156,7 @@ function commonTests() {
             [
               qOption,
               {
-                "cache-hit": "bar,baz,foo,bar=1 AND baz=baz",
+                "cache-hit": "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
                 "tableName": options.tableName,
               },
             ],
@@ -1199,7 +1199,7 @@ function commonTests() {
             [
               qOption,
               {
-                "cache-hit": "bar,baz,foo,bar=1 AND baz=baz",
+                "cache-hit": "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
                 "tableName": options.tableName,
               },
             ],
@@ -1587,7 +1587,7 @@ function commonTests() {
       validateQueries([
         qOption,
         {
-          "cache-hit": "bar,baz,foo,baz=baz",
+          "cache-hit": "fields:bar,baz,foo,clause:baz=baz",
           "tableName": options.tableName,
         },
       ]);
@@ -1675,7 +1675,7 @@ function commonTests() {
       validateQueries([
         qOption,
         {
-          "cache-hit": "bar,baz,foo,baz=baz",
+          "cache-hit": "fields:bar,baz,foo,clause:baz=baz",
           "tableName": options.tableName,
         },
       ]);
@@ -1823,7 +1823,10 @@ function commonTests() {
           } else {
             queries2 = [
               queryOption,
-              { "cache-hit": "bar,baz,foo,bar=1", "tableName": "users" },
+              {
+                "cache-hit": "fields:bar,baz,foo,clause:bar=1",
+                "tableName": "users",
+              },
             ];
           }
           return [queries, queries2];

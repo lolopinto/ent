@@ -15,11 +15,10 @@ import {
   loadRows,
   performRawQuery,
 } from "../ent";
-import { logEnabled } from "../logger";
 import { OrderBy } from "../query_impl";
-import { stableStringify } from "./cache_utils";
+import { stableStringify } from "../cache_utils";
 import {
-  CacheMap,
+  createLoaderCacheMap,
   getCustomLoader,
   getLoader,
   getLoaderMaxBatchSize,
@@ -79,12 +78,8 @@ function createLoader<K extends any>(
 ): DataLoader<K, Data[]> {
   const loaderOptions: DataLoader.Options<K, Data[]> = {
     maxBatchSize: getLoaderMaxBatchSize(),
+    cacheMap: createLoaderCacheMap(options),
   };
-
-  // if query logging is enabled, we should log what's happening with loader
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new CacheMap(options);
-  }
 
   return new DataLoader(async (keys: K[]) => {
     if (!keys.length) {

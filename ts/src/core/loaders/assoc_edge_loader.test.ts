@@ -4,7 +4,7 @@ import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { AssocEdge, getDefaultLimit } from "../ent";
-import { buildQuery } from "../query_impl";
+import { buildQuery, OrderBy } from "../query_impl";
 import {
   clearGlobalSchema,
   setGlobalSchema,
@@ -46,6 +46,7 @@ import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { convertDate } from "../convert";
 import { DateTime } from "luxon";
+import { stableStringify } from "../cache_utils";
 
 const ml = new MockLogs();
 
@@ -1187,10 +1188,22 @@ function verifyMultiCountQueryOffset(
       clause.Less("time", contacts[0].createdAt.toISOString()),
       __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
     );
+    const orderby: OrderBy = [
+      {
+        column: "time",
+        direction: "DESC",
+      },
+    ];
     if (cachehit) {
       // have queried before. we don't hit db again
+      const cacheKey = [
+        `fields:${fields.join(",")}`,
+        `clause:${cls.instanceKey()}`,
+        `orderby:${stableStringify(orderby)}`,
+        "limit:1",
+      ].join(",");
       expect(log).toStrictEqual({
-        "cache-hit": [...fields, cls.instanceKey(), "time DESC"].join(","),
+        "cache-hit": cacheKey,
         "tableName": "user_to_contacts_table",
       });
 
@@ -1200,12 +1213,7 @@ function verifyMultiCountQueryOffset(
       tableName: "user_to_contacts_table",
       fields: fields,
       clause: cls,
-      orderby: [
-        {
-          column: "time",
-          direction: "DESC",
-        },
-      ],
+      orderby: orderby,
       limit: 1,
     });
     expect(log).toStrictEqual({
