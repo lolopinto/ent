@@ -21,10 +21,13 @@ import {
   loadTwoWayEdges,
   performRawQuery,
 } from "../ent";
-import { logEnabled } from "../logger";
 import { OrderBy } from "../query_impl";
 import { stableStringify } from "./cache_utils";
-import { CacheMap, getCustomLoader, getLoaderMaxBatchSize } from "./loader";
+import {
+  createLoaderCacheMap,
+  getCustomLoader,
+  getLoaderMaxBatchSize,
+} from "./loader";
 
 function getDefaultOrderBy(): OrderBy {
   return [
@@ -54,13 +57,10 @@ function createLoader<T extends AssocEdge>(
 ) {
   const loaderOptions: DataLoader.Options<ID, T[]> = {
     maxBatchSize: getLoaderMaxBatchSize(),
-  };
-
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new CacheMap({
+    cacheMap: createLoaderCacheMap({
       tableName: edgeData.edgeTable,
-    });
-  }
+    }),
+  };
 
   return new DataLoader(async (keys: ID[]) => {
     if (keys.length === 1) {

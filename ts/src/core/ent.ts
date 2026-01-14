@@ -35,7 +35,11 @@ import { mapWithConcurrency } from "./async_utils";
 import DataLoader from "dataloader";
 import * as clause from "./clause";
 import { __getGlobalSchema } from "./global_schema";
-import { CacheMap, getLoaderMaxBatchSize } from "./loaders/loader";
+import {
+  createBoundedCacheMap,
+  createLoaderCacheMap,
+  getLoaderMaxBatchSize,
+} from "./loaders/loader";
 import { log, logEnabled, logTrace } from "./logger";
 import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
 
@@ -76,12 +80,8 @@ class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
 function createAssocEdgeConfigLoader(options: SelectDataOptions) {
   const loaderOptions: DataLoader.Options<ID, Data | null> = {
     maxBatchSize: getLoaderMaxBatchSize(),
+    cacheMap: createLoaderCacheMap(options),
   };
-
-  // if query logging is enabled, we should log what's happening with loader
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new CacheMap(options);
-  }
 
   // something here brokwn with strict:true
   return new DataLoader<ID, Data | null>(async (ids: ID[]) => {
@@ -144,7 +144,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   const loaderOptions: DataLoader.Options<any, any> = {
     maxBatchSize: getLoaderMaxBatchSize(),
   };
-  loaderOptions.cacheMap = map;
+  loaderOptions.cacheMap = createBoundedCacheMap(map);
 
   return new DataLoader(async (ids: ID[]) => {
     if (!ids.length) {

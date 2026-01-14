@@ -13,6 +13,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - allow configuring clause loader and ent loader privacy concurrency limits
 
+### Fixed
+
+- cap DataLoader caches and discarded loader list (#1935)
+
 ## [0.2.6]
 
 ### Added

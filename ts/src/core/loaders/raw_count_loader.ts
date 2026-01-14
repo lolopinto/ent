@@ -9,8 +9,11 @@ import {
 } from "../base";
 import { loadRow, loadRows } from "../ent";
 import * as clause from "../clause";
-import { logEnabled } from "../logger";
-import { CacheMap, getLoader, getLoaderMaxBatchSize } from "./loader";
+import {
+  createLoaderCacheMap,
+  getLoader,
+  getLoaderMaxBatchSize,
+} from "./loader";
 
 interface QueryCountOptions {
   tableName: string;
@@ -57,12 +60,8 @@ export function createCountDataLoader<K extends any>(
 ) {
   const loaderOptions: DataLoader.Options<K, number> = {
     maxBatchSize: getLoaderMaxBatchSize(),
+    cacheMap: createLoaderCacheMap(options),
   };
-
-  // if query logging is enabled, we should log what's happening with loader
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new CacheMap(options);
-  }
 
   return new DataLoader(async (keys: K[]) => {
     if (!keys.length) {

@@ -13,12 +13,13 @@ import {
 import { loadRow, loadRows } from "../ent";
 import { mapWithConcurrency } from "../async_utils";
 import * as clause from "../clause";
-import { log, logEnabled } from "../logger";
+import { log } from "../logger";
 import { getCombinedClause } from "../clause";
 
 import {
   getLoader,
-  CacheMap,
+  createBoundedCacheMap,
+  createLoaderCacheMap,
   getCustomLoader,
   getLoaderMaxBatchSize,
 } from "./loader";
@@ -136,12 +137,8 @@ async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
 function createDataLoader(options: SelectDataOptions) {
   const loaderOptions: DataLoader.Options<any, any> = {
     maxBatchSize: getLoaderMaxBatchSize(),
+    cacheMap: createLoaderCacheMap(options),
   };
-
-  // if query logging is enabled, we should log what's happening with loader
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new CacheMap(options);
-  }
 
   return new DataLoader(async (ids: ID[]) => {
     if (!ids.length) {
@@ -186,6 +183,13 @@ class clauseCacheMap {
   }
 }
 
+function createClauseCacheMap(options: DataOptions, count?: boolean) {
+  return createBoundedCacheMap(
+    new clauseCacheMap(options, count),
+    (key) => key.instanceKey(),
+  );
+}
+
 function createClauseDataLoder<
   TQueryData extends Data = Data,
   TResultData extends Data = TQueryData,
@@ -207,7 +211,7 @@ function createClauseDataLoder<
       );
     },
     {
-      cacheMap: new clauseCacheMap(options),
+      cacheMap: createClauseCacheMap(options),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
   );
@@ -226,7 +230,7 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
       );
     },
     {
-      cacheMap: new clauseCacheMap(options, true),
+      cacheMap: createClauseCacheMap(options, true),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
   );
