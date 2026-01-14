@@ -17,6 +17,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - avoid context cache collisions by including query shape options in cache keys (#1934)
 - cap DataLoader caches and discarded loader list (#1935)
+- memoize assoc direct edge loader clause queries to avoid duplicate hits (#1940)
 
 ## [0.2.6]
 
