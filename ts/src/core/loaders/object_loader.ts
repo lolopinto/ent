@@ -18,6 +18,7 @@ import { getCombinedClause } from "../clause";
 
 import {
   getLoader,
+  InstrumentedDataLoader,
   createBoundedCacheMap,
   createLoaderCacheMap,
   getCustomLoader,
@@ -135,30 +136,40 @@ async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
 // so ObjectLoaderFactory and createDataLoader need to take a new optional field which is a clause that's always added here
 // and we need a disableTransform which skips loader completely and uses loadRow...
 function createDataLoader(options: SelectDataOptions) {
+  const loaderName = `objectLoader:${options.tableName}:${options.key}`;
   const loaderOptions: DataLoader.Options<any, any> = {
     maxBatchSize: getLoaderMaxBatchSize(),
     cacheMap: createLoaderCacheMap(options),
   };
 
-  return new DataLoader(async (ids: ID[]) => {
-    if (!ids.length) {
-      return [];
-    }
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (ids: ID[]) => {
+      if (!ids.length) {
+        return [];
+      }
 
-    // context not needed because we're creating a loader which has its own cache which is being used here
-    return loadRowsForIDLoader(options, ids);
-  }, loaderOptions);
+      // context not needed because we're creating a loader which has its own cache which is being used here
+      return loadRowsForIDLoader(options, ids);
+    },
+    loaderOptions,
+    options.tableName,
+  );
 }
 
-class clauseCacheMap {
-  private m = new Map();
+class clauseCacheMap<
+  TQueryData extends Data = Data,
+  K = keyof TQueryData,
+  V = any,
+> implements DataLoader.CacheMap<clause.Clause<TQueryData, K>, Promise<V>> {
+  private m = new Map<string, Promise<V>>();
 
   constructor(
     private options: DataOptions,
     private count?: boolean,
   ) {}
 
-  get(key: clause.Clause) {
+  get(key: clause.Clause<TQueryData, K>) {
     const key2 = key.instanceKey();
     const ret = this.m.get(key2);
     if (ret) {
@@ -170,11 +181,11 @@ class clauseCacheMap {
     return ret;
   }
 
-  set(key: clause.Clause, value: any) {
+  set(key: clause.Clause<TQueryData, K>, value: Promise<V>) {
     return this.m.set(key.instanceKey(), value);
   }
 
-  delete(key: clause.Clause) {
+  delete(key: clause.Clause<TQueryData, K>) {
     return this.m.delete(key.instanceKey());
   }
 
@@ -183,11 +194,15 @@ class clauseCacheMap {
   }
 }
 
-function createClauseCacheMap(options: DataOptions, count?: boolean) {
+function createClauseCacheMap<
+  TQueryData extends Data = Data,
+  K = keyof TQueryData,
+  V = any,
+>(options: DataOptions, count?: boolean) {
   return createBoundedCacheMap(
-    new clauseCacheMap(options, count),
+    new clauseCacheMap<TQueryData, K, V>(options, count),
     (key) => key.instanceKey(),
-  );
+  ) as DataLoader.CacheMap<clause.Clause<TQueryData, K>, Promise<V>>;
 }
 
 function createClauseDataLoder<
@@ -195,7 +210,9 @@ function createClauseDataLoder<
   TResultData extends Data = TQueryData,
   K = keyof TQueryData,
 >(options: SelectDataOptions) {
-  return new DataLoader(
+  const loaderName = `objectLoader:clause:${options.tableName}`;
+  return new InstrumentedDataLoader(
+    loaderName,
     async (clauses: clause.Clause<TQueryData, K>[]) => {
       if (!clauses.length) {
         return [];
@@ -211,16 +228,20 @@ function createClauseDataLoder<
       );
     },
     {
-      cacheMap: createClauseCacheMap(options),
+      cacheMap: createClauseCacheMap<TQueryData, K, TResultData[]>(options),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
+    options.tableName,
+    (key) => key.instanceKey(),
   );
 }
 
 function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
   options: SelectDataOptions,
 ) {
-  return new DataLoader(
+  const loaderName = `objectLoader:count:${options.tableName}`;
+  return new InstrumentedDataLoader(
+    loaderName,
     async (clauses: clause.Clause<V, K>[]) => {
       if (!clauses.length) {
         return [];
@@ -230,9 +251,11 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
       );
     },
     {
-      cacheMap: createClauseCacheMap(options, true),
+      cacheMap: createClauseCacheMap<V, K, number>(options, true),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
+    options.tableName,
+    (key) => `${key.instanceKey()}:count`,
   );
 }
 

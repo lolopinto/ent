@@ -38,6 +38,7 @@ import { __getGlobalSchema } from "./global_schema";
 import {
   createBoundedCacheMap,
   createLoaderCacheMap,
+  InstrumentedDataLoader,
   getLoaderMaxBatchSize,
 } from "./loaders/loader";
 import { log, logEnabled, logTrace } from "./logger";
@@ -78,38 +79,44 @@ class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
 }
 
 function createAssocEdgeConfigLoader(options: SelectDataOptions) {
+  const loaderName = `assocEdgeConfigLoader:${options.tableName}`;
   const loaderOptions: DataLoader.Options<ID, Data | null> = {
     maxBatchSize: getLoaderMaxBatchSize(),
     cacheMap: createLoaderCacheMap(options),
   };
 
   // something here brokwn with strict:true
-  return new DataLoader<ID, Data | null>(async (ids: ID[]) => {
-    if (!ids.length) {
-      return [];
-    }
-    let col = options.key;
-    // defaults to uuid
-    let typ = options.keyType || "uuid";
-
-    const rowOptions: LoadRowOptions = {
-      ...options,
-      clause: clause.DBTypeIn(col, ids, typ),
-    };
-
-    // TODO is there a better way of doing this?
-    // context not needed because we're creating a loader which has its own cache which is being used here
-    const nodes = await loadRows(rowOptions);
-    const rowMap = new Map<ID, Data>();
-    for (const node of nodes) {
-      const key = node[col] as ID;
-      if (!rowMap.has(key)) {
-        rowMap.set(key, node);
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (ids: ID[]) => {
+      if (!ids.length) {
+        return [];
       }
-    }
+      let col = options.key;
+      // defaults to uuid
+      let typ = options.keyType || "uuid";
 
-    return ids.map((id) => rowMap.get(id) ?? null);
-  }, loaderOptions);
+      const rowOptions: LoadRowOptions = {
+        ...options,
+        clause: clause.DBTypeIn(col, ids, typ),
+      };
+
+      // TODO is there a better way of doing this?
+      // context not needed because we're creating a loader which has its own cache which is being used here
+      const nodes = await loadRows(rowOptions);
+      const rowMap = new Map<ID, Data>();
+      for (const node of nodes) {
+        const key = node[col] as ID;
+        if (!rowMap.has(key)) {
+          rowMap.set(key, node);
+        }
+      }
+
+      return ids.map((id) => rowMap.get(id) ?? null);
+    },
+    loaderOptions,
+    options.tableName,
+  );
 }
 
 // used to wrap errors that would eventually be thrown in ents
@@ -140,56 +147,62 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   options: LoadEntOptions<TEnt, TViewer>,
   map: entCacheMap<TViewer, TEnt>,
 ): DataLoader<ID, TEnt | ErrorWrapper> {
+  const loaderName = `entLoader:${options.loaderFactory.name}`;
+  const tableName = options.loaderFactory.options?.tableName;
   // share the cache across loaders even if we create a new instance
   const loaderOptions: DataLoader.Options<any, any> = {
     maxBatchSize: getLoaderMaxBatchSize(),
   };
   loaderOptions.cacheMap = createBoundedCacheMap(map);
 
-  return new DataLoader(async (ids: ID[]) => {
-    if (!ids.length) {
-      return [];
-    }
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (ids: ID[]) => {
+      if (!ids.length) {
+        return [];
+      }
 
-    const tableName = options.loaderFactory.options?.tableName;
-    const loader = options.loaderFactory.createLoader(viewer.context);
-    const rows = await loader.loadMany(ids);
-    // this is a loader which should return the same order based on passed-in ids
-    // so let's depend on that...
+      const loader = options.loaderFactory.createLoader(viewer.context);
+      const rows = await loader.loadMany(ids);
+      // this is a loader which should return the same order based on passed-in ids
+      // so let's depend on that...
 
-    return mapWithConcurrency(
-      rows,
-      getEntLoaderPrivacyConcurrencyLimit(),
-      async (row, idx) => {
-        // db error
-        if (rowIsError(row)) {
-          if (row instanceof Error) {
-            return row;
+      return mapWithConcurrency(
+        rows,
+        getEntLoaderPrivacyConcurrencyLimit(),
+        async (row, idx) => {
+          // db error
+          if (rowIsError(row)) {
+            if (row instanceof Error) {
+              return row;
+            }
+            // @ts-ignore SqliteError
+            return new Error(row.message);
           }
-          // @ts-ignore SqliteError
-          return new Error(row.message);
-        }
-        if (!row) {
-          if (tableName) {
+          if (!row) {
+            if (tableName) {
+              return new ErrorWrapper(
+                new Error(
+                  `couldn't find row for value ${ids[idx]} in table ${tableName}`,
+                ),
+              );
+            }
             return new ErrorWrapper(
-              new Error(
-                `couldn't find row for value ${ids[idx]} in table ${tableName}`,
-              ),
+              new Error(`couldn't find row for value ${ids[idx]}`),
             );
           }
-          return new ErrorWrapper(
-            new Error(`couldn't find row for value ${ids[idx]}`),
-          );
-        }
 
-        const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-        if (rowIsError(r)) {
-          return new ErrorWrapper(r);
-        }
-        return r;
-      },
-    );
-  }, loaderOptions);
+          const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+          if (rowIsError(r)) {
+            return new ErrorWrapper(r);
+          }
+          return r;
+        },
+      );
+    },
+    loaderOptions,
+    tableName,
+  );
 }
 
 class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
