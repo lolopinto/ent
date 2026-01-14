@@ -3,7 +3,7 @@ import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { getDefaultLimit } from "../ent";
 import { getContextCacheKey } from "../context";
-import { buildQuery } from "../query_impl";
+import { buildQuery, OrderBy } from "../query_impl";
 import * as clause from "../clause";
 import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
@@ -805,7 +805,7 @@ function commonTests() {
         clause.Greater("start_time", events[0].startTime.toISOString()),
       );
       if (cachehit) {
-        const orderby = [
+        const orderby: OrderBy = [
           {
             column: "start_time",
             direction: "ASC",
