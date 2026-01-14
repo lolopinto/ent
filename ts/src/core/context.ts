@@ -5,6 +5,24 @@ import { Context } from "./base";
 import { log } from "./logger";
 import { getJoinInfo, getOrderByPhrase } from "./query_impl";
 
+const DEFAULT_MAX_DISCARDED_LOADERS = 1000;
+let maxDiscardedLoaders = DEFAULT_MAX_DISCARDED_LOADERS;
+
+export function getContextCacheMaxDiscardedLoaders(): number {
+  return maxDiscardedLoaders;
+}
+
+export function setContextCacheMaxDiscardedLoaders(size?: number | null) {
+  if (size === undefined || size === null) {
+    maxDiscardedLoaders = DEFAULT_MAX_DISCARDED_LOADERS;
+    return;
+  }
+  if (!Number.isFinite(size) || size < 0) {
+    throw new Error(`maxDiscardedLoaders must be a non-negative number`);
+  }
+  maxDiscardedLoaders = Math.floor(size);
+}
+
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext<TViewer extends Viewer = Viewer>
   extends Context<TViewer> {
@@ -137,6 +155,16 @@ export class ContextCache {
     this.loaderWithLoadMany.clear();
     this.itemMap.clear();
     this.listMap.clear();
+
+    if (maxDiscardedLoaders === 0) {
+      this.discardedLoaders = [];
+      return;
+    }
+    if (this.discardedLoaders.length > maxDiscardedLoaders) {
+      this.discardedLoaders = this.discardedLoaders.slice(
+        -maxDiscardedLoaders,
+      );
+    }
   }
 
   /**
