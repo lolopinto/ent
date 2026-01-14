@@ -11,6 +11,7 @@ import { loadRow, loadRows } from "../ent";
 import * as clause from "../clause";
 import {
   createLoaderCacheMap,
+  InstrumentedDataLoader,
   getLoader,
   getLoaderMaxBatchSize,
 } from "./loader";
@@ -59,57 +60,67 @@ export function createCountDataLoader<K extends any>(
   options: QueryCountOptions,
   context?: Context,
 ) {
+  const loaderName = options.groupCol
+    ? `rawCountLoader:${options.tableName}:${options.groupCol}`
+    : options.clause
+      ? `rawCountLoader:${options.tableName}:${options.clause.instanceKey()}`
+      : `rawCountLoader:${options.tableName}`;
   const loaderOptions: DataLoader.Options<K, number> = {
     maxBatchSize: getLoaderMaxBatchSize(),
     cacheMap: createLoaderCacheMap(options),
   };
 
-  return new DataLoader(async (keys: K[]) => {
-    if (!keys.length) {
-      return [];
-    }
-
-    // keep query simple if we're only fetching for one id
-    if (keys.length == 1 || !options.groupCol) {
-      return simpleCase(options, keys[0], context);
-    }
-
-    let typ = options.groupColType || "uuid";
-    let cls: clause.Clause = clause.DBTypeIn(options.groupCol, keys, typ);
-    if (options.clause) {
-      cls = clause.And(cls, options.clause);
-    }
-
-    let m = new Map<K, number>();
-    let result: number[] = [];
-    for (let i = 0; i < keys.length; i++) {
-      result.push(0);
-      // store the index....
-      m.set(keys[i], i);
-    }
-
-    const rowOptions: LoadRowOptions = {
-      ...options,
-      fields: ["count(1) as count", options.groupCol],
-      groupby: options.groupCol,
-      clause: cls,
-      context,
-    };
-
-    const rows = await loadRows(rowOptions);
-
-    for (const row of rows) {
-      const id = row[options.groupCol];
-      const idx = m.get(id);
-      if (idx === undefined) {
-        throw new Error(
-          `malformed query. got ${id} back but didn't query for it`,
-        );
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (keys: K[]) => {
+      if (!keys.length) {
+        return [];
       }
-      result[idx] = parseInt(row.count, 10);
-    }
-    return result;
-  }, loaderOptions);
+
+      // keep query simple if we're only fetching for one id
+      if (keys.length == 1 || !options.groupCol) {
+        return simpleCase(options, keys[0], context);
+      }
+
+      let typ = options.groupColType || "uuid";
+      let cls: clause.Clause = clause.DBTypeIn(options.groupCol, keys, typ);
+      if (options.clause) {
+        cls = clause.And(cls, options.clause);
+      }
+
+      let m = new Map<K, number>();
+      let result: number[] = [];
+      for (let i = 0; i < keys.length; i++) {
+        result.push(0);
+        // store the index....
+        m.set(keys[i], i);
+      }
+
+      const rowOptions: LoadRowOptions = {
+        ...options,
+        fields: ["count(1) as count", options.groupCol],
+        groupby: options.groupCol,
+        clause: cls,
+        context,
+      };
+
+      const rows = await loadRows(rowOptions);
+
+      for (const row of rows) {
+        const id = row[options.groupCol];
+        const idx = m.get(id);
+        if (idx === undefined) {
+          throw new Error(
+            `malformed query. got ${id} back but didn't query for it`,
+          );
+        }
+        result[idx] = parseInt(row.count, 10);
+      }
+      return result;
+    },
+    loaderOptions,
+    options.tableName,
+  );
 }
 
 // for now this only works for single column counts

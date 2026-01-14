@@ -12,12 +12,15 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Added
 
 - allow configuring clause loader and ent loader privacy concurrency limits
+- add loader/cache metrics hooks (#1939)
 
 ### Fixed
 
 - avoid context cache collisions by including query shape options in cache keys (#1934)
 - cap DataLoader caches and discarded loader list (#1935)
 - pass context through batch loader paths to prime ContextCache (#1936)
+- memoize assoc direct edge loader clause queries to avoid duplicate hits (#1940)
+- reuse QueryDirectLoader cache entries for identical clauses (#1937)
 
 ## [0.2.6]
 

@@ -2,6 +2,7 @@ import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { getDefaultLimit } from "../ent";
+import { getContextCacheKey } from "../context";
 import { buildQuery } from "../query_impl";
 import * as clause from "../clause";
 import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
@@ -197,6 +198,96 @@ function commonTests() {
       );
 
       expect(loader1).not.toBe(loader2);
+    });
+  });
+
+  describe("configurable loader cache keys with clause", () => {
+    const factory = new QueryLoaderFactory({
+      groupCol: "user_id",
+      ...FakeEvent.loaderOptions(),
+    });
+
+    test("same clause instanceKey reuses the same loader", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-01T00:00:00Z"),
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-01T00:00:00Z"),
+        },
+        localCtx,
+      );
+
+      expect(loader1).toBe(loader2);
+    });
+
+    test("different clause instanceKeys create different loaders", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-01T00:00:00Z"),
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-02T00:00:00Z"),
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+    });
+
+    test("orderby and limit changes cache keys", () => {
+      const localCtx = new TestContext();
+      const baseClause = clause.Eq("start_time", "2020-01-01T00:00:00Z");
+      const loader1 = factory.createConfigurableLoader(
+        {
+          clause: baseClause,
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+          limit: 5,
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          clause: baseClause,
+          orderby: [
+            {
+              column: "start_time",
+              direction: "DESC",
+            },
+          ],
+          limit: 5,
+        },
+        localCtx,
+      );
+      const loader3 = factory.createConfigurableLoader(
+        {
+          clause: baseClause,
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+          limit: 6,
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+      expect(loader1).not.toBe(loader3);
     });
   });
 
@@ -714,10 +805,21 @@ function commonTests() {
         clause.Greater("start_time", events[0].startTime.toISOString()),
       );
       if (cachehit) {
+        const orderby = [
+          {
+            column: "start_time",
+            direction: "ASC",
+          },
+        ];
+        const cacheKey = getContextCacheKey({
+          tableName: "fake_events",
+          fields,
+          clause: cls,
+          orderby,
+          limit: 1,
+        });
         expect(log).toStrictEqual({
-          "cache-hit": [...fields, cls.instanceKey(), "start_time ASC"].join(
-            ",",
-          ),
+          "cache-hit": cacheKey,
           "tableName": "fake_events",
         });
         return;
