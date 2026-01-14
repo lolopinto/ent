@@ -157,15 +157,19 @@ function createDataLoader(options: SelectDataOptions) {
   );
 }
 
-class clauseCacheMap {
-  private m = new Map();
+class clauseCacheMap<
+  TQueryData extends Data = Data,
+  K = keyof TQueryData,
+  V = any,
+> implements DataLoader.CacheMap<clause.Clause<TQueryData, K>, Promise<V>> {
+  private m = new Map<string, Promise<V>>();
 
   constructor(
     private options: DataOptions,
     private count?: boolean,
   ) {}
 
-  get(key: clause.Clause) {
+  get(key: clause.Clause<TQueryData, K>) {
     const key2 = key.instanceKey();
     const ret = this.m.get(key2);
     if (ret) {
@@ -177,11 +181,11 @@ class clauseCacheMap {
     return ret;
   }
 
-  set(key: clause.Clause, value: any) {
+  set(key: clause.Clause<TQueryData, K>, value: Promise<V>) {
     return this.m.set(key.instanceKey(), value);
   }
 
-  delete(key: clause.Clause) {
+  delete(key: clause.Clause<TQueryData, K>) {
     return this.m.delete(key.instanceKey());
   }
 
@@ -190,11 +194,15 @@ class clauseCacheMap {
   }
 }
 
-function createClauseCacheMap(options: DataOptions, count?: boolean) {
+function createClauseCacheMap<
+  TQueryData extends Data = Data,
+  K = keyof TQueryData,
+  V = any,
+>(options: DataOptions, count?: boolean) {
   return createBoundedCacheMap(
-    new clauseCacheMap(options, count),
+    new clauseCacheMap<TQueryData, K, V>(options, count),
     (key) => key.instanceKey(),
-  );
+  ) as DataLoader.CacheMap<clause.Clause<TQueryData, K>, Promise<V>>;
 }
 
 function createClauseDataLoder<
@@ -220,7 +228,7 @@ function createClauseDataLoder<
       );
     },
     {
-      cacheMap: createClauseCacheMap(options),
+      cacheMap: createClauseCacheMap<TQueryData, K, TResultData[]>(options),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
     options.tableName,
@@ -243,7 +251,7 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
       );
     },
     {
-      cacheMap: createClauseCacheMap(options, true),
+      cacheMap: createClauseCacheMap<V, K, number>(options, true),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
     options.tableName,

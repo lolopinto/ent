@@ -86,10 +86,10 @@ type BatchLoadFn<K, V> = (
 ) => PromiseLike<ArrayLike<V | Error>>;
 
 function instrumentCacheMap<K, V>(
-  cacheMap: CacheMapLike<K, Promise<V>> | undefined,
+  cacheMap: CacheMapLike<K, V> | null | undefined,
   tableName?: string,
   cacheKeyFn?: (key: K) => unknown,
-): CacheMapLike<K, Promise<V>> | undefined {
+): CacheMapLike<K, V> | null | undefined {
   if (!cacheMap || !tableName) {
     return cacheMap;
   }
