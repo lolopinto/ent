@@ -51,6 +51,7 @@ function createLoader<T extends AssocEdge>(
   edgeType: string,
   edgeCtr: AssocEdgeConstructor<T>,
   edgeData: AssocEdgeData,
+  context?: Context,
 ) {
   const loaderOptions: DataLoader.Options<ID, T[]> = {
     maxBatchSize: getLoaderMaxBatchSize(),
@@ -70,6 +71,7 @@ function createLoader<T extends AssocEdge>(
         id1: keys[0],
         edgeType: edgeType,
         queryOptions: options,
+        context,
         ctr: edgeCtr,
       });
       return [r];
@@ -148,6 +150,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
       this.edgeType,
       this.edgeCtr,
       edgeData,
+      this.context,
     );
     return this.loader;
   }

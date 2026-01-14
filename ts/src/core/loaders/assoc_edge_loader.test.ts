@@ -37,7 +37,11 @@ import {
   addEdge,
 } from "../../testutils/fake_data/test_helpers";
 
-import { AssocEdgeLoaderFactory, AssocLoader } from "./assoc_edge_loader";
+import {
+  AssocDirectEdgeLoader,
+  AssocEdgeLoaderFactory,
+  AssocLoader,
+} from "./assoc_edge_loader";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { convertDate } from "../convert";
@@ -452,6 +456,26 @@ function commonTests() {
 
     //  verifyUserToContactEdges(user, edges2, contacts.reverse());
     verifyGroupedCacheHit([user.id]);
+  });
+
+  test("with context. cache hit across loader paths", async () => {
+    const [user, contacts] = await createAllContacts();
+    ml.clear();
+    const loader = getNewContactsLoader();
+    const edges = await loader.load(user.id);
+    verifyUserToContactEdges(user, edges, contacts.reverse());
+    verifyMultiCountQueryCacheMiss([user.id]);
+
+    ml.clear();
+    const directLoader = new AssocDirectEdgeLoader(
+      EdgeType.UserToContacts,
+      AssocEdge,
+      undefined,
+      ctx,
+    );
+    const edges2 = await directLoader.load(user.id);
+    expect(edges2).toStrictEqual(edges);
+    verifyDefaultContextCacheHit([user.id]);
   });
 
   test("without context. cache hit single id", async () => {
@@ -1067,6 +1091,31 @@ function verifyGroupedCacheHit(ids: ID[]) {
   ml.logs.forEach((log, idx) => {
     expect(log).toStrictEqual({
       "dataloader-cache-hit": ids[idx],
+      "tableName": "user_to_contacts_table",
+    });
+  });
+}
+
+function verifyDefaultContextCacheHit(ids: ID[]) {
+  expect(ml.logs.length).toBe(ids.length);
+  ml.logs.forEach((log, idx) => {
+    const fields = [
+      "id1",
+      "id1_type",
+      "edge_type",
+      "id2",
+      "id2_type",
+      "time",
+      "data",
+      __hasGlobalSchema() ? "deleted_at" : "",
+    ].filter((v) => v !== "");
+    const cls = clause.AndOptional(
+      clause.Eq("id1", ids[idx]),
+      clause.Eq("edge_type", EdgeType.UserToContacts),
+      __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
+    );
+    expect(log).toStrictEqual({
+      "cache-hit": [...fields, cls.instanceKey(), "time DESC"].join(","),
       "tableName": "user_to_contacts_table",
     });
   });

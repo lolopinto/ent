@@ -232,14 +232,16 @@ function commonTests() {
     });
 
     test("multi-ids. with context, offset", async () => {
-      await testMultiQueryDataOffset((options) =>
-        getConfigurableLoader(true, options),
+      await testMultiQueryDataOffset(
+        (options) => getConfigurableLoader(true, options),
+        true,
       );
     });
 
     test("multi-ids. without context, offset", async () => {
-      await testMultiQueryDataOffset((options) =>
-        getConfigurableLoader(false, options),
+      await testMultiQueryDataOffset(
+        (options) => getConfigurableLoader(false, options),
+        false,
       );
     });
 
@@ -627,6 +629,7 @@ function commonTests() {
 
   async function testMultiQueryDataOffset(
     loaderFn: (opts: EdgeQueryableDataOptions) => Loader<ID, Data[]>,
+    expectCacheHit: boolean,
   ) {
     const { m, ids, users } = await createData();
 
@@ -693,10 +696,14 @@ function commonTests() {
     // query again, same data
     // if context, we hit local cache. otherwise, hit db
     expect(edges).toStrictEqual(edges2);
-    verifyMultiCountQueryOffset(ids, m);
+    verifyMultiCountQueryOffset(ids, m, expectCacheHit);
   }
 
-  function verifyMultiCountQueryOffset(ids: ID[], m: Map<ID, FakeEvent[]>) {
+  function verifyMultiCountQueryOffset(
+    ids: ID[],
+    m: Map<ID, FakeEvent[]>,
+    cachehit?: boolean,
+  ) {
     expect(ml.logs.length).toBe(ids.length);
     ml.logs.forEach((log, idx) => {
       let events = m.get(ids[idx]) || [];
@@ -706,6 +713,15 @@ function commonTests() {
         getCompleteClause(ids[idx]),
         clause.Greater("start_time", events[0].startTime.toISOString()),
       );
+      if (cachehit) {
+        expect(log).toStrictEqual({
+          "cache-hit": [...fields, cls.instanceKey(), "start_time ASC"].join(
+            ",",
+          ),
+          "tableName": "fake_events",
+        });
+        return;
+      }
 
       const expQuery = buildQuery({
         tableName: "fake_events",
