@@ -1,5 +1,6 @@
 ---
 sidebar_position: 6
+sidebar_label: "Index Patterns"
 ---
 
 # Performance indexes for grouped and assoc edge queries
