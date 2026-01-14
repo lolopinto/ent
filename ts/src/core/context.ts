@@ -4,6 +4,7 @@ import { Data, Loader, LoaderWithLoadMany, QueryOptions, Viewer } from "./base";
 import { Context } from "./base";
 import { log } from "./logger";
 import { stableStringify } from "./cache_utils";
+import { getOnQueryCacheHit } from "./metrics";
 
 const DEFAULT_MAX_DISCARDED_LOADERS = 1000;
 let maxDiscardedLoaders = DEFAULT_MAX_DISCARDED_LOADERS;
@@ -135,6 +136,13 @@ export class ContextCache {
     const key = this.getkey(options);
     let rows = m.get(key);
     if (rows) {
+      const hook = getOnQueryCacheHit();
+      if (hook) {
+        hook({
+          tableName: options.tableName,
+          key,
+        });
+      }
       log("cache", {
         "cache-hit": key,
         "tableName": options.tableName,
@@ -151,6 +159,13 @@ export class ContextCache {
     const key = this.getkey(options);
     let row = m.get(key);
     if (row) {
+      const hook = getOnQueryCacheHit();
+      if (hook) {
+        hook({
+          tableName: options.tableName,
+          key,
+        });
+      }
       log("cache", {
         "cache-hit": key,
         "tableName": options.tableName,

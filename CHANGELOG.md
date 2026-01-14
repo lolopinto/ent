@@ -12,6 +12,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Added
 
 - allow configuring clause loader and ent loader privacy concurrency limits
+- add loader/cache metrics hooks (#1939)
 
 ### Fixed
 
