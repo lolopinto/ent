@@ -309,8 +309,32 @@ export class QueryLoaderFactory<K extends any>
     options: EdgeQueryableDataOptions,
     context?: Context,
   ) {
-    if (options.clause || !context) {
+    if (!context) {
       return new QueryDirectLoader(queryOptions, options, context);
+    }
+
+    if (options.clause) {
+      const effectiveOrderBy = getOrderByLocal(queryOptions, options);
+      const effectiveLimit = options.limit || getDefaultLimit();
+      const disableTransformations = options.disableTransformations ?? false;
+      const keyParts = [
+        name,
+        `clause:${options.clause.instanceKey()}`,
+        queryOptions.clause
+          ? `baseClause:${queryOptions.clause.instanceKey()}`
+          : undefined,
+        `limit:${effectiveLimit}`,
+        `orderby:${stableStringify(effectiveOrderBy)}`,
+        `disableTransformations:${disableTransformations}`,
+      ];
+      const key = keyParts
+        .filter((part): part is string => Boolean(part))
+        .join(":");
+      return getCustomLoader(
+        key,
+        () => new QueryDirectLoader(queryOptions, options, context),
+        context,
+      );
     }
 
     const effectiveOrderBy = getOrderByLocal(queryOptions, options);
