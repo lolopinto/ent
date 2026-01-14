@@ -1,5 +1,7 @@
+import DataLoader from "dataloader";
 import { Loader, LoaderFactory, Context, DataOptions } from "../base";
 import { log, logEnabled } from "../logger";
+import { getOnDataLoaderBatch, getOnDataLoaderCacheHit } from "../metrics";
 
 const DEFAULT_MAX_BATCH_SIZE = 1000;
 let loaderMaxBatchSize = DEFAULT_MAX_BATCH_SIZE;
@@ -78,6 +80,73 @@ export type CacheMapLike<K, V> = {
 };
 
 type CacheKeyFn<K> = (key: K) => any;
+
+type BatchLoadFn<K, V> = (
+  keys: readonly K[],
+) => PromiseLike<ArrayLike<V | Error>>;
+
+function instrumentCacheMap<K, V>(
+  cacheMap: CacheMapLike<K, Promise<V>> | undefined,
+  tableName?: string,
+  cacheKeyFn?: (key: K) => unknown,
+): CacheMapLike<K, Promise<V>> | undefined {
+  if (!cacheMap || !tableName) {
+    return cacheMap;
+  }
+
+  return {
+    get(key: K) {
+      const value = cacheMap.get(key);
+      if (value !== undefined) {
+        const hook = getOnDataLoaderCacheHit();
+        if (hook) {
+          hook({
+            tableName,
+            key: cacheKeyFn ? cacheKeyFn(key) : key,
+          });
+        }
+      }
+      return value;
+    },
+    set(key: K, value: V) {
+      return cacheMap.set(key, value);
+    },
+    delete(key: K) {
+      return cacheMap.delete(key);
+    },
+    clear() {
+      return cacheMap.clear();
+    },
+  };
+}
+
+export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
+  constructor(
+    loaderName: string,
+    batchLoadFn: BatchLoadFn<K, V>,
+    options: DataLoader.Options<K, V>,
+    tableName?: string,
+    cacheKeyFn?: (key: K) => unknown,
+  ) {
+    const wrappedBatchFn: BatchLoadFn<K, V> = async (keys) => {
+      if (keys.length) {
+        const hook = getOnDataLoaderBatch();
+        if (hook) {
+          hook({
+            loaderName,
+            batchSize: keys.length,
+          });
+        }
+      }
+      return batchLoadFn(keys);
+    };
+
+    const cacheMap = instrumentCacheMap(options.cacheMap, tableName, cacheKeyFn);
+    const loaderOptions =
+      cacheMap === options.cacheMap ? options : { ...options, cacheMap };
+    super(wrappedBatchFn, loaderOptions);
+  }
+}
 
 export class BoundedCacheMap<K, V> {
   private order = new Map<any, K>();

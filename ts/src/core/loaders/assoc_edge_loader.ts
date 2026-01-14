@@ -25,6 +25,7 @@ import { OrderBy } from "../query_impl";
 import { stableStringify } from "../cache_utils";
 import {
   createLoaderCacheMap,
+  InstrumentedDataLoader,
   getCustomLoader,
   getLoaderMaxBatchSize,
 } from "./loader";
@@ -55,6 +56,7 @@ function createLoader<T extends AssocEdge>(
   edgeCtr: AssocEdgeConstructor<T>,
   edgeData: AssocEdgeData,
 ) {
+  const loaderName = `assocEdgeLoader:${edgeType}`;
   const loaderOptions: DataLoader.Options<ID, T[]> = {
     maxBatchSize: getLoaderMaxBatchSize(),
     cacheMap: createLoaderCacheMap({
@@ -62,62 +64,71 @@ function createLoader<T extends AssocEdge>(
     }),
   };
 
-  return new DataLoader(async (keys: ID[]) => {
-    if (keys.length === 1) {
-      // 1 key, just be simple and move on
-      // same as AssocDirectEdgeLoader
-      const r = await loadCustomEdges({
-        id1: keys[0],
-        edgeType: edgeType,
-        queryOptions: options,
-        ctr: edgeCtr,
-      });
-      return [r];
-    }
-
-    let m = new Map<ID, number>();
-    let result: T[][] = [];
-    for (let i = 0; i < keys.length; i++) {
-      result.push([]);
-      // store the index....
-      m.set(keys[i], i);
-    }
-
-    const orderby = options.orderby ?? getDefaultOrderBy();
-    // TODO defaultEdgeQueryOptions
-    const limit = options.limit || getDefaultLimit();
-
-    const tableName = edgeData.edgeTable;
-    const { cls: cls1, fields } = getEdgeClauseAndFields(
-      clause.Eq("edge_type", edgeType),
-      {
-        queryOptions: options,
-      },
-    );
-    const [query, cls] = buildGroupQuery({
-      tableName: tableName,
-      fields,
-      values: keys,
-      orderby,
-      limit,
-      groupColumn: "id1",
-      clause: cls1,
-    });
-
-    const rows = await performRawQuery(query, cls.values(), cls.logValues());
-    for (const row of rows) {
-      const srcID = row.id1;
-      const idx = m.get(srcID);
-      delete row.row_num;
-      if (idx === undefined) {
-        throw new Error(
-          `malformed query. got ${srcID} back but didn't query for it`,
-        );
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (keys: ID[]) => {
+      if (keys.length === 1) {
+        // 1 key, just be simple and move on
+        // same as AssocDirectEdgeLoader
+        const r = await loadCustomEdges({
+          id1: keys[0],
+          edgeType: edgeType,
+          queryOptions: options,
+          ctr: edgeCtr,
+        });
+        return [r];
       }
-      result[idx].push(new edgeCtr(row));
-    }
-    return result;
-  }, loaderOptions);
+
+      let m = new Map<ID, number>();
+      let result: T[][] = [];
+      for (let i = 0; i < keys.length; i++) {
+        result.push([]);
+        // store the index....
+        m.set(keys[i], i);
+      }
+
+      const orderby = options.orderby ?? getDefaultOrderBy();
+      // TODO defaultEdgeQueryOptions
+      const limit = options.limit || getDefaultLimit();
+
+      const tableName = edgeData.edgeTable;
+      const { cls: cls1, fields } = getEdgeClauseAndFields(
+        clause.Eq("edge_type", edgeType),
+        {
+          queryOptions: options,
+        },
+      );
+      const [query, cls] = buildGroupQuery({
+        tableName: tableName,
+        fields,
+        values: keys,
+        orderby,
+        limit,
+        groupColumn: "id1",
+        clause: cls1,
+      });
+
+      const rows = await performRawQuery(
+        query,
+        cls.values(),
+        cls.logValues(),
+      );
+      for (const row of rows) {
+        const srcID = row.id1;
+        const idx = m.get(srcID);
+        delete row.row_num;
+        if (idx === undefined) {
+          throw new Error(
+            `malformed query. got ${srcID} back but didn't query for it`,
+          );
+        }
+        result[idx].push(new edgeCtr(row));
+      }
+      return result;
+    },
+    loaderOptions,
+    edgeData.edgeTable,
+  );
 }
 
 export interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
