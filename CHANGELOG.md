@@ -17,6 +17,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - avoid context cache collisions by including query shape options in cache keys (#1934)
 - cap DataLoader caches and discarded loader list (#1935)
+- reuse QueryDirectLoader cache entries for identical clauses (#1937)
 
 ## [0.2.6]
 
