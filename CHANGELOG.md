@@ -13,6 +13,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - allow configuring clause loader and ent loader privacy concurrency limits
 
+### Fixed
+
+- avoid context cache collisions by including query shape options in cache keys (#1934)
+
 ## [0.2.6]
 
 ### Added
