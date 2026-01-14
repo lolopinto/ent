@@ -200,6 +200,96 @@ function commonTests() {
     });
   });
 
+  describe("configurable loader cache keys with clause", () => {
+    const factory = new QueryLoaderFactory({
+      groupCol: "user_id",
+      ...FakeEvent.loaderOptions(),
+    });
+
+    test("same clause instanceKey reuses the same loader", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-01T00:00:00Z"),
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-01T00:00:00Z"),
+        },
+        localCtx,
+      );
+
+      expect(loader1).toBe(loader2);
+    });
+
+    test("different clause instanceKeys create different loaders", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-01T00:00:00Z"),
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-02T00:00:00Z"),
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+    });
+
+    test("orderby and limit changes cache keys", () => {
+      const localCtx = new TestContext();
+      const baseClause = clause.Eq("start_time", "2020-01-01T00:00:00Z");
+      const loader1 = factory.createConfigurableLoader(
+        {
+          clause: baseClause,
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+          limit: 5,
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          clause: baseClause,
+          orderby: [
+            {
+              column: "start_time",
+              direction: "DESC",
+            },
+          ],
+          limit: 5,
+        },
+        localCtx,
+      );
+      const loader3 = factory.createConfigurableLoader(
+        {
+          clause: baseClause,
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+          limit: 6,
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+      expect(loader1).not.toBe(loader3);
+    });
+  });
+
   describe("groupCol passed", () => {
     test("single id. with context", async () => {
       await verifySingleIDWithContextCacheHit((id) => getNewLoader());
