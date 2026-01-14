@@ -58,6 +58,7 @@ async function simpleCase<K extends any>(
 
 export function createCountDataLoader<K extends any>(
   options: QueryCountOptions,
+  context?: Context,
 ) {
   const loaderName = options.groupCol
     ? `rawCountLoader:${options.tableName}:${options.groupCol}`
@@ -78,7 +79,7 @@ export function createCountDataLoader<K extends any>(
 
       // keep query simple if we're only fetching for one id
       if (keys.length == 1 || !options.groupCol) {
-        return simpleCase(options, keys[0]);
+        return simpleCase(options, keys[0], context);
       }
 
       let typ = options.groupColType || "uuid";
@@ -100,6 +101,7 @@ export function createCountDataLoader<K extends any>(
         fields: ["count(1) as count", options.groupCol],
         groupby: options.groupCol,
         clause: cls,
+        context,
       };
 
       const rows = await loadRows(rowOptions);
@@ -128,7 +130,7 @@ export class RawCountLoader<K extends any> implements Loader<K, number> {
   // tableName, columns
   constructor(private options: QueryCountOptions, public context?: Context) {
     if (context && options.groupCol) {
-      this.loader = createCountDataLoader(options);
+      this.loader = createCountDataLoader(options, context);
     }
   }
 

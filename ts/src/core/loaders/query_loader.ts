@@ -45,6 +45,7 @@ async function simpleCase<K extends any>(
   options: QueryOptions,
   id: K,
   queryOptions?: EdgeQueryableDataOptions,
+  context?: Context,
 ) {
   let cls: clause.Clause;
   if (options.groupCol) {
@@ -67,12 +68,14 @@ async function simpleCase<K extends any>(
     clause: cls,
     orderby: getOrderByLocal(options, queryOptions),
     limit: queryOptions?.limit || getDefaultLimit(),
+    context,
   });
 }
 
 function createLoader<K extends any>(
   options: QueryOptions,
   queryOptions?: EdgeQueryableDataOptions,
+  context?: Context,
 ): DataLoader<K, Data[]> {
   const loaderName = options.groupCol
     ? `queryLoader:${options.tableName}:${options.groupCol}`
@@ -94,7 +97,7 @@ function createLoader<K extends any>(
       // keep query simple if we're only fetching for one id
       // or can't group because no groupCol...
       if (keys.length == 1 || !options.groupCol) {
-        const rows = await simpleCase(options, keys[0], queryOptions);
+        const rows = await simpleCase(options, keys[0], queryOptions, context);
         return [rows];
       }
 
@@ -178,7 +181,12 @@ class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
   }
 
   async load(id: K): Promise<Data[]> {
-    const rows = await simpleCase(this.options, id, this.queryOptions);
+    const rows = await simpleCase(
+      this.options,
+      id,
+      this.queryOptions,
+      this.context,
+    );
     if (this.context) {
       this.memoizedInitPrime();
       if (this.primedLoaders) {
@@ -212,7 +220,7 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
     private queryOptions?: EdgeQueryableDataOptions,
   ) {
     if (context) {
-      this.loader = createLoader(options, queryOptions);
+      this.loader = createLoader(options, queryOptions, context);
     }
     this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
   }
@@ -249,7 +257,7 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
       return rows;
     }
 
-    return simpleCase(this.options, id, this.queryOptions);
+    return simpleCase(this.options, id, this.queryOptions, this.context);
   }
 
   clearAll() {

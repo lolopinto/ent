@@ -42,11 +42,14 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
       },
     );
 
-    this.loader = createCountDataLoader({
-      tableName: edgeData.edgeTable,
-      groupCol: "id1",
-      clause: cls,
-    });
+    this.loader = createCountDataLoader(
+      {
+        tableName: edgeData.edgeTable,
+        groupCol: "id1",
+        clause: cls,
+      },
+      this.context,
+    );
     return this.loader;
   }
 
