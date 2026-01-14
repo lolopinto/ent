@@ -13,6 +13,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - allow configuring clause loader and ent loader privacy concurrency limits
 
+### Fixed
+
+- pass context through batch loader paths to prime ContextCache (#1936)
+
 ## [0.2.6]
 
 ### Added
