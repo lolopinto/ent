@@ -520,6 +520,45 @@ function commonTests() {
     verifyMultiCountQueryCacheMiss([id]);
   });
 
+  test("direct loader with clause memoizes same id", async () => {
+    const [user] = await createAllContacts({ ctx });
+    const loader = getConfigurableContactsLoader(true, {
+      clause: clause.Greater("time", new Date(0).toISOString()),
+    });
+    ml.clear();
+
+    const [edges1, edges2] = await Promise.all([
+      loader.load(user.id),
+      loader.load(user.id),
+    ]);
+
+    ml.verifyNoErrors();
+    expect(edges1.length).toBeGreaterThan(0);
+    expect(edges1).toStrictEqual(edges2);
+    const queryLogs = ml.logs.filter((log) => log.query);
+    expect(queryLogs.length).toBe(1);
+  });
+
+  test("direct loader with clause queries different ids separately", async () => {
+    const [user1] = await createAllContacts({ ctx });
+    const [user2] = await createAllContacts({ ctx });
+    const loader = getConfigurableContactsLoader(true, {
+      clause: clause.Greater("time", new Date(0).toISOString()),
+    });
+    ml.clear();
+
+    const [edges1, edges2] = await Promise.all([
+      loader.load(user1.id),
+      loader.load(user2.id),
+    ]);
+
+    ml.verifyNoErrors();
+    expect(edges1.length).toBeGreaterThan(0);
+    expect(edges2.length).toBeGreaterThan(0);
+    const queryLogs = ml.logs.filter((log) => log.query);
+    expect(queryLogs.length).toBe(2);
+  });
+
   async function verifyTwoWayEdges(
     loaderFn: (opts: EdgeQueryableDataOptions) => AssocLoader<CustomEdge>,
   ) {

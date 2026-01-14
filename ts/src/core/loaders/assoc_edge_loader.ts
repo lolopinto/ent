@@ -198,14 +198,59 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
 export class AssocDirectEdgeLoader<T extends AssocEdge>
   implements Loader<ID, T[]>
 {
+  private loader: DataLoader<ID, T[]> | undefined;
+  private loaderFn: (() => Promise<DataLoader<ID, T[]>>) | undefined;
   constructor(
     private edgeType: string,
     private edgeCtr: AssocEdgeConstructor<T>,
     private options?: EdgeQueryableDataOptions,
     public context?: Context,
-  ) {}
+  ) {
+    if (this.context) {
+      this.loaderFn = memoizee(this.getLoader);
+    }
+  }
+
+  private async getLoader() {
+    if (this.loader) {
+      return this.loader;
+    }
+    const edgeData = await loadEdgeData(this.edgeType);
+    if (!edgeData) {
+      throw new Error(`error loading edge data for ${this.edgeType}`);
+    }
+    const loaderName = `assocDirectEdgeLoader:${this.edgeType}`;
+    this.loader = new InstrumentedDataLoader(
+      loaderName,
+      async (keys: ID[]) => {
+        return Promise.all(
+          keys.map((id) =>
+            loadCustomEdges({
+              id1: id,
+              edgeType: this.edgeType,
+              context: this.context,
+              queryOptions: this.options,
+              ctr: this.edgeCtr,
+            }),
+          ),
+        );
+      },
+      {
+        maxBatchSize: getLoaderMaxBatchSize(),
+        cacheMap: createLoaderCacheMap({
+          tableName: edgeData.edgeTable,
+        }),
+      },
+      edgeData.edgeTable,
+    );
+    return this.loader;
+  }
 
   async load(id: ID) {
+    if (this.loaderFn) {
+      const loader = await this.loaderFn();
+      return loader.load(id);
+    }
     return loadCustomEdges({
       id1: id,
       edgeType: this.edgeType,
@@ -236,7 +281,9 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
     });
   }
 
-  clearAll() {}
+  clearAll() {
+    this.loader && this.loader.clearAll();
+  }
 }
 
 export class AssocEdgeLoaderFactory<T extends AssocEdge>
