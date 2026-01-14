@@ -422,7 +422,7 @@ function commonTests() {
 
       expect(ml.logs.length).toEqual(2);
       expect(ml.logs[1]).toStrictEqual({
-        "cache-hit": "col1,col2,id=1",
+        "cache-hit": "fields:col1,col2,clause:id=1",
         "tableName": options.tableName,
       });
     });
@@ -453,7 +453,7 @@ function commonTests() {
 
       expect(ml.logs.length).toEqual(2);
       expect(ml.logs[1]).toStrictEqual({
-        "cache-hit": "col1,col2,in:id:1",
+        "cache-hit": "fields:col1,col2,clause:in:id:1",
         "tableName": options.tableName,
       });
     });
