@@ -1,11 +1,8 @@
 import { Viewer, ID } from "@snowtop/ent";
-import {
-  CreateEventActivityActionBase,
-  EventActivityCreateInput,
-  CreateEventActivityActionTriggers,
-} from "src/ent/generated/event_activity/actions/create_event_activity_action_base";
+import { CreateEventActivityActionBase } from "src/ent/generated/event_activity/actions/create_event_activity_action_base";
+import type { EventActivityCreateInput, CreateEventActivityActionTriggers } from "src/ent/generated/event_activity/actions/create_event_activity_action_base";
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
-export { EventActivityCreateInput };
+export type { EventActivityCreateInput };
 import { Builder } from "@snowtop/ent/action";
 import CreateAddressAction from "src/ent/address/actions/create_address_action";
 import { NodeType } from "src/ent/generated/const";

@@ -3,15 +3,13 @@ import {
   AllowIfConditionAppliesRule,
   AlwaysDenyRule,
 } from "@snowtop/ent/core/privacy";
-import {
-  CreateAddressActionBase,
-  AddressCreateInput,
-} from "src/ent/generated/address/actions/create_address_action_base";
+import { CreateAddressActionBase } from "src/ent/generated/address/actions/create_address_action_base";
+import type { AddressCreateInput } from "src/ent/generated/address/actions/create_address_action_base";
 import { AllowIfBuilder, Builder } from "@snowtop/ent/action";
 import { getLoaderOptions } from "src/ent/generated/loadAny";
 import { NodeType } from "src/ent/generated/const";
 
-export { AddressCreateInput };
+export type { AddressCreateInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateAddressAction extends CreateAddressActionBase {

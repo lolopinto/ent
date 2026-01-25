@@ -7,19 +7,15 @@ import {
 } from "@snowtop/ent/core/privacy";
 import { Guest, GuestData } from "src/ent";
 import { EdgeType } from "src/ent/generated/const";
-import {
-  EditEventActivityRsvpStatusActionBase,
-  EditEventActivityRsvpStatusInput,
-  EventActivityRsvpStatusInput,
-  EditEventActivityRsvpStatusActionTriggers,
-} from "src/ent/generated/event_activity/actions/edit_event_activity_rsvp_status_action_base";
+import { EditEventActivityRsvpStatusActionBase } from "src/ent/generated/event_activity/actions/edit_event_activity_rsvp_status_action_base";
+import type { EditEventActivityRsvpStatusInput, EventActivityRsvpStatusInput, EditEventActivityRsvpStatusActionTriggers } from "src/ent/generated/event_activity/actions/edit_event_activity_rsvp_status_action_base";
 import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
 import DeleteGuestDataAction from "src/ent/guest_data/actions/delete_guest_data_action";
 import CreateGuestDataAction from "../../guest_data/actions/create_guest_data_action";
 import { EventActivityBuilder } from "../../generated/event_activity/actions/event_activity_builder";
 
-export { EditEventActivityRsvpStatusInput };
-export { EventActivityRsvpStatusInput };
+export type { EditEventActivityRsvpStatusInput };
+export type { EventActivityRsvpStatusInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class EditEventActivityRsvpStatusAction extends EditEventActivityRsvpStatusActionBase {
