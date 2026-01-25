@@ -564,9 +564,6 @@ type Mutation {
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
 
-"""Date scalar type with format YYYY-MM-DD"""
-scalar Date
-
 """Time scalar type"""
 scalar Time
 

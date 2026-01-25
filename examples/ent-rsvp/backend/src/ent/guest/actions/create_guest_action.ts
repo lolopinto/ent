@@ -1,12 +1,9 @@
-import {
-  CreateGuestActionBase,
-  GuestCreateInput,
-  CreateGuestActionTriggers,
-} from "src/ent/generated/guest/actions/create_guest_action_base";
+import { CreateGuestActionBase } from "src/ent/generated/guest/actions/create_guest_action_base";
+import type { GuestCreateInput, CreateGuestActionTriggers } from "src/ent/generated/guest/actions/create_guest_action_base";
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
 import CreateAuthCodeAction from "src/ent/auth_code/actions/create_auth_code_action";
 
-export { GuestCreateInput };
+export type { GuestCreateInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateGuestAction extends CreateGuestActionBase {
