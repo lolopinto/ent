@@ -1,10 +1,8 @@
 import { AlwaysAllowPrivacyPolicy, IDViewer, Data } from "@snowtop/ent";
-import {
-  AccountCreateInput,
-  CreateAccountActionBase,
-} from "src/ent/generated/account/actions/create_account_action_base";
+import { CreateAccountActionBase } from "src/ent/generated/account/actions/create_account_action_base";
+import type { AccountCreateInput } from "src/ent/generated/account/actions/create_account_action_base";
 
-export { AccountCreateInput };
+export type { AccountCreateInput };
 
 export class CreateAccountAction extends CreateAccountActionBase {
   getPrivacyPolicy() {
