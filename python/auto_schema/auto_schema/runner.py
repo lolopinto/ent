@@ -41,12 +41,19 @@ from .util.os import delete_py_files
 
 
 class Runner(object):
-    def __init__(self, metadata, engine, connection, schema_path, args: dict | None = None):
+    def __init__(
+        self,
+        metadata,
+        engine,
+        connection,
+        schema_path,
+        args: Mapping[str, Any] | None = None,
+    ):
         self.metadata = metadata
         self.schema_path = schema_path
         self.engine = engine
         self.connection = connection
-        self.args = args or {}
+        self.args: Mapping[str, Any] = args or {}
 
         config.metadata = self.metadata
         config.engine = self.engine
@@ -97,24 +104,15 @@ class Runner(object):
         return '"' + name.replace('"', '""') + '"'
 
     @classmethod
-    def _resolve_schema_config(cls, args):
+    def _resolve_schema_config(
+        cls, args: Mapping[str, Any] | None
+    ) -> tuple[str | None, bool | None]:
         if os.getenv("NODE_ENV", "").strip().lower() == "production":
             return (None, None)
-        schema = None
-        include_public = None
-        if isinstance(args, Mapping):
-            schema = args.get('db_schema')
-            include_public = args.get('db_schema_include_public')
-        else:
-            schema = getattr(args, 'db_schema', None)
-            include_public = getattr(args, 'db_schema_include_public', None)
-
-        if not schema:
-            schema = os.getenv('ENT_DEV_SCHEMA_NAME') or None
-
-        if include_public is None:
-            include_public = os.getenv('ENT_DEV_SCHEMA_INCLUDE_PUBLIC')
-        include_public = cls._parse_bool(include_public)
+        if not args:
+            return (None, None)
+        schema = args.get("db_schema")
+        include_public = cls._parse_bool(args.get("db_schema_include_public"))
         if schema and include_public is None:
             include_public = True
         return (schema, include_public)
@@ -207,10 +205,11 @@ class Runner(object):
 
     @classmethod
     def fix_edges(cls, metadata, args):
-        if isinstance(args, Mapping) and args.get('connection'):
-            connection = args.get('connection')
-        else:
-            engine = sa.create_engine(args.engine)
+        if not isinstance(args, Mapping):
+            args = vars(args)
+        connection = args.get("connection")
+        if connection is None:
+            engine = sa.create_engine(args["engine"])
             connection = engine.connect()
 
         schema, include_public = cls._resolve_schema_config(args)
