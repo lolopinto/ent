@@ -11,6 +11,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/devschema"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -87,6 +88,24 @@ func NewConfig(configPath, modulePath string) (*Config, error) {
 	c, err := parseConfig(absPathToRoot)
 	if err != nil {
 		return nil, err
+	}
+	if c != nil && c.DevSchema != nil {
+		var pruneEnabled *bool
+		var pruneDays int
+		if c.DevSchema.Prune != nil {
+			pruneEnabled = &c.DevSchema.Prune.Enabled
+			pruneDays = c.DevSchema.Prune.Days
+		}
+		devschema.ApplyEnvFromConfig(&devschema.Config{
+			Enabled:       c.DevSchema.Enabled,
+			Prefix:        c.DevSchema.Prefix,
+			IncludePublic: c.DevSchema.IncludePublic,
+			SchemaName:    c.DevSchema.SchemaName,
+			BranchName:    c.DevSchema.BranchName,
+			Suffix:        c.DevSchema.Suffix,
+			PruneEnabled:  pruneEnabled,
+			PruneDays:     pruneDays,
+		}, devschema.Options{RepoRoot: absPathToRoot})
 	}
 
 	return &Config{
@@ -399,6 +418,13 @@ func (cfg *Config) DatabaseToCompareTo() string {
 	return ""
 }
 
+func (cfg *Config) DevSchema() *DevSchemaConfig {
+	if cfg.config != nil {
+		return cfg.config.DevSchema
+	}
+	return nil
+}
+
 func (cfg *Config) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvaluated {
 	if codegen := cfg.getCodegenConfig(); codegen != nil {
 		if codegen.DefaultGraphQLFieldFormat != "" {
@@ -633,6 +659,7 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 type ConfigurableConfig struct {
 	Codegen                            *CodegenConfig           `yaml:"codegen"`
 	DatabaseMigration                  *DatabaseMigrationConfig `yaml:"databaseMigration"`
+	DevSchema                          *DevSchemaConfig         `yaml:"devSchema"`
 	CustomGraphQLJSONPath              string                   `yaml:"customGraphQLJSONPath"`
 	DynamicScriptCustomGraphQLJSONPath string                   `yaml:"dynamicScriptCustomGraphQLJSONPath"`
 	GlobalSchemaPath                   string                   `yaml:"globalSchemaPath"`
@@ -642,6 +669,7 @@ func (cfg *ConfigurableConfig) Clone() *ConfigurableConfig {
 	return &ConfigurableConfig{
 		Codegen:                            cloneCodegen(cfg.Codegen),
 		DatabaseMigration:                  cloneDatabaseMigration(cfg.DatabaseMigration),
+		DevSchema:                          cloneDevSchema(cfg.DevSchema),
 		CustomGraphQLJSONPath:              cfg.CustomGraphQLJSONPath,
 		DynamicScriptCustomGraphQLJSONPath: cfg.DynamicScriptCustomGraphQLJSONPath,
 		GlobalSchemaPath:                   cfg.GlobalSchemaPath,
@@ -688,6 +716,13 @@ func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
 }
 
 func cloneDatabaseMigration(cfg *DatabaseMigrationConfig) *DatabaseMigrationConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
+func cloneDevSchema(cfg *DevSchemaConfig) *DevSchemaConfig {
 	if cfg == nil {
 		return nil
 	}
@@ -788,5 +823,45 @@ func (cfg *DatabaseMigrationConfig) Clone() *DatabaseMigrationConfig {
 	return &DatabaseMigrationConfig{
 		CustomSQLInclude: cfg.CustomSQLInclude,
 		CustomSQLExclude: cfg.CustomSQLExclude,
+	}
+}
+
+type DevSchemaConfig struct {
+	Enabled       bool                  `yaml:"enabled"`
+	Prefix        string                `yaml:"prefix"`
+	IncludePublic *bool                 `yaml:"includePublic"`
+	SchemaName    string                `yaml:"schemaName"`
+	BranchName    string                `yaml:"branchName"`
+	Suffix        string                `yaml:"suffix"`
+	Prune         *DevSchemaPruneConfig `yaml:"prune"`
+}
+
+func (cfg *DevSchemaConfig) Clone() *DevSchemaConfig {
+	if cfg == nil {
+		return nil
+	}
+	return &DevSchemaConfig{
+		Enabled:       cfg.Enabled,
+		Prefix:        cfg.Prefix,
+		IncludePublic: cfg.IncludePublic,
+		SchemaName:    cfg.SchemaName,
+		BranchName:    cfg.BranchName,
+		Suffix:        cfg.Suffix,
+		Prune:         cloneDevSchemaPrune(cfg.Prune),
+	}
+}
+
+type DevSchemaPruneConfig struct {
+	Enabled bool `yaml:"enabled"`
+	Days    int  `yaml:"days"`
+}
+
+func cloneDevSchemaPrune(cfg *DevSchemaPruneConfig) *DevSchemaPruneConfig {
+	if cfg == nil {
+		return nil
+	}
+	return &DevSchemaPruneConfig{
+		Enabled: cfg.Enabled,
+		Days:    cfg.Days,
 	}
 }
