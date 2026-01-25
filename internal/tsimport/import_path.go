@@ -27,6 +27,9 @@ type ImportPath struct {
 	// automatically imported and we don't need to use it
 	// imported as follows: `import "{path}";`
 	SideEffect bool `json:"sideEffect"`
+
+	// indicates this should be imported as a type-only import
+	TypeOnly bool `json:"typeOnly,omitempty"`
 }
 
 // NewGQLImportPath creates a new import from "graphql"
@@ -142,6 +145,7 @@ func ImportPathEqual(ip1, ip2 *ImportPath) bool {
 		ip1.DefaultImport == ip2.DefaultImport &&
 		ip1.Function == ip2.Function &&
 		ip1.Class == ip2.Class &&
+		ip1.TypeOnly == ip2.TypeOnly &&
 		ip1.TransformedForGraphQLMutation == ip2.TransformedForGraphQLMutation &&
 		ip1.TransformedForExternalEnt == ip2.TransformedForExternalEnt
 }

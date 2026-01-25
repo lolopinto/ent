@@ -89,7 +89,9 @@ func (imps *Imports) ReserveAll(path, as string) (string, error) {
 // ReserveImportPath takes an instance of importPath and reserves importing from it
 // should be default eventually
 func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, error) {
-	return imps.reserve(imps.getImportInfoInput(imp, external))
+	input := imps.getImportInfoInput(imp, external)
+	input.typeOnly = imp.TypeOnly
+	return imps.reserve(input)
 }
 
 // ReserveTypeImportPath takes an instance of importPath and reserves importing it as type-only.
@@ -131,6 +133,7 @@ func (imps *Imports) getImportInfoInput(imp *ImportPath, external bool) *importI
 // ConditionallyReserveImportPath skips importing when the import path is same as file path
 func (imps *Imports) ConditionallyReserveImportPath(imp *ImportPath, external bool) (string, error) {
 	input := imps.getImportInfoInput(imp, external)
+	input.typeOnly = imp.TypeOnly
 
 	relPath := imps.filePath
 	if path.IsAbs(relPath) {
@@ -174,6 +177,46 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 		return "", fmt.Errorf("cannot have a type-only side-effect import for %s", input.path)
 	}
 
+	importMap := imps.importMap
+	pathMap := imps.pathMap
+	importsList := &imps.imports
+	otherImportMap := imps.typeImportMap
+	if input.typeOnly {
+		importMap = imps.typeImportMap
+		pathMap = imps.typePathMap
+		importsList = &imps.typeImports
+		otherImportMap = imps.importMap
+	}
+
+	filteredImports := make([]string, 0, len(input.imports))
+	for _, v := range input.imports {
+		ident := v
+		if input.alias != "" {
+			ident = input.alias
+		}
+		if other := otherImportMap[ident]; other != nil && other.path != input.path {
+			return "", fmt.Errorf("%s is already imported as a different import type from path %s @ file %s", ident, other.path, getErrorPath(imps.cfg, imps.filePath))
+		}
+		if otherImportMap[ident] != nil && otherImportMap[ident].path == input.path && input.typeOnly {
+			continue
+		}
+		filteredImports = append(filteredImports, v)
+	}
+	input.imports = filteredImports
+	if input.defaultImport != "" {
+		ident := input.defaultImport
+		if other := otherImportMap[ident]; other != nil && other.path != input.path {
+			return "", fmt.Errorf("%s is already imported as a different import type from path %s @ file %s", ident, other.path, getErrorPath(imps.cfg, imps.filePath))
+		}
+		if otherImportMap[ident] != nil && otherImportMap[ident].path == input.path && input.typeOnly {
+			input.defaultImport = ""
+		}
+	}
+
+	if len(input.imports) == 0 && input.defaultImport == "" && !input.importAll && !input.sideEffect {
+		return "", nil
+	}
+
 	var imports []importedItem
 	for _, v := range input.imports {
 		imports = append(imports, importedItem{
@@ -185,17 +228,6 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 		imports = append(imports, importedItem{
 			name: input.defaultImport,
 		})
-	}
-
-	importMap := imps.importMap
-	pathMap := imps.pathMap
-	importsList := &imps.imports
-	otherImportMap := imps.typeImportMap
-	if input.typeOnly {
-		importMap = imps.typeImportMap
-		pathMap = imps.typePathMap
-		importsList = &imps.typeImports
-		otherImportMap = imps.importMap
 	}
 
 	imp := pathMap[input.path]
@@ -234,8 +266,8 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 		if existingImport != nil && existingImport != imp {
 			return "", fmt.Errorf("%s is already imported from path %s. duplicate path: %s @ file %s", ident, existingImport.path, imp.path, getErrorPath(imps.cfg, imps.filePath))
 		}
-		if otherImportMap[ident] != nil {
-			return "", fmt.Errorf("%s is already imported as a different import type from path %s @ file %s", ident, otherImportMap[ident].path, getErrorPath(imps.cfg, imps.filePath))
+		if other := otherImportMap[ident]; other != nil && other.path != imp.path {
+			return "", fmt.Errorf("%s is already imported as a different import type from path %s @ file %s", ident, other.path, getErrorPath(imps.cfg, imps.filePath))
 		}
 		importMap[ident] = imp
 	}
@@ -352,6 +384,10 @@ func (imps *Imports) UseMaybe(export string) (string, error) {
 // UseType makes use of a type-only import and ensures it's imported
 func (imps *Imports) UseType(impItem string) (string, error) {
 	if imps.typeImportMap[impItem] == nil {
+		if imps.importMap[impItem] != nil {
+			imps.usedImports[impItem] = true
+			return impItem, nil
+		}
 		if imps.cfg.DebugMode() {
 			var imports []string
 			for k := range imps.typeImportMap {
@@ -370,6 +406,9 @@ func (imps *Imports) UseType(impItem string) (string, error) {
 // UseTypeMaybe makes use of a type-only import if it exists.
 func (imps *Imports) UseTypeMaybe(export string) (string, error) {
 	if imps.typeImportMap[export] == nil {
+		if imps.importMap[export] != nil {
+			imps.usedImports[export] = true
+		}
 		return export, nil
 	}
 

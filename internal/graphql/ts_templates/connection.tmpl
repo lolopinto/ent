@@ -1,5 +1,6 @@
-{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
-{{reserveImport .Package.PackagePath "ID" "RequestContext" }}
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLBoolean" }}
+{{reserveTypeImport "graphql" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" }}
+{{reserveTypeImport .Package.PackagePath "ID" "RequestContext" }}
 {{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLEdgeType" "GraphQLConnectionType" "GraphQLEdge" "GraphQLNodeInterface"}}
 {{$conn := .Connection}}
 {{$baseObj := .BaseObj}}
@@ -9,10 +10,10 @@
 {{ end -}}
 
 {{$viewerInfo := .Config.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{ reserveTypeImportPath $viewerInfo.GetImportPath false -}}
 {{$viewerType := $viewerInfo.GetImport -}}
 
-var connType: {{useImport "GraphQLConnectionType"}}<{{useImport "GraphQLObjectType"}}, {{useImport $conn.Edge.TsEdgeQueryEdgeName}},{{useImport $viewerType}}>;
+var connType: {{useImport "GraphQLConnectionType"}}<{{useImport "GraphQLObjectType"}}, {{useImport $conn.Edge.TsEdgeQueryEdgeName}},{{useTypeImport $viewerType}}>;
 
 export const {{ $conn.ConnType}} = () => {
 {{/* memoizee or something that actually confirms this is run only once is better here but memoizee doesn't work because GraphQLSchema */ -}}
@@ -33,9 +34,9 @@ export const {{ $conn.ConnType}} = () => {
         {{end -}}
       {{ end -}}
       {
-        fields: (): {{useImport "GraphQLFieldConfigMap"}}<
+        fields: (): {{useTypeImport "GraphQLFieldConfigMap"}}<
           {{useImport "GraphQLEdge"}}<{{useImport $conn.Edge.TsEdgeQueryEdgeName}}>,
-          {{useImport "RequestContext"}}<{{useImport $viewerType}}>
+          {{useTypeImport "RequestContext"}}<{{useTypeImport $viewerType}}>
         > => ({
           {{ template "field.tmpl" (dict "Base" $baseObj "Node" $obj "NodeInstance" "edge" "ViewerType" $viewerType) -}}
         }),
@@ -45,4 +46,3 @@ export const {{ $conn.ConnType}} = () => {
   } 
   return connType;
 };
-
