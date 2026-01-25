@@ -160,19 +160,32 @@ class Runner(object):
         branch = os.getenv("ENT_DEV_SCHEMA_BRANCH") or os.getenv("ENT_DEV_BRANCH") or os.getenv("GIT_BRANCH") or os.getenv("BRANCH_NAME")
 
         def _apply_registry(conn):
-            conn.execute(sa.text("""
-CREATE TABLE IF NOT EXISTS public.ent_dev_schema_registry (
-  schema_name TEXT PRIMARY KEY,
-  branch_name TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_used_at TIMESTAMPTZ NOT NULL DEFAULT now()
-)"""))
-            conn.execute(sa.text("""
-INSERT INTO public.ent_dev_schema_registry (schema_name, branch_name, created_at, last_used_at)
-VALUES (:schema_name, :branch_name, now(), now())
-ON CONFLICT (schema_name)
-DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
-"""), {"schema_name": schema_name, "branch_name": branch})
+            metadata = sa.MetaData()
+            registry = sa.Table(
+                "ent_dev_schema_registry",
+                metadata,
+                sa.Column("schema_name", sa.Text(), primary_key=True),
+                sa.Column("branch_name", sa.Text()),
+                sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+                sa.Column("last_used_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+                schema="public",
+            )
+            registry.create(conn, checkfirst=True)
+
+            stmt = postgresql.insert(registry).values(
+                schema_name=schema_name,
+                branch_name=branch,
+                created_at=sa.func.now(),
+                last_used_at=sa.func.now(),
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[registry.c.schema_name],
+                set_={
+                    "last_used_at": sa.func.now(),
+                    "branch_name": stmt.excluded.branch_name,
+                },
+            )
+            conn.execute(stmt)
 
         # Avoid holding locks on the caller's connection/transaction; use autocommit if possible.
         try:

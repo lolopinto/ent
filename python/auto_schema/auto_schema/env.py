@@ -135,11 +135,10 @@ def run_migrations_online():
         # configuring Alembic; otherwise Alembic will treat the transaction
         # as externally managed and won't commit migrations.
         try:
-            in_txn = connection.in_transaction()
+            if connection.in_transaction():
+                connection.commit()
         except Exception:
-            in_txn = False
-        if in_txn:
-            connection.commit()
+            pass
         config_kwargs = {
             "connection": connection,
             "target_metadata": target_metadata,
