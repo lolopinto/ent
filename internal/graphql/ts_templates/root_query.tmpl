@@ -1,5 +1,6 @@
-{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
-{{reserveImport .Package.PackagePath "ID" "RequestContext" }}
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLBoolean" }}
+{{reserveTypeImport "graphql" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" }}
+{{reserveTypeImport .Package.PackagePath "ID" "RequestContext" }}
 
 {{ template "interfaces.tmpl" (dict "Base" .RootQuery "Interfaces" .RootQuery.Interfaces) -}}
 
@@ -17,4 +18,3 @@
 {{ end -}}
 
 {{ template "field_config.tmpl" (dict "Base" .RootQuery "FieldConfig" .RootQuery.FieldConfig "Config" .Config) -}}
-

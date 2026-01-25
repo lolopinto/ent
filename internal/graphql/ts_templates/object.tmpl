@@ -1,32 +1,46 @@
-{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" "GraphQLUnionType" "GraphQLInterfaceType" }}
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLBoolean" "GraphQLUnionType" "GraphQLInterfaceType" }}
+{{reserveTypeImport "graphql" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" }}
 {{ $cfg := .Config -}}
 {{$baseObj := .Data -}}
 
-{{reserveImport $baseObj.Package.PackagePath "ID" "RequestContext" }}
+{{reserveTypeImport $baseObj.Package.PackagePath "ID" "RequestContext" }}
 {{reserveImport $baseObj.Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "nodeIDEncoder" "resolveID" "mustDecodeIDFromGQLID" "encodeGQLID" }}
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{ reserveTypeImportPath $viewerInfo.GetImportPath false -}}
 {{$viewerType := $viewerInfo.GetImport -}}
 
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
 {{ range $baseObj.Imports -}} 
   {{if .ImportPath -}}
-    {{reserveImportPath . true}}
+    {{ if .TypeOnly -}}
+      {{reserveTypeImportPath . true}}
+    {{ else -}}
+      {{reserveImportPath . true}}
+    {{ end -}}
   {{end -}}
 {{ end -}}
 
 {{ range $baseObj.DefaultImports -}} 
   {{if .ImportPath -}}
-    {{reserveDefaultImport .ImportPath .Import}}
+    {{ if .TypeOnly -}}
+      {{reserveTypeImportPath . true}}
+    {{ else -}}
+      {{reserveDefaultImport .ImportPath .Import}}
+    {{ end -}}
   {{end -}}
 {{ end -}}
 
 {{ template "interfaces.tmpl" (dict "Base" $baseObj "Interfaces" $baseObj.TSInterfaces) -}}
 
 {{ range $baseObj.UnconditionalImports }}
-  {{reserveImportPath . true}}
-  {{ $ignore := useImport .Import }}
+  {{ if .TypeOnly -}}
+    {{reserveTypeImportPath . true}}
+    {{ $ignore := useTypeImport .Import }}
+  {{ else -}}
+    {{reserveImportPath . true}}
+    {{ $ignore := useImport .Import }}
+  {{ end -}}
 {{ end -}}
 
 {{ range $baseObj.Classes -}}
@@ -62,14 +76,14 @@
     {{ end -}}
       name: "{{$gqlNode.Node}}",
       {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
-        fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
+        fields: (): {{useTypeImport "GraphQLInputFieldConfigMap"}} => ({
       {{ else -}}
         {{ $tsType := $gqlNode.TSType -}}
         {{ if $tsType -}}
           {{ if $baseObj.ForeignImport $tsType -}}
             {{$tsType = useImport $tsType -}}
           {{ end -}}
-          fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}<{{useImport $viewerType}}>> => ({
+          fields: (): {{useTypeImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useTypeImport "RequestContext"}}<{{useTypeImport $viewerType}}>> => ({
         {{ else -}}
         {{/* for interfaces, we just ignore the type */ -}}
           fields: () => ({
