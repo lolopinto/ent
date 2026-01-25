@@ -1,17 +1,18 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent" "Viewer" "Data"}}
+{{ reserveTypeImport .Package.PackagePath "Ent" "Data"}}
 
 {{$p := .Pattern}}
 {{$cfg := .Config}}
 {{$schema := .Schema}}
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
+{{ reserveTypeImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useTypeImport $viewerInfo.GetImport -}}
 
-{{ reserveImport $p.GetImportPathForMixinBase  $p.GetMixinBaseName $p.GetPatternMethod $p.GetMixinInterfaceBaseName -}}
+{{ reserveImport $p.GetImportPathForMixinBase  $p.GetMixinBaseName $p.GetPatternMethod -}}
+{{ reserveTypeImport $p.GetImportPathForMixinBase $p.GetMixinInterfaceBaseName -}}
 
-export interface {{$p.GetMixinInterfaceName}} <TViewer extends {{useImport $viewerType}} = {{useImport $viewerType}}>
-  extends {{useImport $p.GetMixinInterfaceBaseName }}<TViewer> {
+export interface {{$p.GetMixinInterfaceName}} <TViewer extends {{useTypeImport $viewerType}} = {{useTypeImport $viewerType}}>
+  extends {{useTypeImport $p.GetMixinInterfaceBaseName }}<TViewer> {
 
   {{$p.GetPatternMethod}}(): boolean;
 
@@ -27,7 +28,7 @@ export function {{$p.GetPatternMethod}}(ent: unknown): ent is {{$p.GetMixinInter
 }
 
 {{ range $p.GetImportsForMixin $schema $cfg -}} 
-  {{ reserveImportPath . false -}}
+  {{ reserveTypeImportPath . false -}}
 {{ end}}
 
 

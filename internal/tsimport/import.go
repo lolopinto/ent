@@ -153,6 +153,30 @@ func (imps *Imports) ConditionallyReserveImportPath(imp *ImportPath, external bo
 	return imps.reserve(input)
 }
 
+// ConditionallyReserveTypeImportPath skips importing when the import path is same as file path
+// and reserves the import as type-only.
+func (imps *Imports) ConditionallyReserveTypeImportPath(imp *ImportPath, external bool) (string, error) {
+	input := imps.getImportInfoInput(imp, external)
+	input.typeOnly = true
+
+	relPath := imps.filePath
+	if path.IsAbs(relPath) {
+		var err error
+		relPath, err = filepath.Rel(imps.cfg.GetAbsPathToRoot(), imps.filePath)
+		if err != nil {
+			return "", err
+		}
+	}
+	relPath = strings.TrimSuffix(relPath, ".ts")
+
+	// if importing file from same file, ignore
+	if relPath == input.path {
+		return "", nil
+	}
+
+	return imps.reserve(input)
+}
+
 type importInfoInput struct {
 	path          string
 	defaultImport string
@@ -324,6 +348,7 @@ func (imps *Imports) FuncMap() template.FuncMap {
 		"reserveImportPath":              imps.ReserveImportPath,
 		"reserveTypeImportPath":          imps.ReserveTypeImportPath,
 		"conditionallyReserveImportPath": imps.ConditionallyReserveImportPath,
+		"conditionallyReserveTypeImportPath": imps.ConditionallyReserveTypeImportPath,
 		"useImport":                      imps.Use,
 		"useImportMaybe":                 imps.UseMaybe,
 		"useTypeImport":                  imps.UseType,

@@ -567,6 +567,7 @@ func (f *Field) GetImportsForTypes(cfg codegenapi.Config, g CustomInterfaceGette
 			t2 := t.(enttype.ImportDepsType)
 			imp := t2.GetImportDepsType()
 			if imp != nil {
+				imp.TypeOnly = true
 				// TODO ignoring relative. do we need it?
 				ret = append(ret, imp)
 			}
