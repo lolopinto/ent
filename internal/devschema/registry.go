@@ -8,7 +8,29 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const registryTable = "public.ent_dev_schema_registry"
+const (
+	registryTable = "public.ent_dev_schema_registry"
+	registryDDL   = `
+CREATE TABLE IF NOT EXISTS public.ent_dev_schema_registry (
+  schema_name TEXT PRIMARY KEY,
+  branch_name TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_used_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)`
+	registryUpsert = `
+INSERT INTO public.ent_dev_schema_registry (schema_name, branch_name, created_at, last_used_at)
+VALUES ($1, $2, now(), now())
+ON CONFLICT (schema_name)
+DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
+`
+	registrySelectPrune = `
+SELECT schema_name
+FROM public.ent_dev_schema_registry
+WHERE schema_name LIKE $1
+  AND last_used_at < (now() - $2::interval)
+`
+	registryDelete = "DELETE FROM public.ent_dev_schema_registry WHERE schema_name = $1"
+)
 
 type PruneOptions struct {
 	Prefix string
@@ -17,13 +39,7 @@ type PruneOptions struct {
 }
 
 func EnsureRegistry(db *sqlx.DB) error {
-	_, err := db.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %s (
-  schema_name TEXT PRIMARY KEY,
-  branch_name TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_used_at TIMESTAMPTZ NOT NULL DEFAULT now()
-)`, registryTable))
+	_, err := db.Exec(registryDDL)
 	return err
 }
 
@@ -43,12 +59,7 @@ func TouchSchema(db *sqlx.DB, schemaName, branchName string) error {
 	if err := EnsureRegistry(db); err != nil {
 		return err
 	}
-	_, err := db.Exec(fmt.Sprintf(`
-INSERT INTO %s (schema_name, branch_name, created_at, last_used_at)
-VALUES ($1, $2, now(), now())
-ON CONFLICT (schema_name)
-DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
-`, registryTable), schemaName, branchName)
+	_, err := db.Exec(registryUpsert, schemaName, branchName)
 	return err
 }
 
@@ -65,14 +76,7 @@ func PruneSchemas(db *sqlx.DB, opts PruneOptions) ([]string, error) {
 		days = 30
 	}
 
-	query := fmt.Sprintf(`
-SELECT schema_name
-FROM %s
-WHERE schema_name LIKE $1
-  AND last_used_at < (now() - $2::interval)
-`, registryTable)
-
-	rows, err := db.Queryx(query, prefix+"%", fmt.Sprintf("%d days", days))
+	rows, err := db.Queryx(registrySelectPrune, prefix+"%", fmt.Sprintf("%d days", days))
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +100,9 @@ WHERE schema_name LIKE $1
 			continue
 		}
 		if !schemaExists(db, name) {
-			_, _ = db.Exec(fmt.Sprintf("DELETE FROM %s WHERE schema_name = $1", registryTable), name)
+			if _, err := db.Exec(registryDelete, name); err != nil {
+				return dropped, err
+			}
 			continue
 		}
 		if opts.DryRun {
@@ -106,7 +112,9 @@ WHERE schema_name LIKE $1
 		if err := dropSchema(db, name); err != nil {
 			return dropped, err
 		}
-		_, _ = db.Exec(fmt.Sprintf("DELETE FROM %s WHERE schema_name = $1", registryTable), name)
+		if _, err := db.Exec(registryDelete, name); err != nil {
+			return dropped, err
+		}
 		dropped = append(dropped, name)
 	}
 
@@ -133,8 +141,11 @@ func quoteIdent(name string) string {
 }
 
 func ParsePruneEnabled() bool {
-	if v := parseEnvBool("ENT_DEV_SCHEMA_PRUNE_ENABLED"); v != nil {
-		return *v
+	if v, ok := parseEnvBool("ENT_DEV_SCHEMA_PRUNE_ENABLED"); ok {
+		return v
+	}
+	if defaultConfig != nil && defaultConfig.PruneEnabled != nil {
+		return *defaultConfig.PruneEnabled
 	}
 	return false
 }
@@ -142,6 +153,9 @@ func ParsePruneEnabled() bool {
 func ParsePruneDays() int {
 	val := firstEnv("ENT_DEV_SCHEMA_PRUNE_DAYS")
 	if val == "" {
+		if defaultConfig != nil && defaultConfig.PruneDays > 0 {
+			return defaultConfig.PruneDays
+		}
 		return 30
 	}
 	if n, err := strconv.Atoi(val); err == nil {

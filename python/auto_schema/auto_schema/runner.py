@@ -51,11 +51,6 @@ class Runner(object):
         config.metadata = self.metadata
         config.engine = self.engine
         config.connection = connection
-        self.schema_name, self.include_public = Runner._resolve_schema_config(self.args)
-        if self.schema_name:
-            Runner.setup_schema(self.connection, self.schema_name, self.include_public)
-        config.schema_name = self.schema_name
-        config.include_public = self.include_public
 
         sql = self.args.get('sql', None)
         if sql is not None and sql.lower() != 'true':
@@ -70,122 +65,13 @@ class Runner(object):
     @classmethod   
     def get_opts(cls):
         # note that any change here also needs a comparable change in env.py
-        opts = {
+        return {
                 "compare_type": Runner.compare_type,
                 "include_object": Runner.include_object,
                 "compare_server_default": Runner.compare_server_default,
                 "transaction_per_migration": True,
                 "render_item": Runner.render_item,
             }
-        if config.schema_name:
-            opts["version_table_schema"] = config.schema_name
-        return opts
-
-    @staticmethod
-    def _parse_bool(val):
-        if val is None:
-            return None
-        if isinstance(val, bool):
-            return val
-        val = str(val).strip().lower()
-        if val in ('1', 'true', 't', 'yes', 'y'):
-            return True
-        if val in ('0', 'false', 'f', 'no', 'n'):
-            return False
-        return None
-
-    @staticmethod
-    def _quote_ident(name: str) -> str:
-        return '"' + name.replace('"', '""') + '"'
-
-    @classmethod
-    def _resolve_schema_config(cls, args):
-        if os.getenv("NODE_ENV", "").strip().lower() == "production":
-            return (None, None)
-        schema = None
-        include_public = None
-        if isinstance(args, Mapping):
-            schema = args.get('db_schema')
-            include_public = args.get('db_schema_include_public')
-        else:
-            schema = getattr(args, 'db_schema', None)
-            include_public = getattr(args, 'db_schema_include_public', None)
-
-        if not schema:
-            schema = os.getenv('ENT_DEV_SCHEMA_NAME') or None
-
-        if include_public is None:
-            include_public = os.getenv('ENT_DEV_SCHEMA_INCLUDE_PUBLIC')
-        include_public = cls._parse_bool(include_public)
-        if schema and include_public is None:
-            include_public = True
-        return (schema, include_public)
-
-    @classmethod
-    def setup_schema(cls, connection, schema_name, include_public=True):
-        if not schema_name:
-            return
-
-        dialect = connection.dialect.name
-        if dialect == 'sqlite':
-            raise Exception("dev branch schemas are only supported for postgres")
-        if dialect != 'postgresql':
-            raise Exception(f"dev branch schemas are only supported for postgres. got {dialect}")
-
-        schema_ident = cls._quote_ident(schema_name)
-        # Avoid schema creation inside any existing transaction by using
-        # a separate autocommit connection when possible.
-        try:
-            engine = connection.engine
-        except Exception:
-            engine = None
-
-        if engine is not None:
-            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as ddl_conn:
-                ddl_conn.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {schema_ident}"))
-        else:
-            connection.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {schema_ident}"))
-
-        if include_public is None:
-            include_public = True
-        if include_public:
-            search_path = f"{schema_ident}, public"
-        else:
-            search_path = schema_ident
-        connection.execute(sa.text(f"SET search_path TO {search_path}"))
-        cls._touch_registry(connection, schema_name)
-
-    @classmethod
-    def _touch_registry(cls, connection, schema_name):
-        if not schema_name:
-            return
-        branch = os.getenv("ENT_DEV_SCHEMA_BRANCH")
-
-        def _apply_registry(conn):
-            conn.execute(sa.text("""
-CREATE TABLE IF NOT EXISTS public.ent_dev_schema_registry (
-  schema_name TEXT PRIMARY KEY,
-  branch_name TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_used_at TIMESTAMPTZ NOT NULL DEFAULT now()
-)"""))
-            conn.execute(sa.text("""
-INSERT INTO public.ent_dev_schema_registry (schema_name, branch_name, created_at, last_used_at)
-VALUES (:schema_name, :branch_name, now(), now())
-ON CONFLICT (schema_name)
-DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
-"""), {"schema_name": schema_name, "branch_name": branch})
-
-        # Avoid holding locks on the caller's connection/transaction; use autocommit if possible.
-        try:
-            engine = connection.engine
-        except Exception:
-            engine = None
-        if engine is not None:
-            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as reg_conn:
-                _apply_registry(reg_conn)
-        else:
-            _apply_registry(connection)
 
     @classmethod
     def from_command_line(cls, metadata, args: Namespace):
@@ -201,10 +87,6 @@ DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
         else:
             engine = sa.create_engine(args.engine)
             connection = engine.connect()
-
-        schema, include_public = cls._resolve_schema_config(args)
-        if schema:
-            cls.setup_schema(connection, schema, include_public)
 
         mc = MigrationContext.configure(
             connection=connection,
@@ -355,6 +237,7 @@ DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
 
         # migration_script = produce_migrations(self.mc, self.metadata)
         # print(render_python_code(migration_script.upgrade_ops))
+
         try:
             self.revision(diff)
         except CommandError as err:
@@ -646,8 +529,6 @@ DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
 
         engine = sa.create_engine(url)
         connection = engine.connect()
-        if self.schema_name:
-            Runner.setup_schema(connection, self.schema_name, self.include_public)
 
         metadata = sa.MetaData()
         metadata.reflect(bind=connection)

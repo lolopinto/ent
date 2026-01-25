@@ -40,32 +40,13 @@ class Postgres:
         self._conns = []
         self._engines = []
 
-    def _debug_enabled(self) -> bool:
-        return os.getenv("AUTO_SCHEMA_DEBUG_DB") == "1"
-
-    def _debug(self, msg: str) -> None:
-        if self._debug_enabled():
-            print(msg)
-
-    def _connect_args(self):
-        # avoid hanging on unreachable postgres in CI/local
-        timeout = os.getenv("AUTO_SCHEMA_CONNECT_TIMEOUT", "3")
-        try:
-            timeout_val = int(timeout)
-        except ValueError:
-            timeout_val = 3
-        return {"connect_timeout": timeout_val}
-
     def _get_url(self, _schema_path):
-        url = os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
-        self._debug(f"[auto_schema] postgres url={url}")
-        return url
+        return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
 
     def create_connection(self, schema_path) -> ConnInfo:
         if self._globalConnection is None:
             engine = sa.create_engine(self._get_url(schema_path),
-                                      isolation_level='AUTOCOMMIT',
-                                      connect_args=self._connect_args())
+                                      isolation_level='AUTOCOMMIT')
             self._globalEngine = engine
             self._globalConnection = engine.connect()
             self._globalConnection.execute(
@@ -76,9 +57,8 @@ class Postgres:
     def _conn_info_for_engine(self, schema_path: str, db: str) -> ConnInfo:
         url = ("%s/%s" %
                (self._get_url(schema_path), db))
-        self._debug(f"[auto_schema] postgres db={db} url={url}")
 
-        engine = sa.create_engine(url, connect_args=self._connect_args())
+        engine = sa.create_engine(url)
         self._engines.append(engine)
 
         conn = engine.connect()
@@ -160,7 +140,7 @@ def new_test_runner(request):
 
     request.addfinalizer(dialect.get_finalizer())
 
-    def _make_new_test_runner(metadata, prev_runner=None, new_database=False, args_override=None) -> runner.Runner:
+    def _make_new_test_runner(metadata, prev_runner=None, new_database=False) -> runner.Runner:
         if new_database:
             assert prev_runner is None
 
@@ -192,8 +172,6 @@ def new_test_runner(request):
         args = {
             'engine': info.url,
         }
-        if args_override:
-            args.update(args_override)
         r = runner.Runner(metadata, info.engine, info.connection, schema_path, args=args)
 
         def delete_path():

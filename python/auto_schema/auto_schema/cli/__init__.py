@@ -27,14 +27,6 @@ required.add_argument(
     '-s', '--schema', help='path to the folder the generated schema file is in', required=True)
 required.add_argument(
     '-e', '--engine', help='URL to connect to the database', required=True)
-parser.add_argument(
-    '--db_schema',
-    help='postgres schema to use for dev branch schemas (optional)',
-)
-parser.add_argument(
-    '--db_schema_include_public',
-    help='if set, include public in search_path (true/false). defaults to true when db_schema is set',
-)
 parser.add_argument('-f', '--fix_edges', help='fix edges in schema into db')
 parser.add_argument('-u', '--upgrade', help='upgrade')
 # this is getting bad and needs to be changed soon to something that's more extensible and makes more sense

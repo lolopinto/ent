@@ -35,7 +35,21 @@ type Result struct {
 	Prefix        string
 }
 
+var defaultConfig *Config
+
+func SetDefaultConfig(cfg *Config) {
+	if cfg == nil {
+		defaultConfig = nil
+		return
+	}
+	clone := *cfg
+	defaultConfig = &clone
+}
+
 func Resolve(cfg *Config, opts Options) (*Result, error) {
+	if cfg == nil {
+		cfg = defaultConfig
+	}
 	nodeEnv := opts.NodeEnv
 	if nodeEnv == "" {
 		nodeEnv = os.Getenv("NODE_ENV")
@@ -44,14 +58,13 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 		return &Result{Enabled: false}, nil
 	}
 
-	envEnabled := parseEnvBool(
+	envEnabled, hasEnvEnabled := parseEnvBool(
 		"ENT_DEV_SCHEMA_ENABLED",
-		"ENT_DEV_BRANCH_SCHEMAS",
 	)
 
 	enabled := false
-	if envEnabled != nil {
-		enabled = *envEnabled
+	if hasEnvEnabled {
+		enabled = envEnabled
 	} else if cfg != nil && cfg.Enabled {
 		enabled = true
 	}
@@ -74,8 +87,8 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 	if cfg != nil && cfg.IncludePublic != nil {
 		includePublic = *cfg.IncludePublic
 	}
-	if v := parseEnvBool("ENT_DEV_SCHEMA_INCLUDE_PUBLIC"); v != nil {
-		includePublic = *v
+	if v, ok := parseEnvBool("ENT_DEV_SCHEMA_INCLUDE_PUBLIC"); ok {
+		includePublic = v
 	}
 
 	branchName := ""
@@ -121,35 +134,8 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 }
 
 func ApplyEnvFromConfig(cfg *Config, opts Options) (*Result, error) {
-	res, err := Resolve(cfg, opts)
-	if err != nil {
-		return res, err
-	}
-	if !res.Enabled || res.SchemaName == "" {
-		return res, nil
-	}
-
-	if os.Getenv("ENT_DEV_SCHEMA_NAME") == "" {
-		_ = os.Setenv("ENT_DEV_SCHEMA_NAME", res.SchemaName)
-	}
-	if os.Getenv("ENT_DEV_SCHEMA_INCLUDE_PUBLIC") == "" {
-		_ = os.Setenv("ENT_DEV_SCHEMA_INCLUDE_PUBLIC", boolToString(res.IncludePublic))
-	}
-	if res.BranchName != "" && os.Getenv("ENT_DEV_SCHEMA_BRANCH") == "" {
-		_ = os.Setenv("ENT_DEV_SCHEMA_BRANCH", res.BranchName)
-	}
-
-	if cfg != nil && cfg.PruneEnabled != nil {
-		if os.Getenv("ENT_DEV_SCHEMA_PRUNE_ENABLED") == "" {
-			_ = os.Setenv("ENT_DEV_SCHEMA_PRUNE_ENABLED", boolToString(*cfg.PruneEnabled))
-		}
-	}
-	if cfg != nil && cfg.PruneDays > 0 {
-		if os.Getenv("ENT_DEV_SCHEMA_PRUNE_DAYS") == "" {
-			_ = os.Setenv("ENT_DEV_SCHEMA_PRUNE_DAYS", intToString(cfg.PruneDays))
-		}
-	}
-	return res, nil
+	SetDefaultConfig(cfg)
+	return Resolve(cfg, opts)
 }
 
 func ResolveGitBranch(repoRoot string) string {

@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -18,42 +17,29 @@ func firstEnv(keys ...string) string {
 	return ""
 }
 
-func parseEnvBool(keys ...string) *bool {
+func parseEnvBool(keys ...string) (bool, bool) {
 	for _, key := range keys {
 		val := os.Getenv(key)
 		if val == "" {
 			continue
 		}
-		if b := parseBool(val); b != nil {
-			return b
+		if b, ok := parseBool(val); ok {
+			return b, true
 		}
 	}
-	return nil
+	return false, false
 }
 
-func parseBool(val string) *bool {
+func parseBool(val string) (bool, bool) {
 	v := strings.TrimSpace(strings.ToLower(val))
 	switch v {
 	case "1", "true", "t", "yes", "y":
-		b := true
-		return &b
+		return true, true
 	case "0", "false", "f", "no", "n":
-		b := false
-		return &b
+		return false, true
 	default:
-		return nil
+		return false, false
 	}
-}
-
-func boolToString(val bool) string {
-	if val {
-		return "true"
-	}
-	return "false"
-}
-
-func intToString(val int) string {
-	return strconv.Itoa(val)
 }
 
 func slugify(input string) string {

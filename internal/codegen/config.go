@@ -96,7 +96,7 @@ func NewConfig(configPath, modulePath string) (*Config, error) {
 			pruneEnabled = &c.DevSchema.Prune.Enabled
 			pruneDays = c.DevSchema.Prune.Days
 		}
-		devschema.ApplyEnvFromConfig(&devschema.Config{
+		if _, err := devschema.ApplyEnvFromConfig(&devschema.Config{
 			Enabled:       c.DevSchema.Enabled,
 			Prefix:        c.DevSchema.Prefix,
 			IncludePublic: c.DevSchema.IncludePublic,
@@ -105,7 +105,9 @@ func NewConfig(configPath, modulePath string) (*Config, error) {
 			Suffix:        c.DevSchema.Suffix,
 			PruneEnabled:  pruneEnabled,
 			PruneDays:     pruneDays,
-		}, devschema.Options{RepoRoot: absPathToRoot})
+		}, devschema.Options{RepoRoot: absPathToRoot}); err != nil {
+			return nil, err
+		}
 	}
 
 	return &Config{

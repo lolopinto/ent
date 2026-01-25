@@ -55,7 +55,10 @@ var pruneSchemasCmd = &cobra.Command{
 				PruneDays:     pruneDays,
 			}
 		}
-		res, _ := devschema.Resolve(dsCfg, devschema.Options{RepoRoot: cfg.GetAbsPathToRoot()})
+		res, err := devschema.Resolve(dsCfg, devschema.Options{RepoRoot: cfg.GetAbsPathToRoot()})
+		if err != nil {
+			return err
+		}
 
 		prefix := pruneSchemasInfo.prefix
 		if prefix == "" && res != nil {

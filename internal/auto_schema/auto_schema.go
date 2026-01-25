@@ -34,13 +34,6 @@ func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...str
 		args = append(args, "--debug")
 	}
 
-	if schemaName := util.GetEnv("ENT_DEV_SCHEMA_NAME", ""); schemaName != "" {
-		args = append(args, fmt.Sprintf("--db_schema=%s", schemaName))
-		if includePublic := util.GetEnv("ENT_DEV_SCHEMA_INCLUDE_PUBLIC", ""); includePublic != "" {
-			args = append(args, fmt.Sprintf("--db_schema_include_public=%s", includePublic))
-		}
-	}
-
 	if local {
 		executable = "pipenv"
 		args = append(

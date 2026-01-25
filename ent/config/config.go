@@ -51,7 +51,9 @@ func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
 func (db *DBConfig) Init() (*sqlx.DB, error) {
 	var driverName, connString string
 	if db.Dialect == "sqlite" {
-		if res, _ := devschema.Resolve(nil, devschema.Options{}); res != nil && res.Enabled {
+		if res, err := devschema.Resolve(nil, devschema.Options{}); err != nil {
+			return nil, err
+		} else if res != nil && res.Enabled {
 			return nil, fmt.Errorf("dev branch schemas are only supported for postgres")
 		}
 		driverName = "sqlite3"
@@ -72,7 +74,9 @@ func (db *DBConfig) Init() (*sqlx.DB, error) {
 		fmt.Println("DB unreachable", err)
 		return nil, err
 	}
-	if res, _ := devschema.Resolve(nil, devschema.Options{}); res != nil && res.Enabled {
+	if res, err := devschema.Resolve(nil, devschema.Options{}); err != nil {
+		return nil, err
+	} else if res != nil && res.Enabled {
 		if res.SchemaName != "" {
 			if err := devschema.EnsureSchema(db2, res.SchemaName); err != nil {
 				return nil, err
@@ -82,11 +86,13 @@ func (db *DBConfig) Init() (*sqlx.DB, error) {
 			}
 		}
 		if devschema.ParsePruneEnabled() {
-			_, _ = devschema.PruneSchemas(db2, devschema.PruneOptions{
+			if _, err := devschema.PruneSchemas(db2, devschema.PruneOptions{
 				Prefix: res.Prefix,
 				Days:   devschema.ParsePruneDays(),
 				DryRun: false,
-			})
+			}); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return db2, nil
@@ -141,7 +147,9 @@ func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool) string {
 		)
 	}
 
-	if res, _ := devschema.Resolve(nil, devschema.Options{}); res != nil && res.Enabled && res.SchemaName != "" {
+	if res, err := devschema.Resolve(nil, devschema.Options{}); err != nil {
+		log.Printf("devschema resolve failed: %v", err)
+	} else if res != nil && res.Enabled && res.SchemaName != "" {
 		searchPath := res.SchemaName
 		if res.IncludePublic {
 			searchPath = fmt.Sprintf("%s,public", res.SchemaName)

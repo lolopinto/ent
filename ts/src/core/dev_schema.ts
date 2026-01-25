@@ -20,10 +20,7 @@ export function resolveDevSchema(cfg?: DevSchemaConfig): ResolvedDevSchema {
     return { enabled: false, includePublic: true };
   }
 
-  const envEnabled = parseEnvBool(
-    "ENT_DEV_SCHEMA_ENABLED",
-    "ENT_DEV_BRANCH_SCHEMAS",
-  );
+  const envEnabled = parseEnvBool("ENT_DEV_SCHEMA_ENABLED");
 
   let enabled = false;
   if (envEnabled !== undefined) {

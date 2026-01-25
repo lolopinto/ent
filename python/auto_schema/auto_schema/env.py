@@ -99,19 +99,14 @@ def run_migrations_offline():
     if config.output_buffer is not None:
         output_buffer = config.output_buffer
 
-    config_kwargs = {
-        "connection": connection,
-        "target_metadata": target_metadata,
-        "compare_type": runner.Runner.compare_type,
-        "include_object": runner.Runner.include_object,
-        "compare_server_default": runner.Runner.compare_server_default,
-        "render_item": runner.Runner.render_item,
-        "output_buffer": output_buffer,
-    }
-    if config.schema_name:
-        config_kwargs["version_table_schema"] = config.schema_name
     context.configure(
-        **config_kwargs
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=runner.Runner.compare_type,
+        include_object=runner.Runner.include_object,
+        compare_server_default=runner.Runner.compare_server_default,
+        render_item=runner.Runner.render_item,
+        output_buffer=output_buffer
         # transaction_per_migration doesn't seem to apply offline
     )
 
@@ -128,24 +123,14 @@ def run_migrations_online():
     """
 
     with engine.connect() as connection:
-        if config.schema_name:
-            runner.Runner.setup_schema(
-                connection, config.schema_name, config.include_public
-            )
-
-        config_kwargs = {
-            "connection": connection,
-            "target_metadata": target_metadata,
-            "compare_type": runner.Runner.compare_type,
-            "include_object": runner.Runner.include_object,
-            "compare_server_default": runner.Runner.compare_server_default,
-            "render_item": runner.Runner.render_item,
-            "transaction_per_migration": True,
-        }
-        if config.schema_name:
-            config_kwargs["version_table_schema"] = config.schema_name
         context.configure(
-            **config_kwargs
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=runner.Runner.compare_type,
+            include_object=runner.Runner.include_object,
+            compare_server_default=runner.Runner.compare_server_default,
+            render_item=runner.Runner.render_item,
+            transaction_per_migration=True,
         )
 
         with context.begin_transaction():
