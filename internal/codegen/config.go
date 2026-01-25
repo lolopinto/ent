@@ -89,25 +89,28 @@ func NewConfig(configPath, modulePath string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	var devSchemaCfg *devschema.Config
 	if c != nil && c.DevSchema != nil {
-		var pruneEnabled *bool
-		var pruneDays int
+		pruneEnabled := false
+		pruneDays := 0
 		if c.DevSchema.Prune != nil {
-			pruneEnabled = &c.DevSchema.Prune.Enabled
+			pruneEnabled = c.DevSchema.Prune.Enabled
 			pruneDays = c.DevSchema.Prune.Days
 		}
-		if _, err := devschema.ApplyEnvFromConfig(&devschema.Config{
-			Enabled:       c.DevSchema.Enabled,
-			Prefix:        c.DevSchema.Prefix,
-			IncludePublic: c.DevSchema.IncludePublic,
-			SchemaName:    c.DevSchema.SchemaName,
-			BranchName:    c.DevSchema.BranchName,
-			Suffix:        c.DevSchema.Suffix,
-			PruneEnabled:  pruneEnabled,
-			PruneDays:     pruneDays,
-		}, devschema.Options{RepoRoot: absPathToRoot}); err != nil {
-			return nil, err
+		devSchemaCfg = &devschema.Config{
+			Enabled:      c.DevSchema.Enabled,
+			SchemaName:   c.DevSchema.SchemaName,
+			PruneEnabled: pruneEnabled,
+			PruneDays:    pruneDays,
 		}
+	} else {
+		devSchemaCfg = &devschema.Config{}
+	}
+	if _, err := devschema.WriteStateFromConfig(devSchemaCfg, devschema.Options{
+		RepoRoot:   absPathToRoot,
+		SchemaPath: rootPath,
+	}); err != nil {
+		return nil, err
 	}
 
 	return &Config{
@@ -829,13 +832,9 @@ func (cfg *DatabaseMigrationConfig) Clone() *DatabaseMigrationConfig {
 }
 
 type DevSchemaConfig struct {
-	Enabled       bool                  `yaml:"enabled"`
-	Prefix        string                `yaml:"prefix"`
-	IncludePublic *bool                 `yaml:"includePublic"`
-	SchemaName    string                `yaml:"schemaName"`
-	BranchName    string                `yaml:"branchName"`
-	Suffix        string                `yaml:"suffix"`
-	Prune         *DevSchemaPruneConfig `yaml:"prune"`
+	Enabled    bool                  `yaml:"enabled"`
+	SchemaName string                `yaml:"schemaName"`
+	Prune      *DevSchemaPruneConfig `yaml:"prune"`
 }
 
 func (cfg *DevSchemaConfig) Clone() *DevSchemaConfig {
@@ -843,13 +842,9 @@ func (cfg *DevSchemaConfig) Clone() *DevSchemaConfig {
 		return nil
 	}
 	return &DevSchemaConfig{
-		Enabled:       cfg.Enabled,
-		Prefix:        cfg.Prefix,
-		IncludePublic: cfg.IncludePublic,
-		SchemaName:    cfg.SchemaName,
-		BranchName:    cfg.BranchName,
-		Suffix:        cfg.Suffix,
-		Prune:         cloneDevSchemaPrune(cfg.Prune),
+		Enabled:    cfg.Enabled,
+		SchemaName: cfg.SchemaName,
+		Prune:      cloneDevSchemaPrune(cfg.Prune),
 	}
 }
 

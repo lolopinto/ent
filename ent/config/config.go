@@ -85,10 +85,10 @@ func (db *DBConfig) Init() (*sqlx.DB, error) {
 				return nil, err
 			}
 		}
-		if devschema.ParsePruneEnabled() {
+		if res.PruneEnabled {
 			if _, err := devschema.PruneSchemas(db2, devschema.PruneOptions{
-				Prefix: res.Prefix,
-				Days:   devschema.ParsePruneDays(),
+				Prefix: devschema.DefaultPrefix,
+				Days:   res.PruneDays,
 				DryRun: false,
 			}); err != nil {
 				return nil, err
@@ -150,10 +150,7 @@ func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool) string {
 	if res, err := devschema.Resolve(nil, devschema.Options{}); err != nil {
 		log.Printf("devschema resolve failed: %v", err)
 	} else if res != nil && res.Enabled && res.SchemaName != "" {
-		searchPath := res.SchemaName
-		if res.IncludePublic {
-			searchPath = fmt.Sprintf("%s,public", res.SchemaName)
-		}
+		searchPath := fmt.Sprintf("%s,public", res.SchemaName)
 		if strings.Contains(format, "?") {
 			format = format + "&search_path={search_path}"
 		} else {

@@ -1,55 +1,40 @@
 package devschema
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 const (
-	DefaultPrefix = "ent_dev"
-	MaxSchemaLen  = 63
+	DefaultPrefix    = "ent_dev"
+	DefaultPruneDays = 30
+	MaxSchemaLen     = 63
 )
 
 type Config struct {
-	Enabled       bool
-	Prefix        string
-	IncludePublic *bool
-	SchemaName    string
-	BranchName    string
-	Suffix        string
-	PruneEnabled  *bool
-	PruneDays     int
+	Enabled      bool
+	SchemaName   string
+	PruneEnabled bool
+	PruneDays    int
 }
 
 type Options struct {
-	NodeEnv  string
-	RepoRoot string
+	NodeEnv    string
+	RepoRoot   string
+	SchemaPath string
 }
 
 type Result struct {
-	Enabled       bool
-	SchemaName    string
-	IncludePublic bool
-	BranchName    string
-	Prefix        string
-}
-
-var defaultConfig *Config
-
-func SetDefaultConfig(cfg *Config) {
-	if cfg == nil {
-		defaultConfig = nil
-		return
-	}
-	clone := *cfg
-	defaultConfig = &clone
+	Enabled      bool
+	SchemaName   string
+	BranchName   string
+	PruneEnabled bool
+	PruneDays    int
 }
 
 func Resolve(cfg *Config, opts Options) (*Result, error) {
-	if cfg == nil {
-		cfg = defaultConfig
-	}
 	nodeEnv := opts.NodeEnv
 	if nodeEnv == "" {
 		nodeEnv = os.Getenv("NODE_ENV")
@@ -58,24 +43,24 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 		return &Result{Enabled: false}, nil
 	}
 
-	envEnabled, hasEnvEnabled := parseEnvBool(
-		"ENT_DEV_SCHEMA_ENABLED",
-	)
+	var state *State
+	if cfg == nil {
+		var err error
+		state, err = LoadState(opts)
+		if err != nil {
+			return nil, err
+		}
+	}
 
+	envEnabled := parseEnvBool("ENT_DEV_SCHEMA_ENABLED")
 	enabled := false
-	if hasEnvEnabled {
-		enabled = envEnabled
+	if envEnabled != nil {
+		enabled = *envEnabled
 	} else if cfg != nil && cfg.Enabled {
 		enabled = true
-	}
-
-	schemaName := firstEnv(
-		"ENT_DEV_SCHEMA_NAME",
-	)
-	if schemaName == "" && cfg != nil {
-		schemaName = cfg.SchemaName
-	}
-	if schemaName != "" {
+	} else if cfg != nil && cfg.SchemaName != "" {
+		enabled = true
+	} else if state != nil && state.SchemaName != "" {
 		enabled = true
 	}
 
@@ -83,59 +68,74 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 		return &Result{Enabled: false}, nil
 	}
 
-	includePublic := true
-	if cfg != nil && cfg.IncludePublic != nil {
-		includePublic = *cfg.IncludePublic
+	schemaName := ""
+	explicitSchema := false
+	if cfg != nil && cfg.SchemaName != "" {
+		schemaName = cfg.SchemaName
+		explicitSchema = true
+	} else if state != nil {
+		schemaName = state.SchemaName
+		if schemaName != "" && state.BranchName == "" {
+			explicitSchema = true
+		}
 	}
-	if v, ok := parseEnvBool("ENT_DEV_SCHEMA_INCLUDE_PUBLIC"); ok {
-		includePublic = v
-	}
+
+	pruneEnabled, pruneDays := resolvePrune(cfg, state)
 
 	branchName := ""
-	if cfg != nil {
-		branchName = cfg.BranchName
-	}
-
-	prefix := firstEnv("ENT_DEV_SCHEMA_PREFIX")
-	if prefix == "" && cfg != nil {
-		prefix = cfg.Prefix
-	}
-	if prefix == "" {
-		prefix = DefaultPrefix
-	}
-
-	if schemaName == "" {
+	if !explicitSchema {
+		if state != nil {
+			branchName = state.BranchName
+		}
 		if branchName == "" {
 			branchName = ResolveGitBranch(opts.RepoRoot)
 		}
-		if branchName == "" {
-			return &Result{
-				Enabled:       true,
-				IncludePublic: includePublic,
-				Prefix:        prefix,
-			}, nil
+		if schemaName == "" {
+			if branchName == "" {
+				return nil, fmt.Errorf("dev branch schemas are enabled but no git branch or schema name is available")
+			}
+			schemaName = buildSchemaName(branchName)
 		}
-		suffix := firstEnv("ENT_DEV_SCHEMA_SUFFIX")
-		if suffix == "" && cfg != nil {
-			suffix = cfg.Suffix
-		}
-		schemaName = buildSchemaName(prefix, branchName, suffix)
-	} else {
+	} else if schemaName != "" {
 		schemaName = sanitizeIdentifier(schemaName)
 	}
 
 	return &Result{
-		Enabled:       true,
-		SchemaName:    schemaName,
-		IncludePublic: includePublic,
-		BranchName:    branchName,
-		Prefix:        prefix,
+		Enabled:      true,
+		SchemaName:   schemaName,
+		BranchName:   branchName,
+		PruneEnabled: pruneEnabled,
+		PruneDays:    pruneDays,
 	}, nil
 }
 
-func ApplyEnvFromConfig(cfg *Config, opts Options) (*Result, error) {
-	SetDefaultConfig(cfg)
-	return Resolve(cfg, opts)
+func WriteStateFromConfig(cfg *Config, opts Options) (*Result, error) {
+	res, err := Resolve(cfg, opts)
+	if err != nil {
+		return nil, err
+	}
+	if err := WriteState(res, opts); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func resolvePrune(cfg *Config, state *State) (bool, int) {
+	if cfg != nil {
+		days := cfg.PruneDays
+		if days <= 0 {
+			days = DefaultPruneDays
+		}
+		return cfg.PruneEnabled, days
+	}
+	if state != nil {
+		days := state.PruneDays
+		if days <= 0 {
+			days = DefaultPruneDays
+		}
+		return state.PruneEnabled, days
+	}
+	return false, DefaultPruneDays
 }
 
 func ResolveGitBranch(repoRoot string) string {

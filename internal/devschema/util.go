@@ -7,38 +7,21 @@ import (
 	"strings"
 )
 
-func firstEnv(keys ...string) string {
-	for _, key := range keys {
-		val := os.Getenv(key)
-		if val != "" {
-			return val
-		}
+func parseEnvBool(key string) *bool {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return nil
 	}
-	return ""
-}
-
-func parseEnvBool(keys ...string) (bool, bool) {
-	for _, key := range keys {
-		val := os.Getenv(key)
-		if val == "" {
-			continue
-		}
-		if b, ok := parseBool(val); ok {
-			return b, true
-		}
-	}
-	return false, false
-}
-
-func parseBool(val string) (bool, bool) {
-	v := strings.TrimSpace(strings.ToLower(val))
-	switch v {
+	val = strings.TrimSpace(strings.ToLower(val))
+	switch val {
 	case "1", "true", "t", "yes", "y":
-		return true, true
+		v := true
+		return &v
 	case "0", "false", "f", "no", "n":
-		return false, true
+		v := false
+		return &v
 	default:
-		return false, false
+		return nil
 	}
 }
 
@@ -80,17 +63,14 @@ func shortHash(input string) string {
 	return hex.EncodeToString(h[:])[:8]
 }
 
-func buildSchemaName(prefix, branch, suffix string) string {
-	prefix = sanitizeIdentifier(prefix)
+func buildSchemaName(branch string) string {
+	prefix := sanitizeIdentifier(DefaultPrefix)
 	branchSlug := slugify(branch)
 	if branchSlug == "" {
 		branchSlug = "branch"
 	}
 	hash := shortHash(branch)
 	parts := []string{prefix, branchSlug, hash}
-	if suffix != "" {
-		parts = append(parts, slugify(suffix))
-	}
 	name := strings.Join(parts, "_")
 	if len(name) <= MaxSchemaLen {
 		return name
@@ -102,20 +82,7 @@ func buildSchemaName(prefix, branch, suffix string) string {
 		branchSlug = branchSlug[:len(branchSlug)-trim]
 		over -= trim
 	}
-	if over > 0 && suffix != "" {
-		suffixSlug := slugify(suffix)
-		if len(suffixSlug) > 1 {
-			trim := min(over, len(suffixSlug)-1)
-			suffixSlug = suffixSlug[:len(suffixSlug)-trim]
-			suffix = suffixSlug
-			over -= trim
-		}
-	}
-
 	parts = []string{prefix, branchSlug, hash}
-	if suffix != "" {
-		parts = append(parts, suffix)
-	}
 	name = strings.Join(parts, "_")
 	if len(name) > MaxSchemaLen {
 		return name[:MaxSchemaLen]

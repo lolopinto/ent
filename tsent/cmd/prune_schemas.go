@@ -35,47 +35,26 @@ var pruneSchemasCmd = &cobra.Command{
 			return err
 		}
 
-		var dsCfg *devschema.Config
-		if cfg.DevSchema() != nil {
-			ds := cfg.DevSchema()
-			var pruneEnabled *bool
-			var pruneDays int
-			if ds.Prune != nil {
-				pruneEnabled = &ds.Prune.Enabled
-				pruneDays = ds.Prune.Days
-			}
-			dsCfg = &devschema.Config{
-				Enabled:       ds.Enabled,
-				Prefix:        ds.Prefix,
-				IncludePublic: ds.IncludePublic,
-				SchemaName:    ds.SchemaName,
-				BranchName:    ds.BranchName,
-				Suffix:        ds.Suffix,
-				PruneEnabled:  pruneEnabled,
-				PruneDays:     pruneDays,
-			}
-		}
-		res, err := devschema.Resolve(dsCfg, devschema.Options{RepoRoot: cfg.GetAbsPathToRoot()})
-		if err != nil {
-			return err
-		}
-
 		prefix := pruneSchemasInfo.prefix
-		if prefix == "" && res != nil {
-			prefix = res.Prefix
-		}
 		if prefix == "" {
 			prefix = devschema.DefaultPrefix
 		}
 
 		days := pruneSchemasInfo.days
 		if days <= 0 {
-			days = devschema.ParsePruneDays()
+			days = devschema.DefaultPruneDays
+			if cfg.DevSchema() != nil && cfg.DevSchema().Prune != nil && cfg.DevSchema().Prune.Days > 0 {
+				days = cfg.DevSchema().Prune.Days
+			}
 		}
 
 		dryRun := pruneSchemasInfo.dryRun
 		if pruneSchemasInfo.force {
 			dryRun = false
+		}
+
+		if strings.EqualFold(config.Get().DB.Dialect, "sqlite") {
+			return fmt.Errorf("dev branch schema pruning is only supported for postgres")
 		}
 
 		db, err := config.Get().DB.Init()

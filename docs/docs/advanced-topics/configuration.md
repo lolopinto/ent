@@ -112,11 +112,7 @@ interface PrivacyConfig {
 
 interface DevSchemaConfig {
   enabled?: boolean;
-  prefix?: string; // default "ent_dev"
-  includePublic?: boolean; // default true
   schemaName?: string; // optional explicit schema name
-  branchName?: string; // optional explicit branch name
-  suffix?: string; // optional suffix
   prune?: {
     enabled?: boolean;
     days?: number; // default 30
@@ -143,8 +139,6 @@ codegen:
     custom: true
 devSchema:
   enabled: true
-  prefix: ent_dev
-  includePublic: true
   prune:
     enabled: true
     days: 30
@@ -154,5 +148,7 @@ devSchema:
 
 When `devSchema.enabled` is true (and `NODE_ENV` is not `production`), ent will derive a per-branch
 postgres schema and set `search_path` automatically. The schema name is based on the git branch name
-unless `schemaName` or `branchName` is explicitly provided. This feature is not supported for sqlite
-and will error if enabled with a sqlite connection.
+unless `schemaName` is explicitly provided. This feature is not supported for sqlite and will error
+if enabled with a sqlite connection.
+
+You can force-enable or disable this behavior with `ENT_DEV_SCHEMA_ENABLED` (useful for tests).

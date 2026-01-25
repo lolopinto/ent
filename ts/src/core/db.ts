@@ -4,7 +4,7 @@ import { DateTime } from "luxon";
 import pg, { Pool, PoolClient, PoolConfig } from "pg";
 import { log } from "./logger";
 import type { DevSchemaConfig } from "./config";
-import { resolveDevSchema, ResolvedDevSchema } from "./dev_schema";
+import { isDevSchemaEnabled, resolveDevSchema } from "./dev_schema";
 
 export interface Database extends PoolConfig {
   database?: string;
@@ -163,18 +163,19 @@ export default class DB {
   private pool: Pool;
   private q: Connection;
   private constructor(public db: DatabaseInfo) {
-    const resolvedDevSchema = resolveDevSchema(db.devSchema);
-    if (resolvedDevSchema.enabled && db.dialect === Dialect.SQLite) {
+    const devSchemaEnabled = isDevSchemaEnabled(db.devSchema);
+    if (devSchemaEnabled && db.dialect === Dialect.SQLite) {
       throw new Error(
         "dev branch schemas are only supported for postgres",
       );
     }
+    const resolvedDevSchema = devSchemaEnabled
+      ? resolveDevSchema(db.devSchema)
+      : { enabled: false };
 
     if (db.dialect === Dialect.Postgres) {
       if (resolvedDevSchema.enabled && resolvedDevSchema.schemaName) {
-        const searchPath = resolvedDevSchema.includePublic
-          ? `${resolvedDevSchema.schemaName},public`
-          : resolvedDevSchema.schemaName;
+        const searchPath = `${resolvedDevSchema.schemaName},public`;
         const option = `-c search_path=${searchPath}`;
         db.config = {
           ...db.config,
@@ -187,12 +188,10 @@ export default class DB {
       this.pool = new Pool(db.config);
       const devSchemaReady =
         resolvedDevSchema.enabled && resolvedDevSchema.schemaName
-          ? setupDevSchema(this.pool, resolvedDevSchema, db.devSchema)
+          ? validateDevSchema(this.pool, resolvedDevSchema.schemaName)
           : undefined;
       if (devSchemaReady) {
-        devSchemaReady.catch((err) => {
-          log("error", err);
-        });
+        devSchemaReady.catch(() => {});
       }
       this.q = new Postgres(this.pool, devSchemaReady);
 
@@ -571,130 +570,14 @@ export class PostgresClient implements Client {
   }
 }
 
-const REGISTRY_TABLE = "public.ent_dev_schema_registry";
-
-async function setupDevSchema(
-  pool: Pool,
-  resolved: ResolvedDevSchema,
-  cfg?: DevSchemaConfig,
-) {
-  if (!resolved.schemaName) {
-    return;
-  }
-  await ensureSchema(pool, resolved.schemaName);
-  await touchRegistry(pool, resolved.schemaName, resolved.branchName);
-
-  const pruneEnabled =
-    parseEnvBool("ENT_DEV_SCHEMA_PRUNE_ENABLED") ??
-    cfg?.prune?.enabled ??
-    false;
-  if (!pruneEnabled) {
-    return;
-  }
-  const pruneDays =
-    parseEnvInt("ENT_DEV_SCHEMA_PRUNE_DAYS") ?? cfg?.prune?.days ?? 30;
-  const prefix =
-    resolved.prefix || cfg?.prefix || process.env.ENT_DEV_SCHEMA_PREFIX;
-  await pruneSchemas(pool, prefix, pruneDays);
-}
-
-async function ensureSchema(pool: Pool, schemaName: string) {
-  const ident = quoteIdent(schemaName);
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS ${ident}`);
-}
-
-async function touchRegistry(
-  pool: Pool,
-  schemaName: string,
-  branchName?: string,
-) {
-  await ensureRegistry(pool);
-  await pool.query(
-    `
-INSERT INTO ${REGISTRY_TABLE} (schema_name, branch_name, created_at, last_used_at)
-VALUES ($1, $2, now(), now())
-ON CONFLICT (schema_name)
-DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
-`,
-    [schemaName, branchName || null],
-  );
-}
-
-async function ensureRegistry(pool: Pool) {
-  await pool.query(`
-CREATE TABLE IF NOT EXISTS ${REGISTRY_TABLE} (
-  schema_name TEXT PRIMARY KEY,
-  branch_name TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_used_at TIMESTAMPTZ NOT NULL DEFAULT now()
-)`);
-}
-
-async function pruneSchemas(
-  pool: Pool,
-  prefix: string | undefined,
-  days: number,
-) {
-  const schemaPrefix = prefix || "ent_dev";
+async function validateDevSchema(pool: Pool, schemaName: string) {
   const res = await pool.query(
-    `
-SELECT schema_name
-FROM ${REGISTRY_TABLE}
-WHERE schema_name LIKE $1
-  AND last_used_at < (now() - $2::interval)
-`,
-    [`${schemaPrefix}%`, `${days} days`],
+    "SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = $1) AS ok",
+    [schemaName],
   );
-
-  for (const row of res.rows) {
-    const name = row.schema_name as string;
-    if (!name.startsWith(schemaPrefix)) {
-      continue;
-    }
-    const exists = await pool.query(
-      "SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = $1) AS ok",
-      [name],
+  if (!res.rows?.[0]?.ok) {
+    throw new Error(
+      `dev branch schema \"${schemaName}\" does not exist. Run auto_schema or migrations to create it.`,
     );
-    if (!exists.rows?.[0]?.ok) {
-      await pool.query(`DELETE FROM ${REGISTRY_TABLE} WHERE schema_name = $1`, [
-        name,
-      ]);
-      continue;
-    }
-    await pool.query(`DROP SCHEMA ${quoteIdent(name)} CASCADE`);
-    await pool.query(`DELETE FROM ${REGISTRY_TABLE} WHERE schema_name = $1`, [
-      name,
-    ]);
   }
-}
-
-function quoteIdent(name: string): string {
-  return `"${name.replace(/"/g, `""`)}"`;
-}
-
-function parseEnvBool(key: string): boolean | undefined {
-  const raw = process.env[key];
-  if (!raw) {
-    return undefined;
-  }
-  const val = raw.trim().toLowerCase();
-  if (["1", "true", "t", "yes", "y"].includes(val)) {
-    return true;
-  }
-  if (["0", "false", "f", "no", "n"].includes(val)) {
-    return false;
-  }
-  return undefined;
-}
-
-function parseEnvInt(key: string): number | undefined {
-  const raw = process.env[key];
-  if (!raw) {
-    return undefined;
-  }
-  const val = parseInt(raw, 10);
-  if (Number.isNaN(val)) {
-    return undefined;
-  }
-  return val;
 }

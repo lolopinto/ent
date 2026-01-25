@@ -1,168 +1,107 @@
 import * as fs from "fs";
 import * as path from "path";
-import { createHash } from "crypto";
 import type { DevSchemaConfig } from "./config";
 
-const DEFAULT_PREFIX = "ent_dev";
-const MAX_SCHEMA_LEN = 63;
+const STATE_DIR = ".ent";
+const STATE_FILE = "dev_schema.json";
+const DEFAULT_SCHEMA_DIR = path.join("src", "schema");
 
 export interface ResolvedDevSchema {
   enabled: boolean;
   schemaName?: string;
-  includePublic: boolean;
   branchName?: string;
-  prefix?: string;
+}
+
+interface DevSchemaState {
+  schemaName: string;
+  branchName?: string;
 }
 
 export function resolveDevSchema(cfg?: DevSchemaConfig): ResolvedDevSchema {
-  const nodeEnv = (process.env.NODE_ENV || "").toLowerCase();
-  if (nodeEnv === "production") {
-    return { enabled: false, includePublic: true };
+  if (!isDevSchemaEnabled(cfg)) {
+    return { enabled: false };
   }
 
-  const envEnabled = parseEnvBool("ENT_DEV_SCHEMA_ENABLED");
-
-  let enabled = false;
-  if (envEnabled !== undefined) {
-    enabled = envEnabled;
-  } else if (cfg?.enabled) {
-    enabled = true;
+  const statePath = resolveStatePath();
+  const state = loadDevSchemaState(statePath);
+  if (!state?.schemaName) {
+    throw new Error(
+      "dev branch schemas are enabled but no dev schema state was found. Run ent codegen to generate src/schema/.ent/dev_schema.json.",
+    );
   }
 
-  let schemaName = firstEnv("ENT_DEV_SCHEMA_NAME") || cfg?.schemaName || "";
-  if (schemaName) {
-    enabled = true;
-  }
-
-  if (!enabled) {
-    return { enabled: false, includePublic: true };
-  }
-
-  let includePublic =
-    parseEnvBool("ENT_DEV_SCHEMA_INCLUDE_PUBLIC") ??
-    cfg?.includePublic ??
-    true;
-
-  let branchName = cfg?.branchName || "";
-
-  const prefix =
-    firstEnv("ENT_DEV_SCHEMA_PREFIX") || cfg?.prefix || DEFAULT_PREFIX;
-
-  if (!schemaName) {
-    if (!branchName) {
-      branchName = resolveGitBranch();
+  const branchName = state.branchName;
+  if (branchName) {
+    const currentBranch = resolveGitBranch();
+    if (currentBranch && currentBranch !== branchName) {
+      throw new Error(
+        `dev branch schema was generated for "${branchName}" but current branch is "${currentBranch}". Run ent codegen to regenerate.`,
+      );
     }
-    if (!branchName) {
-      return {
-        enabled: true,
-        includePublic,
-        prefix,
-      };
-    }
-    const suffix = firstEnv("ENT_DEV_SCHEMA_SUFFIX") || cfg?.suffix || "";
-    schemaName = buildSchemaName(prefix, branchName, suffix);
-  } else {
-    schemaName = sanitizeIdentifier(schemaName);
   }
 
   return {
     enabled: true,
-    schemaName,
-    includePublic,
+    schemaName: state.schemaName,
     branchName,
-    prefix,
   };
 }
 
-function buildSchemaName(prefix: string, branch: string, suffix: string): string {
-  const branchSlug = slugify(branch) || "branch";
-  const hash = shortHash(branch);
-  let parts = [sanitizeIdentifier(prefix), branchSlug, hash];
-  if (suffix) {
-    parts.push(slugify(suffix));
-  }
-  let name = parts.join("_");
-  if (name.length <= MAX_SCHEMA_LEN) {
-    return name;
+export function isDevSchemaEnabled(cfg?: DevSchemaConfig): boolean {
+  const nodeEnv = (process.env.NODE_ENV || "").toLowerCase();
+  if (nodeEnv === "production") {
+    return false;
   }
 
-  let over = name.length - MAX_SCHEMA_LEN;
-  if (over > 0 && branchSlug.length > 1) {
-    const trim = Math.min(over, branchSlug.length - 1);
-    parts[1] = branchSlug.slice(0, branchSlug.length - trim);
-    over -= trim;
+  const envEnabled = parseEnvBool("ENT_DEV_SCHEMA_ENABLED");
+  if (envEnabled !== undefined) {
+    return envEnabled;
   }
-  if (over > 0 && suffix) {
-    const suffixSlug = slugify(suffix);
-    if (suffixSlug.length > 1) {
-      const trim = Math.min(over, suffixSlug.length - 1);
-      parts[3] = suffixSlug.slice(0, suffixSlug.length - trim);
-      over -= trim;
-    }
+  if (cfg?.enabled !== undefined) {
+    return !!cfg.enabled;
   }
-  name = parts.filter(Boolean).join("_");
-  if (name.length > MAX_SCHEMA_LEN) {
-    return name.slice(0, MAX_SCHEMA_LEN);
+  if (cfg?.schemaName) {
+    return true;
   }
-  return name;
+  const statePath = resolveStatePath();
+  return !!statePath && fs.existsSync(statePath);
 }
 
-function shortHash(input: string): string {
-  return createHash("sha1").update(input).digest("hex").slice(0, 8);
+function loadDevSchemaState(statePath?: string): DevSchemaState | undefined {
+  if (!statePath || !fs.existsSync(statePath)) {
+    return undefined;
+  }
+  const raw = fs.readFileSync(statePath, "utf8");
+  let data: DevSchemaState;
+  try {
+    data = JSON.parse(raw) as DevSchemaState;
+  } catch (err) {
+    throw new Error(`invalid dev schema state file at ${statePath}`);
+  }
+  if (!data || !data.schemaName) {
+    return undefined;
+  }
+  return data;
 }
 
-function slugify(input: string): string {
-  if (!input) {
-    return "";
-  }
-  const lower = input.toLowerCase();
-  let out = "";
-  let lastUnderscore = false;
-  for (const ch of lower) {
-    const isAlpha = ch >= "a" && ch <= "z";
-    const isNum = ch >= "0" && ch <= "9";
-    if (isAlpha || isNum) {
-      out += ch;
-      lastUnderscore = false;
-    } else if (!lastUnderscore) {
-      out += "_";
-      lastUnderscore = true;
-    }
-  }
-  return out.replace(/^_+|_+$/g, "");
+function resolveStatePath(): string | undefined {
+  const start = process.cwd();
+  const root = findGitRoot(start) || start;
+  const schemaDir = path.join(root, DEFAULT_SCHEMA_DIR);
+  return path.join(schemaDir, STATE_DIR, STATE_FILE);
 }
 
-function sanitizeIdentifier(input: string): string {
-  const slug = slugify(input);
-  if (!slug) {
-    return "schema";
+function parseEnvBool(key: string): boolean | undefined {
+  const raw = process.env[key];
+  if (!raw) {
+    return undefined;
   }
-  return slug.slice(0, MAX_SCHEMA_LEN);
-}
-
-function parseEnvBool(...keys: string[]): boolean | undefined {
-  for (const key of keys) {
-    const raw = process.env[key];
-    if (!raw) {
-      continue;
-    }
-    const val = raw.trim().toLowerCase();
-    if (["1", "true", "t", "yes", "y"].includes(val)) {
-      return true;
-    }
-    if (["0", "false", "f", "no", "n"].includes(val)) {
-      return false;
-    }
+  const val = raw.trim().toLowerCase();
+  if (["1", "true", "t", "yes", "y"].includes(val)) {
+    return true;
   }
-  return undefined;
-}
-
-function firstEnv(...keys: string[]): string | undefined {
-  for (const key of keys) {
-    const val = process.env[key];
-    if (val) {
-      return val;
-    }
+  if (["0", "false", "f", "no", "n"].includes(val)) {
+    return false;
   }
   return undefined;
 }

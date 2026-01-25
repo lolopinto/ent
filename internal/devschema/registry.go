@@ -2,7 +2,6 @@ package devschema
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -73,7 +72,7 @@ func PruneSchemas(db *sqlx.DB, opts PruneOptions) ([]string, error) {
 	}
 	days := opts.Days
 	if days <= 0 {
-		days = 30
+		days = DefaultPruneDays
 	}
 
 	rows, err := db.Queryx(registrySelectPrune, prefix+"%", fmt.Sprintf("%d days", days))
@@ -99,7 +98,11 @@ func PruneSchemas(db *sqlx.DB, opts PruneOptions) ([]string, error) {
 		if !strings.HasPrefix(name, prefix) {
 			continue
 		}
-		if !schemaExists(db, name) {
+		exists, err := schemaExists(db, name)
+		if err != nil {
+			return dropped, err
+		}
+		if !exists {
 			if _, err := db.Exec(registryDelete, name); err != nil {
 				return dropped, err
 			}
@@ -127,39 +130,15 @@ func dropSchema(db *sqlx.DB, schemaName string) error {
 	return err
 }
 
-func schemaExists(db *sqlx.DB, schemaName string) bool {
+func schemaExists(db *sqlx.DB, schemaName string) (bool, error) {
 	var exists bool
 	err := db.Get(&exists, "SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = $1)", schemaName)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return exists
+	return exists, nil
 }
 
 func quoteIdent(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
-}
-
-func ParsePruneEnabled() bool {
-	if v, ok := parseEnvBool("ENT_DEV_SCHEMA_PRUNE_ENABLED"); ok {
-		return v
-	}
-	if defaultConfig != nil && defaultConfig.PruneEnabled != nil {
-		return *defaultConfig.PruneEnabled
-	}
-	return false
-}
-
-func ParsePruneDays() int {
-	val := firstEnv("ENT_DEV_SCHEMA_PRUNE_DAYS")
-	if val == "" {
-		if defaultConfig != nil && defaultConfig.PruneDays > 0 {
-			return defaultConfig.PruneDays
-		}
-		return 30
-	}
-	if n, err := strconv.Atoi(val); err == nil {
-		return n
-	}
-	return 30
 }
