@@ -1,27 +1,28 @@
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
-{{ reserveImport .Package.PackagePath "loadEnt" "loadEntX" "ID" "Viewer" "Ent" "LoadEntOptions"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "loadEntX"}}
+{{ reserveTypeImport .Package.PackagePath "ID" "Viewer" "Ent" "LoadEntOptions"}}
 {{ $impPath := .Package.InternalImportPath }}
 {{ range .NodeData -}}
   {{ reserveImport $impPath .Name}}
 {{ end -}}
 
 export async function loadEntByType(
-  viewer: {{useImport "Viewer"}},
+  viewer: {{useTypeImport "Viewer"}},
   type: {{useImport "NodeType"}},
-  id: {{useImport "ID"}},
-): Promise<{{useImport "Ent"}} | null> {
+  id: {{useTypeImport "ID"}},
+): Promise<{{useTypeImport "Ent"}} | null> {
   return {{useImport "loadEnt"}}(viewer, id, getLoaderOptions(type));
 }
 
 export async function loadEntXByType(
-  viewer: {{useImport "Viewer"}},
+  viewer: {{useTypeImport "Viewer"}},
   type: {{useImport "NodeType"}},
-  id: {{useImport "ID"}},
-): Promise<{{useImport "Ent"}}> {
+  id: {{useTypeImport "ID"}},
+): Promise<{{useTypeImport "Ent"}}> {
   return {{useImport "loadEntX"}}(viewer, id, getLoaderOptions(type));
 }
 
-export function getLoaderOptions(type: {{useImport "NodeType"}}): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}, any> {
+export function getLoaderOptions(type: {{useImport "NodeType"}}): {{useTypeImport "LoadEntOptions"}}<{{useTypeImport "Ent"}}, any> {
   switch (type) {
   {{ range .NodeData -}}
     case {{useImport "NodeType"}}.{{.Name}}:
