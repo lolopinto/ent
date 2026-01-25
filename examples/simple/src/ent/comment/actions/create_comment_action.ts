@@ -3,18 +3,15 @@
  */
 
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import { Trigger } from "@snowtop/ent/action";
+import type { Trigger } from "@snowtop/ent/action";
 import { CommentBuilder } from "../../generated/comment/actions/comment_builder";
-import {
-  CommentCreateInput,
-  CreateCommentActionBase,
-} from "../../generated/comment/actions/create_comment_action_base";
+import { CreateCommentActionBase } from "../../generated/comment/actions/create_comment_action_base";
+import type { CommentCreateInput } from "../../generated/comment/actions/create_comment_action_base";
 import { Comment } from "../../../ent";
 import { ExampleViewer } from "../../../viewer/viewer";
 
-export { CommentCreateInput };
 import { NodeType } from "../../generated/types";
-
+export type { CommentCreateInput };
 export default class CreateCommentAction extends CreateCommentActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;

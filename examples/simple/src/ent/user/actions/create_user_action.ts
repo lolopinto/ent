@@ -1,25 +1,18 @@
-import {
-  AlwaysAllowPrivacyPolicy,
-  Data,
-  PrivacyPolicy,
-  Context,
-} from "@snowtop/ent";
-import { Changeset, Trigger, Observer } from "@snowtop/ent/action";
+import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
+import type { Data, PrivacyPolicy, Context } from "@snowtop/ent";
+import type { Changeset, Trigger, Observer } from "@snowtop/ent/action";
 import { EntCreationObserver } from "@snowtop/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
-import {
-  CreateUserActionBase,
-  UserCreateInput,
-} from "../../generated/user/actions/create_user_action_base";
+import { CreateUserActionBase } from "../../generated/user/actions/create_user_action_base";
+import type { UserCreateInput } from "../../generated/user/actions/create_user_action_base";
 import { UserBuilder } from "../../generated/user/actions/user_builder";
 import CreateContactAction from "../../contact/actions/create_contact_action";
 import { User } from "../../";
 
-export { UserCreateInput };
 import { ExampleViewer } from "../../../viewer/viewer";
 import { ContactLabel, UserAccountStatus } from "../../../ent/generated/types";
 import CreateUserStatisticsAction from "src/ent/user_statistics/actions/create_user_statistics_action";
-
+export type { UserCreateInput };
 // we're only writing this once except with --force and packageName provided
 export default class CreateUserAction extends CreateUserActionBase {
   getPrivacyPolicy(): PrivacyPolicy<User> {
