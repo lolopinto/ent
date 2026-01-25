@@ -99,14 +99,17 @@ def run_migrations_offline():
     if config.output_buffer is not None:
         output_buffer = config.output_buffer
 
+    config_kwargs = {
+        "connection": connection,
+        "target_metadata": target_metadata,
+        "compare_type": runner.Runner.compare_type,
+        "include_object": runner.Runner.include_object,
+        "compare_server_default": runner.Runner.compare_server_default,
+        "render_item": runner.Runner.render_item,
+        "output_buffer": output_buffer,
+    }
     context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        compare_type=runner.Runner.compare_type,
-        include_object=runner.Runner.include_object,
-        compare_server_default=runner.Runner.compare_server_default,
-        render_item=runner.Runner.render_item,
-        output_buffer=output_buffer
+        **config_kwargs
         # transaction_per_migration doesn't seem to apply offline
     )
 
@@ -123,14 +126,31 @@ def run_migrations_online():
     """
 
     with engine.connect() as connection:
+        if config.schema_name:
+            runner.Runner.setup_schema(
+                connection, config.schema_name, config.include_public
+            )
+
+        # Ensure the connection is not in an external transaction before
+        # configuring Alembic; otherwise Alembic will treat the transaction
+        # as externally managed and won't commit migrations.
+        try:
+            in_txn = connection.in_transaction()
+        except Exception:
+            in_txn = False
+        if in_txn:
+            connection.commit()
+        config_kwargs = {
+            "connection": connection,
+            "target_metadata": target_metadata,
+            "compare_type": runner.Runner.compare_type,
+            "include_object": runner.Runner.include_object,
+            "compare_server_default": runner.Runner.compare_server_default,
+            "render_item": runner.Runner.render_item,
+            "transaction_per_migration": True,
+        }
         context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=runner.Runner.compare_type,
-            include_object=runner.Runner.include_object,
-            compare_server_default=runner.Runner.compare_server_default,
-            render_item=runner.Runner.render_item,
-            transaction_per_migration=True,
+            **config_kwargs
         )
 
         with context.begin_transaction():

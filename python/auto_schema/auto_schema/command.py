@@ -40,7 +40,12 @@ class Command(object):
         self.alembic_cfg = alembic_cfg
 
         # pass connection instead of re-creating it and using a sqlalchemy_url file
-        alembic_cfg.attributes['connection'] = connection
+        # Alembic may close/reopen or alter transaction state when reusing a Connection;
+        # pass the Engine instead to avoid hanging on closed connections when env.py connects.
+        try:
+            alembic_cfg.attributes['engine'] = connection.engine
+        except Exception:
+            alembic_cfg.attributes['engine'] = None
 
     # Returns the current revision of the database. Same as calling `alembic current`
     def current(self):
@@ -52,7 +57,7 @@ class Command(object):
         head = 'head'
         if len(heads) > 1:
             head = heads
-            
+
         return command.revision(self.alembic_cfg, message,
                                 autogenerate=autogenerate, head=head, rev_id=revision)
 
@@ -160,4 +165,3 @@ class Command(object):
 
     def merge(self, revisions, message=None):
         command.merge(self.alembic_cfg, revisions, message=message)
-
