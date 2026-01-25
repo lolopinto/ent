@@ -1,13 +1,10 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import {
-  CreateTodoActionBase,
-  CreateTodoActionTriggers,
-  TodoCreateInput,
-} from "src/ent/generated/todo/actions/create_todo_action_base";
+import { CreateTodoActionBase } from "src/ent/generated/todo/actions/create_todo_action_base";
+import type { CreateTodoActionTriggers, TodoCreateInput } from "src/ent/generated/todo/actions/create_todo_action_base";
 import { NodeType } from "src/ent/generated/types";
 import { CreateTagAction } from "src/ent/tag/actions/create_tag_action";
 
-export { TodoCreateInput };
+export type { TodoCreateInput };
 
 export class CreateTodoAction extends CreateTodoActionBase {
   getPrivacyPolicy() {

@@ -1,11 +1,8 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import {
-  AccountUpdateBalanceActionBase,
-  AccountUpdateBalanceActionTriggers,
-  AccountUpdateBalanceInput,
-} from "src/ent/generated/account/actions/account_update_balance_action_base";
+import { AccountUpdateBalanceActionBase } from "src/ent/generated/account/actions/account_update_balance_action_base";
+import type { AccountUpdateBalanceActionTriggers, AccountUpdateBalanceInput } from "src/ent/generated/account/actions/account_update_balance_action_base";
 
-export { AccountUpdateBalanceInput };
+export type { AccountUpdateBalanceInput };
 
 export class AccountUpdateBalanceAction extends AccountUpdateBalanceActionBase {
   getPrivacyPolicy() {
