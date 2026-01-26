@@ -188,12 +188,13 @@ export default class DB {
       }
 
       this.pool = new Pool(db.config);
+      const schemaName = resolvedDevSchema.schemaName;
       const devSchemaReady =
-        resolvedDevSchema.enabled && resolvedDevSchema.schemaName
-          ? validateDevSchema(this.pool, resolvedDevSchema.schemaName).then(() =>
+        resolvedDevSchema.enabled && schemaName
+          ? validateDevSchema(this.pool, schemaName).then(() =>
               touchDevSchemaRegistry(
                 this.pool,
-                resolvedDevSchema.schemaName,
+                schemaName,
                 resolvedDevSchema.branchName,
               ).catch(() => {}),
             )
