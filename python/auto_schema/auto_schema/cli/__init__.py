@@ -33,7 +33,7 @@ parser.add_argument(
 )
 parser.add_argument(
     '--db_schema_include_public',
-    help='if set, include public in search_path (true/false). defaults to true when db_schema is set',
+    help='if set, include public in search_path (true/false). defaults to false when db_schema is set',
 )
 parser.add_argument('-f', '--fix_edges', help='fix edges in schema into db')
 parser.add_argument('-u', '--upgrade', help='upgrade')

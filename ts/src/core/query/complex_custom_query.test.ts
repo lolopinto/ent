@@ -1180,7 +1180,7 @@ describe("joins - products", () => {
           },
           "RETURNING *",
         );
-        console.assert(order, `couldn't create order`);
+        console.assert(!!order, `couldn't create order`);
         orders.push(order!);
       }
     }

@@ -56,6 +56,9 @@ export interface Config {
 
   // limit concurrency for ent loader privacy checks
   entLoaderPrivacyConcurrencyLimit?: number;
+
+  // dev schema configuration
+  devSchema?: DevSchemaConfig;
 }
 
 // things that can be set in ent.yml
@@ -84,6 +87,19 @@ export interface ConfigWithCodegen extends Config {
 interface DatabaseMigrationConfig {
   custom_sql_include?: string[];
   custom_sql_exclude?: string[];
+}
+
+export interface DevSchemaPruneConfig {
+  enabled?: boolean;
+  days?: number;
+}
+
+export interface DevSchemaConfig {
+  enabled?: boolean;
+  schemaName?: string;
+  includePublic?: boolean;
+  ignoreBranches?: string[];
+  prune?: DevSchemaPruneConfig;
 }
 
 interface CodegenConfig {
@@ -194,11 +210,12 @@ function setConfig(cfg: Config) {
     setLogLevels(cfg.log);
   }
 
-  if (cfg.dbConnectionString || cfg.dbFile || cfg.db) {
+  if (cfg.dbConnectionString || cfg.dbFile || cfg.db || cfg.devSchema) {
     DB.initDB({
       connectionString: cfg.dbConnectionString,
       dbFile: cfg.dbFile,
       db: cfg.db,
+      devSchema: cfg.devSchema,
     });
   }
 

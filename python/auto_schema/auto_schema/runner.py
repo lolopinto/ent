@@ -164,7 +164,7 @@ class Runner(object):
     def _touch_registry(cls, connection, schema_name):
         if not schema_name:
             return
-        branch = os.getenv("ENT_DEV_SCHEMA_BRANCH") or os.getenv("ENT_DEV_BRANCH") or os.getenv("GIT_BRANCH") or os.getenv("BRANCH_NAME")
+        branch = None
 
         def _apply_registry(conn):
             metadata = sa.MetaData()

@@ -77,6 +77,7 @@ func init() {
 		upgradeCmd,
 		fixEdgesCmd,
 		alembicCmd,
+		pruneSchemasCmd,
 		generateCmd,
 		squashCmd,
 		parseSchemaCmd,
@@ -125,6 +126,11 @@ func init() {
 	migrationCmd.Flags().StringVar(&migrateInfo.message, "message", "", "message for migration")
 
 	squashCmd.Flags().StringVar(&squashInfo.message, "message", "", "message for new file when squash all is run")
+
+	pruneSchemasCmd.Flags().IntVar(&pruneSchemasInfo.days, "days", 30, "prune schemas not used in the last N days")
+	pruneSchemasCmd.Flags().StringVar(&pruneSchemasInfo.prefix, "prefix", "", "schema prefix to prune (defaults to ent_dev or config)")
+	pruneSchemasCmd.Flags().BoolVar(&pruneSchemasInfo.dryRun, "dry-run", true, "show schemas to prune without deleting")
+	pruneSchemasCmd.Flags().BoolVar(&pruneSchemasInfo.force, "force", false, "delete schemas instead of dry-run")
 }
 
 func Execute() {

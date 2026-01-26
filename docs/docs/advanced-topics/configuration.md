@@ -87,6 +87,9 @@ export interface Config {
 
   // config for codegen. not relevant when loadConfig is called but have it here for posterity
   codegen?: CodegenConfig;
+
+  // dev branch schemas (postgres only)
+  devSchema?: DevSchemaConfig;
 }
 
 interface CodegenConfig {
@@ -105,6 +108,15 @@ interface PrivacyConfig {
   path: string; // e.g. "@snowtop/ent"
   policyName: string; // e.g. "AlwaysAllowPrivacyPolicy";
   class?: boolean;
+}
+
+interface DevSchemaConfig {
+  enabled?: boolean;
+  schemaName?: string; // optional explicit schema name
+  prune?: {
+    enabled?: boolean;
+    days?: number; // default 30
+  };
 }
 ```
 
@@ -125,4 +137,31 @@ codegen:
     policyName: 'AlwaysAllowPrivacyPolicy'
   prettier:
     custom: true
+devSchema:
+  enabled: true
+  # includePublic: false
+  # ignoreBranches:
+  #   - main
+  #   - master
+  prune:
+    enabled: true
+    days: 30
 ```
+
+### Dev branch schemas (postgres only)
+
+When `devSchema.enabled` is true (and `NODE_ENV` is not `production`), ent will derive a per-branch
+postgres schema and set `search_path` automatically. The schema name is based on the git branch name
+unless `schemaName` is explicitly provided (explicit names are sanitized and will be prefixed with
+`schema_` if they start with a digit). Note that `schemaName` does not enable dev schemas by itself;
+`devSchema.enabled` must be set to true. This feature is not supported for sqlite and will error if
+enabled with a sqlite connection.
+
+By default, the dev schema is isolated (`includePublic` defaults to false). Set `includePublic: true`
+to add `public` to the `search_path` for reads while still keeping reflection/compare limited to the
+dev schema.
+
+If you want to disable dev schemas on certain branches (e.g. `main`/`master`), set
+`devSchema.ignoreBranches`. This applies unless you force-enable via `ENT_DEV_SCHEMA_ENABLED=true`.
+
+You can force-enable or disable this behavior with `ENT_DEV_SCHEMA_ENABLED` (useful for tests).
