@@ -54,6 +54,17 @@ func do(version int) error {
 	wg.Add(len(SUFFIXES))
 	var serr syncerr.Error
 
+	builder, err := createBuilder()
+	if err != nil {
+		return errors.Wrap(err, "error creating docker builder")
+	}
+
+	defer func() {
+		if err := removeBuilder(builder); err != nil {
+			log.Println(err, "error cleaning up docker builder instance")
+		}
+	}()
+
 	for j := range SUFFIXES {
 		go func(j int) {
 			suffix := SUFFIXES[j]
@@ -63,7 +74,7 @@ func do(version int) error {
 				Suffix:            suffix,
 				TsentVersion:      TSENT_VERSION,
 				AutoSchemaVersion: AUTO_SCHEMA_VERSION,
-			}, &wg)
+			}, builder, &wg)
 			serr.Append(err)
 		}(j)
 	}
@@ -94,6 +105,25 @@ func (d *dockerfileData) Development() bool {
 	return d.Suffix == "dev"
 }
 
+func createBuilder() (string, error) {
+	var out bytes.Buffer
+	buildCommand := exec.Command("docker", "buildx", "create", "--use")
+	buildCommand.Stderr = os.Stderr
+	buildCommand.Stdout = &out
+	if err := buildCommand.Run(); err != nil {
+		return "", errors.Wrap(err, "error creating builder")
+	}
+
+	return strings.TrimSpace(out.String()), nil
+}
+
+func removeBuilder(builder string) error {
+	cleanupCmd := exec.Command("docker", "buildx", "rm", builder)
+	cleanupCmd.Stdout = os.Stdout
+	cleanupCmd.Stderr = os.Stderr
+	return cleanupCmd.Run()
+}
+
 func createDockerfile(path string, d dockerfileData) error {
 	cfg, err := codegen.NewConfig("src/schema", "")
 	if err != nil {
@@ -119,8 +149,37 @@ func getTags(d dockerfileData) []string {
 	return ret
 }
 
-func getCommandArgs(d dockerfileData, builder string) []string {
+func getCacheType() string {
+	cacheType := os.Getenv("CACHE_TYPE")
+	if cacheType == "gha" {
+		return cacheType
+	}
+
+	return "registry"
+}
+
+func getCacheArgs(d dockerfileData, cacheType string) []string {
 	cacheTag := fmt.Sprintf("%s:cache-nodejs%d", REPO, d.NodeVersion)
+	scope := fmt.Sprintf("cache-nodejs-%d", d.NodeVersion)
+	if cacheType == "gha" {
+		return []string{
+			"--cache-from",
+			fmt.Sprintf("type=gha,scope=%s", scope),
+			"--cache-to",
+			fmt.Sprintf("type=gha,mode=max,scope=%s", scope),
+		}
+	}
+
+	return []string{
+		"--cache-from",
+		fmt.Sprintf("type=registry,ref=%s", cacheTag),
+		"--cache-to",
+		fmt.Sprintf("type=registry,mode=max,ref=%s", cacheTag),
+	}
+}
+
+func getCommandArgs(d dockerfileData, builder string) []string {
+	cacheType := getCacheType()
 	tags := getTags(d)
 	ret := []string{
 		"buildx",
@@ -129,12 +188,10 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 		builder,
 		"--platform",
 		strings.Join(PLATFORMS, ","),
-		"--cache-from",
-		fmt.Sprintf("type=registry,ref=%s", cacheTag),
-		"--cache-to",
-		fmt.Sprintf("type=registry,mode=max,ref=%s", cacheTag),
-		"--push",
 	}
+
+	ret = append(ret, getCacheArgs(d, cacheType)...)
+	ret = append(ret, "--push")
 
 	for _, tag := range tags {
 		ret = append(ret, "--tag")
@@ -145,7 +202,7 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 	return ret
 }
 
-func run(d dockerfileData, wg *sync.WaitGroup) error {
+func run(d dockerfileData, builder string, wg *sync.WaitGroup) error {
 	defer wg.Done()
 	dir := fmt.Sprintf("node_%d_%s", d.NodeVersion, d.Suffix)
 	info, err := os.Stat(dir)
@@ -171,27 +228,6 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 	if err != nil {
 		return errors.Wrap(err, "error creating docker file")
 	}
-
-	// create new builder to user here
-	var out bytes.Buffer
-	buildCommand := exec.Command("docker", "buildx", "create", "--use")
-	buildCommand.Stderr = os.Stderr
-	buildCommand.Stdout = &out
-	if err := buildCommand.Run(); err != nil {
-		return errors.Wrap(err, "error creating builder")
-	}
-	builder := strings.TrimSpace(out.String())
-
-	defer func() {
-		// remove builder
-		cleanupCmd := exec.Command("docker", "buildx", "rm", builder)
-		cleanupCmd.Stdout = os.Stdout
-		cleanupCmd.Stderr = os.Stderr
-		err = cleanupCmd.Run()
-		if err != nil {
-			log.Println(err, "error cleaning up docker builder instance")
-		}
-	}()
 
 	// build image
 	cmd := exec.Command("docker", getCommandArgs(d, builder)...)
