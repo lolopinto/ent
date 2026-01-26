@@ -99,3 +99,18 @@ func min(a, b int) int {
 	}
 	return b
 }
+
+func isBranchIgnored(ignore []string, branch string) bool {
+	if branch == "" || len(ignore) == 0 {
+		return false
+	}
+	for _, name := range ignore {
+		if strings.TrimSpace(name) == "" {
+			continue
+		}
+		if name == branch {
+			return true
+		}
+	}
+	return false
+}

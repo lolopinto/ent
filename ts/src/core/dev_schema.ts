@@ -18,6 +18,7 @@ interface DevSchemaState {
   schemaName: string;
   branchName?: string;
   includePublic?: boolean;
+  ignoreBranches?: string[];
 }
 
 export function resolveDevSchema(cfg?: DevSchemaConfig): ResolvedDevSchema {
@@ -71,13 +72,25 @@ export function isDevSchemaEnabled(cfg?: DevSchemaConfig): boolean {
     return envEnabled;
   }
   if (cfg) {
-    if (cfg.enabled !== undefined) {
-      return !!cfg.enabled;
+    if (cfg.enabled !== true) {
+      return false;
     }
-    return false;
+    const branch = resolveGitBranch();
+    if (isBranchIgnored(cfg.ignoreBranches, branch)) {
+      return false;
+    }
+    return true;
   }
   const statePath = resolveStatePath();
-  return !!statePath && fs.existsSync(statePath);
+  const state = loadDevSchemaState(statePath);
+  if (!state?.schemaName) {
+    return false;
+  }
+  const branch = resolveGitBranch();
+  if (isBranchIgnored(state.ignoreBranches, branch)) {
+    return false;
+  }
+  return true;
 }
 
 function loadDevSchemaState(statePath?: string): DevSchemaState | undefined {
@@ -141,6 +154,21 @@ function resolveStatePath(): string | undefined {
   const root = findGitRoot(start) || start;
   const schemaDir = path.join(root, DEFAULT_SCHEMA_DIR);
   return path.join(schemaDir, STATE_DIR, STATE_FILE);
+}
+
+function isBranchIgnored(ignoreBranches: string[] | undefined, branch: string): boolean {
+  if (!branch || !ignoreBranches || ignoreBranches.length === 0) {
+    return false;
+  }
+  for (const name of ignoreBranches) {
+    if (!name || !name.trim()) {
+      continue;
+    }
+    if (name === branch) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function parseEnvBool(key: string): boolean | undefined {

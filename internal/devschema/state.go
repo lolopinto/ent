@@ -12,11 +12,12 @@ const (
 )
 
 type State struct {
-	SchemaName    string `json:"schemaName"`
-	BranchName    string `json:"branchName,omitempty"`
-	IncludePublic bool   `json:"includePublic"`
-	PruneEnabled  bool   `json:"pruneEnabled,omitempty"`
-	PruneDays     int    `json:"pruneDays,omitempty"`
+	SchemaName     string   `json:"schemaName"`
+	BranchName     string   `json:"branchName,omitempty"`
+	IncludePublic  bool     `json:"includePublic"`
+	IgnoreBranches []string `json:"ignoreBranches,omitempty"`
+	PruneEnabled   bool     `json:"pruneEnabled,omitempty"`
+	PruneDays      int      `json:"pruneDays,omitempty"`
 }
 
 func WriteState(res *Result, opts Options) error {
@@ -34,9 +35,10 @@ func WriteState(res *Result, opts Options) error {
 		return err
 	}
 	state := State{
-		SchemaName:    res.SchemaName,
-		BranchName:    res.BranchName,
-		IncludePublic: res.IncludePublic,
+		SchemaName:     res.SchemaName,
+		BranchName:     res.BranchName,
+		IncludePublic:  res.IncludePublic,
+		IgnoreBranches: res.IgnoreBranches,
 	}
 	if res.PruneEnabled {
 		state.PruneEnabled = true

@@ -14,11 +14,12 @@ const (
 )
 
 type Config struct {
-	Enabled       bool
-	SchemaName    string
-	IncludePublic bool
-	PruneEnabled  bool
-	PruneDays     int
+	Enabled        bool
+	SchemaName     string
+	IncludePublic  bool
+	IgnoreBranches []string
+	PruneEnabled   bool
+	PruneDays      int
 }
 
 type Options struct {
@@ -28,12 +29,13 @@ type Options struct {
 }
 
 type Result struct {
-	Enabled       bool
-	SchemaName    string
-	BranchName    string
-	IncludePublic bool
-	PruneEnabled  bool
-	PruneDays     int
+	Enabled        bool
+	SchemaName     string
+	BranchName     string
+	IncludePublic  bool
+	IgnoreBranches []string
+	PruneEnabled   bool
+	PruneDays      int
 }
 
 func Resolve(cfg *Config, opts Options) (*Result, error) {
@@ -74,6 +76,12 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 	} else if state != nil {
 		includePublic = state.IncludePublic
 	}
+	ignoreBranches := []string{}
+	if cfg != nil && len(cfg.IgnoreBranches) > 0 {
+		ignoreBranches = cfg.IgnoreBranches
+	} else if state != nil && len(state.IgnoreBranches) > 0 {
+		ignoreBranches = state.IgnoreBranches
+	}
 
 	schemaName := ""
 	explicitSchema := false
@@ -106,14 +114,22 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 	} else if schemaName != "" {
 		schemaName = sanitizeIdentifier(schemaName)
 	}
+	branchForIgnore := branchName
+	if branchForIgnore == "" {
+		branchForIgnore = ResolveGitBranch(opts.RepoRoot)
+	}
+	if envEnabled == nil && isBranchIgnored(ignoreBranches, branchForIgnore) {
+		return &Result{Enabled: false}, nil
+	}
 
 	return &Result{
-		Enabled:       true,
-		SchemaName:    schemaName,
-		BranchName:    branchName,
-		IncludePublic: includePublic,
-		PruneEnabled:  pruneEnabled,
-		PruneDays:     pruneDays,
+		Enabled:        true,
+		SchemaName:     schemaName,
+		BranchName:     branchName,
+		IncludePublic:  includePublic,
+		IgnoreBranches: ignoreBranches,
+		PruneEnabled:   pruneEnabled,
+		PruneDays:      pruneDays,
 	}, nil
 }
 

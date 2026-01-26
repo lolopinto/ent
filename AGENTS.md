@@ -25,3 +25,22 @@ Schema filtering:
 
 Environment hints used by registry metadata:
 - `ENT_DEV_SCHEMA_BRANCH`, `ENT_DEV_BRANCH`, `GIT_BRANCH`, `BRANCH_NAME`.
+
+Enablement & naming:
+- `NODE_ENV=production` disables dev schemas everywhere.
+- `ENT_DEV_SCHEMA_ENABLED` overrides config/state (force on/off).
+- If config is provided, `devSchema.enabled` is authoritative; `schemaName` alone does not enable.
+- If no config is provided, the presence of the state file enables dev schema.
+- `ignoreBranches` disables dev schemas on listed branches unless force-enabled via `ENT_DEV_SCHEMA_ENABLED=true`.
+- Explicit `schemaName` is sanitized (lowercase, non-alnum -> `_`, trimmed, max 63 chars).
+- If a sanitized name starts with a digit, prefix with `schema_`.
+- Branch-derived names use `ent_dev_<branchSlug>_<hash>` (short SHA1).
+
+Cross-layer flow (Go -> TS):
+- Go codegen reads `ent.yml` and writes `src/schema/.ent/dev_schema.json`.
+- TS runtime does not read `ent.yml`; it reads the state file only when no runtime config is provided.
+- Runtime config passed to TS (`devSchema` in `setConfig`) overrides the state file.
+- Go auto_schema invokes Python auto_schema with `--db_schema` and `--db_schema_include_public`.
+
+Branch mismatch:
+- Branch mismatch checks apply only when using the state file (not with explicit `schemaName` in runtime config).

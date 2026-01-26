@@ -140,6 +140,9 @@ codegen:
 devSchema:
   enabled: true
   # includePublic: false
+  # ignoreBranches:
+  #   - main
+  #   - master
   prune:
     enabled: true
     days: 30
@@ -157,5 +160,8 @@ enabled with a sqlite connection.
 By default, the dev schema is isolated (`includePublic` defaults to false). Set `includePublic: true`
 to add `public` to the `search_path` for reads while still keeping reflection/compare limited to the
 dev schema.
+
+If you want to disable dev schemas on certain branches (e.g. `main`/`master`), set
+`devSchema.ignoreBranches`. This applies unless you force-enable via `ENT_DEV_SCHEMA_ENABLED=true`.
 
 You can force-enable or disable this behavior with `ENT_DEV_SCHEMA_ENABLED` (useful for tests).

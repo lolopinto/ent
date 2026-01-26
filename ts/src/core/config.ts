@@ -98,6 +98,7 @@ export interface DevSchemaConfig {
   enabled?: boolean;
   schemaName?: string;
   includePublic?: boolean;
+  ignoreBranches?: string[];
   prune?: DevSchemaPruneConfig;
 }
 

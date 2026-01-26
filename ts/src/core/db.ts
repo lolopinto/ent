@@ -597,14 +597,7 @@ async function touchDevSchemaRegistry(pool: Pool, schemaName: string) {
     process.env.BRANCH_NAME ||
     null;
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS public.ent_dev_schema_registry (
-        schema_name TEXT PRIMARY KEY,
-        branch_name TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-        last_used_at TIMESTAMPTZ NOT NULL DEFAULT now()
-      )
-    `);
+    // Avoid DDL at runtime; registry table should be created by auto_schema/prune.
     await pool.query(
       `
       INSERT INTO public.ent_dev_schema_registry (schema_name, branch_name, created_at, last_used_at)
@@ -615,6 +608,13 @@ async function touchDevSchemaRegistry(pool: Pool, schemaName: string) {
       [schemaName, branch],
     );
   } catch (err) {
+    if (
+      err &&
+      typeof err.message === "string" &&
+      err.message.includes("ent_dev_schema_registry")
+    ) {
+      return;
+    }
     log("debug", err);
   }
 }
