@@ -175,7 +175,9 @@ export default class DB {
 
     if (db.dialect === Dialect.Postgres) {
       if (resolvedDevSchema.enabled && resolvedDevSchema.schemaName) {
-        const searchPath = `${resolvedDevSchema.schemaName},public`;
+        const searchPath = resolvedDevSchema.includePublic
+          ? `${resolvedDevSchema.schemaName},public`
+          : resolvedDevSchema.schemaName;
         const option = `-c search_path=${searchPath}`;
         db.config = {
           ...db.config,
@@ -188,7 +190,12 @@ export default class DB {
       this.pool = new Pool(db.config);
       const devSchemaReady =
         resolvedDevSchema.enabled && resolvedDevSchema.schemaName
-          ? validateDevSchema(this.pool, resolvedDevSchema.schemaName)
+          ? validateDevSchema(this.pool, resolvedDevSchema.schemaName).then(() =>
+              touchDevSchemaRegistry(
+                this.pool,
+                resolvedDevSchema.schemaName,
+              ).catch(() => {}),
+            )
           : undefined;
       if (devSchemaReady) {
         devSchemaReady.catch(() => {});
@@ -579,5 +586,35 @@ async function validateDevSchema(pool: Pool, schemaName: string) {
     throw new Error(
       `dev branch schema \"${schemaName}\" does not exist. Run auto_schema or migrations to create it.`,
     );
+  }
+}
+
+async function touchDevSchemaRegistry(pool: Pool, schemaName: string) {
+  const branch =
+    process.env.ENT_DEV_SCHEMA_BRANCH ||
+    process.env.ENT_DEV_BRANCH ||
+    process.env.GIT_BRANCH ||
+    process.env.BRANCH_NAME ||
+    null;
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.ent_dev_schema_registry (
+        schema_name TEXT PRIMARY KEY,
+        branch_name TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_used_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query(
+      `
+      INSERT INTO public.ent_dev_schema_registry (schema_name, branch_name, created_at, last_used_at)
+      VALUES ($1, $2, now(), now())
+      ON CONFLICT (schema_name)
+      DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
+      `,
+      [schemaName, branch],
+    );
+  } catch (err) {
+    log("debug", err);
   }
 }

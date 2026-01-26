@@ -98,10 +98,11 @@ func NewConfig(configPath, modulePath string) (*Config, error) {
 			pruneDays = c.DevSchema.Prune.Days
 		}
 		devSchemaCfg = &devschema.Config{
-			Enabled:      c.DevSchema.Enabled,
-			SchemaName:   c.DevSchema.SchemaName,
-			PruneEnabled: pruneEnabled,
-			PruneDays:    pruneDays,
+			Enabled:       c.DevSchema.Enabled,
+			SchemaName:    c.DevSchema.SchemaName,
+			IncludePublic: c.DevSchema.IncludePublic,
+			PruneEnabled:  pruneEnabled,
+			PruneDays:     pruneDays,
 		}
 	} else {
 		devSchemaCfg = &devschema.Config{}
@@ -832,9 +833,10 @@ func (cfg *DatabaseMigrationConfig) Clone() *DatabaseMigrationConfig {
 }
 
 type DevSchemaConfig struct {
-	Enabled    bool                  `yaml:"enabled"`
-	SchemaName string                `yaml:"schemaName"`
-	Prune      *DevSchemaPruneConfig `yaml:"prune"`
+	Enabled       bool                  `yaml:"enabled"`
+	SchemaName    string                `yaml:"schemaName"`
+	IncludePublic bool                  `yaml:"includePublic"`
+	Prune         *DevSchemaPruneConfig `yaml:"prune"`
 }
 
 func (cfg *DevSchemaConfig) Clone() *DevSchemaConfig {
@@ -842,9 +844,10 @@ func (cfg *DevSchemaConfig) Clone() *DevSchemaConfig {
 		return nil
 	}
 	return &DevSchemaConfig{
-		Enabled:    cfg.Enabled,
-		SchemaName: cfg.SchemaName,
-		Prune:      cloneDevSchemaPrune(cfg.Prune),
+		Enabled:       cfg.Enabled,
+		SchemaName:    cfg.SchemaName,
+		IncludePublic: cfg.IncludePublic,
+		Prune:         cloneDevSchemaPrune(cfg.Prune),
 	}
 }
 

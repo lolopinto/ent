@@ -14,10 +14,11 @@ const (
 )
 
 type Config struct {
-	Enabled      bool
-	SchemaName   string
-	PruneEnabled bool
-	PruneDays    int
+	Enabled       bool
+	SchemaName    string
+	IncludePublic bool
+	PruneEnabled  bool
+	PruneDays     int
 }
 
 type Options struct {
@@ -27,11 +28,12 @@ type Options struct {
 }
 
 type Result struct {
-	Enabled      bool
-	SchemaName   string
-	BranchName   string
-	PruneEnabled bool
-	PruneDays    int
+	Enabled       bool
+	SchemaName    string
+	BranchName    string
+	IncludePublic bool
+	PruneEnabled  bool
+	PruneDays     int
 }
 
 func Resolve(cfg *Config, opts Options) (*Result, error) {
@@ -56,16 +58,21 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 	enabled := false
 	if envEnabled != nil {
 		enabled = *envEnabled
-	} else if cfg != nil && cfg.Enabled {
-		enabled = true
-	} else if cfg != nil && cfg.SchemaName != "" {
-		enabled = true
+	} else if cfg != nil {
+		enabled = cfg.Enabled
 	} else if state != nil && state.SchemaName != "" {
 		enabled = true
 	}
 
 	if !enabled {
 		return &Result{Enabled: false}, nil
+	}
+
+	includePublic := false
+	if cfg != nil {
+		includePublic = cfg.IncludePublic
+	} else if state != nil {
+		includePublic = state.IncludePublic
 	}
 
 	schemaName := ""
@@ -101,11 +108,12 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 	}
 
 	return &Result{
-		Enabled:      true,
-		SchemaName:   schemaName,
-		BranchName:   branchName,
-		PruneEnabled: pruneEnabled,
-		PruneDays:    pruneDays,
+		Enabled:       true,
+		SchemaName:    schemaName,
+		BranchName:    branchName,
+		IncludePublic: includePublic,
+		PruneEnabled:  pruneEnabled,
+		PruneDays:     pruneDays,
 	}, nil
 }
 

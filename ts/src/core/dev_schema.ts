@@ -5,21 +5,33 @@ import type { DevSchemaConfig } from "./config";
 const STATE_DIR = ".ent";
 const STATE_FILE = "dev_schema.json";
 const DEFAULT_SCHEMA_DIR = path.join("src", "schema");
+const MAX_SCHEMA_LEN = 63;
 
 export interface ResolvedDevSchema {
   enabled: boolean;
   schemaName?: string;
   branchName?: string;
+  includePublic?: boolean;
 }
 
 interface DevSchemaState {
   schemaName: string;
   branchName?: string;
+  includePublic?: boolean;
 }
 
 export function resolveDevSchema(cfg?: DevSchemaConfig): ResolvedDevSchema {
   if (!isDevSchemaEnabled(cfg)) {
     return { enabled: false };
+  }
+
+  if (cfg?.schemaName) {
+    const schemaName = sanitizeIdentifier(cfg.schemaName);
+    return {
+      enabled: true,
+      schemaName,
+      includePublic: cfg.includePublic === true,
+    };
   }
 
   const statePath = resolveStatePath();
@@ -44,6 +56,7 @@ export function resolveDevSchema(cfg?: DevSchemaConfig): ResolvedDevSchema {
     enabled: true,
     schemaName: state.schemaName,
     branchName,
+    includePublic: state.includePublic === true,
   };
 }
 
@@ -57,11 +70,11 @@ export function isDevSchemaEnabled(cfg?: DevSchemaConfig): boolean {
   if (envEnabled !== undefined) {
     return envEnabled;
   }
-  if (cfg?.enabled !== undefined) {
-    return !!cfg.enabled;
-  }
-  if (cfg?.schemaName) {
-    return true;
+  if (cfg) {
+    if (cfg.enabled !== undefined) {
+      return !!cfg.enabled;
+    }
+    return false;
   }
   const statePath = resolveStatePath();
   return !!statePath && fs.existsSync(statePath);
@@ -82,6 +95,45 @@ function loadDevSchemaState(statePath?: string): DevSchemaState | undefined {
     return undefined;
   }
   return data;
+}
+
+
+function slugify(input: string): string {
+  if (!input) {
+    return "";
+  }
+  const lower = input.toLowerCase();
+  let out = "";
+  let lastUnderscore = false;
+  for (const ch of lower) {
+    const isAlpha = ch >= "a" && ch <= "z";
+    const isDigit = ch >= "0" && ch <= "9";
+    if (isAlpha || isDigit) {
+      out += ch;
+      lastUnderscore = false;
+      continue;
+    }
+    if (!lastUnderscore) {
+      out += "_";
+      lastUnderscore = true;
+    }
+  }
+  return out.replace(/^_+|_+$/g, "");
+}
+
+function sanitizeIdentifier(input: string): string {
+  const slug = slugify(input);
+  if (!slug) {
+    return "schema";
+  }
+  let normalized = slug;
+  if (normalized[0] >= "0" && normalized[0] <= "9") {
+    normalized = `schema_${normalized}`;
+  }
+  if (normalized.length > MAX_SCHEMA_LEN) {
+    return normalized.slice(0, MAX_SCHEMA_LEN);
+  }
+  return normalized;
 }
 
 function resolveStatePath(): string | undefined {

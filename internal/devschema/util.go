@@ -52,6 +52,9 @@ func sanitizeIdentifier(input string) string {
 	if slug == "" {
 		return "schema"
 	}
+	if len(slug) > 0 && slug[0] >= '0' && slug[0] <= '9' {
+		slug = "schema_" + slug
+	}
 	if len(slug) > MaxSchemaLen {
 		return slug[:MaxSchemaLen]
 	}
