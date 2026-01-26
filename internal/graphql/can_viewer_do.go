@@ -129,14 +129,23 @@ func getCanViewerDoObjectImpl(processor *codegen.Processor, ctx *canViewerDoCont
 
 func getNewCanViewerDoClass(processor *codegen.Processor, ctx *canViewerDoContextInfo, canViewerDoInfo map[string]action.Action) (*classType, error) {
 	viewerInfo := processor.Config.GetTemplatizedViewer()
+	viewerImport := viewerInfo.GetImportPath()
+	viewerImportCopy := *viewerImport
+	viewerImportCopy.TypeOnly = true
+	requestCtxImport := tsimport.NewEntImportPath("RequestContext")
+	requestCtxImportCopy := *requestCtxImport
+	requestCtxImportCopy.TypeOnly = true
 	imports := []*tsimport.ImportPath{
-		tsimport.NewEntImportPath("RequestContext"),
-		viewerInfo.GetImportPath(),
+		&requestCtxImportCopy,
+		&viewerImportCopy,
 		tsimport.NewEntImportPath("applyPrivacyPolicy"),
 	}
 
 	if ctx.Node != "" {
-		imports = append(imports, tsimport.NewLocalEntImportPath(ctx.Node))
+		entImport := tsimport.NewLocalEntImportPath(ctx.Node)
+		entImportCopy := *entImport
+		entImportCopy.TypeOnly = true
+		imports = append(imports, &entImportCopy)
 	}
 
 	var methods []string

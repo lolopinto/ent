@@ -1,5 +1,6 @@
-{{reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
-{{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator" "OrchestratorOptions" "ChangesetOptions"}}
+{{reserveTypeImport .Package.PackagePath "ID" "Ent" "AssocEdgeInputOptions"}}
+{{reserveTypeImport .Package.ActionPackagePath "Action" "Builder" "Changeset" "OrchestratorOptions" "ChangesetOptions"}}
+{{reserveImport .Package.ActionPackagePath "WriteOperation" "saveBuilder" "saveBuilderX" "Orchestrator"}}
 
 {{ $cfg := .CodePath -}}
 {{ $schema := .Schema -}}
@@ -107,8 +108,8 @@ export interface {{$input}} {
   {{range $field := .FieldInfo.GetEditableFieldsInBuilder -}}
     {{$type := $field.TsBuilderType $cfg -}}
       {{range $field.TsBuilderImports $cfg -}}
-        {{ reserveImportPath . true -}}
-        {{ $ignore := useImport .Import -}}
+        {{ reserveTypeImportPath . true -}}
+        {{ $ignore := useTypeImport .Import -}}
       {{end -}}
     {{$field.TsBuilderFieldName}}?: {{$type}};
   {{end -}}
@@ -126,8 +127,8 @@ function randomNum(): string {
 {{$node := useImport .Node}}
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
+{{ reserveTypeImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useTypeImport $viewerInfo.GetImport -}}
 
 {{$mixinInfo := .GetBuilderMixinInfo $schema -}}
 {{$hasBuilderMixin := $mixinInfo.Imports -}}
@@ -138,16 +139,16 @@ function randomNum(): string {
 
     constructor() {}
 
-    isBuilder<T extends {{useImport "Ent"}}>(
-      node: {{useImport "ID"}} | T | {{useImport "Builder"}}<T, any>,
-    ): node is {{useImport "Builder"}}<T, any> {
-      return (node as {{useImport "Builder"}}<T, any>).placeholderID !== undefined;
+    isBuilder<T extends {{useTypeImport "Ent"}}>(
+      node: {{useTypeImport "ID"}} | T | {{useTypeImport "Builder"}}<T, any>,
+    ): node is {{useTypeImport "Builder"}}<T, any> {
+      return (node as {{useTypeImport "Builder"}}<T, any>).placeholderID !== undefined;
     }
   }
 {{ end}}
 
-type MaybeNull<T extends Ent> = T | null;
-type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+type MaybeNull<T extends {{useTypeImport "Ent"}}> = T | null;
+type TMaybleNullableEnt<T extends {{useTypeImport "Ent"}}> = T | MaybeNull<T>;
 
 export class {{$builder}}<
   TInput extends {{$input}} = {{$input}},
@@ -161,9 +162,9 @@ export class {{$builder}}<
   extends {{$mixinInfo.Extends }}
 {{ end -}}
 
-implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
+implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
   orchestrator: {{useImport "Orchestrator"}}<{{$node}}, TInput, {{$viewerType}}, TExistingEnt>;
-  readonly placeholderID: {{useImport "ID"}};
+  readonly placeholderID: {{useTypeImport "ID"}};
   readonly ent = {{$node}};
   readonly nodeType = {{useImport "NodeType"}}.{{$node}};
   private input: TInput;
@@ -172,9 +173,9 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
   public constructor(
     public readonly viewer: {{$viewerType}},
     public readonly operation: {{useImport "WriteOperation"}},
-    action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>, {{$viewerType}}, TInput, TExistingEnt>,
+    action: {{useTypeImport "Action"}}<{{$node}}, {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>, {{$viewerType}}, TInput, TExistingEnt>,
     public readonly existingEnt: TExistingEnt,
-    opts?: Partial<{{useImport "OrchestratorOptions"}}<{{$node}},  TInput, {{$viewerType}}, TExistingEnt>>,
+    opts?: Partial<{{useTypeImport "OrchestratorOptions"}}<{{$node}},  TInput, {{$viewerType}}, TExistingEnt>>,
   ) {
     {{ if $hasBuilderMixin }}
       super();
@@ -274,7 +275,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
       return this.orchestrator.getInputEdges(edgeType, op);
     }
 
-    clearInputEdges(edgeType: {{useImport "EdgeType"}}, op: {{useImport "WriteOperation"}}, id?: {{useImport "ID"}}) {
+    clearInputEdges(edgeType: {{useImport "EdgeType"}}, op: {{useImport "WriteOperation"}}, id?: {{useTypeImport "ID"}}) {
       this.orchestrator.clearInputEdges(edgeType, op, id);
     }
   {{end -}}
@@ -282,11 +283,11 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
   {{$builderEdges := .BuilderEdges $schema}}
   {{ template "edge_builder.tmpl" (dict "Edges" $builderEdges "Schema" $schema "Package" $pkg) -}}
 
-  async build(): Promise<{{useImport "Changeset"}}> {
+  async build(): Promise<{{useTypeImport "Changeset"}}> {
     return this.orchestrator.build();
   }
 
-  async buildWithOptions_BETA(options: {{useImport "ChangesetOptions"}}): Promise<{{useImport "Changeset"}}> {
+  async buildWithOptions_BETA(options: {{useTypeImport "ChangesetOptions"}}): Promise<{{useTypeImport "Changeset"}}> {
     return this.orchestrator.buildWithOptions_BETA(options);
   }
 
@@ -337,7 +338,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     return result;
   }
 
-  isBuilder<T extends {{useImport "Ent"}}>(node: ID | T | Builder<T, any>): node is Builder<T, any> {
+  isBuilder<T extends {{useTypeImport "Ent"}}>(node: {{useTypeImport "ID"}} | T | {{useTypeImport "Builder"}}<T, any>): node is {{useTypeImport "Builder"}}<T, any> {
     return (node as Builder<T, any>).placeholderID !== undefined;
   }
 

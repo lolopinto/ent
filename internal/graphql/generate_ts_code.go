@@ -2108,6 +2108,7 @@ func getGQLFileImports(imps []*tsimport.ImportPath, mutation bool) []*tsimport.I
 			Import:        v.Import,
 			DefaultImport: v.DefaultImport,
 			Function:      v.Function,
+			TypeOnly:      v.TypeOnly,
 		}
 	}
 	return ret
@@ -2697,8 +2698,10 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 				var useImports []string
 				imps := f.GetTsTypeImports()
 				if len(imps) != 0 {
-					result.Imports = append(result.Imports, imps...)
 					for _, v := range imps {
+						imp := *v
+						imp.TypeOnly = true
+						result.Imports = append(result.Imports, &imp)
 						useImports = append(useImports, v.Import)
 					}
 				}
@@ -2728,6 +2731,11 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 
 		// TODO do we need to overwrite some fields?
 		if action.HasInput(a) {
+			result.Imports = append(result.Imports, &tsimport.ImportPath{
+				ImportPath: getActionPath(nodeData, a),
+				Import:     a.GetActionInputName(),
+				TypeOnly:   true,
+			})
 			// TODO? we should just skip this and have all the fields here if snake_case
 			// since long list of omitted fields
 			intType.Extends = []string{
@@ -2754,6 +2762,7 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 			{
 				ImportPath: codepath.GetExternalImportPath(),
 				Import:     nodeData.Node,
+				TypeOnly:   true,
 			},
 			{
 				ImportPath: codepath.GetImportPathForExternalGQLFile(),
@@ -2782,6 +2791,7 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 		result.Imports = append(result.Imports, &tsimport.ImportPath{
 			ImportPath: getActionPath(nodeData, a),
 			Import:     a.GetActionInputName(),
+			TypeOnly:   true,
 		})
 	}
 
@@ -3051,6 +3061,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 		argImports = append(argImports, &tsimport.ImportPath{
 			Import:     argName,
 			ImportPath: getActionPath(nodeData, a),
+			TypeOnly:   true,
 		})
 	}
 	prefix := names.ToClassType(a.GetGraphQLName())

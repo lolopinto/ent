@@ -12,8 +12,8 @@
     {{$type := $field.TsBuilderType $cfg -}}
     {{range $field.TsBuilderImports $cfg -}}
       {{ if $root.ForeignImport .Import -}}
-        {{ reserveImportPath . true -}}
-        {{ $ignore := useImportMaybe .Import -}}
+        {{ reserveTypeImportPath . true -}}
+        {{ $ignore := useTypeImportMaybe .Import -}}
       {{ end -}}
     {{end -}}
     {{if $field.Nullable -}}

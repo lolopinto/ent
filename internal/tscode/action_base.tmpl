@@ -1,5 +1,6 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions" "ChangesetOptions"}}
-{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause" "CreateRowOptions"}}
+{{ reserveImport .Package.ActionPackagePath "WriteOperation" "setEdgeTypeInGroup" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions"}}
+{{ reserveTypeImport .Package.ActionPackagePath "Action" "Builder" "Changeset" "Trigger" "Observer" "Validator" "ChangesetOptions"}}
+{{ reserveTypeImport .Package.PackagePath "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause" "CreateRowOptions"}}
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
@@ -10,7 +11,8 @@
 {{ $builderName := printf "%sBuilder" .NodeData.Node -}}
 {{ $builderInput := printf "%sInput" .NodeData.Node -}}
 
-{{ reserveImport .BuilderPath $builderName $builderInput}}
+{{ reserveImport .BuilderPath $builderName}}
+{{ reserveTypeImport .BuilderPath $builderInput}}
 
 {{ $action := .Action -}}
 {{ $actionName := printf "%sBase" $action.GetActionName -}}
@@ -47,8 +49,8 @@
 
   {{ if $inputWithRelative }}
     {{ range $imp := $inputWithRelative.Imports }} 
-      {{reserveImportPath $imp true }}
-      {{ $ignored := useImport $imp.Import -}}
+      {{reserveTypeImportPath $imp true }}
+      {{ $ignored := useTypeImport $imp.Import -}}
     {{ end }}
   {{ end -}}
 
@@ -61,8 +63,8 @@
       {{ end -}}
 
       {{range $field.TsBuilderImports $cfg -}}
-        {{ reserveImportPath . true -}}
-        {{ $ignore := useImport .Import -}}
+        {{ reserveTypeImportPath . true -}}
+        {{ $ignore := useTypeImport .Import -}}
       {{end -}}
       {{if isRequiredField $action $field -}}
         {{$field.TsBuilderFieldName}}: {{$type}};
@@ -74,8 +76,8 @@
     {{ range $field := $action.GetNonEntFields -}}
       {{$type := $field.GetTsType -}}
       {{range $field.GetTsTypeImports -}}
-        {{ conditionallyReserveImportPath . true -}}
-        {{ $ignore := useImportMaybe .Import -}}
+        {{ conditionallyReserveTypeImportPath . true -}}
+        {{ $ignore := useTypeImportMaybe .Import -}}
       {{end -}}
       {{if $field.Required -}}
         {{$field.TsBuilderFieldName}}: {{$type}};
@@ -107,8 +109,8 @@
 {{ $upsertInfo := .NodeData.GetUpsertInfo $action.GetActionName}} 
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
+{{ reserveTypeImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useTypeImport $viewerInfo.GetImport -}}
 
 
 {{/* edit, whole shebang */ -}}
@@ -132,7 +134,7 @@
 {{ if $hasInput -}}
   {{ $inputData = $inputName -}}
 {{ else -}}
-  {{ $inputData = useImport $inputData -}}
+  {{ $inputData = useTypeImport $inputData -}}
 {{ end -}}
 
 {{ $existingEnt := "" -}}
@@ -143,13 +145,13 @@
 {{ end -}}
 
 {{$triggersType := printf "%sTriggers" $action.GetActionName}}
-export type {{$triggersType }} = ({{useImport "Trigger"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> | {{useImport "Trigger"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[])[];
+export type {{$triggersType }} = ({{useTypeImport "Trigger"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> | {{useTypeImport "Trigger"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[])[];
 
 {{$observersType := printf "%sObservers" $action.GetActionName}}
-export type {{$observersType }} = {{useImport "Observer"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
+export type {{$observersType }} = {{useTypeImport "Observer"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
 
 {{$validatorsType := printf "%sValidators" $action.GetActionName}}
-export type {{$validatorsType }} = {{useImport "Validator"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
+export type {{$validatorsType }} = {{useTypeImport "Validator"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
 
 {{$upsert := and $creating $upsertInfo}}
 {{ if $upsert }}
@@ -158,7 +160,7 @@ export type {{$validatorsType }} = {{useImport "Validator"}}<{{$node}}, {{$build
 
 
 
-export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> {
+export class {{$actionName}} implements {{useTypeImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> {
   public readonly builder: {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>;
   public readonly viewer: {{$viewerType}}
   {{ if $hasInput -}}
@@ -172,7 +174,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
     this.viewer = viewer;
     {{ if $hasInput -}}
       {{if $inputWithRelative -}}
-          let expressions = new Map<string, {{useImport "Clause"}}>();
+          let expressions = new Map<string, {{useTypeImport "Clause"}}>();
           const data = {{$instance}}.___getRawDBData();
           // @ts-expect-error converted below
           this.input = input;
@@ -204,7 +206,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
     {{end -}}
   }
 
-  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<{{$node}},{{$viewerType}}> {
+  getPrivacyPolicy(): {{useTypeImport "PrivacyPolicy"}}<{{$node}},{{$viewerType}}> {
     {{ if .NodeData.HasDefaultActionPrivacy}}
       {{ reserveDefaultImport .NodeData.GetSchemaPath "schema" -}}
       {{ $schema := useImport "schema" -}}
@@ -248,31 +250,31 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   {{ range $edge := $edges -}}
     {{ $node := useImport $edge.Node -}}
     {{ if removeEdgeAction $action -}}
-      {{$edge.TSRemoveMethodName}}(...nodes: ({{useImport "ID"}} | {{$node}})[]): this{
+      {{$edge.TSRemoveMethodName}}(...nodes: ({{useTypeImport "ID"}} | {{$node}})[]): this{
         nodes.forEach(node => this.builder.{{$edge.TSRemoveMethodName}}(node));
         return this;
       }
     {{ else -}}
-      {{$edge.TSAddMethodName}}(...nodes: ({{useImport "ID"}} | {{$node}} | {{useImport "Builder"}}<{{$node}}>)[]): this{
+      {{$edge.TSAddMethodName}}(...nodes: ({{useTypeImport "ID"}} | {{$node}} | {{useTypeImport "Builder"}}<{{$node}}>)[]): this{
         nodes.forEach(node => this.builder.{{$edge.TSAddMethodName}}(node));
         return this;
       }
 
-      {{$edge.TSAddIDMethodName}}(id: {{useImport "ID"}} | {{useImport "Builder"}}<{{$node}}>, options?: {{useImport "AssocEdgeInputOptions"}}): this {
+      {{$edge.TSAddIDMethodName}}(id: {{useTypeImport "ID"}} | {{useTypeImport "Builder"}}<{{$node}}>, options?: {{useTypeImport "AssocEdgeInputOptions"}}): this {
         this.builder.{{$edge.TSAddIDMethodName}}(id, options);
         return this;
       }
     {{end -}}
   {{end -}}
 
-  async changeset(): Promise<{{useImport "Changeset"}}> {
+  async changeset(): Promise<{{useTypeImport "Changeset"}}> {
     {{if edgeGroupAction $action }}
       await this.setEdgeType();
     {{ end -}}
     return this.builder.build();
   }
 
-  async changesetWithOptions_BETA(options: {{useImport "ChangesetOptions"}}): Promise<{{useImport "Changeset"}}> {
+  async changesetWithOptions_BETA(options: {{useTypeImport "ChangesetOptions"}}): Promise<{{useTypeImport "Changeset"}}> {
     {{if edgeGroupAction $action }}
       await this.setEdgeType();
     {{ end -}}
@@ -335,7 +337,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
 
   {{ if $upsert }}
   async upsert_BETA(options: {{$upsertInfo.Name}}): Promise<{{$node}} | null> {
-    const opts: {{useImport "CreateRowOptions"}}['onConflict'] ={
+    const opts: {{useTypeImport "CreateRowOptions"}}['onConflict'] ={
       onConflictCols: [],
       updateCols: options.update_cols,
     };
@@ -354,7 +356,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   }
 
   async upsert_BETAX(options: {{$upsertInfo.Name}}): Promise<{{$node}}> {
-    const opts: {{useImport "CreateRowOptions"}}['onConflict'] ={
+    const opts: {{useTypeImport "CreateRowOptions"}}['onConflict'] ={
       onConflictCols: [],
       updateCols: options.update_cols,
     };
@@ -408,11 +410,11 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
     static async {{$name}}<T extends {{$actionName}}>(
       this: new ({{$constructor}}) => T,
       viewer: {{$viewerType}},
-      id: {{useImport "ID"}},
+      id: {{useTypeImport "ID"}},
       {{if edgeAction $action -}}
         {{ range $edge := $edges -}}
           {{/* TODO this assumes there is only one edge */ -}}
-          {{$edge.TSNodeID}}: {{useImport "ID"}},
+          {{$edge.TSNodeID}}: {{useTypeImport "ID"}},
         {{end -}}
       {{ end -}}
       {{if $hasInput -}}

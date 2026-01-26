@@ -1,10 +1,8 @@
-import {
-  CreateUserActionBase,
-  UserCreateInput,
-} from "src/ent/generated/user/actions/create_user_action_base";
+import { CreateUserActionBase } from "src/ent/generated/user/actions/create_user_action_base";
+import type { UserCreateInput } from "src/ent/generated/user/actions/create_user_action_base";
 import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 
-export { UserCreateInput };
+export type { UserCreateInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateUserAction extends CreateUserActionBase {

@@ -41,16 +41,33 @@ from .util.os import delete_py_files
 
 
 class Runner(object):
-    def __init__(self, metadata, engine, connection, schema_path, args: dict | None = None):
+    # Dev schema isolation contract (Postgres only):
+    # - default include_public = False (strict isolation)
+    # - search_path set to dev schema only (public is opt-in)
+    # - alembic reflection limited to dev schema when enabled
+    # - registry writes are best-effort; skipped for empty-db compares
+    def __init__(
+        self,
+        metadata,
+        engine,
+        connection,
+        schema_path,
+        args: Mapping[str, Any] | None = None,
+    ):
         self.metadata = metadata
         self.schema_path = schema_path
         self.engine = engine
         self.connection = connection
-        self.args = args or {}
+        self.args: Mapping[str, Any] = args or {}
 
         config.metadata = self.metadata
         config.engine = self.engine
         config.connection = connection
+        self.schema_name, self.include_public = Runner._resolve_schema_config(self.args)
+        if self.schema_name:
+            Runner.setup_schema(self.connection, self.schema_name, self.include_public)
+        config.schema_name = self.schema_name
+        config.include_public = self.include_public
 
         sql = self.args.get('sql', None)
         if sql is not None and sql.lower() != 'true':
@@ -65,13 +82,134 @@ class Runner(object):
     @classmethod   
     def get_opts(cls):
         # note that any change here also needs a comparable change in env.py
-        return {
+        opts = {
                 "compare_type": Runner.compare_type,
                 "include_object": Runner.include_object,
+                "include_name": Runner.include_name,
                 "compare_server_default": Runner.compare_server_default,
                 "transaction_per_migration": True,
                 "render_item": Runner.render_item,
             }
+        if config.schema_name:
+            opts["include_schemas"] = True
+        return opts
+
+    @staticmethod
+    def _parse_bool(val):
+        if val is None:
+            return None
+        if isinstance(val, bool):
+            return val
+        val = str(val).strip().lower()
+        if val in ('1', 'true', 't', 'yes', 'y'):
+            return True
+        if val in ('0', 'false', 'f', 'no', 'n'):
+            return False
+        return None
+
+    @staticmethod
+    def _quote_ident(name: str) -> str:
+        return '"' + name.replace('"', '""') + '"'
+
+    @classmethod
+    def _resolve_schema_config(
+        cls, args: Mapping[str, Any] | None
+    ) -> tuple[str | None, bool | None]:
+        if os.getenv("NODE_ENV", "").strip().lower() == "production":
+            return (None, None)
+        if not args:
+            return (None, None)
+        schema = args.get("db_schema")
+        include_public = cls._parse_bool(args.get("db_schema_include_public"))
+        if schema and include_public is None:
+            include_public = False
+        return (schema, include_public)
+
+    @classmethod
+    def setup_schema(cls, connection, schema_name, include_public=False, touch_registry=True):
+        if not schema_name:
+            return
+
+        dialect = connection.dialect.name
+        if dialect == 'sqlite':
+            raise Exception("dev branch schemas are only supported for postgres")
+        if dialect != 'postgresql':
+            raise Exception(f"dev branch schemas are only supported for postgres. got {dialect}")
+
+        schema_ident = cls._quote_ident(schema_name)
+        # Avoid schema creation inside any existing transaction by using
+        # a separate autocommit connection when possible.
+        try:
+            engine = connection.engine
+        except Exception:
+            engine = None
+
+        if engine is not None:
+            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as ddl_conn:
+                ddl_conn.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {schema_ident}"))
+        else:
+            connection.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {schema_ident}"))
+
+        if include_public is None:
+            include_public = False
+        if include_public:
+            search_path = f"{schema_ident}, public"
+        else:
+            search_path = schema_ident
+        connection.execute(sa.text(f"SET search_path TO {search_path}"))
+        if touch_registry:
+            cls._touch_registry(connection, schema_name)
+
+    @classmethod
+    def _touch_registry(cls, connection, schema_name):
+        if not schema_name:
+            return
+        branch = os.getenv("ENT_DEV_SCHEMA_BRANCH") or os.getenv("ENT_DEV_BRANCH") or os.getenv("GIT_BRANCH") or os.getenv("BRANCH_NAME")
+
+        def _apply_registry(conn):
+            metadata = sa.MetaData()
+            registry = sa.Table(
+                "ent_dev_schema_registry",
+                metadata,
+                sa.Column("schema_name", sa.Text(), primary_key=True),
+                sa.Column("branch_name", sa.Text()),
+                sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+                sa.Column("last_used_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+                schema="public",
+            )
+            registry.create(conn, checkfirst=True)
+
+            stmt = postgresql.insert(registry).values(
+                schema_name=schema_name,
+                branch_name=branch,
+                created_at=sa.func.now(),
+                last_used_at=sa.func.now(),
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[registry.c.schema_name],
+                set_={
+                    "last_used_at": sa.func.now(),
+                    "branch_name": stmt.excluded.branch_name,
+                },
+            )
+            conn.execute(stmt)
+
+        # Avoid holding locks on the caller's connection/transaction; use autocommit if possible.
+        try:
+            engine = connection.engine
+        except Exception:
+            engine = None
+        try:
+            if engine is not None:
+                with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as reg_conn:
+                    _apply_registry(reg_conn)
+            else:
+                _apply_registry(connection)
+        except Exception as exc:
+            # registry writes are best-effort; don't fail schema setup if public is locked down
+            if os.getenv("ENT_DEV_SCHEMA_DEBUG") == "1":
+                print(f"[auto_schema] registry update failed: {exc}", file=sys.stderr)
+            return
 
     @classmethod
     def from_command_line(cls, metadata, args: Namespace):
@@ -82,11 +220,16 @@ class Runner(object):
 
     @classmethod
     def fix_edges(cls, metadata, args):
-        if isinstance(args, Mapping) and args.get('connection'):
-            connection = args.get('connection')
-        else:
-            engine = sa.create_engine(args.engine)
+        if not isinstance(args, Mapping):
+            args = vars(args)
+        connection = args.get("connection")
+        if connection is None:
+            engine = sa.create_engine(args["engine"])
             connection = engine.connect()
+
+        schema, include_public = cls._resolve_schema_config(args)
+        if schema:
+            cls.setup_schema(connection, schema, include_public)
 
         mc = MigrationContext.configure(
             connection=connection,
@@ -98,7 +241,10 @@ class Runner(object):
     @classmethod
     def exclude_tables(cls):
         # prevent default POSTGIS tables from affecting this
-        return "geography_columns,geometry_columns,raster_columns,raster_overviews,spatial_ref_sys"
+        base = "geography_columns,geometry_columns,raster_columns,raster_overviews,spatial_ref_sys"
+        if config.schema_name:
+            return f"{base},alembic_version,ent_dev_schema_registry"
+        return base
 
     @classmethod
     def compare_type(cls, context, inspected_column, metadata_column, inspected_type, metadata_type):
@@ -122,12 +268,35 @@ class Runner(object):
 
     @classmethod
     def include_object(cls, object, name, type, reflected, compare_to):
+        if config.schema_name and reflected:
+            schema = getattr(object, "schema", None)
+            if schema is None:
+                table = getattr(object, "table", None)
+                if table is not None:
+                    schema = getattr(table, "schema", None)
+            if schema is None:
+                schema = "public"
+            if schema != config.schema_name:
+                return False
         exclude_tables = Runner.exclude_tables().split(',')
 
         if type == "table" and name in exclude_tables:
             return False
         else:
             return True
+
+    @classmethod
+    def include_name(cls, name, type, parent_names):
+        if not config.schema_name:
+            return True
+        if type == "schema":
+            return name == config.schema_name
+        schema = parent_names.get("schema") if parent_names else None
+        if schema is None:
+            schema = "public"
+        if schema != config.schema_name:
+            return False
+        return True
 
     @classmethod
     def convert_postgres_boolean(cls, metadata_default):
@@ -237,7 +406,6 @@ class Runner(object):
 
         # migration_script = produce_migrations(self.mc, self.metadata)
         # print(render_python_code(migration_script.upgrade_ops))
-
         try:
             self.revision(diff)
         except CommandError as err:
@@ -277,7 +445,8 @@ class Runner(object):
         return self.cmd.revision(message, autogenerate=False)
 
     def upgrade(self, revision='heads', sql=False):
-        return self.cmd.upgrade(revision, sql)
+        result = self.cmd.upgrade(revision, sql)
+        return result
 
     def downgrade(self, revision, delete_files):
         self.cmd.downgrade(revision, delete_files=delete_files)
@@ -529,9 +698,19 @@ class Runner(object):
 
         engine = sa.create_engine(url)
         connection = engine.connect()
+        if self.schema_name:
+            Runner.setup_schema(
+                connection,
+                self.schema_name,
+                self.include_public,
+                touch_registry=False,
+            )
 
         metadata = sa.MetaData()
-        metadata.reflect(bind=connection)
+        if self.schema_name:
+            metadata.reflect(bind=connection, schema=self.schema_name)
+        else:
+            metadata.reflect(bind=connection)
         if len(metadata.sorted_tables) != 0:
             raise Exception(f"to compare from base tables, cannot have any tables in database. have {len(metadata.sorted_tables)}")
 

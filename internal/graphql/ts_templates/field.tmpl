@@ -27,9 +27,9 @@
         {{$args = "any" -}}
       {{ end -}}
       {{if $field.HasAsyncModifier -}}
-        resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useImport "RequestContext"}}<{{useImport $viewerType}}>) => {
+        resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useTypeImport "RequestContext"}}<{{useTypeImport $viewerType}}>) => {
       {{ else -}}
-        resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useImport "RequestContext"}}<{{useImport $viewerType}}>) => {
+        resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {{$args}}, context: {{useTypeImport "RequestContext"}}<{{useTypeImport $viewerType}}>) => {
       {{ end -}}
         {{ range $field.FunctionContents -}}
           {{.}}

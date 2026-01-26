@@ -1,5 +1,7 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "loadCustomCount" "applyPrivacyPolicy" "Ent"}}
-{{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy" "getFieldsWithEditPrivacy"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "loadEntX" "loadEnts" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "query" "getEdgeTypeInGroup" "ObjectLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "loadCustomEnts" "loadCustomData" "loadCustomCount" "applyPrivacyPolicy"}}
+{{ reserveTypeImport .Package.PackagePath "ID" "Data" "LoadEntOptions" "PrivacyPolicy" "Ent" "Context" "CustomQuery"}}
+{{ reserveImport .Package.SchemaPackagePath "getFields" "getFieldsWithPrivacy" "getFieldsWithEditPrivacy"}}
+{{ reserveTypeImport .Package.SchemaPackagePath "Field"}}
 {{ reserveImport .Package.TypesImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/generated/loadAny" "loadEntByType" "loadEntXByType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
@@ -8,8 +10,8 @@
 {{ $cfg := .CodePath -}}
 {{ $schema := .Schema -}}
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
+{{ reserveTypeImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useTypeImport $viewerInfo.GetImport -}}
 
 {{with .NodeData -}}
 {{$loaderInfo := printf "%sLoaderInfo" .NodeInstance -}}
@@ -26,11 +28,11 @@
   {{ reserveImportPath . false -}}
 {{ end}}
 
-{{$idType := useImport "ID" }}
+{{$idType := useTypeImport "ID" }}
 {{$this := .}}
 
 {{$baseClass := printf "%sBase" .Node -}}
-{{$ignore := useImport "Data" -}}
+{{$ignore := useTypeImport "Data" -}}
 {{$thisType := printf ("new (viewer: %s, data: Data) => T") $viewerType}}
 
 {{$nodeData := .}}
@@ -42,8 +44,8 @@
 // 3/ there's potentially extra columns in the db that can be queried which aren't returned in the 
 // query e.g. generated column indices. we can have a third type for that
 */}}
-{{ reserveImport "src/ent/generated/loaders" .GetRawDBDataName -}}
-{{$rawDBDataType := useImport .GetRawDBDataName -}}
+{{ reserveTypeImport "src/ent/generated/loaders" .GetRawDBDataName -}}
+{{$rawDBDataType := useTypeImport .GetRawDBDataName -}}
 {{$dataType := $rawDBDataType -}}
 {{$customQueryDataType := $rawDBDataType -}}
 
@@ -109,7 +111,7 @@ export class {{$baseClass}}
   extends {{$mixinInfo.Extends }}
 {{ end -}}
 
-implements {{useImport "Ent"}}<{{$viewerType}}> 
+implements {{useTypeImport "Ent"}}<{{$viewerType}}> 
 {{ if $mixinInfo.Implements }}
   , {{$mixinInfo.Implements}}
 {{ end -}}
@@ -123,8 +125,8 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{range $field := .FieldInfo.EntFields -}}
     {{ if not ($schema.PatternFieldWithMixin $field) -}}
       {{ range $field.GetTsTypeImports -}}
-        {{ reserveImportPath . false -}}
-        {{$typ := useImportMaybe .Import -}}
+        {{ reserveTypeImportPath . false -}}
+        {{$typ := useTypeImportMaybe .Import -}}
       {{end -}}
       {{ if $field.Private $cfg -}}
         {{ if $field.FetchOnDemand -}}
@@ -138,7 +140,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{ end -}}
   {{end}}
 
-  constructor(public viewer: {{$viewerType}}, data:Data) {
+  constructor(public viewer: {{$viewerType}}, data: {{useTypeImport "Data"}}) {
     {{ if $hasMixins -}}
       // @ts-ignore pass to mixin
       super(viewer, data);
@@ -172,7 +174,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{ end -}}
   }
   
-  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<this, {{$viewerType}}> {
+  getPrivacyPolicy(): {{useTypeImport "PrivacyPolicy"}}<this, {{$viewerType}}> {
     {{ if $privacyCfg.Class }}
       return new {{useImport $privacyCfg.PolicyName}}();
     {{ else }}
@@ -184,7 +186,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{range $field := .FieldInfo.EntFields -}}
     {{ if $field.HasAsyncAccessor $cfg -}}
       {{ range $field.GetTsTypeImports -}}
-        {{$typ := useImportMaybe .Import -}}
+        {{$typ := useTypeImportMaybe .Import -}}
       {{end -}}
       async {{$field.TSPublicAPIName}}(): Promise<{{$field.TsType}}> {
         {{ $fieldName := $field.TsFieldName $cfg -}}
@@ -297,18 +299,18 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     this: {{$thisType}},
     viewer: {{$viewerType}},
     ...ids: {{$idType}}[]
-  ): Promise<Map<ID, T>> {
+  ): Promise<Map<{{$idType}}, T>> {
     return await {{useImport "loadEnts"}}(
       viewer, 
       {{$baseClass}}.loaderOptions.apply(this), 
       ...ids,
-    ) as Map<ID, T>;
+    ) as Map<{{$idType}}, T>;
   }
 
   static async loadCustom<T extends {{$baseClass}}>(
     this: {{$thisType}},
     viewer: {{$viewerType}},
-    query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
+    query: {{useTypeImport "CustomQuery"}}<{{$customQueryDataType}}>,
   ): Promise<T[]> {
     {{/* there's technically some mismatch in the raw db types passed/returned here but doesn't matter */}}
     return await {{useImport "loadCustomEnts"}}(
@@ -323,8 +325,8 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static async loadCustomData<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
-    context?: {{useImport "Context"}}
+    query: {{useTypeImport "CustomQuery"}}<{{$customQueryDataType}}>,
+    context?: {{useTypeImport "Context"}}
   ): Promise<{{$rawDBDataType}}[]> {
     return {{useImport "loadCustomData"}}<{{$customQueryDataType}}, {{$rawDBDataType}}>(
       {
@@ -338,8 +340,8 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static async loadCustomCount<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    query: {{useImport "CustomQuery"}}<{{$customQueryDataType}}>,
-    context?: {{useImport "Context"}}
+    query: {{useTypeImport "CustomQuery"}}<{{$customQueryDataType}}>,
+    context?: {{useTypeImport "Context"}}
   ): Promise<number> {
     return {{useImport "loadCustomCount"}}(
       {
@@ -352,16 +354,16 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static async loadRawData<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    id: ID,
-    context?: {{useImport "Context"}},
+    id: {{$idType}},
+    context?: {{useTypeImport "Context"}},
   ): Promise<{{$rawDBDataType}} | null> {
     return {{useImport $loaderName}}.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    id: ID,
-    context?: {{useImport "Context"}},
+    id: {{$idType}},
+    context?: {{useTypeImport "Context"}},
   ): Promise<{{$rawDBDataType}}> {
     const row = await {{useImport $loaderName}}.createLoader(context).load(id);
     if (!row) {
@@ -407,7 +409,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       static async {{$field.LoadIDFromName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
-        context?: {{useImport "Context"}},
+        context?: {{useTypeImport "Context"}},
       ): Promise<{{$idType}} | undefined> {
         const row = await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName $cfg}});
         return row?.id;
@@ -416,7 +418,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       static async {{$field.LoadRawDataFromName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
-        context?: {{useImport "Context"}},
+        context?: {{useTypeImport "Context"}},
       ): Promise<{{$rawDBDataType}} | null> {
         return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName $cfg}});
       }
@@ -425,7 +427,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       static {{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
-        ent: {{useImport "Ent"}}<{{$viewerType}}>,
+        ent: {{useTypeImport "Ent"}}<{{$viewerType}}>,
       ): {{$queryName}} {
         return {{$queryName}}.query(viewer, ent);
       }
@@ -434,7 +436,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static loaderOptions<T extends {{$baseClass}}>(
     this: new (viewer: {{$viewerType}}, data: Data) => T,
-  ): {{useImport "LoadEntOptions"}}<T, {{$viewerType}}, {{$rawDBDataType}}> {
+  ): {{useTypeImport "LoadEntOptions"}}<T, {{$viewerType}}, {{$rawDBDataType}}> {
     return {
       tableName: {{useImport $loaderInfo}}.tableName,
       fields: {{useImport $loaderInfo}}.fields,
@@ -446,16 +448,16 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     };
   }
 
-  private static schemaFields: Map<string, {{useImport "Field"}}>;
+  private static schemaFields: Map<string, {{useTypeImport "Field"}}>;
 
-  private static getSchemaFields(): Map<string, {{useImport "Field"}}> {
+  private static getSchemaFields(): Map<string, {{useTypeImport "Field"}}> {
     if ({{$baseClass}}.schemaFields != null) {
       return {{$baseClass}}.schemaFields;
     }
     return {{$baseClass}}.schemaFields = {{useImport "getFields"}}({{useImport "schema"}});
   }
 
-  static getField(key: string): {{useImport "Field"}} | undefined{
+  static getField(key: string): {{useTypeImport "Field"}} | undefined{
     return {{$baseClass}}.getSchemaFields().get(key);
   }
 
@@ -575,7 +577,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{ range $edge := .EdgeInfo.FieldEdges -}}
     {{  $edgeName := .CamelCaseEdgeName -}}
     {{ if $edge.Polymorphic}}
-      async load{{$edgeName}}(): Promise<{{useImport "Ent"}}| null>{
+      async load{{$edgeName}}(): Promise<{{useTypeImport "Ent"}}| null>{
         {{ if $edge.Nullable -}}
           if (!this.{{$edge.TSFieldName}}) {
             return null;
@@ -589,7 +591,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       }
       
       {{ if not $edge.Nullable -}}
-        load{{$edgeName}}X(): Promise<{{useImport "Ent"}}> {
+        load{{$edgeName}}X(): Promise<{{useTypeImport "Ent"}}> {
         return {{useImport "loadEntXByType"}}(
           this.viewer, 
           this.{{$edge.Polymorphic.NodeTypeField}} as unknown as {{useImport "NodeType"}},
@@ -689,4 +691,3 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 }
 
 {{end -}}
-

@@ -104,9 +104,11 @@ def run_migrations_offline():
         target_metadata=target_metadata,
         compare_type=runner.Runner.compare_type,
         include_object=runner.Runner.include_object,
+        include_name=runner.Runner.include_name,
         compare_server_default=runner.Runner.compare_server_default,
         render_item=runner.Runner.render_item,
-        output_buffer=output_buffer
+        include_schemas=bool(config.schema_name),
+        output_buffer=output_buffer,
         # transaction_per_migration doesn't seem to apply offline
     )
 
@@ -123,13 +125,28 @@ def run_migrations_online():
     """
 
     with engine.connect() as connection:
+        if config.schema_name:
+            runner.Runner.setup_schema(
+                connection, config.schema_name, config.include_public
+            )
+
+        # Ensure the connection is not in an external transaction before
+        # configuring Alembic; otherwise Alembic will treat the transaction
+        # as externally managed and won't commit migrations.
+        try:
+            if connection.in_transaction():
+                connection.commit()
+        except Exception:
+            pass
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             compare_type=runner.Runner.compare_type,
             include_object=runner.Runner.include_object,
+            include_name=runner.Runner.include_name,
             compare_server_default=runner.Runner.compare_server_default,
             render_item=runner.Runner.render_item,
+            include_schemas=bool(config.schema_name),
             transaction_per_migration=True,
         )
 

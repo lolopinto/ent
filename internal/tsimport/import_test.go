@@ -45,13 +45,28 @@ func reserveImport(imps *Imports, path string, imports ...string) error {
 	return err
 }
 
+func reserveTypeImport(imps *Imports, path string, imports ...string) error {
+	_, err := imps.ReserveType(path, imports...)
+	return err
+}
+
 func useImport(imps *Imports, imp string) error {
 	_, err := imps.Use(imp)
 	return err
 }
 
+func useTypeImport(imps *Imports, imp string) error {
+	_, err := imps.UseType(imp)
+	return err
+}
+
 func useImportMaybe(imps *Imports, imp string) error {
 	_, err := imps.UseMaybe(imp)
+	return err
+}
+
+func useTypeImportMaybe(imps *Imports, imp string) error {
+	_, err := imps.UseTypeMaybe(imp)
 	return err
 }
 
@@ -90,6 +105,11 @@ func export(imps *Imports, path string, exports ...string) error {
 	return err
 }
 
+func exportType(imps *Imports, path string, exports ...string) error {
+	_, err := imps.ExportType(path, exports...)
+	return err
+}
+
 func TestImports(t *testing.T) {
 	testCases := map[string]testCase{
 		"reserve some": {
@@ -101,6 +121,29 @@ func TestImports(t *testing.T) {
 			},
 			expectedLines: []string{
 				getLine("import {loadEnt, loadEntX} from {root};"),
+			},
+		},
+		"reserve type import": {
+			fn: func(imps *Imports) {
+				require.Nil(t, reserveTypeImport(imps, "src/ent/user", "UserInput", "UserInput2"))
+
+				require.Nil(t, useTypeImport(imps, "UserInput"))
+			},
+			expectedLines: []string{
+				getLine("import type {UserInput} from {path};", "src/ent/user"),
+			},
+		},
+		"type + value import same path": {
+			fn: func(imps *Imports) {
+				require.Nil(t, reserveTypeImport(imps, "src/ent/user", "UserInput"))
+				require.Nil(t, reserveImport(imps, "src/ent/user", "User"))
+
+				require.Nil(t, useTypeImport(imps, "UserInput"))
+				require.Nil(t, useImport(imps, "User"))
+			},
+			expectedLines: []string{
+				getLine("import type {UserInput} from {path};", "src/ent/user"),
+				getLine("import {User} from {path};", "src/ent/user"),
 			},
 		},
 		"nothing used": {
@@ -553,6 +596,14 @@ func TestImports(t *testing.T) {
 			},
 			expectedLines: []string{
 				getLine("export {bar, foo} from {path};", "src/ent/generated/const"),
+			},
+		},
+		"export type": {
+			fn: func(imps *Imports) {
+				require.Nil(t, exportType(imps, "src/ent/generated/const", "foo", "bar"))
+			},
+			expectedLines: []string{
+				getLine("export type {bar, foo} from {path};", "src/ent/generated/const"),
 			},
 		},
 		"export relPath": {
