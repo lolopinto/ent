@@ -23,8 +23,8 @@ Schema filtering:
 - When dev schema is active, exclude objects whose schema is not the dev schema.
 - If schema is `None`, treat it as `public` and exclude it to prevent leakage.
 
-Environment hints used by registry metadata:
-- `ENT_DEV_SCHEMA_BRANCH`, `ENT_DEV_BRANCH`, `GIT_BRANCH`, `BRANCH_NAME`.
+Registry metadata:
+- `branch_name` is best-effort and may be empty; do not rely on it for behavior.
 
 Enablement & naming:
 - `NODE_ENV=production` disables dev schemas everywhere.

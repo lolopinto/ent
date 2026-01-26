@@ -194,6 +194,7 @@ export default class DB {
               touchDevSchemaRegistry(
                 this.pool,
                 resolvedDevSchema.schemaName,
+                resolvedDevSchema.branchName,
               ).catch(() => {}),
             )
           : undefined;
@@ -589,13 +590,12 @@ async function validateDevSchema(pool: Pool, schemaName: string) {
   }
 }
 
-async function touchDevSchemaRegistry(pool: Pool, schemaName: string) {
-  const branch =
-    process.env.ENT_DEV_SCHEMA_BRANCH ||
-    process.env.ENT_DEV_BRANCH ||
-    process.env.GIT_BRANCH ||
-    process.env.BRANCH_NAME ||
-    null;
+async function touchDevSchemaRegistry(
+  pool: Pool,
+  schemaName: string,
+  branchName?: string,
+) {
+  const branch = branchName ?? null;
   try {
     // Avoid DDL at runtime; registry table should be created by auto_schema/prune.
     await pool.query(
