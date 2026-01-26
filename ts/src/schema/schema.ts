@@ -687,6 +687,10 @@ export interface Field extends FieldOptions {
   // and should only format children and not format lists or objects
   format?(val: any, nested?: boolean): any;
 
+  // normalize input values (e.g. struct/list shapes) for builder input
+  // defaults to a best-effort format when available
+  formatInput?(val: any): any;
+
   logValue(val: any): any;
 }
 
