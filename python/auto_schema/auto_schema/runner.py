@@ -41,6 +41,11 @@ from .util.os import delete_py_files
 
 
 class Runner(object):
+    # Dev schema isolation contract (Postgres only):
+    # - default include_public = False (strict isolation)
+    # - search_path set to dev schema only (public is opt-in)
+    # - alembic reflection limited to dev schema when enabled
+    # - registry writes are best-effort; skipped for empty-db compares
     def __init__(
         self,
         metadata,
@@ -80,10 +85,13 @@ class Runner(object):
         opts = {
                 "compare_type": Runner.compare_type,
                 "include_object": Runner.include_object,
+                "include_name": Runner.include_name,
                 "compare_server_default": Runner.compare_server_default,
                 "transaction_per_migration": True,
                 "render_item": Runner.render_item,
             }
+        if config.schema_name:
+            opts["include_schemas"] = True
         return opts
 
     @staticmethod
@@ -114,11 +122,11 @@ class Runner(object):
         schema = args.get("db_schema")
         include_public = cls._parse_bool(args.get("db_schema_include_public"))
         if schema and include_public is None:
-            include_public = True
+            include_public = False
         return (schema, include_public)
 
     @classmethod
-    def setup_schema(cls, connection, schema_name, include_public=True):
+    def setup_schema(cls, connection, schema_name, include_public=False, touch_registry=True):
         if not schema_name:
             return
 
@@ -143,13 +151,14 @@ class Runner(object):
             connection.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {schema_ident}"))
 
         if include_public is None:
-            include_public = True
+            include_public = False
         if include_public:
             search_path = f"{schema_ident}, public"
         else:
             search_path = schema_ident
         connection.execute(sa.text(f"SET search_path TO {search_path}"))
-        cls._touch_registry(connection, schema_name)
+        if touch_registry:
+            cls._touch_registry(connection, schema_name)
 
     @classmethod
     def _touch_registry(cls, connection, schema_name):
@@ -190,11 +199,17 @@ class Runner(object):
             engine = connection.engine
         except Exception:
             engine = None
-        if engine is not None:
-            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as reg_conn:
-                _apply_registry(reg_conn)
-        else:
-            _apply_registry(connection)
+        try:
+            if engine is not None:
+                with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as reg_conn:
+                    _apply_registry(reg_conn)
+            else:
+                _apply_registry(connection)
+        except Exception as exc:
+            # registry writes are best-effort; don't fail schema setup if public is locked down
+            if os.getenv("ENT_DEV_SCHEMA_DEBUG") == "1":
+                print(f"[auto_schema] registry update failed: {exc}", file=sys.stderr)
+            return
 
     @classmethod
     def from_command_line(cls, metadata, args: Namespace):
@@ -226,7 +241,10 @@ class Runner(object):
     @classmethod
     def exclude_tables(cls):
         # prevent default POSTGIS tables from affecting this
-        return "geography_columns,geometry_columns,raster_columns,raster_overviews,spatial_ref_sys"
+        base = "geography_columns,geometry_columns,raster_columns,raster_overviews,spatial_ref_sys"
+        if config.schema_name:
+            return f"{base},alembic_version,ent_dev_schema_registry"
+        return base
 
     @classmethod
     def compare_type(cls, context, inspected_column, metadata_column, inspected_type, metadata_type):
@@ -250,12 +268,35 @@ class Runner(object):
 
     @classmethod
     def include_object(cls, object, name, type, reflected, compare_to):
+        if config.schema_name and reflected:
+            schema = getattr(object, "schema", None)
+            if schema is None:
+                table = getattr(object, "table", None)
+                if table is not None:
+                    schema = getattr(table, "schema", None)
+            if schema is None:
+                schema = "public"
+            if schema != config.schema_name:
+                return False
         exclude_tables = Runner.exclude_tables().split(',')
 
         if type == "table" and name in exclude_tables:
             return False
         else:
             return True
+
+    @classmethod
+    def include_name(cls, name, type, parent_names):
+        if not config.schema_name:
+            return True
+        if type == "schema":
+            return name == config.schema_name
+        schema = parent_names.get("schema") if parent_names else None
+        if schema is None:
+            schema = "public"
+        if schema != config.schema_name:
+            return False
+        return True
 
     @classmethod
     def convert_postgres_boolean(cls, metadata_default):
@@ -658,10 +699,18 @@ class Runner(object):
         engine = sa.create_engine(url)
         connection = engine.connect()
         if self.schema_name:
-            Runner.setup_schema(connection, self.schema_name, self.include_public)
+            Runner.setup_schema(
+                connection,
+                self.schema_name,
+                self.include_public,
+                touch_registry=False,
+            )
 
         metadata = sa.MetaData()
-        metadata.reflect(bind=connection)
+        if self.schema_name:
+            metadata.reflect(bind=connection, schema=self.schema_name)
+        else:
+            metadata.reflect(bind=connection)
         if len(metadata.sorted_tables) != 0:
             raise Exception(f"to compare from base tables, cannot have any tables in database. have {len(metadata.sorted_tables)}")
 

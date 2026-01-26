@@ -104,8 +104,10 @@ def run_migrations_offline():
         target_metadata=target_metadata,
         compare_type=runner.Runner.compare_type,
         include_object=runner.Runner.include_object,
+        include_name=runner.Runner.include_name,
         compare_server_default=runner.Runner.compare_server_default,
         render_item=runner.Runner.render_item,
+        include_schemas=bool(config.schema_name),
         output_buffer=output_buffer,
         # transaction_per_migration doesn't seem to apply offline
     )
@@ -141,8 +143,10 @@ def run_migrations_online():
             target_metadata=target_metadata,
             compare_type=runner.Runner.compare_type,
             include_object=runner.Runner.include_object,
+            include_name=runner.Runner.include_name,
             compare_server_default=runner.Runner.compare_server_default,
             render_item=runner.Runner.render_item,
+            include_schemas=bool(config.schema_name),
             transaction_per_migration=True,
         )
 
