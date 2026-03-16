@@ -12,8 +12,8 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
-	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -37,9 +37,8 @@ type Config struct {
 	dummyWrite    bool
 	changes       change.ChangeMap
 	forcePrettier bool
-	// keep track of changed ts files to pass to prettier
+	// keep track of changed ts files to pass to the formatter
 	changedTSFiles []string
-	inputConfig    *input.Config
 }
 
 // Clone doesn't clone changes and changedTSFiles
@@ -55,7 +54,6 @@ func (cfg *Config) Clone() *Config {
 		debugMode:             cfg.debugMode,
 		writeAll:              cfg.writeAll,
 		useChanges:            cfg.useChanges,
-		inputConfig:           cfg.inputConfig,
 	}
 }
 
@@ -69,10 +67,6 @@ func (cfg *Config) OverrideGraphQLMutationName(mutationName codegenapi.GraphQLMu
 			DefaultGraphQLMutationName: mutationName,
 		},
 	}
-}
-
-func (cfg *Config) SetInputConfig(inputCfg *input.Config) {
-	cfg.inputConfig = inputCfg
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -295,11 +289,27 @@ func (cfg *Config) DummyWrite() bool {
 	return cfg.dummyWrite
 }
 
-func (cfg *Config) GetBiomeConfig() *input.BiomeConfig {
-	if cfg.inputConfig == nil {
-		return nil
+func (cfg *Config) GetBiomeConfigPath() (string, error) {
+	for _, name := range []string{"biome.json", "biome.jsonc"} {
+		p := filepath.Join(cfg.GetAbsPathToRoot(), name)
+		fi, err := os.Stat(p)
+		if err == nil && !fi.IsDir() {
+			return p, nil
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return "", err
+		}
 	}
-	return cfg.inputConfig.BiomeConfig
+
+	p := util.GetAbsolutePath("../../ts/biome.json")
+	fi, err := os.Stat(p)
+	if err != nil {
+		return "", err
+	}
+	if fi.IsDir() {
+		return "", fmt.Errorf("default biome config path %s is a directory", p)
+	}
+	return p, nil
 }
 
 func (cfg *Config) SetDummyWrite(val bool) {
@@ -514,12 +524,6 @@ var defaultArgs = []string{
 	"--quote-props", "consistent",
 	"--parser", "typescript",
 	"--end-of-line", "lf",
-}
-
-// options: https://biomejs.dev/reference/cli/#biome
-// everything else is sticking with default...
-var defaultBiomeArgs = []string{
-	"--indent-style", "space",
 }
 
 func (cfg *Config) getPrettierArgs() [][]string {

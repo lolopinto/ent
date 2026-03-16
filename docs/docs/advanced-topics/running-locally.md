@@ -30,8 +30,10 @@ python3 -m pip install auto_schema==0.0.34
 * Install the following TypeScript packages globally:
 
 ```shell
-npm install -g typescript@5.3.2 prettier@3.1.0 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@1.4.1
+npm install -g typescript@5.3.2 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@2.4.7
 ```
+
+If you want generated TypeScript to follow project-specific formatting, add a `biome.json` or `biome.jsonc` file at the project root. `tsent codegen` will use that file automatically; otherwise it falls back to ent's bundled Biome config.
 
 * Install `tsconfig-paths` and `@swc-node/register` locally:
 

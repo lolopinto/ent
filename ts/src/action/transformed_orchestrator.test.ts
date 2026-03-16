@@ -817,113 +817,113 @@ function commonTests() {
     expect(row3).toBe(null);
   });
 
-  each(["contact_info", "contactInfo"]).test(
-    "insert -> update with data",
-    async (contactInfoKey: string) => {
-      const verifyRows = async (ct: number) => {
-        if (Dialect.Postgres !== DB.getDialect()) {
-          return;
-        }
-        const res = await DB.getInstance()
-          .getPool()
-          .query("select count(1) from contacts;");
-        expect(parseInt(res.rows[0].count)).toBe(ct);
-      };
-      await verifyRows(0);
-      const loader = getContactNewLoader();
+  each([
+    "contact_info",
+    "contactInfo",
+  ]).test("insert -> update with data", async (contactInfoKey: string) => {
+    const verifyRows = async (ct: number) => {
+      if (Dialect.Postgres !== DB.getDialect()) {
+        return;
+      }
+      const res = await DB.getInstance()
+        .getPool()
+        .query("select count(1) from contacts;");
+      expect(parseInt(res.rows[0].count)).toBe(ct);
+    };
+    await verifyRows(0);
+    const loader = getContactNewLoader();
 
-      const contactInfo = {
-        phoneNumbers: [
-          randomPhoneNumber(),
-          randomPhoneNumber(),
-          randomPhoneNumber(),
-        ],
-        emails: [randomEmail(), randomEmail(), randomEmail(), randomEmail()],
-      };
-      const expectedContactInfo = transformTODB(contactInfo);
-      const action = getInsertContactAction(
-        new Map<string, any>([
-          ["first_name", "Jon"],
-          ["last_name", "Snow"],
-          ["contact_info", contactInfo],
-        ]),
-        loader.context,
-      );
-      const contact = await action.saveX();
-      await verifyRows(1);
+    const contactInfo = {
+      phoneNumbers: [
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+        randomPhoneNumber(),
+      ],
+      emails: [randomEmail(), randomEmail(), randomEmail(), randomEmail()],
+    };
+    const expectedContactInfo = transformTODB(contactInfo);
+    const action = getInsertContactAction(
+      new Map<string, any>([
+        ["first_name", "Jon"],
+        ["last_name", "Snow"],
+        ["contact_info", contactInfo],
+      ]),
+      loader.context,
+    );
+    const contact = await action.saveX();
+    await verifyRows(1);
 
-      const row = await loader.load(contact.id);
-      expect(transformJSONRow(row)).toEqual({
-        id: contact.id,
-        first_name: "Jon",
-        last_name: "Snow",
-        contact_info: expectedContactInfo,
-        deleted_at: null,
-      });
+    const row = await loader.load(contact.id);
+    expect(transformJSONRow(row)).toEqual({
+      id: contact.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      contact_info: expectedContactInfo,
+      deleted_at: null,
+    });
 
-      const tranformJonToAegon = (
-        stmt: UpdateOperation<Contact>,
-      ): TransformedUpdateOperation<Contact> | undefined => {
-        if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
-          return;
-        }
+    const tranformJonToAegon = (
+      stmt: UpdateOperation<Contact>,
+    ): TransformedUpdateOperation<Contact> | undefined => {
+      if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
+        return;
+      }
 
-        const firstName = stmt.data.get("first_name");
-        const lastName = stmt.data.get("last_name");
-        const contactInfo = stmt.data.get("contact_info");
+      const firstName = stmt.data.get("first_name");
+      const lastName = stmt.data.get("last_name");
+      const contactInfo = stmt.data.get("contact_info");
 
-        if (firstName == "Aegon" && lastName == "Targaryen") {
-          return {
-            op: SQLStatementOperation.Update,
-            existingEnt: contact,
-            data: {
-              first_name: "Aegon",
-              last_name: "Targaryen",
-              [contactInfoKey]: {
-                phoneNumbers: contactInfo.phoneNumbers,
-                emails: contactInfo.emails,
-              },
+      if (firstName == "Aegon" && lastName == "Targaryen") {
+        return {
+          op: SQLStatementOperation.Update,
+          existingEnt: contact,
+          data: {
+            first_name: "Aegon",
+            last_name: "Targaryen",
+            [contactInfoKey]: {
+              phoneNumbers: contactInfo.phoneNumbers,
+              emails: contactInfo.emails,
             },
-          };
-        }
-      };
+          },
+        };
+      }
+    };
 
-      const action2 = getInsertContactAction(
-        new Map<string, any>([
-          ["first_name", "Aegon"],
-          ["last_name", "Targaryen"],
-          ["contact_info", contactInfo],
-        ]),
-        loader.context,
-      );
-      // @ts-ignore
-      action2.transformWrite = tranformJonToAegon;
+    const action2 = getInsertContactAction(
+      new Map<string, any>([
+        ["first_name", "Aegon"],
+        ["last_name", "Targaryen"],
+        ["contact_info", contactInfo],
+      ]),
+      loader.context,
+    );
+    // @ts-ignore
+    action2.transformWrite = tranformJonToAegon;
 
-      const contact2 = await action2.saveX();
-      expect(contact.id).toBe(contact2.id);
-      expect(contact2.data.first_name).toBe("Aegon");
-      expect(contact2.data.last_name).toBe("Targaryen");
-      await verifyRows(1);
+    const contact2 = await action2.saveX();
+    expect(contact.id).toBe(contact2.id);
+    expect(contact2.data.first_name).toBe("Aegon");
+    expect(contact2.data.last_name).toBe("Targaryen");
+    await verifyRows(1);
 
-      const action3 = getInsertContactAction(
-        new Map<string, any>([
-          ["first_name", "Sansa"],
-          ["last_name", "Stark"],
-          ["contact_info", contactInfo],
-        ]),
-        loader.context,
-      );
-      // @ts-ignore
-      action3.transformWrite = tranformJonToAegon;
+    const action3 = getInsertContactAction(
+      new Map<string, any>([
+        ["first_name", "Sansa"],
+        ["last_name", "Stark"],
+        ["contact_info", contactInfo],
+      ]),
+      loader.context,
+    );
+    // @ts-ignore
+    action3.transformWrite = tranformJonToAegon;
 
-      // new contact craeted
-      const contact3 = await action3.saveX();
-      expect(contact.id).not.toBe(contact3.id);
-      expect(contact3.data.first_name).toBe("Sansa");
-      expect(contact3.data.last_name).toBe("Stark");
-      await verifyRows(2);
-    },
-  );
+    // new contact craeted
+    const contact3 = await action3.saveX();
+    expect(contact.id).not.toBe(contact3.id);
+    expect(contact3.data.first_name).toBe("Sansa");
+    expect(contact3.data.last_name).toBe("Stark");
+    await verifyRows(2);
+  });
 
   test("insert -> update no existingEnt returned", async () => {
     const verifyRows = async (ct: number) => {

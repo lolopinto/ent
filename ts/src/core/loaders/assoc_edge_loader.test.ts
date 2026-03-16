@@ -1131,7 +1131,7 @@ function verifyGroupedCacheHit(ids: ID[]) {
   ml.logs.forEach((log, idx) => {
     expect(log).toStrictEqual({
       "dataloader-cache-hit": ids[idx],
-      "tableName": "user_to_contacts_table",
+      tableName: "user_to_contacts_table",
     });
   });
 }
@@ -1169,7 +1169,7 @@ function verifyDefaultContextCacheHit(ids: ID[]) {
     });
     expect(log).toStrictEqual({
       "cache-hit": cacheKey,
-      "tableName": "user_to_contacts_table",
+      tableName: "user_to_contacts_table",
     });
   });
 }
@@ -1257,7 +1257,7 @@ function verifyMultiCountQueryOffset(
       });
       expect(log).toStrictEqual({
         "cache-hit": cacheKey,
-        "tableName": "user_to_contacts_table",
+        tableName: "user_to_contacts_table",
       });
 
       return;

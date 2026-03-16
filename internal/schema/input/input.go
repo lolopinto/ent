@@ -15,57 +15,6 @@ type Schema struct {
 	Nodes        map[string]*Node    `json:"schemas,omitempty"`
 	Patterns     map[string]*Pattern `json:"patterns,omitempty"`
 	GlobalSchema *GlobalSchema       `json:"globalSchema"`
-	Config       *Config             `json:"config"`
-}
-
-type Config struct {
-	// the prettier config that's being used is parsed and sent up to format the files as needed
-	// since we're trying to use biome...
-	// for now keep this named as rome but eventually change to biome?
-	BiomeConfig *BiomeConfig `json:"rome"`
-}
-
-// indicates the biome onfig that should be used here
-// taken from the prettier config
-// https://prettier.io/docs/en/options.html#quotes
-// https://biomejs.dev/reference/cli/#biome
-type BiomeConfig struct {
-	// we always do --indent-style=space
-	IndentStyle     *string `json:"indentStyle"`
-	LineWidth       *int    `json:"lineWidth"`
-	IndentSize      *int    `json:"indentSize"`
-	QuoteStyle      *string `json:"quoteStyle"`
-	QuoteProperties *string `json:"quoteProperties"`
-	TrailingComma   *string `json:"trailingComma"`
-}
-
-func (cfg *BiomeConfig) GetArgs() []string {
-	var ret []string
-
-	if cfg.IndentStyle != nil {
-		ret = append(ret, "--indent-style", *cfg.IndentStyle)
-	}
-
-	if cfg.IndentSize != nil {
-		ret = append(ret, "--indent-size", fmt.Sprintf("%v", *cfg.IndentSize))
-	}
-
-	if cfg.LineWidth != nil {
-		ret = append(ret, "--line-width", fmt.Sprintf("%v", *cfg.LineWidth))
-	}
-
-	if cfg.QuoteStyle != nil {
-		ret = append(ret, "--quote-style", *cfg.QuoteStyle)
-	}
-
-	if cfg.QuoteProperties != nil {
-		ret = append(ret, "--quote-properties", *cfg.QuoteProperties)
-	}
-
-	if cfg.TrailingComma != nil {
-		ret = append(ret, "--trailing-comma", *cfg.TrailingComma)
-	}
-	return ret
 }
 
 type Pattern struct {
@@ -270,15 +219,15 @@ func (f *Field) ApplyOverride(override *FieldOverride) {
 }
 
 type FieldOverride struct {
-	Nullable        *bool   `json:"nullable,omitempty"`
-	StorageKey      string  `json:"storageKey,omitempty"`
-	Unique          *bool   `json:"unique,omitempty"`
-	HideFromGraphQL *bool   `json:"hideFromGraphQL,omitempty"`
-	GraphQLName     string  `json:"graphqlName,omitempty"`
-	Index           *bool   `json:"index,omitempty"`
-	IndexConcurrently *bool `json:"indexConcurrently,omitempty"`
+	Nullable          *bool   `json:"nullable,omitempty"`
+	StorageKey        string  `json:"storageKey,omitempty"`
+	Unique            *bool   `json:"unique,omitempty"`
+	HideFromGraphQL   *bool   `json:"hideFromGraphQL,omitempty"`
+	GraphQLName       string  `json:"graphqlName,omitempty"`
+	Index             *bool   `json:"index,omitempty"`
+	IndexConcurrently *bool   `json:"indexConcurrently,omitempty"`
 	IndexWhere        *string `json:"indexWhere,omitempty"`
-	ServerDefault   *string `json:"serverDefault,omitempty"`
+	ServerDefault     *string `json:"serverDefault,omitempty"`
 }
 
 type ForeignKey struct {
@@ -951,9 +900,9 @@ type Index struct {
 	Unique   bool      `json:"unique,omitempty"`
 	FullText *FullText `json:"fullText,omitempty"`
 	// for regular indices. doesn't apply for full text...
-	IndexType IndexType `json:"indexType,omitempty"`
-	Concurrently bool   `json:"concurrently,omitempty"`
-	Where       string `json:"where,omitempty"`
+	IndexType    IndexType `json:"indexType,omitempty"`
+	Concurrently bool      `json:"concurrently,omitempty"`
+	Where        string    `json:"where,omitempty"`
 }
 
 type FullTextLanguage string

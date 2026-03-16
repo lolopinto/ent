@@ -433,7 +433,10 @@ describe("property", () => {
 
   describe("enabled. custom scalar", () => {
     class Point {
-      constructor(private x: number, private y: number) {}
+      constructor(
+        private x: number,
+        private y: number,
+      ) {}
 
       serialize(): string {
         return `${this.x},${this.y}`;

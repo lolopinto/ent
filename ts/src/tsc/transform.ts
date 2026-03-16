@@ -52,7 +52,7 @@ export interface TransformFile {
 
   postProcess?(file: string): void;
 
-  prettierGlob?: string;
+  formatGlob?: string;
 }
 
 function normalizePath(p: string) {
@@ -211,8 +211,27 @@ export function transform(transform: TransformFile) {
     }
   });
 
-  if (transform.prettierGlob) {
-    spawnSync(`prettier`, [transform.prettierGlob, "--write"]);
+  if (transform.formatGlob) {
+    const files = glob
+      .sync(transform.formatGlob, transform.globOptions ?? {})
+      .map((f) => (typeof f === "string" ? f : f.path));
+    if (!files.length) {
+      return;
+    }
+
+    const result = spawnSync(
+      `biome`,
+      ["format", "--write", "--files-ignore-unknown=true", ...files],
+      {
+        encoding: "utf8",
+      },
+    );
+    if (result.error) {
+      throw result.error;
+    }
+    if (result.status !== 0) {
+      throw new Error(result.stderr || "biome format failed");
+    }
   }
 }
 

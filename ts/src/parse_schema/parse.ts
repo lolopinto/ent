@@ -1,4 +1,3 @@
-import { cosmiconfigSync } from "cosmiconfig";
 import { PACKAGE } from "../core/const";
 import {
   Pattern,
@@ -524,10 +523,6 @@ interface Result {
   schemas: schemasDict;
   patterns: patternsDict;
   globalSchema?: ProcessedGlobalSchema;
-  config?: {
-    // TODO rename this to biome eventually...
-    rome?: BiomeConfig;
-  };
 }
 
 declare type PotentialSchemas = {
@@ -664,63 +659,12 @@ export async function parseSchema(
 
     schemas[key] = processedSchema;
   }
-  const biome = translatePrettier();
-
   return {
     schemas,
     patterns: processPatterns.patternsDict,
     globalSchema: parsedGlobalSchema,
-    config: {
-      rome: biome,
-    },
   };
 }
-
-interface BiomeConfig {
-  indentStyle?: string;
-  lineWidth?: number;
-  indentSize?: number;
-  quoteStyle?: string;
-  quoteProperties?: string;
-  trailingComma?: string;
-}
-
-function translatePrettier(): BiomeConfig | undefined {
-  const r = cosmiconfigSync("prettier").search();
-  if (!r) {
-    return;
-  }
-  const ret: BiomeConfig = {};
-  if (r.config.printWidth !== undefined) {
-    ret.lineWidth = parseInt(r.config.printWidth);
-  }
-  if (r.config.useTabs) {
-    ret.indentStyle = "tab";
-  } else {
-    ret.indentStyle = "space";
-  }
-  if (r.config.tabWidth !== undefined) {
-    ret.indentSize = parseInt(r.config.tabWidth);
-  }
-  if (r.config.singleQuote) {
-    ret.quoteStyle = "single";
-  } else {
-    ret.quoteStyle = "double";
-  }
-  if (r.config.quoteProps !== undefined) {
-    if (r.config.quoteProps === "consistent") {
-      // biome doesn't support this
-      ret.quoteProperties = "as-needed";
-    } else {
-      ret.quoteProperties = r.config.quoteProps;
-    }
-  }
-  if (r.config.trailingComma !== undefined) {
-    ret.trailingComma = r.config.trailingComma;
-  }
-  return ret;
-}
-
 interface ProcessedGlobalSchema {
   globalEdges: ProcessedAssocEdge[];
   extraEdgeFields: ProcessedField[];

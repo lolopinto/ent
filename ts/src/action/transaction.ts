@@ -6,11 +6,18 @@ import { EntBuilder } from "./experimental_action";
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
-type ActionAny<TEnt extends Ent<TViewer>,
+type ActionAny<
+  TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
   TInput extends Data,
-    TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-  > = Action<TEnt, EntBuilder<TEnt, TViewer, TInput, TExistingEnt>, TViewer, TInput, TExistingEnt>;
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> = Action<
+  TEnt,
+  EntBuilder<TEnt, TViewer, TInput, TExistingEnt>,
+  TViewer,
+  TInput,
+  TExistingEnt
+>;
 
 export class Transaction<TViewer extends Viewer = Viewer> {
   constructor(

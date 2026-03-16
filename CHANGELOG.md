@@ -13,6 +13,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - allow configuring clause loader and ent loader privacy concurrency limits
 - add loader/cache metrics hooks (#1939)
+- make Biome the default formatter for generated TypeScript, using project-root `biome.json` or `biome.jsonc` when present and falling back to ent's bundled config
 
 ### Fixed
 
@@ -21,6 +22,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - pass context through batch loader paths to prime ContextCache (#1936)
 - memoize assoc direct edge loader clause queries to avoid duplicate hits (#1940)
 - reuse QueryDirectLoader cache entries for identical clauses (#1937)
+- stop persisting formatter settings in `.ent/schema.json`; Biome config files are now the source of truth
 
 ## [0.2.6]
 

@@ -125,7 +125,7 @@ function getConversionInfo(
 export class TransformAction implements TransformFile {
   glob = "src/ent/**/actions/**/*_action.ts";
 
-  prettierGlob = "src/ent/**/actions/**.ts";
+  formatGlob = "src/ent/**/actions/**.ts";
 
   constructor(private customInfo: customInfo) {}
 

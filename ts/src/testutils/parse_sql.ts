@@ -677,7 +677,7 @@ function parseUpdateStatement(
       "type" in setAny
         ? setAny
         : "column" in setAny
-          ? setAny.column ?? setAny
+          ? (setAny.column ?? setAny)
           : setAny;
     const colName =
       typeof colRef === "string" ? colRef : getColumnFromRef(colRef);

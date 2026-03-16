@@ -76,7 +76,10 @@ class User extends BaseEnt {
       rules: [AllowIfViewerRule, AlwaysDenyRule],
     };
   }
-  constructor(public viewer: Viewer, public data: Data) {
+  constructor(
+    public viewer: Viewer,
+    public data: Data,
+  ) {
     super(viewer, data);
     this.baz = data["baz"];
     this.foo = data["foo"];
@@ -114,7 +117,10 @@ class Contact extends BaseEnt {
     return AllowIfViewerPrivacyPolicy;
   }
 
-  constructor(public viewer: Viewer, public data: Data) {
+  constructor(
+    public viewer: Viewer,
+    public data: Data,
+  ) {
     super(viewer, data);
     this.baz = data["baz"];
     this.foo = data["foo"];
@@ -465,7 +471,7 @@ async function testLoadRow(addCtx?: boolean, disableWrite?: boolean) {
             // cache hit on 2nd query
             {
               "cache-hit": "fields:bar,baz,foo,clause:bar=1",
-              "tableName": options.tableName,
+              tableName: options.tableName,
             },
           ],
         ];
@@ -507,7 +513,7 @@ function commonTests() {
               {
                 // cache hit on 2nd query
                 "cache-hit": "fields:bar,baz,foo,clause:in:bar:1,2,3",
-                "tableName": options.tableName,
+                tableName: options.tableName,
               },
             ],
           ];
@@ -558,7 +564,7 @@ function commonTests() {
             const expQueries1: Data[] = [queryOption];
             const cacheHit: Data = {
               "dataloader-cache-hit": 1,
-              "tableName": options.tableName,
+              tableName: options.tableName,
             };
             const entLoggedoutCacheHit: Data = {
               "ent-cache-hit": ent.getEntKey(
@@ -683,7 +689,7 @@ function commonTests() {
             const expQueries1: Data[] = [queryOption];
             const cacheHit: Data = {
               "dataloader-cache-hit": 1,
-              "tableName": options.tableName,
+              tableName: options.tableName,
             };
             const entLoggedoutCacheHit: Data = {
               "ent-cache-hit": ent.getEntKey(
@@ -780,7 +786,7 @@ function commonTests() {
             const expQueries1: Data[] = [queryOption];
             const cacheHit: Data = {
               "dataloader-cache-hit": 1,
-              "tableName": options.tableName,
+              tableName: options.tableName,
             };
             const entCacheHit1: Data = {
               "ent-cache-hit": ent.getEntKey(
@@ -1157,7 +1163,7 @@ function commonTests() {
               qOption,
               {
                 "cache-hit": "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
-                "tableName": options.tableName,
+                tableName: options.tableName,
               },
             ],
           ];
@@ -1200,7 +1206,7 @@ function commonTests() {
               qOption,
               {
                 "cache-hit": "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
-                "tableName": options.tableName,
+                tableName: options.tableName,
               },
             ],
           ];
@@ -1588,7 +1594,7 @@ function commonTests() {
         qOption,
         {
           "cache-hit": "fields:bar,baz,foo,clause:baz=baz",
-          "tableName": options.tableName,
+          tableName: options.tableName,
         },
       ]);
     });
@@ -1676,7 +1682,7 @@ function commonTests() {
         qOption,
         {
           "cache-hit": "fields:bar,baz,foo,clause:baz=baz",
-          "tableName": options.tableName,
+          tableName: options.tableName,
         },
       ]);
     });
@@ -1825,7 +1831,7 @@ function commonTests() {
               queryOption,
               {
                 "cache-hit": "fields:bar,baz,foo,clause:bar=1",
-                "tableName": "users",
+                tableName: "users",
               },
             ];
           }
