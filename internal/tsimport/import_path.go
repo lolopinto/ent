@@ -32,6 +32,14 @@ type ImportPath struct {
 	TypeOnly bool `json:"typeOnly,omitempty"`
 }
 
+func (ip *ImportPath) Clone() *ImportPath {
+	if ip == nil {
+		return nil
+	}
+	clone := *ip
+	return &clone
+}
+
 // NewGQLImportPath creates a new import from "graphql"
 func NewGQLImportPath(typ string) *ImportPath {
 	return &ImportPath{

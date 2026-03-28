@@ -454,6 +454,8 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 			t2 := t.(enttype.ImportDepsType)
 			imp := t2.GetImportDepsType()
 			if imp != nil {
+				imp = imp.Clone()
+				imp.TypeOnly = true
 				ret = append(ret, imp)
 			}
 		}
