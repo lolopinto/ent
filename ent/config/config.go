@@ -11,6 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	"github.com/lib/pq"
+	"github.com/lolopinto/ent/internal/devschema"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -50,6 +51,11 @@ func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
 func (db *DBConfig) Init() (*sqlx.DB, error) {
 	var driverName, connString string
 	if db.Dialect == "sqlite" {
+		if res, err := devschema.Resolve(nil, devschema.Options{}); err != nil {
+			return nil, err
+		} else if res != nil && res.Enabled {
+			return nil, fmt.Errorf("dev branch schemas are only supported for postgres")
+		}
 		driverName = "sqlite3"
 		connString = db.FilePath
 	} else {
@@ -67,6 +73,27 @@ func (db *DBConfig) Init() (*sqlx.DB, error) {
 	if err != nil {
 		fmt.Println("DB unreachable", err)
 		return nil, err
+	}
+	if res, err := devschema.Resolve(nil, devschema.Options{}); err != nil {
+		return nil, err
+	} else if res != nil && res.Enabled {
+		if res.SchemaName != "" {
+			if err := devschema.EnsureSchema(db2, res.SchemaName); err != nil {
+				return nil, err
+			}
+			if err := devschema.TouchSchema(db2, res.SchemaName, res.BranchName); err != nil {
+				log.Printf("devschema touch failed: %v", err)
+			}
+		}
+		if res.PruneEnabled {
+			if _, err := devschema.PruneSchemas(db2, devschema.PruneOptions{
+				Prefix: devschema.DefaultPrefix,
+				Days:   res.PruneDays,
+				DryRun: false,
+			}); err != nil {
+				log.Printf("devschema prune failed: %v", err)
+			}
+		}
 	}
 	return db2, nil
 }
@@ -118,6 +145,21 @@ func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool) string {
 		parts = append(parts,
 			"{sslmode}", dbData.SslMode,
 		)
+	}
+
+	if res, err := devschema.Resolve(nil, devschema.Options{}); err != nil {
+		log.Printf("devschema resolve failed: %v", err)
+	} else if res != nil && res.Enabled && res.SchemaName != "" {
+		searchPath := res.SchemaName
+		if res.IncludePublic {
+			searchPath = fmt.Sprintf("%s,public", res.SchemaName)
+		}
+		if strings.Contains(format, "?") {
+			format = format + "&search_path={search_path}"
+		} else {
+			format = format + "?search_path={search_path}"
+		}
+		parts = append(parts, "{search_path}", url.QueryEscape(searchPath))
 	}
 	r := strings.NewReplacer(parts...)
 
@@ -208,12 +250,14 @@ func parseConnectionString() (*DBConfig, error) {
 		SslMode: "disable",
 	}
 	m := map[string]func(string){
-		"dbname":   r.setDbName,
-		"host":     r.setHost,
-		"user":     r.setUser,
-		"password": r.setPassword,
-		"port":     r.setPort,
-		"sslmode":  r.setSSLMode,
+		"dbname":      r.setDbName,
+		"host":        r.setHost,
+		"user":        r.setUser,
+		"password":    r.setPassword,
+		"port":        r.setPort,
+		"sslmode":     r.setSSLMode,
+		"search_path": func(string) {},
+		"options":     func(string) {},
 	}
 
 	for _, part := range parts {

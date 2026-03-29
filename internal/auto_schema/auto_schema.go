@@ -6,10 +6,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
+	"github.com/lolopinto/ent/internal/devschema"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
@@ -34,11 +36,15 @@ func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...str
 		args = append(args, "--debug")
 	}
 
-	if schemaName := util.GetEnv("ENT_DEV_SCHEMA_NAME", ""); schemaName != "" {
-		args = append(args, fmt.Sprintf("--db_schema=%s", schemaName))
-		if includePublic := util.GetEnv("ENT_DEV_SCHEMA_INCLUDE_PUBLIC", ""); includePublic != "" {
-			args = append(args, fmt.Sprintf("--db_schema_include_public=%s", includePublic))
-		}
+	schemaPath := pathToConfigs
+	if absPath, err := filepath.Abs(pathToConfigs); err == nil {
+		schemaPath = absPath
+	}
+	if res, err := devschema.Resolve(nil, devschema.Options{SchemaPath: schemaPath}); err != nil {
+		return err
+	} else if res != nil && res.Enabled && res.SchemaName != "" {
+		args = append(args, fmt.Sprintf("--db_schema=%s", res.SchemaName))
+		args = append(args, fmt.Sprintf("--db_schema_include_public=%t", res.IncludePublic))
 	}
 
 	if local {
