@@ -51,7 +51,34 @@ func GlobalSchemaEqual(existing, schema *GlobalSchema) bool {
 		assocEdgesEqual(existing.GlobalEdges, schema.GlobalEdges) &&
 		existing.Init == schema.Init &&
 		existing.TransformsEdges == schema.TransformsEdges &&
-		fieldsEqual(existing.GlobalFields, schema.GlobalFields)
+		fieldsEqual(existing.GlobalFields, schema.GlobalFields) &&
+		dbExtensionsEqual(existing.DBExtensions, schema.DBExtensions)
+}
+
+func dbExtensionsEqual(existing, extensions []*DBExtension) bool {
+	if len(existing) != len(extensions) {
+		return false
+	}
+	for i := range existing {
+		if !dbExtensionEqual(existing[i], extensions[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func dbExtensionEqual(existing, extension *DBExtension) bool {
+	ret := change.CompareNilVals(existing == nil, extension == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Name == extension.Name &&
+		existing.Managed == extension.Managed &&
+		existing.Version == extension.Version &&
+		existing.InstallSchema == extension.InstallSchema &&
+		change.StringListEqual(existing.RuntimeSchemas, extension.RuntimeSchemas) &&
+		existing.DropCascade == extension.DropCascade
 }
 
 func fieldsEqual(existing, fields []*Field) bool {

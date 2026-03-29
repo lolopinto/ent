@@ -169,6 +169,85 @@ func TestExtraEdgeCols(t *testing.T) {
 	require.Equal(t, []string{"id1", "edge_type", "deleted_at"}, edgeIndices[0].Columns)
 }
 
+func TestDBExtensions(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+		},
+		GlobalSchema: &input.GlobalSchema{
+			DBExtensions: []*input.DBExtension{
+				{
+					Name:           "postgis",
+					Managed:        true,
+					InstallSchema:  "public",
+					RuntimeSchemas: []string{"public"},
+				},
+				{
+					Name:           "vector",
+					Managed:        false,
+					DropCascade:    true,
+					RuntimeSchemas: []string{"public", "extensions"},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.NoError(t, err)
+
+	dbExtensions := schema.DBExtensions()
+	require.Len(t, dbExtensions, 2)
+	assert.Equal(t, "postgis", dbExtensions[0].Name)
+	assert.True(t, dbExtensions[0].Managed)
+	assert.Equal(t, []string{"public"}, dbExtensions[0].RuntimeSchemas)
+	assert.Equal(t, "vector", dbExtensions[1].Name)
+	assert.False(t, dbExtensions[1].Managed)
+	assert.True(t, dbExtensions[1].DropCascade)
+}
+
+func TestDuplicateDBExtensionsInvalid(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+		},
+		GlobalSchema: &input.GlobalSchema{
+			DBExtensions: []*input.DBExtension{
+				{
+					Name:    "postgis",
+					Managed: true,
+				},
+				{
+					Name:    "POSTGIS",
+					Managed: true,
+				},
+			},
+		},
+	}
+
+	_, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.EqualError(t, err, "duplicate db extension POSTGIS")
+}
+
 // TODO AssocEdgeBaseImport test based on what we do in ent.yml??
 
 func TestGlobalEnum(t *testing.T) {

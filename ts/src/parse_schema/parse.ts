@@ -11,6 +11,7 @@ import {
 import {
   ActionField,
   Type,
+  DBExtension,
   FieldMap,
   GlobalSchema,
   EdgeIndex,
@@ -672,6 +673,18 @@ interface ProcessedGlobalSchema {
   init?: boolean;
   transformsEdges?: boolean;
   globalFields?: ProcessedField[];
+  dbExtensions?: DBExtension[];
+}
+
+function processDBExtensions(src: DBExtension[]): DBExtension[] {
+  return src
+    .map((extension) => ({
+      ...extension,
+      managed: extension.managed !== false,
+      runtimeSchemas: extension.runtimeSchemas || [],
+      dropCascade: extension.dropCascade === true,
+    }))
+    .sort((lhs, rhs) => lhs.name.localeCompare(rhs.name));
 }
 
 async function parseGlobalSchema(
@@ -685,7 +698,8 @@ async function parseGlobalSchema(
       !!s.edgeIndices ||
       s.transformEdgeRead !== undefined ||
       s.transformEdgeWrite !== undefined ||
-      s.fields !== undefined,
+      s.fields !== undefined ||
+      !!s.dbExtensions?.length,
     transformsEdges: !!s.transformEdgeRead || !!s.transformEdgeWrite,
   };
 
@@ -703,6 +717,10 @@ async function parseGlobalSchema(
 
   if (s.fields) {
     ret.globalFields = await processFields(s.fields);
+  }
+
+  if (s.dbExtensions) {
+    ret.dbExtensions = processDBExtensions(s.dbExtensions);
   }
 
   return ret;

@@ -36,6 +36,7 @@ export {
   getTransformedReadClause,
   getObjectLoaderProperties,
   GlobalSchema,
+  DBExtension,
   ActionField,
 } from "./schema";
 export {

@@ -32,3 +32,43 @@ test("new API with constructor config", async () => {
 
   await parseSchema({ foo: Foo });
 });
+
+test("global schema db extensions normalized", async () => {
+  const Foo: Schema = {
+    fields: {
+      name: StringType(),
+    },
+  };
+
+  const parsed = await parseSchema(
+    { foo: Foo },
+    {
+      dbExtensions: [
+        {
+          name: "postgis",
+          runtimeSchemas: ["public"],
+        },
+        {
+          name: "vector",
+          managed: false,
+          dropCascade: true,
+        },
+      ],
+    },
+  );
+
+  expect(parsed.globalSchema?.dbExtensions).toEqual([
+    {
+      name: "postgis",
+      managed: true,
+      runtimeSchemas: ["public"],
+      dropCascade: false,
+    },
+    {
+      name: "vector",
+      managed: false,
+      runtimeSchemas: [],
+      dropCascade: true,
+    },
+  ]);
+});
