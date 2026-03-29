@@ -5,6 +5,7 @@ import { Context } from "./base";
 import { log } from "./logger";
 import { stableStringify } from "./cache_utils";
 import { getOnQueryCacheHit } from "./metrics";
+import { getOrderByKey, getSelectFieldsKey } from "./query_impl";
 
 const DEFAULT_MAX_DISCARDED_LOADERS = 1000;
 let maxDiscardedLoaders = DEFAULT_MAX_DISCARDED_LOADERS;
@@ -34,16 +35,8 @@ export interface RequestContext<TViewer extends Viewer = Viewer>
 }
 
 export function getContextCacheKey(options: QueryOptions): string {
-  const fields = options.fields
-    .map((f) => {
-      if (typeof f === "object") {
-        return `${f.alias}.${f.column}`;
-      }
-      return f;
-    })
-    .join(",");
   const parts: string[] = [
-    `fields:${fields}`,
+    `fields:${getSelectFieldsKey(options.fields)}`,
     `clause:${options.clause.instanceKey()}`,
   ];
   if (options.distinct !== undefined) {
@@ -67,7 +60,7 @@ export function getContextCacheKey(options: QueryOptions): string {
     parts.push(`groupby:${options.groupby}`);
   }
   if (options.orderby) {
-    parts.push(`orderby:${stableStringify(options.orderby)}`);
+    parts.push(`orderby:${getOrderByKey(options.orderby)}`);
   }
   if (options.join) {
     const joinKey = options.join.map((join) => ({

@@ -649,15 +649,17 @@ def _compare_indexes(autogen_context: AutogenContext,
         # if index is there and postgresql_using changes, drop the index and add it again
         # should hopefully be a one-time migration change...
         if name in conn_indexes and isinstance(index, sa.Index):
-            meta_postgresql_using = index.kwargs.get('postgresql_using')
+            meta_signature = _get_index_signature(index, all_conn_indexes.get(name, {}))
+            conn_signature = _get_index_signature(conn_indexes[name], all_conn_indexes.get(name, {}))
 
-            # TODO there's probably a better way to get this from the index now that sqlachemy is reflecting these
-            conn_postgresql_using = all_conn_indexes.get(
-                name, {}).get('postgresql_using')
-
-            if isinstance(meta_postgresql_using, str) and conn_postgresql_using is not None and meta_postgresql_using != conn_postgresql_using:
+            if _index_signatures_differ(meta_signature, conn_signature):
                 conn_index = conn_indexes[name]
-                conn_index.kwargs['postgresql_using'] = conn_postgresql_using
+                if conn_signature.get('postgresql_using') is not None:
+                    conn_index.kwargs['postgresql_using'] = conn_signature.get('postgresql_using')
+                if conn_signature.get('postgresql_ops'):
+                    conn_index.kwargs['postgresql_ops'] = conn_signature.get('postgresql_ops')
+                if conn_signature.get('postgresql_with'):
+                    conn_index.kwargs['postgresql_with'] = conn_signature.get('postgresql_with')
 
                 modify_table_ops.ops.append(
                     alembicops.DropIndexOp.from_index(conn_index))
@@ -671,10 +673,12 @@ def _compare_indexes(autogen_context: AutogenContext,
                         postgresql_concurrently=index.kwargs.get('postgresql_concurrently'),
                         postgresql_where=index.kwargs.get('postgresql_where'),
                         sqlite_where=index.kwargs.get('sqlite_where'),
+                        postgresql_ops=meta_signature.get('postgresql_ops') or None,
+                        postgresql_with=meta_signature.get('postgresql_with') or None,
                     ))
 
 
-index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
+index_regex = re.compile(r'CREATE (?:UNIQUE )?INDEX .* USING ([a-zA-Z0-9_]+) (.+)')
 
 # this handles computed columns changing and so drops and re-creates the column.
 
@@ -771,7 +775,11 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | 
     # just paying the CPU price. can probably be fixed in some way...
     names = set([index.name for index in conn_table.indexes] +
                 [constraint.name for constraint in conn_table.constraints])
-    res = get_db_indexes_for_table(autogen_context.connection, conn_table.name)
+    res = get_db_indexes_for_table(
+        autogen_context.connection,
+        conn_table.name,
+        conn_table.schema,
+    )
 
     for row in res.fetchall():
         (
@@ -783,17 +791,23 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | 
             continue
         r = m.groups()
 
+        info = _parse_raw_index_details(r[0], r[1])
+
         all_indices[name] = {
-            'postgresql_using': r[1],
-            'postgresql_using_internals': r[2],
+            'postgresql_using': info.get('postgresql_using'),
+            'postgresql_using_internals': info.get('postgresql_using_internals'),
+            'postgresql_ops': info.get('postgresql_ops', {}),
+            'postgresql_with': info.get('postgresql_with', {}),
             # TODO don't have columns|column to pass to FullTextIndex
         }
 
         # missing!
         if name not in names:
             missing[name] = {
-                'postgresql_using': r[1],
-                'postgresql_using_internals': r[2],
+                'postgresql_using': info.get('postgresql_using'),
+                'postgresql_using_internals': info.get('postgresql_using_internals'),
+                'postgresql_ops': info.get('postgresql_ops', {}),
+                'postgresql_with': info.get('postgresql_with', {}),
                 # TODO don't have columns|column to pass to FullTextIndex
             }
 
@@ -802,10 +816,161 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | 
 
 # use a cache so we only hit the db once for each table
 # @functools.lru_cache()
-def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
+def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str, schema_name: str | None = None):
     res = connection.execute(sa.text(
-       f"SELECT indexname, indexdef from pg_indexes where tablename = '{tname}'"))
+       """
+       SELECT indexname, indexdef
+       FROM pg_indexes
+       WHERE tablename = :table_name
+         AND schemaname = COALESCE(:schema_name, current_schema())
+       """),
+       {
+           'table_name': tname,
+           'schema_name': schema_name,
+       })
     return res
+
+
+# pg_get_indexdef gives us an index fragment, not a full SQL statement, so a
+# tiny purpose-built parser is safer than trying to coerce a general SQL parser
+# into accepting it.
+simple_index_part_regex = re.compile(
+    r'^\s*"?(?P<column>[a-zA-Z0-9_]+)"?(?:\s+(?P<operator_class>[a-zA-Z0-9_.]+))?(?:\s+(?:ASC|DESC))?(?:\s+NULLS\s+(?:FIRST|LAST))?\s*$'
+)
+
+
+def _split_top_level_csv(text: str) -> list[str]:
+    parts = []
+    current = []
+    depth = 0
+    in_quotes = False
+
+    for char in text:
+        if char == '"':
+            in_quotes = not in_quotes
+        if not in_quotes:
+            if char == '(':
+                depth += 1
+            elif char == ')':
+                depth -= 1
+            elif char == ',' and depth == 0:
+                parts.append(''.join(current).strip())
+                current = []
+                continue
+        current.append(char)
+
+    if current:
+        parts.append(''.join(current).strip())
+
+    return [part for part in parts if part]
+
+
+def _extract_parenthesized_segment(text: str) -> tuple[str | None, str]:
+    if not text.startswith('('):
+        return (None, text)
+
+    depth = 0
+    in_quotes = False
+    for index, char in enumerate(text):
+        if char == '"':
+            in_quotes = not in_quotes
+        if in_quotes:
+            continue
+        if char == '(':
+            depth += 1
+        elif char == ')':
+            depth -= 1
+            if depth == 0:
+                return (text[1:index], text[index + 1:].strip())
+
+    return (None, text)
+
+
+def _parse_index_ops(columns_clause: str | None) -> dict[str, str]:
+    if not columns_clause:
+        return {}
+
+    ret = {}
+    for part in _split_top_level_csv(columns_clause):
+        match = simple_index_part_regex.match(part)
+        if match is None:
+            continue
+        operator_class = match.group('operator_class')
+        if operator_class:
+            ret[match.group('column')] = operator_class
+    return ret
+
+
+def _parse_index_with(remainder: str) -> dict[str, str]:
+    match = re.search(r'\bWITH\s*\((.+?)\)', remainder)
+    if match is None:
+        return {}
+
+    ret = {}
+    for part in _split_top_level_csv(match.group(1)):
+        key, _, value = part.partition('=')
+        if not _:
+            continue
+        ret[key.strip()] = value.strip().strip("'")
+    return ret
+
+
+def _parse_raw_index_details(using: str, details: str) -> dict[str, Any]:
+    columns_clause, remainder = _extract_parenthesized_segment(details.strip())
+    return {
+        'postgresql_using': using,
+        'postgresql_using_internals': details,
+        'postgresql_ops': _parse_index_ops(columns_clause),
+        'postgresql_with': _parse_index_with(remainder),
+    }
+
+
+def _normalize_index_using(using):
+    if using in (None, False, '', 'btree'):
+        return None
+    return using
+
+
+def _normalize_index_map(value) -> dict[str, str]:
+    if value in (None, False):
+        return {}
+    return {
+        str(key): str(val)
+        for key, val in dict(value).items()
+    }
+
+
+def _get_index_kwarg(index: sa.Index, key: str):
+    value = index.kwargs.get(key)
+    if value not in (None, False):
+        return value
+
+    dialect_options = getattr(index, 'dialect_options', None)
+    if dialect_options is not None:
+        postgres_options = dialect_options.get('postgresql')
+        if postgres_options is not None:
+            value = postgres_options.get(key.removeprefix('postgresql_'))
+            if value not in (None, False, [], {}):
+                return value
+    return None
+
+
+def _get_index_signature(index: sa.Index, raw_index: dict[str, Any]) -> dict[str, Any]:
+    return {
+        'postgresql_using': _normalize_index_using(
+            _get_index_kwarg(index, 'postgresql_using') or raw_index.get('postgresql_using')
+        ),
+        'postgresql_ops': _normalize_index_map(
+            _get_index_kwarg(index, 'postgresql_ops') or raw_index.get('postgresql_ops')
+        ),
+        'postgresql_with': _normalize_index_map(
+            _get_index_kwarg(index, 'postgresql_with') or raw_index.get('postgresql_with')
+        ),
+    }
+
+
+def _index_signatures_differ(meta_signature: dict[str, Any], conn_signature: dict[str, Any]) -> bool:
+    return meta_signature != conn_signature
 
 
 # these 2 ported and updated from https://github.com/lolopinto/ent/pull/1223/files

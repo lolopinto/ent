@@ -37,6 +37,7 @@ from . import renderers
 from . import compare
 from . import ops_impl
 from . import csv
+from .schema_item import CustomSQLAlchemyType
 from .util.os import delete_py_files
 
 
@@ -308,6 +309,21 @@ class Runner(object):
 
         # print(context, inspected_column, metadata_column, inspected_type, metadata_type, type(inspected_type), type(metadata_type))
 
+        if isinstance(metadata_type, CustomSQLAlchemyType):
+            if context.connection.dialect.name != 'postgresql':
+                return True
+
+            schema = getattr(metadata_column.table, "schema", None)
+            reflected_type = cls._get_reflected_postgres_column_type(
+                context.connection,
+                metadata_column.table.name,
+                metadata_column.name,
+                schema,
+            )
+            if reflected_type is None:
+                return True
+            return cls._normalize_postgres_type(reflected_type) != cls._normalize_postgres_type(metadata_type.type_name)
+
         # going from VARCHAR to Text is accepted && makes sense and we should accept that change.
         if isinstance(inspected_type, sa.VARCHAR) and isinstance(metadata_type, sa.Text):
             return True
@@ -318,6 +334,36 @@ class Runner(object):
             return True
 
         return False
+
+    @classmethod
+    def _normalize_postgres_type(cls, type_name: str) -> str:
+        return " ".join(str(type_name).strip().lower().split())
+
+    @classmethod
+    def _get_reflected_postgres_column_type(cls, connection, table_name: str, column_name: str, schema: str | None):
+        row = connection.execute(
+            sa.text(
+                """
+                SELECT format_type(a.atttypid, a.atttypmod) AS type_name
+                FROM pg_catalog.pg_attribute AS a
+                JOIN pg_catalog.pg_class AS c ON c.oid = a.attrelid
+                JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
+                WHERE c.relname = :table_name
+                  AND a.attname = :column_name
+                  AND a.attnum > 0
+                  AND NOT a.attisdropped
+                  AND n.nspname = COALESCE(:schema_name, current_schema())
+                """
+            ),
+            {
+                "table_name": table_name,
+                "column_name": column_name,
+                "schema_name": schema,
+            },
+        ).fetchone()
+        if row is None:
+            return None
+        return row._asdict().get("type_name")
 
     @classmethod
     def include_object(cls, object, name, type, reflected, compare_to):
@@ -422,13 +468,18 @@ class Runner(object):
                 return f"postgresql.ENUM({csv.render_list_csv(item.enums)}, name='{item.name}', create_type=False)"
             return False
 
-        type_map = {
-            'server_default': server_default,
-            'type': enum,
-        }
+        def custom_type():
+            if isinstance(item, CustomSQLAlchemyType):
+                return f"auto_schema.schema_item.CustomSQLAlchemyType({item.type_name!r})"
+            return False
 
-        if type_ in type_map:
-            return type_map[type_]()
+        if type_ == 'server_default':
+            return server_default()
+        if type_ == 'type':
+            rendered = custom_type()
+            if rendered is not False:
+                return rendered
+            return enum()
 
         return False
 

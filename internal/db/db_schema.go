@@ -223,6 +223,8 @@ type indexConstraint struct {
 	indexType    input.IndexType
 	concurrently bool
 	where        string
+	ops          map[string]string
+	indexParams  map[string]interface{}
 }
 
 func (constraint *indexConstraint) getInfo() (string, []string) {
@@ -269,6 +271,12 @@ func (constraint *indexConstraint) getConstraintString() string {
 	}
 	if constraint.indexType != "" {
 		args = append(args, fmt.Sprintf("postgresql_using=%s", strconv.Quote(string(constraint.indexType))))
+	}
+	if len(constraint.ops) > 0 {
+		args = append(args, fmt.Sprintf("postgresql_ops=%s", getStringMapDict(constraint.ops)))
+	}
+	if len(constraint.indexParams) > 0 {
+		args = append(args, fmt.Sprintf("postgresql_with=%s", getInterfaceMapDict(constraint.indexParams)))
 	}
 	if constraint.concurrently {
 		args = append(args, "postgresql_concurrently=True")
@@ -565,6 +573,8 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 			indexType:    index.IndexType,
 			concurrently: index.Concurrently,
 			where:        index.Where,
+			ops:          getIndexOps(index.Columns, cols, index.Ops),
+			indexParams:  index.IndexParams,
 		}
 		if index.IndexType == "" {
 			if len(cols) == 1 {
@@ -1046,6 +1056,103 @@ func getKVPair(key, val string) string {
 	return strconv.Quote(key) + ":" + val
 }
 
+func formatPythonValue(value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		return strconv.Quote(v)
+	case bool:
+		if v {
+			return "True"
+		}
+		return "False"
+	case float64:
+		if v == float64(int64(v)) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case float32:
+		if v == float32(int64(v)) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(float64(v), 'f', -1, 32)
+	case int:
+		return strconv.Itoa(v)
+	case int8:
+		return strconv.FormatInt(int64(v), 10)
+	case int16:
+		return strconv.FormatInt(int64(v), 10)
+	case int32:
+		return strconv.FormatInt(int64(v), 10)
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case uint:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint64:
+		return strconv.FormatUint(v, 10)
+	default:
+		panic(fmt.Sprintf("unsupported python value type %T", value))
+	}
+}
+
+func getStringMapDict(m map[string]string) string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	kvPairs := make([]string, 0, len(keys))
+	for _, key := range keys {
+		kvPairs = append(kvPairs, getKVPair(key, strconv.Quote(m[key])))
+	}
+	return getKVDict(kvPairs)
+}
+
+func getInterfaceMapDict(m map[string]interface{}) string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	kvPairs := make([]string, 0, len(keys))
+	for _, key := range keys {
+		kvPairs = append(kvPairs, getKVPair(key, formatPythonValue(m[key])))
+	}
+	return getKVDict(kvPairs)
+}
+
+func getIndexOps(columnNames []string, cols []*dbColumn, ops map[string]string) map[string]string {
+	if len(ops) == 0 {
+		return nil
+	}
+
+	colMap := make(map[string]string)
+	for i, col := range cols {
+		colMap[col.DBColName] = col.DBColName
+		if i < len(columnNames) {
+			colMap[columnNames[i]] = col.DBColName
+		}
+	}
+
+	ret := make(map[string]string)
+	for key, value := range ops {
+		if col, ok := colMap[key]; ok {
+			ret[col] = value
+		} else {
+			ret[key] = value
+		}
+	}
+
+	return ret
+}
+
 func (s *dbSchema) getSymmetricEdgeValInEdge(edge *ent.AssocEdgeData) string {
 	if edge.SymmetricEdge {
 		return "True"
@@ -1228,6 +1335,8 @@ func (s *dbSchema) addEdgeIndices(tableName string, columns []*dbColumn, constra
 			indexType:    index.IndexType,
 			concurrently: index.Concurrently,
 			where:        index.Where,
+			ops:          getIndexOps(index.Columns, cols, index.Ops),
+			indexParams:  index.IndexParams,
 		}
 		if index.FullText != nil {
 			panic("full text indexes not supported for edge tables")

@@ -10,6 +10,7 @@ from . import conftest
 from . import testingutils
 from auto_schema import runner
 from auto_schema import ops
+from auto_schema import schema_item
 
 from typing import Any, Callable
 
@@ -905,6 +906,85 @@ class TestPostgresRunner(BaseTestRunner):
         r2.run()
 
         testingutils.validate_metadata_after_change(r2, metadata_with_table)
+
+    def test_custom_postgres_type_noop(self, new_test_runner):
+        metadata = sa.MetaData()
+        sa.Table(
+            "locations",
+            metadata,
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("location", schema_item.CustomSQLAlchemyType("point"), nullable=False),
+            sa.PrimaryKeyConstraint("id", name="locations_pkey"),
+        )
+
+        r = new_test_runner(metadata)
+        r.run()
+        testingutils.assert_num_files(r, 1)
+        testingutils.assert_num_tables(r, 2, ['alembic_version', 'locations'])
+
+        reflected_type = runner.Runner._get_reflected_postgres_column_type(
+            r.get_connection(),
+            "locations",
+            "location",
+            None,
+        )
+        assert runner.Runner._normalize_postgres_type(reflected_type) == "point"
+
+        r2 = new_test_runner(metadata, r)
+        assert len(r2.compute_changes()) == 0
+
+    def test_change_index_ops_and_storage_params(self, new_test_runner):
+        metadata = sa.MetaData()
+        table = sa.Table(
+            "accounts",
+            metadata,
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("first_name", sa.Text(), nullable=False),
+            sa.PrimaryKeyConstraint("id", name="accounts_pkey"),
+        )
+        sa.Index(
+            "accounts_first_name_pattern_idx",
+            table.c.first_name,
+            postgresql_using="btree",
+            postgresql_ops={"first_name": "text_pattern_ops"},
+            postgresql_with={"fillfactor": 70},
+        )
+
+        r = new_test_runner(metadata)
+        r.run()
+        testingutils.assert_num_files(r, 1)
+        testingutils.assert_num_tables(r, 2, ['accounts', 'alembic_version'])
+
+        index = next(idx for idx in table.indexes if idx.name == "accounts_first_name_pattern_idx")
+        index.kwargs["postgresql_with"] = {"fillfactor": 80}
+
+        r2 = new_test_runner(metadata, r)
+        diff = r2.compute_changes()
+
+        assert len(diff) == 1
+        assert isinstance(diff[0], alembicops.ModifyTableOps)
+        modify_op = diff[0]
+        assert len(modify_op.ops) == 2
+        assert isinstance(modify_op.ops[0], alembicops.DropIndexOp)
+        assert isinstance(modify_op.ops[1], alembicops.CreateIndexOp)
+
+        r2.run()
+
+        with open(_get_revision_file(r2), "r") as f:
+            contents = f.read()
+        assert "text_pattern_ops" in contents
+        assert "fillfactor" in contents
+
+        row = r2.get_connection().execute(
+            sa.text("select indexdef from pg_indexes where indexname = 'accounts_first_name_pattern_idx'")
+        ).fetchone()
+        assert row is not None
+        indexdef = row._asdict()["indexdef"]
+        assert "text_pattern_ops" in indexdef
+        assert "fillfactor='80'" in indexdef
+
+        r3 = new_test_runner(metadata, r2)
+        assert len(r3.compute_changes()) == 0
 
     @pytest.mark.usefixtures("address_metadata_table_fixture")
     def test_server_default_no_change_string(self, new_test_runner, address_metadata_table_fixture):

@@ -89,6 +89,39 @@ func TestCustomFields(t *testing.T) {
 	validateField(t, getField("nullable_password"), &enttype.NullablePasswordType{})
 }
 
+func TestCustomPostgresFieldMetadata(t *testing.T) {
+	data := `
+ {
+	 "schemas": {
+		 "Location": {
+			"fields": [
+					{
+						"name": "point",
+						"type": {
+							"dbType": "String",
+							"type": "Point",
+							"graphQLType": "Point",
+							"postgresType": "point",
+							"dbExtension": "postgis"
+						}
+					}
+				]
+			}
+		}
+	}`
+
+	s, err := input.ParseSchema([]byte(data))
+	require.Nil(t, err)
+	location := s.Nodes["Location"]
+	require.Len(t, location.Fields, 1)
+
+	field := location.Fields[0]
+	require.NotNil(t, field.Type)
+	assert.Equal(t, input.String, field.Type.DBType)
+	assert.Equal(t, "point", field.Type.PostgresType)
+	assert.Equal(t, "postgis", field.Type.DBExtension)
+}
+
 func validateField(t *testing.T, f *input.Field, expType enttype.TSType) {
 	typ, err := f.GetEntType("User")
 	require.Nil(t, err)

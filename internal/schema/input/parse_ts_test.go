@@ -113,11 +113,15 @@ type constraint struct {
 }
 
 type index struct {
-	name    string
-	columns []string
-	unique  bool
+	name         string
+	columns      []string
+	unique       bool
+	indexType    input.IndexType
 	concurrently bool
-	where   string
+	where        string
+	ops          map[string]string
+	indexParams  map[string]interface{}
+	dbExtension  string
 }
 
 type fkeyInfo struct {
@@ -413,8 +417,12 @@ func verifyIndices(t *testing.T, expIndices []index, indices []*input.Index) {
 		assert.Equal(t, expIndex.name, index.Name)
 		assert.Equal(t, expIndex.columns, index.Columns)
 		assert.Equal(t, expIndex.unique, index.Unique)
+		assert.Equal(t, expIndex.indexType, index.IndexType)
 		assert.Equal(t, expIndex.concurrently, index.Concurrently)
 		assert.Equal(t, expIndex.where, index.Where)
+		assert.Equal(t, expIndex.ops, index.Ops)
+		assert.Equal(t, expIndex.indexParams, index.IndexParams)
+		assert.Equal(t, expIndex.dbExtension, index.DBExtension)
 	}
 }
 

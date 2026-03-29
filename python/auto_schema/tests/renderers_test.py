@@ -6,6 +6,8 @@ import sqlalchemy as sa
 
 from auto_schema import ops
 from auto_schema import renderers
+from auto_schema import runner
+from auto_schema import schema_item
 
 
 def _make_autogen_context():
@@ -128,3 +130,18 @@ def test_render_set_db_extension_schema():
         rendered
         == "op.set_db_extension_schema('hstore', 'public', 'extensions')"
     )
+
+
+def test_render_custom_sqlalchemy_type():
+    autogen_context, connection, engine = _make_autogen_context()
+    try:
+        rendered = runner.Runner.render_item(
+            "type",
+            schema_item.CustomSQLAlchemyType("point"),
+            autogen_context,
+        )
+    finally:
+        connection.close()
+        engine.dispose()
+
+    assert rendered == "auto_schema.schema_item.CustomSQLAlchemyType('point')"

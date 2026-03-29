@@ -1,6 +1,7 @@
 import * as clause from "./clause";
 import { ObjectLoaderFactory } from "./loaders";
 import { OrderBy } from "./query_impl";
+import { QueryExpression } from "./query_expression";
 
 // Loader is the primitive data fetching abstraction in the framework
 // implementation details up to each instance
@@ -156,6 +157,18 @@ export interface EntConstructor<
 
 export type ID = string | number;
 
+export interface SelectColumnField {
+  alias: string;
+  column: string;
+}
+
+export interface SelectExpressionField {
+  alias: string;
+  expression: QueryExpression;
+}
+
+export type SelectField = string | SelectColumnField | SelectExpressionField;
+
 export interface DataOptions {
   // TODO pool or client later since we should get it from there
   // TODO this can be passed in for scenarios where we are not using default configuration
@@ -170,13 +183,7 @@ export interface DataOptions {
 
 export interface SelectBaseDataOptions extends DataOptions {
   // list of fields to read
-  fields: (
-    | string
-    | {
-        alias: string;
-        column: string;
-      }
-  )[];
+  fields: SelectField[];
   // use this alias to alias the fields instead of the table name or table alias
   // takes precedence over tableName and alias
   fieldsAlias?: string;
