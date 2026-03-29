@@ -1,10 +1,12 @@
+import { createHash } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import type { DevSchemaConfig } from "./config";
+import type { RuntimeDevSchemaConfig } from "./config";
 
 const STATE_DIR = ".ent";
 const STATE_FILE = "dev_schema.json";
 const DEFAULT_SCHEMA_DIR = path.join("src", "schema");
+const DEFAULT_SCHEMA_PREFIX = "ent_dev";
 const MAX_SCHEMA_LEN = 63;
 
 export interface ResolvedDevSchema {
@@ -21,7 +23,9 @@ interface DevSchemaState {
   ignoreBranches?: string[];
 }
 
-export function resolveDevSchema(cfg?: DevSchemaConfig): ResolvedDevSchema {
+export function resolveDevSchema(
+  cfg?: RuntimeDevSchemaConfig,
+): ResolvedDevSchema {
   if (!isDevSchemaEnabled(cfg)) {
     return { enabled: false };
   }
@@ -35,33 +39,55 @@ export function resolveDevSchema(cfg?: DevSchemaConfig): ResolvedDevSchema {
     };
   }
 
-  const statePath = resolveStatePath();
-  const state = loadDevSchemaState(statePath);
-  if (!state?.schemaName) {
-    throw new Error(
-      "dev branch schemas are enabled but no dev schema state was found. Run ent codegen to generate src/schema/.ent/dev_schema.json.",
+  if (cfg) {
+    const branchName = requireCurrentBranch(
+      "dev branch schemas are enabled but the current git branch could not be determined. Set devSchema.schemaName explicitly.",
     );
+    return {
+      enabled: true,
+      schemaName: buildSchemaName(branchName),
+      branchName,
+      includePublic: cfg.includePublic === true,
+    };
   }
 
-  const branchName = state.branchName;
-  if (branchName) {
-    const currentBranch = resolveGitBranch();
-    if (currentBranch && currentBranch !== branchName) {
-      throw new Error(
-        `dev branch schema was generated for "${branchName}" but current branch is "${currentBranch}". Run ent codegen to regenerate.`,
+  const state = loadDevSchemaState(resolveStatePath());
+  if (state?.schemaName) {
+    const branchName = state.branchName;
+    if (branchName) {
+      // State-file mode is tied to the branch that produced the generated
+      // schema metadata. Fail closed after branch switches until codegen
+      // refreshes the state file.
+      const currentBranch = requireCurrentBranch(
+        `dev branch schema state was generated for branch "${branchName}" but the current git branch could not be determined. Run ent codegen to regenerate or set devSchema.schemaName explicitly.`,
       );
+      if (currentBranch !== branchName) {
+        throw new Error(
+          `dev branch schema state was generated for branch "${branchName}" but current branch is "${currentBranch}". Run ent codegen to regenerate or set devSchema.schemaName explicitly.`,
+        );
+      }
     }
+
+    return {
+      enabled: true,
+      schemaName: sanitizeIdentifier(state.schemaName),
+      branchName,
+      includePublic: state.includePublic === true,
+    };
   }
 
+  const branchName = requireCurrentBranch(
+    "dev branch schemas are enabled but the current git branch could not be determined. Set devSchema.schemaName explicitly or run ent codegen to regenerate src/schema/.ent/dev_schema.json.",
+  );
   return {
     enabled: true,
-    schemaName: state.schemaName,
+    schemaName: buildSchemaName(branchName),
     branchName,
-    includePublic: state.includePublic === true,
+    includePublic: false,
   };
 }
 
-export function isDevSchemaEnabled(cfg?: DevSchemaConfig): boolean {
+export function isDevSchemaEnabled(cfg?: RuntimeDevSchemaConfig): boolean {
   const nodeEnv = (process.env.NODE_ENV || "").toLowerCase();
   if (nodeEnv === "production") {
     return false;
@@ -81,8 +107,7 @@ export function isDevSchemaEnabled(cfg?: DevSchemaConfig): boolean {
     }
     return true;
   }
-  const statePath = resolveStatePath();
-  const state = loadDevSchemaState(statePath);
+  const state = loadDevSchemaState(resolveStatePath());
   if (!state?.schemaName) {
     return false;
   }
@@ -110,6 +135,13 @@ function loadDevSchemaState(statePath?: string): DevSchemaState | undefined {
   return data;
 }
 
+function requireCurrentBranch(message: string): string {
+  const branch = resolveGitBranch();
+  if (!branch) {
+    throw new Error(message);
+  }
+  return branch;
+}
 
 function slugify(input: string): string {
   if (!input) {
@@ -149,6 +181,36 @@ function sanitizeIdentifier(input: string): string {
   return normalized;
 }
 
+function shortHash(input: string): string {
+  return createHash("sha1").update(input).digest("hex").slice(0, 8);
+}
+
+function buildSchemaName(branch: string): string {
+  const prefix = sanitizeIdentifier(DEFAULT_SCHEMA_PREFIX);
+  let branchSlug = slugify(branch);
+  if (!branchSlug) {
+    branchSlug = "branch";
+  }
+  const hash = shortHash(branch);
+  let name = [prefix, branchSlug, hash].join("_");
+  if (name.length <= MAX_SCHEMA_LEN) {
+    return name;
+  }
+
+  const over = name.length - MAX_SCHEMA_LEN;
+  if (over > 0 && branchSlug.length > 1) {
+    branchSlug = branchSlug.slice(
+      0,
+      branchSlug.length - Math.min(over, branchSlug.length - 1),
+    );
+  }
+  name = [prefix, branchSlug, hash].join("_");
+  if (name.length > MAX_SCHEMA_LEN) {
+    return name.slice(0, MAX_SCHEMA_LEN);
+  }
+  return name;
+}
+
 function resolveStatePath(): string | undefined {
   const start = process.cwd();
   const root = findGitRoot(start) || start;
@@ -156,7 +218,10 @@ function resolveStatePath(): string | undefined {
   return path.join(schemaDir, STATE_DIR, STATE_FILE);
 }
 
-function isBranchIgnored(ignoreBranches: string[] | undefined, branch: string): boolean {
+function isBranchIgnored(
+  ignoreBranches: string[] | undefined,
+  branch: string,
+): boolean {
   if (!branch || !ignoreBranches || ignoreBranches.length === 0) {
     return false;
   }
@@ -204,7 +269,10 @@ function resolveGitBranch(): string {
   if (!head.startsWith("ref:")) {
     return "";
   }
-  return head.replace("ref:", "").trim().replace(/^refs\/heads\//, "");
+  return head
+    .replace("ref:", "")
+    .trim()
+    .replace(/^refs\/heads\//, "");
 }
 
 function resolveGitDir(gitPath: string): string | undefined {
