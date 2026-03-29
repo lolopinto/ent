@@ -1,0 +1,45 @@
+{
+  "name": "@snowtop/ent-pgvector",
+  "version": "0.1.0",
+  "description": "pgvector support for snowtop ent",
+  "main": "dist/pgvector.js",
+  "types": "dist/pgvector.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "test": "jest",
+    "prepublishOnly": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:lolopinto/ent.git",
+    "directory": "packages/ent-pgvector"
+  },
+  "keywords": [
+    "snowtop",
+    "ent",
+    "pgvector",
+    "vector",
+    "postgres"
+  ],
+  "author": "lolopinto",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lolopinto/ent/issues"
+  },
+  "homepage": "https://github.com/lolopinto/ent#readme",
+  "dependencies": {
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@snowtop/ent": "file:../../dist",
+    "@types/jest": "^30.0.0",
+    "@types/pg": "^8.16.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6"
+  },
+  "peerDependencies": {
+    "@snowtop/ent": ">=0.2.7"
+  }
+}
