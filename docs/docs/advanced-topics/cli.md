@@ -211,7 +211,7 @@ Current supported commands:
 ## prune_schemas
 
 Prunes stale dev branch schemas in postgres based on `public.ent_dev_schema_registry.last_used_at`.
-This command is disabled in production.
+The command exits with an error when `NODE_ENV=production`.
 
 `--dry-run` is enabled by default, so the command will print the schemas that would be deleted without
 dropping them. Use `--force` to actually delete schemas.
