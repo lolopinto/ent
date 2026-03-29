@@ -45,7 +45,6 @@ import {
 import { log, logEnabled, logTrace } from "./logger";
 import {
   OrderBy,
-  buildQuery,
   buildQueryData,
   getOrderByPhrase,
   orderByHasExpressions,
