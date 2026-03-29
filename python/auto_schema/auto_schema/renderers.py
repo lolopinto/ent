@@ -15,6 +15,46 @@ def render_add_edges(autogen_context: AutogenContext, op: ops.AddEdgesOp) -> str
     return _render_edge_from_edges(op.edges, "op.add_edges")
 
 
+def _render_extension_kwargs(op) -> str:
+    items = []
+    if getattr(op, "version", None) is not None:
+        items.append(f"version={op.version!r}")
+    if getattr(op, "install_schema", None) is not None:
+        items.append(f"install_schema={op.install_schema!r}")
+    if getattr(op, "drop_cascade", False):
+        items.append(f"drop_cascade={op.drop_cascade!r}")
+    return ", ".join(items)
+
+
+@renderers.dispatch_for(ops.CreateExtensionOp)
+def render_create_extension(autogen_context: AutogenContext, op: ops.CreateExtensionOp) -> str:
+    kw = _render_extension_kwargs(op)
+    if kw:
+        kw = f", {kw}"
+    return f"op.create_extension({op.extension_name!r}{kw})"
+
+
+@renderers.dispatch_for(ops.DropExtensionOp)
+def render_drop_extension(autogen_context: AutogenContext, op: ops.DropExtensionOp) -> str:
+    kw = _render_extension_kwargs(op)
+    if kw:
+        kw = f", {kw}"
+    return f"op.drop_extension({op.extension_name!r}{kw})"
+
+
+@renderers.dispatch_for(ops.UpdateExtensionOp)
+def render_update_extension(autogen_context: AutogenContext, op: ops.UpdateExtensionOp) -> str:
+    parts = [f"from_version={op.from_version!r}", f"to_version={op.to_version!r}"]
+    if op.install_schema is not None:
+        parts.append(f"install_schema={op.install_schema!r}")
+    if op.drop_cascade:
+        parts.append(f"drop_cascade={op.drop_cascade!r}")
+    return (
+        f"op.update_extension({op.extension_name!r}, "
+        f"{', '.join(parts)})"
+    )
+
+
 @renderers.dispatch_for(ops.RemoveEdgesOp)
 def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveEdgesOp) -> str:
     return _render_edge_from_edges(op.edges, "op.remove_edges")

@@ -200,6 +200,44 @@ class OpsTest(object):
                 self)
         )
 
+    def test_create_extension(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.CreateExtensionOp.create_extension(
+                operations,
+                "vector",
+                version="0.4.1",
+                install_schema="public",
+            ),
+            'CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA "public" VERSION \'0.4.1\';',
+        )
+
+    def test_drop_extension(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.DropExtensionOp.drop_extension(
+                operations,
+                "uuid-ossp",
+                drop_cascade=True,
+            ),
+            'DROP EXTENSION IF EXISTS "uuid-ossp" CASCADE;',
+        )
+
+    def test_update_extension(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.UpdateExtensionOp.update_extension(
+                operations,
+                "vector",
+                from_version="0.4.1",
+                to_version="0.5.0",
+            ),
+            'ALTER EXTENSION "vector" UPDATE TO \'0.5.0\';',
+        )
+
     def test_add_rows(self, new_test_runner):
         validate_op(
             new_test_runner,

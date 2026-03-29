@@ -18,6 +18,94 @@ from typing import Any
 import functools
 
 
+def _get_metadata_extensions(autogen_context: AutogenContext) -> list[dict[str, Any]]:
+    metadata_extensions = autogen_context.metadata.info.setdefault("db_extensions", {})
+    extensions = metadata_extensions.get("public", [])
+    if not isinstance(extensions, list):
+        raise ValueError("db_extensions['public'] needs to be a list")
+    return extensions
+
+
+def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, Any]]:
+    rows = autogen_context.connection.execute(
+        sa.text(
+            """
+            SELECT
+                ext.extname AS name,
+                ext.extversion AS version,
+                ns.nspname AS install_schema
+            FROM pg_catalog.pg_extension AS ext
+            JOIN pg_catalog.pg_namespace AS ns
+                ON ns.oid = ext.extnamespace
+            """
+        )
+    )
+    return {
+        row._asdict()["name"].lower(): row._asdict()
+        for row in rows
+    }
+
+
+def _get_extension_ops(
+    metadata_extensions: list[dict[str, Any]],
+    db_extensions: dict[str, dict[str, Any]],
+) -> list[ops.MigrateOpInterface]:
+    extension_ops = []
+    for extension in metadata_extensions:
+        name = extension["name"]
+        managed = extension.get("managed", True)
+        if not managed:
+            continue
+
+        db_extension = db_extensions.get(name.lower())
+        version = extension.get("version")
+        install_schema = extension.get("install_schema")
+        drop_cascade = extension.get("drop_cascade", False)
+        if db_extension is None:
+            extension_ops.append(
+                ops.CreateExtensionOp(
+                    name,
+                    version=version,
+                    install_schema=install_schema,
+                    drop_cascade=drop_cascade,
+                )
+            )
+            continue
+
+        if version is not None and db_extension.get("version") != version:
+            extension_ops.append(
+                ops.UpdateExtensionOp(
+                    name,
+                    from_version=db_extension.get("version"),
+                    to_version=version,
+                    install_schema=install_schema,
+                    drop_cascade=drop_cascade,
+                )
+            )
+
+    return extension_ops
+
+
+@comparators.dispatch_for("schema")
+def compare_extensions(autogen_context, upgrade_ops, schemas):
+    metadata_extensions = _get_metadata_extensions(autogen_context)
+    if len(metadata_extensions) == 0:
+        return
+
+    dialect = _dialect_name(autogen_context)
+    if dialect != "postgresql":
+        raise ValueError("db extensions are only supported for postgres")
+
+    db_extensions = _get_db_extensions(autogen_context)
+    extension_ops = _get_extension_ops(metadata_extensions, db_extensions)
+    if len(extension_ops) == 0:
+        return
+
+    # create/update extension ops need to happen before any dependent
+    # tables, columns, or indexes are created.
+    upgrade_ops.ops[0:0] = extension_ops
+
+
 @comparators.dispatch_for("schema")
 def compare_edges(autogen_context, upgrade_ops, schemas):
     db_edges = {}

@@ -29,6 +29,187 @@ class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
         pass
 
 
+class DBExtensionOp(MigrateOpInterface, metaclass=abc.ABCMeta):
+    def __init__(
+        self,
+        extension_name: str,
+        *,
+        version: str | None = None,
+        install_schema: str | None = None,
+        schema: Any | None = None,
+        drop_cascade: bool = False,
+    ):
+        self.extension_name = extension_name
+        self.version = version
+        self.install_schema = install_schema
+        self.schema = schema
+        self.drop_cascade = drop_cascade
+
+    def get_table_name(self) -> String:
+        return "db_extensions"
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+            "extension": self.extension_name,
+        }
+
+
+@Operations.register_operation("create_extension")
+class CreateExtensionOp(DBExtensionOp):
+
+    """Create a database extension."""
+
+    @classmethod
+    def create_extension(
+        cls,
+        operations,
+        extension_name,
+        *,
+        version=None,
+        install_schema=None,
+        schema=None,
+        drop_cascade=False,
+    ):
+        op = cls(
+            extension_name,
+            version=version,
+            install_schema=install_schema,
+            schema=schema,
+            drop_cascade=drop_cascade,
+        )
+        return operations.invoke(op)
+
+    def reverse(self):
+        return DropExtensionOp(
+            self.extension_name,
+            version=self.version,
+            install_schema=self.install_schema,
+            schema=self.schema,
+            drop_cascade=self.drop_cascade,
+        )
+
+    def get_revision_message(self) -> String:
+        return f"create extension {self.extension_name}"
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.CREATE_EXTENSION
+
+
+@Operations.register_operation("drop_extension")
+class DropExtensionOp(DBExtensionOp):
+
+    """Drop a database extension."""
+
+    @classmethod
+    def drop_extension(
+        cls,
+        operations,
+        extension_name,
+        *,
+        version=None,
+        install_schema=None,
+        schema=None,
+        drop_cascade=False,
+    ):
+        op = cls(
+            extension_name,
+            version=version,
+            install_schema=install_schema,
+            schema=schema,
+            drop_cascade=drop_cascade,
+        )
+        return operations.invoke(op)
+
+    def reverse(self):
+        return CreateExtensionOp(
+            self.extension_name,
+            version=self.version,
+            install_schema=self.install_schema,
+            schema=self.schema,
+            drop_cascade=self.drop_cascade,
+        )
+
+    def get_revision_message(self) -> String:
+        return f"drop extension {self.extension_name}"
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.DROP_EXTENSION
+
+
+@Operations.register_operation("update_extension")
+class UpdateExtensionOp(DBExtensionOp):
+
+    """Update a database extension to a specific version."""
+
+    def __init__(
+        self,
+        extension_name: str,
+        *,
+        from_version: str | None = None,
+        to_version: str | None = None,
+        install_schema: str | None = None,
+        schema: Any | None = None,
+        drop_cascade: bool = False,
+    ):
+        super().__init__(
+            extension_name,
+            version=to_version,
+            install_schema=install_schema,
+            schema=schema,
+            drop_cascade=drop_cascade,
+        )
+        self.from_version = from_version
+        self.to_version = to_version
+
+    @classmethod
+    def update_extension(
+        cls,
+        operations,
+        extension_name,
+        *,
+        from_version=None,
+        to_version=None,
+        install_schema=None,
+        schema=None,
+        drop_cascade=False,
+    ):
+        op = cls(
+            extension_name,
+            from_version=from_version,
+            to_version=to_version,
+            install_schema=install_schema,
+            schema=schema,
+            drop_cascade=drop_cascade,
+        )
+        return operations.invoke(op)
+
+    def reverse(self):
+        return UpdateExtensionOp(
+            self.extension_name,
+            from_version=self.to_version,
+            to_version=self.from_version,
+            install_schema=self.install_schema,
+            schema=self.schema,
+            drop_cascade=self.drop_cascade,
+        )
+
+    def get_revision_message(self) -> String:
+        if self.to_version is None:
+            return f"update extension {self.extension_name}"
+        return f"update extension {self.extension_name} to version {self.to_version}"
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.UPDATE_EXTENSION
+
+    def get_change(self) -> Change:
+        change = super().get_change()
+        if self.to_version is not None:
+            change["desc"] = self.get_revision_message()
+        return change
+
+
 @Operations.register_operation("add_edges")
 class AddEdgesOp(MigrateOpInterface):
 
@@ -112,6 +293,176 @@ def _get_revision_message_for_rows(rows, table_name, single_row_msg_lmabda, mult
         return single_row_msg_lmabda(table_name)
 
     return multi_row_msg_lambda(table_name)
+
+
+def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": extension["name"],
+        "managed": extension.get("managed", True),
+        "version": extension.get("version"),
+        "install_schema": extension.get("install_schema"),
+        "runtime_schemas": list(extension.get("runtime_schemas") or []),
+        "drop_cascade": extension.get("drop_cascade", False),
+    }
+
+
+@Operations.register_operation("create_db_extension")
+class CreateExtensionOp(MigrateOpInterface):
+
+    """Create a database extension."""
+
+    def __init__(self, extension: dict[str, Any]):
+        self.extension = _normalize_db_extension(extension)
+
+    @classmethod
+    def create_db_extension(cls, operations, extension, **kw):
+        op = cls(extension)
+        return operations.invoke(op)
+
+    def reverse(self):
+        return DropExtensionOp(self.extension)
+
+    def get_revision_message(self) -> String:
+        return f"add db extension {self.extension['name']}"
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.CREATE_DB_EXTENSION
+
+    def get_table_name(self) -> String:
+        return "pg_extension"
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "extension": self.extension["name"],
+            "desc": self.get_revision_message(),
+        }
+
+
+@Operations.register_operation("drop_db_extension")
+class DropExtensionOp(MigrateOpInterface):
+
+    """Drop a database extension."""
+
+    def __init__(self, extension: dict[str, Any]):
+        self.extension = _normalize_db_extension(extension)
+
+    @classmethod
+    def drop_db_extension(cls, operations, extension, **kw):
+        op = cls(extension)
+        return operations.invoke(op)
+
+    def reverse(self):
+        return CreateExtensionOp(self.extension)
+
+    def get_revision_message(self) -> String:
+        return f"drop db extension {self.extension['name']}"
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.DROP_DB_EXTENSION
+
+    def get_table_name(self) -> String:
+        return "pg_extension"
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "extension": self.extension["name"],
+            "desc": self.get_revision_message(),
+        }
+
+
+@Operations.register_operation("update_db_extension")
+class UpdateExtensionOp(MigrateOpInterface):
+
+    """Update a database extension to a specific version."""
+
+    def __init__(self, extension_name: str, from_version: str, to_version: str):
+        self.extension_name = extension_name
+        self.from_version = from_version
+        self.to_version = to_version
+
+    @classmethod
+    def update_db_extension(
+        cls, operations, extension_name, from_version, to_version, **kw
+    ):
+        op = cls(extension_name, from_version, to_version)
+        return operations.invoke(op)
+
+    def reverse(self):
+        return UpdateExtensionOp(
+            self.extension_name,
+            self.to_version,
+            self.from_version,
+        )
+
+    def get_revision_message(self) -> String:
+        return (
+            f"update db extension {self.extension_name} "
+            f"from {self.from_version} to {self.to_version}"
+        )
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.UPDATE_DB_EXTENSION
+
+    def get_table_name(self) -> String:
+        return "pg_extension"
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "extension": self.extension_name,
+            "desc": self.get_revision_message(),
+        }
+
+
+@Operations.register_operation("set_db_extension_schema")
+class SetExtensionSchemaOp(MigrateOpInterface):
+
+    """Move a database extension into a different schema."""
+
+    def __init__(
+        self,
+        extension_name: str,
+        from_schema: str,
+        to_schema: str,
+    ):
+        self.extension_name = extension_name
+        self.from_schema = from_schema
+        self.to_schema = to_schema
+
+    @classmethod
+    def set_db_extension_schema(
+        cls, operations, extension_name, from_schema, to_schema, **kw
+    ):
+        op = cls(extension_name, from_schema, to_schema)
+        return operations.invoke(op)
+
+    def reverse(self):
+        return SetExtensionSchemaOp(
+            self.extension_name,
+            self.to_schema,
+            self.from_schema,
+        )
+
+    def get_revision_message(self) -> String:
+        return (
+            f"move db extension {self.extension_name} "
+            f"from schema {self.from_schema} to {self.to_schema}"
+        )
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.SET_DB_EXTENSION_SCHEMA
+
+    def get_table_name(self) -> String:
+        return "pg_extension"
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "extension": self.extension_name,
+            "desc": self.get_revision_message(),
+        }
 
 
 @Operations.register_operation("modify_edge")

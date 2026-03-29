@@ -80,3 +80,32 @@ def test_render_full_text_index_concurrently():
     assert "op.create_full_text_index" in rendered
     assert "accounts_full_text_idx" in rendered
     assert "postgresql_concurrently" in rendered
+
+
+def test_render_create_extension():
+    op = ops.CreateExtensionOp(
+        "vector",
+        version="0.4.1",
+        install_schema="public",
+    )
+    rendered = renderers.render_create_extension(None, op)
+    assert rendered == "op.create_extension('vector', version='0.4.1', install_schema='public')"
+
+
+def test_render_drop_extension():
+    op = ops.DropExtensionOp(
+        "uuid-ossp",
+        drop_cascade=True,
+    )
+    rendered = renderers.render_drop_extension(None, op)
+    assert rendered == "op.drop_extension('uuid-ossp', drop_cascade=True)"
+
+
+def test_render_update_extension():
+    op = ops.UpdateExtensionOp(
+        "vector",
+        from_version="0.4.1",
+        to_version="0.5.0",
+    )
+    rendered = renderers.render_update_extension(None, op)
+    assert rendered == "op.update_extension('vector', from_version='0.4.1', to_version='0.5.0')"

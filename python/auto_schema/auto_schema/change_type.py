@@ -4,6 +4,9 @@ from enum import Enum
 # subclass of str for enum encoding
 # NOTE: these need to be in sync with golang internal/schema/change.go
 class ChangeType(str, Enum):
+    CREATE_EXTENSION = "create_extension"
+    DROP_EXTENSION = "drop_extension"
+    UPDATE_EXTENSION = "update_extension"
     ADD_TABLE = "add_table"
     DROP_TABLE = "drop_table"
     ADD_COLUMN = "add_column"
@@ -28,3 +31,7 @@ class ChangeType(str, Enum):
     CREATE_CHECK_CONSTRAINT = "create_check_constraint"
     DROP_CHECK_CONSTRAINT = "drop_check_constraint"
     EXECUTE_SQL = "execute_sql"
+    CREATE_DB_EXTENSION = "create_db_extension"
+    DROP_DB_EXTENSION = "drop_db_extension"
+    UPDATE_DB_EXTENSION = "update_db_extension"
+    SET_DB_EXTENSION_SCHEMA = "set_db_extension_schema"
