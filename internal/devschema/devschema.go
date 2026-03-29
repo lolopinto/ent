@@ -70,6 +70,16 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 		return &Result{Enabled: false}, nil
 	}
 
+	currentBranch := ""
+	currentBranchResolved := false
+	resolveCurrentBranch := func() string {
+		if !currentBranchResolved {
+			currentBranch = ResolveGitBranch(opts.RepoRoot)
+			currentBranchResolved = true
+		}
+		return currentBranch
+	}
+
 	includePublic := false
 	if cfg != nil {
 		includePublic = cfg.IncludePublic
@@ -85,38 +95,51 @@ func Resolve(cfg *Config, opts Options) (*Result, error) {
 
 	schemaName := ""
 	explicitSchema := false
+	branchName := ""
+	pruneEnabled, pruneDays := resolvePrune(cfg, state)
+
 	if cfg != nil && cfg.SchemaName != "" {
 		schemaName = cfg.SchemaName
 		explicitSchema = true
 	} else if state != nil {
 		schemaName = state.SchemaName
-		if schemaName != "" && state.BranchName == "" {
+		branchName = state.BranchName
+		if schemaName != "" && branchName == "" {
 			explicitSchema = true
 		}
 	}
 
-	pruneEnabled, pruneDays := resolvePrune(cfg, state)
-
-	branchName := ""
-	if !explicitSchema {
-		if state != nil {
-			branchName = state.BranchName
-		}
+	if explicitSchema {
+		schemaName = sanitizeIdentifier(schemaName)
+	} else if cfg != nil {
+		branchName = resolveCurrentBranch()
 		if branchName == "" {
-			branchName = ResolveGitBranch(opts.RepoRoot)
+			return nil, fmt.Errorf("dev branch schemas are enabled but the current git branch could not be determined; set devSchema.schemaName explicitly")
+		}
+		schemaName = buildSchemaName(branchName)
+	} else {
+		if schemaName != "" && branchName != "" {
+			// State-file mode is tied to the branch that generated the schema.
+			// Fail closed after branch switches until codegen refreshes the state.
+			current := resolveCurrentBranch()
+			if current == "" {
+				return nil, fmt.Errorf("dev branch schema state was generated for branch %q but the current git branch could not be determined; run ent codegen to regenerate or set devSchema.schemaName explicitly", branchName)
+			}
+			if current != branchName {
+				return nil, fmt.Errorf("dev branch schema state was generated for branch %q but current branch is %q; run ent codegen to regenerate or set devSchema.schemaName explicitly", branchName, current)
+			}
 		}
 		if schemaName == "" {
+			branchName = resolveCurrentBranch()
 			if branchName == "" {
-				return nil, fmt.Errorf("dev branch schemas are enabled but no git branch or schema name is available")
+				return nil, fmt.Errorf("dev branch schemas are enabled but the current git branch could not be determined; set devSchema.schemaName explicitly or run ent codegen to regenerate src/schema/.ent/dev_schema.json")
 			}
 			schemaName = buildSchemaName(branchName)
 		}
-	} else if schemaName != "" {
-		schemaName = sanitizeIdentifier(schemaName)
 	}
 	branchForIgnore := branchName
 	if branchForIgnore == "" {
-		branchForIgnore = ResolveGitBranch(opts.RepoRoot)
+		branchForIgnore = resolveCurrentBranch()
 	}
 	if envEnabled == nil && isBranchIgnored(ignoreBranches, branchForIgnore) {
 		return &Result{Enabled: false}, nil

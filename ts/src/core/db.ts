@@ -3,7 +3,7 @@ import { load } from "js-yaml";
 import { DateTime } from "luxon";
 import pg, { Pool, PoolClient, PoolConfig } from "pg";
 import { log } from "./logger";
-import type { DevSchemaConfig } from "./config";
+import type { RuntimeDevSchemaConfig } from "./config";
 import { isDevSchemaEnabled, resolveDevSchema } from "./dev_schema";
 
 export interface Database extends PoolConfig {
@@ -68,7 +68,7 @@ interface DatabaseInfo {
   config: PoolConfig;
   /// filePath for sqlite
   filePath?: string;
-  devSchema?: DevSchemaConfig;
+  devSchema?: RuntimeDevSchemaConfig;
 }
 
 interface clientConfigArgs {
@@ -76,7 +76,7 @@ interface clientConfigArgs {
   dbFile?: string;
   db?: Database | DBDict;
   cfg?: PoolConfig;
-  devSchema?: DevSchemaConfig;
+  devSchema?: RuntimeDevSchemaConfig;
 }
 // order
 // env variable
@@ -165,9 +165,7 @@ export default class DB {
   private constructor(public db: DatabaseInfo) {
     const devSchemaEnabled = isDevSchemaEnabled(db.devSchema);
     if (devSchemaEnabled && db.dialect === Dialect.SQLite) {
-      throw new Error(
-        "dev branch schemas are only supported for postgres",
-      );
+      throw new Error("dev branch schemas are only supported for postgres");
     }
     const resolvedDevSchema = devSchemaEnabled
       ? resolveDevSchema(db.devSchema)
@@ -484,7 +482,10 @@ export class Sqlite implements Connection, SyncClient {
 }
 
 export class Postgres implements Connection {
-  constructor(private pool: Pool, private ready?: Promise<void>) {}
+  constructor(
+    private pool: Pool,
+    private ready?: Promise<void>,
+  ) {}
 
   private async ensureReady() {
     if (this.ready) {
@@ -539,7 +540,10 @@ export class Postgres implements Connection {
 }
 
 export class PostgresClient implements Client {
-  constructor(private client: PoolClient, private ready?: Promise<void>) {}
+  constructor(
+    private client: PoolClient,
+    private ready?: Promise<void>,
+  ) {}
 
   private async ensureReady() {
     if (this.ready) {

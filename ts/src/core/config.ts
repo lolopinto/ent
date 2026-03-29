@@ -58,11 +58,11 @@ export interface Config {
   entLoaderPrivacyConcurrencyLimit?: number;
 
   // dev schema configuration
-  devSchema?: DevSchemaConfig;
+  devSchema?: RuntimeDevSchemaConfig;
 }
 
 // things that can be set in ent.yml
-export interface ConfigWithCodegen extends Config {
+export interface ConfigWithCodegen extends Omit<Config, "devSchema"> {
   // config for codegen
   codegen?: CodegenConfig;
 
@@ -82,6 +82,9 @@ export interface ConfigWithCodegen extends Config {
   // defaults to __global__schema.ts if not provided
   // relative to src/schema for now
   globalSchemaPath?: string;
+
+  // codegen/runtime shared config. codegen additionally supports prune.
+  devSchema?: DevSchemaConfig;
 }
 
 interface DatabaseMigrationConfig {
@@ -94,11 +97,14 @@ export interface DevSchemaPruneConfig {
   days?: number;
 }
 
-export interface DevSchemaConfig {
+export interface RuntimeDevSchemaConfig {
   enabled?: boolean;
   schemaName?: string;
   includePublic?: boolean;
   ignoreBranches?: string[];
+}
+
+export interface DevSchemaConfig extends RuntimeDevSchemaConfig {
   prune?: DevSchemaPruneConfig;
 }
 
@@ -244,7 +250,9 @@ function isBuffer(b: Buffer | Config): b is Buffer {
   return (b as Buffer).write !== undefined;
 }
 
-export function loadConfig(file?: string | Buffer | Config) {
+export function loadConfig(
+  file?: string | Buffer | Config | ConfigWithCodegen,
+) {
   let data: string;
   if (typeof file === "object") {
     if (!isBuffer(file)) {

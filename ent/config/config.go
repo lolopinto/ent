@@ -36,14 +36,24 @@ type DBConfig struct {
 
 func (db *DBConfig) GetConnectionStr() string {
 	if db.Dialect == "postgres" {
-		return db.getConnectionStr("postgres", true)
+		return db.getConnectionStr("postgres", true, true)
+	}
+	return db.connString
+}
+
+// GetConnectionStrWithoutDevSchema returns the base connection string without
+// deriving branch-local search_path settings. Admin commands such as
+// prune_schemas use this path so dry-runs stay free of dev-schema side effects.
+func (db *DBConfig) GetConnectionStrWithoutDevSchema() string {
+	if db.Dialect == "postgres" {
+		return db.getConnectionStr("postgres", true, false)
 	}
 	return db.connString
 }
 
 func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
 	if db.Dialect == "postgres" {
-		return db.getConnectionStr("postgresql+psycopg2", false)
+		return db.getConnectionStr("postgresql+psycopg2", false, true)
 	}
 	return db.connString
 }
@@ -126,7 +136,7 @@ func (r *DBConfig) setSSLMode(val string) {
 	r.SslMode = val
 }
 
-func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool) string {
+func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool, includeDevSchema bool) string {
 	format := "{driver}://{user}:{password}@{host}/{dbname}"
 	parts := []string{
 		"{driver}", driver,
@@ -147,19 +157,21 @@ func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool) string {
 		)
 	}
 
-	if res, err := devschema.Resolve(nil, devschema.Options{}); err != nil {
-		log.Printf("devschema resolve failed: %v", err)
-	} else if res != nil && res.Enabled && res.SchemaName != "" {
-		searchPath := res.SchemaName
-		if res.IncludePublic {
-			searchPath = fmt.Sprintf("%s,public", res.SchemaName)
+	if includeDevSchema {
+		if res, err := devschema.Resolve(nil, devschema.Options{}); err != nil {
+			log.Printf("devschema resolve failed: %v", err)
+		} else if res != nil && res.Enabled && res.SchemaName != "" {
+			searchPath := res.SchemaName
+			if res.IncludePublic {
+				searchPath = fmt.Sprintf("%s,public", res.SchemaName)
+			}
+			if strings.Contains(format, "?") {
+				format = format + "&search_path={search_path}"
+			} else {
+				format = format + "?search_path={search_path}"
+			}
+			parts = append(parts, "{search_path}", url.QueryEscape(searchPath))
 		}
-		if strings.Contains(format, "?") {
-			format = format + "&search_path={search_path}"
-		} else {
-			format = format + "?search_path={search_path}"
-		}
-		parts = append(parts, "{search_path}", url.QueryEscape(searchPath))
 	}
 	r := strings.NewReplacer(parts...)
 

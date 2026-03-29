@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/devschema"
@@ -57,7 +58,8 @@ var pruneSchemasCmd = &cobra.Command{
 			return fmt.Errorf("dev branch schema pruning is only supported for postgres")
 		}
 
-		db, err := config.Get().DB.Init()
+		// prune_schemas must bypass runtime dev-schema init so --dry-run stays dry.
+		db, err := sqlx.Connect("postgres", config.Get().DB.GetConnectionStrWithoutDevSchema())
 		if err != nil {
 			return err
 		}
