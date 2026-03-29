@@ -18,12 +18,23 @@ from typing import Any
 import functools
 
 
+def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": extension["name"],
+        "managed": extension.get("managed", True),
+        "version": extension.get("version"),
+        "install_schema": extension.get("install_schema"),
+        "runtime_schemas": list(extension.get("runtime_schemas") or []),
+        "drop_cascade": extension.get("drop_cascade", False),
+    }
+
+
 def _get_metadata_extensions(autogen_context: AutogenContext) -> list[dict[str, Any]]:
-    metadata_extensions = autogen_context.metadata.info.setdefault("db_extensions", {})
+    metadata_extensions = autogen_context.metadata.info.get("db_extensions", {})
     extensions = metadata_extensions.get("public", [])
     if not isinstance(extensions, list):
         raise ValueError("db_extensions['public'] needs to be a list")
-    return extensions
+    return [_normalize_db_extension(extension) for extension in extensions]
 
 
 def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, Any]]:
@@ -54,32 +65,45 @@ def _get_extension_ops(
     for extension in metadata_extensions:
         name = extension["name"]
         managed = extension.get("managed", True)
-        if not managed:
-            continue
-
         db_extension = db_extensions.get(name.lower())
         version = extension.get("version")
         install_schema = extension.get("install_schema")
-        drop_cascade = extension.get("drop_cascade", False)
         if db_extension is None:
-            extension_ops.append(
-                ops.CreateExtensionOp(
-                    name,
-                    version=version,
-                    install_schema=install_schema,
-                    drop_cascade=drop_cascade,
+            if not managed:
+                raise ValueError(
+                    f'required unmanaged db extension "{name}" is not installed'
                 )
+            extension_ops.append(
+                ops.CreateExtensionOp(extension)
             )
             continue
 
         if version is not None and db_extension.get("version") != version:
+            if not managed:
+                raise ValueError(
+                    f'unmanaged db extension "{name}" is installed at version '
+                    f'"{db_extension.get("version")}" but schema requires "{version}"'
+                )
             extension_ops.append(
                 ops.UpdateExtensionOp(
                     name,
-                    from_version=db_extension.get("version"),
-                    to_version=version,
-                    install_schema=install_schema,
-                    drop_cascade=drop_cascade,
+                    db_extension.get("version"),
+                    version,
+                )
+            )
+
+        if install_schema is not None and db_extension.get("install_schema") != install_schema:
+            if not managed:
+                raise ValueError(
+                    f'unmanaged db extension "{name}" is installed in schema '
+                    f'"{db_extension.get("install_schema")}" but schema requires '
+                    f'"{install_schema}"'
+                )
+            extension_ops.append(
+                ops.SetExtensionSchemaOp(
+                    name,
+                    db_extension.get("install_schema"),
+                    install_schema,
                 )
             )
 

@@ -29,14 +29,6 @@ def _quote_literal(val: str) -> str:
     return "'" + val.replace("'", "''") + "'"
 
 
-def _quote_ident(name: str) -> str:
-    return '"' + name.replace('"', '""') + '"'
-
-
-def _quote_literal(val: str) -> str:
-    return "'" + val.replace("'", "''") + "'"
-
-
 def _sql_version(val):
     # for sql mode, need to convert to values that can run from sql script
     match val:
@@ -50,21 +42,6 @@ def _sql_version(val):
             return val.val
         case _:
             return f"{val!r}"
-
-
-def _extension_clauses(
-    *,
-    version: str | None = None,
-    install_schema: str | None = None,
-) -> str:
-    clauses = []
-    if install_schema is not None:
-        clauses.append(f"SCHEMA {_quote_ident(install_schema)}")
-    if version is not None:
-        clauses.append(f"VERSION {_quote_literal(version)}")
-    if len(clauses) == 0:
-        return ""
-    return " WITH " + " ".join(clauses)
 
 
 # need to use manual insert statement because of sql mode
@@ -238,36 +215,6 @@ def modify_rows(operations: ops.Operations, operation: ops.ModifyRowsOp):
     table = _get_table(operations, operation.table_name)
 
     _exec_update_statement(operations, table, operation.pkeys, operation.rows)
-
-
-@ Operations.implementation_for(ops.CreateExtensionOp)
-def create_extension(operations: ops.Operations, operation: ops.CreateExtensionOp):
-    stmt = (
-        f"CREATE EXTENSION IF NOT EXISTS {_quote_ident(operation.extension_name)}"
-        f"{_extension_clauses(version=operation.version, install_schema=operation.install_schema)}"
-    )
-    connection = operations.get_bind()
-    connection.execute(sa.text(stmt))
-
-
-@ Operations.implementation_for(ops.DropExtensionOp)
-def drop_extension(operations: ops.Operations, operation: ops.DropExtensionOp):
-    cascade_sql = " CASCADE" if operation.drop_cascade else ""
-    stmt = (
-        f"DROP EXTENSION IF EXISTS {_quote_ident(operation.extension_name)}"
-        f"{cascade_sql}"
-    )
-    connection = operations.get_bind()
-    connection.execute(sa.text(stmt))
-
-
-@ Operations.implementation_for(ops.UpdateExtensionOp)
-def update_extension(operations: ops.Operations, operation: ops.UpdateExtensionOp):
-    stmt = f"ALTER EXTENSION {_quote_ident(operation.extension_name)} UPDATE"
-    if operation.to_version is not None:
-        stmt += f" TO {_quote_literal(operation.to_version)}"
-    connection = operations.get_bind()
-    connection.execute(sa.text(stmt))
 
 
 @ Operations.implementation_for(ops.AlterEnumOp)

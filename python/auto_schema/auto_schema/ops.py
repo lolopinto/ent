@@ -29,272 +29,6 @@ class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
         pass
 
 
-class DBExtensionOp(MigrateOpInterface, metaclass=abc.ABCMeta):
-    def __init__(
-        self,
-        extension_name: str,
-        *,
-        version: str | None = None,
-        install_schema: str | None = None,
-        schema: Any | None = None,
-        drop_cascade: bool = False,
-    ):
-        self.extension_name = extension_name
-        self.version = version
-        self.install_schema = install_schema
-        self.schema = schema
-        self.drop_cascade = drop_cascade
-
-    def get_table_name(self) -> String:
-        return "db_extensions"
-
-    def get_change(self) -> Change:
-        return {
-            "change": self.get_change_type(),
-            "desc": self.get_revision_message(),
-            "extension": self.extension_name,
-        }
-
-
-@Operations.register_operation("create_extension")
-class CreateExtensionOp(DBExtensionOp):
-
-    """Create a database extension."""
-
-    @classmethod
-    def create_extension(
-        cls,
-        operations,
-        extension_name,
-        *,
-        version=None,
-        install_schema=None,
-        schema=None,
-        drop_cascade=False,
-    ):
-        op = cls(
-            extension_name,
-            version=version,
-            install_schema=install_schema,
-            schema=schema,
-            drop_cascade=drop_cascade,
-        )
-        return operations.invoke(op)
-
-    def reverse(self):
-        return DropExtensionOp(
-            self.extension_name,
-            version=self.version,
-            install_schema=self.install_schema,
-            schema=self.schema,
-            drop_cascade=self.drop_cascade,
-        )
-
-    def get_revision_message(self) -> String:
-        return f"create extension {self.extension_name}"
-
-    def get_change_type(self) -> ChangeType:
-        return ChangeType.CREATE_EXTENSION
-
-
-@Operations.register_operation("drop_extension")
-class DropExtensionOp(DBExtensionOp):
-
-    """Drop a database extension."""
-
-    @classmethod
-    def drop_extension(
-        cls,
-        operations,
-        extension_name,
-        *,
-        version=None,
-        install_schema=None,
-        schema=None,
-        drop_cascade=False,
-    ):
-        op = cls(
-            extension_name,
-            version=version,
-            install_schema=install_schema,
-            schema=schema,
-            drop_cascade=drop_cascade,
-        )
-        return operations.invoke(op)
-
-    def reverse(self):
-        return CreateExtensionOp(
-            self.extension_name,
-            version=self.version,
-            install_schema=self.install_schema,
-            schema=self.schema,
-            drop_cascade=self.drop_cascade,
-        )
-
-    def get_revision_message(self) -> String:
-        return f"drop extension {self.extension_name}"
-
-    def get_change_type(self) -> ChangeType:
-        return ChangeType.DROP_EXTENSION
-
-
-@Operations.register_operation("update_extension")
-class UpdateExtensionOp(DBExtensionOp):
-
-    """Update a database extension to a specific version."""
-
-    def __init__(
-        self,
-        extension_name: str,
-        *,
-        from_version: str | None = None,
-        to_version: str | None = None,
-        install_schema: str | None = None,
-        schema: Any | None = None,
-        drop_cascade: bool = False,
-    ):
-        super().__init__(
-            extension_name,
-            version=to_version,
-            install_schema=install_schema,
-            schema=schema,
-            drop_cascade=drop_cascade,
-        )
-        self.from_version = from_version
-        self.to_version = to_version
-
-    @classmethod
-    def update_extension(
-        cls,
-        operations,
-        extension_name,
-        *,
-        from_version=None,
-        to_version=None,
-        install_schema=None,
-        schema=None,
-        drop_cascade=False,
-    ):
-        op = cls(
-            extension_name,
-            from_version=from_version,
-            to_version=to_version,
-            install_schema=install_schema,
-            schema=schema,
-            drop_cascade=drop_cascade,
-        )
-        return operations.invoke(op)
-
-    def reverse(self):
-        return UpdateExtensionOp(
-            self.extension_name,
-            from_version=self.to_version,
-            to_version=self.from_version,
-            install_schema=self.install_schema,
-            schema=self.schema,
-            drop_cascade=self.drop_cascade,
-        )
-
-    def get_revision_message(self) -> String:
-        if self.to_version is None:
-            return f"update extension {self.extension_name}"
-        return f"update extension {self.extension_name} to version {self.to_version}"
-
-    def get_change_type(self) -> ChangeType:
-        return ChangeType.UPDATE_EXTENSION
-
-    def get_change(self) -> Change:
-        change = super().get_change()
-        if self.to_version is not None:
-            change["desc"] = self.get_revision_message()
-        return change
-
-
-@Operations.register_operation("add_edges")
-class AddEdgesOp(MigrateOpInterface):
-
-    """Add one or more new edges."""
-
-    def __init__(self, edges, schema=None):
-        self.edges = edges
-        self.schema = schema
-
-    @classmethod
-    def add_edges(cls, operations, edges, **kw):
-        """Issue an "add edges" operation"""
-
-        op = AddEdgesOp(edges, **kw)
-        return operations.invoke(op)
-
-    def reverse(self):
-        return RemoveEdgesOp(self.edges, schema=self.schema)
-
-    def get_revision_message(self) -> String:
-        return _get_revision_message_for_edges(self.edges, lambda edge_name: f"add edge {edge_name}", lambda edge_names: f"add edges {edge_names}")
-
-    def get_change_type(self) -> ChangeType:
-        return ChangeType.ADD_EDGES
-
-    def get_table_name(self) -> String:
-        return "assoc_edge_config"
-
-    def get_change(self) -> Change:
-        return {
-            "change": self.get_change_type(),
-            "desc": self.get_revision_message(),
-        }
-
-
-@Operations.register_operation("remove_edges")
-class RemoveEdgesOp(MigrateOpInterface):
-
-    """Removes one or more existing edges."""
-
-    def __init__(self, edges, schema=None):
-        self.edges = edges
-        self.schema = schema
-
-    @classmethod
-    def remove_edges(cls, operations, edges, **kw):
-        """Issue a "remove edges" operation"""
-
-        op = RemoveEdgesOp(edges, **kw)
-        return operations.invoke(op)
-
-    def reverse(self):
-        return AddEdgesOp(self.edges, schema=self.schema)
-
-    def get_revision_message(self) -> String:
-        return _get_revision_message_for_edges(self.edges, lambda edge_name: f"remove edge {edge_name}", lambda edge_names: f"remove edges {edge_names}")
-
-    def get_change_type(self) -> ChangeType:
-        return ChangeType.REMOVE_EDGES
-
-    def get_table_name(self) -> String:
-        return "assoc_edge_config"
-
-    def get_change(self) -> Change:
-        return {
-            "change": self.get_change_type(),
-            "desc": self.get_revision_message(),
-        }
-
-
-def _get_revision_message_for_edges(edges, single_edge_msg_lambda, multi_edge_msg_lambda):
-    if len(edges) == 1:
-        return single_edge_msg_lambda(edges[0]['edge_name'])
-
-    edge_names = [edge['edge_name'] for edge in edges]
-    return multi_edge_msg_lambda(", ".join(sorted(edge_names)))
-
-
-def _get_revision_message_for_rows(rows, table_name, single_row_msg_lmabda, multi_row_msg_lambda):
-    if len(rows) == 1:
-        return single_row_msg_lmabda(table_name)
-
-    return multi_row_msg_lambda(table_name)
-
-
 def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
     return {
         "name": extension["name"],
@@ -463,6 +197,91 @@ class SetExtensionSchemaOp(MigrateOpInterface):
             "extension": self.extension_name,
             "desc": self.get_revision_message(),
         }
+
+
+@Operations.register_operation("add_edges")
+class AddEdgesOp(MigrateOpInterface):
+
+    """Add one or more new edges."""
+
+    def __init__(self, edges, schema=None):
+        self.edges = edges
+        self.schema = schema
+
+    @classmethod
+    def add_edges(cls, operations, edges, **kw):
+        """Issue an "add edges" operation"""
+
+        op = AddEdgesOp(edges, **kw)
+        return operations.invoke(op)
+
+    def reverse(self):
+        return RemoveEdgesOp(self.edges, schema=self.schema)
+
+    def get_revision_message(self) -> String:
+        return _get_revision_message_for_edges(self.edges, lambda edge_name: f"add edge {edge_name}", lambda edge_names: f"add edges {edge_names}")
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.ADD_EDGES
+
+    def get_table_name(self) -> String:
+        return "assoc_edge_config"
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
+
+
+@Operations.register_operation("remove_edges")
+class RemoveEdgesOp(MigrateOpInterface):
+
+    """Removes one or more existing edges."""
+
+    def __init__(self, edges, schema=None):
+        self.edges = edges
+        self.schema = schema
+
+    @classmethod
+    def remove_edges(cls, operations, edges, **kw):
+        """Issue a "remove edges" operation"""
+
+        op = RemoveEdgesOp(edges, **kw)
+        return operations.invoke(op)
+
+    def reverse(self):
+        return AddEdgesOp(self.edges, schema=self.schema)
+
+    def get_revision_message(self) -> String:
+        return _get_revision_message_for_edges(self.edges, lambda edge_name: f"remove edge {edge_name}", lambda edge_names: f"remove edges {edge_names}")
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.REMOVE_EDGES
+
+    def get_table_name(self) -> String:
+        return "assoc_edge_config"
+
+    def get_change(self) -> Change:
+        return {
+            "change": self.get_change_type(),
+            "desc": self.get_revision_message(),
+        }
+
+
+def _get_revision_message_for_edges(edges, single_edge_msg_lambda, multi_edge_msg_lambda):
+    if len(edges) == 1:
+        return single_edge_msg_lambda(edges[0]['edge_name'])
+
+    edge_names = [edge['edge_name'] for edge in edges]
+    return multi_edge_msg_lambda(", ".join(sorted(edge_names)))
+
+
+def _get_revision_message_for_rows(rows, table_name, single_row_msg_lmabda, multi_row_msg_lambda):
+    if len(rows) == 1:
+        return single_row_msg_lmabda(table_name)
+
+    return multi_row_msg_lambda(table_name)
 
 
 @Operations.register_operation("modify_edge")

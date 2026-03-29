@@ -15,46 +15,6 @@ def render_add_edges(autogen_context: AutogenContext, op: ops.AddEdgesOp) -> str
     return _render_edge_from_edges(op.edges, "op.add_edges")
 
 
-def _render_extension_kwargs(op) -> str:
-    items = []
-    if getattr(op, "version", None) is not None:
-        items.append(f"version={op.version!r}")
-    if getattr(op, "install_schema", None) is not None:
-        items.append(f"install_schema={op.install_schema!r}")
-    if getattr(op, "drop_cascade", False):
-        items.append(f"drop_cascade={op.drop_cascade!r}")
-    return ", ".join(items)
-
-
-@renderers.dispatch_for(ops.CreateExtensionOp)
-def render_create_extension(autogen_context: AutogenContext, op: ops.CreateExtensionOp) -> str:
-    kw = _render_extension_kwargs(op)
-    if kw:
-        kw = f", {kw}"
-    return f"op.create_extension({op.extension_name!r}{kw})"
-
-
-@renderers.dispatch_for(ops.DropExtensionOp)
-def render_drop_extension(autogen_context: AutogenContext, op: ops.DropExtensionOp) -> str:
-    kw = _render_extension_kwargs(op)
-    if kw:
-        kw = f", {kw}"
-    return f"op.drop_extension({op.extension_name!r}{kw})"
-
-
-@renderers.dispatch_for(ops.UpdateExtensionOp)
-def render_update_extension(autogen_context: AutogenContext, op: ops.UpdateExtensionOp) -> str:
-    parts = [f"from_version={op.from_version!r}", f"to_version={op.to_version!r}"]
-    if op.install_schema is not None:
-        parts.append(f"install_schema={op.install_schema!r}")
-    if op.drop_cascade:
-        parts.append(f"drop_cascade={op.drop_cascade!r}")
-    return (
-        f"op.update_extension({op.extension_name!r}, "
-        f"{', '.join(parts)})"
-    )
-
-
 @renderers.dispatch_for(ops.RemoveEdgesOp)
 def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveEdgesOp) -> str:
     return _render_edge_from_edges(op.edges, "op.remove_edges")
@@ -202,6 +162,21 @@ def _wrap_autocommit(op_text: str) -> str:
     )
 
 
+def _render_db_extension(extension: dict) -> str:
+    ordered_keys = [
+        "name",
+        "managed",
+        "version",
+        "install_schema",
+        "runtime_schemas",
+        "drop_cascade",
+    ]
+    parts = []
+    for key in ordered_keys:
+        parts.append(f"'{key}': {extension.get(key)!r}")
+    return "{" + ", ".join(parts) + "}"
+
+
 def _get_index_kw(op) -> dict:
     if hasattr(op, "kw") and (kw := op.kw) is not None:
         return dict(kw)
@@ -265,6 +240,40 @@ def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFul
     if (info := op.kw.get("info", {})).get("postgresql_concurrently") is True:
         return _wrap_autocommit(op_text)
     return op_text
+
+
+@renderers.dispatch_for(ops.CreateExtensionOp)
+def render_create_db_extension(
+    autogen_context: AutogenContext, op: ops.CreateExtensionOp
+) -> str:
+    return f"op.create_db_extension({_render_db_extension(op.extension)})"
+
+
+@renderers.dispatch_for(ops.DropExtensionOp)
+def render_drop_db_extension(
+    autogen_context: AutogenContext, op: ops.DropExtensionOp
+) -> str:
+    return f"op.drop_db_extension({_render_db_extension(op.extension)})"
+
+
+@renderers.dispatch_for(ops.UpdateExtensionOp)
+def render_update_db_extension(
+    autogen_context: AutogenContext, op: ops.UpdateExtensionOp
+) -> str:
+    return (
+        f"op.update_db_extension({op.extension_name!r}, "
+        f"{op.from_version!r}, {op.to_version!r})"
+    )
+
+
+@renderers.dispatch_for(ops.SetExtensionSchemaOp)
+def render_set_db_extension_schema(
+    autogen_context: AutogenContext, op: ops.SetExtensionSchemaOp
+) -> str:
+    return (
+        f"op.set_db_extension_schema({op.extension_name!r}, "
+        f"{op.from_schema!r}, {op.to_schema!r})"
+    )
 
 
 # i don't think this is every used since the way it works is that this is called

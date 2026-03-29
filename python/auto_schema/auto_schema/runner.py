@@ -65,7 +65,14 @@ class Runner(object):
         config.connection = connection
         self.schema_name, self.include_public = Runner._resolve_schema_config(self.args)
         if self.schema_name:
-            Runner.setup_schema(self.connection, self.schema_name, self.include_public)
+            Runner.setup_schema(
+                self.connection,
+                self.schema_name,
+                self.include_public,
+                extension_schemas=Runner.get_extension_search_path_schemas(
+                    self.metadata
+                ),
+            )
         config.schema_name = self.schema_name
         config.include_public = self.include_public
 
@@ -112,6 +119,31 @@ class Runner(object):
         return '"' + name.replace('"', '""') + '"'
 
     @classmethod
+    def get_extension_search_path_schemas(
+        cls, metadata: sa.MetaData | None
+    ) -> list[str]:
+        if metadata is None:
+            return []
+
+        extension_info = metadata.info.get("db_extensions", {})
+        extensions = extension_info.get("public", [])
+        schemas = []
+        seen = set()
+
+        for extension in extensions:
+            runtime_schemas = list(extension.get("runtime_schemas") or [])
+            if len(runtime_schemas) == 0 and extension.get("install_schema") is not None:
+                runtime_schemas = [extension["install_schema"]]
+
+            for schema in runtime_schemas:
+                if schema in seen:
+                    continue
+                seen.add(schema)
+                schemas.append(schema)
+
+        return schemas
+
+    @classmethod
     def _resolve_schema_config(
         cls, args: Mapping[str, Any] | None
     ) -> tuple[str | None, bool | None]:
@@ -126,7 +158,14 @@ class Runner(object):
         return (schema, include_public)
 
     @classmethod
-    def setup_schema(cls, connection, schema_name, include_public=False, touch_registry=True):
+    def setup_schema(
+        cls,
+        connection,
+        schema_name,
+        include_public=False,
+        touch_registry=True,
+        extension_schemas: list[str] | None = None,
+    ):
         if not schema_name:
             return
 
@@ -152,10 +191,19 @@ class Runner(object):
 
         if include_public is None:
             include_public = False
-        if include_public:
-            search_path = f"{schema_ident}, public"
-        else:
-            search_path = schema_ident
+        search_path_parts = [schema_ident]
+        seen = {schema_name}
+        for schema in extension_schemas or []:
+            if schema in seen:
+                continue
+            seen.add(schema)
+            if schema == "public":
+                search_path_parts.append("public")
+            else:
+                search_path_parts.append(cls._quote_ident(schema))
+        if include_public and "public" not in seen:
+            search_path_parts.append("public")
+        search_path = ", ".join(search_path_parts)
         connection.execute(sa.text(f"SET search_path TO {search_path}"))
         if touch_registry:
             cls._touch_registry(connection, schema_name)
@@ -229,7 +277,12 @@ class Runner(object):
 
         schema, include_public = cls._resolve_schema_config(args)
         if schema:
-            cls.setup_schema(connection, schema, include_public)
+            cls.setup_schema(
+                connection,
+                schema,
+                include_public,
+                extension_schemas=cls.get_extension_search_path_schemas(metadata),
+            )
 
         mc = MigrationContext.configure(
             connection=connection,
@@ -704,15 +757,23 @@ class Runner(object):
                 self.schema_name,
                 self.include_public,
                 touch_registry=False,
+                extension_schemas=Runner.get_extension_search_path_schemas(
+                    self.metadata
+                ),
             )
 
-        metadata = sa.MetaData()
+        inspector = sa.inspect(connection)
         if self.schema_name:
-            metadata.reflect(bind=connection, schema=self.schema_name)
+            table_names = inspector.get_table_names(schema=self.schema_name)
         else:
-            metadata.reflect(bind=connection)
-        if len(metadata.sorted_tables) != 0:
-            raise Exception(f"to compare from base tables, cannot have any tables in database. have {len(metadata.sorted_tables)}")
+            table_names = inspector.get_table_names()
+        excluded_tables = set(Runner.exclude_tables().split(','))
+        table_names = [name for name in table_names if name not in excluded_tables]
+        if len(table_names) != 0:
+            raise Exception(
+                "to compare from base tables, cannot have any tables in database. "
+                f"have {len(table_names)}"
+            )
 
         mc = MigrationContext.configure(
             connection=connection,

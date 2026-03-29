@@ -87,6 +87,50 @@ class TestPostgresDevSchema(object):
         assert migrations is not None
         connection.close()
 
+    @pytest.mark.usefixtures("empty_metadata")
+    def test_dev_schema_includes_extension_runtime_schema_in_search_path(
+        self, new_test_runner, empty_metadata
+    ):
+        empty_metadata.info["db_extensions"] = {
+            "public": [
+                {
+                    "name": "vector",
+                    "managed": True,
+                    "version": None,
+                    "install_schema": "public",
+                    "runtime_schemas": ["public"],
+                    "drop_cascade": False,
+                }
+            ]
+        }
+        schema = f"ent_dev_test_{uuid.uuid4().hex[:8]}"
+        r = new_test_runner(
+            empty_metadata,
+            args_override={
+                "db_schema": schema,
+                "db_schema_include_public": "false",
+            },
+        )
+
+        row = r.get_connection().execute(sa.text("SHOW search_path")).first()
+        assert row is not None
+        assert row._asdict()["search_path"] == f"{schema}, public"
+
+    @pytest.mark.usefixtures("empty_metadata")
+    def test_migrations_against_empty_ignores_extension_tables(
+        self, new_test_runner, empty_metadata
+    ):
+        setup_runner = new_test_runner(empty_metadata)
+        setup_runner.get_connection().execute(
+            sa.text("CREATE TABLE public.geometry_columns (id INTEGER PRIMARY KEY)")
+        )
+        setup_runner.get_connection().commit()
+
+        r = new_test_runner(empty_metadata, prev_runner=setup_runner)
+        migrations, connection, _, _ = r.migrations_against_empty()
+        assert migrations is not None
+        connection.close()
+
 
 class TestDevSchemaSQLite(object):
     def test_dev_schema_errors_on_sqlite(self, new_test_runner, empty_metadata):

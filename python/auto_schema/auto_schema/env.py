@@ -127,7 +127,12 @@ def run_migrations_online():
     with engine.connect() as connection:
         if config.schema_name:
             runner.Runner.setup_schema(
-                connection, config.schema_name, config.include_public
+                connection,
+                config.schema_name,
+                config.include_public,
+                extension_schemas=runner.Runner.get_extension_search_path_schemas(
+                    target_metadata
+                ),
             )
 
         # Ensure the connection is not in an external transaction before

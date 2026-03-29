@@ -21,6 +21,31 @@ def _get_revision_file(r, rev="head"):
     return testingutils.find_file_by_revision(r, revisions[0])
 
 
+def _db_extension_metadata(
+    *,
+    name: str,
+    managed: bool = True,
+    version: str | None = None,
+    install_schema: str | None = None,
+    runtime_schemas: list[str] | None = None,
+    drop_cascade: bool = False,
+):
+    metadata = sa.MetaData()
+    metadata.info["db_extensions"] = {
+        "public": [
+            {
+                "name": name,
+                "managed": managed,
+                "version": version,
+                "install_schema": install_schema,
+                "runtime_schemas": runtime_schemas or [],
+                "drop_cascade": drop_cascade,
+            }
+        ]
+    }
+    return metadata
+
+
 class BaseTestRunner(object):
 
     @pytest.mark.usefixtures("empty_metadata")
@@ -1763,6 +1788,83 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_bytea_column_fixture, ['tbl'])
 
+    def test_create_db_extension_and_noop_when_installed(self, new_test_runner):
+        metadata = _db_extension_metadata(name="pgcrypto")
+        r = new_test_runner(metadata)
+
+        diff = r.compute_changes()
+        assert len(diff) == 1
+        assert isinstance(diff[0], ops.CreateExtensionOp)
+        assert r.revision_message() == "add db extension pgcrypto"
+
+        r.run()
+
+        row = r.get_connection().execute(
+            sa.text("SELECT extname FROM pg_extension WHERE extname = 'pgcrypto'")
+        ).first()
+        assert row is not None
+
+        r2 = new_test_runner(metadata, r)
+        assert r2.compute_changes() == []
+
+    def test_unmanaged_db_extension_requires_installed_extension(
+        self, new_test_runner
+    ):
+        metadata = _db_extension_metadata(name="pgcrypto", managed=False)
+        r = new_test_runner(metadata)
+
+        with pytest.raises(
+            ValueError,
+            match='required unmanaged db extension "pgcrypto" is not installed',
+        ):
+            r.compute_changes()
+
+    def test_db_extension_version_mismatch_creates_update_op(
+        self, new_test_runner, empty_metadata
+    ):
+        setup_runner = new_test_runner(empty_metadata)
+        setup_runner.get_connection().execute(
+            sa.text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
+        )
+        setup_runner.get_connection().commit()
+        current_version = setup_runner.get_connection().execute(
+            sa.text("SELECT extversion FROM pg_extension WHERE extname = 'pgcrypto'")
+        ).scalar()
+
+        metadata = _db_extension_metadata(name="pgcrypto", version="0.0")
+        r = new_test_runner(metadata, setup_runner)
+        diff = r.compute_changes()
+        assert len(diff) == 1
+        assert isinstance(diff[0], ops.UpdateExtensionOp)
+        assert diff[0].from_version == current_version
+        assert diff[0].to_version == "0.0"
+
+    def test_db_extension_schema_mismatch_creates_set_schema_op(
+        self, new_test_runner, empty_metadata
+    ):
+        setup_runner = new_test_runner(empty_metadata)
+        setup_runner.get_connection().execute(
+            sa.text('CREATE EXTENSION IF NOT EXISTS "hstore"')
+        )
+        setup_runner.get_connection().commit()
+
+        metadata = _db_extension_metadata(
+            name="hstore",
+            install_schema="extensions",
+        )
+        r = new_test_runner(metadata, setup_runner)
+        diff = r.compute_changes()
+        assert len(diff) == 1
+        assert isinstance(diff[0], ops.SetExtensionSchemaOp)
+        assert diff[0].from_schema == "public"
+        assert diff[0].to_schema == "extensions"
+
 
 class TestSqliteRunner(BaseTestRunner):
-    pass
+    def test_db_extensions_error_on_sqlite(self, new_test_runner):
+        metadata = _db_extension_metadata(name="pgcrypto")
+        r = new_test_runner(metadata)
+        with pytest.raises(
+            ValueError, match="db extensions are only supported for postgres"
+        ):
+            r.compute_changes()

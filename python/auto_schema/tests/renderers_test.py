@@ -82,30 +82,49 @@ def test_render_full_text_index_concurrently():
     assert "postgresql_concurrently" in rendered
 
 
-def test_render_create_extension():
+def test_render_create_db_extension():
     op = ops.CreateExtensionOp(
-        "vector",
-        version="0.4.1",
-        install_schema="public",
+        {
+            "name": "vector",
+            "managed": True,
+            "version": "0.4.1",
+            "install_schema": "public",
+            "runtime_schemas": ["public"],
+            "drop_cascade": False,
+        }
     )
-    rendered = renderers.render_create_extension(None, op)
-    assert rendered == "op.create_extension('vector', version='0.4.1', install_schema='public')"
+    rendered = renderers.render_create_db_extension(None, op)
+    assert "op.create_db_extension" in rendered
+    assert "'name': 'vector'" in rendered
+    assert "'runtime_schemas': ['public']" in rendered
 
 
-def test_render_drop_extension():
+def test_render_drop_db_extension():
     op = ops.DropExtensionOp(
-        "uuid-ossp",
-        drop_cascade=True,
+        {
+            "name": "vector",
+            "managed": True,
+            "version": None,
+            "install_schema": None,
+            "runtime_schemas": [],
+            "drop_cascade": True,
+        }
     )
-    rendered = renderers.render_drop_extension(None, op)
-    assert rendered == "op.drop_extension('uuid-ossp', drop_cascade=True)"
+    rendered = renderers.render_drop_db_extension(None, op)
+    assert "op.drop_db_extension" in rendered
+    assert "'drop_cascade': True" in rendered
 
 
-def test_render_update_extension():
-    op = ops.UpdateExtensionOp(
-        "vector",
-        from_version="0.4.1",
-        to_version="0.5.0",
+def test_render_update_db_extension():
+    op = ops.UpdateExtensionOp("vector", "0.4.0", "0.4.1")
+    rendered = renderers.render_update_db_extension(None, op)
+    assert rendered == "op.update_db_extension('vector', '0.4.0', '0.4.1')"
+
+
+def test_render_set_db_extension_schema():
+    op = ops.SetExtensionSchemaOp("hstore", "public", "extensions")
+    rendered = renderers.render_set_db_extension_schema(None, op)
+    assert (
+        rendered
+        == "op.set_db_extension_schema('hstore', 'public', 'extensions')"
     )
-    rendered = renderers.render_update_extension(None, op)
-    assert rendered == "op.update_extension('vector', from_version='0.4.1', to_version='0.5.0')"
