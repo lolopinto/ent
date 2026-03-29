@@ -3,8 +3,13 @@ import { load } from "js-yaml";
 import { DateTime } from "luxon";
 import pg, { Pool, PoolClient, PoolConfig } from "pg";
 import { log } from "./logger";
-import type { RuntimeDevSchemaConfig } from "./config";
+import type { RuntimeDBExtension, RuntimeDevSchemaConfig } from "./config";
 import { isDevSchemaEnabled, resolveDevSchema } from "./dev_schema";
+import {
+  buildExtensionSearchPath,
+  initializeExtensions,
+  resolveExtensions,
+} from "./extensions";
 
 export interface Database extends PoolConfig {
   database?: string;
@@ -69,6 +74,7 @@ interface DatabaseInfo {
   /// filePath for sqlite
   filePath?: string;
   devSchema?: RuntimeDevSchemaConfig;
+  extensions?: RuntimeDBExtension[];
 }
 
 interface clientConfigArgs {
@@ -77,6 +83,7 @@ interface clientConfigArgs {
   db?: Database | DBDict;
   cfg?: PoolConfig;
   devSchema?: RuntimeDevSchemaConfig;
+  extensions?: RuntimeDBExtension[];
 }
 // order
 // env variable
@@ -85,11 +92,14 @@ interface clientConfigArgs {
 // database file in yml file
 // database/config.yml
 function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
+  const extensions = resolveExtensions(args?.extensions);
+
   // if there's a db connection string, use that first
   const str = process.env.DB_CONNECTION_STRING;
   if (str) {
     const info = parseConnectionString(str, args);
     info.devSchema = args?.devSchema;
+    info.extensions = extensions;
     return info;
   }
 
@@ -98,6 +108,7 @@ function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
     if (args.connectionString) {
       const info = parseConnectionString(args.connectionString, args);
       info.devSchema = args?.devSchema;
+      info.extensions = extensions;
       return info;
     }
 
@@ -115,6 +126,7 @@ function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
         dialect: Dialect.Postgres,
         config: db,
         devSchema: args?.devSchema,
+        extensions,
       };
     }
 
@@ -147,6 +159,7 @@ function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
           ...cfg,
         },
         devSchema: args?.devSchema,
+        extensions,
       };
     }
     throw new Error(`invalid yaml configuration in file`);
@@ -170,12 +183,14 @@ export default class DB {
     const resolvedDevSchema = devSchemaEnabled
       ? resolveDevSchema(db.devSchema)
       : { enabled: false };
+    const extensions = db.extensions || [];
 
     if (db.dialect === Dialect.Postgres) {
-      if (resolvedDevSchema.enabled && resolvedDevSchema.schemaName) {
-        const searchPath = resolvedDevSchema.includePublic
-          ? `${resolvedDevSchema.schemaName},public`
-          : resolvedDevSchema.schemaName;
+      const searchPath = buildExtensionSearchPath(
+        resolvedDevSchema,
+        extensions,
+      );
+      if (searchPath) {
         const option = `-c search_path=${searchPath}`;
         db.config = {
           ...db.config,
@@ -187,20 +202,29 @@ export default class DB {
 
       this.pool = new Pool(db.config);
       const schemaName = resolvedDevSchema.schemaName;
-      const devSchemaReady =
-        resolvedDevSchema.enabled && schemaName
-          ? validateDevSchema(this.pool, schemaName).then(() =>
-              touchDevSchemaRegistry(
-                this.pool,
-                schemaName,
-                resolvedDevSchema.branchName,
-              ).catch(() => {}),
-            )
-          : undefined;
-      if (devSchemaReady) {
-        devSchemaReady.catch(() => {});
+      const readyTasks: Promise<void>[] = [];
+      if (resolvedDevSchema.enabled && schemaName) {
+        readyTasks.push(
+          validateDevSchema(this.pool, schemaName).then(() =>
+            touchDevSchemaRegistry(
+              this.pool,
+              schemaName,
+              resolvedDevSchema.branchName,
+            ).catch(() => {}),
+          ),
+        );
       }
-      this.q = new Postgres(this.pool, devSchemaReady);
+      if (extensions.length > 0) {
+        readyTasks.push(initializeExtensions(this.pool, extensions));
+      }
+      const ready =
+        readyTasks.length > 0
+          ? Promise.all(readyTasks).then(() => undefined)
+          : undefined;
+      if (ready) {
+        ready.catch(() => {});
+      }
+      this.q = new Postgres(this.pool, ready);
 
       this.pool.on("error", (err, client) => {
         log("error", err);
